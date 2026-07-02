@@ -1,64 +1,34 @@
 # WILQ Skill Coverage Audit
 
-Data: 2026-07-02 05:02 CEST.
+Generated: `2026-07-02T16:42:04+00:00`.
 
-Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne
-przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko
-decyzję produktową: co działa, co jest review-only, co blokuje BDOS-class
-workflow.
-
-Live context at refresh time:
-
-- WILQ API: `ok`.
-- Connector inventory: 12 total, 9 configured, 2 with missing credentials.
-- Eval coverage gate: `scripts/audit_skill_eval_coverage.py --strict` passed
-  with 13 skill cases and 13 skill directories.
+Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko najnowszy passing artifact i decyzję produktową.
 
 ## Coverage Table
 
-| Skill | Latest artifact | Score | State | What it proves | Remaining blocker |
+| Skill | Latest artifact | Score | State | What it proves | Remaining blocker / next step |
 | --- | --- | ---: | --- | --- | --- |
-| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260702T024250Z/wilq-daily-command/result.json` | 5 | ready / daily loop checked | Uses `/command-center`, `daily_decisions`, `primary_next_step`, Merchant, Content, GA4 and Ads; validates four daily review actions; keeps Localo/social out of the main day plan unless canonical daily view includes them. | Keep daily loop tied to `command_center.daily_decisions`; do not promote Localo/social from broader context. |
-| `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260702T025015Z/wilq-ads-doctor/result.json` | 5 | ready / review-only | Uses full Ads diagnostics/full context, returns five review priorities, validates four Ads review actions and keeps Keyword Planner/forecast blockers explicit. | No CPA/ROAS, wasted-budget, budget scaling, negative-keyword apply or writes without human review, confirmation, write contract and audit. |
-| `wilq-merchant-feed-operator` | `.local-lab/evals/codex-skill/20260702T025422Z/wilq-merchant-feed-operator/result.json` | 5 | ready / review-only | Groups feed work by `decision_queue`, treats `product_count` as reported issue occurrences, validates feed issue review, and uses product samples only as review samples. | No product-level ROAS/revenue, price-impact, product reapproval or feed writes without missing contracts and audit. |
-| `wilq-ga4-analyst` | `.local-lab/evals/codex-skill/20260702T025826Z/wilq-ga4-analyst/result.json` | 4 | ready / review-only | Separates `fix_measurement` `(not set)` rows from `review_traffic_quality` rows, validates GA4 tracking-quality review and avoids inventing absent `review_landing_mapping` queue items. | No profitability, revenue, conversion-rate, ROAS, GA4 write or "measurement fixed" claims without separate contracts. |
-| `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260702T031401Z/wilq-gsc-content-doctor/result.json` | 5 | ready / partial-data caveats checked | Uses fresh GSC/WordPress evidence, exposes latest available single-day Search Analytics, `rowLimit=1000` WILQ detail cap, official 25k/50k limits, partial query/page warning and validated content refresh action. | Publication-ready copy still requires inventory/canonical checks, reviewed knowledge and human review; GSC query/page detail is not a full traffic export. |
-| `wilq-content-strategist` | `.local-lab/evals/codex-skill/20260702T023811Z/wilq-content-strategist/result.json` | 4 | ready / anti-slop checked | Plans content from WILQ evidence, handles BDO and `art 400` as refresh/merge, blocks `zielony ład` until evidence/inventory, and treats GA4 measurement rows as not content topics. | Still review-only: no final publish-ready content or WordPress write without approved knowledge, claim ledger and audit. |
-| `wilq-content-operator` | `.local-lab/evals/codex-skill/20260702T090533Z/wilq-content-operator/result.json` | 4 | blocked correctly / UAT-prep | Handles refresh-first content workflow blockers and now requires Service Profile review recorder, promotion preview, live `review_requirements` authority, `source_trace_clear`, `blocked_claims_reviewed`, `follow_up_beads` and stable `knowledge_card_count` in actionable output. | Full Wilku content UAT still needs owner session or explicit defer with residual risk. |
-| `wilq-social-publisher` | `.local-lab/evals/codex-skill/20260702T083900Z/wilq-social-publisher/result.json` | 4 | draft-ready / history dedupe blocked | Converts WILQ-backed insight into reviewable social draft candidates while exposing missing publish access, `social_history_inventory_v1`, metadata-only history fields and duplicate-free claim blockers. | LinkedIn/Facebook credentials, historical post inventory and publish safety/audit remain missing; no autopublish, duplicate-free claim or social performance claim. |
-| `wilq-campaign-builder` | `.local-lab/evals/codex-skill/20260702T021145Z/wilq-campaign-builder/result.json` | 4 | ready / review-only | Builds campaign candidates from Ads/GSC evidence and action contracts, not generic prompt ideas. | No campaign apply, budget scaling or performance promise without Ads apply contracts, confirmation and audit. |
-| `wilq-custom-segments` | `.local-lab/evals/codex-skill/20260623T160335Z/wilq-custom-segments/result.json` | 4 | ready / review-only | Uses real Ads source terms and review triage for custom segment candidates. | Audience size, targeting applied, forecast and performance claims remain blocked until Keyword Planner/forecast/apply contracts exist. |
-| `wilq-demand-gen-operator` | `.local-lab/evals/codex-skill/20260623T153134Z/wilq-demand-gen-operator/result.json` | 4 | blocked correctly | Detects missing Demand Gen launch/migration/creative evidence and validates readiness review only. | Need real Demand Gen campaign/ad/creative/landing/migration rows before recommendations. |
-| `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260702T030715Z/wilq-ahrefs-gap-finder/result.json` | 4 | ready / review-only | Uses eight Ahrefs evidence IDs, keeps lineage scoped to `ahrefs`, treats compacted `gap_records_omitted=true` as context compaction and returns no write action IDs. | No traffic uplift, authority-growth, ranking or write claims without cross-source measurement, freshness and approved action contracts. |
-| `wilq-localo-operator` | `.local-lab/evals/codex-skill/20260623T154853Z/wilq-localo-operator/result.json` | 5 | partial / local review-only | Localo access and aggregate visibility/review facts can support local visibility review with validated action state. | GBP performance, competitors, local tasks, writes and visibility uplift remain blocked unless current Localo evidence/action contracts support them. |
+| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260702T153612Z/wilq-daily-command/result.json` | 5 | ready / review-only | 20 evidence IDs; connectors: google_merchant_center, ahrefs, google_search_console, wordpress_ekologus, wordpress_sklep, google_analytics_4, google_ads, localo; actions: act_revie… | Plan działań: najpierw otwórz /merchant, bo primary_next_step z /command-center mówi: „Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego”. Dowody: ev… |
+| `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260702T154733Z/wilq-ads-doctor/result.json` | 5 | ready / review-only | 12 evidence IDs; connectors: google_ads; actions: act_prepare_ads_campaign_review_queue, act_prepare_google_ads_recommendation_review_queue, act_prepare_custom_segments_from_searc… | Wejdź w /ads-doctor i kliknij najpierw przygotowanie kolejki przeglądu kampanii: to ma najwyższy priorytet, bo ads_diagnostics pokazuje świeży odczyt Google Ads, gotowy ads_review… |
+| `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260702T160528Z/wilq-gsc-content-doctor/result.json` | 5 | ready / review-only | 5 evidence IDs; connectors: google_search_console, wordpress_ekologus, wordpress_sklep; actions: act_prepare_content_refresh_queue | Otwórz /content-planner i uruchom zweryfikowaną akcję do sprawdzenia act_prepare_content_refresh_queue. Najpierw wybierz decyzję refresh_or_merge dla strony głównej, bo najnowszy… |
+| `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260702T161306Z/wilq-ahrefs-gap-finder/result.json` | 5 | ready / review-only | 8 evidence IDs; connectors: ahrefs | Na /ahrefs najpierw przejrzyj decision_queue dla ahrefs_review_gap_records, bo Ahrefs ma gotowy gap_read_contract i 8 rekordów luk do oceny; potem użyj top pages oraz organic keyw… |
+| `wilq-localo-operator` | `.local-lab/evals/codex-skill/20260702T161619Z/wilq-localo-operator/result.json` | 5 | ready / review-only | 2 evidence IDs; connectors: localo; actions: act_review_localo_visibility_facts | Na route /localo otwórz akcję act_review_localo_visibility_facts i przejrzyj podgląd local_visibility_review_preview_v1: najpierw potwierdź place_inventory, local_rankings, gbp_vi… |
+| `wilq-content-strategist` | `.local-lab/evals/codex-skill/20260702T162005Z/wilq-content-strategist/result.json` | 5 | blocked correctly / review-only | 18 evidence IDs; connectors: ahrefs, google_search_console, wordpress_ekologus, wordpress_sklep, google_analytics_4; actions: act_prepare_content_refresh_queue, act_prepare_wordpr… | Blok dotyczy finalnego draftu i obietnic: adres podglądu jako źródło dowodu, publikacja w WordPress, zapis szkicu WordPress, gwarancja braku duplikatów, gwarancja pozycji, obietni… |
+| `wilq-content-operator` | `.local-lab/evals/codex-skill/20260702T155226Z/wilq-content-operator/result.json` | 5 | blocked correctly / review-only | 6 evidence IDs; connectors: google_analytics_4, ahrefs, google_search_console, wordpress_ekologus | Sesja /content-workflow jest użyteczna jako prowadzenie operatora, ale blokowana przed zapisem i obietnicami: queue_status=blocked, workflow_blocked=true, selected_mode=refresh, d… |
+| `wilq-social-publisher` | `.local-lab/evals/codex-skill/20260702T160931Z/wilq-social-publisher/result.json` | 5 | ready / review-only | 5 evidence IDs; connectors: linkedin, facebook, google_search_console, google_merchant_center, wordpress_ekologus; actions: act_prepare_linkedin_social_drafts, act_prepare_faceboo… | Na /social-publisher najpierw uruchom do sprawdzenia w WILQ zweryfikowane akcje act_prepare_linkedin_social_drafts i act_prepare_facebook_social_drafts, bazując wyłącznie na sourc… |
+| `wilq-campaign-builder` | `.local-lab/evals/codex-skill/20260702T162535Z/wilq-campaign-builder/result.json` | 5 | ready / review-only | 16 evidence IDs; connectors: google_ads, google_analytics_4, google_search_console, wordpress_ekologus; actions: act_prepare_ads_campaign_review_queue, act_prepare_google_ads_reco… | Najpierw otwórz /ads-doctor i uruchom Sprawdzenie w WILQ dla zwalidowanej kolejki Ads; dopiero potem oceniaj podgląd zmian. Nie zapisuj niczego u dostawcy bez zaakceptowanej akcji… |
+| `wilq-custom-segments` | `.local-lab/evals/codex-skill/20260702T162911Z/wilq-custom-segments/result.json` | 5 | ready / review-only | 2 evidence IDs; connectors: google_ads, google_search_console; actions: act_prepare_custom_segments_from_search_terms | Na /ads-doctor otwórz review segmentu dla act_prepare_custom_segments_from_search_terms: sprawdzenie w WILQ przeszło, więc można ocenić source_terms i custom_segment_change_previe… |
+| `wilq-demand-gen-operator` | `.local-lab/evals/codex-skill/20260702T163412Z/wilq-demand-gen-operator/result.json` | 4 | blocked correctly / review-only | 20 evidence IDs; connectors: google_ads, google_analytics_4; actions: act_review_demand_gen_readiness | WILQ blokuje wniosek końcowy, bo demand_gen_readiness ma status blocked: w odczycie jest 18 kampanii Ads, ale 0 kampanii Demand Gen, 0 reklam Demand Gen, 0 kreacji Demand Gen, 0 s… |
+| `wilq-ga4-analyst` | `.local-lab/evals/codex-skill/20260702T154355Z/wilq-ga4-analyst/result.json` | 5 | ready / review-only | 19 evidence IDs; connectors: google_analytics_4, wordpress_ekologus; actions: act_review_ga4_tracking_quality | Na /ga4 wykonaj najpierw zweryfikowaną akcję act_review_ga4_tracking_quality, bo fix_measurement w decision_queue blokuje ocenę wierszy z „(not set)”; potem przejdź do review_land… |
+| `wilq-merchant-feed-operator` | `.local-lab/evals/codex-skill/20260702T154028Z/wilq-merchant-feed-operator/result.json` | 5 | ready / review-only | 4 evidence IDs; connectors: google_merchant_center, google_ads; actions: act_review_merchant_feed_issues | Na /merchant otwórz act_review_merchant_feed_issues i sprawdź podgląd merchant_feed_issue_review_preview_v1: najpierw issue missing_potentially_required_attribute dla n:unit_prici… |
 
 ## Product Readout
 
-- 13/13 WILQ skills have eval cases and skill directories.
-- 13/13 pass the static coverage audit with OpenAI-aligned hard gates:
-  evidence/source connector handling, blocked claims, action validation,
-  freshness/blocker handling and workflow specificity.
-- The strongest current operator path is:
-  `wilq-daily-command` -> `/merchant` -> `/ads-doctor` -> `/ga4` ->
-  `/content-planner`.
-- The strongest content path is not yet "publish": it is review/traceability
-  through Content Strategist, Content Operator and Service Profile blockers.
-  Content Operator now has a live eval guard proving that Service Profile
-  recorder payloads must follow API-owned `review_requirements`, not a stale
-  copied list.
-- The weakest product gaps are now above the skill layer: approved Ekologus
-  knowledge, Wilku UAT proof, claim-level generation gate, measurement
-  provenance and write/apply contracts.
+- 13/13 WILQ skills have a latest passing non-interactive eval.
+- Passing means: Polish operator output, WILQ API usage, source connectors, evidence IDs, blocked-claim handling and all hard gates true.
+- `blocked correctly / review-only` is a useful state when WILQ has evidence for the blocker but not enough proof for an action or claim.
+- If this file drifts, regenerate it with `rtk uv run python scripts/render_skill_coverage_audit.py --write docs/evals/skill-coverage-audit.md`.
 
 ## Guardrail
 
-Do not fix future skill failures by adding edge-case prose to references. If an
-eval lacks a useful decision, first check whether WILQ API exposes a typed field
-for that decision. If not, add or fix the typed API/dashboard contract, then make
-the skill consume it.
-
-`scripts/skill_hygiene_check.py` blocks recovery/artifact prose in skills and
-references. Typed API contract fields such as `decision_queue`,
-`freshness_assessment`, `readiness.status`, `blocked_claims` and ActionObject
-validation remain valid reference material only when they describe existing API
-fields.
+Do not fix future skill failures by adding edge-case prose to references. If an eval lacks a useful decision, first check whether WILQ API exposes a typed field for that decision. If not, add or fix the typed API/dashboard contract, then make the skill consume it.

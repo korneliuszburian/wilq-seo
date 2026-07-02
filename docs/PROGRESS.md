@@ -330,6 +330,10 @@ live API status later contradicts this state.
   claims and only validates `act_review_demand_gen_readiness` as review-only.
   The lower score is intentional: current evidence supports an honest blocker,
   not a launch or optimization recommendation.
+- `docs/evals/skill-coverage-audit.md` is now generated from the latest passing
+  non-interactive eval artifacts by
+  `scripts/render_skill_coverage_audit.py`, so the recovery audit does not
+  drift after skill replay runs.
 - `wilq-campaign-builder` passed deterministic smoke and non-interactive eval
   as a review-only campaign planning workflow; artifact:
   `.local-lab/evals/codex-skill/20260702T133636Z`. Score 5,
