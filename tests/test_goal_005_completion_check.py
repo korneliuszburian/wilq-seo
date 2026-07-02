@@ -18,6 +18,7 @@ FULL_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
     "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
+    "docs/handoffs/2026-07-02-wilku-social-history-blocker.md",
 ]
 
 
@@ -275,6 +276,10 @@ def test_goal_005_completion_check_blocks_ready_uat_without_plain_review_model(
     assert any("2026-07-02-co-pokazac-wilkowi.md" in detail for detail in report["details"])
     assert any(
         "2026-07-02-wilku-ekologus-ai-policy-review.md" in detail
+        for detail in report["details"]
+    )
+    assert any(
+        "2026-07-02-wilku-social-history-blocker.md" in detail
         for detail in report["details"]
     )
 

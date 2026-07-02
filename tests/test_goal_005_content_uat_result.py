@@ -76,6 +76,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
         "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
         "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
+        "docs/handoffs/2026-07-02-wilku-social-history-blocker.md",
     ]
     assert "Nie promuje private proposals" in report["safety_note"]
     assert "nie odblokowuje publikacji" in report["safety_note"]
@@ -89,6 +90,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert "2026-07-02-wilq-marketing-content-model.md" in markdown
     assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
     assert "2026-07-02-wilku-ekologus-ai-policy-review.md" in markdown
+    assert "2026-07-02-wilku-social-history-blocker.md" in markdown
 
 
 def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() -> None:

@@ -346,7 +346,8 @@ Walidowany format wyniku:
     "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-    "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md"
+    "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
+    "docs/handoffs/2026-07-02-wilku-social-history-blocker.md"
   ],
   "oceny_materialow_review": [
     {
@@ -381,6 +382,16 @@ Walidowany format wyniku:
     },
     {
       "material": "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
+      "decyzja": "popraw",
+      "czytelnosc_1_5": 3,
+      "uzytecznosc_1_5": 3,
+      "glos_ekologus_1_5": 3,
+      "zaufanie_do_blokad_1_5": 3,
+      "dopasowanie_cta_1_5": 3,
+      "najwazniejsza_poprawka": "uzupełnić po rozmowie"
+    },
+    {
+      "material": "docs/handoffs/2026-07-02-wilku-social-history-blocker.md",
       "decyzja": "popraw",
       "czytelnosc_1_5": 3,
       "uzytecznosc_1_5": 3,
@@ -456,7 +467,8 @@ materiałów startowych i policy review wymaganych do completion check:
 - `docs/handoffs/2026-07-02-wilq-marketing-content-model.md`;
 - `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`;
 - `docs/handoffs/2026-07-02-wilku-bdo-uat-review.md`;
-- `docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md`.
+- `docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md`;
+- `docs/handoffs/2026-07-02-wilku-social-history-blocker.md`.
 
 To ostrzeżenie nie unieważnia samego raportu UAT, ale blokuje claim
 domknięcia Goal 005 w `scripts/goal_005_completion_check.py`. Pełny proof
