@@ -386,6 +386,14 @@ def _acf_layouts_from_payload(
             layouts.extend(
                 _flexible_layouts_from_field(field, flexible_field_name=flexible_field_name)
             )
+            if flexible_field_name is None:
+                layout = _section_layout_from_field(field)
+                if layout is not None:
+                    layouts.append(layout)
+        if not layouts:
+            fallback = _field_group_layout_from_fields(group, fields)
+            if fallback is not None:
+                layouts.append(fallback)
     return layouts
 
 
@@ -434,6 +442,73 @@ def _flexible_layouts_from_field(
             )
         )
     return layouts
+
+
+def _section_layout_from_field(field: Any) -> WordPressAcfFlexibleLayout | None:
+    if not isinstance(field, dict):
+        return None
+    field_type = _text(field.get("type"))
+    if field_type not in {"group", "repeater"}:
+        return None
+    sub_fields = [
+        _acf_field_from_payload(raw_field)
+        for raw_field in field.get("sub_fields", [])
+        if isinstance(raw_field, dict)
+    ]
+    fields = [sub_field for sub_field in sub_fields if sub_field is not None]
+    if not fields:
+        return None
+    layout_name = _text(field.get("name")) or _text(field.get("key"))
+    if not layout_name:
+        return None
+    return _acf_layout(
+        name=layout_name,
+        label=_text(field.get("label")) or layout_name,
+        fields=fields,
+        source_method="acf_export",
+    )
+
+
+def _field_group_layout_from_fields(
+    group: dict[str, Any],
+    raw_fields: list[Any],
+) -> WordPressAcfFlexibleLayout | None:
+    fields = [
+        _acf_field_from_payload(raw_field)
+        for raw_field in raw_fields
+        if isinstance(raw_field, dict)
+    ]
+    fields = [field for field in fields if field is not None]
+    if not fields:
+        return None
+    group_name = _text(group.get("title")) or _text(group.get("key"))
+    if not group_name:
+        return None
+    return _acf_layout(
+        name=_slug(group_name),
+        label=group_name,
+        fields=fields,
+        source_method="acf_export",
+    )
+
+
+def _acf_layout(
+    *,
+    name: str,
+    label: str,
+    fields: list[WordPressAcfField],
+    source_method: WordPressAuthoringDiscoveryMethod,
+) -> WordPressAcfFlexibleLayout:
+    required = [field.name for field in fields if field.required]
+    optional = [field.name for field in fields if not field.required]
+    return WordPressAcfFlexibleLayout(
+        name=name,
+        label=label,
+        fields=fields,
+        source_method=source_method,
+        required_field_names=required,
+        optional_field_names=optional,
+    )
 
 
 def _acf_field_from_payload(payload: dict[str, Any]) -> WordPressAcfField | None:
@@ -612,6 +687,10 @@ def _blank_to_none(value: str | None) -> str | None:
 
 def _text(value: object) -> str:
     return value.strip() if isinstance(value, str) else ""
+
+
+def _slug(value: str) -> str:
+    return "_".join(value.strip().lower().split())
 
 
 def _acf_required(value: object) -> bool:

@@ -178,7 +178,7 @@ def _profile_blockers(
     profile: WordPressAuthoringProfile,
 ) -> list[ContentWordPressAuthoringPreviewBlocker]:
     blockers: list[ContentWordPressAuthoringPreviewBlocker] = []
-    if not profile.acf.flexible_content_field_name:
+    if not profile.acf.flexible_content_field_name and not profile.acf.layouts:
         blockers.append(
             _blocker(
                 "acf_flexible_field_name_missing",
@@ -204,11 +204,36 @@ def _choose_layout(
 ) -> WordPressAcfFlexibleLayout | None:
     if not layouts:
         return None
-    for layout in layouts:
-        names = " ".join([layout.name, layout.label]).lower()
-        if any(token in names for token in ("content", "tekst", "section", "sekcja")):
-            return layout
-    return layouts[0]
+    return max(layouts, key=_layout_score)
+
+
+def _layout_score(layout: WordPressAcfFlexibleLayout) -> int:
+    text = " ".join(
+        [
+            layout.name,
+            layout.label,
+            *[field.name for field in layout.fields],
+            *[field.label for field in layout.fields],
+            *[field.field_type for field in layout.fields],
+        ]
+    ).lower()
+    score = 0
+    for token in ("podstrona", "content", "tekst", "section", "sekcja"):
+        if token in text:
+            score += 8
+    for token in ("opis", "wysiwyg", "body"):
+        if token in text:
+            score += 5
+    for token in ("tytul", "title", "heading", "naglowek"):
+        if token in text:
+            score += 4
+    for token in ("hero", "cta", "baza_wiedzy", "nasze_uslugi"):
+        if token in text:
+            score += 2
+    for token in ("skrypt", "script", "html_head", "html_body", "api"):
+        if token in text:
+            score -= 20
+    return score
 
 
 def _section_payload(
@@ -234,7 +259,17 @@ def _section_payload(
 
 def _field_value(field: WordPressAcfField, section: ContentDraftSection) -> str | None:
     haystack = f"{field.name} {field.label} {field.field_type}".lower()
-    if any(token in haystack for token in ("heading", "headline", "title", "naglowek")):
+    if field.field_type in {"repeater", "flexible_content"}:
+        return None
+    if field.field_type == "group":
+        nested_value = _nested_text_value(field, section)
+        if nested_value is not None:
+            return nested_value
+        return None
+    if any(
+        token in haystack
+        for token in ("heading", "headline", "title", "tytul", "naglowek")
+    ):
         return section.heading
     if any(token in haystack for token in ("body", "content", "tekst", "opis", "wysiwyg")):
         return _section_body(section)
@@ -242,6 +277,20 @@ def _field_value(field: WordPressAcfField, section: ContentDraftSection) -> str 
         return section.purpose
     if "evidence" in haystack or "dowod" in haystack:
         return ", ".join(section.evidence_ids) if section.evidence_ids else None
+    return None
+
+
+def _nested_text_value(field: WordPressAcfField, section: ContentDraftSection) -> str | None:
+    nested_names = " ".join(
+        f"{sub_field.name} {sub_field.label} {sub_field.field_type}"
+        for sub_field in field.sub_fields
+    ).lower()
+    if not nested_names:
+        return None
+    if any(token in nested_names for token in ("opis", "wysiwyg", "body", "content")):
+        return _section_body(section)
+    if any(token in nested_names for token in ("tytul", "title", "heading", "naglowek")):
+        return section.heading
     return None
 
 

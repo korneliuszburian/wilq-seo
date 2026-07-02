@@ -223,11 +223,15 @@ live API status later contradicts this state.
   and created `~/.local/bin/wilq-wp-readonly`, a read-only wrapper outside the
   WordPress docroot. The wrapper uses Plesk PHP 8.3 with `mysqli`, blocks
   write-capable commands such as `post create`, and allows only selected
-  discovery commands for the configured docroot. Live API now reports WP-CLI
-  fallback as `configured`, ACF Pro is active, and ACF field groups are visible
-  (`Strona główna`, `Podstrona`, `Hero`, `Nasze usługi`, etc.). Current live
-  blocker: `acf_flexible_layouts_missing_wp_cli_ready`, meaning the next step
-  is extracting typed field/layout definitions from those field groups.
+  discovery commands for the configured docroot. A local ignored ACF export was
+  generated from read-only `acf-field-group`/`acf-field` metadata and wired to
+  `.env`; live API now reports WP-CLI fallback as `configured`, ACF Pro active,
+  `acf.layouts_discovered=true`, 21 layout-like ACF sections and no authoring
+  blockers. Live payload preview maps the current homepage draft package to the
+  real `podstrona` ACF layout with `external_write_attempted=false`, leaves the
+  `elementy` repeater empty instead of pretending a flat text value is safe, and
+  still requires the normal WordPress draft-only review/audit path before any
+  write.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with

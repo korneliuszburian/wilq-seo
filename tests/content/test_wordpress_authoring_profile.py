@@ -152,6 +152,60 @@ def test_wordpress_authoring_profile_loads_acf_flexible_layouts_from_export(
     }
 
 
+def test_wordpress_authoring_profile_derives_layouts_from_acf_groups(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_rest(monkeypatch)
+    export_path = tmp_path / "acf-groups.json"
+    export_path.write_text(
+        json.dumps(
+            [
+                {
+                    "key": "group_page",
+                    "title": "Podstrona",
+                    "fields": [
+                        {
+                            "key": "field_page_content",
+                            "name": "podstrona",
+                            "label": "Podstrona",
+                            "type": "group",
+                            "required": 0,
+                            "sub_fields": [
+                                {
+                                    "key": "field_heading",
+                                    "name": "tytul",
+                                    "label": "Tytuł",
+                                    "type": "text",
+                                    "required": 1,
+                                },
+                                {
+                                    "key": "field_body",
+                                    "name": "opis",
+                                    "label": "Opis",
+                                    "type": "wysiwyg",
+                                    "required": 0,
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FIELD_GROUPS_EXPORT_PATH", str(export_path))
+
+    profile = build_wordpress_authoring_profile("wordpress_ekologus")
+
+    assert profile.acf.layouts_discovered is True
+    assert [layout.name for layout in profile.acf.layouts] == ["podstrona"]
+    layout = profile.acf.layouts[0]
+    assert layout.required_field_names == ["tytul"]
+    assert layout.optional_field_names == ["opis"]
+    assert [field.field_type for field in layout.fields] == ["text", "wysiwyg"]
+
+
 def test_wordpress_authoring_payload_preview_maps_draft_to_acf_without_write(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -183,6 +237,95 @@ def test_wordpress_authoring_payload_preview_maps_draft_to_acf_without_write(
     assert "Wyjaśnij obowiązki" in (section.field_values["body"] or "")
     assert section.field_values["evidence_ids"] == "ev_gsc_bdo"
     assert section.missing_required_fields == []
+
+
+def test_wordpress_authoring_payload_preview_prefers_content_layout(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_rest(monkeypatch)
+    export_path = tmp_path / "acf-layout-choice.json"
+    export_path.write_text(
+        json.dumps(
+            [
+                {
+                    "key": "group_scripts",
+                    "title": "Dodatkowe skrypty",
+                    "fields": [
+                        {
+                            "key": "field_scripts",
+                            "name": "skrypty",
+                            "label": "Skrypty",
+                            "type": "group",
+                            "sub_fields": [
+                                {
+                                    "key": "field_html_head",
+                                    "name": "html_head",
+                                    "label": "HTML head",
+                                    "type": "textarea",
+                                }
+                            ],
+                        }
+                    ],
+                },
+                {
+                    "key": "group_page",
+                    "title": "Podstrona",
+                    "fields": [
+                        {
+                            "key": "field_page",
+                            "name": "podstrona",
+                            "label": "Podstrona",
+                            "type": "group",
+                            "sub_fields": [
+                                {
+                                    "key": "field_title",
+                                    "name": "tytul",
+                                    "label": "Tytuł",
+                                    "type": "text",
+                                },
+                                {
+                                    "key": "field_body",
+                                    "name": "glowny_opis",
+                                    "label": "Główny opis",
+                                    "type": "wysiwyg",
+                                },
+                                {
+                                    "key": "field_items",
+                                    "name": "elementy",
+                                    "label": "Elementy",
+                                    "type": "repeater",
+                                    "sub_fields": [
+                                        {
+                                            "key": "field_item_body",
+                                            "name": "opis",
+                                            "label": "Opis",
+                                            "type": "wysiwyg",
+                                        }
+                                    ],
+                                },
+                            ],
+                        }
+                    ],
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FIELD_GROUPS_EXPORT_PATH", str(export_path))
+    profile = build_wordpress_authoring_profile("wordpress_ekologus")
+
+    result = build_content_wordpress_authoring_payload_preview(
+        handoff=_handoff(),
+        draft_package=_draft_package(),
+        authoring_profile=profile,
+    )
+
+    assert result.status == "ready"
+    assert result.sections[0].layout_name == "podstrona"
+    assert result.sections[0].field_values["tytul"] == "Kogo dotyczy BDO"
+    assert "Wyjaśnij obowiązki" in (result.sections[0].field_values["glowny_opis"] or "")
+    assert result.sections[0].field_values["elementy"] is None
 
 
 def test_wordpress_authoring_payload_preview_blocks_without_acf_contract() -> None:
