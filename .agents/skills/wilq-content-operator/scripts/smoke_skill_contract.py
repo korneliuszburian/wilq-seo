@@ -259,6 +259,7 @@ def main() -> int:
         min_candidates=MIN_UAT_ITEMS if args.require_uat_queue else MIN_SMOKE_ITEMS,
     )
     work_item_id = str(selected["work_item_id"])
+    knowledge_cards = validate_knowledge_cards(args.api_base)
     if (
         queue.get("queue_status") == "blocked"
         or int(queue.get("actionable_candidate_count") or 0) == 0
@@ -277,6 +278,7 @@ def main() -> int:
             "blocker_count": len(queue.get("blockers") or []),
             "evidence_ids": queue.get("evidence_ids") or [],
             "source_connectors": queue.get("source_connectors") or [],
+            "knowledge_card_count": len(knowledge_cards.get("cards") or []),
             "safe_next_step": selected.get("safe_next_step"),
             "brief_items": brief_items,
         }
@@ -289,7 +291,6 @@ def main() -> int:
     )
     item = validate_snapshot(snapshot, work_item_id)
     enrichment = validate_enrichment(args.api_base, work_item_id)
-    knowledge_cards = validate_knowledge_cards(args.api_base)
     execution = validate_wordpress_boundary(args.api_base, snapshot)
     outcome = validate_measurement_outcome(args.api_base, snapshot)
 

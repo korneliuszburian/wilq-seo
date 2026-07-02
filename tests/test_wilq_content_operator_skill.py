@@ -71,6 +71,7 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "external_write_attempted",
         "ekologus.dev.proudsite.pl",
         "measured_success",
+        "knowledge_card_count",
     ):
         assert marker in smoke_script
 

@@ -7721,3 +7721,35 @@ Result:
   recommendation and two validated draft actions:
   `act_prepare_linkedin_social_drafts` and
   `act_prepare_facebook_social_drafts`.
+
+## 2026-07-02 - Content Operator live review requirements authority eval
+
+Purpose:
+
+- Harden `wilq-content-operator` so a useful output must say that Service
+  Profile recorder payloads are validated against API-owned live
+  `review_requirements`, not a stale manually copied field list.
+- Ensure blocked content workflow output still carries the API knowledge-card
+  count used by the eval route markers.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run pytest tests/test_wilq_content_operator_skill.py tests/test_codex_skill_eval_cases.py -q -k "content_operator or route_specific_codex_eval_cases_define_surface_markers or active_eval_cases_do_not_require_forbidden_operator_jargon or skill_eval_coverage_audit_has_no_hard_gaps"
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T090533Z/wilq-content-operator/result.json`.
+- The live smoke now returns `knowledge_card_count=10` even when
+  `queue_status=blocked`, so the eval does not depend on a model remembering a
+  marker that was absent from smoke output.
+- The eval case now requires `live_review_requirements_authoritative`,
+  `API-owned review_requirements` and `minimal field lists are a floor` in
+  actionable output.
+- The non-interactive eval passed with `operator_usefulness_score=4`,
+  `blocked=true`, `failure_tags=[]` and all hard gates true.
