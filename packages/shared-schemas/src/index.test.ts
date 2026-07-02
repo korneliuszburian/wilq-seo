@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ActionObjectSchema,
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementOutcomeResponseSchema,
@@ -26,6 +27,41 @@ import {
   ContentPreflightResponseSchema,
   MerchantDiagnosticsResponseSchema
 } from "./index";
+
+describe("ActionObjectSchema", () => {
+  const validAction = {
+    id: "act_prepare_test",
+    title: "Przygotuj review",
+    domain: "content",
+    connector: "wordpress_ekologus",
+    mode: "prepare",
+    risk: "medium",
+    status: "needs_validation",
+    evidence_ids: ["ev_content_service_profile_source_facts"],
+    metrics: [],
+    human_diagnosis: "Akcja wymaga review.",
+    recommended_reason: "Przygotuj bezpieczny podgląd.",
+    validation_status: "not_validated",
+    payload: {},
+    audit_events: []
+  };
+
+  it("accepts only backend-owned action enum values", () => {
+    expect(ActionObjectSchema.safeParse(validAction).success).toBe(true);
+    expect(
+      ActionObjectSchema.safeParse({ ...validAction, domain: "ads" }).success
+    ).toBe(false);
+    expect(
+      ActionObjectSchema.safeParse({ ...validAction, status: "waiting" }).success
+    ).toBe(false);
+    expect(
+      ActionObjectSchema.safeParse({
+        ...validAction,
+        validation_status: "pending_validation"
+      }).success
+    ).toBe(false);
+  });
+});
 
 describe("ContentQualityFindingSchema", () => {
   it("accepts backend-owned quality review signal and claim finding codes", () => {

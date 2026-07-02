@@ -94,7 +94,7 @@ describe("ActionPanels", () => {
             mode_label: "przygotowanie",
             risk: "medium",
             risk_label: "średnie ryzyko",
-            status: "pending",
+            status: "needs_validation",
             status_label: "do sprawdzenia",
             evidence_ids: ["evidence_merchant_feed_status", "evidence_merchant_policy_status"],
             evidence_summary_label: "2 dowody źródłowe",

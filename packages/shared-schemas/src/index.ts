@@ -245,24 +245,58 @@ export const ActionPreviewItemViewModelSchema = z.object({
   rows: z.array(ActionPreviewRowViewModelSchema).default([])
 });
 
+export const ActionDomainSchema = z.enum([
+  "google_ads",
+  "gsc_seo",
+  "ahrefs",
+  "localo",
+  "wordpress",
+  "social",
+  "knowledge",
+  "content",
+  "codex",
+  "ga4",
+  "merchant",
+  "google_sheets"
+]);
+
+export const ActionStatusSchema = z.enum([
+  "new",
+  "ready",
+  "needs_validation",
+  "validation_failed",
+  "ready_to_apply",
+  "applying",
+  "applied",
+  "failed",
+  "dismissed",
+  "blocked"
+]);
+
+export const ActionValidationStatusSchema = z.enum([
+  "not_validated",
+  "valid",
+  "invalid"
+]);
+
 export const ActionObjectSchema = z.object({
   id: z.string(),
   title: z.string(),
-  domain: z.string(),
+  domain: ActionDomainSchema,
   connector: z.string(),
   connector_label: z.string().default(""),
   mode: z.enum(["suggest", "prepare", "apply"]),
   mode_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high", "critical"]),
   risk_label: z.string().default(""),
-  status: z.string(),
+  status: ActionStatusSchema,
   status_label: z.string().default(""),
   evidence_ids: z.array(z.string()).min(1),
   evidence_summary_label: z.string().default(""),
   metrics: z.array(MetricFactSchema),
   human_diagnosis: z.string(),
   recommended_reason: z.string(),
-  validation_status: z.string(),
+  validation_status: ActionValidationStatusSchema,
   validation_status_label: z.string().default(""),
   review_gate: ActionReviewGateSchema.optional().default(DEFAULT_ACTION_REVIEW_GATE),
   preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
