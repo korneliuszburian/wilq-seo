@@ -130,6 +130,14 @@ live API status later contradicts this state.
   honest as blocked, and requires enrichment, preflight, Sales Brief, Claim
   Ledger, draft package, quality review, human review, WordPress draft-only and
   measurement window before any final article, publication or success claim.
+- Content Strategist usefulness proof: replayed non-interactive eval for
+  `wilq-content-strategist` passed at
+  `.local-lab/evals/codex-skill/20260702T162005Z` with
+  `operator_usefulness_score=5` and `blocked=true`. It uses
+  `content_diagnostics.decision_queue` as canonical, treats BDO as a
+  refresh/merge path for the existing URL, blocks Zielony Ład until WILQ has
+  source evidence plus inventory/canonical/duplicate checks, and keeps final
+  draft/WordPress/ranking/lead/revenue claims blocked.
 - GSC Content Doctor usefulness proof: replayed non-interactive eval for
   `wilq-gsc-content-doctor` passed at
   `.local-lab/evals/codex-skill/20260702T160528Z` with

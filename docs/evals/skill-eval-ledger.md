@@ -357,6 +357,14 @@ Result:
 - Validated action candidate: `act_prepare_content_refresh_queue`. Full draft,
   WordPress write, duplicate-free claims, ranking/lead/revenue claims and
   preview-source claims remain blocked without the missing contracts.
+- Current replay proof after the latest Goal 005 eval slice is stored at
+  `.local-lab/evals/codex-skill/20260702T162005Z`. It again passed with
+  `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
+  gates true and 18 evidence IDs. The output kept the anti-slop decision:
+  BDO can move through refresh/merge for the existing URL
+  `https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/`, while
+  Zielony Ład stays blocked until WILQ has source evidence plus
+  inventory/canonical/duplicate checks.
 
 ## 2026-07-02 - Eko-Opieka usefulness review
 
