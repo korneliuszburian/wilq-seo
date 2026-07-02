@@ -27,6 +27,10 @@ from wilq.content.knowledge.source_facts import (
 )
 
 ServiceProfileGapSeverity = Literal["blocker", "review_required", "thin", "stale"]
+ServiceProfileNeededSourceType = Literal[
+    "public_site_or_reviewed_internal_service_fact",
+    "owner_reviewed_source_fact",
+]
 ServiceProfileReviewActionMode = Literal["prepare", "review_request"]
 ServiceProfileReviewActionPriority = Literal["high", "medium", "low"]
 ServiceProfileReviewDecisionOption = Literal["approve", "needs_changes", "stale", "reject"]
@@ -168,7 +172,7 @@ class ContentServiceProfileCoverageGap(BaseModel):
     severity: ServiceProfileGapSeverity
     label: str
     reason: str
-    needed_source_type: str
+    needed_source_type: ServiceProfileNeededSourceType
     safe_next_step: str
     example_work_item_ids: list[str] = Field(default_factory=list)
 

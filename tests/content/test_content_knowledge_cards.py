@@ -26,6 +26,7 @@ from wilq.content.knowledge.private_source_proposals import (
     ekologus_private_source_proposal_registry,
 )
 from wilq.content.knowledge.service_profile import (
+    ContentServiceProfileCoverageGap,
     ContentServiceProfilePrivateSourceProposalSection,
     ContentServiceProfileReviewAction,
     _review_action_summary,
@@ -967,6 +968,15 @@ def test_service_profile_exposes_water_permit_as_review_required_card() -> None:
         "pozwolenia wodnoprawnego" in claim.reason
         for claim in section.forbidden_claims
     )
+
+
+def test_service_profile_coverage_gaps_reject_unknown_needed_source_type() -> None:
+    response = content_service_profile_response()
+    payload = response.coverage_gaps[0].model_dump(mode="json")
+    payload["needed_source_type"] = "random_source"
+
+    with pytest.raises(ValidationError, match="needed_source_type"):
+        ContentServiceProfileCoverageGap.model_validate(payload)
 
 
 def test_content_service_profile_endpoint_exposes_read_only_view_model() -> None:

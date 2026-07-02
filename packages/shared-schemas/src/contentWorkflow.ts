@@ -501,13 +501,18 @@ export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object(
   blocked_write_claim: z.string()
 });
 
+export const ContentServiceProfileNeededSourceTypeSchema = z.enum([
+  "public_site_or_reviewed_internal_service_fact",
+  "owner_reviewed_source_fact"
+]);
+
 export const ContentServiceProfileCoverageGapSchema = z.object({
   gap_id: z.string(),
   area: z.string(),
   severity: z.enum(["blocker", "review_required", "thin", "stale"]),
   label: z.string(),
   reason: z.string(),
-  needed_source_type: z.string(),
+  needed_source_type: ContentServiceProfileNeededSourceTypeSchema,
   safe_next_step: z.string(),
   example_work_item_ids: z.array(z.string()).default([])
 });

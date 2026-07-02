@@ -12,6 +12,7 @@ import {
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
   ContentServiceProfileResponseSchema,
+  ContentServiceProfileCoverageGapSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
   ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
@@ -86,6 +87,21 @@ describe("ContentQualityFindingSchema", () => {
 });
 
 describe("ContentServiceProfileResponseSchema", () => {
+  it("rejects unknown Service Profile gap source requirements", () => {
+    expect(
+      ContentServiceProfileCoverageGapSchema.safeParse({
+        gap_id: "gap_no_approved_current_cards",
+        area: "approved_current",
+        severity: "blocker",
+        label: "Brak zatwierdzonych kart",
+        reason: "Production-depth content needs approved current cards.",
+        needed_source_type: "random_source",
+        safe_next_step: "Zbierz owner review.",
+        example_work_item_ids: []
+      }).success
+    ).toBe(false);
+  });
+
   it("accepts the read-only Service Profile contract", () => {
     const parsed = ContentServiceProfileResponseSchema.parse({
       workspace_id: "ekologus",
