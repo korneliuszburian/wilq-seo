@@ -26,8 +26,8 @@ Powiedz:
 
 Najkrótszy stan:
 
-- dashboard usefulness: 12 powierzchni `demo_ready`, 1 `review_ready`, 0
-  zablokowanych;
+- dashboard usefulness: 13 powierzchni `demo_ready`, 2 `review_ready`
+  (Demand Gen i social), 0 zablokowanych;
 - wiedza Ekologus: 12 source facts, 5 prywatnych propozycji `ekologus-ai`,
   0% production-depth, wszystko nadal review-required;
 - Claim Ledger: 10/10 checków, model nie może oznaczyć treści jako gotowej do

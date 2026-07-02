@@ -52,9 +52,13 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/merchant", "/api/merchant/diagnostics");
     await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Pierwszy problem Merchant do sprawdzenia" })).toBeVisible();
+    await expect(page.getByText("Merchant: co dziś zrobić")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejność pracy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Czego nie obiecywać" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }).click();
-    await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z plikiem produktowym" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Co marketer ma zrobić teraz z plikiem produktowym" }).first()
+    ).toBeVisible();
     await expect(page.getByText("Dowody i warunki przeglądu Merchant")).toBeVisible();
     await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
@@ -95,7 +99,8 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/ads-doctor", "/api/ads/diagnostics");
     await expect(page.getByRole("heading", { name: "Google Ads", exact: true })).toBeVisible();
-    await expect(page.getByText("Decyzja skondensowana")).toBeVisible();
+    await expect(page.getByText("Google Ads: co dziś zrobić")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejność pracy" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Pokaż pełny przegląd Ads" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toHaveCount(0);
