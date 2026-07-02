@@ -109,6 +109,8 @@ def test_source_fact_registry_rejects_duplicate_source_ids() -> None:
 
     with pytest.raises(ValidationError, match="source_id values must be unique"):
         ContentSourceFactRegistry(facts=[fact, fact], fact_count=2)
+    with pytest.raises(ValidationError, match="fact_count must match facts length"):
+        ContentSourceFactRegistry(facts=[fact], fact_count=2)
 
 
 def test_ekologus_ai_source_facts_are_redacted_review_required_proposals() -> None:
@@ -143,6 +145,11 @@ def test_private_source_proposal_registry_rejects_duplicate_proposal_ids() -> No
     with pytest.raises(ValidationError, match="proposal_id values must be unique"):
         PrivateSourceProposalRegistry(
             proposals=[proposal, proposal],
+            proposal_count=2,
+        )
+    with pytest.raises(ValidationError, match="proposal_count must match proposals length"):
+        PrivateSourceProposalRegistry(
+            proposals=[proposal],
             proposal_count=2,
         )
 
