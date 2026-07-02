@@ -238,6 +238,54 @@ Result:
   ordered daily plan before the larger decision cards. Dashboard now shows
   `Plan dnia w kolejności` and `Blokady dnia` above the detailed cards.
 
+## 2026-07-02 - Content Planner dashboard usefulness review
+
+Purpose:
+
+- Test whether `/content-planner` is useful as a marketer decision queue, not
+  only as a technical content diagnostics surface.
+- Verify that WILQ uses GSC, WordPress, Ahrefs and GA4 evidence to separate
+  refresh/merge/create/block decisions from unsupported content or measurement
+  claims.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk curl -sS -m 30 http://127.0.0.1:8000/api/content/diagnostics
+rtk pnpm typecheck
+rtk pnpm --filter @wilq/dashboard test -- ContentDiagnosticSurface.test.ts App.test.tsx --runInBand
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-content-planner-start-card.md`.
+- Live content diagnostics exposed 3 decisions: Ahrefs gap records to review,
+  a ready refresh-or-merge content decision and a blocked GA4 tracking gap that
+  must not become a rewrite task.
+- Main evidence:
+  `ev_refresh_refresh_ahrefs_5eee21244cff`,
+  `ev_refresh_refresh_ahrefs_3155c5fa77cf`,
+  `ev_refresh_refresh_google_search_console_9b25d4143bea`,
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`,
+  `ev_refresh_refresh_google_analytics_4_5ebc4ba1c966` and
+  `ev_refresh_refresh_google_analytics_4_33a4b3fda0db`.
+- Key actions:
+  `act_prepare_content_refresh_queue`,
+  `act_prepare_wordpress_draft_handoff` and
+  `act_review_ga4_tracking_quality`.
+- Usefulness scores:
+  - 8/10 as a content decision queue.
+  - 5.5/10 as production draft readiness, because full Claim Ledger gating and
+    approved-current service knowledge remain follow-ups.
+  - 8.5/10 for blocking unsupported claims about positions, leads,
+    conversions, revenue, duplicate-free topics and WordPress writes.
+- Main learning: the API decision queue is strong, but the first screen needed
+  plain "what to do today" language. Dashboard now shows
+  `Treści: co dziś zrobić`, `Kolejność pracy` and `Czego nie obiecywać` before
+  preflight and deeper technical review.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

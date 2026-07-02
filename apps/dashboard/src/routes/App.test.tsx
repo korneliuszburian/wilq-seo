@@ -8474,6 +8474,11 @@ describe("WILQ dashboard", () => {
       { timeout: 5_000 }
     );
     expect(screen.getByText("Czy można pisać?")).toBeInTheDocument();
+    expect(screen.getByText("Treści: co dziś zrobić")).toBeInTheDocument();
+    expect(screen.getByText("Najpierw decyzja contentowa, potem szkic")).toBeInTheDocument();
+    expect(screen.getByText("Kolejność pracy")).toBeInTheDocument();
+    expect(screen.getByText("Czego nie obiecywać")).toBeInTheDocument();
+    expect(screen.getByText(/bez okna pomiarowego WILQ/)).toBeInTheDocument();
     expect(screen.getByText("Rekomendowany kierunek")).toBeInTheDocument();
     expect(screen.getAllByText("odświeżyć").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wymaga sprawdzenia").length).toBeGreaterThan(0);
@@ -8486,7 +8491,6 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
-    expect(screen.queryByText("Co marketer ma zrobić teraz z treściami")).not.toBeInTheDocument();
     expect(screen.queryByText("Bezpieczny tryb treści")).not.toBeInTheDocument();
     expect(screen.queryByText("Dowody i warunki decyzji treści")).not.toBeInTheDocument();
     expect(screen.queryByText("Brama bezpieczeństwa treści")).not.toBeInTheDocument();
@@ -8494,7 +8498,7 @@ describe("WILQ dashboard", () => {
       expect(screen.getAllByText(/Ahrefs: zweryfikuj luki SEO/).length).toBeGreaterThan(0)
     );
     const contentDecisionCard = screen
-      .getAllByText(/Ahrefs: zweryfikuj luki SEO/)[0]
+      .getByText("rekordy Ahrefs")
       .closest("section");
     expect(contentDecisionCard).not.toBeNull();
     expect(within(contentDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
@@ -8511,8 +8515,8 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
     expect(
-      screen.getByText(/WILQ łączy zapytania i URL-e z GSC ze spisem treści WordPress/)
-    ).toBeInTheDocument();
+      screen.getAllByText(/WILQ łączy zapytania i URL-e z GSC ze spisem treści WordPress/).length
+    ).toBeGreaterThan(0);
     const contentSafeMode = screen
       .getByText("Bezpieczny tryb treści")
       .closest(".rounded-md");

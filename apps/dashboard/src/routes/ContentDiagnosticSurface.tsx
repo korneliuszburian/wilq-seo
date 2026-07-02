@@ -99,6 +99,8 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         <TraceLine label="Ostatnie odczyty" values={latestStatuses} />
       </section>
 
+      <ContentWorkTodayPanel data={data} />
+
       <ContentPreflightPanel data={preflight.data} isLoading={preflight.isLoading} isError={Boolean(preflight.error)} />
 
       <ContentSelectedDecisionPanel data={data} />
@@ -115,6 +117,73 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         isError={Boolean(actions.error)}
       />
     </main>
+  );
+}
+
+function ContentWorkTodayPanel({ data }: { data: ContentDiagnosticsResponse }) {
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const topDecisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is ContentDecisionItem => Boolean(decision));
+
+  return (
+    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-action">
+            Treści: co dziś zrobić
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+            Najpierw decyzja contentowa, potem szkic
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+            {summary.summary}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          {contentOperatorMetricTiles(data).map(([label, value]) => (
+            <MetricTile key={label} label={label} value={value} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Kolejność pracy</h3>
+          <ol className="mt-3 grid gap-2 text-sm leading-6 text-slate-700">
+            {topDecisions.map((decision, index) => (
+              <li key={decision.id} className="grid grid-cols-[1.5rem_1fr] gap-2">
+                <span className="font-semibold text-action">{index + 1}.</span>
+                <span>
+                  <span className="font-medium text-ink">{contentDecisionTitle(decision)}</span>
+                  <span className="block text-xs leading-5 text-slate-600">
+                    {decision.next_step}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          {topDecisions.length === 0 ? (
+            <BlockerNotice message="Brak kolejki decyzji treści. Najpierw odśwież GSC, WordPress i Ahrefs w WILQ." />
+          ) : null}
+        </div>
+
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Czego nie obiecywać</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Treść może przejść do planu i podglądu, ale bez okna pomiarowego WILQ
+            nie twierdzi, że wzrosną pozycje, leady, konwersje albo przychód.
+          </p>
+          <div className="mt-3 grid gap-1 text-xs leading-5 text-slate-600">
+            <TraceLine label="Blokady" values={summary.blocked_claim_labels} />
+            <TraceLine label="Dowody" values={[summary.evidence_summary_label]} />
+            <TraceLine label="Źródła" values={summary.source_connector_labels} />
+            <TraceLine label="Akcje" values={[summary.action_summary_label]} />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

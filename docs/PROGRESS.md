@@ -154,6 +154,14 @@ API status later contradicts this state.
   8.5/10 for the morning daily loop, 8.5/10 for evidence/claim-blocking clarity
   and 7.5/10 as a full BDOS-style daily command. The dashboard first screen now
   shows `Plan dnia w kolejności` and `Blokady dnia` before detailed cards.
+- Content Planner usefulness review now has a short Wilku-facing decision card
+  at `docs/handoffs/2026-07-02-wilku-content-planner-start-card.md`. Live
+  `/api/content/diagnostics` returns 3 decisions, 16 evidence IDs and 5 actions
+  across GSC, GA4, Ahrefs and WordPress. The surface scores 8/10 as a content
+  decision queue, 5.5/10 as production draft readiness and 8.5/10 for blocking
+  unsupported content/result claims. The dashboard first screen now shows
+  `Treści: co dziś zrobić`, `Kolejność pracy` and `Czego nie obiecywać` before
+  preflight and detailed review sections.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
