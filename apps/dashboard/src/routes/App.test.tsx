@@ -8167,6 +8167,14 @@ describe("WILQ dashboard", () => {
         screen.getByRole("heading", { name: "Merchant Center" })
       ).toBeInTheDocument()
     );
+    expect(screen.getByText("Merchant: co dziś zrobić")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Co marketer ma zrobić teraz z plikiem produktowym").length
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Kolejność pracy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Czego nie obiecywać" })).toBeInTheDocument();
+    expect(screen.getByText(/kolejka przeglądu pliku produktowego, nie dowód efektu biznesowego/)).toBeInTheDocument();
+    expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.queryByText("Dowody i warunki przeglądu Merchant")).not.toBeInTheDocument();
@@ -8176,7 +8184,9 @@ describe("WILQ dashboard", () => {
     expect(await screen.findByText("Dowody i warunki przeglądu Merchant")).toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: feed/product health")).not.toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: kolejka feed/product issues")).not.toBeInTheDocument();
-    expect(screen.getByText("Co marketer ma zrobić teraz z plikiem produktowym")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Co marketer ma zrobić teraz z plikiem produktowym").length
+    ).toBeGreaterThan(0);
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
     expect(screen.getByText(/WILQ grupuje problemy Merchant po typie/)).toBeInTheDocument();
     expect(

@@ -139,6 +139,14 @@ API status later contradicts this state.
   usefulness and 9/10 for claim blocking. The dashboard first screen now leads
   with `GA4: co dziś zrobić`, `Kolejność pracy` and `Najpierw pomiar` cards for
   `(not set)` rows before traffic-quality decisions.
+- Merchant usefulness review now has a short Wilku-facing decision card at
+  `docs/handoffs/2026-07-02-wilku-merchant-start-card.md`. Live Merchant data is
+  fresh (`refresh_google_merchant_center_a04a45a6e6fd`, about 12.8h,
+  `metrics_persisted=true`) with 10476 products, 15 issues and 6 decisions.
+  The surface scores 8/10 as a feed-review queue, 5.5/10 for product
+  performance/revenue decisions and 9/10 for claim blocking. The dashboard first
+  screen now leads with `Merchant: co dziś zrobić`, `Kolejność pracy` and
+  `Czego nie obiecywać`.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

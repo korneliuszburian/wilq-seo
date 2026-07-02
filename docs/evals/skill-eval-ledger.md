@@ -157,6 +157,48 @@ Result:
   shows `GA4: co dziś zrobić`, `Kolejność pracy` and first-screen
   `Najpierw pomiar` cards.
 
+## 2026-07-02 - Merchant dashboard usefulness review
+
+Purpose:
+
+- Test whether `/merchant` is useful as a first-screen feed-review queue for
+  Wilku, not only a detailed Merchant diagnostics screen.
+- Verify freshness, action validation, source evidence and claim blocking for
+  product/feed decisions.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk curl -sS -m 20 http://127.0.0.1:8000/api/merchant/diagnostics
+rtk pnpm typecheck
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-merchant-start-card.md`.
+- Live Merchant diagnostics are fresh: latest refresh
+  `refresh_google_merchant_center_a04a45a6e6fd`, about 12.8h old, with
+  `metrics_persisted=true`.
+- WILQ exposed 10476 products, 15 current Merchant issues, 6 decisions,
+  4 evidence IDs and one valid action: `act_review_merchant_feed_issues`.
+- Main evidence:
+  `ev_refresh_refresh_google_merchant_center_a04a45a6e6fd`,
+  `ev_connector_google_merchant_center_status`,
+  `ev_refresh_refresh_google_ads_be7011a4a261` and
+  `ev_refresh_refresh_google_ads_8790a6ba1a50`.
+- Usefulness scores:
+  - 8/10 as a feed-review queue.
+  - 5.5/10 for product performance/revenue decisions, because product-level
+    Ads/GA4 performance join remains blocked.
+  - 9/10 for blocking false claims about reapproval, recovered revenue, product
+    ROAS, price impact and file writes.
+- Main learning: the API queue is useful, but the first screen needed the same
+  BDOS-style order as Ads/GA4. Dashboard now shows `Merchant: co dziś zrobić`,
+  `Kolejność pracy` and `Czego nie obiecywać` before deeper diagnostics.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

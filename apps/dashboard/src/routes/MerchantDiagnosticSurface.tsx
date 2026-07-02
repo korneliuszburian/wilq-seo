@@ -248,6 +248,15 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
   const requiredValidationSummary = primaryPreviewCard?.rows.find(
     (row) => row.label === "Warunki sprawdzenia"
   )?.value;
+  const workSteps = [
+    "Najpierw sprawdź powiązanie produktu albo największy problem atrybutu w kolejce Merchant.",
+    "Potem przygotuj podgląd zmian przez akcję do sprawdzenia, bez zapisu do pliku produktowego.",
+    "Nie obiecuj ponownego zatwierdzenia, odzyskanego przychodu, ROAS produktu ani wpływu ceny bez brakujących kontraktów."
+  ];
+  const blockedClaimLabels = uniqueValues([
+    ...summary.blocked_claim_labels,
+    ...primaryDecision.blocked_claim_labels
+  ]).slice(0, 6);
   const measurementPlan = merchantMerchantMeasurementPlan(primaryDecision);
   const reportedIssueCount =
     primaryDecision.issue_count ??
@@ -268,11 +277,9 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Problem pliku produktowego do sprawdzenia
+            Merchant: co dziś zrobić
           </div>
-          <h2 className="mt-1 text-lg font-semibold tracking-normal">
-            Pierwszy problem Merchant do sprawdzenia
-          </h2>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal">{summary.title}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             {primaryDecision.title}. To jest skrót pierwszej decyzji z kolejki Merchant:
             najpierw ręczny przegląd problemu, potem podgląd zmian i dopiero później
@@ -284,6 +291,25 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <MetricTile label="Raporty tej decyzji" value={reportedIssueCount} />
           <MetricTile label="Najwięcej w raporcie" value={maxReportCount} />
           <MetricTile label="Konteksty" value={contextCount} />
+        </div>
+      </div>
+
+      <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Kolejność pracy</h3>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-slate-700">
+            {workSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="rounded-md border border-risk/25 bg-risk/10 p-3">
+          <h3 className="text-sm font-semibold text-ink">Czego nie obiecywać</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            To jest kolejka przeglądu pliku produktowego, nie dowód efektu biznesowego ani zapis zmian.
+          </p>
+          <TraceLine label="Zablokowane claimy" values={blockedClaimLabels} />
         </div>
       </div>
 
