@@ -8396,3 +8396,36 @@ Result:
   WILQ action was validated.
 - Blocked claims stayed explicit: no traffic growth, authority growth, SEO
   effect or production content claim without GSC/WordPress/human follow-up.
+
+## 2026-07-02 - Localo Operator usefulness eval
+
+Purpose:
+
+- Verify that `wilq-localo-operator` treats Localo as a review-only local
+  visibility diagnostics surface when WILQ has aggregate evidence.
+- Confirm that access/readiness and visible aggregates do not become claims
+  about completed local tasks, profile writes or improved local visibility.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T131128Z/wilq-localo-operator/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, two Localo evidence IDs and all hard gates true.
+- Smoke confirmed `localo_access_status=access_ready`,
+  `mcp_initialize_status=200`, `localo_refresh_status=completed`,
+  `localo_action_preview_contract=local_visibility_review_preview_v1` and
+  validated `act_review_localo_visibility_facts`.
+- The output used WILQ-owned Localo aggregates for active places, tracked
+  keywords, latest grid positions, visibility score, GBP impressions/actions,
+  competitors and reviews.
+- The output kept `ukończone zadanie lokalne`, `zapis zmian w profilu firmy`,
+  `poprawa widoczności lokalnej`, write/apply and unsupported ranking claims
+  blocked until further proof and human review.

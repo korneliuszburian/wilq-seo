@@ -201,6 +201,12 @@ API status later contradicts this state.
   `gap_record_count=8` in the compact contract and 298 gap facts; output treats
   gap record omission as context-pack compaction, not a workflow blocker, while
   keeping traffic/authority/effect claims blocked.
+- `wilq-localo-operator` passed deterministic smoke and non-interactive eval;
+  artifact: `.local-lab/evals/codex-skill/20260702T131128Z`. Score 5,
+  `failure_tags=[]`. Localo access is ready, latest refresh completed, and
+  `act_review_localo_visibility_facts` validates as review-only; output uses
+  Localo aggregates but keeps local-task completion, profile writes and local
+  visibility improvement claims blocked.
 - Service Profile usefulness review now has a short Wilku-facing decision card
   at `docs/handoffs/2026-07-02-wilku-service-profile-start-card.md`. Live
   `/api/content/service-profile` returns 10 cards, 7 service cards,
