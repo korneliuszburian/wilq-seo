@@ -37,6 +37,8 @@ import {
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
+  ContentWorkItemWordPressAuthoringPayloadPreviewRequestSchema,
+  ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffRequestSchema,
@@ -103,6 +105,8 @@ import {
   type ContentWorkItemSnapshotAuditRequest,
   type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemSnapshotResponse,
+  type ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
+  type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWordPressDraftHandoffRequest,
@@ -441,6 +445,16 @@ export function postContentWorkItemWordPressDraftExecution(
   );
 }
 
+export function postContentWorkItemWordPressAuthoringPayloadPreview(
+  request: ContentWorkItemWordPressAuthoringPayloadPreviewRequest
+): Promise<ContentWorkItemWordPressAuthoringPayloadPreviewResponse> {
+  return apiPost(
+    "/api/content/work-items/wordpress-authoring-payload-preview",
+    ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema,
+    ContentWorkItemWordPressAuthoringPayloadPreviewRequestSchema.parse(request)
+  );
+}
+
 export function postContentWorkItemMeasurementWindow(
   request: ContentWorkItemMeasurementWindowRequest
 ): Promise<ContentWorkItemMeasurementWindowResponse> {
@@ -587,6 +601,8 @@ export type {
   ContentWorkItemStructuredDraftPreviewResponse,
   ContentWorkItemStructuredDraftRuntimeRequest,
   ContentWorkItemStructuredDraftRuntimeResponse,
+  ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
+  ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   ContentWorkItemWordPressDraftExecutionRequest,
   ContentWorkItemWordPressDraftExecutionResponse,
   ContentWorkItemWordPressDraftHandoffRequest,

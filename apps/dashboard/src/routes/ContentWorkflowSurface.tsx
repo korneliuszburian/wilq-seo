@@ -11,6 +11,7 @@ import {
   postContentWorkItemRevisionPlan,
   postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
+  postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
@@ -26,6 +27,8 @@ import {
   type ContentWorkItemStructuredDraftPreviewResponse,
   type ContentWorkItemStructuredDraftRuntimeRequest,
   type ContentWorkItemStructuredDraftRuntimeResponse,
+  type ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
+  type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentOpportunityEnrichment,
@@ -48,6 +51,7 @@ type WorkflowSafetyPanelsProps = {
   structuredPreviewResult: ContentWorkItemStructuredDraftPreviewResponse["preview_result"] | null;
   qualityReview: ContentWorkItemQualityReviewResponse["quality_review"] | null;
   revisionPlan: ContentWorkItemRevisionPlanResponse["revision_plan"] | null;
+  acfPreviewResult: ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"] | null;
   executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
 };
 
@@ -231,7 +235,11 @@ function ContentWorkflowLoaded({
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
-  const actions = useContentWorkflowActions(data, selectedWorkItemId);
+  const actions = useContentWorkflowActions(
+    data,
+    selectedWorkItemId,
+    authoringProfile.data ?? null
+  );
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
   const handoff = data.wordpressHandoff.handoff_result.handoff;
@@ -265,6 +273,7 @@ function ContentWorkflowLoaded({
         structuredPreviewResult={actions.structuredPreviewResult}
         qualityReview={actions.qualityReview}
         revisionPlan={actions.revisionPlan}
+        acfPreviewResult={actions.acfPreviewResult}
         executionResult={actions.executionResult}
       />
     </main>
@@ -349,10 +358,11 @@ function ContentWorkflowTodayPanel({
 
 function useContentWorkflowActions(
   data: ContentWorkflowSnapshot,
-  selectedWorkItemId: string
+  selectedWorkItemId: string,
+  authoringProfile: WordPressAuthoringProfile | null
 ) {
   const mutations = useContentWorkflowMutations(selectedWorkItemId);
-  return contentWorkflowActions(data, mutations);
+  return contentWorkflowActions(data, mutations, authoringProfile);
 }
 
 function useContentWorkflowMutations(selectedWorkItemId: string) {
@@ -386,6 +396,9 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     mutationFn: (request: ContentWorkItemRevisionPlanRequest) =>
       postContentWorkItemRevisionPlan(request, selectedWorkItemId)
   });
+  const acfPreviewMutation = useMutation({
+    mutationFn: postContentWorkItemWordPressAuthoringPayloadPreview
+  });
   const executionMutation = useMutation({ mutationFn: postContentWorkItemWordPressDraftExecution });
   return {
     reviewMutation,
@@ -394,13 +407,15 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     structuredPreviewMutation,
     qualityReviewMutation,
     revisionPlanMutation,
+    acfPreviewMutation,
     executionMutation
   };
 }
 
 function contentWorkflowActions(
   data: ContentWorkflowSnapshot,
-  mutations: ContentWorkflowMutations
+  mutations: ContentWorkflowMutations,
+  authoringProfile: WordPressAuthoringProfile | null
 ) {
   const structuredRuntimeResult = runtimeResultFrom(mutations.structuredRuntimeMutation.data);
   const qualityReview = qualityReviewFrom(mutations.qualityReviewMutation.data);
@@ -411,11 +426,14 @@ function contentWorkflowActions(
     structuredPreviewPending: mutations.structuredPreviewMutation.isPending,
     qualityReviewPending: mutations.qualityReviewMutation.isPending,
     revisionPlanPending: mutations.revisionPlanMutation.isPending,
+    acfPreviewPending: mutations.acfPreviewMutation.isPending,
     executionPending: mutations.executionMutation.isPending,
+    authoringProfileReady: Boolean(authoringProfile),
     structuredRuntimeResult,
     structuredPreviewResult: previewResultFrom(mutations.structuredPreviewMutation.data),
     qualityReview,
     revisionPlan: revisionPlanFrom(mutations.revisionPlanMutation.data),
+    acfPreviewResult: acfPreviewResultFrom(mutations.acfPreviewMutation.data),
     executionResult: executionResultFrom(mutations.executionMutation.data),
     runStructuredRuntime: () =>
       submitIfReady(structuredRuntimeDryRunRequest(data), mutations.structuredRuntimeMutation.mutate),
@@ -437,6 +455,15 @@ function contentWorkflowActions(
         mutations.reviewMutation.mutate
       ),
     saveAudit: () => submitIfReady(auditRequest(data), mutations.auditMutation.mutate),
+    runAcfPreview: () =>
+      submitIfReady(
+        acfPreviewRequest(
+          data.draftPackage.draft_package_result.draft_package,
+          data.wordpressHandoff.handoff_result.handoff,
+          authoringProfile
+        ),
+        mutations.acfPreviewMutation.mutate
+      ),
     runExecutionDryRun: () =>
       submitIfReady(
         wordpressExecutionRequest(
@@ -587,6 +614,12 @@ function executionResultFrom(
   return response?.execution_result ?? null;
 }
 
+function acfPreviewResultFrom(
+  response: ContentWorkItemWordPressAuthoringPayloadPreviewResponse | undefined
+) {
+  return response?.preview_result ?? null;
+}
+
 function submitIfReady<TRequest>(request: TRequest | null, submit: (request: TRequest) => void) {
   if (request) submit(request);
 }
@@ -693,6 +726,19 @@ function wordpressExecutionRequest(
     handoff,
     draft_package: draft,
     mode: "dry_run"
+  };
+}
+
+function acfPreviewRequest(
+  draft: DraftPackage,
+  handoff: WordPressHandoff,
+  authoringProfile: WordPressAuthoringProfile | null
+): ContentWorkItemWordPressAuthoringPayloadPreviewRequest | null {
+  if (!draft || !handoff || !authoringProfile) return null;
+  return {
+    handoff,
+    draft_package: draft,
+    authoring_profile: authoringProfile
   };
 }
 
@@ -1112,6 +1158,18 @@ function workflowControlItems(
     qualityReviewControlItem(actions),
     revisionPlanControlItem(actions),
     {
+      label: actions.acfPreviewResult ? "Mapowanie ACF gotowe" : "Pokaż mapowanie ACF",
+      disabledReason: acfPreviewControlDisabledReason(
+        Boolean(draft),
+        Boolean(handoff),
+        actions.authoringProfileReady,
+        actions.acfPreviewPending,
+        actions.acfPreviewResult
+      ),
+      pending: actions.acfPreviewPending,
+      onClick: actions.runAcfPreview
+    },
+    {
       label: actions.executionResult ? "Podgląd szkicu gotowy" : "Sprawdź podgląd szkicu",
       disabledReason: executionControlDisabledReason(
         Boolean(draft),
@@ -1222,6 +1280,7 @@ function WorkflowSafetyPanels({
   structuredPreviewResult,
   qualityReview,
   revisionPlan,
+  acfPreviewResult,
   executionResult
 }: WorkflowSafetyPanelsProps) {
   return (
@@ -1239,6 +1298,7 @@ function WorkflowSafetyPanels({
       <StructuredDraftPreviewPanel result={structuredPreviewResult} />
       <ContentQualityReviewPanel review={qualityReview} />
       <ContentRevisionPlanPanel plan={revisionPlan} />
+      <AcfPreviewPanel result={acfPreviewResult} />
       <SafetyPanel
         icon={<ShieldCheck aria-hidden="true" size={18} />}
         title="WordPress zostaje w trybie szkicu"
@@ -1255,6 +1315,65 @@ function WorkflowSafetyPanels({
         text={measurementSafetyText(window)}
       />
     </div>
+  );
+}
+
+function AcfPreviewPanel({
+  result
+}: {
+  result: ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"] | null;
+}) {
+  const firstSection = result?.sections[0] ?? null;
+  const filledFields = firstSection
+    ? Object.entries(firstSection.field_values).filter(([, value]) => Boolean(value))
+    : [];
+
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="flex items-start gap-3">
+        <div className="rounded-md border border-line bg-surface p-2 text-action">
+          <FileText aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-ink">Mapowanie ACF</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {acfPreviewSafetyText(result)}
+          </p>
+          {firstSection ? (
+            <div className="mt-3 space-y-3 text-sm text-slate-700">
+              <div className="rounded-md border border-line bg-surface p-3">
+                <div className="text-xs uppercase tracking-normal text-slate-500">
+                  Wybrany layout
+                </div>
+                <div className="mt-1 font-semibold text-ink">
+                  {firstSection.layout_label} ({firstSection.layout_name})
+                </div>
+                <div className="mt-1 text-xs text-slate-500">
+                  Sekcja: {firstSection.section_heading}
+                </div>
+              </div>
+              {filledFields.length ? (
+                <div className="rounded-md border border-line bg-surface p-3">
+                  <div className="text-xs uppercase tracking-normal text-slate-500">
+                    Pola, które WILQ wypełni
+                  </div>
+                  <dl className="mt-2 space-y-2">
+                    {filledFields.slice(0, 4).map(([fieldName, value]) => (
+                      <div key={fieldName}>
+                        <dt className="font-medium text-ink">{fieldName}</dt>
+                        <dd className="mt-1 whitespace-pre-line text-xs leading-5 text-slate-600">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1522,6 +1641,28 @@ function wordpressExecutionSafetyText(
   return "WILQ sprawdził przekazanie, ale nie zwrócił paczki podglądu.";
 }
 
+function acfPreviewSafetyText(
+  result: ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"] | null
+) {
+  if (!result) {
+    return "Po audycie WILQ może pokazać, który layout ACF i które pola szkicu wypełni. Ten krok nie wykonuje zapisu w WordPress.";
+  }
+  if (result.external_write_attempted) {
+    return "Zatrzymaj workflow: mapowanie ACF nie powinno wykonywać zewnętrznego zapisu.";
+  }
+  if (result.blockers.length) {
+    return result.blockers[0]?.reason ?? "WILQ zablokował mapowanie ACF.";
+  }
+  const firstSection = result.sections[0] ?? null;
+  const fieldCount = firstSection
+    ? Object.values(firstSection.field_values).filter((value) => Boolean(value)).length
+    : 0;
+  if (firstSection) {
+    return `Mapowanie gotowe: WILQ użyje layoutu ${firstSection.layout_label} i wypełni ${fieldCount} pól. Publikacja i nadpisywanie pozostają zablokowane.`;
+  }
+  return "Mapowanie ACF jest gotowe, ale WILQ nie zwrócił sekcji do pokazania.";
+}
+
 function measurementSafetyText(
   window: ContentWorkflowSnapshot["measurementWindow"]["measurement_window_result"]["window"]
 ) {
@@ -1624,6 +1765,21 @@ function revisionPlanControlDisabledReason(
   if (pending) return "WILQ przygotowuje plan poprawki.";
   if (plan) return "Plan poprawki jest już przygotowany dla tej sesji.";
   if (!review) return "Najpierw uruchom ocenę jakości szkicu.";
+  return null;
+}
+
+function acfPreviewControlDisabledReason(
+  hasDraft: boolean,
+  hasHandoff: boolean,
+  hasAuthoringProfile: boolean,
+  pending: boolean,
+  result: ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"] | null
+) {
+  if (pending) return "WILQ sprawdza mapowanie ACF.";
+  if (result) return "Mapowanie ACF jest już przygotowane dla tej sesji.";
+  if (!hasAuthoringProfile) return "Najpierw WILQ musi odczytać profil WordPress/ACF.";
+  if (!hasDraft) return "Najpierw WILQ musi przygotować paczkę szkicu.";
+  if (!hasHandoff) return "Najpierw zapisz audyt i przygotuj przekazanie szkicu do WordPress.";
   return null;
 }
 

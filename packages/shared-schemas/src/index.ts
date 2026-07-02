@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  ContentDraftPackageSchema,
+  ContentWordPressDraftHandoffSchema
+} from "./contentWorkflow";
+
 export * from "./contentWorkflow";
 
 export const ConnectorStatusSchema = z.object({
@@ -3439,6 +3444,48 @@ export const WordPressAuthoringProfileSchema = z.object({
   source_connectors: z.array(z.string())
 });
 
+const ContentWordPressAuthoringPayloadPreviewBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string()
+});
+
+const ContentWordPressFlexibleSectionPayloadSchema = z.object({
+  layout_name: z.string(),
+  layout_label: z.string(),
+  section_heading: z.string(),
+  field_values: z.record(z.string(), z.string().nullable()),
+  missing_required_fields: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentWordPressAuthoringPayloadPreviewResultSchema = z.object({
+  status: z.enum(["ready", "blocked"]),
+  mode: z.literal("dry_run"),
+  connector: z.literal("wordpress_ekologus"),
+  endpoint_kind: z.literal("posts"),
+  post_status: z.literal("draft"),
+  flexible_content_field_name: z.string().nullable().optional(),
+  sections: z.array(ContentWordPressFlexibleSectionPayloadSchema).default([]),
+  publish_allowed: z.literal(false),
+  destructive_update_allowed: z.literal(false),
+  external_write_attempted: z.literal(false),
+  required_action_contract: z.literal("actionobject_validate_preview_review_confirm_audit"),
+  blockers: z.array(ContentWordPressAuthoringPayloadPreviewBlockerSchema).default([])
+});
+
+export const ContentWorkItemWordPressAuthoringPayloadPreviewRequestSchema = z.object({
+  handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
+  draft_package: ContentDraftPackageSchema.nullable().optional(),
+  authoring_profile: WordPressAuthoringProfileSchema.nullable().optional()
+});
+
+export const ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema = z.object({
+  authoring_profile: WordPressAuthoringProfileSchema,
+  preview_result: ContentWordPressAuthoringPayloadPreviewResultSchema
+});
+
 export const SocialDraftContextSchema = z.object({
   mode: z.literal("review_only"),
   publish_allowed: z.literal(false),
@@ -3577,6 +3624,15 @@ export type SocialHistoryInventorySource = z.infer<typeof SocialHistoryInventory
 export type SocialHistoryDiscoverySeed = z.infer<typeof SocialHistoryDiscoverySeedSchema>;
 export type SocialHistoryInventory = z.infer<typeof SocialHistoryInventorySchema>;
 export type WordPressAuthoringProfile = z.infer<typeof WordPressAuthoringProfileSchema>;
+export type ContentWordPressAuthoringPayloadPreviewResult = z.infer<
+  typeof ContentWordPressAuthoringPayloadPreviewResultSchema
+>;
+export type ContentWorkItemWordPressAuthoringPayloadPreviewRequest = z.input<
+  typeof ContentWorkItemWordPressAuthoringPayloadPreviewRequestSchema
+>;
+export type ContentWorkItemWordPressAuthoringPayloadPreviewResponse = z.infer<
+  typeof ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema
+>;
 export type SocialDraftContext = z.infer<typeof SocialDraftContextSchema>;
 export type SocialPublisherContextPack = z.infer<typeof SocialPublisherContextPackSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;

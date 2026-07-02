@@ -248,7 +248,15 @@ live API status later contradicts this state.
   2026-07-02 showed `rest=configured`, `wp_cli=configured`, 21 ACF sections,
   `publish_allowed=false` and `external_write_attempted=false`; the dashboard
   panel says no external write happened and every WordPress write still requires
-  review, preview, human decision and audit.
+  review, preview, human decision and audit. The route can now also trigger the
+  existing dry-run ACF payload preview after a handoff exists. The UI shows the
+  selected layout and mapped fields under "Mapowanie ACF", while keeping
+  publication, destructive updates and external writes blocked. Live HTTP proof
+  on 2026-07-02: the endpoint correctly blocks preview when the current snapshot
+  has no handoff, and with a matching synthetic handoff returns
+  `status=ready`, `mode=dry_run`, layout `podstrona`,
+  `publish_allowed=false`, `destructive_update_allowed=false` and
+  `external_write_attempted=false`.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with

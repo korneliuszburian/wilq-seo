@@ -10,6 +10,7 @@ import {
   postContentWorkItemRevisionPlan,
   postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
+  postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
@@ -19,6 +20,7 @@ import {
   type ContentWorkItemRevisionPlanResponse,
   type ContentWorkItemStructuredDraftPreviewResponse,
   type ContentWorkItemStructuredDraftRuntimeResponse,
+  type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type WordPressAuthoringProfile
@@ -38,6 +40,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     postContentWorkItemRevisionPlan: vi.fn(),
     postContentWorkItemStructuredDraftPreview: vi.fn(),
     postContentWorkItemStructuredDraftRuntime: vi.fn(),
+    postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
     saveContentWorkItemSnapshotAudit: vi.fn()
@@ -63,6 +66,9 @@ describe("ContentWorkflowSurface", () => {
     );
     vi.mocked(postContentWorkItemStructuredDraftPreview).mockResolvedValue(
       structuredDraftPreviewResponse()
+    );
+    vi.mocked(postContentWorkItemWordPressAuthoringPayloadPreview).mockResolvedValue(
+      wordpressAuthoringPayloadPreviewResponse()
     );
     vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
       wordpressDraftExecutionResponse()
@@ -148,6 +154,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Mapowanie ACF")).toBeInTheDocument();
     expect(screen.getByText("Podgląd treści")).toBeInTheDocument();
     expect(screen.getByText("Ocena jakości szkicu")).toBeInTheDocument();
     expect(screen.getByText("Plan poprawki")).toBeInTheDocument();
@@ -159,6 +166,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Sprawdź jakość szkicu" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Pokaż plan poprawki" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Pokaż mapowanie ACF" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" })).toBeDisabled();
     expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
     expect(screen.getByText("zablokowany")).toBeInTheDocument();
@@ -380,6 +388,43 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByRole("button", { name: "Plan poprawki gotowy" })).toBeDisabled();
     expect(screen.getByText("Dopisz konkretny następny krok dla klienta")).toBeInTheDocument();
     expect(screen.getByText(/Połącz CTA z usługą Ekologus/)).toBeInTheDocument();
+  });
+
+  it("shows dry-run ACF field mapping after the WordPress handoff exists", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByRole("button", { name: "Pokaż mapowanie ACF" });
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż mapowanie ACF" }));
+
+    await waitFor(() => {
+      expect(postContentWorkItemWordPressAuthoringPayloadPreview).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postContentWorkItemWordPressAuthoringPayloadPreview).mock.calls[0]?.[0])
+      .toEqual({
+        handoff: wordpressHandoff(),
+        draft_package: draftPackage(),
+        authoring_profile: wordpressAuthoringProfile()
+      });
+    expect(await screen.findByRole("button", { name: "Mapowanie ACF gotowe" })).toBeDisabled();
+    expect(screen.getByText(/layoutu Podstrona/)).toBeInTheDocument();
+    expect(screen.getByText("Wybrany layout")).toBeInTheDocument();
+    expect(screen.getByText("Podstrona (podstrona)")).toBeInTheDocument();
+    expect(screen.getByText("tytul")).toBeInTheDocument();
+    expect(screen.getByText("glowny_opis")).toBeInTheDocument();
+    expect(screen.getByText(/Publikacja i nadpisywanie pozostają zablokowane/))
+      .toBeInTheDocument();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
   it("prepares a draft-only WordPress dry-run after handoff", async () => {
@@ -1242,6 +1287,40 @@ function revisionPlanResponse(): ContentWorkItemRevisionPlanResponse {
       evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
       source_connectors: ["google_search_console", "wordpress_ekologus"],
       safe_next_step: "Wykonaj tylko wskazane poprawki i uruchom ocenę jakości ponownie."
+    }
+  };
+}
+
+function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAuthoringPayloadPreviewResponse {
+  return {
+    authoring_profile: wordpressAuthoringProfile(),
+    preview_result: {
+      status: "ready",
+      mode: "dry_run",
+      connector: "wordpress_ekologus",
+      endpoint_kind: "posts",
+      post_status: "draft",
+      flexible_content_field_name: "podstrona",
+      sections: [
+        {
+          layout_name: "podstrona",
+          layout_label: "Podstrona",
+          section_heading: "Kogo dotyczy BDO",
+          field_values: {
+            tytul: "Kogo dotyczy BDO",
+            glowny_opis:
+              "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
+            elementy: null
+          },
+          missing_required_fields: [],
+          evidence_ids: ["ev_gsc_bdo"]
+        }
+      ],
+      publish_allowed: false,
+      destructive_update_allowed: false,
+      external_write_attempted: false,
+      required_action_contract: "actionobject_validate_preview_review_confirm_audit",
+      blockers: []
     }
   };
 }
