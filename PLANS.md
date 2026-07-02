@@ -351,6 +351,15 @@ renders a safety-bounded report only; it does not run UAT, promote private
 proposals, approve knowledge cards, unlock WordPress/publishing or close
 Goal 005 by itself.
 
+The same UAT result validator is tied to live packet provenance under Beads
+task `wilq-seo-nan`. With `--api-base`, it checks that the selected work item
+exists in the current WILQ content UAT queue and records queue status, selected
+evidence/source connectors, Service Profile read-only state, production-depth
+readiness and private proposal promotion state. Live proof on 2026-07-02
+accepted `content_work_item_content_decision_https___www_ekologus_pl` with GSC
+and WordPress evidence while keeping full UAT blocked by
+`production_depth_ready=false` and private review actions.
+
 Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
 `ContentDraftVariantsResult` now exposes the recommended variant, comparison
 dimensions, a `magic_score_used=false` policy and a safe next step. The first

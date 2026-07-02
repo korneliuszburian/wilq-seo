@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -33,11 +35,19 @@ def main() -> int:
     )
     parser.add_argument("input", help="Ścieżka do wypełnionego JSON z wynikiem UAT")
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
+    parser.add_argument(
+        "--api-base",
+        help=(
+            "Opcjonalnie sprawdza wynik przeciw aktualnej kolejce i Service Profile "
+            "z WILQ API."
+        ),
+    )
     args = parser.parse_args()
 
     try:
         payload = load_json(Path(args.input))
-        report = build_content_uat_result_report(payload)
+        live_context = load_live_uat_context(args.api_base) if args.api_base else None
+        report = build_content_uat_result_report(payload, live_context=live_context)
     except RuntimeError as error:
         print(str(error), file=sys.stderr)
         return 1
@@ -63,8 +73,12 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
-def build_content_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
-    errors = validate_content_uat_payload(payload)
+def build_content_uat_result_report(
+    payload: dict[str, Any],
+    *,
+    live_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    errors = validate_content_uat_payload(payload, live_context=live_context)
     if errors:
         raise RuntimeError("Niepoprawny wynik Goal 005 content UAT:\n- " + "\n- ".join(errors))
 
@@ -74,6 +88,11 @@ def build_content_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
     private_actions_clear = normalize_bool(payload["private_review_actions_czytelne"])
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     missing_follow_up = not can_continue and not follow_up_tasks
+    selected_work_item = str(payload["wybrany_work_item"]).strip()
+    live_provenance = live_uat_provenance(
+        live_context=live_context,
+        selected_work_item=selected_work_item,
+    )
 
     ready_for_full_content_uat = (
         can_continue
@@ -86,7 +105,7 @@ def build_content_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
         "report_type": "goal_005_content_uat_result_v1",
         "date": str(payload["data_sesji"]).strip(),
         "person": str(payload["osoba"]).strip(),
-        "selected_work_item": str(payload["wybrany_work_item"]).strip(),
+        "selected_work_item": selected_work_item,
         "time_to_status_understanding": str(
             payload["czas_do_zrozumienia_statusu"]
         ).strip(),
@@ -100,6 +119,7 @@ def build_content_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
         "largest_product_gap": str(payload["najwiekszy_brak_produktu"]).strip(),
         "can_continue_to_full_content_uat": can_continue,
         "follow_up_tasks": follow_up_tasks,
+        "live_provenance": live_provenance,
         "overall_status": (
             "ready_for_full_content_uat"
             if ready_for_full_content_uat
@@ -114,7 +134,11 @@ def build_content_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def validate_content_uat_payload(payload: dict[str, Any]) -> list[str]:
+def validate_content_uat_payload(
+    payload: dict[str, Any],
+    *,
+    live_context: dict[str, Any] | None = None,
+) -> list[str]:
     errors: list[str] = []
     for key, label in REQUIRED_TEXT_FIELDS.items():
         if is_blank_or_placeholder(payload.get(key)):
@@ -126,6 +150,14 @@ def validate_content_uat_payload(payload: dict[str, Any]) -> list[str]:
         payload.get("mozna_przejsc_do_pelnego_content_uat")
     ) is False:
         errors.append("Gdy pełny content UAT jest zablokowany, wpisz follow_up_beads")
+    if live_context is not None:
+        selected_work_item = str(payload.get("wybrany_work_item") or "").strip()
+        candidate_ids = live_context_candidate_ids(live_context)
+        if selected_work_item and selected_work_item not in candidate_ids:
+            errors.append(
+                "Wybrany work item nie występuje w aktualnym live UAT packet: "
+                f"{selected_work_item}"
+            )
     return errors
 
 
@@ -141,6 +173,10 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Czas do zrozumienia statusu: {report['time_to_status_understanding']}",
         "",
         report["safety_note"],
+        "",
+        "## Live provenance",
+        "",
+        render_live_provenance(report.get("live_provenance")),
         "",
         "## Ocena",
         "",
@@ -163,6 +199,136 @@ def render_markdown(report: dict[str, Any]) -> str:
     for task in report["follow_up_tasks"] or ["brak"]:
         lines.append(f"- {task}")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def load_live_uat_context(api_base: str) -> dict[str, Any]:
+    health = request_json(api_base, "GET", "/api/health")
+    if not isinstance(health, dict) or health.get("status") != "ok":
+        raise RuntimeError(f"WILQ API health is not ok at {api_base}")
+    queue = request_json(api_base, "GET", "/api/content/work-items/queue")
+    service_profile = request_json(api_base, "GET", "/api/content/service-profile")
+    if not isinstance(queue, dict):
+        raise RuntimeError("Live content work-item queue must be an object")
+    if not isinstance(service_profile, dict):
+        raise RuntimeError("Live Service Profile must be an object")
+    return {
+        "api_base": api_base.rstrip("/"),
+        "queue": queue,
+        "service_profile": service_profile,
+    }
+
+
+def request_json(api_base: str, method: str, path: str, *, timeout: int = 60) -> Any:
+    request = urllib.request.Request(
+        f"{api_base.rstrip('/')}{path}",
+        method=method,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:300]
+        raise RuntimeError(f"HTTP {error.code} from {path}: {detail}") from error
+    except urllib.error.URLError as error:
+        raise RuntimeError(f"Could not reach WILQ API at {api_base}: {error.reason}") from error
+
+
+def live_context_candidate_ids(live_context: dict[str, Any]) -> set[str]:
+    queue = live_context.get("queue")
+    if not isinstance(queue, dict):
+        return set()
+    return {
+        str(candidate.get("work_item_id") or "").strip()
+        for candidate in raw_list_payload(queue.get("candidates"))
+        if isinstance(candidate, dict) and candidate.get("work_item_id")
+    }
+
+
+def live_uat_provenance(
+    *,
+    live_context: dict[str, Any] | None,
+    selected_work_item: str,
+) -> dict[str, Any] | None:
+    if live_context is None:
+        return None
+    queue = live_context.get("queue") if isinstance(live_context.get("queue"), dict) else {}
+    service_profile = (
+        live_context.get("service_profile")
+        if isinstance(live_context.get("service_profile"), dict)
+        else {}
+    )
+    candidates = [
+        candidate
+        for candidate in raw_list_payload(queue.get("candidates"))
+        if isinstance(candidate, dict)
+    ]
+    selected = next(
+        (
+            candidate
+            for candidate in candidates
+            if str(candidate.get("work_item_id") or "") == selected_work_item
+        ),
+        {},
+    )
+    coverage = (
+        service_profile.get("coverage_summary")
+        if isinstance(service_profile.get("coverage_summary"), dict)
+        else {}
+    )
+    private_summary = (
+        service_profile.get("private_source_proposal_summary")
+        if isinstance(service_profile.get("private_source_proposal_summary"), dict)
+        else {}
+    )
+    return {
+        "api_base": live_context.get("api_base"),
+        "queue_status": queue.get("queue_status"),
+        "candidate_count": queue.get("candidate_count"),
+        "actionable_candidate_count": queue.get("actionable_candidate_count"),
+        "selected_work_item_found": bool(selected),
+        "selected_recommended_mode": selected.get("recommended_mode"),
+        "selected_evidence_ids": selected.get("evidence_ids") or [],
+        "selected_source_connectors": selected.get("source_connectors") or [],
+        "service_profile_read_only": service_profile.get("read_only"),
+        "production_depth_ready": coverage.get("ready_for_daily_content"),
+        "private_review_action_count": len(
+            [
+                action
+                for action in raw_list_payload(service_profile.get("review_actions"))
+                if isinstance(action, dict)
+                and str(action.get("action_id") or "").startswith(
+                    "service_profile_review_private_proposal_"
+                )
+            ]
+        ),
+        "private_proposal_promotion_ready": private_summary.get("promotion_ready"),
+    }
+
+
+def render_live_provenance(value: Any) -> str:
+    if not isinstance(value, dict):
+        return "- Nie sprawdzono live WILQ API dla tego wyniku."
+    return "\n".join(
+        [
+            f"- API: `{value.get('api_base')}`",
+            "- Kolejka: "
+            f"`{value.get('queue_status')}`, kandydaci: `{value.get('candidate_count')}`",
+            "- Wybrany work item znaleziony w live packet: "
+            f"{visible_bool(value.get('selected_work_item_found') is True)}",
+            f"- Tryb wybranego itemu: `{value.get('selected_recommended_mode')}`",
+            "- Źródła wybranego itemu: "
+            f"{', '.join(value.get('selected_source_connectors') or []) or 'brak'}",
+            "- Service Profile read-only: "
+            f"{visible_bool(value.get('service_profile_read_only') is True)}",
+            "- Production-depth ready: "
+            f"{visible_bool(value.get('production_depth_ready') is True)}",
+            "- Private review actions: "
+            f"`{value.get('private_review_action_count')}`",
+            "- Private proposal promotion ready: "
+            f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
+        ]
+    )
 
 
 def normalize_bool(value: Any) -> bool | None:
@@ -192,6 +358,10 @@ def list_payload(value: Any) -> list[str]:
     if is_blank_or_placeholder(value):
         return []
     return [str(value).strip()]
+
+
+def raw_list_payload(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
 
 
 def is_blank_or_placeholder(value: Any) -> bool:

@@ -211,9 +211,19 @@ Sprawdzenie wyniku po sesji:
 rtk uv run python scripts/record_goal_005_content_uat_result.py .local-lab/proof/goal-005-content-uat-result-YYYYMMDD.json --format markdown
 ```
 
+Mocniejsze sprawdzenie z live WILQ API:
+
+```bash
+rtk uv run python scripts/record_goal_005_content_uat_result.py .local-lab/proof/goal-005-content-uat-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
+```
+
 Ten walidator sprawdza kompletność realnego wyniku sesji i renderuje raport
-review. Nie promuje private proposals do source facts, nie zatwierdza knowledge
-cards, nie odblokowuje publikacji ani nie zamyka Goal 005 automatycznie.
+review. Z `--api-base` dodatkowo sprawdza, czy wybrany work item występuje w
+aktualnej kolejce UAT WILQ, zapisuje status kolejki, źródła wybranego itemu,
+read-only Service Profile, production-depth readiness i stan private proposal
+promotion. Nie promuje private proposals do source facts, nie zatwierdza
+knowledge cards, nie odblokowuje publikacji ani nie zamyka Goal 005
+automatycznie.
 
 ## Kryterium przejścia dalej
 

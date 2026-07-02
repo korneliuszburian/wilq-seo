@@ -233,6 +233,14 @@ API status later contradicts this state.
   generic/off-brand findings, largest product gap and follow-up Beads when
   full UAT remains blocked. It renders a review report only; it does not
   promote private proposals, approve cards, unlock publishing or close Goal 005.
+- The same UAT result checker now supports live WILQ provenance with
+  `--api-base`: selected work item must exist in the current content UAT queue,
+  and the report records queue status, selected evidence/source connectors,
+  Service Profile read-only state, production-depth readiness and private
+  proposal promotion state. Live proof on 2026-07-02 accepted
+  `content_work_item_content_decision_https___www_ekologus_pl` with GSC and
+  WordPress evidence, `queue_status=blocked`, `production_depth_ready=false`
+  and two private review actions.
 - Master roadmap for "better BDOS.ai" direction now lives at
   `docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current overall WILQ
   maturity is estimated at `35-45%`: the API/safety/content workflow foundation
