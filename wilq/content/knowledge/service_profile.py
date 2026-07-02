@@ -300,7 +300,6 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         coverage_gaps=coverage_gaps,
         review_action_summary=_review_action_summary(
             review_actions=review_actions,
-            private_proposals=private_proposals,
         ),
         review_actions=review_actions,
         technical_trace=ContentServiceProfileTechnicalTrace(
@@ -721,31 +720,32 @@ def _private_review_action_priority(
 def _review_action_summary(
     *,
     review_actions: list[ContentServiceProfileReviewAction],
-    private_proposals: list[PrivateSourceProposal],
 ) -> ContentServiceProfileReviewActionSummary:
-    private_scope_by_target = {
-        proposal.target_card_id: proposal.scope for proposal in private_proposals
-    }
     private_actions = [
         action
         for action in review_actions
-        if action.action_id.startswith("service_profile_review_private_proposal_")
+        if action.review_scope
+        in {
+            "private_service_proposal",
+            "private_claim_policy_proposal",
+            "private_evidence_policy_proposal",
+        }
     ]
     public_service_actions = [
         action
         for action in review_actions
-        if action.action_id.startswith("service_profile_review_card_")
+        if action.review_scope == "public_service_card"
     ]
     private_service_actions = [
         action
         for action in private_actions
-        if private_scope_by_target.get(action.target_card_id or "") == "service"
+        if action.review_scope == "private_service_proposal"
     ]
     private_policy_actions = [
         action
         for action in private_actions
-        if private_scope_by_target.get(action.target_card_id or "")
-        in {"claim_policy", "evidence_requirement"}
+        if action.review_scope
+        in {"private_claim_policy_proposal", "private_evidence_policy_proposal"}
     ]
     return ContentServiceProfileReviewActionSummary(
         total_count=len(review_actions),

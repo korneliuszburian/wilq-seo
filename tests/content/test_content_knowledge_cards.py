@@ -24,7 +24,11 @@ from wilq.content.knowledge.private_source_proposals import (
     PrivateSourceProposalRegistry,
     ekologus_private_source_proposal_registry,
 )
-from wilq.content.knowledge.service_profile import content_service_profile_response
+from wilq.content.knowledge.service_profile import (
+    ContentServiceProfileReviewAction,
+    _review_action_summary,
+    content_service_profile_response,
+)
 from wilq.content.knowledge.source_facts import (
     ContentSourceFact,
     ContentSourceFactRegistry,
@@ -425,6 +429,65 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
         "service_profile_review_private_proposal_"
         "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02"
     ) in action_ids
+
+
+def test_service_profile_review_summary_uses_typed_scopes_not_action_ids() -> None:
+    actions = [
+        ContentServiceProfileReviewAction(
+            action_id="renamed_public_service_action",
+            mode="review_request",
+            review_scope="public_service_card",
+            priority="medium",
+            label="Sprawdź publiczną kartę",
+            reason="Publiczna karta wymaga review.",
+            blocked_write_claim="To nie promuje knowledge card.",
+            required_human_role="Wilku",
+            target_card_id="public_card",
+        ),
+        ContentServiceProfileReviewAction(
+            action_id="renamed_private_service_action",
+            mode="review_request",
+            review_scope="private_service_proposal",
+            priority="medium",
+            label="Sprawdź prywatną propozycję usługi",
+            reason="Prywatna propozycja usługi wymaga review.",
+            blocked_write_claim="To nie promuje private proposal.",
+            required_human_role="Wilku",
+            target_card_id="private_service_card",
+        ),
+        ContentServiceProfileReviewAction(
+            action_id="renamed_private_policy_action",
+            mode="review_request",
+            review_scope="private_claim_policy_proposal",
+            priority="high",
+            label="Sprawdź prywatną propozycję claim policy",
+            reason="Prywatna propozycja claim policy wymaga review.",
+            blocked_write_claim="To nie promuje private proposal.",
+            required_human_role="Wilku",
+            target_card_id="private_policy_card",
+        ),
+        ContentServiceProfileReviewAction(
+            action_id="renamed_gap_action",
+            mode="prepare",
+            review_scope="coverage_gap",
+            priority="high",
+            label="Przygotuj review luki",
+            reason="Luka wymaga źródła.",
+            blocked_write_claim="To nie edytuje knowledge base.",
+            required_human_role="Wilku",
+            gap_id="gap_test",
+        ),
+    ]
+
+    summary = _review_action_summary(review_actions=actions)
+
+    assert summary.total_count == 4
+    assert summary.review_request_count == 3
+    assert summary.prepare_count == 1
+    assert summary.public_service_review_count == 1
+    assert summary.private_review_count == 2
+    assert summary.private_service_review_count == 1
+    assert summary.private_policy_review_count == 1
 
 
 def test_source_backed_waste_storage_card_matches_review_required_topic() -> None:
