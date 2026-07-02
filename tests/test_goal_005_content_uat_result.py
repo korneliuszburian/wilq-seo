@@ -3,6 +3,10 @@ from __future__ import annotations
 import pytest
 
 from scripts.record_goal_005_content_uat_result import (
+    RECOMMENDED_REVIEW_ARTIFACTS,
+    REQUIRED_BOOLEAN_FIELDS,
+    REQUIRED_TEXT_FIELDS,
+    build_content_uat_input_example,
     build_content_uat_result_report,
     render_markdown,
     sales_brief_blocker_label,
@@ -54,6 +58,35 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert "## Ostrzeżenia materiałów review" in markdown
     assert "2026-07-02-wilq-marketing-content-model.md" in markdown
     assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
+
+
+def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() -> None:
+    example = build_content_uat_input_example(live_context=_live_context())
+
+    assert example["wybrany_work_item"] == (
+        "content_work_item_content_decision_https___www_ekologus_pl"
+    )
+    for key in REQUIRED_TEXT_FIELDS:
+        assert key in example
+    for key in REQUIRED_BOOLEAN_FIELDS:
+        assert example[key] in {"tak", "nie"}
+    assert example["pokazane_materialy_review"] == RECOMMENDED_REVIEW_ARTIFACTS
+    assert example["follow_up_beads"] == [
+        "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
+    ]
+
+
+def test_content_uat_input_example_is_not_a_completed_uat_result() -> None:
+    example = build_content_uat_input_example(live_context=_live_context())
+
+    with pytest.raises(RuntimeError) as error:
+        build_content_uat_result_report(example, live_context=_live_context())
+
+    message = str(error.value)
+    assert "Brak pola albo placeholder: data sesji" in message
+    assert "Brak pola albo placeholder: czas do zrozumienia statusu" in message
+    assert "Brak pola albo placeholder: największy brak produktu" in message
+    assert "Gdy pełny content UAT jest zablokowany, wpisz follow_up_beads" in message
 
 
 def test_content_uat_result_records_live_packet_provenance_for_selected_item() -> None:

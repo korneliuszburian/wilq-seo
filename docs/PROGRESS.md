@@ -97,6 +97,11 @@ live API status later contradicts this state.
   or explicitly owner-deferred with residual risk. Initial Service Profile work
   is read-only plus review/flag semantics; ungated knowledge-card writes remain
   out of scope.
+- Goal 005 UAT capture helper: `scripts/record_goal_005_content_uat_result.py`
+  can now print a fillable JSON example with `--print-input-example`, using the
+  live API candidate ID when `--api-base` is provided. The example intentionally
+  contains placeholders and is rejected by the normal validator until Wilku's
+  real answers are filled in.
 - Latest Goal 005 Service Profile slice: review actions expose API-owned
   `review_requirements` aligned with
   `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets

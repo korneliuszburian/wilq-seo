@@ -57,7 +57,19 @@ def main() -> int:
             "Nie uruchamia UAT i nie zamyka goalu."
         )
     )
-    parser.add_argument("input", help="Ścieżka do wypełnionego JSON z wynikiem UAT")
+    parser.add_argument(
+        "input",
+        nargs="?",
+        help="Ścieżka do wypełnionego JSON z wynikiem UAT",
+    )
+    parser.add_argument(
+        "--print-input-example",
+        action="store_true",
+        help=(
+            "Wypisuje fillable JSON do zapisania przed rozmową z Wilkiem. "
+            "To nie jest wynik UAT i celowo zawiera placeholdery."
+        ),
+    )
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     parser.add_argument(
         "--api-base",
@@ -69,8 +81,21 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        payload = load_json(Path(args.input))
         live_context = load_live_uat_context(args.api_base) if args.api_base else None
+        if args.print_input_example:
+            print(
+                json.dumps(
+                    build_content_uat_input_example(live_context=live_context),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 0
+        if not args.input:
+            parser.error(
+                "podaj ścieżkę input albo użyj --print-input-example, żeby wygenerować wzór"
+            )
+        payload = load_json(Path(args.input))
         report = build_content_uat_result_report(payload, live_context=live_context)
     except RuntimeError as error:
         print(str(error), file=sys.stderr)
@@ -81,6 +106,45 @@ def main() -> int:
     else:
         print(render_markdown(report))
     return 0
+
+
+def build_content_uat_input_example(
+    *,
+    live_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    selected_work_item = "<work_item_id_z_uat_packet>"
+    if live_context is not None:
+        candidate_ids = sorted(live_context_candidate_ids(live_context))
+        if candidate_ids:
+            selected_work_item = candidate_ids[0]
+    return {
+        "data_sesji": "<YYYY-MM-DD>",
+        "osoba": "Wilku",
+        "czas_do_zrozumienia_statusu": "UZUPEŁNIJ: np. 8 minut",
+        "punkty_niezrozumienia": (
+            "UZUPEŁNIJ: co było niejasne w statusie, blokadach albo kolejce"
+        ),
+        "wybrany_work_item": selected_work_item,
+        REVIEW_ARTIFACTS_FIELD: RECOMMENDED_REVIEW_ARTIFACTS,
+        "pytania_skad_to_wzielo": (
+            'UZUPEŁNIJ: gdzie Wilku zapytał "skąd to wzięło?" albo "brak pytań"'
+        ),
+        "miejsca_generyczne_off_brand": (
+            "UZUPEŁNIJ: co brzmiało generycznie/off-brand albo brak uwag"
+        ),
+        "najwiekszy_brak_produktu": (
+            "UZUPEŁNIJ: największa luka przed pełnym content UAT"
+        ),
+        "wilku_rozumie_blokady_pelnego_uat": "nie",
+        "service_profile_czytelny": "nie",
+        "public_service_review_actions_czytelne": "nie",
+        "private_review_actions_czytelne": "nie",
+        "private_policy_review_actions_czytelne": "nie",
+        "mozna_przejsc_do_pelnego_content_uat": "nie",
+        "follow_up_beads": [
+            "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
+        ],
+    }
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -615,7 +679,15 @@ def raw_list_payload(value: Any) -> list[Any]:
 
 def is_blank_or_placeholder(value: Any) -> bool:
     text = str(value or "").strip()
-    return not text or text.startswith("<") or text in {"-", "TODO", "todo"}
+    lowered = text.lower()
+    return (
+        not text
+        or text.startswith("<")
+        or text in {"-", "TODO", "todo"}
+        or lowered.startswith("todo:")
+        or lowered.startswith("uzupełnij:")
+        or lowered.startswith("uzupelnij:")
+    )
 
 
 if __name__ == "__main__":

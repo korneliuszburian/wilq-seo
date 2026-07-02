@@ -237,7 +237,14 @@ Po rozmowie zapisz:
 - czy rozumie blokady;
 - jaki jest jeden następny krok.
 
-Wynik pełnej sesji zapisuj przez:
+Najpierw wygeneruj plik do uzupełnienia:
+
+```bash
+rtk uv run python scripts/record_goal_005_content_uat_result.py --print-input-example --api-base http://127.0.0.1:8000 > .local-lab/proof/goal-005-content-uat-result-YYYYMMDD.json
+```
+
+Po rozmowie zamień placeholdery w tym pliku na realne odpowiedzi Wilka i
+zwaliduj wynik przez:
 
 ```bash
 rtk uv run python scripts/record_goal_005_content_uat_result.py .local-lab/proof/goal-005-content-uat-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
