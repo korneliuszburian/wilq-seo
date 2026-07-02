@@ -14,6 +14,7 @@ ContentClaimType = Literal[
     "seo_claim",
     "business_outcome_claim",
     "environmental_claim",
+    "product_claim",
 ]
 ContentClaimStatus = Literal[
     "allowed_with_evidence",
@@ -29,6 +30,7 @@ ContentClaimLedgerBlockerCode = Literal[
     "needs_human_review",
     "blocked_claim",
     "blocked_until_measurement",
+    "missing_product_evidence",
 ]
 
 MEASUREMENT_REQUIRED_CLAIM_TYPES = {
@@ -41,6 +43,7 @@ HUMAN_REVIEW_REQUIRED_CLAIM_TYPES = {
     "risk_claim",
     "environmental_claim",
 }
+PRODUCT_CLAIM_SOURCE_CONNECTORS = {"google_merchant_center", "wordpress_sklep"}
 
 
 class ContentClaimLedgerEntry(BaseModel):
@@ -172,6 +175,18 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
         if consistency_blocker := _entry_consistency_blocker(entry):
             blockers.append(consistency_blocker)
             continue
+        if entry.claim_type == "product_claim" and not PRODUCT_CLAIM_SOURCE_CONNECTORS.intersection(
+            entry.source_connectors
+        ):
+            blockers.append(
+                _blocker(
+                    "missing_product_evidence",
+                    entry,
+                    "Brakuje dowodu produktowego",
+                    "Twierdzenie produktowe wymaga dowodu z Merchant albo sklepu.",
+                    "Podłącz dowód produktowy z Merchant/sklepu albo zmień CTA na konsultację.",
+                )
+            )
         if entry.status == "allowed_with_evidence" and not entry.evidence_ids:
             blockers.append(
                 _blocker(

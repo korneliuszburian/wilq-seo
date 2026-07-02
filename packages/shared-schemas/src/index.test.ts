@@ -597,6 +597,17 @@ describe("ContentClaimLedgerSchema", () => {
         source_connectors: ["wordpress_ekologus"],
         reason: "Claim ma przypisany dowód źródłowy.",
         reviewer_id: "wilku"
+      },
+      {
+        id: "claim_product_sorbent",
+        claim_text: "Ekologus ma produkt sorpcyjny do sprawdzenia w sklepie.",
+        claim_type: "product_claim",
+        status: "allowed_with_evidence",
+        strength: "strong",
+        required: false,
+        evidence_ids: ["ev_merchant_product"],
+        source_connectors: ["google_merchant_center"],
+        reason: "Claim produktowy ma dowód z Merchant."
       }
     ]
   };

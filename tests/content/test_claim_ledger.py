@@ -206,6 +206,40 @@ def test_allowed_with_evidence_status_without_evidence_blocks_draft() -> None:
     assert not claim_ledger_allows_draft(ledger)
 
 
+def test_product_claim_without_merchant_or_shop_evidence_blocks_draft() -> None:
+    entry = content_claim_entry(
+        claim_id="claim_product_offer_without_shop",
+        claim_text="Kup sorbenty Ekologus jako sprawdzone rozwiązanie dla zakładu.",
+        claim_type="product_claim",
+        evidence_ids=["ev_public_article"],
+        source_connectors=["wordpress_ekologus"],
+    )
+    ledger = _ledger(entry)
+
+    assert entry.status == "allowed_with_evidence"
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "missing_product_evidence"
+    ]
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
+
+
+def test_product_claim_with_merchant_evidence_can_feed_draft() -> None:
+    entry = content_claim_entry(
+        claim_id="claim_product_offer_with_merchant",
+        claim_text="Ekologus ma produkt sorpcyjny do sprawdzenia w sklepie.",
+        claim_type="product_claim",
+        evidence_ids=["ev_merchant_product"],
+        source_connectors=["google_merchant_center"],
+    )
+    ledger = _ledger(entry)
+
+    assert entry.status == "allowed_with_evidence"
+    assert claim_ledger_blockers(ledger) == []
+    assert publish_ready_claims(ledger) == [entry]
+    assert claim_ledger_allows_draft(ledger)
+
+
 def test_forged_guarantee_claim_cannot_be_marked_allowed() -> None:
     entry = ContentClaimLedgerEntry(
         id="claim_forged_guarantee",

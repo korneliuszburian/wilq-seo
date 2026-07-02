@@ -127,6 +127,30 @@ def build_report() -> dict[str, Any]:
         )
     )
 
+    product_without_product_source = content_claim_entry(
+        claim_id="claim_product_without_merchant",
+        claim_text="Kup sorbenty Ekologus jako sprawdzone rozwiązanie dla zakładu.",
+        claim_type="product_claim",
+        evidence_ids=["ev_public_article"],
+        source_connectors=["wordpress_ekologus"],
+    )
+    product_without_product_source_ledger = _ledger([product_without_product_source])
+    product_without_product_source_codes = [
+        blocker.code for blocker in claim_ledger_blockers(product_without_product_source_ledger)
+    ]
+    checks.append(
+        _check(
+            "product_claim_requires_merchant_or_shop_evidence",
+            product_without_product_source.status == "allowed_with_evidence"
+            and "missing_product_evidence" in product_without_product_source_codes,
+            "Twierdzenie produktowe wymaga dowodu z Merchant albo sklepu.",
+            {
+                "status": product_without_product_source.status,
+                "blockers": product_without_product_source_codes,
+            },
+        )
+    )
+
     safe_ledger = _safe_claim_ledger()
     safe_blockers = claim_ledger_blockers(safe_ledger)
     checks.append(
@@ -296,9 +320,9 @@ def build_report() -> dict[str, Any]:
         "publish_ready_locked": True,
         "co_pokazac_wilkowi": (
             "WILQ ma działające sprawdzenie twierdzeń: blokuje gwarancje, "
-            "twierdzenia prawne bez review i obietnice efektu bez pomiaru. "
-            "Model dostaje tylko kontrakt review-only, więc nie może sam oznaczyć "
-            "treści jako gotowej do publikacji."
+            "twierdzenia prawne bez review, produktowe oferty bez Merchant/sklepu "
+            "i obietnice efektu bez pomiaru. Model dostaje tylko kontrakt "
+            "review-only, więc nie może sam oznaczyć treści jako gotowej do publikacji."
         ),
         "co_nadal_brakuje": (
             "Production-depth wymaga zatwierdzonych kart wiedzy, review człowieka "

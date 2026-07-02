@@ -212,7 +212,8 @@ export const ContentClaimTypeSchema = z.enum([
   "performance_claim",
   "seo_claim",
   "business_outcome_claim",
-  "environmental_claim"
+  "environmental_claim",
+  "product_claim"
 ]);
 
 export const ContentClaimStatusSchema = z.enum([
@@ -798,7 +799,8 @@ export const StructuredDraftClaimMarkerSchema = z.object({
     "performance_claim",
     "seo_claim",
     "business_outcome_claim",
-    "environmental_claim"
+    "environmental_claim",
+    "product_claim"
   ]),
   status: z.enum([
     "allowed_with_evidence",
