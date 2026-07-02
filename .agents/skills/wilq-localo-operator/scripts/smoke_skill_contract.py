@@ -271,6 +271,10 @@ def main() -> int:
     if LOCALO_VISIBILITY_REVIEW_ACTION_ID in active_action_ids:
         quoted_action = urllib.parse.quote(LOCALO_VISIBILITY_REVIEW_ACTION_ID, safe="")
         validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        full_action = request_json(args.api_base, "GET", f"/api/actions/{quoted_action}")
+        full_payload = full_action.get("payload") if isinstance(full_action, dict) else {}
+        if isinstance(full_payload, dict) and full_payload.get("preview_contract"):
+            localo_action_preview_contract = str(full_payload["preview_contract"])
         action_validations.append(
             {
                 "action_id": validation.get("action_id"),

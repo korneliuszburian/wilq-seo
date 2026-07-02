@@ -7126,3 +7126,48 @@ Result:
   `gap_read_contract`, `gap_record_count=8`, `missing_read_contracts=[]`,
   content/backlink/keyword/top-page contract names, and blocked `wzrost ruchu`
   oraz `wzrost autorytetu`.
+
+## 2026-07-02 - Localo live eval and review-only blocker split
+
+Purpose:
+
+- Test `wilq-localo-operator` against current Localo diagnostics and review
+  action.
+- Separate "Localo works for diagnostics/review" from blocked write/uplift
+  claims.
+- Ensure the smoke exposes the real Localo action preview contract instead of
+  only the compact action-plan location.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run python -m py_compile .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py
+scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- Initial proof passed at
+  `.local-lab/evals/codex-skill/20260702T020334Z/summary.json`, but the output
+  used `blocked=true` even though Localo diagnostics and the review action were
+  ready.
+- The Localo contract now says access-ready Localo with aggregate metrics and a
+  validated review action should be top-level review-ready, while write/uplift
+  claims remain blocked.
+- The eval case now expects `blocked=false` and uses Polish-flexible markers for
+  visibility wording, while keeping blocked claim terms.
+- The Localo smoke now fetches the full action detail and reports
+  `local_visibility_review_preview_v1`, not only `action_plan.preview_items`.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T020751Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=false`, `failure_tags=[]`,
+  all hard gates true, 2 evidence IDs, 2 recommendations and 1 validated action
+  candidate.
+- Validated action candidate: `act_review_localo_visibility_facts`.
+- The output used `mcp_initialize_status=200`, `localo_access_status`,
+  `metric_snapshot`, `place_inventory`, `local_rankings`, `gbp_visibility`,
+  `competitor_visibility`, `reviews`, `read_contract_statuses`,
+  `local_visibility_review_preview_v1`, `apply_allowed`, `api_mutation_ready`
+  and blocked local task/write/uplift claims.

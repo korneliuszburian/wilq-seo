@@ -38,6 +38,14 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 - Żądana obietnica wymaga danych Localo, których nie ma w `allowed_evidence`; np. `wyniki GBP`, `widoczność konkurencji`, `ukończone zadanie lokalne`, `zapis zmian GBP` albo `poprawa widoczności lokalnej`.
 - Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
+Jeśli Localo ma dostęp (`mcp_initialize_status=200` albo status dostępu ready),
+metryki agregatów w `localo_diagnostics` i zwalidowaną akcję review, nie ustawiaj
+top-level `blocked=true` tylko dlatego, że zablokowane są write/uplift claims.
+W takim stanie workflow jest review-only i powinien jasno mówić: Localo działa
+do diagnostyki, a zablokowane pozostają `ukończone zadanie lokalne`, `zapis
+zmian w profilu firmy`, `poprawa widoczności lokalnej`, write/apply oraz
+obietnice rankingu bez dalszej walidacji.
+
 ## Reguły dowodów
 
 Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak akcji do sprawdzenia w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu zmian.

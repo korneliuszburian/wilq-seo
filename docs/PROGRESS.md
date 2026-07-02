@@ -378,6 +378,14 @@ API status later contradicts this state.
   `gap_records_omitted=true` in compact context-pack payloads, and the skill
   contract treats compaction as review-ready evidence rather than missing
   records while still blocking `wzrost ruchu` and `wzrost autorytetu` claims.
+- `wilq-localo-operator` now has a live non-interactive review-only proof at
+  `.local-lab/evals/codex-skill/20260702T020751Z/summary.json`. Result:
+  `operator_usefulness_score=4`, `blocked=false`, all hard gates true, no
+  failure tags, 2 evidence IDs, 2 recommendations and validated
+  `act_review_localo_visibility_facts`. The Localo contract now separates
+  access-ready diagnostics/review from blocked local task/write/uplift claims,
+  and the smoke now exposes the full action preview contract
+  `local_visibility_review_preview_v1`.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

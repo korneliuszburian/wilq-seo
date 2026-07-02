@@ -273,14 +273,15 @@
       "api_mutation_ready",
       "ranking",
       "GBP",
-      "widoczność lokalna",
-      "zablokowane obietnice"
+      "widoczno",
+      "Zablokowane"
     ],
     "blocked_claim_terms": [
       "ukończone zadanie lokalne",
       "zapis zmian w profilu firmy",
       "poprawa widoczności lokalnej"
     ],
+    "expected_blocked": false,
     "expected_action_ids": [
       "act_review_localo_visibility_facts"
     ],
