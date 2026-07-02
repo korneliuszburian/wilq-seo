@@ -40,6 +40,21 @@ Odmów albo obniż odpowiedź do krótkiej informacji o blokadzie, gdy:
 - `ahrefs_diagnostics` ma tylko dane autorytetu (`domain_rating`, `ahrefs_rank`) i nie ma rekordów luk; wtedy wolno użyć Ahrefs jako kontekstu autorytetu, ale trzeba zablokować wnioski o luce treści, luce backlinków i przewadze konkurencji.
 - Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
+Jeśli `gap_read_contract.status=ready` oraz `gap_record_count > 0`, nie ustawiaj
+top-level `blocked=true` tylko dlatego, że `gap_records_omitted=true` w
+context-packu albo że istnieją `blocked_claims`. `gap_records_omitted=true`
+oznacza kompaktowanie pakietu kontekstu; pełne rekordy są w
+`GET /api/ahrefs/diagnostics`. W takim stanie można dać decyzję review-only
+o lukach Ahrefs. Blokuj wyłącznie obietnice wzrostu ruchu, wzrostu autorytetu,
+przewagi konkurencyjnej, produkcyjnej treści albo efektu SEO bez dodatkowego
+sprawdzenia GSC/WordPress/człowieka.
+
+W odpowiedzi używaj dokładnych nazw pól kontraktu, gdy są ważne dla audytu:
+`gap_read_contract`, `gap_record_count`, `missing_read_contracts`,
+`gap_records_omitted`, `ahrefs_content_gap_records`,
+`ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
+`ahrefs_competitor_pages` i `ahrefs_top_pages_by_competitor`.
+
 ## Reguły dowodów
 
 Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak akcji do sprawdzenia w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu.

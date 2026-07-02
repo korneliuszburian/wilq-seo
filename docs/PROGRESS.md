@@ -370,6 +370,14 @@ API status later contradicts this state.
   run found a malformed top-level evidence ID with whitespace, so
   `scripts/codex_skill_eval.sh` now rejects whitespace/empty identifiers in
   top-level lineage IDs and action IDs.
+- `wilq-ahrefs-gap-finder` now has a live non-interactive review-only proof at
+  `.local-lab/evals/codex-skill/20260702T020118Z/summary.json`. Result:
+  `operator_usefulness_score=4`, `blocked=false`, all hard gates true, no
+  failure tags, 8 evidence IDs, 2 recommendations and no action IDs. The Ahrefs
+  smoke now respects `gap_read_contract.gap_record_count` when
+  `gap_records_omitted=true` in compact context-pack payloads, and the skill
+  contract treats compaction as review-ready evidence rather than missing
+  records while still blocking `wzrost ruchu` and `wzrost autorytetu` claims.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

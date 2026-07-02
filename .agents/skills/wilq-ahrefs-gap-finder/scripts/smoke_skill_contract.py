@@ -95,7 +95,10 @@ def main() -> int:
     if not isinstance(missing_read_contract_count, int):
         missing_read_contract_count = len(missing_read_contracts)
     gap_records = gap_contract.get("gap_records") or []
-    if gap_records and "ahrefs_review_gap_records" not in decision_ids:
+    gap_record_count = gap_contract.get("gap_record_count")
+    if not isinstance(gap_record_count, int):
+        gap_record_count = len(gap_records)
+    if gap_record_count and "ahrefs_review_gap_records" not in decision_ids:
         raise SystemExit("Ahrefs diagnostics must expose gap review decision")
     if (
         missing_read_contract_count
@@ -196,7 +199,8 @@ def main() -> int:
                 "ahrefs_blocker_count": ahrefs_diagnostics.get("blocker_count"),
                 "gap_read_contract": {
                     "status": gap_contract.get("status"),
-                    "gap_record_count": len(gap_records),
+                    "gap_record_count": gap_record_count,
+                    "gap_records_omitted": bool(gap_contract.get("gap_records_omitted")),
                     "missing_read_contracts": missing_read_contracts,
                     "blocked_claims": gap_contract.get("blocked_claims", []),
                     "freshness_states": freshness_states,

@@ -206,6 +206,16 @@ expected_blocker_instruction = (
     if expected_blocked is True
     else ""
 )
+expected_unblocked_instruction = (
+    "\n<expected_unblocked>\nTen eval oczekuje `blocked=false`. Jeżeli workflow ma "
+    "review-only decyzję albo bezpieczny następny krok, nie ustawiaj top-level "
+    "`blocked=true` wyłącznie dlatego, że istnieją zablokowane claimy. Takie claimy "
+    "opisz w `notes`, `blocked_reason` rekomendacji albo w action candidate z "
+    "`validation_state=\"blocked\"`, ale zostaw top-level `blocked=false`.\n"
+    "</expected_unblocked>\n"
+    if expected_blocked is False
+    else ""
+)
 blocked_claim_terms_instruction = (
     "\n<blocked_claim_terms>\nThese blocked claim terms must stay out of recommendations "
     "`label_pl` and non-blocked action labels, even when mentioned negatively. Put them only "
@@ -248,6 +258,7 @@ Zadanie: {task_pl}
 {expected_validated_actions_instruction}
 {expected_lineage_instruction}
 {expected_blocker_instruction}
+{expected_unblocked_instruction}
 {blocked_claim_terms_instruction}
 {expected_no_actions_instruction}
 {forbidden_actions_instruction}
@@ -278,6 +289,9 @@ Oczekiwane connector surfaces: {connectors}
 - Nie wymyślaj metryk, kampanii, rankingów, produktów, query ani stawek.
 - Każda rekomendacja musi mieć identyfikatory dowodów i źródła danych z WILQ API
   w polach `evidence_ids` i `source_connectors`.
+- Top-level `evidence_ids` i `source_connectors` muszą być pełnym lineage
+  supersetem: każdy identyfikator użyty w `recommendations[]` albo
+  `action_candidates[]` musi też wystąpić w top-level listach.
 - Jeżeli danych brakuje, zwróć blocker zamiast rekomendacji.
 - Jeżeli `expected_blocker` podaje zablokowane twierdzenia, nie umieszczaj tych
   twierdzeń w `recommendations[].label_pl` ani w nieblokowanych action labels.

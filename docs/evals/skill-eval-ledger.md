@@ -7082,3 +7082,47 @@ Result:
   `demand_gen_ad_group_ad_rows`, `demand_gen_creative_asset_rows`,
   `demand_gen_landing_quality_by_campaign` and
   `demand_gen_campaign_mode_review` were empty.
+
+## 2026-07-02 - Ahrefs live eval and context-pack compaction fix
+
+Purpose:
+
+- Test `wilq-ahrefs-gap-finder` against current Ahrefs diagnostics and
+  review-only SEO/backlink/content gap workflow.
+- Separate ready Ahrefs gap review from unsupported growth/authority claims.
+- Fix a skill smoke issue where compacted context-pack payloads made available
+  gap records look missing.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+bash -n scripts/codex_skill_eval.sh
+scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- First eval failed because the smoke script reported `gap_record_count=0`
+  when context-pack had `gap_records_omitted=true`, even though
+  `/api/ahrefs/diagnostics` exposed `gap_record_count=8` and
+  `gap_fact_count=298`.
+- The Ahrefs smoke now uses `gap_read_contract.gap_record_count` when records
+  are omitted from the compact context-pack.
+- The Ahrefs output contract now treats `gap_records_omitted=true` as
+  compaction, not missing evidence, and keeps growth/authority promises blocked
+  while allowing review-only gap analysis when the contract is ready.
+- The eval harness prompt now states that top-level `blocked=false` can coexist
+  with blocked claims when the workflow has a safe review-only path, and that
+  top-level lineage lists must include every recommendation/action evidence or
+  source ID.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T020118Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=false`, `failure_tags=[]`,
+  all hard gates true, 8 evidence IDs, 2 recommendations and no action IDs.
+- The output used `ahrefs_diagnostics`, `decision_queue`,
+  `ahrefs_review_authority_context`, `ahrefs_review_gap_records`,
+  `gap_read_contract`, `gap_record_count=8`, `missing_read_contracts=[]`,
+  content/backlink/keyword/top-page contract names, and blocked `wzrost ruchu`
+  oraz `wzrost autorytetu`.
