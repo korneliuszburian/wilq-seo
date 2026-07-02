@@ -444,6 +444,12 @@ export const ContentServiceProfilePrivateSourceProposalRiskTierSchema = z.enum([
   "high",
   "unknown"
 ]);
+export const ContentServiceProfilePrivateSourceProposalRetentionDecisionSchema = z.enum([
+  "pending_owner_decision",
+  "retain_while_source_approved",
+  "short_window_only",
+  "do_not_retain"
+]);
 
 export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object({
   proposal_id: z.string(),
@@ -465,6 +471,11 @@ export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object(
   review_status: ContentServiceProfilePrivateSourceProposalReviewStatusSchema,
   support_level: ContentServiceProfilePrivateSourceProposalSupportLevelSchema,
   risk_tier: ContentServiceProfilePrivateSourceProposalRiskTierSchema,
+  data_classes: z.array(z.string()).default([]),
+  source_block_refs: z.array(z.string()).default([]),
+  retention_decision: ContentServiceProfilePrivateSourceProposalRetentionDecisionSchema,
+  deletion_path: z.array(z.string()).default([]),
+  eval_case_ids: z.array(z.string()).default([]),
   confidence_label: z.string(),
   owner_role: z.string(),
   redacted: z.boolean(),

@@ -458,6 +458,29 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert all(proposal.redacted for proposal in response.private_source_proposals)
     assert all(not proposal.promotion_allowed for proposal in response.private_source_proposals)
     assert all(proposal.blocked_claims for proposal in response.private_source_proposals)
+    assert all(proposal.data_classes for proposal in response.private_source_proposals)
+    assert all(proposal.source_block_refs for proposal in response.private_source_proposals)
+    assert all(
+        proposal.retention_decision == "pending_owner_decision"
+        for proposal in response.private_source_proposals
+    )
+    assert all(proposal.deletion_path for proposal in response.private_source_proposals)
+    assert all(proposal.eval_case_ids for proposal in response.private_source_proposals)
+    proposals_by_target = {
+        proposal.target_card_id: proposal for proposal in response.private_source_proposals
+    }
+    assert "service_strategy" in proposals_by_target[
+        "ekologus_service_eko_opieka_calendar"
+    ].data_classes
+    assert "KB_001_EKO_OPIEKA" in proposals_by_target[
+        "ekologus_service_eko_opieka_calendar"
+    ].source_block_refs
+    assert "legal_or_claim_policy" in proposals_by_target[
+        "ekologus_claim_policy_brand_voice"
+    ].data_classes
+    assert "goal_005_private_claim_policy_review" in proposals_by_target[
+        "ekologus_claim_policy_brand_voice"
+    ].eval_case_ids
     assert all(
         "nie promuje" in proposal.blocked_write_claim
         for proposal in response.private_source_proposals
@@ -633,6 +656,11 @@ def test_private_proposal_promotion_action_is_prepare_only_and_review_gated() ->
     assert all(row["apply_allowed"] is False for row in preview_rows)
     assert all(row["api_mutation_ready"] is False for row in preview_rows)
     assert all("promotion_blocked_reason" in row for row in preview_rows)
+    assert all(row["data_classes"] for row in preview_rows)
+    assert all(row["source_block_refs"] for row in preview_rows)
+    assert all(row["retention_decision"] == "pending_owner_decision" for row in preview_rows)
+    assert all(row["deletion_path"] for row in preview_rows)
+    assert all(row["eval_case_ids"] for row in preview_rows)
 
     validation = validate_action(action)
     assert validation.valid is True

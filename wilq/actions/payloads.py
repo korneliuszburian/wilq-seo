@@ -216,6 +216,11 @@ def validate_service_profile_private_proposal_promotion_payload(
             "target_card_title",
             "review_action_id",
             "required_human_role",
+            "data_classes",
+            "source_block_refs",
+            "retention_decision",
+            "deletion_path",
+            "eval_case_ids",
             "promotion_blocked_reason",
             "evidence_ids",
         ):

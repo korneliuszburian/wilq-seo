@@ -126,6 +126,11 @@ describe("ContentServiceProfileResponseSchema", () => {
           review_status: "review_required",
           support_level: "partial",
           risk_tier: "medium",
+          data_classes: ["service_strategy", "internal_operational"],
+          source_block_refs: ["KB_001_EKO_OPIEKA"],
+          retention_decision: "pending_owner_decision",
+          deletion_path: ["Usuń albo odrzuć redacted proposal."],
+          eval_case_ids: ["goal_005_private_service_review"],
           confidence_label: "średnia",
           owner_role: "Wilku albo owner oferty Ekologus",
           redacted: true,
@@ -251,6 +256,11 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
     review_status: "review_required",
     support_level: "partial",
     risk_tier: "medium",
+    data_classes: ["service_strategy", "internal_operational"],
+    source_block_refs: ["KB_001_EKO_OPIEKA"],
+    retention_decision: "pending_owner_decision",
+    deletion_path: ["Usuń albo odrzuć redacted proposal."],
+    eval_case_ids: ["goal_005_private_service_review"],
     confidence_label: "średnia",
     owner_role: "Wilku albo owner oferty Ekologus",
     redacted: true,
@@ -283,6 +293,12 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
       ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
         ...proposal,
         risk_tier: "comfortable"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        ...proposal,
+        retention_decision: "keep_forever"
       }).success
     ).toBe(false);
 

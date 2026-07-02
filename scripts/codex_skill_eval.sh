@@ -210,7 +210,7 @@ expected_blocker_instruction = (
 expected_unblocked_instruction = (
     "\n<expected_unblocked>\nTen eval oczekuje `blocked=false`. Jeżeli workflow ma "
     "review-only decyzję albo bezpieczny następny krok, nie ustawiaj top-level "
-    "`blocked=true` wyłącznie dlatego, że istnieją zablokowane claimy. Takie claimy "
+    "`blocked=true` wyłącznie dlatego, że istnieją zablokowane twierdzenia. Takie twierdzenia "
     "opisz w `notes`, `blocked_reason` rekomendacji albo w action candidate z "
     "`validation_state=\"blocked\"`, ale zostaw top-level `blocked=false`.\n"
     "</expected_unblocked>\n"

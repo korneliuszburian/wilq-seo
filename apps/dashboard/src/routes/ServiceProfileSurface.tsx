@@ -220,6 +220,13 @@ function PrivateProposalCards({ proposals }: { proposals: PrivateProposal[] }) {
           <p className="mt-2 text-xs leading-5 text-slate-500">
             {proposal.blocked_write_claim}
           </p>
+          <List label="Klasy danych" values={proposal.data_classes} />
+          <List label="Source block refs" values={proposal.source_block_refs} />
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Retencja: {proposal.retention_decision}
+          </p>
+          <List label="Ścieżka usunięcia" values={proposal.deletion_path} />
+          <List label="Eval gates" values={proposal.eval_case_ids} />
           <List label="Claimy zablokowane" values={proposal.blocked_claims} />
           <p className="mt-2 text-xs leading-5 text-slate-500">
             Rola review: {proposal.owner_role}

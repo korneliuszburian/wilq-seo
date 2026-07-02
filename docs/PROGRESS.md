@@ -142,6 +142,12 @@ API status later contradicts this state.
   review requirements for public/private review actions: required fields
   `action_id,target_card_id,decision,source_trace_clear,blocked_claims_reviewed,notes`
   and the `follow_up_beads` blocking rule.
+- Service Profile private proposals now expose governance metadata through the
+  same API/dashboard/UAT path: `data_classes`, `source_block_refs`,
+  `retention_decision`, `deletion_path` and `eval_case_ids`. Live proof after
+  stack restart showed the fields on `/api/content/service-profile`, the
+  private proposal promotion preview action and the UAT packet without exposing
+  raw private content.
 - Service Profile private proposal scope counts on 2026-07-02: live
   `/api/content/service-profile` and the UAT packet now expose
   `proposal_count=4`, `service_proposal_count=2`,

@@ -22,6 +22,10 @@ ContentDecisionType = Literal[
     "block_as_tracking_not_content",
     "review_ahrefs_gap_records",
 ]
+CONTENT_REFRESH_ACTION_IDS = {
+    "act_prepare_content_refresh_queue",
+    "act_prepare_wordpress_draft_handoff",
+}
 
 
 @dataclass(frozen=True)
@@ -150,7 +154,10 @@ def gsc_content_decisions(
                 ),
                 metric_facts=metric_facts[:8],
                 action_ids=_unique(
-                    action_id for item in page_items for action_id in item.action_ids
+                    action_id
+                    for item in page_items
+                    for action_id in item.action_ids
+                    if action_id in CONTENT_REFRESH_ACTION_IDS
                 ),
                 knowledge_card_ids=list(knowledge_card_ids),
                 expert_rule_ids=list(expert_rule_ids),

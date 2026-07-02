@@ -75,6 +75,15 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("risk: medium").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("risk: high").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("bez promocji").length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByText("Klasy danych").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("service_strategy").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("KB_001_EKO_OPIEKA")).toBeInTheDocument();
+    expect(screen.getAllByText(/Retencja: pending_owner_decision/).length)
+      .toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("goal_005_private_service_review").length)
+      .toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Usuń albo odrzuć redacted proposal.").length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Claimy zablokowane").length).toBeGreaterThanOrEqual(4);
     expect(screen.getByText("obietnica stałej zgodności")).toBeInTheDocument();
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
@@ -218,6 +227,11 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         review_status: "review_required",
         support_level: "partial",
         risk_tier: "medium",
+        data_classes: ["service_strategy", "internal_operational"],
+        source_block_refs: ["KB_001_EKO_OPIEKA"],
+        retention_decision: "pending_owner_decision",
+        deletion_path: ["Usuń albo odrzuć redacted proposal."],
+        eval_case_ids: ["goal_005_private_service_review"],
         confidence_label: "średnia",
         owner_role: "Wilku albo owner oferty Ekologus",
         redacted: true,
@@ -241,6 +255,11 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         review_status: "review_required",
         support_level: "partial",
         risk_tier: "medium",
+        data_classes: ["service_strategy", "internal_operational"],
+        source_block_refs: ["KB_003_AUDYT_ZGODNOSCI"],
+        retention_decision: "pending_owner_decision",
+        deletion_path: ["Usuń albo odrzuć redacted proposal."],
+        eval_case_ids: ["goal_005_private_service_review"],
         confidence_label: "wysoka",
         owner_role: "Wilku albo owner oferty Ekologus",
         redacted: true,
@@ -264,6 +283,11 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         review_status: "review_required",
         support_level: "direct",
         risk_tier: "high",
+        data_classes: ["brand_policy", "legal_or_claim_policy", "internal_operational"],
+        source_block_refs: ["KB_014_STYL_MARKI"],
+        retention_decision: "pending_owner_decision",
+        deletion_path: ["Usuń albo odrzuć redacted proposal."],
+        eval_case_ids: ["goal_005_private_claim_policy_review"],
         confidence_label: "wysoka",
         owner_role: "Wilku, owner marki albo reviewer prawny Ekologus",
         redacted: true,
@@ -287,6 +311,11 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         review_status: "review_required",
         support_level: "direct",
         risk_tier: "high",
+        data_classes: ["brand_policy", "legal_or_claim_policy", "internal_operational"],
+        source_block_refs: ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+        retention_decision: "pending_owner_decision",
+        deletion_path: ["Usuń albo odrzuć redacted proposal."],
+        eval_case_ids: ["goal_005_private_claim_policy_review"],
         confidence_label: "wysoka",
         owner_role: "Wilku, owner marki albo reviewer prawny Ekologus",
         redacted: true,

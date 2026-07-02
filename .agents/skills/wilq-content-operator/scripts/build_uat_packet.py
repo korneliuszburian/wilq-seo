@@ -260,6 +260,11 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "review_status": proposal.get("review_status"),
             "support_level": proposal.get("support_level"),
             "risk_tier": proposal.get("risk_tier"),
+            "data_classes": proposal.get("data_classes") or [],
+            "source_block_refs": proposal.get("source_block_refs") or [],
+            "retention_decision": proposal.get("retention_decision"),
+            "deletion_path": proposal.get("deletion_path") or [],
+            "eval_case_ids": proposal.get("eval_case_ids") or [],
             "confidence_label": proposal.get("confidence_label"),
             "blocked_claims": proposal.get("blocked_claims") or [],
             "safe_next_step": proposal.get("safe_next_step"),
@@ -597,6 +602,22 @@ def main() -> int:
             )
             if blocked_claims:
                 print(f"    claimy zablokowane: {', '.join(blocked_claims)}")
+            data_classes = [str(value) for value in raw_proposal.get("data_classes") or []]
+            source_block_refs = [
+                str(value) for value in raw_proposal.get("source_block_refs") or []
+            ]
+            deletion_path = [str(value) for value in raw_proposal.get("deletion_path") or []]
+            eval_case_ids = [str(value) for value in raw_proposal.get("eval_case_ids") or []]
+            if data_classes:
+                print(f"    klasy danych: {', '.join(data_classes)}")
+            if source_block_refs:
+                print(f"    source block refs: {', '.join(source_block_refs)}")
+            if raw_proposal.get("retention_decision"):
+                print(f"    retencja: {raw_proposal.get('retention_decision')}")
+            if deletion_path:
+                print(f"    ścieżka usunięcia: {'; '.join(deletion_path)}")
+            if eval_case_ids:
+                print(f"    eval gates: {', '.join(eval_case_ids)}")
     gaps = service_profile_md.get("coverage_gaps")
     if isinstance(gaps, list) and gaps:
         print("- luki:")

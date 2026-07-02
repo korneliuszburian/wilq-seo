@@ -62,7 +62,7 @@ musi użyć metadanych z najnowszego `google_search_console` `vendor_read`:
 - `aggregate_dimensions=country,device`,
   `aggregate_aggregation_type=byProperty` i
   `aggregate_data_completeness=aggregate_without_query_page_dimensions`
-  oznaczają osobny agregat ruchu bez wymiarów `query/page`; można go użyć jako
+  oznaczają osobny agregat ruchu bez wymiarów zapytań i adresów; można go użyć jako
   kontekstu wolumenu, ale nie jako dowodu skuteczności konkretnej frazy lub URL;
 - `read_granularity=single_day_latest_available`,
   `api_recommended_page_size=25000` i

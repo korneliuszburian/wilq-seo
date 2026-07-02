@@ -7,8 +7,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import (
     ContentClaimLedger,
-    ContentClaimStrength,
     ContentClaimStatus,
+    ContentClaimStrength,
     ContentClaimType,
     claim_ledger_allows_draft,
     claim_ledger_blockers,
@@ -453,8 +453,8 @@ def _removed_or_blocked_claim_markers(
             StructuredDraftClaimMarker(
                 claim_id=claim.claim_id,
                 claim_text=claim.claim_text,
-                claim_type=claim.claim_type,
-                status=claim.status,
+                claim_type=cast(ContentClaimType, claim.claim_type),
+                status=cast(ContentClaimStatus, claim.status),
                 strength="strong",
                 required=False,
                 evidence_ids=claim.evidence_ids,

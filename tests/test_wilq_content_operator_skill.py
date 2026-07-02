@@ -90,6 +90,11 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "warunki przed reviewed source fact",
         "private_proposal_details",
         "szczegóły private proposals",
+        "klasy danych",
+        "source block refs",
+        "retencja",
+        "ścieżka usunięcia",
+        "eval gates",
         "review_result_recorders",
         "wymagania review",
         "service_profile_public_card_review_result_v1",
@@ -338,6 +343,11 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "review_status": "review_required",
                     "support_level": "partial",
                     "risk_tier": "medium",
+                    "data_classes": ["service_strategy", "internal_operational"],
+                    "source_block_refs": ["KB_SERVICE"],
+                    "retention_decision": "pending_owner_decision",
+                    "deletion_path": ["Usuń albo odrzuć redacted proposal."],
+                    "eval_case_ids": ["goal_005_private_service_review"],
                     "confidence_label": "średnia",
                     "blocked_claims": ["gwarancja"],
                     "safe_next_step": "Review.",
@@ -355,6 +365,11 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "review_status": "review_required",
                     "support_level": "direct",
                     "risk_tier": "high",
+                    "data_classes": ["brand_policy", "legal_or_claim_policy"],
+                    "source_block_refs": ["KB_POLICY"],
+                    "retention_decision": "pending_owner_decision",
+                    "deletion_path": ["Usuń albo odrzuć redacted proposal."],
+                    "eval_case_ids": ["goal_005_private_claim_policy_review"],
                     "confidence_label": "wysoka",
                     "blocked_claims": ["gwarancja wyniku"],
                     "safe_next_step": "Review policy.",
@@ -428,3 +443,9 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert private_summary["service_proposal_count"] == 1
     assert private_summary["claim_policy_proposal_count"] == 1
     assert private_summary["evidence_requirement_proposal_count"] == 0
+    details = summary["private_proposal_details"]
+    assert details[0]["data_classes"] == ["service_strategy", "internal_operational"]
+    assert details[0]["source_block_refs"] == ["KB_SERVICE"]
+    assert details[0]["retention_decision"] == "pending_owner_decision"
+    assert details[0]["deletion_path"] == ["Usuń albo odrzuć redacted proposal."]
+    assert details[0]["eval_case_ids"] == ["goal_005_private_service_review"]

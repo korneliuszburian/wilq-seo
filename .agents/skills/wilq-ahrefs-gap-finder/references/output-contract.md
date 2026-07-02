@@ -47,7 +47,7 @@ oznacza kompaktowanie pakietu kontekstu; pełne rekordy są w
 `GET /api/ahrefs/diagnostics`. W takim stanie można dać decyzję review-only
 o lukach Ahrefs. Blokuj wyłącznie obietnice wzrostu ruchu, wzrostu autorytetu,
 przewagi konkurencyjnej, produkcyjnej treści albo efektu SEO bez dodatkowego
-sprawdzenia GSC/WordPress/człowieka.
+sprawdzenia GSC i WordPress albo człowieka.
 
 W odpowiedzi używaj dokładnych nazw pól kontraktu, gdy są ważne dla audytu:
 `gap_read_contract`, `gap_record_count`, `missing_read_contracts`,

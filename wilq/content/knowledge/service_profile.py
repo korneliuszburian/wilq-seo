@@ -136,6 +136,11 @@ class ContentServiceProfilePrivateSourceProposalSection(BaseModel):
     review_status: str
     support_level: str
     risk_tier: str
+    data_classes: list[str] = Field(default_factory=list)
+    source_block_refs: list[str] = Field(default_factory=list)
+    retention_decision: str
+    deletion_path: list[str] = Field(default_factory=list)
+    eval_case_ids: list[str] = Field(default_factory=list)
     confidence_label: str
     owner_role: str
     redacted: bool
@@ -326,6 +331,11 @@ def _private_source_proposal_sections(
             review_status=proposal.review_status,
             support_level=proposal.support_level,
             risk_tier=proposal.risk_tier,
+            data_classes=proposal.data_classes,
+            source_block_refs=proposal.source_block_refs,
+            retention_decision=proposal.retention_decision,
+            deletion_path=proposal.deletion_path,
+            eval_case_ids=proposal.eval_case_ids,
             confidence_label=_confidence_label(proposal.confidence),
             owner_role=proposal.owner_role,
             redacted=True,

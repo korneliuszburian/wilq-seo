@@ -121,6 +121,13 @@ def test_localo_smoke_uses_diagnostics_without_refresh_by_default(
                 "status": "valid",
                 "errors": [],
             }
+        if path == "/api/actions/act_review_localo_visibility_facts":
+            return {
+                "id": "act_review_localo_visibility_facts",
+                "payload": {
+                    "preview_contract": "localo_visibility_review_preview_v1",
+                },
+            }
         raise AssertionError(f"Unexpected request: {method} {path}")
 
     monkeypatch.setattr(module, "request_json", fake_request_json)

@@ -616,7 +616,7 @@ def _service_profile_knowledge_promotion_action() -> ActionObject | None:
                 ],
                 "required_validation_labels": [
                     "sprawdź źródła publiczne",
-                    "sprawdź claimy zakazane",
+                    "sprawdź zakazane twierdzenia",
                     "zapisz decyzję Wilka/ownera",
                     "przygotuj osobny audyt awansu",
                 ],
@@ -650,7 +650,7 @@ def _service_profile_knowledge_promotion_action() -> ActionObject | None:
         ),
         recommended_reason=(
             "Po zebraniu decyzji z review kart usługowych sprawdź, które source "
-            "facts mają pełny ślad źródła, review claimów i właściciela decyzji. "
+            "facts mają pełny ślad źródła, review twierdzeń i właściciela decyzji. "
             "Dopiero późniejsza osobna ścieżka audytu może zmienić lifecycle."
         ),
         payload={
@@ -717,6 +717,11 @@ def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
                 "required_human_role": review_action.required_human_role,
                 "support_level": proposal.support_level,
                 "risk_tier": proposal.risk_tier,
+                "data_classes": proposal.data_classes,
+                "source_block_refs": proposal.source_block_refs,
+                "retention_decision": proposal.retention_decision,
+                "deletion_path": proposal.deletion_path,
+                "eval_case_ids": proposal.eval_case_ids,
                 "confidence_label": proposal.confidence_label,
                 "blocked_claims": proposal.blocked_claims,
                 "required_validation": [
@@ -729,7 +734,7 @@ def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
                 "required_validation_labels": [
                     "sprawdź redacted źródło",
                     "zapisz decyzję Wilka/ownera",
-                    "sprawdź claimy zakazane",
+                    "sprawdź zakazane twierdzenia",
                     "przygotuj osobny request awansu source fact",
                     "uruchom focused eval przed użyciem",
                 ],
@@ -765,7 +770,7 @@ def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
         recommended_reason=(
             "Przed użyciem Eko-Opieki, Audytu zgodności, stylu marki albo "
             "legal-safety w treściach sprawdź redacted source trace, blokowane "
-            "claimy, rolę review i wymagany follow-up."
+            "twierdzenia, rolę review i wymagany follow-up."
         ),
         payload={
             "action_type": SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE,

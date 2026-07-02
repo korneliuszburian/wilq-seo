@@ -44,10 +44,10 @@ Dla każdej propozycji z `custom_segments_read_contract.candidates` pokaż:
 - `action_ids`, jeśli API je wystawia;
 - `blocked_claims`, zwłaszcza `rozmiar odbiorców`, `zwrot z reklam`, `zapis kierowania reklam` i `skuteczność kampanii`.
 
-Zakazane claimy pokazuj jako blokady w `Status`, `Diagnoza`, `Sprawdzenie w WILQ`,
+Zakazane twierdzenia pokazuj jako blokady w `Status`, `Diagnoza`, `Sprawdzenie w WILQ`,
 `Następny krok` albo w polu `blocked_reason`. Nie wkładaj ich do etykiety
 rekomendacji segmentu jako zwykłego zdania, nawet z negacją. Etykieta segmentu
-ma opisywać tylko kandydata, `source_terms`, priorytet review i powód review.
+ma opisywać tylko propozycję, `source_terms`, priorytet review i powód review.
 
 Jeśli akcji do sprawdzenia nie ma, pokaż `custom_segments_read_contract.missing_read_contracts` i `next_step`.
 

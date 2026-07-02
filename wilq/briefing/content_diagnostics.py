@@ -348,7 +348,7 @@ def _gsc_aggregate_summary_label(
     if clicks is None or impressions is None or not aggregate_date_end:
         return "GSC Search Analytics: brak osobnego agregatu ruchu bez wymiarów zapytań i adresów."
     return (
-        "Agregat GSC bez wymiarów query/page: "
+        "Agregat GSC bez wymiarów zapytań i adresów: "
         f"{clicks} kliknięć i {impressions} wyświetleń dla dnia {aggregate_date_end}."
     )
 

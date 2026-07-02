@@ -226,6 +226,13 @@ show required decision fields (`action_id`, `target_card_id`, `decision`,
 source/blocked-claim booleans and `notes`) plus the `follow_up_beads` rule for
 blocking review decisions.
 
+Under Beads task `wilq-seo-fjg8`, private source proposals now carry
+governance metadata through API, shared schema, dashboard and UAT packet:
+`data_classes`, `source_block_refs`, `retention_decision`, `deletion_path` and
+`eval_case_ids`. This keeps private `ekologus-ai` reuse auditable and
+deletable without exposing raw private content or treating review-required
+facts as approved knowledge.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and

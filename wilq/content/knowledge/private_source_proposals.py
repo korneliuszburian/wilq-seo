@@ -10,6 +10,12 @@ from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_sour
 PrivateSourceProposalType = Literal["private_candidate", "reviewed_internal"]
 PrivateSourceProposalPrivacyClass = Literal["private_local", "redacted_only"]
 PrivateSourceProposalReviewStatus = Literal["review_required", "approved", "rejected", "stale"]
+PrivateSourceProposalRetentionDecision = Literal[
+    "pending_owner_decision",
+    "retain_while_source_approved",
+    "short_window_only",
+    "do_not_retain",
+]
 PrivateSourceProposalScope = Literal[
     "service",
     "buyer_problem",
@@ -43,6 +49,11 @@ class PrivateSourceProposal(BaseModel):
         "unknown",
     ]
     risk_tier: Literal["low", "medium", "high", "unknown"]
+    data_classes: list[str] = Field(default_factory=list)
+    source_block_refs: list[str] = Field(default_factory=list)
+    retention_decision: PrivateSourceProposalRetentionDecision
+    deletion_path: list[str] = Field(default_factory=list)
+    eval_case_ids: list[str] = Field(default_factory=list)
     source_class_label: str
     target_card_id: str
     target_card_title: str
@@ -100,6 +111,15 @@ def _proposal_from_source_fact(fact: ContentSourceFact) -> PrivateSourceProposal
         owner_role=_owner_role(fact),
         audience=_audience(fact),
         risk_tier=_risk_tier(fact),
+        data_classes=_data_classes(fact),
+        source_block_refs=_source_block_refs(fact),
+        retention_decision="pending_owner_decision",
+        deletion_path=[
+            "Usuń albo odrzuć redacted proposal w Service Profile review.",
+            "Nie promuj source fact i nie kompiluj knowledge card.",
+            "Usuń lokalny derived artifact, jeżeli owner nie zatwierdzi źródła.",
+        ],
+        eval_case_ids=_eval_case_ids(fact),
         source_class_label=_source_class_label(fact),
         target_card_id=fact.target_card_id,
         target_card_title=fact.target_card_title,
@@ -147,6 +167,38 @@ def _risk_tier(fact: ContentSourceFact) -> Literal["low", "medium", "high", "unk
     if fact.scope == "evidence_requirement":
         return "medium"
     return "medium"
+
+
+def _data_classes(fact: ContentSourceFact) -> list[str]:
+    if fact.scope == "claim_policy":
+        return ["brand_policy", "legal_or_claim_policy", "internal_operational"]
+    if fact.scope == "evidence_requirement":
+        return ["evidence_policy", "internal_operational"]
+    if fact.scope == "service":
+        return ["service_strategy", "internal_operational"]
+    return ["internal_operational"]
+
+
+def _source_block_refs(fact: ContentSourceFact) -> list[str]:
+    if "KB_001_EKO_OPIEKA" in fact.source_url_or_path:
+        return ["KB_001_EKO_OPIEKA"]
+    if "KB_003_AUDYT_ZGODNOSCI" in fact.source_url_or_path:
+        return ["KB_003_AUDYT_ZGODNOSCI"]
+    if "KB_014_STYL_MARKI" in fact.source_url_or_path:
+        return ["KB_014_STYL_MARKI"]
+    if "KB_021_BEZPIECZENSTWO_PRAWNE" in fact.source_url_or_path:
+        return ["KB_021_BEZPIECZENSTWO_PRAWNE"]
+    return [fact.source_id]
+
+
+def _eval_case_ids(fact: ContentSourceFact) -> list[str]:
+    if fact.scope == "claim_policy":
+        return ["goal_005_private_claim_policy_review", "goal_006_claim_ledger_gate"]
+    if fact.scope == "evidence_requirement":
+        return ["goal_005_private_evidence_policy_review"]
+    if fact.scope == "service":
+        return ["goal_005_private_service_review", "goal_005_service_profile_uat"]
+    return ["goal_005_private_source_review"]
 
 
 def _support_level(

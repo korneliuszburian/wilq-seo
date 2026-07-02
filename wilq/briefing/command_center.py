@@ -1458,10 +1458,18 @@ def _content_item_from_tactical(
     )
     action_ids = _unique(
         [
-            *_action_ids_for(
-                actions,
-                connector="wordpress_ekologus",
-                domain=OpportunityDomain.content,
+            *(
+                action_id
+                for action_id in _action_ids_for(
+                    actions,
+                    connector="wordpress_ekologus",
+                    domain=OpportunityDomain.content,
+                )
+                if action_id
+                in {
+                    "act_prepare_content_refresh_queue",
+                    "act_prepare_wordpress_draft_handoff",
+                }
             ),
             *(action_id for item in content_items for action_id in item.action_ids),
         ]
