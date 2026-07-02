@@ -410,6 +410,9 @@ export const ContentServiceProfilePolicySectionSchema = z.object({
 export const ContentServiceProfilePrivateSourceProposalSummarySchema = z.object({
   proposal_protocol_available: z.boolean(),
   proposal_count: z.number(),
+  service_proposal_count: z.number(),
+  claim_policy_proposal_count: z.number(),
+  evidence_requirement_proposal_count: z.number(),
   review_required_count: z.number(),
   approved_count: z.number(),
   promotion_ready: z.boolean(),

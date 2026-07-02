@@ -183,17 +183,22 @@ gaps `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`, and
 `can_edit_cards=False`.
 
 Redacted private-source proposal display is implemented under Beads task
-`wilq-seo-8ye`. Service Profile now shows two `ekologus-ai` review-required
-proposals (`Eko-Opieka` and `Audyt zgodności`) with `approved_count=0` and
-`redacted=true`; they do not compile into cards or unlock daily-content
-readiness.
+`wilq-seo-8ye`. Service Profile now shows redacted `ekologus-ai`
+review-required proposals with `approved_count=0` and `redacted=true`; they do
+not compile into cards or unlock daily-content readiness.
 
 Under Beads task `wilq-seo-dtx`, those Service Profile proposals are now
-compiled from redacted `reviewed_internal` service facts in
-`source_facts.json` instead of a separate hardcoded proposal tuple. The live
-payload exposes sanitized lineage (`source_id`, `source_type`,
-`privacy_class`, `scope`) and keeps claim-policy private facts out of the
-service-proposal display until the Claim Ledger layer needs them.
+compiled from redacted `reviewed_internal` facts in `source_facts.json` instead
+of a separate hardcoded proposal tuple. The live payload exposes sanitized
+lineage (`source_id`, `source_type`, `privacy_class`, `scope`) for service and
+claim-policy proposals.
+
+Under Beads task `wilq-seo-kot2`, Service Profile now exposes typed private
+proposal scope counts and the dashboard/UAT packet render them directly. Live
+proof on 2026-07-02 returned `proposal_count=4`, `service_proposal_count=2`,
+`claim_policy_proposal_count=2`, `evidence_requirement_proposal_count=0` and
+`promotion_ready=false`, so Wilku can distinguish service proposals from
+claim-policy review items without opening technical payloads.
 
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete

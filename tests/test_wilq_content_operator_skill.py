@@ -179,6 +179,9 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
             },
             "private_source_proposal_summary": {
                 "proposal_count": 2,
+                "service_proposal_count": 1,
+                "claim_policy_proposal_count": 1,
+                "evidence_requirement_proposal_count": 0,
                 "review_required_count": 2,
                 "approved_count": 0,
                 "promotion_ready": False,
@@ -292,3 +295,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert recorders["private_review"]["promotion_preview"]["preview_row_count"] == 2
     assert recorders["private_review"]["promotion_preview"]["apply_allowed"] is False
     assert "Nie promuje source facts" in recorders["safety_note"]
+    private_summary = summary["private_source_proposals"]
+    assert private_summary["service_proposal_count"] == 1
+    assert private_summary["claim_policy_proposal_count"] == 1
+    assert private_summary["evidence_requirement_proposal_count"] == 0

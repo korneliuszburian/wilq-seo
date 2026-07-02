@@ -52,23 +52,38 @@ describe("ServiceProfileSurface", () => {
       screen.getByText("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/")
     ).toBeInTheDocument();
     expect(screen.getByText("Źródła prywatne")).toBeInTheDocument();
-    expect(screen.getByText("2 do review")).toBeInTheDocument();
+    expect(screen.getByText("4 propozycji")).toBeInTheDocument();
+    expect(screen.getByText("2 usługowe")).toBeInTheDocument();
+    expect(screen.getByText("2 claim-policy")).toBeInTheDocument();
+    expect(screen.getByText("4 do review")).toBeInTheDocument();
     expect(screen.getByText("promocja zablokowana")).toBeInTheDocument();
     expect(screen.getByText("Warunki przed reviewed source fact")).toBeInTheDocument();
     expect(screen.getByText(/Brak zatwierdzenia człowieka/)).toBeInTheDocument();
     expect(screen.getAllByText("ekologus-ai reviewed handoff: Eko-Opieka").length)
       .toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("ekologus-ai reviewed handoff: Audyt zgodności")).toBeInTheDocument();
+    expect(screen.getAllByText("ekologus-ai reviewed handoff: Audyt zgodności").length)
+      .toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("ekologus-ai reviewed handoff: Styl marki").length)
+      .toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("ekologus-ai reviewed handoff: Bezpieczeństwo prawne").length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Eko-Opieka / Eko Kalendarz")).toBeInTheDocument();
-    expect(screen.getByText("support: partial")).toBeInTheDocument();
-    expect(screen.getByText("risk: medium")).toBeInTheDocument();
-    expect(screen.getByText("bez promocji")).toBeInTheDocument();
-    expect(screen.getByText("Claimy zablokowane")).toBeInTheDocument();
+    expect(screen.getByText("Styl marki i claim policy Ekologus")).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczeństwo prawne, poufność i zgody")).toBeInTheDocument();
+    expect(screen.getAllByText("support: partial").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("support: direct").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("risk: medium").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("risk: high").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("bez promocji").length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByText("Claimy zablokowane").length).toBeGreaterThanOrEqual(4);
     expect(screen.getByText("obietnica stałej zgodności")).toBeInTheDocument();
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz"))
       .toBeInTheDocument();
-    expect(screen.getByText(/To nie promuje private proposal/)).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus"))
+      .toBeInTheDocument();
+    expect(screen.getAllByText(/To nie promuje private proposal/).length)
+      .toBeGreaterThanOrEqual(2);
     expect(screen.queryByRole("button", { name: /edytuj/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /promuj/i })).not.toBeInTheDocument();
   });
@@ -142,8 +157,11 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
     evidence_policy_sections: [],
     private_source_proposal_summary: {
       proposal_protocol_available: true,
-      proposal_count: 2,
-      review_required_count: 2,
+      proposal_count: 4,
+      service_proposal_count: 2,
+      claim_policy_proposal_count: 2,
+      evidence_requirement_proposal_count: 0,
+      review_required_count: 4,
       approved_count: 0,
       promotion_ready: false,
       promotion_checklist: [
@@ -154,11 +172,15 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         "Brak zatwierdzenia człowieka i reviewed source fact; Service Profile pokazuje tylko propozycje review.",
       proposal_source_labels: [
         "ekologus-ai reviewed handoff: Eko-Opieka",
-        "ekologus-ai reviewed handoff: Audyt zgodności"
+        "ekologus-ai reviewed handoff: Audyt zgodności",
+        "ekologus-ai reviewed handoff: Styl marki",
+        "ekologus-ai reviewed handoff: Bezpieczeństwo prawne"
       ],
       review_required_proposal_ids: [
         "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
-        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01"
+        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01",
+        "private_proposal_ekologus_ai_brand_voice_2026_07_01",
+        "private_proposal_ekologus_ai_legal_safety_2026_07_01"
       ],
       redacted: true,
       safe_next_step:
@@ -187,6 +209,75 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         promotion_allowed: false,
         blocked_write_claim:
           "To jest redacted proposal do review; nie promuje source fact ani knowledge card."
+      },
+      {
+        proposal_id:
+          "private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
+        source_id: "ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
+        source_type: "reviewed_internal",
+        privacy_class: "redacted_only",
+        scope: "service",
+        target_card_id: "ekologus_service_environmental_compliance_audit",
+        target_card_title: "Audyt zgodności środowiskowej",
+        source_class_label: "review-required internal service context",
+        source_locator_label: "ekologus-ai reviewed handoff: Audyt zgodności",
+        review_status: "review_required",
+        support_level: "partial",
+        risk_tier: "medium",
+        confidence_label: "wysoka",
+        owner_role: "Wilku albo owner oferty Ekologus",
+        redacted: true,
+        blocked_claims: ["gwarancja braku kar"],
+        safe_next_step: "Pokazać Wilkowi zwykły handoff i zdecydować o review.",
+        promotion_allowed: false,
+        blocked_write_claim:
+          "To jest redacted proposal do review; nie promuje source fact ani knowledge card."
+      },
+      {
+        proposal_id:
+          "private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
+        source_id: "ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
+        source_type: "reviewed_internal",
+        privacy_class: "redacted_only",
+        scope: "claim_policy",
+        target_card_id: "ekologus_claim_policy_brand_voice",
+        target_card_title: "Styl marki i claim policy Ekologus",
+        source_class_label: "review-required internal claim-policy source fact",
+        source_locator_label: "ekologus-ai reviewed handoff: Styl marki",
+        review_status: "review_required",
+        support_level: "direct",
+        risk_tier: "high",
+        confidence_label: "wysoka",
+        owner_role: "Wilku, owner marki albo reviewer prawny Ekologus",
+        redacted: true,
+        blocked_claims: ["puste slogany agencyjne", "gwarantowany wynik"],
+        safe_next_step: "Pokaż Wilkowi/reviewerowi zasady claimów.",
+        promotion_allowed: false,
+        blocked_write_claim:
+          "To jest redacted proposal do review; nie promuje source fact ani knowledge card."
+      },
+      {
+        proposal_id:
+          "private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+        source_id: "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+        source_type: "reviewed_internal",
+        privacy_class: "redacted_only",
+        scope: "claim_policy",
+        target_card_id: "ekologus_claim_policy_legal_safety",
+        target_card_title: "Bezpieczeństwo prawne, poufność i zgody",
+        source_class_label: "review-required internal claim-policy source fact",
+        source_locator_label: "ekologus-ai reviewed handoff: Bezpieczeństwo prawne",
+        review_status: "review_required",
+        support_level: "direct",
+        risk_tier: "high",
+        confidence_label: "wysoka",
+        owner_role: "Wilku, owner marki albo reviewer prawny Ekologus",
+        redacted: true,
+        blocked_claims: ["poufne dane klientów w materiale marketingowym"],
+        safe_next_step: "Pokaż Wilkowi/reviewerowi zasady claimów.",
+        promotion_allowed: false,
+        blocked_write_claim:
+          "To jest redacted proposal do review; nie promuje source fact ani knowledge card."
       }
     ],
     coverage_gaps: [
@@ -211,6 +302,16 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         blocked_write_claim: "To nie promuje private proposal do source fact ani knowledge card.",
         required_human_role: "Wilku albo owner oferty Ekologus",
         target_card_id: "ekologus_service_eko_opieka"
+      },
+      {
+        action_id: "service_profile_review_private_proposal_ekologus_ai_brand_voice_2026_07_01",
+        mode: "review_request",
+        label: "Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus",
+        reason:
+          "ekologus-ai reviewed handoff: Styl marki jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",
+        blocked_write_claim: "To nie promuje private proposal do source fact ani knowledge card.",
+        required_human_role: "Wilku, owner marki albo reviewer prawny Ekologus",
+        target_card_id: "ekologus_claim_policy_brand_voice"
       }
     ],
     technical_trace: {

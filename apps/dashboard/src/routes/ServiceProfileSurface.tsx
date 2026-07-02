@@ -143,6 +143,11 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
               ? "protokół proposal dostępny"
               : "brak protokołu",
             `${data.private_source_proposal_summary.proposal_count} propozycji`,
+            `${data.private_source_proposal_summary.service_proposal_count} usługowe`,
+            `${data.private_source_proposal_summary.claim_policy_proposal_count} claim-policy`,
+            data.private_source_proposal_summary.evidence_requirement_proposal_count > 0
+              ? `${data.private_source_proposal_summary.evidence_requirement_proposal_count} evidence-policy`
+              : null,
             `${data.private_source_proposal_summary.review_required_count} do review`,
             `${data.private_source_proposal_summary.approved_count} zatwierdzonych`,
             data.private_source_proposal_summary.promotion_ready

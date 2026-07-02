@@ -94,6 +94,9 @@ describe("ContentServiceProfileResponseSchema", () => {
       private_source_proposal_summary: {
         proposal_protocol_available: true,
         proposal_count: 2,
+        service_proposal_count: 1,
+        claim_policy_proposal_count: 1,
+        evidence_requirement_proposal_count: 0,
         review_required_count: 2,
         approved_count: 0,
         promotion_ready: false,

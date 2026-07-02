@@ -109,6 +109,9 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
         "ekologus_claim_policy_legal_safety",
     } <= set(proposals)
     assert profile.private_source_proposal_summary.proposal_count >= 4
+    assert profile.private_source_proposal_summary.service_proposal_count >= 2
+    assert profile.private_source_proposal_summary.claim_policy_proposal_count >= 2
+    assert profile.private_source_proposal_summary.evidence_requirement_proposal_count == 0
     assert profile.private_source_proposal_summary.review_required_count >= 4
     assert profile.private_source_proposal_summary.promotion_ready is False
     assert profile.review_policy.can_promote_facts is False
@@ -388,6 +391,9 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     )
     assert response.private_source_proposal_summary.proposal_protocol_available is True
     assert response.private_source_proposal_summary.proposal_count >= 4
+    assert response.private_source_proposal_summary.service_proposal_count >= 2
+    assert response.private_source_proposal_summary.claim_policy_proposal_count >= 2
+    assert response.private_source_proposal_summary.evidence_requirement_proposal_count == 0
     assert response.private_source_proposal_summary.review_required_count >= 4
     assert response.private_source_proposal_summary.approved_count == 0
     assert response.private_source_proposal_summary.promotion_ready is False

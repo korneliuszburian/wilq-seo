@@ -267,6 +267,11 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         "coverage_gaps": coverage_gaps,
         "private_source_proposals": {
             "proposal_count": private_summary.get("proposal_count"),
+            "service_proposal_count": private_summary.get("service_proposal_count"),
+            "claim_policy_proposal_count": private_summary.get("claim_policy_proposal_count"),
+            "evidence_requirement_proposal_count": private_summary.get(
+                "evidence_requirement_proposal_count"
+            ),
             "review_required_count": private_summary.get("review_required_count"),
             "approved_count": private_summary.get("approved_count"),
             "promotion_ready": private_summary.get("promotion_ready"),
@@ -520,6 +525,12 @@ def main() -> int:
     private_proposals = service_profile_md.get("private_source_proposals")
     if isinstance(private_proposals, dict):
         print(f"- promocja private proposals: {private_proposals.get('promotion_ready')}")
+        print(
+            "- zakres private proposals: "
+            f"{private_proposals.get('service_proposal_count')} service, "
+            f"{private_proposals.get('claim_policy_proposal_count')} claim-policy, "
+            f"{private_proposals.get('evidence_requirement_proposal_count')} evidence-policy"
+        )
         blocked_reason = private_proposals.get("promotion_blocked_reason")
         if blocked_reason:
             print(f"- blokada promocji: {blocked_reason}")

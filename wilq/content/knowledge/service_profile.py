@@ -96,6 +96,9 @@ class ContentServiceProfilePrivateSourceProposalSummary(BaseModel):
 
     proposal_protocol_available: bool
     proposal_count: int
+    service_proposal_count: int
+    claim_policy_proposal_count: int
+    evidence_requirement_proposal_count: int
     review_required_count: int
     approved_count: int
     promotion_ready: bool
@@ -298,6 +301,7 @@ def _private_source_proposal_summary(
         proposal for proposal in proposals if proposal.review_status == "review_required"
     ]
     approved = [proposal for proposal in proposals if proposal.review_status == "approved"]
+    scope_counts = Counter(proposal.scope for proposal in proposals)
     if review_required:
         safe_next_step = (
             "Pokaż redacted propozycje Wilkowi i zdecyduj, czy któraś ma stać się "
@@ -311,6 +315,9 @@ def _private_source_proposal_summary(
     return ContentServiceProfilePrivateSourceProposalSummary(
         proposal_protocol_available=True,
         proposal_count=len(proposals),
+        service_proposal_count=scope_counts["service"],
+        claim_policy_proposal_count=scope_counts["claim_policy"],
+        evidence_requirement_proposal_count=scope_counts["evidence_requirement"],
         review_required_count=len(review_required),
         approved_count=len(approved),
         promotion_ready=False,

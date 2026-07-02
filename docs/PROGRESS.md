@@ -126,6 +126,12 @@ API status later contradicts this state.
   `review_result_recorders`, `record_service_profile_review_result.py`,
   public/private result report types, `private_source_proposals` and
   `promotion preview`.
+- Service Profile private proposal scope counts on 2026-07-02: live
+  `/api/content/service-profile` and the UAT packet now expose
+  `proposal_count=4`, `service_proposal_count=2`,
+  `claim_policy_proposal_count=2`, `evidence_requirement_proposal_count=0` and
+  `promotion_ready=false`, and `/service-profile` renders those counts for
+  Wilku without exposing raw private content.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three
