@@ -34,6 +34,7 @@ class SurfaceSpec:
     requires_action: bool = False
     requires_decision: bool = False
     requires_records: bool = False
+    requires_lineage: bool = False
     requires_blocker_or_blocked_claim: bool = False
     requires_polish_contract: bool = False
     demo_priority: int = 50
@@ -199,6 +200,7 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         requires_evidence=False,
         requires_source_connector=False,
         requires_records=True,
+        requires_lineage=True,
         demo_priority=85,
     ),
 )
@@ -276,6 +278,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
     blocked_claims = sorted(_find_unique_values(payload, "blocked_claims"))
     decision_count = _decision_count(payload)
     record_count = _record_count(payload)
+    lineage_count = len(_find_unique_values(payload, "source_lineage"))
     safe_next_steps = _safe_next_steps(payload)
     language = payload.get("language") if isinstance(payload, dict) else None
 
@@ -289,6 +292,8 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         errors.append("missing decision queue or decision-like records")
     if spec.requires_records and record_count == 0:
         errors.append("missing records")
+    if spec.requires_lineage and lineage_count == 0:
+        errors.append("missing source lineage")
     has_blocker_count = _has_positive_count(payload, "blocker_count")
     has_decision_blocker_count = _has_positive_count(payload, "decision_blocker_count")
     if spec.requires_blocker_or_blocked_claim and not (
@@ -307,6 +312,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
     score += 1 if (action_ids or not spec.requires_action) else 0
     score += 1 if (decision_count > 0 or not spec.requires_decision) else 0
     score += 1 if (record_count > 0 or not spec.requires_records) else 0
+    score += 1 if (lineage_count > 0 or not spec.requires_lineage) else 0
     score += 1 if (
         blocked_claims
         or has_blocker_count
@@ -330,6 +336,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         "usefulness_score": score,
         "decision_count": decision_count,
         "record_count": record_count,
+        "lineage_count": lineage_count,
         "evidence_count": len(evidence_ids),
         "source_connector_count": len(source_connectors),
         "action_count": len(action_ids),
@@ -355,14 +362,14 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Blocked: {report['blocked_count']}",
         f"- Pass: `{str(report['pass']).lower()}`",
         "",
-        "| Ekran | Status | Gotowość | Score | Rekordy | Dowody | Akcje | Decyzje | Następny krok |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+        "| Ekran | Status | Gotowość | Score | Rekordy | Ślady | Dowody | Akcje | Decyzje | Następny krok |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for surface in report["surfaces"]:
         next_step = surface["sample_next_steps"][0] if surface["sample_next_steps"] else "-"
         row = (
             "| {label} | `{status}` | `{readiness}` | {score} | {records} | "
-            "{evidence} | {actions} | {decisions} | {next_step} |"
+            "{lineage} | {evidence} | {actions} | {decisions} | {next_step} |"
         )
         lines.append(
             row.format(
@@ -371,6 +378,7 @@ def render_markdown(report: dict[str, Any]) -> str:
                 readiness=surface["readiness"],
                 score=surface["usefulness_score"],
                 records=surface["record_count"],
+                lineage=surface["lineage_count"],
                 evidence=surface["evidence_count"],
                 actions=surface["action_count"],
                 decisions=surface["decision_count"],

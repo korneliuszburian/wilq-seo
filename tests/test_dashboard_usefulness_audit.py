@@ -174,6 +174,7 @@ def test_knowledge_surface_requires_nonempty_records() -> None:
         requires_evidence=False,
         requires_source_connector=False,
         requires_records=True,
+        requires_lineage=True,
     )
 
     empty = audit.evaluate_surface(spec, {"payload": [], "errors": []})
@@ -181,6 +182,25 @@ def test_knowledge_surface_requires_nonempty_records() -> None:
     assert empty["readiness"] == "blocked"
     assert empty["record_count"] == 0
     assert "missing records" in empty["errors"]
+    assert "missing source lineage" in empty["errors"]
+
+    missing_lineage = audit.evaluate_surface(
+        spec,
+        {
+            "payload": [
+                {
+                    "id": "card_goal_001_rules",
+                    "title": "Bez zmyślonych metryk",
+                }
+            ],
+            "errors": [],
+        },
+    )
+
+    assert missing_lineage["readiness"] == "blocked"
+    assert missing_lineage["record_count"] == 1
+    assert missing_lineage["lineage_count"] == 0
+    assert "missing source lineage" in missing_lineage["errors"]
 
     ready = audit.evaluate_surface(
         spec,
@@ -198,6 +218,7 @@ def test_knowledge_surface_requires_nonempty_records() -> None:
 
     assert ready["readiness"] == "demo_ready"
     assert ready["record_count"] == 1
+    assert ready["lineage_count"] == 1
 
 
 def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
@@ -217,6 +238,7 @@ def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
                 "readiness": "demo_ready",
                 "usefulness_score": 9,
                 "record_count": 1,
+                "lineage_count": 1,
                 "evidence_count": 2,
                 "action_count": 1,
                 "decision_count": 3,
@@ -228,5 +250,5 @@ def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
 
     markdown = audit.render_markdown(report)
 
-    assert "| Centrum pracy | `production` | `demo_ready` | 9 | 1 |" in markdown
+    assert "| Centrum pracy | `production` | `demo_ready` | 9 | 1 | 1 |" in markdown
     assert "Najpierw sprawdź kolejkę działań." in markdown
