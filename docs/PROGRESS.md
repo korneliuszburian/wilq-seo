@@ -117,6 +117,12 @@ live API status later contradicts this state.
   `fix_measurement` blockers before traffic-quality review, validates
   `act_review_ga4_tracking_quality`, and blocks revenue, ROAS, conversion-drop,
   conversion-rate, GA4-write and "measurement fixed" claims.
+- Ads Doctor usefulness proof: non-interactive eval for `wilq-ads-doctor`
+  passed with `operator_usefulness_score=5`. It orders Ads review by campaigns/
+  budgets, recommendations, search terms/negative keywords, custom segments and
+  change history; validates four review actions; and blocks CPA, ROAS, wasted
+  budget, budget writes, recommendation apply and negative keyword writes
+  without preview, human confirmation and audit.
 - Latest Goal 005 Service Profile slice: review actions expose API-owned
   `review_requirements` aligned with
   `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets

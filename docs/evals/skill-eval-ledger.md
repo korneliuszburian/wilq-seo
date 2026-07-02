@@ -193,6 +193,47 @@ Result:
 - Blocked claims stayed blocked: profitability, ROI/ROAS, revenue, conversion
   drop, conversion rate, GA4 writes and "measurement fixed".
 
+## 2026-07-02 - Ads Doctor usefulness eval
+
+Purpose:
+
+- Verify that `wilq-ads-doctor` behaves like a BDOS-style Ads review queue:
+  fresh evidence, 3-5 review priorities, validated actions and no unsupported
+  "wasted budget", ROAS, CPA, budget-write, recommendation-apply or negative
+  keyword write claims.
+- Confirm that broad Ads prompts use full Ads diagnostics/context when the
+  compact context-pack is not enough.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T154733Z`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Source connector used: `google_ads`.
+- Evidence lineage included 12 evidence IDs, including
+  `ev_connector_google_ads_status` and
+  `ev_refresh_refresh_google_ads_be7011a4a261`.
+- Validated actions: `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` and
+  `act_prepare_negative_keyword_review_queue`.
+- The output gave a usable review order: campaigns/budgets first,
+  recommendations second, search terms/negative keyword review third, custom
+  segments fourth and change-history audit fifth.
+- It correctly used live Ads metrics as review evidence only: 18 campaigns, 81
+  clicks, 2248 impressions, 151 PLN cost, 3 active recommendations, 50 search
+  term rows and 200 safety rows.
+- Blocked claims/actions stayed blocked: CPA, ROAS, wasted budget, budget
+  writes, recommendation apply, targeting writes, campaign writes and negative
+  keyword writes without preview, human confirmation and audit.
+
 ## 2026-07-02 - GSC Content Doctor usefulness eval
 
 Purpose:
