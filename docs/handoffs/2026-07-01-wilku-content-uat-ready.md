@@ -6,6 +6,11 @@ Ostatnia aktualizacja: 2026-07-02 09:55 CEST
 Status: gotowe do pokazania jako sesja review/blokad i traceability, nie jako
 ukończony UAT.
 
+Zacznij od krótkiej instrukcji:
+`docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`. Ten dokument poniżej jest
+szczegółowym zapleczem i formatem zapisu wyniku, nie pierwszą rzeczą do
+czytania na głos.
+
 Aktualizacja po rozdzieleniu review actions: UAT packet pokazuje teraz osobno
 publiczne review actions dla kart usług i prywatne review actions z
 `ekologus-ai`. Wynik sesji musi odpowiedzieć na oba pytania, bo publiczne karty

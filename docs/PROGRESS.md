@@ -217,6 +217,10 @@ API status later contradicts this state.
   Live recorder proof validates their action IDs as private proposal review and
   keeps the result at `needs_follow_up_before_promotion_request` with
   `promotion_allowed=false`.
+- A plain-language "what to show Wilku first" guide now lives at
+  `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`. Use it as the first
+  conversation script; the longer UAT handoff remains the detailed backing
+  material and result format.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only

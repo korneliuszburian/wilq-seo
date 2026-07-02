@@ -1092,6 +1092,10 @@ Stop and record a blocker if:
   proposals: brand voice and legal-safety. Live recorder proof validates the
   policy action IDs and keeps promotion blocked until a separate review result
   and promotion request exist.
+- 2026-07-02: `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is the
+  plain-language entry point for showing Goal 005 materials to Wilku. It
+  explains what to show, what to ask and what not to claim before opening the
+  detailed UAT handoff.
 
 ## Surprises & Discoveries
 
