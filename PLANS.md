@@ -231,6 +231,12 @@ risk: `wilq/credentials` was present locally but ignored by `.gitignore`, so a
 fresh checkout could miss `wilq.credentials.runtime`. The package is now part
 of the runtime surface and must stay covered by `tests/test_runtime_imports.py`.
 
+The same audit follow-up also hardened connector/job refresh persistence:
+`ConnectorRefreshRun` now carries `metrics_persisted`, metric-store failures
+rewrite the run to `failed` with sanitized error type only, per-connector job
+exceptions no longer abort the whole `JobRun`, and manual job API runs clear
+the same view-model caches as direct connector refreshes.
+
 Under Beads task `wilq-seo-x51h`, Service Profile review actions now expose
 API-owned `review_requirements`, also aligned with
 `scripts/record_service_profile_review_result.py`. The dashboard and UAT packet

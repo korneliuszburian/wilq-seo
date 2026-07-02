@@ -96,6 +96,7 @@ export const ConnectorRefreshRunSchema = z.object({
   checked_credentials: z.array(z.string()),
   external_call_attempted: z.boolean(),
   vendor_data_collected: z.boolean(),
+  metrics_persisted: z.boolean().default(true),
   metric_summary: z.record(z.string(), z.union([z.string(), z.number()])),
   summary: z.string(),
   errors: z.array(z.string()),

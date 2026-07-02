@@ -9,7 +9,10 @@ from typer.testing import CliRunner
 
 from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
+from wilq.connectors.refresh import get_connector_refresh_run, run_connector_refresh
 from wilq.jobs.registry import list_jobs
+from wilq.jobs.scheduler import run_job
+from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRequest
 
 client = TestClient(app)
 
@@ -72,6 +75,56 @@ def test_jobs_api_runs_connector_status_probe_without_secret_values(
     system_status_response = client.get("/api/system/status")
     assert system_status_response.status_code == 200
     assert system_status_response.json()["local_state"]["job_runs"] == 1
+
+
+def test_connector_refresh_marks_run_failed_when_metric_persistence_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "state.sqlite3"))
+
+    class BrokenMetricStore:
+        def save_connector_refresh_metrics(self, *args: object, **kwargs: object) -> int:
+            raise RuntimeError("duckdb lock path should stay sanitized")
+
+    monkeypatch.setattr("wilq.connectors.refresh.metric_store", lambda: BrokenMetricStore())
+
+    run = run_connector_refresh(
+        "google_ads",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.status_probe, reason="test"),
+    )
+
+    assert run is not None
+    assert run.status == "failed"
+    assert run.metrics_persisted is False
+    assert "metric_persistence_failed:RuntimeError" in run.errors
+    assert "duckdb lock path" not in " ".join(run.errors)
+
+    persisted = get_connector_refresh_run(run.id)
+    assert persisted is not None
+    assert persisted.status == "failed"
+    assert persisted.metrics_persisted is False
+
+
+def test_job_run_persists_failed_status_when_connector_refresh_raises(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "state.sqlite3"))
+
+    def broken_refresh(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("vendor payload should stay sanitized")
+
+    monkeypatch.setattr("wilq.jobs.scheduler.run_connector_refresh", broken_refresh)
+
+    run = run_job("connector_status_probe_all")
+
+    assert run is not None
+    assert run.status == "failed"
+    assert run.connector_refresh_run_ids == []
+    assert run.errors
+    assert all("connector_refresh_failed:RuntimeError" in error for error in run.errors)
+    assert "vendor payload" not in " ".join(run.errors)
 
 
 def test_wilq_cli_jobs_run_persists_redacted_job_state(

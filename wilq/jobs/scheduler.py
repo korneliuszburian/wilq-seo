@@ -53,13 +53,18 @@ def run_job(job_id: str, request: JobRunRequest | None = None) -> JobRun | None:
     statuses: list[ConnectorRefreshStatus] = []
 
     for connector_id in job.connector_ids:
-        refresh = run_connector_refresh(
-            connector_id,
-            ConnectorRefreshRequest(
-                mode=job.refresh_mode,
-                reason=reason or f"job:{job.id}",
-            ),
-        )
+        try:
+            refresh = run_connector_refresh(
+                connector_id,
+                ConnectorRefreshRequest(
+                    mode=job.refresh_mode,
+                    reason=reason or f"job:{job.id}",
+                ),
+            )
+        except Exception as error:
+            errors.append(f"{connector_id}: connector_refresh_failed:{type(error).__name__}")
+            statuses.append(ConnectorRefreshStatus.failed)
+            continue
         if refresh is None:
             errors.append(f"Unknown connector: {connector_id}")
             statuses.append(ConnectorRefreshStatus.failed)

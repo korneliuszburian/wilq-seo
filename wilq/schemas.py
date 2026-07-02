@@ -209,6 +209,7 @@ class ConnectorRefreshRun(BaseModel):
     checked_credentials: list[str] = Field(default_factory=list)
     external_call_attempted: bool = False
     vendor_data_collected: bool = False
+    metrics_persisted: bool = True
     metric_summary: dict[str, float | int | str] = Field(default_factory=dict)
     summary: str
     errors: list[str] = Field(default_factory=list)

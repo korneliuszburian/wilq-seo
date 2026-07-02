@@ -178,6 +178,12 @@ API status later contradicts this state.
   existed locally but was ignored by `.gitignore`, which explained the
   GitHub-visible `wilq.credentials.runtime` 404 risk. The package is now
   intended to be committed and protected by `tests/test_runtime_imports.py`.
+- Connector/job refresh hardening from the same audit now exposes
+  `ConnectorRefreshRun.metrics_persisted`. If metric persistence fails after a
+  connector run is created, WILQ rewrites the run as `failed` with a sanitized
+  `metric_persistence_failed:<ErrorType>` marker. Manual jobs also isolate
+  per-connector exceptions and always persist a `JobRun`; job-run API calls now
+  clear API view-model caches like direct connector refreshes.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

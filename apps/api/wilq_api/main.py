@@ -26,7 +26,7 @@ from apps.api.wilq_api.routers.demand_gen import create_demand_gen_router
 from apps.api.wilq_api.routers.diagnostics import router as diagnostics_router
 from apps.api.wilq_api.routers.evidence import router as evidence_router
 from apps.api.wilq_api.routers.expert import router as expert_router
-from apps.api.wilq_api.routers.jobs import router as jobs_router
+from apps.api.wilq_api.routers.jobs import create_jobs_router
 from apps.api.wilq_api.routers.knowledge import router as knowledge_router
 from apps.api.wilq_api.routers.metrics import router as metrics_router
 from apps.api.wilq_api.routers.opportunities import router as opportunities_router
@@ -68,7 +68,6 @@ app.include_router(diagnostics_router)
 app.include_router(content_workflow_router)
 app.include_router(evidence_router)
 app.include_router(expert_router)
-app.include_router(jobs_router)
 app.include_router(knowledge_router)
 app.include_router(metrics_router)
 app.include_router(opportunities_router)
@@ -140,5 +139,6 @@ def clear_api_view_model_caches() -> None:
 
 app.include_router(create_actions_router(clear_api_view_model_caches))
 app.include_router(create_connectors_router(clear_api_view_model_caches))
+app.include_router(create_jobs_router(clear_api_view_model_caches))
 app.include_router(create_codex_router(context_pack))
 app.include_router(create_demand_gen_router(context_demand_gen.build_readiness_contract))

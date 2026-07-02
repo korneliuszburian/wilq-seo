@@ -60,12 +60,32 @@ def run_connector_refresh(
         checked_credentials=connector.required_env,
         external_call_attempted=result.external_call_attempted,
         vendor_data_collected=result.vendor_data_collected,
+        metrics_persisted=False,
         metric_summary=result.metric_summary,
         summary=result.summary,
         errors=result.errors,
     )
     saved_run = local_state_store().save_connector_refresh_run(run)
-    metric_store().save_connector_refresh_metrics(saved_run, detailed_facts=result.metric_facts)
+    try:
+        metric_store().save_connector_refresh_metrics(saved_run, detailed_facts=result.metric_facts)
+    except Exception as error:
+        failed_run = saved_run.model_copy(
+            update={
+                "status": ConnectorRefreshStatus.failed,
+                "completed_at": utc_now(),
+                "metrics_persisted": False,
+                "summary": (
+                    f"{saved_run.summary} Metric persistence failed; refresh run marked failed."
+                ),
+                "errors": [
+                    *saved_run.errors,
+                    f"metric_persistence_failed:{type(error).__name__}",
+                ],
+            }
+        )
+        return local_state_store().save_connector_refresh_run(failed_run)
+    saved_run = saved_run.model_copy(update={"metrics_persisted": True})
+    saved_run = local_state_store().save_connector_refresh_run(saved_run)
     return saved_run
 
 
