@@ -471,6 +471,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert {
         "decisions[].data_classes_confirmed",
         "decisions[].source_block_refs_confirmed",
+        "decisions[].freshness_status_confirmed",
+        "decisions[].audience_scope_confirmed",
         "decisions[].retention_decision_confirmed",
         "decisions[].deletion_path_confirmed",
         "decisions[].eval_gates_confirmed",

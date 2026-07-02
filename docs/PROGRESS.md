@@ -113,6 +113,10 @@ API status later contradicts this state.
   `freshness_status` and audience/scope before any source fact promotion path,
   keeping ekologus-ai proposals review-only until source currency and access
   scope are checked.
+- `scripts/record_service_profile_review_result.py` and the content-operator
+  UAT packet helper now require the same private governance confirmations, so
+  recorded review proof cannot omit freshness or audience/scope while the live
+  Service Profile action requires them.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they

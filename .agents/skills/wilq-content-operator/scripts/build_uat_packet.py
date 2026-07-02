@@ -277,6 +277,8 @@ def review_result_recorders(
                 "decisions[].blocked_claims_reviewed",
                 "decisions[].data_classes_confirmed",
                 "decisions[].source_block_refs_confirmed",
+                "decisions[].freshness_status_confirmed",
+                "decisions[].audience_scope_confirmed",
                 "decisions[].retention_decision_confirmed",
                 "decisions[].deletion_path_confirmed",
                 "decisions[].eval_gates_confirmed",

@@ -41,6 +41,12 @@ PRIVATE_DECISION_BOOLEAN_FIELDS = {
     "source_block_refs_confirmed": (
         "czy source block refs są wystarczające do śladu źródłowego"
     ),
+    "freshness_status_confirmed": (
+        "czy aktualność prywatnego źródła została potwierdzona"
+    ),
+    "audience_scope_confirmed": (
+        "czy zakres dostępu/audience prywatnego źródła jest poprawny"
+    ),
     "retention_decision_confirmed": (
         "czy decyzja retencji została podjęta albo świadomie zablokowana"
     ),

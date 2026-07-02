@@ -103,6 +103,8 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
                 "blocked_claims_reviewed": "tak",
                 "data_classes_confirmed": "tak",
                 "source_block_refs_confirmed": "tak",
+                "freshness_status_confirmed": "tak",
+                "audience_scope_confirmed": "tak",
                 "retention_decision_confirmed": "tak",
                 "deletion_path_confirmed": "tak",
                 "eval_gates_confirmed": "tak",
@@ -122,6 +124,8 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert report["safe_next_step"].startswith("Przygotuj osobny, audytowany private")
     assert report["decisions"][0]["data_classes_confirmed"] is True
     assert report["decisions"][0]["source_block_refs_confirmed"] is True
+    assert report["decisions"][0]["freshness_status_confirmed"] is True
+    assert report["decisions"][0]["audience_scope_confirmed"] is True
     assert report["decisions"][0]["retention_decision_confirmed"] is True
     assert report["decisions"][0]["deletion_path_confirmed"] is True
     assert report["decisions"][0]["eval_gates_confirmed"] is True
@@ -144,6 +148,8 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
                 "notes",
                 "data_classes_confirmed",
                 "source_block_refs_confirmed",
+                "freshness_status_confirmed",
+                "audience_scope_confirmed",
                 "retention_decision_confirmed",
                 "deletion_path_confirmed",
                 "eval_gates_confirmed",
@@ -156,6 +162,8 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert "service_profile_private_proposal_review_result_v1" in markdown
     assert "Promotion allowed: nie" in markdown
     assert "retention_decision_confirmed: tak" in markdown
+    assert "freshness_status_confirmed: tak" in markdown
+    assert "audience_scope_confirmed: tak" in markdown
     assert "Wymagane pola review z live Service Profile" in markdown
     assert "eval_gates_confirmed" in markdown
 
@@ -187,6 +195,8 @@ def test_service_profile_review_result_follows_new_live_private_required_field()
                 "blocked_claims_reviewed": "tak",
                 "data_classes_confirmed": "tak",
                 "source_block_refs_confirmed": "tak",
+                "freshness_status_confirmed": "tak",
+                "audience_scope_confirmed": "tak",
                 "retention_decision_confirmed": "tak",
                 "deletion_path_confirmed": "tak",
                 "eval_gates_confirmed": "tak",
@@ -220,7 +230,7 @@ def test_service_profile_review_result_requires_private_governance_checks() -> N
                 "source_block_refs_confirmed": "tak",
                 "retention_decision_confirmed": "nie",
                 "deletion_path_confirmed": "tak",
-                "notes": "Brakuje eval gates i decyzji retencji.",
+                "notes": "Brakuje eval gates, świeżości, audience i decyzji retencji.",
             }
         ],
     }
@@ -231,6 +241,14 @@ def test_service_profile_review_result_requires_private_governance_checks() -> N
     message = str(error.value)
     assert (
         "czy eval gates blokujące unsafe claimy są wskazane musi mieć wartość tak albo nie"
+        in message
+    )
+    assert (
+        "czy aktualność prywatnego źródła została potwierdzona musi mieć wartość tak albo nie"
+        in message
+    )
+    assert (
+        "czy zakres dostępu/audience prywatnego źródła jest poprawny musi mieć wartość tak albo nie"
         in message
     )
     assert "Blokujące decyzje review wymagają follow_up_beads" in message
@@ -466,6 +484,16 @@ def _private_review_requirements() -> list[dict[str, object]]:
         },
         {
             "field": "source_block_refs_confirmed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {
+            "field": "freshness_status_confirmed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {
+            "field": "audience_scope_confirmed",
             "requirement_type": "boolean",
             "required": True,
         },
