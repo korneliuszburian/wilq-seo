@@ -63,11 +63,12 @@ Every WILQ skill eval must answer five questions:
 5. Czy next step is safe and concrete enough that Wilku can use it without a
    developer translating raw API state?
 
-The default non-interactive gate requires `operator_usefulness_score >= 4` and
-all `eval_rubric.hard_gates` to pass. Score `3` is a guardrail pass only and
-must be treated as a product gap, not as BDOS-class quality. If any hard gate is
-false, the harness requires a matching `failure_tags` value and caps usefulness
-at 3.
+The default non-interactive gate requires `operator_usefulness_score >= 5` and
+all `eval_rubric.hard_gates` to pass. Score `4` means the workflow still needs
+product follow-up before it can count as BDOS-class operator quality. Score `3`
+is a guardrail pass only and must be treated as a product gap, not as marketer
+value. If any hard gate is false, the harness requires a matching
+`failure_tags` value and caps usefulness at 3.
 
 ## Eval Case Requirements
 

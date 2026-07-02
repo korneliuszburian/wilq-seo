@@ -1203,7 +1203,7 @@ live API status later contradicts this state.
 - The skill eval layer now has an OpenAI-aligned contract in
   `docs/evals/openai-aligned-skill-evals.md`, a static coverage audit
   (`uv run python scripts/audit_skill_eval_coverage.py --strict`) and default
-  non-interactive threshold `operator_usefulness_score >= 4`. Freshness handling
+  non-interactive threshold `operator_usefulness_score >= 5`. Freshness handling
   is part of the gate: stale connector snapshots require refresh, repair path or
   blocker before recommendation.
 - `wilq-merchant-feed-operator` now has a fresh live non-interactive usefulness
