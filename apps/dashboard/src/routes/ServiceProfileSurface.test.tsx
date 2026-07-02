@@ -44,6 +44,13 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("Brak bezpośredniej karty usługi dla operatu wodnoprawnego"))
       .toBeInTheDocument();
     expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
+    expect(screen.getByText("Źródła i review")).toBeInTheDocument();
+    expect(screen.getByText("Poproś Wilka/ownera o decyzję.")).toBeInTheDocument();
+    expect(screen.getByText("public_site")).toBeInTheDocument();
+    expect(screen.getByText("ekologus_public_bdo_faq_2026_07_01")).toBeInTheDocument();
+    expect(
+      screen.getByText("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/")
+    ).toBeInTheDocument();
     expect(screen.getByText("Źródła prywatne")).toBeInTheDocument();
     expect(screen.getByText("2 do review")).toBeInTheDocument();
     expect(screen.getByText("promocja zablokowana")).toBeInTheDocument();

@@ -298,6 +298,20 @@ function ServiceCard({ section }: { section: ServiceSection }) {
       />
       <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-600">
         <p>{section.safe_next_step}</p>
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <div className="font-semibold text-slate-700">Źródła i review</div>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            {section.review_request_hint}
+          </p>
+          <PlainChipRow
+            className="mt-2"
+            values={[
+              ...section.source_connector_labels,
+              ...section.source_fact_ids.slice(0, 3)
+            ]}
+          />
+          <List label="Ślad źródłowy" values={section.source_lineage_labels.slice(0, 3)} />
+        </div>
         <List label="Dopasowanie" values={section.service_fit_terms.slice(0, 8)} />
         <List label="CTA" values={section.cta_patterns.slice(0, 3)} />
         <List label="Wymagane dowody" values={section.evidence_requirements.slice(0, 3)} />

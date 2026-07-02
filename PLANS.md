@@ -211,6 +211,12 @@ operat wodnoprawny. These actions stay `review_request`, keep
 `can_promote_facts=false`, and explicitly say they do not promote source facts
 or knowledge cards without a future ActionObject/audit path.
 
+Under Beads task `wilq-seo-813`, the dashboard Service Profile service cards
+now render source trace and review context directly: source connector labels,
+source fact IDs, source lineage URLs and `review_request_hint`. This makes the
+public service-card review path inspectable by Wilku without opening raw API
+responses or inventing another review surface.
+
 Redacted per-proposal details are implemented under Beads task `wilq-seo-0ap`.
 Service Profile now shows target card, source class, review status, support
 level, risk tier, confidence label, blocked claims and safe next step for each

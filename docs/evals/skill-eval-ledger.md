@@ -6849,3 +6849,28 @@ Result:
   recorded `public_service_review_action_count=6`,
   `private_review_action_count=2`, `production_depth_ready=false` and
   `overall_status=needs_follow_up_before_full_content_uat`.
+
+## 2026-07-02 - Service Profile source trace dashboard proof
+
+Purpose:
+
+- Make public service-card review usable from the Service Profile UI, not only
+  from raw API or the content-operator UAT packet.
+- Render source connector labels, source fact IDs, source lineage URLs and
+  review request hints on service cards.
+
+Focused proof:
+
+```bash
+pnpm --filter @wilq/dashboard test -- ServiceProfileSurface.test.tsx --runInBand
+pnpm --dir apps/dashboard typecheck
+git diff --check
+```
+
+Result:
+
+- Dashboard Service Profile test passed and now asserts visible `Źródła i
+  review`, `public_site`, `ekologus_public_bdo_faq_2026_07_01`, the public BDO
+  source URL and the review hint.
+- Dashboard typecheck passed after bringing a stale structured-generation
+  fixture up to the current `removed_or_blocked_claim_markers` schema.

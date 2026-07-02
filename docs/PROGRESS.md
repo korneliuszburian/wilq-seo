@@ -175,6 +175,12 @@ API status later contradicts this state.
   `public_card_review_count=6`, targets include
   `ekologus_service_operat_wodnoprawny`, and `can_promote_facts=false` remains.
   These actions tell Wilku what to review without promoting facts or cards.
+  The dashboard Service Profile service cards now render visible source trace:
+  source connectors, source fact IDs, source lineage URLs and review hints, so
+  public service-card review can happen from the UI rather than raw API output.
+  Focused proof passed: `rtk pnpm --filter @wilq/dashboard test --
+  ServiceProfileSurface.test.tsx --runInBand` and
+  `rtk pnpm --dir apps/dashboard typecheck`.
 - The `wilq-content-operator` UAT packet now includes live Service Profile
   evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
   `uat_readiness.status=blocked_for_full_uat`,

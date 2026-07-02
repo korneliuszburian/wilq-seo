@@ -895,6 +895,7 @@ function structuredDraftGenerationContract() {
       ],
       claims_allowed: [],
       claim_markers: [],
+      removed_or_blocked_claim_markers: [],
       claims_removed_or_blocked: [],
       human_review_questions: ["Czy to brzmi jak Ekologus?"]
     },
