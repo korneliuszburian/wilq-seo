@@ -662,6 +662,7 @@ const actions = [
           recommendation_id: "rec-1",
           recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
           recommendation_type: "CAMPAIGN_BUDGET",
+          recommendation_type_label: "budżet kampanii",
           campaign_id: "123",
           campaign_budget_id: "777",
           source_metric_names: ["recommendation_available"],
@@ -7869,6 +7870,13 @@ describe("WILQ dashboard", () => {
     expect(
       screen.queryByRole("heading", { name: "Co można zrobić teraz w Ads" })
     ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
+    expect(screen.getAllByText("Co obejmuje akcja").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/WILQ przygotował 1 rekomendację Google Ads do review/).length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/budżet kampanii/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Wymagane sprawdzenia/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Ads" }));
     expect(
       await screen.findByRole(

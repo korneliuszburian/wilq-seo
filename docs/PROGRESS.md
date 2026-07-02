@@ -139,6 +139,11 @@ API status later contradicts this state.
   `/api/ads/diagnostics?view=summary` returned top blocked claims for
   `zmarnowany budżet`, `opłacalność`, `skalowanie budżetu`, `zmiana budżetu`
   and `zapis rekomendacji`.
+- Ads Doctor action cards now render a concise `Co obejmuje akcja` summary from
+  existing ActionObject payload fields before the technical JSON toggle. Google
+  Ads campaign and recommendation review actions can show campaign/recommendation
+  scope, API-owned required validation labels and blocked claim labels without
+  exposing raw enums as marketer copy.
 - GA4 usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
   surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer
