@@ -141,7 +141,9 @@ API status later contradicts this state.
   outcome claims without a completed measurement window, evidence claims without
   source connectors, missing Claim Ledger input, ledger blockers and full drafts
   from review-required knowledge. Valid section generation remains review-only:
-  the contract is strict and `publish_ready=false`.
+  the contract is strict and `publish_ready=false`. `scripts/pre_demo_gate.sh`
+  now runs this audit before context-pack language checks, so stakeholder-demo
+  proof covers both dashboard usefulness and content generation safety.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production
