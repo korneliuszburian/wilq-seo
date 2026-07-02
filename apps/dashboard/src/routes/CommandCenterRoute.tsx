@@ -173,21 +173,30 @@ export function CommandCenter() {
 
   if (isLoading) return <LoadingBand />;
   if (error || !data) return <ErrorState />;
-  const sourceCount = Array.from(
-    new Set(data.daily_decisions.flatMap((item) => item.source_connectors))
-  ).length;
+  const sourceLabels =
+    data.source_connector_labels.length > 0
+      ? data.source_connector_labels
+      : Array.from(new Set(data.daily_decisions.flatMap((item) => item.source_connector_labels)));
+  const evidenceSummary =
+    data.evidence_summary || `${data.evidence_ids.length} dowodów źródłowych`;
+  const actionSummary = data.action_summary || `${data.action_ids.length} akcji do sprawdzenia`;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold tracking-normal">Centrum pracy</h1>
           <p className="mt-1 text-sm text-slate-600">{data.strict_instruction}</p>
+          <TraceLine
+            label="Źródła decyzji dnia"
+            values={sourceLabels}
+            empty="Brak potwierdzonych źródeł decyzji dnia."
+          />
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Decyzje" value={data.daily_decisions.length} />
-          <MetricTile label="Blokady" value={data.blocker_count} />
-          <MetricTile label="Źródła" value={sourceCount} />
+          <MetricTile label="Dowody" value={evidenceSummary} />
+          <MetricTile label="Akcje" value={actionSummary} />
         </div>
       </div>
 

@@ -177,6 +177,10 @@ API status later contradicts this state.
   Command Center now derives source connectors from merged evidence IDs. Passing
   eval artifact: `.local-lab/evals/codex-skill/20260702T125722Z`, score 5,
   `failure_tags=[]`, 20 evidence IDs and 4 validated daily actions.
+- `/command-center` dashboard first screen now renders API-owned top-level
+  proof summaries: source labels, evidence summary and action summary. Wilku no
+  longer has to infer daily proof from nested decision cards before trusting the
+  morning plan.
 - Content Planner usefulness review now has a short Wilku-facing decision card
   at `docs/handoffs/2026-07-02-wilku-content-planner-start-card.md`. Live
   `/api/content/diagnostics` returns 3 decisions, 16 evidence IDs and 5 actions

@@ -21,6 +21,29 @@ const commandCenterFixture: CommandCenterResponse = {
   primary_next_step: "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego.",
   blocker_count: 0,
   tactical_item_count: 4,
+  source_connectors: [
+    "google_merchant_center",
+    "google_search_console",
+    "wordpress_ekologus",
+    "google_analytics_4"
+  ],
+  source_connector_labels: [
+    "Merchant Center",
+    "Google Search Console",
+    "WordPress ekologus.pl",
+    "GA4"
+  ],
+  evidence_ids: [
+    "ev_refresh_merchant_feed",
+    "ev_refresh_gsc",
+    "ev_refresh_ga4"
+  ],
+  evidence_summary: "3 dowody źródłowe",
+  action_ids: [
+    "act_review_merchant_feed_issues",
+    "act_prepare_content_refresh_queue"
+  ],
+  action_summary: "2 akcje do sprawdzenia",
   daily_decisions: [
     {
       id: "decision_review_merchant_feed_issues",
@@ -228,6 +251,11 @@ describe("CommandCenter route", () => {
     expect(screen.queryByRole("link", { name: "Otwórz działanie" })).not.toBeInTheDocument();
     expect(screen.getByText("gotowe")).toBeInTheDocument();
     expect(screen.getByText("do odświeżenia")).toBeInTheDocument();
+    expect(screen.getByText("3 dowody źródłowe")).toBeInTheDocument();
+    expect(screen.getByText("2 akcje do sprawdzenia")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Źródła decyzji dnia: Merchant Center, Google Search Console, WordPress ekologus\.pl, GA4/)
+    ).toBeInTheDocument();
     expect(screen.queryByText("ready")).not.toBeInTheDocument();
     expect(screen.queryByText("stale")).not.toBeInTheDocument();
     expect(screen.getByText(/Świeżość źródeł: świeże dane/)).toBeInTheDocument();
