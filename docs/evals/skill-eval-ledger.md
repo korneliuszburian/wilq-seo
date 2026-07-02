@@ -365,6 +365,45 @@ Result:
   campaign effectiveness, conversion growth, ranking guarantees, campaign
   changes and Google Ads writes without operator confirmation.
 
+## 2026-07-02 - Social Publisher history-dedupe eval
+
+Purpose:
+
+- Verify that `wilq-social-publisher` treats missing LinkedIn/Facebook access
+  and missing historical social inventory as blockers before publication or
+  duplicate-free claims.
+- Confirm the workflow can still prepare evidence-backed draft directions for
+  human review without raw post bodies or unsupported social performance
+  claims.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Initial eval artifact:
+  `.local-lab/evals/codex-skill/20260702T133931Z/wilq-social-publisher/result.json`.
+  It failed on operator wording: forbidden phrase `tylko do sprawdzenia`.
+- Fix: the social output contract now explicitly tells the skill to use normal
+  Polish such as `do ręcznego przeglądu`, `bez publikacji`, `wymaga review` or
+  `przed publikacją trzeba uzupełnić ...`.
+- Passing eval artifact:
+  `.local-lab/evals/codex-skill/20260702T134213Z/wilq-social-publisher/result.json`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Smoke proof: LinkedIn and Facebook connectors have `missing_credentials`,
+  `publish_allowed=false`, `historical_social_inventory_status=missing`,
+  `duplicate_risk_status=blocked_until_social_history_review`, and actions
+  `act_prepare_linkedin_social_drafts` plus
+  `act_prepare_facebook_social_drafts` validate as `valid=true`.
+- The answer preserves the metadata-only history requirement:
+  `channel`, `published_at`, `topic`, `service`, `claim`, `cta`, `format`,
+  `post_url_or_id` and `source_evidence_id`. It blocks publication, social
+  performance, revenue/ROAS and "no historical repetition" claims.
+
 ## 2026-07-02 - GA4 dashboard usefulness review
 
 Purpose:

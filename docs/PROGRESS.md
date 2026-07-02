@@ -178,6 +178,16 @@ API status later contradicts this state.
   write, performance, conversion-growth and ranking-guarantee claims without
   WILQ confirmation. The eval harness also now forbids runtime cache/retry/
   sandbox noise in operator-facing JSON.
+- `wilq-social-publisher` passed deterministic smoke and non-interactive eval
+  after one language fix. Initial artifact
+  `.local-lab/evals/codex-skill/20260702T133931Z` failed on the awkward phrase
+  `tylko do sprawdzenia`; the skill contract now prefers `do ręcznego
+  przeglądu`, `bez publikacji` and similar normal wording. Passing artifact:
+  `.local-lab/evals/codex-skill/20260702T134213Z`. Score 5,
+  `failure_tags=[]`. LinkedIn/Facebook credentials and historical post
+  inventory are missing, so publication and duplicate-free claims stay blocked;
+  required social history is metadata-only: channel, published date, topic,
+  service, claim, CTA, format, post URL/ID and source evidence ID.
 - GA4 usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
   surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer
