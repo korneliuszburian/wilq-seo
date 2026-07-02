@@ -278,6 +278,7 @@ Uzupełnić po rozmowie:
 - osoba:
 - czas do zrozumienia statusu:
 - wybrany work item:
+- pokazane materiały review:
 - czy Wilku rozumie blokady pełnego UAT:
 - czy Service Profile jest czytelny:
 - czy public service review actions są czytelne:
@@ -297,6 +298,11 @@ Walidowany format wyniku:
   "osoba": "Wilku",
   "czas_do_zrozumienia_statusu": "np. 8 minut",
   "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+  "pokazane_materialy_review": [
+    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+    "docs/handoffs/2026-07-01-wilku-eko-opieka-review.md",
+    "docs/handoffs/2026-07-01-wilku-audyt-zgodnosci-review.md"
+  ],
   "pytania_skad_to_wzielo": "co było jasne albo niejasne w evidence IDs/source connectors",
   "miejsca_generyczne_off_brand": "co brzmiało generycznie albo nie jak Ekologus",
   "najwiekszy_brak_produktu": "najważniejszy brak w produkcie/WILQ po sesji",
@@ -332,6 +338,11 @@ prywatnych review actions, rozdział private service/policy review oraz stan
 private proposal promotion. Nie promuje private proposals do source facts, nie
 zatwierdza publicznych service cards, nie odblokowuje publikacji ani nie zamyka
 Goal 005 automatycznie.
+
+Walidator wymaga też pola `pokazane_materialy_review`. Każda ścieżka musi być
+repo-relative, istnieć w `docs/handoffs/` i wskazywać materiał, który realnie
+pokazano Wilkowi w sesji. To chroni proof UAT przed pustym stwierdzeniem, że
+sesja się odbyła, bez wskazania materiałów review.
 
 ## Kryterium przejścia dalej
 

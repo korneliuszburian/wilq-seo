@@ -265,6 +265,11 @@ API status later contradicts this state.
   the current live queue state: BDO is a source-backed review-required service
   card and historical strong UAT topic, but it is not a live work item on
   2026-07-02 and does not authorize a final draft.
+- Goal 005 UAT result recorder now requires `pokazane_materialy_review`: a
+  real UAT result must list existing repo-relative `docs/handoffs/` artifacts
+  shown to Wilku. Live proof with `--api-base http://127.0.0.1:8000` validates
+  the current queue, Service Profile, review action counts and shown BDO,
+  Eko-Opieka and Audyt zgodności handoffs without claiming UAT completion.
 - Service Profile now exposes non-persistent review requests for the two
   redacted `ekologus-ai` private proposals. These proposals are now compiled
   from redacted `reviewed_internal` service facts in

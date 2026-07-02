@@ -30,6 +30,8 @@ REQUIRED_BOOLEAN_FIELDS = {
     ),
     "mozna_przejsc_do_pelnego_content_uat": "czy można przejść do pełnego content UAT",
 }
+REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
+REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
 
 
 def main() -> int:
@@ -99,6 +101,7 @@ def build_content_uat_result_report(
         payload["private_policy_review_actions_czytelne"]
     )
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
+    shown_review_artifacts = review_artifact_paths(payload.get(REVIEW_ARTIFACTS_FIELD))
     missing_follow_up = not can_continue and not follow_up_tasks
     selected_work_item = str(payload["wybrany_work_item"]).strip()
     live_provenance = live_uat_provenance(
@@ -134,6 +137,7 @@ def build_content_uat_result_report(
         ).strip(),
         "largest_product_gap": str(payload["najwiekszy_brak_produktu"]).strip(),
         "can_continue_to_full_content_uat": can_continue,
+        "shown_review_artifacts": shown_review_artifacts,
         "follow_up_tasks": follow_up_tasks,
         "live_provenance": live_provenance,
         "overall_status": (
@@ -166,6 +170,7 @@ def validate_content_uat_payload(
         payload.get("mozna_przejsc_do_pelnego_content_uat")
     ) is False:
         errors.append("Gdy pełny content UAT jest zablokowany, wpisz follow_up_beads")
+    errors.extend(validate_review_artifacts(payload.get(REVIEW_ARTIFACTS_FIELD)))
     if live_context is not None:
         selected_work_item = str(payload.get("wybrany_work_item") or "").strip()
         candidate_ids = live_context_candidate_ids(live_context)
@@ -206,6 +211,10 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"{visible_bool(report['private_policy_review_actions_clear'])}",
         "- Można przejść do pełnego content UAT: "
         f"{visible_bool(report['can_continue_to_full_content_uat'])}",
+        "",
+        "## Pokazane materiały review",
+        "",
+        *[f"- `{artifact}`" for artifact in report["shown_review_artifacts"]],
         "",
         "## Źródła i jakość",
         "",
@@ -423,6 +432,28 @@ def list_payload(value: Any) -> list[str]:
     if is_blank_or_placeholder(value):
         return []
     return [str(value).strip()]
+
+
+def review_artifact_paths(value: Any) -> list[str]:
+    return list_payload(value)
+
+
+def validate_review_artifacts(value: Any) -> list[str]:
+    artifacts = review_artifact_paths(value)
+    if not artifacts:
+        return ["Brak pokazanych materiałów review w polu pokazane_materialy_review"]
+    errors: list[str] = []
+    for artifact in artifacts:
+        path = Path(artifact)
+        if path.is_absolute() or ".." in path.parts:
+            errors.append(f"Materiał review musi być ścieżką repo-relative: {artifact}")
+            continue
+        if REVIEW_ARTIFACTS_ROOT not in [path, *path.parents]:
+            errors.append(f"Materiał review musi pochodzić z docs/handoffs: {artifact}")
+            continue
+        if not path.is_file():
+            errors.append(f"Materiał review nie istnieje: {artifact}")
+    return errors
 
 
 def raw_list_payload(value: Any) -> list[Any]:

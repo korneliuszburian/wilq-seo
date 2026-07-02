@@ -14,6 +14,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Chce widzieć publiczny URL obok evidence ID.",
         "miejsca_generyczne_off_brand": "CTA było za szerokie dla usług środowiskowych.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonej karty dla Eko-Opieki.",
@@ -35,6 +36,9 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert report["follow_up_tasks"] == [
         "wilq-seo-xyz: doprecyzować private review action copy"
     ]
+    assert report["shown_review_artifacts"] == [
+        "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
+    ]
     assert "Nie promuje private proposals" in report["safety_note"]
     assert "nie odblokowuje publikacji" in report["safety_note"]
 
@@ -45,6 +49,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
         "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
@@ -84,6 +89,8 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert "Public service review actions: `1`" in markdown
     assert "Private service review actions: `1`" in markdown
     assert "Private policy review actions: `0`" in markdown
+    assert "## Pokazane materiały review" in markdown
+    assert "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md" in markdown
 
 
 def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None:
@@ -92,6 +99,7 @@ def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
         "wybrany_work_item": "content_work_item_fake",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
         "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
@@ -118,6 +126,7 @@ def test_content_uat_result_rejects_placeholders_and_invalid_booleans() -> None:
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "-",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "TODO",
         "miejsca_generyczne_off_brand": "brak",
         "najwiekszy_brak_produktu": "brak",
@@ -140,12 +149,62 @@ def test_content_uat_result_rejects_placeholders_and_invalid_booleans() -> None:
     assert "czy można przejść do pełnego content UAT musi mieć wartość tak albo nie" in message
 
 
+def test_content_uat_result_requires_existing_review_artifact() -> None:
+    payload = {
+        "data_sesji": "2026-07-02",
+        "osoba": "Wilku",
+        "czas_do_zrozumienia_statusu": "8 minut",
+        "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/brak-takiego-materialu.md"],
+        "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+        "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
+        "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
+        "wilku_rozumie_blokady_pelnego_uat": "tak",
+        "service_profile_czytelny": "tak",
+        "public_service_review_actions_czytelne": "tak",
+        "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
+        "mozna_przejsc_do_pelnego_content_uat": "nie",
+        "follow_up_beads": ["wilq-seo-next: wybrać konkretniejszy temat UAT"],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_content_uat_result_report(payload)
+
+    assert "Materiał review nie istnieje" in str(error.value)
+
+
+def test_content_uat_result_requires_review_artifact_list() -> None:
+    payload = {
+        "data_sesji": "2026-07-02",
+        "osoba": "Wilku",
+        "czas_do_zrozumienia_statusu": "8 minut",
+        "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+        "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
+        "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
+        "wilku_rozumie_blokady_pelnego_uat": "tak",
+        "service_profile_czytelny": "tak",
+        "public_service_review_actions_czytelne": "tak",
+        "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
+        "mozna_przejsc_do_pelnego_content_uat": "nie",
+        "follow_up_beads": ["wilq-seo-next: wybrać konkretniejszy temat UAT"],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_content_uat_result_report(payload)
+
+    assert "Brak pokazanych materiałów review" in str(error.value)
+
+
 def test_content_uat_result_requires_public_service_review_feedback() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "10 minut",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
         "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
@@ -171,6 +230,7 @@ def test_content_uat_result_requires_follow_up_when_blocked() -> None:
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "12 minut",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Wystarczy, ale chce linki publiczne.",
         "miejsca_generyczne_off_brand": "Nagłówki brzmią jak zwykłe SEO.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonej usługi BDO.",
@@ -197,6 +257,7 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "6 minut",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Evidence IDs i source connectors wystarczają.",
         "miejsca_generyczne_off_brand": "Brak.",
         "najwiekszy_brak_produktu": "Brak.",

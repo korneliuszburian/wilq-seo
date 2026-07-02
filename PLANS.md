@@ -240,6 +240,12 @@ stating that the current live content queue does not expose BDO as an active
 work item on 2026-07-02. This prevents the historical `bdo co to` Sales Brief
 proof from being presented as a current draft recommendation.
 
+Under Beads task `wilq-seo-3cqd`, the Goal 005 UAT result recorder now requires
+`pokazane_materialy_review`, validated as existing repo-relative files under
+`docs/handoffs/`. The rendered UAT result lists the artifacts shown to Wilku,
+so a future completion proof cannot claim that UAT happened without naming the
+actual BDO/Eko-Opieka/Audyt or live packet materials used in the session.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and
