@@ -399,6 +399,12 @@ Jeżeli wynik UAT nadal wymaga follow-up, completion check ma pozostać
 pokazany Wilkowi. To jest poprawne: widoczny blocker jest dowodem kontroli
 jakości, nie dowodem ukończenia Goal 005.
 
+Completion check blokuje też wynik, który formalnie ma wszystkie odpowiedzi
+`tak`, ale scorecard Wilka nadal mówi `popraw`, `odrzuć`, `odśwież` albo ma
+ocenę 3/5 lub niżej dla któregoś materiału. Taki wynik jest wartościowy, bo
+pokazuje dokładny follow-up, ale nie zamyka Goal 005. Najpierw trzeba poprawić
+materiał albo workflow i dopiero potem powtórzyć ocenę.
+
 Walidator wymaga też pola `pokazane_materialy_review`. Każda ścieżka musi być
 repo-relative, istnieć w `docs/handoffs/` i wskazywać materiał, który realnie
 pokazano Wilkowi w sesji. To chroni proof UAT przed pustym stwierdzeniem, że
