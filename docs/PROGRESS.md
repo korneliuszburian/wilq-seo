@@ -152,6 +152,16 @@ API status later contradicts this state.
   custom segments and change-history/impression-share audit, while blocking
   budget scaling, recommendation apply, negative keyword apply, targeting
   writes, ROAS, waste, CPA, margin and change-impact claims.
+- `wilq-custom-segments` had a useful eval failure and fix: the first run
+  `.local-lab/evals/codex-skill/20260702T132550Z` failed because operator-facing
+  notes leaked the technical term `payload`. The smoke helper now exposes
+  `change_preview_count` while still validating the underlying preview
+  contract. Passing artifact:
+  `.local-lab/evals/codex-skill/20260702T132835Z`. Score 5,
+  `failure_tags=[]`; output uses one source-backed segment candidate and blocks
+  audience size, ROAS, targeting write, campaign-effectiveness and
+  conversion-growth claims until Keyword Planner enrichment and forecast/size
+  proof exist.
 - GA4 usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
   surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer

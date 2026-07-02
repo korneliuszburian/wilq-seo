@@ -257,6 +257,44 @@ Result:
   recommendation apply, negative keyword apply, targeting writes, ROAS, waste,
   CPA, margin, conversion-drop and change-impact claims.
 
+## 2026-07-02 - Custom Segments operator-language eval
+
+Purpose:
+
+- Verify that `wilq-custom-segments` proposes only source-backed custom
+  segment review material and keeps Keyword Planner, forecast and apply
+  blockers visible.
+- Catch developer-language leakage in operator-facing output while preserving
+  the underlying WILQ API contract.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Initial eval artifact:
+  `.local-lab/evals/codex-skill/20260702T132550Z/wilq-custom-segments/result.json`.
+  It failed because `notes` contained the operator-facing forbidden term
+  `payload` via `payload_preview_count`.
+- Fix: the custom-segments smoke helper still validates the underlying
+  `payload_preview` contract, but now exposes `change_preview_count` in the
+  eval-facing summary.
+- Passing eval artifact:
+  `.local-lab/evals/codex-skill/20260702T132835Z/wilq-custom-segments/result.json`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Smoke proof: `custom_segments_read_contract.status=ready`,
+  `candidate_count=1`, `change_preview_count=1`,
+  `act_prepare_custom_segments_from_search_terms` validates as `valid=true`.
+- The output keeps exactly one source-backed segment candidate, uses the API
+  `source_terms`, `review_priority=wysokie`, `review_score=66` and
+  `review_reason`, and blocks audience size, ROAS, targeting write, campaign
+  effectiveness and conversion-growth claims until `keyword_planner_enrichment`
+  and `forecast_or_audience_size` are available.
+
 ## 2026-07-02 - GA4 dashboard usefulness review
 
 Purpose:

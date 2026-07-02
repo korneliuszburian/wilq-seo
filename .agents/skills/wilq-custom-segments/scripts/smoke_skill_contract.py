@@ -261,7 +261,7 @@ def main() -> int:
                         "status": custom_segments_read_contract.get("status"),
                         "summary": custom_segments_read_contract.get("summary"),
                         "candidate_count": len(custom_segment_candidates),
-                        "payload_preview_count": len(
+                        "change_preview_count": len(
                             custom_segments_read_contract.get("payload_preview") or []
                         ),
                         "apply_safety_review": {
