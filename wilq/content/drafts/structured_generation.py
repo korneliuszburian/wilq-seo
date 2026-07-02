@@ -4,7 +4,10 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from wilq.content.briefs.sales import ContentSalesBrief
+from wilq.content.briefs.sales import (
+    ContentSalesBrief,
+    ContentSalesBriefSignalQualityStatus,
+)
 from wilq.content.claims.ledger import (
     ContentClaimLedger,
     ContentClaimStatus,
@@ -80,6 +83,22 @@ class StructuredDraftKnowledgeConstraint(BaseModel):
     reason: str
 
 
+class StructuredDraftSignalQuality(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ContentSalesBriefSignalQualityStatus
+    status_label: str
+    reason: str
+    evidence_id_count: int
+    source_connector_count: int
+    source_fact_count: int
+    missing_evidence_count: int
+    knowledge_constraint_count: int
+    review_required_knowledge_card_count: int
+    measurement_baseline_ready: bool
+    safe_next_step: str
+
+
 class StructuredDraftSectionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -108,6 +127,7 @@ class StructuredDraftGenerationInput(BaseModel):
     sections: list[StructuredDraftSectionInput] = Field(default_factory=list)
     source_facts: list[StructuredDraftSourceFact] = Field(default_factory=list)
     knowledge_constraints: list[StructuredDraftKnowledgeConstraint] = Field(default_factory=list)
+    sales_brief_signal_quality: StructuredDraftSignalQuality
     claim_markers: list[StructuredDraftClaimMarker] = Field(default_factory=list)
     removed_or_blocked_claim_markers: list[StructuredDraftClaimMarker] = Field(
         default_factory=list
@@ -239,6 +259,21 @@ def build_structured_draft_generation_contract(
             )
             for constraint in sales_brief.knowledge_constraints
         ],
+        sales_brief_signal_quality=StructuredDraftSignalQuality(
+            status=sales_brief.signal_quality.status,
+            status_label=sales_brief.signal_quality.status_label,
+            reason=sales_brief.signal_quality.reason,
+            evidence_id_count=sales_brief.signal_quality.evidence_id_count,
+            source_connector_count=sales_brief.signal_quality.source_connector_count,
+            source_fact_count=sales_brief.signal_quality.source_fact_count,
+            missing_evidence_count=sales_brief.signal_quality.missing_evidence_count,
+            knowledge_constraint_count=sales_brief.signal_quality.knowledge_constraint_count,
+            review_required_knowledge_card_count=(
+                sales_brief.signal_quality.review_required_knowledge_card_count
+            ),
+            measurement_baseline_ready=sales_brief.signal_quality.measurement_baseline_ready,
+            safe_next_step=sales_brief.signal_quality.safe_next_step,
+        ),
         claim_markers=[
             StructuredDraftClaimMarker(
                 claim_id=entry.id,
@@ -477,6 +512,8 @@ def _system_instruction() -> str:
         "Pisz wyłącznie z przekazanych faktów, dowodów i dozwolonych twierdzeń. "
         "Nie oznaczaj treści jako gotowej do publikacji. Nie obiecuj pozycji, "
         "leadów, przychodu, pełnej zgodności prawnej ani efektu bez dowodu. "
+        "sales_brief_signal_quality mówi, czy brief jest strong, review_required "
+        "albo thin; thin i review_required wolno używać tylko jako materiał do review. "
         "Ograniczenia wiedzy z knowledge_constraints są bramkami bezpieczeństwa, "
         "nie inspiracją do dodawania nowych twierdzeń."
     )
@@ -489,6 +526,7 @@ def _user_instruction(model_input: StructuredDraftGenerationInput) -> str:
         f"Odbiorca: {model_input.target_reader}. "
         f"Problem kupującego: {model_input.buyer_problem}. "
         "Każda sekcja musi wskazywać użyte identyfikatory dowodów. "
+        f"Jakość sygnału briefu: {model_input.sales_brief_signal_quality.status_label}. "
         "Używaj wyłącznie claimów z claim_markers/claims_allowed. "
         "Zwróć wynik zgodny ze ścisłym schematem."
     )

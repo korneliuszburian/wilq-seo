@@ -83,6 +83,19 @@ def _sales_brief() -> dict[str, object]:
                 "reason": "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
             }
         ],
+        "signal_quality": {
+            "status": "review_required",
+            "status_label": "sygnał użyteczny, ale wymaga review",
+            "reason": "Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji człowieka.",
+            "evidence_id_count": 2,
+            "source_connector_count": 2,
+            "source_fact_count": 1,
+            "missing_evidence_count": 0,
+            "knowledge_constraint_count": 1,
+            "review_required_knowledge_card_count": 1,
+            "measurement_baseline_ready": True,
+            "safe_next_step": "Pokaż brief Wilkowi z ograniczeniami wiedzy.",
+        },
         "forbidden_claims": [],
         "missing_evidence": [],
         "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
@@ -232,6 +245,12 @@ def test_structured_draft_generation_api_returns_strict_contract() -> None:
             "reason": "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
         }
     ]
+    assert contract["model_input"]["sales_brief_signal_quality"]["status"] == (
+        "review_required"
+    )
+    assert contract["model_input"]["sales_brief_signal_quality"][
+        "measurement_baseline_ready"
+    ] is True
     assert contract["model_input"]["sections"][0]["evidence_ids"] == [
         "ev_gsc_bdo",
         "ev_wp_bdo",

@@ -8,6 +8,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftOutput,
     StructuredDraftOutputSection,
     StructuredDraftSectionInput,
+    StructuredDraftSignalQuality,
     StructuredDraftSourceFact,
     structured_draft_output_schema,
 )
@@ -41,6 +42,19 @@ def _contract(*, include_claim_markers: bool = True) -> StructuredDraftGeneratio
                     summary="GSC potwierdza popyt na temat.",
                 )
             ],
+            sales_brief_signal_quality=StructuredDraftSignalQuality(
+                status="review_required",
+                status_label="sygnał użyteczny, ale wymaga review",
+                reason="Brief ma ślad dowodowy, ale wiedza wymaga decyzji człowieka.",
+                evidence_id_count=2,
+                source_connector_count=2,
+                source_fact_count=1,
+                missing_evidence_count=0,
+                knowledge_constraint_count=1,
+                review_required_knowledge_card_count=1,
+                measurement_baseline_ready=True,
+                safe_next_step="Pokaż brief Wilkowi przed finalnym szkicem.",
+            ),
             claim_markers=(
                 [
                     StructuredDraftClaimMarker(

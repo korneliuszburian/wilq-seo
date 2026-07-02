@@ -239,6 +239,16 @@ workflow proof renders the API-owned signal label/reason so a brief can say
 `missing_evidence_count=1`, `review_required_knowledge_card_count=4` and
 `measurement_baseline_ready=True`.
 
+The same Sales Brief signal-quality state now reaches the structured draft
+generation contract. `StructuredDraftGenerationInput` carries
+`sales_brief_signal_quality`, shared schemas require it, and the system/user
+instructions tell the model that `thin` and `review_required` are review
+material, not final truth. Live
+`POST /api/content/work-items/structured-draft-generation` proof returned
+`contract_present=True`, `signal_status=review_required`,
+`review_required_knowledge_card_count=4`, `measurement_baseline_ready=True`
+and `system_mentions_signal_quality=True`.
+
 Under Beads task `wilq-seo-pred`, Goal 005 completion is fail-closed through
 `scripts/goal_005_completion_check.py`. Completion claims require either a
 validated real UAT result or an explicit owner defer with residual risk,

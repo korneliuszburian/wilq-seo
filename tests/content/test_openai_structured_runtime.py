@@ -16,6 +16,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationInput,
     StructuredDraftOutput,
     StructuredDraftSectionInput,
+    StructuredDraftSignalQuality,
     StructuredDraftSourceFact,
     structured_draft_output_schema,
 )
@@ -67,6 +68,19 @@ def _contract() -> StructuredDraftGenerationContract:
                 summary="GSC potwierdza popyt na temat.",
             )
         ],
+        sales_brief_signal_quality=StructuredDraftSignalQuality(
+            status="review_required",
+            status_label="sygnał użyteczny, ale wymaga review",
+            reason="Brief ma ślad dowodowy, ale wiedza wymaga decyzji człowieka.",
+            evidence_id_count=2,
+            source_connector_count=2,
+            source_fact_count=1,
+            missing_evidence_count=0,
+            knowledge_constraint_count=1,
+            review_required_knowledge_card_count=1,
+            measurement_baseline_ready=True,
+            safe_next_step="Pokaż brief Wilkowi przed finalnym szkicem.",
+        ),
         claims_allowed=[
             "Ekologus pomaga firmom w obowiązkach związanych z BDO."
         ],

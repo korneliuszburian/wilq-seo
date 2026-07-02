@@ -725,6 +725,8 @@ export const StructuredDraftKnowledgeConstraintSchema = z.object({
   reason: z.string()
 });
 
+export const StructuredDraftSignalQualitySchema = ContentSalesBriefSignalQualitySchema;
+
 export const StructuredDraftSectionInputSchema = z.object({
   heading: z.string(),
   purpose: z.string(),
@@ -749,6 +751,7 @@ export const StructuredDraftGenerationInputSchema = z.object({
   sections: z.array(StructuredDraftSectionInputSchema).default([]),
   source_facts: z.array(StructuredDraftSourceFactSchema).default([]),
   knowledge_constraints: z.array(StructuredDraftKnowledgeConstraintSchema).default([]),
+  sales_brief_signal_quality: StructuredDraftSignalQualitySchema,
   claim_markers: z.array(StructuredDraftClaimMarkerSchema).default([]),
   removed_or_blocked_claim_markers: z
     .array(StructuredDraftClaimMarkerSchema)

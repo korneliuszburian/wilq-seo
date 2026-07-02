@@ -270,6 +270,15 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert contract.model_input.preview_url == "https://ekologus.dev.proudsite.pl/bdo/"
     assert contract.model_input.source_facts[0].evidence_id == "ev_gsc_bdo"
     assert contract.model_input.knowledge_constraints
+    assert contract.model_input.sales_brief_signal_quality.status == "review_required"
+    assert contract.model_input.sales_brief_signal_quality.evidence_id_count == 2
+    assert contract.model_input.sales_brief_signal_quality.source_connector_count == 2
+    assert contract.model_input.sales_brief_signal_quality.source_fact_count == 2
+    assert (
+        contract.model_input.sales_brief_signal_quality.review_required_knowledge_card_count
+        >= 1
+    )
+    assert contract.model_input.sales_brief_signal_quality.measurement_baseline_ready is True
     constraint_types = {
         constraint.constraint_type for constraint in contract.model_input.knowledge_constraints
     }
@@ -291,6 +300,8 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert marker.source_connectors == ["wordpress_ekologus"]
     assert marker.reviewer_id is None
     assert contract.model_input.human_review_questions
+    assert "sales_brief_signal_quality" in contract.system_instruction
+    assert "sygnał użyteczny" in contract.user_instruction
     assert "gotowej do publikacji" in contract.system_instruction
 
 

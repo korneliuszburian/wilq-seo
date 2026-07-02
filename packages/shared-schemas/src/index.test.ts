@@ -900,6 +900,19 @@ describe("Content work item workflow schemas", () => {
                   reason: "Szkic musi wspierać realną usługę, nie ogólny SEO tekst."
                 }
               ],
+              sales_brief_signal_quality: {
+                status: "review_required",
+                status_label: "sygnał użyteczny, ale wymaga review",
+                reason: "Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji człowieka.",
+                evidence_id_count: 2,
+                source_connector_count: 2,
+                source_fact_count: 1,
+                missing_evidence_count: 0,
+                knowledge_constraint_count: 1,
+                review_required_knowledge_card_count: 1,
+                measurement_baseline_ready: true,
+                safe_next_step: "Pokaż brief Wilkowi z ograniczeniami wiedzy."
+              },
               claim_markers: [
                 {
                   claim_id: "claim_general_bdo",
@@ -1291,6 +1304,20 @@ describe("Content work item workflow schemas", () => {
         cta_direction: "Skontaktuj się z Ekologus.",
         sections: [],
         source_facts: [],
+        knowledge_constraints: [],
+        sales_brief_signal_quality: {
+          status: "thin",
+          status_label: "sygnał cienki - tylko analiza/review",
+          reason: "Brief nie ma pełnego śladu dowodowego.",
+          evidence_id_count: 0,
+          source_connector_count: 0,
+          source_fact_count: 0,
+          missing_evidence_count: 0,
+          knowledge_constraint_count: 0,
+          review_required_knowledge_card_count: 0,
+          measurement_baseline_ready: false,
+          safe_next_step: "Uzupełnij dowody przed szkicem."
+        },
         claims_allowed: [],
         claims_removed_or_blocked: [],
         human_review_questions: ["Czy to brzmi jak Ekologus?"]

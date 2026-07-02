@@ -910,6 +910,7 @@ function structuredDraftGenerationContract() {
           reason: "Brak evidence ID oznacza brak rekomendacji."
         }
       ],
+      sales_brief_signal_quality: salesBriefSignalQuality(),
       claims_allowed: [],
       claim_markers: [],
       removed_or_blocked_claim_markers: [],
@@ -923,6 +924,22 @@ function structuredDraftGenerationContract() {
     system_instruction: "Pisz wyłącznie z przekazanych faktów.",
     user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
     publish_ready: false as const
+  };
+}
+
+function salesBriefSignalQuality() {
+  return {
+    status: "review_required" as const,
+    status_label: "sygnał użyteczny, ale wymaga review",
+    reason: "Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji człowieka.",
+    evidence_id_count: 2,
+    source_connector_count: 2,
+    source_fact_count: 1,
+    missing_evidence_count: 0,
+    knowledge_constraint_count: 1,
+    review_required_knowledge_card_count: 1,
+    measurement_baseline_ready: true,
+    safe_next_step: "Pokaż brief Wilkowi z ograniczeniami wiedzy."
   };
 }
 
