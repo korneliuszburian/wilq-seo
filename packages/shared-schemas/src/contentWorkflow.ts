@@ -680,6 +680,18 @@ export const ContentWorkItemSalesBriefResponseSchema = z.object({
   sales_brief_result: ContentSalesBriefBuildResultSchema
 });
 
+export const ContentDraftSectionSchema = z.object({
+  heading: z.string(),
+  purpose: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  draft_notes: z.array(z.string()).default([])
+});
+
+export const ContentDraftEvidenceMapSchema = z.object({
+  section_heading: z.string(),
+  evidence_ids: z.array(z.string()).default([])
+});
+
 export const ContentDraftPackageSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -687,8 +699,8 @@ export const ContentDraftPackageSchema = z.object({
   claim_ledger_id: z.string(),
   draft_kind: z.string(),
   title: z.string(),
-  sections: z.array(z.unknown()).default([]),
-  section_to_evidence_map: z.array(z.unknown()).default([]),
+  sections: z.array(ContentDraftSectionSchema).default([]),
+  section_to_evidence_map: z.array(ContentDraftEvidenceMapSchema).default([]),
   claims_used: z.array(z.string()).default([]),
   claims_removed_or_blocked: z.array(z.string()).default([]),
   human_review_questions: z.array(z.string()).default([]),

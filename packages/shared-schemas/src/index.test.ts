@@ -19,6 +19,7 @@ import {
   ContentQualityFindingSchema,
   ContentWorkItemSchema,
   ContentClaimLedgerSchema,
+  ContentDraftPackageSchema,
   ContentServiceProfilePrivateSourceProposalSectionSchema,
   ContentGscSearchAnalyticsContractSchema,
   StructuredDraftPreviewBlockerSchema,
@@ -531,6 +532,51 @@ describe("ContentClaimLedgerSchema", () => {
             claim_type: "marketing_vibe_claim"
           }
         ]
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentDraftPackageSchema", () => {
+  const draftPackage = {
+    id: "draft_package_content_work_item_bdo",
+    work_item_id: "content_work_item_bdo",
+    brief_id: "sales_brief_content_work_item_bdo",
+    claim_ledger_id: "claim_ledger_bdo",
+    draft_kind: "outline",
+    title: "BDO dla firm",
+    sections: [
+      {
+        heading: "Co to jest BDO",
+        purpose: "Sekcja wyjaśniająca obowiązki.",
+        evidence_ids: ["ev_wp_bdo"],
+        draft_notes: ["Zachowaj konsultacyjny CTA."]
+      }
+    ],
+    section_to_evidence_map: [
+      {
+        section_heading: "Co to jest BDO",
+        evidence_ids: ["ev_wp_bdo"]
+      }
+    ],
+    claims_used: ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
+    claims_removed_or_blocked: ["gwarancja uniknięcia kar"],
+    human_review_questions: ["Czy to brzmi jak Ekologus?"],
+    publish_ready: false
+  };
+
+  it("rejects malformed draft sections and evidence maps", () => {
+    expect(ContentDraftPackageSchema.safeParse(draftPackage).success).toBe(true);
+    expect(
+      ContentDraftPackageSchema.safeParse({
+        ...draftPackage,
+        sections: [{ heading: "Co to jest BDO" }]
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftPackageSchema.safeParse({
+        ...draftPackage,
+        section_to_evidence_map: [{ evidence_ids: ["ev_wp_bdo"] }]
       }).success
     ).toBe(false);
   });
