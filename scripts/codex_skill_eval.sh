@@ -290,6 +290,9 @@ Oczekiwane connector surfaces: {connectors}
 - Nie wymyślaj metryk, kampanii, rankingów, produktów, query ani stawek.
 - Każda rekomendacja musi mieć identyfikatory dowodów i źródła danych z WILQ API
   w polach `evidence_ids` i `source_connectors`.
+- `recommendations[].source_connectors` musi zawierać źródła danych wynikające z
+  użytych w tej rekomendacji `evidence_ids`; nie dodawaj dowodu z innego
+  connectora bez dopisania tego connectora do tej samej rekomendacji.
 - Top-level `evidence_ids` i `source_connectors` muszą być pełnym lineage
   supersetem: każdy identyfikator użyty w `recommendations[]` albo
   `action_candidates[]` musi też wystąpić w top-level listach.
@@ -419,6 +422,35 @@ def _has_structured_blocked_claims(result: dict) -> bool:
         action.get("validation_state") == "blocked" or action.get("blocked_reason")
         for action in result.get("action_candidates", [])
     )
+
+
+def _connector_from_evidence_id(evidence_id: str) -> str | None:
+    prefixes = {
+        "ev_connector_google_search_console_": "google_search_console",
+        "ev_connector_google_analytics_4_": "google_analytics_4",
+        "ev_connector_google_ads_": "google_ads",
+        "ev_connector_google_merchant_center_": "google_merchant_center",
+        "ev_connector_wordpress_ekologus_": "wordpress_ekologus",
+        "ev_connector_wordpress_sklep_": "wordpress_sklep",
+        "ev_connector_ahrefs_": "ahrefs",
+        "ev_connector_localo_": "localo",
+        "ev_connector_linkedin_": "linkedin",
+        "ev_connector_facebook_": "facebook",
+        "ev_refresh_refresh_google_search_console_": "google_search_console",
+        "ev_refresh_refresh_google_analytics_4_": "google_analytics_4",
+        "ev_refresh_refresh_google_ads_": "google_ads",
+        "ev_refresh_refresh_google_merchant_center_": "google_merchant_center",
+        "ev_refresh_refresh_wordpress_ekologus_": "wordpress_ekologus",
+        "ev_refresh_refresh_wordpress_sklep_": "wordpress_sklep",
+        "ev_refresh_refresh_ahrefs_": "ahrefs",
+        "ev_refresh_refresh_localo_": "localo",
+        "ev_refresh_refresh_linkedin_": "linkedin",
+        "ev_refresh_refresh_facebook_": "facebook",
+    }
+    for prefix, connector in prefixes.items():
+        if evidence_id.startswith(prefix):
+            return connector
+    return None
 
 
 if data.get("skill") != expected_skill:
@@ -615,6 +647,24 @@ for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
             errors.append(
                 f"recommendation {idx} uses source_connectors absent from top-level "
                 f"source_connectors: {', '.join(unknown_source_connectors)}"
+            )
+        evidence_connectors = sorted(
+            {
+                connector
+                for evidence_id in recommendation.get("evidence_ids", [])
+                for connector in [_connector_from_evidence_id(str(evidence_id))]
+                if connector
+            }
+        )
+        missing_evidence_connectors = [
+            connector
+            for connector in evidence_connectors
+            if connector not in recommendation.get("source_connectors", [])
+        ]
+        if missing_evidence_connectors:
+            errors.append(
+                f"recommendation {idx} omits source_connectors implied by evidence_ids: "
+                f"{', '.join(missing_evidence_connectors)}"
             )
         recommendation_text = json.dumps(recommendation, ensure_ascii=False).lower()
         for term in case.get("blocked_claim_terms", []):

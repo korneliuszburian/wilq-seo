@@ -7303,3 +7303,47 @@ Result:
   `detail_data_completeness=partial_possible`, `rowLimit`, `startRow`,
   `api_recommended_page_size=25000`, `api_daily_row_cap_per_search_type=50000`,
   `inventory_check_before_create` and `merge_create_after_inventory_check`.
+
+## 2026-07-02 - Content Strategist live eval and per-recommendation lineage
+
+Purpose:
+
+- Test `wilq-content-strategist` against a realistic anti-slop planning prompt
+  for BDO and Zielony Ład.
+- Ensure the skill uses `content_diagnostics`, current evidence, inventory and
+  canonical gates instead of inventing a content plan.
+- Harden eval lineage so each recommendation lists the connector implied by its
+  own evidence IDs, not only top-level connectors.
+
+Focused proof:
+
+```bash
+uv run python -m py_compile .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- The Content Strategist smoke now exposes compact content brief preview
+  markers for `obiekcje`, source-fact labels, `ekologus.pl`,
+  `problem pomiaru, nie temat treści`, `inventory_check_before_create` and
+  `merge_create_after_inventory_check`.
+- The eval harness now checks per-recommendation evidence lineage: recognized
+  `evidence_ids` imply connectors that must appear in the same recommendation's
+  `source_connectors`.
+- Intermediate runs caught useful failures: missing brief-preview markers,
+  missing exact inventory gate markers, and a recommendation that used a GA4
+  evidence ID without listing `google_analytics_4` in that recommendation.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T023811Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=true`, `failure_tags=[]`,
+  all hard gates true, 17 evidence IDs, 2 recommendations and 1 validated action
+  candidate.
+- Validated action candidate: `act_prepare_content_refresh_queue`.
+- The output treats BDO and `art 400` as refresh/merge work on existing
+  WordPress URLs, blocks `zielony ład` until evidence/inventory are present,
+  separates the GA4 issue as `problem pomiaru, nie temat treści`, and blocks
+  WordPress draft/publish, ranking/lead/revenue and duplicate-free claims.

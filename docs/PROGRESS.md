@@ -417,6 +417,18 @@ API status later contradicts this state.
   caveat that query/page evidence is partial Search Analytics signal, not a full
   traffic export. The eval/test marker terms now allow Polish inflection while
   keeping the exact partial-data decision marker.
+- `wilq-content-strategist` now has a fresh live anti-slop planning proof at
+  `.local-lab/evals/codex-skill/20260702T023811Z/summary.json`. Result:
+  `operator_usefulness_score=4`, `blocked=true`, all hard gates true, no
+  failure tags, 17 evidence IDs, 2 recommendations and validated
+  `act_prepare_content_refresh_queue`. The output treats BDO and `art 400`
+  topics as refresh/merge of existing WordPress URLs, blocks `zielony ład` until
+  evidence and inventory are present, surfaces the GA4 measurement issue as
+  `problem pomiaru, nie temat treści`, and keeps WordPress draft/publish,
+  ranking/lead/revenue and duplicate-free claims blocked. The content strategist
+  smoke now exposes brief-preview `obiekcje`, source-fact labels, exact
+  `ekologus.pl` and gate markers; the eval harness also rejects recommendation
+  evidence IDs whose connector is missing from the same recommendation.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.
