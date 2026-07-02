@@ -23,6 +23,7 @@ from wilq.content.knowledge.cards import (
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.knowledge.source_facts import (
     ContentSourceFact,
+    ContentSourceFactRegistry,
     ekologus_source_fact_registry,
 )
 from wilq.content.workflow.models import ContentWorkItem
@@ -72,6 +73,8 @@ def test_source_fact_registry_loads_commit_safe_public_facts() -> None:
     registry = ekologus_source_fact_registry()
 
     assert registry.fact_count >= 5
+    assert registry.fact_count == len(registry.facts)
+    assert len({fact.source_id for fact in registry.facts}) == len(registry.facts)
     bdo_fact = next(
         fact for fact in registry.facts if fact.source_id == "ekologus_public_bdo_faq_2026_07_01"
     )
@@ -80,6 +83,28 @@ def test_source_fact_registry_loads_commit_safe_public_facts() -> None:
     assert bdo_fact.review_status == "review_required"
     assert bdo_fact.source_connectors == ["public_site"]
     assert bdo_fact.blocked_claims
+
+
+def test_source_fact_registry_rejects_duplicate_source_ids() -> None:
+    fact = ContentSourceFact(
+        source_id="duplicate_source_fact",
+        source_type="public_site",
+        privacy_class="commit_safe",
+        source_url_or_path="https://www.ekologus.pl/oferta/",
+        extracted_fact="Publiczny fakt do testu duplikatów.",
+        scope="service",
+        freshness_date="2026-07-02",
+        confidence=0.8,
+        review_status="review_required",
+        source_connectors=["public_site"],
+        blocked_claims=["gwarancja wyniku"],
+        target_card_id="ekologus_service_duplicate_test",
+        target_card_type="service",
+        target_card_title="Duplikat testowy",
+    )
+
+    with pytest.raises(ValidationError, match="source_id values must be unique"):
+        ContentSourceFactRegistry(facts=[fact, fact], fact_count=2)
 
 
 def test_ekologus_ai_source_facts_are_redacted_review_required_proposals() -> None:

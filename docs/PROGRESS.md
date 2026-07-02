@@ -181,6 +181,11 @@ API status later contradicts this state.
   `redacted_only`, `review_required`, and carry blocked claims, evidence
   requirements and usage notes. Focused proof loaded 11 source facts, including
   4 private `ekologus-ai` facts, all redacted and review-required.
+- Source-fact registry lineage is now guarded at the registry level: duplicate
+  `source_id` values and mismatched `fact_count` are invalid before knowledge
+  cards, Service Profile or review actions can compile ambiguous source
+  handles. Focused proof:
+  `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`.
 - Approved source facts now also require `reviewer`, `evidence_ids` and
   `source_connectors` at the model layer. This prevents a future
   `approved_current` knowledge card from being unlocked by reviewed prose

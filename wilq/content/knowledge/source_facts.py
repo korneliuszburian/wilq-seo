@@ -100,6 +100,21 @@ class ContentSourceFactRegistry(BaseModel):
     facts: list[ContentSourceFact] = Field(default_factory=list)
     fact_count: int
 
+    @model_validator(mode="after")
+    def validate_registry(self) -> ContentSourceFactRegistry:
+        source_ids = [fact.source_id for fact in self.facts]
+        duplicate_source_ids = sorted(
+            source_id for source_id in set(source_ids) if source_ids.count(source_id) > 1
+        )
+        if duplicate_source_ids:
+            raise ValueError(
+                "source fact source_id values must be unique: "
+                + ", ".join(duplicate_source_ids)
+            )
+        if self.fact_count != len(self.facts):
+            raise ValueError("source fact registry fact_count must match facts length")
+        return self
+
 
 @lru_cache(maxsize=1)
 def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
