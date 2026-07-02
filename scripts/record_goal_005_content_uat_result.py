@@ -34,6 +34,7 @@ REQUIRED_BOOLEAN_FIELDS = {
 REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
 REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
 RECOMMENDED_REVIEW_ARTIFACTS = [
+    "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
 ]
 

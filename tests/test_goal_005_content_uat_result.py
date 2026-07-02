@@ -44,6 +44,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
     ]
     assert report["missing_recommended_review_artifacts"] == [
+        "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
         "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md"
     ]
     assert "Nie promuje private proposals" in report["safety_note"]
@@ -51,6 +52,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
 
     markdown = render_markdown(report)
     assert "## Ostrzeżenia materiałów review" in markdown
+    assert "2026-07-02-wilq-marketing-content-model.md" in markdown
     assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
 
 
@@ -125,6 +127,7 @@ def test_content_uat_result_has_no_warning_when_plain_show_guide_was_shown() -> 
         "punkty_niezrozumienia": "Prosty przewodnik pomógł odczytać techniczne handoffy.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": [
+            "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
             "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
             "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
         ],

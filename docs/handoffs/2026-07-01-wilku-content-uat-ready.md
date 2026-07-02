@@ -336,6 +336,8 @@ Walidowany format wyniku:
   "punkty_niezrozumienia": "gdzie Wilku się zgubił, co wymagało tłumaczenia albo co było nieczytelne",
   "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
   "pokazane_materialy_review": [
+    "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
+    "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
     "docs/handoffs/2026-07-01-wilku-eko-opieka-review.md",
     "docs/handoffs/2026-07-01-wilku-audyt-zgodnosci-review.md",
@@ -394,6 +396,12 @@ Walidator wymaga też pola `pokazane_materialy_review`. Każda ścieżka musi by
 repo-relative, istnieć w `docs/handoffs/` i wskazywać materiał, który realnie
 pokazano Wilkowi w sesji. To chroni proof UAT przed pustym stwierdzeniem, że
 sesja się odbyła, bez wskazania materiałów review.
+
+Walidator ostrzega, jeżeli przed technicznymi handoffami nie pokazano prostych
+materiałów startowych:
+
+- `docs/handoffs/2026-07-02-wilq-marketing-content-model.md`;
+- `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
 
 ## Kryterium przejścia dalej
 

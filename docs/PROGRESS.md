@@ -227,6 +227,10 @@ API status later contradicts this state.
   generator: daily queue, content decisions, Sales Brief, Claim Ledger, draft
   review, social repurpose review, measurement loop and explicit blocked
   claims. The "what to show Wilku first" guide starts with this model.
+- Goal 005 UAT result reports now also warn when the WILQ marketing/content
+  model handoff is not listed in `pokazane_materialy_review`. A real Wilku
+  review should start from the plain-language operating model before detailed
+  BDO/private-source/Service Profile handoffs.
 - Goal 005 UAT result reports now warn when
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is not listed in
   `pokazane_materialy_review`. This is non-blocking, but it protects Wilku
