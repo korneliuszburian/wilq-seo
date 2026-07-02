@@ -137,6 +137,9 @@ API status later contradicts this state.
   validation time, matching the approved source-fact rule and preventing future
   ekologus-ai/private proposal states from looking approved without a named
   human review.
+- Approved private source proposals also require resolved retention and known
+  freshness, so an ekologus-ai/private proposal cannot look approved while
+  owner retention or source currency remains undecided.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they

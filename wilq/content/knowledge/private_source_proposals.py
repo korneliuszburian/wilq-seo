@@ -103,8 +103,17 @@ class PrivateSourceProposal(BaseModel):
                 "private source proposals require non-empty governance lists: "
                 + ", ".join(missing_list_fields)
             )
-        if self.review_status == "approved" and not (self.reviewer or "").strip():
-            raise ValueError("approved private source proposals require reviewer")
+        if self.review_status == "approved":
+            if not (self.reviewer or "").strip():
+                raise ValueError("approved private source proposals require reviewer")
+            if self.retention_decision == "pending_owner_decision":
+                raise ValueError(
+                    "approved private source proposals require resolved retention_decision"
+                )
+            if self.freshness_status == "unknown":
+                raise ValueError(
+                    "approved private source proposals require known freshness_status"
+                )
 
         return self
 
