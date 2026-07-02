@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any
 
 REVIEW_DECISIONS = {"approve", "needs_changes", "stale", "reject"}
+REVIEW_TYPES = {"public_service_cards", "private_source_proposals"}
+DEFAULT_REVIEW_TYPE = "public_service_cards"
 REQUIRED_TEXT_FIELDS = {
     "data_review": "data review",
     "reviewer": "reviewer",
@@ -79,6 +81,7 @@ def build_review_result_report(
             "Niepoprawny wynik Service Profile review:\n- " + "\n- ".join(errors)
         )
 
+    review_type = normalize_review_type(payload.get("review_type"))
     decisions = [normalize_decision(item) for item in raw_list(payload.get("decisions"))]
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     blocking_decisions = [
@@ -89,14 +92,18 @@ def build_review_result_report(
         or not decision["blocked_claims_reviewed"]
     ]
     approved_count = sum(1 for decision in decisions if decision["decision"] == "approve")
-    live_provenance = live_review_provenance(live_context=live_context, decisions=decisions)
+    live_provenance = live_review_provenance(
+        live_context=live_context,
+        decisions=decisions,
+        review_type=review_type,
+    )
     overall_status = (
         "review_ready_for_promotion_request"
         if not blocking_decisions
         else "needs_follow_up_before_promotion_request"
     )
     return {
-        "report_type": "service_profile_public_card_review_result_v1",
+        "report_type": report_type_for_review_type(review_type),
         "date": str(payload["data_review"]).strip(),
         "reviewer": str(payload["reviewer"]).strip(),
         "scope_label": str(payload["scope_label"]).strip(),
@@ -108,16 +115,11 @@ def build_review_result_report(
         "live_provenance": live_provenance,
         "overall_status": overall_status,
         "promotion_allowed": False,
-        "safe_next_step": (
-            "Przygotuj osobny, audytowany promotion request dla zatwierdzonych kart."
-            if overall_status == "review_ready_for_promotion_request"
-            else "Zamknij follow-upy review przed przygotowaniem promotion request."
+        "safe_next_step": safe_next_step_for_review_type(
+            review_type,
+            overall_status=overall_status,
         ),
-        "safety_note": (
-            "Ten raport zapisuje wynik review publicznych kart usług. Nie edytuje "
-            "source_facts.json, nie zmienia lifecycle kart, nie ustawia "
-            "approved_current i nie odblokowuje production-depth."
-        ),
+        "safety_note": safety_note_for_review_type(review_type),
     }
 
 
@@ -135,8 +137,15 @@ def validate_payload(
         errors.append("Brak decyzji review w polu decisions")
         return errors
 
-    live_actions = live_public_review_actions(live_context)
-    live_card_ids = live_service_card_ids(live_context)
+    review_type = normalize_review_type(payload.get("review_type"))
+    if review_type not in REVIEW_TYPES:
+        errors.append(
+            "review_type musi mieć wartość "
+            f"{' albo '.join(sorted(REVIEW_TYPES))}"
+        )
+        review_type = DEFAULT_REVIEW_TYPE
+    live_actions = live_review_actions(live_context, review_type=review_type)
+    live_target_ids = live_target_card_ids(live_context, review_type=review_type)
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     has_blocking_decision = False
 
@@ -176,9 +185,9 @@ def validate_payload(
                     f"Decyzja #{index}: target_card_id nie pasuje do live action "
                     f"{action_id}: {target_card_id} != {live_target}"
                 )
-        if live_context is not None and target_card_id and target_card_id not in live_card_ids:
+        if live_context is not None and target_card_id and target_card_id not in live_target_ids:
             errors.append(
-                f"Decyzja #{index}: target_card_id nie występuje w service_sections: "
+                f"Decyzja #{index}: target_card_id nie występuje w live Service Profile: "
                 f"{target_card_id}"
             )
 
@@ -192,6 +201,43 @@ def validate_payload(
     if has_blocking_decision and not follow_up_tasks:
         errors.append("Blokujące decyzje review wymagają follow_up_beads")
     return errors
+
+
+def normalize_review_type(value: Any) -> str:
+    if is_blank_or_placeholder(value):
+        return DEFAULT_REVIEW_TYPE
+    return str(value or "").strip()
+
+
+def report_type_for_review_type(review_type: str) -> str:
+    if review_type == "private_source_proposals":
+        return "service_profile_private_proposal_review_result_v1"
+    return "service_profile_public_card_review_result_v1"
+
+
+def safe_next_step_for_review_type(review_type: str, *, overall_status: str) -> str:
+    if overall_status != "review_ready_for_promotion_request":
+        return "Zamknij follow-upy review przed przygotowaniem promotion request."
+    if review_type == "private_source_proposals":
+        return (
+            "Przygotuj osobny, audytowany private source promotion request dla "
+            "zatwierdzonych redacted propozycji."
+        )
+    return "Przygotuj osobny, audytowany promotion request dla zatwierdzonych kart."
+
+
+def safety_note_for_review_type(review_type: str) -> str:
+    if review_type == "private_source_proposals":
+        return (
+            "Ten raport zapisuje wynik review prywatnych redacted propozycji. Nie "
+            "edytuje source_facts.json, nie zapisuje raw private text, nie promuje "
+            "source fact ani knowledge card i nie odblokowuje production-depth."
+        )
+    return (
+        "Ten raport zapisuje wynik review publicznych kart usług. Nie edytuje "
+        "source_facts.json, nie zmienia lifecycle kart, nie ustawia "
+        "approved_current i nie odblokowuje production-depth."
+    )
 
 
 def normalize_decision(raw_decision: Any) -> dict[str, Any]:
@@ -235,28 +281,63 @@ def request_json(api_base: str, method: str, path: str, *, timeout: int = 60) ->
 
 
 def live_public_review_actions(live_context: dict[str, Any] | None) -> dict[str, str]:
+    return live_review_actions(live_context, review_type="public_service_cards")
+
+
+def live_private_review_actions(live_context: dict[str, Any] | None) -> dict[str, str]:
+    return live_review_actions(live_context, review_type="private_source_proposals")
+
+
+def live_review_actions(
+    live_context: dict[str, Any] | None,
+    *,
+    review_type: str,
+) -> dict[str, str]:
     if live_context is None:
         return {}
     profile = live_context.get("service_profile")
     if not isinstance(profile, dict):
         return {}
+    expected_prefix = (
+        "service_profile_review_private_proposal_"
+        if review_type == "private_source_proposals"
+        else "service_profile_review_card_"
+    )
     actions: dict[str, str] = {}
     for action in raw_list(profile.get("review_actions")):
         if not isinstance(action, dict):
             continue
         action_id = str(action.get("action_id") or "").strip()
         target_card_id = str(action.get("target_card_id") or "").strip()
-        if action_id.startswith("service_profile_review_card_") and target_card_id:
+        if action_id.startswith(expected_prefix) and target_card_id:
             actions[action_id] = target_card_id
     return actions
 
 
 def live_service_card_ids(live_context: dict[str, Any] | None) -> set[str]:
+    return live_target_card_ids(live_context, review_type="public_service_cards")
+
+
+def live_private_target_card_ids(live_context: dict[str, Any] | None) -> set[str]:
+    return live_target_card_ids(live_context, review_type="private_source_proposals")
+
+
+def live_target_card_ids(
+    live_context: dict[str, Any] | None,
+    *,
+    review_type: str,
+) -> set[str]:
     if live_context is None:
         return set()
     profile = live_context.get("service_profile")
     if not isinstance(profile, dict):
         return set()
+    if review_type == "private_source_proposals":
+        return {
+            str(proposal.get("target_card_id") or "").strip()
+            for proposal in raw_list(profile.get("private_source_proposals"))
+            if isinstance(proposal, dict) and proposal.get("target_card_id")
+        }
     return {
         str(section.get("card_id") or "").strip()
         for section in raw_list(profile.get("service_sections"))
@@ -268,6 +349,7 @@ def live_review_provenance(
     *,
     live_context: dict[str, Any] | None,
     decisions: list[dict[str, Any]],
+    review_type: str = DEFAULT_REVIEW_TYPE,
 ) -> dict[str, Any] | None:
     if live_context is None:
         return None
@@ -279,7 +361,22 @@ def live_review_provenance(
         if isinstance(profile.get("coverage_summary"), dict)
         else {}
     )
-    live_actions = live_public_review_actions(live_context)
+    live_actions = live_review_actions(live_context, review_type=review_type)
+    if review_type == "private_source_proposals":
+        return {
+            "api_base": live_context.get("api_base"),
+            "service_profile_read_only": profile.get("read_only"),
+            "production_depth_ready": coverage.get("ready_for_daily_content"),
+            "live_private_review_action_count": len(live_actions),
+            "reviewed_action_count": len(decisions),
+            "reviewed_action_ids": [decision["action_id"] for decision in decisions],
+            "reviewed_target_card_ids": [decision["target_card_id"] for decision in decisions],
+            "private_proposal_promotion_ready": (
+                profile.get("private_source_proposal_summary", {}).get("promotion_ready")
+                if isinstance(profile.get("private_source_proposal_summary"), dict)
+                else None
+            ),
+        }
     return {
         "api_base": live_context.get("api_base"),
         "service_profile_read_only": profile.get("read_only"),
@@ -340,19 +437,29 @@ def render_markdown(report: dict[str, Any]) -> str:
 def render_live_provenance(value: Any) -> str:
     if not isinstance(value, dict):
         return "- Nie sprawdzono live Service Profile."
-    return "\n".join(
-        [
-            f"- API: `{value.get('api_base')}`",
-            "- Service Profile read-only: "
-            f"{visible_bool(value.get('service_profile_read_only') is True)}",
-            "- Production-depth ready: "
-            f"{visible_bool(value.get('production_depth_ready') is True)}",
+    lines = [
+        f"- API: `{value.get('api_base')}`",
+        "- Service Profile read-only: "
+        f"{visible_bool(value.get('service_profile_read_only') is True)}",
+        "- Production-depth ready: "
+        f"{visible_bool(value.get('production_depth_ready') is True)}",
+    ]
+    if "live_private_review_action_count" in value:
+        lines.extend(
+            [
+                "- Private review actions live: "
+                f"`{value.get('live_private_review_action_count')}`",
+                "- Private proposal promotion ready: "
+                f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
+            ]
+        )
+    else:
+        lines.append(
             "- Public review actions live: "
-            f"`{value.get('live_public_review_action_count')}`",
-            "- Public review actions w wyniku: "
-            f"`{value.get('reviewed_action_count')}`",
-        ]
-    )
+            f"`{value.get('live_public_review_action_count')}`"
+        )
+    lines.append(f"- Review actions w wyniku: `{value.get('reviewed_action_count')}`")
+    return "\n".join(lines)
 
 
 def normalize_bool(value: Any) -> bool | None:

@@ -77,6 +77,83 @@ def test_service_profile_review_result_records_blocking_decision_with_follow_up(
     assert report["follow_up_tasks"] == ["wilq-seo-next: przejrzeć źródła wodnoprawne"]
 
 
+def test_service_profile_review_result_records_private_proposal_review_without_promotion() -> None:
+    payload = {
+        "review_type": "private_source_proposals",
+        "data_review": "2026-07-02",
+        "reviewer": "Wilku",
+        "scope_label": "prywatne propozycje ekologus-ai",
+        "decisions": [
+            {
+                "action_id": (
+                    "service_profile_review_private_proposal_"
+                    "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+                ),
+                "target_card_id": "ekologus_service_eko_opieka_calendar",
+                "decision": "approve",
+                "source_trace_clear": "tak",
+                "blocked_claims_reviewed": "tak",
+                "notes": "Redacted opis wystarcza do przygotowania osobnego promotion request.",
+            }
+        ],
+    }
+
+    report = build_review_result_report(payload, live_context=_live_context())
+
+    assert report["report_type"] == "service_profile_private_proposal_review_result_v1"
+    assert report["overall_status"] == "review_ready_for_promotion_request"
+    assert report["approved_decision_count"] == 1
+    assert report["blocking_decision_count"] == 0
+    assert report["promotion_allowed"] is False
+    assert "nie zapisuje raw private text" in report["safety_note"]
+    assert report["safe_next_step"].startswith("Przygotuj osobny, audytowany private")
+    assert report["live_provenance"] == {
+        "api_base": "http://127.0.0.1:8000",
+        "service_profile_read_only": True,
+        "production_depth_ready": False,
+        "live_private_review_action_count": 1,
+        "reviewed_action_count": 1,
+        "reviewed_action_ids": [
+            (
+                "service_profile_review_private_proposal_"
+                "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+            )
+        ],
+        "reviewed_target_card_ids": ["ekologus_service_eko_opieka_calendar"],
+        "private_proposal_promotion_ready": False,
+    }
+
+    markdown = render_markdown(report)
+    assert "service_profile_private_proposal_review_result_v1" in markdown
+    assert "Promotion allowed: nie" in markdown
+
+
+def test_service_profile_review_result_rejects_public_action_in_private_mode() -> None:
+    payload = {
+        "review_type": "private_source_proposals",
+        "data_review": "2026-07-02",
+        "reviewer": "Wilku",
+        "scope_label": "prywatne propozycje ekologus-ai",
+        "decisions": [
+            {
+                "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+                "target_card_id": "ekologus_service_bdo_reporting",
+                "decision": "approve",
+                "source_trace_clear": "tak",
+                "blocked_claims_reviewed": "tak",
+                "notes": "To jest publiczna karta, nie prywatna propozycja.",
+            }
+        ],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_review_result_report(payload, live_context=_live_context())
+
+    message = str(error.value)
+    assert "action_id nie występuje w live Service Profile" in message
+    assert "target_card_id nie występuje w live Service Profile" in message
+
+
 def test_service_profile_review_result_requires_follow_up_for_blocking_decision() -> None:
     payload = {
         "data_review": "2026-07-02",
@@ -173,9 +250,22 @@ def _live_context() -> dict[str, object]:
                     "target_card_id": "ekologus_service_operat_wodnoprawny",
                 },
                 {
-                    "action_id": "service_profile_review_private_proposal_example",
+                    "action_id": (
+                        "service_profile_review_private_proposal_"
+                        "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+                    ),
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
                 },
+            ],
+            "private_source_proposal_summary": {"promotion_ready": False},
+            "private_source_proposals": [
+                {
+                    "proposal_id": (
+                        "private_proposal_"
+                        "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+                    ),
+                    "target_card_id": "ekologus_service_eko_opieka_calendar",
+                }
             ],
         },
     }

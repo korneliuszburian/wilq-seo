@@ -156,6 +156,33 @@ Private review actions:
 Wszystkie te akcje mają ten sam warunek bezpieczeństwa: to nie promuje private
 proposal do source fact ani knowledge card.
 
+Wynik private proposal review można zapisać tym samym fail-closed recorderem,
+ale z trybem `private_source_proposals`:
+
+```json
+{
+  "review_type": "private_source_proposals",
+  "data_review": "YYYY-MM-DD",
+  "reviewer": "Wilku",
+  "scope_label": "prywatne propozycje ekologus-ai",
+  "decisions": [
+    {
+      "action_id": "service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+      "target_card_id": "ekologus_service_eko_opieka_calendar",
+      "decision": "approve",
+      "source_trace_clear": "tak",
+      "blocked_claims_reviewed": "tak",
+      "notes": "co Wilku zatwierdził albo co wymaga zmiany"
+    }
+  ],
+  "follow_up_beads": []
+}
+```
+
+Ten raport nadal nie promuje private proposal do source fact ani knowledge card.
+Jeżeli decyzja brzmi `approve`, następny krok to osobny, audytowany private
+source promotion request.
+
 Promotion checklist dla private proposals:
 
 - status: `promotion_ready=false`;

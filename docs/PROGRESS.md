@@ -259,6 +259,15 @@ API status later contradicts this state.
   2026-07-02 accepted BDO review action/card IDs with
   `live_public_review_action_count=6`, `promotion_allowed=false` and
   `production_depth_ready=false`.
+- The same recorder now supports private `ekologus-ai` proposal review results
+  with `review_type=private_source_proposals`. It validates live
+  `service_profile_review_private_proposal_*` action IDs against
+  `private_source_proposals`, records redacted review feedback, and still keeps
+  `promotion_allowed=false`. Live proof on 2026-07-02 accepted
+  `service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`
+  with `live_private_review_action_count=4`,
+  `private_proposal_promotion_ready=false` and
+  `production_depth_ready=false`.
 - Service Profile review now has a central prepare-only ActionObject for the
   next promotion gate: `act_prepare_service_profile_knowledge_promotion`.
   It exposes 6 public service-card promotion-preview rows from source facts,
