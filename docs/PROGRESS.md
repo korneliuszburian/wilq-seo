@@ -287,24 +287,26 @@ live API status later contradicts this state.
   WILQ cannot present the current knowledge layer as production-depth by
   accident.
 - Claim Ledger / structured generation gates are now auditable through
-  `scripts/claim_ledger_gate_audit.py`. Proof on 2026-07-02: 10/10 checks
-  passed. WILQ blocks guarantees, legal claims without human review, business
-  outcome claims without a completed measurement window, evidence claims without
-  source connectors, missing Claim Ledger input, ledger blockers and full drafts
-  from review-required knowledge. Valid section generation remains review-only:
-  the contract is strict and `publish_ready=false`. `scripts/pre_demo_gate.sh`
-  now runs this audit before context-pack language checks, so stakeholder-demo
-  proof covers both dashboard usefulness and content generation safety.
+  `scripts/claim_ledger_gate_audit.py`. Current proof on 2026-07-02: 13/13
+  checks passed. WILQ blocks guarantees, legal claims without human review,
+  business outcome claims without a completed measurement window, evidence
+  claims without source connectors, missing Claim Ledger input, ledger blockers,
+  full drafts from review-required knowledge, unsourced service claims and
+  product claims without Merchant/shop evidence. Valid section generation
+  remains review-only: the contract is strict and `publish_ready=false`.
+  `scripts/pre_demo_gate.sh` now runs this audit before context-pack language
+  checks, so stakeholder-demo proof covers both dashboard usefulness and content
+  generation safety.
 - Goal 005 completion guard now includes pre-demo gate summaries in every
   completion report: source-fact coverage, Claim Ledger generation gate and
   strict skill eval coverage. It still returns
   `blocked_missing_goal_005_uat_proof` without a real UAT result or explicit
   owner defer, but the blocker now also shows that source facts are
   `source_backed_review_required`, production-depth is 0%, Claim Ledger has
-  10/10 checks and skill eval coverage has 13/13 cases with 0 hard gaps.
+  13/13 checks and skill eval coverage has 13/13 cases with 0 hard gaps.
 - `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` now starts with the current
   pre-demo truth in plain Polish: dashboard readiness, source facts still
-  review-required, Claim Ledger 10/10, skill eval coverage 13/13 and Goal 005
+  review-required, Claim Ledger 13/13, skill eval coverage 13/13 and Goal 005
   still blocked without UAT/defer. This is the short artifact to show Wilku
   before walking through detailed BDO, Eko-Opieka, policy and gate materials.
 - Social Publisher usefulness proof now confirms the historical-post rule from
