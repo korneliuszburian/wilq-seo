@@ -962,6 +962,12 @@ Stop and record a blocker if:
   soft postponement. It must name the exact blocked claims for Goal 005
   completion, Wilku usefulness proof, production-depth readiness and final
   draft/publish readiness before the completion guard accepts it.
+- 2026-07-02: Repository audit follow-up `wilq-seo-ecb4` reached its scoped
+  remediation line: encoded dashboard action paths, failure-honest connector
+  refresh/job persistence, explicit connector/surface scope labels and small
+  diagnostic shell dedupe slices. Demand Gen now joins GA4 and Localo on the
+  shared `DiagnosticPage<TData>` without moving domain decision copy out of the
+  route.
 - 2026-07-01: `wilq-ads-doctor` hardened for BDOS-style operator usefulness:
   broad Ads questions must handle freshness and use full diagnostics/full
   context for the complete review queue, while final output should prioritize

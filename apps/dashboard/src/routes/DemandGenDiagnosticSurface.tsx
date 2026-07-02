@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { type ActionPreviewCardViewModel, getDemandGenDiagnostics } from "../lib/api";
 import {
-  DiagnosticSurfaceShell,
-  DiagnosticSurfaceUnavailable
+  type ActionPreviewCardViewModel,
+  getDemandGenDiagnostics,
+  type DemandGenReadinessContract
+} from "../lib/api";
+import {
+  DiagnosticPage
 } from "../components/DiagnosticSurfaceShell";
-import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
 import { SafetyGatePanel } from "../components/SafetyGatePanel";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -16,33 +19,38 @@ export function DemandGenDiagnosticSurface() {
     queryFn: getDemandGenDiagnostics
   });
 
-  if (diagnostics.isLoading) return <LoadingBand />;
-  if (diagnostics.error || !diagnostics.data) {
-    return (
-      <DiagnosticSurfaceUnavailable message="Nie udało się odczytać danych Demand Gen. Ten widok nie może udawać gotowości zmiany trybu kampanii ani jakości kreacji bez WILQ." />
-    );
-  }
+  return (
+    <DiagnosticPage
+      query={diagnostics}
+      title="Demand Gen"
+      description="Dedykowany widok Demand Gen z WILQ. Oddziela kontekst kampanii Ads i GA4 od prawdziwych danych Demand Gen: kreacji, jakości stron wejścia według kampanii, kontroli trybu kampanii i akcji do sprawdzenia."
+      unavailableMessage="Nie udało się odczytać danych Demand Gen. Ten widok nie może udawać gotowości zmiany trybu kampanii ani jakości kreacji bez WILQ."
+      metrics={demandGenMetrics}
+    >
+      {(data) => <DemandGenDiagnosticBody data={data} />}
+    </DiagnosticPage>
+  );
+}
 
-  const data = diagnostics.data;
+function demandGenMetrics(data: DemandGenReadinessContract) {
+  const metricTileEntries = Object.entries(data.metric_tiles);
+  return metricTileEntries.length > 0 ? (
+    <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-6">
+      {metricTileEntries.slice(0, 6).map(([label, value]) => (
+        <MetricTile key={label} label={label} value={value} />
+      ))}
+    </div>
+  ) : null;
+}
+
+function DemandGenDiagnosticBody({ data }: { data: DemandGenReadinessContract }) {
   const channelEntries = Object.entries(data.campaign_channel_counts);
   const demandGenRowCount = data.demand_gen_campaign_rows.length;
   const landingQualityRows = data.demand_gen_landing_quality_rows;
   const campaignModeReviewRows = data.demand_gen_campaign_mode_review_rows;
-  const metricTileEntries = Object.entries(data.metric_tiles);
+
   return (
-    <DiagnosticSurfaceShell
-      title="Demand Gen"
-      description="Dedykowany widok Demand Gen z WILQ. Oddziela kontekst kampanii Ads i GA4 od prawdziwych danych Demand Gen: kreacji, jakości stron wejścia według kampanii, kontroli trybu kampanii i akcji do sprawdzenia."
-      metrics={
-        metricTileEntries.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-6">
-            {metricTileEntries.slice(0, 6).map(([label, value]) => (
-              <MetricTile key={label} label={label} value={value} />
-            ))}
-          </div>
-        ) : null
-      }
-    >
+    <>
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -241,7 +249,7 @@ export function DemandGenDiagnosticSurface() {
         </div>
         <p className="mt-4 text-sm font-medium text-ink">{data.next_step}</p>
       </SafetyGatePanel>
-    </DiagnosticSurfaceShell>
+    </>
   );
 }
 

@@ -65,7 +65,8 @@ describe("operator safety copy guards", () => {
   it("keeps smaller diagnostics on the shared diagnostic page shell proof path", () => {
     const diagnosticSources = [
       readSource("src/routes/LocaloDiagnosticSurface.tsx"),
-      readSource("src/routes/Ga4DiagnosticSurface.tsx")
+      readSource("src/routes/Ga4DiagnosticSurface.tsx"),
+      readSource("src/routes/DemandGenDiagnosticSurface.tsx")
     ];
     const shellSource = readSource("src/components/DiagnosticSurfaceShell.tsx");
 
