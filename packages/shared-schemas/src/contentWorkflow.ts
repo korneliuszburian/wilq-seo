@@ -496,6 +496,17 @@ export const ContentServiceProfileReviewActionSchema = z.object({
   gap_id: z.string().nullable().optional()
 });
 
+export const ContentServiceProfileReviewActionSummarySchema = z.object({
+  total_count: z.number(),
+  review_request_count: z.number(),
+  prepare_count: z.number(),
+  public_service_review_count: z.number(),
+  private_review_count: z.number(),
+  private_service_review_count: z.number(),
+  private_policy_review_count: z.number(),
+  safe_next_step: z.string()
+});
+
 export const ContentServiceProfileTechnicalTraceSchema = z.object({
   knowledge_card_endpoint: z.string(),
   source_fact_count: z.number(),
@@ -518,6 +529,7 @@ export const ContentServiceProfileResponseSchema = z.object({
   private_source_proposal_summary: ContentServiceProfilePrivateSourceProposalSummarySchema,
   private_source_proposals: z.array(ContentServiceProfilePrivateSourceProposalSectionSchema).default([]),
   coverage_gaps: z.array(ContentServiceProfileCoverageGapSchema).default([]),
+  review_action_summary: ContentServiceProfileReviewActionSummarySchema,
   review_actions: z.array(ContentServiceProfileReviewActionSchema).default([]),
   technical_trace: ContentServiceProfileTechnicalTraceSchema
 });

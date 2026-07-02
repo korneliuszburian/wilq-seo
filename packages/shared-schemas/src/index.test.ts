@@ -157,6 +157,16 @@ describe("ContentServiceProfileResponseSchema", () => {
           required_human_role: "Wilku"
         }
       ],
+      review_action_summary: {
+        total_count: 1,
+        review_request_count: 1,
+        prepare_count: 0,
+        public_service_review_count: 0,
+        private_review_count: 0,
+        private_service_review_count: 0,
+        private_policy_review_count: 0,
+        safe_next_step: "Review public cards, then private proposals."
+      },
       technical_trace: {
         knowledge_card_endpoint: "/api/content/knowledge-cards",
         source_fact_count: 5,

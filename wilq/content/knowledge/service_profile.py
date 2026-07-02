@@ -160,6 +160,19 @@ class ContentServiceProfileReviewAction(BaseModel):
     gap_id: str | None = None
 
 
+class ContentServiceProfileReviewActionSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total_count: int
+    review_request_count: int
+    prepare_count: int
+    public_service_review_count: int
+    private_review_count: int
+    private_service_review_count: int
+    private_policy_review_count: int
+    safe_next_step: str
+
+
 class ContentServiceProfileTechnicalTrace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -188,6 +201,7 @@ class ContentServiceProfileResponse(BaseModel):
         default_factory=list
     )
     coverage_gaps: list[ContentServiceProfileCoverageGap] = Field(default_factory=list)
+    review_action_summary: ContentServiceProfileReviewActionSummary
     review_actions: list[ContentServiceProfileReviewAction] = Field(default_factory=list)
     technical_trace: ContentServiceProfileTechnicalTrace
 
@@ -199,6 +213,12 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
     cards = knowledge.cards
     service_sections = [_service_section(card) for card in cards if card.card_type == "service"]
     coverage_gaps = _coverage_gaps(cards)
+    private_proposals = private_proposal_registry.proposals
+    review_actions = _review_actions(
+        cards=cards,
+        coverage_gaps=coverage_gaps,
+        private_proposals=private_proposals,
+    )
     return ContentServiceProfileResponse(
         workspace_id="ekologus",
         workspace_label="Ekologus",
@@ -239,17 +259,17 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             if card.card_type == "evidence_requirement" or card.evidence_requirements
         ],
         private_source_proposal_summary=_private_source_proposal_summary(
-            private_proposal_registry.proposals
+            private_proposals
         ),
         private_source_proposals=_private_source_proposal_sections(
-            private_proposal_registry.proposals
+            private_proposals
         ),
         coverage_gaps=coverage_gaps,
-        review_actions=_review_actions(
-            cards=cards,
-            coverage_gaps=coverage_gaps,
-            private_proposals=private_proposal_registry.proposals,
+        review_action_summary=_review_action_summary(
+            review_actions=review_actions,
+            private_proposals=private_proposals,
         ),
+        review_actions=review_actions,
         technical_trace=ContentServiceProfileTechnicalTrace(
             knowledge_card_endpoint="/api/content/knowledge-cards",
             source_fact_count=source_fact_registry.fact_count,
@@ -525,6 +545,53 @@ def _review_actions(
             )
         )
     return actions
+
+
+def _review_action_summary(
+    *,
+    review_actions: list[ContentServiceProfileReviewAction],
+    private_proposals: list[PrivateSourceProposal],
+) -> ContentServiceProfileReviewActionSummary:
+    private_scope_by_target = {
+        proposal.target_card_id: proposal.scope for proposal in private_proposals
+    }
+    private_actions = [
+        action
+        for action in review_actions
+        if action.action_id.startswith("service_profile_review_private_proposal_")
+    ]
+    public_service_actions = [
+        action
+        for action in review_actions
+        if action.action_id.startswith("service_profile_review_card_")
+    ]
+    private_service_actions = [
+        action
+        for action in private_actions
+        if private_scope_by_target.get(action.target_card_id or "") == "service"
+    ]
+    private_policy_actions = [
+        action
+        for action in private_actions
+        if private_scope_by_target.get(action.target_card_id or "")
+        in {"claim_policy", "evidence_requirement"}
+    ]
+    return ContentServiceProfileReviewActionSummary(
+        total_count=len(review_actions),
+        review_request_count=sum(
+            1 for action in review_actions if action.mode == "review_request"
+        ),
+        prepare_count=sum(1 for action in review_actions if action.mode == "prepare"),
+        public_service_review_count=len(public_service_actions),
+        private_review_count=len(private_actions),
+        private_service_review_count=len(private_service_actions),
+        private_policy_review_count=len(private_policy_actions),
+        safe_next_step=(
+            "Najpierw przejrzyj publiczne karty usług, potem prywatne propozycje "
+            "service i claim-policy; żadna akcja review nie promuje faktów bez "
+            "osobnego prepare-only preview i audytu."
+        ),
+    )
 
 
 def _lifecycle(card: ContentKnowledgeCard) -> ContentKnowledgeLifecycleStatus:

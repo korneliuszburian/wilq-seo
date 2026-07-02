@@ -132,6 +132,11 @@ API status later contradicts this state.
   `claim_policy_proposal_count=2`, `evidence_requirement_proposal_count=0` and
   `promotion_ready=false`, and `/service-profile` renders those counts for
   Wilku without exposing raw private content.
+- Service Profile review-action summary on 2026-07-02: live API now owns the
+  review-action breakdown consumed by dashboard and UAT packet:
+  `total_count=12`, `review_request_count=11`, `prepare_count=1`,
+  `public_service_review_count=6`, `private_review_count=4`,
+  `private_service_review_count=2`, `private_policy_review_count=2`.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

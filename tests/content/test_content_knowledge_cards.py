@@ -438,6 +438,14 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         "private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
     } <= set(response.technical_trace.private_source_proposal_ids)
     assert response.review_actions
+    assert response.review_action_summary.total_count == len(response.review_actions)
+    assert response.review_action_summary.public_service_review_count >= 6
+    assert response.review_action_summary.private_review_count >= 4
+    assert response.review_action_summary.private_service_review_count >= 2
+    assert response.review_action_summary.private_policy_review_count >= 2
+    assert response.review_action_summary.review_request_count >= 10
+    assert response.review_action_summary.prepare_count >= 1
+    assert "nie promuje faktów" in response.review_action_summary.safe_next_step
     private_review_actions = [
         action
         for action in response.review_actions

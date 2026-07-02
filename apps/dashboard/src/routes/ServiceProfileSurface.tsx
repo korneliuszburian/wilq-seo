@@ -15,6 +15,7 @@ import {
 type ServiceSection = ContentServiceProfileResponse["service_sections"][number];
 type CoverageGap = ContentServiceProfileResponse["coverage_gaps"][number];
 type ReviewAction = ContentServiceProfileResponse["review_actions"][number];
+type ReviewActionSummary = ContentServiceProfileResponse["review_action_summary"];
 type PrivateProposal = ContentServiceProfileResponse["private_source_proposals"][number];
 
 export function ServiceProfileSurface() {
@@ -99,7 +100,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
 
       <CoverageGaps gaps={data.coverage_gaps} />
 
-      <ReviewActions actions={data.review_actions} />
+      <ReviewActions actions={data.review_actions} summary={data.review_action_summary} />
 
       <section className="mb-6 grid gap-4 lg:grid-cols-2">
         {data.service_sections.map((section) => (
@@ -250,13 +251,31 @@ function CoverageGaps({ gaps }: { gaps: CoverageGap[] }) {
   );
 }
 
-function ReviewActions({ actions }: { actions: ReviewAction[] }) {
+function ReviewActions({
+  actions,
+  summary
+}: {
+  actions: ReviewAction[];
+  summary: ReviewActionSummary;
+}) {
   if (actions.length === 0) return null;
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
         Akcje review
       </h2>
+      <PlainChipRow
+        className="mt-3"
+        values={[
+          `${summary.total_count} razem`,
+          `${summary.public_service_review_count} publicznych usług`,
+          `${summary.private_service_review_count} prywatne service`,
+          `${summary.private_policy_review_count} prywatne claim-policy`,
+          `${summary.review_request_count} review request`,
+          summary.prepare_count > 0 ? `${summary.prepare_count} prepare` : null
+        ]}
+      />
+      <p className="mt-2 text-sm leading-6 text-slate-600">{summary.safe_next_step}</p>
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
         {actions.map((action) => (
           <div key={action.action_id} className="rounded-md border border-line p-3">

@@ -78,6 +78,13 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("Claimy zablokowane").length).toBeGreaterThanOrEqual(4);
     expect(screen.getByText("obietnica stałej zgodności")).toBeInTheDocument();
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
+    expect(screen.getByText("12 razem")).toBeInTheDocument();
+    expect(screen.getByText("6 publicznych usług")).toBeInTheDocument();
+    expect(screen.getByText("2 prywatne service")).toBeInTheDocument();
+    expect(screen.getByText("2 prywatne claim-policy")).toBeInTheDocument();
+    expect(screen.getByText("11 review request")).toBeInTheDocument();
+    expect(screen.getByText("1 prepare")).toBeInTheDocument();
+    expect(screen.getByText(/Najpierw przejrzyj publiczne karty usług/)).toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz"))
       .toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus"))
@@ -314,6 +321,17 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         target_card_id: "ekologus_claim_policy_brand_voice"
       }
     ],
+    review_action_summary: {
+      total_count: 12,
+      review_request_count: 11,
+      prepare_count: 1,
+      public_service_review_count: 6,
+      private_review_count: 4,
+      private_service_review_count: 2,
+      private_policy_review_count: 2,
+      safe_next_step:
+        "Najpierw przejrzyj publiczne karty usług, potem prywatne propozycje service i claim-policy."
+    },
     technical_trace: {
       knowledge_card_endpoint: "/api/content/knowledge-cards",
       source_fact_count: 5,

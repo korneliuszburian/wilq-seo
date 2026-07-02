@@ -225,6 +225,16 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "target_card_id": "ekologus_claim_policy_brand_voice",
                 },
             ],
+            "review_action_summary": {
+                "total_count": 3,
+                "public_service_review_count": 1,
+                "private_review_count": 2,
+                "private_service_review_count": 1,
+                "private_policy_review_count": 1,
+                "review_request_count": 3,
+                "prepare_count": 0,
+                "safe_next_step": "API-owned review action summary.",
+            },
             "private_source_proposals": [
                 {
                     "proposal_id": "private_proposal_service",
@@ -274,6 +284,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
         "private_service_review_count": 1,
         "private_policy_review_count": 1,
         "review_request_count": 3,
+        "prepare_count": 0,
+        "safe_next_step": "API-owned review action summary.",
     }
     assert summary["public_service_review_actions"][0]["target_card_id"] == (
         "ekologus_service_bdo_reporting"

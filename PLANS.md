@@ -200,6 +200,13 @@ proof on 2026-07-02 returned `proposal_count=4`, `service_proposal_count=2`,
 `promotion_ready=false`, so Wilku can distinguish service proposals from
 claim-policy review items without opening technical payloads.
 
+Under Beads task `wilq-seo-ebv5`, Service Profile also owns the review-action
+summary instead of leaving the UAT packet or dashboard to infer it. Live proof
+on 2026-07-02 returned `total_count=12`, `review_request_count=11`,
+`prepare_count=1`, `public_service_review_count=6`, `private_review_count=4`,
+`private_service_review_count=2` and `private_policy_review_count=2`; the UAT
+packet consumes the same API-owned summary.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and

@@ -251,6 +251,21 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         if private_scope_by_target.get(str(action.get("target_card_id") or ""))
         in {"claim_policy", "evidence_requirement"}
     ]
+    api_review_action_summary = profile.get("review_action_summary")
+    review_action_summary = (
+        api_review_action_summary
+        if isinstance(api_review_action_summary, dict)
+        else {
+            "total_count": len(review_actions),
+            "public_service_review_count": len(public_service_review_actions),
+            "private_review_count": len(private_review_actions),
+            "private_service_review_count": len(private_service_review_actions),
+            "private_policy_review_count": len(private_policy_review_actions),
+            "review_request_count": sum(
+                1 for action in review_actions if action.get("mode") == "review_request"
+            ),
+        }
+    )
     public_promotion = safe_action(api_base, PUBLIC_PROMOTION_ACTION_ID)
     private_promotion = safe_action(api_base, PRIVATE_PROMOTION_ACTION_ID)
     return {
@@ -280,16 +295,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "redacted": private_summary.get("redacted"),
         },
         "private_proposal_details": private_proposal_details,
-        "review_action_summary": {
-            "total_count": len(review_actions),
-            "public_service_review_count": len(public_service_review_actions),
-            "private_review_count": len(private_review_actions),
-            "private_service_review_count": len(private_service_review_actions),
-            "private_policy_review_count": len(private_policy_review_actions),
-            "review_request_count": sum(
-                1 for action in review_actions if action.get("mode") == "review_request"
-            ),
-        },
+        "review_action_summary": review_action_summary,
         "public_service_review_actions": public_service_review_actions,
         "private_review_actions": private_review_actions,
         "private_service_review_actions": private_service_review_actions,
