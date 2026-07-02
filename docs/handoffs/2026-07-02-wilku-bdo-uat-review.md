@@ -5,6 +5,16 @@ rekomendacja publikacji.
 
 Data: 2026-07-02
 
+## Etykieta UAT
+
+To jest `review specimen`, czyli próbka do oceny języka, źródeł, CTA i blokad
+WILQ dla tematu BDO.
+
+To nie jest dzisiejszy aktywny work item z live kolejki, polecenie napisania
+draftu ani rekomendacja publikacji. Jeśli Wilku zatwierdzi kierunek, następnym
+krokiem jest decyzja review dla karty BDO i dopiero później ponowne sprawdzenie
+live kolejki.
+
 ## Po co to pokazujemy
 
 Chcemy sprawdzić, czy WILQ umie zrobić rzecz praktyczną: wziąć temat BDO,
