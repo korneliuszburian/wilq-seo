@@ -6,11 +6,16 @@ Ostatnia aktualizacja: 2026-07-02 00:50 CEST
 Status: gotowe do pokazania jako sesja review/blokad i traceability, nie jako
 ukończony UAT.
 
+Aktualizacja po rozdzieleniu review actions: UAT packet pokazuje teraz osobno
+publiczne review actions dla kart usług i prywatne review actions z
+`ekologus-ai`. Wynik sesji musi odpowiedzieć na oba pytania, bo publiczne karty
+usług nadal blokują production-depth tak samo realnie jak prywatne propozycje.
+
 Aktualizacja po live refreshu: 2026-07-01 22:39 UTC. WILQ odświeżył stale
 źródła Merchant/Ahrefs/WordPress sklep, więc ten handoff nie zakłada już, że
 content/merchant są zablokowane przez nieświeże dane. Pełny UAT nadal jest
-zablokowany przez brak production-depth Service Profile i review prywatnych
-propozycji.
+zablokowany przez brak production-depth Service Profile, review publicznych
+kart usług i review prywatnych propozycji.
 
 Aktualizacja po hardeningu Claim Ledger: claimy oznaczone jako
 `allowed_with_evidence` muszą mieć teraz nie tylko `evidence_ids`, ale też
@@ -42,6 +47,8 @@ przez developera:
 
 - dlaczego pełny content UAT jest jeszcze zablokowany;
 - czy Service Profile jasno pokazuje luki wiedzy i review-required źródła;
+- czy publiczne karty usług do review są czytelne jako decyzje właściciela,
+  a nie jako zatwierdzona wiedza;
 - czy prywatne propozycje z `ekologus-ai` są czytelne jako materiał do review,
   a nie jako zatwierdzona wiedza;
 - czy przy obecnej kolejce Wilku umie wskazać bezpieczny następny krok;
@@ -55,9 +62,9 @@ UAT readiness:
 
 - status: `blocked_for_full_uat`;
 - zakres, który można uczciwie pokazać: review/blokady i traceability;
-- blokady pełnej sesji: Service Profile nie jest production-depth, prywatne
-  propozycje wymagają review Wilka/ownera, kolejka content workflow ma status
-  `blocked`;
+- blokady pełnej sesji: Service Profile nie jest production-depth, publiczne
+  karty usług wymagają review Wilka/ownera, prywatne propozycje wymagają review
+  Wilka/ownera, kolejka content workflow ma status `blocked`;
 - liczba gotowych kandydatów w kolejce: 1.
 - kolejka: `candidate_count=3`, `actionable_candidate_count=1`,
   `queue_status=blocked`.
@@ -77,16 +84,32 @@ Service Profile:
 
 Luki do omówienia:
 
-- `gap_service_operat_wodnoprawny`: brak bezpośredniej karty usługi dla operatu
-  wodnoprawnego;
 - `gap_no_approved_current_cards`: brak zatwierdzonych production-depth kart
   usług.
 
+Public service review actions:
+
+- `service_profile_review_card_ekologus_service_environmental_consulting_outsourcing`:
+  sprawdzić kartę Doradztwo i outsourcing środowiskowy;
+- `service_profile_review_card_ekologus_service_bdo_reporting`:
+  sprawdzić kartę BDO i sprawozdawczość środowiskowa;
+- `service_profile_review_card_ekologus_service_waste_packaging_obligations`:
+  sprawdzić kartę Odpady, opakowania i ewidencja środowiskowa;
+- `service_profile_review_card_ekologus_service_environmental_training`:
+  sprawdzić kartę Szkolenia środowiskowe;
+- `service_profile_review_card_ekologus_service_remediation_monitoring`:
+  sprawdzić kartę Rekultywacje, remediacje i monitoring;
+- `service_profile_review_card_ekologus_service_operat_wodnoprawny`:
+  sprawdzić kartę Operaty i pozwolenia wodnoprawne.
+
+Każda z tych akcji ma ten sam warunek bezpieczeństwa: to nie promuje source
+fact ani knowledge card; potrzebna jest osobna zatwierdzona akcja i audyt.
+
 Private review actions:
 
-- `service_profile_review_private_proposal_ekologus_ai_eko_opieka_2026_07_01`:
+- `service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`:
   sprawdzić prywatną propozycję Eko-Opieka / Eko Kalendarz;
-- `service_profile_review_private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01`:
+- `service_profile_review_private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01`:
   sprawdzić prywatną propozycję Audyt zgodności środowiskowej.
 
 Obie akcje mają ten sam warunek bezpieczeństwa: to nie promuje private proposal
@@ -156,16 +179,19 @@ Zadaj dokładnie te pytania i wpisz odpowiedzi w sekcji wyników:
 1. Czy rozumiesz, dlaczego pełny content UAT jest teraz zablokowany?
 2. Który blocker jest najbardziej sensowny, a który brzmi technicznie?
 3. Czy Service Profile mówi Ci, czego brakuje w wiedzy Ekologus?
-4. Czy private review actions dla Eko-Opieki i Audytu zgodności są czytelne?
-5. Czy widzisz, że te prywatne propozycje nie są jeszcze zatwierdzoną wiedzą?
-6. Gdy pytasz "skąd to wzięło?", czy evidence IDs i source connectors są
+4. Czy public service review actions dla kart usług są czytelne?
+5. Która publiczna karta usługi jest najbardziej niejasna do zatwierdzenia?
+6. Czy private review actions dla Eko-Opieki i Audytu zgodności są czytelne?
+7. Czy widzisz, że publiczne karty i prywatne propozycje nie są jeszcze
+   zatwierdzoną wiedzą?
+8. Gdy pytasz "skąd to wzięło?", czy evidence IDs i source connectors są
    wystarczające?
-7. Czy blokada `missing_source_connector` jest zrozumiała po ludzku jako "brak
+9. Czy blokada `missing_source_connector` jest zrozumiała po ludzku jako "brak
    źródła danych dla twierdzenia"?
-8. Czy `https://www.ekologus.pl/` jako kandydat refresh ma dla Ciebie sens, czy
+10. Czy `https://www.ekologus.pl/` jako kandydat refresh ma dla Ciebie sens, czy
    lepiej wymusić bardziej konkretny temat, np. BDO?
-9. Co jest najbardziej generyczne/off-brand w tej ścieżce?
-10. Jaki jeden następny krok zrobiłbyś po tej sesji?
+11. Co jest najbardziej generyczne/off-brand w tej ścieżce?
+12. Jaki jeden następny krok zrobiłbyś po tej sesji?
 
 ## Wynik sesji
 
@@ -177,6 +203,7 @@ Uzupełnić po rozmowie:
 - wybrany work item:
 - czy Wilku rozumie blokady pełnego UAT:
 - czy Service Profile jest czytelny:
+- czy public service review actions są czytelne:
 - czy private review actions są czytelne:
 - pytania "skąd to wzięło?":
 - miejsca generyczne/off-brand:
@@ -197,10 +224,11 @@ Walidowany format wyniku:
   "najwiekszy_brak_produktu": "najważniejszy brak w produkcie/WILQ po sesji",
   "wilku_rozumie_blokady_pelnego_uat": "tak",
   "service_profile_czytelny": "tak",
+  "public_service_review_actions_czytelne": "nie",
   "private_review_actions_czytelne": "nie",
   "mozna_przejsc_do_pelnego_content_uat": "nie",
   "follow_up_beads": [
-    "wilq-seo-xyz: doprecyzować private review actions przed pełnym UAT"
+    "wilq-seo-xyz: doprecyzować publiczne/private review actions przed pełnym UAT"
   ]
 }
 ```
@@ -220,10 +248,10 @@ rtk uv run python scripts/record_goal_005_content_uat_result.py .local-lab/proof
 Ten walidator sprawdza kompletność realnego wyniku sesji i renderuje raport
 review. Z `--api-base` dodatkowo sprawdza, czy wybrany work item występuje w
 aktualnej kolejce UAT WILQ, zapisuje status kolejki, źródła wybranego itemu,
-read-only Service Profile, production-depth readiness i stan private proposal
-promotion. Nie promuje private proposals do source facts, nie zatwierdza
-knowledge cards, nie odblokowuje publikacji ani nie zamyka Goal 005
-automatycznie.
+read-only Service Profile, production-depth readiness, liczbę publicznych i
+prywatnych review actions oraz stan private proposal promotion. Nie promuje
+private proposals do source facts, nie zatwierdza publicznych service cards,
+nie odblokowuje publikacji ani nie zamyka Goal 005 automatycznie.
 
 ## Kryterium przejścia dalej
 

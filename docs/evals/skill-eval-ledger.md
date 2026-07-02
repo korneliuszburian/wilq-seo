@@ -6821,3 +6821,31 @@ Result:
 - Full UAT remains blocked by non-production-depth Service Profile, public
   service review, private proposal review and blocked queue state. This is UAT
   preparation, not human UAT completion.
+
+## 2026-07-02 - Goal 005 UAT result public service review gate
+
+Purpose:
+
+- Keep the Wilku UAT result proof aligned with the content-operator UAT packet:
+  public service-card review actions and private proposal review actions must be
+  evaluated separately.
+- Prevent a "completed" UAT result from skipping public service cards that still
+  block production-depth knowledge.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_goal_005_content_uat_result.py -q
+uv run ruff check scripts/record_goal_005_content_uat_result.py tests/test_goal_005_content_uat_result.py
+uv run python scripts/record_goal_005_content_uat_result.py <live-example-json> --api-base http://127.0.0.1:8000 --format json
+git diff --check
+```
+
+Result:
+
+- Focused pytest passed: 7 tests.
+- The validator now requires `public_service_review_actions_czytelne`.
+- Live provenance proof accepted the current homepage refresh candidate and
+  recorded `public_service_review_action_count=6`,
+  `private_review_action_count=2`, `production_depth_ready=false` and
+  `overall_status=needs_follow_up_before_full_content_uat`.

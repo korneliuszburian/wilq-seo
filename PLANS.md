@@ -383,6 +383,15 @@ accepted `content_work_item_content_decision_https___www_ekologus_pl` with GSC
 and WordPress evidence while keeping full UAT blocked by
 `production_depth_ready=false` and private review actions.
 
+Under Beads task `wilq-seo-8wn`, the Wilku UAT proof contract now also requires
+feedback on public service-card review actions. The handoff asks separately
+about public service review actions and private proposal review actions, and
+`scripts/record_goal_005_content_uat_result.py` rejects completed result JSON
+without `public_service_review_actions_czytelne`. Live proof on 2026-07-02
+recorded `public_service_review_action_count=6`,
+`private_review_action_count=2`, `production_depth_ready=false` and kept the
+overall result as follow-up-required.
+
 Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
 `ContentDraftVariantsResult` now exposes the recommended variant, comparison
 dimensions, a `magic_score_used=false` policy and a safe next step. The first

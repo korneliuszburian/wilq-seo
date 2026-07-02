@@ -232,25 +232,29 @@ API status later contradicts this state.
   source freshness.
 - The Wilku-ready content UAT handoff
   `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` is refreshed against
-  the post-refresh live content-operator packet. It now uses the latest Ahrefs
-  evidence `ev_refresh_refresh_ahrefs_5eee21244cff` and states that full UAT
-  remains blocked by Service Profile/private-proposal review, not by stale
+  the current content-operator packet. It now states that full UAT remains
+  blocked by non-production-depth Service Profile, public service-card review,
+  private proposal review and blocked queue state, not by stale
   Merchant/content sources.
 - Goal 005 content UAT result proof now has a deterministic checker:
   `scripts/record_goal_005_content_uat_result.py`. It validates the filled
   session result fields for selected work item, blocker understanding, Service
-  Profile readability, private review actions, source-trace questions,
-  generic/off-brand findings, largest product gap and follow-up Beads when
-  full UAT remains blocked. It renders a review report only; it does not
-  promote private proposals, approve cards, unlock publishing or close Goal 005.
+  Profile readability, public and private review actions, source-trace
+  questions, generic/off-brand findings, largest product gap and follow-up
+  Beads when full UAT remains blocked. It renders a review report only; it does
+  not promote private proposals, approve service cards, unlock publishing or
+  close Goal 005.
 - The same UAT result checker now supports live WILQ provenance with
   `--api-base`: selected work item must exist in the current content UAT queue,
   and the report records queue status, selected evidence/source connectors,
-  Service Profile read-only state, production-depth readiness and private
-  proposal promotion state. Live proof on 2026-07-02 accepted
+  Service Profile read-only state, production-depth readiness, public/private
+  review action counts and private proposal promotion state. Live proof on
+  2026-07-02 accepted
   `content_work_item_content_decision_https___www_ekologus_pl` with GSC and
   WordPress evidence, `queue_status=blocked`, `production_depth_ready=false`
-  and two private review actions.
+  `public_service_review_action_count=6` and `private_review_action_count=2`.
+  It now refuses to validate a result when public service review feedback is
+  missing.
 - Master roadmap for "better BDOS.ai" direction now lives at
   `docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current overall WILQ
   maturity is estimated at `35-45%`: the API/safety/content workflow foundation

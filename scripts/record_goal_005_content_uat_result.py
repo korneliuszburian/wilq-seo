@@ -21,6 +21,9 @@ REQUIRED_TEXT_FIELDS = {
 REQUIRED_BOOLEAN_FIELDS = {
     "wilku_rozumie_blokady_pelnego_uat": "czy Wilku rozumie blokady pełnego UAT",
     "service_profile_czytelny": "czy Service Profile jest czytelny",
+    "public_service_review_actions_czytelne": (
+        "czy public service review actions są czytelne"
+    ),
     "private_review_actions_czytelne": "czy private review actions są czytelne",
     "mozna_przejsc_do_pelnego_content_uat": "czy można przejść do pełnego content UAT",
 }
@@ -85,6 +88,9 @@ def build_content_uat_result_report(
     can_continue = normalize_bool(payload["mozna_przejsc_do_pelnego_content_uat"])
     blockers_understood = normalize_bool(payload["wilku_rozumie_blokady_pelnego_uat"])
     service_profile_clear = normalize_bool(payload["service_profile_czytelny"])
+    public_actions_clear = normalize_bool(
+        payload["public_service_review_actions_czytelne"]
+    )
     private_actions_clear = normalize_bool(payload["private_review_actions_czytelne"])
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     missing_follow_up = not can_continue and not follow_up_tasks
@@ -98,6 +104,7 @@ def build_content_uat_result_report(
         can_continue
         and blockers_understood
         and service_profile_clear
+        and public_actions_clear
         and private_actions_clear
     )
 
@@ -111,6 +118,7 @@ def build_content_uat_result_report(
         ).strip(),
         "blockers_understood": blockers_understood,
         "service_profile_clear": service_profile_clear,
+        "public_service_review_actions_clear": public_actions_clear,
         "private_review_actions_clear": private_actions_clear,
         "source_trace_questions": str(payload["pytania_skad_to_wzielo"]).strip(),
         "generic_or_off_brand_findings": str(
@@ -128,8 +136,8 @@ def build_content_uat_result_report(
         "missing_follow_up_task": missing_follow_up,
         "safety_note": (
             "Ten raport zapisuje wynik Goal 005 content UAT. Nie promuje private "
-            "proposals do source facts, nie zatwierdza knowledge cards i nie "
-            "odblokowuje publikacji, WordPress write ani success claims."
+            "proposals do source facts, nie zatwierdza publicznych service cards "
+            "i nie odblokowuje publikacji, WordPress write ani success claims."
         ),
     }
 
@@ -182,6 +190,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         f"- Rozumie blokady pełnego UAT: {visible_bool(report['blockers_understood'])}",
         f"- Service Profile czytelny: {visible_bool(report['service_profile_clear'])}",
+        "- Public service review actions czytelne: "
+        f"{visible_bool(report['public_service_review_actions_clear'])}",
         "- Private review actions czytelne: "
         f"{visible_bool(report['private_review_actions_clear'])}",
         "- Można przejść do pełnego content UAT: "
@@ -292,6 +302,16 @@ def live_uat_provenance(
         "selected_source_connectors": selected.get("source_connectors") or [],
         "service_profile_read_only": service_profile.get("read_only"),
         "production_depth_ready": coverage.get("ready_for_daily_content"),
+        "public_service_review_action_count": len(
+            [
+                action
+                for action in raw_list_payload(service_profile.get("review_actions"))
+                if isinstance(action, dict)
+                and str(action.get("action_id") or "").startswith(
+                    "service_profile_review_card_"
+                )
+            ]
+        ),
         "private_review_action_count": len(
             [
                 action
@@ -323,6 +343,8 @@ def render_live_provenance(value: Any) -> str:
             f"{visible_bool(value.get('service_profile_read_only') is True)}",
             "- Production-depth ready: "
             f"{visible_bool(value.get('production_depth_ready') is True)}",
+            "- Public service review actions: "
+            f"`{value.get('public_service_review_action_count')}`",
             "- Private review actions: "
             f"`{value.get('private_review_action_count')}`",
             "- Private proposal promotion ready: "
