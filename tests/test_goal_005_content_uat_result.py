@@ -5,6 +5,8 @@ import pytest
 from scripts.record_goal_005_content_uat_result import (
     build_content_uat_result_report,
     render_markdown,
+    sales_brief_blocker_label,
+    sales_brief_trace_from_snapshot,
 )
 
 
@@ -77,6 +79,12 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "google_search_console",
         "wordpress_ekologus",
     ]
+    assert provenance["selected_sales_brief_status"] == "ready"
+    assert provenance["selected_sales_brief_blocker"] is None
+    assert provenance["selected_sales_brief_constraint_count"] == 1
+    assert provenance["selected_sales_brief_constraint_evidence_ids"] == [
+        "ev_content_service_profile_source_facts"
+    ]
     assert provenance["service_profile_read_only"] is True
     assert provenance["production_depth_ready"] is False
     assert provenance["public_service_review_action_count"] == 1
@@ -89,11 +97,47 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert "## Live provenance" in markdown
     assert "Wybrany work item znaleziony w live packet: tak" in markdown
     assert "Źródła wybranego itemu: google_search_console, wordpress_ekologus" in markdown
+    assert "Sales Brief wybranego itemu: `ready`" in markdown
+    assert "Sales Brief blocker: brak" in markdown
+    assert (
+        "Sales Brief constraint evidence: ev_content_service_profile_source_facts"
+        in markdown
+    )
     assert "Public service review actions: `1`" in markdown
     assert "Private service review actions: `1`" in markdown
     assert "Private policy review actions: `0`" in markdown
     assert "## Pokazane materiały review" in markdown
     assert "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md" in markdown
+
+
+def test_content_uat_result_preserves_blocked_sales_brief_reason() -> None:
+    trace = sales_brief_trace_from_snapshot(
+        {
+            "sales_brief": {
+                "sales_brief_result": {
+                    "brief": None,
+                    "blockers": [
+                        {
+                            "code": "missing_required_knowledge_card",
+                            "label": "Brakuje wymaganej karty wiedzy",
+                        }
+                    ],
+                }
+            }
+        }
+    )
+
+    assert trace["status"] == "blocked"
+    assert trace["blockers"] == [
+        {
+            "code": "missing_required_knowledge_card",
+            "label": "Brakuje wymaganej karty wiedzy",
+        }
+    ]
+    assert (
+        sales_brief_blocker_label({"selected_sales_brief_blockers": trace["blockers"]})
+        == "Brakuje wymaganej karty wiedzy"
+    )
 
 
 def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None:
@@ -333,5 +377,14 @@ def _live_context() -> dict[str, object]:
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
                 }
             ],
+        },
+        "sales_brief_traces": {
+            "content_work_item_content_decision_https___www_ekologus_pl": {
+                "status": "ready",
+                "knowledge_constraint_count": 1,
+                "knowledge_constraint_evidence_ids": [
+                    "ev_content_service_profile_source_facts"
+                ],
+            }
         },
     }

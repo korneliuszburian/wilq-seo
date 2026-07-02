@@ -198,6 +198,11 @@ API status later contradicts this state.
   Polish. Current live top candidates show `Sales Brief: zablokowany albo
   niedostępny (snapshot nie zawiera sales_brief)`, which makes the lack of a
   brief visible during Wilku review instead of silently omitting it.
+- Goal 005 UAT result recorder now persists live Sales Brief trace for the
+  selected work item in `live_provenance`. Current live proof for
+  `content_work_item_content_decision_https___www_ekologus_pl` records
+  `selected_sales_brief_status=blocked` with blockers `Brakuje karty usługi`
+  and `Brakuje karty CTA`, so the saved UAT report preserves what Wilku saw.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only

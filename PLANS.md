@@ -1072,6 +1072,11 @@ Stop and record a blocker if:
   in markdown. Live output for the current top candidates says
   `Sales Brief: zablokowany albo niedostępny (snapshot nie zawiera sales_brief)`
   instead of silently omitting Sales Brief context.
+- 2026-07-02: `record_goal_005_content_uat_result.py` now stores Sales Brief
+  trace in live UAT provenance for the selected work item. Live proof for the
+  current actionable item records `selected_sales_brief_status=blocked` and
+  blockers `Brakuje karty usługi; Brakuje karty CTA`, so a future UAT report
+  preserves the exact Sales Brief gate shown during review.
 
 ## Surprises & Discoveries
 

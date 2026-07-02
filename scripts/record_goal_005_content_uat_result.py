@@ -247,6 +247,77 @@ def load_live_uat_context(api_base: str) -> dict[str, Any]:
         "api_base": api_base.rstrip("/"),
         "queue": queue,
         "service_profile": service_profile,
+        "sales_brief_traces": load_sales_brief_traces(api_base, queue),
+    }
+
+
+def load_sales_brief_traces(api_base: str, queue: dict[str, Any]) -> dict[str, Any]:
+    traces: dict[str, Any] = {}
+    for candidate in raw_list_payload(queue.get("candidates")):
+        if not isinstance(candidate, dict):
+            continue
+        work_item_id = str(candidate.get("work_item_id") or "").strip()
+        if not work_item_id:
+            continue
+        try:
+            snapshot = request_json(
+                api_base,
+                "GET",
+                f"/api/content/work-items/{work_item_id}/snapshot",
+                timeout=120,
+            )
+        except RuntimeError as error:
+            traces[work_item_id] = {
+                "status": "unavailable",
+                "blocker": str(error),
+            }
+            continue
+        traces[work_item_id] = sales_brief_trace_from_snapshot(snapshot)
+    return traces
+
+
+def sales_brief_trace_from_snapshot(snapshot: Any) -> dict[str, Any]:
+    if not isinstance(snapshot, dict):
+        return {"status": "missing", "blocker": "snapshot nie jest obiektem"}
+    sales_brief_stage = snapshot.get("sales_brief")
+    if not isinstance(sales_brief_stage, dict):
+        return {"status": "missing", "blocker": "snapshot nie zawiera sales_brief"}
+    result = sales_brief_stage.get("sales_brief_result")
+    if not isinstance(result, dict):
+        return {
+            "status": "missing",
+            "blocker": "snapshot nie zawiera sales_brief_result",
+        }
+    brief = result.get("brief")
+    blockers = result.get("blockers")
+    if not isinstance(brief, dict):
+        return {
+            "status": "blocked",
+            "blockers": blockers if isinstance(blockers, list) else [],
+        }
+    signal_quality = brief.get("signal_quality")
+    constraints = [
+        constraint
+        for constraint in raw_list_payload(brief.get("knowledge_constraints"))
+        if isinstance(constraint, dict)
+    ]
+    evidence_ids = sorted(
+        {
+            str(evidence_id)
+            for constraint in constraints
+            for evidence_id in raw_list_payload(constraint.get("evidence_ids"))
+            if evidence_id
+        }
+    )
+    return {
+        "status": "ready",
+        "signal_quality_status_label": (
+            signal_quality.get("status_label")
+            if isinstance(signal_quality, dict)
+            else None
+        ),
+        "knowledge_constraint_count": len(constraints),
+        "knowledge_constraint_evidence_ids": evidence_ids,
     }
 
 
@@ -309,6 +380,16 @@ def live_uat_provenance(
     private_summary: dict[str, Any] = (
         raw_private_summary if isinstance(raw_private_summary, dict) else {}
     )
+    raw_sales_brief_traces = live_context.get("sales_brief_traces")
+    sales_brief_traces: dict[str, Any] = (
+        raw_sales_brief_traces if isinstance(raw_sales_brief_traces, dict) else {}
+    )
+    raw_selected_sales_brief_trace = sales_brief_traces.get(selected_work_item)
+    selected_sales_brief_trace: dict[str, Any] = (
+        raw_selected_sales_brief_trace
+        if isinstance(raw_selected_sales_brief_trace, dict)
+        else {}
+    )
     private_proposal_scopes = private_proposal_scope_by_target(service_profile)
     return {
         "api_base": live_context.get("api_base"),
@@ -319,6 +400,18 @@ def live_uat_provenance(
         "selected_recommended_mode": selected.get("recommended_mode"),
         "selected_evidence_ids": selected.get("evidence_ids") or [],
         "selected_source_connectors": selected.get("source_connectors") or [],
+        "selected_sales_brief_status": selected_sales_brief_trace.get("status"),
+        "selected_sales_brief_blocker": selected_sales_brief_trace.get("blocker"),
+        "selected_sales_brief_blockers": sales_brief_blocker_labels(
+            selected_sales_brief_trace.get("blockers")
+        ),
+        "selected_sales_brief_constraint_count": selected_sales_brief_trace.get(
+            "knowledge_constraint_count"
+        ),
+        "selected_sales_brief_constraint_evidence_ids": selected_sales_brief_trace.get(
+            "knowledge_constraint_evidence_ids"
+        )
+        or [],
         "service_profile_read_only": service_profile.get("read_only"),
         "production_depth_ready": coverage.get("ready_for_daily_content"),
         "public_service_review_action_count": len(
@@ -382,6 +475,12 @@ def render_live_provenance(value: Any) -> str:
             f"- Tryb wybranego itemu: `{value.get('selected_recommended_mode')}`",
             "- Źródła wybranego itemu: "
             f"{', '.join(value.get('selected_source_connectors') or []) or 'brak'}",
+            "- Sales Brief wybranego itemu: "
+            f"`{value.get('selected_sales_brief_status') or 'brak'}`",
+            "- Sales Brief blocker: "
+            f"{sales_brief_blocker_label(value)}",
+            "- Sales Brief constraint evidence: "
+            f"{sales_brief_evidence_label(value)}",
             "- Service Profile read-only: "
             f"{visible_bool(value.get('service_profile_read_only') is True)}",
             "- Production-depth ready: "
@@ -398,6 +497,29 @@ def render_live_provenance(value: Any) -> str:
             f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
         ]
     )
+
+
+def sales_brief_blocker_label(value: dict[str, Any]) -> str:
+    blocker = value.get("selected_sales_brief_blocker")
+    if blocker:
+        return str(blocker)
+    blockers = sales_brief_blocker_labels(value.get("selected_sales_brief_blockers"))
+    return "; ".join(blockers) or "brak"
+
+
+def sales_brief_evidence_label(value: dict[str, Any]) -> str:
+    evidence_ids = value.get("selected_sales_brief_constraint_evidence_ids") or []
+    return ", ".join(evidence_ids) or "brak"
+
+
+def sales_brief_blocker_labels(value: Any) -> list[str]:
+    labels: list[str] = []
+    for item in raw_list_payload(value):
+        if isinstance(item, dict):
+            labels.append(str(item.get("label") or item.get("reason") or item.get("code")))
+        elif item:
+            labels.append(str(item))
+    return [label for label in labels if label and label != "None"]
 
 
 def private_proposal_scope_by_target(service_profile: dict[str, Any]) -> dict[str, str]:
