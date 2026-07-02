@@ -325,6 +325,14 @@ API status later contradicts this state.
   non-interactive threshold `operator_usefulness_score >= 4`. Freshness handling
   is part of the gate: stale connector snapshots require refresh, repair path or
   blocker before recommendation.
+- `wilq-merchant-feed-operator` now has a fresh live non-interactive usefulness
+  proof at `.local-lab/evals/codex-skill/20260702T012547Z/summary.json`.
+  Result: `operator_usefulness_score=4`, all hard gates true, no failure tags,
+  4 evidence IDs, 2 recommendations and validated
+  `act_review_merchant_feed_issues`. The eval case now uses Polish-inflected
+  route markers (`produktów`, `pliku produktowego`) after two false failures,
+  while still requiring Merchant/product intent, freshness, missing read
+  contracts and blocked product ROAS/revenue/price-impact/feed-write claims.
 - `wilq-content-operator` now has a realistic non-interactive eval case in
   `docs/evals/cases/wilq-skill-eval-cases.json`. Static coverage passes with
   all 13 WILQ skills covered. The first live Codex eval caught a useful harness

@@ -6902,3 +6902,34 @@ Result:
   `promotion_allowed=false`.
 - The report explicitly does not edit `source_facts.json`, change lifecycle
   status, set `approved_current` or unlock production-depth.
+
+## 2026-07-02 - Merchant skill live usefulness eval
+
+Purpose:
+
+- Test the real `wilq-merchant-feed-operator` output against live WILQ API
+  after operator feedback that skills must be useful, refresh-aware and
+  evidence-backed rather than merely schema-valid.
+- Catch brittle eval wording before treating a good Polish answer as a failure.
+
+Focused proof:
+
+```bash
+scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- First two runs failed only on literal Polish markers: `produkty` vs
+  `produktów`, and `plik produktowy` vs `pliku produktowego`. The eval case now
+  uses the natural inflected terms while preserving the product/feed intent.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T012547Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `failure_tags=[]`, all hard gates
+  true, 4 evidence IDs, 2 recommendations, 1 action candidate.
+- The output used `merchant_diagnostics`, `freshness_assessment`,
+  `decision_queue`, `product_sample_readiness`, `product_performance_readiness`
+  and `price_impact_readiness`; it validated `act_review_merchant_feed_issues`
+  and blocked product-level ROAS, recovered revenue, price-impact,
+  reapproval and product-feed write claims without the missing read contracts
+  and audit path.

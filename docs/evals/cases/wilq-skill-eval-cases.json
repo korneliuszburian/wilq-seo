@@ -600,8 +600,8 @@
     "expected_connectors": ["google_merchant_center"],
     "expected_terms_pl": [
       "Merchant Center",
-      "plik produktowy",
-      "produkty",
+      "pliku produktowego",
+      "produktów",
       "merchant_diagnostics",
       "freshness_assessment",
       "decision_queue",
