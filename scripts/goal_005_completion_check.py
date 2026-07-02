@@ -115,6 +115,29 @@ def build_completion_report(
                 next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
+        if (
+            uat_report["valid"]
+            and uat_report["overall_status"] == "ready_for_full_content_uat"
+            and uat_report.get("review_follow_up_suggestions")
+        ):
+            return blocked_report(
+                "goal_005_review_scorecard_follow_up",
+                [
+                    "UAT result is valid, but Wilku's material scorecard still "
+                    "contains follow-up suggestions.",
+                    "Resolve these scorecard follow-ups before claiming Goal 005 "
+                    "completion:",
+                    *review_follow_up_detail_lines(
+                        uat_report["review_follow_up_suggestions"]
+                    ),
+                ],
+                uat_live_provenance=uat_report.get("live_provenance_summary"),
+                uat_review_follow_up_suggestions=uat_report.get(
+                    "review_follow_up_suggestions"
+                ),
+                next_uat_input=next_uat_input,
+                pre_demo_audits=pre_demo_audits,
+            )
         if uat_report["valid"] and uat_report["overall_status"] == "ready_for_full_content_uat":
             return {
                 "status": "complete_with_uat",
@@ -138,8 +161,14 @@ def build_completion_report(
                     "UAT result is valid, but it is not ready for Goal 005 completion.",
                     f"UAT status: {uat_report['overall_status']}",
                     "Use this as follow-up evidence, or provide explicit owner defer.",
+                    *review_follow_up_detail_lines(
+                        uat_report.get("review_follow_up_suggestions") or []
+                    ),
                 ],
                 uat_live_provenance=uat_report.get("live_provenance_summary"),
+                uat_review_follow_up_suggestions=uat_report.get(
+                    "review_follow_up_suggestions"
+                ),
                 next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
@@ -312,6 +341,8 @@ def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str,
         "missing_recommended_review_artifacts": report[
             "missing_recommended_review_artifacts"
         ],
+        "review_follow_up_suggestions": report.get("review_follow_up_suggestions")
+        or [],
         "live_provenance_summary": uat_live_provenance_summary(
             report.get("live_provenance")
         ),
@@ -397,6 +428,7 @@ def blocked_report(
     details: list[str],
     *,
     uat_live_provenance: dict[str, Any] | None = None,
+    uat_review_follow_up_suggestions: list[dict[str, Any]] | None = None,
     next_uat_input: dict[str, Any] | None = None,
     pre_demo_audits: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -405,6 +437,7 @@ def blocked_report(
         "missing_input": missing_input,
         "details": details,
         "uat_live_provenance": uat_live_provenance,
+        "uat_review_follow_up_suggestions": uat_review_follow_up_suggestions or [],
         "next_uat_input": next_uat_input or goal_005_next_uat_input(),
         "pre_demo_audits": pre_demo_audits or goal_005_pre_demo_audit_summary(),
         "safe_scope": (
@@ -444,6 +477,13 @@ def render_markdown(report: dict[str, Any]) -> str:
         if report.get("uat_live_provenance"):
             lines.extend(["", "## Live UAT provenance"])
             lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
+        if report.get("uat_review_follow_up_suggestions"):
+            lines.extend(["", "## Follow-up ze scorecardu Wilka"])
+            lines.extend(
+                render_review_follow_up_suggestions(
+                    report["uat_review_follow_up_suggestions"]
+                )
+            )
         if report.get("next_uat_input"):
             lines.extend(["", "## Następny input UAT"])
             lines.extend(render_next_uat_input(report["next_uat_input"]))
@@ -495,6 +535,28 @@ def render_uat_live_provenance(value: dict[str, Any]) -> list[str]:
         "- Production-depth ready: "
         + ("tak" if value.get("production_depth_ready") is True else "nie"),
     ]
+
+
+def render_review_follow_up_suggestions(value: list[dict[str, Any]]) -> list[str]:
+    if not value:
+        return ["- Brak follow-upów ze scorecardu."]
+    return [f"- {line}" for line in review_follow_up_detail_lines(value)]
+
+
+def review_follow_up_detail_lines(value: list[dict[str, Any]]) -> list[str]:
+    lines: list[str] = []
+    for item in value:
+        low_scores = [
+            f"{score.get('label')} {score.get('score')}/5"
+            for score in item.get("low_scores", [])
+            if isinstance(score, dict)
+        ]
+        lines.append(
+            f"{item.get('material')}: decyzja `{item.get('decision')}`, "
+            f"słabe oceny: {', '.join(low_scores) or 'brak'}, "
+            f"poprawka: {item.get('requested_fix')}"
+        )
+    return lines
 
 
 def render_next_uat_input(value: dict[str, Any]) -> list[str]:

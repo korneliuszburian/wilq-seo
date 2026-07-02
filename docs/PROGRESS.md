@@ -1469,6 +1469,11 @@ live API status later contradicts this state.
   plain follow-up suggestion with the material path, decision, weak score and
   requested fix, so Wilku's review can feed the next product/code slice without
   manually rereading the whole report.
+- Goal 005 completion guard now consumes those scorecard follow-ups. A valid
+  UAT result with all boolean gates set to yes still cannot return
+  `complete_with_uat` when Wilku's material scorecard contains non-approved
+  decisions or weak ratings; it blocks as
+  `goal_005_review_scorecard_follow_up` and renders the exact weak scores.
 - Quality-review API tests no longer depend on the current live
   `/api/content/work-items/snapshot` decision. They now build a deterministic
   BDO ready chain through the same Sales Brief, Draft Package and Structured

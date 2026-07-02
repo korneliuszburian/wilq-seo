@@ -210,7 +210,13 @@ def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
     assert report["status"] == "blocked_missing_goal_005_uat_proof"
     assert report["missing_input"] == "goal_005_uat_ready_for_full_content_uat"
     assert any("needs_follow_up_before_full_content_uat" in detail for detail in report["details"])
+    assert report["uat_review_follow_up_suggestions"][0]["decision"] == "popraw"
+    assert any("dopasowanie CTA 3/5" in detail for detail in report["details"])
     assert "realny dowód użyteczności dla Wilka" in report["blocked_claims"]
+
+    markdown = render_markdown(report)
+    assert "## Follow-up ze scorecardu Wilka" in markdown
+    assert "dopasowanie CTA 3/5" in markdown
 
 
 def test_goal_005_completion_check_blocks_ready_uat_without_plain_review_model(
@@ -258,6 +264,59 @@ def test_goal_005_completion_check_blocks_ready_uat_without_plain_review_model(
         for detail in report["details"]
     )
     assert any("2026-07-02-co-pokazac-wilkowi.md" in detail for detail in report["details"])
+
+
+def test_goal_005_completion_check_blocks_ready_uat_with_scorecard_follow_up(
+    tmp_path: Path,
+) -> None:
+    result_path = tmp_path / "goal-005-uat-result.json"
+    result_path.write_text(
+        json.dumps(
+            {
+                "data_sesji": "2026-07-02",
+                "osoba": "Wilku",
+                "czas_do_zrozumienia_statusu": "8 minut",
+                "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
+                "wybrany_work_item": (
+                    "content_work_item_content_decision_https___www_ekologus_pl"
+                ),
+                "pokazane_materialy_review": [
+                    "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
+                    "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+                    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+                ],
+                "oceny_materialow_review": _scorecard(
+                    [
+                        "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
+                        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+                        "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+                    ],
+                    decision="zatwierdź",
+                    cta_score=3,
+                ),
+                "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+                "miejsca_generyczne_off_brand": "Nie znaleziono krytycznych miejsc.",
+                "najwiekszy_brak_produktu": "Brak dalszych blokad dla tego testu.",
+                "wilku_rozumie_blokady_pelnego_uat": "tak",
+                "service_profile_czytelny": "tak",
+                "public_service_review_actions_czytelne": "tak",
+                "private_review_actions_czytelne": "tak",
+                "private_policy_review_actions_czytelne": "tak",
+                "mozna_przejsc_do_pelnego_content_uat": "tak",
+                "follow_up_beads": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_completion_report(uat_result=result_path)
+
+    assert report["status"] == "blocked_missing_goal_005_uat_proof"
+    assert report["missing_input"] == "goal_005_review_scorecard_follow_up"
+    assert report["uat_review_follow_up_suggestions"]
+    assert any("dopasowanie CTA 3/5" in detail for detail in report["details"])
+    assert "## Follow-up ze scorecardu Wilka" in render_markdown(report)
 
 
 def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
@@ -321,6 +380,7 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
                         "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
                     ],
                     decision="zatwierdź",
+                    cta_score=4,
                 ),
                 "pytania_skad_to_wzielo": "Źródła danych były jasne.",
                 "miejsca_generyczne_off_brand": "Nie znaleziono krytycznych miejsc.",
@@ -356,7 +416,12 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
     assert "Pokazane materiały review" in markdown
 
 
-def _scorecard(artifacts: list[str], *, decision: str = "popraw") -> list[dict[str, object]]:
+def _scorecard(
+    artifacts: list[str],
+    *,
+    decision: str = "popraw",
+    cta_score: int = 3,
+) -> list[dict[str, object]]:
     return [
         {
             "material": artifact,
@@ -365,7 +430,7 @@ def _scorecard(artifacts: list[str], *, decision: str = "popraw") -> list[dict[s
             "uzytecznosc_1_5": 5,
             "glos_ekologus_1_5": 4,
             "zaufanie_do_blokad_1_5": 4,
-            "dopasowanie_cta_1_5": 3,
+            "dopasowanie_cta_1_5": cta_score,
             "najwazniejsza_poprawka": "Doprecyzować język i kolejny krok.",
         }
         for artifact in artifacts
