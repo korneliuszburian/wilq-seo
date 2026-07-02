@@ -145,6 +145,13 @@ live API status later contradicts this state.
   and `gap_record_count=8` as a review-only Ahrefs gap queue, keeps
   `action_count=0` honest instead of inventing an ActionObject, and blocks
   traffic-growth/authority-growth claims.
+- Localo Operator usefulness proof: replayed non-interactive eval for
+  `wilq-localo-operator` passed at
+  `.local-lab/evals/codex-skill/20260702T161619Z` with
+  `operator_usefulness_score=5`. It validates
+  `act_review_localo_visibility_facts`, uses two Localo evidence IDs, treats
+  aggregate visibility/GBP/review facts as review-only, and keeps local-task,
+  profile-write and local-visibility improvement claims blocked.
 - Social Publisher usefulness proof: non-interactive eval replay passed at
   `.local-lab/evals/codex-skill/20260702T160931Z` with
   `operator_usefulness_score=5`. It stays review-only with

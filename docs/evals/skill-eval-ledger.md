@@ -8870,6 +8870,13 @@ Result:
 - The output kept `ukończone zadanie lokalne`, `zapis zmian w profilu firmy`,
   `poprawa widoczności lokalnej`, write/apply and unsupported ranking claims
   blocked until further proof and human review.
+- Current replay proof after the latest Goal 005 eval slice is stored at
+  `.local-lab/evals/codex-skill/20260702T161619Z`. It again passed with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true,
+  evidence IDs `ev_connector_localo_status` and
+  `ev_refresh_refresh_localo_588bc91e81e8`, validated
+  `act_review_localo_visibility_facts`, and kept `local_tasks`, GBP/profile
+  writes and "poprawa widoczności lokalnej" blocked.
 
 ## 2026-07-02 - Merchant Feed Operator usefulness eval
 
