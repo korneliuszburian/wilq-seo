@@ -133,6 +133,15 @@ API status later contradicts this state.
   artifacts where available, live API connector context (`12` connectors, `9`
   configured, `2` missing credentials) and the current strongest operator paths
   instead of the old June 24 12-skill snapshot.
+- Ahrefs Gap Finder eval proof on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T030715Z`. The non-interactive eval
+  passed with `operator_usefulness_score=4`, eight Ahrefs evidence IDs, two
+  recommendations, three review-only action candidates and all hard gates true.
+  It kept lineage scoped to `ahrefs`, handled `gap_records_omitted=true` as
+  context compaction rather than a blocker, avoided unrelated action IDs, and
+  blocked traffic/autorytet growth promises. The eval harness now also tells
+  Codex not to use technical runtime names such as `ActionObject` in
+  operator-facing text.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/

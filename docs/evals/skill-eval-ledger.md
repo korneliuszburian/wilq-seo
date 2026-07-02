@@ -201,6 +201,47 @@ Result:
   profitability, revenue, conversion-rate, ROAS, GA4 write and "measurement
   fixed" claims without separate contracts.
 
+## 2026-07-02 - `wilq-ahrefs-gap-finder` review-only gap eval
+
+Purpose:
+
+- Re-check Ahrefs after the user asked for BDOS-class usefulness rather than
+  generic reports.
+- Verify that the skill keeps lineage scoped to `ahrefs` for an Ahrefs gap
+  prompt, even though the smoke script also checks adjacent connector readiness.
+- Prove that compacted gap records can support review-only SEO context without
+  promising traffic, authority growth, ranking uplift or writes.
+- Remove confusing runtime terminology from operator-facing non-interactive
+  eval output.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Smoke passed against live WILQ API. It confirmed `ahrefs` configured, eight
+  Ahrefs evidence IDs, two authority facts, 298 gap facts, two Ahrefs decision
+  IDs, `gap_read_contract.status=ready`, `gap_record_count=8`,
+  `gap_records_omitted=true`, empty `missing_read_contracts`, no action IDs and
+  blocked claims for `wzrost ruchu` and `wzrost autorytetu`.
+- The first non-interactive eval failed because the answer used the technical
+  term `ActionObject` in text meant for the operator. The eval harness now
+  instructs Codex to write `akcja do sprawdzenia`, `podgląd` or `sprawdzenie w
+  WILQ` instead of runtime names.
+- Final non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260702T030715Z`.
+- Summary: `operator_usefulness_score=4`, `blocked=false`, eight evidence IDs,
+  two recommendations, three review-only action candidates, empty
+  `failure_tags`, all hard gates true.
+- Output keeps `source_connectors=["ahrefs"]`, avoids unrelated action IDs,
+  treats `gap_records_omitted=true` as context compaction rather than a blocker,
+  and blocks traffic/autorytet growth promises without cross-source measurement
+  or approved action contracts.
+
 ## 2026-07-02 - OpenAI-aligned hard gates for non-interactive skill evals
 
 Purpose:

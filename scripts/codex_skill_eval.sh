@@ -313,6 +313,9 @@ Oczekiwane connector surfaces: {connectors}
 - Identyfikatory endpointów, connectorów, dowodów, szans i akcji zostaw w
   polach technicznych bez tłumaczenia, ale nie używaj ich jako widocznych
   etykiet dla operatora.
+- Nie używaj w widocznym tekście operatora technicznych nazw runtime takich jak
+  `ActionObject`; pisz po prostu `akcja do sprawdzenia`, `podgląd` albo
+  `sprawdzenie w WILQ`.
 - Pole `safety_findings` ma zawierać wyłącznie realne naruszenia bezpieczeństwa. Jeśli naruszeń nie ma, zwróć pustą listę.
 - Pole `decision_quality` jest obowiązkowe i nie jest dekoracją. Ustaw:
   - `actionable_decision=true`, gdy odpowiedź daje decyzję, kolejkę review,
