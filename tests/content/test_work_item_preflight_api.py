@@ -780,7 +780,7 @@ def test_content_work_item_snapshot_persists_real_human_review(
         work_item_id=item["id"],
         evidence_ids=item["evidence_ids"],
         draft_package_id=draft["id"],
-        blocked_claims_handled=[],
+        blocked_claims_handled=draft["claims_removed_or_blocked"],
     )
 
     response = client.post(
@@ -853,7 +853,7 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
         work_item_id=item["id"],
         evidence_ids=item["evidence_ids"],
         draft_package_id=draft["id"],
-        blocked_claims_handled=[],
+        blocked_claims_handled=draft["claims_removed_or_blocked"],
     )
     client.post("/api/content/work-items/snapshot/human-review", json={"review": review})
 
@@ -903,6 +903,7 @@ def test_content_work_item_snapshot_does_not_persist_mismatched_audit(
         work_item_id=item["id"],
         evidence_ids=item["evidence_ids"],
         draft_package_id=draft["id"],
+        blocked_claims_handled=draft["claims_removed_or_blocked"],
     )
     client.post("/api/content/work-items/snapshot/human-review", json={"review": review})
 

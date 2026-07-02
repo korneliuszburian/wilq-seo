@@ -9132,9 +9132,9 @@ Result:
 
 Purpose:
 
-- Re-test `wilq-content-operator` after the Goal 005 completion guard and
-  Wilku handoff started exposing the next Service Profile review actions in
-  plain language.
+- Re-test `wilq-content-operator` after the homepage Sales Brief became
+  source-backed/review-required and the skill eval language guard was tightened
+  to keep technical identifiers out of operator prose.
 - Confirm that the skill still treats the content workflow as blocked until
   Service Profile, Claim Ledger, human review and measurement gates are
   satisfied.
@@ -9149,16 +9149,20 @@ rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://
 Result:
 
 - Passing proof is stored at
-  `.local-lab/evals/codex-skill/20260702T183711Z/wilq-content-operator/result.json`.
+  `.local-lab/evals/codex-skill/20260702T195256Z/wilq-content-operator/result.json`.
 - The eval passed with `operator_usefulness_score=5`, `blocked=true`,
-  `failure_tags=[]`, six evidence IDs, seven action candidates and all hard
+  `failure_tags=[]`, six evidence IDs, five action candidates and all hard
   gates true.
 - Source connectors used: `google_analytics_4`, `ahrefs`,
   `google_search_console` and `wordpress_ekologus`.
 - The deterministic smoke selected
   `content_work_item_content_decision_https___www_ekologus_pl`, mode
-  `refresh`, with `workflow_blocked=true`, `knowledge_card_count=10` and
+  `refresh`, with `workflow_blocked=true`, `knowledge_card_count=12` and
   queue status `blocked`.
+- A failed eval immediately before this run caught the phrase `evidence IDs` in
+  operator-facing text. The harness and skill output contract now require
+  Polish operator labels such as `dowody WILQ`, while raw IDs remain in
+  technical JSON fields.
 - The output kept final article generation, WordPress publication and
   measurement-success claims blocked. The safe next step remains a review/
   preparation step, not production-depth publication.

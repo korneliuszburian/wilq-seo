@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from wilq.content.briefs.sales import ContentSalesBriefSeed, ContentSalesBriefSourceFact
-from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
+from wilq.content.canonical.urls import (
+    CONTENT_SOURCE_SITE_HOSTS,
+    content_normalized_path,
+    content_url_host,
+)
 from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
 from wilq.content.inventory.records import ContentInventoryRecord
 from wilq.content.workflow.models import (
@@ -118,10 +122,10 @@ def content_sales_brief_seed_from_decision(
         buyer_trigger=f"użytkownik szuka informacji lub pomocy dla tematu: {primary_query}",
         search_intent="informacyjno-usługowy",
         service_fit="sprawdzenie, czy temat pasuje do usługi Ekologus przed szkicem",
-        h1_direction=decision.title,
+        h1_direction=_decision_h1_direction(decision),
         h2_direction=_decision_h2_direction(decision),
-        faq_direction=[f"Co trzeba sprawdzić przed działaniem w temacie: {primary_query}?"],
-        cta_direction="Zaproponuj kontakt w celu sprawdzenia sytuacji firmy bez obietnicy wyniku.",
+        faq_direction=_decision_faq_direction(decision, primary_query),
+        cta_direction=_decision_cta_direction(decision),
         internal_link_direction=["https://ekologus.pl/kontakt/"],
         source_facts=[
             ContentSalesBriefSourceFact(
@@ -164,9 +168,56 @@ def _duplicate_status(decision: ContentDecisionItem) -> ContentDuplicateStatus:
 
 
 def _decision_h2_direction(decision: ContentDecisionItem) -> list[str]:
+    if _decision_is_homepage(decision):
+        return [
+            "W czym pomaga Ekologus",
+            "Kiedy warto skonsultować obowiązki środowiskowe",
+            "Jak przygotować się do rozmowy",
+        ]
     if decision.queries:
         return [f"Co wiemy z zapytań: {query}" for query in decision.queries[:2]]
     return ["Co pokazują dane", "Co sprawdzić przed publikacją"]
+
+
+def _decision_h1_direction(decision: ContentDecisionItem) -> str:
+    if _decision_is_homepage(decision):
+        return "Ekologus - doradztwo i outsourcing środowiskowy dla firm"
+    return decision.title
+
+
+def _decision_faq_direction(
+    decision: ContentDecisionItem,
+    primary_query: str,
+) -> list[str]:
+    if _decision_is_homepage(decision):
+        return [
+            "Z jakimi obowiązkami środowiskowymi Ekologus może pomóc firmie?",
+            "Jakie informacje przygotować przed kontaktem z Ekologus?",
+        ]
+    return [f"Co trzeba sprawdzić przed działaniem w temacie: {primary_query}?"]
+
+
+def _decision_cta_direction(decision: ContentDecisionItem) -> str:
+    if _decision_is_homepage(decision):
+        return (
+            "Zaproponuj kontakt z Ekologus w celu krótkiego opisania sytuacji "
+            "firmy i dobrania właściwego obszaru wsparcia, bez obietnicy wyniku."
+        )
+    return "Zaproponuj kontakt w celu sprawdzenia sytuacji firmy bez obietnicy wyniku."
+
+
+def _decision_is_homepage(decision: ContentDecisionItem) -> bool:
+    urls = (
+        decision.final_canonical_url,
+        decision.intended_final_url,
+        decision.source_public_url,
+        decision.page,
+    )
+    return any(
+        content_url_host(url) in {"ekologus.pl", "www.ekologus.pl"}
+        and content_normalized_path(url) == "/"
+        for url in urls
+    )
 
 
 def _source_connector_for_evidence(decision: ContentDecisionItem, index: int) -> str:

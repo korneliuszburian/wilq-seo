@@ -4,7 +4,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
+from wilq.content.canonical.urls import (
+    CONTENT_SOURCE_SITE_HOSTS,
+    content_normalized_path,
+    content_url_host,
+)
 from wilq.content.workflow.decision_mapping import content_work_item_from_decision
 from wilq.content.workflow.queue import (
     ContentQueueRecommendedMode,
@@ -465,7 +469,26 @@ def _cta_hypothesis(decision: ContentDecisionItem) -> str:
         return "Zaproponuj konsultację obowiązków bez gwarancji uniknięcia kar lub wyniku."
     if intent == "gap_review":
         return "Najpierw sprawdź dopasowanie luki do usługi, potem dopiero kieruj do kontaktu."
+    if _decision_is_homepage(decision):
+        return (
+            "Zaproponuj kontakt z Ekologus w celu krótkiego opisania sytuacji "
+            "firmy i dobrania właściwego obszaru wsparcia, bez obietnicy wyniku."
+        )
     return "Zaproponuj kontakt z Ekologus w celu sprawdzenia sytuacji firmy."
+
+
+def _decision_is_homepage(decision: ContentDecisionItem) -> bool:
+    urls = (
+        decision.final_canonical_url,
+        decision.intended_final_url,
+        decision.source_public_url,
+        decision.page,
+    )
+    return any(
+        content_url_host(url) in {"ekologus.pl", "www.ekologus.pl"}
+        and content_normalized_path(url) == "/"
+        for url in urls
+    )
 
 
 def _safe_next_step(

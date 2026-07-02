@@ -93,6 +93,52 @@ def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow
     assert "sales_brief" not in payload
 
 
+def test_homepage_work_item_builds_review_required_public_brief_without_publish(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    client = TestClient(app)
+
+    snapshot = _get_selected_snapshot(
+        client,
+        "content_work_item_content_decision_https___www_ekologus_pl",
+    )
+    brief_result = snapshot["sales_brief"]["sales_brief_result"]
+    blocker_codes = [blocker["code"] for blocker in brief_result["blockers"]]
+
+    assert "missing_required_knowledge_card" not in blocker_codes
+    brief = brief_result["brief"]
+    assert brief is not None
+    assert brief["signal_quality"]["status"] == "review_required"
+    assert brief["draft_allowed"] is False
+    assert "SEO:" not in brief["h1_direction"]
+    assert "odśwież" not in brief["h1_direction"].lower()
+    assert brief["h1_direction"].startswith("Ekologus")
+    assert brief["h2_direction"] == [
+        "W czym pomaga Ekologus",
+        "Kiedy warto skonsultować obowiązki środowiskowe",
+        "Jak przygotować się do rozmowy",
+    ]
+    assert "bez obietnicy wyniku" in brief["cta_direction"]
+    assert "ekologus_service_homepage_overview" in brief["knowledge_card_ids"]
+    assert "ekologus_cta_homepage_contact_review_required" in brief[
+        "knowledge_card_ids"
+    ]
+
+    structured = snapshot["structured_generation"]["structured_generation_result"]
+    if structured["contract"] is not None:
+        assert structured["contract"]["publish_ready"] is False
+    handoff = snapshot["wordpress_handoff"]["handoff_result"]
+    assert handoff["handoff"] is None
+    assert "missing_human_review" in {blocker["code"] for blocker in handoff["blockers"]}
+    measurement = snapshot["measurement_window"]
+    assert measurement["measurement_window_result"]["window"]["success_claim_allowed"] is False
+    assert "measurement_window_not_ready" in {
+        blocker["code"] for blocker in measurement["outcome_blockers"]
+    }
+
+
 def test_selected_content_work_item_output_and_quality_state_is_isolated(
     monkeypatch: Any,
     tmp_path: Path,

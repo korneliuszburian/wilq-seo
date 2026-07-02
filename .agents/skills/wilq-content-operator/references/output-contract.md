@@ -25,7 +25,7 @@ Wymagane źródła danych zależą od itemu i muszą pochodzić z API:
 
 ## Kształt odpowiedzi
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Kolejka treści`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Kolejka treści`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet typu `evidence IDs` ani `source connectors` poza technicznymi polami JSON.
 
 1. `Status`: dostępność WILQ API, status kolejki, wybrany `work_item_id`, gotowość preflightu, quality review, human review, WordPress draft-only i measurement window.
 2. `Dowody`: identyfikatory dowodów, identyfikatory źródeł danych, final canonical, preview URL jako preview, enrichment facts, karty wiedzy i measurement boundary wyłącznie z WILQ API.

@@ -459,6 +459,7 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
             item.topic,
             item.source_public_url,
             item.final_canonical_url,
+            *_homepage_match_markers(item),
             *item.evidence_ids,
             *item.source_connectors,
         ]
@@ -698,6 +699,26 @@ def _blocker(
 
 def _search_text(values: Iterable[object]) -> str:
     return " ".join(str(value).lower() for value in values if value)
+
+
+def _homepage_match_markers(item: ContentWorkItem) -> list[str]:
+    root_urls = {
+        "https://ekologus.pl",
+        "https://ekologus.pl/",
+        "https://www.ekologus.pl",
+        "https://www.ekologus.pl/",
+    }
+    item_urls = {
+        str(url).strip().lower().rstrip("/") for url in (
+            item.source_public_url,
+            item.final_canonical_url,
+            item.intended_final_url,
+        )
+        if url
+    }
+    if item_urls & {url.rstrip("/") for url in root_urls}:
+        return ["homepage_overview"]
+    return []
 
 
 def _slug(value: str) -> str:

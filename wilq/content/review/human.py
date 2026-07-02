@@ -202,7 +202,14 @@ def _claim_handling_blockers(
 ) -> list[ContentHumanReviewBlocker]:
     required_claims = set(draft_package.claims_removed_or_blocked if draft_package else [])
     if claim_ledger is not None:
-        required_claims.update(blocker.claim_id for blocker in claim_ledger_blockers(claim_ledger))
+        required_claims.update(
+            _claim_handling_ref(entry.id, entry.claim_text)
+            for blocker in claim_ledger_blockers(claim_ledger)
+            for entry in claim_ledger.entries
+            if entry.id == blocker.claim_id
+            and entry.id not in review.blocked_claims_handled
+            and entry.claim_text not in review.blocked_claims_handled
+        )
     missing = sorted(required_claims.difference(review.blocked_claims_handled))
     if not missing:
         return []
@@ -215,6 +222,12 @@ def _claim_handling_blockers(
             "Uzupełnij listę obsłużonych ryzykownych twierdzeń: " + ", ".join(missing),
         )
     ]
+
+
+def _claim_handling_ref(claim_id: str, claim_text: str) -> str:
+    if claim_text:
+        return claim_text
+    return claim_id
 
 
 def _blocker(

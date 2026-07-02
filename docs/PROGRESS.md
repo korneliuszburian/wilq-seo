@@ -197,15 +197,25 @@ live API status later contradicts this state.
   gates true. The selected work item now exposes and validates
   `act_prepare_content_refresh_queue`, so Wilku gets a concrete safe action
   instead of only a descriptive blocked workflow.
-- Content workflow Claim Ledger now uses marketer-useful claim semantics for
-  the selected homepage refresh item: one source-backed allowed claim plus
-  explicit blocked claims for SEO position improvement, lead growth and
-  visibility guarantees. Blocked claims no longer stop an outline when a safe
-  publish-ready claim exists; they flow into `claims_removed_or_blocked` so the
-  model sees what not to say. Live API still blocks the homepage Sales Brief on
-  `missing_required_knowledge_card` for service and CTA, so the next content
-  slice is review-required homepage service/CTA knowledge plus public-facing
-  H1/H2/CTA directions.
+- Content workflow Claim Ledger and homepage Sales Brief now produce a useful
+  review-required plan for the selected homepage refresh item. WILQ added
+  commit-safe public source facts for homepage service overview and contact CTA,
+  matches them only for the exact root URL, and returns public-facing H1/H2/CTA:
+  `Ekologus - doradztwo i outsourcing środowiskowy dla firm`, `W czym pomaga
+  Ekologus`, `Kiedy warto skonsultować obowiązki środowiskowe`, `Jak
+  przygotować się do rozmowy`, plus contact CTA without outcome promises. Live
+  API proof: brief exists, `signal_quality.status=review_required`,
+  `draft_allowed=false`, no `missing_required_knowledge_card` blockers,
+  structured generation remains `publish_ready=false`, WordPress handoff is
+  blocked by `missing_human_review` and `missing_audit`, and measurement success
+  remains blocked by `measurement_window_not_ready`.
+- WordPress authoring direction: Ekologus likely uses ACF Flexible Content, so
+  the next WordPress element slice should inventory real ACF layouts and define
+  a typed `ACF Flexible Content` section contract before any custom block,
+  Interactivity API or Abilities API work. Interactivity API remains useful
+  later for interactive blocks, and Abilities API can become a discovery bridge,
+  but the first production path should map WILQ draft-only packages to existing
+  ACF layouts with ActionObject preview/review/audit.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with

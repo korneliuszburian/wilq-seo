@@ -628,6 +628,43 @@ def test_water_permit_topic_matches_review_required_public_source_card() -> None
     )
 
 
+def test_homepage_root_matches_review_required_cards_without_url_overmatch() -> None:
+    match = match_content_knowledge_cards(
+        _item(
+            id="content_work_item_homepage",
+            topic='SEO: odśwież lub scal "ekologus" (24 zapytań)',
+            source_public_url="https://www.ekologus.pl/",
+            final_canonical_url="https://www.ekologus.pl/",
+            intended_final_url="https://www.ekologus.pl/",
+            evidence_ids=["ev_gsc_homepage", "ev_wp_homepage"],
+        )
+    )
+
+    assert match.blockers == []
+    assert match.service_card is not None
+    assert match.service_card.id == "ekologus_service_homepage_overview"
+    assert match.service_card.lifecycle_status == "source_backed_review_required"
+    assert "ekologus_public_homepage_service_overview_2026_07_02" in (
+        match.service_card.source_fact_ids
+    )
+    assert [card.id for card in match.cta_cards[:1]] == [
+        "ekologus_cta_homepage_contact_review_required"
+    ]
+
+    neutral = match_content_knowledge_cards(
+        _item(
+            topic="Neutralny temat w tej samej domenie",
+            source_public_url="https://www.ekologus.pl/neutralny-temat/",
+            final_canonical_url="https://www.ekologus.pl/neutralny-temat/",
+            intended_final_url="https://www.ekologus.pl/neutralny-temat/",
+            evidence_ids=["ev_neutral"],
+        )
+    )
+    blocker_codes = {blocker.code for blocker in content_knowledge_card_blockers(neutral)}
+    assert neutral.service_card is None
+    assert {"missing_service_card", "missing_cta_card"} <= blocker_codes
+
+
 def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -> None:
     response = content_knowledge_cards_response()
 

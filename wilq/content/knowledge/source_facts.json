@@ -60,6 +60,109 @@
       ]
     },
     {
+      "source_id": "ekologus_public_homepage_service_overview_2026_07_02",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/",
+      "extracted_fact": "Publiczna strona główna Ekologus może wspierać review-required plan odświeżenia przeglądu oferty i kierowania użytkownika do właściwego obszaru wsparcia środowiskowego.",
+      "scope": "service",
+      "freshness_date": "2026-07-02",
+      "confidence": 0.7,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja zgodności środowiskowej po kontakcie",
+        "rozstrzygnięcie obowiązków konkretnej firmy bez review",
+        "twierdzenie o poprawie pozycji SEO lub leadów bez okna pomiaru"
+      ],
+      "target_card_id": "ekologus_service_homepage_overview",
+      "target_card_type": "service",
+      "target_card_title": "Strona główna i przegląd oferty Ekologus",
+      "service_fit_terms": [
+        "homepage_overview"
+      ],
+      "buyer_problem_terms": [
+        "użytkownik nie wie od której usługi zacząć",
+        "potrzeba ogólnego przeglądu wsparcia środowiskowego",
+        "firma chce sprawdzić, czy Ekologus pasuje do jej sytuacji"
+      ],
+      "buyer_triggers": [
+        "użytkownik trafia na stronę główną z zapytań brandowych lub ogólnych",
+        "strona główna ma prowadzić do właściwej usługi bez obietnicy wyniku",
+        "WILQ odświeża istniejącą publiczną treść zamiast tworzyć duplikat"
+      ],
+      "cta_patterns": [
+        "Poproś użytkownika o krótki opis sytuacji firmy i skieruj go do kontaktu z Ekologus.",
+        "Zaproponuj rozmowę w celu dobrania właściwego obszaru wsparcia, bez obietnicy wyniku."
+      ],
+      "allowed_claims": [
+        "Strona główna może porządkować, w czym Ekologus pomaga firmom w obszarze środowiskowym.",
+        "Treść może kierować użytkownika do kontaktu, gdy nie wie, który obszar oferty pasuje do jego sytuacji."
+      ],
+      "evidence_requirements": [
+        "GSC/WordPress evidence is required before recommending a homepage refresh or merge.",
+        "Service scope, legal, penalty, SEO result and lead-growth claims require review or measurement evidence."
+      ],
+      "usage_notes": [
+        "Karta dotyczy tylko dokładnego root URL strony głównej; nie wolno jej używać do dowolnej podstrony w domenie.",
+        "Używaj jako source-backed review-required service fact dla analizy i UAT."
+      ]
+    },
+    {
+      "source_id": "ekologus_public_homepage_contact_cta_2026_07_02",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/",
+      "extracted_fact": "Dla odświeżenia strony głównej bezpieczny CTA powinien prowadzić do kontaktu i opisania sytuacji firmy, nie do obietnicy wyniku, pozycji SEO, uniknięcia kar ani automatycznego rozstrzygnięcia obowiązków.",
+      "scope": "cta",
+      "freshness_date": "2026-07-02",
+      "confidence": 0.71,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja efektu po wysłaniu formularza",
+        "obiecanie uniknięcia kary",
+        "obietnica wzrostu leadów lub pozycji SEO bez pomiaru"
+      ],
+      "target_card_id": "ekologus_cta_homepage_contact_review_required",
+      "target_card_type": "cta_pattern",
+      "target_card_title": "CTA strony głównej: kontakt i opis sytuacji",
+      "service_fit_terms": [
+        "homepage_overview"
+      ],
+      "buyer_problem_terms": [
+        "użytkownik nie wie, czy ma BDO, odpady, pozwolenia, szkolenie czy audyt",
+        "użytkownik potrzebuje bezpiecznego pierwszego kroku"
+      ],
+      "buyer_triggers": [
+        "odświeżenie strony głównej",
+        "użytkownik wchodzi z zapytania brandowego lub ogólnego"
+      ],
+      "cta_patterns": [
+        "Opisz sytuację firmy i zapytaj Ekologus, który obszar wsparcia wymaga sprawdzenia.",
+        "Skontaktuj się z Ekologus, żeby dobrać właściwy zakres konsultacji bez obietnicy wyniku."
+      ],
+      "allowed_claims": [
+        "CTA może prowadzić do rozmowy lub formularza kontaktowego.",
+        "CTA może prosić o opis sytuacji firmy i dokumentów do sprawdzenia."
+      ],
+      "evidence_requirements": [
+        "CTA requires service fit and claim policy review before production-depth use.",
+        "Outcome claims require measurement evidence and cannot be implied by the CTA."
+      ],
+      "usage_notes": [
+        "Nie zamieniaj CTA strony głównej w obietnicę zgodności, leadów albo uniknięcia kar."
+      ]
+    },
+    {
       "source_id": "ekologus_public_bdo_faq_2026_07_01",
       "source_type": "public_site",
       "privacy_class": "commit_safe",
