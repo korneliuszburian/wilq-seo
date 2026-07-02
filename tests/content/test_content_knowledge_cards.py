@@ -20,6 +20,10 @@ from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
     required_content_knowledge_card_ids,
 )
+from wilq.content.knowledge.private_source_proposals import (
+    PrivateSourceProposalRegistry,
+    ekologus_private_source_proposal_registry,
+)
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.knowledge.source_facts import (
     ContentSourceFact,
@@ -125,6 +129,22 @@ def test_ekologus_ai_source_facts_are_redacted_review_required_proposals() -> No
     assert all(fact.blocked_claims for fact in private_facts)
     assert all(fact.evidence_requirements for fact in private_facts)
     assert all(fact.usage_notes for fact in private_facts)
+
+
+def test_private_source_proposal_registry_rejects_duplicate_proposal_ids() -> None:
+    registry = ekologus_private_source_proposal_registry()
+
+    assert registry.proposal_count == len(registry.proposals)
+    assert len({proposal.proposal_id for proposal in registry.proposals}) == len(
+        registry.proposals
+    )
+
+    proposal = registry.proposals[0]
+    with pytest.raises(ValidationError, match="proposal_id values must be unique"):
+        PrivateSourceProposalRegistry(
+            proposals=[proposal, proposal],
+            proposal_count=2,
+        )
 
 
 def test_ekologus_ai_source_facts_require_private_governance_fields() -> None:

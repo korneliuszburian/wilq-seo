@@ -186,6 +186,9 @@ API status later contradicts this state.
   cards, Service Profile or review actions can compile ambiguous source
   handles. Focused proof:
   `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`.
+- Private source proposal registry handles are guarded the same way: duplicate
+  `proposal_id` values and mismatched `proposal_count` are invalid before
+  redacted `ekologus-ai` proposals reach Service Profile review actions.
 - Approved source facts now also require `reviewer`, `evidence_ids` and
   `source_connectors` at the model layer. This prevents a future
   `approved_current` knowledge card from being unlocked by reviewed prose

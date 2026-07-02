@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
 
@@ -67,6 +67,25 @@ class PrivateSourceProposalRegistry(BaseModel):
 
     proposals: list[PrivateSourceProposal] = Field(default_factory=list)
     proposal_count: int
+
+    @model_validator(mode="after")
+    def validate_registry(self) -> PrivateSourceProposalRegistry:
+        proposal_ids = [proposal.proposal_id for proposal in self.proposals]
+        duplicate_proposal_ids = sorted(
+            proposal_id
+            for proposal_id in set(proposal_ids)
+            if proposal_ids.count(proposal_id) > 1
+        )
+        if duplicate_proposal_ids:
+            raise ValueError(
+                "private source proposal_id values must be unique: "
+                + ", ".join(duplicate_proposal_ids)
+            )
+        if self.proposal_count != len(self.proposals):
+            raise ValueError(
+                "private source proposal registry proposal_count must match proposals length"
+            )
+        return self
 
 
 @lru_cache(maxsize=1)
