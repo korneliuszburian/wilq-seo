@@ -290,6 +290,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "product_performance_readiness",
                 "price_impact_readiness",
                 "merchant_price_impact_readiness_preview_v1",
+                "required_read_contracts",
                 "missing_read_contracts",
                 "sample_product_ids",
                 "issue",
@@ -609,6 +610,12 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "wpływ zmiany ceny" in merchant_case["blocked_claim_terms"]
     assert "ponowne zatwierdzenie produktu" in merchant_case["blocked_claim_terms"]
     assert "zapis do pliku produktowego" in merchant_case["blocked_claim_terms"]
+    assert "required_read_contracts" in merchant_case["task_pl"]
+    assert "missing_read_contracts" in merchant_case["task_pl"]
+    assert "Nie myl required_read_contracts z missing_read_contracts" in merchant_case["task_pl"]
+    assert "wypisz ich wartości literalnie" in merchant_case["task_pl"]
+    assert "required_read_contracts" in merchant_case["expected_terms_pl"]
+    assert "missing_read_contracts" in merchant_case["expected_terms_pl"]
 
     for skill in (
         "wilq-content-strategist",
@@ -820,6 +827,10 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "review_price_impact_readiness" in merchant_smoke_script
     assert "merchant_decision_review_price_impact_readiness" in merchant_smoke_script
     assert "merchant_price_impact_readiness_preview_v1" in merchant_smoke_script
+    assert "required_read_contracts" in merchant_skill_doc
+    assert "missing_read_contracts" in merchant_skill_doc
+    assert "Nie wolno opisywać całej" in merchant_skill_doc
+    assert "wypisz jego wartości literalnie" in merchant_skill_doc
     merchant_validation_call = (
         'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
     )

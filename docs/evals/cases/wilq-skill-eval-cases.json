@@ -703,7 +703,7 @@
   {
     "skill": "wilq-merchant-feed-operator",
     "surface_path": "/merchant",
-    "task_pl": "Sprawdź dowody Merchant dla pliku produktowego i produktów oraz wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że zwrot z reklam na poziomie produktu, odzyskany przychód produktu, wpływ zmiany ceny, ponowne zatwierdzenie produktu oraz zapis pliku produktowego są zablokowane bez odpowiednich kontraktów.",
+    "task_pl": "Sprawdź dowody Merchant dla pliku produktowego i produktów oraz wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, required_read_contracts i missing_read_contracts. Nie myl required_read_contracts z missing_read_contracts: brakujące kontrakty cytuj tylko z missing_read_contracts i wypisz ich wartości literalnie, a required_read_contracts traktuj jako pełną listę wymagań. Pokaż, że zwrot z reklam na poziomie produktu, odzyskany przychód produktu, wpływ zmiany ceny, ponowne zatwierdzenie produktu oraz zapis pliku produktowego są zablokowane bez odpowiednich kontraktów.",
     "messy_task_pl": "Czy plik produktowy jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj ponownego zatwierdzenia ani odzyskanego przychodu.",
     "expected_connectors": [
       "google_merchant_center"
@@ -720,6 +720,7 @@
       "product_performance_readiness",
       "price_impact_readiness",
       "merchant_price_impact_readiness_preview_v1",
+      "required_read_contracts",
       "missing_read_contracts",
       "sample_product_ids",
       "issue",

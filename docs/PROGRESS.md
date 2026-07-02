@@ -125,10 +125,15 @@ live API status later contradicts this state.
   step is Merchant review from `primary_next_step`; GA4 and Ads claims stay
   blocked where proof/contracts are missing.
 - Merchant Operator usefulness proof: non-interactive eval for
-  `wilq-merchant-feed-operator` passed with `operator_usefulness_score=5`.
-  It validates `act_review_merchant_feed_issues`, treats Merchant counts as
-  reported issue occurrences rather than unique SKUs, and blocks product ROAS,
-  recovered revenue, price-impact, reapproval and feed-write claims.
+  `wilq-merchant-feed-operator` passed at
+  `.local-lab/evals/codex-skill/20260702T171333Z` with
+  `operator_usefulness_score=5`. It validates
+  `act_review_merchant_feed_issues`, treats Merchant counts as reported issue
+  occurrences rather than unique SKUs, separates `required_read_contracts` from
+  `missing_read_contracts`, and now lists literal missing contracts for product
+  performance and price-impact readiness instead of broadening all requirements
+  into "missing" blockers. It blocks product ROAS, recovered revenue,
+  price-impact, reapproval and feed-write claims.
 - GA4 Analyst usefulness proof: non-interactive eval for `wilq-ga4-analyst`
   passed with `operator_usefulness_score=5`. It treats `(not set)` rows as
   `fix_measurement` blockers before traffic-quality review, validates

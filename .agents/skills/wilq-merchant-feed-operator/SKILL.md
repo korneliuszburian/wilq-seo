@@ -75,6 +75,12 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 Jeśli `/api/merchant/diagnostics` zwraca `unknowns`, `product_sample_readiness.status=blocked`, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`, odpowiedź musi mieć sekcję "Czego nie wiemy" i nie może udawać kolejki produkt-po-produkcie, zwrotu z reklam na poziomie produktu, wpływu ceny ani wpływu naprawy na przychód.
 
+Przy `product_performance_readiness` i `price_impact_readiness` odróżniaj
+`required_read_contracts` od `missing_read_contracts`. Nie wolno opisywać całej
+listy wymaganych kontraktów jako brakującej, jeśli WILQ API zwraca węższą listę
+`missing_read_contracts`. Jeśli `missing_read_contracts` jest dostępne,
+wypisz jego wartości literalnie jako faktyczny brak.
+
 </evidence_requirements>
 
 ## Kontrakt odpowiedzi

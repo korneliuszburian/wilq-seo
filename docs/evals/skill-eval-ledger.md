@@ -9052,3 +9052,36 @@ Result:
   `daily_decisions`.
 - Product reapproval, recovered revenue, automatic feed change, ROAS,
   budget-scaling and write/apply claims remained blocked.
+
+## 2026-07-02 - Merchant missing-contract precision
+
+Purpose:
+
+- Re-evaluate `wilq-merchant-feed-operator` after current product-readiness
+  diagnostics started exposing a narrower `missing_read_contracts` list than
+  the full `required_read_contracts` list.
+- Prevent a formally passing eval from telling Wilku that all required
+  contracts are missing when WILQ API already satisfies part of the contract.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T171333Z/wilq-merchant-feed-operator/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, four evidence IDs and all hard gates true.
+- The output separates `required_read_contracts` from
+  `missing_read_contracts` and lists literal missing values:
+  `google_ads_shopping_product_performance` for product performance readiness,
+  plus `merchant_price_change_event_or_snapshot` and
+  `google_ads_or_ga4_product_performance_window` for price impact readiness.
+- It keeps `act_review_merchant_feed_issues` as a validated check-only action,
+  treats `count_semantics=reported_issue_occurrences` as issue occurrences
+  rather than unique SKU counts, and blocks product ROAS, recovered revenue,
+  price-impact, product reapproval and feed-write claims.

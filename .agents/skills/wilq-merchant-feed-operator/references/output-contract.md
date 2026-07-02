@@ -26,6 +26,11 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 3. `Kolejka review`: grupuj finalne rekomendacje po `decision_queue`. `issue_clusters` pokazuj tylko jako drilldown raportowania. Jeśli `count_semantics=reported_issue_occurrences`, wartości `product_count`, `issue_count`, `max zgłoszeń` i `raporty razem` opisuj jako wystąpienia/zgłoszenia problemu, nie jako unikalne produkty, SKU ani listę produktów do poprawy.
 4. `Przykładowe produkty`: jeśli `product_sample_readiness.sample_products_available=true`, pokaż kilka `sample_product_ids` albo tytułów jako materiał do sprawdzenia. Nie traktuj próbek jako pełnej listy SKU ani zgody na zapis do pliku produktowego.
 5. `Czego nie wiemy`: opisz `unknowns` z `/api/merchant/diagnostics`, szczególnie brak unikalnej liczby produktów, brak pełnego SKU workflow, brak próbek dla części klastrów, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`.
+   Cytuj `missing_read_contracts` jako faktycznie brakujące kontrakty, a
+   `required_read_contracts` tylko jako pełną listę wymagań. Nie łącz tych list
+   w jeden "brak", bo WILQ może mieć część wymagań już spełnioną. Jeśli
+   `missing_read_contracts` jest dostępne, wypisz jego wartości literalnie jako
+   faktyczny brak.
 6. `Diagnoza`: co `/api/merchant/diagnostics` wspiera, z niepewnością jeśli dowody są zagregowane, nieświeże, niepełne albo zablokowane uprawnieniami.
 7. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
 8. `Sprawdzenie w WILQ`: pokaż różnicę między statusem akcji w pakiecie kontekstuu a bieżącym wynikiem `POST /api/actions/{action_id}/validate`. `valid=true` oznacza tylko ścieżkę sprawdzenia/przygotowania, nie zapis zmian.

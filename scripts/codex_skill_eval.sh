@@ -357,7 +357,13 @@ Oczekiwane connector surfaces: {connectors}
 Smoke script output jest dowodem działania skill/API path. Dla `wilq-ads-doctor`
 `ads_diagnostics` jest najmocniejszym dowodem Google Ads. Dla
 `wilq-merchant-feed-operator` `merchant_diagnostics` jest najmocniejszym dowodem
-Merchant route. Dla `wilq-gsc-content-doctor` i `wilq-content-strategist`
+Merchant route. Przy `product_performance_readiness` i `price_impact_readiness`
+cytuj `missing_read_contracts` jako faktycznie brakujące kontrakty, a
+`required_read_contracts` tylko jako pełną listę wymagań; nie opisuj całej listy
+wymagań jako brakującej, jeśli API zwraca węższe `missing_read_contracts`. Jeżeli
+`missing_read_contracts` jest dostępne, wypisz jego wartości literalnie jako
+faktyczny brak. Dla
+`wilq-gsc-content-doctor` i `wilq-content-strategist`
 `content_diagnostics` jest najmocniejszym dowodem SEO/content route. Dla
 `wilq-ga4-analyst` `ga4_diagnostics` jest najmocniejszym dowodem GA4 route. Dla
 pozostałych route-specific skillów `brief_items` są wycinkiem z
