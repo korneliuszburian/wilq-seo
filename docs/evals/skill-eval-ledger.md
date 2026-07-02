@@ -515,7 +515,7 @@ Result:
   effectiveness and conversion-growth claims until `keyword_planner_enrichment`
   and `forecast_or_audience_size` are available.
 - Current replay proof after the latest Goal 005 eval slice is stored at
-  `.local-lab/evals/codex-skill/20260702T162911Z`. It again passed with
+  `.local-lab/evals/codex-skill/20260702T162911Z`. It passed with
   `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true,
   validated `act_prepare_custom_segments_from_search_terms`, kept one
   source-backed segment candidate with 10 `source_terms`, and preserved the
@@ -540,8 +540,8 @@ CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/c
 Result:
 
 - Eval artifact:
-  `.local-lab/evals/codex-skill/20260702T133130Z/wilq-demand-gen-operator/result.json`.
-- `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
+  `.local-lab/evals/codex-skill/20260702T163412Z/wilq-demand-gen-operator/result.json`.
+- `operator_usefulness_score=4`, `blocked=true`, `failure_tags=[]`, all hard
   gates true.
 - Smoke proof: `google_ads` and `google_analytics_4` are configured,
   `action_count=1`, `act_review_demand_gen_readiness` validates as
@@ -554,6 +554,9 @@ Result:
 - The answer correctly blocks recommendations to launch Demand Gen, claims
   about Demand Gen mode readiness, creative quality, creative effectiveness,
   campaign changes and effectiveness growth.
+- The score is 4 instead of 5 because the current state is a useful review-only
+  blocker, not a workflow that can yet recommend a Demand Gen launch or
+  creative/traffic optimization.
 
 ## 2026-07-02 - Campaign Builder review-only eval
 
