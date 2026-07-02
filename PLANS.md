@@ -254,7 +254,9 @@ passing it to generation instructions. A `review_required` Sales Brief signal
 returns a `needs_changes` review with
 `sales_brief_signal_review_required`; a `thin` signal blocks with
 `sales_brief_signal_thin`. Live HTTP proof after stack restart confirmed:
-`review_required -> needs_changes` and `thin -> blocked`.
+`review_required -> needs_changes` and `thin -> blocked`. Shared Zod schemas
+now accept those backend-owned finding codes plus `required_claim_missing`, so
+the dashboard/API client boundary does not reject valid Quality Review output.
 
 Under Beads task `wilq-seo-pred`, Goal 005 completion is fail-closed through
 `scripts/goal_005_completion_check.py`. Completion claims require either a

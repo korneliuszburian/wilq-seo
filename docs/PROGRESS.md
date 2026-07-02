@@ -824,7 +824,9 @@ API status later contradicts this state.
   produces `needs_changes` with `sales_brief_signal_review_required`, while
   `thin` blocks with `sales_brief_signal_thin`. Live HTTP proof after stack
   restart on 2026-07-02 confirmed both states on
-  `/api/content/work-items/quality-review`.
+  `/api/content/work-items/quality-review`. Shared Zod schema now also accepts
+  those finding codes plus existing backend code `required_claim_missing`, so
+  the dashboard/API client boundary stays aligned with Quality Review.
 - Goal 005 waste-storage knowledge slice `wilq-seo-nlz` added
   `ekologus_public_waste_packaging_obligations_2026_07_01` as a commit-safe
   source fact compiled into `ekologus_service_waste_packaging_obligations`

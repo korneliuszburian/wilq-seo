@@ -27,6 +27,28 @@ import {
   MerchantDiagnosticsResponseSchema
 } from "./index";
 
+describe("ContentQualityFindingSchema", () => {
+  it("accepts backend-owned quality review signal and claim finding codes", () => {
+    for (const code of [
+      "required_claim_missing",
+      "sales_brief_signal_review_required",
+      "sales_brief_signal_thin"
+    ]) {
+      expect(
+        ContentQualityFindingSchema.safeParse({
+          code,
+          severity: code === "sales_brief_signal_thin" ? "blocker" : "needs_changes",
+          label: "Kontrola jakości",
+          reason: "Powód z WILQ API.",
+          next_step: "Wykonaj bezpieczny następny krok.",
+          evidence_ids: ["ev_gsc_bdo"],
+          source_connectors: ["google_search_console"]
+        }).success
+      ).toBe(true);
+    }
+  });
+});
+
 describe("ContentServiceProfileResponseSchema", () => {
   it("accepts the read-only Service Profile contract", () => {
     const parsed = ContentServiceProfileResponseSchema.parse({
