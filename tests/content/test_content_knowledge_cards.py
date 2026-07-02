@@ -302,11 +302,12 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
         "ekologus_service_environmental_compliance_audit",
         "ekologus_claim_policy_brand_voice",
         "ekologus_claim_policy_legal_safety",
+        "ekologus_evidence_policy_source_trace",
     } <= set(proposals)
     assert profile.private_source_proposal_summary.proposal_count >= 4
     assert profile.private_source_proposal_summary.service_proposal_count >= 2
     assert profile.private_source_proposal_summary.claim_policy_proposal_count >= 2
-    assert profile.private_source_proposal_summary.evidence_requirement_proposal_count == 0
+    assert profile.private_source_proposal_summary.evidence_requirement_proposal_count >= 1
     assert profile.private_source_proposal_summary.review_required_count >= 4
     assert profile.private_source_proposal_summary.promotion_ready is False
     assert profile.review_policy.can_promote_facts is False
@@ -325,6 +326,18 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
     assert legal_safety.redacted is True
     assert legal_safety.blocked_claims
 
+    source_trace = proposals["ekologus_evidence_policy_source_trace"]
+    assert source_trace.scope == "evidence_requirement"
+    assert source_trace.source_class_label == (
+        "review-required internal evidence-policy source fact"
+    )
+    assert source_trace.support_level == "direct"
+    assert source_trace.risk_tier == "medium"
+    assert "evidence_policy" in source_trace.data_classes
+    assert "goal_005_private_evidence_policy_review" in source_trace.eval_case_ids
+    assert source_trace.promotion_allowed is False
+    assert "reviewed evidence policy" in source_trace.safe_next_step
+
     action_ids = {action.action_id for action in profile.review_actions}
     assert (
         "service_profile_review_private_proposal_"
@@ -333,6 +346,10 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
     assert (
         "service_profile_review_private_proposal_"
         "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01"
+    ) in action_ids
+    assert (
+        "service_profile_review_private_proposal_"
+        "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02"
     ) in action_ids
 
 
@@ -620,7 +637,7 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.private_source_proposal_summary.proposal_count >= 4
     assert response.private_source_proposal_summary.service_proposal_count >= 2
     assert response.private_source_proposal_summary.claim_policy_proposal_count >= 2
-    assert response.private_source_proposal_summary.evidence_requirement_proposal_count == 0
+    assert response.private_source_proposal_summary.evidence_requirement_proposal_count >= 1
     assert response.private_source_proposal_summary.review_required_count >= 4
     assert response.private_source_proposal_summary.approved_count == 0
     assert response.private_source_proposal_summary.promotion_ready is False
@@ -635,12 +652,14 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         "ekologus_service_environmental_compliance_audit",
         "ekologus_claim_policy_brand_voice",
         "ekologus_claim_policy_legal_safety",
+        "ekologus_evidence_policy_source_trace",
     } <= {proposal.target_card_id for proposal in response.private_source_proposals}
     assert {
         "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
         "ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
         "ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
         "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+        "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02",
     } <= {proposal.source_id for proposal in response.private_source_proposals}
     assert all(
         proposal.source_type == "reviewed_internal"
@@ -676,6 +695,12 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert "goal_005_private_claim_policy_review" in proposals_by_target[
         "ekologus_claim_policy_brand_voice"
     ].eval_case_ids
+    assert "evidence_policy" in proposals_by_target[
+        "ekologus_evidence_policy_source_trace"
+    ].data_classes
+    assert "goal_005_private_evidence_policy_review" in proposals_by_target[
+        "ekologus_evidence_policy_source_trace"
+    ].eval_case_ids
     assert all(
         "nie promuje" in proposal.blocked_write_claim
         for proposal in response.private_source_proposals
@@ -686,13 +711,14 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         "private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
         "private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
         "private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+        "private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02",
     } <= set(response.technical_trace.private_source_proposal_ids)
     assert response.review_actions
     assert response.review_action_summary.total_count == len(response.review_actions)
     assert response.review_action_summary.public_service_review_count >= 6
     assert response.review_action_summary.private_review_count >= 4
     assert response.review_action_summary.private_service_review_count >= 2
-    assert response.review_action_summary.private_policy_review_count >= 2
+    assert response.review_action_summary.private_policy_review_count >= 3
     assert response.review_action_summary.review_request_count >= 10
     assert response.review_action_summary.prepare_count >= 1
     assert "nie promuje faktów" in response.review_action_summary.safe_next_step
@@ -706,6 +732,7 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         "ekologus_service_environmental_compliance_audit",
         "ekologus_claim_policy_brand_voice",
         "ekologus_claim_policy_legal_safety",
+        "ekologus_evidence_policy_source_trace",
     } <= {action.target_card_id for action in private_review_actions}
     assert all(action.mode == "review_request" for action in private_review_actions)
     assert all("nie promuje" in action.blocked_write_claim for action in private_review_actions)
@@ -722,7 +749,14 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         ].review_scope
         == "private_claim_policy_proposal"
     )
+    assert (
+        private_action_by_target[
+            "ekologus_evidence_policy_source_trace"
+        ].review_scope
+        == "private_evidence_policy_proposal"
+    )
     assert private_action_by_target["ekologus_claim_policy_brand_voice"].priority == "high"
+    assert private_action_by_target["ekologus_evidence_policy_source_trace"].priority == "high"
     assert private_action_by_target[
         "ekologus_claim_policy_brand_voice"
     ].decision_options == ["approve", "needs_changes", "stale", "reject"]
@@ -860,8 +894,11 @@ def test_private_proposal_promotion_action_is_prepare_only_and_review_gated() ->
         "ekologus_service_environmental_compliance_audit",
         "ekologus_claim_policy_brand_voice",
         "ekologus_claim_policy_legal_safety",
+        "ekologus_evidence_policy_source_trace",
     } <= {row["target_card_id"] for row in preview_rows}
-    assert {"service", "claim_policy"} <= {row["scope"] for row in preview_rows}
+    assert {"service", "claim_policy", "evidence_requirement"} <= {
+        row["scope"] for row in preview_rows
+    }
     assert all(row["redacted"] is True for row in preview_rows)
     assert all(row["apply_allowed"] is False for row in preview_rows)
     assert all(row["api_mutation_ready"] is False for row in preview_rows)

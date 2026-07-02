@@ -640,6 +640,64 @@
       "usage_notes": [
         "Kandydat powinien blokować publiczne drafty wysokiego ryzyka bez review."
       ]
+    },
+    {
+      "source_id": "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02",
+      "source_type": "reviewed_internal",
+      "privacy_class": "redacted_only",
+      "source_url_or_path": "https://github.com/rekurencja/ekologus-ai/tree/8ee3cb237306bd4e8bc6eba674fcb64a607379a6/materials",
+      "extracted_fact": "Ekologus-ai materials require source trace, evidence pack style lineage and post-generation checking before claims from private or reviewed materials can be used in operator-facing content.",
+      "scope": "evidence_requirement",
+      "freshness_date": "2026-07-02",
+      "confidence": 0.8,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "ekologus_ai_private_source_catalog"
+      ],
+      "blocked_claims": [
+        "claim z prywatnego źródła bez evidence pack",
+        "claim z reviewed material bez source trace",
+        "twierdzenie że source trace zastępuje human review",
+        "użycie raw private text w publicznym materiale"
+      ],
+      "target_card_id": "ekologus_evidence_policy_source_trace",
+      "target_card_type": "evidence_requirement",
+      "target_card_title": "Source trace i evidence pack dla prywatnych/reviewed źródeł",
+      "service_fit_terms": [
+        "source trace",
+        "evidence pack",
+        "claim ledger",
+        "reviewed internal",
+        "private source"
+      ],
+      "buyer_problem_terms": [
+        "nie wiadomo skąd system bierze claim",
+        "claim nie ma dowodu",
+        "materiał prywatny może trafić do publicznej treści"
+      ],
+      "buyer_triggers": [
+        "WILQ używa private/reviewed source fact w Service Profile",
+        "draft albo brief opiera się na ekologus-ai source candidate",
+        "Wilku pyta skąd to wzięło albo czy wolno to powiedzieć"
+      ],
+      "cta_patterns": [
+        "Pokaż reviewerowi evidence IDs, source connectors i blocked claims przed użyciem claimu.",
+        "Jeżeli brakuje source trace, zablokuj claim albo zostaw go jako pytanie do review."
+      ],
+      "allowed_claims": [
+        "Private/reviewed source facts mogą wspierać analizę i UAT tylko z czytelnym śladem źródłowym.",
+        "Claimy z prywatnych materiałów wymagają evidence pack/source trace i decyzji review przed produkcyjnym użyciem."
+      ],
+      "evidence_requirements": [
+        "Any private/reviewed source claim requires source fact ID, evidence IDs or explicit fallback evidence, source connectors and blocked claims.",
+        "Human review remains required before private/reviewed source facts unlock production-depth cards or public claims."
+      ],
+      "usage_notes": [
+        "Redacted evidence-policy proposal z ekologus-ai; używaj jako review-required Service Profile policy, nie jako automatycznej bramki produkcyjnej.",
+        "Nie kopiuj raw private text ani szczegółów materiałów z ekologus-ai do publicznych draftów."
+      ]
     }
   ]
 }

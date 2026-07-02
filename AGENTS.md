@@ -63,6 +63,55 @@ API traps encoded in code, auditability, local credentials, and domain knowledge
 condensed into structured rules. Do not copy BDOS scope literally: WILQ's
 domain is the full Ekologus marketing system, not only Google Ads.
 
+WILQ's core operating algorithms:
+
+- `daily_priority_triage`: refresh connector status, freshness and blockers,
+  then rank today's work by evidence strength, risk, source freshness, business
+  fit and safe next action.
+- `evidence_first_recommendation`: no evidence IDs, source connectors and
+  freshness means no recommendation; missing proof becomes a blocker, not a
+  guess.
+- `content_decision_pipeline`: candidate -> metrics/source facts -> inventory
+  and duplicate risk -> Service Profile match -> preflight -> Sales Brief ->
+  Claim Ledger -> draft package -> quality review -> human review -> WordPress
+  draft-only -> measurement window -> learning proposal.
+- `knowledge_lifecycle_compiler`: source facts compile into cards only through
+  lifecycle states: seeded proof, source-backed review-required, approved
+  current, stale or rejected.
+- `claim_ledger_guard`: every draft claim must be allowed by retrieved cards,
+  source facts or explicit evidence requirements; legal, penalty, product,
+  measurement and private-source claims require review.
+- `historical_content_dedupe`: WordPress inventory, canonical URLs, previous
+  topics and social history must be checked before WILQ claims a topic is new
+  or safe to repeat.
+- `gsc_opportunity_ranker`: prioritize pages and queries by impressions,
+  clicks, CTR, position, decay, cannibalization, service fit and existing
+  inventory.
+- `ga4_quality_splitter`: separate marketing traffic quality from measurement
+  gaps such as `(not set)` landing pages, attribution gaps and missing
+  conversion proof.
+- `ads_doctor_queue`: inspect budgets, campaign activity, recommendations,
+  search terms, n-grams, negative keyword safety, custom segments and missing
+  Google Ads contracts before any change.
+- `merchant_feed_review`: group Merchant issues by severity, product status,
+  affected attributes and missing product-performance contracts before any
+  Shopping/PMax claim.
+- `local_visibility_review`: use Localo/GBP/local evidence only when the
+  connector exposes proof; missing local ranking evidence blocks local SEO
+  claims.
+- `social_review_only_publisher`: turn approved insights into LinkedIn/Facebook
+  draft directions, but block duplicate-free claims until historical posts are
+  inventoried.
+- `actionobject_safety_loop`: any write-capable path must go through validate
+  -> preview -> human review -> confirm -> audit; skills must not mutate
+  vendors directly.
+- `measurement_learning_loop`: after publication or change, wait for the
+  observation window, compare real metrics, classify the verdict and create a
+  learning proposal instead of rewriting knowledge automatically.
+- `skill_eval_loop`: every operator skill must pass smoke tests and
+  non-interactive Codex evals for Polish output, evidence IDs, source
+  connectors, blocked claims, action safety and operator usefulness.
+
 ## Recovery index
 
 After context loss, read:

@@ -54,10 +54,11 @@ describe("ServiceProfileSurface", () => {
       screen.getByText("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/")
     ).toBeInTheDocument();
     expect(screen.getByText("Źródła prywatne")).toBeInTheDocument();
-    expect(screen.getByText("4 propozycji")).toBeInTheDocument();
+    expect(screen.getByText("5 propozycji")).toBeInTheDocument();
     expect(screen.getByText("2 usługowe")).toBeInTheDocument();
     expect(screen.getByText("2 claim-policy")).toBeInTheDocument();
-    expect(screen.getByText("4 do review")).toBeInTheDocument();
+    expect(screen.getByText("1 evidence-policy")).toBeInTheDocument();
+    expect(screen.getByText("5 do review")).toBeInTheDocument();
     expect(screen.getByText("promocja zablokowana")).toBeInTheDocument();
     expect(screen.getByText("Warunki przed reviewed source fact")).toBeInTheDocument();
     expect(screen.getByText(/Brak zatwierdzenia człowieka/)).toBeInTheDocument();
@@ -69,14 +70,17 @@ describe("ServiceProfileSurface", () => {
       .toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("ekologus-ai reviewed handoff: Bezpieczeństwo prawne").length)
       .toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("ekologus-ai reviewed handoff: Source trace").length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Eko-Opieka / Eko Kalendarz")).toBeInTheDocument();
     expect(screen.getByText("Styl marki i claim policy Ekologus")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczeństwo prawne, poufność i zgody")).toBeInTheDocument();
+    expect(screen.getByText("Source trace i evidence pack")).toBeInTheDocument();
     expect(screen.getAllByText("support: partial").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("support: direct").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("risk: medium").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("risk: high").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("bez promocji").length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByText("bez promocji").length).toBeGreaterThanOrEqual(5);
     expect(screen.getAllByText("Klasy danych").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("service_strategy").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("KB_001_EKO_OPIEKA")).toBeInTheDocument();
@@ -86,14 +90,14 @@ describe("ServiceProfileSurface", () => {
       .toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Usuń albo odrzuć redacted proposal.").length)
       .toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Claimy zablokowane").length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByText("Claimy zablokowane").length).toBeGreaterThanOrEqual(5);
     expect(screen.getByText("obietnica stałej zgodności")).toBeInTheDocument();
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
-    expect(screen.getByText("12 razem")).toBeInTheDocument();
+    expect(screen.getByText("13 razem")).toBeInTheDocument();
     expect(screen.getByText("6 publicznych usług")).toBeInTheDocument();
     expect(screen.getByText("2 prywatne service")).toBeInTheDocument();
-    expect(screen.getByText("2 prywatne claim-policy")).toBeInTheDocument();
-    expect(screen.getByText("11 review request")).toBeInTheDocument();
+    expect(screen.getByText("3 prywatne claim-policy")).toBeInTheDocument();
+    expect(screen.getByText("12 review request")).toBeInTheDocument();
     expect(screen.getByText("1 prepare")).toBeInTheDocument();
     expect(screen.getByText(/Najpierw przejrzyj publiczne karty usług/)).toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz"))
@@ -102,6 +106,7 @@ describe("ServiceProfileSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText("private_service_proposal")).toBeInTheDocument();
     expect(screen.getByText("private_claim_policy_proposal")).toBeInTheDocument();
+    expect(screen.getByText("private_evidence_policy_proposal")).toBeInTheDocument();
     expect(screen.getAllByText("medium").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("high").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Decyzje: approve, needs_changes, stale, reject").length)
@@ -194,11 +199,11 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
     evidence_policy_sections: [],
     private_source_proposal_summary: {
       proposal_protocol_available: true,
-      proposal_count: 4,
+      proposal_count: 5,
       service_proposal_count: 2,
       claim_policy_proposal_count: 2,
-      evidence_requirement_proposal_count: 0,
-      review_required_count: 4,
+      evidence_requirement_proposal_count: 1,
+      review_required_count: 5,
       approved_count: 0,
       promotion_ready: false,
       promotion_checklist: [
@@ -211,7 +216,8 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         "ekologus-ai reviewed handoff: Eko-Opieka",
         "ekologus-ai reviewed handoff: Audyt zgodności",
         "ekologus-ai reviewed handoff: Styl marki",
-        "ekologus-ai reviewed handoff: Bezpieczeństwo prawne"
+        "ekologus-ai reviewed handoff: Bezpieczeństwo prawne",
+        "ekologus-ai reviewed handoff: Source trace"
       ],
       review_required_proposal_ids: [
         "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
@@ -335,6 +341,34 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         promotion_allowed: false,
         blocked_write_claim:
           "To jest redacted proposal do review; nie promuje source fact ani knowledge card."
+      },
+      {
+        proposal_id:
+          "private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02",
+        source_id: "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02",
+        source_type: "reviewed_internal",
+        privacy_class: "redacted_only",
+        scope: "evidence_requirement",
+        target_card_id: "ekologus_evidence_policy_source_trace",
+        target_card_title: "Source trace i evidence pack",
+        source_class_label: "review-required internal evidence-policy source fact",
+        source_locator_label: "ekologus-ai reviewed handoff: Source trace",
+        review_status: "review_required",
+        support_level: "direct",
+        risk_tier: "medium",
+        data_classes: ["evidence_policy", "internal_operational"],
+        source_block_refs: ["KB_EVIDENCE_SOURCE_TRACE"],
+        retention_decision: "pending_owner_decision",
+        deletion_path: ["Usuń albo odrzuć redacted proposal."],
+        eval_case_ids: ["goal_005_private_evidence_policy_review"],
+        confidence_label: "wysoka",
+        owner_role: "Wilku, owner marki albo reviewer prawny Ekologus",
+        redacted: true,
+        blocked_claims: ["claim z prywatnego źródła bez evidence pack"],
+        safe_next_step: "Pokaż Wilkowi/reviewerowi wymogi source trace.",
+        promotion_allowed: false,
+        blocked_write_claim:
+          "To jest redacted proposal do review; nie promuje source fact ani knowledge card."
       }
     ],
     coverage_gaps: [
@@ -377,18 +411,33 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         blocked_write_claim: "To nie promuje private proposal do source fact ani knowledge card.",
         required_human_role: "Wilku, owner marki albo reviewer prawny Ekologus",
         target_card_id: "ekologus_claim_policy_brand_voice"
+      },
+      {
+        action_id:
+          "service_profile_review_private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02",
+        mode: "review_request",
+        review_scope: "private_evidence_policy_proposal",
+        priority: "high",
+        decision_options: ["approve", "needs_changes", "stale", "reject"],
+        review_requirements: reviewRequirementsFixture(),
+        label: "Sprawdź prywatną propozycję: Source trace i evidence pack",
+        reason:
+          "ekologus-ai reviewed handoff: Source trace jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",
+        blocked_write_claim: "To nie promuje private proposal do source fact ani knowledge card.",
+        required_human_role: "Wilku, owner marki albo reviewer prawny Ekologus",
+        target_card_id: "ekologus_evidence_policy_source_trace"
       }
     ],
     review_action_summary: {
-      total_count: 12,
-      review_request_count: 11,
+      total_count: 13,
+      review_request_count: 12,
       prepare_count: 1,
       public_service_review_count: 6,
-      private_review_count: 4,
+      private_review_count: 5,
       private_service_review_count: 2,
-      private_policy_review_count: 2,
+      private_policy_review_count: 3,
       safe_next_step:
-        "Najpierw przejrzyj publiczne karty usług, potem prywatne propozycje service i claim-policy."
+        "Najpierw przejrzyj publiczne karty usług, potem prywatne propozycje service, claim-policy i evidence-policy."
     },
     technical_trace: {
       knowledge_card_endpoint: "/api/content/knowledge-cards",
@@ -396,7 +445,8 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
       private_source_proposal_ids: [
         "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
-        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01"
+        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01",
+        "private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02"
       ],
       private_source_protocol_doc: "docs/architecture/private-source-proposal-protocol.md"
     }

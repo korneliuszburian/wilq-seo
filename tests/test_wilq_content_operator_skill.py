@@ -250,6 +250,13 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                             ),
                             "target_card_id": "ekologus_claim_policy_brand_voice",
                         },
+                        {
+                            "review_action_id": (
+                                "service_profile_review_private_proposal_"
+                                "ekologus_ai_evidence_policy_2026_07_02"
+                            ),
+                            "target_card_id": "ekologus_evidence_policy_source_trace",
+                        },
                     ],
                 },
             }
@@ -265,11 +272,11 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                 "source_backed_review_required_count": 2,
             },
             "private_source_proposal_summary": {
-                "proposal_count": 2,
+                "proposal_count": 3,
                 "service_proposal_count": 1,
                 "claim_policy_proposal_count": 1,
-                "evidence_requirement_proposal_count": 0,
-                "review_required_count": 2,
+                "evidence_requirement_proposal_count": 1,
+                "review_required_count": 3,
                 "approved_count": 0,
                 "promotion_ready": False,
                 "promotion_blocked_reason": "Wymaga review.",
@@ -323,14 +330,30 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "required_human_role": "reviewer",
                     "target_card_id": "ekologus_claim_policy_brand_voice",
                 },
+                {
+                    "action_id": (
+                        "service_profile_review_private_proposal_"
+                        "ekologus_ai_evidence_policy_2026_07_02"
+                    ),
+                    "mode": "review_request",
+                    "review_scope": "private_evidence_policy_proposal",
+                    "priority": "high",
+                    "decision_options": ["approve", "needs_changes", "stale", "reject"],
+                    "review_requirements": review_requirements,
+                    "label": "Sprawdź prywatną politykę evidence",
+                    "reason": "Prywatne źródło evidence-policy wymaga decyzji.",
+                    "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
+                    "required_human_role": "reviewer",
+                    "target_card_id": "ekologus_evidence_policy_source_trace",
+                },
             ],
             "review_action_summary": {
-                "total_count": 3,
+                "total_count": 4,
                 "public_service_review_count": 1,
-                "private_review_count": 2,
+                "private_review_count": 3,
                 "private_service_review_count": 1,
-                "private_policy_review_count": 1,
-                "review_request_count": 3,
+                "private_policy_review_count": 2,
+                "review_request_count": 4,
                 "prepare_count": 0,
                 "safe_next_step": "API-owned review action summary.",
             },
@@ -379,6 +402,28 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "promotion_allowed": False,
                     "redacted": True,
                 },
+                {
+                    "proposal_id": "private_proposal_evidence_policy",
+                    "source_id": "ekologus_ai_evidence_policy",
+                    "source_type": "reviewed_internal",
+                    "privacy_class": "redacted_only",
+                    "scope": "evidence_requirement",
+                    "target_card_id": "ekologus_evidence_policy_source_trace",
+                    "target_card_title": "Source trace i evidence pack",
+                    "review_status": "review_required",
+                    "support_level": "direct",
+                    "risk_tier": "medium",
+                    "data_classes": ["evidence_policy", "internal_operational"],
+                    "source_block_refs": ["KB_EVIDENCE"],
+                    "retention_decision": "pending_owner_decision",
+                    "deletion_path": ["Usuń albo odrzuć redacted proposal."],
+                    "eval_case_ids": ["goal_005_private_evidence_policy_review"],
+                    "confidence_label": "wysoka",
+                    "blocked_claims": ["claim bez source trace"],
+                    "safe_next_step": "Review evidence policy.",
+                    "promotion_allowed": False,
+                    "redacted": True,
+                },
             ],
         }
 
@@ -387,12 +432,12 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     summary = uat_script.service_profile_uat_summary("http://example.test")
 
     assert summary["review_action_summary"] == {
-        "total_count": 3,
+        "total_count": 4,
         "public_service_review_count": 1,
-        "private_review_count": 2,
+        "private_review_count": 3,
         "private_service_review_count": 1,
-        "private_policy_review_count": 1,
-        "review_request_count": 3,
+        "private_policy_review_count": 2,
+        "review_request_count": 4,
         "prepare_count": 0,
         "safe_next_step": "API-owned review action summary.",
     }
@@ -439,7 +484,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert recorders["public_review"]["review_type"] == "public_service_cards"
     assert recorders["public_review"]["promotion_preview"]["preview_row_count"] == 1
     assert recorders["private_review"]["review_type"] == "private_source_proposals"
-    assert recorders["private_review"]["promotion_preview"]["preview_row_count"] == 2
+    assert recorders["private_review"]["promotion_preview"]["preview_row_count"] == 3
     assert recorders["private_review"]["promotion_preview"]["apply_allowed"] is False
     assert {
         "decisions[].data_classes_confirmed",
@@ -452,7 +497,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     private_summary = summary["private_source_proposals"]
     assert private_summary["service_proposal_count"] == 1
     assert private_summary["claim_policy_proposal_count"] == 1
-    assert private_summary["evidence_requirement_proposal_count"] == 0
+    assert private_summary["evidence_requirement_proposal_count"] == 1
     details = summary["private_proposal_details"]
     assert details[0]["data_classes"] == ["service_strategy", "internal_operational"]
     assert details[0]["source_block_refs"] == ["KB_SERVICE"]

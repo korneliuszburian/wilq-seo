@@ -150,15 +150,15 @@ API status later contradicts this state.
   raw private content.
 - Service Profile private proposal scope counts on 2026-07-02: live
   `/api/content/service-profile` and the UAT packet now expose
-  `proposal_count=4`, `service_proposal_count=2`,
-  `claim_policy_proposal_count=2`, `evidence_requirement_proposal_count=0` and
+  `proposal_count=5`, `service_proposal_count=2`,
+  `claim_policy_proposal_count=2`, `evidence_requirement_proposal_count=1` and
   `promotion_ready=false`, and `/service-profile` renders those counts for
   Wilku without exposing raw private content.
 - Service Profile review-action summary on 2026-07-02: live API now owns the
   review-action breakdown consumed by dashboard and UAT packet:
-  `total_count=12`, `review_request_count=11`, `prepare_count=1`,
-  `public_service_review_count=6`, `private_review_count=4`,
-  `private_service_review_count=2`, `private_policy_review_count=2`.
+  `total_count=13`, `review_request_count=12`, `prepare_count=1`,
+  `public_service_review_count=6`, `private_review_count=5`,
+  `private_service_review_count=2`, `private_policy_review_count=3`.
 - Service Profile review actions now expose `review_scope` and `priority`.
   Live private `ekologus-ai` actions split service proposals as
   `private_service_proposal` / `medium` and claim-policy proposals as
@@ -988,12 +988,14 @@ API status later contradicts this state.
   risk, plus full `rtk scripts/verify.sh` before any completion claim.
 - Service Profile now exposes all redacted `ekologus-ai` reviewed-internal
   private proposals from source facts, not only service-scope proposals. Live
-  proof after stack restart on 2026-07-02: `proposal_count=4`,
-  `review_required_count=4`, scopes `claim_policy` and `service`, policy targets
-  `ekologus_claim_policy_brand_voice` and `ekologus_claim_policy_legal_safety`,
-  dedicated review actions for both, `promotion_ready=false`,
-  `can_promote_facts=false` and `ready_for_daily_content=false`. This gives
-  Wilku review targets for brand/legal-safety rules without turning them into
+  proof after stack restart on 2026-07-02 later advanced to `proposal_count=5`,
+  `review_required_count=5`, scopes `claim_policy`, `service` and
+  `evidence_requirement`, policy targets `ekologus_claim_policy_brand_voice`,
+  `ekologus_claim_policy_legal_safety` and
+  `ekologus_evidence_policy_source_trace`, dedicated review actions for those
+  review targets, `promotion_ready=false`, `can_promote_facts=false` and
+  `ready_for_daily_content=false`. This gives Wilku review targets for
+  brand/legal-safety/source-trace rules without turning them into
   production-depth cards or automatic quality gates.
 - Service Profile private proposal review recorder now requires the private
   governance checks exposed by the review actions:
@@ -1005,14 +1007,15 @@ API status later contradicts this state.
 - The `wilq-content-operator` UAT packet now exposes the same private
   governance fields in
   `review_result_recorders.private_review.minimal_payload_required_fields`.
-  Live packet proof on 2026-07-02 returned those fields with 4 private
+  Live packet proof on 2026-07-02 later advanced to those fields with 5 private
   promotion preview rows and `apply_allowed=false`.
 - Goal 005 UAT proof now separates private service proposals from private
   policy proposals. Live `wilq-content-operator` UAT packet on 2026-07-02 shows
-  `public_service_review_count=6`, `private_review_count=4`,
-  `private_service_review_count=2`, `private_policy_review_count=2`, policy
-  targets `ekologus_claim_policy_brand_voice` and
-  `ekologus_claim_policy_legal_safety`, and `queue_status=blocked`.
+  `public_service_review_count=6`, `private_review_count=5`,
+  `private_service_review_count=2`, `private_policy_review_count=3`, policy
+  targets `ekologus_claim_policy_brand_voice`,
+  `ekologus_claim_policy_legal_safety` and
+  `ekologus_evidence_policy_source_trace`, and `queue_status=blocked`.
   `scripts/record_goal_005_content_uat_result.py` now requires
   `private_policy_review_actions_czytelne` and records separate live provenance
   counts, so a future Wilku result cannot collapse service fit and brand/legal

@@ -195,16 +195,18 @@ claim-policy proposals.
 
 Under Beads task `wilq-seo-kot2`, Service Profile now exposes typed private
 proposal scope counts and the dashboard/UAT packet render them directly. Live
-proof on 2026-07-02 returned `proposal_count=4`, `service_proposal_count=2`,
-`claim_policy_proposal_count=2`, `evidence_requirement_proposal_count=0` and
-`promotion_ready=false`, so Wilku can distinguish service proposals from
-claim-policy review items without opening technical payloads.
+proof on 2026-07-02 later advanced to `proposal_count=5`,
+`service_proposal_count=2`, `claim_policy_proposal_count=2`,
+`evidence_requirement_proposal_count=1` and `promotion_ready=false`, so Wilku
+can distinguish service proposals, claim-policy review items and
+evidence-policy/source-trace review items without opening technical payloads.
 
 Under Beads task `wilq-seo-ebv5`, Service Profile also owns the review-action
 summary instead of leaving the UAT packet or dashboard to infer it. Live proof
-on 2026-07-02 returned `total_count=12`, `review_request_count=11`,
-`prepare_count=1`, `public_service_review_count=6`, `private_review_count=4`,
-`private_service_review_count=2` and `private_policy_review_count=2`; the UAT
+on 2026-07-02 later advanced to `total_count=13`,
+`review_request_count=12`, `prepare_count=1`,
+`public_service_review_count=6`, `private_review_count=5`,
+`private_service_review_count=2` and `private_policy_review_count=3`; the UAT
 packet consumes the same API-owned summary.
 
 Under Beads task `wilq-seo-pcgz`, every Service Profile review action now also
