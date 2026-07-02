@@ -386,6 +386,15 @@ API status later contradicts this state.
   access-ready diagnostics/review from blocked local task/write/uplift claims,
   and the smoke now exposes the full action preview contract
   `local_visibility_review_preview_v1`.
+- `wilq-campaign-builder` now has a live non-interactive prepare-only proof at
+  `.local-lab/evals/codex-skill/20260702T021145Z/summary.json`. Result:
+  `operator_usefulness_score=4`, `blocked=false`, all hard gates true, no
+  failure tags, 16 evidence IDs, 2 recommendations and validated
+  `act_prepare_ads_campaign_review_queue` plus
+  `act_prepare_google_ads_recommendation_review_queue`. Manual inspection of an
+  earlier passing run found an evidence ID typo, so the eval prompt now tells
+  Codex to copy IDs exactly from smoke/API output and never reconstruct similar
+  identifiers.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

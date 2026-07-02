@@ -7171,3 +7171,42 @@ Result:
   `competitor_visibility`, `reviews`, `read_contract_statuses`,
   `local_visibility_review_preview_v1`, `apply_allowed`, `api_mutation_ready`
   and blocked local task/write/uplift claims.
+
+## 2026-07-02 - Campaign Builder live eval and exact lineage prompt
+
+Purpose:
+
+- Test `wilq-campaign-builder` against the current Ads/content landing context.
+- Ensure campaign planning remains prepare/review-only and cannot imply Ads
+  write readiness, launch, conversion growth, campaign effectiveness or ranking
+  guarantees.
+- Harden the eval prompt after manual inspection found an evidence ID typo in
+  an otherwise passing run.
+
+Focused proof:
+
+```bash
+bash -n scripts/codex_skill_eval.sh
+scripts/codex_skill_eval.sh --skill wilq-campaign-builder --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- Initial proof passed at
+  `.local-lab/evals/codex-skill/20260702T021018Z/summary.json`, but manual
+  inspection found a mistyped top-level evidence ID copied from the Ads brief.
+- The eval prompt now explicitly tells Codex to copy evidence, connector,
+  opportunity and action IDs exactly from smoke/API output without manual
+  shortening, repair or reconstruction.
+- Passing proof after the prompt hardening is stored at
+  `.local-lab/evals/codex-skill/20260702T021145Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=false`, `failure_tags=[]`,
+  all hard gates true, 16 evidence IDs, 2 recommendations and 2 validated
+  action candidates.
+- Validated action candidates: `act_prepare_ads_campaign_review_queue` and
+  `act_prepare_google_ads_recommendation_review_queue`.
+- The output used `content_landing_context`, `query_page_candidates`,
+  `campaign_candidates` as a missing/limited planning contract, prepare-only
+  Ads review actions and blocked `skuteczność kampanii`, `wzrost konwersji`,
+  `gwarancja pozycji` and `zmiana kampanii` claims.

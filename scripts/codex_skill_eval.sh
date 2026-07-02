@@ -292,6 +292,9 @@ Oczekiwane connector surfaces: {connectors}
 - Top-level `evidence_ids` i `source_connectors` muszą być pełnym lineage
   supersetem: każdy identyfikator użyty w `recommendations[]` albo
   `action_candidates[]` musi też wystąpić w top-level listach.
+- Identyfikatory dowodów, źródeł danych, szans i akcji kopiuj dokładnie z
+  outputu smoke/API. Nie przepisuj ich z pamięci, nie skracaj, nie poprawiaj
+  ręcznie i nie twórz podobnie wyglądających identyfikatorów.
 - Jeżeli danych brakuje, zwróć blocker zamiast rekomendacji.
 - Jeżeli `expected_blocker` podaje zablokowane twierdzenia, nie umieszczaj tych
   twierdzeń w `recommendations[].label_pl` ani w nieblokowanych action labels.
