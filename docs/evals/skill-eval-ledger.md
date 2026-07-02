@@ -329,6 +329,42 @@ Result:
   about Demand Gen mode readiness, creative quality, creative effectiveness,
   campaign changes and effectiveness growth.
 
+## 2026-07-02 - Campaign Builder review-only eval
+
+Purpose:
+
+- Verify that `wilq-campaign-builder` can prepare a campaign-review plan from
+  `ads_diagnostics` and `content_landing_context` without implying campaign
+  creation, launch or performance claims.
+- Strengthen the non-interactive eval harness against runtime noise in
+  operator-facing JSON.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-campaign-builder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-campaign-builder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Final passing eval artifact:
+  `.local-lab/evals/codex-skill/20260702T133636Z/wilq-campaign-builder/result.json`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Harness hardening: `scripts/codex_skill_eval.sh` now instructs eval runs not
+  to mention cache, retry, sandbox or environment-variable mechanics in
+  operator-facing fields and treats common runtime-noise terms as forbidden.
+- Smoke proof: required connectors `google_ads`, `google_analytics_4` and
+  `google_search_console` are configured; `action_count=2`; both
+  `act_prepare_ads_campaign_review_queue` and
+  `act_prepare_google_ads_recommendation_review_queue` validate as
+  `valid=true`.
+- The output uses `ads_diagnostics`, `content_landing_context`,
+  `query_page_candidates`, `campaign_candidates`, podgląd zmian and
+  `Sprawdzenie w WILQ` as review-only context. It blocks or avoids claims about
+  campaign effectiveness, conversion growth, ranking guarantees, campaign
+  changes and Google Ads writes without operator confirmation.
+
 ## 2026-07-02 - GA4 dashboard usefulness review
 
 Purpose:

@@ -316,6 +316,9 @@ Oczekiwane connector surfaces: {connectors}
 - Nie używaj w widocznym tekście operatora technicznych nazw runtime takich jak
   `ActionObject`; pisz po prostu `akcja do sprawdzenia`, `podgląd` albo
   `sprawdzenie w WILQ`.
+- Nie opisuj technicznych szczegółów uruchomienia evala, cache, retry,
+  sandboxa ani zmiennych środowiskowych. Smoke script output jest dowodem
+  danych WILQ, ale jego mechanika wykonania nie jest materiałem dla marketera.
 - Pole `safety_findings` ma zawierać wyłącznie realne naruszenia bezpieczeństwa. Jeśli naruszeń nie ma, zwróć pustą listę.
 - Pole `decision_quality` jest obowiązkowe i nie jest dekoracją. Ustaw:
   - `actionable_decision=true`, gdy odpowiedź daje decyzję, kolejkę review,
@@ -579,6 +582,10 @@ default_forbidden_operator_terms = (
     "mapping" + "_review",
     "mapping" + "-review",
     "migration" + "-map",
+    "UV" + "_CACHE_DIR",
+    "read" + "-only cache",
+    "retry z lokalnym",
+    "sandbox",
     "wykonanie" + " zmian",
     "tylko do" + " sprawdzenia",
 )

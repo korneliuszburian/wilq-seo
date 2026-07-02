@@ -169,6 +169,15 @@ API status later contradicts this state.
   campaign rows, ads, creative assets or Demand Gen landing-quality rows, so
   the skill correctly blocks launch/readiness/creative-quality/effectiveness
   claims and only validates `act_review_demand_gen_readiness` as review-only.
+- `wilq-campaign-builder` passed deterministic smoke and non-interactive eval
+  as a review-only campaign planning workflow; artifact:
+  `.local-lab/evals/codex-skill/20260702T133636Z`. Score 5,
+  `failure_tags=[]`. It validates `act_prepare_ads_campaign_review_queue` and
+  `act_prepare_google_ads_recommendation_review_queue`, uses
+  `ads_diagnostics` plus `content_landing_context`, and blocks campaign launch,
+  write, performance, conversion-growth and ranking-guarantee claims without
+  WILQ confirmation. The eval harness also now forbids runtime cache/retry/
+  sandbox noise in operator-facing JSON.
 - GA4 usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
   surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer
