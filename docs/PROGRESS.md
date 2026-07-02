@@ -361,6 +361,14 @@ API status later contradicts this state.
   existing-content refresh/merge candidate, block Zielony Ład until stronger
   source evidence exists and keep GA4 tracking gaps as measurement work rather
   than content topics.
+- `wilq-content-strategist` was re-evaluated after pre-demo source coverage and
+  Claim Ledger gates were wired in; artifact:
+  `.local-lab/evals/codex-skill/20260702T144102Z`. Score:
+  `operator_usefulness_score=5`, all hard gates true, `failure_tags=[]`. The
+  output again treats BDO as a refresh/merge candidate for an existing
+  ekologus.pl URL, blocks Zielony Ład without inventory/canonical/duplicate and
+  source evidence, validates `act_prepare_content_refresh_queue`, and blocks
+  WordPress/draft/publishing claims.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

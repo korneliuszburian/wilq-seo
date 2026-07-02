@@ -8680,3 +8680,37 @@ Result:
 - The output preserves unknowns and blockers: missing unique product count,
   missing Merchant-to-Ads/GA4 product performance join, blocked product ROAS,
   recovered revenue, price impact, product reapproval and feed write claims.
+
+## 2026-07-02 - Content Strategist post-gate usefulness eval
+
+Purpose:
+
+- Re-test `wilq-content-strategist` after the pre-demo source coverage and
+  Claim Ledger generation audits were wired into the stakeholder gate.
+- Confirm that the skill still turns WILQ content diagnostics into an
+  actionable marketing decision instead of generic SEO copy.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T144102Z/wilq-content-strategist/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=true`,
+  `failure_tags=[]`, eleven evidence IDs and all hard gates true.
+- Source connectors used: Ahrefs, Google Search Console, WordPress ekologus.pl,
+  WordPress sklep and GA4.
+- WILQ validated `act_prepare_content_refresh_queue` as the safe action to
+  check.
+- The output treats BDO / `bdo co to jest` as an existing-content refresh or
+  merge candidate for the current ekologus.pl URL, not a new article.
+- The output blocks Zielony Ład until WILQ has inventory, canonical, duplicate
+  and source evidence for that specific topic.
+- GA4 `(not set)` rows remain a measurement blocker, not a content topic.
+- WordPress draft/write/publish, guarantee of rankings, duplicate-free claims,
+  lead growth and revenue-impact claims remain blocked.
