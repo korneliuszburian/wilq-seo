@@ -119,6 +119,13 @@ API status later contradicts this state.
   `act_review_merchant_feed_issues`, used `sample_product_ids` only as review
   samples, and blocked product-level ROAS/revenue, price-impact, product
   reapproval and product-feed write claims without missing contracts and audit.
+- Content Operator review-recorder eval guard on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T040247Z`. The eval contract now fails
+  unless `wilq-content-operator` shows the Service Profile review recorder
+  path and prepare-only promotion-preview markers in the actionable output:
+  `review_result_recorders`, `record_service_profile_review_result.py`,
+  public/private result report types, `private_source_proposals` and
+  `promotion preview`.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

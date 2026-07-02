@@ -7593,3 +7593,35 @@ Result:
   WordPress URLs, blocks `zielony ład` until evidence/inventory are present,
   separates the GA4 issue as `problem pomiaru, nie temat treści`, and blocks
   WordPress draft/publish, ranking/lead/revenue and duplicate-free claims.
+
+## 2026-07-02 - Content Operator review-recorder eval guard
+
+Purpose:
+
+- Tighten `wilq-content-operator` non-interactive eval after the Service
+  Profile UAT packet started exposing `review_result_recorders`.
+- Ensure the skill output must show Wilku how to record public/private Service
+  Profile review results and reference the prepare-only promotion preview,
+  instead of passing on generic content workflow markers alone.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py::test_active_eval_cases_do_not_require_forbidden_operator_jargon -q
+uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-content-operator
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T040247Z/summary.json`.
+- The eval case now requires the content-operator decision output to include
+  `review_result_recorders`, `record_service_profile_review_result.py`,
+  `service_profile_public_card_review_result_v1`,
+  `service_profile_private_proposal_review_result_v1`,
+  `private_source_proposals` and `promotion preview`.
+- The live eval passed with `blocked=true`; its `operator_next_step` and action
+  candidate included those recorder/promotion-preview markers, while preserving
+  `refresh-first`, Claim Ledger, quality/human review, WordPress `draft-only`
+  and measurement-window blockers.
