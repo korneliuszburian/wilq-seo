@@ -80,6 +80,43 @@ Result:
   concept, Eko Kalendarz, audience, CTA direction and forbidden claims. It does
   not yet unlock production content; Wilku/owner review is still required.
 
+## 2026-07-02 - Ads Doctor dashboard usefulness review
+
+Purpose:
+
+- Test whether `/ads-doctor` is moving toward BDOS-class usefulness: a clear
+  review queue, live evidence, safe actions and blocked unsupported Ads claims.
+- Improve the first screen based on specialist/operator feedback instead of
+  only proving that the route renders.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk curl -sS -m 20 http://127.0.0.1:8000/api/ads/diagnostics
+rtk pnpm typecheck
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-ads-doctor-start-card.md`.
+- Live Ads diagnostics source evidence:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_be7011a4a261`.
+- Live Ads diagnostics showed 18 campaigns, 81 clicks, 2248 impressions,
+  151 PLN cost, 0 conversions, 50 search-term rows, 200 safety rows,
+  3 active Google Ads recommendations and 41 change-history events.
+- Reviewer scores:
+  - Ads specialist: 7/10 overall, 7.5/10 as marketer review material, 5.5/10
+    as safe-change readiness, 8.5/10 for blocking false claims.
+  - Marketer/operator: 6.5/10 first-screen clarity before UI tuning.
+- Main learning: WILQ Ads Doctor already has useful live evidence and strong
+  claim blocking, but the first screen needed a plain "today do this" order.
+  Dashboard now shows `Ads Doctor: co dziś zrobić` and `Kolejność pracy` before
+  deeper diagnostics.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

@@ -31,17 +31,22 @@ export function AdsCondensedDecisionPanel({
     ? primaryDecision.evidence_summary_label
     : summary.evidence_summary_label;
   const actionSummary = primaryDecision?.action_summary_label ?? summary.action_summary_label;
+  const workSteps = [
+    `Zacznij od kolejki ${summary.campaign_count} kampanii: sprawdź kampanie z największym ruchem, kosztem i sygnałem review.`,
+    `Potem przejrzyj ${summary.search_term_count} wyszukiwanych haseł oraz ${data.negative_keywords_read_contract.candidates.length} kandydatów do wykluczeń, ale tylko jako review.`,
+    "Nie zapisuj zmian w Ads: budżety, rekomendacje i wykluczenia wymagają podglądu, walidacji ActionObject i audytu."
+  ];
 
   return (
     <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-action">
-            Decyzja skondensowana
+            Ads Doctor: co dziś zrobić
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
             {primaryDecision
-              ? `Pierwszy krok: ${primaryDecision.decision_type_label}`
+              ? `Najpierw: ${primaryDecision.decision_type_label}`
               : "Najpierw sprawdź Ads"}
           </h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
@@ -56,6 +61,15 @@ export function AdsCondensedDecisionPanel({
           <MetricTile label="Konwersje" value={adsNumber(summary.total_conversions)} />
           <MetricTile label="Akcje" value={actionSummary} />
         </div>
+      </div>
+
+      <div className="mt-4 rounded-md border border-line bg-white p-3">
+        <h3 className="text-sm font-semibold text-ink">Kolejność pracy</h3>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-slate-700">
+          {workSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
       </div>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-2">

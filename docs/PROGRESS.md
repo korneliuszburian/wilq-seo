@@ -126,6 +126,13 @@ API status later contradicts this state.
   knowledge improves specificity, but WILQ must still block production content
   until Wilku/owner review, WordPress/GSC duplicate checks and claim ledger are
   complete.
+- Ads Doctor usefulness review now has a short Wilku-facing decision card at
+  `docs/handoffs/2026-07-02-wilku-ads-doctor-start-card.md`. Reviewers scored
+  the surface 7/10 overall, 7.5/10 as marketer review material, 5.5/10 as
+  safe-change readiness and 8.5/10 for blocking unsupported Ads claims. The
+  dashboard first screen now leads with `Ads Doctor: co dziś zrobić` and
+  `Kolejność pracy`; the next gap is API-owned top blocked claim labels and
+  clearer per-action preview detail.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
