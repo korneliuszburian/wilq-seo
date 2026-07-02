@@ -10,10 +10,11 @@ This protocol follows the OpenAI eval pattern described in
 `docs/evals/openai-aligned-skill-evals.md`: production-like inputs, explicit
 testing criteria, deterministic graders, failure analysis and iteration. Schema
 validity is only the floor; the default marketer-value gate is
-`operator_usefulness_score >= 4` plus all `eval_rubric.hard_gates=true`.
-Score 3 means guardrail-only quality and must create product follow-up before
-claiming BDOS-class usefulness. `failure_tags` are eval failures in the skill
-answer, not normal WILQ product blockers.
+`operator_usefulness_score >= 5` plus all `eval_rubric.hard_gates=true`.
+Score 4 means useful but still follow-up worthy; score 3 means guardrail-only
+quality and must create product follow-up before claiming BDOS-class
+usefulness. `failure_tags` are eval failures in the skill answer, not normal
+WILQ product blockers.
 
 For each skill:
 
@@ -9123,3 +9124,38 @@ Result:
   review-only action and explains that the first step is to confirm the
   zero-campaign/read-contract state before judging creative or traffic quality.
 - Launch/readiness/creative-quality/effectiveness claims remain blocked.
+
+## 2026-07-02 - Content Operator post-review-action eval refresh
+
+Purpose:
+
+- Re-test `wilq-content-operator` after the Goal 005 completion guard and
+  Wilku handoff started exposing the next Service Profile review actions in
+  plain language.
+- Confirm that the skill still treats the content workflow as blocked until
+  Service Profile, Claim Ledger, human review and measurement gates are
+  satisfied.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T183711Z/wilq-content-operator/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=true`,
+  `failure_tags=[]`, six evidence IDs, seven action candidates and all hard
+  gates true.
+- Source connectors used: `google_analytics_4`, `ahrefs`,
+  `google_search_console` and `wordpress_ekologus`.
+- The deterministic smoke selected
+  `content_work_item_content_decision_https___www_ekologus_pl`, mode
+  `refresh`, with `workflow_blocked=true`, `knowledge_card_count=10` and
+  queue status `blocked`.
+- The output kept final article generation, WordPress publication and
+  measurement-success claims blocked. The safe next step remains a review/
+  preparation step, not production-depth publication.

@@ -161,6 +161,11 @@ live API status later contradicts this state.
   honest as blocked, and requires enrichment, preflight, Sales Brief, Claim
   Ledger, draft package, quality review, human review, WordPress draft-only and
   measurement window before any final article, publication or success claim.
+- Content Operator was re-tested after adding readable Service Profile review
+  actions to the Goal 005 completion/handoff flow. The latest eval artifact is
+  `.local-lab/evals/codex-skill/20260702T183711Z`, still
+  `operator_usefulness_score=5`, `blocked=true`, six evidence IDs, seven action
+  candidates and all hard gates true.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with
