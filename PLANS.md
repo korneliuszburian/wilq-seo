@@ -1087,6 +1087,11 @@ Stop and record a blocker if:
   current actionable item is blocked by missing service and CTA knowledge, asks
   whether that blocker is understandable, and routes post-session proof through
   the completion guard without claiming Goal 005 completion.
+- 2026-07-02: `docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md`
+  prepares ordinary Wilku review for the two private `ekologus-ai` claim-policy
+  proposals: brand voice and legal-safety. Live recorder proof validates the
+  policy action IDs and keeps promotion blocked until a separate review result
+  and promotion request exist.
 
 ## Surprises & Discoveries
 

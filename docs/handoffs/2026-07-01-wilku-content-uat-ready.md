@@ -38,6 +38,12 @@ snapshotu Sales Brief, a jedyny actionable item
 Brief przez: `Brakuje karty usługi; Brakuje karty CTA`. To jest materiał do
 review z Wilkiem, nie dowód ukończonego UAT.
 
+Aktualizacja po policy handoff: osobny materiał review dla prywatnych claim
+policy proposals z `ekologus-ai` jest w
+`docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md`. Pokazuje styl
+marki i legal-safety jako redacted review-required proposals, nie jako
+zatwierdzoną politykę.
+
 Źródło live:
 
 ```bash
@@ -221,6 +227,10 @@ Redacted proposal details do sprawdzenia:
   dane klientów, gwarantowany wynik administracyjny i pełną interpretację
   prawną bez review człowieka.
 
+Materiał do pokazania przy policy review:
+
+- `docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md`
+
 ## Kandydaci z kolejki
 
 ### Zablokuj braki w pomiarze GA4 jako zadania contentowe
@@ -323,7 +333,8 @@ Walidowany format wyniku:
   "pokazane_materialy_review": [
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
     "docs/handoffs/2026-07-01-wilku-eko-opieka-review.md",
-    "docs/handoffs/2026-07-01-wilku-audyt-zgodnosci-review.md"
+    "docs/handoffs/2026-07-01-wilku-audyt-zgodnosci-review.md",
+    "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md"
   ],
   "pytania_skad_to_wzielo": "co było jasne albo niejasne w evidence IDs/source connectors",
   "miejsca_generyczne_off_brand": "co brzmiało generycznie albo nie jak Ekologus",

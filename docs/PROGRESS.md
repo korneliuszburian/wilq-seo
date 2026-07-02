@@ -212,6 +212,11 @@ API status later contradicts this state.
   the current Sales Brief blocker for the selected actionable item, asks Wilku
   whether the blocker is understandable, and points the post-session check to
   `goal_005_completion_check.py` without claiming completion.
+- A Wilku-ready review handoff now exists for the two private `ekologus-ai`
+  claim-policy proposals: `docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md`.
+  Live recorder proof validates their action IDs as private proposal review and
+  keeps the result at `needs_follow_up_before_promotion_request` with
+  `promotion_allowed=false`.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only
