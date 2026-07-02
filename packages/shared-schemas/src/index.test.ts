@@ -13,6 +13,7 @@ import {
   ContentWorkItemSnapshotResponseSchema,
   ContentServiceProfileResponseSchema,
   ContentServiceProfileCoverageGapSchema,
+  ContentWorkItemQualityReviewRequestSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
   ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
@@ -840,6 +841,21 @@ describe("Content work item workflow schemas", () => {
     reason: "Okno obserwacji jeszcze trwa.",
     next_step: "Wróć po earliest_verdict_date."
   };
+
+  it("rejects unknown quality review duplicate risk values", () => {
+    expect(
+      ContentWorkItemQualityReviewRequestSchema.safeParse({
+        item,
+        duplicate_risk: "clear"
+      }).success
+    ).toBe(true);
+    expect(
+      ContentWorkItemQualityReviewRequestSchema.safeParse({
+        item,
+        duplicate_risk: "probably_fine"
+      }).success
+    ).toBe(false);
+  });
 
   it("accepts Goal 002 work item workflow API response shapes", () => {
     expect(

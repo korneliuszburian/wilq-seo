@@ -1041,7 +1041,7 @@ export const ContentWorkItemQualityReviewRequestSchema = z.object({
   structured_output: StructuredDraftOutputSchema.nullable().optional(),
   claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
   sales_brief: ContentSalesBriefSchema.nullable().optional(),
-  duplicate_risk: z.string().default("clear")
+  duplicate_risk: ContentInventoryDuplicateRiskSchema.default("clear")
 });
 
 export const ContentWorkItemQualityReviewResponseSchema = z.object({

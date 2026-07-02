@@ -538,7 +538,7 @@ function qualityReviewRequest() {
     draft_package: draftPackage(),
     claim_ledger: claimLedger(),
     structured_output: structuredDraftOutput(),
-    duplicate_risk: "clear"
+    duplicate_risk: "clear" as const
   };
 }
 
