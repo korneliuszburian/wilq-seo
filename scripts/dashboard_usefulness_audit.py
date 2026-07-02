@@ -5,11 +5,12 @@ import json
 from dataclasses import dataclass
 from typing import Any, Literal
 from urllib.error import HTTPError, URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000"
 
 SurfaceStatus = Literal["production", "experimental", "placeholder", "technical"]
+HttpMethod = Literal["GET", "POST"]
 SurfaceFamily = Literal[
     "command",
     "diagnostic",
@@ -29,6 +30,9 @@ class SurfaceSpec:
     family: SurfaceFamily
     status: SurfaceStatus
     endpoint: str
+    method: HttpMethod = "GET"
+    request_json: dict[str, Any] | None = None
+    payload_key: str | None = None
     requires_evidence: bool = True
     requires_source_connector: bool = True
     requires_action: bool = False
@@ -120,6 +124,17 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         demo_priority=40,
     ),
     SurfaceSpec(
+        "content_workflow",
+        "/content-workflow",
+        "Workflow treści",
+        "workflow",
+        "production",
+        "/api/content/work-items/snapshot",
+        requires_decision=True,
+        requires_blocker_or_blocked_claim=True,
+        demo_priority=42,
+    ),
+    SurfaceSpec(
         "ahrefs",
         "/ahrefs",
         "Ahrefs",
@@ -156,6 +171,21 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         requires_blocker_or_blocked_claim=True,
         requires_polish_contract=True,
         demo_priority=60,
+    ),
+    SurfaceSpec(
+        "social_publisher",
+        "/social-publisher",
+        "Publikacje social",
+        "workflow",
+        "experimental",
+        "/api/codex/context-pack",
+        method="POST",
+        request_json={"skill": "wilq-social-publisher"},
+        payload_key="social_draft_context",
+        requires_action=True,
+        requires_decision=True,
+        requires_blocker_or_blocked_claim=True,
+        demo_priority=65,
     ),
     SurfaceSpec(
         "actions",
@@ -234,7 +264,7 @@ def main() -> int:
 
 def build_report(api_base: str = DEFAULT_API_BASE, min_production_score: int = 7) -> dict[str, Any]:
     surface_reports = [
-        evaluate_surface(spec, _safe_fetch(api_base, spec.endpoint)) for spec in SURFACES
+        evaluate_surface(spec, _safe_fetch(api_base, spec)) for spec in SURFACES
     ]
     production_failures = [
         surface
@@ -271,6 +301,8 @@ def build_report(api_base: str = DEFAULT_API_BASE, min_production_score: int = 7
 
 def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[str, Any]:
     payload = fetch_result.get("payload")
+    if spec.payload_key and isinstance(payload, dict):
+        payload = payload.get(spec.payload_key, payload)
     errors = list(fetch_result.get("errors") or [])
     evidence_ids = sorted(_find_unique_values(payload, "evidence_ids"))
     source_connectors = sorted(_find_unique_values(payload, "source_connectors"))
@@ -281,6 +313,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
     lineage_count = len(_find_unique_values(payload, "source_lineage"))
     safe_next_steps = _safe_next_steps(payload)
     language = payload.get("language") if isinstance(payload, dict) else None
+    has_blockers = _has_blockers(payload)
 
     if spec.requires_evidence and not evidence_ids:
         errors.append("missing evidence_ids")
@@ -297,7 +330,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
     has_blocker_count = _has_positive_count(payload, "blocker_count")
     has_decision_blocker_count = _has_positive_count(payload, "decision_blocker_count")
     if spec.requires_blocker_or_blocked_claim and not (
-        blocked_claims or has_blocker_count or has_decision_blocker_count
+        blocked_claims or has_blockers or has_blocker_count or has_decision_blocker_count
     ):
         errors.append("missing blocked_claims or blocker count")
     if spec.requires_polish_contract and language not in {None, "pl-PL"}:
@@ -315,6 +348,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
     score += 1 if (lineage_count > 0 or not spec.requires_lineage) else 0
     score += 1 if (
         blocked_claims
+        or has_blockers
         or has_blocker_count
         or has_decision_blocker_count
         or not spec.requires_blocker_or_blocked_claim
@@ -362,7 +396,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Blocked: {report['blocked_count']}",
         f"- Pass: `{str(report['pass']).lower()}`",
         "",
-        "| Ekran | Status | Gotowość | Score | Rekordy | Ślady | Dowody | Akcje | Decyzje | Następny krok |",
+        "| Ekran | Status | Gotowość | Score | Rekordy | Ślady | Dowody | Akcje | "
+        "Decyzje | Następny krok |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for surface in report["surfaces"]:
@@ -396,9 +431,9 @@ def render_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _safe_fetch(api_base: str, endpoint: str) -> dict[str, Any]:
+def _safe_fetch(api_base: str, spec: SurfaceSpec) -> dict[str, Any]:
     try:
-        return {"payload": _fetch_json(api_base, endpoint), "errors": []}
+        return {"payload": _fetch_json(api_base, spec), "errors": []}
     except RuntimeError as error:
         return {
             "payload": {},
@@ -407,17 +442,23 @@ def _safe_fetch(api_base: str, endpoint: str) -> dict[str, Any]:
         }
 
 
-def _fetch_json(api_base: str, endpoint: str) -> Any:
-    url = f"{api_base.rstrip('/')}{endpoint}"
+def _fetch_json(api_base: str, spec: SurfaceSpec) -> Any:
+    url = f"{api_base.rstrip('/')}{spec.endpoint}"
+    data = None
+    headers = {}
+    if spec.method == "POST":
+        data = json.dumps(spec.request_json or {}).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    request = Request(url, data=data, headers=headers, method=spec.method)
     try:
-        with urlopen(url, timeout=25) as response:
+        with urlopen(request, timeout=25) as response:
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
-        raise RuntimeError(f"{endpoint} returned HTTP {error.code}") from error
+        raise RuntimeError(f"{spec.endpoint} returned HTTP {error.code}") from error
     except (TimeoutError, URLError) as error:
-        raise RuntimeError(f"{endpoint} unreachable: {error}") from error
+        raise RuntimeError(f"{spec.endpoint} unreachable: {error}") from error
     except json.JSONDecodeError as error:
-        raise RuntimeError(f"{endpoint} did not return JSON") from error
+        raise RuntimeError(f"{spec.endpoint} did not return JSON") from error
 
 
 def _find_unique_values(value: Any, key: str) -> set[str]:
@@ -437,6 +478,7 @@ def _find_unique_values(value: Any, key: str) -> set[str]:
 def _find_action_ids(value: Any) -> set[str]:
     found = _find_unique_values(value, "action_ids")
     found.update(_find_unique_values(value, "action_id"))
+    found.update(_find_unique_values(value, "draft_action_ids"))
     if isinstance(value, dict):
         item_id = value.get("id")
         if isinstance(item_id, str) and _looks_like_action_id(item_id):
@@ -503,6 +545,7 @@ def _looks_decision_like(value: dict[str, Any]) -> bool:
         value.get("decision_type")
         or value.get("decision_state")
         or value.get("next_step")
+        or value.get("operator_next_step")
         or value.get("operator_action")
         or value.get("safe_next_step")
     )
@@ -514,6 +557,7 @@ def _safe_next_steps(value: Any) -> list[str]:
         for key in (
             "primary_next_step",
             "next_step",
+            "operator_next_step",
             "operator_action",
             "safe_next_step",
             "allowed_next_step",
@@ -537,6 +581,17 @@ def _has_positive_count(value: Any, key: str) -> bool:
         return any(_has_positive_count(item, key) for item in value.values())
     if isinstance(value, list):
         return any(_has_positive_count(item, key) for item in value)
+    return False
+
+
+def _has_blockers(value: Any) -> bool:
+    if isinstance(value, dict):
+        child = value.get("blockers")
+        if isinstance(child, list) and len(child) > 0:
+            return True
+        return any(_has_blockers(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_has_blockers(item) for item in value)
     return False
 
 

@@ -281,10 +281,10 @@ this loop:
 
 Current dashboard usefulness map, updated by replacing rows rather than
 appending history. The canonical live check is:
-`uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown`.
+`rtk uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown`.
 
-Snapshot from 2026-07-02 live API audit: 13 surfaces checked, 12
-`demo_ready`, 1 `review_ready`, 0 `blocked`, pass=true. Treat this as a
+Snapshot from 2026-07-02 live API audit: 15 surfaces checked, 13
+`demo_ready`, 2 `review_ready`, 0 `blocked`, pass=true. Treat this as a
 readiness map, not as Wilku UAT proof.
 
 | Surface | Current usefulness state | Next tuning target |
@@ -295,20 +295,15 @@ readiness map, not as Wilku UAT proof.
 | `/content-planner` | `demo_ready`; 16 evidence IDs, 5 actions and 55 content decisions. It can queue refresh/merge/create/block work from GSC, WordPress, Ahrefs, GA4 and knowledge evidence. | Connect the full Claim Ledger to draft gating and add historical LinkedIn/Facebook metadata before claiming topics are new or safe to repurpose. |
 | `/ga4` | `demo_ready`; 19 evidence IDs, 1 action and 33 decision/proof rows. It separates traffic-quality review from measurement problems such as `(not set)`. | Make conversion-readiness and action-panel copy less technical without implying ROAS, revenue or conversion proof. |
 | `/service-profile` | `demo_ready`; 1 evidence ID, 13 review actions and 36 knowledge/service decisions. It is useful for owner review, but production-depth knowledge is still blocked. | Run real Wilku/owner review for selected cards/proposals, then persist reviewer, freshness, confidence and source lineage toward approved-current cards. |
+| `/content-workflow` | `demo_ready`; 2 evidence IDs and 36 workflow/claim-gate decisions. It shows the active candidate and API-owned blocker/next-step chain. | Run one approved-current knowledge item through preflight -> Sales Brief -> Claim Ledger -> draft-only package -> human review proof. |
 | `/ahrefs` | `demo_ready`; 8 evidence IDs and 20 gap/authority decisions. | Pair Ahrefs gaps with GSC and WordPress inventory before turning them into content actions. |
 | `/localo` | `demo_ready`; 2 evidence IDs, 1 action and 35 local-readiness rows. | Keep local claims review-only until ranking/GBP/competitor evidence is exposed beyond OAuth/initialize proof. |
 | `/ads-doctor/demand-gen` | `review_ready`; 12 evidence IDs, 1 action and 1 readiness decision. It remains experimental. | Confirm landing-page quality data and creative/asset readiness before proposing Demand Gen launch or mode changes. |
+| `/social-publisher` | `review_ready`; 7 evidence IDs, 2 draft actions and 2 social decisions. It can prepare review-only post directions, but publish access and duplicate-free claims stay blocked because social history and credentials are missing. | Add metadata-only historical post inventory (`social_history_inventory_v1`) before claiming duplicate-free repurposing or safe repeat topics. |
 | `/actions` | `demo_ready`; 19 ActionObjects and 41 evidence IDs. | Keep marketer summaries above raw payloads; raw audit details stay below the fold. |
 | `/opportunities` | `demo_ready`; 5 opportunities, 22 evidence IDs and 9 actions. | Make each opportunity answer "why now?" and "what is the next safe action?" without developer translation. |
 | `/workflows` | `demo_ready`; 15 workflow records, 20 evidence IDs, 10 actions and 15 decisions. | Route operators back to Command Center priority order instead of making workflows feel like a separate product. |
 | `/knowledge` | `demo_ready`; 15 records and 49 lineage traces. | Keep knowledge review honest: records with lineage are not automatically approved-current production knowledge. |
-
-Important workflow surfaces outside this 13-surface snapshot:
-
-| Surface | Current usefulness state | Next tuning target |
-| --- | --- | --- |
-| `/content-workflow` | Previously scored 8/10 as an honest end-to-end content gate, 5/10 as production draft readiness and 8.5/10 for write/claim blocking. It shows the active candidate and uses API-owned Claim Ledger snapshots. | Run one approved-current knowledge item through preflight -> Sales Brief -> Claim Ledger -> draft-only package -> human review proof. |
-| `/social-publisher` | Skill eval scored `operator_usefulness_score=5`: review-only LinkedIn/Facebook draft actions validate, but publish access and duplicate-free claims stay blocked because `historical_social_inventory_status=missing` and both social connectors have missing credentials. | Add metadata-only historical post inventory (`social_history_inventory_v1`) before claiming duplicate-free repurposing or safe repeat topics. |
 
 ## Codex skills and hooks rules
 

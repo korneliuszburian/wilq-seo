@@ -143,8 +143,11 @@ live API status later contradicts this state.
   surfaces as `demo_ready`, `review_ready` or `blocked` without asserting exact
   metric values. Proof on 2026-07-02:
   `rtk uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown`
-  returned 13 checked surfaces, 12 `demo_ready`, 1 `review_ready` (Demand Gen,
-  experimental), 0 `blocked`, `pass=true`. `scripts/pre_demo_gate.sh` now runs
+  returned 15 checked surfaces, 13 `demo_ready`, 2 `review_ready` (Demand Gen
+  and Social Publisher, experimental), 0 `blocked`, `pass=true`. The audit now
+  includes `/content-workflow` and the social context-pack, with social scoped
+  to `social_draft_context` so historical-post blockers are measured without
+  counting unrelated context-pack actions. `scripts/pre_demo_gate.sh` now runs
   this audit after the live contract smoke.
 - Source fact / Service Profile coverage is now auditable as a concise Wilku
   readiness report through `scripts/source_fact_coverage_audit.py`. Proof on

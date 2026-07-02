@@ -123,6 +123,100 @@ def test_experimental_surface_caps_at_review_ready_even_with_full_proof() -> Non
     assert result["usefulness_score"] == 10
 
 
+def test_social_surface_detects_operator_next_step_and_draft_action_ids() -> None:
+    audit = load_module()
+    spec = audit.SurfaceSpec(
+        "social_publisher",
+        "/social-publisher",
+        "Publikacje social",
+        "workflow",
+        "experimental",
+        "/api/codex/context-pack",
+        method="POST",
+        request_json={"skill": "wilq-social-publisher"},
+        payload_key="social_draft_context",
+        requires_evidence=True,
+        requires_action=True,
+        requires_decision=True,
+        requires_blocker_or_blocked_claim=True,
+    )
+
+    result = audit.evaluate_surface(
+        spec,
+        {
+            "payload": {
+                "social_draft_context": {
+                    "source_connectors": ["google_search_console", "wordpress_ekologus"],
+                    "evidence_ids": ["ev_social"],
+                    "draft_action_ids": ["act_prepare_linkedin_social_drafts"],
+                    "blocked_claims": ["brak powtórzeń historycznych postów"],
+                    "operator_next_step": (
+                        "Zbierz metadata-only historię LinkedIn/Facebook przed claimem "
+                        "o braku powtórek."
+                    ),
+                }
+            },
+            "errors": [],
+        },
+    )
+
+    assert result["readiness"] == "review_ready"
+    assert result["sample_action_ids"] == ["act_prepare_linkedin_social_drafts"]
+    assert result["sample_next_steps"] == [
+        "Zbierz metadata-only historię LinkedIn/Facebook przed claimem o braku powtórek."
+    ]
+
+
+def test_surface_specs_include_content_workflow_and_social_publisher() -> None:
+    audit = load_module()
+    specs_by_id = {surface.surface_id: surface for surface in audit.SURFACES}
+
+    assert specs_by_id["content_workflow"].path == "/content-workflow"
+    assert specs_by_id["content_workflow"].endpoint == "/api/content/work-items/snapshot"
+    assert specs_by_id["social_publisher"].path == "/social-publisher"
+    assert specs_by_id["social_publisher"].method == "POST"
+    assert specs_by_id["social_publisher"].request_json == {"skill": "wilq-social-publisher"}
+    assert specs_by_id["social_publisher"].payload_key == "social_draft_context"
+
+
+def test_blocker_lists_satisfy_blocker_requirement() -> None:
+    audit = load_module()
+    spec = audit.SurfaceSpec(
+        "content_workflow",
+        "/content-workflow",
+        "Workflow treści",
+        "workflow",
+        "production",
+        "/api/content/work-items/snapshot",
+        requires_evidence=True,
+        requires_decision=True,
+        requires_blocker_or_blocked_claim=True,
+    )
+
+    result = audit.evaluate_surface(
+        spec,
+        {
+            "payload": {
+                "evidence_ids": ["ev_content"],
+                "source_connectors": ["google_search_console"],
+                "preflight": {
+                    "preflight_verdict": {
+                        "blockers": [
+                            {
+                                "code": "missing_claim_ledger",
+                                "next_step": "Sprawdź i zatwierdź ryzykowne twierdzenia.",
+                            }
+                        ]
+                    }
+                },
+            },
+            "errors": [],
+        },
+    )
+
+    assert result["readiness"] == "demo_ready"
+
+
 def test_action_ids_are_detected_from_singular_review_action_fields() -> None:
     audit = load_module()
     spec = audit.SurfaceSpec(
