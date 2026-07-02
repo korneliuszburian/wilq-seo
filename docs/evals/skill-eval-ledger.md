@@ -8429,3 +8429,38 @@ Result:
 - The output kept `ukończone zadanie lokalne`, `zapis zmian w profilu firmy`,
   `poprawa widoczności lokalnej`, write/apply and unsupported ranking claims
   blocked until further proof and human review.
+
+## 2026-07-02 - Merchant Feed Operator usefulness eval
+
+Purpose:
+
+- Verify that `wilq-merchant-feed-operator` turns Merchant diagnostics into a
+  safe feed-review queue grouped by `decision_queue`, not a fake SKU repair
+  list.
+- Confirm that reapproval, revenue, product ROAS, price-impact and feed-write
+  claims stay blocked without the required read contracts and audit trail.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T131438Z/wilq-merchant-feed-operator/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, four evidence IDs and all hard gates true.
+- WILQ validated `act_review_merchant_feed_issues` as the only safe action to
+  check.
+- The output starts from `decision_queue`, uses
+  `count_semantics=reported_issue_occurrences`, and explicitly says
+  `product_count`/issue counts are reported problem occurrences, not unique SKU
+  counts.
+- `product_sample_readiness` is treated as sample material only, not a complete
+  product list or permission to mutate the feed.
+- The output preserves unknowns and blockers: missing unique product count,
+  missing Merchant-to-Ads/GA4 product performance join, blocked product ROAS,
+  recovered revenue, price impact, product reapproval and feed write claims.

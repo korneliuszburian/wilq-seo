@@ -158,6 +158,13 @@ API status later contradicts this state.
   performance/revenue decisions and 9/10 for claim blocking. The dashboard first
   screen now leads with `Merchant: co dziś zrobić`, `Kolejność pracy` and
   `Czego nie obiecywać`.
+- `wilq-merchant-feed-operator` passed deterministic smoke and non-interactive
+  eval; artifact: `.local-lab/evals/codex-skill/20260702T131438Z`. Score 5,
+  `failure_tags=[]`. The useful output starts from `decision_queue`, validates
+  `act_review_merchant_feed_issues`, treats problem counts as reported issue
+  occurrences rather than unique SKUs, uses product samples only as review
+  material and blocks reapproval, revenue, product ROAS, price impact and feed
+  write claims.
 - Command Center usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-command-center-start-card.md`. Live
   `/api/dashboard/command-center` returns Merchant as the primary next step,
