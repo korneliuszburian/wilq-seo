@@ -333,6 +333,19 @@ API status later contradicts this state.
   route markers (`produktów`, `pliku produktowego`) after two false failures,
   while still requiring Merchant/product intent, freshness, missing read
   contracts and blocked product ROAS/revenue/price-impact/feed-write claims.
+- `wilq-ads-doctor` now has a fresh live non-interactive usefulness proof at
+  `.local-lab/evals/codex-skill/20260702T013936Z/summary.json`. Result:
+  `operator_usefulness_score=4`, all hard gates true, no failure tags,
+  12 evidence IDs, 5 recommendations and 4 validated action candidates:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` and
+  `act_prepare_negative_keyword_review_queue`. The eval harness now also fails
+  recommendation-level evidence IDs or source connectors that are absent from
+  top-level lineage, after an earlier Ads run exposed an evidence ID typo.
+  The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
+  campaign writes and negative-keyword writes without full review/audit while
+  avoiding brittle exact wording for areas already proven by validated actions.
 - `wilq-content-operator` now has a realistic non-interactive eval case in
   `docs/evals/cases/wilq-skill-eval-cases.json`. Static coverage passes with
   all 13 WILQ skills covered. The first live Codex eval caught a useful harness

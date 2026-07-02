@@ -6933,3 +6933,43 @@ Result:
   and blocked product-level ROAS, recovered revenue, price-impact,
   reapproval and product-feed write claims without the missing read contracts
   and audit path.
+
+## 2026-07-02 - Ads Doctor live usefulness eval and lineage hardening
+
+Purpose:
+
+- Test `wilq-ads-doctor` against the live `/api/ads/diagnostics` queue after
+  operator feedback that Ads skill output must be useful, prioritized and safe,
+  not a field dump or unsafe performance interpretation.
+- Harden the non-interactive harness so a recommendation cannot introduce
+  evidence IDs or source connectors outside the top-level lineage list.
+
+Focused proof:
+
+```bash
+scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- Earlier runs exposed two useful eval issues: overly literal Polish route
+  markers and one generated evidence ID typo inside a recommendation. The
+  harness now fails recommendation-level evidence/source connectors that are
+  absent from top-level `evidence_ids`/`source_connectors`.
+- The Ads case now keeps raw route markers only where they prove workflow
+  coverage; coverage for recommendations and negative-keyword review is guarded
+  by expected validated action IDs instead of brittle exact wording.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T013936Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `failure_tags=[]`, all hard gates
+  true, 12 evidence IDs, 5 recommendations, 4 validated action candidates.
+- Validated action candidates:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms`,
+  `act_prepare_negative_keyword_review_queue`.
+- The output used `ads_diagnostics`, `full_context`, `live_data_available`,
+  `ads_review_budget_context`, search-term safety, custom-segment and negative
+  keyword readiness, while blocking CPA, ROAS, budget scaling, recommendation
+  writes, campaign writes and negative-keyword writes without full review/audit.

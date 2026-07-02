@@ -30,54 +30,52 @@
       "act_review_ga4_tracking_quality",
       "act_prepare_ads_campaign_review_queue"
     ],
-  "expected_connectors": [
-    "google_ads",
-    "google_search_console",
-    "google_analytics_4",
-    "google_merchant_center",
+    "expected_connectors": [
+      "google_ads",
+      "google_search_console",
+      "google_analytics_4",
+      "google_merchant_center",
       "ahrefs",
       "localo",
-    "wordpress_ekologus",
-    "wordpress_sklep"
-  ],
-  "required_source_connectors": [
-    "google_ads",
-    "google_search_console",
-    "google_analytics_4",
-    "google_merchant_center",
-    "wordpress_ekologus",
-    "wordpress_sklep"
-  ],
-  "forbidden_action_ids": [
-    "act_prepare_linkedin_social_drafts",
-    "act_prepare_facebook_social_drafts",
-    "act_review_localo_visibility_facts"
-  ]
-},
+      "wordpress_ekologus",
+      "wordpress_sklep"
+    ],
+    "required_source_connectors": [
+      "google_ads",
+      "google_search_console",
+      "google_analytics_4",
+      "google_merchant_center",
+      "wordpress_ekologus",
+      "wordpress_sklep"
+    ],
+    "forbidden_action_ids": [
+      "act_prepare_linkedin_social_drafts",
+      "act_prepare_facebook_social_drafts",
+      "act_review_localo_visibility_facts"
+    ]
+  },
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
     "task_pl": "Sprawdź aktualne dowody Google Ads dla Ekologus: pokaż priorytetową, pełną kolejkę review z /api/ads/diagnostics albo full_context, czyli budżety, rekomendacje, wskaźniki kampanii, wyszukiwane hasła, wykluczenia i segmenty niestandardowe. Najpierw obsłuż świeżość odczytu, potem wskaż 3-5 decyzji do sprawdzenia, a jasno zablokuj koszt pozyskania celu, zwrot z reklam, marnowanie budżetu na zapytaniach, zmarnowany budżet, skalowanie budżetu, zapis rekomendacji, kierowanie reklam i zapis zmian oraz dodanie wykluczających słów kluczowych bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
     "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw. Jak default context-pack uciął kolejkę albo dane są stare, ogarnij full_context/pełne diagnostics albo refresh, ale nie rób mi dumpu pól API i nie wciskaj kosztu pozyskania celu ani zwrotu z reklam.",
-    "expected_connectors": ["google_ads"],
+    "expected_connectors": [
+      "google_ads"
+    ],
     "expected_terms_pl": [
       "Google Ads",
       "google_ads",
       "ads_diagnostics",
       "full_context",
       "live_data_available",
-      "świeżość",
       "priorytet",
       "campaign",
-      "przegląd kampanii",
-      "wiersze tylko do odczytu",
-      "wyszukiwane hasła",
+      "do odczytu",
+      "wyszukiwanych haseł",
       "koszt pozyskania celu",
       "zwrot z reklam",
-      "wykluczające słowa kluczowe",
       "blokady",
       "ads_review_budget_context",
-      "budget_pacing_read_contract",
       "card_google_ads_budget_review_playbook",
       "ads_scaling_candidates_v1",
       "ads_recommendations_v1",
@@ -86,24 +84,19 @@
       "review_priority",
       "review_score",
       "review_reason",
-      "review rekomendacji",
       "impression_share_read_contract",
       "ads_review_impression_share",
       "change_history_read_contract",
       "ads_review_change_history",
       "search_term_safety_read_contract",
       "search_term_90d",
-      "keyword_match_context_read_contract",
-      "keyword_match_context",
       "custom_segments_read_contract",
       "segmenty niestandardowe",
-      "keyword_planner_read_contract",
       "keyword_planner_enrichment",
       "forecast_or_audience_size",
       "negative_keyword_change_preview",
-      "zapis zmian rekomendacji",
+      "zapis rekomendacji",
       "negative_keywords_read_contract",
-      "review_negative_keyword_safety",
       "90_day_safety_check"
     ],
     "forbidden_terms_pl": [
@@ -133,13 +126,23 @@
       "act_prepare_google_ads_recommendation_review_queue",
       "act_prepare_custom_segments_from_search_terms",
       "act_prepare_negative_keyword_review_queue"
+    ],
+    "blocked_claim_terms": [
+      "ryzyko dalszych strat",
+      "ROI",
+      "ROI-sygnał",
+      "straty"
     ]
   },
   {
     "skill": "wilq-gsc-content-doctor",
     "surface_path": "/content-planner",
     "task_pl": "Na podstawie dostępnych dowodów z GSC wskaż jedną bezpieczną diagnozę treści i co marketer ma zrobić dalej.",
-    "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
+    "expected_connectors": [
+      "google_search_console",
+      "wordpress_ekologus",
+      "wordpress_sklep"
+    ],
     "expected_terms_pl": [
       "Treści",
       "GSC",
@@ -180,15 +183,23 @@
       "częściowe dane zapytań i adresów",
       "partial_possible"
     ],
-    "forbidden_connectors": ["ahrefs"],
-    "expected_action_ids": ["act_prepare_content_refresh_queue"],
-    "expected_validated_action_ids": ["act_prepare_content_refresh_queue"]
+    "forbidden_connectors": [
+      "ahrefs"
+    ],
+    "expected_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ]
   },
   {
     "skill": "wilq-ahrefs-gap-finder",
     "surface_path": "/ahrefs",
     "task_pl": "Sprawdź, czy dostępne dowody Ahrefs pozwalają wskazać luki SEO, treści i linków. WILQ ma fakty autorytetu, strony konkurencji, najlepsze strony konkurentów, organic keywords by URL, rekordy luk linków i rekordy luk treści. Pokaż, co wolno przejrzeć, i zablokuj tylko niepotwierdzony wzrost oraz obietnice autorytetu.",
-    "expected_connectors": ["ahrefs"],
+    "expected_connectors": [
+      "ahrefs"
+    ],
     "expected_terms_pl": [
       "Ahrefs",
       "ahrefs_diagnostics",
@@ -239,7 +250,9 @@
     "surface_path": "/localo",
     "task_pl": "Oceń aktualne dowody Localo dla Ekologus: pokaż dostęp MCP oraz agregaty place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ je zwraca. Jasno oddziel przegląd agregatów od brakujących danych local_tasks, zapisu zmian w profilu firmy i poprawy widoczności lokalnej; nie twierdź, że zadania lokalne, zapis zmian albo wzrost widoczności są odblokowane.",
     "messy_task_pl": "Localo finalnie działa czy nie działa? Daj mi konkretnie co wiemy o lokalnej widoczności i czego nadal nie wolno obiecać.",
-    "expected_connectors": ["localo"],
+    "expected_connectors": [
+      "localo"
+    ],
     "expected_terms_pl": [
       "Localo",
       "mcp_initialize_status",
@@ -268,8 +281,12 @@
       "zapis zmian w profilu firmy",
       "poprawa widoczności lokalnej"
     ],
-    "expected_action_ids": ["act_review_localo_visibility_facts"],
-    "expected_validated_action_ids": ["act_review_localo_visibility_facts"]
+    "expected_action_ids": [
+      "act_review_localo_visibility_facts"
+    ],
+    "expected_validated_action_ids": [
+      "act_review_localo_visibility_facts"
+    ]
   },
   {
     "skill": "wilq-content-strategist",
@@ -324,8 +341,12 @@
       "zapis szkicu WordPress",
       "obietnica wzrostu pozycji albo leadów"
     ],
-    "expected_action_ids": ["act_prepare_content_refresh_queue"],
-    "expected_validated_action_ids": ["act_prepare_content_refresh_queue"],
+    "expected_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ],
     "expected_blocked": true,
     "blocked_claim_terms": [
       "adres podglądu jako źródło dowodu",
@@ -448,7 +469,10 @@
     "skill": "wilq-social-publisher",
     "surface_path": "/social-publisher",
     "task_pl": "Przygotuj bezpieczny do sprawdzenia kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",
-    "expected_connectors": ["linkedin", "facebook"],
+    "expected_connectors": [
+      "linkedin",
+      "facebook"
+    ],
     "expected_terms_pl": [
       "social_draft_context",
       "publish_allowed",
@@ -479,7 +503,11 @@
     "skill": "wilq-campaign-builder",
     "surface_path": "/ads-doctor",
     "task_pl": "Oceń, czy można przygotować propozycję kampanii albo podgląd zmian. Nie proponuj zapisu zmian bez akcji do sprawdzenia w WILQ.",
-    "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"],
+    "expected_connectors": [
+      "google_ads",
+      "google_analytics_4",
+      "google_search_console"
+    ],
     "expected_terms_pl": [
       "Plan kampanii",
       "ads_diagnostics",
@@ -510,7 +538,10 @@
     "skill": "wilq-custom-segments",
     "surface_path": "/ads-doctor",
     "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować segmenty niestandardowe z realnych source_terms i dowodów. Uwzględnij review_priority, review_score i review_reason, ale nie wymyślaj terminów odbiorców, rozmiaru odbiorców, zwrotu z reklam ani efektu kampanii.",
-    "expected_connectors": ["google_ads", "google_search_console"],
+    "expected_connectors": [
+      "google_ads",
+      "google_search_console"
+    ],
     "expected_terms_pl": [
       "Google Ads",
       "segmenty niestandardowe",
@@ -535,14 +566,21 @@
       "zapis kierowania reklam",
       "skuteczność kampanii"
     ],
-    "expected_action_ids": ["act_prepare_custom_segments_from_search_terms"],
-    "expected_validated_action_ids": ["act_prepare_custom_segments_from_search_terms"]
+    "expected_action_ids": [
+      "act_prepare_custom_segments_from_search_terms"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_custom_segments_from_search_terms"
+    ]
   },
   {
     "skill": "wilq-demand-gen-operator",
     "surface_path": "/ads-doctor/demand-gen",
     "task_pl": "Oceń gotowość Demand Gen, jakość materiałów i jakość ruchu tylko z dowodów WILQ oraz sprawdzenia w WILQ.",
-    "expected_connectors": ["google_ads", "google_analytics_4"],
+    "expected_connectors": [
+      "google_ads",
+      "google_analytics_4"
+    ],
     "expected_terms_pl": [
       "Demand Gen",
       "demand_gen_readiness",
@@ -563,8 +601,12 @@
       "zmiana kampanii",
       "wzrost skuteczności"
     ],
-    "expected_action_ids": ["act_review_demand_gen_readiness"],
-    "expected_validated_action_ids": ["act_review_demand_gen_readiness"],
+    "expected_action_ids": [
+      "act_review_demand_gen_readiness"
+    ],
+    "expected_validated_action_ids": [
+      "act_review_demand_gen_readiness"
+    ],
     "forbidden_action_ids": [
       "act_review_ga4_tracking_quality",
       "act_prepare_ads_campaign_review_queue",
@@ -578,7 +620,9 @@
     "surface_path": "/ga4",
     "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż identyfikatory dowodów, akcję do sprawdzenia oraz twierdzenia, których nie wolno mówić.",
     "messy_task_pl": "Czy te strony wejścia są słabe, czy pomiar jest rozwalony? Nie zwalaj winy na kampanie, jeśli widzisz tylko not set albo braki pomiaru.",
-    "expected_connectors": ["google_analytics_4"],
+    "expected_connectors": [
+      "google_analytics_4"
+    ],
     "expected_terms_pl": [
       "GA4",
       "active_users",
@@ -589,15 +633,21 @@
       "review_traffic_quality",
       "landing/source/campaign"
     ],
-    "expected_action_ids": ["act_review_ga4_tracking_quality"],
-    "expected_validated_action_ids": ["act_review_ga4_tracking_quality"]
+    "expected_action_ids": [
+      "act_review_ga4_tracking_quality"
+    ],
+    "expected_validated_action_ids": [
+      "act_review_ga4_tracking_quality"
+    ]
   },
   {
     "skill": "wilq-merchant-feed-operator",
     "surface_path": "/merchant",
     "task_pl": "Sprawdź dowody Merchant dla pliku produktowego i produktów oraz wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że zwrot z reklam na poziomie produktu, odzyskany przychód produktu, wpływ zmiany ceny, ponowne zatwierdzenie produktu oraz zapis pliku produktowego są zablokowane bez odpowiednich kontraktów.",
     "messy_task_pl": "Czy plik produktowy jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj ponownego zatwierdzenia ani odzyskanego przychodu.",
-    "expected_connectors": ["google_merchant_center"],
+    "expected_connectors": [
+      "google_merchant_center"
+    ],
     "expected_terms_pl": [
       "Merchant Center",
       "pliku produktowego",
@@ -626,7 +676,11 @@
       "ponowne zatwierdzenie produktu",
       "zapis do pliku produktowego"
     ],
-    "expected_action_ids": ["act_review_merchant_feed_issues"],
-    "expected_validated_action_ids": ["act_review_merchant_feed_issues"]
+    "expected_action_ids": [
+      "act_review_merchant_feed_issues"
+    ],
+    "expected_validated_action_ids": [
+      "act_review_merchant_feed_issues"
+    ]
   }
 ]

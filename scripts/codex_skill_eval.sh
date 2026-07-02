@@ -557,6 +557,26 @@ for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
             errors.append(f"recommendation {idx} has no evidence_ids")
         if not recommendation.get("source_connectors"):
             errors.append(f"recommendation {idx} has no source_connectors")
+        unknown_evidence_ids = [
+            evidence_id
+            for evidence_id in recommendation.get("evidence_ids", [])
+            if evidence_id not in data.get("evidence_ids", [])
+        ]
+        if unknown_evidence_ids:
+            errors.append(
+                f"recommendation {idx} uses evidence_ids absent from top-level "
+                f"evidence_ids: {', '.join(unknown_evidence_ids)}"
+            )
+        unknown_source_connectors = [
+            connector
+            for connector in recommendation.get("source_connectors", [])
+            if connector not in data.get("source_connectors", [])
+        ]
+        if unknown_source_connectors:
+            errors.append(
+                f"recommendation {idx} uses source_connectors absent from top-level "
+                f"source_connectors: {', '.join(unknown_source_connectors)}"
+            )
         recommendation_text = json.dumps(recommendation, ensure_ascii=False).lower()
         for term in case.get("blocked_claim_terms", []):
             if term.lower() in recommendation_text:
