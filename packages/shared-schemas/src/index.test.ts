@@ -21,6 +21,7 @@ import {
   ContentWorkItemSchema,
   ContentClaimLedgerSchema,
   ContentDraftPackageSchema,
+  ContentKnowledgeConstraintTypeSchema,
   ContentServiceProfilePrivateSourceProposalSectionSchema,
   ContentGscSearchAnalyticsContractSchema,
   StructuredDraftPreviewBlockerSchema,
@@ -586,6 +587,18 @@ describe("ContentDraftPackageSchema", () => {
         draft_kind: "full_publishable_draft"
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ContentKnowledgeConstraintTypeSchema", () => {
+  it("rejects unknown knowledge constraint categories", () => {
+    expect(ContentKnowledgeConstraintTypeSchema.safeParse("evidence_requirement").success).toBe(
+      true
+    );
+    expect(ContentKnowledgeConstraintTypeSchema.safeParse("needs_human_review").success).toBe(
+      true
+    );
+    expect(ContentKnowledgeConstraintTypeSchema.safeParse("model_opinion").success).toBe(false);
   });
 });
 

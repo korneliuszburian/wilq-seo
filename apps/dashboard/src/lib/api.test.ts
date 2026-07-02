@@ -712,7 +712,7 @@ function salesBrief() {
     knowledge_constraints: [
       {
         card_id: "ekologus_evidence_live_connector_requirement",
-        constraint_type: "evidence_requirement",
+        constraint_type: "evidence_requirement" as const,
         label: "Live evidence i source connector są wymagane",
         reason: "Brak evidence ID oznacza brak rekomendacji."
       }
@@ -827,7 +827,7 @@ function structuredDraftGenerationContract(): NonNullable<
       knowledge_constraints: [
         {
           card_id: "ekologus_evidence_live_connector_requirement",
-          constraint_type: "evidence_requirement",
+          constraint_type: "evidence_requirement" as const,
           label: "Live evidence i source connector są wymagane",
           reason: "Brak evidence ID oznacza brak rekomendacji."
         }

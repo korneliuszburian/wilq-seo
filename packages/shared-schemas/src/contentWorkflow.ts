@@ -278,9 +278,20 @@ export const ContentSalesBriefOperationsContextSchema = z.object({
   source_fact_ids: z.array(z.string()).default([])
 });
 
+export const ContentKnowledgeConstraintTypeSchema = z.enum([
+  "service_fit",
+  "evidence_requirement",
+  "allowed_with_evidence",
+  "needs_human_review",
+  "blocked",
+  "blocked_until_measurement",
+  "source_backed_review_required",
+  "stale"
+]);
+
 export const ContentSalesBriefKnowledgeConstraintSchema = z.object({
   card_id: z.string(),
-  constraint_type: z.string(),
+  constraint_type: ContentKnowledgeConstraintTypeSchema,
   label: z.string(),
   reason: z.string(),
   evidence_ids: z.array(z.string()).default([])
@@ -780,7 +791,7 @@ export const StructuredDraftClaimMarkerSchema = z.object({
 
 export const StructuredDraftKnowledgeConstraintSchema = z.object({
   card_id: z.string(),
-  constraint_type: z.string(),
+  constraint_type: ContentKnowledgeConstraintTypeSchema,
   label: z.string(),
   reason: z.string(),
   evidence_ids: z.array(z.string()).default([])
