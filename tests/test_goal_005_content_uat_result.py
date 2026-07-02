@@ -43,8 +43,15 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert report["shown_review_artifacts"] == [
         "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
     ]
+    assert report["missing_recommended_review_artifacts"] == [
+        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md"
+    ]
     assert "Nie promuje private proposals" in report["safety_note"]
     assert "nie odblokowuje publikacji" in report["safety_note"]
+
+    markdown = render_markdown(report)
+    assert "## Ostrzeżenia materiałów review" in markdown
+    assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
 
 
 def test_content_uat_result_records_live_packet_provenance_for_selected_item() -> None:
@@ -108,6 +115,35 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert "Private policy review actions: `0`" in markdown
     assert "## Pokazane materiały review" in markdown
     assert "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md" in markdown
+
+
+def test_content_uat_result_has_no_warning_when_plain_show_guide_was_shown() -> None:
+    payload = {
+        "data_sesji": "2026-07-02",
+        "osoba": "Wilku",
+        "czas_do_zrozumienia_statusu": "7 minut",
+        "punkty_niezrozumienia": "Prosty przewodnik pomógł odczytać techniczne handoffy.",
+        "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": [
+            "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+            "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+        ],
+        "pytania_skad_to_wzielo": "Źródła były czytelne.",
+        "miejsca_generyczne_off_brand": "Brak nowych uwag.",
+        "najwiekszy_brak_produktu": "Brak zatwierdzonej karty usługi.",
+        "wilku_rozumie_blokady_pelnego_uat": "tak",
+        "service_profile_czytelny": "tak",
+        "public_service_review_actions_czytelne": "tak",
+        "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
+        "mozna_przejsc_do_pelnego_content_uat": "nie",
+        "follow_up_beads": ["wilq-seo-next: zatwierdzić albo poprawić kartę usługi"],
+    }
+
+    report = build_content_uat_result_report(payload)
+
+    assert report["missing_recommended_review_artifacts"] == []
+    assert "## Ostrzeżenia materiałów review" not in render_markdown(report)
 
 
 def test_content_uat_result_preserves_blocked_sales_brief_reason() -> None:

@@ -33,6 +33,9 @@ REQUIRED_BOOLEAN_FIELDS = {
 }
 REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
 REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
+RECOMMENDED_REVIEW_ARTIFACTS = [
+    "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+]
 
 
 def main() -> int:
@@ -103,6 +106,9 @@ def build_content_uat_result_report(
     )
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     shown_review_artifacts = review_artifact_paths(payload.get(REVIEW_ARTIFACTS_FIELD))
+    missing_recommended_review_artifacts = recommended_review_artifact_gaps(
+        shown_review_artifacts
+    )
     missing_follow_up = not can_continue and not follow_up_tasks
     selected_work_item = str(payload["wybrany_work_item"]).strip()
     live_provenance = live_uat_provenance(
@@ -140,6 +146,7 @@ def build_content_uat_result_report(
         "largest_product_gap": str(payload["najwiekszy_brak_produktu"]).strip(),
         "can_continue_to_full_content_uat": can_continue,
         "shown_review_artifacts": shown_review_artifacts,
+        "missing_recommended_review_artifacts": missing_recommended_review_artifacts,
         "follow_up_tasks": follow_up_tasks,
         "live_provenance": live_provenance,
         "overall_status": (
@@ -219,6 +226,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         *[f"- `{artifact}`" for artifact in report["shown_review_artifacts"]],
         "",
+        *render_missing_recommended_review_artifacts(report),
         "## Źródła i jakość",
         "",
         f"- Pytania \"skąd to wzięło?\": {report['source_trace_questions']}",
@@ -231,6 +239,21 @@ def render_markdown(report: dict[str, Any]) -> str:
     for task in report["follow_up_tasks"] or ["brak"]:
         lines.append(f"- {task}")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def render_missing_recommended_review_artifacts(report: dict[str, Any]) -> list[str]:
+    missing = report.get("missing_recommended_review_artifacts") or []
+    if not missing:
+        return []
+    return [
+        "## Ostrzeżenia materiałów review",
+        "",
+        *[
+            f"- Nie pokazano rekomendowanego prostego przewodnika: `{artifact}`"
+            for artifact in missing
+        ],
+        "",
+    ]
 
 
 def load_live_uat_context(api_base: str) -> dict[str, Any]:
@@ -579,6 +602,15 @@ def validate_review_artifacts(value: Any) -> list[str]:
         if not path.is_file():
             errors.append(f"Materiał review nie istnieje: {artifact}")
     return errors
+
+
+def recommended_review_artifact_gaps(shown_review_artifacts: list[str]) -> list[str]:
+    shown = set(shown_review_artifacts)
+    return [
+        artifact
+        for artifact in RECOMMENDED_REVIEW_ARTIFACTS
+        if artifact not in shown
+    ]
 
 
 def raw_list_payload(value: Any) -> list[Any]:

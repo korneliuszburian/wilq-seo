@@ -1096,6 +1096,11 @@ Stop and record a blocker if:
   plain-language entry point for showing Goal 005 materials to Wilku. It
   explains what to show, what to ask and what not to claim before opening the
   detailed UAT handoff.
+- 2026-07-02: `record_goal_005_content_uat_result.py` now emits a non-blocking
+  warning when that plain-language guide is missing from
+  `pokazane_materialy_review`. The UAT record stays valid, but the markdown
+  report tells the operator that Wilku was shown only the more technical
+  backing material.
 
 ## Surprises & Discoveries
 

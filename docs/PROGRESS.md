@@ -221,6 +221,10 @@ API status later contradicts this state.
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`. Use it as the first
   conversation script; the longer UAT handoff remains the detailed backing
   material and result format.
+- Goal 005 UAT result reports now warn when
+  `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is not listed in
+  `pokazane_materialy_review`. This is non-blocking, but it protects Wilku
+  review from starting with only technical handoffs.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only
