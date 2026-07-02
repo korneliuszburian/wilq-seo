@@ -62,13 +62,18 @@ describe("operator safety copy guards", () => {
     expect(source).toContain("nie dodawaj segmentu bez review");
   });
 
-  it("keeps Localo on the shared diagnostic page shell proof path", () => {
-    const localoSource = readSource("src/routes/LocaloDiagnosticSurface.tsx");
+  it("keeps smaller diagnostics on the shared diagnostic page shell proof path", () => {
+    const diagnosticSources = [
+      readSource("src/routes/LocaloDiagnosticSurface.tsx"),
+      readSource("src/routes/Ga4DiagnosticSurface.tsx")
+    ];
     const shellSource = readSource("src/components/DiagnosticSurfaceShell.tsx");
 
-    expect(localoSource).toContain("<DiagnosticPage");
-    expect(localoSource).not.toContain("diagnostics.isLoading");
-    expect(localoSource).not.toContain("DiagnosticSurfaceUnavailable");
+    for (const source of diagnosticSources) {
+      expect(source).toContain("<DiagnosticPage");
+      expect(source).not.toContain("diagnostics.isLoading");
+      expect(source).not.toContain("DiagnosticSurfaceUnavailable");
+    }
     expect(shellSource).toContain("export function DiagnosticPage");
     expect(shellSource).toContain("query.isLoading");
     expect(shellSource).toContain("DiagnosticSurfaceUnavailable");

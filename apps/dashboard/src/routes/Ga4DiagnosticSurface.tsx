@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useState } from "react";
 import { ShieldAlert } from "lucide-react";
 
@@ -7,10 +7,10 @@ import {
   ActionPreviewCardViewModel,
   Ga4DiagnosticsResponse,
   getActions,
-  getConnectors,
   getGa4Diagnostics
 } from "../lib/api";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
+import { DiagnosticPage } from "../components/DiagnosticSurfaceShell";
 import { BlockerNotice, LoadingBand, MetricTile, PlainChipRow } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -28,58 +28,47 @@ export function Ga4DiagnosticSurface() {
     queryKey: ["actions"],
     queryFn: getActions
   });
-  const connectors = useQuery({
-    queryKey: ["connectors"],
-    queryFn: getConnectors
-  });
-
-  if (diagnostics.isLoading || actions.isLoading || connectors.isLoading) return <LoadingBand />;
-  if (diagnostics.error || !diagnostics.data) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych GA4. Ten widok nie może udawać jakości ruchu ani konwersji bez WILQ." />
-      </main>
-    );
-  }
-  if (actions.error || !actions.data) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się pobrać akcji do sprawdzenia. Odśwież widok albo sprawdź status WILQ." />
-      </main>
-    );
-  }
-  if (connectors.error || !connectors.data) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się pobrać statusu źródeł danych. Odśwież widok albo sprawdź status WILQ." />
-      </main>
-    );
-  }
-
-  const data = diagnostics.data;
-  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
-  const trackingPreviewCards = ga4TrackingQualityPreviewCardsFromActions(routeActions);
-  const latestRefresh = data.latest_refresh;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">GA4</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok GA4 z WILQ. Pokazuje jakość ruchu ze stron wejścia,
-            dopasowanie WordPress i problemy pomiaru bez udawania konwersji, zwrot z reklam
-            albo przychód.
-          </p>
-        </div>
+    <DiagnosticPage
+      query={diagnostics}
+      title="GA4"
+      description="Dedykowany widok GA4 z WILQ. Pokazuje jakość ruchu ze stron wejścia, dopasowanie WordPress i problemy pomiaru bez udawania konwersji, zwrot z reklam albo przychód."
+      unavailableMessage="Nie udało się odczytać danych GA4. Ten widok nie może udawać jakości ruchu ani konwersji bez WILQ."
+      metrics={(data) => (
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Grupy ruchu" value={data.landing_group_count} />
           <MetricTile label="Problemy pomiaru" value={data.operator_summary.measurement_issue_count} />
           <MetricTile label="Brak WP" value={data.operator_summary.wordpress_missing_count} />
           <MetricTile label="Blokady decyzji" value={data.decision_blocker_count} />
         </div>
-      </div>
+      )}
+    >
+      {(data) => <Ga4DiagnosticBody data={data} actions={actions} />}
+    </DiagnosticPage>
+  );
+}
 
+function Ga4DiagnosticBody({
+  data,
+  actions
+}: {
+  data: Ga4DiagnosticsResponse;
+  actions: UseQueryResult<ActionObject[]>;
+}) {
+  if (actions.isLoading) return <LoadingBand />;
+  if (actions.error || !actions.data) {
+    return (
+      <BlockerNotice message="Nie udało się pobrać akcji do sprawdzenia. Odśwież widok albo sprawdź status WILQ." />
+    );
+  }
+
+  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const trackingPreviewCards = ga4TrackingQualityPreviewCardsFromActions(routeActions);
+  const latestRefresh = data.latest_refresh;
+
+  return (
+    <>
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -125,7 +114,7 @@ export function Ga4DiagnosticSurface() {
           />
         </div>
       ) : null}
-    </main>
+    </>
   );
 }
 

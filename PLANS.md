@@ -249,10 +249,12 @@ Dashboard route/nav/status now has one typed source of truth in
 `generatedSurfaceRoutes`, `Shell.tsx` reads `primarySurfaceRoutes`, and tests
 block reintroducing separate `operatingRoutes` / `primaryRoutes` arrays.
 
-The first diagnostic UI dedupe proof is in place: `DiagnosticPage<TData>` owns
-loading/error/shell behavior in `DiagnosticSurfaceShell.tsx`, and Localo now
-uses it while keeping all Localo-specific cards and safety copy in the route.
-This is the candidate pattern for GA4 next, not a generic surface factory.
+The diagnostic UI dedupe proof is in place: `DiagnosticPage<TData>` owns
+loading/error/shell behavior in `DiagnosticSurfaceShell.tsx`, and Localo plus
+GA4 now use it while keeping all domain-specific cards and safety copy in the
+routes. This remains a small reusable shell pattern, not a generic surface
+factory; Merchant or Content are next candidates only if the diff stays
+readable.
 
 Under Beads task `wilq-seo-x51h`, Service Profile review actions now expose
 API-owned `review_requirements`, also aligned with
