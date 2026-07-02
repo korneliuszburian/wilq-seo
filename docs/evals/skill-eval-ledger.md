@@ -128,6 +128,42 @@ Result:
   CPA/ROAS, wasted-budget, budget scaling, negative-keyword apply and writes
   without human review, confirmation, write contract and audit.
 
+## 2026-07-02 - `wilq-merchant-feed-operator` product-feed review eval
+
+Purpose:
+
+- Re-check Merchant skill quality after the user flagged Merchant/Ads outputs
+  as too report-like and potentially weak.
+- Prove the feed review can answer "what should I inspect?" while separating
+  issue occurrences from unique products/SKU.
+- Verify that product approval, revenue recovery, product-level ROAS, price
+  impact and product-feed writes remain blocked without product-performance,
+  price-history, write-contract and audit evidence.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=360 rtk scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Smoke passed against live WILQ API. It confirmed `google_merchant_center`
+  configured, `merchant_diagnostics`, `freshness_assessment`, `decision_queue`,
+  `unknowns`, `product_sample_readiness`, `product_performance_readiness`,
+  `price_impact_readiness` and blocked write previews.
+- Smoke validated `act_review_merchant_feed_issues`.
+- Non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260702T025422Z`.
+- Summary: `operator_usefulness_score=5`, `blocked=false`, four evidence IDs,
+  two recommendations, two action candidates, empty `failure_tags`, all hard
+  gates true.
+- Output grouped work by Merchant `decision_queue`, said `product_count` means
+  reported issue occurrences and not unique SKUs, used `sample_product_ids` as
+  review samples only, and blocked product-level ROAS/revenue, price-impact,
+  reapproval and feed-write claims without missing contracts and audit.
+
 ## 2026-07-02 - OpenAI-aligned hard gates for non-interactive skill evals
 
 Purpose:

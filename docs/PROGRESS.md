@@ -110,6 +110,15 @@ API status later contradicts this state.
   actions, kept Keyword Planner/forecast blockers explicit, and blocked
   CPA/ROAS, wasted-budget, budget scaling, negative-keyword apply and write
   claims without human review, confirmation, write contract and audit.
+- Merchant Feed Operator BDOS-class eval proof on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T025422Z`. The non-interactive eval
+  passed with `operator_usefulness_score=5`, four evidence IDs, two
+  recommendations, two action candidates and all hard gates true. It kept the
+  final work grouped by `decision_queue`, treated `product_count` as reported
+  issue occurrences rather than unique SKUs, validated
+  `act_review_merchant_feed_issues`, used `sample_product_ids` only as review
+  samples, and blocked product-level ROAS/revenue, price-impact, product
+  reapproval and product-feed write claims without missing contracts and audit.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/
