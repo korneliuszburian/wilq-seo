@@ -240,6 +240,11 @@ API status later contradicts this state.
   reported that Wilku said the current WILQ direction/materials are very good.
   Treat this as a strong positive direction signal, not as structured Goal 005
   UAT completion proof.
+- Service Profile review recorder now validates live API-owned
+  `review_requirements` per action. Private `ekologus-ai` proposal review
+  results must satisfy the required governance fields currently exposed by
+  `/api/content/service-profile`, and live provenance records those required
+  fields without promoting source facts or unlocking production-depth.
 - Goal 005 UAT result reports now warn when
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is not listed in
   `pokazane_materialy_review`. This is non-blocking, but it protects Wilku

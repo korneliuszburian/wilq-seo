@@ -161,6 +161,10 @@ def validate_payload(
         )
         review_type = DEFAULT_REVIEW_TYPE
     live_actions = live_review_actions(live_context, review_type=review_type)
+    live_required_fields = live_required_review_fields(
+        live_context,
+        review_type=review_type,
+    )
     live_target_ids = live_target_card_ids(live_context, review_type=review_type)
     live_promotion_preview = live_promotion_preview_actions(
         live_context,
@@ -211,6 +215,13 @@ def validate_payload(
                     f"Decyzja #{index}: target_card_id nie pasuje do live action "
                     f"{action_id}: {target_card_id} != {live_target}"
                 )
+            errors.extend(
+                validate_live_required_fields(
+                    raw_decision,
+                    required_fields=live_required_fields.get(action_id, ()),
+                    index=index,
+                )
+            )
         if live_context is not None and target_card_id and target_card_id not in live_target_ids:
             errors.append(
                 f"Decyzja #{index}: target_card_id nie występuje w live Service Profile: "
@@ -378,6 +389,76 @@ def live_review_actions(
     return actions
 
 
+def live_required_review_fields(
+    live_context: dict[str, Any] | None,
+    *,
+    review_type: str,
+) -> dict[str, tuple[dict[str, Any], ...]]:
+    if live_context is None:
+        return {}
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return {}
+    expected_prefix = (
+        "service_profile_review_private_proposal_"
+        if review_type == "private_source_proposals"
+        else "service_profile_review_card_"
+    )
+    fields_by_action: dict[str, tuple[dict[str, Any], ...]] = {}
+    for action in raw_list(profile.get("review_actions")):
+        if not isinstance(action, dict):
+            continue
+        action_id = str(action.get("action_id") or "").strip()
+        if not action_id.startswith(expected_prefix):
+            continue
+        required_fields: list[dict[str, Any]] = []
+        for requirement in raw_list(action.get("review_requirements")):
+            if not isinstance(requirement, dict) or requirement.get("required") is not True:
+                continue
+            field = str(requirement.get("field") or "").strip()
+            if not field:
+                continue
+            required_fields.append(
+                {
+                    "field": field,
+                    "label": str(requirement.get("label") or field).strip(),
+                    "requirement_type": str(
+                        requirement.get("requirement_type") or "text"
+                    ).strip(),
+                }
+            )
+        fields_by_action[action_id] = tuple(required_fields)
+    return fields_by_action
+
+
+def validate_live_required_fields(
+    raw_decision: dict[str, Any],
+    *,
+    required_fields: tuple[dict[str, Any], ...],
+    index: int,
+) -> list[str]:
+    errors: list[str] = []
+    for requirement in required_fields:
+        field = str(requirement.get("field") or "").strip()
+        if not field:
+            continue
+        label = str(requirement.get("label") or field).strip()
+        requirement_type = str(requirement.get("requirement_type") or "text").strip()
+        if requirement_type == "boolean":
+            if normalize_bool(raw_decision.get(field)) is None:
+                errors.append(
+                    f"Decyzja #{index}: wymagane przez live Service Profile pole "
+                    f"{field} ({label}) musi mieć wartość tak albo nie"
+                )
+            continue
+        if is_blank_or_placeholder(raw_decision.get(field)):
+            errors.append(
+                f"Decyzja #{index}: wymagane przez live Service Profile pole "
+                f"{field} ({label}) jest puste"
+            )
+    return errors
+
+
 def live_service_card_ids(live_context: dict[str, Any] | None) -> set[str]:
     return live_target_card_ids(live_context, review_type="public_service_cards")
 
@@ -454,6 +535,10 @@ def live_review_provenance(
         else {}
     )
     live_actions = live_review_actions(live_context, review_type=review_type)
+    live_required_fields = live_required_review_fields(
+        live_context,
+        review_type=review_type,
+    )
     live_promotion_preview = live_promotion_preview_actions(
         live_context,
         review_type=review_type,
@@ -468,6 +553,13 @@ def live_review_provenance(
             "reviewed_action_count": len(decisions),
             "reviewed_action_ids": [decision["action_id"] for decision in decisions],
             "reviewed_target_card_ids": [decision["target_card_id"] for decision in decisions],
+            "reviewed_required_review_fields": {
+                decision["action_id"]: [
+                    requirement["field"]
+                    for requirement in live_required_fields.get(decision["action_id"], ())
+                ]
+                for decision in decisions
+            },
             "private_proposal_promotion_ready": (
                 profile.get("private_source_proposal_summary", {}).get("promotion_ready")
                 if isinstance(profile.get("private_source_proposal_summary"), dict)
@@ -483,6 +575,13 @@ def live_review_provenance(
         "reviewed_action_count": len(decisions),
         "reviewed_action_ids": [decision["action_id"] for decision in decisions],
         "reviewed_target_card_ids": [decision["target_card_id"] for decision in decisions],
+        "reviewed_required_review_fields": {
+            decision["action_id"]: [
+                requirement["field"]
+                for requirement in live_required_fields.get(decision["action_id"], ())
+            ]
+            for decision in decisions
+        },
     }
 
 
@@ -566,6 +665,12 @@ def render_live_provenance(value: Any) -> str:
             f"`{value.get('live_public_promotion_preview_count')}`"
         )
     lines.append(f"- Review actions w wyniku: `{value.get('reviewed_action_count')}`")
+    required_fields = value.get("reviewed_required_review_fields")
+    if isinstance(required_fields, dict) and required_fields:
+        lines.append("- Wymagane pola review z live Service Profile:")
+        for action_id, fields in required_fields.items():
+            rendered_fields = ", ".join(str(field) for field in fields) or "brak"
+            lines.append(f"  - `{action_id}`: {rendered_fields}")
     return "\n".join(lines)
 
 

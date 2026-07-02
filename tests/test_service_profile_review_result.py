@@ -44,6 +44,16 @@ def test_service_profile_review_result_records_approved_review_without_promotion
             "service_profile_review_card_ekologus_service_bdo_reporting"
         ],
         "reviewed_target_card_ids": ["ekologus_service_bdo_reporting"],
+        "reviewed_required_review_fields": {
+            "service_profile_review_card_ekologus_service_bdo_reporting": [
+                "action_id",
+                "target_card_id",
+                "decision",
+                "source_trace_clear",
+                "blocked_claims_reviewed",
+                "notes",
+            ]
+        },
     }
 
     markdown = render_markdown(report)
@@ -132,6 +142,24 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
             )
         ],
         "reviewed_target_card_ids": ["ekologus_service_eko_opieka_calendar"],
+        "reviewed_required_review_fields": {
+            (
+                "service_profile_review_private_proposal_"
+                "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+            ): [
+                "action_id",
+                "target_card_id",
+                "decision",
+                "source_trace_clear",
+                "blocked_claims_reviewed",
+                "notes",
+                "data_classes_confirmed",
+                "source_block_refs_confirmed",
+                "retention_decision_confirmed",
+                "deletion_path_confirmed",
+                "eval_gates_confirmed",
+            ]
+        },
         "private_proposal_promotion_ready": False,
     }
 
@@ -139,6 +167,54 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert "service_profile_private_proposal_review_result_v1" in markdown
     assert "Promotion allowed: nie" in markdown
     assert "retention_decision_confirmed: tak" in markdown
+    assert "Wymagane pola review z live Service Profile" in markdown
+    assert "eval_gates_confirmed" in markdown
+
+
+def test_service_profile_review_result_follows_new_live_private_required_field() -> None:
+    live_context = _live_context()
+    review_actions = live_context["service_profile"]["review_actions"]  # type: ignore[index]
+    private_action = review_actions[2]
+    private_action["review_requirements"] = [
+        *private_action["review_requirements"],
+        {
+            "field": "owner_retention_note_confirmed",
+            "label": "czy owner potwierdził notatkę retencji",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+    ]
+    payload = {
+        "review_type": "private_source_proposals",
+        "data_review": "2026-07-02",
+        "reviewer": "Wilku",
+        "scope_label": "prywatne propozycje ekologus-ai",
+        "decisions": [
+            {
+                "action_id": (
+                    "service_profile_review_private_proposal_"
+                    "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+                ),
+                "target_card_id": "ekologus_service_eko_opieka_calendar",
+                "decision": "approve",
+                "source_trace_clear": "tak",
+                "blocked_claims_reviewed": "tak",
+                "data_classes_confirmed": "tak",
+                "source_block_refs_confirmed": "tak",
+                "retention_decision_confirmed": "tak",
+                "deletion_path_confirmed": "tak",
+                "eval_gates_confirmed": "tak",
+                "notes": "Stary JSON nie zna nowego wymaganego pola z API.",
+            }
+        ],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_review_result_report(payload, live_context=live_context)
+
+    message = str(error.value)
+    assert "owner_retention_note_confirmed" in message
+    assert "musi mieć wartość tak albo nie" in message
 
 
 def test_service_profile_review_result_requires_private_governance_checks() -> None:
@@ -316,6 +392,7 @@ def _live_context() -> dict[str, object]:
                 {
                     "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
                     "target_card_id": "ekologus_service_bdo_reporting",
+                    "review_requirements": _public_review_requirements(),
                 },
                 {
                     "action_id": (
@@ -323,6 +400,7 @@ def _live_context() -> dict[str, object]:
                         "ekologus_service_operat_wodnoprawny"
                     ),
                     "target_card_id": "ekologus_service_operat_wodnoprawny",
+                    "review_requirements": _public_review_requirements(),
                 },
                 {
                     "action_id": (
@@ -330,6 +408,7 @@ def _live_context() -> dict[str, object]:
                         "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
                     ),
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
+                    "review_requirements": _private_review_requirements(),
                 },
             ],
             "private_source_proposal_summary": {"promotion_ready": False},
@@ -379,3 +458,53 @@ def _live_context() -> dict[str, object]:
             },
         },
     }
+
+
+def _public_review_requirements() -> list[dict[str, object]]:
+    return [
+        {"field": "action_id", "requirement_type": "text", "required": True},
+        {"field": "target_card_id", "requirement_type": "text", "required": True},
+        {"field": "decision", "requirement_type": "text", "required": True},
+        {
+            "field": "source_trace_clear",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {
+            "field": "blocked_claims_reviewed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {"field": "notes", "requirement_type": "text", "required": True},
+    ]
+
+
+def _private_review_requirements() -> list[dict[str, object]]:
+    return [
+        *_public_review_requirements(),
+        {
+            "field": "data_classes_confirmed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {
+            "field": "source_block_refs_confirmed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {
+            "field": "retention_decision_confirmed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {
+            "field": "deletion_path_confirmed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+        {
+            "field": "eval_gates_confirmed",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+    ]
