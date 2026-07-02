@@ -939,6 +939,8 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         *required_review_fields,
         "data_classes_confirmed",
         "source_block_refs_confirmed",
+        "freshness_status_confirmed",
+        "audience_scope_confirmed",
         "retention_decision_confirmed",
         "deletion_path_confirmed",
         "eval_gates_confirmed",
@@ -947,6 +949,22 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         requirement.field == "retention_decision_confirmed"
         and requirement.blocking_rule
         and "pending_owner_decision" in requirement.blocking_rule
+        for requirement in private_action_by_target[
+            "ekologus_claim_policy_brand_voice"
+        ].review_requirements
+    )
+    assert any(
+        requirement.field == "freshness_status_confirmed"
+        and requirement.blocking_rule
+        and "freshness_status" in requirement.blocking_rule
+        for requirement in private_action_by_target[
+            "ekologus_claim_policy_brand_voice"
+        ].review_requirements
+    )
+    assert any(
+        requirement.field == "audience_scope_confirmed"
+        and requirement.blocking_rule
+        and "audience/scope" in requirement.blocking_rule
         for requirement in private_action_by_target[
             "ekologus_claim_policy_brand_voice"
         ].review_requirements

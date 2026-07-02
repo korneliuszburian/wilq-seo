@@ -694,6 +694,26 @@ def _private_review_requirements() -> list[ContentServiceProfileReviewRequiremen
             required=True,
         ),
         ContentServiceProfileReviewRequirement(
+            field="freshness_status_confirmed",
+            label="czy aktualność prywatnego źródła została potwierdzona",
+            requirement_type="boolean",
+            required=True,
+            blocking_rule=(
+                "Nie wolno promować prywatnej propozycji, gdy freshness_status "
+                "nie został potwierdzony przez ownera/reviewera."
+            ),
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="audience_scope_confirmed",
+            label="czy zakres dostępu/audience prywatnego źródła jest poprawny",
+            requirement_type="boolean",
+            required=True,
+            blocking_rule=(
+                "Nie wolno promować prywatnej propozycji, gdy audience/scope "
+                "nie został potwierdzony dla użycia marketingowego."
+            ),
+        ),
+        ContentServiceProfileReviewRequirement(
             field="retention_decision_confirmed",
             label="czy decyzja retencji została podjęta albo świadomie zablokowana",
             requirement_type="boolean",

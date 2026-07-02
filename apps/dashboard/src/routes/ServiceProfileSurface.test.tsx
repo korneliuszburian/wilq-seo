@@ -124,6 +124,16 @@ describe("ServiceProfileSurface", () => {
         /czy decyzja retencji została podjęta albo świadomie zablokowana \(retention_decision_confirmed\)/
       ).length
     ).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText(
+        /czy aktualność prywatnego źródła została potwierdzona \(freshness_status_confirmed\)/
+      ).length
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText(
+        /czy zakres dostępu\/audience prywatnego źródła jest poprawny \(audience_scope_confirmed\)/
+      ).length
+    ).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/follow_up_beads przy blokadzie/).length)
       .toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/To nie promuje private proposal/).length)
@@ -515,6 +525,22 @@ function reviewRequirementsFixture(): ContentServiceProfileResponse["review_acti
       label: "czy source block refs są wystarczające do śladu źródłowego",
       requirement_type: "boolean",
       required: true
+    },
+    {
+      field: "freshness_status_confirmed",
+      label: "czy aktualność prywatnego źródła została potwierdzona",
+      requirement_type: "boolean",
+      required: true,
+      blocking_rule:
+        "Nie wolno promować prywatnej propozycji, gdy freshness_status nie został potwierdzony przez ownera/reviewera."
+    },
+    {
+      field: "audience_scope_confirmed",
+      label: "czy zakres dostępu/audience prywatnego źródła jest poprawny",
+      requirement_type: "boolean",
+      required: true,
+      blocking_rule:
+        "Nie wolno promować prywatnej propozycji, gdy audience/scope nie został potwierdzony dla użycia marketingowego."
     },
     {
       field: "retention_decision_confirmed",
