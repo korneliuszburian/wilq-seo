@@ -128,6 +128,13 @@ API status later contradicts this state.
   returned 13 checked surfaces, 12 `demo_ready`, 1 `review_ready` (Demand Gen,
   experimental), 0 `blocked`, `pass=true`. `scripts/pre_demo_gate.sh` now runs
   this audit after the live contract smoke.
+- Source fact / Service Profile coverage is now auditable as a concise Wilku
+  readiness report through `scripts/source_fact_coverage_audit.py`. Proof on
+  2026-07-02: 12 source facts, 13 review actions, 5 private `ekologus-ai`
+  proposals requiring review, 0% production-depth service readiness, 0%
+  approved source facts and `ready_for_daily_content=false`. The next review
+  order is claim policy first, then evidence policy, then private service
+  proposals.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production
