@@ -8287,3 +8287,41 @@ Result:
   actionable output.
 - The non-interactive eval passed with `operator_usefulness_score=4`,
   `blocked=true`, `failure_tags=[]` and all hard gates true.
+
+## 2026-07-02 - Daily Command lineage usefulness eval
+
+Purpose:
+
+- Re-evaluate `wilq-daily-command` after Command Center gained top-level
+  evidence, action and source lineage.
+- Verify that the morning `/command-center` workflow gives Wilku one safe
+  first step, preserves `daily_decisions` order and carries evidence/source
+  lineage per recommendation.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Initial eval artifact
+  `.local-lab/evals/codex-skill/20260702T125206Z/wilq-daily-command/result.json`
+  failed correctly: the content recommendation used a GA4 evidence ID while
+  omitting `google_analytics_4` from recommendation-level `source_connectors`.
+- The fix keeps Command Center lineage honest by deriving additional source
+  connectors from evidence IDs when content action-plan evidence is merged from
+  related tactical items.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T125722Z/wilq-daily-command/result.json`.
+- The passed eval returned `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, 20 top-level evidence IDs and all hard gates true.
+- Action candidates validated:
+  `act_review_merchant_feed_issues`, `act_prepare_content_refresh_queue`,
+  `act_review_ga4_tracking_quality` and
+  `act_prepare_ads_campaign_review_queue`.
+- The output tells the marketer to start at `/command-center`, execute
+  `primary_next_step`, open `/merchant`, then continue through
+  `/content-planner`, `/ga4` and `/ads-doctor` without write/apply claims.

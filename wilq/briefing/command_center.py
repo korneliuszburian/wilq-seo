@@ -1438,7 +1438,7 @@ def _content_item_from_tactical(
         if top_group is not None
         else "Otwórz widok Treści i odśwież GSC oraz spis treści WordPress."
     )
-    source_connectors = [
+    base_source_connectors = [
         *([AHREFS_CONNECTOR_ID] if ahrefs_available else []),
         "google_search_console",
         "wordpress_ekologus",
@@ -1452,6 +1452,10 @@ def _content_item_from_tactical(
             ]
         )
         or [connector_evidence_id("google_search_console")]
+    )
+    source_connectors = _source_connectors_with_evidence(
+        base_source_connectors,
+        evidence_ids,
     )
     action_ids = _unique(
         [
@@ -2025,6 +2029,33 @@ def _limited_ids(values: list[str], limit: int = 12) -> list[str]:
     return values[:limit]
 
 
+def _source_connectors_with_evidence(
+    source_connectors: Iterable[object],
+    evidence_ids: Iterable[object],
+) -> list[str]:
+    return _unique(
+        [
+            *source_connectors,
+            *(
+                connector_id
+                for evidence_id in evidence_ids
+                for connector_id in [_connector_from_evidence_id(str(evidence_id))]
+                if connector_id
+            ),
+        ]
+    )
+
+
+def _connector_from_evidence_id(evidence_id: str) -> str | None:
+    known_connectors = sorted(command_center_metric_fact_limits(), key=len, reverse=True)
+    for connector_id in known_connectors:
+        if evidence_id.startswith(f"ev_connector_{connector_id}_") or evidence_id.startswith(
+            f"ev_refresh_refresh_{connector_id}_"
+        ):
+            return connector_id
+    return None
+
+
 def _action_ids_for(
     actions: list[ActionObject],
     *,
@@ -2113,6 +2144,7 @@ def _action_plan_item(
             risk=item.risk,
         )
     if item.id == "daily_content_queue":
+        evidence_ids = _merge_ids(item.evidence_ids, related_tactics)
         return CommandCenterActionPlanItem(
             id="plan_prepare_content_refresh_queue",
             title="Przejrzyj kolejkę SEO z GSC i WordPress",
@@ -2134,8 +2166,11 @@ def _action_plan_item(
                 "Polska kolejka decyzji treści z dowodami źródłowymi, źródłami danych "
                 "i następnym krokiem."
             ),
-            source_connectors=item.source_connectors,
-            evidence_ids=_merge_ids(item.evidence_ids, related_tactics),
+            source_connectors=_source_connectors_with_evidence(
+                item.source_connectors,
+                evidence_ids,
+            ),
+            evidence_ids=evidence_ids,
             action_ids=item.action_ids,
             blocked_claims=item.blocked_claims,
             risk=item.risk,

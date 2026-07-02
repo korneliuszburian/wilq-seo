@@ -171,6 +171,12 @@ API status later contradicts this state.
   restart returned 20 evidence IDs, 8 action IDs and sources across Merchant,
   Ahrefs, GSC, WordPress, GA4 and Google Ads, so daily Codex/dashboard flows no
   longer need to infer proof only from nested cards.
+- `wilq-daily-command` was re-evaluated after Command Center lineage hardening.
+  The first eval correctly failed because the content recommendation used a GA4
+  evidence ID without `google_analytics_4` in recommendation source connectors;
+  Command Center now derives source connectors from merged evidence IDs. Passing
+  eval artifact: `.local-lab/evals/codex-skill/20260702T125722Z`, score 5,
+  `failure_tags=[]`, 20 evidence IDs and 4 validated daily actions.
 - Content Planner usefulness review now has a short Wilku-facing decision card
   at `docs/handoffs/2026-07-02-wilku-content-planner-start-card.md`. Live
   `/api/content/diagnostics` returns 3 decisions, 16 evidence IDs and 5 actions

@@ -74,7 +74,7 @@ from wilq.briefing.ahrefs_diagnostics import (
     _ahrefs_status_label,
     _missing_authority_summary,
 )
-from wilq.briefing.command_center import _decision_state_label
+from wilq.briefing.command_center import _decision_state_label, _source_connectors_with_evidence
 from wilq.briefing.content_diagnostics import build_content_diagnostics, build_content_preflight
 from wilq.briefing.ga4_diagnostics import (
     _ga4_connector_status_label,
@@ -344,6 +344,30 @@ def ga4_decision_trace(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "action_ids": decision["action_ids"],
         }
         for decision in decisions
+    ]
+
+
+def test_command_center_source_connectors_follow_evidence_ids() -> None:
+    source_connectors = _source_connectors_with_evidence(
+        [
+            "ahrefs",
+            "google_search_console",
+            "wordpress_ekologus",
+            "wordpress_sklep",
+        ],
+        [
+            "ev_refresh_refresh_google_analytics_4_action_test",
+            "ev_connector_google_ads_status",
+        ],
+    )
+
+    assert source_connectors == [
+        "ahrefs",
+        "google_search_console",
+        "wordpress_ekologus",
+        "wordpress_sklep",
+        "google_analytics_4",
+        "google_ads",
     ]
 
 
@@ -6375,6 +6399,10 @@ def test_command_center_exposes_polish_operator_brief(
         "ev_refresh_refresh_ahrefs_action_test"
         in brief_by_id["daily_content_queue"]["evidence_ids"]
     )
+    if "ev_refresh_refresh_google_analytics_4_action_test" in brief_by_id[
+        "daily_content_queue"
+    ]["evidence_ids"]:
+        assert "google_analytics_4" in brief_by_id["daily_content_queue"]["source_connectors"]
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["zapytania i adresy z GSC"] >= 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["decyzje"] >= 2
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["ocena Ahrefs"] == 1
@@ -6412,6 +6440,12 @@ def test_command_center_exposes_polish_operator_brief(
     assert plan_by_id["plan_prepare_content_refresh_queue"]["skill_id"] == (
         "wilq-content-strategist"
     )
+    if "ev_refresh_refresh_google_analytics_4_action_test" in plan_by_id[
+        "plan_prepare_content_refresh_queue"
+    ]["evidence_ids"]:
+        assert "google_analytics_4" in plan_by_id["plan_prepare_content_refresh_queue"][
+            "source_connectors"
+        ]
     assert plan_by_id["plan_review_ga4_landing_quality"]["route"] == "/ga4"
     assert plan_by_id["plan_review_ga4_landing_quality"]["skill_id"] == "wilq-ga4-analyst"
     assert plan_by_id["plan_review_ga4_landing_quality"]["status"] == "blocked"
@@ -6582,6 +6616,8 @@ def test_command_center_exposes_polish_operator_brief(
     assert "act_prepare_wordpress_draft_handoff" in content_decision["action_ids"]
     content_fact_sources = {fact["source_connector"] for fact in content_decision["metric_facts"]}
     assert {"google_search_console", "ahrefs"}.issubset(content_fact_sources)
+    if "google_analytics_4" in content_fact_sources:
+        assert "google_analytics_4" in content_decision["source_connectors"]
     content_ahrefs_facts = [
         fact for fact in content_decision["metric_facts"] if fact["source_connector"] == "ahrefs"
     ]
