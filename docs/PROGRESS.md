@@ -160,6 +160,14 @@ live API status later contradicts this state.
   `act_review_localo_visibility_facts`, uses two Localo evidence IDs, treats
   aggregate visibility/GBP/review facts as review-only, and keeps local-task,
   profile-write and local-visibility improvement claims blocked.
+- Campaign Builder usefulness proof: replayed non-interactive eval for
+  `wilq-campaign-builder` passed at
+  `.local-lab/evals/codex-skill/20260702T162535Z` with
+  `operator_usefulness_score=5`. It validates
+  `act_prepare_ads_campaign_review_queue` and
+  `act_prepare_google_ads_recommendation_review_queue`, uses the GSC/WordPress
+  landing candidate only as review context, and blocks campaign writes, budget
+  changes, conversion uplift and ranking guarantees.
 - Social Publisher usefulness proof: non-interactive eval replay passed at
   `.local-lab/evals/codex-skill/20260702T160931Z` with
   `operator_usefulness_score=5`. It stays review-only with

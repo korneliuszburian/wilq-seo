@@ -584,6 +584,13 @@ Result:
   `Sprawdzenie w WILQ` as review-only context. It blocks or avoids claims about
   campaign effectiveness, conversion growth, ranking guarantees, campaign
   changes and Google Ads writes without operator confirmation.
+- Current replay proof after the latest Goal 005 eval slice is stored at
+  `.local-lab/evals/codex-skill/20260702T162535Z`. It again passed with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true,
+  validated `act_prepare_ads_campaign_review_queue` and
+  `act_prepare_google_ads_recommendation_review_queue`, used the GSC/WordPress
+  landing candidate only as review context, and kept campaign writes, budget
+  changes, conversion uplift and ranking guarantees blocked.
 
 ## 2026-07-02 - Social Publisher history-dedupe eval
 
