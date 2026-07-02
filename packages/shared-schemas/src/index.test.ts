@@ -33,7 +33,8 @@ import {
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
-  MerchantDiagnosticsResponseSchema
+  MerchantDiagnosticsResponseSchema,
+  SocialHistoryInventorySourceSchema
 } from "./index";
 
 describe("ActionObjectSchema", () => {
@@ -66,6 +67,39 @@ describe("ActionObjectSchema", () => {
       ActionObjectSchema.safeParse({
         ...validAction,
         validation_status: "pending_validation"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("SocialHistoryInventorySourceSchema", () => {
+  it("keeps social history metadata-only and rejects raw post body collection", () => {
+    const validSource = {
+      channel: "linkedin",
+      connector_id: "linkedin",
+      inventory_status: "missing",
+      connector_access_status: "missing_credentials",
+      required_evidence_id: "linkedin_historical_posts",
+      required_metadata_fields: [
+        "channel",
+        "published_at",
+        "topic",
+        "service",
+        "claim",
+        "cta",
+        "format",
+        "post_url_or_id",
+        "source_evidence_id"
+      ],
+      safe_collection_mode: "metadata_only",
+      raw_post_body_allowed: false
+    };
+
+    expect(SocialHistoryInventorySourceSchema.safeParse(validSource).success).toBe(true);
+    expect(
+      SocialHistoryInventorySourceSchema.safeParse({
+        ...validSource,
+        raw_post_body_allowed: true
       }).success
     ).toBe(false);
   });

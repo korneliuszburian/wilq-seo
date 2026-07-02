@@ -3304,6 +3304,61 @@ export const WorkflowRunSchema = z.object({
   output: WorkflowOutputSchema
 });
 
+export const SocialHistoryInventorySourceSchema = z.object({
+  channel: z.enum(["linkedin", "facebook"]),
+  connector_id: z.enum(["linkedin", "facebook"]),
+  inventory_status: z.literal("missing"),
+  connector_access_status: z.enum(["configured", "missing_credentials", "unavailable"]),
+  required_evidence_id: z.string(),
+  required_metadata_fields: z.array(z.string()),
+  safe_collection_mode: z.literal("metadata_only"),
+  raw_post_body_allowed: z.literal(false)
+});
+
+export const SocialHistoryInventorySchema = z.object({
+  contract: z.literal("social_history_inventory_v1"),
+  read_only: z.literal(true),
+  status: z.literal("missing"),
+  status_label: z.string(),
+  duplicate_risk_status: z.literal("blocked_until_social_history_review"),
+  required_sources: z.array(z.enum(["linkedin", "facebook"])),
+  missing_evidence_ids: z.array(z.string()),
+  sources: z.array(SocialHistoryInventorySourceSchema),
+  allowed_uses: z.array(z.string()),
+  blocked_uses: z.array(z.string()),
+  dedupe_requirements: z.array(z.string()),
+  operator_next_step: z.string()
+});
+
+export const SocialDraftContextSchema = z.object({
+  mode: z.literal("review_only"),
+  publish_allowed: z.literal(false),
+  missing_publish_access: z.record(z.string(), z.array(z.string())),
+  draft_action_ids: z.array(z.string()),
+  source_inputs: z.array(z.record(z.string(), z.unknown())),
+  draft_constraints: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_metric_names: z.array(z.string()).optional(),
+  source_connectors: z.array(z.string()).optional(),
+  evidence_ids: z.array(z.string()).optional(),
+  historical_social_inventory_status: z.literal("missing"),
+  historical_social_inventory_status_label: z.string(),
+  duplicate_risk_status: z.literal("blocked_until_social_history_review"),
+  duplicate_risk_status_label: z.string(),
+  required_history_sources: z.array(z.enum(["linkedin", "facebook"])),
+  missing_history_evidence: z.array(z.string()),
+  social_history_inventory: SocialHistoryInventorySchema,
+  operator_next_step: z.string()
+});
+
+export const SocialPublisherContextPackSchema = z.object({
+  strict_instruction: z.string(),
+  connector_status: z.array(ConnectorStatusSchema),
+  active_action_objects: z.array(ActionObjectSchema),
+  evidence_summaries: z.array(EvidenceSchema),
+  social_draft_context: SocialDraftContextSchema
+});
+
 export const ContextPackResponseSchema = z.object({
   current_product_rules: z.array(z.string()),
   available_connectors: z.array(z.string()),
@@ -3409,6 +3464,10 @@ export type TacticalQueueResponse = z.infer<typeof TacticalQueueResponseSchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
 export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
 export type DemandGenReadinessContract = z.infer<typeof DemandGenReadinessContractSchema>;
+export type SocialHistoryInventorySource = z.infer<typeof SocialHistoryInventorySourceSchema>;
+export type SocialHistoryInventory = z.infer<typeof SocialHistoryInventorySchema>;
+export type SocialDraftContext = z.infer<typeof SocialDraftContextSchema>;
+export type SocialPublisherContextPack = z.infer<typeof SocialPublisherContextPackSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;
 export type ExpertRule = z.infer<typeof ExpertRuleSchema>;
 export type ExpertRuleSummary = z.infer<typeof ExpertRuleSummarySchema>;

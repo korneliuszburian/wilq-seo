@@ -6863,6 +6863,203 @@ const knowledgeOperatingMap = {
   ]
 };
 
+const socialPublisherContextPack = {
+  strict_instruction: "WILQ pokazuje tylko szkice social do review z dowodami źródłowymi.",
+  connector_status: [
+    {
+      id: "linkedin",
+      label: "LinkedIn",
+      status: "missing_credentials",
+      status_label: "braki dostępu",
+      configured: false,
+      missing_credentials: ["LINKEDIN_ORGANIZATION_ID", "LINKEDIN_ACCESS_TOKEN"],
+      available_credential_sources: [],
+      freshness: { state: "missing" },
+      supported_actions: []
+    },
+    {
+      id: "facebook",
+      label: "Facebook",
+      status: "missing_credentials",
+      status_label: "braki dostępu",
+      configured: false,
+      missing_credentials: ["FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_ACCESS_TOKEN"],
+      available_credential_sources: [],
+      freshness: { state: "missing" },
+      supported_actions: []
+    }
+  ],
+  active_action_objects: [
+    {
+      id: "act_prepare_linkedin_social_drafts",
+      title: "Przygotuj szkice LinkedIn do sprawdzenia",
+      domain: "social",
+      connector: "linkedin",
+      connector_label: "LinkedIn",
+      mode: "prepare",
+      mode_label: "przygotowanie",
+      risk: "medium",
+      risk_label: "średnie",
+      status: "needs_validation",
+      status_label: "wymaga sprawdzenia",
+      evidence_ids: ["ev_connector_linkedin_status"],
+      evidence_summary_label: "1 dowód źródłowy",
+      metrics: [],
+      human_diagnosis:
+        "WILQ może przygotować tylko szkic do review. Publikacja i brak powtórek są zablokowane.",
+      recommended_reason: "Przygotuj kierunek posta bez publikacji.",
+      validation_status: "valid",
+      validation_status_label: "sprawdzone",
+      payload: {
+        action_type: "prepare_social_draft",
+        channel: "linkedin"
+      },
+      audit_events: []
+    },
+    {
+      id: "act_prepare_facebook_social_drafts",
+      title: "Przygotuj szkice Facebook do sprawdzenia",
+      domain: "social",
+      connector: "facebook",
+      connector_label: "Facebook",
+      mode: "prepare",
+      mode_label: "przygotowanie",
+      risk: "medium",
+      risk_label: "średnie",
+      status: "needs_validation",
+      status_label: "wymaga sprawdzenia",
+      evidence_ids: ["ev_connector_facebook_status"],
+      evidence_summary_label: "1 dowód źródłowy",
+      metrics: [],
+      human_diagnosis:
+        "WILQ może przygotować tylko szkic do review. Publikacja i brak powtórek są zablokowane.",
+      recommended_reason: "Przygotuj kierunek posta bez publikacji.",
+      validation_status: "valid",
+      validation_status_label: "sprawdzone",
+      payload: {
+        action_type: "prepare_social_draft",
+        channel: "facebook"
+      },
+      audit_events: []
+    }
+  ],
+  evidence_summaries: [
+    {
+      id: "ev_connector_linkedin_status",
+      source_connector: "linkedin",
+      source_type: "connector_status",
+      source_id: "linkedin",
+      collected_at: "2026-07-02T12:00:00Z",
+      freshness: { state: "missing" },
+      summary: "Brak dostępu LinkedIn."
+    },
+    {
+      id: "ev_connector_facebook_status",
+      source_connector: "facebook",
+      source_type: "connector_status",
+      source_id: "facebook",
+      collected_at: "2026-07-02T12:00:00Z",
+      freshness: { state: "missing" },
+      summary: "Brak dostępu Facebook."
+    }
+  ],
+  social_draft_context: {
+    mode: "review_only",
+    publish_allowed: false,
+    missing_publish_access: {
+      linkedin: ["LINKEDIN_ORGANIZATION_ID", "LINKEDIN_ACCESS_TOKEN"],
+      facebook: ["FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_ACCESS_TOKEN"]
+    },
+    draft_action_ids: [
+      "act_prepare_facebook_social_drafts",
+      "act_prepare_linkedin_social_drafts"
+    ],
+    source_inputs: [],
+    draft_constraints: [
+      "no_publishing_without_connector_credentials",
+      "require_social_history_duplicate_review"
+    ],
+    blocked_claims: [
+      "opublikowanie posta",
+      "brak powtórzeń historycznych postów",
+      "wzrost skuteczności social"
+    ],
+    source_metric_names: [],
+    source_connectors: [],
+    evidence_ids: ["ev_connector_linkedin_status", "ev_connector_facebook_status"],
+    historical_social_inventory_status: "missing",
+    historical_social_inventory_status_label: "brak spisu historycznych postów",
+    duplicate_risk_status: "blocked_until_social_history_review",
+    duplicate_risk_status_label: "nie oceniono ryzyka powtórzenia treści social",
+    required_history_sources: ["linkedin", "facebook"],
+    missing_history_evidence: ["linkedin_historical_posts", "facebook_historical_posts"],
+    social_history_inventory: {
+      contract: "social_history_inventory_v1",
+      read_only: true,
+      status: "missing",
+      status_label: "brak spisu historycznych postów LinkedIn/Facebook",
+      duplicate_risk_status: "blocked_until_social_history_review",
+      required_sources: ["linkedin", "facebook"],
+      missing_evidence_ids: ["linkedin_historical_posts", "facebook_historical_posts"],
+      sources: [
+        {
+          channel: "linkedin",
+          connector_id: "linkedin",
+          inventory_status: "missing",
+          connector_access_status: "missing_credentials",
+          required_evidence_id: "linkedin_historical_posts",
+          required_metadata_fields: [
+            "channel",
+            "published_at",
+            "topic",
+            "service",
+            "claim",
+            "cta",
+            "format",
+            "post_url_or_id",
+            "source_evidence_id"
+          ],
+          safe_collection_mode: "metadata_only",
+          raw_post_body_allowed: false
+        },
+        {
+          channel: "facebook",
+          connector_id: "facebook",
+          inventory_status: "missing",
+          connector_access_status: "missing_credentials",
+          required_evidence_id: "facebook_historical_posts",
+          required_metadata_fields: [
+            "channel",
+            "published_at",
+            "topic",
+            "service",
+            "claim",
+            "cta",
+            "format",
+            "post_url_or_id",
+            "source_evidence_id"
+          ],
+          safe_collection_mode: "metadata_only",
+          raw_post_body_allowed: false
+        }
+      ],
+      allowed_uses: ["sprawdzenie czy temat, claim albo CTA powtarza wcześniejsze posty"],
+      blocked_uses: [
+        "twierdzenie że temat jest nowy bez historii postów",
+        "twierdzenie że nie powielamy wcześniejszych postów"
+      ],
+      dedupe_requirements: [
+        "porównać temat i usługę z historią LinkedIn/Facebook",
+        "porównać claim i CTA z ostatnimi postami"
+      ],
+      operator_next_step:
+        "Zbierz albo zaimportuj metadata-only historię LinkedIn/Facebook: kanał, data, temat, usługa, claim, CTA, format i post ID."
+    },
+    operator_next_step:
+      "Przygotuj szkice do sprawdzenia z dowodami; publikacja i claim o braku powtórzeń pozostają zablokowane."
+  }
+};
+
 function mockFetch() {
   vi.stubGlobal("fetch", vi.fn(mockWilqApiFetch));
 }
@@ -7184,7 +7381,8 @@ function mockDiagnosticApi(url: string) {
     ["/api/connectors", connectors],
     ["/api/metrics/status", metricStoreStatus],
     ["/api/opportunities", opportunities],
-    ["/api/actions", actions]
+    ["/api/actions", actions],
+    ["/api/codex/context-pack", socialPublisherContextPack]
   ];
   const exactResponse = exactResponses.find(([path]) => url.endsWith(path));
   if (exactResponse) return Promise.resolve(Response.json(exactResponse[1]));
@@ -8676,9 +8874,21 @@ describe("WILQ dashboard", () => {
         expect(screen.getByRole("heading", { name: "Publikacje social" })).toBeInTheDocument(),
       { timeout: 10_000 }
     );
-    expect(screen.getByText("Publikacje social do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Social jest tylko do review")).toBeInTheDocument();
+    expect(screen.getByText("Historia social blokuje brak powtórek")).toBeInTheDocument();
+    expect(screen.getByText("Jakie pola trzeba zebrać")).toBeInTheDocument();
+    expect(screen.getByText("Kanał")).toBeInTheDocument();
+    expect(screen.getByText("Data publikacji")).toBeInTheDocument();
+    expect(screen.getByText("Temat")).toBeInTheDocument();
+    expect(screen.getByText("Usługa")).toBeInTheDocument();
+    expect(screen.getByText("Claim")).toBeInTheDocument();
+    expect(screen.getByText("CTA")).toBeInTheDocument();
+    expect(screen.getByText("URL albo ID posta")).toBeInTheDocument();
+    expect(screen.getByText("Dowód źródłowy")).toBeInTheDocument();
+    expect(screen.getAllByText("brakuje dostępu")).toHaveLength(2);
+    expect(screen.getAllByText(/Pełna treść posta nie jest wymagana/)).toHaveLength(2);
+    expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
-    expect(screen.getByText("LinkedIn: brakuje dostępu do organizacji")).toBeInTheDocument();
     expect(screen.queryByText(/access token/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ev_/)).not.toBeInTheDocument();
     expect(screen.queryByText(/act_/)).not.toBeInTheDocument();

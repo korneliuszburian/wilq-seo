@@ -57,6 +57,11 @@ const ServiceProfileSurface = lazy(() =>
     default: module.ServiceProfileSurface
   }))
 );
+const SocialPublisherSurface = lazy(() =>
+  import("./SocialPublisherSurface").then((module) => ({
+    default: module.SocialPublisherSurface
+  }))
+);
 const CustomSegmentsDiagnosticSurface = lazy(() =>
   import("./CustomSegmentsDiagnosticSurface").then((module) => ({
     default: module.CustomSegmentsDiagnosticSurface
@@ -130,6 +135,11 @@ const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
   "/service-profile": () => (
     <LazyRoute>
       <ServiceProfileSurface />
+    </LazyRoute>
+  ),
+  "/social-publisher": () => (
+    <LazyRoute>
+      <SocialPublisherSurface />
     </LazyRoute>
   )
 };

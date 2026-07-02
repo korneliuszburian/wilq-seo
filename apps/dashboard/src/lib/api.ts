@@ -52,6 +52,7 @@ import {
   MarketingPlaybookSchema,
   MerchantDiagnosticsResponseSchema,
   OpportunitySchema,
+  SocialPublisherContextPackSchema,
   TacticalQueueResponseSchema,
   WorkflowRunSchema,
   WorkflowSchema,
@@ -120,6 +121,9 @@ import {
   type MerchantDiagnosticsResponse,
   type MetricFact,
   type Opportunity,
+  type SocialDraftContext,
+  type SocialHistoryInventory,
+  type SocialPublisherContextPack,
   type TacticalQueueResponse,
   type Workflow,
   type WorkflowRun
@@ -203,6 +207,14 @@ export function getMarketingBrief(): Promise<MarketingBrief> {
 
 export function getTacticalQueue(): Promise<TacticalQueueResponse> {
   return apiGet("/api/marketing/tactical-queue", TacticalQueueResponseSchema);
+}
+
+export function getSocialPublisherContextPack(): Promise<SocialPublisherContextPack> {
+  return apiPost(
+    "/api/codex/context-pack",
+    SocialPublisherContextPackSchema,
+    { skill: "wilq-social-publisher" }
+  );
 }
 
 export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
@@ -584,6 +596,9 @@ export type {
   MerchantDiagnosticsResponse,
   MetricFact,
   Opportunity,
+  SocialDraftContext,
+  SocialHistoryInventory,
+  SocialPublisherContextPack,
   TacticalQueueResponse,
   Workflow,
   WorkflowRun

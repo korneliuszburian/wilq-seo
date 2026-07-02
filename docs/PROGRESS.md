@@ -210,6 +210,10 @@ API status later contradicts this state.
   requires only channel/date/topic/service/claim/CTA/format/post ID/source
   evidence metadata, forbids raw post-body requirements and keeps duplicate-free
   social claims blocked until LinkedIn/Facebook history evidence exists.
+- `/social-publisher` now has a dedicated dashboard surface over
+  `wilq-social-publisher` context-pack. It shows the review-only decision,
+  missing LinkedIn/Facebook history blocker and required metadata-only fields in
+  Polish, without exposing raw evidence/action IDs or requiring raw post bodies.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
