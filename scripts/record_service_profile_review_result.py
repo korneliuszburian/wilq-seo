@@ -11,6 +11,10 @@ from typing import Any
 REVIEW_DECISIONS = {"approve", "needs_changes", "stale", "reject"}
 REVIEW_TYPES = {"public_service_cards", "private_source_proposals"}
 DEFAULT_REVIEW_TYPE = "public_service_cards"
+PROMOTION_ACTION_IDS = {
+    "public_service_cards": "act_prepare_service_profile_knowledge_promotion",
+    "private_source_proposals": "act_prepare_service_profile_private_proposal_promotion",
+}
 REQUIRED_TEXT_FIELDS = {
     "data_review": "data review",
     "reviewer": "reviewer",
@@ -146,6 +150,10 @@ def validate_payload(
         review_type = DEFAULT_REVIEW_TYPE
     live_actions = live_review_actions(live_context, review_type=review_type)
     live_target_ids = live_target_card_ids(live_context, review_type=review_type)
+    live_promotion_preview = live_promotion_preview_actions(
+        live_context,
+        review_type=review_type,
+    )
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     has_blocking_decision = False
 
@@ -190,6 +198,18 @@ def validate_payload(
                 f"Decyzja #{index}: target_card_id nie występuje w live Service Profile: "
                 f"{target_card_id}"
             )
+        if live_context is not None and decision_value == "approve" and action_id:
+            promotion_target = live_promotion_preview.get(action_id)
+            if promotion_target is None:
+                errors.append(
+                    f"Decyzja #{index}: action_id nie występuje w live promotion preview: "
+                    f"{action_id}"
+                )
+            elif target_card_id and promotion_target != target_card_id:
+                errors.append(
+                    f"Decyzja #{index}: target_card_id nie pasuje do promotion preview "
+                    f"{action_id}: {target_card_id} != {promotion_target}"
+                )
 
         decision_blocks = (
             decision_value != "approve"
@@ -261,7 +281,16 @@ def load_live_context(api_base: str) -> dict[str, Any]:
     profile = request_json(api_base, "GET", "/api/content/service-profile")
     if not isinstance(profile, dict):
         raise RuntimeError("Live Service Profile must be an object")
-    return {"api_base": api_base.rstrip("/"), "service_profile": profile}
+    promotion_actions: dict[str, Any] = {}
+    for action_id in PROMOTION_ACTION_IDS.values():
+        action = request_json(api_base, "GET", f"/api/actions/{action_id}")
+        if isinstance(action, dict):
+            promotion_actions[action_id] = action
+    return {
+        "api_base": api_base.rstrip("/"),
+        "service_profile": profile,
+        "promotion_actions": promotion_actions,
+    }
 
 
 def request_json(api_base: str, method: str, path: str, *, timeout: int = 60) -> Any:
@@ -345,6 +374,34 @@ def live_target_card_ids(
     }
 
 
+def live_promotion_preview_actions(
+    live_context: dict[str, Any] | None,
+    *,
+    review_type: str,
+) -> dict[str, str]:
+    if live_context is None:
+        return {}
+    promotion_actions = live_context.get("promotion_actions")
+    if not isinstance(promotion_actions, dict):
+        return {}
+    action_id = PROMOTION_ACTION_IDS.get(review_type)
+    action = promotion_actions.get(action_id)
+    if not isinstance(action, dict):
+        return {}
+    payload = action.get("payload")
+    if not isinstance(payload, dict):
+        return {}
+    preview_by_review_action: dict[str, str] = {}
+    for item in raw_list(payload.get("payload_preview")):
+        if not isinstance(item, dict):
+            continue
+        review_action_id = str(item.get("review_action_id") or "").strip()
+        target_card_id = str(item.get("target_card_id") or "").strip()
+        if review_action_id and target_card_id:
+            preview_by_review_action[review_action_id] = target_card_id
+    return preview_by_review_action
+
+
 def live_review_provenance(
     *,
     live_context: dict[str, Any] | None,
@@ -362,12 +419,17 @@ def live_review_provenance(
         else {}
     )
     live_actions = live_review_actions(live_context, review_type=review_type)
+    live_promotion_preview = live_promotion_preview_actions(
+        live_context,
+        review_type=review_type,
+    )
     if review_type == "private_source_proposals":
         return {
             "api_base": live_context.get("api_base"),
             "service_profile_read_only": profile.get("read_only"),
             "production_depth_ready": coverage.get("ready_for_daily_content"),
             "live_private_review_action_count": len(live_actions),
+            "live_private_promotion_preview_count": len(live_promotion_preview),
             "reviewed_action_count": len(decisions),
             "reviewed_action_ids": [decision["action_id"] for decision in decisions],
             "reviewed_target_card_ids": [decision["target_card_id"] for decision in decisions],
@@ -382,6 +444,7 @@ def live_review_provenance(
         "service_profile_read_only": profile.get("read_only"),
         "production_depth_ready": coverage.get("ready_for_daily_content"),
         "live_public_review_action_count": len(live_actions),
+        "live_public_promotion_preview_count": len(live_promotion_preview),
         "reviewed_action_count": len(decisions),
         "reviewed_action_ids": [decision["action_id"] for decision in decisions],
         "reviewed_target_card_ids": [decision["target_card_id"] for decision in decisions],
@@ -449,6 +512,8 @@ def render_live_provenance(value: Any) -> str:
             [
                 "- Private review actions live: "
                 f"`{value.get('live_private_review_action_count')}`",
+                "- Private promotion preview rows live: "
+                f"`{value.get('live_private_promotion_preview_count')}`",
                 "- Private proposal promotion ready: "
                 f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
             ]
@@ -457,6 +522,10 @@ def render_live_provenance(value: Any) -> str:
         lines.append(
             "- Public review actions live: "
             f"`{value.get('live_public_review_action_count')}`"
+        )
+        lines.append(
+            "- Public promotion preview rows live: "
+            f"`{value.get('live_public_promotion_preview_count')}`"
         )
     lines.append(f"- Review actions w wyniku: `{value.get('reviewed_action_count')}`")
     return "\n".join(lines)

@@ -268,6 +268,14 @@ API status later contradicts this state.
   with `live_private_review_action_count=4`,
   `private_proposal_promotion_ready=false` and
   `production_depth_ready=false`.
+- Service Profile review results now also validate approved decisions against
+  the matching prepare-only promotion ActionObject preview. A public approve
+  must exist in `act_prepare_service_profile_knowledge_promotion`, while a
+  private approve must exist in
+  `act_prepare_service_profile_private_proposal_promotion`; otherwise the
+  recorder refuses to claim readiness for a promotion request. Live proof on
+  2026-07-02 saw 4 private review actions and 4 private promotion preview rows,
+  still with `promotion_allowed=false`.
 - Service Profile review now has a central prepare-only ActionObject for the
   next promotion gate: `act_prepare_service_profile_knowledge_promotion`.
   It exposes 6 public service-card promotion-preview rows from source facts,

@@ -38,6 +38,7 @@ def test_service_profile_review_result_records_approved_review_without_promotion
         "service_profile_read_only": True,
         "production_depth_ready": False,
         "live_public_review_action_count": 2,
+        "live_public_promotion_preview_count": 2,
         "reviewed_action_count": 1,
         "reviewed_action_ids": [
             "service_profile_review_card_ekologus_service_bdo_reporting"
@@ -112,6 +113,7 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
         "service_profile_read_only": True,
         "production_depth_ready": False,
         "live_private_review_action_count": 1,
+        "live_private_promotion_preview_count": 1,
         "reviewed_action_count": 1,
         "reviewed_action_ids": [
             (
@@ -200,6 +202,32 @@ def test_service_profile_review_result_rejects_unknown_live_action() -> None:
     assert "action_id nie występuje w live Service Profile" in str(error.value)
 
 
+def test_service_profile_review_result_rejects_approve_missing_promotion_preview() -> None:
+    live_context = _live_context()
+    assert isinstance(live_context["promotion_actions"], dict)
+    live_context["promotion_actions"] = {}
+    payload = {
+        "data_review": "2026-07-02",
+        "reviewer": "Wilku",
+        "scope_label": "publiczne karty usług",
+        "decisions": [
+            {
+                "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+                "target_card_id": "ekologus_service_bdo_reporting",
+                "decision": "approve",
+                "source_trace_clear": "tak",
+                "blocked_claims_reviewed": "tak",
+                "notes": "OK.",
+            }
+        ],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_review_result_report(payload, live_context=live_context)
+
+    assert "action_id nie występuje w live promotion preview" in str(error.value)
+
+
 def test_service_profile_review_result_rejects_target_mismatch_and_placeholders() -> None:
     payload = {
         "data_review": "<YYYY-MM-DD>",
@@ -267,5 +295,40 @@ def _live_context() -> dict[str, object]:
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
                 }
             ],
+        },
+        "promotion_actions": {
+            "act_prepare_service_profile_knowledge_promotion": {
+                "payload": {
+                    "payload_preview": [
+                        {
+                            "review_action_id": (
+                                "service_profile_review_card_"
+                                "ekologus_service_bdo_reporting"
+                            ),
+                            "target_card_id": "ekologus_service_bdo_reporting",
+                        },
+                        {
+                            "review_action_id": (
+                                "service_profile_review_card_"
+                                "ekologus_service_operat_wodnoprawny"
+                            ),
+                            "target_card_id": "ekologus_service_operat_wodnoprawny",
+                        },
+                    ]
+                }
+            },
+            "act_prepare_service_profile_private_proposal_promotion": {
+                "payload": {
+                    "payload_preview": [
+                        {
+                            "review_action_id": (
+                                "service_profile_review_private_proposal_"
+                                "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+                            ),
+                            "target_card_id": "ekologus_service_eko_opieka_calendar",
+                        }
+                    ]
+                }
+            },
         },
     }
