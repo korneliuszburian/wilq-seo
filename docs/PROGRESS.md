@@ -389,6 +389,10 @@ API status later contradicts this state.
   Brief into `contract.model_input` and shared schemas. The runtime receives
   typed evidence requirements, blocked/review-required claim constraints and
   card lineage as contract data, not only prose in the system instruction.
+- Structured draft generation now blocks `full_draft` when Sales Brief still
+  contains review-required, blocked, stale or measurement-blocked knowledge
+  constraints. `section_draft` remains available for UAT/analysis, but a full
+  production-depth draft must wait for reviewed knowledge and claim policy.
 - Structured draft preview now blocks
   `missing_forbidden_claim_acknowledgement` when model output does not list all
   `claims_removed_or_blocked` from the generation contract in

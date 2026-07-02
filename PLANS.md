@@ -444,6 +444,12 @@ requirements and blocked/review-required knowledge constraints into
 `model_input`, keeping review-required knowledge visible to runtime/preview/
 quality gates instead of burying it in prose.
 
+Full-draft generation is blocked on review-required knowledge under Beads task
+`wilq-seo-7ph`. The same constraints can still support `section_draft` for UAT
+and analysis, but `full_draft` returns
+`review_required_knowledge_for_full_draft` until knowledge and claim policy are
+reviewed enough for production-depth use.
+
 Structured draft preview now requires forbidden-claim acknowledgement under
 Beads task `wilq-seo-dfu`: every `claims_removed_or_blocked` item from the
 generation contract must appear in `forbidden_claims_avoided`, otherwise

@@ -33,6 +33,7 @@ StructuredDraftGenerationBlockerCode = Literal[
     "sales_brief_mismatch",
     "missing_claim_ledger",
     "claim_ledger_blocks_generation",
+    "review_required_knowledge_for_full_draft",
     "missing_measurement_window",
     "missing_evidence_mapping",
     "missing_human_review_questions",
@@ -168,6 +169,7 @@ def build_structured_draft_generation_contract(
         sales_brief=sales_brief,
         claim_ledger=claim_ledger,
         draft_package=draft_package,
+        draft_kind=draft_kind,
     )
     if blockers:
         return StructuredDraftGenerationResult(blockers=blockers)
@@ -262,6 +264,7 @@ def structured_draft_generation_blockers(
     sales_brief: ContentSalesBrief | None,
     claim_ledger: ContentClaimLedger | None,
     draft_package: ContentDraftPackage | None,
+    draft_kind: Literal["section_draft", "full_draft"] = "section_draft",
 ) -> list[StructuredDraftGenerationBlocker]:
     blockers: list[StructuredDraftGenerationBlocker] = [
         _blocker(
@@ -337,6 +340,18 @@ def structured_draft_generation_blockers(
                 "Podaj plan sprzedażowy przypisany do aktualnego tematu.",
             )
         )
+    elif draft_kind == "full_draft" and _sales_brief_has_review_required_knowledge(
+        sales_brief
+    ):
+        blockers.append(
+            _blocker(
+                "review_required_knowledge_for_full_draft",
+                "Pełny szkic wymaga zatwierdzonej wiedzy",
+                "Plan sprzedażowy zawiera wiedzę albo ograniczenia, które nadal "
+                "wymagają review przed pełnym szkicem.",
+                "Zatwierdź karty wiedzy i claimy albo przygotuj tylko szkic sekcji do review.",
+            )
+        )
 
     if claim_ledger is None:
         blockers.append(
@@ -378,6 +393,20 @@ def structured_draft_generation_blockers(
                 )
             )
     return blockers
+
+
+def _sales_brief_has_review_required_knowledge(sales_brief: ContentSalesBrief) -> bool:
+    blocking_constraint_types = {
+        "needs_human_review",
+        "blocked",
+        "blocked_until_measurement",
+        "source_backed_review_required",
+        "stale",
+    }
+    return any(
+        constraint.constraint_type in blocking_constraint_types
+        for constraint in sales_brief.knowledge_constraints
+    )
 
 
 def structured_draft_output_schema() -> dict[str, object]:

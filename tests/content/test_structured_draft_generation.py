@@ -292,6 +292,32 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert "gotowej do publikacji" in contract.system_instruction
 
 
+def test_structured_generation_blocks_full_draft_on_review_required_knowledge() -> None:
+    item, ledger, draft_package = _draft_stack()
+    brief = _sales_brief(item, ledger)
+    assert {
+        constraint.constraint_type for constraint in brief.knowledge_constraints
+    } & {"blocked", "needs_human_review"}
+
+    result = build_structured_draft_generation_contract(
+        item=item,
+        sales_brief=brief,
+        claim_ledger=ledger,
+        draft_package=draft_package,
+        draft_kind="full_draft",
+    )
+
+    assert result.contract is None
+    assert [blocker.code for blocker in result.blockers] == [
+        "review_required_knowledge_for_full_draft"
+    ]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in result.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
+
+
 def test_structured_generation_receives_sales_brief_forbidden_claims() -> None:
     item = _item()
     resolved_ledger = _claim_ledger()
