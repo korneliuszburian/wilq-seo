@@ -95,6 +95,13 @@ API status later contradicts this state.
   `wilq-seo-ciz`, expand reviewed typed cards `wilq-seo-lt1`, and add
   production-depth guard tests `wilq-seo-t13`. Focused proof passed:
   `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`.
+- Daily Command BDOS-class eval proof on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T024250Z`. The non-interactive eval
+  passed with `operator_usefulness_score=5`, 20 evidence IDs, four
+  recommendations, four validated daily actions and all hard gates true. The
+  final answer kept the daily loop to Merchant, Content, GA4 and Google Ads via
+  `command_center.daily_decisions`, used `primary_next_step`, and did not
+  promote Localo or social drafts as main daily work.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/

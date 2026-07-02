@@ -42,6 +42,47 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
+
+Purpose:
+
+- Re-check the main daily operating skill after the Ads, GA4, Merchant and
+  content skill-eval hardening.
+- Verify that `wilq-daily-command` acts like a useful BDOS-style morning
+  command: one prioritized daily loop, source proof, validated safe actions,
+  blockers and no invented business outcome claims.
+- Confirm that broader API context does not leak into the main daily plan:
+  Localo and social ActionObjects may exist in WILQ context, but the final
+  brief must follow `command_center.daily_decisions`.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Smoke passed against live WILQ API. It confirmed `health=ok`,
+  `command_center.primary_next_step`, four `daily_decisions`, two blockers,
+  24 tactical items, 27 evidence summaries and no disabled configured
+  connector in the daily context.
+- Core validated actions:
+  `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue`,
+  `act_review_ga4_tracking_quality`,
+  `act_prepare_ads_campaign_review_queue`.
+- Non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260702T024250Z`.
+- Summary: `operator_usefulness_score=5`, `blocked=false`, 20 evidence IDs,
+  four recommendations, four action candidates, empty `failure_tags`, all hard
+  gates true.
+- The final JSON keeps the daily work to Merchant `/merchant`, Treści
+  `/content-planner`, GA4 `/ga4` and Google Ads `/ads-doctor`; it explicitly
+  notes `Localo poza daily_decisions` and does not promote LinkedIn/Facebook
+  draft actions.
+
 ## 2026-07-02 - OpenAI-aligned hard gates for non-interactive skill evals
 
 Purpose:
