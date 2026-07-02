@@ -218,6 +218,8 @@ def validate_service_profile_private_proposal_promotion_payload(
             "required_human_role",
             "data_classes",
             "source_block_refs",
+            "freshness_status",
+            "audience",
             "retention_decision",
             "deletion_path",
             "eval_case_ids",

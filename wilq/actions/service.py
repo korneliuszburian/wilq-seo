@@ -720,6 +720,8 @@ def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
                 "required_human_role": review_action.required_human_role,
                 "support_level": proposal.support_level,
                 "risk_tier": proposal.risk_tier,
+                "freshness_status": proposal.freshness_status,
+                "audience": proposal.audience,
                 "data_classes": proposal.data_classes,
                 "source_block_refs": proposal.source_block_refs,
                 "retention_decision": proposal.retention_decision,
@@ -3333,6 +3335,14 @@ def _service_profile_private_proposal_promotion_preview_cards(
             _preview_row("Zakres", str(item.get("scope") or "private source")),
             _preview_row("Ryzyko", str(item.get("risk_tier") or "unknown")),
             _preview_row("Wsparcie", str(item.get("support_level") or "review-required")),
+            _preview_row(
+                "Aktualność źródła",
+                str(item.get("freshness_status") or "do potwierdzenia"),
+            ),
+            _preview_row(
+                "Zakres dostępu",
+                str(item.get("audience") or "do potwierdzenia"),
+            ),
             _preview_row(
                 "Review",
                 str(item.get("required_human_role") or "Wilku albo owner wiedzy"),

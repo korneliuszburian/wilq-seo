@@ -113,6 +113,10 @@ API status later contradicts this state.
   `freshness_status` and audience/scope before any source fact promotion path,
   keeping ekologus-ai proposals review-only until source currency and access
   scope are checked.
+- Prepare-only private proposal promotion previews now carry the same
+  `freshness_status` and `audience` governance context and render it in preview
+  cards, so a reviewer sees source currency and access scope inside the
+  ActionObject review path, not only on the Service Profile proposal card.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

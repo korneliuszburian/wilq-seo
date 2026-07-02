@@ -1121,6 +1121,8 @@ def test_private_proposal_promotion_action_is_prepare_only_and_review_gated() ->
     assert all(row["apply_allowed"] is False for row in preview_rows)
     assert all(row["api_mutation_ready"] is False for row in preview_rows)
     assert all("promotion_blocked_reason" in row for row in preview_rows)
+    assert all(row["freshness_status"] for row in preview_rows)
+    assert all(row["audience"] for row in preview_rows)
     assert all(row["data_classes"] for row in preview_rows)
     assert all(row["source_block_refs"] for row in preview_rows)
     assert all(row["retention_decision"] == "pending_owner_decision" for row in preview_rows)
@@ -1137,6 +1139,9 @@ def test_private_proposal_promotion_action_is_prepare_only_and_review_gated() ->
     assert preview.preview_cards
     assert preview.preview_cards[0].kind == "service_profile_private_proposal_promotion_review"
     assert preview.preview_cards[0].apply_state_label == "zapis zmian zablokowany"
+    first_preview_labels = {row.label for row in preview.preview_cards[0].rows}
+    assert "Aktualność źródła" in first_preview_labels
+    assert "Zakres dostępu" in first_preview_labels
     assert any(
         "Prywatna propozycja Service Profile" in card.title_label
         for card in preview.preview_cards
