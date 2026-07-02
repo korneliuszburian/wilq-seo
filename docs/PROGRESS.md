@@ -102,6 +102,14 @@ API status later contradicts this state.
   final answer kept the daily loop to Merchant, Content, GA4 and Google Ads via
   `command_center.daily_decisions`, used `primary_next_step`, and did not
   promote Localo or social drafts as main daily work.
+- Ads Doctor BDOS-class eval proof on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T025015Z`. The non-interactive eval
+  passed with `operator_usefulness_score=5`, two Ads evidence IDs, five
+  prioritized review recommendations, five action candidates and all hard gates
+  true. It used full Ads diagnostics/full context, validated four review
+  actions, kept Keyword Planner/forecast blockers explicit, and blocked
+  CPA/ROAS, wasted-budget, budget scaling, negative-keyword apply and write
+  claims without human review, confirmation, write contract and audit.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/

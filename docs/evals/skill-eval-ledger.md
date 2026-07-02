@@ -83,6 +83,51 @@ Result:
   notes `Localo poza daily_decisions` and does not promote LinkedIn/Facebook
   draft actions.
 
+## 2026-07-02 - `wilq-ads-doctor` BDOS-class Ads diagnostic eval
+
+Purpose:
+
+- Re-check `wilq-ads-doctor` against the current live Ads API state and the
+  user's BDOS-style expectation: answer "what should I inspect first?" without
+  pretending to know ROAS, CPA, wasted budget or write safety.
+- Prove the broad Ads path: budgets, recommendations, campaign metrics,
+  search terms, negative-keyword safety, custom segments, Keyword Planner
+  blocker, change history and apply-safety gates.
+- Verify that the skill uses full Ads diagnostics/full context when the
+  default context-pack is compacted.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=360 rtk scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Smoke passed against live WILQ API. It confirmed `google_ads` configured,
+  `live_data_available=true`, `latest_refresh_status=completed`, default
+  context-pack decision count `5` and full context decision count `14`.
+- Smoke validated:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms`,
+  `act_prepare_negative_keyword_review_queue`.
+- The first non-interactive eval run failed only on brittle wording: expected
+  exact marker `blokady`, while the useful output used `Zablokowane`. The eval
+  case and contract test now require `Zablokowane`, preserving the blocked-claim
+  requirement without forcing unnatural phrasing.
+- Final non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260702T025015Z`.
+- Summary: `operator_usefulness_score=5`, `blocked=false`, two evidence IDs,
+  five recommendations, five action candidates, empty `failure_tags`, all hard
+  gates true.
+- Output prioritized campaign/budget review, recommendations, search terms,
+  negative-keyword safety, custom segments and change history. It kept
+  Keyword Planner enrichment and audience forecast as blockers, and blocked
+  CPA/ROAS, wasted-budget, budget scaling, negative-keyword apply and writes
+  without human review, confirmation, write contract and audit.
+
 ## 2026-07-02 - OpenAI-aligned hard gates for non-interactive skill evals
 
 Purpose:

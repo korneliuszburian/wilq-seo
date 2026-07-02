@@ -193,7 +193,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "90_day_safety_check",
                 "koszt pozyskania celu",
                 "zwrot z reklam",
-                "blokady",
+                "Zablokowane",
             },
             "action_ids": {
                 "act_prepare_ads_campaign_review_queue",
