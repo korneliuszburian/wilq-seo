@@ -176,6 +176,11 @@ live API status later contradicts this state.
   review-required, Claim Ledger 10/10, skill eval coverage 13/13 and Goal 005
   still blocked without UAT/defer. This is the short artifact to show Wilku
   before walking through detailed BDO, Eko-Opieka, policy and gate materials.
+- Social Publisher usefulness proof now confirms the historical-post rule from
+  the WILQ product contract: WILQ can prepare LinkedIn/Facebook draft directions
+  for manual review, but cannot claim a topic is new, non-duplicated or safe to
+  repeat until metadata-only LinkedIn/Facebook history exists. Passing proof:
+  `.local-lab/evals/codex-skill/20260702T145613Z/wilq-social-publisher/result.json`.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production

@@ -8714,3 +8714,38 @@ Result:
 - GA4 `(not set)` rows remain a measurement blocker, not a content topic.
 - WordPress draft/write/publish, guarantee of rankings, duplicate-free claims,
   lead growth and revenue-impact claims remain blocked.
+
+## 2026-07-02 - Social Publisher duplicate-history eval
+
+Purpose:
+
+- Verify that `wilq-social-publisher` can turn WILQ evidence into review-only
+  LinkedIn/Facebook draft directions without pretending that social publishing
+  access or historical post inventory exists.
+- Confirm that duplicate-free and "no repeated historical post" claims stay
+  blocked until WILQ has metadata-only social history evidence.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T145613Z/wilq-social-publisher/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, five evidence IDs and all hard gates true.
+- WILQ validated `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts` as review-only actions to check.
+- The output used GSC, Merchant and WordPress evidence as source inputs, while
+  keeping LinkedIn/Facebook connector status as missing-credentials proof.
+- `historical_social_inventory_status=missing` and
+  `duplicate_risk_status=blocked_until_social_history_review` were preserved:
+  WILQ requires metadata-only history with `channel`, `published_at`, `topic`,
+  `service`, `claim`, `cta`, `format`, `post_url_or_id` and
+  `source_evidence_id` before saying a topic is new or non-duplicated.
+- Publish access, duplicate-free claims, social performance growth, ROAS,
+  revenue and unreviewed posting remain blocked.
