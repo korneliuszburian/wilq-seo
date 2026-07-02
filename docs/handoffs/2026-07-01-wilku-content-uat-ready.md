@@ -346,9 +346,49 @@ Walidowany format wyniku:
     "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-    "docs/handoffs/2026-07-01-wilku-eko-opieka-review.md",
-    "docs/handoffs/2026-07-01-wilku-audyt-zgodnosci-review.md",
     "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md"
+  ],
+  "oceny_materialow_review": [
+    {
+      "material": "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
+      "decyzja": "popraw",
+      "czytelnosc_1_5": 3,
+      "uzytecznosc_1_5": 3,
+      "glos_ekologus_1_5": 3,
+      "zaufanie_do_blokad_1_5": 3,
+      "dopasowanie_cta_1_5": 3,
+      "najwazniejsza_poprawka": "uzupełnić po rozmowie"
+    },
+    {
+      "material": "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+      "decyzja": "popraw",
+      "czytelnosc_1_5": 3,
+      "uzytecznosc_1_5": 3,
+      "glos_ekologus_1_5": 3,
+      "zaufanie_do_blokad_1_5": 3,
+      "dopasowanie_cta_1_5": 3,
+      "najwazniejsza_poprawka": "uzupełnić po rozmowie"
+    },
+    {
+      "material": "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+      "decyzja": "popraw",
+      "czytelnosc_1_5": 3,
+      "uzytecznosc_1_5": 3,
+      "glos_ekologus_1_5": 3,
+      "zaufanie_do_blokad_1_5": 3,
+      "dopasowanie_cta_1_5": 3,
+      "najwazniejsza_poprawka": "uzupełnić po rozmowie"
+    },
+    {
+      "material": "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
+      "decyzja": "popraw",
+      "czytelnosc_1_5": 3,
+      "uzytecznosc_1_5": 3,
+      "glos_ekologus_1_5": 3,
+      "zaufanie_do_blokad_1_5": 3,
+      "dopasowanie_cta_1_5": 3,
+      "najwazniejsza_poprawka": "uzupełnić po rozmowie"
+    }
   ],
   "pytania_skad_to_wzielo": "co było jasne albo niejasne w evidence IDs/source connectors",
   "miejsca_generyczne_off_brand": "co brzmiało generycznie albo nie jak Ekologus",
@@ -411,15 +451,23 @@ pokazano Wilkowi w sesji. To chroni proof UAT przed pustym stwierdzeniem, że
 sesja się odbyła, bez wskazania materiałów review.
 
 Walidator ostrzega, jeżeli przed technicznymi handoffami nie pokazano prostych
-materiałów startowych:
+materiałów startowych i policy review wymaganych do completion check:
 
 - `docs/handoffs/2026-07-02-wilq-marketing-content-model.md`;
-- `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
+- `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`;
+- `docs/handoffs/2026-07-02-wilku-bdo-uat-review.md`;
+- `docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md`.
 
 To ostrzeżenie nie unieważnia samego raportu UAT, ale blokuje claim
 domknięcia Goal 005 w `scripts/goal_005_completion_check.py`. Pełny proof
 użyteczności dla Wilka musi zaczynać się od prostego modelu WILQ, nie od samych
 technicznych handoffów.
+
+Aktualny fillable JSON najlepiej wygenerować komendą:
+
+```bash
+rtk uv run python scripts/record_goal_005_content_uat_result.py --print-input-example --api-base http://127.0.0.1:8000
+```
 
 ## Kryterium przejścia dalej
 
