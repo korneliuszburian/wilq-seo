@@ -787,6 +787,7 @@ const connectorRefreshRuns = [
     checked_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
     external_call_attempted: false,
     vendor_data_collected: false,
+    metrics_persisted: true,
     metric_summary: {},
     summary: "Connector google_ads status probe completed.",
     errors: [],

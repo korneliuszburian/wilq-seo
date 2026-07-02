@@ -7,6 +7,11 @@ export const ConnectorStatusSchema = z.object({
   label: z.string(),
   status: z.string(),
   status_label: z.string().default(""),
+  product_scope: z
+    .enum(["production", "optional_disabled", "experimental", "runtime"])
+    .default("production"),
+  product_scope_label: z.string().default(""),
+  active_for_daily_work: z.boolean().default(true),
   configured: z.boolean(),
   missing_credentials: z.array(z.string()),
   missing_credentials_summary_label: z.string().default(""),

@@ -890,10 +890,30 @@ def test_google_sheets_is_optional_disabled_current_scope() -> None:
     assert response.status_code == 200
     connector = response.json()
     assert connector["status"] == "disabled"
+    assert connector["product_scope"] == "optional_disabled"
+    assert connector["product_scope_label"] == "opcjonalne, wyłączone w tym zakresie"
+    assert connector["active_for_daily_work"] is False
     assert connector["configured"] is False
     assert connector["missing_credentials"] == []
     assert connector["health_check"] == "disabled_optional"
     assert connector["error"] == "Connector disabled by current product scope."
+
+
+def test_connector_registry_marks_experimental_and_runtime_surfaces_outside_daily_work() -> None:
+    response = client.get("/api/connectors")
+    assert response.status_code == 200
+    connectors = {connector["id"]: connector for connector in response.json()}
+
+    for connector_id in ("google_ads", "google_search_console", "wordpress_ekologus"):
+        assert connectors[connector_id]["product_scope"] == "production"
+        assert connectors[connector_id]["active_for_daily_work"] is True
+
+    assert connectors["linkedin"]["product_scope"] == "experimental"
+    assert connectors["linkedin"]["active_for_daily_work"] is False
+    assert connectors["facebook"]["product_scope"] == "experimental"
+    assert connectors["facebook"]["active_for_daily_work"] is False
+    assert connectors["openai_codex"]["product_scope"] == "runtime"
+    assert connectors["openai_codex"]["active_for_daily_work"] is False
 
 
 def test_localo_status_requires_api_token_and_organization_id(

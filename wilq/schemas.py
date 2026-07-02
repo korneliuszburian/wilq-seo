@@ -51,6 +51,13 @@ class ConnectorStatusValue(StrEnum):
     disabled = "disabled"
 
 
+class ConnectorProductScope(StrEnum):
+    production = "production"
+    optional_disabled = "optional_disabled"
+    experimental = "experimental"
+    runtime = "runtime"
+
+
 class ConnectorRefreshMode(StrEnum):
     status_probe = "status_probe"
     vendor_read = "vendor_read"
@@ -124,6 +131,9 @@ class ConnectorStatus(BaseModel):
     label: str
     status: ConnectorStatusValue
     status_label: str = ""
+    product_scope: ConnectorProductScope = ConnectorProductScope.production
+    product_scope_label: str = ""
+    active_for_daily_work: bool = True
     configured: bool
     missing_credentials: list[str] = Field(default_factory=list)
     missing_credentials_summary_label: str = ""
@@ -144,6 +154,14 @@ class ConnectorStatus(BaseModel):
     def hydrate_operator_labels(self) -> ConnectorStatus:
         if not self.status_label:
             self.status_label = connector_status_label(self.status)
+        if not self.product_scope_label:
+            labels = {
+                ConnectorProductScope.production: "aktywny zakres WILQ",
+                ConnectorProductScope.optional_disabled: "opcjonalne, wyłączone w tym zakresie",
+                ConnectorProductScope.experimental: "eksperymentalny workflow review",
+                ConnectorProductScope.runtime: "runtime operatora, nie źródło marketingowe",
+            }
+            self.product_scope_label = labels[self.product_scope]
         if not self.missing_credentials_summary_label:
             self.missing_credentials_summary_label = credential_field_count_label(
                 self.missing_credentials

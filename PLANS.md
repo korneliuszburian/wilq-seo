@@ -237,6 +237,13 @@ rewrite the run to `failed` with sanitized error type only, per-connector job
 exceptions no longer abort the whole `JobRun`, and manual job API runs clear
 the same view-model caches as direct connector refreshes.
 
+Connector status now carries product-scope metadata so roadmap surfaces no
+longer look equivalent to production evidence: `production`,
+`optional_disabled`, `experimental` and `runtime`, plus
+`active_for_daily_work`. Live `/api/connectors` marks LinkedIn/Facebook as
+experimental review workflows, Google Sheets as optional-disabled and OpenAI
+Codex as operator runtime rather than a marketing connector.
+
 Under Beads task `wilq-seo-x51h`, Service Profile review actions now expose
 API-owned `review_requirements`, also aligned with
 `scripts/record_service_profile_review_result.py`. The dashboard and UAT packet

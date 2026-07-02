@@ -412,7 +412,8 @@ function compactRouteConfig(routeName: string) {
 function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] }) {
   const configured = connectors.filter((connector) => connector.configured);
   const missing = connectors.filter((connector) => connector.missing_credentials.length > 0);
-  const disabled = connectors.filter((connector) => connector.status === "disabled");
+  const active = connectors.filter((connector) => connector.active_for_daily_work);
+  const outsideDailyScope = connectors.filter((connector) => !connector.active_for_daily_work);
 
   if (connectors.length === 0) {
     return (
@@ -424,9 +425,9 @@ function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] 
     <div className="grid gap-4">
       <div className="grid gap-2 text-center text-xs sm:grid-cols-4">
         <MetricTile label="Źródła" value={connectors.length} />
-        <MetricTile label="Dostęp działa" value={configured.length} />
+        <MetricTile label="Aktywne dziennie" value={active.length} />
         <MetricTile label="Braki dostępu" value={missing.length} />
-        <MetricTile label="Wyłączone" value={disabled.length} />
+        <MetricTile label="Poza dziennym zakresem" value={outsideDailyScope.length} />
       </div>
       {missing.length > 0 ? (
         <article className="rounded-md border border-wait/30 bg-wait/10 p-4">
@@ -452,6 +453,9 @@ function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] 
               <h3 className="text-sm font-semibold">{connector.label}</h3>
               <StatusBadge value={connector.status} label={connector.status_label} />
             </div>
+            <div className="mt-2 text-xs font-medium text-slate-500">
+              {connector.product_scope_label}
+            </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {connector.missing_credentials.length > 0
                 ? `Wymaga uzupełnienia dostępu: ${connector.missing_credentials.length} ${pluralize(connector.missing_credentials.length, "pole", "pola", "pól")}.`
@@ -459,6 +463,12 @@ function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] 
                   ? "Dostęp skonfigurowany. Szczegóły techniczne są dostępne po rozwinięciu."
                   : "Brak aktywnego dostępu. Szczegóły techniczne są dostępne po rozwinięciu."}
             </p>
+            {!connector.active_for_daily_work ? (
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                To źródło nie powinno sterować główną dzienną kolejką pracy bez osobnego
+                workflow review.
+              </p>
+            ) : null}
           </article>
         ))}
       </div>

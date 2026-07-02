@@ -16,6 +16,7 @@ from wilq.credentials.runtime import (
 )
 from wilq.schemas import (
     ConnectorCapability,
+    ConnectorProductScope,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -43,6 +44,8 @@ class ConnectorDefinition:
     health_check: str
     required_credential_groups: tuple[tuple[str, ...], ...] = ()
     enabled: bool = True
+    product_scope: ConnectorProductScope = ConnectorProductScope.production
+    active_for_daily_work: bool = True
 
 
 CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
@@ -128,6 +131,8 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ),
         "disabled_optional",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
+        False,
+        ConnectorProductScope.optional_disabled,
         False,
     ),
     ConnectorDefinition(
@@ -216,6 +221,8 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "uprawnień, review i akcji publikacji."
         ),
         "credential_presence",
+        product_scope=ConnectorProductScope.experimental,
+        active_for_daily_work=False,
     ),
     ConnectorDefinition(
         "facebook",
@@ -231,6 +238,8 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "uprawnień, review i akcji publikacji."
         ),
         "credential_presence",
+        product_scope=ConnectorProductScope.experimental,
+        active_for_daily_work=False,
     ),
     ConnectorDefinition(
         "openai_codex",
@@ -243,6 +252,8 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "May consume OpenAI/Codex credits depending on auth path.",
         "Runtime operatorski nie jest produkcyjnym autorem treści i nie omija WILQ API.",
         "runtime_presence",
+        product_scope=ConnectorProductScope.runtime,
+        active_for_daily_work=False,
     ),
 )
 
@@ -297,6 +308,8 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
             id=definition.id,
             label=definition.label,
             status=ConnectorStatusValue.disabled,
+            product_scope=definition.product_scope,
+            active_for_daily_work=definition.active_for_daily_work,
             configured=False,
             missing_credentials=[],
             available_credential_sources=credential_source_summary(required_names),
@@ -329,6 +342,8 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
         status=ConnectorStatusValue.configured
         if configured
         else ConnectorStatusValue.missing_credentials,
+        product_scope=definition.product_scope,
+        active_for_daily_work=definition.active_for_daily_work,
         configured=configured,
         missing_credentials=missing,
         available_credential_sources=credential_source_summary(required_names),

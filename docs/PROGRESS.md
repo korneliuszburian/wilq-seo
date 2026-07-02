@@ -184,6 +184,14 @@ API status later contradicts this state.
   `metric_persistence_failed:<ErrorType>` marker. Manual jobs also isolate
   per-connector exceptions and always persist a `JobRun`; job-run API calls now
   clear API view-model caches like direct connector refreshes.
+- Connector scope clarity slice on 2026-07-02 adds API-owned
+  `product_scope`, `product_scope_label` and `active_for_daily_work` to
+  connector status. Live `/api/connectors` now marks Google Ads and other core
+  data sources as `production`, Google Sheets as `optional_disabled`,
+  LinkedIn/Facebook as `experimental`, and OpenAI Codex as `runtime` rather
+  than a marketing data source. Dashboard connector access summary uses these
+  fields so placeholder/review-only surfaces do not look like daily-production
+  evidence.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

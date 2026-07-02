@@ -62,6 +62,9 @@ describe("RegistryPanels", () => {
             label: "Google Ads",
             status: "missing_credentials",
             status_label: "brakuje dostępu",
+            product_scope: "production",
+            product_scope_label: "aktywny zakres WILQ",
+            active_for_daily_work: true,
             configured: false,
             missing_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
             missing_credentials_summary_label: "1 pole",
@@ -152,6 +155,7 @@ describe("RegistryPanels", () => {
             },
             vendor_data_collected: true,
             external_call_attempted: true,
+            metrics_persisted: true,
             errors: [],
             redacted: true
           } satisfies ConnectorRefreshRun)
