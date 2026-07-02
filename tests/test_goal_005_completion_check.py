@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 
 from scripts.goal_005_completion_check import (
+    blocked_report,
     build_completion_report,
     render_markdown,
+    uat_live_provenance_summary,
     validate_owner_defer,
 )
 
@@ -60,6 +62,37 @@ def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
     assert report["missing_input"] == "goal_005_uat_ready_for_full_content_uat"
     assert any("needs_follow_up_before_full_content_uat" in detail for detail in report["details"])
     assert "realny dowód użyteczności dla Wilka" in report["blocked_claims"]
+
+
+def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
+    provenance = uat_live_provenance_summary(
+        {
+            "selected_work_item_found": True,
+            "selected_sales_brief_status": "blocked",
+            "selected_sales_brief_blockers": [
+                "Brakuje karty usługi",
+                "Brakuje karty CTA",
+            ],
+            "selected_sales_brief_constraint_evidence_ids": [
+                "ev_content_service_profile_source_facts"
+            ],
+            "production_depth_ready": False,
+        }
+    )
+
+    report = blocked_report(
+        "goal_005_uat_ready_for_full_content_uat",
+        ["UAT result is valid, but it is not ready for Goal 005 completion."],
+        uat_live_provenance=provenance,
+    )
+    markdown = render_markdown(report)
+
+    assert report["uat_live_provenance"] == provenance
+    assert "## Live UAT provenance" in markdown
+    assert "Sales Brief status: `blocked`" in markdown
+    assert "Sales Brief blocker: Brakuje karty usługi; Brakuje karty CTA" in markdown
+    assert "Sales Brief constraint evidence: ev_content_service_profile_source_facts" in markdown
+    assert "Production-depth ready: nie" in markdown
 
 
 def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> None:

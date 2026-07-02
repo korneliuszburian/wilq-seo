@@ -90,6 +90,7 @@ def build_completion_report(
                 "uat_status": uat_report["overall_status"],
                 "selected_work_item": uat_report["selected_work_item"],
                 "shown_review_artifacts": uat_report["shown_review_artifacts"],
+                "uat_live_provenance": uat_report.get("live_provenance_summary"),
                 "safe_scope": (
                     "Goal 005 ma zwalidowany wynik realnego UAT. Domknięcie nadal "
                     "wymaga zgodności pozostałych kryteriów goalu i pełnego verify."
@@ -104,6 +105,7 @@ def build_completion_report(
                     f"UAT status: {uat_report['overall_status']}",
                     "Use this as follow-up evidence, or provide explicit owner defer.",
                 ],
+                uat_live_provenance=uat_report.get("live_provenance_summary"),
             )
         return blocked_report("valid_goal_005_uat_result", uat_report["errors"])
 
@@ -149,6 +151,26 @@ def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str,
         "overall_status": report["overall_status"],
         "selected_work_item": report["selected_work_item"],
         "shown_review_artifacts": report["shown_review_artifacts"],
+        "live_provenance_summary": uat_live_provenance_summary(
+            report.get("live_provenance")
+        ),
+    }
+
+
+def uat_live_provenance_summary(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    return {
+        "selected_work_item_found": value.get("selected_work_item_found"),
+        "selected_sales_brief_status": value.get("selected_sales_brief_status"),
+        "selected_sales_brief_blocker": value.get("selected_sales_brief_blocker"),
+        "selected_sales_brief_blockers": value.get("selected_sales_brief_blockers")
+        or [],
+        "selected_sales_brief_constraint_evidence_ids": value.get(
+            "selected_sales_brief_constraint_evidence_ids"
+        )
+        or [],
+        "production_depth_ready": value.get("production_depth_ready"),
     }
 
 
@@ -173,13 +195,16 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
         field = OWNER_DEFER_FIELDS[key]
         if is_blank(payload.get(field)):
             errors.append(f"brak pola owner defer: {field}")
-    blocked_claims = payload.get(OWNER_DEFER_FIELDS["blocked_claims"])
-    if not isinstance(blocked_claims, list) or not blocked_claims:
+    raw_blocked_claims = payload.get(OWNER_DEFER_FIELDS["blocked_claims"])
+    blocked_claim_list: list[Any] = (
+        raw_blocked_claims if isinstance(raw_blocked_claims, list) else []
+    )
+    if not blocked_claim_list:
         errors.append("czego_nie_wolno_twierdzic musi być niepustą listą")
-    elif any(is_blank(item) for item in blocked_claims):
+    elif any(is_blank(item) for item in blocked_claim_list):
         errors.append("czego_nie_wolno_twierdzic nie może zawierać pustych pozycji")
     else:
-        normalized_claims = {normalize_text(item) for item in blocked_claims}
+        normalized_claims = {normalize_text(item) for item in blocked_claim_list}
         missing_required_claims = [
             claim
             for claim in REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS
@@ -202,15 +227,21 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
         "residual_risk": str(payload[OWNER_DEFER_FIELDS["residual_risk"]]).strip(),
         "next_review": str(payload[OWNER_DEFER_FIELDS["next_review"]]).strip(),
         "next_uat_input": str(payload[OWNER_DEFER_FIELDS["next_uat_input"]]).strip(),
-        "blocked_claims": [str(item).strip() for item in blocked_claims],
+        "blocked_claims": [str(item).strip() for item in blocked_claim_list],
     }
 
 
-def blocked_report(missing_input: str, details: list[str]) -> dict[str, Any]:
+def blocked_report(
+    missing_input: str,
+    details: list[str],
+    *,
+    uat_live_provenance: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     return {
         "status": "blocked_missing_goal_005_uat_proof",
         "missing_input": missing_input,
         "details": details,
+        "uat_live_provenance": uat_live_provenance,
         "safe_scope": (
             "Service Profile, review handoffs and UAT packet can be shown as "
             "preparation, not as a completed usefulness proof."
@@ -245,6 +276,9 @@ def render_markdown(report: dict[str, Any]) -> str:
             ]
         )
         lines.extend(f"- {item}" for item in report["blocked_claims"])
+        if report.get("uat_live_provenance"):
+            lines.extend(["", "## Live UAT provenance"])
+            lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
         lines.extend(["", "## Co odblokowuje domknięcie"])
         lines.extend(f"- {item}" for item in report["unblockers"])
     else:
@@ -260,6 +294,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         if report.get("shown_review_artifacts"):
             lines.extend(["", "## Pokazane materiały review"])
             lines.extend(f"- `{item}`" for item in report["shown_review_artifacts"])
+        if report.get("uat_live_provenance"):
+            lines.extend(["", "## Live UAT provenance"])
+            lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
         if report.get("residual_risk"):
             lines.extend(["", "## Ryzyko rezydualne", report["residual_risk"]])
         if report.get("next_uat_input"):
@@ -268,6 +305,22 @@ def render_markdown(report: dict[str, Any]) -> str:
             lines.extend(["", "## Obietnice nadal zablokowane"])
             lines.extend(f"- {item}" for item in report["blocked_claims"])
     return "\n".join(lines).rstrip() + "\n"
+
+
+def render_uat_live_provenance(value: dict[str, Any]) -> list[str]:
+    blockers = value.get("selected_sales_brief_blockers") or []
+    blocker_label = value.get("selected_sales_brief_blocker") or "; ".join(blockers) or "brak"
+    evidence_ids = value.get("selected_sales_brief_constraint_evidence_ids") or []
+    return [
+        "- Wybrany work item znaleziony: "
+        + ("tak" if value.get("selected_work_item_found") is True else "nie"),
+        f"- Sales Brief status: `{value.get('selected_sales_brief_status') or 'brak'}`",
+        f"- Sales Brief blocker: {blocker_label}",
+        "- Sales Brief constraint evidence: "
+        + (", ".join(evidence_ids) or "brak"),
+        "- Production-depth ready: "
+        + ("tak" if value.get("production_depth_ready") is True else "nie"),
+    ]
 
 
 def is_blank(value: Any) -> bool:

@@ -203,6 +203,11 @@ API status later contradicts this state.
   `content_work_item_content_decision_https___www_ekologus_pl` records
   `selected_sales_brief_status=blocked` with blockers `Brakuje karty usługi`
   and `Brakuje karty CTA`, so the saved UAT report preserves what Wilku saw.
+- Goal 005 completion guard now keeps that Sales Brief provenance when a UAT
+  result is valid but still needs follow-up. Live proof with `--api-base`
+  remains `blocked_missing_goal_005_uat_proof` and renders the same Sales Brief
+  blockers, so the completion audit cannot lose the gate that blocked the
+  selected item.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only

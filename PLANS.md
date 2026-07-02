@@ -1077,6 +1077,11 @@ Stop and record a blocker if:
   current actionable item records `selected_sales_brief_status=blocked` and
   blockers `Brakuje karty usługi; Brakuje karty CTA`, so a future UAT report
   preserves the exact Sales Brief gate shown during review.
+- 2026-07-02: `goal_005_completion_check.py` now carries that Sales Brief
+  provenance into blocked/accepted completion reports. A valid follow-up UAT
+  result checked with live API still blocks completion, but the markdown report
+  now shows the selected item's Sales Brief status, blockers and constraint
+  evidence summary.
 
 ## Surprises & Discoveries
 
