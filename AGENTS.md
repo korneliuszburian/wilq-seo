@@ -112,6 +112,50 @@ WILQ's core operating algorithms:
   non-interactive Codex evals for Polish output, evidence IDs, source
   connectors, blocked claims, action safety and operator usefulness.
 
+BDOS-style workflows for WILQ, in marketing/content language:
+
+- `/wilq-daily-command`: one morning queue for Ekologus marketing. It ranks
+  today's work from live GSC, GA4, Ads, Merchant, WordPress, Ahrefs, Localo and
+  knowledge evidence, then says what is ready, stale, blocked or review-only.
+- `/wilq-content-doctor`: decides whether to refresh, merge, create or block a
+  content item using GSC query/page data, WordPress inventory, canonical/
+  duplicate risk, Service Profile fit and approved/review-required knowledge.
+- `/wilq-sales-brief`: prepares a source-traced brief only when service fit,
+  CTA, buyer problem, claim policy and evidence requirements are clear enough;
+  otherwise it returns blockers instead of a fake final brief.
+- `/wilq-claim-ledger`: lists what a draft may say, what is weak, what is
+  required and what is forbidden. Legal, penalty, product, measurement and
+  private-source claims stay review-gated.
+- `/wilq-draft-review`: checks whether a draft uses only ledger-approved
+  claims, includes required claims, avoids forbidden claims and remains
+  draft-only until human review.
+- `/wilq-gsc-opportunities`: finds SEO/content opportunities from impressions,
+  clicks, CTR, position, decay, cannibalization and inventory risk, not from
+  generic keyword brainstorming.
+- `/wilq-ga4-quality`: separates real traffic-quality questions from
+  measurement issues such as `(not set)`, attribution gaps or missing
+  conversion proof.
+- `/wilq-ads-doctor`: reviews Ads budgets, campaign activity, recommendations,
+  search terms, n-grams, negative keywords and custom segments with evidence
+  and safe actions, without claiming ROAS/CPA/waste unless contracts support it.
+- `/wilq-merchant-review`: reviews product/feed issues, availability, price
+  readiness and Shopping/PMax blockers without claiming revenue recovery or
+  product reapproval without proof.
+- `/wilq-social-review`: turns approved insights into LinkedIn/Facebook draft
+  directions, but must first check historical post inventory before claiming a
+  topic is new, non-duplicated or safe to repeat.
+- `/wilq-measurement-loop`: after publication or change, waits for the
+  observation window, compares real evidence and creates a learning proposal
+  instead of rewriting knowledge automatically.
+
+Historical social and content memory is mandatory. WILQ must not claim
+"nowy temat", "brak powtórek", "można repurpose bez ryzyka" or "to już było
+sprawdzone" until WordPress inventory, canonical/duplicate checks and
+LinkedIn/Facebook historical metadata are available. For social history, WILQ
+needs metadata only: channel, published date, topic, service, claim, CTA,
+format, post URL/ID and source evidence ID. Raw post bodies, comments and user
+data are not required for the initial dedupe contract.
+
 ## Recovery index
 
 After context loss, read:

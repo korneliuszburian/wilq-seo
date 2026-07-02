@@ -14,6 +14,27 @@ Powiedz prosto:
 
 ## Co pokazać
 
+### 0. Czym realnie jest WILQ
+
+Pokaż:
+
+- `docs/handoffs/2026-07-02-wilq-marketing-content-model.md`
+
+Powiedz:
+
+> To nie ma być generator tekstów. To ma być system decyzyjny dla marketingu:
+> bierze dane z GSC, GA4, Ads, Merchant, WordPress, Ahrefs, Localo i wiedzy
+> Ekologus, sprawdza czy temat już był, czy claim jest dozwolony, czy mamy
+> świeże dowody i dopiero wtedy pozwala iść w brief, draft albo akcję.
+
+Zapytaj:
+
+1. Czy ten model pracy ma sens dla marketingu Ekologus?
+2. Czy bardziej wartościowa jest sama generacja tekstu, czy decyzja: co wolno,
+   czego nie wolno i co ma największy sens?
+3. Jakie historyczne posty LinkedIn/Facebook możemy dodać jako metadata-only,
+   żeby WILQ nie powielał tematów?
+
 ### 1. Aktualny stan WILQ
 
 Pokaż:

@@ -221,6 +221,12 @@ API status later contradicts this state.
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`. Use it as the first
   conversation script; the longer UAT handoff remains the detailed backing
   material and result format.
+- A plain-language WILQ marketing/content model now lives at
+  `docs/handoffs/2026-07-02-wilq-marketing-content-model.md`. It explains WILQ
+  as a BDOS-class operating system for Ekologus marketing, not a content
+  generator: daily queue, content decisions, Sales Brief, Claim Ledger, draft
+  review, social repurpose review, measurement loop and explicit blocked
+  claims. The "what to show Wilku first" guide starts with this model.
 - Goal 005 UAT result reports now warn when
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is not listed in
   `pokazane_materialy_review`. This is non-blocking, but it protects Wilku
@@ -230,6 +236,10 @@ API status later contradicts this state.
   WordPress, social readiness, knowledge, safe actions, measurement and
   learning. Do not narrow WILQ to "marketing copy/content generation" in future
   sessions.
+- `AGENTS.md` now also lists BDOS-style WILQ workflows in marketing/content
+  language: daily command, content doctor, Sales Brief, Claim Ledger, draft
+  review, GSC opportunities, GA4 quality split, Ads Doctor, Merchant review,
+  social review and measurement loop.
 - Social publishing readiness now has an explicit historical-post blocker in
   the API-owned `social_draft_context`: historical LinkedIn/Facebook inventory
   is `missing`, duplicate-risk is `blocked_until_social_history_review`, and
