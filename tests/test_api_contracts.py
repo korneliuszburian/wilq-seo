@@ -15318,7 +15318,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                 "search_type": "web",
                 "detail_dimensions": "query,page",
                 "detail_data_completeness": "partial_possible",
-                "query_page_row_limit": 250,
+                "query_page_row_limit": 1000,
                 "query_page_max_rows": 1000,
                 "query_page_rows_truncated": "false",
                 "aggregate_date_start": "2026-06-29",
@@ -15474,7 +15474,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert gsc_contract["read_granularity"] == "single_day_latest_available"
     assert gsc_contract["api_recommended_page_size"] == 25000
     assert gsc_contract["api_daily_row_cap_per_search_type"] == 50000
-    assert gsc_contract["query_page_row_limit"] == 250
+    assert gsc_contract["query_page_row_limit"] == 1000
     assert gsc_contract["query_page_max_rows"] == 1000
     assert gsc_contract["query_page_rows_truncated"] is False
     assert gsc_contract["aggregate_date_start"] == "2026-06-29"
@@ -15493,11 +15493,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "Agregat GSC" in gsc_contract["aggregate_summary_label"]
     assert "najnowszy dostępny dzień" in gsc_contract["summary_label"]
     assert "nie pełną sumą całego ruchu" in gsc_contract["partial_detail_warning_label"]
-    assert "rowLimit=250" in gsc_contract["paging_label"]
+    assert "rowLimit=1000" in gsc_contract["paging_label"]
     assert "2-3 dniach" in gsc_contract["official_limits_label"]
     assert "25 000 wierszy" in gsc_contract["official_limits_label"]
     assert "50 000 wierszy" in gsc_contract["official_limits_label"]
-    assert "rowLimit=250" in gsc_contract["wilq_internal_cap_label"]
+    assert "rowLimit=1000" in gsc_contract["wilq_internal_cap_label"]
     assert "max rows=1000" in gsc_contract["wilq_internal_cap_label"]
     assert payload["query_page_count"] >= 1
     assert payload["matched_inventory_count"] >= 1
@@ -16085,33 +16085,27 @@ def test_gsc_vendor_read_uses_search_analytics(
                 },
             )
         assert body["dimensions"] == ["query", "page"]
-        assert body["rowLimit"] == 250
+        assert body["rowLimit"] == 1000
         assert body["startDate"] == "2026-06-28"
         assert body["endDate"] == "2026-06-28"
-        if body["startRow"] == 0:
-            return httpx.Response(
-                200,
-                json={
-                    "rows": [
-                        {
-                            "keys": [
-                                f"odpady przemysłowe {index}",
-                                f"https://ekologus.pl/oferta/{index}/",
-                            ],
-                            "clicks": 1,
-                            "impressions": 10,
-                            "ctr": 0.1,
-                            "position": 4.5,
-                        }
-                        for index in range(250)
-                    ]
-                },
-            )
-        assert body["startRow"] == 250
+        assert body["startRow"] == 0
         return httpx.Response(
             200,
             json={
                 "rows": [
+                    {
+                        "keys": [
+                            f"odpady przemysłowe {index}",
+                            f"https://ekologus.pl/oferta/{index}/",
+                        ],
+                        "clicks": 1,
+                        "impressions": 10,
+                        "ctr": 0.1,
+                        "position": 4.5,
+                    }
+                    for index in range(250)
+                ]
+                + [
                     {
                         "keys": ["odpady przemysłowe", "https://ekologus.pl/oferta/"],
                         "clicks": 12,
@@ -16119,7 +16113,7 @@ def test_gsc_vendor_read_uses_search_analytics(
                         "ctr": 0.1,
                         "position": 4.5,
                     }
-                ]
+                ],
             },
         )
 
@@ -16142,7 +16136,7 @@ def test_gsc_vendor_read_uses_search_analytics(
     assert result.metric_summary["date_availability_status"] == "available"
     assert result.metric_summary["availability_date_start"] <= "2026-06-28"
     assert result.metric_summary["availability_date_end"] >= "2026-06-28"
-    assert result.metric_summary["query_page_row_limit"] == 250
+    assert result.metric_summary["query_page_row_limit"] == 1000
     assert result.metric_summary["query_page_max_rows"] == 1000
     assert result.metric_summary["query_page_rows_truncated"] == "false"
     assert result.metric_summary["search_type"] == "web"
@@ -16165,9 +16159,8 @@ def test_gsc_vendor_read_uses_search_analytics(
         ["date"],
         ["country", "device"],
         ["query", "page"],
-        ["query", "page"],
     ]
-    assert [request.get("startRow") for request in seen_requests[2:]] == [0, 250]
+    assert [request.get("startRow") for request in seen_requests[2:]] == [0]
     assert result.metric_facts[0].name == "clicks"
     assert result.metric_facts[0].value == 1
     assert result.metric_facts[0].dimensions == {

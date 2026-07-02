@@ -14,7 +14,7 @@ from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 GSC_READONLY_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly"
 GSC_API_BASE = "https://searchconsole.googleapis.com/webmasters/v3"
 GSC_AVAILABILITY_LOOKBACK_DAYS = 10
-GSC_QUERY_PAGE_ROW_LIMIT = 250
+GSC_QUERY_PAGE_ROW_LIMIT = 1000
 GSC_QUERY_PAGE_MAX_ROWS = 1000
 GSC_SEARCH_TYPE = "web"
 GSC_QUERY_PAGE_DETAIL_COMPLETENESS = "partial_possible"

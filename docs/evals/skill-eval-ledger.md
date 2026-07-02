@@ -242,6 +242,52 @@ Result:
   and blocks traffic/autorytet growth promises without cross-source measurement
   or approved action contracts.
 
+## 2026-07-02 - `wilq-gsc-content-doctor` Search Analytics cap refresh
+
+Purpose:
+
+- Apply the official Search Console Search Analytics guidance supplied by the
+  user to the existing WILQ GSC path.
+- Keep the typed API contract explicit about latest available single-day reads,
+  typical 2-3 day data delay, official 25k paging, 50k daily row cap per search
+  type and partial query/page detail.
+- Improve the adapter's operational query/page read from `rowLimit=250` to
+  `rowLimit=1000` without pretending WILQ exports full Search Analytics.
+
+Proof:
+
+```bash
+rtk scripts/local_stack.sh restart
+rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics_exposes_query_page_inventory_queue or gsc_vendor_read_uses_search_analytics"
+rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Fresh read-only GSC proof `refresh_google_search_console_9b25d4143bea`
+  completed with `vendor_data_collected=true`, evidence
+  `ev_refresh_refresh_google_search_console_9b25d4143bea`,
+  `date_availability_status=available`, detail date `2026-06-29`,
+  `query_page_row_limit=1000`, `query_page_max_rows=1000` and
+  `query_page_rows_truncated=false`.
+- Focused API tests passed. They verify the connector request shape and
+  `content_diagnostics.gsc_search_analytics_contract`.
+- Smoke passed against live WILQ API. It confirmed the GSC contract includes
+  `data_availability_checked`, `date_availability_status`, `search_type=web`,
+  `detail_dimensions=query,page`, `detail_data_completeness=partial_possible`,
+  aggregate `byProperty` data, official 25k/50k labels, latest GSC refresh
+  evidence and validated `act_prepare_content_refresh_queue`.
+- Non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260702T031401Z`.
+- Summary: `operator_usefulness_score=5`, `blocked=false`, ten evidence IDs,
+  one recommendation, one validated action candidate, empty `failure_tags`, all
+  hard gates true.
+- Output keeps operator lineage scoped to `google_search_console`,
+  `wordpress_ekologus`, `wordpress_sklep`, avoids Ahrefs leakage, and treats
+  query/page rows as partial decision evidence rather than full traffic totals
+  or SEO-success proof.
+
 ## 2026-07-02 - OpenAI-aligned hard gates for non-interactive skill evals
 
 Purpose:

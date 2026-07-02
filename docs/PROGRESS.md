@@ -142,6 +142,19 @@ API status later contradicts this state.
   blocked traffic/autorytet growth promises. The eval harness now also tells
   Codex not to use technical runtime names such as `ActionObject` in
   operator-facing text.
+- GSC Search Analytics proof on 2026-07-02:
+  `refresh_google_search_console_9b25d4143bea` completed after the adapter
+  changed query/page detail reads from `rowLimit=250` to `rowLimit=1000` while
+  keeping WILQ's operational max rows at `1000`. The public API contract still
+  exposes the official GSC pattern: latest available single day, typical 2-3
+  day delay, `api_recommended_page_size=25000`,
+  `api_daily_row_cap_per_search_type=50000`, `partial_possible` query/page
+  detail and labels that warn this is not a full Search Analytics export.
+  Non-interactive proof passed at
+  `.local-lab/evals/codex-skill/20260702T031401Z` with
+  `operator_usefulness_score=5`, source connectors scoped to
+  `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`, and no
+  Ahrefs leakage in the operator lineage.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/
