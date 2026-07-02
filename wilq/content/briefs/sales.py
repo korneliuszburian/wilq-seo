@@ -35,6 +35,7 @@ ContentSalesBriefBlockerCode = Literal[
     "missing_required_knowledge_card",
 ]
 ContentSalesBriefSignalQualityStatus = Literal["strong", "review_required", "thin"]
+ContentSalesBriefRecommendedMode = Literal["preserve", "refresh", "merge", "create", "block"]
 ContentKnowledgeConstraintType = Literal[
     "service_fit",
     "evidence_requirement",
@@ -50,7 +51,7 @@ ContentKnowledgeConstraintType = Literal[
 class ContentSalesBriefOperationsContext(BaseModel):
     enrichment_id: str
     intent_label: str
-    recommended_mode: str
+    recommended_mode: ContentSalesBriefRecommendedMode
     safe_next_step: str
     source_fact_ids: list[str] = Field(default_factory=list)
 

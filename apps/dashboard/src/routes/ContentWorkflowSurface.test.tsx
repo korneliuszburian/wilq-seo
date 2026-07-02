@@ -543,7 +543,7 @@ function contentOpportunityEnrichmentResponse(): ContentOpportunityEnrichmentRes
       decision_id: "decision_bdo",
       title: "BDO dla firm",
       topic: "BDO dla firm",
-      recommended_mode: "refresh",
+      recommended_mode: "refresh" as const,
       recommended_mode_label: "odśwież istniejącą treść",
       status: "ready",
       status_label: "gotowe do pracy nad treścią",
@@ -635,7 +635,7 @@ function salesBrief() {
     operations_context: {
       enrichment_id: "content_opportunity_enrichment_content_work_item_bdo",
       intent_label: "intencja ryzyka lub obowiązku",
-      recommended_mode: "refresh",
+      recommended_mode: "refresh" as const,
       safe_next_step: "Przygotuj preserve-first brief.",
       source_fact_ids: ["source_fact_queries_bdo"]
     },

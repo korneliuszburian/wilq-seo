@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
 from wilq.content.workflow.decision_mapping import content_work_item_from_decision
 from wilq.content.workflow.queue import (
+    ContentQueueRecommendedMode,
     ContentWorkItemQueueCandidate,
     ContentWorkItemQueueResponse,
 )
@@ -77,7 +78,7 @@ class ContentOpportunityEnrichment(BaseModel):
     status: ContentOpportunityEnrichmentStatus
     title: str
     topic: str
-    recommended_mode: str
+    recommended_mode: ContentQueueRecommendedMode
     intent: ContentOpportunityIntent
     intent_label: str
     buyer_problem: str
@@ -480,8 +481,8 @@ def _safe_next_step(
     return decision.next_step
 
 
-def _recommended_mode_from_decision(decision: ContentDecisionItem) -> str:
-    modes = {
+def _recommended_mode_from_decision(decision: ContentDecisionItem) -> ContentQueueRecommendedMode:
+    modes: dict[str, ContentQueueRecommendedMode] = {
         "refresh_or_merge": "refresh",
         "merge_create_after_inventory_check": "merge",
         "inventory_check_before_create": "create",

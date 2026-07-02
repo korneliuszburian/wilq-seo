@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefKnowledgeConstraint,
+    ContentSalesBriefOperationsContext,
     ContentSalesBriefSeed,
     ContentSalesBriefSourceFact,
     build_content_sales_brief,
@@ -68,6 +69,23 @@ def test_knowledge_constraints_reject_unknown_constraint_type() -> None:
         ContentSalesBriefKnowledgeConstraint.model_validate(payload)
     with pytest.raises(ValidationError, match="constraint_type"):
         StructuredDraftKnowledgeConstraint.model_validate(payload)
+
+
+def test_recommended_modes_reject_unknown_values() -> None:
+    operations_payload = {
+        "enrichment_id": "content_opportunity_enrichment_content_work_item_bdo",
+        "intent_label": "intencja ryzyka lub obowiązku",
+        "recommended_mode": "publish_now",
+        "safe_next_step": "Przygotuj preserve-first brief.",
+        "source_fact_ids": ["source_fact_bdo"],
+    }
+    enrichment_payload = _enrichment().model_dump(mode="json")
+    enrichment_payload["recommended_mode"] = "publish_now"
+
+    with pytest.raises(ValidationError, match="recommended_mode"):
+        ContentSalesBriefOperationsContext.model_validate(operations_payload)
+    with pytest.raises(ValidationError, match="recommended_mode"):
+        ContentOpportunityEnrichment.model_validate(enrichment_payload)
 
 
 def _inventory() -> ContentInventoryRecord:

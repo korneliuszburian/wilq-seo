@@ -22,6 +22,7 @@ import {
   ContentClaimLedgerSchema,
   ContentDraftPackageSchema,
   ContentKnowledgeConstraintTypeSchema,
+  ContentRecommendedModeSchema,
   ContentServiceProfilePrivateSourceProposalSectionSchema,
   ContentGscSearchAnalyticsContractSchema,
   StructuredDraftPreviewBlockerSchema,
@@ -599,6 +600,13 @@ describe("ContentKnowledgeConstraintTypeSchema", () => {
       true
     );
     expect(ContentKnowledgeConstraintTypeSchema.safeParse("model_opinion").success).toBe(false);
+  });
+});
+
+describe("ContentRecommendedModeSchema", () => {
+  it("rejects unknown content recommended modes", () => {
+    expect(ContentRecommendedModeSchema.safeParse("refresh").success).toBe(true);
+    expect(ContentRecommendedModeSchema.safeParse("publish_now").success).toBe(false);
   });
 });
 

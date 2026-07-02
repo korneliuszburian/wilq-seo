@@ -106,13 +106,21 @@ export const ContentWorkItemQueueMeasurementReadinessSchema = z.object({
   source_connectors: ContentEvidenceTraceFields.source_connectors
 });
 
+export const ContentRecommendedModeSchema = z.enum([
+  "preserve",
+  "refresh",
+  "merge",
+  "create",
+  "block"
+]);
+
 export const ContentWorkItemQueueCandidateSchema = z.object({
   work_item_id: z.string(),
   decision_id: z.string(),
   title: z.string(),
   topic: z.string(),
   priority: z.number(),
-  recommended_mode: z.enum(["preserve", "refresh", "merge", "create", "block"]),
+  recommended_mode: ContentRecommendedModeSchema,
   recommended_mode_label: z.string(),
   status_label: z.string(),
   reason: z.string(),
@@ -273,7 +281,7 @@ export const ContentSalesBriefSeedSchema = z.object({
 export const ContentSalesBriefOperationsContextSchema = z.object({
   enrichment_id: z.string(),
   intent_label: z.string(),
-  recommended_mode: z.string(),
+  recommended_mode: ContentRecommendedModeSchema,
   safe_next_step: z.string(),
   source_fact_ids: z.array(z.string()).default([])
 });
@@ -1387,7 +1395,7 @@ export const ContentOpportunityEnrichmentSchema = z.object({
   status_label: z.string(),
   title: z.string(),
   topic: z.string(),
-  recommended_mode: z.string(),
+  recommended_mode: ContentRecommendedModeSchema,
   recommended_mode_label: z.string(),
   intent: z.enum([
     "informational_service",
