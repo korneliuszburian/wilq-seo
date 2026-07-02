@@ -541,11 +541,8 @@ def live_review_provenance(
     profile = live_context.get("service_profile")
     if not isinstance(profile, dict):
         return None
-    coverage = (
-        profile.get("coverage_summary")
-        if isinstance(profile.get("coverage_summary"), dict)
-        else {}
-    )
+    raw_coverage = profile.get("coverage_summary")
+    coverage: dict[str, Any] = raw_coverage if isinstance(raw_coverage, dict) else {}
     live_actions = live_review_actions(live_context, review_type=review_type)
     live_required_fields = live_required_review_fields(
         live_context,
@@ -556,6 +553,14 @@ def live_review_provenance(
         review_type=review_type,
     )
     if review_type == "private_source_proposals":
+        private_proposal_provenance = live_private_proposal_provenance(
+            profile,
+            decisions=decisions,
+        )
+        raw_private_summary = profile.get("private_source_proposal_summary")
+        private_summary: dict[str, Any] = (
+            raw_private_summary if isinstance(raw_private_summary, dict) else {}
+        )
         return {
             "api_base": live_context.get("api_base"),
             "service_profile_read_only": profile.get("read_only"),
@@ -572,11 +577,8 @@ def live_review_provenance(
                 ]
                 for decision in decisions
             },
-            "private_proposal_promotion_ready": (
-                profile.get("private_source_proposal_summary", {}).get("promotion_ready")
-                if isinstance(profile.get("private_source_proposal_summary"), dict)
-                else None
-            ),
+            "private_proposal_promotion_ready": private_summary.get("promotion_ready"),
+            "reviewed_private_proposal_provenance": private_proposal_provenance,
         }
     return {
         "api_base": live_context.get("api_base"),
@@ -595,6 +597,36 @@ def live_review_provenance(
             for decision in decisions
         },
     }
+
+
+def live_private_proposal_provenance(
+    profile: dict[str, Any],
+    *,
+    decisions: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    proposals_by_target = {
+        str(proposal.get("target_card_id") or "").strip(): proposal
+        for proposal in raw_list(profile.get("private_source_proposals"))
+        if isinstance(proposal, dict) and proposal.get("target_card_id")
+    }
+    provenance: dict[str, dict[str, Any]] = {}
+    for decision in decisions:
+        target_card_id = str(decision.get("target_card_id") or "").strip()
+        proposal = proposals_by_target.get(target_card_id)
+        if proposal is None:
+            continue
+        provenance[target_card_id] = {
+            "proposal_id": proposal.get("proposal_id"),
+            "source_id": proposal.get("source_id"),
+            "freshness_status": proposal.get("freshness_status"),
+            "audience": proposal.get("audience"),
+            "retention_decision": proposal.get("retention_decision"),
+            "risk_tier": proposal.get("risk_tier"),
+            "support_level": proposal.get("support_level"),
+            "promotion_allowed": proposal.get("promotion_allowed"),
+            "redacted": proposal.get("redacted"),
+        }
+    return provenance
 
 
 def render_markdown(report: dict[str, Any]) -> str:
@@ -683,6 +715,22 @@ def render_live_provenance(value: Any) -> str:
         for action_id, fields in required_fields.items():
             rendered_fields = ", ".join(str(field) for field in fields) or "brak"
             lines.append(f"  - `{action_id}`: {rendered_fields}")
+    private_proposals = value.get("reviewed_private_proposal_provenance")
+    if isinstance(private_proposals, dict) and private_proposals:
+        lines.append("- Private proposal provenance z live Service Profile:")
+        for target_card_id, proposal in private_proposals.items():
+            if not isinstance(proposal, dict):
+                continue
+            lines.append(
+                "  - "
+                f"`{target_card_id}`: "
+                f"freshness={proposal.get('freshness_status')}, "
+                f"audience={proposal.get('audience')}, "
+                f"retencja={proposal.get('retention_decision')}, "
+                f"ryzyko={proposal.get('risk_tier')}, "
+                f"support={proposal.get('support_level')}, "
+                f"promotion_allowed={visible_bool(proposal.get('promotion_allowed') is True)}"
+            )
     return "\n".join(lines)
 
 

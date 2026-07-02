@@ -182,6 +182,22 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
             ]
         },
         "private_proposal_promotion_ready": False,
+        "reviewed_private_proposal_provenance": {
+            "ekologus_service_eko_opieka_calendar": {
+                "proposal_id": (
+                    "private_proposal_"
+                    "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+                ),
+                "source_id": "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+                "freshness_status": "current",
+                "audience": "company_wide",
+                "retention_decision": "pending_owner_decision",
+                "risk_tier": "medium",
+                "support_level": "partial",
+                "promotion_allowed": False,
+                "redacted": True,
+            }
+        },
     }
 
     markdown = render_markdown(report)
@@ -192,6 +208,9 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert "audience_scope_confirmed: tak" in markdown
     assert "Wymagane pola review z live Service Profile" in markdown
     assert "eval_gates_confirmed" in markdown
+    assert "Private proposal provenance z live Service Profile" in markdown
+    assert "freshness=current" in markdown
+    assert "audience=company_wide" in markdown
 
 
 def test_service_profile_review_result_follows_new_live_private_required_field() -> None:
@@ -442,7 +461,15 @@ def _live_context() -> dict[str, object]:
                         "private_proposal_"
                         "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
                     ),
+                    "source_id": "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
+                    "freshness_status": "current",
+                    "audience": "company_wide",
+                    "retention_decision": "pending_owner_decision",
+                    "risk_tier": "medium",
+                    "support_level": "partial",
+                    "promotion_allowed": False,
+                    "redacted": True,
                 }
             ],
         },

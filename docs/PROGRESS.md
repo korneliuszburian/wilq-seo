@@ -124,6 +124,10 @@ API status later contradicts this state.
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
   Service Profile action requires them.
+- Service Profile private review result reports now also record live private
+  proposal provenance from the API: proposal/source IDs, freshness, audience,
+  retention, risk, support, redaction and promotion allowance. The markdown
+  report renders those fields under live provenance.
 - Wilku handoff examples for private ekologus-ai proposal review now include
   those governance confirmations, so copied review JSON matches the current
   recorder contract.
