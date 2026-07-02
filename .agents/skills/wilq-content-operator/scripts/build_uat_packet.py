@@ -49,6 +49,32 @@ def as_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
+def review_requirements_summary(action: dict[str, Any]) -> str:
+    requirements = [
+        item
+        for item in as_list(action.get("review_requirements"))
+        if isinstance(item, dict)
+    ]
+    if not requirements:
+        return ""
+    required_fields = [
+        str(item.get("field"))
+        for item in requirements
+        if item.get("required") is True and item.get("field")
+    ]
+    follow_up_rules = [
+        str(item.get("blocking_rule"))
+        for item in requirements
+        if item.get("field") == "follow_up_beads" and item.get("blocking_rule")
+    ]
+    parts: list[str] = []
+    if required_fields:
+        parts.append("wymagane pola: " + ", ".join(required_fields))
+    if follow_up_rules:
+        parts.append("follow_up_beads: " + "; ".join(follow_up_rules))
+    return "; ".join(parts)
+
+
 def safe_enrichment(api_base: str, work_item_id: str) -> dict[str, Any]:
     try:
         return require_dict(
@@ -590,6 +616,9 @@ def main() -> int:
                     f"({raw_action.get('target_card_id')}): "
                     f"{raw_action.get('label')} -> {raw_action.get('blocked_write_claim')}"
                 )
+                requirements_summary = review_requirements_summary(raw_action)
+                if requirements_summary:
+                    print(f"    wymagania review: {requirements_summary}")
     actions = service_profile_md.get("private_review_actions")
     if isinstance(actions, list) and actions:
         print("- private review actions:")
@@ -599,6 +628,9 @@ def main() -> int:
                     f"  - `{raw_action.get('action_id')}`: "
                     f"{raw_action.get('label')} -> {raw_action.get('blocked_write_claim')}"
                 )
+                requirements_summary = review_requirements_summary(raw_action)
+                if requirements_summary:
+                    print(f"    wymagania review: {requirements_summary}")
     policy_actions = service_profile_md.get("private_policy_review_actions")
     if isinstance(policy_actions, list) and policy_actions:
         print("- private policy review actions:")
@@ -608,6 +640,9 @@ def main() -> int:
                     f"  - `{raw_action.get('action_id')}`: "
                     f"{raw_action.get('label')} -> {raw_action.get('blocked_write_claim')}"
                 )
+                requirements_summary = review_requirements_summary(raw_action)
+                if requirements_summary:
+                    print(f"    wymagania review: {requirements_summary}")
     print()
     packet_items = packet.get("items")
     if not isinstance(packet_items, list):

@@ -91,6 +91,7 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "private_proposal_details",
         "szczegóły private proposals",
         "review_result_recorders",
+        "wymagania review",
         "service_profile_public_card_review_result_v1",
         "service_profile_private_proposal_review_result_v1",
         "promotion preview rows",
@@ -102,6 +103,39 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "/api/content/work-items/{work_item_id}/enrichment",
     ):
         assert marker in uat_script
+
+
+def test_content_operator_uat_packet_summarizes_review_requirements() -> None:
+    uat_script = load_uat_script()
+
+    summary = uat_script.review_requirements_summary(
+        {
+            "review_requirements": [
+                {
+                    "field": "action_id",
+                    "label": "action ID z live Service Profile",
+                    "requirement_type": "text",
+                    "required": True,
+                },
+                {
+                    "field": "source_trace_clear",
+                    "label": "czy ślad źródłowy jest czytelny",
+                    "requirement_type": "boolean",
+                    "required": True,
+                },
+                {
+                    "field": "follow_up_beads",
+                    "label": "follow-up Beads",
+                    "requirement_type": "follow_up",
+                    "required": False,
+                    "blocking_rule": "Wymagane, gdy decision != approve.",
+                },
+            ]
+        }
+    )
+
+    assert "wymagane pola: action_id, source_trace_clear" in summary
+    assert "follow_up_beads: Wymagane, gdy decision != approve." in summary
 
 
 def test_content_operator_uat_packet_separates_public_and_private_review_actions(

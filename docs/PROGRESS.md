@@ -138,6 +138,10 @@ API status later contradicts this state.
   `blocked_claims_reviewed` and `follow_up_beads` in actionable output. The
   live eval passed with `operator_usefulness_score=4`, `blocked=true`,
   `failure_tags=[]` and all hard gates true.
+- Content Operator UAT markdown on 2026-07-02 now renders Service Profile
+  review requirements for public/private review actions: required fields
+  `action_id,target_card_id,decision,source_trace_clear,blocked_claims_reviewed,notes`
+  and the `follow_up_beads` blocking rule.
 - Service Profile private proposal scope counts on 2026-07-02: live
   `/api/content/service-profile` and the UAT packet now expose
   `proposal_count=4`, `service_proposal_count=2`,

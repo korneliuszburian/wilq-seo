@@ -878,6 +878,9 @@ Stop and record a blocker if:
   Live proof after stack restart returned required fields
   `action_id,target_card_id,decision,source_trace_clear,blocked_claims_reviewed,notes`
   and `follow_up_beads` as the blocking follow-up rule.
+- 2026-07-02: The `wilq-content-operator` UAT markdown packet now renders those
+  Service Profile review requirements next to public/private review actions, so
+  Wilku can see the required review fields without opening JSON.
 - 2026-07-02: `wilq-content-operator` non-interactive eval now fails unless
   the actionable output includes Service Profile `review_requirements`,
   `source_trace_clear`, `blocked_claims_reviewed` and `follow_up_beads`.
