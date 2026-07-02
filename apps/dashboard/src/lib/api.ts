@@ -57,6 +57,7 @@ import {
   TacticalQueueResponseSchema,
   WorkflowRunSchema,
   WorkflowSchema,
+  WordPressAuthoringProfileSchema,
   type ActionObject,
   type ActionConfirmRequest,
   type ActionConfirmResult,
@@ -127,7 +128,8 @@ import {
   type SocialPublisherContextPack,
   type TacticalQueueResponse,
   type Workflow,
-  type WorkflowRun
+  type WorkflowRun,
+  type WordPressAuthoringProfile
 } from "@wilq/shared-schemas";
 import { z } from "zod";
 
@@ -220,6 +222,10 @@ export function getSocialPublisherContextPack(): Promise<SocialPublisherContextP
 
 export function getSocialHistoryInventory(): Promise<SocialHistoryInventory> {
   return apiGet("/api/social/history-inventory", SocialHistoryInventorySchema);
+}
+
+export function getWordPressAuthoringProfile(): Promise<WordPressAuthoringProfile> {
+  return apiGet("/api/content/wordpress/authoring-profile", WordPressAuthoringProfileSchema);
 }
 
 export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
@@ -606,5 +612,6 @@ export type {
   SocialPublisherContextPack,
   TacticalQueueResponse,
   Workflow,
-  WorkflowRun
+  WorkflowRun,
+  WordPressAuthoringProfile
 };

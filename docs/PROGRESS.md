@@ -242,6 +242,13 @@ live API status later contradicts this state.
   `elementy` repeater empty instead of pretending a flat text value is safe, and
   still requires the normal WordPress draft-only review/audit path before any
   write.
+- `/content-workflow` now renders WordPress authoring readiness directly from
+  `/api/content/wordpress/authoring-profile`: REST status, ACF layout discovery,
+  read-only WP-CLI fallback and publish/write blockers. Live proof on
+  2026-07-02 showed `rest=configured`, `wp_cli=configured`, 21 ACF sections,
+  `publish_allowed=false` and `external_write_attempted=false`; the dashboard
+  panel says no external write happened and every WordPress write still requires
+  review, preview, human decision and audit.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with

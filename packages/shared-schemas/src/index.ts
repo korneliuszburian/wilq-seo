@@ -3351,6 +3351,94 @@ export const SocialHistoryInventorySchema = z.object({
   operator_next_step: z.string()
 });
 
+const WordPressAuthoringReadinessSchema = z.enum([
+  "available",
+  "configured",
+  "not_configured",
+  "missing",
+  "blocked",
+  "unknown"
+]);
+
+const WordPressAuthoringDiscoveryMethodSchema = z.enum([
+  "rest",
+  "acf_rest",
+  "acf_export",
+  "wp_cli",
+  "helper",
+  "env_config"
+]);
+
+export const WordPressAuthoringProfileSchema = z.object({
+  profile_version: z.literal("wordpress_authoring_profile_v1"),
+  connector: z.string(),
+  site_kind: z.string(),
+  authoring_target: z.string(),
+  discovery_mode: z.string(),
+  discovery_order: z.array(WordPressAuthoringDiscoveryMethodSchema),
+  rest_api: z.object({
+    method: z.literal("rest"),
+    status: WordPressAuthoringReadinessSchema,
+    base_url_configured: z.boolean(),
+    auth_configured: z.boolean(),
+    public_url_configured: z.boolean(),
+    post_types: z.array(z.string())
+  }),
+  acf: z.object({
+    enabled_state: z.enum(["enabled", "disabled", "unknown"]),
+    rest_enabled_state: z.enum(["enabled", "disabled", "unknown"]),
+    flexible_content_field_name: z.string().nullable().optional(),
+    post_types: z.array(z.string()),
+    layouts: z.array(
+      z.object({
+        name: z.string(),
+        label: z.string(),
+        fields: z.array(z.record(z.string(), z.unknown())),
+        source_method: WordPressAuthoringDiscoveryMethodSchema,
+        required_field_names: z.array(z.string()),
+        optional_field_names: z.array(z.string())
+      })
+    ),
+    source_method: WordPressAuthoringDiscoveryMethodSchema.nullable().optional(),
+    layouts_discovered: z.boolean()
+  }),
+  wp_cli: z.object({
+    method: z.literal("wp_cli"),
+    status: WordPressAuthoringReadinessSchema,
+    configured: z.boolean(),
+    missing_env: z.array(z.string()),
+    source_refs: z.array(z.string())
+  }),
+  helper_plugin: z.object({
+    method: z.literal("helper"),
+    status: WordPressAuthoringReadinessSchema,
+    configured: z.boolean(),
+    missing_env: z.array(z.string()),
+    source_refs: z.array(z.string())
+  }),
+  write_boundary: z.object({
+    allowed_operation: z.literal("create_wordpress_draft"),
+    direct_vendor_write_allowed: z.literal(false),
+    draft_writes_enabled_by_env: z.boolean(),
+    live_write_enabled: z.literal(false),
+    publish_allowed: z.literal(false),
+    destructive_update_allowed: z.literal(false),
+    external_write_attempted: z.literal(false),
+    required_action_contract: z.literal("actionobject_validate_preview_review_confirm_audit")
+  }),
+  discovery_facts: z.array(z.record(z.string(), z.unknown())),
+  blockers: z.array(
+    z.object({
+      code: z.string(),
+      label: z.string(),
+      reason: z.string(),
+      next_step: z.string()
+    })
+  ),
+  evidence_ids: z.array(z.string()),
+  source_connectors: z.array(z.string())
+});
+
 export const SocialDraftContextSchema = z.object({
   mode: z.literal("review_only"),
   publish_allowed: z.literal(false),
@@ -3488,6 +3576,7 @@ export type DemandGenReadinessContract = z.infer<typeof DemandGenReadinessContra
 export type SocialHistoryInventorySource = z.infer<typeof SocialHistoryInventorySourceSchema>;
 export type SocialHistoryDiscoverySeed = z.infer<typeof SocialHistoryDiscoverySeedSchema>;
 export type SocialHistoryInventory = z.infer<typeof SocialHistoryInventorySchema>;
+export type WordPressAuthoringProfile = z.infer<typeof WordPressAuthoringProfileSchema>;
 export type SocialDraftContext = z.infer<typeof SocialDraftContextSchema>;
 export type SocialPublisherContextPack = z.infer<typeof SocialPublisherContextPackSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;

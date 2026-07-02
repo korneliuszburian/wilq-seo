@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
+  getWordPressAuthoringProfile,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   postContentWorkItemQualityReview,
@@ -28,7 +29,8 @@ import {
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentOpportunityEnrichment,
-  type ContentOpportunityEnrichmentResponse
+  type ContentOpportunityEnrichmentResponse,
+  type WordPressAuthoringProfile
 } from "../lib/api";
 import {
   buildWorkflowSteps,
@@ -57,6 +59,7 @@ type ContentOpportunityEnrichmentQuery = UseQueryResult<
   ContentOpportunityEnrichmentResponse,
   Error
 >;
+type WordPressAuthoringProfileQuery = UseQueryResult<WordPressAuthoringProfile, Error>;
 
 export function ContentWorkflowSurface() {
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | null>(null);
@@ -84,10 +87,15 @@ export function ContentWorkflowSurface() {
     queryFn: () => getContentWorkItemEnrichment(activeWorkItemId ?? ""),
     enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked)
   });
+  const authoringProfile = useQuery({
+    queryKey: ["content-workflow", "wordpress-authoring-profile"],
+    queryFn: getWordPressAuthoringProfile
+  });
 
   return (
     <ContentWorkflowRouteState
       activeWorkItemId={activeWorkItemId}
+      authoringProfile={authoringProfile}
       enrichment={enrichment}
       queue={queue}
       selectedCandidate={selectedCandidate}
@@ -99,6 +107,7 @@ export function ContentWorkflowSurface() {
 
 function ContentWorkflowRouteState({
   activeWorkItemId,
+  authoringProfile,
   enrichment,
   queue,
   selectedCandidate,
@@ -106,6 +115,7 @@ function ContentWorkflowRouteState({
   onSelectWorkItem
 }: {
   activeWorkItemId: string | null;
+  authoringProfile: WordPressAuthoringProfileQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueQuery;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
@@ -117,6 +127,7 @@ function ContentWorkflowRouteState({
   return (
     <ContentWorkflowQueueReady
       activeWorkItemId={activeWorkItemId}
+      authoringProfile={authoringProfile}
       enrichment={enrichment}
       queue={queue.data}
       selectedCandidate={selectedCandidate}
@@ -128,6 +139,7 @@ function ContentWorkflowRouteState({
 
 function ContentWorkflowQueueReady({
   activeWorkItemId,
+  authoringProfile,
   enrichment,
   queue,
   selectedCandidate,
@@ -135,6 +147,7 @@ function ContentWorkflowQueueReady({
   onSelectWorkItem
 }: {
   activeWorkItemId: string | null;
+  authoringProfile: WordPressAuthoringProfileQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
@@ -155,6 +168,7 @@ function ContentWorkflowQueueReady({
   return (
     <ContentWorkflowSelectedReady
       activeWorkItemId={activeWorkItemId}
+      authoringProfile={authoringProfile}
       enrichment={enrichment}
       queue={queue}
       workflow={workflow}
@@ -165,12 +179,14 @@ function ContentWorkflowQueueReady({
 
 function ContentWorkflowSelectedReady({
   activeWorkItemId,
+  authoringProfile,
   enrichment,
   queue,
   workflow,
   onSelectWorkItem
 }: {
   activeWorkItemId: string;
+  authoringProfile: WordPressAuthoringProfileQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
   workflow: ContentWorkflowSnapshotQuery;
@@ -181,6 +197,7 @@ function ContentWorkflowSelectedReady({
   return (
     <ContentWorkflowLoaded
       data={workflow.data}
+      authoringProfile={authoringProfile}
       enrichment={enrichment.data?.enrichment ?? null}
       queue={queue}
       selectedWorkItemId={activeWorkItemId}
@@ -201,12 +218,14 @@ function ContentWorkflowError() {
 
 function ContentWorkflowLoaded({
   data,
+  authoringProfile,
   enrichment,
   queue,
   selectedWorkItemId,
   onSelectWorkItem
 }: {
   data: ContentWorkflowSnapshot;
+  authoringProfile: WordPressAuthoringProfileQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
   selectedWorkItemId: string;
@@ -229,6 +248,7 @@ function ContentWorkflowLoaded({
         onSelectWorkItem={onSelectWorkItem}
       />
       <WorkflowProofSummary data={data} />
+      <WordPressAuthoringReadinessPanel authoringProfile={authoringProfile} />
       <ClaimLedgerGatePanel data={data} />
       <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
       <WorkflowStepsList steps={steps} />
@@ -284,7 +304,7 @@ function ContentWorkflowTodayPanel({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-          <FactTile label="Kandydaci" value={`${queue.candidate_count}`} />
+          <FactTile label="Propozycje" value={`${queue.candidate_count}`} />
           <FactTile label="Gotowe" value={`${queue.actionable_candidate_count}`} />
           <FactTile label="Dowody" value={`${unique(item.evidence_ids).length}`} />
           <FactTile label="Etapy zablokowane" value={`${blockedSteps.length}`} />
@@ -502,7 +522,7 @@ function ContentCandidateQueuePanel({
           </p>
         </div>
         <div className="grid gap-2 text-sm sm:grid-cols-2">
-          <FactTile label="Kandydaci" value={`${queue.candidate_count}`} />
+          <FactTile label="Propozycje" value={`${queue.candidate_count}`} />
           <FactTile label="Gotowe do pracy" value={`${queue.actionable_candidate_count}`} />
         </div>
       </div>
@@ -740,6 +760,87 @@ function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
           <FactTile label="Tryb" value={data.preflight.preflight_verdict.recommended_mode} />
           <FactTile label="Jakość briefu" value={signalQuality?.status_label ?? "brief zablokowany"} />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function WordPressAuthoringReadinessPanel({
+  authoringProfile
+}: {
+  authoringProfile: WordPressAuthoringProfileQuery;
+}) {
+  if (authoringProfile.isLoading) {
+    return (
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+          WordPress: sprawdzanie trybu szkicu
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          WILQ odczytuje gotowość REST/ACF/WP-CLI bez wykonywania zapisu.
+        </p>
+      </section>
+    );
+  }
+  if (authoringProfile.error || !authoringProfile.data) {
+    return (
+      <section className="mb-6 rounded-md border border-wait/30 bg-wait/10 p-4">
+        <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
+          WordPress: brak odczytu gotowości szkicu
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          WILQ nie pokazuje gotowości WordPress bez API. Nie próbuj przekazywać
+          szkicu poza ścieżką review i audytu.
+        </p>
+      </section>
+    );
+  }
+  const profile = authoringProfile.data;
+  const layoutLabel = profile.acf.layouts_discovered
+    ? `${profile.acf.layouts.length} sekcji ACF rozpoznanych`
+    : "brak rozpoznanych sekcji ACF";
+  const blocker = profile.blockers[0] ?? null;
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            WordPress: szkic bez publikacji
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ rozpoznaje techniczny tor przekazania treści do WordPress, ale
+            nie wykonuje zapisu i nie publikuje. Każdy zapis nadal wymaga
+            sprawdzenia, podglądu, decyzji człowieka i audytu.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+          <FactTile label="REST" value={authoringReadinessLabel(profile.rest_api.status)} />
+          <FactTile label="ACF" value={layoutLabel} />
+          <FactTile label="WP-CLI" value={authoringReadinessLabel(profile.wp_cli.status)} />
+          <FactTile label="Publikacja" value="zablokowana" />
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <SafetyPanel
+          icon={<Stamp aria-hidden="true" size={18} />}
+          title="Zapis zewnętrzny"
+          text="Ten odczyt nie wykonał żadnego zapisu zewnętrznego."
+        />
+        <SafetyPanel
+          icon={<ShieldCheck aria-hidden="true" size={18} />}
+          title="Tryb WordPress"
+          text="Bezpośredni zapis do WordPress jest zablokowany poza ścieżką sprawdzenia w WILQ."
+        />
+        <SafetyPanel
+          icon={<FileText aria-hidden="true" size={18} />}
+          title="Najbliższy blok"
+          text={
+            blocker
+              ? `${blocker.reason} Następny krok: ${blocker.next_step}`
+              : "Brak blokad authoringu; nadal obowiązuje draft-only review i audyt przed zapisem."
+          }
+        />
       </div>
     </section>
   );
@@ -1426,6 +1527,15 @@ function measurementSafetyText(
 ) {
   if (!window) return "Brak okna pomiaru blokuje jakiekolwiek wnioski o efekcie treści.";
   return `Pierwsza ocena po ${window.earliest_verdict_date}. Do tego czasu WILQ zbiera dane, ale nie claimuje sukcesu ani porażki.`;
+}
+
+function authoringReadinessLabel(status: string) {
+  if (status === "configured") return "skonfigurowane";
+  if (status === "available") return "dostępne";
+  if (status === "not_configured") return "nieustawione";
+  if (status === "missing") return "brakuje danych";
+  if (status === "blocked") return "zablokowane";
+  return "do sprawdzenia";
 }
 
 function reviewControlDisabledReason(

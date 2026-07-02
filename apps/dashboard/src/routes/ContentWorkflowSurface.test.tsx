@@ -5,6 +5,7 @@ import {
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
+  getWordPressAuthoringProfile,
   postContentWorkItemQualityReview,
   postContentWorkItemRevisionPlan,
   postContentWorkItemStructuredDraftPreview,
@@ -19,7 +20,8 @@ import {
   type ContentWorkItemStructuredDraftPreviewResponse,
   type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
-  type ContentWorkItemWorkflowSnapshotResponse
+  type ContentWorkItemWorkflowSnapshotResponse,
+  type WordPressAuthoringProfile
 } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
@@ -31,6 +33,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
+    getWordPressAuthoringProfile: vi.fn(),
     postContentWorkItemQualityReview: vi.fn(),
     postContentWorkItemRevisionPlan: vi.fn(),
     postContentWorkItemStructuredDraftPreview: vi.fn(),
@@ -46,6 +49,7 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(getWordPressAuthoringProfile).mockResolvedValue(wordpressAuthoringProfile());
     vi.mocked(postContentWorkItemQualityReview).mockResolvedValue(qualityReviewResponse());
     vi.mocked(postContentWorkItemRevisionPlan).mockResolvedValue(revisionPlanResponse());
     vi.mocked(saveContentWorkItemSnapshotHumanReview).mockResolvedValue(
@@ -122,6 +126,17 @@ describe("ContentWorkflowSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText("Ograniczenia wiedzy i dowody")).toBeInTheDocument();
     expect(screen.getByText(/ev_content_service_profile_source_facts/)).toBeInTheDocument();
+    expect(await screen.findByText("WordPress: szkic bez publikacji")).toBeInTheDocument();
+    expect(screen.getByText(/nie wykonuje zapisu i nie publikuje/)).toBeInTheDocument();
+    expect(screen.getByText("21 sekcji ACF rozpoznanych")).toBeInTheDocument();
+    expect(screen.getByText("WP-CLI")).toBeInTheDocument();
+    expect(screen.getAllByText("skonfigurowane").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Publikacja")).toBeInTheDocument();
+    expect(screen.getAllByText("zablokowana").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ten odczyt nie wykonał żadnego zapisu zewnętrznego."))
+      .toBeInTheDocument();
+    expect(screen.getByText(/Bezpośredni zapis do WordPress jest zablokowany/))
+      .toBeInTheDocument();
     expect(screen.getByText("Claim Ledger: co wolno powiedzieć")).toBeInTheDocument();
     expect(screen.getAllByText("Do szkicu")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Wymaga review")[0]).toBeInTheDocument();
@@ -1259,6 +1274,69 @@ function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecuti
       external_write_attempted: false,
       blockers: []
     }
+  };
+}
+
+function wordpressAuthoringProfile(): WordPressAuthoringProfile {
+  return {
+    profile_version: "wordpress_authoring_profile_v1",
+    connector: "wordpress_ekologus",
+    site_kind: "primary",
+    authoring_target: "staging",
+    discovery_mode: "rest_first",
+    discovery_order: ["rest", "acf_rest", "wp_cli", "helper"],
+    rest_api: {
+      method: "rest",
+      status: "configured",
+      base_url_configured: true,
+      auth_configured: true,
+      public_url_configured: true,
+      post_types: ["page", "post"]
+    },
+    acf: {
+      enabled_state: "unknown",
+      rest_enabled_state: "unknown",
+      flexible_content_field_name: null,
+      post_types: ["page", "post"],
+      layouts: Array.from({ length: 21 }, (_, index) => ({
+        name: index === 0 ? "podstrona" : `layout_${index}`,
+        label: index === 0 ? "Podstrona" : `Layout ${index}`,
+        fields: [],
+        source_method: "acf_export",
+        required_field_names: [],
+        optional_field_names: ["tytul", "glowny_opis"]
+      })),
+      source_method: "acf_export",
+      layouts_discovered: true
+    },
+    wp_cli: {
+      method: "wp_cli",
+      status: "configured",
+      configured: true,
+      missing_env: [],
+      source_refs: ["WORDPRESS_EKOLOGUS_WP_CLI_PATH"]
+    },
+    helper_plugin: {
+      method: "helper",
+      status: "not_configured",
+      configured: false,
+      missing_env: ["WORDPRESS_EKOLOGUS_HELPER_URL"],
+      source_refs: []
+    },
+    write_boundary: {
+      allowed_operation: "create_wordpress_draft",
+      direct_vendor_write_allowed: false,
+      draft_writes_enabled_by_env: false,
+      live_write_enabled: false,
+      publish_allowed: false,
+      destructive_update_allowed: false,
+      external_write_attempted: false,
+      required_action_contract: "actionobject_validate_preview_review_confirm_audit"
+    },
+    discovery_facts: [],
+    blockers: [],
+    evidence_ids: ["ev_connector_wordpress_ekologus_status"],
+    source_connectors: ["wordpress_ekologus"]
   };
 }
 

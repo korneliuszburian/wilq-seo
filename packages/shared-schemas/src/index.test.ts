@@ -35,7 +35,8 @@ import {
   ContentPreflightResponseSchema,
   MerchantDiagnosticsResponseSchema,
   SocialHistoryInventorySchema,
-  SocialHistoryInventorySourceSchema
+  SocialHistoryInventorySourceSchema,
+  WordPressAuthoringProfileSchema
 } from "./index";
 
 describe("ActionObjectSchema", () => {
@@ -146,6 +147,84 @@ describe("SocialHistoryInventorySchema", () => {
             raw_post_body_allowed: true
           }
         ]
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("WordPressAuthoringProfileSchema", () => {
+  it("keeps WordPress authoring draft-only", () => {
+    const validProfile = {
+      profile_version: "wordpress_authoring_profile_v1",
+      connector: "wordpress_ekologus",
+      site_kind: "primary",
+      authoring_target: "staging",
+      discovery_mode: "rest_first",
+      discovery_order: ["rest", "acf_rest", "wp_cli", "helper"],
+      rest_api: {
+        method: "rest",
+        status: "configured",
+        base_url_configured: true,
+        auth_configured: true,
+        public_url_configured: true,
+        post_types: ["page", "post"]
+      },
+      acf: {
+        enabled_state: "unknown",
+        rest_enabled_state: "unknown",
+        flexible_content_field_name: null,
+        post_types: ["page", "post"],
+        layouts: [
+          {
+            name: "podstrona",
+            label: "Podstrona",
+            fields: [],
+            source_method: "acf_export",
+            required_field_names: [],
+            optional_field_names: ["tytul", "glowny_opis"]
+          }
+        ],
+        source_method: "acf_export",
+        layouts_discovered: true
+      },
+      wp_cli: {
+        method: "wp_cli",
+        status: "configured",
+        configured: true,
+        missing_env: [],
+        source_refs: ["WORDPRESS_EKOLOGUS_WP_CLI_PATH"]
+      },
+      helper_plugin: {
+        method: "helper",
+        status: "not_configured",
+        configured: false,
+        missing_env: ["WORDPRESS_EKOLOGUS_HELPER_URL"],
+        source_refs: []
+      },
+      write_boundary: {
+        allowed_operation: "create_wordpress_draft",
+        direct_vendor_write_allowed: false,
+        draft_writes_enabled_by_env: false,
+        live_write_enabled: false,
+        publish_allowed: false,
+        destructive_update_allowed: false,
+        external_write_attempted: false,
+        required_action_contract: "actionobject_validate_preview_review_confirm_audit"
+      },
+      discovery_facts: [],
+      blockers: [],
+      evidence_ids: ["ev_connector_wordpress_ekologus_status"],
+      source_connectors: ["wordpress_ekologus"]
+    };
+
+    expect(WordPressAuthoringProfileSchema.safeParse(validProfile).success).toBe(true);
+    expect(
+      WordPressAuthoringProfileSchema.safeParse({
+        ...validProfile,
+        write_boundary: {
+          ...validProfile.write_boundary,
+          publish_allowed: true
+        }
       }).success
     ).toBe(false);
   });
