@@ -28,8 +28,11 @@ Najkrótszy stan:
 
 - dashboard usefulness: 13 powierzchni `demo_ready`, 2 `review_ready`
   (Demand Gen i social), 0 zablokowanych;
-- wiedza Ekologus: 12 source facts, 5 prywatnych propozycji `ekologus-ai`,
-  0% production-depth, wszystko nadal review-required;
+- `/content-workflow` ma też sprawdzony authoring WordPress/ACF:
+  REST `configured`, WP-CLI `configured`, 21 sekcji ACF rozpoznanych,
+  zapis i publikacja zablokowane;
+- wiedza Ekologus: 14 source facts, 5 prywatnych propozycji `ekologus-ai`,
+  14 akcji review, 0% production-depth, wszystko nadal review-required;
 - Claim Ledger: 13/13 checków, model nie może oznaczyć treści jako gotowej do
   publikacji;
 - evale skilli: 13/13 operator skills przeszło deterministic smoke i
@@ -97,6 +100,9 @@ Podział:
   Builder i Custom Segments są gotowe jako review-operacje;
 - Content Operator blokuje finalną treść, dopóki nie ma Service Profile, Claim
   Ledger, human review i measurement window;
+- Content Operator potrafi już pokazać podgląd WordPress/ACF jako dry-run:
+  8 propozycji wierszy `elementy`, pierwsza do ręcznego przeglądu, pola
+  `tresc`, `opis`, `podtytul`, `tytul`, bez publikacji i bez zapisu;
 - Demand Gen blokuje rekomendację, bo WILQ widzi 18 kampanii Ads, ale 0
   kampanii Demand Gen, reklam, kreacji i stron wejścia DG;
 - Social Publisher blokuje publikację i "brak powtórek", bo brakuje

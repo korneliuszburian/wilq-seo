@@ -399,7 +399,7 @@ live API status later contradicts this state.
   `/content-workflow` becomes blocked in the readiness report.
 - Source fact / Service Profile coverage is now auditable as a concise Wilku
   readiness report through `scripts/source_fact_coverage_audit.py`. Proof on
-  2026-07-02: 12 source facts, 13 review actions, 5 private `ekologus-ai`
+  2026-07-02: 14 source facts, 14 review actions, 5 private `ekologus-ai`
   proposals requiring review, 0% production-depth service readiness, 0%
   approved source facts and `ready_for_daily_content=false`. The next review
   order is claim policy first, then evidence policy, then private service
