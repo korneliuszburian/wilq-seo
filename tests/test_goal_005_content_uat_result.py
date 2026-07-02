@@ -74,7 +74,8 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     ]
     assert report["missing_recommended_review_artifacts"] == [
         "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md"
+        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+        "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
     ]
     assert "Nie promuje private proposals" in report["safety_note"]
     assert "nie odblokowuje publikacji" in report["safety_note"]
@@ -87,6 +88,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert "dopasowanie CTA 3/5" in markdown
     assert "2026-07-02-wilq-marketing-content-model.md" in markdown
     assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
+    assert "2026-07-02-wilku-ekologus-ai-policy-review.md" in markdown
 
 
 def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() -> None:
@@ -206,18 +208,8 @@ def test_content_uat_result_has_no_warning_when_plain_show_guide_was_shown() -> 
         "czas_do_zrozumienia_statusu": "7 minut",
         "punkty_niezrozumienia": "Prosty przewodnik pomógł odczytać techniczne handoffy.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
-        "pokazane_materialy_review": [
-            "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-            "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-            "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-        ],
-        "oceny_materialow_review": _scorecard(
-            [
-                "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-                "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-                "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-            ]
-        ),
+        "pokazane_materialy_review": RECOMMENDED_REVIEW_ARTIFACTS,
+        "oceny_materialow_review": _scorecard(RECOMMENDED_REVIEW_ARTIFACTS),
         "pytania_skad_to_wzielo": "Źródła były czytelne.",
         "miejsca_generyczne_off_brand": "Brak nowych uwag.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonej karty usługi.",

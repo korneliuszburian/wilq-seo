@@ -13,6 +13,13 @@ from scripts.goal_005_completion_check import (
     validate_owner_defer,
 )
 
+FULL_REVIEW_ARTIFACTS = [
+    "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
+    "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+    "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
+]
+
 
 def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     report = build_completion_report()
@@ -266,6 +273,10 @@ def test_goal_005_completion_check_blocks_ready_uat_without_plain_review_model(
         for detail in report["details"]
     )
     assert any("2026-07-02-co-pokazac-wilkowi.md" in detail for detail in report["details"])
+    assert any(
+        "2026-07-02-wilku-ekologus-ai-policy-review.md" in detail
+        for detail in report["details"]
+    )
 
 
 def test_goal_005_completion_check_blocks_ready_uat_with_scorecard_follow_up(
@@ -282,17 +293,9 @@ def test_goal_005_completion_check_blocks_ready_uat_with_scorecard_follow_up(
                 "wybrany_work_item": (
                     "content_work_item_content_decision_https___www_ekologus_pl"
                 ),
-                "pokazane_materialy_review": [
-                    "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-                    "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-                    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-                ],
+                "pokazane_materialy_review": FULL_REVIEW_ARTIFACTS,
                 "oceny_materialow_review": _scorecard(
-                    [
-                        "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-                        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-                        "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-                    ],
+                    FULL_REVIEW_ARTIFACTS,
                     decision="zatwierdź",
                     cta_score=3,
                 ),
@@ -373,17 +376,9 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
                 "wybrany_work_item": (
                     "content_work_item_content_decision_https___www_ekologus_pl"
                 ),
-                "pokazane_materialy_review": [
-                    "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-                    "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-                    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
-                ],
+                "pokazane_materialy_review": FULL_REVIEW_ARTIFACTS,
                 "oceny_materialow_review": _scorecard(
-                    [
-                        "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-                        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-                        "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-                    ],
+                    FULL_REVIEW_ARTIFACTS,
                     decision="zatwierdź",
                     cta_score=4,
                 ),
@@ -410,11 +405,7 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
     assert report["selected_work_item"] == (
         "content_work_item_content_decision_https___www_ekologus_pl"
     )
-    assert report["shown_review_artifacts"] == [
-        "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-        "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
-    ]
+    assert report["shown_review_artifacts"] == FULL_REVIEW_ARTIFACTS
 
     markdown = render_markdown(report)
     assert "# Sprawdzenie domknięcia Goal 005" in markdown

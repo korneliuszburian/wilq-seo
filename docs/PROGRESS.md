@@ -118,6 +118,10 @@ live API status later contradicts this state.
   service/policy and allowed decision options. The report still blocks
   completion without real UAT/defer, but now says exactly what Wilku should
   review next.
+- Goal 005 UAT input now recommends the full review set before any completion
+  claim: WILQ model, plain "co pokazać Wilkowi" guide, BDO review artifact and
+  `ekologus-ai` policy review artifact. The fillable scorecard is generated for
+  all four materials, so a shallow UAT cannot accidentally pass as complete.
 - Pre-demo gate proof after the latest Goal 005 slices:
   `rtk scripts/pre_demo_gate.sh` passed on 2026-07-02. It verified the managed
   local stack, API health, live contracts, dashboard usefulness, source fact

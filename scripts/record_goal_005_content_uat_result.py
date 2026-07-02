@@ -37,6 +37,8 @@ REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
 RECOMMENDED_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+    "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
 ]
 REVIEW_SCORECARD_DECISIONS = {"zatwierdź", "popraw", "odrzuć", "odśwież"}
 REVIEW_SCORECARD_SCORE_FIELDS = {
