@@ -82,7 +82,7 @@ def build_completion_report(
 
     if uat_result is not None:
         uat_report = validate_uat_result(uat_result, api_base=api_base)
-        if uat_report["valid"]:
+        if uat_report["valid"] and uat_report["overall_status"] == "ready_for_full_content_uat":
             return {
                 "status": "complete_with_uat",
                 "proof_type": "real_wilku_content_uat",
@@ -96,6 +96,15 @@ def build_completion_report(
                 ),
                 "blocked_claims": [],
             }
+        if uat_report["valid"]:
+            return blocked_report(
+                "goal_005_uat_ready_for_full_content_uat",
+                [
+                    "UAT result is valid, but it is not ready for Goal 005 completion.",
+                    f"UAT status: {uat_report['overall_status']}",
+                    "Use this as follow-up evidence, or provide explicit owner defer.",
+                ],
+            )
         return blocked_report("valid_goal_005_uat_result", uat_report["errors"])
 
     if owner_defer is not None:

@@ -19,7 +19,9 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Service Profile" in report["safe_scope"]
 
 
-def test_goal_005_completion_check_accepts_uat_result(tmp_path: Path) -> None:
+def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
+    tmp_path: Path,
+) -> None:
     result_path = tmp_path / "goal-005-uat-result.json"
     result_path.write_text(
         json.dumps(
@@ -46,6 +48,45 @@ def test_goal_005_completion_check_accepts_uat_result(tmp_path: Path) -> None:
                 "private_policy_review_actions_czytelne": "tak",
                 "mozna_przejsc_do_pelnego_content_uat": "nie",
                 "follow_up_beads": ["wilq-seo-next: realny follow-up po sesji"],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_completion_report(uat_result=result_path)
+
+    assert report["status"] == "blocked_missing_goal_005_uat_proof"
+    assert report["missing_input"] == "goal_005_uat_ready_for_full_content_uat"
+    assert any("needs_follow_up_before_full_content_uat" in detail for detail in report["details"])
+    assert "realny dowód użyteczności dla Wilka" in report["blocked_claims"]
+
+
+def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> None:
+    result_path = tmp_path / "goal-005-uat-result.json"
+    result_path.write_text(
+        json.dumps(
+            {
+                "data_sesji": "2026-07-02",
+                "osoba": "Wilku",
+                "czas_do_zrozumienia_statusu": "8 minut",
+                "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
+                "wybrany_work_item": (
+                    "content_work_item_content_decision_https___www_ekologus_pl"
+                ),
+                "pokazane_materialy_review": [
+                    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
+                ],
+                "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+                "miejsca_generyczne_off_brand": "Nie znaleziono krytycznych miejsc.",
+                "najwiekszy_brak_produktu": "Brak dalszych blokad dla tego testu.",
+                "wilku_rozumie_blokady_pelnego_uat": "tak",
+                "service_profile_czytelny": "tak",
+                "public_service_review_actions_czytelne": "tak",
+                "private_review_actions_czytelne": "tak",
+                "private_policy_review_actions_czytelne": "tak",
+                "mozna_przejsc_do_pelnego_content_uat": "tak",
+                "follow_up_beads": [],
             },
             ensure_ascii=False,
         ),

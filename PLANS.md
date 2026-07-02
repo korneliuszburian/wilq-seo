@@ -962,6 +962,10 @@ Stop and record a blocker if:
   soft postponement. It must name the exact blocked claims for Goal 005
   completion, Wilku usefulness proof, production-depth readiness and final
   draft/publish readiness before the completion guard accepts it.
+- 2026-07-02: Goal 005 completion guard now treats a valid but follow-up-needed
+  UAT result as evidence, not completion. `complete_with_uat` requires
+  `ready_for_full_content_uat`; otherwise the guard stays blocked unless the
+  owner records an explicit defer with residual risk.
 - 2026-07-02: Repository audit follow-up `wilq-seo-ecb4` reached its scoped
   remediation line: encoded dashboard action paths, failure-honest connector
   refresh/job persistence, explicit connector/surface scope labels and small

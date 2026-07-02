@@ -189,6 +189,12 @@ API status later contradicts this state.
   `realny dowód użyteczności dla Wilka`, `production-depth readiness` and
   `gotowość finalnego draftu albo publikacji`. A generic or softer
   `czego_nie_wolno_twierdzic` list no longer passes the guard.
+- Goal 005 UAT-result proof now distinguishes a valid session record from a
+  completion-ready session. A result with
+  `needs_follow_up_before_full_content_uat` remains valid evidence, but
+  `scripts/goal_005_completion_check.py` returns blocked status and exit code
+  `1` until the UAT status is `ready_for_full_content_uat` or the owner records
+  an explicit defer.
 - Runtime import audit follow-up on 2026-07-02 found that `wilq/credentials`
   existed locally but was ignored by `.gitignore`, which explained the
   GitHub-visible `wilq.credentials.runtime` 404 risk. The package is now
