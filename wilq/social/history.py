@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections import Counter
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from wilq.schemas import ConnectorStatus
 
@@ -26,6 +27,20 @@ SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS = [
     "format",
     "post_url_or_id",
     "source_evidence_id",
+]
+SOCIAL_HISTORY_FORBIDDEN_METADATA_FIELDS = [
+    "raw_post_body",
+    "post_body",
+    "body",
+    "content",
+    "text",
+    "comments",
+    "comment_text",
+    "comment_author",
+    "author_email",
+    "user_id",
+    "profile_id",
+    "access_token",
 ]
 
 
@@ -121,3 +136,169 @@ def build_social_history_inventory(
             )
         )
     return SocialHistoryInventory(sources=sources)
+
+
+class SocialHistoryMetadataRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    channel: SocialHistoryChannel
+    published_at: str
+    topic: str
+    service: str
+    claim: str
+    cta: str
+    format: str
+    post_url_or_id: str
+    source_evidence_id: str
+
+    @field_validator(
+        "published_at",
+        "topic",
+        "service",
+        "claim",
+        "cta",
+        "format",
+        "post_url_or_id",
+        "source_evidence_id",
+    )
+    @classmethod
+    def _non_blank(cls, value: str) -> str:
+        text = value.strip()
+        if not text or text.startswith("<") or text in {"-", "TODO", "todo"}:
+            raise ValueError("field must be filled with reviewed metadata")
+        return text
+
+
+class SocialHistoryImportAudit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    contract: Literal["social_history_inventory_v1"] = "social_history_inventory_v1"
+    read_only: Literal[True] = True
+    status: Literal["invalid", "review_ready"]
+    item_count: int
+    channel_counts: dict[str, int]
+    missing_required_sources: list[SocialHistoryChannel]
+    required_metadata_fields: list[str] = Field(
+        default_factory=lambda: list(SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS)
+    )
+    forbidden_metadata_fields: list[str] = Field(
+        default_factory=lambda: list(SOCIAL_HISTORY_FORBIDDEN_METADATA_FIELDS)
+    )
+    errors: list[str]
+    duplicate_free_claim_allowed: Literal[False] = False
+    publish_allowed: Literal[False] = False
+    operator_next_step: str
+
+
+def audit_social_history_metadata_payload(payload: object) -> SocialHistoryImportAudit:
+    if not isinstance(payload, dict):
+        return _invalid_social_history_import(["Root JSON must be an object"], item_count=0)
+    items = payload.get("items")
+    if not isinstance(items, list):
+        return _invalid_social_history_import(["Field `items` must be a list"], item_count=0)
+
+    errors: list[str] = []
+    records: list[SocialHistoryMetadataRecord] = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            errors.append(f"Item #{index}: must be an object")
+            continue
+        forbidden_fields = [
+            field for field in SOCIAL_HISTORY_FORBIDDEN_METADATA_FIELDS if field in item
+        ]
+        if forbidden_fields:
+            errors.append(
+                f"Item #{index}: forbidden raw/private fields: "
+                + ", ".join(forbidden_fields)
+            )
+            continue
+        try:
+            records.append(SocialHistoryMetadataRecord.model_validate(item))
+        except ValidationError as error:
+            for validation_error in error.errors():
+                location = ".".join(str(part) for part in validation_error.get("loc", ()))
+                message = str(validation_error.get("msg") or "invalid value")
+                errors.append(f"Item #{index}: {location}: {message}")
+
+    counts = Counter(record.channel for record in records)
+    missing_sources: list[SocialHistoryChannel] = [
+        channel for channel in SOCIAL_HISTORY_REQUIRED_SOURCES if counts[channel] == 0
+    ]
+    if missing_sources:
+        errors.append(
+            "Missing required social history sources: " + ", ".join(missing_sources)
+        )
+    status: Literal["invalid", "review_ready"] = "invalid" if errors else "review_ready"
+    return SocialHistoryImportAudit(
+        status=status,
+        item_count=len(records),
+        channel_counts=dict(sorted(counts.items())),
+        missing_required_sources=missing_sources,
+        errors=errors,
+        operator_next_step=_social_history_import_next_step(status),
+    )
+
+
+def social_history_input_example() -> dict[str, object]:
+    return {
+        "contract": "social_history_inventory_v1",
+        "collected_at": "<YYYY-MM-DD>",
+        "reviewer": "<Wilku albo owner>",
+        "items": [
+            {
+                "channel": "linkedin",
+                "published_at": "2026-01-15",
+                "topic": "BDO i sprawozdawczość środowiskowa",
+                "service": "BDO",
+                "claim": "Ekologus pomaga uporządkować obowiązki BDO",
+                "cta": "kontakt z doradcą",
+                "format": "post edukacyjny",
+                "post_url_or_id": "https://www.linkedin.com/posts/...",
+                "source_evidence_id": "linkedin_historical_posts",
+            },
+            {
+                "channel": "facebook",
+                "published_at": "2026-01-20",
+                "topic": "BDO i sprawozdawczość środowiskowa",
+                "service": "BDO",
+                "claim": "Ekologus pomaga uporządkować obowiązki BDO",
+                "cta": "kontakt z doradcą",
+                "format": "post edukacyjny",
+                "post_url_or_id": "facebook-post-id-or-url",
+                "source_evidence_id": "facebook_historical_posts",
+            },
+        ],
+        "_instruction": (
+            "To jest metadata-only format. Nie dodawaj raw treści postów, komentarzy, "
+            "danych użytkowników ani tokenów. Audit nadal nie pozwala WILQ obiecać "
+            "braku powtórzeń bez osobnego review."
+        ),
+    }
+
+
+def _invalid_social_history_import(
+    errors: list[str],
+    *,
+    item_count: int,
+) -> SocialHistoryImportAudit:
+    return SocialHistoryImportAudit(
+        status="invalid",
+        item_count=item_count,
+        channel_counts={},
+        missing_required_sources=list(SOCIAL_HISTORY_REQUIRED_SOURCES),
+        errors=errors,
+        operator_next_step=_social_history_import_next_step("invalid"),
+    )
+
+
+def _social_history_import_next_step(status: str) -> str:
+    if status == "review_ready":
+        return (
+            "Przekaż metadata-only historię do review dedupe. Nadal nie twierdź, "
+            "że temat jest nowy albo bez powtórek, dopóki review nie porówna tematu, "
+            "claimu, CTA i formatu z historią."
+        )
+    return (
+        "Uzupełnij brakujące metadane i usuń raw/private fields. WILQ pozostaje "
+        "w trybie review-only dla social i blokuje claim o braku powtórek."
+    )

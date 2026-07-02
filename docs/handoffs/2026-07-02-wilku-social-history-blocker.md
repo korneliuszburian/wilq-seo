@@ -43,6 +43,26 @@ Potrzebny jest metadata-only spis historii LinkedIn/Facebook:
 Raw treści postów i komentarze nie są wymagane na start. Wystarczy metadane,
 żeby sprawdzić duplikację tematu, claimu, CTA i kąta komunikacji.
 
+## Jak przygotować input
+
+WILQ ma teraz read-only audyt metadata-only historii social. Wygeneruj aktualny
+format:
+
+```bash
+rtk uv run python scripts/social_history_inventory_audit.py --print-input-example > .local-lab/proof/social-history-input-YYYYMMDD.json
+```
+
+Po uzupełnieniu metadanych sprawdź input:
+
+```bash
+rtk uv run python scripts/social_history_inventory_audit.py .local-lab/proof/social-history-input-YYYYMMDD.json --format markdown
+```
+
+Audyt odrzuca raw treści postów, komentarze, dane użytkowników i tokeny. Status
+`review_ready` oznacza tylko gotowość do dedupe review. Nadal nie wolno mówić,
+że temat jest nowy albo bez powtórek, dopóki review nie porówna tematu, claimu,
+CTA i formatu z historią.
+
 ## Wynik evala
 
 - Eval artifact: `.local-lab/evals/codex-skill/20260702T120859Z`.

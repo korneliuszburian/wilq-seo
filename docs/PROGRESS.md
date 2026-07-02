@@ -132,6 +132,13 @@ live API status later contradicts this state.
   blocker, so Wilku reviews the LinkedIn/Facebook metadata-only dedupe contract
   before WILQ can claim safe repurpose. The fillable scorecard is generated for
   all materials, so a shallow UAT cannot accidentally pass as complete.
+- Social history dedupe is now a practical metadata-only input path, not only a
+  blocker. `scripts/social_history_inventory_audit.py --print-input-example`
+  prints the `social_history_inventory_v1` JSON shape; the audit rejects raw
+  post bodies, comments, user fields and tokens, requires both LinkedIn and
+  Facebook metadata, and returns `review_ready` only for dedupe review. Even a
+  clean audit keeps `duplicate_free_claim_allowed=false` and
+  `publish_allowed=false` until separate historical review evidence exists.
 - Pre-demo gate proof after the latest Goal 005 slices:
   `rtk scripts/pre_demo_gate.sh` passed on 2026-07-02. It verified the managed
   local stack, API health, live contracts, dashboard usefulness, source fact

@@ -12,7 +12,9 @@ from wilq.schemas import (
 from wilq.social.history import (
     SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS,
     SocialHistoryInventorySource,
+    audit_social_history_metadata_payload,
     build_social_history_inventory,
+    social_history_input_example,
 )
 
 
@@ -100,3 +102,47 @@ def test_social_history_inventory_rejects_raw_post_body_contract_fields() -> Non
             required_evidence_id="linkedin_historical_posts",
             raw_post_body_required=True,
         )
+
+
+def test_social_history_metadata_audit_accepts_complete_metadata_only_history() -> None:
+    audit = audit_social_history_metadata_payload(social_history_input_example())
+
+    payload = audit.model_dump(mode="json")
+
+    assert payload["contract"] == "social_history_inventory_v1"
+    assert payload["read_only"] is True
+    assert payload["status"] == "review_ready"
+    assert payload["item_count"] == 2
+    assert payload["channel_counts"] == {"facebook": 1, "linkedin": 1}
+    assert payload["missing_required_sources"] == []
+    assert payload["errors"] == []
+    assert payload["duplicate_free_claim_allowed"] is False
+    assert payload["publish_allowed"] is False
+    assert "bez powtórek" in payload["operator_next_step"]
+
+
+def test_social_history_metadata_audit_blocks_missing_channel() -> None:
+    example = social_history_input_example()
+    example["items"] = [example["items"][0]]  # type: ignore[index]
+
+    audit = audit_social_history_metadata_payload(example).model_dump(mode="json")
+
+    assert audit["status"] == "invalid"
+    assert audit["channel_counts"] == {"linkedin": 1}
+    assert audit["missing_required_sources"] == ["facebook"]
+    assert any("Missing required social history sources" in error for error in audit["errors"])
+    assert audit["duplicate_free_claim_allowed"] is False
+
+
+def test_social_history_metadata_audit_rejects_raw_private_fields() -> None:
+    example = social_history_input_example()
+    example["items"][0]["raw_post_body"] = "Pełna treść posta"  # type: ignore[index]
+    example["items"][1]["comments"] = ["komentarz"]  # type: ignore[index]
+
+    audit = audit_social_history_metadata_payload(example).model_dump(mode="json")
+
+    assert audit["status"] == "invalid"
+    assert audit["item_count"] == 0
+    assert audit["missing_required_sources"] == ["linkedin", "facebook"]
+    assert any("raw_post_body" in error for error in audit["errors"])
+    assert any("comments" in error for error in audit["errors"])
