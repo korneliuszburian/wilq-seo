@@ -130,6 +130,15 @@ live API status later contradicts this state.
   honest as blocked, and requires enrichment, preflight, Sales Brief, Claim
   Ledger, draft package, quality review, human review, WordPress draft-only and
   measurement window before any final article, publication or success claim.
+- Social Publisher eval status: deterministic smoke confirms review-only social
+  context, `publish_allowed=false`, missing LinkedIn/Facebook credentials,
+  metadata-only `social_history_inventory_v1`, and duplicate-free claims blocked
+  until historical social metadata exists. Non-interactive Codex eval was
+  attempted at `.local-lab/evals/codex-skill/20260702T155617Z` but stopped
+  before result JSON because Codex hit the usage limit; Bead `wilq-seo-8ede`
+  remains open for retry. The smoke now also requires the social history import
+  contract to include `format` and `source_evidence_id`, so WILQ can trace
+  dedupe decisions without storing raw post bodies.
 - Latest Goal 005 Service Profile slice: review actions expose API-owned
   `review_requirements` aligned with
   `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets

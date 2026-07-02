@@ -147,7 +147,9 @@ def main() -> int:
         "service",
         "claim",
         "cta",
+        "format",
         "post_url_or_id",
+        "source_evidence_id",
     }.issubset(required_metadata_fields):
         raise SystemExit("Social history inventory must expose metadata-only fields")
     if any(source.get("raw_post_body_allowed") for source in sources):
