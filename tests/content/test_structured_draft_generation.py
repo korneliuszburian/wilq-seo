@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import pytest
 from _marketer_language import assert_marketer_text_has_no_workflow_jargon
+from pydantic import ValidationError
 
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
+    ContentSalesBriefKnowledgeConstraint,
     ContentSalesBriefSeed,
     ContentSalesBriefSourceFact,
     build_content_sales_brief,
@@ -11,6 +14,7 @@ from wilq.content.briefs.sales import (
 from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
 from wilq.content.drafts.package import ContentDraftPackage, build_content_draft_package
 from wilq.content.drafts.structured_generation import (
+    StructuredDraftKnowledgeConstraint,
     build_structured_draft_generation_contract,
 )
 from wilq.content.enrichment.opportunity import (
@@ -49,6 +53,21 @@ def _item(**overrides: object) -> ContentWorkItem:
     }
     payload.update(overrides)
     return ContentWorkItem.model_validate(payload)
+
+
+def test_knowledge_constraints_reject_unknown_constraint_type() -> None:
+    payload = {
+        "card_id": "ekologus_evidence_live_connector_requirement",
+        "constraint_type": "model_opinion",
+        "label": "Nieznany constraint",
+        "reason": "To nie jest znany typ bramki wiedzy.",
+        "evidence_ids": ["ev_content_service_profile_source_facts"],
+    }
+
+    with pytest.raises(ValidationError, match="constraint_type"):
+        ContentSalesBriefKnowledgeConstraint.model_validate(payload)
+    with pytest.raises(ValidationError, match="constraint_type"):
+        StructuredDraftKnowledgeConstraint.model_validate(payload)
 
 
 def _inventory() -> ContentInventoryRecord:

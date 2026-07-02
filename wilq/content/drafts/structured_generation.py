@@ -5,6 +5,7 @@ from typing import Literal, cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.briefs.sales import (
+    ContentKnowledgeConstraintType,
     ContentSalesBrief,
     ContentSalesBriefSignalQualityStatus,
 )
@@ -78,7 +79,7 @@ class StructuredDraftKnowledgeConstraint(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     card_id: str
-    constraint_type: str
+    constraint_type: ContentKnowledgeConstraintType
     label: str
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)

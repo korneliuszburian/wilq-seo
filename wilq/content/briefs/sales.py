@@ -35,6 +35,16 @@ ContentSalesBriefBlockerCode = Literal[
     "missing_required_knowledge_card",
 ]
 ContentSalesBriefSignalQualityStatus = Literal["strong", "review_required", "thin"]
+ContentKnowledgeConstraintType = Literal[
+    "service_fit",
+    "evidence_requirement",
+    "allowed_with_evidence",
+    "needs_human_review",
+    "blocked",
+    "blocked_until_measurement",
+    "source_backed_review_required",
+    "stale",
+]
 
 
 class ContentSalesBriefOperationsContext(BaseModel):
@@ -53,7 +63,7 @@ class ContentSalesBriefSourceFact(BaseModel):
 
 class ContentSalesBriefKnowledgeConstraint(BaseModel):
     card_id: str
-    constraint_type: str
+    constraint_type: ContentKnowledgeConstraintType
     label: str
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
