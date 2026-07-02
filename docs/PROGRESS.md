@@ -195,6 +195,12 @@ API status later contradicts this state.
   `failure_tags=[]`. The useful output is a concrete `refresh_or_merge`
   decision for `https://www.ekologus.pl/`, with GSC partial-data limits and
   `act_prepare_content_refresh_queue` validated as review-only.
+- `wilq-ahrefs-gap-finder` passed deterministic smoke and non-interactive eval;
+  artifact: `.local-lab/evals/codex-skill/20260702T130834Z`. Score 5,
+  `failure_tags=[]`. Ahrefs has `gap_read_contract.status=ready`,
+  `gap_record_count=8` in the compact contract and 298 gap facts; output treats
+  gap record omission as context-pack compaction, not a workflow blocker, while
+  keeping traffic/authority/effect claims blocked.
 - Service Profile usefulness review now has a short Wilku-facing decision card
   at `docs/handoffs/2026-07-02-wilku-service-profile-start-card.md`. Live
   `/api/content/service-profile` returns 10 cards, 7 service cards,

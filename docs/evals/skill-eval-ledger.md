@@ -8361,3 +8361,38 @@ Result:
 - `act_prepare_content_refresh_queue` was validated and kept as a preview/review
   action, with no WordPress write, ranking guarantee, lead uplift or full
   traffic-diagnosis claim.
+
+## 2026-07-02 - Ahrefs Gap Finder usefulness eval
+
+Purpose:
+
+- Verify that `wilq-ahrefs-gap-finder` turns Ahrefs gap evidence into a
+  review-only SEO/content/backlink queue instead of blocking the whole workflow
+  because context-pack gap records are compacted.
+- Confirm that outcome claims such as traffic growth and authority growth stay
+  blocked without additional proof.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T130834Z/wilq-ahrefs-gap-finder/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, eight Ahrefs evidence IDs and all hard gates true.
+- Smoke returned `gap_read_contract.status=ready`, `gap_record_count=8`,
+  `missing_read_contracts=[]`, `gap_records_omitted=true`,
+  `ahrefs_gap_fact_count=298` and `ahrefs_authority_fact_count=2`.
+- The output correctly treated `gap_records_omitted=true` as context-pack
+  compaction, not as a product blocker; it recommended review-only inspection
+  of `ahrefs_review_gap_records`.
+- No write-capable `action_id` exists for this Ahrefs review path yet, so action
+  candidates stayed `pending_validation`/`blocked` without pretending that a
+  WILQ action was validated.
+- Blocked claims stayed explicit: no traffic growth, authority growth, SEO
+  effect or production content claim without GSC/WordPress/human follow-up.
