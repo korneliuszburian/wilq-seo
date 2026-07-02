@@ -367,6 +367,7 @@ function ServiceCard({ section }: { section: ServiceSection }) {
               ...section.source_fact_ids.slice(0, 3)
             ]}
           />
+          <List label="Dowody WILQ" values={section.evidence_ids.slice(0, 3)} />
           <List label="Ślad źródłowy" values={section.source_lineage_labels.slice(0, 3)} />
         </div>
         <List label="Dopasowanie" values={section.service_fit_terms.slice(0, 8)} />

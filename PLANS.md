@@ -1049,6 +1049,9 @@ Stop and record a blocker if:
   compile with fallback evidence `ev_content_service_profile_source_facts`,
   which proves Service Profile/source-fact lineage exists without implying
   human approval.
+- 2026-07-02: Dashboard Service Profile service cards now render those WILQ
+  evidence IDs in the operator-facing source/review block, so Wilku can see the
+  proof handle without opening raw JSON.
 
 ## Surprises & Discoveries
 

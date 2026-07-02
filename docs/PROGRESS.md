@@ -192,6 +192,9 @@ API status later contradicts this state.
 - Review-required source facts without their own evidence IDs now compile with
   fallback evidence `ev_content_service_profile_source_facts`, which proves
   Service Profile/source-fact lineage exists without implying human approval.
+- Dashboard Service Profile service cards now render those WILQ evidence IDs in
+  the operator-facing source/review block, so Wilku can see the proof handle
+  without opening raw JSON.
 - Goal 005 completion is now guarded by
   `scripts/goal_005_completion_check.py`. It fails closed unless given a
   validated real UAT result from `scripts/record_goal_005_content_uat_result.py`

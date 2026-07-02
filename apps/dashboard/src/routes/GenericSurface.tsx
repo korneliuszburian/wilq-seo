@@ -410,7 +410,6 @@ function compactRouteConfig(routeName: string) {
 }
 
 function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] }) {
-  const configured = connectors.filter((connector) => connector.configured);
   const missing = connectors.filter((connector) => connector.missing_credentials.length > 0);
   const active = connectors.filter((connector) => connector.active_for_daily_work);
   const outsideDailyScope = connectors.filter((connector) => !connector.active_for_daily_work);

@@ -48,6 +48,8 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("Poproś Wilka/ownera o decyzję.")).toBeInTheDocument();
     expect(screen.getByText("public_site")).toBeInTheDocument();
     expect(screen.getByText("ekologus_public_bdo_faq_2026_07_01")).toBeInTheDocument();
+    expect(screen.getByText("Dowody WILQ")).toBeInTheDocument();
+    expect(screen.getByText("ev_content_service_profile_source_facts")).toBeInTheDocument();
     expect(
       screen.getByText("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/")
     ).toBeInTheDocument();
@@ -170,6 +172,7 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         status_label: "źródło istnieje, wymagane review",
         summary: "Publiczny artykuł Ekologus wspiera edukacyjne tematy o BDO.",
         source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+        evidence_ids: ["ev_content_service_profile_source_facts"],
         source_connector_labels: ["public_site"],
         source_lineage_labels: ["https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"],
         freshness_label: "public_site_review_required_2026-07-01",
