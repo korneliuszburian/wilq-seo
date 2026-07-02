@@ -1029,6 +1029,10 @@ Stop and record a blocker if:
   review-required and explicitly claim/evidence/usage-gated before Service
   Profile can expose them as private proposals. This keeps private knowledge in
   the normal WILQ source-fact path instead of relying on skill wording.
+- 2026-07-02: Approved source facts now fail closed unless they carry reviewer,
+  evidence IDs and source connectors. This guards the future
+  `approved_current` path so production-depth cards cannot be created from
+  prose-only approval.
 
 ## Surprises & Discoveries
 

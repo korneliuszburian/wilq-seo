@@ -69,8 +69,13 @@ class ContentSourceFact(BaseModel):
 
     @model_validator(mode="after")
     def validate_review_state(self) -> ContentSourceFact:
-        if self.review_status == "approved" and not self.reviewer:
-            raise ValueError("approved source facts require reviewer")
+        if self.review_status == "approved":
+            if not self.reviewer:
+                raise ValueError("approved source facts require reviewer")
+            if not self.evidence_ids:
+                raise ValueError("approved source facts require evidence_ids")
+            if not self.source_connectors:
+                raise ValueError("approved source facts require source_connectors")
         if self.source_type == "public_site" and self.privacy_class != "commit_safe":
             raise ValueError("public site source facts must be commit_safe")
         if "ekologus_ai_private_source_catalog" in self.source_connectors:

@@ -174,6 +174,10 @@ API status later contradicts this state.
   `redacted_only`, `review_required`, and carry blocked claims, evidence
   requirements and usage notes. Focused proof loaded 11 source facts, including
   4 private `ekologus-ai` facts, all redacted and review-required.
+- Approved source facts now also require `reviewer`, `evidence_ids` and
+  `source_connectors` at the model layer. This prevents a future
+  `approved_current` knowledge card from being unlocked by reviewed prose
+  without traceable evidence lineage.
 - Goal 005 completion is now guarded by
   `scripts/goal_005_completion_check.py`. It fails closed unless given a
   validated real UAT result from `scripts/record_goal_005_content_uat_result.py`

@@ -122,6 +122,45 @@ def test_ekologus_ai_source_facts_require_private_governance_fields() -> None:
         )
 
 
+def test_approved_source_facts_require_evidence_and_source_connectors() -> None:
+    with pytest.raises(ValidationError, match="evidence_ids"):
+        ContentSourceFact(
+            source_id="approved_without_evidence",
+            source_type="public_site",
+            privacy_class="commit_safe",
+            source_url_or_path="https://www.ekologus.pl/oferta/",
+            extracted_fact="Approved source fact without evidence should not unlock cards.",
+            scope="service",
+            freshness_date="2026-07-02",
+            confidence=0.8,
+            review_status="approved",
+            reviewer="Wilku",
+            target_card_id="approved_without_evidence_card",
+            target_card_type="service",
+            target_card_title="Approved without evidence",
+        )
+
+    with pytest.raises(ValidationError, match="source_connectors"):
+        ContentSourceFact(
+            source_id="approved_without_connector",
+            source_type="public_site",
+            privacy_class="commit_safe",
+            source_url_or_path="https://www.ekologus.pl/oferta/",
+            extracted_fact=(
+                "Approved source fact without source connectors should not unlock cards."
+            ),
+            scope="service",
+            freshness_date="2026-07-02",
+            confidence=0.8,
+            review_status="approved",
+            reviewer="Wilku",
+            evidence_ids=["ev_reviewed_source_fact"],
+            target_card_id="approved_without_connector_card",
+            target_card_type="service",
+            target_card_title="Approved without connector",
+        )
+
+
 def test_source_facts_compile_to_review_required_cards() -> None:
     cards = compile_source_facts_to_knowledge_cards(ekologus_source_fact_registry().facts)
 
