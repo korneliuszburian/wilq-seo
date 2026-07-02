@@ -627,6 +627,7 @@
     "skill": "wilq-demand-gen-operator",
     "surface_path": "/ads-doctor/demand-gen",
     "task_pl": "Oceń gotowość Demand Gen, jakość materiałów i jakość ruchu tylko z dowodów WILQ oraz sprawdzenia w WILQ.",
+    "minimum_operator_usefulness_score": 5,
     "expected_connectors": [
       "google_ads",
       "google_analytics_4"

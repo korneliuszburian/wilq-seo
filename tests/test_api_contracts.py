@@ -20240,6 +20240,34 @@ def test_demand_gen_readiness_uses_ads_summary_view(monkeypatch: pytest.MonkeyPa
     assert requested_views == ["summary"]
 
 
+def test_demand_gen_zero_campaign_next_step_is_operator_specific() -> None:
+    from apps.api.wilq_api import context_demand_gen
+
+    contract = context_demand_gen._readiness_contract(
+        {
+            "campaign_read_contract": {
+                "campaign_rows": [
+                    {"campaign_name": "Search", "advertising_channel_type": "SEARCH"},
+                    {
+                        "campaign_name": "Performance Max",
+                        "advertising_channel_type": "PERFORMANCE_MAX",
+                    },
+                ]
+            },
+            "evidence_ids": ["ev_ads"],
+        },
+        {"evidence_ids": ["ev_ga4"]},
+        [],
+        [],
+    )
+
+    assert contract.status == "blocked"
+    assert contract.metric_tiles["kampanie Demand Gen"] == 0
+    assert "nie oceniaj jeszcze jakości kreacji ani ruchu" in contract.next_step.lower()
+    assert "0 kampanii Demand Gen/Discovery" in contract.next_step
+    assert "act_review_demand_gen_readiness" in contract.next_step
+
+
 def test_demand_gen_review_action_is_validate_only_and_scoped() -> None:
     response = client.get("/api/actions/act_review_demand_gen_readiness")
 

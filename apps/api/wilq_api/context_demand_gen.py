@@ -294,10 +294,8 @@ def _readiness_contract(
         demand_gen_creative_asset_rows=demand_gen_creative_asset_rows,
         demand_gen_landing_quality_rows=demand_gen_landing_quality_rows,
         demand_gen_campaign_mode_review_rows=demand_gen_campaign_mode_review_rows,
-        next_step=(
-            "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. "
-            "Zanim WILQ pokaże propozycje uruchomienia albo zmiany trybu kampanii, "
-            "potwierdź dostępność danych o jakości stron wejścia i kontroli trybu kampanii."
+        next_step=_demand_gen_next_step(
+            demand_gen_campaign_count=len(demand_gen_campaign_rows),
         ),
     )
 
@@ -327,6 +325,21 @@ def _campaign_channel_counts(campaign_rows: list[dict[str, Any]]) -> dict[str, i
 
 def _is_demand_gen_channel(channel: Any) -> bool:
     return str(channel or "").strip().upper() in DEMAND_GEN_CHANNEL_TYPES
+
+
+def _demand_gen_next_step(*, demand_gen_campaign_count: int) -> str:
+    if demand_gen_campaign_count == 0:
+        return (
+            "Najpierw otwórz act_review_demand_gen_readiness i potwierdź, że WILQ "
+            "widzi 0 kampanii Demand Gen/Discovery. Nie oceniaj jeszcze jakości kreacji "
+            "ani ruchu, bo nie ma kampanii Demand Gen do porównania; traktuj to jako "
+            "sprawdzenie gotowości i brakujących kontraktów odczytu."
+        )
+    return (
+        "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. "
+        "Zanim WILQ pokaże propozycje uruchomienia albo zmiany trybu kampanii, "
+        "potwierdź dostępność danych o jakości stron wejścia i kontroli trybu kampanii."
+    )
 
 
 def _compact_campaign_row_for_demand_gen(row: dict[str, Any]) -> AdsCampaignMetricRow:

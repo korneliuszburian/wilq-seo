@@ -9085,3 +9085,41 @@ Result:
   treats `count_semantics=reported_issue_occurrences` as issue occurrences
   rather than unique SKU counts, and blocks product ROAS, recovered revenue,
   price-impact, product reapproval and feed-write claims.
+
+## 2026-07-02 - Demand Gen blocker usefulness raised to score 5
+
+Purpose:
+
+- Raise `wilq-demand-gen-operator` from a formally valid blocker to a
+  marketer-usable Demand Gen readiness decision.
+- Make the zero-campaign case self-explanatory: do not judge creative quality
+  or traffic quality when WILQ sees no Demand Gen/Discovery campaigns to
+  compare.
+
+Change:
+
+- `/api/demand-gen/diagnostics` now gives an operator-specific `next_step` when
+  Demand Gen campaign count is zero.
+- The Demand Gen smoke script includes that API-owned `next_step` in its
+  evidence output.
+- The Demand Gen eval case now requires `operator_usefulness_score=5`.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k "demand_gen_zero_campaign_next_step_is_operator_specific or demand_gen_diagnostics_exposes_honest_readiness_contract or demand_gen_eval_case"
+rtk uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T174521Z/wilq-demand-gen-operator/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=true`,
+  `failure_tags=[]`, 20 evidence IDs and all hard gates true.
+- The output keeps `act_review_demand_gen_readiness` as the validated
+  review-only action and explains that the first step is to confirm the
+  zero-campaign/read-contract state before judging creative or traffic quality.
+- Launch/readiness/creative-quality/effectiveness claims remain blocked.

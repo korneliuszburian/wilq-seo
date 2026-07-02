@@ -232,6 +232,7 @@ def main() -> int:
                     "available_read_contracts": available_read_contracts,
                     "missing_read_contracts": missing_read_contracts,
                     "blocked_claims": readiness.get("blocked_claims", []),
+                    "next_step": readiness.get("next_step"),
                 },
                 "required_connectors": connector_results,
                 "brief_items": brief_items,

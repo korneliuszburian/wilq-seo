@@ -364,13 +364,14 @@ live API status later contradicts this state.
   proof exist.
 - `wilq-demand-gen-operator` passed deterministic smoke and the latest
   non-interactive eval as a useful blocker; artifact:
-  `.local-lab/evals/codex-skill/20260702T163412Z`. Score 4, `blocked=true`,
-  `failure_tags=[]`. WILQ evaluated 18 Ads campaign rows but has 0 Demand Gen
-  campaign rows, ads, creative assets or Demand Gen landing-quality rows, so
-  the skill correctly blocks launch/readiness/creative-quality/effectiveness
-  claims and only validates `act_review_demand_gen_readiness` as review-only.
-  The lower score is intentional: current evidence supports an honest blocker,
-  not a launch or optimization recommendation.
+  `.local-lab/evals/codex-skill/20260702T174521Z`. Score 5, `blocked=true`,
+  `failure_tags=[]`. WILQ evaluated 18 Ads campaign rows and saw 0 Demand Gen/
+  Discovery campaign rows, 0 ads, 0 creative assets and 0 Demand Gen landing-
+  quality rows. The API-owned next step now tells the operator to first open
+  `act_review_demand_gen_readiness`, confirm the zero-campaign/read-contract
+  state, and not judge creative or traffic quality before there is a Demand Gen
+  campaign to compare. Launch/readiness/creative-quality/effectiveness claims
+  stay blocked.
 - `docs/evals/skill-coverage-audit.md` is now generated from the latest passing
   non-interactive eval artifacts by
   `scripts/render_skill_coverage_audit.py`, so the recovery audit does not
@@ -1241,13 +1242,12 @@ live API status later contradicts this state.
   audience/return/performance/write claims in blocker fields instead of segment
   recommendation copy.
 - `wilq-demand-gen-operator` now has a live non-interactive blocker proof at
-  `.local-lab/evals/codex-skill/20260702T015421Z/summary.json`. Result:
-  `operator_usefulness_score=4`, `blocked=true`, all hard gates true, no
-  failure tags, 8 evidence IDs, 0 recommendations and validated
-  `act_review_demand_gen_readiness`. Manual inspection of an earlier passing
-  run found a malformed top-level evidence ID with whitespace, so
-  `scripts/codex_skill_eval.sh` now rejects whitespace/empty identifiers in
-  top-level lineage IDs and action IDs.
+  `.local-lab/evals/codex-skill/20260702T174521Z/wilq-demand-gen-operator/result.json`.
+  Result: `operator_usefulness_score=5`, `blocked=true`, all hard gates true,
+  no failure tags, 20 evidence IDs and validated `act_review_demand_gen_readiness`.
+  Manual inspection of an earlier passing run found a malformed top-level
+  evidence ID with whitespace, so `scripts/codex_skill_eval.sh` rejects
+  whitespace/empty identifiers in top-level lineage IDs and action IDs.
 - `wilq-ahrefs-gap-finder` now has a live non-interactive review-only proof at
   `.local-lab/evals/codex-skill/20260702T020118Z/summary.json`. Result:
   `operator_usefulness_score=4`, `blocked=false`, all hard gates true, no
