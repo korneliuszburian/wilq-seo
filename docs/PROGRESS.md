@@ -1089,8 +1089,9 @@ API status later contradicts this state.
 - Service Profile private proposal review recorder now requires the private
   governance checks exposed by the review actions:
   `data_classes_confirmed`, `source_block_refs_confirmed`,
+  `freshness_status_confirmed`, `audience_scope_confirmed`,
   `retention_decision_confirmed`, `deletion_path_confirmed` and
-  `eval_gates_confirmed`. Live proof on 2026-07-02 accepted a real
+  `eval_gates_confirmed`. Earlier live proof on 2026-07-02 accepted a real
   `service_profile_review_private_proposal_*` action with those booleans and
   still returned `promotion_allowed=false`.
 - The `wilq-content-operator` UAT packet now exposes the same private
