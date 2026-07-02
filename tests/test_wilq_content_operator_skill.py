@@ -99,6 +99,7 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "wymagania review",
         "sales_brief_trace",
         "ograniczenia wiedzy z dowodami",
+        "zablokowany albo niedostępny",
         "service_profile_public_card_review_result_v1",
         "service_profile_private_proposal_review_result_v1",
         "promotion preview rows",
@@ -550,4 +551,20 @@ def test_content_operator_uat_packet_item_includes_sales_brief_constraint_eviden
             "reason": "Nie rekomenduj bez dowodu i źródła.",
             "evidence_ids": ["ev_content_service_profile_source_facts"],
         }
+    ]
+
+
+def test_content_operator_uat_packet_renders_blocked_sales_brief_trace() -> None:
+    uat_script = load_uat_script()
+
+    lines = uat_script.sales_brief_trace_markdown_lines(
+        {
+            "status": "missing",
+            "blocker": "snapshot nie zawiera sales_brief",
+        }
+    )
+
+    assert lines == [
+        "- Sales Brief: zablokowany albo niedostępny "
+        "(snapshot nie zawiera sales_brief)"
     ]

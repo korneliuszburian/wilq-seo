@@ -135,6 +135,39 @@ def sales_brief_trace_from_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def sales_brief_trace_markdown_lines(trace: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    signal_quality = trace.get("signal_quality")
+    if isinstance(signal_quality, dict) and signal_quality.get("status_label"):
+        lines.append(f"- jakość Sales Brief: {signal_quality.get('status_label')}")
+    status = str(trace.get("status") or "")
+    blocker = trace.get("blocker")
+    blockers = [
+        str(item.get("label") or item.get("reason") or item.get("code") or item)
+        for item in as_list(trace.get("blockers"))
+        if isinstance(item, dict) or item
+    ]
+    if status in {"missing", "blocked"} and (blocker or blockers):
+        reason = str(blocker) if blocker else "; ".join(blockers)
+        lines.append(f"- Sales Brief: zablokowany albo niedostępny ({reason})")
+    constraints = [
+        constraint
+        for constraint in as_list(trace.get("shown_knowledge_constraints"))
+        if isinstance(constraint, dict)
+    ]
+    if constraints:
+        lines.append("- ograniczenia wiedzy z dowodami:")
+        for constraint in constraints:
+            constraint_evidence = [
+                str(value) for value in constraint.get("evidence_ids") or []
+            ]
+            lines.append(
+                f"  - {constraint.get('label')}: {constraint.get('reason')} "
+                f"(dowody: {', '.join(constraint_evidence) or 'brak'})"
+            )
+    return lines
+
+
 def safe_action(api_base: str, action_id: str) -> dict[str, Any]:
     try:
         return require_dict(
@@ -741,24 +774,8 @@ def main() -> int:
         print(f"- następny krok: {item['safe_next_step']}")
         sales_brief_trace = item.get("sales_brief_trace")
         if isinstance(sales_brief_trace, dict):
-            signal_quality = sales_brief_trace.get("signal_quality")
-            if isinstance(signal_quality, dict) and signal_quality.get("status_label"):
-                print(f"- jakość Sales Brief: {signal_quality.get('status_label')}")
-            constraints = [
-                constraint
-                for constraint in as_list(sales_brief_trace.get("shown_knowledge_constraints"))
-                if isinstance(constraint, dict)
-            ]
-            if constraints:
-                print("- ograniczenia wiedzy z dowodami:")
-                for constraint in constraints:
-                    constraint_evidence = [
-                        str(value) for value in constraint.get("evidence_ids") or []
-                    ]
-                    print(
-                        f"  - {constraint.get('label')}: {constraint.get('reason')} "
-                        f"(dowody: {', '.join(constraint_evidence) or 'brak'})"
-                    )
+            for line in sales_brief_trace_markdown_lines(sales_brief_trace):
+                print(line)
         print()
     return 0
 

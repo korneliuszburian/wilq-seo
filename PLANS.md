@@ -1068,6 +1068,10 @@ Stop and record a blocker if:
   `sales_brief_trace` per candidate. It carries Sales Brief knowledge
   constraints and evidence IDs when present, or an explicit blocked/missing
   state when the current item has not reached Sales Brief.
+- 2026-07-02: The same UAT packet now renders blocked/missing Sales Brief trace
+  in markdown. Live output for the current top candidates says
+  `Sales Brief: zablokowany albo niedostępny (snapshot nie zawiera sales_brief)`
+  instead of silently omitting Sales Brief context.
 
 ## Surprises & Discoveries
 

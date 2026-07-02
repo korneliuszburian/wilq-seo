@@ -194,6 +194,10 @@ API status later contradicts this state.
   item. When a Sales Brief exists, it lists shown knowledge constraints and
   their evidence IDs; when the workflow is blocked earlier, it records the
   blocker/missing snapshot state instead of hiding the gap.
+- The UAT markdown packet now also renders blocked/missing Sales Brief trace in
+  Polish. Current live top candidates show `Sales Brief: zablokowany albo
+  niedostępny (snapshot nie zawiera sales_brief)`, which makes the lack of a
+  brief visible during Wilku review instead of silently omitting it.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only
