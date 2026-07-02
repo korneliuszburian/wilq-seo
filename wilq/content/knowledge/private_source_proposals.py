@@ -63,7 +63,7 @@ def ekologus_private_source_proposals() -> tuple[PrivateSourceProposal, ...]:
     return tuple(
         _proposal_from_source_fact(fact)
         for fact in ekologus_source_facts()
-        if _is_private_service_proposal_fact(fact)
+        if _is_private_proposal_fact(fact)
     )
 
 
@@ -75,12 +75,11 @@ def ekologus_private_source_proposal_registry() -> PrivateSourceProposalRegistry
     )
 
 
-def _is_private_service_proposal_fact(fact: ContentSourceFact) -> bool:
+def _is_private_proposal_fact(fact: ContentSourceFact) -> bool:
     return (
         fact.source_type == "reviewed_internal"
         and fact.privacy_class == "redacted_only"
         and fact.review_status == "review_required"
-        and fact.scope == "service"
         and "ekologus_ai_private_source_catalog" in fact.source_connectors
     )
 
@@ -98,18 +97,15 @@ def _proposal_from_source_fact(fact: ContentSourceFact) -> PrivateSourceProposal
         confidence=fact.confidence,
         review_status="review_required",
         reviewer=fact.reviewer,
-        owner_role="Wilku albo owner oferty Ekologus",
-        audience="company_wide",
-        risk_tier="medium",
-        source_class_label="review-required internal service source fact",
+        owner_role=_owner_role(fact),
+        audience=_audience(fact),
+        risk_tier=_risk_tier(fact),
+        source_class_label=_source_class_label(fact),
         target_card_id=fact.target_card_id,
         target_card_title=fact.target_card_title,
-        support_level="partial",
+        support_level=_support_level(fact),
         blocked_claims=fact.blocked_claims,
-        safe_next_step=(
-            "Pokaż Wilkowi zwykły handoff i zdecyduj, czy ten redacted source "
-            "fact może przejść review; nie odblokowuj production-depth bez decyzji człowieka."
-        ),
+        safe_next_step=_safe_next_step(fact),
     )
 
 
@@ -118,4 +114,73 @@ def _source_locator_label(fact: ContentSourceFact) -> str:
         return "ekologus-ai reviewed handoff: Eko-Opieka"
     if "KB_003_AUDYT_ZGODNOSCI" in fact.source_url_or_path:
         return "ekologus-ai reviewed handoff: Audyt zgodności"
+    if "KB_014_STYL_MARKI" in fact.source_url_or_path:
+        return "ekologus-ai reviewed handoff: Styl marki"
+    if "KB_021_BEZPIECZENSTWO_PRAWNE" in fact.source_url_or_path:
+        return "ekologus-ai reviewed handoff: Bezpieczeństwo prawne"
     return f"ekologus-ai reviewed handoff: {fact.target_card_title}"
+
+
+def _owner_role(fact: ContentSourceFact) -> str:
+    if fact.scope == "service":
+        return "Wilku albo owner oferty Ekologus"
+    if fact.scope in {"claim_policy", "evidence_requirement"}:
+        return "Wilku, owner marki albo reviewer prawny Ekologus"
+    return "Wilku albo owner wiedzy Ekologus"
+
+
+def _audience(fact: ContentSourceFact) -> Literal[
+    "company_wide",
+    "department_only",
+    "role_restricted",
+    "owner_only",
+    "unknown",
+]:
+    if fact.scope in {"claim_policy", "evidence_requirement"}:
+        return "role_restricted"
+    return "company_wide"
+
+
+def _risk_tier(fact: ContentSourceFact) -> Literal["low", "medium", "high", "unknown"]:
+    if fact.scope == "claim_policy":
+        return "high"
+    if fact.scope == "evidence_requirement":
+        return "medium"
+    return "medium"
+
+
+def _support_level(
+    fact: ContentSourceFact,
+) -> Literal["direct", "partial", "background", "conflicting"]:
+    if fact.scope == "claim_policy":
+        return "direct"
+    if fact.scope == "evidence_requirement":
+        return "direct"
+    return "partial"
+
+
+def _source_class_label(fact: ContentSourceFact) -> str:
+    if fact.scope == "service":
+        return "review-required internal service source fact"
+    if fact.scope == "claim_policy":
+        return "review-required internal claim-policy source fact"
+    if fact.scope == "evidence_requirement":
+        return "review-required internal evidence-policy source fact"
+    return "review-required internal source fact"
+
+
+def _safe_next_step(fact: ContentSourceFact) -> str:
+    if fact.scope == "claim_policy":
+        return (
+            "Pokaż Wilkowi/reviewerowi zasady claimów i zdecyduj, czy mają stać "
+            "się reviewed policy fact; nie używaj jako automatycznej bramki bez review."
+        )
+    if fact.scope == "evidence_requirement":
+        return (
+            "Pokaż wymaganie dowodowe reviewerowi i zdecyduj, czy ma wejść do "
+            "WILQ jako reviewed evidence policy; nie odblokowuj rekomendacji bez decyzji."
+        )
+    return (
+        "Pokaż Wilkowi zwykły handoff i zdecyduj, czy ten redacted source "
+        "fact może przejść review; nie odblokowuj production-depth bez decyzji człowieka."
+    )

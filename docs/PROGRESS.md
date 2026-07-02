@@ -726,6 +726,15 @@ API status later contradicts this state.
   only `actionable_candidate_count=1`, so `queue_status=blocked`. Remaining hard
   blockers are still Goal 005 Wilku UAT or explicit owner defer with residual
   risk, plus full `rtk scripts/verify.sh` before any completion claim.
+- Service Profile now exposes all redacted `ekologus-ai` reviewed-internal
+  private proposals from source facts, not only service-scope proposals. Live
+  proof after stack restart on 2026-07-02: `proposal_count=4`,
+  `review_required_count=4`, scopes `claim_policy` and `service`, policy targets
+  `ekologus_claim_policy_brand_voice` and `ekologus_claim_policy_legal_safety`,
+  dedicated review actions for both, `promotion_ready=false`,
+  `can_promote_facts=false` and `ready_for_daily_content=false`. This gives
+  Wilku review targets for brand/legal-safety rules without turning them into
+  production-depth cards or automatic quality gates.
   The request now pins `type=web`, and persisted metric summaries mark
   `detail_dimensions=query,page` with `detail_data_completeness=partial_possible`
   so downstream skills do not treat detailed query/page rows as full traffic

@@ -823,6 +823,12 @@ Stop and record a blocker if:
   `wilq-seo-jst` open until Wilku completes the session or the owner records an
   explicit defer with residual risk; run full `rtk scripts/verify.sh` only
   before claiming completion.
+- 2026-07-02: Service Profile private proposals now include redacted
+  `ekologus-ai` claim-policy facts, not only service facts. Brand voice and
+  legal-safety proposals appear as review-required targets with dedicated
+  review actions, while promotion, fact editing and daily-content readiness
+  remain blocked. This moves the useful `ekologus-ai` knowledge into normal
+  WILQ review flow instead of creating another endpoint or artifact layer.
 
 ## Surprises & Discoveries
 

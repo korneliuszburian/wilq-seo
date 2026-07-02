@@ -94,6 +94,48 @@ def test_source_facts_compile_to_review_required_cards() -> None:
     assert bdo_card.claims_needing_review
     assert any("unikniesz kary" in rule.reason for rule in bdo_card.forbidden_claims)
     assert "ekologus_service_eko_opieka_calendar" not in {card.id for card in cards}
+    assert "ekologus_claim_policy_brand_voice" not in {card.id for card in cards}
+    assert "ekologus_claim_policy_legal_safety" not in {card.id for card in cards}
+
+
+def test_service_profile_exposes_private_policy_proposals_without_promotion() -> None:
+    profile = content_service_profile_response()
+
+    proposals = {proposal.target_card_id: proposal for proposal in profile.private_source_proposals}
+    assert {
+        "ekologus_service_eko_opieka_calendar",
+        "ekologus_service_environmental_compliance_audit",
+        "ekologus_claim_policy_brand_voice",
+        "ekologus_claim_policy_legal_safety",
+    } <= set(proposals)
+    assert profile.private_source_proposal_summary.proposal_count >= 4
+    assert profile.private_source_proposal_summary.review_required_count >= 4
+    assert profile.private_source_proposal_summary.promotion_ready is False
+    assert profile.review_policy.can_promote_facts is False
+    assert profile.production_depth_readiness.ready_for_daily_content is False
+
+    brand_voice = proposals["ekologus_claim_policy_brand_voice"]
+    assert brand_voice.scope == "claim_policy"
+    assert brand_voice.source_class_label == "review-required internal claim-policy source fact"
+    assert brand_voice.support_level == "direct"
+    assert brand_voice.risk_tier == "high"
+    assert brand_voice.promotion_allowed is False
+    assert "automatycznej bramki bez review" in brand_voice.safe_next_step
+
+    legal_safety = proposals["ekologus_claim_policy_legal_safety"]
+    assert legal_safety.scope == "claim_policy"
+    assert legal_safety.redacted is True
+    assert legal_safety.blocked_claims
+
+    action_ids = {action.action_id for action in profile.review_actions}
+    assert (
+        "service_profile_review_private_proposal_"
+        "ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01"
+    ) in action_ids
+    assert (
+        "service_profile_review_private_proposal_"
+        "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01"
+    ) in action_ids
 
 
 def test_source_backed_waste_storage_card_matches_review_required_topic() -> None:
@@ -345,8 +387,8 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         for action in public_service_review_actions
     )
     assert response.private_source_proposal_summary.proposal_protocol_available is True
-    assert response.private_source_proposal_summary.proposal_count == 2
-    assert response.private_source_proposal_summary.review_required_count == 2
+    assert response.private_source_proposal_summary.proposal_count >= 4
+    assert response.private_source_proposal_summary.review_required_count >= 4
     assert response.private_source_proposal_summary.approved_count == 0
     assert response.private_source_proposal_summary.promotion_ready is False
     assert len(response.private_source_proposal_summary.promotion_checklist) >= 5
@@ -354,15 +396,19 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         response.private_source_proposal_summary.promotion_blocked_reason
     )
     assert response.private_source_proposal_summary.redacted is True
-    assert len(response.private_source_proposals) == 2
-    assert {proposal.target_card_id for proposal in response.private_source_proposals} == {
+    assert len(response.private_source_proposals) >= 4
+    assert {
         "ekologus_service_eko_opieka_calendar",
         "ekologus_service_environmental_compliance_audit",
-    }
-    assert {proposal.source_id for proposal in response.private_source_proposals} == {
+        "ekologus_claim_policy_brand_voice",
+        "ekologus_claim_policy_legal_safety",
+    } <= {proposal.target_card_id for proposal in response.private_source_proposals}
+    assert {
         "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
         "ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
-    }
+        "ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
+        "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+    } <= {proposal.source_id for proposal in response.private_source_proposals}
     assert all(
         proposal.source_type == "reviewed_internal"
         for proposal in response.private_source_proposals
@@ -371,9 +417,6 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         proposal.privacy_class == "redacted_only"
         for proposal in response.private_source_proposals
     )
-    assert "ekologus_claim_policy_brand_voice" not in {
-        proposal.target_card_id for proposal in response.private_source_proposals
-    }
     assert all(proposal.redacted for proposal in response.private_source_proposals)
     assert all(not proposal.promotion_allowed for proposal in response.private_source_proposals)
     assert all(proposal.blocked_claims for proposal in response.private_source_proposals)
@@ -381,21 +424,25 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         "nie promuje" in proposal.blocked_write_claim
         for proposal in response.private_source_proposals
     )
-    assert response.coverage_summary.private_candidate_count == 2
-    assert response.technical_trace.private_source_proposal_ids == [
+    assert response.coverage_summary.private_candidate_count >= 4
+    assert {
         "private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
         "private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
-    ]
+        "private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
+        "private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+    } <= set(response.technical_trace.private_source_proposal_ids)
     assert response.review_actions
     private_review_actions = [
         action
         for action in response.review_actions
         if action.action_id.startswith("service_profile_review_private_proposal_")
     ]
-    assert {action.target_card_id for action in private_review_actions} == {
+    assert {
         "ekologus_service_eko_opieka_calendar",
         "ekologus_service_environmental_compliance_audit",
-    }
+        "ekologus_claim_policy_brand_voice",
+        "ekologus_claim_policy_legal_safety",
+    } <= {action.target_card_id for action in private_review_actions}
     assert all(action.mode == "review_request" for action in private_review_actions)
     assert all("nie promuje" in action.blocked_write_claim for action in private_review_actions)
 
