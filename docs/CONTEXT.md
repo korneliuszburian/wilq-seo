@@ -13,7 +13,7 @@ Przeczytaj w tej kolejności:
 3. `docs/PROGRESS.md` - krótki aktualny stan, aktywne luki i następny ruch.
 4. `bd prime` and `bd ready --json` - operational issue graph for the current
    cleanup queue.
-5. `docs/evals/skill-coverage-audit.md` - aktualna tabela pokrycia 12 skillów.
+5. `docs/evals/skill-coverage-audit.md` - aktualna tabela pokrycia skillów.
 6. `docs/evals/skill-eval-ledger.md` - szczegóły manualnych i non-interactive
    przebiegów skillów.
 7. `docs/architecture/bdos-class-wilq-operating-system.md` - produktowa
@@ -74,7 +74,8 @@ Available evidence surfaces for current proof include:
 - GSC query/page and WordPress inventory matching for current Ekologus URLs.
 - Localo aggregate visibility, rankings, GBP visibility, competitor visibility
   and reviews as read-only evidence.
-- 12 WILQ skills with baseline non-interactive eval coverage.
+- 13 WILQ skills with strict eval coverage cases and baseline non-interactive
+  eval proof in `docs/evals/skill-eval-ledger.md`.
 
 Active gaps live in:
 
