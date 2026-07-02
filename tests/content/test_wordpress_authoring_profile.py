@@ -326,6 +326,15 @@ def test_wordpress_authoring_payload_preview_prefers_content_layout(
     assert result.sections[0].field_values["tytul"] == "Kogo dotyczy BDO"
     assert "Wyjaśnij obowiązki" in (result.sections[0].field_values["glowny_opis"] or "")
     assert result.sections[0].field_values["elementy"] is None
+    previews = {field.field_name: field for field in result.sections[0].field_previews}
+    assert previews["tytul"].value_preview == "Kogo dotyczy BDO"
+    assert previews["glowny_opis"].safe_to_autofill is True
+    assert "Wyjaśnij obowiązki" in (previews["glowny_opis"].value_preview or "")
+    assert previews["elementy"].field_type == "repeater"
+    assert previews["elementy"].safe_to_autofill is True
+    assert "wybór layoutu/wierszy" in (previews["elementy"].note or "")
+    repeater_nested = {field.field_name: field for field in previews["elementy"].nested_values}
+    assert "Wyjaśnij obowiązki" in (repeater_nested["opis"].value_preview or "")
 
 
 def test_wordpress_authoring_payload_preview_blocks_without_acf_contract() -> None:

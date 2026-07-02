@@ -34,6 +34,18 @@ class ContentWordPressAuthoringPreviewBlocker(BaseModel):
     next_step: str
 
 
+class ContentWordPressFieldValuePreview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str
+    field_label: str
+    field_type: str
+    value_preview: str | None = None
+    safe_to_autofill: bool = False
+    note: str | None = None
+    nested_values: list[ContentWordPressFieldValuePreview] = Field(default_factory=list)
+
+
 class ContentWordPressFlexibleSectionPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -41,6 +53,7 @@ class ContentWordPressFlexibleSectionPayload(BaseModel):
     layout_label: str
     section_heading: str
     field_values: dict[str, str | None] = Field(default_factory=dict)
+    field_previews: list[ContentWordPressFieldValuePreview] = Field(default_factory=list)
     missing_required_fields: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
 
@@ -241,10 +254,12 @@ def _section_payload(
     section: ContentDraftSection,
 ) -> ContentWordPressFlexibleSectionPayload:
     field_values: dict[str, str | None] = {}
+    field_previews: list[ContentWordPressFieldValuePreview] = []
     missing_required: list[str] = []
     for field in layout.fields:
         value = _field_value(field, section)
         field_values[field.name] = value
+        field_previews.append(_field_preview(field, section))
         if field.required and value is None:
             missing_required.append(field.name)
     return ContentWordPressFlexibleSectionPayload(
@@ -252,12 +267,35 @@ def _section_payload(
         layout_label=layout.label,
         section_heading=section.heading,
         field_values=field_values,
+        field_previews=field_previews,
         missing_required_fields=missing_required,
         evidence_ids=section.evidence_ids,
     )
 
 
 def _field_value(field: WordPressAcfField, section: ContentDraftSection) -> str | None:
+    return _field_scalar_value(field, section)
+
+
+def _field_preview(
+    field: WordPressAcfField,
+    section: ContentDraftSection,
+) -> ContentWordPressFieldValuePreview:
+    nested = [_field_preview(sub_field, section) for sub_field in field.sub_fields]
+    value = _field_scalar_value(field, section)
+    note = _field_preview_note(field, value=value, nested=nested)
+    return ContentWordPressFieldValuePreview(
+        field_name=field.name,
+        field_label=field.label,
+        field_type=field.field_type,
+        value_preview=value,
+        safe_to_autofill=bool(value) or any(item.safe_to_autofill for item in nested),
+        note=note,
+        nested_values=nested,
+    )
+
+
+def _field_scalar_value(field: WordPressAcfField, section: ContentDraftSection) -> str | None:
     haystack = f"{field.name} {field.label} {field.field_type}".lower()
     if field.field_type in {"repeater", "flexible_content"}:
         return None
@@ -273,10 +311,38 @@ def _field_value(field: WordPressAcfField, section: ContentDraftSection) -> str 
         return section.heading
     if any(token in haystack for token in ("body", "content", "tekst", "opis", "wysiwyg")):
         return _section_body(section)
+    if any(token in haystack for token in ("lead", "intro", "wstep", "wstęp")):
+        return section.purpose
     if "purpose" in haystack or "cel" in haystack:
         return section.purpose
     if "evidence" in haystack or "dowod" in haystack:
         return ", ".join(section.evidence_ids) if section.evidence_ids else None
+    return None
+
+
+def _field_preview_note(
+    field: WordPressAcfField,
+    *,
+    value: str | None,
+    nested: list[ContentWordPressFieldValuePreview],
+) -> str | None:
+    if field.field_type == "group":
+        if any(item.safe_to_autofill for item in nested):
+            return "Grupa ACF: WILQ mapuje jej pod pola w podglądzie."
+        return "Grupa ACF wymaga ręcznego dopasowania pod pól."
+    if field.field_type in {"repeater", "flexible_content"}:
+        if any(item.safe_to_autofill for item in nested):
+            return (
+                "Pole zagnieżdżone: WILQ pokazuje możliwe mapowanie pod pól, "
+                "ale wybór layoutu/wierszy wymaga osobnego review."
+            )
+        return "Pole zagnieżdżone wymaga osobnego layoutu, mediów albo ręcznego review."
+    if value is not None:
+        return None
+    if field.required:
+        return "Wymagane pole ACF nie ma bezpiecznej wartości ze szkicu."
+    if field.field_type in {"image", "file", "post_object", "google_map", "select", "true_false"}:
+        return "To pole wymaga ręcznego wyboru wartości w WordPress/ACF."
     return None
 
 

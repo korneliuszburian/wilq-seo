@@ -3451,11 +3451,36 @@ const ContentWordPressAuthoringPayloadPreviewBlockerSchema = z.object({
   next_step: z.string()
 });
 
+type ContentWordPressFieldValuePreviewShape = {
+  field_name: string;
+  field_label: string;
+  field_type: string;
+  value_preview?: string | null;
+  safe_to_autofill: boolean;
+  note?: string | null;
+  nested_values: ContentWordPressFieldValuePreviewShape[];
+};
+
+const ContentWordPressFieldValuePreviewSchema: z.ZodType<
+  ContentWordPressFieldValuePreviewShape
+> = z.lazy(() =>
+  z.object({
+    field_name: z.string(),
+    field_label: z.string(),
+    field_type: z.string(),
+    value_preview: z.string().nullable().optional(),
+    safe_to_autofill: z.boolean(),
+    note: z.string().nullable().optional(),
+    nested_values: z.array(ContentWordPressFieldValuePreviewSchema).default([])
+  })
+);
+
 const ContentWordPressFlexibleSectionPayloadSchema = z.object({
   layout_name: z.string(),
   layout_label: z.string(),
   section_heading: z.string(),
   field_values: z.record(z.string(), z.string().nullable()),
+  field_previews: z.array(ContentWordPressFieldValuePreviewSchema).default([]),
   missing_required_fields: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).default([])
 });

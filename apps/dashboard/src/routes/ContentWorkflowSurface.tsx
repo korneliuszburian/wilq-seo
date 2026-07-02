@@ -583,6 +583,8 @@ function ContentCandidateQueuePanel({
 type DraftPackage = ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
 type WordPressHandoff =
   ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
+type AcfFieldPreview =
+  ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"]["sections"][number]["field_previews"][number];
 
 function defaultSelectedWorkItemId(queue: ContentWorkItemQueueResponse) {
   return (
@@ -1324,9 +1326,11 @@ function AcfPreviewPanel({
   result: ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"] | null;
 }) {
   const firstSection = result?.sections[0] ?? null;
-  const filledFields = firstSection
-    ? Object.entries(firstSection.field_values).filter(([, value]) => Boolean(value))
-    : [];
+  const fieldPreviews = firstSection?.field_previews ?? [];
+  const filledFields =
+    firstSection && !fieldPreviews.length
+      ? Object.entries(firstSection.field_values).filter(([, value]) => Boolean(value))
+      : [];
 
   return (
     <section className="rounded-md border border-line bg-white p-4">
@@ -1352,7 +1356,14 @@ function AcfPreviewPanel({
                   Sekcja: {firstSection.section_heading}
                 </div>
               </div>
-              {filledFields.length ? (
+              {fieldPreviews.length ? (
+                <div className="rounded-md border border-line bg-surface p-3">
+                  <div className="text-xs uppercase tracking-normal text-slate-500">
+                    Mapowanie pól ACF
+                  </div>
+                  <AcfFieldPreviewList fields={fieldPreviews.slice(0, 4)} />
+                </div>
+              ) : filledFields.length ? (
                 <div className="rounded-md border border-line bg-surface p-3">
                   <div className="text-xs uppercase tracking-normal text-slate-500">
                     Pola, które WILQ wypełni
@@ -1374,6 +1385,39 @@ function AcfPreviewPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function AcfFieldPreviewList({
+  fields,
+  depth = 0
+}: {
+  fields: AcfFieldPreview[];
+  depth?: number;
+}) {
+  return (
+    <dl className={`${depth ? "mt-2 border-l border-line pl-3" : "mt-2"} space-y-2`}>
+      {fields.map((field) => (
+        <div key={`${field.field_name}-${field.field_type}-${depth}`}>
+          <dt className="font-medium text-ink">
+            {field.field_label} ({field.field_name})
+          </dt>
+          {field.value_preview ? (
+            <dd className="mt-1 whitespace-pre-line text-xs leading-5 text-slate-600">
+              {field.value_preview}
+            </dd>
+          ) : null}
+          {field.note ? (
+            <dd className="mt-1 text-xs leading-5 text-slate-500">{field.note}</dd>
+          ) : null}
+          {field.nested_values.length && depth < 2 ? (
+            <dd>
+              <AcfFieldPreviewList fields={field.nested_values.slice(0, 6)} depth={depth + 1} />
+            </dd>
+          ) : null}
+        </div>
+      ))}
+    </dl>
   );
 }
 

@@ -420,8 +420,13 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText(/layoutu Podstrona/)).toBeInTheDocument();
     expect(screen.getByText("Wybrany layout")).toBeInTheDocument();
     expect(screen.getByText("Podstrona (podstrona)")).toBeInTheDocument();
-    expect(screen.getByText("tytul")).toBeInTheDocument();
-    expect(screen.getByText("glowny_opis")).toBeInTheDocument();
+    expect(screen.getByText("Mapowanie pól ACF")).toBeInTheDocument();
+    expect(screen.getByText("Tytuł (tytul)")).toBeInTheDocument();
+    expect(screen.getByText("Główny opis (glowny_opis)")).toBeInTheDocument();
+    expect(screen.getByText("Lead (lead)")).toBeInTheDocument();
+    expect(screen.getByText("Elementy (elementy)")).toBeInTheDocument();
+    expect(screen.getByText(/wybór layoutu\/wierszy wymaga osobnego review/))
+      .toBeInTheDocument();
     expect(screen.getByText(/Publikacja i nadpisywanie pozostają zablokowane/))
       .toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
@@ -1312,6 +1317,67 @@ function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAut
               "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
             elementy: null
           },
+          field_previews: [
+            {
+              field_name: "tytul",
+              field_label: "Tytuł",
+              field_type: "text",
+              value_preview: "Kogo dotyczy BDO",
+              safe_to_autofill: true,
+              note: null,
+              nested_values: []
+            },
+            {
+              field_name: "glowny_opis",
+              field_label: "Główny opis",
+              field_type: "group",
+              value_preview:
+                "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
+              safe_to_autofill: true,
+              note: "Grupa ACF: WILQ mapuje jej pod pola w podglądzie.",
+              nested_values: [
+                {
+                  field_name: "lead",
+                  field_label: "Lead",
+                  field_type: "wysiwyg",
+                  value_preview: "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus.",
+                  safe_to_autofill: true,
+                  note: null,
+                  nested_values: []
+                },
+                {
+                  field_name: "opis",
+                  field_label: "Opis",
+                  field_type: "wysiwyg",
+                  value_preview:
+                    "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
+                  safe_to_autofill: true,
+                  note: null,
+                  nested_values: []
+                }
+              ]
+            },
+            {
+              field_name: "elementy",
+              field_label: "Elementy",
+              field_type: "flexible_content",
+              value_preview: null,
+              safe_to_autofill: true,
+              note:
+                "Pole zagnieżdżone: WILQ pokazuje możliwe mapowanie pod pól, ale wybór layoutu/wierszy wymaga osobnego review.",
+              nested_values: [
+                {
+                  field_name: "opis",
+                  field_label: "Opis",
+                  field_type: "wysiwyg",
+                  value_preview: "Opis sekcji do sprawdzenia.",
+                  safe_to_autofill: true,
+                  note: null,
+                  nested_values: []
+                }
+              ]
+            }
+          ],
           missing_required_fields: [],
           evidence_ids: ["ev_gsc_bdo"]
         }
