@@ -347,7 +347,10 @@ API status later contradicts this state.
 - Strict skill eval coverage audit passed on 2026-07-02:
   `case_count=13`, `skill_dir_count=13`, `hard_gap_count=0`,
   `warning_count=0`, `pass=true`. This proves eval coverage structure, not
-  perfect output quality for every future prompt.
+  perfect output quality for every future prompt. `scripts/pre_demo_gate.sh`
+  now runs this audit with `--strict`, so any new WILQ skill without a
+  production-like eval case or required output schema field blocks the demo
+  gate.
 - `wilq-gsc-content-doctor` usefulness eval passed on 2026-07-02; artifact:
   `.local-lab/evals/codex-skill/20260702T123010Z`. Score:
   `operator_usefulness_score=5`, all hard gates true, `failure_tags=[]`.

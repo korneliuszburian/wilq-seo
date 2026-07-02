@@ -111,6 +111,7 @@ run_step "live contract smoke" uv run python scripts/live_contract_smoke.py --ap
 run_step "dashboard usefulness audit" uv run python scripts/dashboard_usefulness_audit.py --api-base "$api_base"
 run_step "source fact coverage audit" uv run python scripts/source_fact_coverage_audit.py
 run_step "claim ledger generation gate audit" uv run python scripts/claim_ledger_gate_audit.py
+run_step "skill eval coverage audit" uv run python scripts/audit_skill_eval_coverage.py --strict
 run_step "context-pack language guard" uv run python scripts/context_pack_language_guard.py --api-base "$api_base"
 
 if [ "$run_shared_schema" -eq 1 ]; then
