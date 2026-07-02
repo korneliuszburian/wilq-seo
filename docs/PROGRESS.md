@@ -405,6 +405,18 @@ API status later contradicts this state.
   action preparation, not social publishing or performance claims. The eval
   prompt now requires exact dashboard route markers in `notes` so route-specific
   coverage is deterministic instead of relying on incidental wording.
+- `wilq-gsc-content-doctor` now has a fresh live non-interactive Search
+  Analytics proof at
+  `.local-lab/evals/codex-skill/20260702T022132Z/summary.json`. Result:
+  `operator_usefulness_score=4`, `blocked=false`, all hard gates true, no
+  failure tags, 10 evidence IDs, 1 recommendation and validated
+  `act_prepare_content_refresh_queue`. The output names the latest available
+  detail day, `data_availability_checked=true`, `search_type=web`,
+  `detail_dimensions=query,page`, `detail_data_completeness=partial_possible`,
+  `rowLimit`/`startRow`, 25k/50k official paging limits and the operator-facing
+  caveat that query/page evidence is partial Search Analytics signal, not a full
+  traffic export. The eval/test marker terms now allow Polish inflection while
+  keeping the exact partial-data decision marker.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

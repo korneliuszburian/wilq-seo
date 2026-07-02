@@ -7252,3 +7252,54 @@ Result:
   `publish_allowed=false`, `missing_publish_access`, `do sprawdzenia w WILQ`,
   LinkedIn/Facebook connector status and blocked `opublikowanie posta`,
   `wzrost skuteczności social`, `zwrot z reklam` and `przychód` claims.
+
+## 2026-07-02 - GSC Content Doctor live eval and Polish marker cleanup
+
+Purpose:
+
+- Test `wilq-gsc-content-doctor` against the current Google Search Console
+  Search Analytics contract.
+- Ensure the operator output uses the official GSC caveats: available-date
+  check, latest available detail day, 2-3 day delay, query/page partiality and
+  paging limits.
+- Keep content diagnosis useful without implying full traffic export, SEO
+  success, lead growth, WordPress publication or duplicate-free creation.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- Smoke proof returned `data_availability_checked=true`,
+  `date_availability_status=available`, latest available detail day
+  `2026-06-29`, `search_type=web`, `detail_dimensions=query,page`,
+  `detail_data_completeness=partial_possible`, `rowLimit=250`,
+  `query_page_max_rows=1000`, official 25k/50k paging labels and validated
+  `act_prepare_content_refresh_queue`.
+- Initial eval at `.local-lab/evals/codex-skill/20260702T022014Z/` was
+  semantically correct but failed brittle Polish marker checks because it used
+  inflected forms of "zapytania/adresy".
+- The GSC eval case and static case test now use stable stems for broad Polish
+  marker checks, while still requiring the exact actionable phrase
+  `częściowe dane zapytań i adresów`.
+- The same static test also had stale marker expectations for Ads, Merchant,
+  Custom Segments and Localo; those expectations were aligned to the current
+  live eval cases without changing product behavior.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T022132Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=false`, `failure_tags=[]`,
+  all hard gates true, 10 evidence IDs, 1 recommendation and 1 validated action
+  candidate.
+- Validated action candidate: `act_prepare_content_refresh_queue`.
+- The output used `/content-planner`, `content_diagnostics`, `decision_queue`,
+  `gsc_content_doctor_context`, `single_day_latest_available`,
+  `data_availability_checked=true`, `date_availability_status=available`,
+  `detail_data_completeness=partial_possible`, `rowLimit`, `startRow`,
+  `api_recommended_page_size=25000`, `api_daily_row_cap_per_search_type=50000`,
+  `inventory_check_before_create` and `merge_create_after_inventory_check`.
