@@ -39,6 +39,8 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
     assert summary["source_fact_coverage"]["pass"] is True
     assert summary["source_fact_coverage"]["ready_for_daily_content"] is False
     assert summary["source_fact_coverage"]["private_review_required_count"] >= 5
+    assert summary["source_fact_coverage"]["next_review_actions"]
+    assert summary["source_fact_coverage"]["next_review_actions"][0]["action_id"]
     assert summary["claim_ledger_gate"]["pass"] is True
     assert summary["claim_ledger_gate"]["passed_count"] == summary["claim_ledger_gate"][
         "check_count"
@@ -348,6 +350,7 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "production_depth=0%" in markdown
     assert "publish_ready_locked=true" in markdown
     assert "Latest skill eval results" in markdown
+    assert "Next Service Profile review actions" in markdown
     assert "Następny input UAT" in markdown
     assert "Komenda do wygenerowania JSON" in markdown
     assert "Sales Brief status: `blocked`" in markdown

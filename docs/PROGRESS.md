@@ -286,6 +286,10 @@ live API status later contradicts this state.
   proposals. `scripts/pre_demo_gate.sh` now runs this audit before demos, so
   WILQ cannot present the current knowledge layer as production-depth by
   accident.
+- The same source-fact audit now renders a concrete Service Profile
+  `review_action_queue` with ActionObject IDs, review scope, target card and
+  decision options. Wilku can see not only that source facts require review, but
+  which `service_profile_review_*` action to check next.
 - Claim Ledger / structured generation gates are now auditable through
   `scripts/claim_ledger_gate_audit.py`. Current proof on 2026-07-02: 13/13
   checks passed. WILQ blocks guarantees, legal claims without human review,

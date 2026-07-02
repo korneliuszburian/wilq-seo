@@ -34,6 +34,7 @@ def build_report() -> dict[str, Any]:
     facts = list(fact_registry.facts)
     private_proposals = list(profile.private_source_proposals)
     service_sections = list(profile.service_sections)
+    review_actions = list(profile.review_actions)
 
     fact_review_counts = Counter(fact.review_status for fact in facts)
     fact_scope_counts = Counter(fact.scope for fact in facts)
@@ -61,6 +62,19 @@ def build_report() -> dict[str, Any]:
             _risk_order(item["risk_tier"]),
             _scope_order(item["scope"]),
             item["target_card_title"],
+        )
+    )
+    title_by_card_id = _target_title_lookup(service_sections, private_proposals)
+    review_action_queue = [
+        _review_action_item(action, title_by_card_id=title_by_card_id)
+        for action in review_actions
+    ]
+    review_action_queue.sort(
+        key=lambda item: (
+            _priority_order(item["priority"]),
+            _scope_order(item["review_scope"]),
+            item["target_card_title"],
+            item["action_id"],
         )
     )
     blockers = list(profile.production_depth_readiness.blocker_labels)
@@ -91,6 +105,7 @@ def build_report() -> dict[str, Any]:
             profile.private_source_proposal_summary.review_required_count
         ),
         "private_review_queue": private_review_queue,
+        "review_action_queue": review_action_queue,
         "blockers": blockers,
         "safe_next_step": profile.coverage_summary.safe_next_step,
     }
@@ -129,6 +144,27 @@ def render_markdown(report: dict[str, Any]) -> str:
                 next_step=_markdown_cell(_operator_text(item["safe_next_step"])),
             )
         )
+    review_actions = report.get("review_action_queue") or []
+    if review_actions:
+        lines.extend(
+            [
+                "",
+                "## Konkretne akcje review",
+                "",
+                "| Priorytet | Scope | ActionObject | Target | Decyzje |",
+                "| ---: | --- | --- | --- | --- |",
+            ]
+        )
+        for index, item in enumerate(review_actions[:8], start=1):
+            lines.append(
+                "| {index} | `{scope}` | `{action_id}` | {target} | {decisions} |".format(
+                    index=index,
+                    scope=item["review_scope"],
+                    action_id=item["action_id"],
+                    target=_markdown_cell(item["target_card_title"]),
+                    decisions=_markdown_cell(", ".join(item["decision_options"])),
+                )
+            )
     if report["blockers"]:
         lines.extend(["", "## Blokery production-depth", ""])
         for blocker in report["blockers"]:
@@ -153,6 +189,46 @@ def _private_review_item(proposal: Any) -> dict[str, Any]:
     }
 
 
+def _review_action_item(
+    action: Any,
+    *,
+    title_by_card_id: dict[str, str],
+) -> dict[str, Any]:
+    target_card_id = str(getattr(action, "target_card_id", "") or "")
+    target_title = (
+        str(getattr(action, "target_card_title", "") or "").strip()
+        or title_by_card_id.get(target_card_id)
+        or target_card_id
+        or "ogólny przegląd wiedzy"
+    )
+    return {
+        "action_id": getattr(action, "action_id", ""),
+        "review_scope": getattr(action, "review_scope", ""),
+        "priority": getattr(action, "priority", ""),
+        "target_card_id": target_card_id,
+        "target_card_title": target_title,
+        "decision_options": list(getattr(action, "decision_options", []) or []),
+    }
+
+
+def _target_title_lookup(
+    service_sections: list[Any],
+    private_proposals: list[Any],
+) -> dict[str, str]:
+    lookup: dict[str, str] = {}
+    for section in service_sections:
+        card_id = str(getattr(section, "card_id", "") or "")
+        title = str(getattr(section, "title", "") or "")
+        if card_id and title:
+            lookup[card_id] = title
+    for proposal in private_proposals:
+        card_id = str(getattr(proposal, "target_card_id", "") or "")
+        title = str(getattr(proposal, "target_card_title", "") or "")
+        if card_id and title:
+            lookup[card_id] = title
+    return lookup
+
+
 def _percent(value: int, total: int) -> int:
     if total <= 0:
         return 0
@@ -160,6 +236,10 @@ def _percent(value: int, total: int) -> int:
 
 
 def _risk_order(value: str) -> int:
+    return {"high": 0, "medium": 1, "low": 2, "unknown": 3}.get(value, 4)
+
+
+def _priority_order(value: str) -> int:
     return {"high": 0, "medium": 1, "low": 2, "unknown": 3}.get(value, 4)
 
 

@@ -30,6 +30,13 @@ def test_source_fact_coverage_audit_reports_current_goal_005_backlog() -> None:
     assert report["private_review_required_count"] == report["private_proposal_count"]
     assert report["review_action_count"] >= report["private_proposal_count"]
     assert report["private_review_queue"][0]["risk_tier"] == "high"
+    assert report["review_action_queue"]
+    assert any(
+        item["review_scope"] == "public_service_card"
+        for item in report["review_action_queue"]
+    )
+    assert all(item["action_id"] for item in report["review_action_queue"])
+    assert all(item["decision_options"] for item in report["review_action_queue"])
     assert all(not item["promotion_allowed"] for item in report["private_review_queue"])
     assert report["blockers"]
 
@@ -55,6 +62,15 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
                 "safe_next_step": "Sprawdź zasady claimów z reviewerem.",
             }
         ],
+        "review_action_queue": [
+            {
+                "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+                "review_scope": "public_service_card",
+                "priority": "medium",
+                "target_card_title": "BDO i sprawozdawczość środowiskowa",
+                "decision_options": ["approve", "needs_changes", "stale", "reject"],
+            }
+        ],
         "blockers": ["Brakuje zatwierdzonych production-depth kart usług Ekologus."],
     }
 
@@ -63,4 +79,7 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
     assert "Production-depth service readiness: 0%" in markdown
     assert "Pokaż Wilkowi review-required źródła przed treścią." in markdown
     assert "| 1 | `claim_policy` | Styl marki | `high` |" in markdown
+    assert "## Konkretne akcje review" in markdown
+    assert "`service_profile_review_card_ekologus_service_bdo_reporting`" in markdown
+    assert "approve, needs_changes, stale, reject" in markdown
     assert "Brakuje zatwierdzonych production-depth kart usług Ekologus." in markdown

@@ -234,6 +234,14 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "private_review_required_count": source_report[
                 "private_review_required_count"
             ],
+            "next_review_actions": [
+                {
+                    "action_id": item["action_id"],
+                    "review_scope": item["review_scope"],
+                    "target_card_title": item["target_card_title"],
+                }
+                for item in source_report.get("review_action_queue", [])[:5]
+            ],
         },
         "claim_ledger_gate": {
             "pass": claim_report["pass"],
@@ -602,6 +610,16 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"`minimum_score={latest_eval.get('minimum_score')}`, "
         f"`blocked_correctly={latest_eval.get('blocked_correctly_count')}`",
     ]
+    next_review_actions = source.get("next_review_actions") or []
+    if next_review_actions:
+        lines.append(
+            "- Next Service Profile review actions: "
+            + ", ".join(
+                f"`{item.get('action_id')}`"
+                for item in next_review_actions[:5]
+                if item.get("action_id")
+            )
+        )
     if dashboard:
         lines.append(
             "- Dashboard usefulness: "
