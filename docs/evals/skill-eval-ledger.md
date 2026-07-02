@@ -108,6 +108,44 @@ Result:
   `2026-06-29` with `partial_possible` query/page data, so it did not claim
   full traffic diagnostics, ranking growth or WordPress writes.
 
+## 2026-07-02 - Content Strategist usefulness eval
+
+Purpose:
+
+- Check whether `wilq-content-strategist` can answer a realistic Polish
+  marketer question about BDO and Zielony Ład through WILQ API evidence instead
+  of generic SEO brainstorming.
+- Verify that it uses GSC, GA4, Ahrefs, WordPress inventory and knowledge
+  signals to choose refresh/merge/create/block decisions and keeps unsupported
+  production draft claims blocked.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T123356Z`.
+- `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
+  gates true.
+- Smoke proof: `content_diagnostics.live_data_available=true`,
+  decision types `review_ahrefs_gap_records`, `refresh_or_merge` and
+  `block_as_tracking_not_content`, 18 evidence IDs and validated content
+  actions including `act_prepare_content_refresh_queue`.
+- Source connectors used: `ahrefs`, `google_search_console`,
+  `wordpress_ekologus`, `wordpress_sklep` and `google_analytics_4`.
+- Main useful decision: BDO is treated as an existing-content refresh or merge
+  candidate after inventory/canonical checks; Zielony Ład is blocked until
+  stronger source evidence exists; GA4 tracking gaps stay measurement work, not
+  a content topic.
+- Validated action candidate: `act_prepare_content_refresh_queue`. Full draft,
+  WordPress write, duplicate-free claims, ranking/lead/revenue claims and
+  preview-source claims remain blocked without the missing contracts.
+
 ## 2026-07-02 - Eko-Opieka usefulness review
 
 Purpose:

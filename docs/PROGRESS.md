@@ -224,6 +224,13 @@ API status later contradicts this state.
   It used configured GSC/WordPress evidence, validated
   `act_prepare_content_refresh_queue`, and treated GSC query/page rows as
   latest-available partial data instead of full traffic proof.
+- `wilq-content-strategist` usefulness eval passed on 2026-07-02; artifact:
+  `.local-lab/evals/codex-skill/20260702T123356Z`. Score:
+  `operator_usefulness_score=5`, all hard gates true, `failure_tags=[]`.
+  It used GSC, GA4, Ahrefs and WordPress evidence to treat BDO as an
+  existing-content refresh/merge candidate, block Zielony Ład until stronger
+  source evidence exists and keep GA4 tracking gaps as measurement work rather
+  than content topics.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
