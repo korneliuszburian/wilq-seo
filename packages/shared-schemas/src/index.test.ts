@@ -18,6 +18,7 @@ import {
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentQualityFindingSchema,
   ContentWorkItemSchema,
+  ContentClaimLedgerSchema,
   ContentServiceProfilePrivateSourceProposalSectionSchema,
   ContentGscSearchAnalyticsContractSchema,
   StructuredDraftPreviewBlockerSchema,
@@ -482,6 +483,54 @@ describe("ContentWorkItemSchema", () => {
       ContentWorkItemSchema.safeParse({
         ...workItem,
         preflight_status: "secret_unreviewed_state"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentClaimLedgerSchema", () => {
+  const ledger = {
+    id: "claim_ledger_bdo",
+    work_item_id: "content_work_item_bdo",
+    reviewed_by: "wilku",
+    entries: [
+      {
+        id: "claim_general_bdo",
+        claim_text: "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+        claim_type: "service_claim",
+        status: "allowed_with_evidence",
+        strength: "strong",
+        required: true,
+        evidence_ids: ["ev_wp_bdo"],
+        source_connectors: ["wordpress_ekologus"],
+        reason: "Claim ma przypisany dowód źródłowy.",
+        reviewer_id: "wilku"
+      }
+    ]
+  };
+
+  it("rejects unknown claim ledger enums", () => {
+    expect(ContentClaimLedgerSchema.safeParse(ledger).success).toBe(true);
+    expect(
+      ContentClaimLedgerSchema.safeParse({
+        ...ledger,
+        entries: [
+          {
+            ...ledger.entries[0],
+            status: "approved_by_prompt"
+          }
+        ]
+      }).success
+    ).toBe(false);
+    expect(
+      ContentClaimLedgerSchema.safeParse({
+        ...ledger,
+        entries: [
+          {
+            ...ledger.entries[0],
+            claim_type: "marketing_vibe_claim"
+          }
+        ]
       }).success
     ).toBe(false);
   });

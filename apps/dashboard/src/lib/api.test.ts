@@ -207,18 +207,18 @@ describe("content workflow API helpers", () => {
     await postContentWorkItemPreflight({ item: workItem() });
     await postContentWorkItemSalesBrief({
       item: workItem(),
-      claim_ledger: {},
+      claim_ledger: claimLedger(),
       seed: salesBriefSeed()
     });
     await postContentWorkItemDraftPackage({
       item: workItem(),
-      claim_ledger: {},
+      claim_ledger: claimLedger(),
       seed: salesBriefSeed()
     });
     await postContentWorkItemStructuredDraftGeneration({
       item: workItem(),
       sales_brief: salesBrief(),
-      claim_ledger: {},
+      claim_ledger: claimLedger(),
       draft_package: draftPackage()
     });
     await postContentWorkItemStructuredDraftRuntime({
@@ -536,9 +536,31 @@ function qualityReviewRequest() {
     item: workItem(),
     sales_brief: salesBrief(),
     draft_package: draftPackage(),
-    claim_ledger: {},
+    claim_ledger: claimLedger(),
     structured_output: structuredDraftOutput(),
     duplicate_risk: "clear"
+  };
+}
+
+function claimLedger() {
+  return {
+    id: "claim_ledger_bdo",
+    work_item_id: "content_work_item_bdo",
+    reviewed_by: "wilku",
+    entries: [
+      {
+        id: "claim_general_bdo",
+        claim_text: "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+        claim_type: "service_claim" as const,
+        status: "allowed_with_evidence" as const,
+        strength: "strong" as const,
+        required: false,
+        evidence_ids: ["ev_wp_bdo"],
+        source_connectors: ["wordpress_ekologus"],
+        reason: "Claim ma przypisany dowód źródłowy.",
+        reviewer_id: "wilku"
+      }
+    ]
   };
 }
 

@@ -208,6 +208,47 @@ export const ContentClaimReferenceSchema = z.object({
   reason: z.string().optional()
 });
 
+export const ContentClaimTypeSchema = z.enum([
+  "service_claim",
+  "legal_requirement_claim",
+  "risk_claim",
+  "guarantee_claim",
+  "performance_claim",
+  "seo_claim",
+  "business_outcome_claim",
+  "environmental_claim"
+]);
+
+export const ContentClaimStatusSchema = z.enum([
+  "allowed_with_evidence",
+  "allowed_general",
+  "needs_human_review",
+  "blocked",
+  "blocked_until_measurement"
+]);
+
+export const ContentClaimStrengthSchema = z.enum(["strong", "weak"]);
+
+export const ContentClaimLedgerEntrySchema = z.object({
+  id: z.string(),
+  claim_text: z.string(),
+  claim_type: ContentClaimTypeSchema,
+  status: ContentClaimStatusSchema,
+  strength: ContentClaimStrengthSchema.default("strong"),
+  required: z.boolean().default(false),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  reason: z.string(),
+  reviewer_id: z.string().nullable().optional()
+});
+
+export const ContentClaimLedgerSchema = z.object({
+  id: z.string(),
+  work_item_id: z.string(),
+  entries: z.array(ContentClaimLedgerEntrySchema).default([]),
+  reviewed_by: z.string().nullable().optional()
+});
+
 export const ContentSalesBriefSourceFactSchema = z.object({
   evidence_id: z.string(),
   source_connector: z.string(),
@@ -677,7 +718,7 @@ const ContentWorkItemBriefRequestFields = {
   item: ContentWorkItemSchema,
   inventory_records: z.array(ContentInventoryRecordSchema).default([]),
   duplicate_risk: ContentInventoryDuplicateRiskSchema.default("unknown"),
-  claim_ledger: z.unknown(),
+  claim_ledger: ContentClaimLedgerSchema,
   seed: ContentSalesBriefSeedSchema,
   enrichment: z.lazy(() => ContentOpportunityEnrichmentSchema).nullable().optional(),
   knowledge_match: ContentKnowledgeCardMatchSchema.nullable().optional()
@@ -878,7 +919,7 @@ export const StructuredDraftPreviewResultSchema = z.object({
 export const ContentWorkItemStructuredDraftGenerationRequestSchema = z.object({
   item: ContentWorkItemSchema,
   sales_brief: ContentSalesBriefSchema.nullable().optional(),
-  claim_ledger: z.unknown().nullable().optional(),
+  claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
   draft_package: ContentDraftPackageSchema.nullable().optional()
 });
 
@@ -986,7 +1027,7 @@ export const ContentWorkItemQualityReviewRequestSchema = z.object({
   item: ContentWorkItemSchema,
   draft_package: ContentDraftPackageSchema.nullable().optional(),
   structured_output: StructuredDraftOutputSchema.nullable().optional(),
-  claim_ledger: z.unknown().nullable().optional(),
+  claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
   sales_brief: ContentSalesBriefSchema.nullable().optional(),
   duplicate_risk: z.string().default("clear")
 });
@@ -1045,7 +1086,7 @@ export const ContentWorkItemHumanReviewRequestSchema = z.object({
   item: ContentWorkItemSchema,
   review: ContentHumanReviewSchema.nullable().optional(),
   draft_package: ContentDraftPackageSchema.nullable().optional(),
-  claim_ledger: z.unknown().nullable().optional()
+  claim_ledger: ContentClaimLedgerSchema.nullable().optional()
 });
 
 export const ContentWorkItemSnapshotHumanReviewRequestSchema = z.object({
