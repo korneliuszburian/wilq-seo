@@ -144,6 +144,14 @@ API status later contradicts this state.
   Ads campaign and recommendation review actions can show campaign/recommendation
   scope, API-owned required validation labels and blocked claim labels without
   exposing raw enums as marketer copy.
+- `wilq-ads-doctor` passed deterministic smoke and non-interactive eval after
+  action-summary hardening; artifact:
+  `.local-lab/evals/codex-skill/20260702T132226Z`. Score 5,
+  `failure_tags=[]`. The useful output gives five review priorities across
+  campaign/budget context, recommendations, search terms with 90-day safety,
+  custom segments and change-history/impression-share audit, while blocking
+  budget scaling, recommendation apply, negative keyword apply, targeting
+  writes, ROAS, waste, CPA, margin and change-impact claims.
 - GA4 usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
   surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer

@@ -221,6 +221,42 @@ Result:
   Dashboard now shows `Ads Doctor: co dziś zrobić` and `Kolejność pracy` before
   deeper diagnostics.
 
+## 2026-07-02 - Ads Doctor post-action-summary eval
+
+Purpose:
+
+- Verify that `wilq-ads-doctor` gives a BDOS-style Ads review queue after the
+  dashboard/action-summary hardening, not a raw diagnostics dump.
+- Check that the answer covers campaigns, budgets, recommendations, search
+  terms, negative keyword safety, custom segments, freshness and blocked write
+  claims without inventing ROAS, waste or safe mutation paths.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T132226Z/wilq-ads-doctor/result.json`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Smoke proof: `google_ads` is configured, `live_data_available=true`,
+  `latest_refresh_status=completed`, default context has 5 compact decisions
+  and full context has 14 decisions.
+- Validated actions include `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` and
+  `act_prepare_negative_keyword_review_queue`.
+- The answer gives five useful review priorities: campaign/budget context,
+  Google Ads recommendations, search terms with 90-day safety, custom segment
+  review and change-history/impression-share audit.
+- The skill keeps writes and unsupported claims blocked: budget scaling,
+  recommendation apply, negative keyword apply, targeting writes, ROAS, waste,
+  CPA, margin, conversion-drop and change-impact claims.
+
 ## 2026-07-02 - GA4 dashboard usefulness review
 
 Purpose:
