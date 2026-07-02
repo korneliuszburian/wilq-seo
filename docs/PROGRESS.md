@@ -214,6 +214,10 @@ API status later contradicts this state.
   `wilq-social-publisher` context-pack. It shows the review-only decision,
   missing LinkedIn/Facebook history blocker and required metadata-only fields in
   Polish, without exposing raw evidence/action IDs or requiring raw post bodies.
+- Strict skill eval coverage audit passed on 2026-07-02:
+  `case_count=13`, `skill_dir_count=13`, `hard_gap_count=0`,
+  `warning_count=0`, `pass=true`. This proves eval coverage structure, not
+  perfect output quality for every future prompt.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

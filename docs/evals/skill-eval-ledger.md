@@ -42,6 +42,38 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-07-02 - Strict skill eval coverage audit
+
+Purpose:
+
+- Verify that WILQ's current operator skills have explicit deterministic eval
+  coverage before claiming BDOS-class workflow quality.
+- Check that the eval suite tracks production-like Polish inputs, evidence,
+  source connectors, blocked claims, freshness handling and usefulness score.
+
+Proof:
+
+```bash
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- `case_count=13` and `skill_dir_count=13`.
+- Covered skills: `wilq-daily-command`, `wilq-ads-doctor`,
+  `wilq-gsc-content-doctor`, `wilq-ahrefs-gap-finder`,
+  `wilq-localo-operator`, `wilq-content-strategist`,
+  `wilq-content-operator`, `wilq-social-publisher`,
+  `wilq-campaign-builder`, `wilq-custom-segments`,
+  `wilq-demand-gen-operator`, `wilq-ga4-analyst` and
+  `wilq-merchant-feed-operator`.
+- `missing_skill_cases=[]`, `unknown_case_skills=[]`,
+  `missing_required_schema_fields=[]`, `hard_gap_count=0`,
+  `warning_count=0`, `pass=true`.
+- Audit confirms coverage structure, not perfect output quality. Individual
+  non-interactive eval runs still decide whether a skill's current answer is
+  useful enough for a marketer.
+
 ## 2026-07-02 - Eko-Opieka usefulness review
 
 Purpose:
