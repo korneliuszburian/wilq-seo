@@ -14,6 +14,7 @@ from wilq.content.knowledge.source_facts import (
     knowledge_lifecycle_from_review_status,
 )
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID
 
 ContentKnowledgeCardType = Literal[
     "service",
@@ -372,7 +373,9 @@ def compile_source_facts_to_knowledge_cards(
                 source_lineage=_unique(fact.source_url_or_path for fact in card_facts),
                 source_fact_ids=[fact.source_id for fact in card_facts],
                 evidence_ids=_unique(
-                    evidence_id for fact in card_facts for evidence_id in fact.evidence_ids
+                    evidence_id
+                    for fact in card_facts
+                    for evidence_id in _source_fact_evidence_ids(fact)
                 ),
                 source_connectors=_unique(
                     connector for fact in card_facts for connector in fact.source_connectors
@@ -588,6 +591,12 @@ def _source_fact_review_claim_rules(
                 )
             )
     return rules
+
+
+def _source_fact_evidence_ids(fact: ContentSourceFact) -> list[str]:
+    if fact.evidence_ids:
+        return fact.evidence_ids
+    return [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID]
 
 
 def _source_fact_forbidden_claim_rules(

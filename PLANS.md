@@ -1045,6 +1045,10 @@ Stop and record a blocker if:
 - 2026-07-02: Mixed source-fact lifecycle is regression-tested: if an approved
   fact and a review-required fact compile into the same card, the card remains
   `source_backed_review_required` and cannot unlock production-depth readiness.
+- 2026-07-02: Review-required source facts without their own evidence IDs now
+  compile with fallback evidence `ev_content_service_profile_source_facts`,
+  which proves Service Profile/source-fact lineage exists without implying
+  human approval.
 
 ## Surprises & Discoveries
 

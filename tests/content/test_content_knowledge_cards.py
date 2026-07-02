@@ -168,6 +168,7 @@ def test_source_facts_compile_to_review_required_cards() -> None:
     assert bdo_card.lifecycle_status == "source_backed_review_required"
     assert bdo_card.freshness == "public_site_review_required_2026-07-01"
     assert bdo_card.source_fact_ids == ["ekologus_public_bdo_faq_2026_07_01"]
+    assert bdo_card.evidence_ids == [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID]
     assert bdo_card.source_connectors == ["public_site"]
     assert "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/" in (
         bdo_card.source_lineage
@@ -273,7 +274,10 @@ def test_mixed_source_fact_review_state_stays_review_required() -> None:
     assert len(cards) == 1
     card = cards[0]
     assert card.lifecycle_status == "source_backed_review_required"
-    assert card.evidence_ids == ["ev_owner_review_bdo_service_fact"]
+    assert card.evidence_ids == [
+        "ev_owner_review_bdo_service_fact",
+        SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID,
+    ]
     assert card.source_fact_ids == [
         "approved_bdo_service_fact",
         "review_required_bdo_deadline_fact",
