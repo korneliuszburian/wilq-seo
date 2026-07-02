@@ -3667,8 +3667,11 @@ def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
     assert "oauth_error=invalid_grant" not in action["human_diagnosis"]
     assert "credentials" not in action["human_diagnosis"]
     assert "refresh token" not in action["human_diagnosis"]
-    assert "client_secret" in action["payload"]["oauth_client_json_path"]
+    assert "$WILQ_GOOGLE_ADS_CLIENT_SECRET_FILE" in action["payload"]["oauth_client_json_path"]
     assert "GOOGLE_ADS_REFRESH_TOKEN" in action["payload"]["required_env"]
+    assert "/home/" not in serialized
+    assert "marketing@rekurencja.com" not in serialized
+    assert "client_secret_504856024095" not in serialized
     assert "ya29." not in serialized
     assert "refresh-token" not in serialized.lower()
     assert "client-secret-test" not in serialized

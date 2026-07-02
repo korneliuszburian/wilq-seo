@@ -219,6 +219,18 @@ exposes API-owned `decision_options`, aligned with
 `stale` and `reject`. Dashboard and the UAT packet now show those options for
 the review queue so Wilku can record outcomes without guessing accepted values.
 
+Under Beads task `wilq-seo-pred`, Goal 005 completion is fail-closed through
+`scripts/goal_005_completion_check.py`. Completion claims require either a
+validated real UAT result or an explicit owner defer with residual risk,
+blocked claims and next review. Without one of those inputs the script blocks
+claims that Goal 005 is done, that real Wilku usefulness is proven, or that
+production-depth/final draft readiness exists.
+
+Repository audit follow-up on 2026-07-02 confirmed a real committed-state
+risk: `wilq/credentials` was present locally but ignored by `.gitignore`, so a
+fresh checkout could miss `wilq.credentials.runtime`. The package is now part
+of the runtime surface and must stay covered by `tests/test_runtime_imports.py`.
+
 Under Beads task `wilq-seo-x51h`, Service Profile review actions now expose
 API-owned `review_requirements`, also aligned with
 `scripts/record_service_profile_review_result.py`. The dashboard and UAT packet

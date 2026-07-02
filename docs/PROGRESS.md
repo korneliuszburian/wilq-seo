@@ -168,6 +168,16 @@ API status later contradicts this state.
   with the review recorder: `approve`, `needs_changes`, `stale`, `reject`.
   Live API and UAT packet both return those options on private service and
   claim-policy review actions.
+- Goal 005 completion is now guarded by
+  `scripts/goal_005_completion_check.py`. It fails closed unless given a
+  validated real UAT result from `scripts/record_goal_005_content_uat_result.py`
+  or an explicit owner defer JSON with residual risk and blocked claims. This
+  prevents claiming Goal 005 completion, Wilku usefulness, production-depth
+  readiness or final draft/publish readiness without proof.
+- Runtime import audit follow-up on 2026-07-02 found that `wilq/credentials`
+  existed locally but was ignored by `.gitignore`, which explained the
+  GitHub-visible `wilq.credentials.runtime` 404 risk. The package is now
+  intended to be committed and protected by `tests/test_runtime_imports.py`.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

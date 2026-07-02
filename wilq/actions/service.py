@@ -157,29 +157,26 @@ def seed_static_actions() -> dict[str, ActionObject]:
             "odczytać kampanii, wyszukiwanych haseł ani rekomendacji."
         ),
         recommended_reason=(
-            "Uruchom ponowną zgodę dla marketing@rekurencja.com, potem odśwież "
-            "dane Google Ads w WILQ."
+            "Uruchom ponowną zgodę na właściwym koncie Google operatora, potem "
+            "odśwież dane Google Ads w WILQ."
         ),
         payload={
             "action_type": "repair_google_ads_oauth",
             "connector": "google_ads",
             "credential_source": "repo_env",
             "oauth_client_json_path": (
-                "/home/krn/.local/wilq/"
-                "client_secret_504856024095-"
-                "0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json"
+                "$WILQ_GOOGLE_ADS_CLIENT_SECRET_FILE albo lokalna ścieżka do "
+                "OAuth desktop client JSON"
             ),
             "oauth_scope": "https://www.googleapis.com/auth/adwords",
             "helper_commands": [
                 (
                     "uv run wilq google-ads oauth-url --client-secret-file "
-                    "/home/krn/.local/wilq/client_secret_504856024095-"
-                    "0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json"
+                    "$WILQ_GOOGLE_ADS_CLIENT_SECRET_FILE"
                 ),
                 (
                     "uv run wilq google-ads oauth-exchange --client-secret-file "
-                    "/home/krn/.local/wilq/client_secret_504856024095-"
-                    "0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json "
+                    "$WILQ_GOOGLE_ADS_CLIENT_SECRET_FILE "
                     "--redirect-url '<final localhost URL>' --write-env"
                 ),
                 (

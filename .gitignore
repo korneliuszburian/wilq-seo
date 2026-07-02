@@ -29,6 +29,8 @@ test-results/
 ekologus-access-pack-*/
 *.tar.gz
 credentials/
+!wilq/credentials/
+!wilq/credentials/**
 *oauth-client*.json
 *application_default_credentials*.json
 
