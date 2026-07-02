@@ -106,13 +106,13 @@ class PrivateSourceProposal(BaseModel):
         if self.review_status == "approved":
             if not (self.reviewer or "").strip():
                 raise ValueError("approved private source proposals require reviewer")
-            if self.retention_decision == "pending_owner_decision":
+            if self.retention_decision in {"pending_owner_decision", "do_not_retain"}:
                 raise ValueError(
-                    "approved private source proposals require resolved retention_decision"
+                    "approved private source proposals require usable retention_decision"
                 )
-            if self.freshness_status == "unknown":
+            if self.freshness_status in {"stale", "unknown"}:
                 raise ValueError(
-                    "approved private source proposals require known freshness_status"
+                    "approved private source proposals require usable freshness_status"
                 )
 
         return self

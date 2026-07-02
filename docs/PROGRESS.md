@@ -140,6 +140,9 @@ API status later contradicts this state.
 - Approved private source proposals also require resolved retention and known
   freshness, so an ekologus-ai/private proposal cannot look approved while
   owner retention or source currency remains undecided.
+- The approved private proposal state now also rejects `do_not_retain`
+  retention and `stale` freshness, so approval cannot represent a source that
+  the governance model says should not be retained or is out of date.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they

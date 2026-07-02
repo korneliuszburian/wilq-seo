@@ -198,8 +198,23 @@ def test_private_source_proposals_require_review_governance_fields() -> None:
     invalid_payload = dict(payload)
     invalid_payload["review_status"] = "approved"
     invalid_payload["reviewer"] = "Wilku"
+    invalid_payload["retention_decision"] = "do_not_retain"
+    with pytest.raises(ValidationError, match="retention_decision"):
+        proposal.__class__.model_validate(invalid_payload)
+
+    invalid_payload = dict(payload)
+    invalid_payload["review_status"] = "approved"
+    invalid_payload["reviewer"] = "Wilku"
     invalid_payload["retention_decision"] = "retain_while_source_approved"
     invalid_payload["freshness_status"] = "unknown"
+    with pytest.raises(ValidationError, match="freshness_status"):
+        proposal.__class__.model_validate(invalid_payload)
+
+    invalid_payload = dict(payload)
+    invalid_payload["review_status"] = "approved"
+    invalid_payload["reviewer"] = "Wilku"
+    invalid_payload["retention_decision"] = "retain_while_source_approved"
+    invalid_payload["freshness_status"] = "stale"
     with pytest.raises(ValidationError, match="freshness_status"):
         proposal.__class__.model_validate(invalid_payload)
 
