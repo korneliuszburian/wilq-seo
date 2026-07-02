@@ -146,6 +146,13 @@ API status later contradicts this state.
   the contract is strict and `publish_ready=false`. `scripts/pre_demo_gate.sh`
   now runs this audit before context-pack language checks, so stakeholder-demo
   proof covers both dashboard usefulness and content generation safety.
+- Goal 005 completion guard now includes pre-demo gate summaries in every
+  completion report: source-fact coverage, Claim Ledger generation gate and
+  strict skill eval coverage. It still returns
+  `blocked_missing_goal_005_uat_proof` without a real UAT result or explicit
+  owner defer, but the blocker now also shows that source facts are
+  `source_backed_review_required`, production-depth is 0%, Claim Ledger has
+  10/10 checks and skill eval coverage has 13/13 cases with 0 hard gaps.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production

@@ -6,10 +6,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from scripts.audit_skill_eval_coverage import build_report as build_skill_eval_coverage_report
+from scripts.claim_ledger_gate_audit import build_report as build_claim_ledger_gate_report
 from scripts.record_goal_005_content_uat_result import (
     build_content_uat_result_report,
     load_json,
 )
+from scripts.source_fact_coverage_audit import build_report as build_source_fact_coverage_report
 
 REQUIRED_DOCS = [
     Path("PLANS.md"),
@@ -76,9 +79,14 @@ def build_completion_report(
     owner_defer: Path | None = None,
     api_base: str | None = None,
 ) -> dict[str, Any]:
+    pre_demo_audits = goal_005_pre_demo_audit_summary()
     missing_docs = [str(path) for path in REQUIRED_DOCS if not path.exists()]
     if missing_docs:
-        return blocked_report("required_goal_005_docs", missing_docs)
+        return blocked_report(
+            "required_goal_005_docs",
+            missing_docs,
+            pre_demo_audits=pre_demo_audits,
+        )
 
     if uat_result is not None:
         uat_report = validate_uat_result(uat_result, api_base=api_base)
@@ -99,6 +107,7 @@ def build_completion_report(
                     ],
                 ],
                 uat_live_provenance=uat_report.get("live_provenance_summary"),
+                pre_demo_audits=pre_demo_audits,
             )
         if uat_report["valid"] and uat_report["overall_status"] == "ready_for_full_content_uat":
             return {
@@ -109,9 +118,10 @@ def build_completion_report(
                 "selected_work_item": uat_report["selected_work_item"],
                 "shown_review_artifacts": uat_report["shown_review_artifacts"],
                 "uat_live_provenance": uat_report.get("live_provenance_summary"),
+                "pre_demo_audits": pre_demo_audits,
                 "safe_scope": (
                     "Goal 005 ma zwalidowany wynik realnego UAT. Domknięcie nadal "
-                    "wymaga zgodności pozostałych kryteriów goalu i pełnego verify."
+                    "wymaga zgodności z pozostałymi kryteriami goalu i pełnego verify."
                 ),
                 "blocked_claims": [],
             }
@@ -124,8 +134,13 @@ def build_completion_report(
                     "Use this as follow-up evidence, or provide explicit owner defer.",
                 ],
                 uat_live_provenance=uat_report.get("live_provenance_summary"),
+                pre_demo_audits=pre_demo_audits,
             )
-        return blocked_report("valid_goal_005_uat_result", uat_report["errors"])
+        return blocked_report(
+            "valid_goal_005_uat_result",
+            uat_report["errors"],
+            pre_demo_audits=pre_demo_audits,
+        )
 
     if owner_defer is not None:
         defer_report = validate_owner_defer(owner_defer)
@@ -141,8 +156,13 @@ def build_completion_report(
                 "next_review": defer_report["next_review"],
                 "next_uat_input": defer_report["next_uat_input"],
                 "blocked_claims": defer_report["blocked_claims"],
+                "pre_demo_audits": pre_demo_audits,
             }
-        return blocked_report("valid_goal_005_owner_defer", defer_report["errors"])
+        return blocked_report(
+            "valid_goal_005_owner_defer",
+            defer_report["errors"],
+            pre_demo_audits=pre_demo_audits,
+        )
 
     return blocked_report(
         "goal_005_uat_result_or_owner_defer",
@@ -150,7 +170,46 @@ def build_completion_report(
             "Provide --uat-result with a validated Goal 005 UAT JSON, or",
             "provide --owner-defer with explicit owner defer and residual risk.",
         ],
+        pre_demo_audits=pre_demo_audits,
     )
+
+
+def goal_005_pre_demo_audit_summary() -> dict[str, Any]:
+    source_report = build_source_fact_coverage_report()
+    claim_report = build_claim_ledger_gate_report()
+    eval_report = build_skill_eval_coverage_report()
+    return {
+        "source_fact_coverage": {
+            "pass": source_report["pass"],
+            "knowledge_status": source_report["knowledge_status"],
+            "ready_for_daily_content": source_report["ready_for_daily_content"],
+            "production_depth_percent": source_report["production_depth_percent"],
+            "approved_service_percent": source_report["approved_service_percent"],
+            "reviewed_fact_percent": source_report["reviewed_fact_percent"],
+            "fact_count": source_report["fact_count"],
+            "review_action_count": source_report["review_action_count"],
+            "private_review_required_count": source_report[
+                "private_review_required_count"
+            ],
+        },
+        "claim_ledger_gate": {
+            "pass": claim_report["pass"],
+            "check_count": claim_report["check_count"],
+            "passed_count": claim_report["passed_count"],
+            "failed_count": claim_report["failed_count"],
+            "publish_ready_locked": claim_report["publish_ready_locked"],
+            "structured_generation_blocks": claim_report[
+                "structured_generation_blocks"
+            ],
+        },
+        "skill_eval_coverage": {
+            "pass": eval_report["pass"],
+            "case_count": eval_report["case_count"],
+            "skill_dir_count": eval_report["skill_dir_count"],
+            "hard_gap_count": eval_report["summary"]["hard_gap_count"],
+            "warning_count": eval_report["summary"]["warning_count"],
+        },
+    }
 
 
 def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str, Any]:
@@ -257,15 +316,17 @@ def blocked_report(
     details: list[str],
     *,
     uat_live_provenance: dict[str, Any] | None = None,
+    pre_demo_audits: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "status": "blocked_missing_goal_005_uat_proof",
         "missing_input": missing_input,
         "details": details,
         "uat_live_provenance": uat_live_provenance,
+        "pre_demo_audits": pre_demo_audits or goal_005_pre_demo_audit_summary(),
         "safe_scope": (
-            "Service Profile, review handoffs and UAT packet can be shown as "
-            "preparation, not as a completed usefulness proof."
+            "Service Profile, materiały review i UAT packet można pokazać jako "
+            "przygotowanie, ale nie jako ukończony dowód użyteczności."
         ),
         "blocked_claims": [
             "ukończony Goal 005",
@@ -300,6 +361,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         if report.get("uat_live_provenance"):
             lines.extend(["", "## Live UAT provenance"])
             lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
+        if report.get("pre_demo_audits"):
+            lines.extend(["", "## Pre-demo gates"])
+            lines.extend(render_pre_demo_audits(report["pre_demo_audits"]))
         lines.extend(["", "## Co odblokowuje domknięcie"])
         lines.extend(f"- {item}" for item in report["unblockers"])
     else:
@@ -318,6 +382,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         if report.get("uat_live_provenance"):
             lines.extend(["", "## Live UAT provenance"])
             lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
+        if report.get("pre_demo_audits"):
+            lines.extend(["", "## Pre-demo gates"])
+            lines.extend(render_pre_demo_audits(report["pre_demo_audits"]))
         if report.get("residual_risk"):
             lines.extend(["", "## Ryzyko rezydualne", report["residual_risk"]])
         if report.get("next_uat_input"):
@@ -341,6 +408,28 @@ def render_uat_live_provenance(value: dict[str, Any]) -> list[str]:
         + (", ".join(evidence_ids) or "brak"),
         "- Production-depth ready: "
         + ("tak" if value.get("production_depth_ready") is True else "nie"),
+    ]
+
+
+def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
+    source = value.get("source_fact_coverage") or {}
+    claim = value.get("claim_ledger_gate") or {}
+    eval_coverage = value.get("skill_eval_coverage") or {}
+    return [
+        "- Source facts: "
+        f"`pass={str(source.get('pass')).lower()}`, "
+        f"`knowledge_status={source.get('knowledge_status')}`, "
+        f"`production_depth={source.get('production_depth_percent')}%`, "
+        f"`ready_for_daily_content={str(source.get('ready_for_daily_content')).lower()}`",
+        "- Claim Ledger gate: "
+        f"`pass={str(claim.get('pass')).lower()}`, "
+        f"`checks={claim.get('passed_count')}/{claim.get('check_count')}`, "
+        f"`publish_ready_locked={str(claim.get('publish_ready_locked')).lower()}`",
+        "- Skill eval coverage: "
+        f"`pass={str(eval_coverage.get('pass')).lower()}`, "
+        f"`cases={eval_coverage.get('case_count')}`, "
+        f"`skills={eval_coverage.get('skill_dir_count')}`, "
+        f"`hard_gaps={eval_coverage.get('hard_gap_count')}`",
     ]
 
 

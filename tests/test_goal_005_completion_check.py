@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.goal_005_completion_check import (
     blocked_report,
     build_completion_report,
+    goal_005_pre_demo_audit_summary,
     render_markdown,
     uat_live_provenance_summary,
     validate_owner_defer,
@@ -19,6 +20,33 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert report["missing_input"] == "goal_005_uat_result_or_owner_defer"
     assert "ukończony Goal 005" in report["blocked_claims"]
     assert "Service Profile" in report["safe_scope"]
+    assert report["pre_demo_audits"]["source_fact_coverage"]["knowledge_status"] == (
+        "source_backed_review_required"
+    )
+    assert report["pre_demo_audits"]["source_fact_coverage"][
+        "production_depth_percent"
+    ] == 0
+    assert report["pre_demo_audits"]["claim_ledger_gate"]["publish_ready_locked"] is True
+    assert report["pre_demo_audits"]["skill_eval_coverage"]["hard_gap_count"] == 0
+
+
+def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
+    summary = goal_005_pre_demo_audit_summary()
+
+    assert summary["source_fact_coverage"]["pass"] is True
+    assert summary["source_fact_coverage"]["ready_for_daily_content"] is False
+    assert summary["source_fact_coverage"]["private_review_required_count"] >= 5
+    assert summary["claim_ledger_gate"]["pass"] is True
+    assert summary["claim_ledger_gate"]["passed_count"] == summary["claim_ledger_gate"][
+        "check_count"
+    ]
+    assert "missing_claim_ledger" in summary["claim_ledger_gate"][
+        "structured_generation_blocks"
+    ]
+    assert summary["skill_eval_coverage"]["pass"] is True
+    assert summary["skill_eval_coverage"]["case_count"] == summary["skill_eval_coverage"][
+        "skill_dir_count"
+    ]
 
 
 def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
@@ -133,6 +161,9 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
 
     assert report["uat_live_provenance"] == provenance
     assert "## Live UAT provenance" in markdown
+    assert "## Pre-demo gates" in markdown
+    assert "production_depth=0%" in markdown
+    assert "publish_ready_locked=true" in markdown
     assert "Sales Brief status: `blocked`" in markdown
     assert "Sales Brief blocker: Brakuje karty usługi; Brakuje karty CTA" in markdown
     assert "Sales Brief constraint evidence: ev_content_service_profile_source_facts" in markdown
