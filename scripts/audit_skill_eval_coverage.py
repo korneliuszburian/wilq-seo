@@ -22,6 +22,8 @@ REQUIRED_RESULT_FIELDS = {
     "blocked",
     "operator_next_step",
     "operator_usefulness_score",
+    "eval_rubric",
+    "failure_tags",
     "decision_quality",
     "notes",
 }
@@ -122,6 +124,8 @@ def build_report() -> dict[str, Any]:
             "openai_alignment": [
                 "production_like_polish_inputs",
                 "structured_output_schema",
+                "task_specific_pass_fail_gates",
+                "failure_tagging",
                 "deterministic_evidence_and_connector_grades",
                 "blocked_claim_grades",
                 "freshness_handling",

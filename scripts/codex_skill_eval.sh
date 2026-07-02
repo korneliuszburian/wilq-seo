@@ -259,6 +259,11 @@ minimalny próg to operator_usefulness_score >= {minimum_operator_usefulness_sco
 Ustaw 4 tylko wtedy, gdy odpowiedź daje konkretną decyzję, priorytet, dowody,
 blokady, freshness/refresh handling i bezpieczny następny krok. Ustaw 5 tylko
 wtedy, gdy marketer może realnie użyć wyniku bez tłumaczenia surowych pól API.
+Wypełnij `eval_rubric` jako deterministic pass/fail gates dla realnego workflow:
+każdy hard gate ma mówić, czy odpowiedź poprawnie obsłużyła wymaganie, także
+przez blocker lub repair path. `failure_tags` opisują awarie odpowiedzi skilla,
+nie normalne blokady produktu w WILQ; jeśli wszystkie hard gate'y są true, lista
+`failure_tags` musi być pusta.
 </quality_bar>
 
 <api>
@@ -301,6 +306,14 @@ Oczekiwane connector surfaces: {connectors}
     źródeł danych i danych ze smoke/API.
   - `notes_pl` krótko wyjaśnia po polsku, dlaczego decyzja jest użyteczna albo
     co blokuje pełną decyzję.
+- Pole `eval_rubric` jest obowiązkowe. Ustaw
+  `evaluator_type="deterministic_pass_fail"` i oceń hard gate'y:
+  evidence_requirement_handled, source_connector_requirement_handled,
+  blocked_claims_handled, action_validation_handled,
+  freshness_or_blocker_handled, workflow_specificity_handled.
+- Jeżeli jakikolwiek hard gate jest false, dodaj właściwy `failure_tags`, ustaw
+  `operator_usefulness_score` najwyżej 3 i jasno opisz problem w `notes` albo
+  `blocked_reason`.
 - Wykonaj najwyżej: odczyt SKILL.md/output-contract i poniższy smoke script. Potem zakończ finalnym JSON.
 - Nie używaj raw `curl`, `jq` ani dodatkowych requestów, jeżeli smoke script działa.
 </rules>
@@ -411,6 +424,38 @@ if int(data.get("operator_usefulness_score", 0)) < minimum_operator_usefulness_s
         "operator_usefulness_score must be >= "
         f"{minimum_operator_usefulness_score}"
     )
+
+eval_rubric = data.get("eval_rubric") or {}
+if eval_rubric.get("evaluator_type") != "deterministic_pass_fail":
+    errors.append("eval_rubric.evaluator_type must be deterministic_pass_fail")
+if not str(eval_rubric.get("objective_pl") or "").strip():
+    errors.append("eval_rubric.objective_pl must be non-empty")
+if not str(eval_rubric.get("score_reason_pl") or "").strip():
+    errors.append("eval_rubric.score_reason_pl must be non-empty")
+hard_gates = eval_rubric.get("hard_gates") or {}
+required_hard_gates = {
+    "evidence_requirement_handled": "missing_evidence_handling",
+    "source_connector_requirement_handled": "missing_source_connector_handling",
+    "blocked_claims_handled": "unsafe_claim_handling",
+    "action_validation_handled": "invalid_action_validation",
+    "freshness_or_blocker_handled": "stale_without_refresh_or_blocker",
+    "workflow_specificity_handled": "generic_workflow_output",
+}
+failure_tag_values = data.get("failure_tags", [])
+failure_tags = set(failure_tag_values)
+if len(failure_tag_values) != len(failure_tags):
+    errors.append("failure_tags must not contain duplicates")
+false_hard_gates = [
+    gate for gate in required_hard_gates if hard_gates.get(gate) is not True
+]
+for gate in false_hard_gates:
+    expected_tag = required_hard_gates[gate]
+    if expected_tag not in failure_tags:
+        errors.append(f"false hard gate {gate} requires failure tag {expected_tag}")
+if false_hard_gates and int(data.get("operator_usefulness_score", 0)) > 3:
+    errors.append("operator_usefulness_score must be <= 3 when any hard gate is false")
+if not false_hard_gates and failure_tags:
+    errors.append("failure_tags must be empty when all hard gates pass")
 
 decision_quality = data.get("decision_quality") or {}
 decision_quality_required = {
@@ -583,6 +628,8 @@ for result_file in sorted(root.glob("wilq-*/result.json")):
             "recommendations_count": len(data["recommendations"]),
             "actions_count": len(data["action_candidates"]),
             "operator_usefulness_score": data["operator_usefulness_score"],
+            "failure_tags": data.get("failure_tags", []),
+            "hard_gates": data.get("eval_rubric", {}).get("hard_gates", {}),
         }
     )
 summary = {

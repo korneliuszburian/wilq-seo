@@ -246,6 +246,15 @@ text that tells Wilku to refresh source data before draft/review work. The
 eval harness no longer seeds the technical term `ActionObject` into
 operator-facing output.
 
+Non-interactive skill evals now include OpenAI-style task-specific hard gates
+and failure tags under Beads task `wilq-seo-s55`. The structured result schema
+requires `eval_rubric` and `failure_tags`; the harness fails runs where a false
+hard gate has no matching failure tag and caps usefulness at 3 if any hard gate
+fails. The first live proof passed for `wilq-gsc-content-doctor` at
+`.local-lab/evals/codex-skill/20260702T001627Z` with score 4, all hard gates
+true, empty failure tags, six evidence IDs and validated
+`act_prepare_content_refresh_queue`.
+
 Google Search Console vendor reads now carry the official Search Analytics
 partial-detail caveat in the API contract. The adapter pins `type=web` and
 persists `detail_data_completeness=partial_possible` for `query,page` reads, so
@@ -685,11 +694,12 @@ Stop and record a blocker if:
   WILQ work must actively restore the local stack when API/dashboard is
   unreachable and must use non-interactive Codex evals as BDOS-class workflow
   proof for realistic marketer commands, not only deterministic smoke scripts.
-- 2026-07-01: Skill eval layer aligned with OpenAI eval guidance: production-like
-  Polish inputs, explicit testing criteria/graders, deterministic coverage
-  audit and default `operator_usefulness_score >= 4`. Stale snapshots are not
-  acceptable as final workflow value; skills must refresh, provide repair path
-  or block conclusions before action.
+- 2026-07-02: Skill eval layer aligned with OpenAI eval guidance:
+  production-like Polish inputs, explicit testing criteria/graders,
+  deterministic coverage audit, default `operator_usefulness_score >= 4`,
+  task-specific hard gates and failure tags. Stale snapshots are not acceptable
+  as final workflow value; skills must refresh, provide repair path or block
+  conclusions before action.
 - 2026-07-01: `wilq-ads-doctor` hardened for BDOS-style operator usefulness:
   broad Ads questions must handle freshness and use full diagnostics/full
   context for the complete review queue, while final output should prioritize

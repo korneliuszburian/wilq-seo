@@ -7,13 +7,31 @@ blocked claims, safe next step and workflow-specific interpretation.
 
 ## OpenAI Baseline
 
-This layer follows the OpenAI eval pattern:
+This layer follows the OpenAI eval pattern from official evaluation guidance:
 
 - Define the task before prompt tuning.
 - Run production-like test inputs, not toy examples.
 - Use structured criteria/graders, not vibes.
 - Inspect failures, tag them and iterate on the system.
 - Treat eval data and harnesses as product assets.
+- Prefer task-specific pass/fail gates for the failure modes that break real
+  work before treating a numeric score as useful.
+- Calibrate any LLM-as-judge layer against human labels before using it as the
+  main optimizer.
+
+Reference basis checked on 2026-07-02:
+
+- OpenAI Evaluation best practices:
+  `https://developers.openai.com/api/docs/guides/evaluation-best-practices`
+  says to define the objective, collect task-specific data, define metrics, run
+  and compare evals, continuously evaluate, automate where possible and keep
+  human feedback in the loop.
+- The same guide recommends pairwise or pass/fail judging for reliability,
+  clear rubrics, length-bias control and human-label agreement before scaling
+  LLM-as-judge.
+- OpenAI cookbook guidance for workflow-specific evals emphasizes hard
+  pass/fail gates, structured outputs, failure tags and treating the eval
+  harness as a product asset rather than a one-off check.
 
 OpenAI docs map to WILQ this way:
 
@@ -24,6 +42,11 @@ OpenAI docs map to WILQ this way:
 - per-item inputs: realistic Polish marketer prompts in each eval case.
 - graders: schema validation, connector/evidence/action checks, blocked-claim
   checks, Polish-language checks, freshness handling and operator usefulness.
+- hard gates: `eval_rubric.hard_gates` for evidence, source connector, blocked
+  claim, action validation, freshness/blocker and workflow-specific handling.
+- failure tags: `failure_tags` for response failures such as missing evidence
+  handling, unsafe claim handling, stale data without refresh/blocker or generic
+  workflow output.
 - analysis loop: `docs/evals/skill-eval-ledger.md` plus Beads follow-up tasks.
 
 ## Required Quality Bar
@@ -40,9 +63,11 @@ Every WILQ skill eval must answer five questions:
 5. Czy next step is safe and concrete enough that Wilku can use it without a
    developer translating raw API state?
 
-The default non-interactive gate requires `operator_usefulness_score >= 4`.
-Score `3` is a guardrail pass only and must be treated as a product gap, not as
-BDOS-class quality.
+The default non-interactive gate requires `operator_usefulness_score >= 4` and
+all `eval_rubric.hard_gates` to pass. Score `3` is a guardrail pass only and
+must be treated as a product gap, not as BDOS-class quality. If any hard gate is
+false, the harness requires a matching `failure_tags` value and caps usefulness
+at 3.
 
 ## Eval Case Requirements
 

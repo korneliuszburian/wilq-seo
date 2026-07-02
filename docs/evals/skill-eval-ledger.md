@@ -10,8 +10,10 @@ This protocol follows the OpenAI eval pattern described in
 `docs/evals/openai-aligned-skill-evals.md`: production-like inputs, explicit
 testing criteria, deterministic graders, failure analysis and iteration. Schema
 validity is only the floor; the default marketer-value gate is
-`operator_usefulness_score >= 4`. Score 3 means guardrail-only quality and
-must create product follow-up before claiming BDOS-class usefulness.
+`operator_usefulness_score >= 4` plus all `eval_rubric.hard_gates=true`.
+Score 3 means guardrail-only quality and must create product follow-up before
+claiming BDOS-class usefulness. `failure_tags` are eval failures in the skill
+answer, not normal WILQ product blockers.
 
 For each skill:
 
@@ -26,13 +28,49 @@ For each skill:
    - Czy nie wymyśla metryk?
    - Czy obsługuje freshness przez refresh, repair path albo blocker?
    - Czy wskazuje konkretny następny krok?
-6. Run deterministic smoke and, where possible, non-interactive Codex eval:
+6. Confirm the structured eval metadata:
+   - `eval_rubric.evaluator_type=deterministic_pass_fail`.
+   - hard gates cover evidence, source connectors, blocked claims, action
+     validation, freshness/blocker and workflow specificity.
+   - if a hard gate fails, `failure_tags` identifies the failure and usefulness
+     score is at most 3.
+7. Run deterministic smoke and, where possible, non-interactive Codex eval:
 
 ```bash
 uv run python scripts/audit_skill_eval_coverage.py --strict
 uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
+
+## 2026-07-02 - OpenAI-aligned hard gates for non-interactive skill evals
+
+Purpose:
+
+- Move WILQ skill evals beyond a single usefulness score.
+- Add task-specific pass/fail gates and failure tags, matching the OpenAI eval
+  guidance in `docs/evals/openai-aligned-skill-evals.md`.
+- Keep product blockers separate from eval failures: a blocked WILQ decision can
+  still pass if the skill handles evidence, source connectors, claims,
+  freshness and safe next step correctly.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- The eval output schema now requires `eval_rubric` and `failure_tags`.
+- `scripts/codex_skill_eval.sh` fails a run when any hard gate is false without
+  a matching failure tag, or when a false hard gate tries to keep
+  `operator_usefulness_score > 3`.
+- The first real GSC non-interactive eval passed at
+  `.local-lab/evals/codex-skill/20260702T001627Z`: score `4`, six evidence IDs,
+  one validated `act_prepare_content_refresh_queue`, empty `failure_tags` and
+  all hard gates true.
 
 ## 2026-07-01 - `wilq-gsc-content-doctor` Search Analytics completeness eval
 

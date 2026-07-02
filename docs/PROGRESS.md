@@ -199,6 +199,13 @@ API status later contradicts this state.
   `refresh-first` / `dane wymagają odświeżenia` / `odśwież dane źródłowe`
   language. The eval prompt no longer seeds `ActionObject` into
   operator-facing output.
+- Non-interactive skill evals now have OpenAI-aligned hard gates and failure
+  tags in addition to `operator_usefulness_score`. The result schema requires
+  `eval_rubric` and `failure_tags`; the harness caps usefulness at 3 when any
+  hard gate fails and requires matching failure tags. First live proof:
+  `.local-lab/evals/codex-skill/20260702T001627Z` for
+  `wilq-gsc-content-doctor` passed with score 4, six evidence IDs, one
+  validated action, empty failure tags and all hard gates true.
 - Marketing brief `safe_next_actions` now mirrors refresh-first stale decision
   handling. Live proof after stack restart on 2026-07-01 showed Merchant,
   content refresh and WordPress draft handoff actions rendered as `kind=blocker`

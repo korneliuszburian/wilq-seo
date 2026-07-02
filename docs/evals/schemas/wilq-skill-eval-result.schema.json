@@ -139,6 +139,77 @@
       "minimum": 1,
       "maximum": 5
     },
+    "eval_rubric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "objective_pl": {
+          "type": "string"
+        },
+        "evaluator_type": {
+          "type": "string",
+          "enum": ["deterministic_pass_fail"]
+        },
+        "hard_gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "evidence_requirement_handled": {
+              "type": "boolean"
+            },
+            "source_connector_requirement_handled": {
+              "type": "boolean"
+            },
+            "blocked_claims_handled": {
+              "type": "boolean"
+            },
+            "action_validation_handled": {
+              "type": "boolean"
+            },
+            "freshness_or_blocker_handled": {
+              "type": "boolean"
+            },
+            "workflow_specificity_handled": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "evidence_requirement_handled",
+            "source_connector_requirement_handled",
+            "blocked_claims_handled",
+            "action_validation_handled",
+            "freshness_or_blocker_handled",
+            "workflow_specificity_handled"
+          ]
+        },
+        "score_reason_pl": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "objective_pl",
+        "evaluator_type",
+        "hard_gates",
+        "score_reason_pl"
+      ]
+    },
+    "failure_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "missing_evidence_handling",
+          "missing_source_connector_handling",
+          "unsafe_claim_handling",
+          "invalid_action_validation",
+          "stale_without_refresh_or_blocker",
+          "generic_workflow_output",
+          "wrong_workflow_surface",
+          "non_polish_operator_output",
+          "secret_or_raw_payload_exposure"
+        ]
+      }
+    },
     "decision_quality": {
       "type": "object",
       "additionalProperties": false,
@@ -194,6 +265,8 @@
     "safety_findings",
     "operator_next_step",
     "operator_usefulness_score",
+    "eval_rubric",
+    "failure_tags",
     "decision_quality",
     "notes"
   ]

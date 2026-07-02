@@ -5,6 +5,7 @@ from pathlib import Path
 
 CASES_PATH = Path("docs/evals/cases/wilq-skill-eval-cases.json")
 HARNESS_PATH = Path("scripts/codex_skill_eval.sh")
+SCHEMA_PATH = Path("docs/evals/schemas/wilq-skill-eval-result.schema.json")
 ADS_SKILL_PATH = Path(".agents/skills/wilq-ads-doctor/SKILL.md")
 ADS_OUTPUT_CONTRACT_PATH = Path(".agents/skills/wilq-ads-doctor/references/output-contract.md")
 CONTENT_SKILL_PATH = Path(".agents/skills/wilq-content-strategist/SKILL.md")
@@ -37,6 +38,41 @@ def test_skill_eval_coverage_audit_has_no_hard_gaps() -> None:
     assert report["summary"]["hard_gap_count"] == 0
     assert "operator_usefulness_threshold" in report["summary"]["openai_alignment"]
     assert "freshness_handling" in report["summary"]["openai_alignment"]
+    assert "task_specific_pass_fail_gates" in report["summary"]["openai_alignment"]
+    assert "failure_tagging" in report["summary"]["openai_alignment"]
+
+
+def test_codex_skill_eval_schema_requires_openai_style_hard_gates() -> None:
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    required = set(schema["required"])
+    assert {"eval_rubric", "failure_tags"}.issubset(required)
+
+    rubric = schema["properties"]["eval_rubric"]
+    assert rubric["properties"]["evaluator_type"]["enum"] == ["deterministic_pass_fail"]
+    gates = rubric["properties"]["hard_gates"]
+    assert set(gates["required"]) == {
+        "evidence_requirement_handled",
+        "source_connector_requirement_handled",
+        "blocked_claims_handled",
+        "action_validation_handled",
+        "freshness_or_blocker_handled",
+        "workflow_specificity_handled",
+    }
+    assert {
+        "missing_evidence_handling",
+        "invalid_action_validation",
+        "generic_workflow_output",
+    }.issubset(set(schema["properties"]["failure_tags"]["items"]["enum"]))
+
+
+def test_codex_skill_eval_harness_validates_hard_gates_independently_of_score() -> None:
+    harness = HARNESS_PATH.read_text(encoding="utf-8")
+
+    assert "false_hard_gates" in harness
+    assert "operator_usefulness_score must be <= 3 when any hard gate is false" in harness
+    assert "failure_tags must be empty when all hard gates pass" in harness
+    assert "failure_tags must not contain duplicates" in harness
+    assert "eval_rubric.evaluator_type must be deterministic_pass_fail" in harness
 
 
 def test_active_eval_prompts_do_not_reintroduce_ads_polglish() -> None:
