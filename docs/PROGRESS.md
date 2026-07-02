@@ -119,6 +119,15 @@ API status later contradicts this state.
   `act_review_merchant_feed_issues`, used `sample_product_ids` only as review
   samples, and blocked product-level ROAS/revenue, price-impact, product
   reapproval and product-feed write claims without missing contracts and audit.
+- GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
+  passed with `operator_usefulness_score=4`, 12 evidence IDs, three
+  recommendations, three action candidates and all hard gates true. It
+  separated `fix_measurement` rows with `(not set)` from `review_traffic_quality`
+  rows for `google / cpc`, validated `act_review_ga4_tracking_quality`, did not
+  invent `review_landing_mapping` as a real queue item, and blocked
+  profitability, revenue, conversion-rate, ROAS, GA4 write and "measurement
+  fixed" claims without separate contracts.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/

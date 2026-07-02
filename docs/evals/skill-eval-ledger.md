@@ -164,6 +164,43 @@ Result:
   review samples only, and blocked product-level ROAS/revenue, price-impact,
   reapproval and feed-write claims without missing contracts and audit.
 
+## 2026-07-02 - `wilq-ga4-analyst` measurement-vs-marketing eval
+
+Purpose:
+
+- Re-check the GA4 analyst after live tests showed `(not set)` rows and blocked
+  statuses that can be misread as campaign or content problems.
+- Verify the skill separates `fix_measurement` from `review_traffic_quality`,
+  preserves WILQ API decision labels and does not infer revenue, ROAS,
+  conversion rate, campaign profitability or "measurement fixed" claims.
+- Confirm the skill handles the current absence of a separate
+  `review_landing_mapping` queue item without inventing that decision.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Smoke passed against live WILQ API. It confirmed `google_analytics_4`
+  configured, `live_data_available=true`, 11 landing groups, four
+  `ga4_diagnostics.decision_queue` entries and valid
+  `act_review_ga4_tracking_quality`.
+- Current decision types are `fix_measurement` and `review_traffic_quality`;
+  smoke did not return a separate `review_landing_mapping` item.
+- Non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260702T025826Z`.
+- Summary: `operator_usefulness_score=4`, `blocked=false`, 12 evidence IDs,
+  three recommendations, three action candidates, empty `failure_tags`, all hard
+  gates true.
+- Output treats `(not set)` rows as measurement blockers first, then reviews
+  `google / cpc` traffic quality only as behavior/intent review. It blocks
+  profitability, revenue, conversion-rate, ROAS, GA4 write and "measurement
+  fixed" claims without separate contracts.
+
 ## 2026-07-02 - OpenAI-aligned hard gates for non-interactive skill evals
 
 Purpose:
