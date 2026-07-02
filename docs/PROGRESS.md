@@ -162,6 +162,13 @@ API status later contradicts this state.
   audience size, ROAS, targeting write, campaign-effectiveness and
   conversion-growth claims until Keyword Planner enrichment and forecast/size
   proof exist.
+- `wilq-demand-gen-operator` passed deterministic smoke and non-interactive
+  eval as a useful blocker; artifact:
+  `.local-lab/evals/codex-skill/20260702T133130Z`. Score 5, `blocked=true`,
+  `failure_tags=[]`. WILQ evaluated 18 Ads campaign rows but has 0 Demand Gen
+  campaign rows, ads, creative assets or Demand Gen landing-quality rows, so
+  the skill correctly blocks launch/readiness/creative-quality/effectiveness
+  claims and only validates `act_review_demand_gen_readiness` as review-only.
 - GA4 usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
   surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer

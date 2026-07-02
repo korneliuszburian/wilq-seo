@@ -295,6 +295,40 @@ Result:
   effectiveness and conversion-growth claims until `keyword_planner_enrichment`
   and `forecast_or_audience_size` are available.
 
+## 2026-07-02 - Demand Gen blocked-readiness eval
+
+Purpose:
+
+- Verify that `wilq-demand-gen-operator` handles the current Demand Gen state
+  as a useful blocker, not as a speculative campaign recommendation.
+- Confirm Ads + GA4 evidence, action validation and blocked claims are present
+  even when no Demand Gen campaign rows exist.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T133130Z/wilq-demand-gen-operator/result.json`.
+- `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
+  gates true.
+- Smoke proof: `google_ads` and `google_analytics_4` are configured,
+  `action_count=1`, `act_review_demand_gen_readiness` validates as
+  `valid=true`, and `evidence_count=80` in the smoke context.
+- Demand Gen readiness is intentionally blocked: 18 Ads campaign rows evaluated
+  across Performance Max/Search, but `demand_gen_campaign_row_count=0`,
+  `demand_gen_ad_group_ad_row_count=0`,
+  `demand_gen_creative_asset_row_count=0` and
+  `demand_gen_landing_quality_row_count=0`.
+- The answer correctly blocks recommendations to launch Demand Gen, claims
+  about Demand Gen mode readiness, creative quality, creative effectiveness,
+  campaign changes and effectiveness growth.
+
 ## 2026-07-02 - GA4 dashboard usefulness review
 
 Purpose:
