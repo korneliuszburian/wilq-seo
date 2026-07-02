@@ -165,6 +165,17 @@ Po uzupełnieniu decyzji Wilka/ownera sprawdź wynik:
 rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-policy-review-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
 ```
 
+Potem sprawdź, czy wynik review jest w ogóle gotowy do osobnego promotion
+request:
+
+```bash
+rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-policy-review-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --promotion-readiness --format markdown
+```
+
+To nadal nie promuje private proposal do source fact. Obecny live stan powinien
+blokować promotion readiness, jeżeli brakuje `evidence_ids` albo decyzja
+retencji nadal jest `pending_owner_decision`.
+
 ## Czego ten review nie robi
 
 - Nie promuje private proposal do source fact.

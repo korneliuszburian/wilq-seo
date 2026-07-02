@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from scripts.record_service_profile_review_result import (
     PRIVATE_DECISION_BOOLEAN_FIELDS,
     build_input_example,
+    build_promotion_readiness_report,
     build_review_result_report,
     render_markdown,
 )
@@ -259,6 +262,60 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert "Private proposal provenance z live Service Profile" in markdown
     assert "freshness=current" in markdown
     assert "audience=company_wide" in markdown
+
+
+def test_service_profile_promotion_readiness_blocks_private_without_evidence() -> None:
+    payload = _private_eko_opieka_approved_payload()
+
+    report = build_promotion_readiness_report(payload, live_context=_live_context())
+
+    assert report["report_type"] == "service_profile_promotion_readiness_v1"
+    assert report["review_ready"] is True
+    assert report["promotion_request_ready"] is False
+    assert report["promotion_allowed"] is False
+    assert report["mutation_allowed"] is False
+    assert report["production_depth_unlocked"] is False
+    assert report["raw_private_text_included"] is False
+    assert "missing_evidence_ids" in report["promotion_blockers"]
+    assert "private_retention_not_usable" in report["promotion_blockers"]
+    preview = report["promotion_request_preview"][0]
+    assert preview["source_connectors"] == ["ekologus_ai_private_source_catalog"]
+    assert preview["blocked_claims"]
+    assert preview["promotion_ready"] is False
+    assert "nie edytuje source_facts.json" in report["safety_note"].lower()
+
+
+def test_service_profile_promotion_readiness_prepares_complete_private_preview(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _private_eko_opieka_approved_payload()
+    live_context = _live_context()
+    proposal = live_context["service_profile"]["private_source_proposals"][0]  # type: ignore[index]
+    proposal["retention_decision"] = "retain_while_source_approved"
+    monkeypatch.setattr(
+        "scripts.record_service_profile_review_result.source_fact_by_id",
+        lambda: {
+            "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01": SimpleNamespace(
+                evidence_ids=["ev_private_reviewed_eko_opieka"],
+                source_connectors=["ekologus_ai_private_source_catalog"],
+                freshness_date="2026-07-01",
+                confidence=0.82,
+            )
+        },
+    )
+
+    report = build_promotion_readiness_report(payload, live_context=live_context)
+
+    assert report["review_ready"] is True
+    assert report["promotion_request_ready"] is True
+    assert report["promotion_allowed"] is False
+    assert report["mutation_allowed"] is False
+    assert report["production_depth_unlocked"] is False
+    assert report["promotion_blockers"] == []
+    preview = report["promotion_request_preview"][0]
+    assert preview["promotion_ready"] is True
+    assert preview["evidence_ids"] == ["ev_private_reviewed_eko_opieka"]
+    assert preview["retention_decision"] == "retain_while_source_approved"
 
 
 def test_service_profile_review_result_follows_new_live_private_required_field() -> None:
@@ -516,6 +573,18 @@ def _live_context() -> dict[str, object]:
                     "retention_decision": "pending_owner_decision",
                     "risk_tier": "medium",
                     "support_level": "partial",
+                    "data_classes": ["service_strategy", "internal_operational"],
+                    "source_block_refs": ["KB_001_EKO_OPIEKA"],
+                    "deletion_path": [
+                        "Usuń albo odrzuć redacted proposal w Service Profile review."
+                    ],
+                    "eval_case_ids": [
+                        "goal_005_private_service_review",
+                        "goal_005_service_profile_uat",
+                    ],
+                    "blocked_claims": [
+                        "obiecanie klientowi pełnej zgodności bez audytu i review"
+                    ],
                     "promotion_allowed": False,
                     "redacted": True,
                 }
@@ -573,6 +642,32 @@ def _public_review_requirements() -> list[dict[str, object]]:
         },
         {"field": "notes", "requirement_type": "text", "required": True},
     ]
+
+
+def _private_eko_opieka_approved_payload() -> dict[str, object]:
+    return {
+        "review_type": "private_source_proposals",
+        "data_review": "2026-07-02",
+        "reviewer": "Wilku",
+        "scope_label": "prywatne propozycje ekologus-ai",
+        "decisions": [
+            {
+                "action_id": "renamed_private_eko_opieka_review",
+                "target_card_id": "ekologus_service_eko_opieka_calendar",
+                "decision": "approve",
+                "source_trace_clear": "tak",
+                "blocked_claims_reviewed": "tak",
+                "data_classes_confirmed": "tak",
+                "source_block_refs_confirmed": "tak",
+                "freshness_status_confirmed": "tak",
+                "audience_scope_confirmed": "tak",
+                "retention_decision_confirmed": "tak",
+                "deletion_path_confirmed": "tak",
+                "eval_gates_confirmed": "tak",
+                "notes": "Redacted opis wystarcza do przygotowania readiness preview.",
+            }
+        ],
+    }
 
 
 def _private_review_requirements() -> list[dict[str, object]]:

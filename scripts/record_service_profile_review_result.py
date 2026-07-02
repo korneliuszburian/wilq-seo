@@ -8,6 +8,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
+
 REVIEW_DECISIONS = {"approve", "needs_changes", "stale", "reject"}
 REVIEW_TYPES = {"public_service_cards", "private_source_proposals"}
 PUBLIC_SERVICE_REVIEW_SCOPES = {"public_service_card"}
@@ -79,6 +81,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--promotion-readiness",
+        action="store_true",
+        help=(
+            "Po walidacji review zbuduj prepare-only promotion readiness preview. "
+            "Nie edytuje source facts ani kart."
+        ),
+    )
+    parser.add_argument(
         "--api-base",
         help="Opcjonalnie sprawdza action/card IDs przeciw live Service Profile.",
     )
@@ -99,6 +109,18 @@ def main() -> int:
             raise RuntimeError("Podaj ścieżkę input albo użyj --print-input-example")
         payload = load_json(Path(args.input))
         live_context = load_live_context(args.api_base) if args.api_base else None
+        if args.promotion_readiness:
+            if live_context is None:
+                raise RuntimeError("--promotion-readiness wymaga --api-base")
+            report = build_promotion_readiness_report(
+                payload,
+                live_context=live_context,
+            )
+            if args.format == "json":
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+            else:
+                print(render_promotion_readiness_markdown(report))
+            return 0 if report["promotion_request_ready"] is True else 1
         report = build_review_result_report(payload, live_context=live_context)
     except RuntimeError as error:
         print(str(error), file=sys.stderr)
@@ -252,6 +274,193 @@ def build_review_result_report(
         ),
         "safety_note": safety_note_for_review_type(review_type),
     }
+
+
+def build_promotion_readiness_report(
+    payload: dict[str, Any],
+    *,
+    live_context: dict[str, Any],
+) -> dict[str, Any]:
+    review_report = build_review_result_report(payload, live_context=live_context)
+    review_type = normalize_review_type(payload.get("review_type"))
+    rows = [
+        promotion_readiness_row(
+            decision,
+            review_type=review_type,
+            reviewer=review_report["reviewer"],
+            live_context=live_context,
+        )
+        for decision in review_report["decisions"]
+        if decision["decision"] == "approve"
+    ]
+    review_ready = review_report["overall_status"] == "review_ready_for_promotion_request"
+    row_blockers = [
+        blocker for row in rows for blocker in row["promotion_blockers"]
+    ]
+    if not rows:
+        row_blockers.append("no_approved_review_decisions")
+    if not review_ready:
+        row_blockers.append("review_result_not_ready_for_promotion_request")
+    promotion_request_ready = review_ready and bool(rows) and not row_blockers
+    return {
+        "report_type": "service_profile_promotion_readiness_v1",
+        "review_result_type": review_report["report_type"],
+        "reviewer": review_report["reviewer"],
+        "review_type": review_type,
+        "review_ready": review_ready,
+        "promotion_request_ready": promotion_request_ready,
+        "promotion_allowed": False,
+        "mutation_allowed": False,
+        "production_depth_unlocked": False,
+        "raw_private_text_included": False,
+        "approved_decision_count": len(rows),
+        "promotion_blockers": _unique(row_blockers),
+        "promotion_request_preview": rows,
+        "safe_next_step": promotion_readiness_next_step(promotion_request_ready),
+        "safety_note": (
+            "Ten raport jest prepare-only. Nie edytuje source_facts.json, nie ustawia "
+            "approved_current i nie odblokowuje production-depth."
+        ),
+    }
+
+
+def promotion_readiness_row(
+    decision: dict[str, Any],
+    *,
+    review_type: str,
+    reviewer: str,
+    live_context: dict[str, Any],
+) -> dict[str, Any]:
+    if review_type == "private_source_proposals":
+        return private_promotion_readiness_row(
+            decision,
+            reviewer=reviewer,
+            live_context=live_context,
+        )
+    return public_promotion_readiness_row(
+        decision,
+        reviewer=reviewer,
+        live_context=live_context,
+    )
+
+
+def public_promotion_readiness_row(
+    decision: dict[str, Any],
+    *,
+    reviewer: str,
+    live_context: dict[str, Any],
+) -> dict[str, Any]:
+    section = live_service_section_by_card_id(live_context).get(decision["target_card_id"], {})
+    row = {
+        "action_id": decision["action_id"],
+        "target_card_id": decision["target_card_id"],
+        "review_scope": "public_service_card",
+        "reviewer": reviewer,
+        "source_fact_ids": list_payload(section.get("source_fact_ids")),
+        "evidence_ids": list_payload(section.get("evidence_ids")),
+        "source_connectors": list_payload(section.get("source_connector_labels")),
+        "blocked_claims": [
+            str(rule.get("claim") or rule.get("reason") or "").strip()
+            for rule in raw_list(section.get("forbidden_claims"))
+            if isinstance(rule, dict)
+        ],
+        "freshness": str(section.get("freshness_label") or "").strip(),
+        "confidence": str(section.get("confidence_label") or "").strip(),
+        "raw_private_text_included": False,
+    }
+    blockers = promotion_row_blockers(row)
+    row["promotion_ready"] = not blockers
+    row["promotion_blockers"] = blockers
+    return row
+
+
+def private_promotion_readiness_row(
+    decision: dict[str, Any],
+    *,
+    reviewer: str,
+    live_context: dict[str, Any],
+) -> dict[str, Any]:
+    proposal = live_private_proposals_by_target(live_context).get(
+        decision["target_card_id"],
+        {},
+    )
+    source_fact = source_fact_by_id().get(str(proposal.get("source_id") or ""))
+    row = {
+        "action_id": decision["action_id"],
+        "target_card_id": decision["target_card_id"],
+        "proposal_id": proposal.get("proposal_id"),
+        "source_id": proposal.get("source_id"),
+        "review_scope": "private_source_proposal",
+        "reviewer": reviewer,
+        "source_fact_ids": [str(proposal.get("source_id") or "").strip()],
+        "evidence_ids": list(source_fact.evidence_ids) if source_fact else [],
+        "source_connectors": list(source_fact.source_connectors) if source_fact else [],
+        "blocked_claims": list_payload(proposal.get("blocked_claims")),
+        "freshness": str(source_fact.freshness_date if source_fact else "").strip(),
+        "freshness_status": str(proposal.get("freshness_status") or "").strip(),
+        "confidence": (
+            str(source_fact.confidence)
+            if source_fact
+            else str(proposal.get("confidence_label") or "")
+        ),
+        "audience": proposal.get("audience"),
+        "retention_decision": proposal.get("retention_decision"),
+        "data_classes": list_payload(proposal.get("data_classes")),
+        "source_block_refs": list_payload(proposal.get("source_block_refs")),
+        "deletion_path": list_payload(proposal.get("deletion_path")),
+        "eval_case_ids": list_payload(proposal.get("eval_case_ids")),
+        "raw_private_text_included": False,
+    }
+    blockers = promotion_row_blockers(row)
+    if row["freshness_status"] in {"stale", "unknown", ""}:
+        blockers.append("private_freshness_not_usable")
+    if row["retention_decision"] in {"pending_owner_decision", "do_not_retain", None, ""}:
+        blockers.append("private_retention_not_usable")
+    for field in (
+        "data_classes",
+        "source_block_refs",
+        "deletion_path",
+        "eval_case_ids",
+    ):
+        if not row[field]:
+            blockers.append(f"missing_{field}")
+    row["promotion_ready"] = not blockers
+    row["promotion_blockers"] = _unique(blockers)
+    return row
+
+
+def promotion_row_blockers(row: dict[str, Any]) -> list[str]:
+    blockers: list[str] = []
+    if not list_payload(row.get("source_fact_ids")):
+        blockers.append("missing_source_fact_ids")
+    if not list_payload(row.get("evidence_ids")):
+        blockers.append("missing_evidence_ids")
+    if not list_payload(row.get("source_connectors")):
+        blockers.append("missing_source_connectors")
+    if not list_payload(row.get("blocked_claims")):
+        blockers.append("missing_blocked_claims")
+    if is_blank_or_placeholder(row.get("freshness")):
+        blockers.append("missing_freshness")
+    if is_blank_or_placeholder(row.get("confidence")):
+        blockers.append("missing_confidence")
+    if is_blank_or_placeholder(row.get("reviewer")):
+        blockers.append("missing_reviewer")
+    if row.get("raw_private_text_included") is True:
+        blockers.append("raw_private_text_included")
+    return _unique(blockers)
+
+
+def promotion_readiness_next_step(ready: bool) -> str:
+    if ready:
+        return (
+            "Przygotuj osobny ActionObject promotion request z preview i audytem; "
+            "nadal bez bezpośredniej edycji source facts."
+        )
+    return (
+        "Uzupełnij blokery promotion readiness przed osobnym promotion request. "
+        "Najczęściej brakuje evidence IDs albo decyzji retencji/freshness dla "
+        "prywatnych propozycji."
+    )
 
 
 def validate_payload(
@@ -732,6 +941,82 @@ def live_private_proposal_provenance(
     return provenance
 
 
+def live_service_section_by_card_id(
+    live_context: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return {}
+    return {
+        str(section.get("card_id") or "").strip(): section
+        for section in raw_list(profile.get("service_sections"))
+        if isinstance(section, dict) and section.get("card_id")
+    }
+
+
+def live_private_proposals_by_target(
+    live_context: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return {}
+    return {
+        str(proposal.get("target_card_id") or "").strip(): proposal
+        for proposal in raw_list(profile.get("private_source_proposals"))
+        if isinstance(proposal, dict) and proposal.get("target_card_id")
+    }
+
+
+def source_fact_by_id() -> dict[str, Any]:
+    return {fact.source_id: fact for fact in ekologus_source_facts()}
+
+
+def render_promotion_readiness_markdown(report: dict[str, Any]) -> str:
+    lines = [
+        "# Service Profile promotion readiness",
+        "",
+        f"- Typ: `{report['report_type']}`",
+        f"- Review type: `{report['review_type']}`",
+        f"- Review ready: {visible_bool(report['review_ready'])}",
+        f"- Promotion request ready: {visible_bool(report['promotion_request_ready'])}",
+        f"- Promotion allowed: {visible_bool(report['promotion_allowed'])}",
+        f"- Mutation allowed: {visible_bool(report['mutation_allowed'])}",
+        f"- Production-depth unlocked: {visible_bool(report['production_depth_unlocked'])}",
+        f"- Raw private text included: {visible_bool(report['raw_private_text_included'])}",
+        "",
+        report["safety_note"],
+        "",
+        "## Blokery",
+        "",
+    ]
+    for blocker in report["promotion_blockers"] or ["brak"]:
+        lines.append(f"- `{blocker}`")
+    lines.extend(["", "## Preview", ""])
+    for row in report["promotion_request_preview"]:
+        lines.extend(
+            [
+                f"### `{row['target_card_id']}`",
+                "",
+                f"- action_id: `{row['action_id']}`",
+                f"- promotion_ready: {visible_bool(row['promotion_ready'])}",
+                f"- source facts: {', '.join(row['source_fact_ids']) or 'brak'}",
+                f"- evidence IDs: {', '.join(row['evidence_ids']) or 'brak'}",
+                f"- source connectors: {', '.join(row['source_connectors']) or 'brak'}",
+                f"- blocked claims: {', '.join(row['blocked_claims']) or 'brak'}",
+                f"- freshness: `{row['freshness']}`",
+                f"- confidence: `{row['confidence']}`",
+                "- blokery: "
+                + (
+                    ", ".join(f"`{blocker}`" for blocker in row["promotion_blockers"])
+                    or "brak"
+                ),
+                "",
+            ]
+        )
+    lines.extend(["## Następny krok", "", report["safe_next_step"]])
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def render_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Wynik Service Profile review",
@@ -868,6 +1153,14 @@ def list_payload(value: Any) -> list[str]:
 
 def raw_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def _unique(values: list[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        if value and value not in result:
+            result.append(value)
+    return result
 
 
 def is_blank_or_placeholder(value: Any) -> bool:

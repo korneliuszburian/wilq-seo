@@ -126,6 +126,14 @@ live API status later contradicts this state.
   decisions and six public service-card decisions. This makes review practical
   without hand-copying action IDs, but still does not promote facts, cards or
   production-depth readiness.
+- Service Profile review recorder also has a prepare-only promotion-readiness
+  guard: `--promotion-readiness`. It validates the review result, builds an
+  auditable promotion request preview, and still keeps `promotion_allowed=false`,
+  `mutation_allowed=false` and `production_depth_unlocked=false`. Live proof on
+  2026-07-02 with a clean private approval stayed blocked by
+  `missing_evidence_ids` and `private_retention_not_usable`, which is correct
+  because current redacted `ekologus-ai` proposals have no evidence IDs and
+  retention remains `pending_owner_decision`.
 - Goal 005 UAT input now recommends the full review set before any completion
   claim: WILQ model, plain "co pokazać Wilkowi" guide, BDO review artifact and
   `ekologus-ai` policy review artifact. It now also includes the social history
