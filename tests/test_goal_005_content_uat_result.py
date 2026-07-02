@@ -58,6 +58,20 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "average_usefulness": 5.0,
         "decision_counts": {"popraw": 1},
     }
+    assert report["review_follow_up_suggestions"] == [
+        {
+            "material": "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+            "decision": "popraw",
+            "low_scores": [
+                {
+                    "field": "dopasowanie_cta_1_5",
+                    "label": "dopasowanie CTA",
+                    "score": 3,
+                }
+            ],
+            "requested_fix": "Doprecyzować język i kolejny krok.",
+        }
+    ]
     assert report["missing_recommended_review_artifacts"] == [
         "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
         "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md"
@@ -68,7 +82,9 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     markdown = render_markdown(report)
     assert "## Ostrzeżenia materiałów review" in markdown
     assert "## Scorecard Wilka" in markdown
+    assert "## Sugestie follow-up z ocen" in markdown
     assert "decyzja: popraw" in markdown
+    assert "dopasowanie CTA 3/5" in markdown
     assert "2026-07-02-wilq-marketing-content-model.md" in markdown
     assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
 
@@ -451,6 +467,44 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
     assert "Generyczne/off-brand" in markdown
     assert "Największy brak produktu" in markdown
     assert "brak" in markdown
+
+
+def test_content_uat_result_has_no_scorecard_follow_up_for_strong_approved_material() -> None:
+    artifact = "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
+    payload = {
+        "data_sesji": "2026-07-02",
+        "osoba": "Wilku",
+        "czas_do_zrozumienia_statusu": "5 minut",
+        "punkty_niezrozumienia": "Brak.",
+        "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": [artifact],
+        "oceny_materialow_review": [
+            {
+                "material": artifact,
+                "decyzja": "zatwierdź",
+                "czytelnosc_1_5": 5,
+                "uzytecznosc_1_5": 5,
+                "glos_ekologus_1_5": 4,
+                "zaufanie_do_blokad_1_5": 4,
+                "dopasowanie_cta_1_5": 4,
+                "najwazniejsza_poprawka": "brak",
+            }
+        ],
+        "pytania_skad_to_wzielo": "Brak pytań.",
+        "miejsca_generyczne_off_brand": "Brak.",
+        "najwiekszy_brak_produktu": "Brak.",
+        "wilku_rozumie_blokady_pelnego_uat": "tak",
+        "service_profile_czytelny": "tak",
+        "public_service_review_actions_czytelne": "tak",
+        "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
+        "mozna_przejsc_do_pelnego_content_uat": "tak",
+    }
+
+    report = build_content_uat_result_report(payload)
+
+    assert report["review_follow_up_suggestions"] == []
+    assert "Brak automatycznych sugestii ze scorecardu" in render_markdown(report)
 
 
 def test_content_uat_result_requires_scorecard_for_shown_artifacts() -> None:

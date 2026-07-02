@@ -1461,6 +1461,11 @@ live API status later contradicts this state.
   review artifact: decision plus 1-5 ratings for clarity, usefulness, Ekologus
   voice, blocker trust and CTA fit. This turns Wilku feedback into concrete
   product follow-up instead of only free-text notes.
+- The same UAT recorder now extracts `review_follow_up_suggestions` from that
+  scorecard. Any non-approved material or rating at 3/5 or below becomes a
+  plain follow-up suggestion with the material path, decision, weak score and
+  requested fix, so Wilku's review can feed the next product/code slice without
+  manually rereading the whole report.
 - Quality-review API tests no longer depend on the current live
   `/api/content/work-items/snapshot` decision. They now build a deterministic
   BDO ready chain through the same Sales Brief, Draft Package and Structured

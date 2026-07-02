@@ -250,6 +250,7 @@ def build_content_uat_result_report(
         "shown_review_artifacts": shown_review_artifacts,
         "review_scorecard": review_scorecard,
         "review_scorecard_summary": review_scorecard_summary(review_scorecard),
+        "review_follow_up_suggestions": review_follow_up_suggestions(review_scorecard),
         "missing_recommended_review_artifacts": missing_recommended_review_artifacts,
         "follow_up_tasks": follow_up_tasks,
         "live_provenance": live_provenance,
@@ -344,6 +345,12 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         *render_review_scorecard(report.get("review_scorecard")),
         "",
+        "## Sugestie follow-up z ocen",
+        "",
+        *render_review_follow_up_suggestions(
+            report.get("review_follow_up_suggestions")
+        ),
+        "",
         *render_missing_recommended_review_artifacts(report),
         "## Źródła i jakość",
         "",
@@ -395,6 +402,26 @@ def render_review_scorecard(value: Any) -> list[str]:
                 f"CTA {row.get('dopasowanie_cta_1_5')}/5",
                 f"  - najważniejsza poprawka: {row.get('najwazniejsza_poprawka')}",
             ]
+        )
+    return lines
+
+
+def render_review_follow_up_suggestions(value: Any) -> list[str]:
+    rows = [row for row in raw_list_payload(value) if isinstance(row, dict)]
+    if not rows:
+        return ["- Brak automatycznych sugestii ze scorecardu."]
+    lines: list[str] = []
+    for row in rows:
+        low_scores = [
+            f"{item.get('label')} {item.get('score')}/5"
+            for item in raw_list_payload(row.get("low_scores"))
+            if isinstance(item, dict)
+        ]
+        lines.append(
+            "- "
+            f"`{row.get('material')}`: decyzja `{row.get('decision')}`; "
+            f"słabe oceny: {', '.join(low_scores) or 'brak'}; "
+            f"poprawka: {row.get('requested_fix')}"
         )
     return lines
 
@@ -792,6 +819,33 @@ def review_scorecard_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "decision_counts": decision_counts,
     }
+
+
+def review_follow_up_suggestions(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    suggestions: list[dict[str, Any]] = []
+    for row in rows:
+        decision = str(row.get("decyzja") or "")
+        low_scores = [
+            {
+                "field": field,
+                "label": label,
+                "score": int(row[field]),
+            }
+            for field, label in REVIEW_SCORECARD_SCORE_FIELDS.items()
+            if int(row.get(field) or 0) <= 3
+        ]
+        requested_fix = str(row.get("najwazniejsza_poprawka") or "").strip()
+        if decision == "zatwierdź" and not low_scores:
+            continue
+        suggestions.append(
+            {
+                "material": row.get("material"),
+                "decision": decision,
+                "low_scores": low_scores,
+                "requested_fix": requested_fix,
+            }
+        )
+    return suggestions
 
 
 def validate_review_scorecard(
