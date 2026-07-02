@@ -225,6 +225,11 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
     assert "ekologus_cta_consultation_without_guarantee" in result.brief.knowledge_card_ids
     assert "ekologus_evidence_live_connector_requirement" in result.brief.knowledge_card_ids
     assert result.brief.knowledge_constraints
+    assert any(
+        constraint.card_id == "ekologus_service_bdo_reporting"
+        and constraint.evidence_ids == ["ev_content_service_profile_source_facts"]
+        for constraint in result.brief.knowledge_constraints
+    )
     assert result.brief.measurement_plan.metrics_to_watch == [
         "GSC: kliknięcia dla strony i klastra zapytań",
         "GSC: wyświetlenia, CTR i pozycja dla klastra",

@@ -178,6 +178,10 @@ API status later contradicts this state.
   `source_connectors` at the model layer. This prevents a future
   `approved_current` knowledge card from being unlocked by reviewed prose
   without traceable evidence lineage.
+- Sales Brief knowledge constraints and structured draft model input now carry
+  knowledge-card `evidence_ids`. This extends source-fact/card lineage into the
+  actual generation contract, so review-required constraints can point to WILQ
+  evidence instead of only card IDs.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only

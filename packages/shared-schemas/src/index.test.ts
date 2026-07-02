@@ -761,7 +761,8 @@ describe("Content work item workflow schemas", () => {
           card_id: "content_knowledge_service_bdo",
           constraint_type: "service_fit",
           label: "Dopasuj treść do usługi Ekologus",
-          reason: "Szkic musi wspierać realną usługę, nie ogólny SEO tekst."
+          reason: "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
+          evidence_ids: ["ev_knowledge_bdo_service"]
         }
       ],
       signal_quality: {
@@ -920,7 +921,8 @@ describe("Content work item workflow schemas", () => {
                   card_id: "content_knowledge_service_bdo",
                   constraint_type: "service_fit",
                   label: "Dopasuj treść do usługi Ekologus",
-                  reason: "Szkic musi wspierać realną usługę, nie ogólny SEO tekst."
+                  reason: "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
+                  evidence_ids: ["ev_knowledge_bdo_service"]
                 }
               ],
               sales_brief_signal_quality: {

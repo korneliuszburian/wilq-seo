@@ -56,6 +56,7 @@ class ContentSalesBriefKnowledgeConstraint(BaseModel):
     constraint_type: str
     label: str
     reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class ContentSalesBriefSignalQuality(BaseModel):
@@ -479,6 +480,7 @@ def _knowledge_constraints(
                     constraint_type="evidence_requirement",
                     label=card.title,
                     reason=requirement,
+                    evidence_ids=card.evidence_ids,
                 )
             )
         for claim in [*card.forbidden_claims, *card.measurement_sensitive_claims]:
@@ -488,6 +490,7 @@ def _knowledge_constraints(
                     constraint_type=claim.status,
                     label=claim.label,
                     reason=claim.reason,
+                    evidence_ids=card.evidence_ids,
                 )
             )
     return constraints

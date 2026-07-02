@@ -669,7 +669,8 @@ function salesBrief() {
         card_id: "ekologus_evidence_live_connector_requirement",
         constraint_type: "evidence_requirement",
         label: "Live evidence i source connector są wymagane",
-        reason: "Brak evidence ID oznacza brak rekomendacji."
+        reason: "Brak evidence ID oznacza brak rekomendacji.",
+        evidence_ids: ["ev_content_service_profile_source_facts"]
       }
     ],
     signal_quality: {
@@ -907,7 +908,8 @@ function structuredDraftGenerationContract() {
           card_id: "ekologus_evidence_live_connector_requirement",
           constraint_type: "evidence_requirement",
           label: "Live evidence i source connector są wymagane",
-          reason: "Brak evidence ID oznacza brak rekomendacji."
+          reason: "Brak evidence ID oznacza brak rekomendacji.",
+          evidence_ids: ["ev_content_service_profile_source_facts"]
         }
       ],
       sales_brief_signal_quality: salesBriefSignalQuality(),

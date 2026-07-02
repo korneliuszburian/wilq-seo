@@ -81,6 +81,7 @@ def _sales_brief() -> dict[str, object]:
                 "constraint_type": "service_fit",
                 "label": "Dopasuj treść do usługi Ekologus",
                 "reason": "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
+                "evidence_ids": ["ev_knowledge_bdo_service"],
             }
         ],
         "signal_quality": {
@@ -243,6 +244,7 @@ def test_structured_draft_generation_api_returns_strict_contract() -> None:
             "constraint_type": "service_fit",
             "label": "Dopasuj treść do usługi Ekologus",
             "reason": "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
+            "evidence_ids": ["ev_knowledge_bdo_service"],
         }
     ]
     assert contract["model_input"]["sales_brief_signal_quality"]["status"] == (

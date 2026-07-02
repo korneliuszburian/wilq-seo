@@ -1052,6 +1052,10 @@ Stop and record a blocker if:
 - 2026-07-02: Dashboard Service Profile service cards now render those WILQ
   evidence IDs in the operator-facing source/review block, so Wilku can see the
   proof handle without opening raw JSON.
+- 2026-07-02: Sales Brief knowledge constraints and structured draft generation
+  input now preserve knowledge-card `evidence_ids`. The source-fact evidence
+  fallback therefore reaches not just Service Profile, but also the contract
+  given to draft generation.
 
 ## Surprises & Discoveries
 

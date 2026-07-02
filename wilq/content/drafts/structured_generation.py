@@ -81,6 +81,7 @@ class StructuredDraftKnowledgeConstraint(BaseModel):
     constraint_type: str
     label: str
     reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class StructuredDraftSignalQuality(BaseModel):
@@ -256,6 +257,7 @@ def build_structured_draft_generation_contract(
                 constraint_type=constraint.constraint_type,
                 label=constraint.label,
                 reason=constraint.reason,
+                evidence_ids=constraint.evidence_ids,
             )
             for constraint in sales_brief.knowledge_constraints
         ],

@@ -241,7 +241,8 @@ export const ContentSalesBriefKnowledgeConstraintSchema = z.object({
   card_id: z.string(),
   constraint_type: z.string(),
   label: z.string(),
-  reason: z.string()
+  reason: z.string(),
+  evidence_ids: z.array(z.string()).default([])
 });
 
 export const ContentSalesBriefSignalQualitySchema = z.object({
@@ -723,7 +724,8 @@ export const StructuredDraftKnowledgeConstraintSchema = z.object({
   card_id: z.string(),
   constraint_type: z.string(),
   label: z.string(),
-  reason: z.string()
+  reason: z.string(),
+  evidence_ids: z.array(z.string()).default([])
 });
 
 export const StructuredDraftSignalQualitySchema = ContentSalesBriefSignalQualitySchema;
