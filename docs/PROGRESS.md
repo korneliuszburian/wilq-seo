@@ -295,6 +295,13 @@ API status later contradicts this state.
   `active_action_objects`, omit raw payloads, keep
   `ev_content_service_profile_source_facts`, and use distinct preview card
   kinds for public knowledge promotion vs private proposal review.
+- The `wilq-content-operator` UAT packet now carries the fail-closed Service
+  Profile review-result recorder contract directly, not only in handoff docs.
+  Live proof on 2026-07-02 returned
+  `service_profile_public_card_review_result_v1` with 6 public promotion
+  preview rows and `service_profile_private_proposal_review_result_v1` with 4
+  private promotion preview rows; both still state that recorder output does
+  not promote source facts or knowledge cards.
 - The `wilq-content-operator` UAT packet now includes live Service Profile
   evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
   `uat_readiness.status=blocked_for_full_uat`,

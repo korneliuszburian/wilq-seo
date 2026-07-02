@@ -90,6 +90,10 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "warunki przed reviewed source fact",
         "private_proposal_details",
         "szczegóły private proposals",
+        "review_result_recorders",
+        "service_profile_public_card_review_result_v1",
+        "service_profile_private_proposal_review_result_v1",
+        "promotion preview rows",
         "Public service review action nie promuje faktu ani karty wiedzy.",
         "Private proposal review action nie promuje faktu ani karty wiedzy.",
         "Dev URL nie jest canonical",
@@ -115,6 +119,53 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     ) -> dict[str, Any]:
         assert api_base == "http://example.test"
         assert method == "GET"
+        if path == "/api/actions/act_prepare_service_profile_knowledge_promotion":
+            return {
+                "id": "act_prepare_service_profile_knowledge_promotion",
+                "validation_status": "valid",
+                "payload": {
+                    "preview_contract": "service_profile_knowledge_promotion_preview_v1",
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                    "payload_preview": [
+                        {
+                            "review_action_id": (
+                                "service_profile_review_card_"
+                                "ekologus_service_bdo_reporting"
+                            ),
+                            "target_card_id": "ekologus_service_bdo_reporting",
+                        }
+                    ],
+                },
+            }
+        if path == "/api/actions/act_prepare_service_profile_private_proposal_promotion":
+            return {
+                "id": "act_prepare_service_profile_private_proposal_promotion",
+                "validation_status": "valid",
+                "payload": {
+                    "preview_contract": "private_source_proposal_promotion_preview_v1",
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                    "payload_preview": [
+                        {
+                            "review_action_id": (
+                                "service_profile_review_private_proposal_"
+                                "ekologus_ai_eko_opieka_2026_07_01"
+                            ),
+                            "target_card_id": (
+                                "ekologus_service_environmental_consulting_outsourcing"
+                            ),
+                        },
+                        {
+                            "review_action_id": (
+                                "service_profile_review_private_proposal_"
+                                "ekologus_ai_brand_voice_2026_07_01"
+                            ),
+                            "target_card_id": "ekologus_claim_policy_brand_voice",
+                        },
+                    ],
+                },
+            }
         assert path == "/api/content/service-profile"
         return {
             "read_only": True,
@@ -233,3 +284,11 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert summary["private_policy_review_actions"][0]["target_card_id"] == (
         "ekologus_claim_policy_brand_voice"
     )
+    recorders = summary["review_result_recorders"]
+    assert recorders["recorder_script"] == "scripts/record_service_profile_review_result.py"
+    assert recorders["public_review"]["review_type"] == "public_service_cards"
+    assert recorders["public_review"]["promotion_preview"]["preview_row_count"] == 1
+    assert recorders["private_review"]["review_type"] == "private_source_proposals"
+    assert recorders["private_review"]["promotion_preview"]["preview_row_count"] == 2
+    assert recorders["private_review"]["promotion_preview"]["apply_allowed"] is False
+    assert "Nie promuje source facts" in recorders["safety_note"]

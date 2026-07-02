@@ -9,6 +9,9 @@ from typing import Any, cast
 
 SKILL_NAME = "wilq-content-operator"
 DEV_HOST = "ekologus.dev.proudsite.pl"
+SERVICE_PROFILE_REVIEW_RECORDER = "scripts/record_service_profile_review_result.py"
+PUBLIC_PROMOTION_ACTION_ID = "act_prepare_service_profile_knowledge_promotion"
+PRIVATE_PROMOTION_ACTION_ID = "act_prepare_service_profile_private_proposal_promotion"
 
 
 def request_json(
@@ -57,6 +60,104 @@ def safe_enrichment(api_base: str, work_item_id: str) -> dict[str, Any]:
             "status": "blocked",
             "blocker": str(exc),
         }
+
+
+def safe_action(api_base: str, action_id: str) -> dict[str, Any]:
+    try:
+        return require_dict(
+            request_json(api_base, "GET", f"/api/actions/{action_id}"),
+            f"action {action_id}",
+        )
+    except SystemExit as exc:
+        return {
+            "id": action_id,
+            "status": "blocked",
+            "blocker": str(exc),
+            "payload": {},
+        }
+
+
+def promotion_preview_summary(action: dict[str, Any]) -> dict[str, Any]:
+    payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
+    preview_rows = [
+        item
+        for item in as_list(payload.get("payload_preview"))
+        if isinstance(item, dict)
+    ]
+    return {
+        "action_id": action.get("id"),
+        "validation_status": action.get("validation_status"),
+        "preview_contract": payload.get("preview_contract"),
+        "preview_row_count": len(preview_rows),
+        "apply_allowed": payload.get("apply_allowed"),
+        "api_mutation_ready": payload.get("api_mutation_ready"),
+        "target_card_ids": [
+            row.get("target_card_id")
+            for row in preview_rows
+            if row.get("target_card_id")
+        ],
+        "review_action_ids": [
+            row.get("review_action_id")
+            for row in preview_rows
+            if row.get("review_action_id")
+        ],
+    }
+
+
+def review_result_recorders(
+    *,
+    public_promotion: dict[str, Any],
+    private_promotion: dict[str, Any],
+) -> dict[str, Any]:
+    public_summary = promotion_preview_summary(public_promotion)
+    private_summary = promotion_preview_summary(private_promotion)
+    command = (
+        f"rtk uv run python {SERVICE_PROFILE_REVIEW_RECORDER} "
+        ".local-lab/proof/service-profile-review-result-YYYYMMDD.json "
+        "--api-base http://127.0.0.1:8000 --format markdown"
+    )
+    return {
+        "recorder_script": SERVICE_PROFILE_REVIEW_RECORDER,
+        "command_template": command,
+        "public_review": {
+            "review_type": "public_service_cards",
+            "result_report_type": "service_profile_public_card_review_result_v1",
+            "promotion_preview": public_summary,
+            "minimal_payload_required_fields": [
+                "data_review",
+                "reviewer",
+                "scope_label",
+                "decisions[].action_id",
+                "decisions[].target_card_id",
+                "decisions[].decision",
+                "decisions[].source_trace_clear",
+                "decisions[].blocked_claims_reviewed",
+                "decisions[].notes",
+            ],
+        },
+        "private_review": {
+            "review_type": "private_source_proposals",
+            "result_report_type": "service_profile_private_proposal_review_result_v1",
+            "promotion_preview": private_summary,
+            "minimal_payload_required_fields": [
+                "review_type",
+                "data_review",
+                "reviewer",
+                "scope_label",
+                "decisions[].action_id",
+                "decisions[].target_card_id",
+                "decisions[].decision",
+                "decisions[].source_trace_clear",
+                "decisions[].blocked_claims_reviewed",
+                "decisions[].notes",
+            ],
+        },
+        "safety_note": (
+            "Recorder zapisuje tylko wynik review. Nie promuje source facts ani "
+            "knowledge cards; zatwierdzone decyzje muszą istnieć w prepare-only "
+            "promotion preview."
+        ),
+    }
 
 
 def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
@@ -150,6 +251,8 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         if private_scope_by_target.get(str(action.get("target_card_id") or ""))
         in {"claim_policy", "evidence_requirement"}
     ]
+    public_promotion = safe_action(api_base, PUBLIC_PROMOTION_ACTION_ID)
+    private_promotion = safe_action(api_base, PRIVATE_PROMOTION_ACTION_ID)
     return {
         "endpoint": "/api/content/service-profile",
         "read_only": profile.get("read_only"),
@@ -186,6 +289,10 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         "private_review_actions": private_review_actions,
         "private_service_review_actions": private_service_review_actions,
         "private_policy_review_actions": private_policy_review_actions,
+        "review_result_recorders": review_result_recorders(
+            public_promotion=public_promotion,
+            private_promotion=private_promotion,
+        ),
     }
 
 
@@ -386,6 +493,30 @@ def main() -> int:
             f"({review_action_summary.get('private_service_review_count')} service, "
             f"{review_action_summary.get('private_policy_review_count')} policy)"
         )
+    review_recorders = service_profile_md.get("review_result_recorders")
+    if isinstance(review_recorders, dict):
+        print(f"- recorder review: `{review_recorders.get('recorder_script')}`")
+        public_recorder = review_recorders.get("public_review")
+        if isinstance(public_recorder, dict):
+            public_preview = public_recorder.get("promotion_preview")
+            if isinstance(public_preview, dict):
+                print(
+                    "- public review recorder: "
+                    f"{public_recorder.get('result_report_type')}, "
+                    f"promotion preview rows={public_preview.get('preview_row_count')}"
+                )
+        private_recorder = review_recorders.get("private_review")
+        if isinstance(private_recorder, dict):
+            private_preview = private_recorder.get("promotion_preview")
+            if isinstance(private_preview, dict):
+                print(
+                    "- private review recorder: "
+                    f"{private_recorder.get('result_report_type')}, "
+                    f"promotion preview rows={private_preview.get('preview_row_count')}"
+                )
+        safety_note = review_recorders.get("safety_note")
+        if safety_note:
+            print(f"- recorder safety: {safety_note}")
     private_proposals = service_profile_md.get("private_source_proposals")
     if isinstance(private_proposals, dict):
         print(f"- promocja private proposals: {private_proposals.get('promotion_ready')}")
