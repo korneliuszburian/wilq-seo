@@ -259,6 +259,12 @@ API status later contradicts this state.
   zgodności as a possible product wejściowy with draft angles, safe/unsafe
   wording and questions for Wilku, still without claiming legal/publication
   readiness.
+- BDO Wilku UAT review artifact now lives at
+  `docs/handoffs/2026-07-02-wilku-bdo-uat-review.md`. It uses live WILQ
+  Service Profile and content queue evidence to separate BDO review value from
+  the current live queue state: BDO is a source-backed review-required service
+  card and historical strong UAT topic, but it is not a live work item on
+  2026-07-02 and does not authorize a final draft.
 - Service Profile now exposes non-persistent review requests for the two
   redacted `ekologus-ai` private proposals. These proposals are now compiled
   from redacted `reviewed_internal` service facts in

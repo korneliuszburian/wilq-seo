@@ -233,6 +233,13 @@ governance metadata through API, shared schema, dashboard and UAT packet:
 deletable without exposing raw private content or treating review-required
 facts as approved knowledge.
 
+Under Beads task `wilq-seo-d0rw`, the BDO UAT handoff is prepared at
+`docs/handoffs/2026-07-02-wilku-bdo-uat-review.md`. It gives Wilku a normal
+review artifact for BDO language, CTA and blocked claims, while explicitly
+stating that the current live content queue does not expose BDO as an active
+work item on 2026-07-02. This prevents the historical `bdo co to` Sales Brief
+proof from being presented as a current draft recommendation.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and
