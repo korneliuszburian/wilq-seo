@@ -95,6 +95,10 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("high").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Decyzje: approve, needs_changes, stale, reject").length)
       .toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Wymagane pola: action_id, target_card_id/).length)
+      .toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/follow_up_beads przy blokadzie/).length)
+      .toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/To nie promuje private proposal/).length)
       .toBeGreaterThanOrEqual(2);
     expect(screen.queryByRole("button", { name: /edytuj/i })).not.toBeInTheDocument();
@@ -312,6 +316,7 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         review_scope: "private_service_proposal",
         priority: "medium",
         decision_options: ["approve", "needs_changes", "stale", "reject"],
+        review_requirements: reviewRequirementsFixture(),
         label: "Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz",
         reason:
           "ekologus-ai reviewed handoff: Eko-Opieka jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",
@@ -325,6 +330,7 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         review_scope: "private_claim_policy_proposal",
         priority: "high",
         decision_options: ["approve", "needs_changes", "stale", "reject"],
+        review_requirements: reviewRequirementsFixture(),
         label: "Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus",
         reason:
           "ekologus-ai reviewed handoff: Styl marki jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",
@@ -355,4 +361,52 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       private_source_protocol_doc: "docs/architecture/private-source-proposal-protocol.md"
     }
   };
+}
+
+function reviewRequirementsFixture(): ContentServiceProfileResponse["review_actions"][number]["review_requirements"] {
+  return [
+    {
+      field: "action_id",
+      label: "action ID z live Service Profile",
+      requirement_type: "text",
+      required: true
+    },
+    {
+      field: "target_card_id",
+      label: "target card ID zgodny z action_id",
+      requirement_type: "text",
+      required: true
+    },
+    {
+      field: "decision",
+      label: "decyzja review",
+      requirement_type: "text",
+      required: true
+    },
+    {
+      field: "source_trace_clear",
+      label: "czy ślad źródłowy jest czytelny",
+      requirement_type: "boolean",
+      required: true
+    },
+    {
+      field: "blocked_claims_reviewed",
+      label: "czy claimy zablokowane zostały sprawdzone",
+      requirement_type: "boolean",
+      required: true
+    },
+    {
+      field: "notes",
+      label: "notatki review",
+      requirement_type: "text",
+      required: true
+    },
+    {
+      field: "follow_up_beads",
+      label: "follow-up Beads",
+      requirement_type: "follow_up",
+      required: false,
+      blocking_rule: "Wymagane przy blokadzie."
+    }
+  ];
 }

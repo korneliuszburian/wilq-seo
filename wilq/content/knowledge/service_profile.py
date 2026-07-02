@@ -25,6 +25,7 @@ ServiceProfileGapSeverity = Literal["blocker", "review_required", "thin", "stale
 ServiceProfileReviewActionMode = Literal["prepare", "review_request"]
 ServiceProfileReviewActionPriority = Literal["high", "medium", "low"]
 ServiceProfileReviewDecisionOption = Literal["approve", "needs_changes", "stale", "reject"]
+ServiceProfileReviewRequirementType = Literal["text", "boolean", "follow_up"]
 ServiceProfileReviewActionScope = Literal[
     "general_knowledge_review",
     "public_service_card",
@@ -157,6 +158,16 @@ class ContentServiceProfileCoverageGap(BaseModel):
     example_work_item_ids: list[str] = Field(default_factory=list)
 
 
+class ContentServiceProfileReviewRequirement(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    label: str
+    requirement_type: ServiceProfileReviewRequirementType
+    required: bool
+    blocking_rule: str | None = None
+
+
 class ContentServiceProfileReviewAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -165,6 +176,9 @@ class ContentServiceProfileReviewAction(BaseModel):
     review_scope: ServiceProfileReviewActionScope
     priority: ServiceProfileReviewActionPriority
     decision_options: list[ServiceProfileReviewDecisionOption] = Field(default_factory=list)
+    review_requirements: list[ContentServiceProfileReviewRequirement] = Field(
+        default_factory=list
+    )
     label: str
     reason: str
     blocked_write_claim: str
@@ -491,6 +505,7 @@ def _review_actions(
     private_proposals: list[PrivateSourceProposal],
 ) -> list[ContentServiceProfileReviewAction]:
     decision_options = _review_decision_options()
+    review_requirements = _review_requirements()
     actions = [
         ContentServiceProfileReviewAction(
             action_id="service_profile_request_knowledge_review",
@@ -498,6 +513,7 @@ def _review_actions(
             review_scope="general_knowledge_review",
             priority="medium",
             decision_options=decision_options,
+            review_requirements=review_requirements,
             label="Poproś o review wiedzy usługowej",
             reason=(
                 "Karty review-required nie mogą odblokować production-depth "
@@ -520,6 +536,7 @@ def _review_actions(
                     review_scope="public_service_card",
                     priority="medium",
                     decision_options=decision_options,
+                    review_requirements=review_requirements,
                     label=f"Sprawdź kartę usługi: {card.title}",
                     reason=(
                         "Karta ma publiczne źródło, ale wymaga decyzji człowieka "
@@ -541,6 +558,7 @@ def _review_actions(
                 review_scope="coverage_gap",
                 priority="high" if gap.severity == "blocker" else "medium",
                 decision_options=decision_options,
+                review_requirements=review_requirements,
                 label=f"Przygotuj review: {gap.label}",
                 reason=gap.reason,
                 blocked_write_claim="To jest przygotowanie review, nie edycja knowledge base.",
@@ -558,6 +576,7 @@ def _review_actions(
                 review_scope=_private_review_action_scope(proposal),
                 priority=_private_review_action_priority(proposal),
                 decision_options=decision_options,
+                review_requirements=review_requirements,
                 label=f"Sprawdź prywatną propozycję: {proposal.target_card_title}",
                 reason=(
                     f"{proposal.source_locator_label} jest redacted i review-required; "
@@ -575,6 +594,57 @@ def _review_actions(
 
 def _review_decision_options() -> list[ServiceProfileReviewDecisionOption]:
     return ["approve", "needs_changes", "stale", "reject"]
+
+
+def _review_requirements() -> list[ContentServiceProfileReviewRequirement]:
+    return [
+        ContentServiceProfileReviewRequirement(
+            field="action_id",
+            label="action ID z live Service Profile",
+            requirement_type="text",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="target_card_id",
+            label="target card ID zgodny z action_id",
+            requirement_type="text",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="decision",
+            label="decyzja review",
+            requirement_type="text",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="source_trace_clear",
+            label="czy ślad źródłowy jest czytelny",
+            requirement_type="boolean",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="blocked_claims_reviewed",
+            label="czy claimy zablokowane zostały sprawdzone",
+            requirement_type="boolean",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="notes",
+            label="notatki review",
+            requirement_type="text",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="follow_up_beads",
+            label="follow-up Beads",
+            requirement_type="follow_up",
+            required=False,
+            blocking_rule=(
+                "Wymagane, gdy decision != approve albo source_trace_clear/"
+                "blocked_claims_reviewed nie są true."
+            ),
+        ),
+    ]
 
 
 def _private_review_action_scope(

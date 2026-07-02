@@ -9,7 +9,7 @@ Goal 001 contract: `docs/goals/001-goal.md`
 
 ## Current Readout
 
-Date: 2026-07-01
+Date: 2026-07-02
 
 - WILQ is the system/product.
 - Wilku is the human marketer/operator persona.
@@ -79,6 +79,12 @@ API status later contradicts this state.
   or explicitly owner-deferred with residual risk. Initial Service Profile work
   is read-only plus review/flag semantics; ungated knowledge-card writes remain
   out of scope.
+- Latest Goal 005 Service Profile slice: review actions expose API-owned
+  `review_requirements` aligned with
+  `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets
+  now show required review fields plus the `follow_up_beads` rule for blocking
+  decisions. Live proof after `scripts/local_stack.sh restart` showed 12 review
+  actions with those requirements.
 - Second-opinion follow-up after Goal 005 activation: the reported loose
   `unknown` request typing for core content POSTs is stale in the current repo;
   `api.ts` validates preflight, Sales Brief, draft package, human review and

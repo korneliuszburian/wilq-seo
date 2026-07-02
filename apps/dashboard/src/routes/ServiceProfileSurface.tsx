@@ -297,6 +297,21 @@ function ReviewActions({
                 Decyzje: {action.decision_options.join(", ")}
               </p>
             ) : null}
+            {action.review_requirements.length > 0 ? (
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Wymagane pola:{" "}
+                {action.review_requirements
+                  .filter((requirement) => requirement.required)
+                  .map((requirement) => requirement.field)
+                  .join(", ")}
+                {action.review_requirements.some(
+                  (requirement) => requirement.field === "follow_up_beads"
+                )
+                  ? "; follow_up_beads przy blokadzie"
+                  : ""}
+                .
+              </p>
+            ) : null}
             <p className="mt-2 text-xs leading-5 text-slate-500">
               {action.blocked_write_claim}
             </p>

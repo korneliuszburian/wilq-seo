@@ -154,6 +154,27 @@ describe("ContentServiceProfileResponseSchema", () => {
           review_scope: "general_knowledge_review",
           priority: "medium",
           decision_options: ["approve", "needs_changes", "stale", "reject"],
+          review_requirements: [
+            {
+              field: "action_id",
+              label: "action ID z live Service Profile",
+              requirement_type: "text",
+              required: true
+            },
+            {
+              field: "source_trace_clear",
+              label: "czy ślad źródłowy jest czytelny",
+              requirement_type: "boolean",
+              required: true
+            },
+            {
+              field: "follow_up_beads",
+              label: "follow-up Beads",
+              requirement_type: "follow_up",
+              required: false,
+              blocking_rule: "Wymagane przy blokadzie."
+            }
+          ],
           label: "Poproś o review",
           reason: "Review required.",
           blocked_write_claim: "No write.",

@@ -485,6 +485,14 @@ export const ContentServiceProfileCoverageGapSchema = z.object({
   example_work_item_ids: z.array(z.string()).default([])
 });
 
+export const ContentServiceProfileReviewRequirementSchema = z.object({
+  field: z.string(),
+  label: z.string(),
+  requirement_type: z.enum(["text", "boolean", "follow_up"]),
+  required: z.boolean(),
+  blocking_rule: z.string().nullable().optional()
+});
+
 export const ContentServiceProfileReviewActionSchema = z.object({
   action_id: z.string(),
   mode: z.enum(["prepare", "review_request"]),
@@ -498,6 +506,7 @@ export const ContentServiceProfileReviewActionSchema = z.object({
   ]),
   priority: z.enum(["high", "medium", "low"]),
   decision_options: z.array(z.enum(["approve", "needs_changes", "stale", "reject"])).default([]),
+  review_requirements: z.array(ContentServiceProfileReviewRequirementSchema).default([]),
   label: z.string(),
   reason: z.string(),
   blocked_write_claim: z.string(),

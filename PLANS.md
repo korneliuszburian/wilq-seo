@@ -219,6 +219,13 @@ exposes API-owned `decision_options`, aligned with
 `stale` and `reject`. Dashboard and the UAT packet now show those options for
 the review queue so Wilku can record outcomes without guessing accepted values.
 
+Under Beads task `wilq-seo-x51h`, Service Profile review actions now expose
+API-owned `review_requirements`, also aligned with
+`scripts/record_service_profile_review_result.py`. The dashboard and UAT packet
+show required decision fields (`action_id`, `target_card_id`, `decision`,
+source/blocked-claim booleans and `notes`) plus the `follow_up_beads` rule for
+blocking review decisions.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and
@@ -866,6 +873,11 @@ Stop and record a blocker if:
   validates only while `apply_allowed=false` and `api_mutation_ready=false`.
   This brings private proposal review into the same WILQ action/audit surface
   as public source-card promotion review without creating a write path.
+- 2026-07-02: Service Profile review actions now carry
+  `review_requirements` from the WILQ API into dashboard and UAT packet output.
+  Live proof after stack restart returned required fields
+  `action_id,target_card_id,decision,source_trace_clear,blocked_claims_reviewed,notes`
+  and `follow_up_beads` as the blocking follow-up rule.
 
 ## Surprises & Discoveries
 

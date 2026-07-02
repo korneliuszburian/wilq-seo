@@ -394,6 +394,29 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         action.decision_options == ["approve", "needs_changes", "stale", "reject"]
         for action in public_service_review_actions
     )
+    required_review_fields = {
+        "action_id",
+        "target_card_id",
+        "decision",
+        "source_trace_clear",
+        "blocked_claims_reviewed",
+        "notes",
+    }
+    assert all(
+        required_review_fields
+        <= {requirement.field for requirement in action.review_requirements if requirement.required}
+        for action in public_service_review_actions
+    )
+    assert all(
+        any(
+            requirement.field == "follow_up_beads"
+            and requirement.requirement_type == "follow_up"
+            and requirement.blocking_rule
+            and "decision != approve" in requirement.blocking_rule
+            for requirement in action.review_requirements
+        )
+        for action in public_service_review_actions
+    )
     assert all(
         "nie promuje" in action.blocked_write_claim
         for action in public_service_review_actions
@@ -485,6 +508,19 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert private_action_by_target[
         "ekologus_claim_policy_brand_voice"
     ].decision_options == ["approve", "needs_changes", "stale", "reject"]
+    assert {
+        requirement.field
+        for requirement in private_action_by_target[
+            "ekologus_claim_policy_brand_voice"
+        ].review_requirements
+        if requirement.required
+    } >= required_review_fields
+    assert any(
+        requirement.field == "follow_up_beads" and requirement.blocking_rule
+        for requirement in private_action_by_target[
+            "ekologus_claim_policy_brand_voice"
+        ].review_requirements
+    )
 
 
 def test_service_profile_exposes_water_permit_as_review_required_card() -> None:
