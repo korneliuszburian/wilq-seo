@@ -3,9 +3,11 @@ from __future__ import annotations
 import pytest
 
 from scripts.record_service_profile_review_result import (
+    PRIVATE_DECISION_BOOLEAN_FIELDS,
     build_review_result_report,
     render_markdown,
 )
+from wilq.content.knowledge.service_profile import content_service_profile_response
 
 
 def test_service_profile_review_result_records_approved_review_without_promotion() -> None:
@@ -60,6 +62,30 @@ def test_service_profile_review_result_records_approved_review_without_promotion
     assert "# Wynik Service Profile review" in markdown
     assert "Promotion allowed: nie" in markdown
     assert "review gotowy do osobnego promotion request" in markdown
+
+
+def test_private_recorder_fields_match_service_profile_review_requirements() -> None:
+    profile = content_service_profile_response()
+    private_actions = [
+        action
+        for action in profile.review_actions
+        if action.review_scope
+        in {
+            "private_service_proposal",
+            "private_claim_policy_proposal",
+            "private_evidence_policy_proposal",
+        }
+    ]
+
+    assert private_actions
+    recorder_fields = set(PRIVATE_DECISION_BOOLEAN_FIELDS)
+    for action in private_actions:
+        private_required_fields = {
+            requirement.field
+            for requirement in action.review_requirements
+            if requirement.required and requirement.field in recorder_fields
+        }
+        assert private_required_fields == recorder_fields
 
 
 def test_service_profile_review_result_records_blocking_decision_with_follow_up() -> None:

@@ -120,6 +120,9 @@ API status later contradicts this state.
 - Wilku handoff examples for private ekologus-ai proposal review now include
   those governance confirmations, so copied review JSON matches the current
   recorder contract.
+- Private review contract drift is now guarded: tests compare Service Profile
+  private review requirements, recorder private boolean fields and
+  `wilq-content-operator` minimal private payload fields.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they

@@ -5,6 +5,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+from scripts.record_service_profile_review_result import PRIVATE_DECISION_BOOLEAN_FIELDS
+
 CONTENT_OPERATOR_SKILL_PATH = Path(".agents/skills/wilq-content-operator/SKILL.md")
 CONTENT_OPERATOR_OUTPUT_CONTRACT_PATH = Path(
     ".agents/skills/wilq-content-operator/references/output-contract.md"
@@ -468,15 +470,12 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert recorders["private_review"]["review_type"] == "private_source_proposals"
     assert recorders["private_review"]["promotion_preview"]["preview_row_count"] == 3
     assert recorders["private_review"]["promotion_preview"]["apply_allowed"] is False
+    private_payload_fields = set(
+        recorders["private_review"]["minimal_payload_required_fields"]
+    )
     assert {
-        "decisions[].data_classes_confirmed",
-        "decisions[].source_block_refs_confirmed",
-        "decisions[].freshness_status_confirmed",
-        "decisions[].audience_scope_confirmed",
-        "decisions[].retention_decision_confirmed",
-        "decisions[].deletion_path_confirmed",
-        "decisions[].eval_gates_confirmed",
-    } <= set(recorders["private_review"]["minimal_payload_required_fields"])
+        f"decisions[].{field}" for field in PRIVATE_DECISION_BOOLEAN_FIELDS
+    } <= private_payload_fields
     assert "Nie promuje source facts" in recorders["safety_note"]
     private_summary = summary["private_source_proposals"]
     assert private_summary["service_proposal_count"] == 1
