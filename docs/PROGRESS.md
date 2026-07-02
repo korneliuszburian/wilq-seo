@@ -168,6 +168,14 @@ live API status later contradicts this state.
   `act_prepare_google_ads_recommendation_review_queue`, uses the GSC/WordPress
   landing candidate only as review context, and blocks campaign writes, budget
   changes, conversion uplift and ranking guarantees.
+- Custom Segments usefulness proof: replayed non-interactive eval for
+  `wilq-custom-segments` passed at
+  `.local-lab/evals/codex-skill/20260702T162911Z` with
+  `operator_usefulness_score=5`. It validates
+  `act_prepare_custom_segments_from_search_terms`, keeps one source-backed
+  segment candidate with 10 `source_terms`, and blocks audience-size,
+  Keyword Planner enrichment, targeting-write and performance claims until the
+  missing contracts exist.
 - Social Publisher usefulness proof: non-interactive eval replay passed at
   `.local-lab/evals/codex-skill/20260702T160931Z` with
   `operator_usefulness_score=5`. It stays review-only with

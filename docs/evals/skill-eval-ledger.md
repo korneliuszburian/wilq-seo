@@ -514,6 +514,12 @@ Result:
   `review_reason`, and blocks audience size, ROAS, targeting write, campaign
   effectiveness and conversion-growth claims until `keyword_planner_enrichment`
   and `forecast_or_audience_size` are available.
+- Current replay proof after the latest Goal 005 eval slice is stored at
+  `.local-lab/evals/codex-skill/20260702T162911Z`. It again passed with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true,
+  validated `act_prepare_custom_segments_from_search_terms`, kept one
+  source-backed segment candidate with 10 `source_terms`, and preserved the
+  `forecast_or_audience_size` plus `keyword_planner_enrichment` blockers.
 
 ## 2026-07-02 - Demand Gen blocked-readiness eval
 
