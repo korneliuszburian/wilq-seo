@@ -4901,6 +4901,22 @@ def test_command_center_returns_valid_shape() -> None:
     assert data["demo_script"] == []
     assert data["action_plan"]
     assert data["action_plan"][0]["evidence_ids"]
+    nested_evidence_ids = {
+        evidence_id
+        for decision in data["daily_decisions"]
+        for evidence_id in decision["evidence_ids"]
+    }
+    nested_action_ids = {
+        action_id for decision in data["daily_decisions"] for action_id in decision["action_ids"]
+    }
+    assert data["evidence_ids"]
+    assert data["action_ids"]
+    assert set(data["evidence_ids"]) == nested_evidence_ids
+    assert set(data["action_ids"]) == nested_action_ids
+    assert data["source_connectors"]
+    assert data["source_connector_labels"]
+    assert data["evidence_summary"]
+    assert data["action_summary"]
 
 
 def test_command_center_endpoint_uses_daily_runtime_cache(
@@ -6609,6 +6625,11 @@ def test_command_center_exposes_polish_operator_brief(
     assert "operator_brief" not in context_command
     assert "action_plan" not in context_command
     assert "demo_script" not in context_command
+    assert context_command["evidence_ids"] == payload["evidence_ids"]
+    assert context_command["action_ids"] == payload["action_ids"]
+    assert context_command["source_connectors"] == payload["source_connectors"]
+    assert context_command["evidence_summary"] == payload["evidence_summary"]
+    assert context_command["action_summary"] == payload["action_summary"]
     assert [
         {
             "id": item["id"],

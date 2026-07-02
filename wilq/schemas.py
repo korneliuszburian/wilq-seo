@@ -40,6 +40,17 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _unique_strings(values: Any) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if not isinstance(value, str) or not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
+
+
 class ConnectorStatusValue(StrEnum):
     configured = "configured"
     missing_credentials = "missing_credentials"
@@ -4879,6 +4890,12 @@ class CommandCenterResponse(BaseModel):
     primary_next_step: str
     blocker_count: int = 0
     tactical_item_count: int = 0
+    source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary: str = ""
+    action_ids: list[str] = Field(default_factory=list)
+    action_summary: str = ""
     daily_decisions: list[DailyDecision] = Field(default_factory=list)
     operator_brief: list[CommandCenterBriefItem] = Field(default_factory=list)
     demo_script: list[CommandCenterDemoStep] = Field(default_factory=list)
@@ -4888,6 +4905,32 @@ class CommandCenterResponse(BaseModel):
     active_actions: list[ActionObject]
     connector_health: list[ConnectorStatus]
     codex_operator_status: dict[str, Any]
+
+    @model_validator(mode="after")
+    def fill_lineage_summaries(self) -> CommandCenterResponse:
+        if not self.source_connectors:
+            self.source_connectors = _unique_strings(
+                connector
+                for decision in self.daily_decisions
+                for connector in decision.source_connectors
+            )
+        if not self.source_connector_labels:
+            self.source_connector_labels = source_connector_labels(self.source_connectors)
+        if not self.evidence_ids:
+            self.evidence_ids = _unique_strings(
+                evidence_id
+                for decision in self.daily_decisions
+                for evidence_id in decision.evidence_ids
+            )
+        if not self.action_ids:
+            self.action_ids = _unique_strings(
+                action_id for decision in self.daily_decisions for action_id in decision.action_ids
+            )
+        if not self.evidence_summary:
+            self.evidence_summary = evidence_count_label(self.evidence_ids)
+        if not self.action_summary:
+            self.action_summary = action_count_label(self.action_ids)
+        return self
 
 
 class DemandGenReadinessContract(BaseModel):

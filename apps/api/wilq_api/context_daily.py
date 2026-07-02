@@ -310,6 +310,12 @@ def _compact_command_center_for_daily_context(command: CommandCenterResponse) ->
         "primary_next_step": dumped["primary_next_step"],
         "blocker_count": dumped["blocker_count"],
         "tactical_item_count": dumped["tactical_item_count"],
+        "source_connectors": dumped.get("source_connectors", []),
+        "source_connector_labels": dumped.get("source_connector_labels", []),
+        "evidence_ids": dumped.get("evidence_ids", []),
+        "evidence_summary": dumped.get("evidence_summary", ""),
+        "action_ids": dumped.get("action_ids", []),
+        "action_summary": dumped.get("action_summary", ""),
         "daily_decisions": [
             _compact_daily_decision_for_context(decision)
             for decision in dumped["daily_decisions"]

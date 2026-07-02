@@ -165,6 +165,12 @@ API status later contradicts this state.
   8.5/10 for the morning daily loop, 8.5/10 for evidence/claim-blocking clarity
   and 7.5/10 as a full BDOS-style daily command. The dashboard first screen now
   shows `Plan dnia w kolejności` and `Blokady dnia` before detailed cards.
+- Command Center now exposes top-level lineage aggregated from daily decisions:
+  `source_connectors`, `source_connector_labels`, `evidence_ids`,
+  `evidence_summary`, `action_ids` and `action_summary`. Live proof after stack
+  restart returned 20 evidence IDs, 8 action IDs and sources across Merchant,
+  Ahrefs, GSC, WordPress, GA4 and Google Ads, so daily Codex/dashboard flows no
+  longer need to infer proof only from nested cards.
 - Content Planner usefulness review now has a short Wilku-facing decision card
   at `docs/handoffs/2026-07-02-wilku-content-planner-start-card.md`. Live
   `/api/content/diagnostics` returns 3 decisions, 16 evidence IDs and 5 actions
