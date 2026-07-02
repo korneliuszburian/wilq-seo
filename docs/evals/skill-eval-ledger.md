@@ -7688,3 +7688,36 @@ Result:
 - The final notes state that WILQ must not claim a topic avoids repeating
   earlier posts until `linkedin_historical_posts` and
   `facebook_historical_posts` evidence exists.
+
+## 2026-07-02 - Social Publisher social-history inventory eval hardening
+
+Purpose:
+
+- Tighten the `wilq-social-publisher` non-interactive eval after
+  `social_draft_context` gained the versioned `social_history_inventory_v1`
+  contract.
+- Ensure the operator answer must mention the nested inventory contract,
+  metadata-only required fields and duplicate-free blocker, not only the older
+  flat `historical_social_inventory_status` fields.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q -k "route_specific_codex_eval_cases_define_surface_markers or social or active_eval_cases_do_not_require_forbidden_operator_jargon"
+rtk uv run ruff check tests/test_codex_skill_eval_cases.py
+rtk bash -n scripts/codex_skill_eval.sh
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T083900Z/wilq-social-publisher/result.json`.
+- The eval case now requires `social_history_inventory`,
+  `social_history_inventory_v1`, `metadata-only`, `source_evidence_id` and
+  `brak powtórzeń historycznych postów` in actionable output.
+- The live eval passed with `operator_usefulness_score=4`, `blocked=false`,
+  `failure_tags=[]`, all hard gates true, five evidence IDs, one
+  recommendation and two validated draft actions:
+  `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts`.

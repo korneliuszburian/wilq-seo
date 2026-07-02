@@ -245,11 +245,14 @@ API status later contradicts this state.
   `raw_post_body_allowed=false` and duplicate-free claims blocked until history
   review. This is still not a social connector/import; it is the typed contract
   for what WILQ must collect before dedupe/reuse claims.
-- Social Publisher history/duplication eval proof on 2026-07-02:
-  `.local-lab/evals/codex-skill/20260702T081424Z`. The non-interactive eval
-  passed with `operator_usefulness_score=4`, five evidence IDs, validated
-  LinkedIn/Facebook draft actions and explicit blocking of duplicate-free
-  social claims until `linkedin_historical_posts` and
+- Social Publisher history/duplication eval proof was hardened on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T083900Z`. The non-interactive eval now
+  requires actionable output to mention `social_history_inventory`,
+  `social_history_inventory_v1`, `metadata-only`, `source_evidence_id` and
+  `brak powtórzeń historycznych postów`. It passed with
+  `operator_usefulness_score=4`, five evidence IDs, one recommendation, two
+  validated LinkedIn/Facebook draft actions and explicit blocking of
+  duplicate-free social claims until `linkedin_historical_posts` and
   `facebook_historical_posts` evidence exists.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
@@ -728,14 +731,16 @@ API status later contradicts this state.
   Codex to copy IDs exactly from smoke/API output and never reconstruct similar
   identifiers.
 - `wilq-social-publisher` now has a live non-interactive review-only proof at
-  `.local-lab/evals/codex-skill/20260702T021742Z/summary.json`. Result:
+  `.local-lab/evals/codex-skill/20260702T083900Z/summary.json`. Result:
   `operator_usefulness_score=4`, `blocked=false`, all hard gates true, no
-  failure tags, 23 evidence IDs, 0 recommendations and validated
+  failure tags, 5 evidence IDs, 1 recommendation and validated
   `act_prepare_linkedin_social_drafts` plus
   `act_prepare_facebook_social_drafts`. LinkedIn/Facebook publication remains
   blocked by `missing_publish_access`; the useful behavior is draft-review
-  action preparation, not social publishing or performance claims. The eval
-  prompt now requires exact dashboard route markers in `notes` so route-specific
+  action preparation plus explicit `social_history_inventory_v1` /
+  metadata-only history requirements, not social publishing or performance
+  claims. The eval prompt now requires exact dashboard route markers in `notes`
+  so route-specific
   coverage is deterministic instead of relying on incidental wording.
 - `wilq-gsc-content-doctor` now has a fresh live non-interactive Search
   Analytics proof at

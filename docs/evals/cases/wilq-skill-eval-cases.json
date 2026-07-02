@@ -498,6 +498,10 @@
       "publish_allowed",
       "missing_publish_access",
       "historical_social_inventory_status",
+      "social_history_inventory",
+      "social_history_inventory_v1",
+      "metadata-only",
+      "source_evidence_id",
       "duplicate_risk_status",
       "histori",
       "powtórzeń",
@@ -506,6 +510,13 @@
       "LinkedIn",
       "Facebook",
       "zablokowane obietnice"
+    ],
+    "required_decision_terms_pl": [
+      "social_history_inventory",
+      "social_history_inventory_v1",
+      "metadata-only",
+      "source_evidence_id",
+      "brak powtórzeń historycznych postów"
     ],
     "expected_action_ids": [
       "act_prepare_linkedin_social_drafts",

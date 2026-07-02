@@ -410,6 +410,10 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "publish_allowed",
                 "missing_publish_access",
                 "historical_social_inventory_status",
+                "social_history_inventory",
+                "social_history_inventory_v1",
+                "metadata-only",
+                "source_evidence_id",
                 "duplicate_risk_status",
                 "histori",
                 "powtórzeń",
@@ -898,6 +902,15 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     }
     assert "opublikowanie posta" in social_case["blocked_claim_terms"]
     assert "wzrost skuteczności social" in social_case["blocked_claim_terms"]
+    assert set(social_case["required_decision_terms_pl"]).issuperset(
+        {
+            "social_history_inventory",
+            "social_history_inventory_v1",
+            "metadata-only",
+            "source_evidence_id",
+            "brak powtórzeń historycznych postów",
+        }
+    )
     old_post_publish_claim = "post " + "published"
     old_social_growth_claim = "social performance " + "up" + "lift"
     assert old_post_publish_claim not in social_case["blocked_claim_terms"]
