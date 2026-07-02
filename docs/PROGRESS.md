@@ -107,6 +107,11 @@ live API status later contradicts this state.
   IDs, eight source connectors and four validated daily actions. The first safe
   step is Merchant review from `primary_next_step`; GA4 and Ads claims stay
   blocked where proof/contracts are missing.
+- Merchant Operator usefulness proof: non-interactive eval for
+  `wilq-merchant-feed-operator` passed with `operator_usefulness_score=5`.
+  It validates `act_review_merchant_feed_issues`, treats Merchant counts as
+  reported issue occurrences rather than unique SKUs, and blocks product ROAS,
+  recovered revenue, price-impact, reapproval and feed-write claims.
 - Latest Goal 005 Service Profile slice: review actions expose API-owned
   `review_requirements` aligned with
   `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets

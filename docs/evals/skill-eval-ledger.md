@@ -120,6 +120,43 @@ Result:
   profitability, wasted-budget, budget-change and negative-keyword write claims
   without the missing business/write contracts.
 
+## 2026-07-02 - Merchant Operator usefulness eval
+
+Purpose:
+
+- Verify the first Daily Command action: `wilq-merchant-feed-operator` should
+  turn Merchant diagnostics into a useful feed review queue, not a revenue or
+  product-reapproval claim.
+- Confirm that the skill distinguishes reported issue occurrences from unique
+  SKU/product counts and keeps product performance, price impact and write
+  actions blocked without the missing contracts.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T154028Z`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Source connectors used: `google_merchant_center` and `google_ads`.
+- Evidence lineage included `ev_connector_google_merchant_center_status`,
+  `ev_refresh_refresh_google_merchant_center_a04a45a6e6fd`,
+  `ev_refresh_refresh_google_ads_be7011a4a261` and
+  `ev_refresh_refresh_google_ads_8790a6ba1a50`.
+- Validated action: `act_review_merchant_feed_issues`.
+- First safe operator step: open `/merchant`, run the Merchant issue review
+  preview and inspect `missing_potentially_required_attribute` for
+  `n:unit_pricing_measure` plus product samples.
+- The output correctly stated that `count_semantics=reported_issue_occurrences`
+  means issue reports, not unique SKU/product counts.
+- Blocked claims/actions stayed blocked: product-level ROAS, recovered revenue,
+  price-impact verdicts, product reapproval and feed writes.
+
 ## 2026-07-02 - GSC Content Doctor usefulness eval
 
 Purpose:
