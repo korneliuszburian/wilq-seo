@@ -3467,6 +3467,8 @@ class AdsOperatorSummary(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     blocked_claim_summary_label: str = ""
+    top_blocked_claim_labels: list[str] = Field(default_factory=list)
+    top_blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
     def fill_trace_summary_labels(self) -> AdsOperatorSummary:
@@ -3481,6 +3483,12 @@ class AdsOperatorSummary(BaseModel):
         if not self.blocked_claim_summary_label:
             self.blocked_claim_summary_label = blocked_claim_count_label(
                 self.blocked_claim_labels or self.blocked_claims
+            )
+        if not self.top_blocked_claim_labels:
+            self.top_blocked_claim_labels = list(self.blocked_claim_labels or self.blocked_claims)
+        if not self.top_blocked_claim_summary_label:
+            self.top_blocked_claim_summary_label = blocked_claim_count_label(
+                self.top_blocked_claim_labels
             )
         return self
 

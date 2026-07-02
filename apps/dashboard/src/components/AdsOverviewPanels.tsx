@@ -21,9 +21,14 @@ export function AdsCondensedDecisionPanel({
       .map((decisionId) => decisionsById.get(decisionId))
       .find((decision): decision is AdsDecisionItem => Boolean(decision)) ??
     data.decision_queue[0];
-  const blockedClaimSummary = primaryDecision
-    ? primaryDecision.blocked_claim_summary_label
-    : summary.blocked_claim_summary_label;
+  const topBlockedClaimLabels =
+    summary.top_blocked_claim_labels.length > 0
+      ? summary.top_blocked_claim_labels
+      : primaryDecision?.blocked_claim_labels ?? [];
+  const blockedClaimSummary =
+    summary.top_blocked_claim_summary_label ||
+    primaryDecision?.blocked_claim_summary_label ||
+    summary.blocked_claim_summary_label;
   const missingInputSummary = primaryDecision
     ? primaryDecision.missing_read_contract_summary_label
     : summary.missing_read_contract_summary_label;
@@ -108,7 +113,11 @@ export function AdsCondensedDecisionPanel({
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Czego WILQ nie powie</h3>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine label="Nie wolno twierdzić" values={[blockedClaimSummary]} />
+            <TraceLine
+              label="Nie wolno twierdzić"
+              values={topBlockedClaimLabels}
+              empty={blockedClaimSummary}
+            />
             <TraceLine label="Brakujące wejścia" values={[missingInputSummary]} />
           </div>
         </div>
@@ -177,8 +186,11 @@ export function AdsMarketSnapshot({
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={[summary.blocked_claim_summary_label]}
-          empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
+          values={summary.top_blocked_claim_labels}
+          empty={
+            summary.blocked_claim_summary_label ||
+            "WILQ nie zgłosił dodatkowych zablokowanych obietnic."
+          }
         />
       </div>
     </section>

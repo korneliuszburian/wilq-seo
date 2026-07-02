@@ -1877,7 +1877,9 @@ export const AdsOperatorSummarySchema = z.object({
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
-  blocked_claim_summary_label: z.string().optional().default("")
+  blocked_claim_summary_label: z.string().optional().default(""),
+  top_blocked_claim_labels: z.array(z.string()).default([]),
+  top_blocked_claim_summary_label: z.string().optional().default("")
 });
 
 export const AdsDiagnosticsResponseSchema = z.object({

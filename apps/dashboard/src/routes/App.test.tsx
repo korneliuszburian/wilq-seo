@@ -3029,6 +3029,12 @@ const adsDiagnostics = {
     action_summary_label: "1 akcja do sprawdzenia",
     blocked_claims: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"],
     blocked_claim_summary_label: "3 zablokowane obietnice",
+    top_blocked_claim_labels: [
+      "werdykt zwrotu z reklam",
+      "zmiana budżetu",
+      "dodanie wykluczających słów kluczowych"
+    ],
+    top_blocked_claim_summary_label: "3 zablokowane obietnice",
     missing_read_contract_labels: ["marża albo cel opłacalności", "ocena strategii przez człowieka"],
     blocked_claim_labels: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
   },
@@ -7848,6 +7854,7 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Ads Doctor: co dziś zrobić")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kolejność pracy" })).toBeInTheDocument();
+    expect(screen.getAllByText(/werdykt zwrotu z reklam/).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();
     expect(screen.getByText("Wartości Ads")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeInTheDocument();
@@ -8048,7 +8055,8 @@ describe("WILQ dashboard", () => {
     expect(overviewPanelsSource).toContain("summary.missing_read_contract_summary_label");
     expect(metricEvidencePanelSource).toContain("summary.operator_review_gate_summary_label");
     expect(overviewPanelsSource).toContain("summary.blocked_claim_summary_label");
-    expect(overviewPanelsSource).toContain("primaryDecision.blocked_claim_summary_label");
+    expect(overviewPanelsSource).toContain("summary.top_blocked_claim_labels");
+    expect(overviewPanelsSource).toContain("summary.top_blocked_claim_summary_label");
     expect(overviewPanelsSource).toContain("primaryDecision.missing_read_contract_summary_label");
     expect(metricEvidencePanelSource).toContain("business_context_read_contract.status_label");
     expect(campaignPanelsSource).toContain("row.advertising_channel_type_label");

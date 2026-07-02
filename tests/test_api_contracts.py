@@ -13644,6 +13644,13 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
         summary_payload["operator_summary"]["blocked_claim_labels"]
         == (full_payload["operator_summary"]["blocked_claim_labels"])
     )
+    assert summary_payload["operator_summary"]["top_blocked_claim_labels"]
+    assert len(summary_payload["operator_summary"]["top_blocked_claim_labels"]) <= 5
+    assert (
+        summary_payload["operator_summary"]["top_blocked_claim_labels"]
+        == full_payload["operator_summary"]["top_blocked_claim_labels"]
+    )
+    assert summary_payload["operator_summary"]["top_blocked_claim_summary_label"]
     assert len(summary_payload["decision_queue"]) <= len(full_payload["decision_queue"])
     assert all(decision["status_label"] for decision in summary_payload["decision_queue"])
     assert all(decision["decision_type_label"] for decision in summary_payload["decision_queue"])

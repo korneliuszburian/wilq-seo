@@ -1013,6 +1013,9 @@ def _operator_summary(
         blocked_claims=_unique(
             claim for decision in top_decisions for claim in decision.blocked_claims
         ),
+        top_blocked_claim_labels=_unique(
+            claim for decision in top_decisions for claim in decision.blocked_claims
+        )[:5],
     )
 
 
@@ -6362,6 +6365,13 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     )
     response.operator_summary.blocked_claim_summary_label = blocked_claim_count_label(
         response.operator_summary.blocked_claim_labels or response.operator_summary.blocked_claims
+    )
+    response.operator_summary.top_blocked_claim_labels = _unique(
+        response.operator_summary.top_blocked_claim_labels
+        or response.operator_summary.blocked_claim_labels
+    )[:5]
+    response.operator_summary.top_blocked_claim_summary_label = blocked_claim_count_label(
+        response.operator_summary.top_blocked_claim_labels
     )
     response.decision_queue = [
         decision.model_copy(

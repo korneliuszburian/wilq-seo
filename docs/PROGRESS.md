@@ -131,8 +131,14 @@ API status later contradicts this state.
   the surface 7/10 overall, 7.5/10 as marketer review material, 5.5/10 as
   safe-change readiness and 8.5/10 for blocking unsupported Ads claims. The
   dashboard first screen now leads with `Ads Doctor: co dziś zrobić` and
-  `Kolejność pracy`; the next gap is API-owned top blocked claim labels and
-  clearer per-action preview detail.
+  `Kolejność pracy`; the remaining next gap is clearer per-action preview
+  detail.
+- Ads Doctor now exposes API-owned top blocked claim labels through
+  `operator_summary.top_blocked_claim_labels` and renders them on the first
+  screen instead of only showing a count. Live proof after stack restart:
+  `/api/ads/diagnostics?view=summary` returned top blocked claims for
+  `zmarnowany budżet`, `opłacalność`, `skalowanie budżetu`, `zmiana budżetu`
+  and `zapis rekomendacji`.
 - GA4 usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
   surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer
