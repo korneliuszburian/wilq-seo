@@ -156,6 +156,13 @@ Minimalny format wyniku review:
       "decision": "approve",
       "source_trace_clear": "tak",
       "blocked_claims_reviewed": "tak",
+      "data_classes_confirmed": "tak",
+      "source_block_refs_confirmed": "tak",
+      "freshness_status_confirmed": "tak",
+      "audience_scope_confirmed": "tak",
+      "retention_decision_confirmed": "tak",
+      "deletion_path_confirmed": "tak",
+      "eval_gates_confirmed": "tak",
       "notes": "co Wilku zatwierdził albo co wymaga zmiany"
     }
   ],

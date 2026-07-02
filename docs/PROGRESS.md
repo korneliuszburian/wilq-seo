@@ -117,6 +117,9 @@ API status later contradicts this state.
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
   Service Profile action requires them.
+- Wilku handoff examples for private ekologus-ai proposal review now include
+  those governance confirmations, so copied review JSON matches the current
+  recorder contract.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they
