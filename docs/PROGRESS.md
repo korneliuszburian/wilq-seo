@@ -218,6 +218,12 @@ API status later contradicts this state.
   `case_count=13`, `skill_dir_count=13`, `hard_gap_count=0`,
   `warning_count=0`, `pass=true`. This proves eval coverage structure, not
   perfect output quality for every future prompt.
+- `wilq-gsc-content-doctor` usefulness eval passed on 2026-07-02; artifact:
+  `.local-lab/evals/codex-skill/20260702T123010Z`. Score:
+  `operator_usefulness_score=5`, all hard gates true, `failure_tags=[]`.
+  It used configured GSC/WordPress evidence, validated
+  `act_prepare_content_refresh_queue`, and treated GSC query/page rows as
+  latest-available partial data instead of full traffic proof.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

@@ -74,6 +74,40 @@ Result:
   non-interactive eval runs still decide whether a skill's current answer is
   useful enough for a marketer.
 
+## 2026-07-02 - GSC Content Doctor usefulness eval
+
+Purpose:
+
+- Verify that `wilq-gsc-content-doctor` gives Wilku a usable SEO/content
+  decision from GSC and WordPress evidence, not generic SEO advice.
+- Confirm that the skill handles Search Analytics freshness, partial
+  query/page data and action validation before recommending work.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T123010Z`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Smoke proof: required connectors `google_search_console`,
+  `wordpress_ekologus` and `wordpress_sklep` are configured.
+- Main action: `act_prepare_content_refresh_queue`, validation `valid=true`.
+- Evidence used by eval included:
+  `ev_connector_google_search_console_status`,
+  `ev_connector_wordpress_ekologus_status`,
+  `ev_connector_wordpress_sklep_status`,
+  `ev_refresh_refresh_google_search_console_9b25d4143bea` and
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`.
+- The answer correctly treated GSC as the latest available day
+  `2026-06-29` with `partial_possible` query/page data, so it did not claim
+  full traffic diagnostics, ranking growth or WordPress writes.
+
 ## 2026-07-02 - Eko-Opieka usefulness review
 
 Purpose:
