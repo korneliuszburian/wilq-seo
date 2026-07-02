@@ -208,6 +208,10 @@ API status later contradicts this state.
   remains `blocked_missing_goal_005_uat_proof` and renders the same Sales Brief
   blockers, so the completion audit cannot lose the gate that blocked the
   selected item.
+- The Wilku-ready content UAT handoff now matches that live state: it explains
+  the current Sales Brief blocker for the selected actionable item, asks Wilku
+  whether the blocker is understandable, and points the post-session check to
+  `goal_005_completion_check.py` without claiming completion.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only

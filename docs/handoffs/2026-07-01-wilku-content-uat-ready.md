@@ -1,7 +1,7 @@
 # Wilku Content UAT - przygotowanie sesji
 
 Data przygotowania: 2026-07-01
-Ostatnia aktualizacja: 2026-07-02 03:35 CEST
+Ostatnia aktualizacja: 2026-07-02 09:55 CEST
 
 Status: gotowe do pokazania jako sesja review/blokad i traceability, nie jako
 ukończony UAT.
@@ -29,6 +29,14 @@ Aktualizacja po hardeningu Claim Ledger: claimy oznaczone jako
 `source_connectors`. Brak źródła danych blokuje gotowość szkicu przez
 `missing_source_connector`. Dzięki temu pytanie "skąd to wzięło?" nie kończy
 się samym technicznym ID dowodu, tylko prowadzi do konkretnego źródła danych.
+
+Aktualizacja po Sales Brief provenance: UAT packet, recorder wyniku UAT i
+completion guard zapisują teraz Sales Brief gate dla wybranego work itemu.
+Aktualny live packet pokazuje, że dwa zablokowane itemy nie mają jeszcze
+snapshotu Sales Brief, a jedyny actionable item
+`content_work_item_content_decision_https___www_ekologus_pl` blokuje Sales
+Brief przez: `Brakuje karty usługi; Brakuje karty CTA`. To jest materiał do
+review z Wilkiem, nie dowód ukończonego UAT.
 
 Źródło live:
 
@@ -62,6 +70,8 @@ przez developera:
 - czy na pytanie "skąd to wzięło?" widzi evidence IDs i source connectors;
 - czy rozumie, że claim z dowodem bez źródła danych jest teraz blokowany, a nie
   przepychany do szkicu.
+- czy rozumie, dlaczego Sales Brief dla wybranego itemu jest zablokowany przez
+  brak karty usługi i CTA, a nie przez awarię modelu.
 
 ## Aktualny stan WILQ
 
@@ -79,6 +89,9 @@ UAT readiness:
   `refresh_google_merchant_center_a04a45a6e6fd`,
   `refresh_ahrefs_5eee21244cff`,
   `refresh_wordpress_sklep_c1db9b8fa677`.
+- live Sales Brief gate dla wybranego actionable itemu:
+  `selected_sales_brief_status=blocked`, blockery `Brakuje karty usługi` i
+  `Brakuje karty CTA`.
 
 Service Profile:
 
@@ -233,19 +246,23 @@ Redacted proposal details do sprawdzenia:
 - final canonical: brak;
 - pytanie do Wilka: czy blocker duplikacji/canonical jasno zatrzymuje pisanie?
 
-### SEO: odśwież lub scal "ekologus" (25 zapytań)
+### SEO: odśwież lub scal "ekologus" (24 zapytania)
 
 - work item: `content_work_item_content_decision_https___www_ekologus_pl`;
 - tryb: `refresh`;
 - status: gotowe do planu;
 - dowody:
-  `ev_refresh_refresh_google_search_console_b545c32e13f1`,
+  `ev_refresh_refresh_google_search_console_9b25d4143bea`,
   `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`;
 - source connectors: `google_search_console`, `wordpress_ekologus`;
 - final canonical: `https://www.ekologus.pl/`;
 - pytanie do Wilka: czy przy takim temacie WILQ powinien przygotować plan
   odświeżenia strony głównej, czy to jest zbyt szeroki kandydat na pierwszy
   content UAT?
+- Sales Brief gate: zablokowany przez `Brakuje karty usługi` i `Brakuje karty
+  CTA`. To znaczy: WILQ widzi źródła i kandydat refresh, ale nie ma jeszcze
+  zatwierdzonej wiedzy usługowej/CTA, żeby zrobić pełny brief bez generycznego
+  SEO.
 
 ## Pytania do Wilka
 
@@ -267,8 +284,10 @@ Zadaj dokładnie te pytania i wpisz odpowiedzi w sekcji wyników:
    źródła danych dla twierdzenia"?
 11. Czy `https://www.ekologus.pl/` jako kandydat refresh ma dla Ciebie sens, czy
    lepiej wymusić bardziej konkretny temat, np. BDO?
-12. Co jest najbardziej generyczne/off-brand w tej ścieżce?
-13. Jaki jeden następny krok zrobiłbyś po tej sesji?
+12. Czy blokada Sales Brief `Brakuje karty usługi; Brakuje karty CTA` jest
+   zrozumiała jako brak zatwierdzonej wiedzy, czy brzmi technicznie?
+13. Co jest najbardziej generyczne/off-brand w tej ścieżce?
+14. Jaki jeden następny krok zrobiłbyś po tej sesji?
 
 ## Wynik sesji
 
@@ -290,6 +309,7 @@ Uzupełnić po rozmowie:
 - największy brak produktu:
 - czy można przejść do pełnego content UAT:
 - follow-up Beads:
+- Sales Brief gate pokazany w live provenance:
 
 Walidowany format wyniku:
 
@@ -336,10 +356,23 @@ Ten walidator sprawdza kompletność realnego wyniku sesji i renderuje raport
 review. Z `--api-base` dodatkowo sprawdza, czy wybrany work item występuje w
 aktualnej kolejce UAT WILQ, zapisuje status kolejki, źródła wybranego itemu,
 read-only Service Profile, production-depth readiness, liczbę publicznych i
-prywatnych review actions, rozdział private service/policy review oraz stan
-private proposal promotion. Nie promuje private proposals do source facts, nie
-zatwierdza publicznych service cards, nie odblokowuje publikacji ani nie zamyka
-Goal 005 automatycznie.
+prywatnych review actions, rozdział private service/policy review, stan private
+proposal promotion oraz Sales Brief provenance wybranego itemu. Przy obecnym
+live stanie raport zapisze `Sales Brief status: blocked` i blockery `Brakuje
+karty usługi; Brakuje karty CTA`. Nie promuje private proposals do source
+facts, nie zatwierdza publicznych service cards, nie odblokowuje publikacji ani
+nie zamyka Goal 005 automatycznie.
+
+Sprawdzenie domknięcia Goal 005 po wyniku UAT:
+
+```bash
+rtk uv run python scripts/goal_005_completion_check.py --uat-result .local-lab/proof/goal-005-content-uat-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
+```
+
+Jeżeli wynik UAT nadal wymaga follow-up, completion check ma pozostać
+`blocked_missing_goal_005_uat_proof`, ale zachowa w raporcie Sales Brief gate
+pokazany Wilkowi. To jest poprawne: widoczny blocker jest dowodem kontroli
+jakości, nie dowodem ukończenia Goal 005.
 
 Walidator wymaga też pola `pokazane_materialy_review`. Każda ścieżka musi być
 repo-relative, istnieć w `docs/handoffs/` i wskazywać materiał, który realnie

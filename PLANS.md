@@ -1082,6 +1082,11 @@ Stop and record a blocker if:
   result checked with live API still blocks completion, but the markdown report
   now shows the selected item's Sales Brief status, blockers and constraint
   evidence summary.
+- 2026-07-02: `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` is now
+  synchronized with the same live Sales Brief gate. It tells Wilku that the
+  current actionable item is blocked by missing service and CTA knowledge, asks
+  whether that blocker is understandable, and routes post-session proof through
+  the completion guard without claiming Goal 005 completion.
 
 ## Surprises & Discoveries
 
