@@ -349,6 +349,69 @@
       ]
     },
     {
+      "source_id": "ekologus_public_water_permit_documentation_2026_07_02",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+      "extracted_fact": "Publiczna oferta Ekologus potwierdza opracowywanie dokumentacji środowiskowej w zakresie gospodarki wodno-ściekowej, w tym operatów wodnoprawnych jako podstawy do uzyskania pozwoleń między innymi na wykonanie urządzeń wodnych, pobór wód oraz wprowadzanie ścieków.",
+      "scope": "service",
+      "freshness_date": "2026-07-02",
+      "confidence": 0.76,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uzyskania pozwolenia wodnoprawnego",
+        "rozstrzygnięcie czy konkretna firma musi mieć pozwolenie bez review",
+        "aktualne terminy, opłaty lub komplet dokumentów bez human review",
+        "pełna interpretacja Prawa wodnego bez człowieka"
+      ],
+      "target_card_id": "ekologus_service_operat_wodnoprawny",
+      "target_card_type": "service",
+      "target_card_title": "Operaty i pozwolenia wodnoprawne",
+      "service_fit_terms": [
+        "operat wodnoprawny",
+        "operaty wodnoprawne",
+        "pozwolenie wodnoprawne",
+        "pozwolenia wodnoprawne",
+        "zgłoszenie wodnoprawne",
+        "gospodarka wodno-ściekowa",
+        "ścieki",
+        "pobór wód",
+        "urządzenia wodne"
+      ],
+      "buyer_problem_terms": [
+        "nie wiem czy potrzebuję pozwolenia wodnoprawnego",
+        "potrzebny operat wodnoprawny",
+        "planowana inwestycja wymaga dokumentacji wodnoprawnej",
+        "trzeba sprawdzić gospodarkę wodno-ściekową"
+      ],
+      "buyer_triggers": [
+        "firma planuje korzystanie z wód albo odprowadzanie ścieków",
+        "inwestycja może wymagać pozwolenia lub zgłoszenia wodnoprawnego",
+        "potrzebna jest dokumentacja przed decyzją administracyjną"
+      ],
+      "cta_patterns": [
+        "Poproś o opis inwestycji, sposobu korzystania z wód i dostępne decyzje.",
+        "Zaproponuj konsultację dokumentacji wodnoprawnej bez obietnicy decyzji urzędu."
+      ],
+      "allowed_claims": [
+        "Ekologus opisuje operaty wodnoprawne i dokumentację wodno-ściekową jako obszar swojej oferty.",
+        "Treść może edukacyjnie wskazać, jakie informacje warto przygotować przed konsultacją."
+      ],
+      "evidence_requirements": [
+        "GSC/WordPress evidence is required before recommending a water-permit content update.",
+        "Legal, deadline, fee, permit necessity and authority-decision claims require human review."
+      ],
+      "usage_notes": [
+        "Używaj jako source-backed review-required service fact dla analizy i UAT.",
+        "Nie traktuj tej karty jako zatwierdzonej porady prawnej ani gwarancji uzyskania pozwolenia."
+      ]
+    },
+    {
       "source_id": "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
       "source_type": "reviewed_internal",
       "privacy_class": "redacted_only",

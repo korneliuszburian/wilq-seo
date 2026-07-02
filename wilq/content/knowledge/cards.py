@@ -246,6 +246,8 @@ def _consultation_cta_card() -> ContentKnowledgeCard:
             "odpady",
             "magazynowanie odpadów",
             "magazynowanie odpadow",
+            "operat wodnoprawny",
+            "pozwolenie wodnoprawne",
             "zielony ład",
             "środowisk",
         ],

@@ -426,6 +426,14 @@ with `missing_product_evidence` unless Merchant Center or shop evidence is
 present. This keeps product availability/pricing/offer claims out of content
 work when WILQ only has SEO intent signals.
 
+Water-permit service coverage is improved under Beads task `wilq-seo-d0m`.
+`ekologus_public_water_permit_documentation_2026_07_02` now compiles into
+`ekologus_service_operat_wodnoprawny` as `source_backed_review_required`.
+Service Profile no longer reports `gap_service_operat_wodnoprawny`, but
+production-depth readiness remains false until owner/Wilku approval. Sales
+Brief can analyze operat wodnoprawny with GSC/WordPress evidence while keeping
+draft readiness blocked by review-required legal/permit constraints.
+
 Google Search Console vendor read is aligned with the first official
 Search Analytics ingestion pattern under Beads task `wilq-seo-kr8`: check
 available dates first, use the latest available day for detailed zapytania i adresy

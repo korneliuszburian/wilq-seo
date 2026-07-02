@@ -242,6 +242,92 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
     ]
 
 
+def test_sales_brief_allows_water_permit_analysis_but_blocks_draft_readiness() -> None:
+    result = _brief_result(
+        item=_item(
+            id="content_work_item_operat_wodnoprawny",
+            topic="Operat wodnoprawny",
+            source_public_url="https://ekologus.pl/operat-wodnoprawny/",
+            final_canonical_url="https://ekologus.pl/operat-wodnoprawny/",
+            intended_final_url="https://ekologus.pl/operat-wodnoprawny/",
+            evidence_ids=["ev_gsc_operat_wodnoprawny", "ev_wp_operat_wodnoprawny"],
+        ),
+        inventory_record=_inventory(
+            id="inventory_operat_wodnoprawny",
+            url="https://ekologus.pl/operat-wodnoprawny/",
+            final_canonical_url="https://ekologus.pl/operat-wodnoprawny/",
+            intended_final_url="https://ekologus.pl/operat-wodnoprawny/",
+            evidence_ids=["ev_wp_operat_wodnoprawny"],
+        ),
+        seed=_seed(
+            source_facts=[
+                ContentSalesBriefSourceFact(
+                    evidence_id="ev_gsc_operat_wodnoprawny",
+                    source_connector="google_search_console",
+                    summary="GSC potwierdza popyt na temat operatu wodnoprawnego.",
+                ),
+                ContentSalesBriefSourceFact(
+                    evidence_id="ev_wp_operat_wodnoprawny",
+                    source_connector="wordpress_ekologus",
+                    summary="WordPress potwierdza publiczną treść o operacie wodnoprawnym.",
+                ),
+            ],
+        ),
+        enrichment=_enrichment(
+            id="content_opportunity_enrichment_content_work_item_operat_wodnoprawny",
+            work_item_id="content_work_item_operat_wodnoprawny",
+            decision_id="operat_wodnoprawny",
+            title="Operat wodnoprawny",
+            topic="Operat wodnoprawny",
+            source_facts=[
+                ContentOpportunitySourceFact(
+                    id="source_fact_queries_operat_wodnoprawny",
+                    signal_kind="gsc_query",
+                    label="Zapytania GSC",
+                    summary="operat wodnoprawny",
+                    evidence_ids=["ev_gsc_operat_wodnoprawny"],
+                    source_connectors=["google_search_console"],
+                ),
+                ContentOpportunitySourceFact(
+                    id="source_fact_wordpress_operat_wodnoprawny",
+                    signal_kind="wordpress_inventory",
+                    label="Spis WordPress",
+                    summary="WordPress potwierdza publiczną treść o operacie.",
+                    evidence_ids=["ev_wp_operat_wodnoprawny"],
+                    source_connectors=["wordpress_ekologus"],
+                ),
+            ],
+            measurement_baseline=ContentOpportunityMeasurementBaseline(
+                status="ready_to_plan",
+                label="baza pomiaru do zaplanowania",
+                reason="WILQ ma GSC i WordPress jako bazę planu pomiaru.",
+                metrics_to_watch=["gsc_clicks", "gsc_impressions"],
+                source_connectors=["google_search_console"],
+                evidence_ids=["ev_gsc_operat_wodnoprawny"],
+            ),
+            evidence_ids=["ev_gsc_operat_wodnoprawny", "ev_wp_operat_wodnoprawny"],
+            source_connectors=["google_search_console", "wordpress_ekologus"],
+        ),
+    )
+
+    assert result.blockers == []
+    assert result.brief is not None
+    assert "ekologus_service_operat_wodnoprawny" in result.brief.knowledge_card_ids
+    assert result.brief.draft_allowed is False
+    assert any(
+        constraint.card_id == "ekologus_service_operat_wodnoprawny"
+        and constraint.constraint_type == "evidence_requirement"
+        and "Legal, deadline, fee" in constraint.reason
+        for constraint in result.brief.knowledge_constraints
+    )
+    assert any(
+        constraint.card_id == "ekologus_service_operat_wodnoprawny"
+        and constraint.constraint_type == "blocked"
+        and "gwarancja uzyskania pozwolenia wodnoprawnego" in constraint.reason
+        for constraint in result.brief.knowledge_constraints
+    )
+
+
 def test_sales_brief_is_blocked_without_required_evidence() -> None:
     result = _brief_result(
         item=_item(evidence_ids=[]),

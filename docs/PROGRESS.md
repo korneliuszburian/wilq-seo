@@ -470,9 +470,17 @@ API status later contradicts this state.
   source fact compiled into `ekologus_service_waste_packaging_obligations`
   (`source_backed_review_required`). Live proof after stack restart:
   `magazynowanie odpadów` builds a Sales Brief with no blockers and
-  `draft_allowed=false`; `operat wodnoprawny` still blocks with
-  `missing_required_knowledge_card` until a direct public/reviewed source
-  exists.
+  `draft_allowed=false`.
+- Goal 005 water-permit knowledge slice `wilq-seo-d0m` added
+  `ekologus_public_water_permit_documentation_2026_07_02` as a commit-safe
+  public source fact compiled into
+  `ekologus_service_operat_wodnoprawny`
+  (`source_backed_review_required`). Live Service Profile proof after stack
+  restart on 2026-07-02: `service_card_count=7`,
+  `water_status=source_backed_review_required`, source connector
+  `public_site`, 4 forbidden legal/guarantee claims and only
+  `gap_no_approved_current_cards` remains. Sales Brief can analyze the topic
+  with evidence but still keeps `draft_allowed=false`.
 - Goal 005 blocked Ahrefs snapshot slice `wilq-seo-ad8` replaced the selected
   work-item snapshot HTTP 404 for blocked `beczki` with typed
   `blocked_snapshot`. Live proof: status 200, `recommended_mode=block`,

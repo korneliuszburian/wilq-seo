@@ -116,7 +116,7 @@ def test_source_backed_waste_storage_card_matches_review_required_topic() -> Non
     )
 
 
-def test_water_permit_topic_stays_blocked_without_direct_service_source_card() -> None:
+def test_water_permit_topic_matches_review_required_public_source_card() -> None:
     match = match_content_knowledge_cards(
         _item(
             id="content_work_item_operat_wodnoprawny",
@@ -129,8 +129,22 @@ def test_water_permit_topic_stays_blocked_without_direct_service_source_card() -
     )
 
     blocker_codes = {blocker.code for blocker in content_knowledge_card_blockers(match)}
-    assert match.service_card is None
-    assert "missing_service_card" in blocker_codes
+    assert match.service_card is not None
+    assert match.service_card.id == "ekologus_service_operat_wodnoprawny"
+    assert match.service_card.lifecycle_status == "source_backed_review_required"
+    assert "missing_service_card" not in blocker_codes
+    assert "ekologus_public_water_permit_documentation_2026_07_02" in (
+        match.service_card.source_fact_ids
+    )
+    assert "public_site" in match.service_card.source_connectors
+    assert any(
+        "gwarancja uzyskania pozwolenia wodnoprawnego" in rule.reason
+        for rule in match.service_card.forbidden_claims
+    )
+    assert any(
+        "GSC/WordPress evidence" in requirement
+        for requirement in match.service_card.evidence_requirements
+    )
 
 
 def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -> None:
@@ -368,18 +382,22 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert all("nie promuje" in action.blocked_write_claim for action in private_review_actions)
 
 
-def test_service_profile_exposes_water_permit_gap_without_fake_card() -> None:
+def test_service_profile_exposes_water_permit_as_review_required_card() -> None:
     response = content_service_profile_response()
 
-    gap = next(
-        gap for gap in response.coverage_gaps if gap.gap_id == "gap_service_operat_wodnoprawny"
-    )
-    assert gap.severity == "blocker"
-    assert gap.needed_source_type == "public_site_or_reviewed_internal_service_fact"
-    assert "content_work_item_operat_wodnoprawny" in gap.example_work_item_ids
-    assert not any(
-        section.card_id == "ekologus_service_operat_wodnoprawny"
+    assert "gap_service_operat_wodnoprawny" not in {
+        gap.gap_id for gap in response.coverage_gaps
+    }
+    section = next(
+        section
         for section in response.service_sections
+        if section.card_id == "ekologus_service_operat_wodnoprawny"
+    )
+    assert section.status == "source_backed_review_required"
+    assert "public_site" in section.source_connector_labels
+    assert any(
+        "pozwolenia wodnoprawnego" in claim.reason
+        for claim in section.forbidden_claims
     )
 
 
@@ -397,7 +415,6 @@ def test_content_service_profile_endpoint_exposes_read_only_view_model() -> None
     assert payload["production_depth_readiness"]["status"] == "source_backed_review_required"
     assert payload["private_source_proposals"]
     assert payload["private_source_proposals"][0]["promotion_allowed"] is False
-    assert {gap["gap_id"] for gap in payload["coverage_gaps"]} >= {
-        "gap_service_operat_wodnoprawny",
-        "gap_no_approved_current_cards",
-    }
+    gap_ids = {gap["gap_id"] for gap in payload["coverage_gaps"]}
+    assert "gap_no_approved_current_cards" in gap_ids
+    assert "gap_service_operat_wodnoprawny" not in gap_ids
