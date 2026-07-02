@@ -199,6 +199,45 @@ Result:
   BDOS-style order as Ads/GA4. Dashboard now shows `Merchant: co dziś zrobić`,
   `Kolejność pracy` and `Czego nie obiecywać` before deeper diagnostics.
 
+## 2026-07-02 - Command Center dashboard usefulness review
+
+Purpose:
+
+- Test whether `/command-center` is the BDOS-style morning command surface:
+  one first step, ordered daily decisions, blockers, evidence and safe next
+  actions.
+- Verify that `wilq-daily-command` uses the canonical
+  `/api/dashboard/command-center` first-screen view-model.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+rtk curl -sS -m 25 http://127.0.0.1:8000/api/dashboard/command-center
+rtk pnpm typecheck
+rtk pnpm --filter @wilq/dashboard test -- CommandCenterRoute.test.tsx --runInBand
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-command-center-start-card.md`.
+- Live Command Center primary next step:
+  `Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego.`
+- Live Command Center exposed 4 daily decisions, 2 blockers and 24 tactical
+  items. The ordered decisions were Merchant, Content, GA4 and Ads.
+- The context pack contains compact `command_center.daily_decisions` and points
+  to the full endpoint through `context_pack_compaction.full_command_center_endpoint`.
+- Usefulness scores:
+  - 8.5/10 for the morning “what should I do today?” loop.
+  - 8.5/10 for evidence and claim-blocking clarity.
+  - 7.5/10 as full BDOS-style daily command, because details still require
+    opening individual surfaces.
+- Main learning: the API plan is strong, but the dashboard needed an explicit
+  ordered daily plan before the larger decision cards. Dashboard now shows
+  `Plan dnia w kolejności` and `Blokady dnia` above the detailed cards.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

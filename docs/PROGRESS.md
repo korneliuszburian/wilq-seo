@@ -147,6 +147,13 @@ API status later contradicts this state.
   performance/revenue decisions and 9/10 for claim blocking. The dashboard first
   screen now leads with `Merchant: co dziś zrobić`, `Kolejność pracy` and
   `Czego nie obiecywać`.
+- Command Center usefulness review now has a short Wilku-facing decision card at
+  `docs/handoffs/2026-07-02-wilku-command-center-start-card.md`. Live
+  `/api/dashboard/command-center` returns Merchant as the primary next step,
+  4 daily decisions, 2 blockers and 24 tactical items. The surface scores
+  8.5/10 for the morning daily loop, 8.5/10 for evidence/claim-blocking clarity
+  and 7.5/10 as a full BDOS-style daily command. The dashboard first screen now
+  shows `Plan dnia w kolejności` and `Blokady dnia` before detailed cards.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

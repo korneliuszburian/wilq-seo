@@ -12,6 +12,10 @@ function copyPromptToClipboard(prompt: string) {
 }
 
 function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
+  const blockedDecisions = data.daily_decisions.filter(
+    (item) => item.decision_state === "blocked" || item.status === "blocked"
+  );
+
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -25,6 +29,33 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {data.primary_next_step}
           </p>
+        </div>
+      </div>
+      <div className="mb-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-md border border-line bg-white p-4">
+          <h3 className="text-sm font-semibold text-ink">Plan dnia w kolejności</h3>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            {data.daily_decisions.map((item) => (
+              <li key={`order-${item.id}`}>
+                <span className="font-medium text-ink">{item.title}</span>
+                <span className="text-slate-500"> · {item.route_label} · {item.decision_state_label}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="rounded-md border border-risk/25 bg-risk/10 p-4">
+          <h3 className="text-sm font-semibold text-ink">Blokady dnia</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {data.blocker_count > 0
+              ? `${data.blocker_count} decyzje wymagają wyjaśnienia przed końcowym wnioskiem.`
+              : "Brak blokad w decyzjach dnia; nadal sprawdzaj dowody i akcje przed zapisem."}
+          </p>
+          <TraceLine
+            label="Najpierw nie przeskakuj"
+            values={blockedDecisions.map((item) => item.title)}
+            empty="Brak zablokowanych decyzji w planie dnia."
+          />
         </div>
       </div>
       <div className="grid gap-3 xl:grid-cols-2">

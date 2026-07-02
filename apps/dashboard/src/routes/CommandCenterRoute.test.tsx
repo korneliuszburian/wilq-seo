@@ -190,10 +190,18 @@ describe("CommandCenter route", () => {
     expect(
       screen.getByText("Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Przejrzyj kolejkę problemów Merchant Center")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Plan dnia w kolejności" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Blokady dnia" })).toBeInTheDocument();
+    expect(screen.getByText("Brak blokad w decyzjach dnia; nadal sprawdzaj dowody i akcje przed zapisem.")).toBeInTheDocument();
+    const planSection = screen.getByRole("heading", { name: "Plan dnia w kolejności" }).closest("div");
+    expect(planSection).not.toBeNull();
+    expect(planSection).toHaveTextContent("Przejrzyj kolejkę problemów Merchant Center");
+    expect(planSection).toHaveTextContent("Merchant");
+    expect(planSection).toHaveTextContent("gotowe");
+    expect(screen.getAllByText("Przejrzyj kolejkę problemów Merchant Center").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Przejrzyj kolejkę SEO z GSC i WordPress")
-    ).toBeInTheDocument();
+      screen.getAllByText("Przejrzyj kolejkę SEO z GSC i WordPress").length
+    ).toBeGreaterThan(0);
     expect(
       screen.getByText("Merchant Center ma potwierdzone dane problemów pliku produktowego.")
     ).toBeInTheDocument();

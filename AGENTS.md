@@ -284,7 +284,7 @@ appending history:
 
 | Surface | Current usefulness state | Next tuning target |
 | --- | --- | --- |
-| `/command-center` | Daily loop exists and `wilq-daily-command` has BDOS-style skill eval proof, but needs a fresh dashboard first-screen reviewer score. | Check whether the first screen gives one clear daily priority, blockers and safe next actions without developer translation. |
+| `/command-center` | Command Center usefulness scored: 8.5/10 for the morning daily loop, 8.5/10 for evidence/claim-blocking clarity and 7.5/10 as a full BDOS-style daily command. Dashboard now shows `Plan dnia w kolejności` and `Blokady dnia` before detailed decision cards. | Next tuning: add a lower-friction "run the right skill" path and API-owned explanation for why the top decision is first. |
 | `/content-planner` | Content queue/API is useful for blockers and evidence; current queue is partly blocked. | Score whether a marketer can choose refresh/merge/block without opening raw diagnostics. |
 | `/content-workflow` | Strong workflow surface, but broad and complex. | Test one real item end-to-end: preflight -> brief -> claim ledger -> draft-only gates, score usefulness at each step. |
 | `/service-profile` | Goal 005 focus. Private Eko-Opieka review scored 7-8/10 as Wilku review material and 3/10 as production SEO readiness. | Keep turning service/profile knowledge into short decision cards; reduce meta-language on first screen. |
