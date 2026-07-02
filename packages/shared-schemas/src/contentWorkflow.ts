@@ -651,6 +651,8 @@ export const StructuredDraftClaimMarkerSchema = z.object({
     "blocked",
     "blocked_until_measurement"
   ]),
+  strength: z.enum(["strong", "weak"]).default("strong"),
+  required: z.boolean().default(false),
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
   reviewer_id: z.string().nullable().optional()

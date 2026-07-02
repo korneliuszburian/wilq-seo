@@ -35,6 +35,7 @@ ContentQualityFindingCode = Literal[
     "unsupported_claim_used",
     "forbidden_claim_used",
     "claim_missing_required_evidence",
+    "required_claim_missing",
     "missing_forbidden_claim_acknowledgement",
     "duplicate_risk_not_clear",
     "missing_measurement_window",
@@ -171,6 +172,7 @@ def build_content_quality_review(
                 "unsupported_claim_used",
                 "forbidden_claim_used",
                 "claim_missing_required_evidence",
+                "required_claim_missing",
                 "missing_forbidden_claim_acknowledgement",
             },
         ),
@@ -480,6 +482,25 @@ def _claim_findings(
                 "Szkic używa zablokowanego twierdzenia",
                 "Zablokowane claimy nie mogą pojawić się w treści.",
                 "Usuń zablokowane twierdzenia: " + "; ".join(leaked_claims),
+                source_connectors=item.source_connectors,
+            )
+        )
+    required_claims = sorted(
+        entry.claim_text
+        for entry in claim_ledger.entries
+        if entry.required
+        and entry.status in {"allowed_with_evidence", "allowed_general"}
+        and entry.claim_text not in used_claims
+    )
+    if required_claims:
+        findings.append(
+            _finding(
+                "required_claim_missing",
+                "blocker",
+                "Szkic pomija wymagany claim",
+                "Claim Ledger oznacza te twierdzenia jako wymagane do pokrycia w szkicu.",
+                "Dodaj wymagane twierdzenia do właściwej sekcji albo zmień Claim Ledger: "
+                + "; ".join(required_claims),
                 source_connectors=item.source_connectors,
             )
         )

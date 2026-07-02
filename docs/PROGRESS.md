@@ -155,6 +155,15 @@ API status later contradicts this state.
   `operator_usefulness_score=5`, source connectors scoped to
   `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`, and no
   Ahrefs leakage in the operator lineage.
+- Claim Ledger / Generation Gate gap audit on 2026-07-02 found that the core
+  safety gates were already implemented, but the ledger still lacked explicit
+  typed metadata for weak and required claims. `ContentClaimLedgerEntry` and
+  structured draft claim markers now carry `strength=strong|weak` and
+  `required=true|false`. Structured preview and Quality Review block
+  `required_claim_missing` when a required allowed claim is omitted from the
+  output, while shared schemas preserve the new marker fields. Focused proof:
+  `rtk uv run pytest tests/content -q`, `rtk pnpm --filter @wilq/shared-schemas
+  test`, and `rtk pnpm typecheck` in `packages/shared-schemas`.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/

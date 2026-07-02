@@ -48,6 +48,8 @@ def _contract(*, include_claim_markers: bool = True) -> StructuredDraftGeneratio
                         claim_text="Ekologus pomaga firmom uporządkować obowiązki BDO.",
                         claim_type="service_claim",
                         status="allowed_with_evidence",
+                        strength="weak",
+                        required=True,
                         evidence_ids=["ev_wp_bdo"],
                         source_connectors=["wordpress_ekologus"],
                         reviewer_id="wilku",
@@ -169,6 +171,26 @@ def test_structured_draft_preview_blocks_claim_marker_without_section_evidence()
     assert "ev_wp_bdo" in result.blockers[0].next_step
 
 
+def test_structured_draft_preview_blocks_missing_required_claim() -> None:
+    result = build_structured_draft_preview(
+        output=_output(
+            sections=[
+                StructuredDraftOutputSection(
+                    heading="Kogo dotyczy BDO",
+                    body_markdown="BDO warto sprawdzić na podstawie sytuacji firmy.",
+                    evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+                    claims_used=[],
+                )
+            ]
+        ),
+        contract=_contract(),
+    )
+
+    assert result.preview is None
+    assert [blocker.code for blocker in result.blockers] == ["required_claim_missing"]
+    assert "Ekologus pomaga firmom uporządkować obowiązki BDO." in result.blockers[0].next_step
+
+
 def test_structured_draft_preview_requires_forbidden_claim_acknowledgement() -> None:
     result = build_structured_draft_preview(
         output=_output(forbidden_claims_avoided=[]),
@@ -213,7 +235,7 @@ def test_structured_draft_preview_blocks_missing_or_unknown_evidence() -> None:
                 )
             ]
         ),
-        contract=_contract(),
+        contract=_contract(include_claim_markers=False),
     )
     unknown_evidence = build_structured_draft_preview(
         output=_output(source_facts_used=["ev_fake"]),

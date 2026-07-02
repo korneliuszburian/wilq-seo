@@ -242,6 +242,8 @@ def test_structured_draft_generation_api_returns_strict_contract() -> None:
             "claim_text": "Ekologus pomaga firmom uporządkować obowiązki BDO.",
             "claim_type": "service_claim",
             "status": "allowed_with_evidence",
+            "strength": "strong",
+            "required": False,
             "evidence_ids": ["ev_wp_bdo"],
             "source_connectors": ["wordpress_ekologus"],
             "reviewer_id": "wilku",

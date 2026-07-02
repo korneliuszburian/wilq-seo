@@ -68,6 +68,25 @@ def test_content_quality_review_blocks_claim_without_required_section_evidence()
     assert blocker["evidence_ids"] == ["ev_wp_bdo"]
 
 
+def test_content_quality_review_blocks_missing_required_claim() -> None:
+    payload = _quality_payload()
+    payload["claim_ledger"]["entries"][0]["required"] = True
+    required_claim = payload["claim_ledger"]["entries"][0]["claim_text"]
+    payload["structured_output"]["sections"][0]["claims_used"] = []
+
+    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
+
+    assert response.status_code == 200
+    review = response.json()["quality_review"]
+    assert review["verdict"] == "blocked"
+    assert "required_claim_missing" in _blocker_codes(review)
+    assert review["claim_safety"]["status"] == "blocked"
+    blocker = next(
+        blocker for blocker in review["blockers"] if blocker["code"] == "required_claim_missing"
+    )
+    assert required_claim in blocker["next_step"]
+
+
 def test_content_quality_review_blocks_missing_forbidden_claim_acknowledgement() -> None:
     payload = _quality_payload()
     blocked_claim = "Nie obiecuj leadów po publikacji."

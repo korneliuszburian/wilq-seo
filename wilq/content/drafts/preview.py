@@ -18,6 +18,7 @@ StructuredDraftPreviewBlockerCode = Literal[
     "unknown_evidence_reference",
     "unknown_claim_reference",
     "claim_missing_required_evidence",
+    "required_claim_missing",
     "missing_forbidden_claim_acknowledgement",
 ]
 
@@ -173,6 +174,21 @@ def structured_draft_preview_blockers(
                 "Szkic używa claimu spoza kontraktu",
                 "Podgląd może pokazać tylko twierdzenia dopuszczone przez kontrakt WILQ.",
                 "Usuń obce twierdzenia ze szkicu: " + "; ".join(unknown_claims),
+            )
+        )
+    missing_required_claims = sorted(
+        marker.claim_text
+        for marker in contract.model_input.claim_markers
+        if marker.required and marker.claim_text not in used_claims
+    )
+    if missing_required_claims:
+        blockers.append(
+            _blocker(
+                "required_claim_missing",
+                "Szkic pomija wymagany claim",
+                "Kontrakt WILQ oznaczył claim jako wymagany do pokrycia w szkicu.",
+                "Dodaj wymagany claim do odpowiedniej sekcji albo zmień Claim Ledger: "
+                + "; ".join(missing_required_claims),
             )
         )
     missing_forbidden_claims = sorted(

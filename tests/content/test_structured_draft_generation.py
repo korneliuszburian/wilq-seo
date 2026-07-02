@@ -285,6 +285,8 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert marker.claim_text == "Ekologus pomaga firmom w obowiązkach związanych z BDO."
     assert marker.claim_type == "service_claim"
     assert marker.status == "allowed_with_evidence"
+    assert marker.strength == "strong"
+    assert marker.required is False
     assert marker.evidence_ids == ["ev_wp_bdo"]
     assert marker.source_connectors == ["wordpress_ekologus"]
     assert marker.reviewer_id is None
@@ -350,6 +352,8 @@ def test_structured_generation_receives_sales_brief_forbidden_claims() -> None:
     marker = result.contract.model_input.removed_or_blocked_claim_markers[0]
     assert marker.claim_id == "claim_more_leads"
     assert marker.claim_text == "Ta treść zwiększy liczbę leadów."
+    assert marker.strength == "strong"
+    assert marker.required is False
     assert marker.claim_type == "business_outcome_claim"
     assert marker.status == "blocked_until_measurement"
     assert marker.evidence_ids == ["ev_gsc_bdo"]

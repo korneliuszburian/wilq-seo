@@ -22,6 +22,7 @@ ContentClaimStatus = Literal[
     "blocked",
     "blocked_until_measurement",
 ]
+ContentClaimStrength = Literal["strong", "weak"]
 ContentClaimLedgerBlockerCode = Literal[
     "missing_evidence",
     "missing_source_connector",
@@ -47,6 +48,8 @@ class ContentClaimLedgerEntry(BaseModel):
     claim_text: str
     claim_type: ContentClaimType
     status: ContentClaimStatus
+    strength: ContentClaimStrength = "strong"
+    required: bool = False
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     reason: str
@@ -75,6 +78,8 @@ def content_claim_entry(
     claim_type: ContentClaimType,
     evidence_ids: list[str] | None = None,
     source_connectors: list[str] | None = None,
+    strength: ContentClaimStrength = "strong",
+    required: bool = False,
     measurement_window_ready: bool = False,
     human_reviewed: bool = False,
     reviewer_id: str | None = None,
@@ -87,6 +92,8 @@ def content_claim_entry(
             claim_text=claim_text,
             claim_type=claim_type,
             status="blocked",
+            strength=strength,
+            required=False,
             evidence_ids=evidence,
             source_connectors=connectors,
             reason="Gwarancje efektu nie mogą trafić do gotowego języka szkicu.",
@@ -98,6 +105,8 @@ def content_claim_entry(
             claim_text=claim_text,
             claim_type=claim_type,
             status="blocked_until_measurement",
+            strength=strength,
+            required=False,
             evidence_ids=evidence,
             source_connectors=connectors,
             reason="Twierdzenie o skuteczności wymaga zakończonego okna pomiaru.",
@@ -109,6 +118,8 @@ def content_claim_entry(
             claim_text=claim_text,
             claim_type=claim_type,
             status="needs_human_review",
+            strength=strength,
+            required=False,
             evidence_ids=evidence,
             source_connectors=connectors,
             reason="Twierdzenie prawne, ryzyka albo środowiskowe wymaga decyzji człowieka.",
@@ -119,6 +130,8 @@ def content_claim_entry(
             claim_text=claim_text,
             claim_type=claim_type,
             status="needs_human_review",
+            strength=strength,
+            required=False,
             evidence_ids=evidence,
             source_connectors=connectors,
             reason=(
@@ -133,6 +146,8 @@ def content_claim_entry(
             claim_text=claim_text,
             claim_type=claim_type,
             status="allowed_with_evidence",
+            strength=strength,
+            required=required,
             evidence_ids=evidence,
             source_connectors=connectors,
             reason="Twierdzenie ma przypisane dowody źródłowe.",
@@ -143,6 +158,8 @@ def content_claim_entry(
         claim_text=claim_text,
         claim_type=claim_type,
         status="allowed_general",
+        strength=strength,
+        required=required,
         source_connectors=connectors,
         reason="Twierdzenie jest ogólną informacją bez obietnicy efektu.",
         reviewer_id=reviewer_id if human_reviewed else None,

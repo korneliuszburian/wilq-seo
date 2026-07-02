@@ -840,6 +840,8 @@ describe("Content work item workflow schemas", () => {
                   claim_text: "Ekologus pomaga firmom uporządkować obowiązki BDO.",
                   claim_type: "service_claim",
                   status: "allowed_with_evidence",
+                  strength: "weak",
+                  required: true,
                   evidence_ids: ["ev_wp_bdo"],
                   source_connectors: ["wordpress_ekologus"],
                   reviewer_id: "wilku"
@@ -851,6 +853,8 @@ describe("Content work item workflow schemas", () => {
                   claim_text: "Ta treść zwiększy liczbę leadów.",
                   claim_type: "business_outcome_claim",
                   status: "blocked_until_measurement",
+                  strength: "strong",
+                  required: false,
                   evidence_ids: ["ev_gsc_bdo"],
                   source_connectors: ["google_search_console"]
                 }

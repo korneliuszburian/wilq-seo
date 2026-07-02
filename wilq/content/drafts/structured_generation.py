@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import (
     ContentClaimLedger,
+    ContentClaimStrength,
     ContentClaimStatus,
     ContentClaimType,
     claim_ledger_allows_draft,
@@ -63,6 +64,8 @@ class StructuredDraftClaimMarker(BaseModel):
     claim_text: str
     claim_type: ContentClaimType
     status: ContentClaimStatus
+    strength: ContentClaimStrength = "strong"
+    required: bool = False
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     reviewer_id: str | None = None
@@ -242,6 +245,8 @@ def build_structured_draft_generation_contract(
                 claim_text=entry.claim_text,
                 claim_type=entry.claim_type,
                 status=entry.status,
+                strength=entry.strength,
+                required=entry.required,
                 evidence_ids=entry.evidence_ids,
                 source_connectors=entry.source_connectors,
                 reviewer_id=entry.reviewer_id,
@@ -434,6 +439,8 @@ def _removed_or_blocked_claim_markers(
                 claim_text=entry.claim_text,
                 claim_type=entry.claim_type,
                 status=entry.status,
+                strength=entry.strength,
+                required=entry.required,
                 evidence_ids=entry.evidence_ids,
                 source_connectors=entry.source_connectors,
                 reviewer_id=entry.reviewer_id,
@@ -448,6 +455,8 @@ def _removed_or_blocked_claim_markers(
                 claim_text=claim.claim_text,
                 claim_type=claim.claim_type,
                 status=claim.status,
+                strength="strong",
+                required=False,
                 evidence_ids=claim.evidence_ids,
                 source_connectors=claim.source_connectors,
                 reviewer_id=claim.reviewer_id,

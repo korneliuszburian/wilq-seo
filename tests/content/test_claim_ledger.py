@@ -90,10 +90,14 @@ def test_allowed_with_evidence_claim_can_be_used_in_draft() -> None:
         claim_type="service_claim",
         evidence_ids=["ev_service_map_bdo"],
         source_connectors=["google_search_console", "wordpress_ekologus"],
+        strength="weak",
+        required=True,
     )
     ledger = _ledger(entry)
 
     assert entry.status == "allowed_with_evidence"
+    assert entry.strength == "weak"
+    assert entry.required is True
     assert entry.source_connectors == ["google_search_console", "wordpress_ekologus"]
     assert claim_ledger_blockers(ledger) == []
     assert claim_ledger_allows_draft(ledger)
