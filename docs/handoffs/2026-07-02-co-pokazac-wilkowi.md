@@ -32,7 +32,8 @@ Najkrótszy stan:
   0% production-depth, wszystko nadal review-required;
 - Claim Ledger: 10/10 checków, model nie może oznaczyć treści jako gotowej do
   publikacji;
-- evale skilli: 13/13 skilli ma przypadek eval i wymagane pola outputu;
+- evale skilli: 13/13 operator skills przeszło deterministic smoke i
+  non-interactive Codex eval z WILQ API;
 - poranna komenda WILQ musi już odpowiedzieć po ludzku: co zrobić najpierw,
   dlaczego teraz, z jakimi dowodami, co jest zablokowane i jaki jest następny
   bezpieczny krok;
@@ -47,6 +48,31 @@ Zapytaj:
 2. Czy te blokady budują zaufanie, czy przeszkadzają w pracy?
 3. Którą część chcesz zobaczyć jako pierwszą: wiedzę usług, treści, Ads/GA4,
    czy social/history?
+
+### Co znaczy 13/13 skill eval
+
+Powiedz:
+
+> To nie znaczy, że wszystko wolno już automatyzować. To znaczy, że każda
+> główna umiejętność WILQ potrafi pobrać dane z API, pokazać dowody, nazwać
+> źródła, zablokować ryzykowne claimy i dać następny bezpieczny krok po polsku.
+
+Podział:
+
+- Daily, Ads, Merchant, GA4, GSC, Ahrefs, Localo, Content Strategist, Campaign
+  Builder i Custom Segments są gotowe jako review-operacje;
+- Content Operator blokuje finalną treść, dopóki nie ma Service Profile, Claim
+  Ledger, human review i measurement window;
+- Demand Gen blokuje rekomendację, bo WILQ widzi 18 kampanii Ads, ale 0
+  kampanii Demand Gen, reklam, kreacji i stron wejścia DG;
+- Social Publisher blokuje publikację i "brak powtórek", bo brakuje
+  credentiali oraz historii LinkedIn/Facebook jako metadata-only.
+
+Zapytaj:
+
+1. Czy taki podział na `działaj`, `sprawdź`, `zablokuj` jest dla Ciebie jasny?
+2. Który workflow ma największą wartość w codziennej pracy?
+3. Gdzie odpowiedź nadal brzmi jak AI albo generyczne SEO?
 
 ### 0. Centrum pracy: co zrobić najpierw
 

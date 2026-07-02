@@ -139,8 +139,11 @@ claim "brak powtórzeń historycznych postów" jest zablokowany.
 
 ## Co już jest sprawdzone
 
-Na 2026-07-02 realne evale skillów nie są tylko teorią. Przeszły
-non-interactive Codex evale z WILQ API dla:
+Na 2026-07-02 realne evale skillów nie są tylko teorią. Mamy pełny replay
+13/13 operator skills: deterministic smoke plus non-interactive Codex eval z
+WILQ API.
+
+Przeszły:
 
 - Daily Command;
 - Ads Doctor;
@@ -148,12 +151,31 @@ non-interactive Codex evale z WILQ API dla:
 - GA4 Analyst;
 - Ahrefs Gap Finder;
 - GSC Content Doctor;
+- Content Strategist;
 - Content Operator;
+- Campaign Builder;
+- Custom Segments;
+- Demand Gen Operator;
+- Localo Operator;
 - Social Publisher.
 
 Najważniejsze: evale sprawdzają, czy odpowiedź jest po polsku, używa WILQ API,
 ma evidence IDs, source connectors, nie wymyśla metryk, blokuje unsafe claimy i
 daje następny krok, który marketer rozumie.
+
+Najprostszy podział:
+
+- gotowe jako review-operacje: Daily, Ads, Merchant, GA4, GSC, Ahrefs, Localo,
+  Content Strategist, Campaign Builder i Custom Segments;
+- blokowane poprawnie: Content Operator, bo pełna treść wymaga Service Profile,
+  Claim Ledger, human review i measurement window;
+- blokowane poprawnie: Demand Gen, bo w danych jest 18 kampanii Ads, ale 0
+  kampanii Demand Gen, 0 reklam, 0 kreacji i 0 stron wejścia Demand Gen;
+- blokowane poprawnie: Social Publisher, bo brakuje historii LinkedIn/Facebook
+  i credentiali, więc nie wolno obiecać braku powtórek ani publikacji.
+
+To jest dobry stan pre-UAT: WILQ zaczyna zachowywać się jak system operacyjny,
+który umie powiedzieć "działaj", "sprawdź" albo "nie wolno jeszcze".
 
 ## Czego jeszcze nie wolno twierdzić
 
