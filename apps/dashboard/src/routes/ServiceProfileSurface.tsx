@@ -58,6 +58,8 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
         </div>
       </div>
 
+      <ServiceProfileTodayPanel data={data} />
+
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -183,6 +185,70 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
         </details>
       </section>
     </main>
+  );
+}
+
+function ServiceProfileTodayPanel({ data }: { data: ContentServiceProfileResponse }) {
+  const readiness = data.production_depth_readiness;
+  const proposals = data.private_source_proposal_summary;
+  const review = data.review_action_summary;
+
+  return (
+    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-action">
+            Wiedza Ekologus: co dziś sprawdzić
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+            Są źródła i propozycje, ale produkcyjne treści są nadal zablokowane
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+            {data.coverage_summary.safe_next_step}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          <MetricTile label="Karty" value={data.coverage_summary.card_count} />
+          <MetricTile label="Approved" value={data.coverage_summary.approved_current_count} />
+          <MetricTile label="Do review" value={readiness.source_backed_review_required_count} />
+          <MetricTile label="ekologus-ai" value={proposals.proposal_count} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Kolejność review</h3>
+          <ol className="mt-3 grid gap-2 text-sm leading-6 text-slate-700">
+            <li className="grid grid-cols-[1.5rem_1fr] gap-2">
+              <span className="font-semibold text-action">1.</span>
+              <span>Najpierw publiczne karty usług Ekologus.</span>
+            </li>
+            <li className="grid grid-cols-[1.5rem_1fr] gap-2">
+              <span className="font-semibold text-action">2.</span>
+              <span>Potem prywatne propozycje ekologus-ai: service, claim-policy i evidence-policy.</span>
+            </li>
+            <li className="grid grid-cols-[1.5rem_1fr] gap-2">
+              <span className="font-semibold text-action">3.</span>
+              <span>Dopiero po reviewerze, freshness i source lineage można myśleć o reviewed source fact.</span>
+            </li>
+          </ol>
+          <p className="mt-3 text-sm font-medium leading-6 text-ink">
+            {review.safe_next_step}
+          </p>
+        </div>
+
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Co blokuje produkcję</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {proposals.promotion_blocked_reason}
+          </p>
+          <div className="mt-3 grid gap-1 text-xs leading-5 text-slate-600">
+            <List label="Blokady" values={readiness.blocker_labels} />
+            <List label="Warunki promocji" values={proposals.promotion_checklist.slice(0, 3)} />
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

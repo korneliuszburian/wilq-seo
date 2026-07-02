@@ -37,6 +37,20 @@ describe("ServiceProfileSurface", () => {
     );
 
     expect(await screen.findByText("Profil usług Ekologus")).toBeInTheDocument();
+    expect(screen.getByText("Wiedza Ekologus: co dziś sprawdzić")).toBeInTheDocument();
+    expect(
+      screen.getByText("Są źródła i propozycje, ale produkcyjne treści są nadal zablokowane")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Kolejność review")).toBeInTheDocument();
+    expect(screen.getByText("Co blokuje produkcję")).toBeInTheDocument();
+    expect(screen.getByText("Najpierw publiczne karty usług Ekologus.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Potem prywatne propozycje ekologus-ai: service, claim-policy i evidence-policy."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText("ekologus-ai")).toBeInTheDocument();
     expect(screen.getByText(/production-depth zablokowane/)).toBeInTheDocument();
     expect(screen.getByText(/źródła są, wymagają review/)).toBeInTheDocument();
     expect(screen.getByText("Polityka zapisu")).toBeInTheDocument();
@@ -61,7 +75,8 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("5 do review")).toBeInTheDocument();
     expect(screen.getByText("promocja zablokowana")).toBeInTheDocument();
     expect(screen.getByText("Warunki przed reviewed source fact")).toBeInTheDocument();
-    expect(screen.getByText(/Brak zatwierdzenia człowieka/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Brak zatwierdzenia człowieka/).length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("ekologus-ai reviewed handoff: Eko-Opieka").length)
       .toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("ekologus-ai reviewed handoff: Audyt zgodności").length)
@@ -102,7 +117,8 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("3 prywatne claim-policy")).toBeInTheDocument();
     expect(screen.getByText("12 review request")).toBeInTheDocument();
     expect(screen.getByText("1 prepare")).toBeInTheDocument();
-    expect(screen.getByText(/Najpierw przejrzyj publiczne karty usług/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Najpierw przejrzyj publiczne karty usług/).length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz"))
       .toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus"))

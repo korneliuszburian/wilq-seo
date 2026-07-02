@@ -286,6 +286,46 @@ Result:
   `Treści: co dziś zrobić`, `Kolejność pracy` and `Czego nie obiecywać` before
   preflight and deeper technical review.
 
+## 2026-07-02 - Service Profile dashboard usefulness review
+
+Purpose:
+
+- Test whether `/service-profile` explains real Ekologus knowledge readiness
+  to Wilku, not only the internal knowledge-card model.
+- Verify that ekologus-ai private/reviewed proposals improve specificity while
+  still blocking production-depth content until human review, freshness,
+  confidence and source lineage are recorded.
+
+Proof:
+
+```bash
+rtk curl -sS -m 30 http://127.0.0.1:8000/api/content/service-profile
+rtk pnpm --filter @wilq/dashboard test -- ServiceProfileSurface.test.tsx --runInBand
+rtk pnpm typecheck
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-service-profile-start-card.md`.
+- Live Service Profile exposed 10 knowledge cards, 7 service cards,
+  7 source-backed review-required cards, 0 approved-current cards,
+  0 production-depth cards, 5 private ekologus-ai proposals and 13 review
+  actions.
+- Private proposal scopes: 2 service proposals, 2 claim-policy proposals and
+  1 evidence-policy proposal.
+- Usefulness scores:
+  - 8/10 as a knowledge-review screen.
+  - 4/10 as production knowledge, because approved-current service cards are
+    still missing.
+  - 8/10 for ekologus-ai reviewed source value, because it contributes concrete
+    service, claim-policy and evidence-policy proposals without exposing raw
+    private text.
+- Main learning: Service Profile needed a first-screen operating explanation,
+  not only cards, gaps and review actions. Dashboard now shows
+  `Wiedza Ekologus: co dziś sprawdzić`, review order and production blockers
+  before detailed card/proposal lists.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

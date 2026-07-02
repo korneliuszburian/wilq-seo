@@ -162,6 +162,15 @@ API status later contradicts this state.
   unsupported content/result claims. The dashboard first screen now shows
   `Treści: co dziś zrobić`, `Kolejność pracy` and `Czego nie obiecywać` before
   preflight and detailed review sections.
+- Service Profile usefulness review now has a short Wilku-facing decision card
+  at `docs/handoffs/2026-07-02-wilku-service-profile-start-card.md`. Live
+  `/api/content/service-profile` returns 10 cards, 7 service cards,
+  7 source-backed review-required cards, 0 approved-current cards, 0
+  production-depth cards, 5 private ekologus-ai proposals and 13 review
+  actions. The surface scores 8/10 as a knowledge-review screen, 4/10 as
+  production knowledge and 8/10 for ekologus-ai reviewed source value. The
+  dashboard first screen now shows `Wiedza Ekologus: co dziś sprawdzić`,
+  review order and production blockers before detailed card/proposal lists.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
