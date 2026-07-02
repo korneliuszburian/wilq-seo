@@ -1020,6 +1020,11 @@ Stop and record a blocker if:
   `source_trace_clear`, `blocked_claims_reviewed` and `follow_up_beads`.
   Passing proof:
   `.local-lab/evals/codex-skill/20260702T043747Z/wilq-content-operator/result.json`.
+- 2026-07-02: `ekologus-ai` source facts gained fail-closed model validation.
+  Facts from `ekologus_ai_private_source_catalog` must remain redacted,
+  review-required and explicitly claim/evidence/usage-gated before Service
+  Profile can expose them as private proposals. This keeps private knowledge in
+  the normal WILQ source-fact path instead of relying on skill wording.
 
 ## Surprises & Discoveries
 

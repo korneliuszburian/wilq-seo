@@ -168,6 +168,12 @@ API status later contradicts this state.
   with the review recorder: `approve`, `needs_changes`, `stale`, `reject`.
   Live API and UAT packet both return those options on private service and
   claim-policy review actions.
+- `ekologus-ai` source facts now have model-level governance validation before
+  they can appear as private proposals. Any fact using
+  `ekologus_ai_private_source_catalog` must be a private/reviewed source type,
+  `redacted_only`, `review_required`, and carry blocked claims, evidence
+  requirements and usage notes. Focused proof loaded 11 source facts, including
+  4 private `ekologus-ai` facts, all redacted and review-required.
 - Goal 005 completion is now guarded by
   `scripts/goal_005_completion_check.py`. It fails closed unless given a
   validated real UAT result from `scripts/record_goal_005_content_uat_result.py`

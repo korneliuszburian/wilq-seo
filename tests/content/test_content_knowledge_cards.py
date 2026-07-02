@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.actions.service import get_action, preview_action, validate_action
@@ -78,6 +80,46 @@ def test_source_fact_registry_loads_commit_safe_public_facts() -> None:
     assert bdo_fact.review_status == "review_required"
     assert bdo_fact.source_connectors == ["public_site"]
     assert bdo_fact.blocked_claims
+
+
+def test_ekologus_ai_source_facts_are_redacted_review_required_proposals() -> None:
+    registry = ekologus_source_fact_registry()
+    private_facts = [
+        fact
+        for fact in registry.facts
+        if "ekologus_ai_private_source_catalog" in fact.source_connectors
+    ]
+
+    assert len(private_facts) >= 4
+    assert all(
+        fact.source_type in {"private_candidate", "reviewed_internal"}
+        for fact in private_facts
+    )
+    assert all(fact.privacy_class == "redacted_only" for fact in private_facts)
+    assert all(fact.review_status == "review_required" for fact in private_facts)
+    assert all(fact.blocked_claims for fact in private_facts)
+    assert all(fact.evidence_requirements for fact in private_facts)
+    assert all(fact.usage_notes for fact in private_facts)
+
+
+def test_ekologus_ai_source_facts_require_private_governance_fields() -> None:
+    with pytest.raises(ValidationError, match="redacted_only"):
+        ContentSourceFact(
+            source_id="bad_ekologus_ai_fact",
+            source_type="reviewed_internal",
+            privacy_class="commit_safe",
+            source_url_or_path="https://github.com/rekurencja/ekologus-ai/blob/main/private.md",
+            extracted_fact="Unsafe private source fact.",
+            scope="service",
+            freshness_date="2026-07-02",
+            confidence=0.6,
+            review_status="review_required",
+            source_connectors=["ekologus_ai_private_source_catalog"],
+            blocked_claims=[],
+            target_card_id="bad_private_card",
+            target_card_type="service",
+            target_card_title="Bad private card",
+        )
 
 
 def test_source_facts_compile_to_review_required_cards() -> None:

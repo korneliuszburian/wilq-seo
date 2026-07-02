@@ -73,6 +73,19 @@ class ContentSourceFact(BaseModel):
             raise ValueError("approved source facts require reviewer")
         if self.source_type == "public_site" and self.privacy_class != "commit_safe":
             raise ValueError("public site source facts must be commit_safe")
+        if "ekologus_ai_private_source_catalog" in self.source_connectors:
+            if self.source_type not in {"private_candidate", "reviewed_internal"}:
+                raise ValueError("ekologus-ai source facts must use private source types")
+            if self.privacy_class != "redacted_only":
+                raise ValueError("ekologus-ai source facts must be redacted_only")
+            if self.review_status != "review_required":
+                raise ValueError("ekologus-ai source facts must start as review_required")
+            if not self.blocked_claims:
+                raise ValueError("ekologus-ai source facts require blocked_claims")
+            if not self.evidence_requirements:
+                raise ValueError("ekologus-ai source facts require evidence_requirements")
+            if not self.usage_notes:
+                raise ValueError("ekologus-ai source facts require usage_notes")
         return self
 
 
