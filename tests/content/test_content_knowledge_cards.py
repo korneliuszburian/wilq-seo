@@ -179,6 +179,52 @@ def test_source_facts_compile_to_review_required_cards() -> None:
     assert "ekologus_claim_policy_legal_safety" not in {card.id for card in cards}
 
 
+def test_approved_source_fact_compiles_to_approved_current_with_traceability() -> None:
+    fact = ContentSourceFact(
+        source_id="approved_bdo_service_fact",
+        source_type="public_site",
+        privacy_class="commit_safe",
+        source_url_or_path="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        extracted_fact="Ekologus opisuje wsparcie przedsiębiorców w obowiązkach BDO.",
+        scope="service",
+        freshness_date="2026-07-02",
+        confidence=0.82,
+        review_status="approved",
+        reviewer="Wilku",
+        evidence_ids=["ev_owner_review_bdo_service_fact"],
+        source_connectors=["public_site", "owner_review"],
+        blocked_claims=["gwarancja uniknięcia kar BDO"],
+        target_card_id="ekologus_service_bdo_reporting",
+        target_card_type="service",
+        target_card_title="BDO i sprawozdawczość",
+        service_fit_terms=["bdo", "sprawozdanie bdo"],
+        allowed_claims=["Ekologus może pomagać w uporządkowaniu obowiązków BDO."],
+        evidence_requirements=["GSC/WordPress evidence dla rekomendacji treści."],
+    )
+
+    cards = compile_source_facts_to_knowledge_cards([fact])
+
+    assert len(cards) == 1
+    card = cards[0]
+    assert card.lifecycle_status == "approved_current"
+    assert card.freshness == "reviewed_2026-07-02"
+    assert card.source_fact_ids == ["approved_bdo_service_fact"]
+    assert card.source_connectors == ["public_site", "owner_review"]
+    assert card.source_lineage == [
+        "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    ]
+    assert card.claims_needing_review == []
+    assert any(
+        "gwarancja uniknięcia kar BDO" in rule.reason
+        for rule in card.forbidden_claims
+    )
+
+    readiness = content_knowledge_production_depth_readiness(cards)
+    assert readiness.status == "production_depth"
+    assert readiness.ready_for_daily_content is True
+    assert readiness.production_depth_card_count == 1
+
+
 def test_service_profile_exposes_private_policy_proposals_without_promotion() -> None:
     profile = content_service_profile_response()
 

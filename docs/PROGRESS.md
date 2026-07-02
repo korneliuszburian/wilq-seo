@@ -178,6 +178,10 @@ API status later contradicts this state.
   `source_connectors` at the model layer. This prevents a future
   `approved_current` knowledge card from being unlocked by reviewed prose
   without traceable evidence lineage.
+- The approved source-fact happy path is regression-tested too: a reviewed fact
+  with evidence IDs and source connectors compiles to `approved_current`,
+  preserves source lineage/connectors, keeps blocked claims, and is the only
+  isolated source-fact path that unlocks production-depth readiness.
 - Goal 005 completion is now guarded by
   `scripts/goal_005_completion_check.py`. It fails closed unless given a
   validated real UAT result from `scripts/record_goal_005_content_uat_result.py`

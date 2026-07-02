@@ -1033,6 +1033,11 @@ Stop and record a blocker if:
   evidence IDs and source connectors. This guards the future
   `approved_current` path so production-depth cards cannot be created from
   prose-only approval.
+- 2026-07-02: The approved source-fact happy path is regression-tested too:
+  a reviewed fact with evidence IDs and source connectors compiles to
+  `approved_current`, preserves source lineage/connectors, keeps blocked claims,
+  and is the only isolated source-fact path that unlocks production-depth
+  readiness.
 
 ## Surprises & Discoveries
 
