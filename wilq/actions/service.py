@@ -138,6 +138,12 @@ from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
+SERVICE_PROFILE_PUBLIC_REVIEW_SCOPES = {"public_service_card"}
+SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES = {
+    "private_service_proposal",
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal",
+}
 
 
 def seed_static_actions() -> dict[str, ActionObject]:
@@ -573,7 +579,7 @@ def _service_profile_knowledge_promotion_action() -> ActionObject | None:
     review_actions_by_target = {
         action.target_card_id: action
         for action in profile.review_actions
-        if action.action_id.startswith("service_profile_review_card_")
+        if action.review_scope in SERVICE_PROFILE_PUBLIC_REVIEW_SCOPES
         and action.target_card_id
     }
     rows: list[dict[str, Any]] = []
@@ -688,7 +694,7 @@ def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
     review_actions_by_target = {
         action.target_card_id: action
         for action in profile.review_actions
-        if action.action_id.startswith("service_profile_review_private_proposal_")
+        if action.review_scope in SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES
         and action.target_card_id
     }
     rows: list[dict[str, Any]] = []

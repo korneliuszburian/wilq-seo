@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+import wilq.actions.service as action_service
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.actions.service import get_action, preview_action, validate_action
 from wilq.content.knowledge.cards import (
@@ -1068,6 +1069,53 @@ def test_private_proposal_promotion_action_is_prepare_only_and_review_gated() ->
     assert after_profile.private_source_proposal_summary.promotion_ready is False
     assert after_profile.coverage_summary.approved_current_count == (
         before_profile.coverage_summary.approved_current_count
+    )
+
+
+def test_service_profile_promotion_actions_use_review_scope_not_action_id_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    profile = content_service_profile_response()
+    renamed_actions = []
+    for index, action in enumerate(profile.review_actions):
+        if action.review_scope == "public_service_card":
+            renamed_actions.append(
+                action.model_copy(update={"action_id": f"renamed_public_review_{index}"})
+            )
+            continue
+        if action.review_scope in {
+            "private_service_proposal",
+            "private_claim_policy_proposal",
+            "private_evidence_policy_proposal",
+        }:
+            renamed_actions.append(
+                action.model_copy(update={"action_id": f"renamed_private_review_{index}"})
+            )
+            continue
+        renamed_actions.append(action)
+    renamed_profile = profile.model_copy(update={"review_actions": renamed_actions})
+    monkeypatch.setattr(
+        action_service,
+        "content_service_profile_response",
+        lambda: renamed_profile,
+    )
+
+    public_action = action_service._service_profile_knowledge_promotion_action()
+    private_action = action_service._service_profile_private_proposal_promotion_action()
+
+    assert public_action is not None
+    assert private_action is not None
+    public_preview_rows = public_action.payload["payload_preview"]
+    private_preview_rows = private_action.payload["payload_preview"]
+    assert public_preview_rows
+    assert private_preview_rows
+    assert all(
+        str(row["review_action_id"]).startswith("renamed_public_review_")
+        for row in public_preview_rows
+    )
+    assert all(
+        str(row["review_action_id"]).startswith("renamed_private_review_")
+        for row in private_preview_rows
     )
 
 
