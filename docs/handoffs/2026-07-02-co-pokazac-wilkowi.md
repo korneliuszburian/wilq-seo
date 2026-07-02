@@ -30,7 +30,7 @@ Najkrótszy stan:
   (Demand Gen i social), 0 zablokowanych;
 - wiedza Ekologus: 12 source facts, 5 prywatnych propozycji `ekologus-ai`,
   0% production-depth, wszystko nadal review-required;
-- Claim Ledger: 10/10 checków, model nie może oznaczyć treści jako gotowej do
+- Claim Ledger: 13/13 checków, model nie może oznaczyć treści jako gotowej do
   publikacji;
 - evale skilli: 13/13 operator skills przeszło deterministic smoke i
   non-interactive Codex eval z WILQ API;
@@ -258,6 +258,8 @@ Po rozmowie zapisz:
 - co Wilku zatwierdza;
 - co wymaga zmian;
 - co odrzuca;
+- ocenę każdego pokazanego materiału: czytelność, użyteczność, głos Ekologus,
+  zaufanie do blokad i dopasowanie CTA w skali 1-5;
 - gdzie zapytał "skąd to wzięło?";
 - co brzmiało generycznie albo nie jak Ekologus;
 - czy rozumie blokady;

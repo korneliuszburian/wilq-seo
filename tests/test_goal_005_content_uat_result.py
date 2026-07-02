@@ -23,6 +23,10 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "punkty_niezrozumienia": "Nie było jasne, które karty są tylko review-required.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+        "oceny_materialow_review": _scorecard(
+            ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+            decision="popraw",
+        ),
         "pytania_skad_to_wzielo": "Chce widzieć publiczny URL obok evidence ID.",
         "miejsca_generyczne_off_brand": "CTA było za szerokie dla usług środowiskowych.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonej karty dla Eko-Opieki.",
@@ -48,6 +52,12 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert report["shown_review_artifacts"] == [
         "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
     ]
+    assert report["review_scorecard_summary"] == {
+        "artifact_count": 1,
+        "average_clarity": 4.0,
+        "average_usefulness": 5.0,
+        "decision_counts": {"popraw": 1},
+    }
     assert report["missing_recommended_review_artifacts"] == [
         "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
         "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md"
@@ -57,6 +67,8 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
 
     markdown = render_markdown(report)
     assert "## Ostrzeżenia materiałów review" in markdown
+    assert "## Scorecard Wilka" in markdown
+    assert "decyzja: popraw" in markdown
     assert "2026-07-02-wilq-marketing-content-model.md" in markdown
     assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
 
@@ -72,6 +84,9 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
     for key in REQUIRED_BOOLEAN_FIELDS:
         assert example[key] in {"tak", "nie"}
     assert example["pokazane_materialy_review"] == RECOMMENDED_REVIEW_ARTIFACTS
+    assert [row["material"] for row in example["oceny_materialow_review"]] == (
+        RECOMMENDED_REVIEW_ARTIFACTS
+    )
     assert example["follow_up_beads"] == [
         "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
     ]
@@ -110,6 +125,9 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "punkty_niezrozumienia": "Nie było jasne, czemu BDO nie jest live work itemem.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+        "oceny_materialow_review": _scorecard(
+            ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"]
+        ),
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
         "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
@@ -177,6 +195,13 @@ def test_content_uat_result_has_no_warning_when_plain_show_guide_was_shown() -> 
             "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
             "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
         ],
+        "oceny_materialow_review": _scorecard(
+            [
+                "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
+                "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+                "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+            ]
+        ),
         "pytania_skad_to_wzielo": "Źródła były czytelne.",
         "miejsca_generyczne_off_brand": "Brak nowych uwag.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonej karty usługi.",
@@ -398,6 +423,10 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
         "punkty_niezrozumienia": "Brak nowych punktów niezrozumienia po review.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+        "oceny_materialow_review": _scorecard(
+            ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+            decision="zatwierdź",
+        ),
         "pytania_skad_to_wzielo": "Evidence IDs i source connectors wystarczają.",
         "miejsca_generyczne_off_brand": "Brak.",
         "najwiekszy_brak_produktu": "Brak.",
@@ -422,6 +451,89 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
     assert "Generyczne/off-brand" in markdown
     assert "Największy brak produktu" in markdown
     assert "brak" in markdown
+
+
+def test_content_uat_result_requires_scorecard_for_shown_artifacts() -> None:
+    payload = {
+        "data_sesji": "2026-07-02",
+        "osoba": "Wilku",
+        "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Brak oceny materiału review.",
+        "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+        "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+        "miejsca_generyczne_off_brand": "Brak.",
+        "najwiekszy_brak_produktu": "Brak.",
+        "wilku_rozumie_blokady_pelnego_uat": "tak",
+        "service_profile_czytelny": "tak",
+        "public_service_review_actions_czytelne": "tak",
+        "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
+        "mozna_przejsc_do_pelnego_content_uat": "nie",
+        "follow_up_beads": ["wilq-seo-next: dodać scorecard do wyniku UAT"],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_content_uat_result_report(payload)
+
+    assert "Brak scorecardu materiałów review" in str(error.value)
+
+
+def test_content_uat_result_rejects_invalid_scorecard_values() -> None:
+    payload = {
+        "data_sesji": "2026-07-02",
+        "osoba": "Wilku",
+        "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Skala ocen była niejasna.",
+        "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+        "oceny_materialow_review": [
+            {
+                "material": "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+                "decyzja": "może",
+                "czytelnosc_1_5": 6,
+                "uzytecznosc_1_5": 4,
+                "glos_ekologus_1_5": 4,
+                "zaufanie_do_blokad_1_5": 4,
+                "dopasowanie_cta_1_5": 4,
+                "najwazniejsza_poprawka": "UZUPEŁNIJ",
+            }
+        ],
+        "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+        "miejsca_generyczne_off_brand": "Brak.",
+        "najwiekszy_brak_produktu": "Brak.",
+        "wilku_rozumie_blokady_pelnego_uat": "tak",
+        "service_profile_czytelny": "tak",
+        "public_service_review_actions_czytelne": "tak",
+        "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
+        "mozna_przejsc_do_pelnego_content_uat": "nie",
+        "follow_up_beads": ["wilq-seo-next: doprecyzować skalę scorecardu"],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_content_uat_result_report(payload)
+
+    message = str(error.value)
+    assert "musi mieć decyzję: zatwierdź, popraw, odrzuć albo odśwież" in message
+    assert "musi mieć czytelność 1-5" in message
+    assert "musi mieć najwazniejsza_poprawka" in message
+
+
+def _scorecard(artifacts: list[str], *, decision: str = "popraw") -> list[dict[str, object]]:
+    return [
+        {
+            "material": artifact,
+            "decyzja": decision,
+            "czytelnosc_1_5": 4,
+            "uzytecznosc_1_5": 5,
+            "glos_ekologus_1_5": 4,
+            "zaufanie_do_blokad_1_5": 4,
+            "dopasowanie_cta_1_5": 3,
+            "najwazniejsza_poprawka": "Doprecyzować język i kolejny krok.",
+        }
+        for artifact in artifacts
+    ]
 
 
 def _live_context() -> dict[str, object]:

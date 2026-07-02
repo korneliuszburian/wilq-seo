@@ -1455,6 +1455,10 @@ live API status later contradicts this state.
   `actionable_candidate_count=1`, `queue_status=blocked` and
   `workflow_blocked=true`; therefore `wilq-seo-jst` remains open/in-progress
   until a real Wilku session or explicit owner defer is recorded.
+- Goal 005 UAT recorder now requires a plain Polish scorecard for every shown
+  review artifact: decision plus 1-5 ratings for clarity, usefulness, Ekologus
+  voice, blocker trust and CTA fit. This turns Wilku feedback into concrete
+  product follow-up instead of only free-text notes.
 - Quality-review API tests no longer depend on the current live
   `/api/content/work-items/snapshot` decision. They now build a deterministic
   BDO ready chain through the same Sales Brief, Draft Package and Structured

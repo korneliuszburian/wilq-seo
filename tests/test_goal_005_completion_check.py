@@ -186,6 +186,9 @@ def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
                 "pokazane_materialy_review": [
                     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
                 ],
+                "oceny_materialow_review": _scorecard(
+                    ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"]
+                ),
                 "pytania_skad_to_wzielo": "Źródła danych były jasne.",
                 "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
                 "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
@@ -227,6 +230,9 @@ def test_goal_005_completion_check_blocks_ready_uat_without_plain_review_model(
                 "pokazane_materialy_review": [
                     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
                 ],
+                "oceny_materialow_review": _scorecard(
+                    ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"]
+                ),
                 "pytania_skad_to_wzielo": "Źródła danych były jasne.",
                 "miejsca_generyczne_off_brand": "Nie znaleziono krytycznych miejsc.",
                 "najwiekszy_brak_produktu": "Brak dalszych blokad dla tego testu.",
@@ -308,6 +314,14 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
                     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
                     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
                 ],
+                "oceny_materialow_review": _scorecard(
+                    [
+                        "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
+                        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
+                        "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+                    ],
+                    decision="zatwierdź",
+                ),
                 "pytania_skad_to_wzielo": "Źródła danych były jasne.",
                 "miejsca_generyczne_off_brand": "Nie znaleziono krytycznych miejsc.",
                 "najwiekszy_brak_produktu": "Brak dalszych blokad dla tego testu.",
@@ -340,6 +354,22 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
     markdown = render_markdown(report)
     assert "# Sprawdzenie domknięcia Goal 005" in markdown
     assert "Pokazane materiały review" in markdown
+
+
+def _scorecard(artifacts: list[str], *, decision: str = "popraw") -> list[dict[str, object]]:
+    return [
+        {
+            "material": artifact,
+            "decyzja": decision,
+            "czytelnosc_1_5": 4,
+            "uzytecznosc_1_5": 5,
+            "glos_ekologus_1_5": 4,
+            "zaufanie_do_blokad_1_5": 4,
+            "dopasowanie_cta_1_5": 3,
+            "najwazniejsza_poprawka": "Doprecyzować język i kolejny krok.",
+        }
+        for artifact in artifacts
+    ]
 
 
 def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:

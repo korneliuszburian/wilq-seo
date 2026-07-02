@@ -32,11 +32,20 @@ REQUIRED_BOOLEAN_FIELDS = {
     "mozna_przejsc_do_pelnego_content_uat": "czy można przejść do pełnego content UAT",
 }
 REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
+REVIEW_SCORECARD_FIELD = "oceny_materialow_review"
 REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
 RECOMMENDED_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
 ]
+REVIEW_SCORECARD_DECISIONS = {"zatwierdź", "popraw", "odrzuć", "odśwież"}
+REVIEW_SCORECARD_SCORE_FIELDS = {
+    "czytelnosc_1_5": "czytelność",
+    "uzytecznosc_1_5": "użyteczność",
+    "glos_ekologus_1_5": "głos Ekologus",
+    "zaufanie_do_blokad_1_5": "zaufanie do blokad",
+    "dopasowanie_cta_1_5": "dopasowanie CTA",
+}
 PUBLIC_SERVICE_REVIEW_SCOPES = {"public_service_card"}
 PRIVATE_SOURCE_REVIEW_SCOPES = {
     "private_service_proposal",
@@ -124,6 +133,21 @@ def build_content_uat_input_example(
         ),
         "wybrany_work_item": selected_work_item,
         REVIEW_ARTIFACTS_FIELD: RECOMMENDED_REVIEW_ARTIFACTS,
+        REVIEW_SCORECARD_FIELD: [
+            {
+                "material": artifact,
+                "decyzja": "popraw",
+                "czytelnosc_1_5": 3,
+                "uzytecznosc_1_5": 3,
+                "glos_ekologus_1_5": 3,
+                "zaufanie_do_blokad_1_5": 3,
+                "dopasowanie_cta_1_5": 3,
+                "najwazniejsza_poprawka": (
+                    "UZUPEŁNIJ: co poprawić w tym materiale albo wpisz brak"
+                ),
+            }
+            for artifact in RECOMMENDED_REVIEW_ARTIFACTS
+        ],
         "pytania_skad_to_wzielo": (
             'UZUPEŁNIJ: gdzie Wilku zapytał "skąd to wzięło?" albo "brak pytań"'
         ),
@@ -180,6 +204,10 @@ def build_content_uat_result_report(
     )
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     shown_review_artifacts = review_artifact_paths(payload.get(REVIEW_ARTIFACTS_FIELD))
+    review_scorecard = review_scorecard_payload(
+        payload.get(REVIEW_SCORECARD_FIELD),
+        shown_review_artifacts=shown_review_artifacts,
+    )
     missing_recommended_review_artifacts = recommended_review_artifact_gaps(
         shown_review_artifacts
     )
@@ -220,6 +248,8 @@ def build_content_uat_result_report(
         "largest_product_gap": str(payload["najwiekszy_brak_produktu"]).strip(),
         "can_continue_to_full_content_uat": can_continue,
         "shown_review_artifacts": shown_review_artifacts,
+        "review_scorecard": review_scorecard,
+        "review_scorecard_summary": review_scorecard_summary(review_scorecard),
         "missing_recommended_review_artifacts": missing_recommended_review_artifacts,
         "follow_up_tasks": follow_up_tasks,
         "live_provenance": live_provenance,
@@ -254,6 +284,14 @@ def validate_content_uat_payload(
     ) is False:
         errors.append("Gdy pełny content UAT jest zablokowany, wpisz follow_up_beads")
     errors.extend(validate_review_artifacts(payload.get(REVIEW_ARTIFACTS_FIELD)))
+    errors.extend(
+        validate_review_scorecard(
+            payload.get(REVIEW_SCORECARD_FIELD),
+            shown_review_artifacts=review_artifact_paths(
+                payload.get(REVIEW_ARTIFACTS_FIELD)
+            ),
+        )
+    )
     if live_context is not None:
         selected_work_item = str(payload.get("wybrany_work_item") or "").strip()
         candidate_ids = live_context_candidate_ids(live_context)
@@ -300,6 +338,12 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         *[f"- `{artifact}`" for artifact in report["shown_review_artifacts"]],
         "",
+        "## Scorecard Wilka",
+        "",
+        render_review_scorecard_summary(report.get("review_scorecard_summary")),
+        "",
+        *render_review_scorecard(report.get("review_scorecard")),
+        "",
         *render_missing_recommended_review_artifacts(report),
         "## Źródła i jakość",
         "",
@@ -313,6 +357,46 @@ def render_markdown(report: dict[str, Any]) -> str:
     for task in report["follow_up_tasks"] or ["brak"]:
         lines.append(f"- {task}")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def render_review_scorecard_summary(value: Any) -> str:
+    if not isinstance(value, dict):
+        return "- Brak scorecardu materiałów review."
+    decisions = value.get("decision_counts")
+    decision_label = ", ".join(
+        f"{decision}: {count}"
+        for decision, count in sorted((decisions or {}).items())
+    )
+    return "\n".join(
+        [
+            f"- Materiały ocenione: `{value.get('artifact_count')}`",
+            f"- Średnia czytelność: `{value.get('average_clarity')}`/5",
+            f"- Średnia użyteczność: `{value.get('average_usefulness')}`/5",
+            f"- Decyzje: {decision_label or 'brak'}",
+        ]
+    )
+
+
+def render_review_scorecard(value: Any) -> list[str]:
+    rows = [row for row in raw_list_payload(value) if isinstance(row, dict)]
+    if not rows:
+        return ["- Brak ocen materiałów review."]
+    lines: list[str] = []
+    for row in rows:
+        lines.extend(
+            [
+                f"- `{row.get('material')}`",
+                f"  - decyzja: {row.get('decyzja')}",
+                "  - oceny: "
+                f"czytelność {row.get('czytelnosc_1_5')}/5, "
+                f"użyteczność {row.get('uzytecznosc_1_5')}/5, "
+                f"głos Ekologus {row.get('glos_ekologus_1_5')}/5, "
+                f"zaufanie do blokad {row.get('zaufanie_do_blokad_1_5')}/5, "
+                f"CTA {row.get('dopasowanie_cta_1_5')}/5",
+                f"  - najważniejsza poprawka: {row.get('najwazniejsza_poprawka')}",
+            ]
+        )
+    return lines
 
 
 def render_missing_recommended_review_artifacts(report: dict[str, Any]) -> list[str]:
@@ -658,6 +742,112 @@ def sales_brief_blocker_labels(value: Any) -> list[str]:
     return [label for label in labels if label and label != "None"]
 
 
+def review_scorecard_payload(
+    value: Any,
+    *,
+    shown_review_artifacts: list[str],
+) -> list[dict[str, Any]]:
+    artifacts = set(shown_review_artifacts)
+    rows: list[dict[str, Any]] = []
+    for item in raw_list_payload(value):
+        if not isinstance(item, dict):
+            continue
+        material = str(item.get("material") or "").strip()
+        if material not in artifacts:
+            continue
+        row: dict[str, Any] = {
+            "material": material,
+            "decyzja": str(item.get("decyzja") or "").strip(),
+            "najwazniejsza_poprawka": str(
+                item.get("najwazniejsza_poprawka") or ""
+            ).strip(),
+        }
+        for field in REVIEW_SCORECARD_SCORE_FIELDS:
+            row[field] = int(item.get(field) or 0)
+        rows.append(row)
+    return rows
+
+
+def review_scorecard_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        return {
+            "artifact_count": 0,
+            "average_clarity": None,
+            "average_usefulness": None,
+            "decision_counts": {},
+        }
+    decision_counts: dict[str, int] = {}
+    for row in rows:
+        decision = str(row.get("decyzja") or "")
+        decision_counts[decision] = decision_counts.get(decision, 0) + 1
+    return {
+        "artifact_count": len(rows),
+        "average_clarity": round(
+            sum(int(row["czytelnosc_1_5"]) for row in rows) / len(rows),
+            1,
+        ),
+        "average_usefulness": round(
+            sum(int(row["uzytecznosc_1_5"]) for row in rows) / len(rows),
+            1,
+        ),
+        "decision_counts": decision_counts,
+    }
+
+
+def validate_review_scorecard(
+    value: Any,
+    *,
+    shown_review_artifacts: list[str],
+) -> list[str]:
+    if not shown_review_artifacts:
+        return []
+    if not isinstance(value, list):
+        return [
+            "Brak scorecardu materiałów review w polu oceny_materialow_review"
+        ]
+    errors: list[str] = []
+    rows_by_material: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, dict):
+            errors.append(f"Scorecard #{index} musi być obiektem")
+            continue
+        material = str(item.get("material") or "").strip()
+        if material not in shown_review_artifacts:
+            errors.append(
+                "Scorecard wskazuje materiał spoza pokazane_materialy_review: "
+                f"{material or '<brak>'}"
+            )
+            continue
+        if material in rows_by_material:
+            errors.append(f"Scorecard powtarza materiał review: {material}")
+        rows_by_material[material] = item
+        decision = str(item.get("decyzja") or "").strip()
+        if decision not in REVIEW_SCORECARD_DECISIONS:
+            errors.append(
+                "Scorecard dla materiału "
+                f"{material} musi mieć decyzję: zatwierdź, popraw, odrzuć albo odśwież"
+            )
+        for field, label in REVIEW_SCORECARD_SCORE_FIELDS.items():
+            score = item.get(field)
+            if not isinstance(score, int) or isinstance(score, bool) or not 1 <= score <= 5:
+                errors.append(
+                    f"Scorecard dla materiału {material} musi mieć {label} 1-5"
+                )
+        if is_blank_or_placeholder(item.get("najwazniejsza_poprawka")):
+            errors.append(
+                "Scorecard dla materiału "
+                f"{material} musi mieć najwazniejsza_poprawka albo 'brak'"
+            )
+    missing = [
+        artifact
+        for artifact in shown_review_artifacts
+        if artifact not in rows_by_material
+    ]
+    for artifact in missing:
+        errors.append(f"Brak scorecardu dla materiału review: {artifact}")
+    return errors
+
+
 def normalize_bool(value: Any) -> bool | None:
     lowered = str(value or "").strip().lower()
     if lowered == "tak":
@@ -730,6 +920,7 @@ def is_blank_or_placeholder(value: Any) -> bool:
         or text.startswith("<")
         or text in {"-", "TODO", "todo"}
         or lowered.startswith("todo:")
+        or lowered in {"uzupełnij", "uzupelnij"}
         or lowered.startswith("uzupełnij:")
         or lowered.startswith("uzupelnij:")
     )
