@@ -119,6 +119,15 @@ API status later contradicts this state.
   ActionObject review path, not only on the Service Profile proposal card.
 - The `wilq-content-operator` UAT packet private proposal details now preserve
   `freshness_status` and `audience` for Wilku-facing review.
+- Dashboard usefulness readiness is now API-audited before demo. New script:
+  `scripts/dashboard_usefulness_audit.py`. It scores live surfaces for endpoint
+  reachability, decision/proof/action/blocker/next-step coverage and marks
+  surfaces as `demo_ready`, `review_ready` or `blocked` without asserting exact
+  metric values. Proof on 2026-07-02:
+  `rtk uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown`
+  returned 13 checked surfaces, 12 `demo_ready`, 1 `review_ready` (Demand Gen,
+  experimental), 0 `blocked`, `pass=true`. `scripts/pre_demo_gate.sh` now runs
+  this audit after the live contract smoke.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production

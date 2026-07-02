@@ -98,7 +98,7 @@ function SocialDecisionSummary({
         </div>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <MetricTile label="Blokady claimów" value={socialContext.blocked_claims.length} />
+        <MetricTile label="Blokady twierdzeń" value={socialContext.blocked_claims.length} />
         <MetricTile label="Wymagane źródła historii" value={inventory.required_sources.length} />
         <MetricTile label="Akcje review-only" value={socialContext.draft_action_ids.length} />
       </div>
@@ -106,7 +106,7 @@ function SocialDecisionSummary({
         <TraceLine
           label="Czego nie wolno twierdzić"
           values={socialContext.blocked_claims.slice(0, 6)}
-          empty="Brak blokad claimów oznaczałby brak bezpiecznego zakresu social."
+          empty="Brak blokad twierdzeń oznaczałby brak bezpiecznego zakresu social."
         />
         <TraceLine
           label="Brakujące dowody historii"

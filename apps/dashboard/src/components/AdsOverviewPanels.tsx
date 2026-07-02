@@ -38,8 +38,8 @@ export function AdsCondensedDecisionPanel({
   const actionSummary = primaryDecision?.action_summary_label ?? summary.action_summary_label;
   const workSteps = [
     `Zacznij od kolejki ${summary.campaign_count} kampanii: sprawdź kampanie z największym ruchem, kosztem i sygnałem review.`,
-    `Potem przejrzyj ${summary.search_term_count} wyszukiwanych haseł oraz ${data.negative_keywords_read_contract.candidates.length} kandydatów do wykluczeń, ale tylko jako review.`,
-    "Nie zapisuj zmian w Ads: budżety, rekomendacje i wykluczenia wymagają podglądu, walidacji ActionObject i audytu."
+    `Potem przejrzyj ${summary.search_term_count} wyszukiwanych haseł oraz ${data.negative_keywords_read_contract.candidates.length} propozycji wykluczeń, ale tylko jako review.`,
+    "Nie zapisuj zmian w Ads: budżety, rekomendacje i wykluczenia wymagają podglądu, sprawdzenia w WILQ i audytu."
   ];
 
   return (
@@ -47,7 +47,7 @@ export function AdsCondensedDecisionPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-action">
-            Ads Doctor: co dziś zrobić
+            Google Ads: co dziś zrobić
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
             {primaryDecision

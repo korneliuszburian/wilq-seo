@@ -86,7 +86,7 @@ describe("ContentWorkflowSurface", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText("Workflow treści: co dziś zrobić")).toBeInTheDocument();
-    expect(screen.getByText("Pracuj tylko na kandydacie, który przeszedł bramki"))
+    expect(screen.getByText("Pracuj tylko na propozycji, która przeszła bramki"))
       .toBeInTheDocument();
     expect(screen.getByText("Aktywny temat")).toBeInTheDocument();
     expect(screen.getByText("Co jeszcze blokuje szkic")).toBeInTheDocument();

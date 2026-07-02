@@ -199,7 +199,7 @@ function CampaignPayloadSummary({ candidates }: { candidates: PayloadRecord[] })
         <TraceLine
           label="Nie wolno twierdzić"
           values={blockedClaimLabels.slice(0, 5)}
-          empty="WILQ nie podał osobnych blokad claimów dla kampanii."
+          empty="WILQ nie podał osobnych blokad twierdzeń dla kampanii."
         />
       </div>
     </div>
@@ -235,7 +235,7 @@ function RecommendationPayloadSummary({ recommendations }: { recommendations: Pa
         <TraceLine
           label="Nie wolno twierdzić"
           values={blockedClaimLabels.slice(0, 5)}
-          empty="WILQ nie podał osobnych blokad claimów rekomendacji."
+          empty="WILQ nie podał osobnych blokad twierdzeń rekomendacji."
         />
       </div>
     </div>

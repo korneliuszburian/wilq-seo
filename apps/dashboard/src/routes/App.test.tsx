@@ -7853,7 +7853,7 @@ describe("WILQ dashboard", () => {
     expect(
       await screen.findByRole("heading", { name: "Google Ads" }, { timeout: 5000 })
     ).toBeInTheDocument();
-    expect(screen.getByText("Ads Doctor: co dziś zrobić")).toBeInTheDocument();
+    expect(screen.getByText("Google Ads: co dziś zrobić")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kolejność pracy" })).toBeInTheDocument();
     expect(screen.getAllByText(/werdykt zwrotu z reklam/).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();

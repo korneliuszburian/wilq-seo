@@ -26,9 +26,9 @@ Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
-W tekście dla operatora nie używaj skrótu `tylko do sprawdzenia`. Pisz
-normalniej: `do ręcznego przeglądu`, `bez publikacji`, `wymaga review` albo
-`przed publikacją trzeba uzupełnić ...`.
+W tekście dla operatora unikaj artefaktowego skrótu łączącego "tylko" z
+"do sprawdzenia". Pisz normalniej: `do ręcznego przeglądu`, `bez publikacji`,
+`wymaga review` albo `przed publikacją trzeba uzupełnić ...`.
 
 
 1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.

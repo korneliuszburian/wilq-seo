@@ -309,7 +309,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <p className="mt-2 text-sm leading-6 text-slate-700">
             To jest kolejka przeglądu pliku produktowego, nie dowód efektu biznesowego ani zapis zmian.
           </p>
-          <TraceLine label="Zablokowane claimy" values={blockedClaimLabels} />
+          <TraceLine label="Nie wolno obiecać" values={blockedClaimLabels} />
         </div>
       </div>
 

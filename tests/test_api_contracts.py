@@ -5522,10 +5522,11 @@ def test_blocked_refresh_summaries_use_operator_status_labels() -> None:
     ]
     assert summaries == [
         "Ostatni odczyt zakończył się statusem odczyt zablokowany. Powód: testowy blocker",
-        "Ostatni odczyt Merchant nie zakończył się poprawnie. Status odczytu: zablokowany.",
+        "Ostatni odczyt Merchant nie zakończył się poprawnie. "
+        "Status odczytu: status odczytu do sprawdzenia.",
         "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk. "
-        "Status odczytu: zablokowany.",
-        "Ostatni odczyt Ahrefs zakończył się statusem zablokowany.",
+        "Status odczytu: odczyt zablokowany.",
+        "Ostatni odczyt Ahrefs zakończył się statusem status odczytu do sprawdzenia.",
     ]
     for summary in summaries:
         assert "ConnectorRefreshStatus" not in summary
@@ -7366,7 +7367,7 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     payload = response.json()
     assert payload["language"] == "pl-PL"
     assert payload["connector_status_label"] == "dostęp skonfigurowany"
-    assert payload["latest_refresh_status_label"] == "zakończony"
+    assert payload["latest_refresh_status_label"] == "odczyt zakończony"
     assert payload["access_probe"]["status"] == "access_ready"
     assert payload["access_probe"]["status_label"] == "dostęp działa"
     assert payload["access_probe"]["mcp_initialize_status"] == 200
@@ -7996,7 +7997,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert payload["language"] == "pl-PL"
     assert payload["live_data_available"] is True
     assert payload["connector_status_label"] == "dostęp skonfigurowany"
-    assert payload["latest_refresh_status_label"] == "zakończony"
+    assert payload["latest_refresh_status_label"] == "odczyt zakończony"
     assert payload["live_data_status_label"] == "metryki Ahrefs dostępne"
     assert payload["authority_fact_count"] == 2
     assert payload["gap_fact_count"] == 0
@@ -8326,7 +8327,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     payload = response.json()
     assert payload["live_data_available"] is True
     assert payload["connector_status_label"] == "dostęp skonfigurowany"
-    assert payload["latest_refresh_status_label"] == "zakończony"
+    assert payload["latest_refresh_status_label"] == "odczyt zakończony"
     assert payload["live_data_status_label"] == "metryki Ahrefs dostępne"
     assert payload["gap_fact_count"] == 9
     assert payload["blocker_count"] == 0
@@ -14279,7 +14280,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["language"] == "pl-PL"
     assert payload["live_data_available"] is True
     assert payload["connector_status_label"] == "dostęp skonfigurowany"
-    assert payload["latest_refresh_status_label"] == "zakończony"
+    assert payload["latest_refresh_status_label"] == "odczyt zakończony"
     assert payload["live_data_status_label"] == "metryki pliku produktowego dostępne"
     assert payload["product_count"] == 10900
     assert payload["issue_count"] == 23

@@ -277,7 +277,7 @@ function ContentWorkflowTodayPanel({
             Workflow treści: co dziś zrobić
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
-            Pracuj tylko na kandydacie, który przeszedł bramki
+            Pracuj tylko na propozycji, która przeszła bramki
           </h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
             {queue.operator_summary}

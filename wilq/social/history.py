@@ -6,7 +6,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.schemas import ConnectorStatus
 
-SOCIAL_HISTORY_REQUIRED_SOURCES = ["linkedin", "facebook"]
+SocialHistoryChannel = Literal["linkedin", "facebook"]
+
+SOCIAL_HISTORY_REQUIRED_SOURCES: tuple[SocialHistoryChannel, ...] = (
+    "linkedin",
+    "facebook",
+)
 SOCIAL_HISTORY_MISSING_EVIDENCE_IDS = [
     "linkedin_historical_posts",
     "facebook_historical_posts",
@@ -27,8 +32,8 @@ SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS = [
 class SocialHistoryInventorySource(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    channel: Literal["linkedin", "facebook"]
-    connector_id: Literal["linkedin", "facebook"]
+    channel: SocialHistoryChannel
+    connector_id: SocialHistoryChannel
     inventory_status: Literal["missing"] = "missing"
     connector_access_status: Literal[
         "configured",
@@ -53,7 +58,7 @@ class SocialHistoryInventory(BaseModel):
     duplicate_risk_status: Literal[
         "blocked_until_social_history_review"
     ] = "blocked_until_social_history_review"
-    required_sources: list[Literal["linkedin", "facebook"]] = Field(
+    required_sources: list[SocialHistoryChannel] = Field(
         default_factory=lambda: list(SOCIAL_HISTORY_REQUIRED_SOURCES)
     )
     missing_evidence_ids: list[str] = Field(

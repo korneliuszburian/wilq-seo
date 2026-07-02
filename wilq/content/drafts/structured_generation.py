@@ -491,8 +491,8 @@ def _removed_or_blocked_claim_markers(
             StructuredDraftClaimMarker(
                 claim_id=claim.claim_id,
                 claim_text=claim.claim_text,
-                claim_type=cast(ContentClaimType, claim.claim_type),
-                status=cast(ContentClaimStatus, claim.status),
+                claim_type=claim.claim_type,
+                status=claim.status,
                 strength="strong",
                 required=False,
                 evidence_ids=claim.evidence_ids,
