@@ -10,6 +10,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CASES_PATH = REPO_ROOT / "docs/evals/cases/wilq-skill-eval-cases.json"
 DEFAULT_EVAL_ROOT = REPO_ROOT / ".local-lab/evals/codex-skill"
+MINIMUM_OPERATOR_USEFULNESS_SCORE = 5
 
 
 def _load_json(path: Path) -> Any:
@@ -107,7 +108,15 @@ def build_report(eval_root: Path = DEFAULT_EVAL_ROOT) -> dict[str, Any]:
     missing: list[str] = []
     for case in _cases():
         skill = str(case["skill"])
-        minimum_score = int(case.get("minimum_operator_usefulness_score", 4))
+        minimum_score = max(
+            int(
+                case.get(
+                    "minimum_operator_usefulness_score",
+                    MINIMUM_OPERATOR_USEFULNESS_SCORE,
+                )
+            ),
+            MINIMUM_OPERATOR_USEFULNESS_SCORE,
+        )
         path, result = _load_latest_passing_result(eval_root, skill, minimum_score)
         if result is None or path is None:
             missing.append(skill)

@@ -54,7 +54,7 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
     assert summary["latest_skill_eval_results"]["passing_skill_count"] == summary[
         "latest_skill_eval_results"
     ]["skill_count"]
-    assert summary["latest_skill_eval_results"]["minimum_score"] >= 4
+    assert summary["latest_skill_eval_results"]["minimum_score"] >= 5
 
 
 def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) -> None:

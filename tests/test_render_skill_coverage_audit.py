@@ -121,3 +121,37 @@ def test_render_markdown_marks_missing_passing_eval(tmp_path, monkeypatch) -> No
     assert "`wilq-missing`" in markdown
     assert "missing passing eval" in markdown
     assert "Uruchom deterministic smoke" in markdown
+
+
+def test_build_report_floors_minimum_operator_usefulness_at_five(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    audit = load_module()
+    cases_path = tmp_path / "cases.json"
+    cases_path.write_text(
+        json.dumps(
+            [
+                {
+                    "skill": "wilq-low-floor",
+                    "minimum_operator_usefulness_score": 4,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(audit, "CASES_PATH", cases_path)
+
+    eval_root = tmp_path / "evals"
+    write_result(
+        eval_root / "20260702T010000Z/wilq-low-floor/result.json",
+        skill="wilq-low-floor",
+        score=4,
+        blocked=True,
+    )
+
+    report = audit.build_report(eval_root)
+
+    assert report["pass"] is False
+    assert report["missing_passing_skills"] == ["wilq-low-floor"]
+    assert report["rows"][0]["state"] == "missing passing eval"
