@@ -8,6 +8,7 @@ from typing import Any
 
 from scripts.audit_skill_eval_coverage import build_report as build_skill_eval_coverage_report
 from scripts.claim_ledger_gate_audit import build_report as build_claim_ledger_gate_report
+from scripts.dashboard_usefulness_audit import build_report as build_dashboard_usefulness_report
 from scripts.record_goal_005_content_uat_result import (
     build_content_uat_result_report,
     load_json,
@@ -79,7 +80,7 @@ def build_completion_report(
     owner_defer: Path | None = None,
     api_base: str | None = None,
 ) -> dict[str, Any]:
-    pre_demo_audits = goal_005_pre_demo_audit_summary()
+    pre_demo_audits = goal_005_pre_demo_audit_summary(api_base=api_base)
     missing_docs = [str(path) for path in REQUIRED_DOCS if not path.exists()]
     if missing_docs:
         return blocked_report(
@@ -174,11 +175,11 @@ def build_completion_report(
     )
 
 
-def goal_005_pre_demo_audit_summary() -> dict[str, Any]:
+def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, Any]:
     source_report = build_source_fact_coverage_report()
     claim_report = build_claim_ledger_gate_report()
     eval_report = build_skill_eval_coverage_report()
-    return {
+    summary = {
         "source_fact_coverage": {
             "pass": source_report["pass"],
             "knowledge_status": source_report["knowledge_status"],
@@ -210,6 +211,29 @@ def goal_005_pre_demo_audit_summary() -> dict[str, Any]:
             "warning_count": eval_report["summary"]["warning_count"],
         },
     }
+    if api_base:
+        dashboard_report = build_dashboard_usefulness_report(api_base)
+        knowledge_surface = next(
+            (
+                surface
+                for surface in dashboard_report["surfaces"]
+                if surface["surface_id"] == "knowledge"
+            ),
+            {},
+        )
+        summary["dashboard_usefulness"] = {
+            "pass": dashboard_report["pass"],
+            "surface_count": dashboard_report["surface_count"],
+            "demo_ready_count": dashboard_report["demo_ready_count"],
+            "review_ready_count": dashboard_report["review_ready_count"],
+            "blocked_count": dashboard_report["blocked_count"],
+            "production_failure_count": dashboard_report[
+                "production_failure_count"
+            ],
+            "knowledge_record_count": knowledge_surface.get("record_count"),
+            "knowledge_lineage_count": knowledge_surface.get("lineage_count"),
+        }
+    return summary
 
 
 def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str, Any]:
@@ -415,7 +439,8 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     source = value.get("source_fact_coverage") or {}
     claim = value.get("claim_ledger_gate") or {}
     eval_coverage = value.get("skill_eval_coverage") or {}
-    return [
+    dashboard = value.get("dashboard_usefulness") or {}
+    lines = [
         "- Source facts: "
         f"`pass={str(source.get('pass')).lower()}`, "
         f"`knowledge_status={source.get('knowledge_status')}`, "
@@ -431,6 +456,17 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"`skills={eval_coverage.get('skill_dir_count')}`, "
         f"`hard_gaps={eval_coverage.get('hard_gap_count')}`",
     ]
+    if dashboard:
+        lines.append(
+            "- Dashboard usefulness: "
+            f"`pass={str(dashboard.get('pass')).lower()}`, "
+            f"`demo_ready={dashboard.get('demo_ready_count')}`, "
+            f"`review_ready={dashboard.get('review_ready_count')}`, "
+            f"`blocked={dashboard.get('blocked_count')}`, "
+            f"`knowledge_records={dashboard.get('knowledge_record_count')}`, "
+            f"`knowledge_lineage={dashboard.get('knowledge_lineage_count')}`"
+        )
+    return lines
 
 
 def is_blank(value: Any) -> bool:

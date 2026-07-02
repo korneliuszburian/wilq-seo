@@ -49,6 +49,61 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
     ]
 
 
+def test_goal_005_pre_demo_audit_summary_can_include_dashboard_usefulness(
+    monkeypatch,
+) -> None:
+    from scripts import goal_005_completion_check
+
+    def fake_dashboard_report(api_base: str) -> dict[str, object]:
+        assert api_base == "http://127.0.0.1:8000"
+        return {
+            "pass": True,
+            "surface_count": 13,
+            "demo_ready_count": 12,
+            "review_ready_count": 1,
+            "blocked_count": 0,
+            "production_failure_count": 0,
+            "surfaces": [
+                {
+                    "surface_id": "knowledge",
+                    "record_count": 15,
+                    "lineage_count": 49,
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        goal_005_completion_check,
+        "build_dashboard_usefulness_report",
+        fake_dashboard_report,
+    )
+
+    summary = goal_005_pre_demo_audit_summary(api_base="http://127.0.0.1:8000")
+
+    assert summary["dashboard_usefulness"] == {
+        "pass": True,
+        "surface_count": 13,
+        "demo_ready_count": 12,
+        "review_ready_count": 1,
+        "blocked_count": 0,
+        "production_failure_count": 0,
+        "knowledge_record_count": 15,
+        "knowledge_lineage_count": 49,
+    }
+
+    markdown = render_markdown(
+        blocked_report(
+            "goal_005_uat_result_or_owner_defer",
+            ["Brakuje UAT."],
+            pre_demo_audits=summary,
+        )
+    )
+
+    assert "Dashboard usefulness" in markdown
+    assert "knowledge_records=15" in markdown
+    assert "knowledge_lineage=49" in markdown
+
+
 def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
     tmp_path: Path,
 ) -> None:
