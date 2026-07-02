@@ -197,6 +197,15 @@ live API status later contradicts this state.
   gates true. The selected work item now exposes and validates
   `act_prepare_content_refresh_queue`, so Wilku gets a concrete safe action
   instead of only a descriptive blocked workflow.
+- Content workflow Claim Ledger now uses marketer-useful claim semantics for
+  the selected homepage refresh item: one source-backed allowed claim plus
+  explicit blocked claims for SEO position improvement, lead growth and
+  visibility guarantees. Blocked claims no longer stop an outline when a safe
+  publish-ready claim exists; they flow into `claims_removed_or_blocked` so the
+  model sees what not to say. Live API still blocks the homepage Sales Brief on
+  `missing_required_knowledge_card` for service and CTA, so the next content
+  slice is review-required homepage service/CTA knowledge plus public-facing
+  H1/H2/CTA directions.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with

@@ -212,6 +212,11 @@ def _assert_claim_ledger(*, snapshot: dict[str, Any]) -> None:
     assert ledger["entries"]
     assert ledger["entries"][0]["evidence_ids"]
     assert ledger["entries"][0]["source_connectors"]
+    claim_texts = [entry["claim_text"] for entry in ledger["entries"]]
+    assert all("może pomóc użytkownikowi w temacie" not in text for text in claim_texts)
+    assert any("istniejącej publicznej treści Ekologus" in text for text in claim_texts)
+    assert any("poprawi pozycje SEO" in text for text in claim_texts)
+    assert any("zwiększy liczbę leadów" in text for text in claim_texts)
 
 
 def _assert_missing_knowledge_blocks_draft(*, snapshot: dict[str, Any]) -> None:
@@ -270,6 +275,12 @@ def _assert_draft_package(
     assert draft["section_to_evidence_map"]
     assert draft["human_review_questions"]
     assert set(_draft_evidence_ids(draft)).issubset(set(item["evidence_ids"]))
+    assert any("poprawi pozycje SEO" in claim for claim in draft["claims_removed_or_blocked"])
+    assert any("zwiększy liczbę leadów" in claim for claim in draft["claims_removed_or_blocked"])
+    assert any(
+        "gwarantuje wzrost widoczności" in claim
+        for claim in draft["claims_removed_or_blocked"]
+    )
 
 
 def _assert_structured_contract(

@@ -321,7 +321,16 @@ def _entry_consistency_blocker(
 
 
 def claim_ledger_allows_draft(ledger: ContentClaimLedger) -> bool:
-    return not claim_ledger_blockers(ledger)
+    critical_blocker_codes = {
+        "missing_evidence",
+        "missing_source_connector",
+        "needs_human_review",
+        "missing_product_evidence",
+    }
+    blockers = claim_ledger_blockers(ledger)
+    return bool(publish_ready_claims(ledger)) and all(
+        blocker.code not in critical_blocker_codes for blocker in blockers
+    )
 
 
 def publish_ready_claims(ledger: ContentClaimLedger) -> list[ContentClaimLedgerEntry]:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from wilq.content.briefs.sales import ContentSalesBriefSeed, ContentSalesBriefSourceFact
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
-from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
+from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
 from wilq.content.inventory.records import ContentInventoryRecord
 from wilq.content.workflow.models import (
     ContentCanonicalStatus,
@@ -58,17 +58,51 @@ def content_claim_ledger_from_work_item(item: ContentWorkItem) -> ContentClaimLe
         work_item_id=item.id,
         reviewed_by="wilku",
         entries=[
-            ContentClaimLedgerEntry(
-                id=f"claim_service_{item.id}",
-                claim_text=f"Ekologus może pomóc użytkownikowi w temacie: {item.topic}.",
+            content_claim_entry(
+                claim_id=f"claim_content_source_{item.id}",
+                claim_text=_source_backed_content_claim(item),
                 claim_type="service_claim",
-                status="allowed_with_evidence",
                 evidence_ids=[evidence_id],
                 source_connectors=item.source_connectors,
-                reason="Claim jest ogólną deklaracją usługi i ma przypisany dowód źródłowy.",
                 reviewer_id="wilku",
-            )
+                human_reviewed=True,
+            ),
+            content_claim_entry(
+                claim_id=f"claim_no_ranking_guarantee_{item.id}",
+                claim_text="Odświeżenie tej treści poprawi pozycje SEO.",
+                claim_type="seo_claim",
+                evidence_ids=item.evidence_ids[:1],
+                source_connectors=item.source_connectors,
+            ),
+            content_claim_entry(
+                claim_id=f"claim_no_lead_growth_{item.id}",
+                claim_text="Ta treść zwiększy liczbę leadów.",
+                claim_type="business_outcome_claim",
+                evidence_ids=item.evidence_ids[:1],
+                source_connectors=item.source_connectors,
+            ),
+            content_claim_entry(
+                claim_id=f"claim_no_success_guarantee_{item.id}",
+                claim_text="Publikacja gwarantuje wzrost widoczności.",
+                claim_type="guarantee_claim",
+                evidence_ids=item.evidence_ids[:1],
+                source_connectors=item.source_connectors,
+            ),
         ],
+    )
+
+
+def _source_backed_content_claim(item: ContentWorkItem) -> str:
+    topic = item.topic.strip().rstrip(".")
+    if item.final_canonical_url:
+        return (
+            f"WILQ ma dowody źródłowe, że temat „{topic}” dotyczy istniejącej "
+            "publicznej treści Ekologus i wymaga pracy w trybie odświeżenia "
+            "albo scalenia, nie automatycznego tworzenia nowej strony."
+        )
+    return (
+        f"WILQ ma dowody źródłowe dla tematu „{topic}”, ale finalny adres "
+        "i ryzyko duplikacji muszą zostać sprawdzone przed szkicem."
     )
 
 

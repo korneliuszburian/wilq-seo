@@ -169,7 +169,7 @@ def test_content_work_item_draft_package_api_blocks_before_draft_allowed() -> No
     ]
 
 
-def test_content_work_item_draft_package_api_blocks_unresolved_claims() -> None:
+def test_content_work_item_draft_package_api_removes_blocked_claims() -> None:
     data = _post_draft_package(
         {
             "item": _item(
@@ -191,9 +191,11 @@ def test_content_work_item_draft_package_api_blocks_unresolved_claims() -> None:
     )
 
     result = data["draft_package_result"]
-    assert result["draft_package"] is None
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "claim_ledger_blocks_draft"
+    assert result["blockers"] == []
+    draft = result["draft_package"]
+    assert draft["claims_used"] == ["Ekologus pomaga firmom uporządkować obowiązki BDO."]
+    assert draft["claims_removed_or_blocked"] == [
+        "Po wdrożeniu treści liczba leadów wzrośnie."
     ]
 
 

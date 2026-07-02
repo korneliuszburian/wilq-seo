@@ -105,6 +105,30 @@ def test_allowed_with_evidence_claim_can_be_used_in_draft() -> None:
     assert claim_source_connectors_required(ledger.entries)
 
 
+def test_blocked_claims_do_not_block_draft_when_safe_claim_exists() -> None:
+    safe = content_claim_entry(
+        claim_id="claim_content_source",
+        claim_text="WILQ ma dowody źródłowe, że istniejąca treść wymaga odświeżenia.",
+        claim_type="service_claim",
+        evidence_ids=["ev_gsc_bdo"],
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+    )
+    blocked = content_claim_entry(
+        claim_id="claim_more_leads",
+        claim_text="Ta treść zwiększy liczbę leadów.",
+        claim_type="business_outcome_claim",
+        evidence_ids=["ev_gsc_bdo"],
+        source_connectors=["google_search_console"],
+    )
+    ledger = _ledger(safe, blocked)
+
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "blocked_until_measurement"
+    ]
+    assert publish_ready_claims(ledger) == [safe]
+    assert claim_ledger_allows_draft(ledger)
+
+
 def test_service_claim_without_evidence_cannot_be_publish_ready() -> None:
     entry = content_claim_entry(
         claim_id="claim_unsourced_service",

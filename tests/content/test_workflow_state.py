@@ -79,6 +79,24 @@ def test_work_item_claim_ledger_preserves_source_connectors() -> None:
     ]
 
 
+def test_work_item_claim_ledger_uses_marketer_useful_claims() -> None:
+    item = _base_item(topic='SEO: odśwież lub scal "ekologus" (24 zapytań)')
+
+    ledger = content_claim_ledger_from_work_item(item)
+    claim_texts = [entry.claim_text for entry in ledger.entries]
+    statuses = {entry.id: entry.status for entry in ledger.entries}
+
+    assert all("może pomóc użytkownikowi w temacie" not in text for text in claim_texts)
+    assert any("istniejącej publicznej treści Ekologus" in text for text in claim_texts)
+    assert any(text == "Odświeżenie tej treści poprawi pozycje SEO." for text in claim_texts)
+    assert any(text == "Ta treść zwiększy liczbę leadów." for text in claim_texts)
+    assert any(text == "Publikacja gwarantuje wzrost widoczności." for text in claim_texts)
+    assert statuses[f"claim_content_source_{item.id}"] == "allowed_with_evidence"
+    assert statuses[f"claim_no_ranking_guarantee_{item.id}"] == "blocked_until_measurement"
+    assert statuses[f"claim_no_lead_growth_{item.id}"] == "blocked_until_measurement"
+    assert statuses[f"claim_no_success_guarantee_{item.id}"] == "blocked"
+
+
 def test_dev_preview_url_cannot_be_final_canonical() -> None:
     item = _base_item(final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/")
 
