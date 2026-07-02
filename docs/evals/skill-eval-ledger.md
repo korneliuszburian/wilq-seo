@@ -7651,3 +7651,40 @@ Result:
   `blocked_claims_reviewed` and `follow_up_beads` in the actionable output.
 - The live eval passed with `operator_usefulness_score=4`, `blocked=true`,
   `failure_tags=[]` and all hard gates true.
+
+## 2026-07-02 - Social Publisher history duplicate blocker eval
+
+Purpose:
+
+- Verify that `wilq-social-publisher` uses the new API-owned historical social
+  inventory blocker, not only the older LinkedIn/Facebook publish-access
+  blocker.
+- Ensure the operator answer explicitly blocks claims that a proposed social
+  direction is new, non-duplicative or safe to repeat when historical
+  LinkedIn/Facebook posts have not been inventoried.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T081424Z/wilq-social-publisher/result.json`.
+- The live smoke and final eval output both carried
+  `historical_social_inventory_status=missing`,
+  `duplicate_risk_status=blocked_until_social_history_review` and
+  `missing_history_evidence=["linkedin_historical_posts","facebook_historical_posts"]`.
+- The non-interactive eval passed with `operator_usefulness_score=4`,
+  `blocked=false`, `failure_tags=[]`, five evidence IDs, one recommendation and
+  three action candidates.
+- Action candidates validated `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts`, then separately blocked
+  `opublikowanie posta`, `wzrost skuteczności social`,
+  `brak powtórzeń historycznych postów`, `zwrot z reklam` and `przychód`.
+- The final notes state that WILQ must not claim a topic avoids repeating
+  earlier posts until `linkedin_historical_posts` and
+  `facebook_historical_posts` evidence exists.

@@ -235,6 +235,12 @@ API status later contradicts this state.
   is `missing`, duplicate-risk is `blocked_until_social_history_review`, and
   the claim `brak powtórzeń historycznych postów` is blocked until prior posts
   are reviewed.
+- Social Publisher history/duplication eval proof on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T081424Z`. The non-interactive eval
+  passed with `operator_usefulness_score=4`, five evidence IDs, validated
+  LinkedIn/Facebook draft actions and explicit blocking of duplicate-free
+  social claims until `linkedin_historical_posts` and
+  `facebook_historical_posts` evidence exists.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only
