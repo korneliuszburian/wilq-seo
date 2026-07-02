@@ -778,7 +778,7 @@ function draftPackage() {
     work_item_id: "content_work_item_bdo",
     brief_id: "sales_brief_content_work_item_bdo",
     claim_ledger_id: "claim_ledger_bdo",
-    draft_kind: "outline",
+    draft_kind: "outline" as const,
     title: "BDO dla firm",
     sections: [],
     section_to_evidence_map: [],

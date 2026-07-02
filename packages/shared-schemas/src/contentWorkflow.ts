@@ -697,7 +697,7 @@ export const ContentDraftPackageSchema = z.object({
   work_item_id: z.string(),
   brief_id: z.string(),
   claim_ledger_id: z.string(),
-  draft_kind: z.string(),
+  draft_kind: z.literal("outline"),
   title: z.string(),
   sections: z.array(ContentDraftSectionSchema).default([]),
   section_to_evidence_map: z.array(ContentDraftEvidenceMapSchema).default([]),

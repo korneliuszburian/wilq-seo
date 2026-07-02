@@ -579,6 +579,12 @@ describe("ContentDraftPackageSchema", () => {
         section_to_evidence_map: [{ evidence_ids: ["ev_wp_bdo"] }]
       }).success
     ).toBe(false);
+    expect(
+      ContentDraftPackageSchema.safeParse({
+        ...draftPackage,
+        draft_kind: "full_publishable_draft"
+      }).success
+    ).toBe(false);
   });
 });
 
