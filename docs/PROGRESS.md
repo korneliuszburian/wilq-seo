@@ -135,6 +135,13 @@ API status later contradicts this state.
   approved source facts and `ready_for_daily_content=false`. The next review
   order is claim policy first, then evidence policy, then private service
   proposals.
+- Claim Ledger / structured generation gates are now auditable through
+  `scripts/claim_ledger_gate_audit.py`. Proof on 2026-07-02: 10/10 checks
+  passed. WILQ blocks guarantees, legal claims without human review, business
+  outcome claims without a completed measurement window, evidence claims without
+  source connectors, missing Claim Ledger input, ledger blockers and full drafts
+  from review-required knowledge. Valid section generation remains review-only:
+  the contract is strict and `publish_ready=false`.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production
