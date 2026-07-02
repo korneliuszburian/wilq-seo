@@ -128,6 +128,10 @@ API status later contradicts this state.
   proposal provenance from the API: proposal/source IDs, freshness, audience,
   retention, risk, support, redaction and promotion allowance. The markdown
   report renders those fields under live provenance.
+- Shared frontend schemas now reject weak private proposal sections with blank
+  required text or empty governance lists, matching the backend
+  `PrivateSourceProposal` guard before dashboard/API parsing can show them to
+  Wilku.
 - Wilku handoff examples for private ekologus-ai proposal review now include
   those governance confirmations, so copied review JSON matches the current
   recorder contract.

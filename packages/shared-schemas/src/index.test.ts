@@ -406,6 +406,36 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
       }).success
     ).toBe(false);
   });
+
+  it("rejects weak private proposal governance fields", () => {
+    for (const fieldName of [
+      "data_classes",
+      "source_block_refs",
+      "deletion_path",
+      "eval_case_ids",
+      "blocked_claims"
+    ] as const) {
+      expect(
+        ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+          ...proposal,
+          [fieldName]: []
+        }).success
+      ).toBe(false);
+      expect(
+        ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+          ...proposal,
+          [fieldName]: [" "]
+        }).success
+      ).toBe(false);
+    }
+
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        ...proposal,
+        safe_next_step: ""
+      }).success
+    ).toBe(false);
+  });
 });
 
 describe("ContentGscSearchAnalyticsContractSchema", () => {

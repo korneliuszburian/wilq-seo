@@ -541,8 +541,8 @@ export const ContentServiceProfilePrivateSourceProposalRetentionDecisionSchema =
 ]);
 
 export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object({
-  proposal_id: z.string(),
-  source_id: z.string(),
+  proposal_id: z.string().trim().min(1),
+  source_id: z.string().trim().min(1),
   source_type: z.enum(["private_candidate", "reviewed_internal"]),
   privacy_class: z.enum(["private_local", "redacted_only"]),
   scope: z.enum([
@@ -553,27 +553,27 @@ export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object(
     "evidence_requirement",
     "metric_signal"
   ]),
-  target_card_id: z.string(),
-  target_card_title: z.string(),
-  source_class_label: z.string(),
-  source_locator_label: z.string(),
+  target_card_id: z.string().trim().min(1),
+  target_card_title: z.string().trim().min(1),
+  source_class_label: z.string().trim().min(1),
+  source_locator_label: z.string().trim().min(1),
   freshness_status: ContentServiceProfilePrivateSourceProposalFreshnessStatusSchema,
   review_status: ContentServiceProfilePrivateSourceProposalReviewStatusSchema,
   support_level: ContentServiceProfilePrivateSourceProposalSupportLevelSchema,
   risk_tier: ContentServiceProfilePrivateSourceProposalRiskTierSchema,
-  data_classes: z.array(z.string()).default([]),
-  source_block_refs: z.array(z.string()).default([]),
+  data_classes: z.array(z.string().trim().min(1)).nonempty(),
+  source_block_refs: z.array(z.string().trim().min(1)).nonempty(),
   retention_decision: ContentServiceProfilePrivateSourceProposalRetentionDecisionSchema,
-  deletion_path: z.array(z.string()).default([]),
-  eval_case_ids: z.array(z.string()).default([]),
-  confidence_label: z.string(),
-  owner_role: z.string(),
+  deletion_path: z.array(z.string().trim().min(1)).nonempty(),
+  eval_case_ids: z.array(z.string().trim().min(1)).nonempty(),
+  confidence_label: z.string().trim().min(1),
+  owner_role: z.string().trim().min(1),
   audience: ContentServiceProfilePrivateSourceProposalAudienceSchema,
   redacted: z.boolean(),
-  blocked_claims: z.array(z.string()).default([]),
-  safe_next_step: z.string(),
+  blocked_claims: z.array(z.string().trim().min(1)).nonempty(),
+  safe_next_step: z.string().trim().min(1),
   promotion_allowed: z.boolean(),
-  blocked_write_claim: z.string()
+  blocked_write_claim: z.string().trim().min(1)
 });
 
 export const ContentServiceProfileNeededSourceTypeSchema = z.enum([
