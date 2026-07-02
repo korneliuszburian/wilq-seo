@@ -69,6 +69,49 @@ class ContentSourceFact(BaseModel):
 
     @model_validator(mode="after")
     def validate_review_state(self) -> ContentSourceFact:
+        required_text_fields = {
+            "source_id": self.source_id,
+            "source_url_or_path": self.source_url_or_path,
+            "extracted_fact": self.extracted_fact,
+            "freshness_date": self.freshness_date,
+            "target_card_id": self.target_card_id,
+            "target_card_type": self.target_card_type,
+            "target_card_title": self.target_card_title,
+        }
+        blank_text_fields = sorted(
+            field_name
+            for field_name, value in required_text_fields.items()
+            if not value.strip()
+        )
+        if blank_text_fields:
+            raise ValueError(
+                "source facts require non-empty fields: "
+                + ", ".join(blank_text_fields)
+            )
+
+        trace_list_fields = {
+            "evidence_ids": self.evidence_ids,
+            "source_connectors": self.source_connectors,
+            "blocked_claims": self.blocked_claims,
+            "service_fit_terms": self.service_fit_terms,
+            "buyer_problem_terms": self.buyer_problem_terms,
+            "buyer_triggers": self.buyer_triggers,
+            "cta_patterns": self.cta_patterns,
+            "allowed_claims": self.allowed_claims,
+            "evidence_requirements": self.evidence_requirements,
+            "usage_notes": self.usage_notes,
+        }
+        blank_list_fields = sorted(
+            field_name
+            for field_name, values in trace_list_fields.items()
+            if any(not value.strip() for value in values)
+        )
+        if blank_list_fields:
+            raise ValueError(
+                "source facts require non-empty list entries: "
+                + ", ".join(blank_list_fields)
+            )
+
         if self.review_status == "approved":
             if not self.reviewer:
                 raise ValueError("approved source facts require reviewer")

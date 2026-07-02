@@ -123,6 +123,12 @@ API status later contradicts this state.
 - Private review contract drift is now guarded: tests compare Service Profile
   private review requirements, recorder private boolean fields and
   `wilq-content-operator` minimal private payload fields.
+- Source fact input quality is now guarded before Service Profile/source fact
+  compilation: required source fact text fields cannot be blank, and trace/
+  governance lists such as connectors, evidence IDs, blocked claims, evidence
+  requirements and usage notes cannot contain blank entries. Focused proof:
+  `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`, ruff,
+  mypy and `git diff --check`.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they

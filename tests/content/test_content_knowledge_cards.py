@@ -203,6 +203,28 @@ def test_ekologus_ai_source_facts_require_private_governance_fields() -> None:
         )
 
 
+def test_source_facts_reject_blank_core_fields_and_trace_entries() -> None:
+    private_fact = next(
+        fact
+        for fact in ekologus_source_fact_registry().facts
+        if "ekologus_ai_private_source_catalog" in fact.source_connectors
+    )
+    payload = private_fact.model_dump(mode="json")
+
+    invalid_payload = dict(payload)
+    invalid_payload["extracted_fact"] = " "
+    with pytest.raises(ValidationError, match="extracted_fact"):
+        ContentSourceFact.model_validate(invalid_payload)
+
+    invalid_payload = dict(payload)
+    invalid_payload["source_connectors"] = [
+        *payload["source_connectors"],
+        " ",
+    ]
+    with pytest.raises(ValidationError, match="source_connectors"):
+        ContentSourceFact.model_validate(invalid_payload)
+
+
 def test_approved_source_facts_require_evidence_and_source_connectors() -> None:
     with pytest.raises(ValidationError, match="evidence_ids"):
         ContentSourceFact(
