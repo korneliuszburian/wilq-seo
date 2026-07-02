@@ -10,6 +10,7 @@ from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_sour
 PrivateSourceProposalType = Literal["private_candidate", "reviewed_internal"]
 PrivateSourceProposalPrivacyClass = Literal["private_local", "redacted_only"]
 PrivateSourceProposalReviewStatus = Literal["review_required", "approved", "rejected", "stale"]
+PrivateSourceProposalFreshnessStatus = Literal["current", "historical", "stale", "unknown"]
 PrivateSourceProposalRetentionDecision = Literal[
     "pending_owner_decision",
     "retain_while_source_approved",
@@ -24,6 +25,13 @@ PrivateSourceProposalScope = Literal[
     "evidence_requirement",
     "metric_signal",
 ]
+PrivateSourceProposalAudience = Literal[
+    "company_wide",
+    "department_only",
+    "role_restricted",
+    "owner_only",
+    "unknown",
+]
 
 
 class PrivateSourceProposal(BaseModel):
@@ -36,18 +44,12 @@ class PrivateSourceProposal(BaseModel):
     source_locator_label: str
     scope: PrivateSourceProposalScope
     freshness_date: str
-    freshness_status: Literal["current", "historical", "stale", "unknown"]
+    freshness_status: PrivateSourceProposalFreshnessStatus
     confidence: float = Field(ge=0, le=1)
     review_status: PrivateSourceProposalReviewStatus
     reviewer: str | None = None
     owner_role: str
-    audience: Literal[
-        "company_wide",
-        "department_only",
-        "role_restricted",
-        "owner_only",
-        "unknown",
-    ]
+    audience: PrivateSourceProposalAudience
     risk_tier: Literal["low", "medium", "high", "unknown"]
     data_classes: list[str] = Field(default_factory=list)
     source_block_refs: list[str] = Field(default_factory=list)
@@ -211,13 +213,7 @@ def _owner_role(fact: ContentSourceFact) -> str:
     return "Wilku albo owner wiedzy Ekologus"
 
 
-def _audience(fact: ContentSourceFact) -> Literal[
-    "company_wide",
-    "department_only",
-    "role_restricted",
-    "owner_only",
-    "unknown",
-]:
+def _audience(fact: ContentSourceFact) -> PrivateSourceProposalAudience:
     if fact.scope in {"claim_policy", "evidence_requirement"}:
         return "role_restricted"
     return "company_wide"

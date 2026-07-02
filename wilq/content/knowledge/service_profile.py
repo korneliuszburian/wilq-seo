@@ -14,6 +14,8 @@ from wilq.content.knowledge.cards import (
 )
 from wilq.content.knowledge.private_source_proposals import (
     PrivateSourceProposal,
+    PrivateSourceProposalAudience,
+    PrivateSourceProposalFreshnessStatus,
     PrivateSourceProposalPrivacyClass,
     PrivateSourceProposalRetentionDecision,
     PrivateSourceProposalReviewStatus,
@@ -147,6 +149,7 @@ class ContentServiceProfilePrivateSourceProposalSection(BaseModel):
     target_card_title: str
     source_class_label: str
     source_locator_label: str
+    freshness_status: PrivateSourceProposalFreshnessStatus
     review_status: PrivateSourceProposalReviewStatus
     support_level: ServiceProfilePrivateProposalSupportLevel
     risk_tier: ServiceProfilePrivateProposalRiskTier
@@ -157,6 +160,7 @@ class ContentServiceProfilePrivateSourceProposalSection(BaseModel):
     eval_case_ids: list[str] = Field(default_factory=list)
     confidence_label: str
     owner_role: str
+    audience: PrivateSourceProposalAudience
     redacted: bool
     blocked_claims: list[str] = Field(default_factory=list)
     safe_next_step: str
@@ -341,6 +345,7 @@ def _private_source_proposal_sections(
             target_card_title=proposal.target_card_title,
             source_class_label=proposal.source_class_label,
             source_locator_label=proposal.source_locator_label,
+            freshness_status=proposal.freshness_status,
             review_status=proposal.review_status,
             support_level=proposal.support_level,
             risk_tier=proposal.risk_tier,
@@ -351,6 +356,7 @@ def _private_source_proposal_sections(
             eval_case_ids=proposal.eval_case_ids,
             confidence_label=_confidence_label(proposal.confidence),
             owner_role=proposal.owner_role,
+            audience=proposal.audience,
             redacted=True,
             blocked_claims=proposal.blocked_claims,
             safe_next_step=proposal.safe_next_step,

@@ -204,6 +204,7 @@ describe("ContentServiceProfileResponseSchema", () => {
           target_card_title: "Eko-Opieka / Eko Kalendarz",
           source_class_label: "review-required internal service context",
           source_locator_label: "ekologus-ai reviewed handoff: Eko-Opieka",
+          freshness_status: "current",
           review_status: "review_required",
           support_level: "partial",
           risk_tier: "medium",
@@ -214,6 +215,7 @@ describe("ContentServiceProfileResponseSchema", () => {
           eval_case_ids: ["goal_005_private_service_review"],
           confidence_label: "średnia",
           owner_role: "Wilku albo owner oferty Ekologus",
+          audience: "company_wide",
           redacted: true,
           blocked_claims: ["obietnica stałej zgodności"],
           safe_next_step: "Pokazać Wilkowi zwykły handoff.",
@@ -334,6 +336,7 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
     target_card_title: "Eko-Opieka / Eko Kalendarz",
     source_class_label: "review-required internal service context",
     source_locator_label: "ekologus-ai reviewed handoff: Eko-Opieka",
+    freshness_status: "current",
     review_status: "review_required",
     support_level: "partial",
     risk_tier: "medium",
@@ -344,6 +347,7 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
     eval_case_ids: ["goal_005_private_service_review"],
     confidence_label: "średnia",
     owner_role: "Wilku albo owner oferty Ekologus",
+    audience: "company_wide",
     redacted: true,
     blocked_claims: ["obietnica stałej zgodności"],
     safe_next_step: "Pokazać Wilkowi zwykły handoff.",
@@ -374,6 +378,18 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
       ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
         ...proposal,
         risk_tier: "comfortable"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        ...proposal,
+        freshness_status: "fresh_enough"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        ...proposal,
+        audience: "everyone_on_internet"
       }).success
     ).toBe(false);
     expect(

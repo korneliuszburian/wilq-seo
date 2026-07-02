@@ -830,6 +830,14 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         proposal.privacy_class == "redacted_only"
         for proposal in response.private_source_proposals
     )
+    assert all(
+        proposal.freshness_status == "current"
+        for proposal in response.private_source_proposals
+    )
+    assert all(
+        proposal.audience in {"company_wide", "role_restricted"}
+        for proposal in response.private_source_proposals
+    )
     assert all(proposal.redacted for proposal in response.private_source_proposals)
     assert all(not proposal.promotion_allowed for proposal in response.private_source_proposals)
     assert all(proposal.blocked_claims for proposal in response.private_source_proposals)

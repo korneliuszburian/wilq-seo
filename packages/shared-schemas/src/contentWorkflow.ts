@@ -520,6 +520,19 @@ export const ContentServiceProfilePrivateSourceProposalRiskTierSchema = z.enum([
   "high",
   "unknown"
 ]);
+export const ContentServiceProfilePrivateSourceProposalFreshnessStatusSchema = z.enum([
+  "current",
+  "historical",
+  "stale",
+  "unknown"
+]);
+export const ContentServiceProfilePrivateSourceProposalAudienceSchema = z.enum([
+  "company_wide",
+  "department_only",
+  "role_restricted",
+  "owner_only",
+  "unknown"
+]);
 export const ContentServiceProfilePrivateSourceProposalRetentionDecisionSchema = z.enum([
   "pending_owner_decision",
   "retain_while_source_approved",
@@ -544,6 +557,7 @@ export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object(
   target_card_title: z.string(),
   source_class_label: z.string(),
   source_locator_label: z.string(),
+  freshness_status: ContentServiceProfilePrivateSourceProposalFreshnessStatusSchema,
   review_status: ContentServiceProfilePrivateSourceProposalReviewStatusSchema,
   support_level: ContentServiceProfilePrivateSourceProposalSupportLevelSchema,
   risk_tier: ContentServiceProfilePrivateSourceProposalRiskTierSchema,
@@ -554,6 +568,7 @@ export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object(
   eval_case_ids: z.array(z.string()).default([]),
   confidence_label: z.string(),
   owner_role: z.string(),
+  audience: ContentServiceProfilePrivateSourceProposalAudienceSchema,
   redacted: z.boolean(),
   blocked_claims: z.array(z.string()).default([]),
   safe_next_step: z.string(),
