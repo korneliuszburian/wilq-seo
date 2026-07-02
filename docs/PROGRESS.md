@@ -389,6 +389,11 @@ API status later contradicts this state.
 - Quality Review now mirrors that same forbidden-claim acknowledgement gate, so
   direct quality-review calls cannot bypass preview by omitting
   `forbidden_claims_avoided` for claims removed or blocked by the draft package.
+- Draft Package now carries forbidden claims already recorded in Sales Brief
+  into `claims_removed_or_blocked`, even when the active Claim Ledger is
+  resolved enough to draft. Structured generation therefore receives the same
+  avoided-claim list in `model_input` and the existing preview/quality gates
+  still require `forbidden_claims_avoided` before human-review readiness.
 - Shared schemas now type `ContentQualityFinding.code` as the known quality gate
   enum instead of any string, including
   `missing_forbidden_claim_acknowledgement`. Dashboard/API tests now catch

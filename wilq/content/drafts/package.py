@@ -98,6 +98,7 @@ def build_content_draft_package(
         for entry in claim_ledger.entries
         if entry.id == blocker.claim_id
     ]
+    sales_brief_forbidden_claims = [claim.claim_text for claim in sales_brief.forbidden_claims]
     return ContentDraftPackageBuildResult(
         draft_package=ContentDraftPackage(
             id=f"draft_package_{item.id}",
@@ -108,7 +109,9 @@ def build_content_draft_package(
             sections=sections,
             section_to_evidence_map=evidence_map,
             claims_used=[entry.claim_text for entry in publish_ready_claims(claim_ledger)],
-            claims_removed_or_blocked=_unique(blocked_claims),
+            claims_removed_or_blocked=_unique(
+                [*blocked_claims, *sales_brief_forbidden_claims]
+            ),
             human_review_questions=[
                 "Czy szkic brzmi jak Ekologus i nie używa generycznego języka?",
                 "Czy każde twierdzenie sprzedażowe ma dowód albo zostało usunięte?",

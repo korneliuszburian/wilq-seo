@@ -256,3 +256,25 @@ def test_draft_package_is_outline_first_and_not_publish_ready() -> None:
     assert result.draft_package.claims_used == [
         "Ekologus pomaga firmom w obowiązkach związanych z BDO."
     ]
+
+
+def test_draft_package_carries_sales_brief_forbidden_claims_to_generation_gate() -> None:
+    item = _item()
+    resolved_ledger = _claim_ledger()
+    brief_with_forbidden_claims = _sales_brief(item, _claim_ledger(blocked=True))
+
+    result = build_content_draft_package(
+        item=item,
+        preflight=_preflight(item),
+        sales_brief=brief_with_forbidden_claims,
+        claim_ledger=resolved_ledger,
+    )
+
+    assert result.blockers == []
+    assert result.draft_package is not None
+    assert result.draft_package.claims_used == [
+        "Ekologus pomaga firmom w obowiązkach związanych z BDO."
+    ]
+    assert result.draft_package.claims_removed_or_blocked == [
+        "Ta treść zwiększy liczbę leadów."
+    ]

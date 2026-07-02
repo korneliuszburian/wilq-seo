@@ -384,6 +384,12 @@ Structured draft preview now has the matching early gate under Beads task
 `wilq-seo-eva`: preview blocks `unknown_claim_reference` when runtime output
 uses a claim not present in `contract.model_input.claims_allowed`.
 
+Sales Brief forbidden claims now flow into the draft/generation gate under
+Beads task `wilq-seo-6ic`. `ContentDraftPackage.claims_removed_or_blocked`
+includes forbidden claim text recorded on the Sales Brief even after the active
+Claim Ledger is resolved for drafting, and structured generation passes that
+list into `model_input` for preview/quality acknowledgement gates.
+
 WordPress draft handoff audit lineage is hardened under Beads task
 `wilq-seo-unp`: audit evidence must overlap with the approved human review
 evidence and the draft package evidence map, otherwise handoff blocks with

@@ -290,3 +290,33 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert marker.reviewer_id is None
     assert contract.model_input.human_review_questions
     assert "gotowej do publikacji" in contract.system_instruction
+
+
+def test_structured_generation_receives_sales_brief_forbidden_claims() -> None:
+    item = _item()
+    resolved_ledger = _claim_ledger()
+    brief_with_forbidden_claims = _sales_brief(item, _claim_ledger(blocked=True))
+    preflight = build_content_preflight_verdict(
+        item,
+        resolve_content_inventory([_inventory()], duplicate_risk="clear"),
+    )
+    draft_result = build_content_draft_package(
+        item=item,
+        preflight=preflight,
+        sales_brief=brief_with_forbidden_claims,
+        claim_ledger=resolved_ledger,
+    )
+    assert draft_result.draft_package is not None
+
+    result = build_structured_draft_generation_contract(
+        item=item,
+        sales_brief=brief_with_forbidden_claims,
+        claim_ledger=resolved_ledger,
+        draft_package=draft_result.draft_package,
+    )
+
+    assert result.blockers == []
+    assert result.contract is not None
+    assert result.contract.model_input.claims_removed_or_blocked == [
+        "Ta treść zwiększy liczbę leadów."
+    ]
