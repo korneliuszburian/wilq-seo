@@ -33,6 +33,12 @@ Najkrótszy stan:
 - Claim Ledger: 10/10 checków, model nie może oznaczyć treści jako gotowej do
   publikacji;
 - evale skilli: 13/13 skilli ma przypadek eval i wymagane pola outputu;
+- poranna komenda WILQ musi już odpowiedzieć po ludzku: co zrobić najpierw,
+  dlaczego teraz, z jakimi dowodami, co jest zablokowane i jaki jest następny
+  bezpieczny krok;
+- social: WILQ może przygotować kierunki LinkedIn/Facebook do review, ale nie
+  może obiecać, że temat jest nowy albo niepowielony, dopóki nie ma historii
+  postów jako metadata-only;
 - completion guard nadal blokuje: nie wolno mówić, że Goal 005 jest domknięty.
 
 Zapytaj:
@@ -41,6 +47,29 @@ Zapytaj:
 2. Czy te blokady budują zaufanie, czy przeszkadzają w pracy?
 3. Którą część chcesz zobaczyć jako pierwszą: wiedzę usług, treści, Ads/GA4,
    czy social/history?
+
+### 0. Centrum pracy: co zrobić najpierw
+
+Pokaż:
+
+- dashboard `/command-center`
+- eval proof:
+  `.local-lab/evals/codex-skill/20260702T150140Z/wilq-daily-command/result.json`
+
+Powiedz:
+
+> To jest najbliższe temu, co BDOS robi rano. WILQ nie tylko pokazuje kafelki.
+> Ma powiedzieć: co zrobić najpierw, dlaczego teraz, na jakich dowodach, czego
+> nie wolno obiecać i jaka akcja jest bezpieczna do sprawdzenia. W aktualnym
+> proofie najpierw wskazuje Merchant, bo tak wynika z `daily_decisions` i
+> `primary_next_step`.
+
+Zapytaj:
+
+1. Czy taka poranna kolejka jest dla Ciebie użyteczna?
+2. Czy chcesz, żeby pierwsza decyzja była bardziej marketingowa, sprzedażowa
+   czy techniczno-pomiarowa?
+3. Czy powód "dlaczego teraz" jest wystarczająco czytelny?
 
 ### 1. Czym realnie jest WILQ
 
@@ -62,6 +91,14 @@ Zapytaj:
    czego nie wolno i co ma największy sens?
 3. Jakie historyczne posty LinkedIn/Facebook możemy dodać jako metadata-only,
    żeby WILQ nie powielał tematów?
+
+Powiedz też:
+
+> Dla sociala WILQ ma już twardą blokadę: bez historii postów LinkedIn/Facebook
+> nie może powiedzieć, że temat jest nowy albo że nie powielamy wcześniejszej
+> komunikacji. Na start wystarczą metadane: kanał, data, temat, usługa, claim,
+> CTA, format, URL albo ID posta i źródło dowodu. Nie potrzebujemy raw treści
+> postów ani komentarzy, żeby zbudować pierwszy dedupe contract.
 
 ### 2. Aktualny stan WILQ
 
