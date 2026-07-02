@@ -326,6 +326,50 @@ Result:
   `Wiedza Ekologus: co dziś sprawdzić`, review order and production blockers
   before detailed card/proposal lists.
 
+## 2026-07-02 - Content Workflow dashboard usefulness review
+
+Purpose:
+
+- Test whether `/content-workflow` explains the actual end-to-end content gate
+  for one real work item, not only whether preflight/brief/draft endpoints
+  exist.
+- Verify that WILQ allows planning when evidence exists, but blocks Sales
+  Brief, draft package, structured generation, human review and WordPress
+  handoff until the required contracts are ready.
+
+Proof:
+
+```bash
+rtk curl -sS -m 30 http://127.0.0.1:8000/api/content/work-items/queue
+rtk curl -sS -m 30 'http://127.0.0.1:8000/api/content/workflow?snapshot=1&work_item_id=content_work_item_content_decision_https___www_ekologus_pl'
+rtk pnpm typecheck
+rtk pnpm test -- src/routes/ContentWorkflowSurface.test.tsx --runInBand
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-content-workflow-start-card.md`.
+- Live queue status is `blocked`: WILQ sees 3 candidates, but only 1 candidate
+  is actionable.
+- Active item:
+  `content_work_item_content_decision_https___www_ekologus_pl`.
+- Active topic: `SEO: odśwież lub scal "ekologus" (24 zapytań)`.
+- Main evidence:
+  `ev_refresh_refresh_google_search_console_9b25d4143bea` and
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`.
+- Current gates: preflight is `plan_allowed`; Sales Brief, draft package,
+  structured draft generation, human review and WordPress handoff are blocked.
+  The measurement window is planned with earliest verdict `2026-08-01`.
+- Usefulness scores:
+  - 7.5/10 as an honest end-to-end workflow gate.
+  - 4.5/10 as production draft readiness.
+  - 8.5/10 for blocking unsafe claims and writes.
+- Main learning: WILQ is useful here because it refuses to pretend the content
+  is ready. Dashboard now starts with `Workflow treści: co dziś zrobić` and
+  tells Wilku to plan only on the candidate that passed gates, without jumping
+  to draft or WordPress.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

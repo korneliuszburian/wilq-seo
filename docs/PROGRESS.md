@@ -171,6 +171,16 @@ API status later contradicts this state.
   production knowledge and 8/10 for ekologus-ai reviewed source value. The
   dashboard first screen now shows `Wiedza Ekologus: co dziś sprawdzić`,
   review order and production blockers before detailed card/proposal lists.
+- Content Workflow usefulness review now has a short Wilku-facing decision card
+  at `docs/handoffs/2026-07-02-wilku-content-workflow-start-card.md`. Live
+  `/api/content/work-items/queue` returns 3 candidates, but only 1 actionable
+  candidate; the active `ekologus` refresh/merge work item has GSC and
+  WordPress evidence and `plan_allowed` preflight, while Sales Brief, draft
+  package, structured generation, human review and WordPress handoff remain
+  blocked. The surface scores 7.5/10 as an honest workflow gate, 4.5/10 as
+  production draft readiness and 8.5/10 for write/claim blocking. The dashboard
+  first screen now shows `Workflow treści: co dziś zrobić`, the active topic,
+  proof count and blocked workflow steps.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

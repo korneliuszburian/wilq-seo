@@ -222,6 +222,7 @@ function ContentWorkflowLoaded({
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <ContentWorkflowHeader topic={item.topic} />
+      <ContentWorkflowTodayPanel data={data} queue={queue} />
       <ContentCandidateQueuePanel
         queue={queue}
         selectedWorkItemId={selectedWorkItemId}
@@ -246,6 +247,82 @@ function ContentWorkflowLoaded({
         executionResult={actions.executionResult}
       />
     </main>
+  );
+}
+
+function ContentWorkflowTodayPanel({
+  data,
+  queue
+}: {
+  data: ContentWorkflowSnapshot;
+  queue: ContentWorkItemQueueResponse;
+}) {
+  const item = data.preflight.item;
+  const blockedSteps = data.operatorSteps.filter((step) =>
+    step.statusLabel.toLowerCase().includes("zablok")
+  );
+  const readySteps = data.operatorSteps.filter(
+    (step) => !step.statusLabel.toLowerCase().includes("zablok")
+  );
+  const activeCandidate = queue.candidates.find(
+    (candidate) => candidate.work_item_id === item.id
+  );
+
+  return (
+    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-action">
+            Workflow treści: co dziś zrobić
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+            Pracuj tylko na kandydacie, który przeszedł bramki
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+            {queue.operator_summary}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          <FactTile label="Kandydaci" value={`${queue.candidate_count}`} />
+          <FactTile label="Gotowe" value={`${queue.actionable_candidate_count}`} />
+          <FactTile label="Dowody" value={`${unique(item.evidence_ids).length}`} />
+          <FactTile label="Etapy zablokowane" value={`${blockedSteps.length}`} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Aktywny temat</h3>
+          <p className="mt-2 text-sm font-medium leading-6 text-ink">{item.topic}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-700">
+            {activeCandidate?.recommended_mode_label ??
+              data.preflight.preflight_verdict.recommended_mode}
+          </p>
+          <div className="mt-3 grid gap-1 text-xs leading-5 text-slate-600">
+            {readySteps.slice(0, 3).map((step) => (
+              <div key={step.id}>
+                {step.title}: {step.statusLabel}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Co jeszcze blokuje szkic</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Nie przechodź do szkicu ani WordPress, dopóki WILQ nie odblokuje briefu,
+            paczki szkicu, decyzji człowieka i audytu.
+          </p>
+          <div className="mt-3 grid gap-1 text-xs leading-5 text-slate-600">
+            {blockedSteps.slice(0, 4).map((step) => (
+              <div key={step.id}>
+                {step.title}: {step.statusLabel}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

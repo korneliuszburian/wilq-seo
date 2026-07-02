@@ -85,8 +85,15 @@ describe("ContentWorkflowSurface", () => {
       await screen.findByText("Workflow treści bez slopu", undefined, { timeout: 5000 })
     ).toBeInTheDocument();
 
+    expect(screen.getByText("Workflow treści: co dziś zrobić")).toBeInTheDocument();
+    expect(screen.getByText("Pracuj tylko na kandydacie, który przeszedł bramki"))
+      .toBeInTheDocument();
+    expect(screen.getByText("Aktywny temat")).toBeInTheDocument();
+    expect(screen.getByText("Co jeszcze blokuje szkic")).toBeInTheDocument();
+    expect(screen.getByText(/Nie przechodź do szkicu ani WordPress/)).toBeInTheDocument();
+    expect(screen.getByText("Etapy zablokowane")).toBeInTheDocument();
     expect(await screen.findByText("Kolejka tematów")).toBeInTheDocument();
-    expect(screen.getByText(/WILQ widzi 3 kandydatów/)).toBeInTheDocument();
+    expect(screen.getAllByText(/WILQ widzi 3 kandydatów/).length).toBeGreaterThan(0);
     expect(screen.getByText("Zielony Ład dla firm")).toBeInTheDocument();
     expect(screen.getByText("Luka Ahrefs bez finalnego adresu")).toBeInTheDocument();
     expect(screen.getByText("odśwież istniejącą treść · gotowe do planu")).toBeInTheDocument();
