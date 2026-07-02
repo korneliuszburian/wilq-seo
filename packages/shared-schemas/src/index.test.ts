@@ -282,8 +282,9 @@ describe("ContentGscSearchAnalyticsContractSchema", () => {
     query_page_rows_truncated: false,
     summary_label: "GSC Search Analytics: najnowszy dostępny dzień szczegółów 2026-06-29.",
     partial_detail_warning_label:
-      "Dane query/page z Search Analytics są sygnałem, nie pełną sumą całego ruchu.",
-    paging_label: "Paginacja query/page: rowLimit=250, max rows=1000; wynik nie zgłasza ucięcia.",
+      "Dane zapytań i adresów z Search Analytics są sygnałem, nie pełną sumą całego ruchu.",
+    paging_label:
+      "Paginacja zapytań i adresów: rowLimit=250, max rows=1000; wynik nie zgłasza ucięcia.",
     official_limits_label:
       "Oficjalny wzorzec GSC: dane zwykle pojawiają się po 2-3 dniach.",
     wilq_internal_cap_label: "Ten odczyt WILQ jest operacyjnie ograniczony."

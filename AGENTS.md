@@ -10,7 +10,7 @@ After context loss, read:
 
 1. `docs/CONTEXT.md` - durable index of current runtime, skill eval harness and key docs.
 2. `docs/PROGRESS.md` - latest short progress ledger and current gaps.
-3. `docs/goals/005-goal.md` - active goal and current execution boundaries.
+3. `docs/goals/archive/005-goal.md` - active goal and current execution boundaries.
 4. `PLANS.md` - active long-running ExecPlan and latest decision log.
 5. `docs/goals/001-goal.md` - historical cleanup contract and owner-deferred UAT context.
 6. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.

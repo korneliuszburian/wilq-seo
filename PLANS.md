@@ -5,12 +5,12 @@ It must stay restartable without chat history.
 
 Current cleanup truth remains in `PLAN.md`, `docs/CONTEXT.md`,
 `docs/PROGRESS.md`, `docs/goals/001-goal.md`,
-`docs/goals/archive/004-goal.md`, `docs/goals/005-goal.md` and Beads.
+`docs/goals/archive/004-goal.md`, `docs/goals/archive/005-goal.md` and Beads.
 
 ## How To Use This File
 
 - Read `AGENTS.md`, `PLAN.md`, `docs/CONTEXT.md`,
-  `docs/PROGRESS.md` and `docs/goals/005-goal.md` first.
+  `docs/PROGRESS.md` and `docs/goals/archive/005-goal.md` first.
 - Run `bd prime` and `bd ready --json` before choosing work.
 - Use Beads for operational task tracking. Do not copy the Beads issue list
   into markdown TODOs.
@@ -89,8 +89,8 @@ knowledge-card depth audit
 - WILQ API owns product logic.
 - Dashboard renders API-owned view models.
 - Codex skills consume WILQ API; they do not invent product behavior.
-- No evidence ID means no recommendation.
-- No source connector means no recommendation.
+- Brak dowodu w WILQ oznacza brak rekomendacji.
+- Brak źródła danych oznacza brak rekomendacji.
 - Weak, stale or thin evidence must become an explicit low-confidence/blocker
   state, not a polished generic brief.
 - Typed knowledge cards do not replace live evidence.
@@ -257,8 +257,8 @@ The GSC skill eval now enforces that caveat under Beads task `wilq-seo-3pq`.
 contract fields and fails if they are missing. The non-interactive proof at
 `.local-lab/evals/codex-skill/20260701T231227Z/summary.json` passed with
 `operator_usefulness_score=4`, six evidence IDs, one recommendation and a
-validated `act_prepare_content_refresh_queue`, while keeping query/page rows
-as `partial_possible` signals from the newest available day.
+validated `act_prepare_content_refresh_queue`, while keeping rows for
+zapytania i adresy as `partial_possible` signals from the newest available day.
 
 The Search Analytics caveat is now API-owned under Beads task `wilq-seo-5y8`.
 `/api/content/diagnostics` exposes `gsc_search_analytics_contract` with
@@ -271,7 +271,7 @@ The same contract now distinguishes official Search Analytics limits from
 WILQ's smaller operating cap under Beads task `wilq-seo-llp`: typical 2-3 day
 data delay, single-day latest-available reads, official 25k page size, 50k
 daily row cap per search type, and the current WILQ `rowLimit=250` /
-`max rows=1000` query/page cap. The tightened `wilq-gsc-content-doctor`
+`max rows=1000` cap for zapytania i adresy. The tightened `wilq-gsc-content-doctor`
 non-interactive eval passed at
 `.local-lab/evals/codex-skill/20260701T232526Z`.
 
@@ -379,7 +379,7 @@ publish-ready paths inherit this gate through `claim_ledger_blockers`.
 
 Google Search Console vendor read is aligned with the first official
 Search Analytics ingestion pattern under Beads task `wilq-seo-kr8`: check
-available dates first, use the latest available day for detailed query/page
+available dates first, use the latest available day for detailed zapytania i adresy
 facts, page with `rowLimit`/`startRow`, and keep the stored result bounded and
 sanitized.
 
@@ -503,7 +503,7 @@ Goal 005 is complete only when repo evidence proves all of this:
    explicitly defers it with residual risk and exact next UAT input required.
 9. UAT proof captures confusion points, off-brand/generic SEO findings,
    source-trace questions, selected work item and exact follow-ups.
-10. `docs/PROGRESS.md`, `PLANS.md`, `docs/goals/005-goal.md` and Beads agree.
+10. `docs/PROGRESS.md`, `PLANS.md`, `docs/goals/archive/005-goal.md` and Beads agree.
 11. Focused verification passes for changed areas, and full
     `rtk scripts/verify.sh` passes before completion claims.
 
@@ -555,7 +555,7 @@ Inspect first: `AGENTS.md`, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md`,
 `docs/PROGRESS.md`, `docs/goals/archive/004-goal.md`, current knowledge-card
 code and Beads.
 
-Build: this active plan, `docs/goals/005-goal.md`, progress/context alignment
+Build: this active plan, `docs/goals/archive/005-goal.md`, progress/context alignment
 and Beads graph.
 
 Do not build: product behavior.

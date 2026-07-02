@@ -17,7 +17,7 @@ as proof that WILQ already knows Ekologus deeply.
 - `wilq/content/briefs/sales.py`
 - `wilq/content/enrichment/opportunity.py`
 - `tests/content/test_content_knowledge_cards.py`
-- `docs/goals/005-goal.md`
+- `docs/goals/archive/005-goal.md`
 - `PLANS.md`
 - `docs/PROGRESS.md`
 - `docs/handoffs/2026-06-29-marketer-uat-ready.md`

@@ -24,6 +24,11 @@ def test_diagnostics_derived_content_item_reaches_draft_dry_run_without_publish(
     contract = snapshot["structured_generation"]["structured_generation_result"]["contract"]
 
     _assert_initial_content_gates(item=item, inventory=inventory, preflight=preflight)
+    if draft is None:
+        _assert_missing_knowledge_blocks_draft(snapshot=snapshot)
+        return
+    if contract is None:
+        raise AssertionError("Expected structured generation contract when draft package exists.")
     _assert_workflow_build_gates(snapshot=snapshot)
     _assert_sales_brief(brief=brief, item=item)
     _assert_draft_package(draft=draft, brief=brief, item=snapshot["draft_package"]["item"])
@@ -196,6 +201,28 @@ def _assert_workflow_build_gates(*, snapshot: dict[str, Any]) -> None:
 
     measurement_candidate = snapshot["measurement_window"]["updated_item"]
     assert measurement_candidate["measurement_window_status"] == "planned"
+
+
+def _assert_missing_knowledge_blocks_draft(*, snapshot: dict[str, Any]) -> None:
+    brief_result = snapshot["sales_brief"]["sales_brief_result"]
+    draft_result = snapshot["draft_package"]["draft_package_result"]
+    structured_result = snapshot["structured_generation"]["structured_generation_result"]
+
+    assert brief_result["brief"] is None
+    assert [blocker["code"] for blocker in brief_result["blockers"]] == [
+        "missing_required_knowledge_card",
+        "missing_required_knowledge_card",
+    ]
+    assert draft_result["draft_package"] is None
+    assert {
+        "preflight_not_draft_allowed",
+        "missing_sales_brief",
+    }.issubset({blocker["code"] for blocker in draft_result["blockers"]})
+    assert structured_result["contract"] is None
+    assert {
+        "missing_sales_brief",
+        "missing_draft_package",
+    }.issubset({blocker["code"] for blocker in structured_result["blockers"]})
 
 
 def _assert_sales_brief(*, brief: dict[str, Any], item: dict[str, Any]) -> None:

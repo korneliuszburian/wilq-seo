@@ -109,7 +109,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-          Claimy i wymagane dowody
+          Twierdzenia i wymagane dowody
         </h2>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {data.claim_policy_sections.slice(0, 4).map((section) => (
@@ -118,8 +118,8 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
               <PlainChipRow
                 className="mt-2"
                 values={[
-                  `${section.claims_needing_review.length} claimów do review`,
-                  `${section.forbidden_claims.length} claimów zablokowanych`,
+                  `${section.claims_needing_review.length} twierdzeń do review`,
+                  `${section.forbidden_claims.length} twierdzeń zablokowanych`,
                   `${section.measurement_sensitive_claims.length} pomiarowych`
                 ]}
               />

@@ -7,8 +7,7 @@ import {
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemStructuredDraftGenerationResponse,
   type ContentWorkItemWordPressDraftHandoffResponse,
-  type ContentWorkItemSnapshotResponse,
-  type ContentWorkItemWorkflowSnapshotResponse
+  type ContentWorkItemSnapshotResponse
 } from "../lib/api";
 
 export type ContentWorkflowSnapshot = {

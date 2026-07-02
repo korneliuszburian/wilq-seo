@@ -262,6 +262,7 @@ def _claim_ledger() -> ContentClaimLedger:
                 claim_text="Ekologus pomaga firmom uporządkować obowiązki BDO.",
                 claim_type="service_claim",
                 evidence_ids=["ev_wp_bdo"],
+                source_connectors=["wordpress_ekologus"],
             )
         ],
     )

@@ -58,7 +58,7 @@ musi użyć metadanych z najnowszego `google_search_console` `vendor_read`:
 - `search_type=web` ogranicza interpretację do web search;
 - `detail_dimensions=query,page` i
   `detail_data_completeness=partial_possible` oznaczają, że wiersze
-  query/page są sygnałem do decyzji treściowej, ale nie pełną sumą ruchu;
+  zapytań i adresów są sygnałem do decyzji treściowej, ale nie pełną sumą ruchu;
 - `read_granularity=single_day_latest_available`,
   `api_recommended_page_size=25000` i
   `api_daily_row_cap_per_search_type=50000` opisują oficjalny wzorzec
@@ -68,7 +68,7 @@ musi użyć metadanych z najnowszego `google_search_console` `vendor_read`:
   operacyjny i czy wynik mógł zostać ucięty.
 
 W odpowiedzi dla operatora powiedz po polsku, jeśli decyzja opiera się na
-najnowszym dostępnym dniu i częściowych danych query/page. Nie obiecuj pełnej
+najnowszym dostępnym dniu i częściowych danych zapytań i adresów. Nie obiecuj pełnej
 diagnostyki ruchu, kanibalizacji ani wzrostu pozycji bez dodatkowych dowodów.
 
 ## Bezpieczeństwo treści

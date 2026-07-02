@@ -296,8 +296,8 @@ def _gsc_search_analytics_contract(
         query_page_rows_truncated=rows_truncated,
         summary_label=_gsc_search_analytics_summary_label(detail_date_end),
         partial_detail_warning_label=(
-            "Dane query/page z Search Analytics są sygnałem do decyzji treściowej, "
-            "nie pełną sumą całego ruchu."
+            "Dane zapytań i adresów z Search Analytics są sygnałem do decyzji "
+            "treściowej, nie pełną sumą całego ruchu."
         ),
         paging_label=_gsc_search_analytics_paging_label(row_limit, max_rows, rows_truncated),
         official_limits_label=(
@@ -307,7 +307,7 @@ def _gsc_search_analytics_contract(
             "dla danego typu wyszukiwania."
         ),
         wilq_internal_cap_label=(
-            "Ten odczyt WILQ jest operacyjnie ograniczony do query/page "
+            "Ten odczyt WILQ jest operacyjnie ograniczony do zapytań i adresów "
             f"rowLimit={row_limit or 'unknown'} i max rows={max_rows or 'unknown'}; "
             "to bezpieczny sygnał decyzyjny, nie eksport całego Search Analytics."
         ),
@@ -318,9 +318,9 @@ def _gsc_search_analytics_summary_label(detail_date_end: str | None) -> str:
     if detail_date_end:
         return (
             "GSC Search Analytics: najnowszy dostępny dzień szczegółów "
-            f"{detail_date_end}; query/page może być częściowe."
+            f"{detail_date_end}; zapytania i adresy mogą być częściowe."
         )
-    return "GSC Search Analytics: brak potwierdzonego dnia szczegółów query/page."
+    return "GSC Search Analytics: brak potwierdzonego dnia szczegółów zapytań i adresów."
 
 
 def _gsc_search_analytics_paging_label(
@@ -329,9 +329,12 @@ def _gsc_search_analytics_paging_label(
     rows_truncated: bool,
 ) -> str:
     if row_limit is None or max_rows is None:
-        return "Brak potwierdzonej informacji o stronicowaniu query/page."
+        return "Brak potwierdzonej informacji o stronicowaniu zapytań i adresów."
     truncation = "wynik mógł zostać ucięty" if rows_truncated else "wynik nie zgłasza ucięcia"
-    return f"Paginacja query/page: rowLimit={row_limit}, max rows={max_rows}; {truncation}."
+    return (
+        f"Paginacja zapytań i adresów: rowLimit={row_limit}, max rows={max_rows}; "
+        f"{truncation}."
+    )
 
 
 def _optional_text(value: object) -> str | None:

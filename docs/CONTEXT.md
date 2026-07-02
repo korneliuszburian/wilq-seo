@@ -9,7 +9,7 @@ changelogiem ani kopią goalu. Jeżeli potrzebujesz historii, użyj git log,
 Przeczytaj w tej kolejności:
 
 1. `AGENTS.md` - stałe reguły pracy, sekrety, lokalne ścieżki i gotchas.
-2. `docs/goals/005-goal.md` - aktywny goal i granice aktualnego etapu.
+2. `docs/goals/archive/005-goal.md` - aktywny goal i granice aktualnego etapu.
 3. `docs/PROGRESS.md` - krótki aktualny stan, aktywne luki i następny ruch.
 4. `bd prime` and `bd ready --json` - operational issue graph for the current
    cleanup queue.
@@ -33,7 +33,7 @@ surowe payloady trafiają tylko do technicznego szczegółu albo audytu.
 
 ## Current Recovery State
 
-- Aktywny goal: `docs/goals/005-goal.md`.
+- Aktywny goal: `docs/goals/archive/005-goal.md`.
 - Completed baseline: `docs/goals/archive/004-goal.md`.
 - Historical cleanup contract: `docs/goals/001-goal.md`.
 - Aktualny ledger: `docs/PROGRESS.md`.
@@ -78,7 +78,7 @@ Available evidence surfaces for current proof include:
 
 Active gaps live in:
 
-- `docs/goals/005-goal.md` - current goal contract and next execution
+- `docs/goals/archive/005-goal.md` - current goal contract and next execution
   boundaries.
 - `docs/PROGRESS.md` - short current readout, latest proof and active gaps.
 - `PLAN.md` - canonical cleanup/product-semantics plan.
@@ -106,9 +106,9 @@ Po zapisaniu/commitnięciu aktualnego stanu możesz rozpocząć świeżą sesję
 
 ```text
 Kontynuuj aktywny goal z repo:
-docs/goals/005-goal.md
+docs/goals/archive/005-goal.md
 
-Najpierw przeczytaj AGENTS.md, docs/goals/005-goal.md, PLANS.md, docs/PROGRESS.md i docs/CONTEXT.md.
+Najpierw przeczytaj AGENTS.md, docs/goals/archive/005-goal.md, PLANS.md, docs/PROGRESS.md i docs/CONTEXT.md.
 Użyj aktualnego worktree i live WILQ API jako źródła prawdy.
 Nie rozbudowuj recovery docs; usuwaj outdated rzeczy zamiast dopisywać log.
 Kontynuuj następny najlepszy slice z goalu i używaj focused verification.
