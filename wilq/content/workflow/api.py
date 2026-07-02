@@ -577,6 +577,7 @@ def _build_content_work_item_snapshot_response(
         human_review,
     )
     snapshot = ContentWorkItemWorkflowSnapshotResponse(
+        claim_ledger=claim_ledger,
         preflight=preflight,
         sales_brief=sales_brief,
         draft_package=draft_package,

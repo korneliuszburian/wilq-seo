@@ -30,6 +30,7 @@ def test_diagnostics_derived_content_item_reaches_draft_dry_run_without_publish(
     if contract is None:
         raise AssertionError("Expected structured generation contract when draft package exists.")
     _assert_workflow_build_gates(snapshot=snapshot)
+    _assert_claim_ledger(snapshot=snapshot)
     _assert_sales_brief(brief=brief, item=item)
     _assert_draft_package(draft=draft, brief=brief, item=snapshot["draft_package"]["item"])
     _assert_structured_contract(contract=contract, draft=draft, item=item)
@@ -201,6 +202,16 @@ def _assert_workflow_build_gates(*, snapshot: dict[str, Any]) -> None:
 
     measurement_candidate = snapshot["measurement_window"]["updated_item"]
     assert measurement_candidate["measurement_window_status"] == "planned"
+
+
+def _assert_claim_ledger(*, snapshot: dict[str, Any]) -> None:
+    ledger = snapshot["claim_ledger"]
+    draft_item = snapshot["draft_package"]["item"]
+    assert ledger["id"] == draft_item["claim_ledger_id"]
+    assert ledger["work_item_id"] == draft_item["id"]
+    assert ledger["entries"]
+    assert ledger["entries"][0]["evidence_ids"]
+    assert ledger["entries"][0]["source_connectors"]
 
 
 def _assert_missing_knowledge_blocks_draft(*, snapshot: dict[str, Any]) -> None:

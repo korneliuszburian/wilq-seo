@@ -252,6 +252,7 @@ class ContentWorkItemMeasurementOutcomeResponse(BaseModel):
 
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     response_type: Literal["workflow_snapshot"] = "workflow_snapshot"
+    claim_ledger: ContentClaimLedger
     preflight: ContentWorkItemPreflightResponse
     sales_brief: ContentWorkItemSalesBriefResponse
     draft_package: ContentWorkItemDraftPackageResponse

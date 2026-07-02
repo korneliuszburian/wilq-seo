@@ -1335,6 +1335,7 @@ export const ContentWorkflowOperatorStepSchema = z.object({
 
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   response_type: z.literal("workflow_snapshot").default("workflow_snapshot"),
+  claim_ledger: ContentClaimLedgerSchema,
   preflight: ContentWorkItemPreflightResponseSchema,
   sales_brief: ContentWorkItemSalesBriefResponseSchema,
   draft_package: ContentWorkItemDraftPackageResponseSchema,
@@ -1450,6 +1451,7 @@ export type ContentWorkItemPreflightResponse = z.infer<
 export type ContentWorkItemPreflightRequest = z.input<
   typeof ContentWorkItemPreflightRequestSchema
 >;
+export type ContentClaimLedger = z.infer<typeof ContentClaimLedgerSchema>;
 export type ContentWorkItemSalesBriefResponse = z.infer<
   typeof ContentWorkItemSalesBriefResponseSchema
 >;

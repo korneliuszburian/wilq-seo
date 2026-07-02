@@ -1624,9 +1624,29 @@ describe("Content work item workflow schemas", () => {
       user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
       publish_ready: false
     };
+    const claimLedger = {
+      id: "claim_ledger_bdo",
+      work_item_id: "content_work_item_bdo",
+      reviewed_by: "wilku",
+      entries: [
+        {
+          id: "claim_general_bdo",
+          claim_text: "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+          claim_type: "service_claim",
+          status: "allowed_with_evidence",
+          strength: "strong",
+          required: true,
+          evidence_ids: ["ev_wp_bdo"],
+          source_connectors: ["wordpress_ekologus"],
+          reason: "Claim ma przypisany dowód źródłowy.",
+          reviewer_id: "wilku"
+        }
+      ]
+    };
 
     expect(
       ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+        claim_ledger: claimLedger,
         preflight: {
           item,
           inventory_resolution: inventoryResolution,

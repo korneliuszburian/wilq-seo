@@ -1,5 +1,6 @@
 import {
   getContentWorkItemSnapshot,
+  type ContentClaimLedger,
   type ContentWorkItemDraftPackageResponse,
   type ContentWorkItemHumanReviewResponse,
   type ContentWorkItemMeasurementWindowResponse,
@@ -11,6 +12,7 @@ import {
 } from "../lib/api";
 
 export type ContentWorkflowSnapshot = {
+  claimLedger: ContentClaimLedger;
   preflight: ContentWorkItemPreflightResponse;
   salesBrief: ContentWorkItemSalesBriefResponse;
   draftPackage: ContentWorkItemDraftPackageResponse;
@@ -36,6 +38,7 @@ function workflowSnapshotFromApi(
     throw new Error(snapshot.safe_next_step);
   }
   return {
+    claimLedger: snapshot.claim_ledger,
     preflight: snapshot.preflight,
     salesBrief: snapshot.sales_brief,
     draftPackage: snapshot.draft_package,

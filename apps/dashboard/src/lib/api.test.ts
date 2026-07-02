@@ -397,6 +397,7 @@ function contentKnowledgeCardsResponse() {
 function workflowSnapshot() {
   return {
     response_type: "workflow_snapshot",
+    claim_ledger: claimLedger(),
     preflight: responseByPath["/api/content/work-items/preflight"],
     sales_brief: responseByPath["/api/content/work-items/sales-brief"],
     draft_package: responseByPath["/api/content/work-items/draft-package"],

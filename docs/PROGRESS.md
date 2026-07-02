@@ -181,6 +181,15 @@ API status later contradicts this state.
   production draft readiness and 8.5/10 for write/claim blocking. The dashboard
   first screen now shows `Workflow treści: co dziś zrobić`, the active topic,
   proof count and blocked workflow steps.
+- Content Workflow now exposes Claim Ledger as a visible draft gate. Snapshot
+  API responses include `claim_ledger`, `/content-workflow` renders
+  `Claim Ledger: co wolno powiedzieć`, and dashboard quality review requests
+  pass the snapshot ledger instead of `null`. Live proof after local stack
+  restart showed
+  `claim_ledger_content_work_item_content_decision_https___www_ekologus_pl`
+  with one `allowed_with_evidence` claim backed by
+  `ev_refresh_refresh_google_search_console_9b25d4143bea`. Wilku-facing handoff:
+  `docs/handoffs/2026-07-02-wilku-claim-ledger-gate.md`.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

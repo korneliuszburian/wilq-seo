@@ -370,6 +370,23 @@ Result:
   tells Wilku to plan only on the candidate that passed gates, without jumping
   to draft or WordPress.
 
+Follow-up slice:
+
+- Claim Ledger is now part of the live workflow snapshot and visible on the
+  dashboard as `Claim Ledger: co wolno powiedzieć`.
+- Dashboard quality review sends the snapshot `claim_ledger` instead of `null`,
+  so later quality checks can compare generated draft claims against the ledger.
+- Live proof after API restart:
+  `claim_ledger_content_work_item_content_decision_https___www_ekologus_pl`
+  had 1 claim, status `allowed_with_evidence`, backed by
+  `ev_refresh_refresh_google_search_console_9b25d4143bea`.
+- Handoff:
+  `docs/handoffs/2026-07-02-wilku-claim-ledger-gate.md`.
+- Updated usefulness score:
+  - 8/10 as an honest end-to-end workflow gate.
+  - 5/10 as production draft readiness.
+  - 8.5/10 for claim/write blocking.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

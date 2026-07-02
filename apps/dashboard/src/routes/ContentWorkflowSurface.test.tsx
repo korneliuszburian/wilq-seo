@@ -122,6 +122,14 @@ describe("ContentWorkflowSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText("Ograniczenia wiedzy i dowody")).toBeInTheDocument();
     expect(screen.getByText(/ev_content_service_profile_source_facts/)).toBeInTheDocument();
+    expect(screen.getByText("Claim Ledger: co wolno powiedzieć")).toBeInTheDocument();
+    expect(screen.getAllByText("Do szkicu")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Wymaga review")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Zablokowane")[0]).toBeInTheDocument();
+    expect(screen.getByText(/Ekologus pomaga firmom uporządkować obowiązki BDO/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/Twierdzenie o skuteczności wymaga zakończonego okna pomiaru/))
+      .toBeInTheDocument();
     expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
@@ -337,7 +345,7 @@ describe("ContentWorkflowSurface", () => {
       item: workItem(),
       draft_package: draftPackage(),
       structured_output: structuredDraftOutput(),
-      claim_ledger: null,
+      claim_ledger: claimLedger(),
       sales_brief: salesBrief(),
       duplicate_risk: "clear"
     });
@@ -743,6 +751,7 @@ function workflowSnapshot({
     : workItem({ human_review_status: "missing", human_review_id: null });
   return {
     response_type: "workflow_snapshot",
+    claim_ledger: claimLedger(),
     preflight: {
       item: workItem(),
       inventory_resolution: inventoryResolution(),
@@ -823,6 +832,52 @@ function workflowSnapshot({
       ]
     },
     operator_steps: operatorSteps({ review: Boolean(review), handoff: Boolean(handoff) })
+  };
+}
+
+function claimLedger() {
+  return {
+    id: "claim_ledger_bdo",
+    work_item_id: "content_work_item_bdo",
+    reviewed_by: "wilku",
+    entries: [
+      {
+        id: "claim_service_bdo",
+        claim_text: "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+        claim_type: "service_claim" as const,
+        status: "allowed_with_evidence" as const,
+        strength: "strong" as const,
+        required: true,
+        evidence_ids: ["ev_wp_bdo"],
+        source_connectors: ["wordpress_ekologus"],
+        reason: "Twierdzenie ma przypisany dowód źródłowy.",
+        reviewer_id: "wilku"
+      },
+      {
+        id: "claim_review_bdo",
+        claim_text: "BDO może wiązać się z ryzykiem kary.",
+        claim_type: "risk_claim" as const,
+        status: "needs_human_review" as const,
+        strength: "weak" as const,
+        required: false,
+        evidence_ids: ["ev_wp_bdo"],
+        source_connectors: ["wordpress_ekologus"],
+        reason: "Twierdzenie ryzyka wymaga decyzji człowieka.",
+        reviewer_id: null
+      },
+      {
+        id: "claim_effect_bdo",
+        claim_text: "Odświeżenie treści zwiększy liczbę leadów.",
+        claim_type: "business_outcome_claim" as const,
+        status: "blocked_until_measurement" as const,
+        strength: "strong" as const,
+        required: false,
+        evidence_ids: [],
+        source_connectors: [],
+        reason: "Twierdzenie o skuteczności wymaga zakończonego okna pomiaru.",
+        reviewer_id: null
+      }
+    ]
   };
 }
 
