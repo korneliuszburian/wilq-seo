@@ -97,6 +97,8 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "eval gates",
         "review_result_recorders",
         "wymagania review",
+        "sales_brief_trace",
+        "ograniczenia wiedzy z dowodami",
         "service_profile_public_card_review_result_v1",
         "service_profile_private_proposal_review_result_v1",
         "promotion preview rows",
@@ -456,3 +458,96 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert details[0]["retention_decision"] == "pending_owner_decision"
     assert details[0]["deletion_path"] == ["Usuń albo odrzuć redacted proposal."]
     assert details[0]["eval_case_ids"] == ["goal_005_private_service_review"]
+
+
+def test_content_operator_uat_packet_item_includes_sales_brief_constraint_evidence(
+    monkeypatch: Any,
+) -> None:
+    uat_script = load_uat_script()
+
+    def fake_request_json(
+        api_base: str,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+        *,
+        timeout: int = 180,
+    ) -> dict[str, Any]:
+        assert api_base == "http://example.test"
+        assert method == "GET"
+        assert body is None
+        if path == "/api/content/work-items/content_work_item_bdo/enrichment":
+            return {
+                "enrichment": {
+                    "status": "ready",
+                    "intent_label": "informacyjno-usługowa",
+                    "service_fit": "obsługa środowiskowa Ekologus",
+                    "buyer_problem": "Firma chce sprawdzić BDO.",
+                    "safe_next_step": "Pokaż ograniczenia wiedzy Wilkowi.",
+                },
+                "blockers": [],
+            }
+        if path == "/api/content/work-items/content_work_item_bdo/snapshot":
+            return {
+                "sales_brief": {
+                    "sales_brief_result": {
+                        "brief": {
+                            "signal_quality": {
+                                "status": "review_required",
+                                "status_label": "sygnał użyteczny, ale wymaga review",
+                            },
+                            "knowledge_constraints": [
+                                {
+                                    "card_id": "ekologus_service_bdo_reporting",
+                                    "constraint_type": "evidence_requirement",
+                                    "label": "BDO wymaga live evidence",
+                                    "reason": "Nie rekomenduj bez dowodu i źródła.",
+                                    "evidence_ids": [
+                                        "ev_content_service_profile_source_facts"
+                                    ],
+                                }
+                            ],
+                        },
+                        "blockers": [],
+                    }
+                }
+            }
+        raise AssertionError(f"Unexpected path: {path}")
+
+    monkeypatch.setattr(uat_script, "request_json", fake_request_json)
+
+    item = uat_script.packet_item(
+        "http://example.test",
+        {
+            "work_item_id": "content_work_item_bdo",
+            "title": "BDO dla firm",
+            "topic": "BDO dla firm",
+            "recommended_mode": "refresh",
+            "recommended_mode_label": "odświeżenie",
+            "status_label": "do sprawdzenia",
+            "reason": "Temat ma popyt i istniejącą treść.",
+            "safe_next_step": "Sprawdź źródła przed briefem.",
+            "evidence_ids": ["ev_gsc_bdo"],
+            "source_connectors": ["google_search_console"],
+            "final_canonical_url": "https://ekologus.pl/bdo/",
+            "preview_url": "https://ekologus.dev.proudsite.pl/bdo/",
+            "preflight_status": "brief_allowed",
+            "duplicate_canonical_risk_summary": "brak",
+            "measurement_readiness": {"label": "pomiar zaplanowany"},
+            "blockers": [],
+        },
+    )
+
+    trace = item["sales_brief_trace"]
+    assert trace["signal_quality"]["status_label"] == (
+        "sygnał użyteczny, ale wymaga review"
+    )
+    assert trace["shown_knowledge_constraints"] == [
+        {
+            "card_id": "ekologus_service_bdo_reporting",
+            "constraint_type": "evidence_requirement",
+            "label": "BDO wymaga live evidence",
+            "reason": "Nie rekomenduj bez dowodu i źródła.",
+            "evidence_ids": ["ev_content_service_profile_source_facts"],
+        }
+    ]

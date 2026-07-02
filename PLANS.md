@@ -1064,6 +1064,10 @@ Stop and record a blocker if:
   with their WILQ evidence IDs in the proof summary. This makes the new
   `knowledge_constraints[].evidence_ids` field useful for Wilku review, not
   only for API/model input.
+- 2026-07-02: `wilq-content-operator` UAT packet now exposes a
+  `sales_brief_trace` per candidate. It carries Sales Brief knowledge
+  constraints and evidence IDs when present, or an explicit blocked/missing
+  state when the current item has not reached Sales Brief.
 
 ## Surprises & Discoveries
 

@@ -88,6 +88,53 @@ def safe_enrichment(api_base: str, work_item_id: str) -> dict[str, Any]:
         }
 
 
+def safe_workflow_snapshot(api_base: str, work_item_id: str) -> dict[str, Any]:
+    try:
+        return require_dict(
+            request_json(api_base, "GET", f"/api/content/work-items/{work_item_id}/snapshot"),
+            "content workflow snapshot response",
+        )
+    except SystemExit as exc:
+        return {
+            "status": "blocked",
+            "blocker": str(exc),
+        }
+
+
+def sales_brief_trace_from_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    sales_brief_stage = snapshot.get("sales_brief")
+    if not isinstance(sales_brief_stage, dict):
+        return {"status": "missing", "blocker": "snapshot nie zawiera sales_brief"}
+    result = sales_brief_stage.get("sales_brief_result")
+    if not isinstance(result, dict):
+        return {"status": "missing", "blocker": "snapshot nie zawiera sales_brief_result"}
+    brief = result.get("brief")
+    blockers = result.get("blockers")
+    if not isinstance(brief, dict):
+        return {
+            "status": "blocked",
+            "blockers": blockers if isinstance(blockers, list) else [],
+        }
+    signal_quality = brief.get("signal_quality")
+    constraints = [
+        {
+            "card_id": constraint.get("card_id"),
+            "constraint_type": constraint.get("constraint_type"),
+            "label": constraint.get("label"),
+            "reason": constraint.get("reason"),
+            "evidence_ids": constraint.get("evidence_ids") or [],
+        }
+        for constraint in as_list(brief.get("knowledge_constraints"))[:5]
+        if isinstance(constraint, dict)
+    ]
+    return {
+        "status": "ready",
+        "signal_quality": signal_quality if isinstance(signal_quality, dict) else {},
+        "knowledge_constraint_count": len(as_list(brief.get("knowledge_constraints"))),
+        "shown_knowledge_constraints": constraints,
+    }
+
+
 def safe_action(api_base: str, action_id: str) -> dict[str, Any]:
     try:
         return require_dict(
@@ -356,6 +403,9 @@ def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
     enrichment_response: dict[str, Any] = (
         safe_enrichment(api_base, work_item_id) if work_item_id else {}
     )
+    snapshot_response: dict[str, Any] = (
+        safe_workflow_snapshot(api_base, work_item_id) if work_item_id else {}
+    )
     raw_enrichment = enrichment_response.get("enrichment")
     enrichment: dict[str, Any] = (
         cast(dict[str, Any], raw_enrichment)
@@ -403,6 +453,7 @@ def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
             "safe_next_step": enrichment.get("safe_next_step"),
             "blockers": enrichment.get("blockers") or response_blockers,
         },
+        "sales_brief_trace": sales_brief_trace_from_snapshot(snapshot_response),
     }
 
 
@@ -688,6 +739,26 @@ def main() -> int:
         print(f"- final canonical: {item['final_canonical_url'] or 'brak'}")
         print(f"- preview: {item['preview_url'] or 'brak'}")
         print(f"- następny krok: {item['safe_next_step']}")
+        sales_brief_trace = item.get("sales_brief_trace")
+        if isinstance(sales_brief_trace, dict):
+            signal_quality = sales_brief_trace.get("signal_quality")
+            if isinstance(signal_quality, dict) and signal_quality.get("status_label"):
+                print(f"- jakość Sales Brief: {signal_quality.get('status_label')}")
+            constraints = [
+                constraint
+                for constraint in as_list(sales_brief_trace.get("shown_knowledge_constraints"))
+                if isinstance(constraint, dict)
+            ]
+            if constraints:
+                print("- ograniczenia wiedzy z dowodami:")
+                for constraint in constraints:
+                    constraint_evidence = [
+                        str(value) for value in constraint.get("evidence_ids") or []
+                    ]
+                    print(
+                        f"  - {constraint.get('label')}: {constraint.get('reason')} "
+                        f"(dowody: {', '.join(constraint_evidence) or 'brak'})"
+                    )
         print()
     return 0
 

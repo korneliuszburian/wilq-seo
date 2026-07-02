@@ -190,6 +190,10 @@ API status later contradicts this state.
   WILQ evidence IDs in the operator-facing proof panel. Wilku can see why a
   brief is review-required and which proof handle supports that constraint
   without opening raw JSON.
+- `wilq-content-operator` UAT packet now includes `sales_brief_trace` per
+  item. When a Sales Brief exists, it lists shown knowledge constraints and
+  their evidence IDs; when the workflow is blocked earlier, it records the
+  blocker/missing snapshot state instead of hiding the gap.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only
