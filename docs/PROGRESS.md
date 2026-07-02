@@ -395,6 +395,16 @@ API status later contradicts this state.
   earlier passing run found an evidence ID typo, so the eval prompt now tells
   Codex to copy IDs exactly from smoke/API output and never reconstruct similar
   identifiers.
+- `wilq-social-publisher` now has a live non-interactive review-only proof at
+  `.local-lab/evals/codex-skill/20260702T021742Z/summary.json`. Result:
+  `operator_usefulness_score=4`, `blocked=false`, all hard gates true, no
+  failure tags, 23 evidence IDs, 0 recommendations and validated
+  `act_prepare_linkedin_social_drafts` plus
+  `act_prepare_facebook_social_drafts`. LinkedIn/Facebook publication remains
+  blocked by `missing_publish_access`; the useful behavior is draft-review
+  action preparation, not social publishing or performance claims. The eval
+  prompt now requires exact dashboard route markers in `notes` so route-specific
+  coverage is deterministic instead of relying on incidental wording.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

@@ -7210,3 +7210,45 @@ Result:
   `campaign_candidates` as a missing/limited planning contract, prepare-only
   Ads review actions and blocked `skuteczność kampanii`, `wzrost konwersji`,
   `gwarancja pozycji` and `zmiana kampanii` claims.
+
+## 2026-07-02 - Social Publisher live eval and route marker hardening
+
+Purpose:
+
+- Test `wilq-social-publisher` against the current LinkedIn/Facebook missing
+  credential state.
+- Ensure missing publish access blocks publication but does not block
+  review-only draft action preparation.
+- Harden the eval prompt so dashboard route-specific coverage uses an exact
+  marker instead of incidental wording.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+bash -n scripts/codex_skill_eval.sh
+scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- Smoke proof returned `publish_allowed=false`, `mode=review_only`,
+  `missing_publish_access` for LinkedIn and Facebook, 8 source inputs and
+  validated `act_prepare_facebook_social_drafts` plus
+  `act_prepare_linkedin_social_drafts`.
+- Initial eval at `.local-lab/evals/codex-skill/20260702T021618Z/` produced a
+  good review-only answer but failed because the final JSON omitted the exact
+  `/social-publisher` route marker.
+- The eval prompt now requires the exact route marker in `notes`.
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T021742Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=false`, `failure_tags=[]`,
+  all hard gates true, 23 evidence IDs, 0 recommendations and 2 validated
+  action candidates.
+- Validated action candidates: `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts`.
+- The output used `social_draft_context`, `source_inputs`,
+  `publish_allowed=false`, `missing_publish_access`, `do sprawdzenia w WILQ`,
+  LinkedIn/Facebook connector status and blocked `opublikowanie posta`,
+  `wzrost skuteczności social`, `zwrot z reklam` and `przychód` claims.

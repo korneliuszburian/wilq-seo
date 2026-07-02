@@ -147,7 +147,8 @@ api_instruction = (
 surface_instruction = (
     f"\n<surface>\nOceniany dashboard workflow route: {surface_path}. "
     "Finalny JSON musi odzwierciedlać ten route w `notes`, `operator_next_step`, "
-    "rekomendacjach albo akcjach do sprawdzenia.\n</surface>\n"
+    "rekomendacjach albo akcjach do sprawdzenia. Umieść dokładny marker route "
+    f"`{surface_path}` w `notes`.\n</surface>\n"
     if surface_path
     else ""
 )
