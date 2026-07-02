@@ -3323,6 +3323,18 @@ export const SocialHistoryInventorySourceSchema = z.object({
   raw_post_body_allowed: z.literal(false)
 });
 
+export const SocialHistoryDiscoverySeedSchema = z.object({
+  id: z.string(),
+  channel: z.enum(["linkedin", "facebook"]),
+  source_type: z.literal("public_posts_url"),
+  source_url: z.string(),
+  status: z.literal("seeded_not_collected"),
+  safe_collection_mode: z.literal("metadata_only"),
+  raw_post_body_allowed: z.literal(false),
+  required_review: z.literal(true),
+  operator_note: z.string()
+});
+
 export const SocialHistoryInventorySchema = z.object({
   contract: z.literal("social_history_inventory_v1"),
   read_only: z.literal(true),
@@ -3332,6 +3344,7 @@ export const SocialHistoryInventorySchema = z.object({
   required_sources: z.array(z.enum(["linkedin", "facebook"])),
   missing_evidence_ids: z.array(z.string()),
   sources: z.array(SocialHistoryInventorySourceSchema),
+  discovery_seeds: z.array(SocialHistoryDiscoverySeedSchema),
   allowed_uses: z.array(z.string()),
   blocked_uses: z.array(z.string()),
   dedupe_requirements: z.array(z.string()),
@@ -3473,6 +3486,7 @@ export type Workflow = z.infer<typeof WorkflowSchema>;
 export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
 export type DemandGenReadinessContract = z.infer<typeof DemandGenReadinessContractSchema>;
 export type SocialHistoryInventorySource = z.infer<typeof SocialHistoryInventorySourceSchema>;
+export type SocialHistoryDiscoverySeed = z.infer<typeof SocialHistoryDiscoverySeedSchema>;
 export type SocialHistoryInventory = z.infer<typeof SocialHistoryInventorySchema>;
 export type SocialDraftContext = z.infer<typeof SocialDraftContextSchema>;
 export type SocialPublisherContextPack = z.infer<typeof SocialPublisherContextPackSchema>;

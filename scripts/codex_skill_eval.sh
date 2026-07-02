@@ -313,9 +313,9 @@ Oczekiwane connector surfaces: {connectors}
 - Identyfikatory endpointów, connectorów, dowodów, szans i akcji zostaw w
   polach technicznych bez tłumaczenia, ale nie używaj ich jako widocznych
   etykiet dla operatora.
-- W polach opisowych dla operatora nie używaj angielskich etykiet typu
-  "evidence IDs" ani "source connectors". Pisz "dowody WILQ", "identyfikatory
-  dowodów" i "źródła danych"; surowe wartości zostaw wyłącznie w polach
+- W polach opisowych dla operatora nie używaj angielskich etykiet dla
+  identyfikatorów dowodów ani źródeł danych. Pisz "dowody WILQ",
+  "identyfikatory dowodów" i "źródła danych"; surowe wartości zostaw wyłącznie w polach
   `evidence_ids` i `source_connectors`.
 - Nie używaj w widocznym tekście operatora technicznych nazw runtime takich jak
   `ActionObject`; pisz po prostu `akcja do sprawdzenia`, `podgląd` albo

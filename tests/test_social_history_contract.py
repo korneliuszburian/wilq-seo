@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from apps.api.wilq_api.main import app
 from wilq.schemas import (
     ConnectorCapability,
     ConnectorStatus,
@@ -10,12 +14,15 @@ from wilq.schemas import (
     FreshnessState,
 )
 from wilq.social.history import (
+    EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
     SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS,
     SocialHistoryInventorySource,
     audit_social_history_metadata_payload,
     build_social_history_inventory,
     social_history_input_example,
 )
+
+client = TestClient(app)
 
 
 def _connector_status(
@@ -82,6 +89,24 @@ def test_social_history_inventory_is_metadata_only_and_read_only() -> None:
         "blocked_uses"
     ]
     assert "automatyczne zatwierdzenie" in " ".join(payload["blocked_uses"])
+    assert payload["discovery_seeds"] == [
+        {
+            "id": "social_history_seed_ekologus_linkedin_posts",
+            "channel": "linkedin",
+            "source_type": "public_posts_url",
+            "source_url": EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
+            "status": "seeded_not_collected",
+            "safe_collection_mode": "metadata_only",
+            "raw_post_body_allowed": False,
+            "required_review": True,
+            "operator_note": (
+                "Publiczny adres postów LinkedIn Ekologus jest tylko punktem "
+                "startowym discovery. WILQ nie traktuje go jako gotowej historii "
+                "postów, dopóki metadata-only inventory nie zostanie zebrane i "
+                "sprawdzone."
+            ),
+        }
+    ]
 
 
 def test_social_history_inventory_rejects_raw_post_body_contract_fields() -> None:
@@ -146,3 +171,29 @@ def test_social_history_metadata_audit_rejects_raw_private_fields() -> None:
     assert audit["missing_required_sources"] == ["linkedin", "facebook"]
     assert any("raw_post_body" in error for error in audit["errors"])
     assert any("comments" in error for error in audit["errors"])
+
+
+def test_social_history_inventory_endpoint_exposes_public_discovery_seed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "social_history.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "social_history.duckdb"))
+    monkeypatch.delenv("LINKEDIN_ORGANIZATION_ID", raising=False)
+    monkeypatch.delenv("LINKEDIN_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv("FACEBOOK_PAGE_ID", raising=False)
+    monkeypatch.delenv("FACEBOOK_PAGE_ACCESS_TOKEN", raising=False)
+
+    response = client.get("/api/social/history-inventory")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["contract"] == "social_history_inventory_v1"
+    assert payload["status"] == "missing"
+    assert payload["required_sources"] == ["linkedin", "facebook"]
+    assert {
+        source["connector_access_status"] for source in payload["sources"]
+    } == {"missing_credentials"}
+    assert payload["discovery_seeds"][0]["source_url"] == EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL
+    assert payload["discovery_seeds"][0]["safe_collection_mode"] == "metadata_only"
+    assert payload["discovery_seeds"][0]["raw_post_body_allowed"] is False

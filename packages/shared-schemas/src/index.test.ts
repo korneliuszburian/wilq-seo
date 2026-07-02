@@ -34,6 +34,7 @@ import {
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
   MerchantDiagnosticsResponseSchema,
+  SocialHistoryInventorySchema,
   SocialHistoryInventorySourceSchema
 } from "./index";
 
@@ -100,6 +101,51 @@ describe("SocialHistoryInventorySourceSchema", () => {
       SocialHistoryInventorySourceSchema.safeParse({
         ...validSource,
         raw_post_body_allowed: true
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("SocialHistoryInventorySchema", () => {
+  it("keeps public discovery seeds metadata-only", () => {
+    const validInventory = {
+      contract: "social_history_inventory_v1",
+      read_only: true,
+      status: "missing",
+      status_label: "brak spisu historycznych postów LinkedIn/Facebook",
+      duplicate_risk_status: "blocked_until_social_history_review",
+      required_sources: ["linkedin", "facebook"],
+      missing_evidence_ids: ["linkedin_historical_posts", "facebook_historical_posts"],
+      sources: [],
+      discovery_seeds: [
+        {
+          id: "social_history_seed_ekologus_linkedin_posts",
+          channel: "linkedin",
+          source_type: "public_posts_url",
+          source_url: "https://www.linkedin.com/company/ekologus/posts/?feedView=all",
+          status: "seeded_not_collected",
+          safe_collection_mode: "metadata_only",
+          raw_post_body_allowed: false,
+          required_review: true,
+          operator_note: "Publiczny seed discovery nie jest gotową historią postów."
+        }
+      ],
+      allowed_uses: ["sprawdzenie powtórek"],
+      blocked_uses: ["twierdzenie że temat jest nowy bez historii postów"],
+      dedupe_requirements: ["porównać temat, claim i CTA"],
+      operator_next_step: "Zbierz metadata-only historię social."
+    };
+
+    expect(SocialHistoryInventorySchema.safeParse(validInventory).success).toBe(true);
+    expect(
+      SocialHistoryInventorySchema.safeParse({
+        ...validInventory,
+        discovery_seeds: [
+          {
+            ...validInventory.discovery_seeds[0],
+            raw_post_body_allowed: true
+          }
+        ]
       }).success
     ).toBe(false);
   });

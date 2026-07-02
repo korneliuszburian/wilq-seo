@@ -25,14 +25,14 @@ Wymagane źródła danych zależą od itemu i muszą pochodzić z API:
 
 ## Kształt odpowiedzi
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Kolejka treści`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet typu `evidence IDs` ani `source connectors` poza technicznymi polami JSON.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Kolejka treści`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet identyfikatorów dowodów ani źródeł poza technicznymi polami JSON.
 
 1. `Status`: dostępność WILQ API, status kolejki, wybrany `work_item_id`, gotowość preflightu, quality review, human review, WordPress draft-only i measurement window.
 2. `Dowody`: identyfikatory dowodów, identyfikatory źródeł danych, final canonical, preview URL jako preview, enrichment facts, karty wiedzy i measurement boundary wyłącznie z WILQ API.
 3. `Kolejka treści`: 3-5 propozycji z `recommended_mode`, blokadami i bezpiecznym kolejnym krokiem. Jeśli kolejka ma mniej gotowych itemów, powiedz to jako blokadę.
 4. `Diagnoza`: co API wspiera dla preserve, refresh, merge, create albo block. Nie zmieniaj rankingu i nie twórz nowego priorytetu z promptu.
 5. `Akcje do sprawdzenia`: endpointy albo work item gates, które trzeba uruchomić dalej: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, structured runtime, quality review, revision plan, revision apply, human review, audit, WordPress draft-only, measurement.
-   Jeżeli wybrany kandydat z kolejki ma `action_ids`, pokaż te ActionObject IDs
+   Jeżeli wybrana propozycja z kolejki ma `action_ids`, pokaż te identyfikatory akcji
    w tej sekcji i sprawdź je przez `POST /api/actions/{action_id}/validate`.
    Globalnie zablokowana kolejka UAT nie usuwa action proofu dla wybranego
    bezpiecznego kroku, np. `act_prepare_content_refresh_queue`.

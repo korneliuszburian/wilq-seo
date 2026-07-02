@@ -28,6 +28,11 @@ SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS = [
     "post_url_or_id",
     "source_evidence_id",
 ]
+EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL = (
+    "https://www.linkedin.com/company/"
+    "ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-"
+    "szkolenia-sorbenty/posts/?feedView=all"
+)
 SOCIAL_HISTORY_FORBIDDEN_METADATA_FIELDS = [
     "raw_post_body",
     "post_body",
@@ -63,6 +68,20 @@ class SocialHistoryInventorySource(BaseModel):
     raw_post_body_allowed: Literal[False] = False
 
 
+class SocialHistoryDiscoverySeed(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    channel: SocialHistoryChannel
+    source_type: Literal["public_posts_url"]
+    source_url: str
+    status: Literal["seeded_not_collected"] = "seeded_not_collected"
+    safe_collection_mode: Literal["metadata_only"] = "metadata_only"
+    raw_post_body_allowed: Literal[False] = False
+    required_review: Literal[True] = True
+    operator_note: str
+
+
 class SocialHistoryInventory(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -80,6 +99,22 @@ class SocialHistoryInventory(BaseModel):
         default_factory=lambda: list(SOCIAL_HISTORY_MISSING_EVIDENCE_IDS)
     )
     sources: list[SocialHistoryInventorySource]
+    discovery_seeds: list[SocialHistoryDiscoverySeed] = Field(
+        default_factory=lambda: [
+            SocialHistoryDiscoverySeed(
+                id="social_history_seed_ekologus_linkedin_posts",
+                channel="linkedin",
+                source_type="public_posts_url",
+                source_url=EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
+                operator_note=(
+                    "Publiczny adres postów LinkedIn Ekologus jest tylko punktem "
+                    "startowym discovery. WILQ nie traktuje go jako gotowej historii "
+                    "postów, dopóki metadata-only inventory nie zostanie zebrane i "
+                    "sprawdzone."
+                ),
+            )
+        ]
+    )
     allowed_uses: list[str] = Field(
         default_factory=lambda: [
             "sprawdzenie czy temat, claim albo CTA powtarza wcześniejsze posty",

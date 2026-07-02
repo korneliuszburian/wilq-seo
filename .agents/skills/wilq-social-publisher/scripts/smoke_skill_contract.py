@@ -22,6 +22,11 @@ CORE_SOCIAL_ACTION_IDS = {
     "act_prepare_facebook_social_drafts",
     "act_prepare_linkedin_social_drafts",
 }
+EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL = (
+    "https://www.linkedin.com/company/"
+    "ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-"
+    "szkolenia-sorbenty/posts/?feedView=all"
+)
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -159,6 +164,12 @@ def main() -> int:
         raise SystemExit("Social history inventory must expose non-secret access status")
     if any("credential_status" in source for source in sources):
         raise SystemExit("Social history inventory must avoid redacted credential_status key")
+    _assert_public_discovery_seed(social_history_inventory)
+
+    direct_inventory = request_json(args.api_base, "GET", "/api/social/history-inventory")
+    if direct_inventory.get("contract") != "social_history_inventory_v1":
+        raise SystemExit("Direct social history endpoint must expose the versioned contract")
+    _assert_public_discovery_seed(direct_inventory)
 
     action_validations = validate_core_social_actions(args.api_base, pack)
 
@@ -204,6 +215,9 @@ def main() -> int:
                         "missing_history_evidence"
                     ),
                     "social_history_inventory": social_history_inventory,
+                    "direct_inventory_seed_count": len(
+                        direct_inventory.get("discovery_seeds") or []
+                    ),
                     "source_input_count": len(social_draft_context.get("source_inputs", [])),
                     "source_inputs": social_draft_context.get("source_inputs", [])[:4],
                     "draft_action_ids": social_draft_context.get("draft_action_ids", []),
@@ -238,6 +252,24 @@ def validate_core_social_actions(api_base: str, pack: dict[str, Any]) -> list[di
         if validation.get("valid") is not True or validation.get("status") != "valid":
             raise SystemExit(f"Social action validation failed: {validation}")
     return action_validations
+
+
+def _assert_public_discovery_seed(inventory: dict[str, Any]) -> None:
+    seeds = inventory.get("discovery_seeds")
+    if not isinstance(seeds, list) or not seeds:
+        raise SystemExit("Social history inventory must expose public discovery seeds")
+    linkedin_seed = next(
+        (seed for seed in seeds if seed.get("channel") == "linkedin"),
+        None,
+    )
+    if not isinstance(linkedin_seed, dict):
+        raise SystemExit("Social history inventory must expose a LinkedIn discovery seed")
+    if linkedin_seed.get("source_url") != EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL:
+        raise SystemExit("LinkedIn discovery seed URL does not match the public Ekologus posts URL")
+    if linkedin_seed.get("safe_collection_mode") != "metadata_only":
+        raise SystemExit("LinkedIn discovery seed must remain metadata_only")
+    if linkedin_seed.get("raw_post_body_allowed") is not False:
+        raise SystemExit("LinkedIn discovery seed must not allow raw post bodies")
 
 
 if __name__ == "__main__":

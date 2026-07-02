@@ -9166,3 +9166,33 @@ Result:
 - The output kept final article generation, WordPress publication and
   measurement-success claims blocked. The safe next step remains a review/
   preparation step, not production-depth publication.
+
+## 2026-07-02 - Social history discovery seed proof
+
+Purpose:
+
+- Re-test `wilq-social-publisher` after adding the direct
+  `/api/social/history-inventory` contract and the public Ekologus LinkedIn
+  posts URL as a metadata-only discovery seed.
+- Confirm that the skill can show a concrete next source for historical social
+  metadata without treating the public URL as reviewed history or allowing
+  duplicate-free claims.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T205202Z/wilq-social-publisher/result.json`.
+- The deterministic smoke confirmed `social_history_inventory_v1`,
+  `direct_inventory_seed_count=1`, the LinkedIn public posts seed,
+  `metadata_only` mode, `raw_post_body_allowed=false`, missing
+  LinkedIn/Facebook credentials and valid review-only social ActionObjects.
+- The non-interactive eval passed and kept publishing, social performance,
+  revenue, conversion and duplicate-free claims blocked until reviewed
+  historical metadata exists.

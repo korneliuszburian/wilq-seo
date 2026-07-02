@@ -7050,6 +7050,21 @@ const socialPublisherContextPack = {
           raw_post_body_allowed: false
         }
       ],
+      discovery_seeds: [
+        {
+          id: "social_history_seed_ekologus_linkedin_posts",
+          channel: "linkedin",
+          source_type: "public_posts_url",
+          source_url:
+            "https://www.linkedin.com/company/ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-szkolenia-sorbenty/posts/?feedView=all",
+          status: "seeded_not_collected",
+          safe_collection_mode: "metadata_only",
+          raw_post_body_allowed: false,
+          required_review: true,
+          operator_note:
+            "Publiczny adres postów LinkedIn Ekologus jest tylko punktem startowym discovery."
+        }
+      ],
       allowed_uses: ["sprawdzenie czy temat, claim albo CTA powtarza wcześniejsze posty"],
       blocked_uses: [
         "twierdzenie że temat jest nowy bez historii postów",

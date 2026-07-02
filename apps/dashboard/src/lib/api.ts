@@ -52,6 +52,7 @@ import {
   MarketingPlaybookSchema,
   MerchantDiagnosticsResponseSchema,
   OpportunitySchema,
+  SocialHistoryInventorySchema,
   SocialPublisherContextPackSchema,
   TacticalQueueResponseSchema,
   WorkflowRunSchema,
@@ -215,6 +216,10 @@ export function getSocialPublisherContextPack(): Promise<SocialPublisherContextP
     SocialPublisherContextPackSchema,
     { skill: "wilq-social-publisher" }
   );
+}
+
+export function getSocialHistoryInventory(): Promise<SocialHistoryInventory> {
+  return apiGet("/api/social/history-inventory", SocialHistoryInventorySchema);
 }
 
 export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {

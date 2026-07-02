@@ -11,7 +11,10 @@ Oczekiwany wynik: propozycje postów social z dowodami źródłowymi, stanem prz
 Pobierz `POST /api/codex/context-pack` z
 `{"skill":"wilq-social-publisher"}` przed analizą marketingową. Skillowy
 pakiet kontekstu musi zawierać `social_draft_context`; traktuj go jako kontrakt
-szkicu, a nie promptowy generator postów. Użyj
+szkicu, a nie promptowy generator postów. Pobierz też
+`GET /api/social/history-inventory`, gdy mówisz o historii postów albo ryzyku
+powtórek. Publiczne `discovery_seeds` pokazuj jako punkt startowy zbierania
+metadanych, nie jako gotową historię postów. Użyj
 `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy
 gotowość ma znaczenie.
 
@@ -47,7 +50,7 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 - Żądana metryka albo akcja nie występuje w pakiecie kontekstu, dowodach, odczytach źródeł danych, regułach eksperckich ani akcjach do sprawdzenia.
 - Pakiet kontekstu skilla nie zawiera `social_draft_context`.
 - `historical_social_inventory_status` ma wartość `missing`; wtedy nie wolno twierdzić, że temat nie powiela wcześniejszych postów LinkedIn/Facebook.
-- `social_history_inventory.status` ma wartość `missing`; wtedy pokaż wymagane metadata-only pola historii (`channel`, `published_at`, `topic`, `service`, `claim`, `cta`, `format`, `post_url_or_id`, `source_evidence_id`) i nie używaj raw treści postów jako wymogu.
+- `social_history_inventory.status` ma wartość `missing`; wtedy pokaż wymagane metadata-only pola historii (`channel`, `published_at`, `topic`, `service`, `claim`, `cta`, `format`, `post_url_or_id`, `source_evidence_id`) i nie używaj raw treści postów jako wymogu. Jeśli `discovery_seeds` zawiera publiczny URL LinkedIn, nazwij go tylko seedem discovery.
 - Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
 ## Reguły dowodów

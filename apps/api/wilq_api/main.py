@@ -30,6 +30,7 @@ from apps.api.wilq_api.routers.jobs import create_jobs_router
 from apps.api.wilq_api.routers.knowledge import router as knowledge_router
 from apps.api.wilq_api.routers.metrics import router as metrics_router
 from apps.api.wilq_api.routers.opportunities import router as opportunities_router
+from apps.api.wilq_api.routers.social import router as social_router
 from apps.api.wilq_api.routers.system import router as system_router
 from apps.api.wilq_api.routers.workflows import router as workflows_router
 from wilq.briefing.daily_runtime import (
@@ -71,6 +72,7 @@ app.include_router(expert_router)
 app.include_router(knowledge_router)
 app.include_router(metrics_router)
 app.include_router(opportunities_router)
+app.include_router(social_router)
 app.include_router(system_router)
 app.include_router(workflows_router)
 

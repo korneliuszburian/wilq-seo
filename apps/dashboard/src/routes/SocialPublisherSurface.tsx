@@ -174,6 +174,34 @@ function SocialHistoryBlocker({ inventory }: { inventory: SocialHistoryInventory
           ))}
         </div>
       </div>
+      {inventory.discovery_seeds.length > 0 ? (
+        <div className="mt-4 rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Od czego zacząć discovery</h3>
+          <div className="mt-3 grid gap-2">
+            {inventory.discovery_seeds.map((seed) => (
+              <article key={seed.id} className="rounded-md border border-line bg-white p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-semibold capitalize">{seed.channel}</span>
+                  <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                    {seed.safe_collection_mode}
+                  </span>
+                </div>
+                <a
+                  className="mt-2 block break-all text-sm text-action underline-offset-2 hover:underline"
+                  href={seed.source_url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {seed.source_url}
+                </a>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {seed.operator_note}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="mt-4 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine
           label="Dozwolone użycie"

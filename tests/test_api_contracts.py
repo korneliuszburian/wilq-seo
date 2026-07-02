@@ -19113,6 +19113,27 @@ def test_social_context_pack_exposes_review_only_draft_context(
         source["raw_post_body_allowed"] is False
         for source in history_inventory["sources"]
     )
+    assert history_inventory["discovery_seeds"] == [
+        {
+            "id": "social_history_seed_ekologus_linkedin_posts",
+            "channel": "linkedin",
+            "source_type": "public_posts_url",
+            "source_url": (
+                "https://www.linkedin.com/company/"
+                "ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-"
+                "srodowiskowe-szkolenia-sorbenty/posts/?feedView=all"
+            ),
+            "status": "seeded_not_collected",
+            "safe_collection_mode": "metadata_only",
+            "raw_post_body_allowed": False,
+            "required_review": True,
+            "operator_note": (
+                "Publiczny adres postów LinkedIn Ekologus jest tylko punktem startowym "
+                "discovery. WILQ nie traktuje go jako gotowej historii postów, dopóki "
+                "metadata-only inventory nie zostanie zebrane i sprawdzone."
+            ),
+        }
+    ]
     assert {
         source["connector_access_status"] for source in history_inventory["sources"]
     } == {"missing_credentials"}

@@ -420,12 +420,7 @@ def _flexible_layouts_from_field(
     for layout in layout_values:
         if not isinstance(layout, dict):
             continue
-        fields = [
-            _acf_field_from_payload(raw_field)
-            for raw_field in layout.get("sub_fields", [])
-            if isinstance(raw_field, dict)
-        ]
-        fields = [field for field in fields if field is not None]
+        fields = _acf_fields_from_payloads(layout.get("sub_fields", []))
         required = [field.name for field in fields if field.required]
         optional = [field.name for field in fields if not field.required]
         layout_name = _text(layout.get("name")) or _text(layout.get("key"))
@@ -450,12 +445,7 @@ def _section_layout_from_field(field: Any) -> WordPressAcfFlexibleLayout | None:
     field_type = _text(field.get("type"))
     if field_type not in {"group", "repeater"}:
         return None
-    sub_fields = [
-        _acf_field_from_payload(raw_field)
-        for raw_field in field.get("sub_fields", [])
-        if isinstance(raw_field, dict)
-    ]
-    fields = [sub_field for sub_field in sub_fields if sub_field is not None]
+    fields = _acf_fields_from_payloads(field.get("sub_fields", []))
     if not fields:
         return None
     layout_name = _text(field.get("name")) or _text(field.get("key"))
@@ -473,12 +463,7 @@ def _field_group_layout_from_fields(
     group: dict[str, Any],
     raw_fields: list[Any],
 ) -> WordPressAcfFlexibleLayout | None:
-    fields = [
-        _acf_field_from_payload(raw_field)
-        for raw_field in raw_fields
-        if isinstance(raw_field, dict)
-    ]
-    fields = [field for field in fields if field is not None]
+    fields = _acf_fields_from_payloads(raw_fields)
     if not fields:
         return None
     group_name = _text(group.get("title")) or _text(group.get("key"))
@@ -509,6 +494,19 @@ def _acf_layout(
         required_field_names=required,
         optional_field_names=optional,
     )
+
+
+def _acf_fields_from_payloads(raw_fields: object) -> list[WordPressAcfField]:
+    if not isinstance(raw_fields, list):
+        return []
+    fields: list[WordPressAcfField] = []
+    for raw_field in raw_fields:
+        if not isinstance(raw_field, dict):
+            continue
+        field = _acf_field_from_payload(raw_field)
+        if field is not None:
+            fields.append(field)
+    return fields
 
 
 def _acf_field_from_payload(payload: dict[str, Any]) -> WordPressAcfField | None:

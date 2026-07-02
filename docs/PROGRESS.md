@@ -147,6 +147,16 @@ live API status later contradicts this state.
   Facebook metadata, and returns `review_ready` only for dedupe review. Even a
   clean audit keeps `duplicate_free_claim_allowed=false` and
   `publish_allowed=false` until separate historical review evidence exists.
+- Social history readiness is now exposed as a direct read-only API contract at
+  `/api/social/history-inventory` and in the `wilq-social-publisher`
+  context-pack. It records the public Ekologus LinkedIn posts URL as a
+  `metadata_only` discovery seed, keeps LinkedIn/Facebook credentials as
+  explicit blockers, and still blocks "new topic", "no duplicates" and
+  publishing claims until reviewed metadata exists. Live proof on 2026-07-02:
+  endpoint returned `social_history_inventory_v1` with one LinkedIn
+  `discovery_seed`, and `wilq-social-publisher` smoke passed with
+  `direct_inventory_seed_count=1`; non-interactive eval passed at
+  `.local-lab/evals/codex-skill/20260702T205202Z`.
 - Pre-demo gate proof after the latest Goal 005 slices:
   `rtk scripts/pre_demo_gate.sh` passed on 2026-07-02. It verified the managed
   local stack, API health, live contracts, dashboard usefulness, source fact
