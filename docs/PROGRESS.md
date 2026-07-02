@@ -98,6 +98,10 @@ API status later contradicts this state.
   claim references cannot carry arbitrary model-owned labels. Focused proof:
   shared-schema tests, dashboard API/content workflow tests, dashboard
   typecheck and `git diff --check`.
+- Backend Sales Brief claim gate hardening: `ContentSalesBriefForbiddenClaim`
+  now uses the backend Claim Ledger claim type/status literals, with regression
+  proof that forged labels such as `marketing_vibe_claim` and
+  `approved_by_prompt` are rejected before generation gates consume them.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they

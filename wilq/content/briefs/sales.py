@@ -6,7 +6,12 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import BaseModel, Field
 
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
-from wilq.content.claims.ledger import ContentClaimLedger, claim_ledger_blockers
+from wilq.content.claims.ledger import (
+    ContentClaimLedger,
+    ContentClaimStatus,
+    ContentClaimType,
+    claim_ledger_blockers,
+)
 from wilq.content.inventory.records import ContentInventoryResolution
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCardMatch,
@@ -113,8 +118,8 @@ class ContentSalesBriefMeasurementPlan(BaseModel):
 class ContentSalesBriefForbiddenClaim(BaseModel):
     claim_id: str
     claim_text: str
-    claim_type: str
-    status: str
+    claim_type: ContentClaimType
+    status: ContentClaimStatus
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     reviewer_id: str | None = None

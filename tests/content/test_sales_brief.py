@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+from pydantic import ValidationError
+
 from wilq.content.briefs.sales import (
     ContentSalesBriefBuildResult,
+    ContentSalesBriefForbiddenClaim,
     ContentSalesBriefSeed,
     ContentSalesBriefSourceFact,
     build_content_sales_brief,
@@ -256,6 +260,30 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
     assert [claim.claim_id for claim in result.brief.forbidden_claims] == [
         "claim_more_leads"
     ]
+
+
+def test_sales_brief_forbidden_claim_rejects_unknown_claim_enums() -> None:
+    payload = {
+        "claim_id": "claim_bdo_penalty",
+        "claim_text": "Ekologus gwarantuje uniknięcie kar BDO.",
+        "claim_type": "guarantee_claim",
+        "status": "blocked",
+        "evidence_ids": ["ev_content_claim_ledger_bdo"],
+        "source_connectors": ["wilq_claim_ledger"],
+        "reason": "Claim wymaga blokady w ledgerze.",
+    }
+
+    assert ContentSalesBriefForbiddenClaim.model_validate(payload).claim_type == (
+        "guarantee_claim"
+    )
+    with pytest.raises(ValidationError):
+        ContentSalesBriefForbiddenClaim.model_validate(
+            {**payload, "claim_type": "marketing_vibe_claim"}
+        )
+    with pytest.raises(ValidationError):
+        ContentSalesBriefForbiddenClaim.model_validate(
+            {**payload, "status": "approved_by_prompt"}
+        )
 
 
 def test_sales_brief_marks_thin_signal_without_measurement_baseline() -> None:
