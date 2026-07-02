@@ -387,6 +387,49 @@ Follow-up slice:
   - 5/10 as production draft readiness.
   - 8.5/10 for claim/write blocking.
 
+## 2026-07-02 - `wilq-content-operator` post-Claim-Ledger eval
+
+Purpose:
+
+- Verify that the content operator skill still produces useful Polish operator
+  output after the workflow snapshot started exposing Claim Ledger.
+- Check that the skill explains queue/workflow blockers, uses evidence/source
+  lineage and does not invent a final article, WordPress publication or SEO
+  outcome.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5 --format json
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T120524Z`.
+- Deterministic smoke passed with `candidate_count=3`,
+  `actionable_candidate_count=1`, `queue_status=blocked`,
+  `workflow_blocked=true`, `selected_mode=refresh` and
+  `selected_work_item_id=content_work_item_content_decision_https___www_ekologus_pl`.
+- Non-interactive Codex eval passed:
+  `operator_usefulness_score=5`, `failure_tags=[]`,
+  `evidence_count=6`, `recommendations_count=2`, `actions_count=4`.
+- Hard gates were all true:
+  evidence requirement, source connector requirement, blocked claims, action
+  validation handling, freshness/blocker handling and workflow specificity.
+- Main evidence IDs:
+  `ev_refresh_refresh_google_analytics_4_5ebc4ba1c966`,
+  `ev_refresh_refresh_google_analytics_4_33a4b3fda0db`,
+  `ev_refresh_refresh_ahrefs_5eee21244cff`,
+  `ev_refresh_refresh_ahrefs_3155c5fa77cf`,
+  `ev_refresh_refresh_google_search_console_9b25d4143bea` and
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`.
+- Main learning: the skill is useful as a guided blocker/repair workflow. It
+  does not yet prove production writing usefulness because the queue remains
+  blocked for full UAT and only one candidate is actionable.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

@@ -190,6 +190,13 @@ API status later contradicts this state.
   with one `allowed_with_evidence` claim backed by
   `ev_refresh_refresh_google_search_console_9b25d4143bea`. Wilku-facing handoff:
   `docs/handoffs/2026-07-02-wilku-claim-ledger-gate.md`.
+- `wilq-content-operator` was re-evaluated after the Claim Ledger workflow
+  slice. Deterministic smoke and non-interactive Codex eval passed; artifact:
+  `.local-lab/evals/codex-skill/20260702T120524Z`. Score:
+  `operator_usefulness_score=5`, all hard gates true, `failure_tags=[]`. The
+  useful output is still a guided blocker/repair workflow, not production
+  writing proof, because `queue_status=blocked`, `workflow_blocked=true` and
+  only 1 of 3 candidates is actionable.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
