@@ -184,6 +184,12 @@ API status later contradicts this state.
   `metric_persistence_failed:<ErrorType>` marker. Manual jobs also isolate
   per-connector exceptions and always persist a `JobRun`; job-run API calls now
   clear API view-model caches like direct connector refreshes.
+- Connector refresh trust hardening on 2026-07-02 now also treats historical
+  `completed` runs with `metrics_persisted=false` as incomplete in
+  operator-facing labels: `odczyt niepełny - metryki nieutrwalone`. GA4,
+  Merchant, Ads, Localo, Ahrefs and content diagnostics inherit the label, and
+  the dashboard refresh-run list shows metric persistence directly instead of a
+  normal green refresh.
 - Connector scope clarity slice on 2026-07-02 adds API-owned
   `product_scope`, `product_scope_label` and `active_for_daily_work` to
   connector status. Live `/api/connectors` now marks Google Ads and other core

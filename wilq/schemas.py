@@ -238,10 +238,16 @@ class ConnectorRefreshRun(BaseModel):
         if not self.connector_label:
             self.connector_label = source_connector_label(self.connector_id)
         if not self.status_label:
-            self.status_label = connector_refresh_status_label(self.status)
+            self.status_label = connector_refresh_run_status_label(self)
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
+
+
+def connector_refresh_run_status_label(run: ConnectorRefreshRun) -> str:
+    if run.status == ConnectorRefreshStatus.completed and not run.metrics_persisted:
+        return "odczyt niepełny - metryki nieutrwalone"
+    return connector_refresh_status_label(run.status)
 
 
 class MetricFact(BaseModel):

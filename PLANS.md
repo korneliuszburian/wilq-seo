@@ -237,6 +237,12 @@ rewrite the run to `failed` with sanitized error type only, per-connector job
 exceptions no longer abort the whole `JobRun`, and manual job API runs clear
 the same view-model caches as direct connector refreshes.
 
+Follow-up hardening on 2026-07-02 also covers the hard-crash edge case where a
+historical run can remain `completed` while `metrics_persisted=false`. WILQ now
+labels that state as `odczyt niepełny - metryki nieutrwalone` in the run itself,
+major diagnostics and the dashboard refresh-run list, so an operator does not
+treat an incomplete refresh as normal evidence.
+
 Connector status now carries product-scope metadata so roadmap surfaces no
 longer look equivalent to production evidence: `production`,
 `optional_disabled`, `experimental` and `runtime`, plus

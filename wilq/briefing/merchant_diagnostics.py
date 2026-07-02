@@ -43,6 +43,7 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
+    connector_refresh_run_status_label,
     utc_now,
 )
 from wilq.storage.metric_store import metric_store
@@ -237,7 +238,7 @@ def build_merchant_diagnostics(
         connector=connector,
         connector_status_label=_merchant_connector_status_label(connector.status),
         latest_refresh=latest_refresh,
-        latest_refresh_status_label=_merchant_refresh_status_label(latest_refresh.status)
+        latest_refresh_status_label=_merchant_refresh_status_label(latest_refresh)
         if latest_refresh
         else None,
         live_data_available=live_data_available,
@@ -522,15 +523,10 @@ def _merchant_connector_status_label(status: object) -> str:
     return labels.get(normalized, "status źródła do sprawdzenia")
 
 
-def _merchant_refresh_status_label(status: object) -> str:
-    normalized = _enum_value(status)
-    labels = {
-        "completed": "zakończony",
-        "blocked": "zablokowany",
-        "failed": "błąd",
-        "running": "w toku",
-    }
-    return labels.get(normalized, "status odczytu do sprawdzenia")
+def _merchant_refresh_status_label(run: ConnectorRefreshRun | object) -> str:
+    if not isinstance(run, ConnectorRefreshRun):
+        return "status odczytu do sprawdzenia"
+    return connector_refresh_run_status_label(run)
 
 
 def _merchant_live_data_status_label(live_data_available: bool) -> str:

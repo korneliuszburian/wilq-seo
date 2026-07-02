@@ -24,6 +24,7 @@ from wilq.schemas import (
     LocaloOperatorSummary,
     LocaloReadContractStatus,
     MetricFact,
+    connector_refresh_run_status_label,
 )
 from wilq.storage.metric_store import metric_store
 
@@ -130,7 +131,7 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
         connector=connector,
         connector_status_label=_localo_connector_status_label(str(connector.status)),
         latest_refresh=latest_refresh,
-        latest_refresh_status_label=_localo_refresh_status_label(latest_refresh.status)
+        latest_refresh_status_label=_localo_refresh_status_label(latest_refresh)
         if latest_refresh
         else None,
         access_probe=access_probe,
@@ -814,10 +815,10 @@ def _localo_connector_status_label(status: str) -> str:
     return labels.get(status, "status źródła do sprawdzenia")
 
 
-def _localo_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
-    value = status.value if isinstance(status, ConnectorRefreshStatus) else status
-    labels = {"completed": "zakończony", "blocked": "zablokowany", "failed": "błąd"}
-    return labels.get(value, "status odczytu do sprawdzenia")
+def _localo_refresh_status_label(run: ConnectorRefreshRun | object) -> str:
+    if not isinstance(run, ConnectorRefreshRun):
+        return "status odczytu do sprawdzenia"
+    return connector_refresh_run_status_label(run)
 
 
 def _localo_access_status_label(status: str) -> str:

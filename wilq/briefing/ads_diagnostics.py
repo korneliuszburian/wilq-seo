@@ -122,6 +122,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
+    connector_refresh_run_status_label,
 )
 from wilq.storage.metric_store import metric_store
 
@@ -727,7 +728,7 @@ def build_ads_diagnostics(
         connector=connector,
         connector_status_label=_ads_connector_status_label(str(connector.status)),
         latest_refresh=latest_refresh,
-        latest_refresh_status_label=_ads_refresh_status_label(latest_refresh.status)
+        latest_refresh_status_label=_ads_refresh_status_label(latest_refresh)
         if latest_refresh
         else None,
         live_data_status_label=_ads_live_data_status_label(live_data_available),
@@ -7507,15 +7508,10 @@ def _ads_connector_status_label(status: str) -> str:
     return labels.get(status, "status dostępu Google Ads do sprawdzenia")
 
 
-def _ads_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
-    value = status.value if isinstance(status, ConnectorRefreshStatus) else status
-    labels = {
-        "completed": "zakończony",
-        "blocked": "zablokowany",
-        "failed": "błąd",
-        "running": "w toku",
-    }
-    return labels.get(value, "status odczytu Google Ads do sprawdzenia")
+def _ads_refresh_status_label(run: ConnectorRefreshRun | object) -> str:
+    if not isinstance(run, ConnectorRefreshRun):
+        return "status odczytu Google Ads do sprawdzenia"
+    return connector_refresh_run_status_label(run)
 
 
 def _ads_live_data_status_label(live_data_available: bool) -> str:

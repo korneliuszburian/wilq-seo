@@ -152,12 +152,16 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
                 Skrót ostatniego pobrania danych. Pełny ślad techniczny zostaje w audycie.
               </p>
             </div>
-            <StatusBadge value={run.status} label={run.status_label} />
+            <StatusBadge value={connectorRefreshVisualStatus(run)} label={run.status_label} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{run.summary}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dane z zewnętrznego systemu: {run.vendor_data_collected ? "tak" : "nie"}</div>
             <div>Zewnętrzny odczyt: {run.external_call_attempted ? "tak" : "nie"}</div>
+            <div>
+              Utrwalenie metryk:{" "}
+              {run.metrics_persisted ? "tak" : "nie - odczyt niepełny"}
+            </div>
             <div>Dowody: {run.evidence_summary_label}</div>
           </div>
           {formatMetricCount(run.metric_summary) ? (
@@ -169,6 +173,11 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
       ))}
     </div>
   );
+}
+
+function connectorRefreshVisualStatus(run: ConnectorRefreshRun) {
+  if (run.status === "completed" && !run.metrics_persisted) return "failed";
+  return run.status;
 }
 
 export function ActionList({ actions }: { actions: ActionObject[] }) {

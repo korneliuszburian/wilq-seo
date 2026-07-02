@@ -172,6 +172,40 @@ describe("RegistryPanels", () => {
     expect(screen.queryByText(/clicks=12/)).not.toBeInTheDocument();
   });
 
+  it("connector refresh cards expose incomplete metric persistence", () => {
+    render(
+      <ConnectorRefreshRunList
+        runs={[
+          ({
+            id: "refresh_google_ads_incomplete_metrics",
+            connector_id: "google_ads",
+            connector_label: "Google Ads",
+            mode: "vendor_read",
+            status: "completed",
+            status_label: "odczyt niepełny - metryki nieutrwalone",
+            summary: "Odczyt Google Ads zakończony, ale metryki nie zostały utrwalone.",
+            evidence_ids: ["ev_refresh_refresh_google_ads_incomplete_metrics"],
+            evidence_summary_label: "1 dowód źródłowy",
+            missing_credentials: [],
+            checked_credentials: [],
+            started_at: "2026-06-17T10:00:00Z",
+            completed_at: "2026-06-17T10:01:00Z",
+            metric_summary: {},
+            vendor_data_collected: true,
+            external_call_attempted: true,
+            metrics_persisted: false,
+            errors: [],
+            redacted: true
+          } satisfies ConnectorRefreshRun)
+        ]}
+      />
+    );
+
+    expect(screen.getByText("odczyt niepełny - metryki nieutrwalone")).toBeInTheDocument();
+    expect(screen.getByText("Utrwalenie metryk: nie - odczyt niepełny")).toBeInTheDocument();
+    expect(screen.queryByText("refresh_google_ads_incomplete_metrics")).not.toBeInTheDocument();
+  });
+
   it("expert rule cards hide raw rule internals until technical details are opened", () => {
     render(
       <ExpertRuleList

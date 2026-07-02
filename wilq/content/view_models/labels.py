@@ -12,6 +12,7 @@ from wilq.schemas import (
     ConnectorStatus,
     ContentDiagnosticSection,
     MetricFact,
+    connector_refresh_run_status_label,
 )
 
 CONTENT_CONNECTOR_STATUS_LABELS = {
@@ -60,7 +61,7 @@ def content_refresh_with_api_label(refresh: ConnectorRefreshRun) -> ConnectorRef
     return refresh.model_copy(
         update={
             "connector_label": source_connector_label(refresh.connector_id),
-            "status_label": content_refresh_status_label(str(refresh.status)),
+            "status_label": content_refresh_status_label(refresh),
         }
     )
 
@@ -96,7 +97,12 @@ def content_connector_status_label(value: str) -> str:
     return CONTENT_CONNECTOR_STATUS_LABELS.get(value, content_contract_label(value))
 
 
-def content_refresh_status_label(value: str) -> str:
+def content_refresh_status_label(value: ConnectorRefreshRun | str) -> str:
+    if isinstance(value, ConnectorRefreshRun):
+        if not value.metrics_persisted:
+            return connector_refresh_run_status_label(value)
+        status = getattr(value.status, "value", value.status)
+        return CONTENT_REFRESH_STATUS_LABELS.get(str(status), content_contract_label(str(status)))
     return CONTENT_REFRESH_STATUS_LABELS.get(value, content_contract_label(value))
 
 

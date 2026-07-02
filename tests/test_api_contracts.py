@@ -210,6 +210,7 @@ from wilq.schemas import (
     OpportunityDomain,
     TacticalQueueItem,
     TacticalQueueResponse,
+    connector_refresh_run_status_label,
 )
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import local_state_store
@@ -1569,6 +1570,21 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert "Pola dostępu kompletne w tym sprawdzeniu" in configured_compact["summary"]
     assert "dowody 2" not in configured_compact["summary"]
     assert "braki dostępu 0" not in configured_compact["summary"]
+
+
+def test_connector_refresh_run_labels_incomplete_metric_persistence() -> None:
+    run = ConnectorRefreshRun(
+        id="refresh_google_ads_incomplete_metrics",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        vendor_data_collected=True,
+        metrics_persisted=False,
+        summary="Odczyt Google Ads zakończony, ale metryki nie zostały utrwalone.",
+    )
+
+    assert run.status_label == "odczyt niepełny - metryki nieutrwalone"
+    assert connector_refresh_run_status_label(run) == "odczyt niepełny - metryki nieutrwalone"
 
 
 def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
@@ -6185,6 +6201,37 @@ def test_ga4_diagnostics_marks_stale_refresh_as_stale_review(
     assert "do odświeżenia" in freshness["summary"]
     assert "odczyt danych GA4" in freshness["next_step"]
     assert "odświeżenia" in payload["operator_summary"]["summary"]
+
+
+def test_ga4_diagnostics_exposes_incomplete_metric_persistence(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_incomplete_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ga4_incomplete_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
+    run = ConnectorRefreshRun(
+        id="refresh_google_analytics_4_incomplete_metrics_test",
+        connector_id="google_analytics_4",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_google_analytics_4_incomplete_metrics_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metrics_persisted=False,
+        metric_summary={"active_users": 20, "sessions": 30},
+        summary="GA4 vendor read completed, but metrics were not persisted.",
+    )
+    local_state_store().save_connector_refresh_run(run)
+
+    response = client.get("/api/ga4/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["latest_refresh"]["metrics_persisted"] is False
+    assert payload["latest_refresh"]["status_label"] == "odczyt niepełny - metryki nieutrwalone"
+    assert payload["latest_refresh_status_label"] == "odczyt niepełny - metryki nieutrwalone"
 
 
 def test_ga4_measurement_decision_titles_include_reporting_context(
