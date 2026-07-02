@@ -878,6 +878,11 @@ Stop and record a blocker if:
   Live proof after stack restart returned required fields
   `action_id,target_card_id,decision,source_trace_clear,blocked_claims_reviewed,notes`
   and `follow_up_beads` as the blocking follow-up rule.
+- 2026-07-02: `wilq-content-operator` non-interactive eval now fails unless
+  the actionable output includes Service Profile `review_requirements`,
+  `source_trace_clear`, `blocked_claims_reviewed` and `follow_up_beads`.
+  Passing proof:
+  `.local-lab/evals/codex-skill/20260702T043747Z/wilq-content-operator/result.json`.
 
 ## Surprises & Discoveries
 

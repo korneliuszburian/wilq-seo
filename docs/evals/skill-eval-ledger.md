@@ -7625,3 +7625,29 @@ Result:
   candidate included those recorder/promotion-preview markers, while preserving
   `refresh-first`, Claim Ledger, quality/human review, WordPress `draft-only`
   and measurement-window blockers.
+
+## 2026-07-02 - Content Operator review-requirements eval guard
+
+Purpose:
+
+- Tighten `wilq-content-operator` after Service Profile review actions gained
+  API-owned `review_requirements`.
+- Ensure the non-interactive output must carry the fields Wilku needs to record
+  review decisions, not only the recorder script name.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py::test_route_specific_codex_eval_cases_define_surface_markers tests/test_codex_skill_eval_cases.py::test_skill_eval_coverage_audit_has_no_hard_gaps -q
+uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T043747Z/wilq-content-operator/result.json`.
+- The eval case now requires `review_requirements`, `source_trace_clear`,
+  `blocked_claims_reviewed` and `follow_up_beads` in the actionable output.
+- The live eval passed with `operator_usefulness_score=4`, `blocked=true`,
+  `failure_tags=[]` and all hard gates true.

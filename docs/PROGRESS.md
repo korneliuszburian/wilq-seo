@@ -132,6 +132,12 @@ API status later contradicts this state.
   `review_result_recorders`, `record_service_profile_review_result.py`,
   public/private result report types, `private_source_proposals` and
   `promotion preview`.
+- Content Operator review-requirements eval guard on 2026-07-02:
+  `.local-lab/evals/codex-skill/20260702T043747Z`. The eval contract now also
+  requires `review_requirements`, `source_trace_clear`,
+  `blocked_claims_reviewed` and `follow_up_beads` in actionable output. The
+  live eval passed with `operator_usefulness_score=4`, `blocked=true`,
+  `failure_tags=[]` and all hard gates true.
 - Service Profile private proposal scope counts on 2026-07-02: live
   `/api/content/service-profile` and the UAT packet now expose
   `proposal_count=4`, `service_proposal_count=2`,
