@@ -377,6 +377,10 @@ API status later contradicts this state.
   environmental claims. Human review alone no longer lets a high-risk claim
   become `allowed_general`/publish-ready; missing proof blocks with
   `missing_evidence` and the claim stays outside draft readiness.
+- Sales Brief now blocks product or purchase CTA when WILQ has no Merchant or
+  shop evidence. Product-intent GSC/source facts alone cannot produce a product
+  offer; `missing_product_evidence` tells the operator to connect Merchant/shop
+  proof or change CTA back to consultation.
 - Draft Package tests are realigned with the Claim Ledger source-connector
   contract: allowed evidence-backed fixture claims now carry source connectors,
   so the focused draft/claim/structured-generation chain passes under the same

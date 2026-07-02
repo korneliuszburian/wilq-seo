@@ -406,6 +406,12 @@ legal, risk and environmental claims still need evidence/source proof after
 human review. A reviewed high-risk claim without evidence blocks with
 `missing_evidence` instead of becoming `allowed_general` or publish-ready.
 
+Sales Brief product CTA safety is hardened under Beads task `wilq-seo-9i2`.
+If a topic/source fact/CTA implies product purchase intent, the brief blocks
+with `missing_product_evidence` unless Merchant Center or shop evidence is
+present. This keeps product availability/pricing/offer claims out of content
+work when WILQ only has SEO intent signals.
+
 Google Search Console vendor read is aligned with the first official
 Search Analytics ingestion pattern under Beads task `wilq-seo-kr8`: check
 available dates first, use the latest available day for detailed zapytania i adresy

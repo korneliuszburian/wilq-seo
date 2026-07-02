@@ -28,6 +28,7 @@ ContentSalesBriefBlockerCode = Literal[
     "missing_source_fact",
     "unknown_source_fact_evidence",
     "unknown_source_fact_connector",
+    "missing_product_evidence",
     "missing_final_canonical",
     "invalid_final_canonical",
     "missing_measurement_plan",
@@ -239,6 +240,7 @@ def content_sales_brief_blockers(
     ]
     blockers.extend(_preflight_and_evidence_blockers(item, preflight, seed))
     blockers.extend(_source_fact_reference_blockers(item, preflight, seed.source_facts))
+    blockers.extend(_product_evidence_blockers(item, preflight, seed))
     blockers.extend(_canonical_and_measurement_blockers(item))
     return blockers
 
@@ -521,6 +523,37 @@ def _source_fact_reference_blockers(
     return blockers
 
 
+def _product_evidence_blockers(
+    item: ContentWorkItem,
+    preflight: ContentPreflightVerdict,
+    seed: ContentSalesBriefSeed,
+) -> list[ContentSalesBriefBlocker]:
+    text = _search_text(
+        [
+            item.topic,
+            item.source_public_url,
+            seed.cta_direction,
+            *(fact.summary for fact in seed.source_facts),
+        ]
+    )
+    if not _looks_like_product_cta_or_topic(text):
+        return []
+    connectors = set(_unique([*item.source_connectors, *preflight.source_connectors]))
+    connectors.update(fact.source_connector for fact in seed.source_facts)
+    if connectors & {"google_merchant_center", "wordpress_sklep", "shop_ekologus"}:
+        return []
+    if any("merchant" in connector or "sklep" in connector for connector in connectors):
+        return []
+    return [
+        _blocker(
+            "missing_product_evidence",
+            "Brakuje dowodu produktowego",
+            "CTA produktowe albo zakupowe wymaga dowodu z Merchant Center albo sklepu.",
+            "Podłącz Merchant/sklep jako źródło produktu albo zmień CTA na konsultacyjne.",
+        )
+    ]
+
+
 def _existing_content_plan(inventory: ContentInventoryResolution) -> str:
     if inventory.recommended_mode == "preserve":
         return "Zacznij od istniejącej treści: preserve-first, potem refresh albo merge."
@@ -558,6 +591,27 @@ def _unique(values: Iterable[object]) -> list[str]:
         if text and text not in unique_values:
             unique_values.append(text)
     return unique_values
+
+
+def _search_text(values: Iterable[object]) -> str:
+    return " ".join(str(value).lower() for value in values if value)
+
+
+def _looks_like_product_cta_or_topic(text: str) -> bool:
+    product_terms = {
+        "sorbent",
+        "produkt",
+        "produkty",
+        "sklep",
+        "kup",
+        "zamów",
+        "zamow",
+        "cena",
+        "cennik",
+        "dostępność",
+        "dostepnosc",
+    }
+    return any(term in text for term in product_terms)
 
 
 def _blocker(

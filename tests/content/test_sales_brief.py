@@ -341,6 +341,76 @@ def test_sales_brief_rejects_source_facts_without_known_evidence_or_connector() 
     }
 
 
+def test_sales_brief_blocks_product_cta_without_merchant_or_shop_evidence() -> None:
+    result = _brief_result(
+        item=_item(topic="Sorbent do oleju"),
+        seed=_seed(
+            cta_direction="Kup sorbent do oleju w sklepie Ekologus.",
+            source_facts=[
+                ContentSalesBriefSourceFact(
+                    evidence_id="ev_gsc_bdo",
+                    source_connector="google_search_console",
+                    summary="GSC pokazuje zapytania produktowe o sorbent.",
+                )
+            ],
+        ),
+        enrichment=_enrichment(
+            title="Sorbent do oleju",
+            topic="Sorbent do oleju",
+            cta_hypothesis="Kup sorbent do oleju w sklepie Ekologus.",
+            source_facts=[],
+            source_connectors=["google_search_console"],
+            evidence_ids=["ev_gsc_bdo"],
+        ),
+    )
+
+    assert result.brief is None
+    assert "missing_product_evidence" in [blocker.code for blocker in result.blockers]
+
+
+def test_sales_brief_allows_product_cta_with_merchant_evidence() -> None:
+    result = _brief_result(
+        item=_item(
+            topic="Sorbent do oleju",
+            evidence_ids=["ev_gsc_bdo", "ev_merchant_sorbent"],
+            source_connectors=["google_search_console", "google_merchant_center"],
+        ),
+        inventory_record=_inventory(
+            evidence_ids=["ev_merchant_sorbent"],
+            source_connectors=["google_merchant_center"],
+        ),
+        seed=_seed(
+            cta_direction="Kup sorbent do oleju w sklepie Ekologus.",
+            source_facts=[
+                ContentSalesBriefSourceFact(
+                    evidence_id="ev_merchant_sorbent",
+                    source_connector="google_merchant_center",
+                    summary="Merchant potwierdza produktowy dowód dla sorbentu.",
+                )
+            ],
+        ),
+        enrichment=_enrichment(
+            title="Sorbent do oleju",
+            topic="Sorbent do oleju",
+            cta_hypothesis="Kup sorbent do oleju w sklepie Ekologus.",
+            source_facts=[],
+            source_connectors=["google_search_console", "google_merchant_center"],
+            evidence_ids=["ev_gsc_bdo", "ev_merchant_sorbent"],
+            measurement_baseline=ContentOpportunityMeasurementBaseline(
+                status="ready_to_plan",
+                label="baza pomiaru do zaplanowania",
+                reason="Merchant daje dowód produktowy, GSC daje popyt.",
+                metrics_to_watch=["gsc_clicks", "gsc_impressions"],
+                source_connectors=["google_search_console", "google_merchant_center"],
+                evidence_ids=["ev_gsc_bdo", "ev_merchant_sorbent"],
+            ),
+        ),
+    )
+
+    assert result.brief is not None
+    assert "missing_product_evidence" not in [blocker.code for blocker in result.blockers]
+
+
 def test_sales_brief_blocks_when_required_knowledge_cards_are_missing() -> None:
     work_item = _item(
         topic="Neutralny temat bez dopasowania",
