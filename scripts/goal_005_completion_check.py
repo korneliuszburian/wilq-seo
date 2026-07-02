@@ -13,6 +13,7 @@ from scripts.record_goal_005_content_uat_result import (
     build_content_uat_result_report,
     load_json,
 )
+from scripts.render_skill_coverage_audit import build_report as build_latest_skill_eval_report
 from scripts.source_fact_coverage_audit import build_report as build_source_fact_coverage_report
 
 REQUIRED_DOCS = [
@@ -179,6 +180,10 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
     source_report = build_source_fact_coverage_report()
     claim_report = build_claim_ledger_gate_report()
     eval_report = build_skill_eval_coverage_report()
+    latest_eval_report = build_latest_skill_eval_report()
+    latest_eval_scores = [
+        row["score"] for row in latest_eval_report["rows"] if row.get("score") is not None
+    ]
     summary = {
         "source_fact_coverage": {
             "pass": source_report["pass"],
@@ -209,6 +214,18 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "skill_dir_count": eval_report["skill_dir_count"],
             "hard_gap_count": eval_report["summary"]["hard_gap_count"],
             "warning_count": eval_report["summary"]["warning_count"],
+        },
+        "latest_skill_eval_results": {
+            "pass": latest_eval_report["pass"],
+            "passing_skill_count": latest_eval_report["passing_skill_count"],
+            "skill_count": latest_eval_report["skill_count"],
+            "minimum_score": min(latest_eval_scores) if latest_eval_scores else None,
+            "blocked_correctly_count": sum(
+                1
+                for row in latest_eval_report["rows"]
+                if str(row.get("state", "")).startswith("blocked correctly")
+            ),
+            "missing_passing_skills": latest_eval_report["missing_passing_skills"],
         },
     }
     if api_base:
@@ -439,6 +456,7 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     source = value.get("source_fact_coverage") or {}
     claim = value.get("claim_ledger_gate") or {}
     eval_coverage = value.get("skill_eval_coverage") or {}
+    latest_eval = value.get("latest_skill_eval_results") or {}
     dashboard = value.get("dashboard_usefulness") or {}
     lines = [
         "- Source facts: "
@@ -455,6 +473,11 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"`cases={eval_coverage.get('case_count')}`, "
         f"`skills={eval_coverage.get('skill_dir_count')}`, "
         f"`hard_gaps={eval_coverage.get('hard_gap_count')}`",
+        "- Latest skill eval results: "
+        f"`pass={str(latest_eval.get('pass')).lower()}`, "
+        f"`passing={latest_eval.get('passing_skill_count')}/{latest_eval.get('skill_count')}`, "
+        f"`minimum_score={latest_eval.get('minimum_score')}`, "
+        f"`blocked_correctly={latest_eval.get('blocked_correctly_count')}`",
     ]
     if dashboard:
         lines.append(

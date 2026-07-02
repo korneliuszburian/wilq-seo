@@ -47,6 +47,11 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
     assert summary["skill_eval_coverage"]["case_count"] == summary["skill_eval_coverage"][
         "skill_dir_count"
     ]
+    assert summary["latest_skill_eval_results"]["pass"] is True
+    assert summary["latest_skill_eval_results"]["passing_skill_count"] == summary[
+        "latest_skill_eval_results"
+    ]["skill_count"]
+    assert summary["latest_skill_eval_results"]["minimum_score"] >= 4
 
 
 def test_goal_005_pre_demo_audit_summary_can_include_dashboard_usefulness(
@@ -219,6 +224,7 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "## Pre-demo gates" in markdown
     assert "production_depth=0%" in markdown
     assert "publish_ready_locked=true" in markdown
+    assert "Latest skill eval results" in markdown
     assert "Sales Brief status: `blocked`" in markdown
     assert "Sales Brief blocker: Brakuje karty usługi; Brakuje karty CTA" in markdown
     assert "Sales Brief constraint evidence: ev_content_service_profile_source_facts" in markdown

@@ -334,6 +334,10 @@ live API status later contradicts this state.
   non-interactive eval artifacts by
   `scripts/render_skill_coverage_audit.py`, so the recovery audit does not
   drift after skill replay runs.
+- Goal 005 completion check now includes artifact-based latest skill eval
+  results in pre-demo gates, not only static case coverage. Current proof:
+  `passing=13/13`, `minimum_score=4`, `blocked_correctly=3`; completion still
+  remains blocked without real Wilku UAT or explicit owner defer.
 - `wilq-campaign-builder` passed deterministic smoke and non-interactive eval
   as a review-only campaign planning workflow; artifact:
   `.local-lab/evals/codex-skill/20260702T133636Z`. Score 5,
