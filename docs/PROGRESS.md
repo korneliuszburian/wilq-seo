@@ -112,6 +112,11 @@ live API status later contradicts this state.
   It validates `act_review_merchant_feed_issues`, treats Merchant counts as
   reported issue occurrences rather than unique SKUs, and blocks product ROAS,
   recovered revenue, price-impact, reapproval and feed-write claims.
+- GA4 Analyst usefulness proof: non-interactive eval for `wilq-ga4-analyst`
+  passed with `operator_usefulness_score=5`. It treats `(not set)` rows as
+  `fix_measurement` blockers before traffic-quality review, validates
+  `act_review_ga4_tracking_quality`, and blocks revenue, ROAS, conversion-drop,
+  conversion-rate, GA4-write and "measurement fixed" claims.
 - Latest Goal 005 Service Profile slice: review actions expose API-owned
   `review_requirements` aligned with
   `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets

@@ -157,6 +157,42 @@ Result:
 - Blocked claims/actions stayed blocked: product-level ROAS, recovered revenue,
   price-impact verdicts, product reapproval and feed writes.
 
+## 2026-07-02 - GA4 Analyst usefulness eval
+
+Purpose:
+
+- Verify that `wilq-ga4-analyst` separates measurement problems from marketing
+  traffic-quality questions instead of blaming campaigns or pages for `(not
+  set)` rows.
+- Confirm that revenue, ROAS, conversion-drop, conversion-rate, GA4-write and
+  "measurement fixed" claims remain blocked without the required contracts.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T154355Z`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Source connectors used: `google_analytics_4` and `wordpress_ekologus`.
+- Evidence lineage included 19 evidence IDs, including
+  `ev_refresh_refresh_google_analytics_4_5ebc4ba1c966`,
+  `ev_refresh_refresh_google_analytics_4_33a4b3fda0db`,
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d` and
+  `ev_connector_google_analytics_4_status`.
+- Validated action: `act_review_ga4_tracking_quality`.
+- The answer correctly treated two `(not set)` rows as `fix_measurement`
+  blockers, not as weak landing pages or weak campaigns.
+- Safe operator order: run GA4 tracking-quality review first, then map landing
+  pages, then inspect `google / cpc` traffic-quality candidates.
+- Blocked claims stayed blocked: profitability, ROI/ROAS, revenue, conversion
+  drop, conversion rate, GA4 writes and "measurement fixed".
+
 ## 2026-07-02 - GSC Content Doctor usefulness eval
 
 Purpose:
