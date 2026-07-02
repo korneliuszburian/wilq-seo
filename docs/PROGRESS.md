@@ -343,6 +343,15 @@ API status later contradicts this state.
   `act_prepare_negative_keyword_review_queue`. The eval harness now also fails
   recommendation-level evidence IDs or source connectors that are absent from
   top-level lineage, after an earlier Ads run exposed an evidence ID typo.
+- `wilq-ga4-analyst` now has a tightened live non-interactive usefulness proof
+  at `.local-lab/evals/codex-skill/20260702T014440Z/summary.json`. Result:
+  `operator_usefulness_score=4`, all hard gates true, no failure tags,
+  12 evidence IDs, 5 recommendations and validated
+  `act_review_ga4_tracking_quality`. The GA4 eval case now includes
+  GA4-specific `blocked_claim_terms` for opłacalność/ROI/przychód/konwersje
+  and measurement-repair claims, while still requiring the skill to separate
+  measurement blockers from traffic-quality review candidates through
+  `ga4_diagnostics.decision_queue`.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

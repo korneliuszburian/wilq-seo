@@ -6973,3 +6973,36 @@ Result:
   `ads_review_budget_context`, search-term safety, custom-segment and negative
   keyword readiness, while blocking CPA, ROAS, budget scaling, recommendation
   writes, campaign writes and negative-keyword writes without full review/audit.
+
+## 2026-07-02 - GA4 Analyst live usefulness eval and claim hardening
+
+Purpose:
+
+- Test `wilq-ga4-analyst` against the live `/api/ga4/diagnostics`
+  tracking-quality queue after operator feedback that GA4 skill output must
+  separate measurement problems from marketing traffic-quality review.
+- Harden the GA4 eval case so ROI, revenue, conversion and measurement-repair
+  claims cannot appear as non-blocked recommendations or action labels.
+
+Focused proof:
+
+```bash
+scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- Initial proof already passed at
+  `.local-lab/evals/codex-skill/20260702T014335Z/summary.json`; the case was
+  then tightened with GA4-specific `blocked_claim_terms`.
+- Passing tightened proof is stored at
+  `.local-lab/evals/codex-skill/20260702T014440Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `failure_tags=[]`, all hard gates
+  true, 12 evidence IDs, 5 recommendations and 1 validated action candidate.
+- Validated action candidate: `act_review_ga4_tracking_quality`.
+- The output used `ga4_diagnostics.decision_queue` to distinguish two
+  `fix_measurement` rows from two `review_traffic_quality` rows, explicitly
+  noted that `review_landing_mapping` was not present as a separate current
+  decision, and kept opłacalność/ROI/przychód/konwersje/zwrot/zapis claims
+  blocked without additional evidence.

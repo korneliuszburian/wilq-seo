@@ -633,6 +633,16 @@
       "review_traffic_quality",
       "landing/source/campaign"
     ],
+    "blocked_claim_terms": [
+      "opłacalność",
+      "ROI",
+      "przychód",
+      "spadek konwersji",
+      "współczynnik konwersji",
+      "zwrot z reklam",
+      "zapis w GA4",
+      "naprawiony pomiar"
+    ],
     "expected_action_ids": [
       "act_review_ga4_tracking_quality"
     ],
