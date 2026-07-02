@@ -225,6 +225,123 @@ def validate_wordpress_boundary(api_base: str, snapshot: dict[str, Any]) -> dict
     return execution
 
 
+def validate_wordpress_authoring_preview(
+    api_base: str,
+    selected: dict[str, Any],
+    *,
+    evidence_ids: list[str],
+) -> dict[str, Any]:
+    work_item_id = str(selected.get("work_item_id") or "content_work_item_preview")
+    title = str(selected.get("title") or selected.get("topic") or "WILQ content preview")
+    final_url = str(
+        selected.get("final_canonical_url")
+        or selected.get("intended_final_url")
+        or "https://www.ekologus.pl/"
+    )
+    if DEV_HOST in final_url:
+        final_url = "https://www.ekologus.pl/"
+    clean_evidence_ids = [str(evidence_id) for evidence_id in evidence_ids if evidence_id]
+    if not clean_evidence_ids:
+        clean_evidence_ids = [f"ev_{work_item_id}_authoring_preview"]
+    primary_evidence_ids = clean_evidence_ids[:2]
+    draft_package = {
+        "id": f"draft_package_{work_item_id}_authoring_preview",
+        "work_item_id": work_item_id,
+        "brief_id": f"sales_brief_{work_item_id}",
+        "claim_ledger_id": f"claim_ledger_{work_item_id}",
+        "title": title,
+        "sections": [
+            {
+                "heading": str(selected.get("topic") or title),
+                "purpose": str(
+                    selected.get("safe_next_step")
+                    or "Przygotuj review-only sekcję do szkicu WordPress."
+                ),
+                "evidence_ids": primary_evidence_ids,
+                "draft_notes": [
+                    "WordPress authoring preview pozostaje dry-run i nie zapisuje zmian."
+                ],
+            }
+        ],
+        "section_to_evidence_map": [
+            {
+                "section_heading": str(selected.get("topic") or title),
+                "evidence_ids": primary_evidence_ids,
+            }
+        ],
+        "claims_used": [],
+        "publish_ready": False,
+    }
+    handoff = {
+        "id": f"wordpress_draft_handoff_{work_item_id}_authoring_preview",
+        "work_item_id": work_item_id,
+        "draft_package_id": draft_package["id"],
+        "human_review_id": f"human_review_{work_item_id}",
+        "audit_id": f"audit_{work_item_id}",
+        "title": title,
+        "final_canonical_url": final_url,
+        "evidence_ids": clean_evidence_ids,
+        "publish_allowed": False,
+        "destructive_update_allowed": False,
+    }
+    response = require_dict(
+        request_json(
+            api_base,
+            "POST",
+            "/api/content/work-items/wordpress-authoring-payload-preview",
+            {"handoff": handoff, "draft_package": draft_package},
+        ),
+        "wordpress authoring payload preview response",
+    )
+    preview = require_dict(response.get("preview_result"), "wordpress authoring preview")
+    assert_false_everywhere(preview, "publish_allowed", "wordpress authoring preview")
+    assert_false_everywhere(preview, "destructive_update_allowed", "wordpress authoring preview")
+    assert_false_everywhere(preview, "external_write_attempted", "wordpress authoring preview")
+    row_candidates = _authoring_row_candidates(preview)
+    if preview.get("status") == "ready" and not row_candidates:
+        raise SystemExit("WordPress authoring preview needs at least one ACF row candidate")
+    first_candidate = row_candidates[0] if row_candidates else {}
+    return {
+        "status": preview.get("status"),
+        "layout": preview.get("layout"),
+        "mode": preview.get("mode"),
+        "row_candidate_count": len(row_candidates),
+        "first_row_label": first_candidate.get("row_label"),
+        "first_row_review_status": first_candidate.get("review_status"),
+        "first_row_fields": [
+            field.get("field_name")
+            for field in first_candidate.get("field_values", [])
+            if isinstance(field, dict) and field.get("field_name")
+        ],
+        "evidence_ids": first_candidate.get("evidence_ids") or [],
+        "publish_allowed": preview.get("publish_allowed"),
+        "destructive_update_allowed": preview.get("destructive_update_allowed"),
+        "external_write_attempted": preview.get("external_write_attempted"),
+    }
+
+
+def _authoring_row_candidates(preview: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for section in preview.get("sections") or []:
+        if isinstance(section, dict):
+            candidates.extend(_field_row_candidates(section.get("field_previews") or []))
+    return candidates
+
+
+def _field_row_candidates(fields: list[Any]) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for field in fields:
+        if not isinstance(field, dict):
+            continue
+        candidates.extend(
+            candidate
+            for candidate in field.get("row_candidates") or []
+            if isinstance(candidate, dict)
+        )
+        candidates.extend(_field_row_candidates(field.get("nested_values") or []))
+    return candidates
+
+
 def validate_measurement_outcome(api_base: str, snapshot: dict[str, Any]) -> dict[str, Any] | None:
     window = (
         snapshot.get("measurement_window", {})
@@ -281,6 +398,11 @@ def main() -> int:
     work_item_id = str(selected["work_item_id"])
     selected_validated_action_ids = validate_selected_actions(args.api_base, selected)
     knowledge_cards = validate_knowledge_cards(args.api_base)
+    authoring_preview = validate_wordpress_authoring_preview(
+        args.api_base,
+        selected,
+        evidence_ids=queue.get("evidence_ids") or selected.get("evidence_ids") or [],
+    )
     if (
         queue.get("queue_status") == "blocked"
         or int(queue.get("actionable_candidate_count") or 0) == 0
@@ -304,6 +426,7 @@ def main() -> int:
             "knowledge_card_count": len(knowledge_cards.get("cards") or []),
             "safe_next_step": selected.get("safe_next_step"),
             "brief_items": brief_items,
+            "wordpress_authoring_preview": authoring_preview,
         }
         print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
@@ -338,6 +461,7 @@ def main() -> int:
         "publish_blocked": True,
         "destructive_update_blocked": True,
         "success_claim_blocked_until_measurement": True,
+        "wordpress_authoring_preview": authoring_preview,
         "brief_items": brief_items,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))

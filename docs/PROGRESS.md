@@ -203,11 +203,15 @@ live API status later contradicts this state.
 - Content Operator was re-tested after making the selected content-workflow
   queue step action-backed and after hardening the eval harness against
   marker-dump operator copy. The latest eval artifact is
-  `.local-lab/evals/codex-skill/20260702T223249Z`, still
+  `.local-lab/evals/codex-skill/20260702T230541Z`, still
   `operator_usefulness_score=5`, `blocked=true`, six evidence IDs, four source
   connectors and all hard gates true. The selected work item validates
   `act_prepare_content_refresh_queue`; visible next-step copy stays normal
-  Polish while technical markers stay in `notes`.
+  Polish while technical markers stay in `notes`. The eval now also proves the
+  dry-run WordPress ACF/`elementy` authoring preview: `row_candidate_count=8`,
+  first row `review_required`, mapped fields `tresc`, `opis`, `podtytul`,
+  `tytul`, and `publish_allowed=false`,
+  `destructive_update_allowed=false`, `external_write_attempted=false`.
 - Content workflow Claim Ledger and homepage Sales Brief now produce a useful
   review-required plan for the selected homepage refresh item. WILQ added
   commit-safe public source facts for homepage service overview and contact CTA,

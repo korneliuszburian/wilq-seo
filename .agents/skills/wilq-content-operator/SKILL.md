@@ -40,7 +40,7 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 8. Pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli workflow dotyczy pisania, rewizji albo handoffu.
 9. Pobierz `GET /api/marketing/brief` jako skondensowany marketingowy kontekst route/workflow, nie jako zamiennik queue/snapshot.
 10. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation contract, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
-11. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
+11. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Jeśli API zwraca `wordpress_authoring_preview`, pokaż ACF/`elementy` row candidate jako propozycję do ręcznego przeglądu, nie jako zapis. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
 12. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
 
 </workflow>
@@ -78,6 +78,7 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 - `POST /api/content/work-items/{work_item_id}/audit`
 - `POST /api/content/work-items/wordpress-draft-handoff`
 - `POST /api/content/work-items/wordpress-draft-execution`
+- `POST /api/content/work-items/wordpress-authoring-payload-preview`
 - `POST /api/content/work-items/measurement-window`
 - `POST /api/content/work-items/measurement-outcome`
 

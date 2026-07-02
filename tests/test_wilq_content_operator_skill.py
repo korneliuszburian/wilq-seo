@@ -31,6 +31,18 @@ def load_uat_script() -> ModuleType:
     return module
 
 
+def load_smoke_script() -> ModuleType:
+    spec = importlib.util.spec_from_file_location(
+        "wilq_content_operator_smoke",
+        CONTENT_OPERATOR_SMOKE_PATH,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
     skill_doc = CONTENT_OPERATOR_SKILL_PATH.read_text(encoding="utf-8")
     output_contract = CONTENT_OPERATOR_OUTPUT_CONTRACT_PATH.read_text(encoding="utf-8")
@@ -46,6 +58,7 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "POST /api/content/work-items/quality-review",
         "POST /api/content/work-items/revision-apply",
         "POST /api/content/work-items/wordpress-draft-execution",
+        "POST /api/content/work-items/wordpress-authoring-payload-preview",
         "POST /api/content/work-items/measurement-outcome",
     ):
         assert endpoint in skill_doc
@@ -66,6 +79,7 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "/api/content/work-items/{work_item_id}/enrichment",
         "/api/content/knowledge-cards",
         "/api/content/work-items/wordpress-draft-execution",
+        "/api/content/work-items/wordpress-authoring-payload-preview",
         "/api/content/work-items/measurement-outcome",
         "publish_ready",
         "publish_allowed",
@@ -76,6 +90,8 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "knowledge_card_count",
         "selected_action_ids",
         "selected_validated_action_ids",
+        "wordpress_authoring_preview",
+        "row_candidate_count",
         "/api/actions/{action_id}/validate",
     ):
         assert marker in smoke_script
@@ -121,6 +137,100 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "/api/content/work-items/{work_item_id}/enrichment",
     ):
         assert marker in uat_script
+
+
+def test_content_operator_smoke_summarizes_acf_authoring_preview(
+    monkeypatch,
+) -> None:
+    smoke_script = load_smoke_script()
+    seen_requests: list[dict[str, Any]] = []
+
+    def fake_request_json(
+        api_base: str,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+        *,
+        timeout: int = 180,
+    ) -> dict[str, Any]:
+        del api_base, timeout
+        seen_requests.append({"method": method, "path": path, "body": body})
+        assert method == "POST"
+        assert path == "/api/content/work-items/wordpress-authoring-payload-preview"
+        assert body is not None
+        assert body["handoff"]["publish_allowed"] is False
+        assert body["handoff"]["destructive_update_allowed"] is False
+        assert body["draft_package"]["publish_ready"] is False
+        return {
+            "authoring_profile": {},
+            "preview_result": {
+                "status": "ready",
+                "mode": "dry_run",
+                "layout": "podstrona",
+                "publish_allowed": False,
+                "destructive_update_allowed": False,
+                "external_write_attempted": False,
+                "sections": [
+                    {
+                        "section_heading": "Kogo dotyczy BDO",
+                        "field_previews": [
+                            {
+                                "field_name": "elementy",
+                                "row_candidates": [
+                                    {
+                                        "row_label": (
+                                            "Wiersz do ręcznego przeglądu: "
+                                            "Kogo dotyczy BDO"
+                                        ),
+                                        "review_status": "review_required",
+                                        "evidence_ids": ["ev_gsc_bdo"],
+                                        "field_values": [
+                                            {
+                                                "field_name": "opis",
+                                                "field_label": "Opis",
+                                                "value_preview": (
+                                                    "Sprawdź źródła przed briefem."
+                                                ),
+                                                "source": "section_purpose",
+                                            }
+                                        ],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            },
+        }
+
+    monkeypatch.setattr(smoke_script, "request_json", fake_request_json)
+
+    summary = smoke_script.validate_wordpress_authoring_preview(
+        "http://example.test",
+        {
+            "work_item_id": "content_work_item_bdo",
+            "title": "BDO dla firm",
+            "topic": "Kogo dotyczy BDO",
+            "safe_next_step": "Sprawdź źródła przed briefem.",
+            "final_canonical_url": "https://ekologus.pl/bdo/",
+        },
+        evidence_ids=["ev_gsc_bdo"],
+    )
+
+    assert seen_requests
+    assert summary == {
+        "status": "ready",
+        "layout": "podstrona",
+        "mode": "dry_run",
+        "row_candidate_count": 1,
+        "first_row_label": "Wiersz do ręcznego przeglądu: Kogo dotyczy BDO",
+        "first_row_review_status": "review_required",
+        "first_row_fields": ["opis"],
+        "evidence_ids": ["ev_gsc_bdo"],
+        "publish_allowed": False,
+        "destructive_update_allowed": False,
+        "external_write_attempted": False,
+    }
 
 
 def test_content_operator_uat_packet_builds_plain_wilku_summary() -> None:

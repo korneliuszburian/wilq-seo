@@ -143,6 +143,7 @@ forbidden_action_ids = case.get("forbidden_action_ids", [])
 forbidden_connectors = case.get("forbidden_connectors", [])
 messy_task_pl = case.get("messy_task_pl")
 task_pl = case.get("task_pl") or messy_task_pl
+candidate_forbidden_term = "kan" + "dydat"
 if not task_pl:
     raise SystemExit(f"Eval case for {skill} requires task_pl or messy_task_pl")
 is_daily_command = skill == "wilq-daily-command"
@@ -338,6 +339,11 @@ Oczekiwane connector surfaces: {connectors}
 - Nie używaj w widocznym tekście operatora technicznych nazw runtime takich jak
   `ActionObject`; pisz po prostu `akcja do sprawdzenia`, `podgląd` albo
   `sprawdzenie w WILQ`.
+- Nie używaj w widocznym tekście operatora słowa `{candidate_forbidden_term}` ani jego odmian.
+  Pisz `propozycja`, `propozycja wiersza` albo `akcja do sprawdzenia`.
+  Nie używaj rdzeni słów pod test, np. `kontrol`; pisz normalnie:
+  `kontrolę jakości`, `przejdź przez kontrolę jakości` albo
+  `przed kontrolą jakości`.
 - Nie opisuj technicznych szczegółów uruchomienia evala, cache, retry,
   sandboxa ani zmiennych środowiskowych. Smoke script output jest dowodem
   danych WILQ, ale jego mechanika wykonania nie jest materiałem dla marketera.
@@ -640,6 +646,8 @@ default_forbidden_operator_terms = (
     "sandbox",
     "wykonanie" + " zmian",
     "tylko do" + " sprawdzenia",
+    "kan" + "dydat",
+    "przed kontrolę",
 )
 for term in default_forbidden_operator_terms:
     if term.lower() in visible_operator_text.lower():

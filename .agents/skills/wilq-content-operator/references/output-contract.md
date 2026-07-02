@@ -10,6 +10,14 @@ Oczekiwany wynik: krótka, polska odpowiedź, która pokazuje, co można bezpiec
 
 Najpierw pobierz `GET /api/content/work-items/queue`. Dla wybranej propozycji pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli praca dotyczy briefu, szkicu, rewizji albo handoffu.
 
+Jeśli ścieżka dotyczy WordPressa, użyj WILQ API authoring preview zamiast
+bezpośredniego WordPressa: `POST /api/content/work-items/wordpress-authoring-
+payload-preview`. Wynik `wordpress_authoring_preview` ma być opisany jako
+podgląd ACF/`elementy` do ręcznego przeglądu. `row_candidate_count`,
+`first_row_fields`, `publish_allowed=false`, `destructive_update_allowed=false`
+i `external_write_attempted=false` są dowodem, że to nie jest zapis ani
+publikacja.
+
 Użyj `POST /api/codex/context-pack` tylko jako dodatkowego kontekstu, jeśli operator pyta o szersze tło. Kanoniczne decyzje contentowe pochodzą z endpointów `content-work-items`, nie z promptu.
 
 Wymagane źródła danych zależą od itemu i muszą pochodzić z API:
@@ -36,7 +44,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
    w tej sekcji i sprawdź je przez `POST /api/actions/{action_id}/validate`.
    Globalnie zablokowana kolejka UAT nie usuwa action proofu dla wybranego
    bezpiecznego kroku, np. `act_prepare_content_refresh_queue`.
-6. `Sprawdzenie w WILQ`: potwierdzenie, które bramki przeszły, które są zablokowane, czy `publish_ready=false`, czy WordPress pozostaje draft-only i czy measurement outcome jest gotowy.
+6. `Sprawdzenie w WILQ`: potwierdzenie, które bramki przeszły, które są zablokowane, czy `publish_ready=false`, czy WordPress pozostaje draft-only, czy ACF authoring preview jest tylko propozycją wiersza do ręcznego przeglądu i czy measurement outcome jest gotowy.
 7. `Następny krok`: najmniejszy bezpieczny krok operatora, bez obietnicy publikacji albo efektu.
 
 ## Warunki odmowy lub obniżenia do blokady

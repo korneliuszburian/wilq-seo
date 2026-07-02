@@ -251,13 +251,13 @@ Proof:
 ```bash
 rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
 rtk uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5 --format json
-CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+rtk env CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
 ```
 
 Result:
 
 - Eval artifact:
-  `.local-lab/evals/codex-skill/20260702T223249Z`.
+  `.local-lab/evals/codex-skill/20260702T230541Z`.
 - `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
   gates true.
 - Source connectors used: `google_analytics_4`, `ahrefs`,
@@ -274,6 +274,12 @@ Result:
 - The selected queue candidate now exposes and validates the concrete next
   ActionObject: `act_prepare_content_refresh_queue`, so the operator path is
   action-backed instead of only descriptive.
+- The smoke and eval now include the dry-run WordPress authoring preview:
+  `wordpress_authoring_preview.status=ready`, `mode=dry_run`,
+  `row_candidate_count=8`, ACF/`elementy` row candidate
+  `Wiersz do ręcznego przeglądu: ekologus`, mapped fields `tresc`, `opis`,
+  `podtytul`, `tytul`, and write flags `publish_allowed=false`,
+  `destructive_update_allowed=false`, `external_write_attempted=false`.
 - The eval harness now captures deterministic `smoke.json` before the model
   run and injects it into the prompt. This prevents false failures where the
   nested agent skipped the smoke command, and it lets the eval judge answer

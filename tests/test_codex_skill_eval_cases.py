@@ -146,6 +146,7 @@ def test_active_eval_cases_do_not_require_forbidden_operator_jargon() -> None:
         "migration" + "-map",
         "wykonanie" + " zmian",
         "tylko do" + " sprawdzenia",
+        "kan" + "dydat",
     }
 
     for case in cases:
@@ -646,7 +647,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "preflight",
             "brief sprzedażowy",
             "Claim Ledger",
-            "kontrola jakości",
+            "kontrolę jakości",
             "review człowieka",
             "WordPress",
             "szkic",
@@ -694,6 +695,8 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "requires task_pl or messy_task_pl",
         "forbidden operator-facing term present",
         "default_forbidden_operator_terms",
+        '"kan" + "dydat"',
+        "przed kontrolę",
         "visible_operator_text",
         "operator-facing fields contain too many raw technical markers",
         "<smoke_output>",
