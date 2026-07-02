@@ -69,7 +69,7 @@ def test_service_profile_review_result_records_blocking_decision_with_follow_up(
         "scope_label": "publiczne karty usług",
         "decisions": [
             {
-                "action_id": "service_profile_review_card_ekologus_service_operat_wodnoprawny",
+                "action_id": "renamed_public_operat_review",
                 "target_card_id": "ekologus_service_operat_wodnoprawny",
                 "decision": "needs_changes",
                 "source_trace_clear": "nie",
@@ -96,10 +96,7 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
         "scope_label": "prywatne propozycje ekologus-ai",
         "decisions": [
             {
-                "action_id": (
-                    "service_profile_review_private_proposal_"
-                    "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
-                ),
+                "action_id": "renamed_private_eko_opieka_review",
                 "target_card_id": "ekologus_service_eko_opieka_calendar",
                 "decision": "approve",
                 "source_trace_clear": "tak",
@@ -135,18 +132,10 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
         "live_private_review_action_count": 1,
         "live_private_promotion_preview_count": 1,
         "reviewed_action_count": 1,
-        "reviewed_action_ids": [
-            (
-                "service_profile_review_private_proposal_"
-                "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
-            )
-        ],
+        "reviewed_action_ids": ["renamed_private_eko_opieka_review"],
         "reviewed_target_card_ids": ["ekologus_service_eko_opieka_calendar"],
         "reviewed_required_review_fields": {
-            (
-                "service_profile_review_private_proposal_"
-                "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
-            ): [
+            "renamed_private_eko_opieka_review": [
                 "action_id",
                 "target_card_id",
                 "decision",
@@ -191,10 +180,7 @@ def test_service_profile_review_result_follows_new_live_private_required_field()
         "scope_label": "prywatne propozycje ekologus-ai",
         "decisions": [
             {
-                "action_id": (
-                    "service_profile_review_private_proposal_"
-                    "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
-                ),
+                "action_id": "renamed_private_eko_opieka_review",
                 "target_card_id": "ekologus_service_eko_opieka_calendar",
                 "decision": "approve",
                 "source_trace_clear": "tak",
@@ -225,10 +211,7 @@ def test_service_profile_review_result_requires_private_governance_checks() -> N
         "scope_label": "prywatne propozycje ekologus-ai",
         "decisions": [
             {
-                "action_id": (
-                    "service_profile_review_private_proposal_"
-                    "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
-                ),
+                "action_id": "renamed_private_eko_opieka_review",
                 "target_card_id": "ekologus_service_eko_opieka_calendar",
                 "decision": "approve",
                 "source_trace_clear": "tak",
@@ -392,22 +375,19 @@ def _live_context() -> dict[str, object]:
                 {
                     "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
                     "target_card_id": "ekologus_service_bdo_reporting",
+                    "review_scope": "public_service_card",
                     "review_requirements": _public_review_requirements(),
                 },
                 {
-                    "action_id": (
-                        "service_profile_review_card_"
-                        "ekologus_service_operat_wodnoprawny"
-                    ),
+                    "action_id": "renamed_public_operat_review",
                     "target_card_id": "ekologus_service_operat_wodnoprawny",
+                    "review_scope": "public_service_card",
                     "review_requirements": _public_review_requirements(),
                 },
                 {
-                    "action_id": (
-                        "service_profile_review_private_proposal_"
-                        "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
-                    ),
+                    "action_id": "renamed_private_eko_opieka_review",
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
+                    "review_scope": "private_service_proposal",
                     "review_requirements": _private_review_requirements(),
                 },
             ],
@@ -447,10 +427,7 @@ def _live_context() -> dict[str, object]:
                 "payload": {
                     "payload_preview": [
                         {
-                            "review_action_id": (
-                                "service_profile_review_private_proposal_"
-                                "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
-                            ),
+                            "review_action_id": "renamed_private_eko_opieka_review",
                             "target_card_id": "ekologus_service_eko_opieka_calendar",
                         }
                     ]

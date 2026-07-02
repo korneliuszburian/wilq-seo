@@ -217,10 +217,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "api_mutation_ready": False,
                     "payload_preview": [
                         {
-                            "review_action_id": (
-                                "service_profile_review_card_"
-                                "ekologus_service_bdo_reporting"
-                            ),
+                            "review_action_id": "renamed_public_bdo_review",
                             "target_card_id": "ekologus_service_bdo_reporting",
                         }
                     ],
@@ -236,26 +233,17 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "api_mutation_ready": False,
                     "payload_preview": [
                         {
-                            "review_action_id": (
-                                "service_profile_review_private_proposal_"
-                                "ekologus_ai_eko_opieka_2026_07_01"
-                            ),
+                            "review_action_id": "renamed_private_service_review",
                             "target_card_id": (
                                 "ekologus_service_environmental_consulting_outsourcing"
                             ),
                         },
                         {
-                            "review_action_id": (
-                                "service_profile_review_private_proposal_"
-                                "ekologus_ai_brand_voice_2026_07_01"
-                            ),
+                            "review_action_id": "renamed_private_claim_policy_review",
                             "target_card_id": "ekologus_claim_policy_brand_voice",
                         },
                         {
-                            "review_action_id": (
-                                "service_profile_review_private_proposal_"
-                                "ekologus_ai_evidence_policy_2026_07_02"
-                            ),
+                            "review_action_id": "renamed_private_evidence_policy_review",
                             "target_card_id": "ekologus_evidence_policy_source_trace",
                         },
                     ],
@@ -287,7 +275,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
             "coverage_gaps": [],
             "review_actions": [
                 {
-                    "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+                    "action_id": "renamed_public_bdo_review",
                     "mode": "review_request",
                     "review_scope": "public_service_card",
                     "priority": "medium",
@@ -300,10 +288,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "target_card_id": "ekologus_service_bdo_reporting",
                 },
                 {
-                    "action_id": (
-                        "service_profile_review_private_proposal_"
-                        "ekologus_ai_eko_opieka_2026_07_01"
-                    ),
+                    "action_id": "renamed_private_service_review",
                     "mode": "review_request",
                     "review_scope": "private_service_proposal",
                     "priority": "medium",
@@ -316,10 +301,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
                 },
                 {
-                    "action_id": (
-                        "service_profile_review_private_proposal_"
-                        "ekologus_ai_brand_voice_2026_07_01"
-                    ),
+                    "action_id": "renamed_private_claim_policy_review",
                     "mode": "review_request",
                     "review_scope": "private_claim_policy_proposal",
                     "priority": "high",
@@ -332,10 +314,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "target_card_id": "ekologus_claim_policy_brand_voice",
                 },
                 {
-                    "action_id": (
-                        "service_profile_review_private_proposal_"
-                        "ekologus_ai_evidence_policy_2026_07_02"
-                    ),
+                    "action_id": "renamed_private_evidence_policy_review",
                     "mode": "review_request",
                     "review_scope": "private_evidence_policy_proposal",
                     "priority": "high",

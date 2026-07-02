@@ -10,6 +10,12 @@ from typing import Any
 
 REVIEW_DECISIONS = {"approve", "needs_changes", "stale", "reject"}
 REVIEW_TYPES = {"public_service_cards", "private_source_proposals"}
+PUBLIC_SERVICE_REVIEW_SCOPES = {"public_service_card"}
+PRIVATE_SOURCE_REVIEW_SCOPES = {
+    "private_service_proposal",
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal",
+}
 DEFAULT_REVIEW_TYPE = "public_service_cards"
 PROMOTION_ACTION_IDS = {
     "public_service_cards": "act_prepare_service_profile_knowledge_promotion",
@@ -373,18 +379,15 @@ def live_review_actions(
     profile = live_context.get("service_profile")
     if not isinstance(profile, dict):
         return {}
-    expected_prefix = (
-        "service_profile_review_private_proposal_"
-        if review_type == "private_source_proposals"
-        else "service_profile_review_card_"
-    )
+    expected_scopes = review_scopes_for_type(review_type)
     actions: dict[str, str] = {}
     for action in raw_list(profile.get("review_actions")):
         if not isinstance(action, dict):
             continue
         action_id = str(action.get("action_id") or "").strip()
+        review_scope = str(action.get("review_scope") or "").strip()
         target_card_id = str(action.get("target_card_id") or "").strip()
-        if action_id.startswith(expected_prefix) and target_card_id:
+        if review_scope in expected_scopes and action_id and target_card_id:
             actions[action_id] = target_card_id
     return actions
 
@@ -399,17 +402,14 @@ def live_required_review_fields(
     profile = live_context.get("service_profile")
     if not isinstance(profile, dict):
         return {}
-    expected_prefix = (
-        "service_profile_review_private_proposal_"
-        if review_type == "private_source_proposals"
-        else "service_profile_review_card_"
-    )
+    expected_scopes = review_scopes_for_type(review_type)
     fields_by_action: dict[str, tuple[dict[str, Any], ...]] = {}
     for action in raw_list(profile.get("review_actions")):
         if not isinstance(action, dict):
             continue
         action_id = str(action.get("action_id") or "").strip()
-        if not action_id.startswith(expected_prefix):
+        review_scope = str(action.get("review_scope") or "").strip()
+        if review_scope not in expected_scopes or not action_id:
             continue
         required_fields: list[dict[str, Any]] = []
         for requirement in raw_list(action.get("review_requirements")):
@@ -429,6 +429,12 @@ def live_required_review_fields(
             )
         fields_by_action[action_id] = tuple(required_fields)
     return fields_by_action
+
+
+def review_scopes_for_type(review_type: str) -> set[str]:
+    if review_type == "private_source_proposals":
+        return PRIVATE_SOURCE_REVIEW_SCOPES
+    return PUBLIC_SERVICE_REVIEW_SCOPES
 
 
 def validate_live_required_fields(

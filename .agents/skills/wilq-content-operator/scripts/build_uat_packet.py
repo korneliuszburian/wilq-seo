@@ -12,6 +12,17 @@ DEV_HOST = "ekologus.dev.proudsite.pl"
 SERVICE_PROFILE_REVIEW_RECORDER = "scripts/record_service_profile_review_result.py"
 PUBLIC_PROMOTION_ACTION_ID = "act_prepare_service_profile_knowledge_promotion"
 PRIVATE_PROMOTION_ACTION_ID = "act_prepare_service_profile_private_proposal_promotion"
+PUBLIC_SERVICE_REVIEW_SCOPES = {"public_service_card"}
+PRIVATE_SOURCE_REVIEW_SCOPES = {
+    "private_service_proposal",
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal",
+}
+PRIVATE_SERVICE_REVIEW_SCOPES = {"private_service_proposal"}
+PRIVATE_POLICY_REVIEW_SCOPES = {
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal",
+}
 
 
 def request_json(
@@ -43,6 +54,10 @@ def require_dict(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise SystemExit(f"{label} must be an object")
     return value
+
+
+def review_scope(action: dict[str, Any]) -> str:
+    return str(action.get("review_scope") or "").strip()
 
 
 def as_list(value: Any) -> list[Any]:
@@ -319,7 +334,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "mode": action.get("mode"),
         }
         for action in review_actions
-        if str(action.get("action_id") or "").startswith("service_profile_review_card_")
+        if review_scope(action) in PUBLIC_SERVICE_REVIEW_SCOPES
     ]
     private_review_actions = [
         {
@@ -336,7 +351,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "mode": action.get("mode"),
         }
         for action in review_actions
-        if str(action.get("action_id") or "").startswith("service_profile_review_private_proposal_")
+        if review_scope(action) in PRIVATE_SOURCE_REVIEW_SCOPES
     ]
     private_proposal_details = [
         {
@@ -364,21 +379,15 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         for proposal in as_list(profile.get("private_source_proposals"))
         if isinstance(proposal, dict)
     ]
-    private_scope_by_target = {
-        str(proposal.get("target_card_id") or ""): str(proposal.get("scope") or "")
-        for proposal in private_proposal_details
-        if proposal.get("target_card_id")
-    }
     private_service_review_actions = [
         action
         for action in private_review_actions
-        if private_scope_by_target.get(str(action.get("target_card_id") or "")) == "service"
+        if review_scope(action) in PRIVATE_SERVICE_REVIEW_SCOPES
     ]
     private_policy_review_actions = [
         action
         for action in private_review_actions
-        if private_scope_by_target.get(str(action.get("target_card_id") or ""))
-        in {"claim_policy", "evidence_requirement"}
+        if review_scope(action) in PRIVATE_POLICY_REVIEW_SCOPES
     ]
     api_review_action_summary = profile.get("review_action_summary")
     review_action_summary = (

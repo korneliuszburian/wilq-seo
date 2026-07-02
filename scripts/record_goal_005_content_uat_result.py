@@ -37,6 +37,17 @@ RECOMMENDED_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
 ]
+PUBLIC_SERVICE_REVIEW_SCOPES = {"public_service_card"}
+PRIVATE_SOURCE_REVIEW_SCOPES = {
+    "private_service_proposal",
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal",
+}
+PRIVATE_SERVICE_REVIEW_SCOPES = {"private_service_proposal"}
+PRIVATE_POLICY_REVIEW_SCOPES = {
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal",
+}
 
 
 def main() -> int:
@@ -414,7 +425,11 @@ def live_uat_provenance(
         if isinstance(raw_selected_sales_brief_trace, dict)
         else {}
     )
-    private_proposal_scopes = private_proposal_scope_by_target(service_profile)
+    review_actions = [
+        action
+        for action in raw_list_payload(service_profile.get("review_actions"))
+        if isinstance(action, dict)
+    ]
     return {
         "api_base": live_context.get("api_base"),
         "queue_status": queue.get("queue_status"),
@@ -441,49 +456,37 @@ def live_uat_provenance(
         "public_service_review_action_count": len(
             [
                 action
-                for action in raw_list_payload(service_profile.get("review_actions"))
-                if isinstance(action, dict)
-                and str(action.get("action_id") or "").startswith(
-                    "service_profile_review_card_"
-                )
+                for action in review_actions
+                if review_scope(action) in PUBLIC_SERVICE_REVIEW_SCOPES
             ]
         ),
         "private_review_action_count": len(
             [
                 action
-                for action in raw_list_payload(service_profile.get("review_actions"))
-                if isinstance(action, dict)
-                and str(action.get("action_id") or "").startswith(
-                    "service_profile_review_private_proposal_"
-                )
+                for action in review_actions
+                if review_scope(action) in PRIVATE_SOURCE_REVIEW_SCOPES
             ]
         ),
         "private_service_review_action_count": len(
             [
                 action
-                for action in raw_list_payload(service_profile.get("review_actions"))
-                if isinstance(action, dict)
-                and str(action.get("action_id") or "").startswith(
-                    "service_profile_review_private_proposal_"
-                )
-                and private_proposal_scopes.get(str(action.get("target_card_id") or ""))
-                == "service"
+                for action in review_actions
+                if review_scope(action) in PRIVATE_SERVICE_REVIEW_SCOPES
             ]
         ),
         "private_policy_review_action_count": len(
             [
                 action
-                for action in raw_list_payload(service_profile.get("review_actions"))
-                if isinstance(action, dict)
-                and str(action.get("action_id") or "").startswith(
-                    "service_profile_review_private_proposal_"
-                )
-                and private_proposal_scopes.get(str(action.get("target_card_id") or ""))
-                in {"claim_policy", "evidence_requirement"}
+                for action in review_actions
+                if review_scope(action) in PRIVATE_POLICY_REVIEW_SCOPES
             ]
         ),
         "private_proposal_promotion_ready": private_summary.get("promotion_ready"),
     }
+
+
+def review_scope(action: dict[str, Any]) -> str:
+    return str(action.get("review_scope") or "").strip()
 
 
 def render_live_provenance(value: Any) -> str:
@@ -544,14 +547,6 @@ def sales_brief_blocker_labels(value: Any) -> list[str]:
         elif item:
             labels.append(str(item))
     return [label for label in labels if label and label != "None"]
-
-
-def private_proposal_scope_by_target(service_profile: dict[str, Any]) -> dict[str, str]:
-    return {
-        str(proposal.get("target_card_id") or ""): str(proposal.get("scope") or "")
-        for proposal in raw_list_payload(service_profile.get("private_source_proposals"))
-        if isinstance(proposal, dict) and proposal.get("target_card_id")
-    }
 
 
 def normalize_bool(value: Any) -> bool | None:

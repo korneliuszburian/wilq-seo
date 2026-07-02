@@ -409,10 +409,12 @@ def _live_context() -> dict[str, object]:
             ],
             "review_actions": [
                 {
-                    "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+                    "action_id": "renamed_public_service_bdo_review",
+                    "review_scope": "public_service_card",
                 },
                 {
-                    "action_id": "service_profile_review_private_proposal_example",
+                    "action_id": "renamed_private_service_review",
+                    "review_scope": "private_service_proposal",
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
                 }
             ],
