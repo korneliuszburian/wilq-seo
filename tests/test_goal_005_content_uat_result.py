@@ -21,6 +21,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
         "private_review_actions_czytelne": "nie",
+        "private_policy_review_actions_czytelne": "nie",
         "mozna_przejsc_do_pelnego_content_uat": "nie",
         "follow_up_beads": ["wilq-seo-xyz: doprecyzować private review action copy"],
     }
@@ -51,6 +52,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
         "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
         "mozna_przejsc_do_pelnego_content_uat": "nie",
         "follow_up_beads": ["wilq-seo-next: wybrać konkretniejszy temat UAT"],
     }
@@ -71,6 +73,8 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert provenance["production_depth_ready"] is False
     assert provenance["public_service_review_action_count"] == 1
     assert provenance["private_review_action_count"] == 1
+    assert provenance["private_service_review_action_count"] == 1
+    assert provenance["private_policy_review_action_count"] == 0
     assert provenance["private_proposal_promotion_ready"] is False
 
     markdown = render_markdown(report)
@@ -78,6 +82,8 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert "Wybrany work item znaleziony w live packet: tak" in markdown
     assert "Źródła wybranego itemu: google_search_console, wordpress_ekologus" in markdown
     assert "Public service review actions: `1`" in markdown
+    assert "Private service review actions: `1`" in markdown
+    assert "Private policy review actions: `0`" in markdown
 
 
 def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None:
@@ -93,6 +99,7 @@ def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
         "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
         "mozna_przejsc_do_pelnego_content_uat": "nie",
         "follow_up_beads": ["wilq-seo-next: wybrać konkretniejszy temat UAT"],
     }
@@ -118,6 +125,7 @@ def test_content_uat_result_rejects_placeholders_and_invalid_booleans() -> None:
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
         "private_review_actions_czytelne": "nie",
+        "private_policy_review_actions_czytelne": "nie",
         "mozna_przejsc_do_pelnego_content_uat": "maybe",
     }
 
@@ -144,6 +152,7 @@ def test_content_uat_result_requires_public_service_review_feedback() -> None:
         "wilku_rozumie_blokady_pelnego_uat": "tak",
         "service_profile_czytelny": "tak",
         "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
         "mozna_przejsc_do_pelnego_content_uat": "nie",
         "follow_up_beads": ["wilq-seo-next: ocenić publiczne karty usług"],
     }
@@ -169,6 +178,7 @@ def test_content_uat_result_requires_follow_up_when_blocked() -> None:
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
         "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
         "mozna_przejsc_do_pelnego_content_uat": "nie",
         "follow_up_beads": [],
     }
@@ -194,6 +204,7 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
         "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
         "mozna_przejsc_do_pelnego_content_uat": "tak",
     }
 
@@ -234,12 +245,19 @@ def _live_context() -> dict[str, object]:
             "read_only": True,
             "coverage_summary": {"ready_for_daily_content": False},
             "private_source_proposal_summary": {"promotion_ready": False},
+            "private_source_proposals": [
+                {
+                    "target_card_id": "ekologus_service_eko_opieka_calendar",
+                    "scope": "service",
+                }
+            ],
             "review_actions": [
                 {
                     "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
                 },
                 {
                     "action_id": "service_profile_review_private_proposal_example",
+                    "target_card_id": "ekologus_service_eko_opieka_calendar",
                 }
             ],
         },

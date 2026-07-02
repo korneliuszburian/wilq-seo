@@ -25,6 +25,9 @@ REQUIRED_BOOLEAN_FIELDS = {
         "czy public service review actions są czytelne"
     ),
     "private_review_actions_czytelne": "czy private review actions są czytelne",
+    "private_policy_review_actions_czytelne": (
+        "czy private policy review actions są czytelne"
+    ),
     "mozna_przejsc_do_pelnego_content_uat": "czy można przejść do pełnego content UAT",
 }
 
@@ -92,6 +95,9 @@ def build_content_uat_result_report(
         payload["public_service_review_actions_czytelne"]
     )
     private_actions_clear = normalize_bool(payload["private_review_actions_czytelne"])
+    private_policy_actions_clear = normalize_bool(
+        payload["private_policy_review_actions_czytelne"]
+    )
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     missing_follow_up = not can_continue and not follow_up_tasks
     selected_work_item = str(payload["wybrany_work_item"]).strip()
@@ -106,6 +112,7 @@ def build_content_uat_result_report(
         and service_profile_clear
         and public_actions_clear
         and private_actions_clear
+        and private_policy_actions_clear
     )
 
     return {
@@ -120,6 +127,7 @@ def build_content_uat_result_report(
         "service_profile_clear": service_profile_clear,
         "public_service_review_actions_clear": public_actions_clear,
         "private_review_actions_clear": private_actions_clear,
+        "private_policy_review_actions_clear": private_policy_actions_clear,
         "source_trace_questions": str(payload["pytania_skad_to_wzielo"]).strip(),
         "generic_or_off_brand_findings": str(
             payload["miejsca_generyczne_off_brand"]
@@ -194,6 +202,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"{visible_bool(report['public_service_review_actions_clear'])}",
         "- Private review actions czytelne: "
         f"{visible_bool(report['private_review_actions_clear'])}",
+        "- Private policy review actions czytelne: "
+        f"{visible_bool(report['private_policy_review_actions_clear'])}",
         "- Można przejść do pełnego content UAT: "
         f"{visible_bool(report['can_continue_to_full_content_uat'])}",
         "",
@@ -262,11 +272,11 @@ def live_uat_provenance(
 ) -> dict[str, Any] | None:
     if live_context is None:
         return None
-    queue = live_context.get("queue") if isinstance(live_context.get("queue"), dict) else {}
-    service_profile = (
-        live_context.get("service_profile")
-        if isinstance(live_context.get("service_profile"), dict)
-        else {}
+    raw_queue = live_context.get("queue")
+    queue: dict[str, Any] = raw_queue if isinstance(raw_queue, dict) else {}
+    raw_service_profile = live_context.get("service_profile")
+    service_profile: dict[str, Any] = (
+        raw_service_profile if isinstance(raw_service_profile, dict) else {}
     )
     candidates = [
         candidate
@@ -281,16 +291,13 @@ def live_uat_provenance(
         ),
         {},
     )
-    coverage = (
-        service_profile.get("coverage_summary")
-        if isinstance(service_profile.get("coverage_summary"), dict)
-        else {}
+    raw_coverage = service_profile.get("coverage_summary")
+    coverage: dict[str, Any] = raw_coverage if isinstance(raw_coverage, dict) else {}
+    raw_private_summary = service_profile.get("private_source_proposal_summary")
+    private_summary: dict[str, Any] = (
+        raw_private_summary if isinstance(raw_private_summary, dict) else {}
     )
-    private_summary = (
-        service_profile.get("private_source_proposal_summary")
-        if isinstance(service_profile.get("private_source_proposal_summary"), dict)
-        else {}
-    )
+    private_proposal_scopes = private_proposal_scope_by_target(service_profile)
     return {
         "api_base": live_context.get("api_base"),
         "queue_status": queue.get("queue_status"),
@@ -322,6 +329,30 @@ def live_uat_provenance(
                 )
             ]
         ),
+        "private_service_review_action_count": len(
+            [
+                action
+                for action in raw_list_payload(service_profile.get("review_actions"))
+                if isinstance(action, dict)
+                and str(action.get("action_id") or "").startswith(
+                    "service_profile_review_private_proposal_"
+                )
+                and private_proposal_scopes.get(str(action.get("target_card_id") or ""))
+                == "service"
+            ]
+        ),
+        "private_policy_review_action_count": len(
+            [
+                action
+                for action in raw_list_payload(service_profile.get("review_actions"))
+                if isinstance(action, dict)
+                and str(action.get("action_id") or "").startswith(
+                    "service_profile_review_private_proposal_"
+                )
+                and private_proposal_scopes.get(str(action.get("target_card_id") or ""))
+                in {"claim_policy", "evidence_requirement"}
+            ]
+        ),
         "private_proposal_promotion_ready": private_summary.get("promotion_ready"),
     }
 
@@ -347,10 +378,22 @@ def render_live_provenance(value: Any) -> str:
             f"`{value.get('public_service_review_action_count')}`",
             "- Private review actions: "
             f"`{value.get('private_review_action_count')}`",
+            "- Private service review actions: "
+            f"`{value.get('private_service_review_action_count')}`",
+            "- Private policy review actions: "
+            f"`{value.get('private_policy_review_action_count')}`",
             "- Private proposal promotion ready: "
             f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
         ]
     )
+
+
+def private_proposal_scope_by_target(service_profile: dict[str, Any]) -> dict[str, str]:
+    return {
+        str(proposal.get("target_card_id") or ""): str(proposal.get("scope") or "")
+        for proposal in raw_list_payload(service_profile.get("private_source_proposals"))
+        if isinstance(proposal, dict) and proposal.get("target_card_id")
+    }
 
 
 def normalize_bool(value: Any) -> bool | None:

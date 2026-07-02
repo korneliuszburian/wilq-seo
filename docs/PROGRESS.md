@@ -735,6 +735,16 @@ API status later contradicts this state.
   `can_promote_facts=false` and `ready_for_daily_content=false`. This gives
   Wilku review targets for brand/legal-safety rules without turning them into
   production-depth cards or automatic quality gates.
+- Goal 005 UAT proof now separates private service proposals from private
+  policy proposals. Live `wilq-content-operator` UAT packet on 2026-07-02 shows
+  `public_service_review_count=6`, `private_review_count=4`,
+  `private_service_review_count=2`, `private_policy_review_count=2`, policy
+  targets `ekologus_claim_policy_brand_voice` and
+  `ekologus_claim_policy_legal_safety`, and `queue_status=blocked`.
+  `scripts/record_goal_005_content_uat_result.py` now requires
+  `private_policy_review_actions_czytelne` and records separate live provenance
+  counts, so a future Wilku result cannot collapse service fit and brand/legal
+  safety into one vague "private review" answer.
   The request now pins `type=web`, and persisted metric summaries mark
   `detail_dimensions=query,page` with `detail_data_completeness=partial_possible`
   so downstream skills do not treat detailed query/page rows as full traffic

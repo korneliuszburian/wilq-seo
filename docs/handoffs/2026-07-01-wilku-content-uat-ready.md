@@ -1,7 +1,7 @@
 # Wilku Content UAT - przygotowanie sesji
 
 Data przygotowania: 2026-07-01
-Ostatnia aktualizacja: 2026-07-02 00:50 CEST
+Ostatnia aktualizacja: 2026-07-02 03:35 CEST
 
 Status: gotowe do pokazania jako sesja review/blokad i traceability, nie jako
 ukończony UAT.
@@ -10,6 +10,13 @@ Aktualizacja po rozdzieleniu review actions: UAT packet pokazuje teraz osobno
 publiczne review actions dla kart usług i prywatne review actions z
 `ekologus-ai`. Wynik sesji musi odpowiedzieć na oba pytania, bo publiczne karty
 usług nadal blokują production-depth tak samo realnie jak prywatne propozycje.
+
+Aktualizacja po policy proposals: prywatne review actions są teraz rozdzielone
+na propozycje usługowe i claim-policy. Live packet pokazuje 4 prywatne review
+actions: 2 service oraz 2 policy (`ekologus_claim_policy_brand_voice`,
+`ekologus_claim_policy_legal_safety`). Wynik sesji musi osobno odpowiedzieć,
+czy policy review actions są czytelne, bo to one mają później pilnować tonu,
+poufności i legal-safety, ale nadal nie są automatyczną bramką produkcyjną.
 
 Aktualizacja po live refreshu: 2026-07-01 22:39 UTC. WILQ odświeżył stale
 źródła Merchant/Ahrefs/WordPress sklep, więc ten handoff nie zakłada już, że
@@ -140,10 +147,14 @@ Private review actions:
 - `service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`:
   sprawdzić prywatną propozycję Eko-Opieka / Eko Kalendarz;
 - `service_profile_review_private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01`:
-  sprawdzić prywatną propozycję Audyt zgodności środowiskowej.
+  sprawdzić prywatną propozycję Audyt zgodności środowiskowej;
+- `service_profile_review_private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`:
+  sprawdzić prywatną politykę stylu marki i języka Ekologus;
+- `service_profile_review_private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`:
+  sprawdzić prywatną politykę bezpieczeństwa prawnego, poufności i zgód.
 
-Obie akcje mają ten sam warunek bezpieczeństwa: to nie promuje private proposal
-do source fact ani knowledge card.
+Wszystkie te akcje mają ten sam warunek bezpieczeństwa: to nie promuje private
+proposal do source fact ani knowledge card.
 
 Promotion checklist dla private proposals:
 
@@ -162,6 +173,13 @@ Redacted proposal details do sprawdzenia:
 - Audyt zgodności środowiskowej: `review_required`, support `partial`, risk
   `medium`, promotion allowed `false`; zablokowane claimy obejmują gwarancję
   braku kar i wiążącą ocenę zgodności bez review eksperta.
+- Styl marki i język Ekologus: `review_required`, support `direct`, risk
+  `high`, promotion allowed `false`; zablokowane claimy obejmują puste slogany,
+  gwarantowany wynik i pełną interpretację prawną w darmowej treści.
+- Bezpieczeństwo prawne, poufność i zgody: `review_required`, support `direct`,
+  risk `high`, promotion allowed `false`; zablokowane claimy obejmują poufne
+  dane klientów, gwarantowany wynik administracyjny i pełną interpretację
+  prawną bez review człowieka.
 
 ## Kandydaci z kolejki
 
@@ -211,17 +229,19 @@ Zadaj dokładnie te pytania i wpisz odpowiedzi w sekcji wyników:
 3. Czy Service Profile mówi Ci, czego brakuje w wiedzy Ekologus?
 4. Czy public service review actions dla kart usług są czytelne?
 5. Która publiczna karta usługi jest najbardziej niejasna do zatwierdzenia?
-6. Czy private review actions dla Eko-Opieki i Audytu zgodności są czytelne?
-7. Czy widzisz, że publiczne karty i prywatne propozycje nie są jeszcze
+6. Czy private service review actions dla Eko-Opieki i Audytu zgodności są
+   czytelne?
+7. Czy private policy review actions dla stylu marki i legal-safety są czytelne?
+8. Czy widzisz, że publiczne karty i prywatne propozycje nie są jeszcze
    zatwierdzoną wiedzą?
-8. Gdy pytasz "skąd to wzięło?", czy evidence IDs i source connectors są
+9. Gdy pytasz "skąd to wzięło?", czy evidence IDs i source connectors są
    wystarczające?
-9. Czy blokada `missing_source_connector` jest zrozumiała po ludzku jako "brak
+10. Czy blokada `missing_source_connector` jest zrozumiała po ludzku jako "brak
    źródła danych dla twierdzenia"?
-10. Czy `https://www.ekologus.pl/` jako kandydat refresh ma dla Ciebie sens, czy
+11. Czy `https://www.ekologus.pl/` jako kandydat refresh ma dla Ciebie sens, czy
    lepiej wymusić bardziej konkretny temat, np. BDO?
-11. Co jest najbardziej generyczne/off-brand w tej ścieżce?
-12. Jaki jeden następny krok zrobiłbyś po tej sesji?
+12. Co jest najbardziej generyczne/off-brand w tej ścieżce?
+13. Jaki jeden następny krok zrobiłbyś po tej sesji?
 
 ## Wynik sesji
 
@@ -235,6 +255,7 @@ Uzupełnić po rozmowie:
 - czy Service Profile jest czytelny:
 - czy public service review actions są czytelne:
 - czy private review actions są czytelne:
+- czy private policy review actions są czytelne:
 - pytania "skąd to wzięło?":
 - miejsca generyczne/off-brand:
 - największy brak produktu:
@@ -256,6 +277,7 @@ Walidowany format wyniku:
   "service_profile_czytelny": "tak",
   "public_service_review_actions_czytelne": "nie",
   "private_review_actions_czytelne": "nie",
+  "private_policy_review_actions_czytelne": "nie",
   "mozna_przejsc_do_pelnego_content_uat": "nie",
   "follow_up_beads": [
     "wilq-seo-xyz: doprecyzować publiczne/private review actions przed pełnym UAT"
@@ -279,9 +301,10 @@ Ten walidator sprawdza kompletność realnego wyniku sesji i renderuje raport
 review. Z `--api-base` dodatkowo sprawdza, czy wybrany work item występuje w
 aktualnej kolejce UAT WILQ, zapisuje status kolejki, źródła wybranego itemu,
 read-only Service Profile, production-depth readiness, liczbę publicznych i
-prywatnych review actions oraz stan private proposal promotion. Nie promuje
-private proposals do source facts, nie zatwierdza publicznych service cards,
-nie odblokowuje publikacji ani nie zamyka Goal 005 automatycznie.
+prywatnych review actions, rozdział private service/policy review oraz stan
+private proposal promotion. Nie promuje private proposals do source facts, nie
+zatwierdza publicznych service cards, nie odblokowuje publikacji ani nie zamyka
+Goal 005 automatycznie.
 
 ## Kryterium przejścia dalej
 

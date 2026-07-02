@@ -829,6 +829,12 @@ Stop and record a blocker if:
   review actions, while promotion, fact editing and daily-content readiness
   remain blocked. This moves the useful `ekologus-ai` knowledge into normal
   WILQ review flow instead of creating another endpoint or artifact layer.
+- 2026-07-02: Goal 005 UAT packet/result proof now separates private service
+  review from private policy review. The packet exposes service and policy
+  counts/actions separately, and the result validator requires
+  `private_policy_review_actions_czytelne` plus records live policy provenance.
+  This keeps Eko-Opieka/Audyt service review distinct from brand/legal-safety
+  policy review while preserving the no-promotion/no-production-depth gates.
 
 ## Surprises & Discoveries
 

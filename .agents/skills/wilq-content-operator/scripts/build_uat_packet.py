@@ -120,6 +120,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "source_type": proposal.get("source_type"),
             "privacy_class": proposal.get("privacy_class"),
             "scope": proposal.get("scope"),
+            "target_card_id": proposal.get("target_card_id"),
             "target_card_title": proposal.get("target_card_title"),
             "review_status": proposal.get("review_status"),
             "support_level": proposal.get("support_level"),
@@ -132,6 +133,22 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         }
         for proposal in as_list(profile.get("private_source_proposals"))
         if isinstance(proposal, dict)
+    ]
+    private_scope_by_target = {
+        str(proposal.get("target_card_id") or ""): str(proposal.get("scope") or "")
+        for proposal in private_proposal_details
+        if proposal.get("target_card_id")
+    }
+    private_service_review_actions = [
+        action
+        for action in private_review_actions
+        if private_scope_by_target.get(str(action.get("target_card_id") or "")) == "service"
+    ]
+    private_policy_review_actions = [
+        action
+        for action in private_review_actions
+        if private_scope_by_target.get(str(action.get("target_card_id") or ""))
+        in {"claim_policy", "evidence_requirement"}
     ]
     return {
         "endpoint": "/api/content/service-profile",
@@ -159,12 +176,16 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "total_count": len(review_actions),
             "public_service_review_count": len(public_service_review_actions),
             "private_review_count": len(private_review_actions),
+            "private_service_review_count": len(private_service_review_actions),
+            "private_policy_review_count": len(private_policy_review_actions),
             "review_request_count": sum(
                 1 for action in review_actions if action.get("mode") == "review_request"
             ),
         },
         "public_service_review_actions": public_service_review_actions,
         "private_review_actions": private_review_actions,
+        "private_service_review_actions": private_service_review_actions,
+        "private_policy_review_actions": private_policy_review_actions,
     }
 
 
@@ -361,7 +382,9 @@ def main() -> int:
             "- akcje review: "
             f"{review_action_summary.get('total_count')} razem, "
             f"{review_action_summary.get('public_service_review_count')} publicznych usług, "
-            f"{review_action_summary.get('private_review_count')} prywatnych propozycji"
+            f"{review_action_summary.get('private_review_count')} prywatnych propozycji "
+            f"({review_action_summary.get('private_service_review_count')} service, "
+            f"{review_action_summary.get('private_policy_review_count')} policy)"
         )
     private_proposals = service_profile_md.get("private_source_proposals")
     if isinstance(private_proposals, dict):
@@ -415,6 +438,15 @@ def main() -> int:
     if isinstance(actions, list) and actions:
         print("- private review actions:")
         for raw_action in actions:
+            if isinstance(raw_action, dict):
+                print(
+                    f"  - `{raw_action.get('action_id')}`: "
+                    f"{raw_action.get('label')} -> {raw_action.get('blocked_write_claim')}"
+                )
+    policy_actions = service_profile_md.get("private_policy_review_actions")
+    if isinstance(policy_actions, list) and policy_actions:
+        print("- private policy review actions:")
+        for raw_action in policy_actions:
             if isinstance(raw_action, dict):
                 print(
                     f"  - `{raw_action.get('action_id')}`: "

@@ -81,7 +81,9 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "Service Profile",
         "public_service_review_actions",
         "private_review_actions",
+        "private_policy_review_actions",
         "public service review actions",
+        "private policy review actions",
         "Service Profile nie jest production-depth",
         "publiczne karty usług wymagają review Wilka/ownera",
         "promotion_checklist",
@@ -125,8 +127,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                 "source_backed_review_required_count": 2,
             },
             "private_source_proposal_summary": {
-                "proposal_count": 1,
-                "review_required_count": 1,
+                "proposal_count": 2,
+                "review_required_count": 2,
                 "approved_count": 0,
                 "promotion_ready": False,
                 "promotion_blocked_reason": "Wymaga review.",
@@ -156,8 +158,55 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "required_human_role": "owner",
                     "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
                 },
+                {
+                    "action_id": (
+                        "service_profile_review_private_proposal_"
+                        "ekologus_ai_brand_voice_2026_07_01"
+                    ),
+                    "mode": "review_request",
+                    "label": "Sprawdź prywatną politykę claimów",
+                    "reason": "Prywatne źródło claim-policy wymaga decyzji.",
+                    "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
+                    "required_human_role": "reviewer",
+                    "target_card_id": "ekologus_claim_policy_brand_voice",
+                },
             ],
-            "private_source_proposals": [],
+            "private_source_proposals": [
+                {
+                    "proposal_id": "private_proposal_service",
+                    "source_id": "ekologus_ai_service",
+                    "source_type": "reviewed_internal",
+                    "privacy_class": "redacted_only",
+                    "scope": "service",
+                    "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
+                    "target_card_title": "Doradztwo",
+                    "review_status": "review_required",
+                    "support_level": "partial",
+                    "risk_tier": "medium",
+                    "confidence_label": "średnia",
+                    "blocked_claims": ["gwarancja"],
+                    "safe_next_step": "Review.",
+                    "promotion_allowed": False,
+                    "redacted": True,
+                },
+                {
+                    "proposal_id": "private_proposal_policy",
+                    "source_id": "ekologus_ai_policy",
+                    "source_type": "reviewed_internal",
+                    "privacy_class": "redacted_only",
+                    "scope": "claim_policy",
+                    "target_card_id": "ekologus_claim_policy_brand_voice",
+                    "target_card_title": "Styl marki",
+                    "review_status": "review_required",
+                    "support_level": "direct",
+                    "risk_tier": "high",
+                    "confidence_label": "wysoka",
+                    "blocked_claims": ["gwarancja wyniku"],
+                    "safe_next_step": "Review policy.",
+                    "promotion_allowed": False,
+                    "redacted": True,
+                },
+            ],
         }
 
     monkeypatch.setattr(uat_script, "request_json", fake_request_json)
@@ -165,14 +214,22 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     summary = uat_script.service_profile_uat_summary("http://example.test")
 
     assert summary["review_action_summary"] == {
-        "total_count": 2,
+        "total_count": 3,
         "public_service_review_count": 1,
-        "private_review_count": 1,
-        "review_request_count": 2,
+        "private_review_count": 2,
+        "private_service_review_count": 1,
+        "private_policy_review_count": 1,
+        "review_request_count": 3,
     }
     assert summary["public_service_review_actions"][0]["target_card_id"] == (
         "ekologus_service_bdo_reporting"
     )
     assert summary["private_review_actions"][0]["target_card_id"] == (
         "ekologus_service_environmental_consulting_outsourcing"
+    )
+    assert summary["private_service_review_actions"][0]["target_card_id"] == (
+        "ekologus_service_environmental_consulting_outsourcing"
+    )
+    assert summary["private_policy_review_actions"][0]["target_card_id"] == (
+        "ekologus_claim_policy_brand_voice"
     )
