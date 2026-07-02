@@ -113,6 +113,11 @@ live API status later contradicts this state.
   UAT/defer, but returns `next_uat_input.selected_work_item` plus the fillable
   JSON command for the homepage candidate, so the next Wilku session does not
   require hunting through helper scripts.
+- Goal 005 completion guard also renders the next Service Profile review
+  actions as readable bullets with ActionObject ID, review scope, target
+  service/policy and allowed decision options. The report still blocks
+  completion without real UAT/defer, but now says exactly what Wilku should
+  review next.
 - Pre-demo gate proof after the latest Goal 005 slices:
   `rtk scripts/pre_demo_gate.sh` passed on 2026-07-02. It verified the managed
   local stack, API health, live contracts, dashboard usefulness, source fact

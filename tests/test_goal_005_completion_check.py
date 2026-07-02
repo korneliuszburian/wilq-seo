@@ -351,6 +351,8 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "publish_ready_locked=true" in markdown
     assert "Latest skill eval results" in markdown
     assert "Next Service Profile review actions" in markdown
+    assert "-> Bezpieczeństwo prawne, poufność i zgody" in markdown
+    assert "decyzje: approve, needs_changes, stale, reject" in markdown
     assert "Następny input UAT" in markdown
     assert "Komenda do wygenerowania JSON" in markdown
     assert "Sales Brief status: `blocked`" in markdown

@@ -239,6 +239,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
                     "action_id": item["action_id"],
                     "review_scope": item["review_scope"],
                     "target_card_title": item["target_card_title"],
+                    "decision_options": item.get("decision_options", []),
                 }
                 for item in source_report.get("review_action_queue", [])[:5]
             ],
@@ -612,14 +613,22 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     ]
     next_review_actions = source.get("next_review_actions") or []
     if next_review_actions:
-        lines.append(
-            "- Next Service Profile review actions: "
-            + ", ".join(
-                f"`{item.get('action_id')}`"
-                for item in next_review_actions[:5]
-                if item.get("action_id")
+        lines.append("- Next Service Profile review actions:")
+        for item in next_review_actions[:5]:
+            decisions = ", ".join(
+                str(decision) for decision in item.get("decision_options", [])
             )
-        )
+            details = (
+                f"`{item.get('review_scope')}` -> "
+                f"{item.get('target_card_title') or 'brak targetu'}"
+            )
+            if decisions:
+                details += f" (decyzje: {decisions})"
+            lines.append(
+                f"  - `{item.get('action_id')}`: {details}"
+                if item.get("action_id")
+                else f"  - {details}"
+            )
     if dashboard:
         lines.append(
             "- Dashboard usefulness: "
