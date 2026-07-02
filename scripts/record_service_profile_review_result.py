@@ -1,0 +1,397 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+REVIEW_DECISIONS = {"approve", "needs_changes", "stale", "reject"}
+REQUIRED_TEXT_FIELDS = {
+    "data_review": "data review",
+    "reviewer": "reviewer",
+    "scope_label": "zakres review",
+}
+REQUIRED_DECISION_TEXT_FIELDS = {
+    "action_id": "action ID",
+    "target_card_id": "target card ID",
+    "decision": "decyzja",
+    "notes": "notatki review",
+}
+REQUIRED_DECISION_BOOLEAN_FIELDS = {
+    "source_trace_clear": "czy ślad źródłowy jest czytelny",
+    "blocked_claims_reviewed": "czy claimy zablokowane zostały sprawdzone",
+}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Waliduje wynik review publicznych kart usług Service Profile. "
+            "Nie promuje kart i nie edytuje source facts."
+        )
+    )
+    parser.add_argument("input", help="Ścieżka do JSON z wynikiem review")
+    parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
+    parser.add_argument(
+        "--api-base",
+        help="Opcjonalnie sprawdza action/card IDs przeciw live Service Profile.",
+    )
+    args = parser.parse_args()
+
+    try:
+        payload = load_json(Path(args.input))
+        live_context = load_live_context(args.api_base) if args.api_base else None
+        report = build_review_result_report(payload, live_context=live_context)
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr)
+        return 1
+
+    if args.format == "json":
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    else:
+        print(render_markdown(report))
+    return 0
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise RuntimeError(f"Could not read {path}: {error}") from error
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"{path} is not valid JSON") from error
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"{path} must contain a JSON object")
+    return payload
+
+
+def build_review_result_report(
+    payload: dict[str, Any],
+    *,
+    live_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    errors = validate_payload(payload, live_context=live_context)
+    if errors:
+        raise RuntimeError(
+            "Niepoprawny wynik Service Profile review:\n- " + "\n- ".join(errors)
+        )
+
+    decisions = [normalize_decision(item) for item in raw_list(payload.get("decisions"))]
+    follow_up_tasks = list_payload(payload.get("follow_up_beads"))
+    blocking_decisions = [
+        decision
+        for decision in decisions
+        if decision["decision"] != "approve"
+        or not decision["source_trace_clear"]
+        or not decision["blocked_claims_reviewed"]
+    ]
+    approved_count = sum(1 for decision in decisions if decision["decision"] == "approve")
+    live_provenance = live_review_provenance(live_context=live_context, decisions=decisions)
+    overall_status = (
+        "review_ready_for_promotion_request"
+        if not blocking_decisions
+        else "needs_follow_up_before_promotion_request"
+    )
+    return {
+        "report_type": "service_profile_public_card_review_result_v1",
+        "date": str(payload["data_review"]).strip(),
+        "reviewer": str(payload["reviewer"]).strip(),
+        "scope_label": str(payload["scope_label"]).strip(),
+        "decision_count": len(decisions),
+        "approved_decision_count": approved_count,
+        "blocking_decision_count": len(blocking_decisions),
+        "decisions": decisions,
+        "follow_up_tasks": follow_up_tasks,
+        "live_provenance": live_provenance,
+        "overall_status": overall_status,
+        "promotion_allowed": False,
+        "safe_next_step": (
+            "Przygotuj osobny, audytowany promotion request dla zatwierdzonych kart."
+            if overall_status == "review_ready_for_promotion_request"
+            else "Zamknij follow-upy review przed przygotowaniem promotion request."
+        ),
+        "safety_note": (
+            "Ten raport zapisuje wynik review publicznych kart usług. Nie edytuje "
+            "source_facts.json, nie zmienia lifecycle kart, nie ustawia "
+            "approved_current i nie odblokowuje production-depth."
+        ),
+    }
+
+
+def validate_payload(
+    payload: dict[str, Any],
+    *,
+    live_context: dict[str, Any] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    for key, label in REQUIRED_TEXT_FIELDS.items():
+        if is_blank_or_placeholder(payload.get(key)):
+            errors.append(f"Brak pola albo placeholder: {label}")
+    decisions = raw_list(payload.get("decisions"))
+    if not decisions:
+        errors.append("Brak decyzji review w polu decisions")
+        return errors
+
+    live_actions = live_public_review_actions(live_context)
+    live_card_ids = live_service_card_ids(live_context)
+    follow_up_tasks = list_payload(payload.get("follow_up_beads"))
+    has_blocking_decision = False
+
+    seen_action_ids: set[str] = set()
+    for index, raw_decision in enumerate(decisions, start=1):
+        if not isinstance(raw_decision, dict):
+            errors.append(f"Decyzja #{index} musi być obiektem")
+            continue
+        for key, label in REQUIRED_DECISION_TEXT_FIELDS.items():
+            if is_blank_or_placeholder(raw_decision.get(key)):
+                errors.append(f"Decyzja #{index}: brak pola albo placeholder: {label}")
+        decision_value = str(raw_decision.get("decision") or "").strip()
+        if decision_value and decision_value not in REVIEW_DECISIONS:
+            errors.append(
+                f"Decyzja #{index}: decision musi być jedną z wartości "
+                f"{', '.join(sorted(REVIEW_DECISIONS))}"
+            )
+        for key, label in REQUIRED_DECISION_BOOLEAN_FIELDS.items():
+            if normalize_bool(raw_decision.get(key)) is None:
+                errors.append(f"Decyzja #{index}: {label} musi mieć wartość tak albo nie")
+
+        action_id = str(raw_decision.get("action_id") or "").strip()
+        target_card_id = str(raw_decision.get("target_card_id") or "").strip()
+        if action_id:
+            if action_id in seen_action_ids:
+                errors.append(f"Decyzja #{index}: powtórzony action_id {action_id}")
+            seen_action_ids.add(action_id)
+        if live_context is not None and action_id:
+            live_target = live_actions.get(action_id)
+            if live_target is None:
+                errors.append(
+                    f"Decyzja #{index}: action_id nie występuje w live Service Profile: "
+                    f"{action_id}"
+                )
+            elif target_card_id and live_target != target_card_id:
+                errors.append(
+                    f"Decyzja #{index}: target_card_id nie pasuje do live action "
+                    f"{action_id}: {target_card_id} != {live_target}"
+                )
+        if live_context is not None and target_card_id and target_card_id not in live_card_ids:
+            errors.append(
+                f"Decyzja #{index}: target_card_id nie występuje w service_sections: "
+                f"{target_card_id}"
+            )
+
+        decision_blocks = (
+            decision_value != "approve"
+            or normalize_bool(raw_decision.get("source_trace_clear")) is not True
+            or normalize_bool(raw_decision.get("blocked_claims_reviewed")) is not True
+        )
+        has_blocking_decision = has_blocking_decision or decision_blocks
+
+    if has_blocking_decision and not follow_up_tasks:
+        errors.append("Blokujące decyzje review wymagają follow_up_beads")
+    return errors
+
+
+def normalize_decision(raw_decision: Any) -> dict[str, Any]:
+    if not isinstance(raw_decision, dict):
+        raise RuntimeError("Decyzja review musi być obiektem")
+    return {
+        "action_id": str(raw_decision["action_id"]).strip(),
+        "target_card_id": str(raw_decision["target_card_id"]).strip(),
+        "decision": str(raw_decision["decision"]).strip(),
+        "source_trace_clear": normalize_bool(raw_decision["source_trace_clear"]),
+        "blocked_claims_reviewed": normalize_bool(raw_decision["blocked_claims_reviewed"]),
+        "notes": str(raw_decision["notes"]).strip(),
+        "follow_up_beads": list_payload(raw_decision.get("follow_up_beads")),
+    }
+
+
+def load_live_context(api_base: str) -> dict[str, Any]:
+    health = request_json(api_base, "GET", "/api/health")
+    if not isinstance(health, dict) or health.get("status") != "ok":
+        raise RuntimeError(f"WILQ API health is not ok at {api_base}")
+    profile = request_json(api_base, "GET", "/api/content/service-profile")
+    if not isinstance(profile, dict):
+        raise RuntimeError("Live Service Profile must be an object")
+    return {"api_base": api_base.rstrip("/"), "service_profile": profile}
+
+
+def request_json(api_base: str, method: str, path: str, *, timeout: int = 60) -> Any:
+    request = urllib.request.Request(
+        f"{api_base.rstrip('/')}{path}",
+        method=method,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:300]
+        raise RuntimeError(f"HTTP {error.code} from {path}: {detail}") from error
+    except urllib.error.URLError as error:
+        raise RuntimeError(f"Could not reach WILQ API at {api_base}: {error.reason}") from error
+
+
+def live_public_review_actions(live_context: dict[str, Any] | None) -> dict[str, str]:
+    if live_context is None:
+        return {}
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return {}
+    actions: dict[str, str] = {}
+    for action in raw_list(profile.get("review_actions")):
+        if not isinstance(action, dict):
+            continue
+        action_id = str(action.get("action_id") or "").strip()
+        target_card_id = str(action.get("target_card_id") or "").strip()
+        if action_id.startswith("service_profile_review_card_") and target_card_id:
+            actions[action_id] = target_card_id
+    return actions
+
+
+def live_service_card_ids(live_context: dict[str, Any] | None) -> set[str]:
+    if live_context is None:
+        return set()
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return set()
+    return {
+        str(section.get("card_id") or "").strip()
+        for section in raw_list(profile.get("service_sections"))
+        if isinstance(section, dict) and section.get("card_id")
+    }
+
+
+def live_review_provenance(
+    *,
+    live_context: dict[str, Any] | None,
+    decisions: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if live_context is None:
+        return None
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return None
+    coverage = (
+        profile.get("coverage_summary")
+        if isinstance(profile.get("coverage_summary"), dict)
+        else {}
+    )
+    live_actions = live_public_review_actions(live_context)
+    return {
+        "api_base": live_context.get("api_base"),
+        "service_profile_read_only": profile.get("read_only"),
+        "production_depth_ready": coverage.get("ready_for_daily_content"),
+        "live_public_review_action_count": len(live_actions),
+        "reviewed_action_count": len(decisions),
+        "reviewed_action_ids": [decision["action_id"] for decision in decisions],
+        "reviewed_target_card_ids": [decision["target_card_id"] for decision in decisions],
+    }
+
+
+def render_markdown(report: dict[str, Any]) -> str:
+    lines = [
+        "# Wynik Service Profile review",
+        "",
+        f"- Typ: `{report['report_type']}`",
+        f"- Data: `{report['date']}`",
+        f"- Reviewer: `{report['reviewer']}`",
+        f"- Zakres: {report['scope_label']}",
+        f"- Status: {visible_status(report['overall_status'])}",
+        f"- Decyzje: `{report['decision_count']}`",
+        f"- Zatwierdzone w review: `{report['approved_decision_count']}`",
+        f"- Blokujące: `{report['blocking_decision_count']}`",
+        f"- Promotion allowed: {visible_bool(report['promotion_allowed'])}",
+        "",
+        report["safety_note"],
+        "",
+        "## Live provenance",
+        "",
+        render_live_provenance(report.get("live_provenance")),
+        "",
+        "## Decyzje",
+        "",
+    ]
+    for decision in report["decisions"]:
+        lines.extend(
+            [
+                f"### `{decision['target_card_id']}`",
+                "",
+                f"- action_id: `{decision['action_id']}`",
+                f"- decyzja: `{decision['decision']}`",
+                f"- ślad źródłowy czytelny: {visible_bool(decision['source_trace_clear'])}",
+                "- claimy zablokowane sprawdzone: "
+                f"{visible_bool(decision['blocked_claims_reviewed'])}",
+                f"- notatki: {decision['notes']}",
+            ]
+        )
+        for task in decision["follow_up_beads"]:
+            lines.append(f"- follow-up: {task}")
+        lines.append("")
+    lines.extend(["## Follow-up", ""])
+    for task in report["follow_up_tasks"] or ["brak"]:
+        lines.append(f"- {task}")
+    lines.extend(["", "## Następny krok", "", report["safe_next_step"]])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_live_provenance(value: Any) -> str:
+    if not isinstance(value, dict):
+        return "- Nie sprawdzono live Service Profile."
+    return "\n".join(
+        [
+            f"- API: `{value.get('api_base')}`",
+            "- Service Profile read-only: "
+            f"{visible_bool(value.get('service_profile_read_only') is True)}",
+            "- Production-depth ready: "
+            f"{visible_bool(value.get('production_depth_ready') is True)}",
+            "- Public review actions live: "
+            f"`{value.get('live_public_review_action_count')}`",
+            "- Public review actions w wyniku: "
+            f"`{value.get('reviewed_action_count')}`",
+        ]
+    )
+
+
+def normalize_bool(value: Any) -> bool | None:
+    lowered = str(value or "").strip().lower()
+    if lowered == "tak":
+        return True
+    if lowered == "nie":
+        return False
+    return None
+
+
+def visible_bool(value: Any) -> str:
+    return "tak" if value is True else "nie"
+
+
+def visible_status(value: Any) -> str:
+    if value == "review_ready_for_promotion_request":
+        return "review gotowy do osobnego promotion request"
+    return "wymaga follow-up przed promotion request"
+
+
+def list_payload(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if not is_blank_or_placeholder(item)]
+    if is_blank_or_placeholder(value):
+        return []
+    return [str(value).strip()]
+
+
+def raw_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def is_blank_or_placeholder(value: Any) -> bool:
+    text = str(value or "").strip()
+    return not text or text.startswith("<") or text in {"-", "TODO", "todo"}
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

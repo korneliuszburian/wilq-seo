@@ -105,6 +105,36 @@ Public service review actions:
 Każda z tych akcji ma ten sam warunek bezpieczeństwa: to nie promuje source
 fact ani knowledge card; potrzebna jest osobna zatwierdzona akcja i audyt.
 
+Wynik public service review można zapisać osobnym, fail-closed raportem:
+
+```bash
+rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-review-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
+```
+
+Minimalny format wyniku review:
+
+```json
+{
+  "data_review": "YYYY-MM-DD",
+  "reviewer": "Wilku",
+  "scope_label": "publiczne karty usług Service Profile",
+  "decisions": [
+    {
+      "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+      "target_card_id": "ekologus_service_bdo_reporting",
+      "decision": "approve",
+      "source_trace_clear": "tak",
+      "blocked_claims_reviewed": "tak",
+      "notes": "co Wilku zatwierdził albo co wymaga zmiany"
+    }
+  ],
+  "follow_up_beads": []
+}
+```
+
+Ten raport nie promuje kart do `approved_current`. Jeżeli decyzja brzmi
+`approve`, następny krok to osobny, audytowany promotion request.
+
 Private review actions:
 
 - `service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`:

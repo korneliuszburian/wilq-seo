@@ -217,6 +217,15 @@ source fact IDs, source lineage URLs and `review_request_hint`. This makes the
 public service-card review path inspectable by Wilku without opening raw API
 responses or inventing another review surface.
 
+Under Beads task `wilq-seo-ht6`, public service-card review results can now be
+recorded as a deterministic report through
+`scripts/record_service_profile_review_result.py`. The script checks live
+Service Profile action/card IDs, reviewer/date/scope, source trace clarity,
+blocked-claim review and required follow-up Beads for blocking decisions. It
+does not edit source facts, change lifecycle status, set `approved_current` or
+unlock production-depth; an `approve` result only means a separate audited
+promotion request can be prepared.
+
 Redacted per-proposal details are implemented under Beads task `wilq-seo-0ap`.
 Service Profile now shows target card, source class, review status, support
 level, risk tier, confidence label, blocked claims and safe next step for each

@@ -181,6 +181,15 @@ API status later contradicts this state.
   Focused proof passed: `rtk pnpm --filter @wilq/dashboard test --
   ServiceProfileSurface.test.tsx --runInBand` and
   `rtk pnpm --dir apps/dashboard typecheck`.
+- Public service-card review results now have a deterministic fail-closed
+  recorder: `scripts/record_service_profile_review_result.py`. It validates
+  reviewer/date/scope, live Service Profile action/card IDs, source-trace
+  clarity, blocked-claim review and follow-up Beads for blocking decisions. It
+  renders a report only; it does not edit `source_facts.json`, change lifecycle
+  status, set `approved_current` or unlock production-depth. Live proof on
+  2026-07-02 accepted BDO review action/card IDs with
+  `live_public_review_action_count=6`, `promotion_allowed=false` and
+  `production_depth_ready=false`.
 - The `wilq-content-operator` UAT packet now includes live Service Profile
   evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
   `uat_readiness.status=blocked_for_full_uat`,

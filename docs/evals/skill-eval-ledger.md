@@ -6874,3 +6874,31 @@ Result:
   source URL and the review hint.
 - Dashboard typecheck passed after bringing a stale structured-generation
   fixture up to the current `removed_or_blocked_claim_markers` schema.
+
+## 2026-07-02 - Service Profile public card review result validator
+
+Purpose:
+
+- Add a deterministic way to record Wilku/owner review results for public
+  service-card review actions without promoting cards automatically.
+- Check live Service Profile action/card IDs so review proof cannot reference
+  stale or invented targets.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_service_profile_review_result.py -q
+uv run ruff check scripts/record_service_profile_review_result.py tests/test_service_profile_review_result.py
+uv run python scripts/record_service_profile_review_result.py <live-example-json> --api-base http://127.0.0.1:8000 --format json
+git diff --check
+```
+
+Result:
+
+- Focused pytest passed: 5 tests.
+- Live proof accepted `service_profile_review_card_ekologus_service_bdo_reporting`
+  for `ekologus_service_bdo_reporting`, recorded
+  `live_public_review_action_count=6`, `production_depth_ready=false` and
+  `promotion_allowed=false`.
+- The report explicitly does not edit `source_facts.json`, change lifecycle
+  status, set `approved_current` or unlock production-depth.
