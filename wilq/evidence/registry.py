@@ -20,6 +20,8 @@ METRIC_EVIDENCE_CONNECTORS = (
     "openai_codex",
 )
 
+SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID = "ev_content_service_profile_source_facts"
+
 
 def connector_evidence_id(connector_id: str) -> str:
     return f"ev_connector_{connector_id}_status"
@@ -30,6 +32,7 @@ def refresh_run_evidence_id(run_id: str) -> str:
 
 
 def list_evidence() -> list[Evidence]:
+    service_profile_evidence = [_service_profile_source_facts_evidence()]
     connector_evidence = [
         Evidence(
             id=connector_evidence_id(connector.id),
@@ -53,7 +56,7 @@ def list_evidence() -> list[Evidence]:
     metric_evidence = [
         evidence for evidence in _metric_fact_evidence() if evidence.id not in known_evidence_ids
     ]
-    return [*connector_evidence, *refresh_evidence, *metric_evidence]
+    return [*service_profile_evidence, *connector_evidence, *refresh_evidence, *metric_evidence]
 
 
 def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
@@ -62,6 +65,11 @@ def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
         return []
     requested_id_set = set(requested_ids)
     evidence_by_id: dict[str, Evidence] = {}
+
+    if SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID in requested_id_set:
+        evidence_by_id[SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID] = (
+            _service_profile_source_facts_evidence()
+        )
 
     for connector in list_connector_statuses():
         evidence_id = connector_evidence_id(connector.id)
@@ -103,6 +111,28 @@ def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
 def get_evidence(evidence_id: str) -> Evidence | None:
     evidence = list_evidence_by_ids([evidence_id])
     return evidence[0] if evidence else None
+
+
+def _service_profile_source_facts_evidence() -> Evidence:
+    return Evidence(
+        id=SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID,
+        source_connector="public_site",
+        source_type="compiled_service_profile_source_facts",
+        source_id="wilq.content.knowledge.source_facts",
+        freshness=FreshnessState(
+            state="unknown",
+            notes=(
+                "Service Profile is compiled from commit-safe public source facts and "
+                "redacted reviewed-internal candidates. This evidence proves source "
+                "lineage exists, not human approval or production-depth readiness."
+            ),
+        ),
+        summary=(
+            "Service Profile source facts loaded from WILQ knowledge registry; "
+            "review-required facts still need Wilku/owner approval before promotion."
+        ),
+        raw_ref="wilq/content/knowledge/source_facts.json",
+    )
 
 
 def _metric_fact_evidence_for_ids(evidence_ids: list[str]) -> list[Evidence]:

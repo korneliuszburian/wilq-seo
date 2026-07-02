@@ -226,6 +226,16 @@ does not edit source facts, change lifecycle status, set `approved_current` or
 unlock production-depth; an `approve` result only means a separate audited
 promotion request can be prepared.
 
+Under Beads task `wilq-seo-saf`, that next step now has a central WILQ
+ActionObject preview: `act_prepare_service_profile_knowledge_promotion`. The
+action validates as prepare-only, uses evidence
+`ev_content_service_profile_source_facts`, exposes 6 public service-card
+promotion-preview rows and marketer preview cards, and stays blocked with
+`apply_allowed=false` plus `api_mutation_ready=false`. It does not mutate
+`source_facts.json`, promote cards, set `approved_current` or unlock
+production-depth; it only makes the later audited promotion request explicit in
+the same ActionObject system as the rest of WILQ.
+
 Redacted per-proposal details are implemented under Beads task `wilq-seo-0ap`.
 Service Profile now shows target card, source class, review status, support
 level, risk tier, confidence label, blocked claims and safe next step for each

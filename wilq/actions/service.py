@@ -81,7 +81,10 @@ from wilq.actions.localo.visibility import (
     LOCALO_VISIBILITY_REVIEW_ACTION_ID,
     localo_visibility_review_payload_from_metric_facts,
 )
-from wilq.actions.payloads import validate_action_payload
+from wilq.actions.payloads import (
+    SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE,
+    validate_action_payload,
+)
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.merchant_labels import (
     merchant_display_label,
@@ -93,7 +96,8 @@ from wilq.briefing.merchant_labels import (
 )
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
-from wilq.evidence.registry import connector_evidence_id
+from wilq.content.knowledge.service_profile import content_service_profile_response
+from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
     evidence_count_label,
@@ -557,7 +561,125 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
             created_by="system_core_seed",
         ),
     ]
+    service_profile_action = _service_profile_knowledge_promotion_action()
+    if service_profile_action is not None:
+        actions.append(service_profile_action)
     return {action.id: action for action in actions}
+
+
+def _service_profile_knowledge_promotion_action() -> ActionObject | None:
+    profile = content_service_profile_response()
+    review_actions_by_target = {
+        action.target_card_id: action
+        for action in profile.review_actions
+        if action.action_id.startswith("service_profile_review_card_")
+        and action.target_card_id
+    }
+    rows: list[dict[str, Any]] = []
+    for section in profile.service_sections:
+        review_action = review_actions_by_target.get(section.card_id)
+        if review_action is None:
+            continue
+        if section.status != "source_backed_review_required":
+            continue
+        if "public_site" not in section.source_connector_labels:
+            continue
+        rows.append(
+            {
+                "id": f"knowledge_promotion_{section.card_id}",
+                "preview_contract": "service_profile_knowledge_promotion_preview_v1",
+                "operation_type": "knowledge_card_promotion_review",
+                "target_card_id": section.card_id,
+                "target_card_title": section.title,
+                "current_lifecycle": section.status,
+                "current_lifecycle_label": section.status_label,
+                "target_lifecycle": "approved_current",
+                "target_lifecycle_label": "zatwierdzone i aktualne po review człowieka",
+                "source_fact_ids": section.source_fact_ids,
+                "source_connector_labels": section.source_connector_labels,
+                "source_lineage_labels": section.source_lineage_labels,
+                "review_action_id": review_action.action_id,
+                "required_human_role": review_action.required_human_role,
+                "blocked_claims": [claim.label for claim in section.forbidden_claims],
+                "claims_needing_review": [
+                    claim.label for claim in section.claims_needing_review
+                ],
+                "required_validation": [
+                    "public_source_trace_review",
+                    "blocked_claims_review",
+                    "owner_human_review_record",
+                    "separate_audited_promotion_request",
+                ],
+                "required_validation_labels": [
+                    "sprawdź źródła publiczne",
+                    "sprawdź claimy zakazane",
+                    "zapisz decyzję Wilka/ownera",
+                    "przygotuj osobny audyt awansu",
+                ],
+                "promotion_blocked_reason": (
+                    "Ta akcja tylko przygotowuje request po review. Nie edytuje "
+                    "source_facts.json, nie zmienia lifecycle i nie odblokowuje "
+                    "production-depth."
+                ),
+                "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
+                "apply_allowed": False,
+                "api_mutation_ready": False,
+                "destructive": False,
+            }
+        )
+    if not rows:
+        return None
+    return ActionObject(
+        id="act_prepare_service_profile_knowledge_promotion",
+        title="Przygotuj request awansu wiedzy Service Profile",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=[SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
+        human_diagnosis=(
+            "Service Profile ma publiczne karty usługowe ze źródłami, ale nadal "
+            "są review-required. WILQ może przygotować audytowalny request awansu "
+            "po decyzji Wilka/ownera, bez zmiany wiedzy i bez odblokowania "
+            "production-depth."
+        ),
+        recommended_reason=(
+            "Po zebraniu decyzji z review kart usługowych sprawdź, które source "
+            "facts mają pełny ślad źródła, review claimów i właściciela decyzji. "
+            "Dopiero późniejsza osobna ścieżka audytu może zmienić lifecycle."
+        ),
+        payload={
+            "action_type": SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE,
+            "connector": "wordpress_ekologus",
+            "mode": "prepare_only",
+            "preview_contract": "service_profile_knowledge_promotion_preview_v1",
+            "source_connectors": ["public_site"],
+            "source_fact_count": profile.technical_trace.source_fact_count,
+            "target_lifecycle": "approved_current",
+            "payload_preview": rows,
+            "payload_preview_total": len(rows),
+            "payload_preview_included": len(rows),
+            "required_validation": [
+                "public_source_trace_review",
+                "blocked_claims_review",
+                "owner_human_review_record",
+                "separate_audited_promotion_request",
+            ],
+            "blocked_claims": [
+                "automatyczny awans wiedzy",
+                "production-depth bez owner review",
+                "edycja source_facts.json z tej akcji",
+                "publikacja lub szkic finalny na podstawie review-required",
+            ],
+            "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_core_seed",
+    )
 
 
 _STATIC_ACTIONS = seed_static_actions()
@@ -2646,6 +2768,11 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _content_refresh_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "wordpress_draft_handoff_preview_v1":
         return _wordpress_draft_handoff_preview_cards(action.payload)
+    if (
+        action.payload.get("preview_contract")
+        == "service_profile_knowledge_promotion_preview_v1"
+    ):
+        return _service_profile_knowledge_promotion_preview_cards(action.payload)
     if action.payload.get("action_type") == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
         return _keyword_planner_access_preview_cards(action.payload)
     if action.payload.get("action_type") == "confirm_ads_target_guardrails":
@@ -3001,6 +3128,57 @@ def _wordpress_draft_handoff_preview_cards(
                 kind="wordpress_draft_handoff_review",
                 title_label="Szkic WordPress do sprawdzenia",
                 subtitle_label="podgląd bez zapisu i bez publikacji",
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
+            )
+        )
+    return cards
+
+
+def _service_profile_knowledge_promotion_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:6]):
+        source_fact_ids = _string_list(item.get("source_fact_ids"))
+        source_connectors = _string_list(item.get("source_connector_labels"))
+        required_validation = _string_list(item.get("required_validation_labels"))
+        blocked_claims = _string_list(item.get("blocked_claims"))
+        rows = [
+            _preview_row("Karta", str(item.get("target_card_title") or "karta usługi")),
+            _preview_row(
+                "Status teraz",
+                str(item.get("current_lifecycle_label") or "wymaga review"),
+            ),
+            _preview_row(
+                "Status po decyzji",
+                str(item.get("target_lifecycle_label") or "approved-current po review"),
+            ),
+            _preview_row(
+                "Review",
+                str(item.get("required_human_role") or "Wilku albo owner wiedzy"),
+            ),
+        ]
+        if source_fact_ids:
+            rows.append(_preview_row("Source facts", ", ".join(source_fact_ids[:3])))
+        if source_connectors:
+            rows.append(_preview_row("Źródła", ", ".join(source_connectors[:3])))
+        if required_validation:
+            rows.append(_preview_row("Warunki", ", ".join(required_validation[:4])))
+        if blocked_claims:
+            rows.append(_preview_row("Claimy blokowane", ", ".join(blocked_claims[:3])))
+        blocked_reason = item.get("promotion_blocked_reason")
+        if isinstance(blocked_reason, str) and blocked_reason:
+            rows.append(_preview_row("Blokada", blocked_reason))
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"service_profile_knowledge_promotion_{index}",
+                kind="service_profile_knowledge_promotion_review",
+                title_label="Awans wiedzy Service Profile do sprawdzenia",
+                subtitle_label="request po review, bez edycji knowledge base",
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),

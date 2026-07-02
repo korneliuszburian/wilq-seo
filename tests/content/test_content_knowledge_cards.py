@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers.content_workflow import router
+from wilq.actions.service import get_action, preview_action, validate_action
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCard,
     compile_source_facts_to_knowledge_cards,
@@ -23,6 +24,10 @@ from wilq.content.knowledge.source_facts import (
     ekologus_source_fact_registry,
 )
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.evidence.registry import (
+    SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID,
+    get_evidence,
+)
 
 
 def _item(**overrides: object) -> ContentWorkItem:
@@ -431,3 +436,59 @@ def test_content_service_profile_endpoint_exposes_read_only_view_model() -> None
     gap_ids = {gap["gap_id"] for gap in payload["coverage_gaps"]}
     assert "gap_no_approved_current_cards" in gap_ids
     assert "gap_service_operat_wodnoprawny" not in gap_ids
+
+
+def test_service_profile_promotion_action_is_prepare_only_and_review_gated() -> None:
+    before_profile = content_service_profile_response()
+    action = get_action("act_prepare_service_profile_knowledge_promotion")
+
+    assert action is not None
+    assert action.mode == "prepare"
+    assert action.connector == "wordpress_ekologus"
+    assert action.evidence_ids == [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID]
+    assert action.payload["action_type"] == "service_profile_knowledge_promotion_review"
+    assert action.payload["preview_contract"] == (
+        "service_profile_knowledge_promotion_preview_v1"
+    )
+    assert action.payload["apply_allowed"] is False
+    assert action.payload["api_mutation_ready"] is False
+    assert action.payload["target_lifecycle"] == "approved_current"
+    preview_rows = action.payload["payload_preview"]
+    assert preview_rows
+    assert any(
+        row["target_card_id"] == "ekologus_service_bdo_reporting"
+        and row["source_fact_ids"] == ["ekologus_public_bdo_faq_2026_07_01"]
+        for row in preview_rows
+    )
+    assert all(row["apply_allowed"] is False for row in preview_rows)
+    assert all(row["api_mutation_ready"] is False for row in preview_rows)
+    assert all("promotion_blocked_reason" in row for row in preview_rows)
+
+    validation = validate_action(action)
+    assert validation.valid is True
+    preview = preview_action(action)
+    assert preview.status == "blocked"
+    assert preview.mutation_allowed is False
+    assert "action_mode_prepare_only" in preview.blockers
+    assert "payload_apply_allowed_false" in preview.blockers
+    assert preview.preview_cards
+    assert preview.preview_cards[0].kind == "service_profile_knowledge_promotion_review"
+    assert preview.preview_cards[0].apply_state_label == "zapis zmian zablokowany"
+
+    after_profile = content_service_profile_response()
+    assert after_profile.read_only is True
+    assert after_profile.review_policy.can_promote_facts is False
+    assert after_profile.coverage_summary.ready_for_daily_content is False
+    assert after_profile.coverage_summary.approved_current_count == (
+        before_profile.coverage_summary.approved_current_count
+    )
+
+
+def test_service_profile_source_facts_evidence_is_known() -> None:
+    evidence = get_evidence(SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID)
+
+    assert evidence is not None
+    assert evidence.id == SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID
+    assert evidence.source_connector == "public_site"
+    assert evidence.source_type == "compiled_service_profile_source_facts"
+    assert "review-required" in evidence.summary

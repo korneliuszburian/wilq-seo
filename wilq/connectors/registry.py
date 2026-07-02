@@ -171,6 +171,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "wordpress_content_refresh",
             "wordpress_draft_update",
             "wordpress_draft_handoff",
+            "service_profile_knowledge_promotion_review",
         ),
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",

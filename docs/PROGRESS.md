@@ -190,6 +190,17 @@ API status later contradicts this state.
   2026-07-02 accepted BDO review action/card IDs with
   `live_public_review_action_count=6`, `promotion_allowed=false` and
   `production_depth_ready=false`.
+- Service Profile review now has a central prepare-only ActionObject for the
+  next promotion gate: `act_prepare_service_profile_knowledge_promotion`.
+  It exposes 6 public service-card promotion-preview rows from source facts,
+  validates with `valid=true`, uses evidence
+  `ev_content_service_profile_source_facts`, and returns marketer preview cards
+  with `kind=service_profile_knowledge_promotion_review`. Live API proof after
+  stack restart on 2026-07-02: `preview_status=blocked`,
+  `preview_contract=service_profile_knowledge_promotion_preview_v1`,
+  `apply_allowed=false`, `api_mutation_ready=false`. This prepares the audited
+  promotion request path without editing `source_facts.json`, changing
+  lifecycle status, setting `approved_current` or unlocking production-depth.
 - The `wilq-content-operator` UAT packet now includes live Service Profile
   evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
   `uat_readiness.status=blocked_for_full_uat`,

@@ -44,6 +44,10 @@ INTERNAL_ACTION_TYPES = {
     KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
 }
 
+SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE = (
+    "service_profile_knowledge_promotion_review"
+)
+
 
 def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
@@ -116,5 +120,51 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         errors.extend(validate_ga4_tracking_quality_payload(payload))
     if connector_id == "localo" and action_type == LOCALO_VISIBILITY_REVIEW_ACTION_TYPE:
         errors.extend(validate_localo_visibility_review_payload(payload))
+    if (
+        connector_id == "wordpress_ekologus"
+        and action_type == SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE
+    ):
+        errors.extend(validate_service_profile_knowledge_promotion_payload(payload))
 
+    return errors
+
+
+def validate_service_profile_knowledge_promotion_payload(
+    payload: dict[str, Any],
+) -> list[str]:
+    errors: list[str] = []
+    if payload.get("mode") != "prepare_only":
+        errors.append(wrong("Promocja wiedzy", "musi pozostać w trybie prepare_only"))
+    if payload.get("preview_contract") != "service_profile_knowledge_promotion_preview_v1":
+        errors.append(missing("Promocja wiedzy", "kontraktu podglądu"))
+    if payload.get("apply_allowed") is not False:
+        errors.append(wrong("Promocja wiedzy", "zapis zmian musi być zablokowany"))
+    if payload.get("api_mutation_ready") is not False:
+        errors.append(wrong("Promocja wiedzy", "nie może deklarować gotowości mutacji"))
+    if payload.get("target_lifecycle") != "approved_current":
+        errors.append(missing("Promocja wiedzy", "docelowego statusu approved_current"))
+    rows = payload.get("payload_preview")
+    if not isinstance(rows, list) or not rows:
+        errors.append(missing("Promocja wiedzy", "pozycji do sprawdzenia"))
+        return errors
+    for index, row in enumerate(rows, start=1):
+        if not isinstance(row, dict):
+            errors.append(wrong("Promocja wiedzy", f"pozycja {index} nie jest obiektem"))
+            continue
+        for field_name in (
+            "target_card_id",
+            "target_card_title",
+            "source_fact_ids",
+            "review_action_id",
+            "required_human_role",
+            "promotion_blocked_reason",
+            "evidence_ids",
+        ):
+            value = row.get(field_name)
+            if value in (None, "", []):
+                errors.append(missing("Promocja wiedzy", f"pola {field_name}"))
+        if row.get("apply_allowed") is not False:
+            errors.append(wrong("Promocja wiedzy", "pozycja musi blokować zapis zmian"))
+        if row.get("api_mutation_ready") is not False:
+            errors.append(wrong("Promocja wiedzy", "pozycja nie może być gotowa do mutacji"))
     return errors
