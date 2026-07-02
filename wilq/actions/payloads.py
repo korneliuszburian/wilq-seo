@@ -47,6 +47,9 @@ INTERNAL_ACTION_TYPES = {
 SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE = (
     "service_profile_knowledge_promotion_review"
 )
+SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE = (
+    "service_profile_private_proposal_promotion_review"
+)
 
 
 def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[str]:
@@ -125,6 +128,11 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         and action_type == SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE
     ):
         errors.extend(validate_service_profile_knowledge_promotion_payload(payload))
+    if (
+        connector_id == "wordpress_ekologus"
+        and action_type == SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE
+    ):
+        errors.extend(validate_service_profile_private_proposal_promotion_payload(payload))
 
     return errors
 
@@ -167,4 +175,67 @@ def validate_service_profile_knowledge_promotion_payload(
             errors.append(wrong("Promocja wiedzy", "pozycja musi blokować zapis zmian"))
         if row.get("api_mutation_ready") is not False:
             errors.append(wrong("Promocja wiedzy", "pozycja nie może być gotowa do mutacji"))
+    return errors
+
+
+def validate_service_profile_private_proposal_promotion_payload(
+    payload: dict[str, Any],
+) -> list[str]:
+    errors: list[str] = []
+    if payload.get("mode") != "prepare_only":
+        errors.append(wrong("Promocja prywatnej propozycji", "musi pozostać w trybie prepare_only"))
+    if payload.get("preview_contract") != "private_source_proposal_promotion_preview_v1":
+        errors.append(missing("Promocja prywatnej propozycji", "kontraktu podglądu"))
+    if payload.get("apply_allowed") is not False:
+        errors.append(wrong("Promocja prywatnej propozycji", "zapis zmian musi być zablokowany"))
+    if payload.get("api_mutation_ready") is not False:
+        errors.append(
+            wrong(
+                "Promocja prywatnej propozycji",
+                "nie może deklarować gotowości mutacji",
+            )
+        )
+    rows = payload.get("payload_preview")
+    if not isinstance(rows, list) or not rows:
+        errors.append(missing("Promocja prywatnej propozycji", "pozycji do sprawdzenia"))
+        return errors
+    for index, row in enumerate(rows, start=1):
+        if not isinstance(row, dict):
+            errors.append(
+                wrong(
+                    "Promocja prywatnej propozycji",
+                    f"pozycja {index} nie jest obiektem",
+                )
+            )
+            continue
+        for field_name in (
+            "proposal_id",
+            "source_id",
+            "scope",
+            "target_card_id",
+            "target_card_title",
+            "review_action_id",
+            "required_human_role",
+            "promotion_blocked_reason",
+            "evidence_ids",
+        ):
+            value = row.get(field_name)
+            if value in (None, "", []):
+                errors.append(missing("Promocja prywatnej propozycji", f"pola {field_name}"))
+        if row.get("redacted") is not True:
+            errors.append(wrong("Promocja prywatnej propozycji", "pozycja musi być redacted"))
+        if row.get("apply_allowed") is not False:
+            errors.append(
+                wrong(
+                    "Promocja prywatnej propozycji",
+                    "pozycja musi blokować zapis zmian",
+                )
+            )
+        if row.get("api_mutation_ready") is not False:
+            errors.append(
+                wrong(
+                    "Promocja prywatnej propozycji",
+                    "pozycja nie może być gotowa do mutacji",
+                )
+            )
     return errors

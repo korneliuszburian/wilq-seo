@@ -531,6 +531,58 @@ def test_service_profile_promotion_action_is_prepare_only_and_review_gated() -> 
     )
 
 
+def test_private_proposal_promotion_action_is_prepare_only_and_review_gated() -> None:
+    before_profile = content_service_profile_response()
+    action = get_action("act_prepare_service_profile_private_proposal_promotion")
+
+    assert action is not None
+    assert action.mode == "prepare"
+    assert action.connector == "wordpress_ekologus"
+    assert action.evidence_ids == [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID]
+    assert action.payload["action_type"] == "service_profile_private_proposal_promotion_review"
+    assert action.payload["preview_contract"] == "private_source_proposal_promotion_preview_v1"
+    assert action.payload["apply_allowed"] is False
+    assert action.payload["api_mutation_ready"] is False
+    assert action.payload["proposal_count"] >= 4
+    preview_rows = action.payload["payload_preview"]
+    assert preview_rows
+    assert {
+        "ekologus_service_eko_opieka_calendar",
+        "ekologus_service_environmental_compliance_audit",
+        "ekologus_claim_policy_brand_voice",
+        "ekologus_claim_policy_legal_safety",
+    } <= {row["target_card_id"] for row in preview_rows}
+    assert {"service", "claim_policy"} <= {row["scope"] for row in preview_rows}
+    assert all(row["redacted"] is True for row in preview_rows)
+    assert all(row["apply_allowed"] is False for row in preview_rows)
+    assert all(row["api_mutation_ready"] is False for row in preview_rows)
+    assert all("promotion_blocked_reason" in row for row in preview_rows)
+
+    validation = validate_action(action)
+    assert validation.valid is True
+    preview = preview_action(action)
+    assert preview.status == "blocked"
+    assert preview.mutation_allowed is False
+    assert "action_mode_prepare_only" in preview.blockers
+    assert "payload_apply_allowed_false" in preview.blockers
+    assert preview.preview_cards
+    assert preview.preview_cards[0].kind == "service_profile_knowledge_promotion_review"
+    assert preview.preview_cards[0].apply_state_label == "zapis zmian zablokowany"
+    assert any(
+        "Prywatna propozycja Service Profile" in card.title_label
+        for card in preview.preview_cards
+    )
+
+    after_profile = content_service_profile_response()
+    assert after_profile.read_only is True
+    assert after_profile.review_policy.can_promote_facts is False
+    assert after_profile.coverage_summary.ready_for_daily_content is False
+    assert after_profile.private_source_proposal_summary.promotion_ready is False
+    assert after_profile.coverage_summary.approved_current_count == (
+        before_profile.coverage_summary.approved_current_count
+    )
+
+
 def test_service_profile_source_facts_evidence_is_known() -> None:
     evidence = get_evidence(SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID)
 

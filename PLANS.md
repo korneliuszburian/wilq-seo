@@ -835,6 +835,13 @@ Stop and record a blocker if:
   `private_policy_review_actions_czytelne` plus records live policy provenance.
   This keeps Eko-Opieka/Audyt service review distinct from brand/legal-safety
   policy review while preserving the no-promotion/no-production-depth gates.
+- 2026-07-02: Added
+  `act_prepare_service_profile_private_proposal_promotion`, a prepare-only
+  ActionObject for redacted `ekologus-ai` private proposals. It previews service
+  and claim-policy proposals with required review gates and blocked claims, but
+  validates only while `apply_allowed=false` and `api_mutation_ready=false`.
+  This brings private proposal review into the same WILQ action/audit surface
+  as public source-card promotion review without creating a write path.
 
 ## Surprises & Discoveries
 

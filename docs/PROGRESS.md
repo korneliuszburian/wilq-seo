@@ -745,6 +745,15 @@ API status later contradicts this state.
   `private_policy_review_actions_czytelne` and records separate live provenance
   counts, so a future Wilku result cannot collapse service fit and brand/legal
   safety into one vague "private review" answer.
+- Private `ekologus-ai` proposals now have the same prepare-only action surface
+  as public service-card promotion review. Live proof after stack restart on
+  2026-07-02: `/api/actions/act_prepare_service_profile_private_proposal_promotion`
+  validates with `valid=true`, exposes `private_source_proposal_promotion_preview_v1`,
+  `row_count=4`, scopes `claim_policy` and `service`, targets Eko-Opieka,
+  Audyt zgodności, brand voice and legal safety, `preview_card_count=4`,
+  `apply_allowed=false` and `api_mutation_ready=false`. This is still only
+  review preparation; it does not edit `source_facts.json` or unlock
+  production-depth.
   The request now pins `type=web`, and persisted metric summaries mark
   `detail_dimensions=query,page` with `detail_data_completeness=partial_possible`
   so downstream skills do not treat detailed query/page rows as full traffic

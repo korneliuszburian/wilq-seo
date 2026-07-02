@@ -83,6 +83,7 @@ from wilq.actions.localo.visibility import (
 )
 from wilq.actions.payloads import (
     SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE,
+    SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE,
     validate_action_payload,
 )
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
@@ -564,6 +565,9 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
     service_profile_action = _service_profile_knowledge_promotion_action()
     if service_profile_action is not None:
         actions.append(service_profile_action)
+    private_proposal_action = _service_profile_private_proposal_promotion_action()
+    if private_proposal_action is not None:
+        actions.append(private_proposal_action)
     return {action.id: action for action in actions}
 
 
@@ -671,6 +675,122 @@ def _service_profile_knowledge_promotion_action() -> ActionObject | None:
                 "production-depth bez owner review",
                 "edycja source_facts.json z tej akcji",
                 "publikacja lub szkic finalny na podstawie review-required",
+            ],
+            "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_core_seed",
+    )
+
+
+def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
+    profile = content_service_profile_response()
+    review_actions_by_target = {
+        action.target_card_id: action
+        for action in profile.review_actions
+        if action.action_id.startswith("service_profile_review_private_proposal_")
+        and action.target_card_id
+    }
+    rows: list[dict[str, Any]] = []
+    for proposal in profile.private_source_proposals:
+        review_action = review_actions_by_target.get(proposal.target_card_id)
+        if review_action is None:
+            continue
+        if proposal.review_status != "review_required":
+            continue
+        rows.append(
+            {
+                "id": f"private_proposal_promotion_{proposal.proposal_id}",
+                "preview_contract": "private_source_proposal_promotion_preview_v1",
+                "operation_type": "private_source_proposal_promotion_review",
+                "proposal_id": proposal.proposal_id,
+                "source_id": proposal.source_id,
+                "source_type": proposal.source_type,
+                "privacy_class": proposal.privacy_class,
+                "scope": proposal.scope,
+                "target_card_id": proposal.target_card_id,
+                "target_card_title": proposal.target_card_title,
+                "review_action_id": review_action.action_id,
+                "required_human_role": review_action.required_human_role,
+                "support_level": proposal.support_level,
+                "risk_tier": proposal.risk_tier,
+                "confidence_label": proposal.confidence_label,
+                "blocked_claims": proposal.blocked_claims,
+                "required_validation": [
+                    "redacted_source_trace_review",
+                    "private_owner_human_review_record",
+                    "blocked_claims_review",
+                    "separate_source_fact_promotion_request",
+                    "focused_eval_before_policy_or_service_use",
+                ],
+                "required_validation_labels": [
+                    "sprawdź redacted źródło",
+                    "zapisz decyzję Wilka/ownera",
+                    "sprawdź claimy zakazane",
+                    "przygotuj osobny request awansu source fact",
+                    "uruchom focused eval przed użyciem",
+                ],
+                "promotion_blocked_reason": (
+                    "Ta akcja tylko przygotowuje review prywatnej propozycji. Nie "
+                    "edytuje source_facts.json, nie promuje private proposal, nie "
+                    "zmienia lifecycle i nie odblokowuje production-depth."
+                ),
+                "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
+                "redacted": True,
+                "apply_allowed": False,
+                "api_mutation_ready": False,
+                "destructive": False,
+            }
+        )
+    if not rows:
+        return None
+    return ActionObject(
+        id="act_prepare_service_profile_private_proposal_promotion",
+        title="Przygotuj review prywatnych propozycji Service Profile",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=[SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
+        human_diagnosis=(
+            "Service Profile ma redacted propozycje z ekologus-ai dla usług i "
+            "claim-policy. WILQ może przygotować ich review, ale nie może "
+            "promować prywatnego źródła ani traktować go jako production-depth "
+            "bez decyzji człowieka i osobnego audytu."
+        ),
+        recommended_reason=(
+            "Przed użyciem Eko-Opieki, Audytu zgodności, stylu marki albo "
+            "legal-safety w treściach sprawdź redacted source trace, blokowane "
+            "claimy, rolę review i wymagany follow-up."
+        ),
+        payload={
+            "action_type": SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE,
+            "connector": "wordpress_ekologus",
+            "mode": "prepare_only",
+            "preview_contract": "private_source_proposal_promotion_preview_v1",
+            "source_connectors": ["wordpress_ekologus"],
+            "private_source_labels": ["ekologus_ai_private_source_catalog"],
+            "proposal_count": len(profile.private_source_proposals),
+            "payload_preview": rows,
+            "payload_preview_total": len(rows),
+            "payload_preview_included": len(rows),
+            "required_validation": [
+                "redacted_source_trace_review",
+                "private_owner_human_review_record",
+                "blocked_claims_review",
+                "separate_source_fact_promotion_request",
+                "focused_eval_before_policy_or_service_use",
+            ],
+            "blocked_claims": [
+                "automatyczny awans prywatnej propozycji",
+                "production-depth bez owner review",
+                "edycja source_facts.json z tej akcji",
+                "użycie raw private text w publicznej treści",
+                "automatyczna bramka brand/legal-safety bez review",
             ],
             "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
             "apply_allowed": False,
@@ -2773,6 +2893,8 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         == "service_profile_knowledge_promotion_preview_v1"
     ):
         return _service_profile_knowledge_promotion_preview_cards(action.payload)
+    if action.payload.get("preview_contract") == "private_source_proposal_promotion_preview_v1":
+        return _service_profile_private_proposal_promotion_preview_cards(action.payload)
     if action.payload.get("action_type") == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
         return _keyword_planner_access_preview_cards(action.payload)
     if action.payload.get("action_type") == "confirm_ads_target_guardrails":
@@ -3179,6 +3301,47 @@ def _service_profile_knowledge_promotion_preview_cards(
                 kind="service_profile_knowledge_promotion_review",
                 title_label="Awans wiedzy Service Profile do sprawdzenia",
                 subtitle_label="request po review, bez edycji knowledge base",
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
+            )
+        )
+    return cards
+
+
+def _service_profile_private_proposal_promotion_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:6]):
+        required_validation = _string_list(item.get("required_validation_labels"))
+        blocked_claims = _string_list(item.get("blocked_claims"))
+        rows = [
+            _preview_row("Propozycja", str(item.get("target_card_title") or "private proposal")),
+            _preview_row("Zakres", str(item.get("scope") or "private source")),
+            _preview_row("Ryzyko", str(item.get("risk_tier") or "unknown")),
+            _preview_row("Wsparcie", str(item.get("support_level") or "review-required")),
+            _preview_row(
+                "Review",
+                str(item.get("required_human_role") or "Wilku albo owner wiedzy"),
+            ),
+            _preview_row("Redakcja", "redacted, bez raw private text"),
+        ]
+        if required_validation:
+            rows.append(_preview_row("Warunki", ", ".join(required_validation[:5])))
+        if blocked_claims:
+            rows.append(_preview_row("Claimy blokowane", ", ".join(blocked_claims[:4])))
+        blocked_reason = item.get("promotion_blocked_reason")
+        if isinstance(blocked_reason, str) and blocked_reason:
+            rows.append(_preview_row("Blokada", blocked_reason))
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"service_profile_private_proposal_promotion_{index}",
+                kind="service_profile_knowledge_promotion_review",
+                title_label="Prywatna propozycja Service Profile do sprawdzenia",
+                subtitle_label="review redacted źródła, bez promocji i bez zapisu",
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
