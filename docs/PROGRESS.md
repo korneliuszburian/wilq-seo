@@ -43,18 +43,36 @@ Date: 2026-07-02
 
 ## Live Connector State
 
-Live API check on 2026-06-29:
+Live API check on 2026-07-02:
 
 - WILQ API health: `ok`.
-- Google Search Console: configured, fresh, no missing credentials.
-- Google Analytics 4: configured, fresh, no missing credentials.
-- Google Merchant Center: configured, fresh, no missing credentials.
-- Google Ads, Ahrefs, Localo and WordPress are configured.
-- LinkedIn and Facebook credentials are missing; social remains later scope.
-- Google Sheets is intentionally disabled for the current operator scope.
+- Connector summary: 12 total, 9 configured, 2 missing credentials and Google
+  Sheets intentionally disabled for the current operator scope.
+- Configured connectors: Google Ads, Google Search Console, Google Analytics 4,
+  Google Merchant Center, Ahrefs, Localo, WordPress ekologus.pl, WordPress
+  sklep and OpenAI Codex runtime.
+- Missing credentials: LinkedIn (`LINKEDIN_ORGANIZATION_ID`,
+  `LINKEDIN_ACCESS_TOKEN`) and Facebook (`FACEBOOK_PAGE_ID`,
+  `FACEBOOK_PAGE_ACCESS_TOKEN`). Social publishing/history remains review-only
+  and cannot support duplicate-free claims until metadata/evidence exists.
+- Metric store: DuckDB enabled, 79,799 metric facts, 8 connector families with
+  metric facts and 4,170 refresh runs.
+- Recent refresh proof includes GSC `refresh_google_search_console_9b25d4143bea`
+  completed `2026-07-02T03:13:21Z`, WordPress sklep
+  `refresh_wordpress_sklep_c1db9b8fa677` completed
+  `2026-07-01T22:38:18Z`, Ahrefs `refresh_ahrefs_5eee21244cff` completed
+  `2026-07-01T22:37:01Z`, Merchant
+  `refresh_google_merchant_center_a04a45a6e6fd` completed
+  `2026-07-01T22:36:56Z` and Google Ads
+  `refresh_google_ads_be7011a4a261` completed `2026-07-01T19:15:42Z`; all have
+  `metrics_persisted=true`.
+- Treat future Ads/Keyword Planner failures as Ads API/customer/readiness state
+  unless status reports missing credential names. Current Keyword Planner can
+  still be blocked by developer-token approval, not by missing OAuth
+  credentials.
 
-Do not reopen old WSL credential recovery for GSC, GA4 or Merchant unless live
-API status later contradicts this state.
+Do not reopen old WSL credential recovery for GSC, GA4, Merchant or Ads unless
+live API status later contradicts this state.
 
 ## Current Goal Transition
 
