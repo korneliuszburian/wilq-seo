@@ -42,6 +42,44 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-07-02 - Eko-Opieka usefulness review
+
+Purpose:
+
+- Test whether the `ekologus-ai` private/reviewed source slice improves a real
+  WILQ marketing decision, not only whether schemas and guards pass.
+- Produce a short Wilku-facing decision card before the longer handoff, because
+  reviewers found the full material useful but too meta-heavy for first read.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5 --format json
+rtk curl -sS -m 20 http://127.0.0.1:8000/api/content/service-profile
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`.
+- Live Service Profile status remains `source_backed_review_required` with
+  `ready_for_daily_content=false`, `approved_current_count=0` and
+  `production_depth_card_count=0`.
+- Eko-Opieka private proposal is current and company-wide, but review-required:
+  `private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`.
+- Review action:
+  `service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`.
+- Reviewer scores:
+  - SEO/content review: 8/10 as Wilku review material, 3/10 as production SEO
+    readiness.
+  - Marketer/operator review: 7/10 as decision material, 6.5/10 as real work
+    saved versus manual source reading.
+- Main learning: private `ekologus-ai` knowledge clearly improves specificity
+  versus public-only knowledge, because it adds the subscription/cyclic-care
+  concept, Eko Kalendarz, audience, CTA direction and forbidden claims. It does
+  not yet unlock production content; Wilku/owner review is still required.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

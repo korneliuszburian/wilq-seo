@@ -540,7 +540,7 @@ export const ContentServiceProfilePrivateSourceProposalRetentionDecisionSchema =
   "do_not_retain"
 ]);
 
-export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object({
+export const PrivateProposalSchema = z.object({
   proposal_id: z.string().trim().min(1),
   source_id: z.string().trim().min(1),
   source_type: z.enum(["private_candidate", "reviewed_internal"]),
@@ -575,6 +575,8 @@ export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object(
   promotion_allowed: z.boolean(),
   blocked_write_claim: z.string().trim().min(1)
 });
+export const ContentServiceProfilePrivateSourceProposalSectionSchema =
+  PrivateProposalSchema;
 
 export const ContentServiceProfileNeededSourceTypeSchema = z.enum([
   "public_site_or_reviewed_internal_service_fact",
@@ -653,7 +655,7 @@ export const ContentServiceProfileResponseSchema = z.object({
   claim_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
   evidence_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
   private_source_proposal_summary: ContentServiceProfilePrivateSourceProposalSummarySchema,
-  private_source_proposals: z.array(ContentServiceProfilePrivateSourceProposalSectionSchema).default([]),
+  private_source_proposals: z.array(PrivateProposalSchema).default([]),
   coverage_gaps: z.array(ContentServiceProfileCoverageGapSchema).default([]),
   review_action_summary: ContentServiceProfileReviewActionSummarySchema,
   review_actions: z.array(ContentServiceProfileReviewActionSchema).default([]),

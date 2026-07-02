@@ -182,6 +182,35 @@ and do not move marketing decisions or product behavior into Beads descriptions.
 
 Build an API-first marketing operating system, not a prompt pack, static report generator, or artifact factory. The WILQ API is the system brain. MCP servers are adapters, not the system brain.
 
+WILQ work is usefulness-first. The main question is not "did we add another
+guard?", but "does this make Wilku or another marketer decide faster, write
+better, avoid wrong claims, or use Ekologus knowledge more clearly?". Condense
+knowledge, source material, code and workflow output into working decision
+patterns. Do not build layers of defensive ceremony that will later need to be
+stripped from the product.
+
+Use guardrails only when they protect a real product risk: invented metrics,
+missing evidence, secret leakage, unsafe vendor writes, unsupported legal/
+penalty/product claims, duplicate content, stale source use, or premature
+publication/success claims. Avoid guard theater: redundant validators, verbose
+class names, review fields, tests or policy text that do not improve a real
+operator decision or protect a concrete failure mode.
+
+For Goal 005 and later WILQ marketing/content work, test usefulness directly:
+generate or fetch the real WILQ output, compare it against the source evidence,
+score it 0-10 for marketer usefulness, and ask what changed when richer
+knowledge was added. Prefer reviewer passes with clear roles such as SEO
+specialist, content strategist and marketer/operator. Useful evidence includes:
+what the output helps decide, what it blocks correctly, what remains unclear,
+whether it sounds like Ekologus, and whether it saves real work versus reading
+raw materials manually.
+
+When preparing something for Wilku, lead with a short decision card in normal
+Polish: decision needed, current WILQ status, evidence, blockers, 3-5 questions
+and the next safe step. Put technical IDs and review mechanics below the fold.
+Do not make Wilku decode product architecture before he can answer the business
+question.
+
 ## Runtime model
 
 Dashboard, Codex skills, hooks, workflows, expert rules, opportunities, and action execution must use the same WILQ API contracts. Codex może rozumować i działać, ale nie może zmyślać metryk.
@@ -206,6 +235,12 @@ speculative flexibility, unrelated refactors or adjacent cleanup. Every changed
 line should trace to the active goal or the user request. Define success as a
 verifiable check, then loop until the check passes or the blocker is explicit.
 
+Do not treat tests, guards, schemas or docs as value by themselves. They are
+valuable only when they make WILQ's output more useful, safer, clearer or more
+trustworthy for the marketer. If a new guard does not protect a concrete
+failure mode or improve a decision, do not add it. If a test proves only that
+more scaffolding exists, replace it with a usefulness check or delete the idea.
+
 ## Evidence and metrics rules
 
 Every marketing recommendation requires evidence IDs and source connectors. Missing connector credentials must be exposed honestly without printing values. Mock or seed data may support tests, but must never be represented as real Ekologus state.
@@ -229,6 +264,36 @@ Operator-facing content must defend itself: every first-screen summary,
 decision card and empty state should be understandable without developer
 translation and should state the decision, reason, proof, blocker or next safe
 step directly.
+
+Dashboard work must be tested as marketer usefulness, not only as rendering.
+For every important screen, keep a current score and next tuning target. Use
+this loop:
+
+1. Open or query the real screen/API state.
+2. Ask: what decision can Wilku make from the first screen in 30 seconds?
+3. Score usefulness 0-10 with at least one reviewer role when the screen is
+   important: SEO/content strategist, ads/analytics specialist, marketer/
+   operator or owner-reviewer.
+4. Record what is useful, what is confusing, what is missing, what WILQ blocks
+   correctly and what next change would raise the score.
+5. Tune the API/view-model/UI copy or workflow, then test again. Do not add a
+   guard or test unless it improves the score or protects a concrete failure.
+
+Current dashboard usefulness map, updated by replacing rows rather than
+appending history:
+
+| Surface | Current usefulness state | Next tuning target |
+| --- | --- | --- |
+| `/command-center` | Daily loop exists and `wilq-daily-command` has BDOS-style skill eval proof, but needs a fresh dashboard first-screen reviewer score. | Check whether the first screen gives one clear daily priority, blockers and safe next actions without developer translation. |
+| `/content-planner` | Content queue/API is useful for blockers and evidence; current queue is partly blocked. | Score whether a marketer can choose refresh/merge/block without opening raw diagnostics. |
+| `/content-workflow` | Strong workflow surface, but broad and complex. | Test one real item end-to-end: preflight -> brief -> claim ledger -> draft-only gates, score usefulness at each step. |
+| `/service-profile` | Goal 005 focus. Private Eko-Opieka review scored 7-8/10 as Wilku review material and 3/10 as production SEO readiness. | Keep turning service/profile knowledge into short decision cards; reduce meta-language on first screen. |
+| `/social-publisher` | Skill eval passes with social-history blocker; useful only as review-only draft readiness until LinkedIn/Facebook history metadata exists. | Add historical post metadata inventory before claiming duplicate-free repurposing. |
+| `/ads-doctor` | Diagnostic skill/API returns evidence, action IDs and blockers; dashboard still needs usefulness scoring, not only route tests. | Score whether budgets, search terms, recommendations and safe actions form a clear Ads review queue. |
+| `/ga4` | Skill separates measurement gaps from traffic-quality questions; dashboard needs fresh reviewer score. | Make `(not set)` and attribution blockers obvious as measurement problems, not campaign verdicts. |
+| `/merchant` | Skill/API exposes feed issues and stale/freshness limits; dashboard needs reviewer score. | Show feed issue priority, evidence freshness and safest next action without implying revenue recovery. |
+| `/ahrefs`, `/localo`, `/ads-doctor/demand-gen`, `/ads-doctor/custom-segments` | Dedicated surfaces exist; usefulness proof is partial or pending. | Run focused specialist reviewer passes and score whether each screen gives one actionable review queue. |
+| `/actions`, `/workflows`, `/knowledge`, `/settings`, `/opportunities` | Infrastructure/operator surfaces exist and have contract tests; marketer usefulness varies by screen. | Score whether each surface explains why the operator should care, not only what records exist. |
 
 ## Codex skills and hooks rules
 

@@ -118,8 +118,14 @@ API status later contradicts this state.
   cards, so a reviewer sees source currency and access scope inside the
   ActionObject review path, not only on the Service Profile proposal card.
 - The `wilq-content-operator` UAT packet private proposal details now preserve
-  the same `freshness_status` and `audience` fields, so Wilku handoff material
-  does not lose source currency/access-scope context from the API.
+  `freshness_status` and `audience` for Wilku-facing review.
+- Eko-Opieka usefulness review now has a short Wilku-facing decision card at
+  `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
+  7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production
+  SEO readiness. The main learning is that `ekologus-ai` private/reviewed
+  knowledge improves specificity, but WILQ must still block production content
+  until Wilku/owner review, WordPress/GSC duplicate checks and claim ledger are
+  complete.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

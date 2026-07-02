@@ -24,8 +24,9 @@ import {
   ContentDraftPackageSchema,
   ContentKnowledgeConstraintTypeSchema,
   ContentRecommendedModeSchema,
-  ContentServiceProfilePrivateSourceProposalSectionSchema,
   ContentGscSearchAnalyticsContractSchema,
+  ContentServiceProfilePrivateSourceProposalSectionSchema,
+  PrivateProposalSchema,
   StructuredDraftPreviewBlockerSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
@@ -325,7 +326,7 @@ describe("ContentQualityFindingSchema", () => {
   });
 });
 
-describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
+describe("PrivateProposalSchema", () => {
   const proposal = {
     proposal_id: "private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
     source_id: "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
@@ -355,52 +356,58 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
     blocked_write_claim: "To jest redacted proposal do review."
   };
 
+  it("keeps the legacy export as a compatibility alias", () => {
+    expect(ContentServiceProfilePrivateSourceProposalSectionSchema).toBe(
+      PrivateProposalSchema
+    );
+  });
+
   it("rejects unknown private proposal states", () => {
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse(proposal).success
+      PrivateProposalSchema.safeParse(proposal).success
     ).toBe(true);
 
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         review_status: "maybe_ready"
       }).success
     ).toBe(false);
 
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         support_level: "looks_good"
       }).success
     ).toBe(false);
 
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         risk_tier: "comfortable"
       }).success
     ).toBe(false);
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         freshness_status: "fresh_enough"
       }).success
     ).toBe(false);
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         audience: "everyone_on_internet"
       }).success
     ).toBe(false);
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         retention_decision: "keep_forever"
       }).success
     ).toBe(false);
 
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         privacy_class: "commit_safe"
       }).success
@@ -416,13 +423,13 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
       "blocked_claims"
     ] as const) {
       expect(
-        ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        PrivateProposalSchema.safeParse({
           ...proposal,
           [fieldName]: []
         }).success
       ).toBe(false);
       expect(
-        ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        PrivateProposalSchema.safeParse({
           ...proposal,
           [fieldName]: [" "]
         }).success
@@ -430,7 +437,7 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
     }
 
     expect(
-      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+      PrivateProposalSchema.safeParse({
         ...proposal,
         safe_next_step: ""
       }).success
