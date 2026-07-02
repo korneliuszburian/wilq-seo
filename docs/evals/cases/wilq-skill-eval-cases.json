@@ -91,7 +91,7 @@
       "search_term_safety_read_contract",
       "search_term_90d",
       "custom_segments_read_contract",
-      "segmenty niestandardowe",
+      "segment",
       "keyword_planner_enrichment",
       "forecast_or_audience_size",
       "negative_keyword_change_preview",
@@ -544,10 +544,11 @@
     ],
     "expected_terms_pl": [
       "Google Ads",
-      "segmenty niestandardowe",
+      "segment",
       "ads_diagnostics",
       "custom_segments_read_contract",
       "audience_forecast_read_contract",
+      "keyword_planner_enrichment",
       "custom_segment_change_preview",
       "forecast_or_audience_size",
       "missing_forecast",
@@ -556,15 +557,14 @@
       "review_reason",
       "review segmentu",
       "source_terms",
-      "blokady",
-      "rozmiar odbiorców",
-      "zwrot z reklam"
+      "blokady"
     ],
     "blocked_claim_terms": [
       "rozmiar odbiorców",
       "zwrot z reklam",
       "zapis kierowania reklam",
-      "skuteczność kampanii"
+      "skuteczność kampanii",
+      "wzrost konwersji"
     ],
     "expected_action_ids": [
       "act_prepare_custom_segments_from_search_terms"

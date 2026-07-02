@@ -352,6 +352,16 @@ API status later contradicts this state.
   and measurement-repair claims, while still requiring the skill to separate
   measurement blockers from traffic-quality review candidates through
   `ga4_diagnostics.decision_queue`.
+- `wilq-custom-segments` now has a tightened live non-interactive usefulness
+  proof at `.local-lab/evals/codex-skill/20260702T015121Z/summary.json`.
+  Result: `operator_usefulness_score=4`, all hard gates true, no failure tags,
+  2 evidence IDs, 1 recommendation and validated
+  `act_prepare_custom_segments_from_search_terms`. The eval now explicitly
+  requires the Keyword Planner blocker `keyword_planner_enrichment` and blocks
+  `wzrost konwersji`; an intermediate failed run caught blocked claim terms in
+  a non-blocked recommendation label, so the skill output contract now keeps
+  audience/return/performance/write claims in blocker fields instead of segment
+  recommendation copy.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

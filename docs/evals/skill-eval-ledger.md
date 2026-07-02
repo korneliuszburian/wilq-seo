@@ -7006,3 +7006,40 @@ Result:
   noted that `review_landing_mapping` was not present as a separate current
   decision, and kept opłacalność/ROI/przychód/konwersje/zwrot/zapis claims
   blocked without additional evidence.
+
+## 2026-07-02 - Custom Segments live eval and Keyword Planner blocker
+
+Purpose:
+
+- Test `wilq-custom-segments` against live Ads diagnostics with the current
+  Keyword Planner/forecast blocker.
+- Ensure the skill uses only real `source_terms`, does not invent audience
+  terms, and keeps audience size, return, conversion growth, campaign
+  effectiveness and targeting-write claims blocked without evidence.
+
+Focused proof:
+
+```bash
+scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- First proof passed at
+  `.local-lab/evals/codex-skill/20260702T014734Z/summary.json`.
+- The eval case was then tightened to require `keyword_planner_enrichment` and
+  block `wzrost konwersji`. A later run correctly failed because blocked
+  claim terms were mentioned inside a non-blocked recommendation label.
+- The skill output contract now requires blocked claims to be shown in blocker
+  fields/sections, not as ordinary segment recommendation wording.
+- Passing tightened proof is stored at
+  `.local-lab/evals/codex-skill/20260702T015121Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `failure_tags=[]`, all hard gates
+  true, 2 evidence IDs, 1 recommendation and 1 validated action candidate.
+- Validated action candidate: `act_prepare_custom_segments_from_search_terms`.
+- The output used `ads_diagnostics.custom_segments_read_contract`, one real
+  source-term segment candidate, `review_priority`, `review_score`,
+  `review_reason`, and explicit blockers for `audience_forecast_read_contract`,
+  `forecast_or_audience_size`, `missing_forecast` and
+  `keyword_planner_enrichment`.
