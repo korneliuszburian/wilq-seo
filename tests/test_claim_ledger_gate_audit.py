@@ -21,7 +21,7 @@ def test_claim_ledger_gate_audit_proves_content_generation_gates() -> None:
     report = audit.build_report()
 
     assert report["pass"] is True
-    assert report["check_count"] == 10
+    assert report["check_count"] == 11
     assert report["failed_count"] == 0
     check_names = {check["name"] for check in report["checks"]}
     assert {
@@ -31,6 +31,7 @@ def test_claim_ledger_gate_audit_proves_content_generation_gates() -> None:
         "evidence_claim_requires_source_connector",
         "structured_generation_requires_claim_ledger",
         "structured_generation_respects_ledger_blockers",
+        "structured_generation_blocks_claims_outside_ledger",
         "full_draft_requires_approved_knowledge",
         "valid_section_contract_stays_review_only",
         "removed_claims_are_visible_to_model_contract",
@@ -39,6 +40,7 @@ def test_claim_ledger_gate_audit_proves_content_generation_gates() -> None:
     assert {
         "missing_claim_ledger",
         "claim_ledger_blocks_generation",
+        "draft_package_claim_outside_ledger",
         "review_required_knowledge_for_full_draft",
     } <= set(report["structured_generation_blocks"])
     assert report["publish_ready_locked"] is True

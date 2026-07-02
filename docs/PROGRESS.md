@@ -117,8 +117,10 @@ live API status later contradicts this state.
   `rtk scripts/pre_demo_gate.sh` passed on 2026-07-02. It verified the managed
   local stack, API health, live contracts, dashboard usefulness, source fact
   coverage, Claim Ledger gate, skill eval coverage, language guard, shared
-  schemas, 13 dashboard route smokes and WILQ skill smoke contracts. This is
-  review/demo readiness proof, not Goal 005 completion or real Wilku UAT proof.
+  schemas, 13 dashboard route smokes and WILQ skill smoke contracts. It was
+  rerun after adding `draft_package_claim_outside_ledger`, and the Claim Ledger
+  gate now passes 11/11 checks. This is review/demo readiness proof, not Goal
+  005 completion or real Wilku UAT proof.
 - Daily Command usefulness proof: non-interactive eval for
   `wilq-daily-command` passed with `operator_usefulness_score=5`, 20 evidence
   IDs, eight source connectors and four validated daily actions. The first safe
@@ -229,6 +231,11 @@ live API status later contradicts this state.
   now uses the backend Claim Ledger claim type/status literals, with regression
   proof that forged labels such as `marketing_vibe_claim` and
   `approved_by_prompt` are rejected before generation gates consume them.
+- Structured draft generation now blocks draft-package claims that are not in
+  publish-ready Claim Ledger entries before they can enter `claims_allowed` in
+  the model contract. The Claim Ledger gate audit now proves
+  `draft_package_claim_outside_ledger`, so preview validation is no longer the
+  first line of defense for foreign/unsafe draft claims.
 - Service Profile private proposal governance now exposes `freshness_status`
   and `audience` from ekologus-ai/private source proposals through backend API
   models and shared Zod schemas, so owner review can see source currency and

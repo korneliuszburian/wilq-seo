@@ -291,6 +291,33 @@ def test_structured_draft_generation_api_returns_typed_blockers() -> None:
     }
 
 
+def test_structured_draft_generation_blocks_draft_package_claim_outside_ledger() -> None:
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(
+                claims_used=[
+                    "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+                    "Ekologus gwarantuje pełną zgodność po kontakcie.",
+                ],
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    result = data["structured_generation_result"]
+    assert result["contract"] is None
+    assert [blocker["code"] for blocker in result["blockers"]] == [
+        "draft_package_claim_outside_ledger"
+    ]
+    blocker = result["blockers"][0]
+    assert "Ekologus gwarantuje pełną zgodność po kontakcie." in blocker["next_step"]
+
+
 def test_structured_draft_runtime_api_returns_dry_run_payload() -> None:
     generation = TestClient(app).post(
         "/api/content/work-items/structured-draft-generation",

@@ -254,6 +254,14 @@ def test_structured_generation_blocks_mismatched_or_unsafe_inputs() -> None:
         update={"id": "draft_package_other", "work_item_id": "other_item"}
     )
     unsafe_package = draft_package.model_copy(update={"publish_ready": True})
+    package_with_unknown_claim = draft_package.model_copy(
+        update={
+            "claims_used": [
+                "Ekologus pomaga firmom w obowiązkach związanych z BDO.",
+                "Ekologus gwarantuje pełną zgodność po kontakcie.",
+            ]
+        }
+    )
     blocked_ledger = _claim_ledger(blocked=True)
 
     mismatched = build_structured_draft_generation_contract(
@@ -274,10 +282,19 @@ def test_structured_generation_blocks_mismatched_or_unsafe_inputs() -> None:
         claim_ledger=blocked_ledger,
         draft_package=draft_package,
     )
+    unknown_claim = build_structured_draft_generation_contract(
+        item=item,
+        sales_brief=brief,
+        claim_ledger=ledger,
+        draft_package=package_with_unknown_claim,
+    )
 
     assert "draft_package_mismatch" in [blocker.code for blocker in mismatched.blockers]
     assert "draft_package_marked_publish_ready" in [blocker.code for blocker in unsafe.blockers]
     assert "claim_ledger_blocks_generation" in [blocker.code for blocker in blocked.blockers]
+    assert "draft_package_claim_outside_ledger" in [
+        blocker.code for blocker in unknown_claim.blockers
+    ]
 
 
 def test_structured_generation_returns_strict_schema_contract_for_valid_item() -> None:

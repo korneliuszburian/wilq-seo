@@ -174,6 +174,29 @@ def build_report() -> dict[str, Any]:
         )
     )
 
+    package_with_unknown_claim = draft_package.model_copy(
+        update={
+            "claims_used": [
+                "Ekologus pomaga firmom w obowiązkach związanych z BDO.",
+                "Ekologus gwarantuje pełną zgodność po kontakcie.",
+            ]
+        }
+    )
+    unknown_claim_result = build_structured_draft_generation_contract(
+        item=item,
+        sales_brief=sales_brief,
+        claim_ledger=ledger,
+        draft_package=package_with_unknown_claim,
+    )
+    checks.append(
+        _result_check(
+            "structured_generation_blocks_claims_outside_ledger",
+            unknown_claim_result,
+            "draft_package_claim_outside_ledger",
+            "Paczka szkicu nie może wpuścić claimu spoza Claim Ledger do kontraktu modelu.",
+        )
+    )
+
     full_draft_result = build_structured_draft_generation_contract(
         item=item,
         sales_brief=sales_brief,

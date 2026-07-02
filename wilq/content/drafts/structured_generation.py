@@ -35,6 +35,7 @@ StructuredDraftGenerationBlockerCode = Literal[
     "missing_draft_package",
     "draft_package_mismatch",
     "draft_package_marked_publish_ready",
+    "draft_package_claim_outside_ledger",
     "missing_sales_brief",
     "sales_brief_mismatch",
     "missing_claim_ledger",
@@ -423,6 +424,21 @@ def structured_draft_generation_blockers(
                 "Rozwiąż sprawdzenie twierdzeń przed generowaniem treści.",
             )
         )
+    elif draft_package is not None:
+        allowed_claims = {entry.claim_text for entry in publish_ready_claims(claim_ledger)}
+        unknown_claims = sorted(
+            claim for claim in draft_package.claims_used if claim not in allowed_claims
+        )
+        if unknown_claims:
+            blockers.append(
+                _blocker(
+                    "draft_package_claim_outside_ledger",
+                    "Paczka szkicu używa twierdzenia spoza sprawdzenia",
+                    "Model może dostać tylko twierdzenia dopuszczone w Claim Ledger.",
+                    "Usuń z paczki szkicu obce twierdzenia albo dodaj je do sprawdzenia: "
+                    + "; ".join(unknown_claims),
+                )
+            )
 
     if draft_package is not None:
         if not draft_package.section_to_evidence_map:
