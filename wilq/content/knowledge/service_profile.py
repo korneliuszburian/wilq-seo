@@ -14,6 +14,10 @@ from wilq.content.knowledge.cards import (
 )
 from wilq.content.knowledge.private_source_proposals import (
     PrivateSourceProposal,
+    PrivateSourceProposalPrivacyClass,
+    PrivateSourceProposalReviewStatus,
+    PrivateSourceProposalScope,
+    PrivateSourceProposalType,
     ekologus_private_source_proposal_registry,
 )
 from wilq.content.knowledge.source_facts import (
@@ -26,6 +30,10 @@ ServiceProfileReviewActionMode = Literal["prepare", "review_request"]
 ServiceProfileReviewActionPriority = Literal["high", "medium", "low"]
 ServiceProfileReviewDecisionOption = Literal["approve", "needs_changes", "stale", "reject"]
 ServiceProfileReviewRequirementType = Literal["text", "boolean", "follow_up"]
+ServiceProfilePrivateProposalRiskTier = Literal["low", "medium", "high", "unknown"]
+ServiceProfilePrivateProposalSupportLevel = Literal[
+    "direct", "partial", "background", "conflicting"
+]
 ServiceProfileReviewActionScope = Literal[
     "general_knowledge_review",
     "public_service_card",
@@ -127,16 +135,16 @@ class ContentServiceProfilePrivateSourceProposalSection(BaseModel):
 
     proposal_id: str
     source_id: str
-    source_type: str
-    privacy_class: str
-    scope: str
+    source_type: PrivateSourceProposalType
+    privacy_class: PrivateSourceProposalPrivacyClass
+    scope: PrivateSourceProposalScope
     target_card_id: str
     target_card_title: str
     source_class_label: str
     source_locator_label: str
-    review_status: str
-    support_level: str
-    risk_tier: str
+    review_status: PrivateSourceProposalReviewStatus
+    support_level: ServiceProfilePrivateProposalSupportLevel
+    risk_tier: ServiceProfilePrivateProposalRiskTier
     data_classes: list[str] = Field(default_factory=list)
     source_block_refs: list[str] = Field(default_factory=list)
     retention_decision: str

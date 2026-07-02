@@ -26,6 +26,7 @@ from wilq.content.knowledge.private_source_proposals import (
     ekologus_private_source_proposal_registry,
 )
 from wilq.content.knowledge.service_profile import (
+    ContentServiceProfilePrivateSourceProposalSection,
     ContentServiceProfileReviewAction,
     _review_action_summary,
     content_service_profile_response,
@@ -430,6 +431,26 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
         "service_profile_review_private_proposal_"
         "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02"
     ) in action_ids
+
+
+def test_service_profile_private_proposal_sections_reject_unknown_enum_values() -> None:
+    proposal = content_service_profile_response().private_source_proposals[0]
+    payload = proposal.model_dump(mode="json")
+
+    for field_name, invalid_value in {
+        "source_type": "raw_private_dump",
+        "privacy_class": "commit_safe",
+        "scope": "random_scope",
+        "review_status": "pending",
+        "support_level": "unsupported",
+        "risk_tier": "urgent",
+    }.items():
+        invalid_payload = dict(payload)
+        invalid_payload[field_name] = invalid_value
+        with pytest.raises(ValidationError, match=field_name):
+            ContentServiceProfilePrivateSourceProposalSection.model_validate(
+                invalid_payload
+            )
 
 
 def test_service_profile_review_summary_uses_typed_scopes_not_action_ids() -> None:
