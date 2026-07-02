@@ -514,6 +514,16 @@ API status later contradicts this state.
   `detail_data_completeness=partial_possible`, detail date `2026-06-29`,
   `rowLimit=250` and a Polish warning that query/page rows are not full traffic
   totals.
+- GSC vendor reads now also persist a separate Search Analytics aggregate
+  without `query/page` dimensions (`aggregate_dimensions=country,device`,
+  `aggregate_aggregation_type=byProperty`,
+  `aggregate_data_completeness=aggregate_without_query_page_dimensions`).
+  `/api/content/diagnostics` exposes those aggregate fields beside the partial
+  detail contract, so skills can distinguish general traffic volume from
+  query/page content opportunity rows. Live proof
+  `refresh_google_search_console_a9578df29c2f` completed on 2026-07-02 with
+  703 query/page rows, aggregate 18 clicks and 2755 impressions for
+  2026-06-29.
 - The same API contract now carries official GSC operational caveats:
   `expected_data_delay_days_min=2`, `expected_data_delay_days_max=3`,
   `read_granularity=single_day_latest_available`,

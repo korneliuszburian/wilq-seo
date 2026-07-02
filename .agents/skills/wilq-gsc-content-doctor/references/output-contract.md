@@ -59,6 +59,11 @@ musi użyć metadanych z najnowszego `google_search_console` `vendor_read`:
 - `detail_dimensions=query,page` i
   `detail_data_completeness=partial_possible` oznaczają, że wiersze
   zapytań i adresów są sygnałem do decyzji treściowej, ale nie pełną sumą ruchu;
+- `aggregate_dimensions=country,device`,
+  `aggregate_aggregation_type=byProperty` i
+  `aggregate_data_completeness=aggregate_without_query_page_dimensions`
+  oznaczają osobny agregat ruchu bez wymiarów `query/page`; można go użyć jako
+  kontekstu wolumenu, ale nie jako dowodu skuteczności konkretnej frazy lub URL;
 - `read_granularity=single_day_latest_available`,
   `api_recommended_page_size=25000` i
   `api_daily_row_cap_per_search_type=50000` opisują oficjalny wzorzec

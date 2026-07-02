@@ -101,6 +101,11 @@ def main() -> int:
             "search_type",
             "detail_dimensions",
             "detail_data_completeness",
+            "aggregate_dimensions",
+            "aggregate_aggregation_type",
+            "aggregate_data_completeness",
+            "aggregate_clicks",
+            "aggregate_impressions",
         }
         missing_gsc_summary_fields = sorted(
             required_gsc_summary_fields - set(latest_gsc_refresh_summary)
@@ -122,6 +127,17 @@ def main() -> int:
             raise SystemExit(
                 "Latest GSC vendor_read must mark query/page data as partial_possible"
             )
+        if latest_gsc_refresh_summary.get("aggregate_dimensions") != "country,device":
+            raise SystemExit("Latest GSC vendor_read must record aggregate dimensions")
+        if latest_gsc_refresh_summary.get("aggregate_aggregation_type") != "byProperty":
+            raise SystemExit("Latest GSC vendor_read must record byProperty aggregation")
+        if (
+            latest_gsc_refresh_summary.get("aggregate_data_completeness")
+            != "aggregate_without_query_page_dimensions"
+        ):
+            raise SystemExit(
+                "Latest GSC vendor_read must distinguish aggregate data completeness"
+            )
     if content_diagnostics.get("live_data_available") is True:
         if not isinstance(api_gsc_contract, dict):
             raise SystemExit("Content diagnostics must expose GSC Search Analytics contract")
@@ -137,6 +153,19 @@ def main() -> int:
             raise SystemExit(
                 "Content diagnostics GSC contract must expose partial_possible completeness"
             )
+        if api_gsc_contract.get("aggregate_dimensions") != "country,device":
+            raise SystemExit("Content diagnostics GSC contract must expose aggregate dimensions")
+        if api_gsc_contract.get("aggregate_aggregation_type") != "byProperty":
+            raise SystemExit("Content diagnostics GSC contract must expose byProperty aggregate")
+        if (
+            api_gsc_contract.get("aggregate_data_completeness")
+            != "aggregate_without_query_page_dimensions"
+        ):
+            raise SystemExit(
+                "Content diagnostics GSC contract must distinguish aggregate completeness"
+            )
+        if not str(api_gsc_contract.get("aggregate_summary_label") or "").strip():
+            raise SystemExit("Content diagnostics GSC contract aggregate_summary_label is missing")
         if api_gsc_contract.get("expected_data_delay_days_min") != 2:
             raise SystemExit("Content diagnostics GSC contract must expose 2-day delay minimum")
         if api_gsc_contract.get("expected_data_delay_days_max") != 3:

@@ -15321,6 +15321,16 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                 "query_page_row_limit": 250,
                 "query_page_max_rows": 1000,
                 "query_page_rows_truncated": "false",
+                "aggregate_date_start": "2026-06-29",
+                "aggregate_date_end": "2026-06-29",
+                "aggregate_dimensions": "country,device",
+                "aggregate_aggregation_type": "byProperty",
+                "aggregate_data_completeness": "aggregate_without_query_page_dimensions",
+                "aggregate_row_count": 2,
+                "aggregate_clicks": 30,
+                "aggregate_impressions": 300,
+                "aggregate_ctr": 0.1,
+                "aggregate_average_position": 4.0,
             },
             metric_facts=[
                 VendorMetricFact(
@@ -15467,6 +15477,20 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert gsc_contract["query_page_row_limit"] == 250
     assert gsc_contract["query_page_max_rows"] == 1000
     assert gsc_contract["query_page_rows_truncated"] is False
+    assert gsc_contract["aggregate_date_start"] == "2026-06-29"
+    assert gsc_contract["aggregate_date_end"] == "2026-06-29"
+    assert gsc_contract["aggregate_dimensions"] == "country,device"
+    assert gsc_contract["aggregate_aggregation_type"] == "byProperty"
+    assert (
+        gsc_contract["aggregate_data_completeness"]
+        == "aggregate_without_query_page_dimensions"
+    )
+    assert gsc_contract["aggregate_row_count"] == 2
+    assert gsc_contract["aggregate_clicks"] == 30
+    assert gsc_contract["aggregate_impressions"] == 300
+    assert gsc_contract["aggregate_ctr"] == 0.1
+    assert gsc_contract["aggregate_average_position"] == 4.0
+    assert "Agregat GSC" in gsc_contract["aggregate_summary_label"]
     assert "najnowszy dostępny dzień" in gsc_contract["summary_label"]
     assert "nie pełną sumą całego ruchu" in gsc_contract["partial_detail_warning_label"]
     assert "rowLimit=250" in gsc_contract["paging_label"]
@@ -16034,6 +16058,32 @@ def test_gsc_vendor_read_uses_search_analytics(
                     ]
                 },
             )
+        if body["dimensions"] == ["country", "device"]:
+            assert body["aggregationType"] == "byProperty"
+            assert body["rowLimit"] == 25000
+            assert body["startDate"] == "2026-06-28"
+            assert body["endDate"] == "2026-06-28"
+            return httpx.Response(
+                200,
+                json={
+                    "rows": [
+                        {
+                            "keys": ["pol", "DESKTOP"],
+                            "clicks": 200,
+                            "impressions": 1000,
+                            "ctr": 0.2,
+                            "position": 3.0,
+                        },
+                        {
+                            "keys": ["pol", "MOBILE"],
+                            "clicks": 100,
+                            "impressions": 1000,
+                            "ctr": 0.1,
+                            "position": 5.0,
+                        },
+                    ]
+                },
+            )
         assert body["dimensions"] == ["query", "page"]
         assert body["rowLimit"] == 250
         assert body["startDate"] == "2026-06-28"
@@ -16098,12 +16148,26 @@ def test_gsc_vendor_read_uses_search_analytics(
     assert result.metric_summary["search_type"] == "web"
     assert result.metric_summary["detail_dimensions"] == "query,page"
     assert result.metric_summary["detail_data_completeness"] == "partial_possible"
+    assert result.metric_summary["aggregate_date_start"] == "2026-06-28"
+    assert result.metric_summary["aggregate_date_end"] == "2026-06-28"
+    assert result.metric_summary["aggregate_dimensions"] == "country,device"
+    assert result.metric_summary["aggregate_aggregation_type"] == "byProperty"
+    assert (
+        result.metric_summary["aggregate_data_completeness"]
+        == "aggregate_without_query_page_dimensions"
+    )
+    assert result.metric_summary["aggregate_row_count"] == 2
+    assert result.metric_summary["aggregate_clicks"] == 300
+    assert result.metric_summary["aggregate_impressions"] == 2000
+    assert result.metric_summary["aggregate_ctr"] == 0.15
+    assert result.metric_summary["aggregate_average_position"] == 4.0
     assert [request["dimensions"] for request in seen_requests] == [
         ["date"],
+        ["country", "device"],
         ["query", "page"],
         ["query", "page"],
     ]
-    assert [request.get("startRow") for request in seen_requests[1:]] == [0, 250]
+    assert [request.get("startRow") for request in seen_requests[2:]] == [0, 250]
     assert result.metric_facts[0].name == "clicks"
     assert result.metric_facts[0].value == 1
     assert result.metric_facts[0].dimensions == {

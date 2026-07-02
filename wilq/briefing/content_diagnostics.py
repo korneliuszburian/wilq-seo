@@ -279,6 +279,8 @@ def _gsc_search_analytics_contract(
     row_limit = _optional_int(summary.get("query_page_row_limit"))
     max_rows = _optional_int(summary.get("query_page_max_rows"))
     rows_truncated = _bool_metric(summary.get("query_page_rows_truncated"))
+    aggregate_clicks = _optional_int(summary.get("aggregate_clicks"))
+    aggregate_impressions = _optional_int(summary.get("aggregate_impressions"))
     return ContentGscSearchAnalyticsContract(
         evidence_ids=refresh.evidence_ids,
         data_availability_checked=_bool_metric(summary.get("data_availability_checked")),
@@ -294,6 +296,21 @@ def _gsc_search_analytics_contract(
         query_page_row_limit=row_limit,
         query_page_max_rows=max_rows,
         query_page_rows_truncated=rows_truncated,
+        aggregate_date_start=_optional_text(summary.get("aggregate_date_start")),
+        aggregate_date_end=_optional_text(summary.get("aggregate_date_end")),
+        aggregate_dimensions=_text(summary.get("aggregate_dimensions")),
+        aggregate_aggregation_type=_text(summary.get("aggregate_aggregation_type")),
+        aggregate_data_completeness=_text(summary.get("aggregate_data_completeness")),
+        aggregate_row_count=_optional_int(summary.get("aggregate_row_count")),
+        aggregate_clicks=aggregate_clicks,
+        aggregate_impressions=aggregate_impressions,
+        aggregate_ctr=_optional_float(summary.get("aggregate_ctr")),
+        aggregate_average_position=_optional_float(summary.get("aggregate_average_position")),
+        aggregate_summary_label=_gsc_aggregate_summary_label(
+            aggregate_clicks,
+            aggregate_impressions,
+            _optional_text(summary.get("aggregate_date_end")),
+        ),
         summary_label=_gsc_search_analytics_summary_label(detail_date_end),
         partial_detail_warning_label=(
             "Dane zapytań i adresów z Search Analytics są sygnałem do decyzji "
@@ -321,6 +338,19 @@ def _gsc_search_analytics_summary_label(detail_date_end: str | None) -> str:
             f"{detail_date_end}; zapytania i adresy mogą być częściowe."
         )
     return "GSC Search Analytics: brak potwierdzonego dnia szczegółów zapytań i adresów."
+
+
+def _gsc_aggregate_summary_label(
+    clicks: int | None,
+    impressions: int | None,
+    aggregate_date_end: str | None,
+) -> str:
+    if clicks is None or impressions is None or not aggregate_date_end:
+        return "GSC Search Analytics: brak osobnego agregatu ruchu bez wymiarów zapytań i adresów."
+    return (
+        "Agregat GSC bez wymiarów query/page: "
+        f"{clicks} kliknięć i {impressions} wyświetleń dla dnia {aggregate_date_end}."
+    )
 
 
 def _gsc_search_analytics_paging_label(
@@ -355,6 +385,17 @@ def _optional_int(value: object) -> int | None:
         return int(value)
     if isinstance(value, str) and value.isdigit():
         return int(value)
+    return None
+
+
+def _optional_float(value: object) -> float | None:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
     return None
 
 

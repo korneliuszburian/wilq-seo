@@ -276,6 +276,14 @@ available-date, `search_type=web`, `detail_dimensions=query,page`,
 so skills and dashboard code no longer need to infer this from raw
 `latest_refreshes.metric_summary`.
 
+The GSC aggregate-vs-detail split is implemented under Beads task
+`wilq-seo-bos`. Google Search Console vendor reads now collect an additional
+`byProperty` aggregate grouped by `country,device` for the same latest
+available day, while keeping detailed `query,page` rows marked
+`partial_possible`. The diagnostics contract exposes both so WILQ can discuss
+overall organic volume without pretending detailed query/page rows are full
+traffic totals.
+
 The same contract now distinguishes official Search Analytics limits from
 WILQ's smaller operating cap under Beads task `wilq-seo-llp`: typical 2-3 day
 data delay, single-day latest-available reads, official 25k page size, 50k

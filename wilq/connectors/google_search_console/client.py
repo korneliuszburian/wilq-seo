@@ -18,6 +18,10 @@ GSC_QUERY_PAGE_ROW_LIMIT = 250
 GSC_QUERY_PAGE_MAX_ROWS = 1000
 GSC_SEARCH_TYPE = "web"
 GSC_QUERY_PAGE_DETAIL_COMPLETENESS = "partial_possible"
+GSC_AGGREGATE_DIMENSIONS = ["country", "device"]
+GSC_AGGREGATE_ROW_LIMIT = 25000
+GSC_AGGREGATION_TYPE = "byProperty"
+GSC_AGGREGATE_COMPLETENESS = "aggregate_without_query_page_dimensions"
 
 
 def refresh_search_console_site_summary(
@@ -112,9 +116,33 @@ def _fetch_site_summary(
                 "search_type": GSC_SEARCH_TYPE,
                 "detail_dimensions": "query,page",
                 "detail_data_completeness": GSC_QUERY_PAGE_DETAIL_COMPLETENESS,
+                "aggregate_date_start": "",
+                "aggregate_date_end": "",
+                "aggregate_dimensions": ",".join(GSC_AGGREGATE_DIMENSIONS),
+                "aggregate_aggregation_type": GSC_AGGREGATION_TYPE,
+                "aggregate_data_completeness": GSC_AGGREGATE_COMPLETENESS,
+                "aggregate_row_count": 0,
+                "aggregate_clicks": 0,
+                "aggregate_impressions": 0,
+                "aggregate_ctr": 0.0,
+                "aggregate_average_position": 0.0,
             },
             [],
         )
+    aggregate_response = client.post(
+        endpoint,
+        headers=headers,
+        json={
+            "startDate": available_date,
+            "endDate": available_date,
+            "dimensions": GSC_AGGREGATE_DIMENSIONS,
+            "type": GSC_SEARCH_TYPE,
+            "aggregationType": GSC_AGGREGATION_TYPE,
+            "rowLimit": GSC_AGGREGATE_ROW_LIMIT,
+        },
+    )
+    aggregate_response.raise_for_status()
+    aggregate_summary = _summarize_metrics(_payload_rows(aggregate_response.json()))
     rows: list[dict[str, Any]] = []
     start_row = 0
     while start_row < GSC_QUERY_PAGE_MAX_ROWS:
@@ -143,6 +171,7 @@ def _fetch_site_summary(
         availability_date_start=availability_start,
         availability_date_end=availability_end,
         rows_truncated=len(rows) >= GSC_QUERY_PAGE_MAX_ROWS,
+        aggregate_summary=aggregate_summary,
     )
 
 
@@ -160,12 +189,10 @@ def _summarize_search_analytics_response(
     availability_date_start: str | None = None,
     availability_date_end: str | None = None,
     rows_truncated: bool = False,
+    aggregate_summary: dict[str, float | int] | None = None,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     rows = _payload_rows(payload)
-    clicks = 0
-    impressions = 0
-    weighted_position = 0.0
-    ctr_values: list[float] = []
+    detail_summary = _summarize_metrics(rows)
     metric_facts: list[VendorMetricFact] = []
     for row in rows:
         if not isinstance(row, dict):
@@ -174,10 +201,6 @@ def _summarize_search_analytics_response(
         row_impressions = _int_metric(row.get("impressions"))
         row_ctr = _float_metric(row.get("ctr"))
         row_position = _float_metric(row.get("position"))
-        clicks += row_clicks
-        impressions += row_impressions
-        weighted_position += row_position * row_impressions
-        ctr_values.append(row_ctr)
         dimensions = _search_dimensions(row)
         if dimensions:
             metric_facts.extend(
@@ -188,16 +211,23 @@ def _summarize_search_analytics_response(
                     VendorMetricFact("average_position", row_position, dimensions),
                 ]
             )
+    aggregate_summary = aggregate_summary or {
+        "row_count": 0,
+        "clicks": 0,
+        "impressions": 0,
+        "ctr": 0.0,
+        "average_position": 0.0,
+    }
     return (
         {
             "api": "search_console_search_analytics",
             "date_start": date_start,
             "date_end": date_end,
-            "row_count": len([row for row in rows if isinstance(row, dict)]),
-            "clicks": clicks,
-            "impressions": impressions,
-            "ctr": round(clicks / impressions, 6) if impressions else _average(ctr_values),
-            "average_position": round(weighted_position / impressions, 4) if impressions else 0.0,
+            "row_count": detail_summary["row_count"],
+            "clicks": detail_summary["clicks"],
+            "impressions": detail_summary["impressions"],
+            "ctr": detail_summary["ctr"],
+            "average_position": detail_summary["average_position"],
             "data_availability_checked": "true",
             "date_availability_status": "available",
             "availability_date_start": availability_date_start or date_start,
@@ -208,9 +238,46 @@ def _summarize_search_analytics_response(
             "search_type": GSC_SEARCH_TYPE,
             "detail_dimensions": "query,page",
             "detail_data_completeness": GSC_QUERY_PAGE_DETAIL_COMPLETENESS,
+            "aggregate_date_start": date_start,
+            "aggregate_date_end": date_end,
+            "aggregate_dimensions": ",".join(GSC_AGGREGATE_DIMENSIONS),
+            "aggregate_aggregation_type": GSC_AGGREGATION_TYPE,
+            "aggregate_data_completeness": GSC_AGGREGATE_COMPLETENESS,
+            "aggregate_row_count": aggregate_summary["row_count"],
+            "aggregate_clicks": aggregate_summary["clicks"],
+            "aggregate_impressions": aggregate_summary["impressions"],
+            "aggregate_ctr": aggregate_summary["ctr"],
+            "aggregate_average_position": aggregate_summary["average_position"],
         },
         metric_facts,
     )
+
+
+def _summarize_metrics(rows: list[dict[str, Any]]) -> dict[str, float | int]:
+    clicks = 0
+    impressions = 0
+    weighted_position = 0.0
+    ctr_values: list[float] = []
+    row_count = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        row_count += 1
+        row_clicks = _int_metric(row.get("clicks"))
+        row_impressions = _int_metric(row.get("impressions"))
+        row_ctr = _float_metric(row.get("ctr"))
+        row_position = _float_metric(row.get("position"))
+        clicks += row_clicks
+        impressions += row_impressions
+        weighted_position += row_position * row_impressions
+        ctr_values.append(row_ctr)
+    return {
+        "row_count": row_count,
+        "clicks": clicks,
+        "impressions": impressions,
+        "ctr": round(clicks / impressions, 6) if impressions else _average(ctr_values),
+        "average_position": round(weighted_position / impressions, 4) if impressions else 0.0,
+    }
 
 
 def _payload_rows(payload: Any) -> list[dict[str, Any]]:

@@ -4165,6 +4165,17 @@ class ContentGscSearchAnalyticsContract(BaseModel):
     query_page_row_limit: int | None = None
     query_page_max_rows: int | None = None
     query_page_rows_truncated: bool = False
+    aggregate_date_start: str | None = None
+    aggregate_date_end: str | None = None
+    aggregate_dimensions: str = ""
+    aggregate_aggregation_type: str = ""
+    aggregate_data_completeness: str = ""
+    aggregate_row_count: int | None = None
+    aggregate_clicks: int | None = None
+    aggregate_impressions: int | None = None
+    aggregate_ctr: float | None = None
+    aggregate_average_position: float | None = None
+    aggregate_summary_label: str = ""
     summary_label: str = ""
     partial_detail_warning_label: str = ""
     paging_label: str = ""

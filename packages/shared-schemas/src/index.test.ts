@@ -280,6 +280,18 @@ describe("ContentGscSearchAnalyticsContractSchema", () => {
     query_page_row_limit: 250,
     query_page_max_rows: 1000,
     query_page_rows_truncated: false,
+    aggregate_date_start: "2026-06-29",
+    aggregate_date_end: "2026-06-29",
+    aggregate_dimensions: "country,device",
+    aggregate_aggregation_type: "byProperty",
+    aggregate_data_completeness: "aggregate_without_query_page_dimensions",
+    aggregate_row_count: 2,
+    aggregate_clicks: 30,
+    aggregate_impressions: 300,
+    aggregate_ctr: 0.1,
+    aggregate_average_position: 4.0,
+    aggregate_summary_label:
+      "Agregat GSC bez wymiarów query/page: 30 kliknięć i 300 wyświetleń.",
     summary_label: "GSC Search Analytics: najnowszy dostępny dzień szczegółów 2026-06-29.",
     partial_detail_warning_label:
       "Dane zapytań i adresów z Search Analytics są sygnałem, nie pełną sumą całego ruchu.",
