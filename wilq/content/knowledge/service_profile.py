@@ -15,6 +15,7 @@ from wilq.content.knowledge.cards import (
 from wilq.content.knowledge.private_source_proposals import (
     PrivateSourceProposal,
     PrivateSourceProposalPrivacyClass,
+    PrivateSourceProposalRetentionDecision,
     PrivateSourceProposalReviewStatus,
     PrivateSourceProposalScope,
     PrivateSourceProposalType,
@@ -147,7 +148,7 @@ class ContentServiceProfilePrivateSourceProposalSection(BaseModel):
     risk_tier: ServiceProfilePrivateProposalRiskTier
     data_classes: list[str] = Field(default_factory=list)
     source_block_refs: list[str] = Field(default_factory=list)
-    retention_decision: str
+    retention_decision: PrivateSourceProposalRetentionDecision
     deletion_path: list[str] = Field(default_factory=list)
     eval_case_ids: list[str] = Field(default_factory=list)
     confidence_label: str

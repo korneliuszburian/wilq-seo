@@ -444,6 +444,7 @@ def test_service_profile_private_proposal_sections_reject_unknown_enum_values() 
         "review_status": "pending",
         "support_level": "unsupported",
         "risk_tier": "urgent",
+        "retention_decision": "keep_forever",
     }.items():
         invalid_payload = dict(payload)
         invalid_payload[field_name] = invalid_value
