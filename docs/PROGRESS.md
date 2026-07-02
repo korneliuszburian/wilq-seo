@@ -128,6 +128,11 @@ API status later contradicts this state.
   invent `review_landing_mapping` as a real queue item, and blocked
   profitability, revenue, conversion-rate, ROAS, GA4 write and "measurement
   fixed" claims without separate contracts.
+- Skill coverage audit is refreshed in `docs/evals/skill-coverage-audit.md`
+  after the July 2 BDOS-class evals. It now records 13 skills, current fresh
+  artifacts where available, live API connector context (`12` connectors, `9`
+  configured, `2` missing credentials) and the current strongest operator paths
+  instead of the old June 24 12-skill snapshot.
 - Goal 005 source-pack slice `wilq-seo-ciz` produced
   `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
   now give commit-safe source candidates for environmental consulting/
