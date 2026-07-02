@@ -246,11 +246,17 @@ def _priority_order(value: str) -> int:
 def _scope_order(value: str) -> int:
     return {
         "claim_policy": 0,
+        "private_claim_policy_proposal": 0,
         "evidence_requirement": 1,
+        "private_evidence_policy_proposal": 1,
         "service": 2,
+        "private_service_proposal": 2,
+        "public_service_card": 2,
         "buyer_problem": 3,
         "cta": 4,
         "metric_signal": 5,
+        "coverage_gap": 6,
+        "general_knowledge_review": 7,
     }.get(value, 6)
 
 

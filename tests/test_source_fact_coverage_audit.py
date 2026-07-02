@@ -83,3 +83,21 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
     assert "`service_profile_review_card_ekologus_service_bdo_reporting`" in markdown
     assert "approve, needs_changes, stale, reject" in markdown
     assert "Brakuje zatwierdzonych production-depth kart usług Ekologus." in markdown
+
+
+def test_private_review_action_scopes_sort_by_review_risk() -> None:
+    audit = load_module()
+
+    assert audit._scope_order("private_claim_policy_proposal") == audit._scope_order(
+        "claim_policy"
+    )
+    assert audit._scope_order("private_evidence_policy_proposal") == audit._scope_order(
+        "evidence_requirement"
+    )
+    assert audit._scope_order("private_service_proposal") == audit._scope_order("service")
+    assert audit._scope_order("private_claim_policy_proposal") < audit._scope_order(
+        "private_evidence_policy_proposal"
+    )
+    assert audit._scope_order("private_evidence_policy_proposal") < audit._scope_order(
+        "private_service_proposal"
+    )
