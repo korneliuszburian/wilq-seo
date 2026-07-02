@@ -102,6 +102,11 @@ live API status later contradicts this state.
   live API candidate ID when `--api-base` is provided. The example intentionally
   contains placeholders and is rejected by the normal validator until Wilku's
   real answers are filled in.
+- Goal 005 UAT input example now ranks live content candidates for practical
+  review value instead of picking the first ID alphabetically. With the current
+  API queue it selects
+  `content_work_item_content_decision_https___www_ekologus_pl`, the actionable
+  homepage refresh candidate, instead of blocked GA4/Ahrefs review-only items.
 - Daily Command usefulness proof: non-interactive eval for
   `wilq-daily-command` passed with `operator_usefulness_score=5`, 20 evidence
   IDs, eight source connectors and four validated daily actions. The first safe

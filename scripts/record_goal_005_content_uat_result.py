@@ -114,9 +114,7 @@ def build_content_uat_input_example(
 ) -> dict[str, Any]:
     selected_work_item = "<work_item_id_z_uat_packet>"
     if live_context is not None:
-        candidate_ids = sorted(live_context_candidate_ids(live_context))
-        if candidate_ids:
-            selected_work_item = candidate_ids[0]
+        selected_work_item = select_uat_candidate_id(live_context) or selected_work_item
     return {
         "data_sesji": "<YYYY-MM-DD>",
         "osoba": "Wilku",
@@ -445,6 +443,53 @@ def live_context_candidate_ids(live_context: dict[str, Any]) -> set[str]:
         for candidate in raw_list_payload(queue.get("candidates"))
         if isinstance(candidate, dict) and candidate.get("work_item_id")
     }
+
+
+def select_uat_candidate_id(live_context: dict[str, Any]) -> str | None:
+    queue = live_context.get("queue")
+    if not isinstance(queue, dict):
+        return None
+    candidates = [
+        candidate
+        for candidate in raw_list_payload(queue.get("candidates"))
+        if isinstance(candidate, dict) and candidate.get("work_item_id")
+    ]
+    if not candidates:
+        return None
+    ranked = sorted(
+        candidates,
+        key=lambda candidate: (
+            -uat_candidate_score(candidate, live_context),
+            str(candidate.get("work_item_id") or ""),
+        ),
+    )
+    return str(ranked[0].get("work_item_id") or "").strip() or None
+
+
+def uat_candidate_score(candidate: dict[str, Any], live_context: dict[str, Any]) -> int:
+    score = 0
+    mode = str(candidate.get("recommended_mode") or "").strip()
+    if mode in {"refresh", "merge", "refresh_or_merge"}:
+        score += 50
+    elif mode == "block":
+        score -= 20
+    if candidate.get("final_canonical_url") or candidate.get("intended_final_url"):
+        score += 20
+    if candidate.get("source_public_url"):
+        score += 10
+    if candidate.get("preflight_status") in {"plan_allowed", "ready"}:
+        score += 10
+    if candidate.get("source_connectors"):
+        score += 5
+    traces = live_context.get("sales_brief_traces")
+    if isinstance(traces, dict):
+        trace = traces.get(str(candidate.get("work_item_id") or ""))
+        if isinstance(trace, dict):
+            if trace.get("status") == "ready":
+                score += 20
+            elif trace.get("status") == "blocked":
+                score += 5
+    return score
 
 
 def live_uat_provenance(

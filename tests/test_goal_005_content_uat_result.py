@@ -11,6 +11,7 @@ from scripts.record_goal_005_content_uat_result import (
     render_markdown,
     sales_brief_blocker_label,
     sales_brief_trace_from_snapshot,
+    select_uat_candidate_id,
 )
 
 
@@ -74,6 +75,18 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
     assert example["follow_up_beads"] == [
         "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
     ]
+
+
+def test_content_uat_candidate_selection_prefers_actionable_work_item() -> None:
+    live_context = _live_context_with_blocked_and_actionable_candidates()
+
+    selected_work_item = select_uat_candidate_id(live_context)
+    example = build_content_uat_input_example(live_context=live_context)
+
+    assert selected_work_item == (
+        "content_work_item_content_decision_https___www_ekologus_pl"
+    )
+    assert example["wybrany_work_item"] == selected_work_item
 
 
 def test_content_uat_input_example_is_not_a_completed_uat_result() -> None:
@@ -462,3 +475,54 @@ def _live_context() -> dict[str, object]:
             }
         },
     }
+
+
+def _live_context_with_blocked_and_actionable_candidates() -> dict[str, object]:
+    live_context = _live_context()
+    live_context["queue"] = {
+        "queue_status": "blocked",
+        "candidate_count": 3,
+        "actionable_candidate_count": 1,
+        "candidates": [
+            {
+                "work_item_id": "content_work_item_content_decision_ga4_tracking_gap_review",
+                "recommended_mode": "block",
+                "evidence_ids": ["ev_ga4"],
+                "source_connectors": ["google_analytics_4"],
+            },
+            {
+                "work_item_id": "content_work_item_content_decision_ahrefs_gap_records_review",
+                "recommended_mode": "block",
+                "evidence_ids": ["ev_ahrefs"],
+                "source_connectors": ["ahrefs"],
+            },
+            {
+                "work_item_id": "content_work_item_content_decision_https___www_ekologus_pl",
+                "recommended_mode": "refresh",
+                "final_canonical_url": "https://www.ekologus.pl/",
+                "source_public_url": "https://www.ekologus.pl/",
+                "preflight_status": "plan_allowed",
+                "evidence_ids": ["ev_gsc", "ev_wp"],
+                "source_connectors": [
+                    "google_search_console",
+                    "wordpress_ekologus",
+                ],
+            },
+        ],
+    }
+    live_context["sales_brief_traces"] = {
+        "content_work_item_content_decision_ga4_tracking_gap_review": {
+            "status": "blocked",
+        },
+        "content_work_item_content_decision_ahrefs_gap_records_review": {
+            "status": "blocked",
+        },
+        "content_work_item_content_decision_https___www_ekologus_pl": {
+            "status": "ready",
+            "knowledge_constraint_count": 1,
+            "knowledge_constraint_evidence_ids": [
+                "ev_content_service_profile_source_facts"
+            ],
+        },
+    }
+    return live_context
