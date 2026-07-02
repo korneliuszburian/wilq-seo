@@ -430,6 +430,48 @@ Result:
   does not yet prove production writing usefulness because the queue remains
   blocked for full UAT and only one candidate is actionable.
 
+## 2026-07-02 - `wilq-social-publisher` social history blocker eval
+
+Purpose:
+
+- Verify that WILQ does not claim duplicate-free LinkedIn/Facebook repurposing
+  without historical social metadata.
+- Check whether the skill can still be useful as a review-only social draft
+  workflow when LinkedIn/Facebook credentials are missing.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T120859Z`.
+- Smoke showed LinkedIn and Facebook as `missing_credentials`.
+- `social_draft_context.publish_allowed=false`.
+- `historical_social_inventory_status=missing`.
+- `duplicate_risk_status=blocked_until_social_history_review`.
+- Validated review-only draft actions:
+  `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts`.
+- Non-interactive Codex eval passed:
+  `operator_usefulness_score=5`, `failure_tags=[]`,
+  `evidence_count=5`, `recommendations_count=2`, `actions_count=3`.
+- Hard gates were all true:
+  evidence requirement, source connector requirement, blocked claims, action
+  validation, freshness/blocker handling and workflow specificity.
+- Required metadata-only social history fields remain:
+  `channel`, `published_at`, `topic`, `service`, `claim`, `cta`, `format`,
+  `post_url_or_id` and `source_evidence_id`.
+- Main learning: social is useful as review-only ideation from WILQ evidence,
+  but WILQ must not claim "no duplicates" or publish until credentials and
+  `social_history_inventory_v1` metadata exist.
+- Handoff:
+  `docs/handoffs/2026-07-02-wilku-social-history-blocker.md`.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

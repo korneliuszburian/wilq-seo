@@ -197,6 +197,14 @@ API status later contradicts this state.
   useful output is still a guided blocker/repair workflow, not production
   writing proof, because `queue_status=blocked`, `workflow_blocked=true` and
   only 1 of 3 candidates is actionable.
+- `wilq-social-publisher` social-history blocker review passed deterministic
+  smoke and non-interactive Codex eval; artifact:
+  `.local-lab/evals/codex-skill/20260702T120859Z`. Score:
+  `operator_usefulness_score=5`, all hard gates true, `failure_tags=[]`.
+  Review-only LinkedIn/Facebook draft actions validate, but publication and
+  duplicate-free claims remain blocked because LinkedIn/Facebook credentials
+  are missing and `historical_social_inventory_status=missing`. Wilku-facing
+  handoff: `docs/handoffs/2026-07-02-wilku-social-history-blocker.md`.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
