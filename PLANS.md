@@ -390,6 +390,12 @@ includes forbidden claim text recorded on the Sales Brief even after the active
 Claim Ledger is resolved for drafting, and structured generation passes that
 list into `model_input` for preview/quality acknowledgement gates.
 
+Removed and blocked claim markers are typed under Beads task `wilq-seo-zqs`.
+Structured generation model input now carries
+`removed_or_blocked_claim_markers` using the same marker shape as allowed
+`claim_markers`, preserving claim ID, type, status, evidence, connector and
+reviewer lineage for avoided claims.
+
 WordPress draft handoff audit lineage is hardened under Beads task
 `wilq-seo-unp`: audit evidence must overlap with the approved human review
 evidence and the draft package evidence map, otherwise handoff blocks with

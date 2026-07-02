@@ -346,3 +346,11 @@ def test_structured_generation_receives_sales_brief_forbidden_claims() -> None:
     assert result.contract.model_input.claims_removed_or_blocked == [
         "Ta treść zwiększy liczbę leadów."
     ]
+    assert len(result.contract.model_input.removed_or_blocked_claim_markers) == 1
+    marker = result.contract.model_input.removed_or_blocked_claim_markers[0]
+    assert marker.claim_id == "claim_more_leads"
+    assert marker.claim_text == "Ta treść zwiększy liczbę leadów."
+    assert marker.claim_type == "business_outcome_claim"
+    assert marker.status == "blocked_until_measurement"
+    assert marker.evidence_ids == ["ev_gsc_bdo"]
+    assert marker.source_connectors == ["google_search_console"]

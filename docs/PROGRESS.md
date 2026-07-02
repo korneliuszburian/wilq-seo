@@ -406,6 +406,12 @@ API status later contradicts this state.
   resolved enough to draft. Structured generation therefore receives the same
   avoided-claim list in `model_input` and the existing preview/quality gates
   still require `forbidden_claims_avoided` before human-review readiness.
+- Structured draft generation now also exposes typed
+  `removed_or_blocked_claim_markers` beside text-only
+  `claims_removed_or_blocked`. Blocked or removed claims keep claim ID, type,
+  status, evidence IDs, source connectors and reviewer lineage from Claim
+  Ledger/Sales Brief, so avoided claims no longer reach runtime as plain
+  strings only.
 - Shared schemas now type `ContentQualityFinding.code` as the known quality gate
   enum instead of any string, including
   `missing_forbidden_claim_acknowledgement`. Dashboard/API tests now catch

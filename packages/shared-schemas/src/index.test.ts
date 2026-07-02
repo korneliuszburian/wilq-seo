@@ -833,8 +833,18 @@ describe("Content work item workflow schemas", () => {
                   reviewer_id: "wilku"
                 }
               ],
+              removed_or_blocked_claim_markers: [
+                {
+                  claim_id: "claim_more_leads",
+                  claim_text: "Ta treść zwiększy liczbę leadów.",
+                  claim_type: "business_outcome_claim",
+                  status: "blocked_until_measurement",
+                  evidence_ids: ["ev_gsc_bdo"],
+                  source_connectors: ["google_search_console"]
+                }
+              ],
               claims_allowed: ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
-              claims_removed_or_blocked: [],
+              claims_removed_or_blocked: ["Ta treść zwiększy liczbę leadów."],
               human_review_questions: ["Czy to brzmi jak Ekologus?"]
             },
             output_schema: {

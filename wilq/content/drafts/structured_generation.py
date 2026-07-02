@@ -10,6 +10,7 @@ from wilq.content.claims.ledger import (
     ContentClaimStatus,
     ContentClaimType,
     claim_ledger_allows_draft,
+    claim_ledger_blockers,
     publish_ready_claims,
 )
 from wilq.content.drafts.package import ContentDraftPackage
@@ -105,6 +106,9 @@ class StructuredDraftGenerationInput(BaseModel):
     source_facts: list[StructuredDraftSourceFact] = Field(default_factory=list)
     knowledge_constraints: list[StructuredDraftKnowledgeConstraint] = Field(default_factory=list)
     claim_markers: list[StructuredDraftClaimMarker] = Field(default_factory=list)
+    removed_or_blocked_claim_markers: list[StructuredDraftClaimMarker] = Field(
+        default_factory=list
+    )
     claims_allowed: list[str] = Field(default_factory=list)
     claims_removed_or_blocked: list[str] = Field(default_factory=list)
     human_review_questions: list[str] = Field(default_factory=list)
@@ -244,6 +248,10 @@ def build_structured_draft_generation_contract(
             )
             for entry in publish_ready_claims(claim_ledger)
         ],
+        removed_or_blocked_claim_markers=_removed_or_blocked_claim_markers(
+            claim_ledger=claim_ledger,
+            sales_brief=sales_brief,
+        ),
         claims_allowed=draft_package.claims_used,
         claims_removed_or_blocked=draft_package.claims_removed_or_blocked,
         human_review_questions=draft_package.human_review_questions,
@@ -407,6 +415,45 @@ def _sales_brief_has_review_required_knowledge(sales_brief: ContentSalesBrief) -
         constraint.constraint_type in blocking_constraint_types
         for constraint in sales_brief.knowledge_constraints
     )
+
+
+def _removed_or_blocked_claim_markers(
+    *,
+    claim_ledger: ContentClaimLedger,
+    sales_brief: ContentSalesBrief,
+) -> list[StructuredDraftClaimMarker]:
+    entries_by_id = {entry.id: entry for entry in claim_ledger.entries}
+    markers: list[StructuredDraftClaimMarker] = []
+    for blocker in claim_ledger_blockers(claim_ledger):
+        entry = entries_by_id.get(blocker.claim_id)
+        if entry is None:
+            continue
+        markers.append(
+            StructuredDraftClaimMarker(
+                claim_id=entry.id,
+                claim_text=entry.claim_text,
+                claim_type=entry.claim_type,
+                status=entry.status,
+                evidence_ids=entry.evidence_ids,
+                source_connectors=entry.source_connectors,
+                reviewer_id=entry.reviewer_id,
+            )
+        )
+    markers_by_id = {marker.claim_id: marker for marker in markers}
+    for claim in sales_brief.forbidden_claims:
+        markers_by_id.setdefault(
+            claim.claim_id,
+            StructuredDraftClaimMarker(
+                claim_id=claim.claim_id,
+                claim_text=claim.claim_text,
+                claim_type=claim.claim_type,
+                status=claim.status,
+                evidence_ids=claim.evidence_ids,
+                source_connectors=claim.source_connectors,
+                reviewer_id=claim.reviewer_id,
+            ),
+        )
+    return list(markers_by_id.values())
 
 
 def structured_draft_output_schema() -> dict[str, object]:

@@ -86,7 +86,11 @@ class ContentSalesBriefMeasurementPlan(BaseModel):
 class ContentSalesBriefForbiddenClaim(BaseModel):
     claim_id: str
     claim_text: str
+    claim_type: str
     status: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    reviewer_id: str | None = None
     reason: str
 
 
@@ -577,7 +581,11 @@ def _forbidden_claims(
             ContentSalesBriefForbiddenClaim(
                 claim_id=entry.id,
                 claim_text=entry.claim_text,
+                claim_type=entry.claim_type,
                 status=entry.status,
+                evidence_ids=entry.evidence_ids,
+                source_connectors=entry.source_connectors,
+                reviewer_id=entry.reviewer_id,
                 reason=blocker.reason,
             )
         )

@@ -203,6 +203,8 @@ export const ContentClaimReferenceSchema = z.object({
   claim_type: z.string().optional(),
   status: z.string().optional(),
   evidence_ids: z.array(z.string()).optional(),
+  source_connectors: z.array(z.string()).optional(),
+  reviewer_id: z.string().nullable().optional(),
   reason: z.string().optional()
 });
 
@@ -686,6 +688,9 @@ export const StructuredDraftGenerationInputSchema = z.object({
   source_facts: z.array(StructuredDraftSourceFactSchema).default([]),
   knowledge_constraints: z.array(StructuredDraftKnowledgeConstraintSchema).default([]),
   claim_markers: z.array(StructuredDraftClaimMarkerSchema).default([]),
+  removed_or_blocked_claim_markers: z
+    .array(StructuredDraftClaimMarkerSchema)
+    .default([]),
   claims_allowed: z.array(z.string()).default([]),
   claims_removed_or_blocked: z.array(z.string()).default([]),
   human_review_questions: z.array(z.string()).default([])
