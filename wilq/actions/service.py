@@ -3339,7 +3339,7 @@ def _service_profile_private_proposal_promotion_preview_cards(
         cards.append(
             ActionPreviewCardViewModel(
                 id=f"service_profile_private_proposal_promotion_{index}",
-                kind="service_profile_knowledge_promotion_review",
+                kind="service_profile_private_proposal_promotion_review",
                 title_label="Prywatna propozycja Service Profile do sprawdzenia",
                 subtitle_label="review redacted źródła, bez promocji i bez zapisu",
                 status_label="zapis zmian zablokowany",

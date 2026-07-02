@@ -566,7 +566,7 @@ def test_private_proposal_promotion_action_is_prepare_only_and_review_gated() ->
     assert "action_mode_prepare_only" in preview.blockers
     assert "payload_apply_allowed_false" in preview.blockers
     assert preview.preview_cards
-    assert preview.preview_cards[0].kind == "service_profile_knowledge_promotion_review"
+    assert preview.preview_cards[0].kind == "service_profile_private_proposal_promotion_review"
     assert preview.preview_cards[0].apply_state_label == "zapis zmian zablokowany"
     assert any(
         "Prywatna propozycja Service Profile" in card.title_label

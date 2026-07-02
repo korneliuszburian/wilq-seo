@@ -19072,6 +19072,36 @@ def test_codex_context_pack_scopes_gsc_content_doctor_without_ahrefs_decisions()
     assert content["context_pack_compaction"]["ahrefs_decisions_removed"] is True
 
 
+def test_content_operator_context_pack_exposes_service_profile_review_actions() -> None:
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-content-operator"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-content-operator"
+
+    actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
+    public_action = actions_by_id["act_prepare_service_profile_knowledge_promotion"]
+    private_action = actions_by_id["act_prepare_service_profile_private_proposal_promotion"]
+
+    assert "payload" not in public_action
+    assert "payload" not in private_action
+    assert public_action["api_endpoint_template"] == "/api/actions/{action_id}"
+    assert private_action["api_endpoint_template"] == "/api/actions/{action_id}"
+    assert public_action["preview_cards"]
+    assert private_action["preview_cards"]
+    assert public_action["preview_cards"][0]["kind"] == "service_profile_knowledge_promotion_review"
+    assert (
+        private_action["preview_cards"][0]["kind"]
+        == "service_profile_private_proposal_promotion_review"
+    )
+    assert public_action["evidence_ids"] == ["ev_content_service_profile_source_facts"]
+    assert private_action["evidence_ids"] == ["ev_content_service_profile_source_facts"]
+
+
 def test_codex_context_pack_scopes_merchant_change_preview(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

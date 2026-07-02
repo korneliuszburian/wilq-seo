@@ -270,6 +270,14 @@ API status later contradicts this state.
   `apply_allowed=false`, `api_mutation_ready=false`. This prepares the audited
   promotion request path without editing `source_facts.json`, changing
   lifecycle status, setting `approved_current` or unlocking production-depth.
+- The `wilq-content-operator` context-pack now has a focused regression guard
+  for both Service Profile promotion review actions. Live proof after stack
+  restart on 2026-07-02 confirmed that
+  `act_prepare_service_profile_knowledge_promotion` and
+  `act_prepare_service_profile_private_proposal_promotion` are exposed through
+  `active_action_objects`, omit raw payloads, keep
+  `ev_content_service_profile_source_facts`, and use distinct preview card
+  kinds for public knowledge promotion vs private proposal review.
 - The `wilq-content-operator` UAT packet now includes live Service Profile
   evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
   `uat_readiness.status=blocked_for_full_uat`,
