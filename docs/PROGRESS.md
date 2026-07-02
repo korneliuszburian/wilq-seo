@@ -820,6 +820,11 @@ API status later contradicts this state.
   to` item in the active queue. Use the live UAT packet and
   `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` before presenting
   candidate choice to Wilku.
+- Quality Review now enforces Sales Brief signal quality: `review_required`
+  produces `needs_changes` with `sales_brief_signal_review_required`, while
+  `thin` blocks with `sales_brief_signal_thin`. Live HTTP proof after stack
+  restart on 2026-07-02 confirmed both states on
+  `/api/content/work-items/quality-review`.
 - Goal 005 waste-storage knowledge slice `wilq-seo-nlz` added
   `ekologus_public_waste_packaging_obligations_2026_07_01` as a commit-safe
   source fact compiled into `ekologus_service_waste_packaging_obligations`

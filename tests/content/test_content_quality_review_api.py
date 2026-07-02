@@ -156,6 +156,52 @@ def test_content_quality_review_blocks_duplicate_and_missing_measurement() -> No
     assert review["measurement_readiness"]["status"] == "blocked"
 
 
+def test_content_quality_review_flags_review_required_sales_brief_signal() -> None:
+    payload = _quality_payload()
+    payload["sales_brief"]["signal_quality"] = {
+        **payload["sales_brief"]["signal_quality"],
+        "status": "review_required",
+        "status_label": "wymaga review źródeł",
+        "reason": "Brief opiera się na źródłach review-required.",
+        "safe_next_step": "Pokaż brief Wilkowi i zbierz decyzję źródłową.",
+    }
+
+    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
+
+    assert response.status_code == 200
+    review = response.json()["quality_review"]
+    assert review["verdict"] == "needs_changes"
+    assert "sales_brief_signal_review_required" in [
+        finding["code"] for finding in review["findings"]
+    ]
+    assert review["evidence_coverage"]["status"] == "needs_changes"
+    assert review["usefulness"]["status"] == "needs_changes"
+    assert review["safe_next_step"] == "Pokaż brief Wilkowi i zbierz decyzję źródłową."
+
+
+def test_content_quality_review_blocks_thin_sales_brief_signal() -> None:
+    payload = _quality_payload()
+    payload["sales_brief"]["signal_quality"] = {
+        **payload["sales_brief"]["signal_quality"],
+        "status": "thin",
+        "status_label": "cienki sygnał",
+        "reason": "Brief ma zbyt mało dowodów i źródeł.",
+        "missing_evidence_count": 2,
+        "measurement_baseline_ready": False,
+        "safe_next_step": "Uzupełnij dowody i źródła przed szkicem.",
+    }
+
+    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
+
+    assert response.status_code == 200
+    review = response.json()["quality_review"]
+    assert review["verdict"] == "blocked"
+    assert "sales_brief_signal_thin" in _blocker_codes(review)
+    assert review["evidence_coverage"]["status"] == "blocked"
+    assert review["usefulness"]["status"] == "blocked"
+    assert review["safe_next_step"] == "Uzupełnij dowody i źródła przed szkicem."
+
+
 def test_content_quality_review_returns_revision_instruction_for_weak_cta() -> None:
     payload = _quality_payload()
     payload["structured_output"]["cta"] = "kliknij tutaj"
@@ -335,6 +381,16 @@ def _quality_payload() -> dict[str, Any]:
         }
     )
     brief = deepcopy(brief_response["sales_brief_result"]["brief"])
+    brief["signal_quality"] = {
+        **brief["signal_quality"],
+        "status": "strong",
+        "status_label": "mocny sygnał",
+        "reason": "Testowy brief ma komplet dowodów wymaganych dla happy path.",
+        "missing_evidence_count": 0,
+        "review_required_knowledge_card_count": 0,
+        "measurement_baseline_ready": True,
+        "safe_next_step": "Przekaż szkic do sprawdzenia człowieka.",
+    }
     draft_response = _post_draft_package(
         {
             "item": item,

@@ -249,6 +249,13 @@ material, not final truth. Live
 `review_required_knowledge_card_count=4`, `measurement_baseline_ready=True`
 and `system_mentions_signal_quality=True`.
 
+Quality Review now enforces the same signal-quality contract instead of only
+passing it to generation instructions. A `review_required` Sales Brief signal
+returns a `needs_changes` review with
+`sales_brief_signal_review_required`; a `thin` signal blocks with
+`sales_brief_signal_thin`. Live HTTP proof after stack restart confirmed:
+`review_required -> needs_changes` and `thin -> blocked`.
+
 Under Beads task `wilq-seo-pred`, Goal 005 completion is fail-closed through
 `scripts/goal_005_completion_check.py`. Completion claims require either a
 validated real UAT result or an explicit owner defer with residual risk,

@@ -39,6 +39,8 @@ ContentQualityFindingCode = Literal[
     "missing_forbidden_claim_acknowledgement",
     "duplicate_risk_not_clear",
     "missing_measurement_window",
+    "sales_brief_signal_review_required",
+    "sales_brief_signal_thin",
     "weak_cta",
     "missing_service_fit",
     "missing_search_intent",
@@ -161,6 +163,10 @@ def build_content_quality_review(
                 "missing_structured_output",
                 "section_missing_evidence",
                 "unknown_evidence_reference",
+                "sales_brief_signal_thin",
+            },
+            needs_change_codes={
+                "sales_brief_signal_review_required",
             },
         ),
         claim_safety=_dimension(
@@ -184,7 +190,13 @@ def build_content_quality_review(
         usefulness=_dimension(
             "Użyteczność dla czytelnika",
             findings,
-            needs_change_codes={"weak_cta", "missing_buyer_problem", "missing_service_fit"},
+            blocked_codes={"sales_brief_signal_thin"},
+            needs_change_codes={
+                "sales_brief_signal_review_required",
+                "weak_cta",
+                "missing_buyer_problem",
+                "missing_service_fit",
+            },
         ),
         service_fit=_dimension(
             "Dopasowanie do usługi",
@@ -581,6 +593,30 @@ def _brief_fit_findings(
             ),
         ]
     findings: list[ContentQualityFinding] = []
+    if sales_brief.signal_quality.status == "thin":
+        findings.append(
+            _finding(
+                "sales_brief_signal_thin",
+                "blocker",
+                "Brief ma zbyt cienki sygnał",
+                sales_brief.signal_quality.reason,
+                sales_brief.signal_quality.safe_next_step,
+                evidence_ids=sales_brief.evidence_ids,
+                source_connectors=sales_brief.source_connectors,
+            )
+        )
+    elif sales_brief.signal_quality.status == "review_required":
+        findings.append(
+            _finding(
+                "sales_brief_signal_review_required",
+                "needs_changes",
+                "Brief wymaga review źródeł",
+                sales_brief.signal_quality.reason,
+                sales_brief.signal_quality.safe_next_step,
+                evidence_ids=sales_brief.evidence_ids,
+                source_connectors=sales_brief.source_connectors,
+            )
+        )
     if not sales_brief.service_fit.strip():
         findings.append(
             _finding(
