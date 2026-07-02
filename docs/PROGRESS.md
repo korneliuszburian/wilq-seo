@@ -198,6 +198,11 @@ API status later contradicts this state.
   operating routes from `generatedSurfaceRoutes`, while `Shell.tsx` renders nav
   from `primarySurfaceRoutes`. Placeholder/experimental routes remain routable
   only when deliberately classified, not by accidental hidden arrays.
+- Diagnostic UI dedupe proof on 2026-07-02 adds shared
+  `DiagnosticPage<TData>` in `DiagnosticSurfaceShell.tsx` and migrates
+  `LocaloDiagnosticSurface` to it. The route keeps Localo-specific decision,
+  proof and safety content, while loading/error/shell behavior now lives in
+  one reusable component for later GA4/Merchant migration.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

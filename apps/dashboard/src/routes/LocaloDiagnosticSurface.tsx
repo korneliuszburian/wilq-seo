@@ -4,14 +4,10 @@ import { ClipboardCheck } from "lucide-react";
 
 import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
 import { DiagnosticDecisionCard } from "../components/DiagnosticDecisionCard";
-import {
-  DiagnosticSurfaceShell,
-  DiagnosticSurfaceUnavailable
-} from "../components/DiagnosticSurfaceShell";
+import { DiagnosticPage } from "../components/DiagnosticSurfaceShell";
 import { MetricFactChips } from "../components/MetricFactChips";
 import {
   BlockerNotice,
-  LoadingBand,
   MetricTile,
   PlainChipRow
 } from "../components/OperatorPrimitives";
@@ -26,29 +22,30 @@ export function LocaloDiagnosticSurface() {
     queryFn: getLocaloDiagnostics
   });
 
-  if (diagnostics.isLoading) return <LoadingBand />;
-  if (diagnostics.error || !diagnostics.data) {
-    return (
-      <DiagnosticSurfaceUnavailable message="Nie udało się odczytać danych Localo. Ten widok nie może udawać rankingów, danych profilu firmy w Google ani lokalnej widoczności bez WILQ." />
-    );
-  }
-
-  const data = diagnostics.data;
-  const latestRefresh = data.latest_refresh;
-
   return (
-    <DiagnosticSurfaceShell
+    <DiagnosticPage
+      query={diagnostics}
       title="Localo"
       description="Dedykowany widok Localo z WILQ. Oddziela sam dostęp do danych od lokalnych rankingów, profilu firmy w Google, konkurencji i opinii, żeby marketer nie dostał fałszywej rekomendacji lokalnego SEO."
-      metrics={
+      unavailableMessage="Nie udało się odczytać danych Localo. Ten widok nie może udawać rankingów, danych profilu firmy w Google ani lokalnej widoczności bez WILQ."
+      metrics={(data) => (
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Dane lokalne" value={data.visibility_fact_count} />
           <MetricTile label="Braki danych" value={data.operator_summary.missing_read_contract_summary_label} />
           <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
-      }
+      )}
     >
+      {(data) => <LocaloDiagnosticBody data={data} />}
+    </DiagnosticPage>
+  );
+}
 
+function LocaloDiagnosticBody({ data }: { data: LocaloDiagnosticsResponse }) {
+  const latestRefresh = data.latest_refresh;
+
+  return (
+    <>
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -107,7 +104,7 @@ export function LocaloDiagnosticSurface() {
           />
         </div>
       </SafetyGatePanel>
-    </DiagnosticSurfaceShell>
+    </>
   );
 }
 

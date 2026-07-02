@@ -1,6 +1,38 @@
 import type { ReactNode } from "react";
+import type { UseQueryResult } from "@tanstack/react-query";
 
-import { BlockerNotice } from "./OperatorPrimitives";
+import { BlockerNotice, LoadingBand } from "./OperatorPrimitives";
+
+export function DiagnosticPage<TData>({
+  query,
+  title,
+  description,
+  unavailableMessage,
+  metrics,
+  children
+}: {
+  query: UseQueryResult<TData>;
+  title: string;
+  description: string;
+  unavailableMessage: string;
+  metrics?: (data: TData) => ReactNode;
+  children: (data: TData) => ReactNode;
+}) {
+  if (query.isLoading) return <LoadingBand />;
+  if (query.error || !query.data) {
+    return <DiagnosticSurfaceUnavailable message={unavailableMessage} />;
+  }
+
+  return (
+    <DiagnosticSurfaceShell
+      title={title}
+      description={description}
+      metrics={metrics ? metrics(query.data) : undefined}
+    >
+      {children(query.data)}
+    </DiagnosticSurfaceShell>
+  );
+}
 
 export function DiagnosticSurfaceShell({
   title,

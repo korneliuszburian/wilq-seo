@@ -62,6 +62,18 @@ describe("operator safety copy guards", () => {
     expect(source).toContain("nie dodawaj segmentu bez review");
   });
 
+  it("keeps Localo on the shared diagnostic page shell proof path", () => {
+    const localoSource = readSource("src/routes/LocaloDiagnosticSurface.tsx");
+    const shellSource = readSource("src/components/DiagnosticSurfaceShell.tsx");
+
+    expect(localoSource).toContain("<DiagnosticPage");
+    expect(localoSource).not.toContain("diagnostics.isLoading");
+    expect(localoSource).not.toContain("DiagnosticSurfaceUnavailable");
+    expect(shellSource).toContain("export function DiagnosticPage");
+    expect(shellSource).toContain("query.isLoading");
+    expect(shellSource).toContain("DiagnosticSurfaceUnavailable");
+  });
+
   it("keeps Tactical Queue evidence and action gaps explicit", () => {
     const source = readSource("src/routes/TacticalQueuePanel.tsx");
 
