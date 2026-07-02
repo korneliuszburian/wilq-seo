@@ -348,6 +348,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "scope": "service",
                     "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
                     "target_card_title": "Doradztwo",
+                    "freshness_status": "current",
                     "review_status": "review_required",
                     "support_level": "partial",
                     "risk_tier": "medium",
@@ -357,6 +358,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "deletion_path": ["Usuń albo odrzuć redacted proposal."],
                     "eval_case_ids": ["goal_005_private_service_review"],
                     "confidence_label": "średnia",
+                    "audience": "company_wide",
                     "blocked_claims": ["gwarancja"],
                     "safe_next_step": "Review.",
                     "promotion_allowed": False,
@@ -370,6 +372,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "scope": "claim_policy",
                     "target_card_id": "ekologus_claim_policy_brand_voice",
                     "target_card_title": "Styl marki",
+                    "freshness_status": "current",
                     "review_status": "review_required",
                     "support_level": "direct",
                     "risk_tier": "high",
@@ -379,6 +382,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "deletion_path": ["Usuń albo odrzuć redacted proposal."],
                     "eval_case_ids": ["goal_005_private_claim_policy_review"],
                     "confidence_label": "wysoka",
+                    "audience": "role_restricted",
                     "blocked_claims": ["gwarancja wyniku"],
                     "safe_next_step": "Review policy.",
                     "promotion_allowed": False,
@@ -392,6 +396,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "scope": "evidence_requirement",
                     "target_card_id": "ekologus_evidence_policy_source_trace",
                     "target_card_title": "Source trace i evidence pack",
+                    "freshness_status": "current",
                     "review_status": "review_required",
                     "support_level": "direct",
                     "risk_tier": "medium",
@@ -401,6 +406,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "deletion_path": ["Usuń albo odrzuć redacted proposal."],
                     "eval_case_ids": ["goal_005_private_evidence_policy_review"],
                     "confidence_label": "wysoka",
+                    "audience": "role_restricted",
                     "blocked_claims": ["claim bez source trace"],
                     "safe_next_step": "Review evidence policy.",
                     "promotion_allowed": False,
@@ -485,6 +491,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert details[0]["data_classes"] == ["service_strategy", "internal_operational"]
     assert details[0]["source_block_refs"] == ["KB_SERVICE"]
     assert details[0]["retention_decision"] == "pending_owner_decision"
+    assert details[0]["freshness_status"] == "current"
+    assert details[0]["audience"] == "company_wide"
     assert details[0]["deletion_path"] == ["Usuń albo odrzuć redacted proposal."]
     assert details[0]["eval_case_ids"] == ["goal_005_private_service_review"]
 

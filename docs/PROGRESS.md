@@ -117,6 +117,9 @@ API status later contradicts this state.
   `freshness_status` and `audience` governance context and render it in preview
   cards, so a reviewer sees source currency and access scope inside the
   ActionObject review path, not only on the Service Profile proposal card.
+- The `wilq-content-operator` UAT packet private proposal details now preserve
+  the same `freshness_status` and `audience` fields, so Wilku handoff material
+  does not lose source currency/access-scope context from the API.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live

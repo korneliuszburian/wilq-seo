@@ -199,7 +199,8 @@ def safe_action(api_base: str, action_id: str) -> dict[str, Any]:
 
 
 def promotion_preview_summary(action: dict[str, Any]) -> dict[str, Any]:
-    payload = action.get("payload") if isinstance(action.get("payload"), dict) else {}
+    raw_payload = action.get("payload")
+    payload: dict[str, Any] = raw_payload if isinstance(raw_payload, dict) else {}
     preview_rows = [
         item
         for item in as_list(payload.get("payload_preview"))
@@ -364,6 +365,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "scope": proposal.get("scope"),
             "target_card_id": proposal.get("target_card_id"),
             "target_card_title": proposal.get("target_card_title"),
+            "freshness_status": proposal.get("freshness_status"),
             "review_status": proposal.get("review_status"),
             "support_level": proposal.get("support_level"),
             "risk_tier": proposal.get("risk_tier"),
@@ -373,6 +375,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "deletion_path": proposal.get("deletion_path") or [],
             "eval_case_ids": proposal.get("eval_case_ids") or [],
             "confidence_label": proposal.get("confidence_label"),
+            "audience": proposal.get("audience"),
             "blocked_claims": proposal.get("blocked_claims") or [],
             "safe_next_step": proposal.get("safe_next_step"),
             "promotion_allowed": proposal.get("promotion_allowed"),
@@ -719,6 +722,10 @@ def main() -> int:
                 print(f"    source block refs: {', '.join(source_block_refs)}")
             if raw_proposal.get("retention_decision"):
                 print(f"    retencja: {raw_proposal.get('retention_decision')}")
+            if raw_proposal.get("freshness_status"):
+                print(f"    aktualność: {raw_proposal.get('freshness_status')}")
+            if raw_proposal.get("audience"):
+                print(f"    audience: {raw_proposal.get('audience')}")
             if deletion_path:
                 print(f"    ścieżka usunięcia: {'; '.join(deletion_path)}")
             if eval_case_ids:
