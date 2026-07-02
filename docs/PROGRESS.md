@@ -106,6 +106,9 @@ API status later contradicts this state.
   and `audience` from ekologus-ai/private source proposals through backend API
   models and shared Zod schemas, so owner review can see source currency and
   access scope before any source fact promotion.
+- `/service-profile` now renders private proposal freshness and audience chips
+  on proposal cards, so those governance fields are visible to Wilku/reviewer,
+  not only present in the raw API contract.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they

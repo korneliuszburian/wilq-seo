@@ -80,6 +80,9 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("support: direct").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("risk: medium").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("risk: high").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("freshness: current").length).toBeGreaterThanOrEqual(5);
+    expect(screen.getAllByText("audience: company_wide").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("audience: role_restricted").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("bez promocji").length).toBeGreaterThanOrEqual(5);
     expect(screen.getAllByText("Klasy danych").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("service_strategy").length).toBeGreaterThanOrEqual(1);

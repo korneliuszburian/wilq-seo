@@ -210,6 +210,8 @@ function PrivateProposalCards({ proposals }: { proposals: PrivateProposal[] }) {
               proposal.privacy_class,
               `scope: ${proposal.scope}`,
               proposal.source_class_label,
+              `freshness: ${proposal.freshness_status}`,
+              `audience: ${proposal.audience}`,
               `support: ${proposal.support_level}`,
               `risk: ${proposal.risk_tier}`,
               proposal.confidence_label,
