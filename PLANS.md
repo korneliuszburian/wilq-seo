@@ -264,6 +264,9 @@ validated real UAT result or an explicit owner defer with residual risk,
 blocked claims and next review. Without one of those inputs the script blocks
 claims that Goal 005 is done, that real Wilku usefulness is proven, or that
 production-depth/final draft readiness exists.
+Follow-up task `wilq-seo-ohw8` tightened owner defer proof: an explicit defer
+must now include `nastepny_input_uat`, the exact next UAT material/input, not
+only a vague next-review note.
 
 Repository audit follow-up on 2026-07-02 confirmed a real committed-state
 risk: `wilq/credentials` was present locally but ignored by `.gitignore`, so a

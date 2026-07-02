@@ -174,6 +174,10 @@ API status later contradicts this state.
   or an explicit owner defer JSON with residual risk and blocked claims. This
   prevents claiming Goal 005 completion, Wilku usefulness, production-depth
   readiness or final draft/publish readiness without proof.
+- Goal 005 owner defer proof now must include `nastepny_input_uat`, not only
+  residual risk and `nastepny_przeglad`. The completion guard returns and
+  renders the exact next UAT material/input so an owner defer cannot be a vague
+  postponement.
 - Runtime import audit follow-up on 2026-07-02 found that `wilq/credentials`
   existed locally but was ignored by `.gitignore`, which explained the
   GitHub-visible `wilq.credentials.runtime` 404 risk. The package is now

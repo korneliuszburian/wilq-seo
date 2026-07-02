@@ -28,6 +28,7 @@ OWNER_DEFER_FIELDS = {
     "residual_risk": "ryzyko_rezydualne",
     "blocked_claims": "czego_nie_wolno_twierdzic",
     "next_review": "nastepny_przeglad",
+    "next_uat_input": "nastepny_input_uat",
 }
 
 
@@ -102,6 +103,7 @@ def build_completion_report(
                 "safe_scope": defer_report["safe_scope"],
                 "residual_risk": defer_report["residual_risk"],
                 "next_review": defer_report["next_review"],
+                "next_uat_input": defer_report["next_uat_input"],
                 "blocked_claims": defer_report["blocked_claims"],
             }
         return blocked_report("valid_goal_005_owner_defer", defer_report["errors"])
@@ -143,7 +145,15 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
     errors: list[str] = []
     if payload.get(OWNER_DEFER_FIELDS["flag"]) is not True:
         errors.append("owner defer musi ustawić odroczenie_goal_005_uat na true")
-    for key in ("date", "owner", "reason", "safe_scope", "residual_risk", "next_review"):
+    for key in (
+        "date",
+        "owner",
+        "reason",
+        "safe_scope",
+        "residual_risk",
+        "next_review",
+        "next_uat_input",
+    ):
         field = OWNER_DEFER_FIELDS[key]
         if is_blank(payload.get(field)):
             errors.append(f"brak pola owner defer: {field}")
@@ -163,6 +173,7 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
         "safe_scope": str(payload[OWNER_DEFER_FIELDS["safe_scope"]]).strip(),
         "residual_risk": str(payload[OWNER_DEFER_FIELDS["residual_risk"]]).strip(),
         "next_review": str(payload[OWNER_DEFER_FIELDS["next_review"]]).strip(),
+        "next_uat_input": str(payload[OWNER_DEFER_FIELDS["next_uat_input"]]).strip(),
         "blocked_claims": [str(item).strip() for item in blocked_claims],
     }
 
@@ -223,6 +234,8 @@ def render_markdown(report: dict[str, Any]) -> str:
             lines.extend(f"- `{item}`" for item in report["shown_review_artifacts"])
         if report.get("residual_risk"):
             lines.extend(["", "## Ryzyko rezydualne", report["residual_risk"]])
+        if report.get("next_uat_input"):
+            lines.extend(["", "## Następny input UAT", report["next_uat_input"]])
         if report.get("blocked_claims"):
             lines.extend(["", "## Obietnice nadal zablokowane"])
             lines.extend(f"- {item}" for item in report["blocked_claims"])

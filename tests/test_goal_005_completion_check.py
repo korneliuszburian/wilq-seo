@@ -86,6 +86,10 @@ def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:
                     "production-depth readiness",
                 ],
                 "nastepny_przeglad": "po realnej sesji z Wilkiem",
+                "nastepny_input_uat": (
+                    "Pokazać Wilkowi live UAT packet, BDO handoff, Eko-Opieka "
+                    "handoff i prywatne governance pola review."
+                ),
             },
             ensure_ascii=False,
         ),
@@ -97,7 +101,11 @@ def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:
     assert report["status"] == "owner_deferred"
     assert report["proof_type"] == "explicit_goal_005_owner_defer"
     assert "Brak realnej walidacji" in report["residual_risk"]
+    assert "live UAT packet" in report["next_uat_input"]
     assert "production-depth readiness" in report["blocked_claims"]
+    markdown = render_markdown(report)
+    assert "Następny input UAT" in markdown
+    assert "prywatne governance pola review" in markdown
 
 
 def test_goal_005_owner_defer_requires_residual_risk(tmp_path: Path) -> None:
@@ -122,3 +130,4 @@ def test_goal_005_owner_defer_requires_residual_risk(tmp_path: Path) -> None:
 
     assert report["valid"] is False
     assert "brak pola owner defer: ryzyko_rezydualne" in report["errors"]
+    assert "brak pola owner defer: nastepny_input_uat" in report["errors"]
