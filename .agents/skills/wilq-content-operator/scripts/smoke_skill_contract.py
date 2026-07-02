@@ -99,8 +99,28 @@ def validate_queue(queue: dict[str, Any], *, min_candidates: int) -> dict[str, A
             raise SystemExit(f"{work_item_id}: preview URL cannot equal final canonical")
         if not candidate.get("safe_next_step"):
             raise SystemExit(f"{work_item_id}: candidate needs safe_next_step")
+        if candidate.get("recommended_mode") != "block" and not candidate.get("action_ids"):
+            raise SystemExit(f"{work_item_id}: actionable candidate needs action_ids")
 
     return first_candidate(candidates)
+
+
+def validate_selected_actions(api_base: str, selected: dict[str, Any]) -> list[str]:
+    action_ids = [str(action_id) for action_id in selected.get("action_ids") or []]
+    if selected.get("recommended_mode") == "block":
+        return []
+    if not action_ids:
+        raise SystemExit("Selected non-block content candidate needs action_ids")
+    validated_action_ids: list[str] = []
+    for action_id in action_ids:
+        validation = require_dict(
+            request_json(api_base, "POST", f"/api/actions/{action_id}/validate"),
+            f"action validation response for {action_id}",
+        )
+        if validation.get("valid") is not True:
+            raise SystemExit(f"Selected action {action_id} did not validate")
+        validated_action_ids.append(action_id)
+    return validated_action_ids
 
 
 def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, Any]:
@@ -259,6 +279,7 @@ def main() -> int:
         min_candidates=MIN_UAT_ITEMS if args.require_uat_queue else MIN_SMOKE_ITEMS,
     )
     work_item_id = str(selected["work_item_id"])
+    selected_validated_action_ids = validate_selected_actions(args.api_base, selected)
     knowledge_cards = validate_knowledge_cards(args.api_base)
     if (
         queue.get("queue_status") == "blocked"
@@ -274,6 +295,8 @@ def main() -> int:
             "uat_min_candidate_count": MIN_UAT_ITEMS,
             "selected_work_item_id": work_item_id,
             "selected_mode": selected.get("recommended_mode"),
+            "selected_action_ids": selected.get("action_ids") or [],
+            "selected_validated_action_ids": selected_validated_action_ids,
             "workflow_blocked": True,
             "blocker_count": len(queue.get("blockers") or []),
             "evidence_ids": queue.get("evidence_ids") or [],
@@ -302,6 +325,8 @@ def main() -> int:
         "uat_min_candidate_count": MIN_UAT_ITEMS,
         "selected_work_item_id": work_item_id,
         "selected_mode": selected.get("recommended_mode"),
+        "selected_action_ids": selected.get("action_ids") or [],
+        "selected_validated_action_ids": selected_validated_action_ids,
         "evidence_ids": item.get("evidence_ids", []),
         "source_connectors": item.get("source_connectors", []),
         "enrichment_keys": sorted(enrichment.keys()),

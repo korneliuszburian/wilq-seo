@@ -257,7 +257,7 @@ CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/c
 Result:
 
 - Eval artifact:
-  `.local-lab/evals/codex-skill/20260702T155226Z`.
+  `.local-lab/evals/codex-skill/20260702T191850Z`.
 - `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
   gates true.
 - Source connectors used: `google_analytics_4`, `ahrefs`,
@@ -271,6 +271,9 @@ Result:
   `content_work_item_content_decision_https___www_ekologus_pl` with
   `selected_mode=refresh`, `candidate_count=3`, `actionable_candidate_count=1`
   and `queue_status=blocked`.
+- The selected queue candidate now exposes and validates the concrete next
+  ActionObject: `act_prepare_content_refresh_queue`, so the operator path is
+  action-backed instead of only descriptive.
 - Safe operator path: refresh source data, then check enrichment, preflight,
   Sales Brief, Claim Ledger, draft package, quality review, human review,
   WordPress draft-only and measurement window.

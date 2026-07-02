@@ -29,6 +29,9 @@ def test_content_work_item_queue_exposes_api_owned_candidates() -> None:
         }
         assert candidate["evidence_ids"]
         assert candidate["source_connectors"]
+        if candidate["recommended_mode"] != "block":
+            assert "act_prepare_content_refresh_queue" in candidate["action_ids"]
+            assert candidate["action_summary_label"]
         assert candidate["preflight_status"] in {
             "blocked",
             "plan_allowed",

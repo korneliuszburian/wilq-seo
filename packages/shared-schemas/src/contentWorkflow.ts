@@ -126,6 +126,8 @@ export const ContentWorkItemQueueCandidateSchema = z.object({
   reason: z.string(),
   ...ContentEvidenceTraceFields,
   source_connector_labels: z.array(z.string()).default([]),
+  action_ids: z.array(z.string()).default([]),
+  action_summary_label: z.string().default(""),
   source_public_url: z.string().nullable().optional(),
   final_canonical_url: z.string().nullable().optional(),
   intended_final_url: z.string().nullable().optional(),

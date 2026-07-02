@@ -74,6 +74,8 @@ class ContentWorkItemQueueCandidate(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     source_public_url: str | None = None
     final_canonical_url: str | None = None
     intended_final_url: str | None = None
@@ -177,6 +179,8 @@ def _candidate_from_decision(decision: ContentDecisionItem) -> ContentWorkItemQu
         evidence_ids=decision.evidence_ids,
         source_connectors=decision.source_connectors,
         source_connector_labels=decision.source_connector_labels,
+        action_ids=decision.action_ids,
+        action_summary_label=decision.action_summary_label,
         source_public_url=decision.source_public_url or decision.page,
         final_canonical_url=decision.final_canonical_url,
         intended_final_url=decision.intended_final_url or decision.final_canonical_url,

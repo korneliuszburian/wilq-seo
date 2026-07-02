@@ -32,6 +32,10 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 3. `Kolejka treści`: 3-5 propozycji z `recommended_mode`, blokadami i bezpiecznym kolejnym krokiem. Jeśli kolejka ma mniej gotowych itemów, powiedz to jako blokadę.
 4. `Diagnoza`: co API wspiera dla preserve, refresh, merge, create albo block. Nie zmieniaj rankingu i nie twórz nowego priorytetu z promptu.
 5. `Akcje do sprawdzenia`: endpointy albo work item gates, które trzeba uruchomić dalej: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, structured runtime, quality review, revision plan, revision apply, human review, audit, WordPress draft-only, measurement.
+   Jeżeli wybrany kandydat z kolejki ma `action_ids`, pokaż te ActionObject IDs
+   w tej sekcji i sprawdź je przez `POST /api/actions/{action_id}/validate`.
+   Globalnie zablokowana kolejka UAT nie usuwa action proofu dla wybranego
+   bezpiecznego kroku, np. `act_prepare_content_refresh_queue`.
 6. `Sprawdzenie w WILQ`: potwierdzenie, które bramki przeszły, które są zablokowane, czy `publish_ready=false`, czy WordPress pozostaje draft-only i czy measurement outcome jest gotowy.
 7. `Następny krok`: najmniejszy bezpieczny krok operatora, bez obietnicy publikacji albo efektu.
 

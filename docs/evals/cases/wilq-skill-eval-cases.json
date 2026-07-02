@@ -479,7 +479,12 @@
       "nie publikuj",
       "nie pisz finalnego artykułu"
     ],
-    "expected_no_action_ids": true,
+    "expected_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ],
     "expected_blocked": true,
     "blocked_claim_terms": [
       "publikacja w WordPress",
