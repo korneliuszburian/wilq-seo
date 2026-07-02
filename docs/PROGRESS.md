@@ -893,6 +893,11 @@ API status later contradicts this state.
   `eval_gates_confirmed`. Live proof on 2026-07-02 accepted a real
   `service_profile_review_private_proposal_*` action with those booleans and
   still returned `promotion_allowed=false`.
+- The `wilq-content-operator` UAT packet now exposes the same private
+  governance fields in
+  `review_result_recorders.private_review.minimal_payload_required_fields`.
+  Live packet proof on 2026-07-02 returned those fields with 4 private
+  promotion preview rows and `apply_allowed=false`.
 - Goal 005 UAT proof now separates private service proposals from private
   policy proposals. Live `wilq-content-operator` UAT packet on 2026-07-02 shows
   `public_service_review_count=6`, `private_review_count=4`,

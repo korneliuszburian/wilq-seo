@@ -342,6 +342,9 @@ review actions: data classes, source block refs, retention decision, deletion
 path and eval gates. A private proposal can only become ready for a separate
 promotion request after those booleans are explicit, and even then the recorder
 keeps `promotion_allowed=false`.
+Follow-up task `wilq-seo-m7kp` exposes those same fields in the
+`wilq-content-operator` UAT packet recorder contract, so Wilku/operator can
+fill a valid private review result without reading the recorder script.
 
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete

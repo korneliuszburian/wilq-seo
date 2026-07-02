@@ -438,6 +438,13 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert recorders["private_review"]["review_type"] == "private_source_proposals"
     assert recorders["private_review"]["promotion_preview"]["preview_row_count"] == 2
     assert recorders["private_review"]["promotion_preview"]["apply_allowed"] is False
+    assert {
+        "decisions[].data_classes_confirmed",
+        "decisions[].source_block_refs_confirmed",
+        "decisions[].retention_decision_confirmed",
+        "decisions[].deletion_path_confirmed",
+        "decisions[].eval_gates_confirmed",
+    } <= set(recorders["private_review"]["minimal_payload_required_fields"])
     assert "Nie promuje source facts" in recorders["safety_note"]
     private_summary = summary["private_source_proposals"]
     assert private_summary["service_proposal_count"] == 1
