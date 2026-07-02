@@ -718,6 +718,14 @@ API status later contradicts this state.
   selects the latest available day, then reads `query,page` facts through
   bounded `rowLimit`/`startRow` paging. The adapter records availability and
   paging metadata instead of pretending a stale or missing day is complete data.
+- Goal 005 completion evidence audit on 2026-07-02 is recorded in
+  `docs/audits/005-2026-07-02-completion-evidence-audit.md`. Verdict: not
+  complete. Live WILQ API is reachable, Service Profile is read-only and
+  review-gated, `7` service sections are source-backed review-required, direct
+  edit/promotion is blocked, and the content queue has `candidate_count=3` but
+  only `actionable_candidate_count=1`, so `queue_status=blocked`. Remaining hard
+  blockers are still Goal 005 Wilku UAT or explicit owner defer with residual
+  risk, plus full `rtk scripts/verify.sh` before any completion claim.
   The request now pins `type=web`, and persisted metric summaries mark
   `detail_dimensions=query,page` with `detail_data_completeness=partial_possible`
   so downstream skills do not treat detailed query/page rows as full traffic

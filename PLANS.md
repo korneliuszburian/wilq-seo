@@ -815,6 +815,14 @@ Stop and record a blocker if:
   queue proof later on 2026-07-01 shows `queue_status=blocked`, one actionable
   homepage refresh item and no `bdo co to` item in the active queue. Use the
   live UAT packet and Wilku handoff before presenting candidate choice.
+- 2026-07-02: Goal 005 completion evidence audit is recorded in
+  `docs/audits/005-2026-07-02-completion-evidence-audit.md`. Result: not
+  complete. Live WILQ API is reachable and Service Profile is correctly
+  read-only/review-gated, but production-depth readiness remains false and the
+  live content queue is blocked with only one actionable candidate. Keep
+  `wilq-seo-jst` open until Wilku completes the session or the owner records an
+  explicit defer with residual risk; run full `rtk scripts/verify.sh` only
+  before claiming completion.
 
 ## Surprises & Discoveries
 
@@ -875,4 +883,5 @@ Stop and record a blocker if:
 
 ## Outcomes & Retrospective
 
-Not completed. Goal 005 is active.
+Not completed. Goal 005 is active. Latest completion audit:
+`docs/audits/005-2026-07-02-completion-evidence-audit.md`.

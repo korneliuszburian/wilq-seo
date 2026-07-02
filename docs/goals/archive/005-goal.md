@@ -124,6 +124,15 @@ First Goal 005 source-pack proof:
   metric fact IDs, connector refresh run IDs, matching work item/window/URL,
   evidence IDs, allowed metrics and allowed source connectors. Missing
   provenance blocks outcome interpretation as `insufficient_data`.
+- Completion evidence audit on 2026-07-02:
+  `docs/audits/005-2026-07-02-completion-evidence-audit.md` confirms that the
+  API/Service Profile/source-fact/claim-gate foundations are real, but Goal 005
+  is not complete. Live Service Profile is read-only and review-gated with
+  `7` source-backed review-required service sections and no production-depth
+  approved cards; the content queue is still `blocked` with only one actionable
+  candidate. The remaining hard blockers are the first real Wilku content UAT
+  session or explicit owner defer with residual risk, and full
+  `rtk scripts/verify.sh` before a completion claim.
 
 ## Non-Negotiable Rules
 
