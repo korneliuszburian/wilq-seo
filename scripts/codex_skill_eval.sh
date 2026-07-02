@@ -122,7 +122,7 @@ expected_action_ids = case.get("expected_action_ids", [])
 expected_validated_action_ids = case.get("expected_validated_action_ids", [])
 expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
 expected_expert_rule_ids = case.get("expected_expert_rule_ids", [])
-minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 4))
+minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 5))
 expected_blocked = case.get("expected_blocked")
 expected_no_action_ids = case.get("expected_no_action_ids", False)
 blocked_claim_terms = case.get("blocked_claim_terms", [])
@@ -422,7 +422,7 @@ data = json.loads(open(path, encoding="utf-8").read())
 case = {
     case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())
 }[expected_skill]
-minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 4))
+minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 5))
 errors = []
 
 

@@ -1206,6 +1206,9 @@ live API status later contradicts this state.
   non-interactive threshold `operator_usefulness_score >= 5`. Freshness handling
   is part of the gate: stale connector snapshots require refresh, repair path or
   blocker before recommendation.
+- `scripts/codex_skill_eval.sh` now uses the same score-five default when an
+  eval case does not declare `minimum_operator_usefulness_score`, and
+  `tests/test_codex_skill_eval_cases.py` blocks regressions back to score 4.
 - `wilq-merchant-feed-operator` now has a fresh live non-interactive usefulness
   proof at `.local-lab/evals/codex-skill/20260702T012547Z/summary.json`.
   Result: `operator_usefulness_score=4`, all hard gates true, no failure tags,

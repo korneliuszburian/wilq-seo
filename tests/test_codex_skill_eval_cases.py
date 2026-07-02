@@ -75,6 +75,13 @@ def test_codex_skill_eval_harness_validates_hard_gates_independently_of_score() 
     assert "eval_rubric.evaluator_type must be deterministic_pass_fail" in harness
 
 
+def test_codex_skill_eval_harness_defaults_to_score_five() -> None:
+    harness = HARNESS_PATH.read_text(encoding="utf-8")
+
+    assert 'case.get("minimum_operator_usefulness_score", 5)' in harness
+    assert 'case.get("minimum_operator_usefulness_score", 4)' not in harness
+
+
 def test_active_eval_prompts_do_not_reintroduce_ads_polglish() -> None:
     active_text = "\n".join(
         [
