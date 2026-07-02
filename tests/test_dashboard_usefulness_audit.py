@@ -162,6 +162,44 @@ def test_action_ids_are_detected_from_singular_review_action_fields() -> None:
     assert result["sample_action_ids"] == ["service_profile_review_private_proposal_abc"]
 
 
+def test_knowledge_surface_requires_nonempty_records() -> None:
+    audit = load_module()
+    spec = audit.SurfaceSpec(
+        "knowledge",
+        "/knowledge",
+        "Baza wiedzy",
+        "knowledge",
+        "production",
+        "/api/knowledge/cards",
+        requires_evidence=False,
+        requires_source_connector=False,
+        requires_records=True,
+    )
+
+    empty = audit.evaluate_surface(spec, {"payload": [], "errors": []})
+
+    assert empty["readiness"] == "blocked"
+    assert empty["record_count"] == 0
+    assert "missing records" in empty["errors"]
+
+    ready = audit.evaluate_surface(
+        spec,
+        {
+            "payload": [
+                {
+                    "id": "card_goal_001_rules",
+                    "title": "Bez zmyślonych metryk",
+                    "source_lineage": ["docs/goals/001-goal.md"],
+                }
+            ],
+            "errors": [],
+        },
+    )
+
+    assert ready["readiness"] == "demo_ready"
+    assert ready["record_count"] == 1
+
+
 def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
     audit = load_module()
     report = {
@@ -178,6 +216,7 @@ def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
                 "status": "production",
                 "readiness": "demo_ready",
                 "usefulness_score": 9,
+                "record_count": 1,
                 "evidence_count": 2,
                 "action_count": 1,
                 "decision_count": 3,
@@ -189,5 +228,5 @@ def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
 
     markdown = audit.render_markdown(report)
 
-    assert "| Centrum pracy | `production` | `demo_ready` | 9 |" in markdown
+    assert "| Centrum pracy | `production` | `demo_ready` | 9 | 1 |" in markdown
     assert "Najpierw sprawdź kolejkę działań." in markdown
