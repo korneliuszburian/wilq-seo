@@ -80,6 +80,10 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
     for marker in (
         "uat_tasks",
         "3-5",
+        "marketer_summary",
+        "Krótko dla Wilka",
+        "Co Wilku ma teraz ocenić",
+        "Czego WILQ nadal nie może obiecać",
         "/api/content/service-profile",
         "Service Profile",
         "public_service_review_actions",
@@ -114,6 +118,31 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "/api/content/work-items/{work_item_id}/enrichment",
     ):
         assert marker in uat_script
+
+
+def test_content_operator_uat_packet_builds_plain_wilku_summary() -> None:
+    uat_script = load_uat_script()
+
+    lines = uat_script.marketer_summary_lines(
+        {
+            "uat_readiness": {
+                "status": "blocked_for_full_uat",
+                "blockers": ["Service Profile nie jest production-depth"],
+            },
+            "service_profile": {
+                "safe_next_step": (
+                    "Przejrzyj karty review-required i luki usługowe z Wilkiem."
+                )
+            },
+        }
+    )
+
+    assert lines[0].startswith("Co Wilku ma teraz ocenić:")
+    assert "Pełny content UAT jest zablokowany" in lines[0]
+    assert "Service Profile nie jest production-depth" in lines[1]
+    assert "Przejrzyj karty review-required" in lines[2]
+    assert "finalnego draftu" in lines[3]
+    assert "zatwierdź, popraw, odrzuć albo odśwież" in lines[4]
 
 
 def test_content_operator_uat_packet_summarizes_review_requirements() -> None:

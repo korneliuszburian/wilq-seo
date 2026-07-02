@@ -547,6 +547,44 @@ def uat_readiness(
     }
 
 
+def marketer_summary_lines(packet: dict[str, Any]) -> list[str]:
+    readiness = packet.get("uat_readiness")
+    readiness_dict = readiness if isinstance(readiness, dict) else {}
+    service_profile = packet.get("service_profile")
+    service_profile_dict = service_profile if isinstance(service_profile, dict) else {}
+    status = str(readiness_dict.get("status") or "")
+    blockers = [str(value) for value in readiness_dict.get("blockers") or []]
+    if status == "blocked_for_full_uat":
+        current_state = (
+            "Pełny content UAT jest zablokowany. Ta sesja ma ocenić, czy "
+            "Wilku rozumie źródła, blokady, język i następny bezpieczny krok."
+        )
+    else:
+        current_state = (
+            "Można przejść do pełnej sesji content UAT, ale nadal obowiązuje "
+            "review człowieka przed draftem, WordPressem i claimami sukcesu."
+        )
+    first_blocker = blockers[0] if blockers else "brak głównej blokady"
+    safe_next_step = str(
+        service_profile_dict.get("safe_next_step")
+        or "Wybierz jeden item i sprawdź źródła, blokady oraz CTA."
+    )
+    return [
+        f"Co Wilku ma teraz ocenić: {current_state}",
+        f"Dlaczego pełny UAT jest zablokowany: {first_blocker}.",
+        f"Co można bezpiecznie zrobić: {safe_next_step}",
+        (
+            "Czego WILQ nadal nie może obiecać: finalnego draftu, publikacji, "
+            "production-depth wiedzy, braku duplikacji ani efektu SEO bez "
+            "review i measurement window."
+        ),
+        (
+            "Jaką decyzję wpisać po review: zatwierdź, popraw, odrzuć albo "
+            "odśwież źródła."
+        ),
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Build {SKILL_NAME} Wilku UAT packet")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
@@ -611,6 +649,7 @@ def main() -> int:
             "Sukces lub porażka treści wymagają gotowego measurement outcome.",
         ],
     }
+    packet["marketer_summary"] = marketer_summary_lines(packet)
 
     if args.format == "json":
         print(json.dumps(packet, ensure_ascii=False, indent=2, sort_keys=True))
@@ -620,6 +659,12 @@ def main() -> int:
     print()
     print(f"Status kolejki: {packet['queue_status']}")
     print(f"Podsumowanie: {packet['operator_summary']}")
+    print()
+    print("## Krótko dla Wilka")
+    marketer_summary = packet.get("marketer_summary")
+    if isinstance(marketer_summary, list):
+        for line in marketer_summary:
+            print(f"- {line}")
     print()
     service_profile_raw = packet.get("service_profile")
     if not isinstance(service_profile_raw, dict):
