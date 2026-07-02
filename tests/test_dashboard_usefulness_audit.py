@@ -173,10 +173,102 @@ def test_surface_specs_include_content_workflow_and_social_publisher() -> None:
 
     assert specs_by_id["content_workflow"].path == "/content-workflow"
     assert specs_by_id["content_workflow"].endpoint == "/api/content/work-items/snapshot"
+    assert specs_by_id["content_workflow"].auxiliary_endpoints == (
+        "/api/content/wordpress/authoring-profile",
+    )
     assert specs_by_id["social_publisher"].path == "/social-publisher"
     assert specs_by_id["social_publisher"].method == "POST"
     assert specs_by_id["social_publisher"].request_json == {"skill": "wilq-social-publisher"}
     assert specs_by_id["social_publisher"].payload_key == "social_draft_context"
+
+
+def test_content_workflow_requires_safe_wordpress_authoring_profile() -> None:
+    audit = load_module()
+    spec = audit.SurfaceSpec(
+        "content_workflow",
+        "/content-workflow",
+        "Workflow treści",
+        "workflow",
+        "production",
+        "/api/content/work-items/snapshot",
+        auxiliary_endpoints=("/api/content/wordpress/authoring-profile",),
+        requires_evidence=True,
+        requires_decision=True,
+        requires_blocker_or_blocked_claim=True,
+    )
+
+    result = audit.evaluate_surface(
+        spec,
+        {
+            "payload": {
+                "evidence_ids": ["ev_content"],
+                "source_connectors": ["google_search_console"],
+                "safe_next_step": "Przejdź przez Claim Ledger i review człowieka.",
+                "preflight": {
+                    "preflight_verdict": {
+                        "blockers": [{"code": "missing_claim_ledger"}]
+                    }
+                },
+            },
+            "auxiliary_payloads": {
+                "/api/content/wordpress/authoring-profile": safe_authoring_profile()
+            },
+            "errors": [],
+        },
+    )
+
+    assert result["readiness"] == "demo_ready"
+    assert result["auxiliary_checks"] == [
+        {
+            "id": "wordpress_authoring_profile",
+            "endpoint": "/api/content/wordpress/authoring-profile",
+            "status": "ready",
+            "summary": "REST=configured, WP-CLI=configured, ACF layouts=1, writes blocked=True",
+            "errors": [],
+        }
+    ]
+
+
+def test_content_workflow_blocks_when_wordpress_authoring_writes_are_not_safe() -> None:
+    audit = load_module()
+    spec = audit.SurfaceSpec(
+        "content_workflow",
+        "/content-workflow",
+        "Workflow treści",
+        "workflow",
+        "production",
+        "/api/content/work-items/snapshot",
+        auxiliary_endpoints=("/api/content/wordpress/authoring-profile",),
+        requires_evidence=True,
+        requires_decision=True,
+        requires_blocker_or_blocked_claim=True,
+    )
+    profile = safe_authoring_profile()
+    profile["write_boundary"]["publish_allowed"] = True
+
+    result = audit.evaluate_surface(
+        spec,
+        {
+            "payload": {
+                "evidence_ids": ["ev_content"],
+                "source_connectors": ["google_search_console"],
+                "safe_next_step": "Przejdź przez Claim Ledger i review człowieka.",
+                "preflight": {
+                    "preflight_verdict": {
+                        "blockers": [{"code": "missing_claim_ledger"}]
+                    }
+                },
+            },
+            "auxiliary_payloads": {
+                "/api/content/wordpress/authoring-profile": profile
+            },
+            "errors": [],
+        },
+    )
+
+    assert result["readiness"] == "blocked"
+    assert "wordpress authoring write boundary not false: publish_allowed" in result["errors"]
+    assert result["auxiliary_checks"][0]["status"] == "blocked"
 
 
 def test_blocker_lists_satisfy_blocker_requirement() -> None:
@@ -375,6 +467,16 @@ def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
                 "action_count": 1,
                 "decision_count": 3,
                 "sample_next_steps": ["Najpierw sprawdź kolejkę działań."],
+                "auxiliary_checks": [
+                    {
+                        "id": "wordpress_authoring_profile",
+                        "status": "ready",
+                        "summary": (
+                            "REST=configured, WP-CLI=configured, "
+                            "ACF layouts=21, writes blocked=True"
+                        ),
+                    }
+                ],
                 "errors": [],
             }
         ],
@@ -384,3 +486,25 @@ def test_markdown_report_shows_surface_progress_without_raw_json_dump() -> None:
 
     assert "| Centrum pracy | `production` | `demo_ready` | 9 | 1 | 1 |" in markdown
     assert "Najpierw sprawdź kolejkę działań." in markdown
+    assert "## Kontrole pomocnicze" in markdown
+    assert "ACF layouts=21, writes blocked=True" in markdown
+
+
+def safe_authoring_profile() -> dict[str, object]:
+    return {
+        "profile_version": "wordpress_authoring_profile_v1",
+        "rest_api": {"status": "configured"},
+        "wp_cli": {"status": "configured"},
+        "acf": {
+            "layouts_discovered": True,
+            "layouts": [{"name": "podstrona"}],
+        },
+        "blockers": [],
+        "write_boundary": {
+            "direct_vendor_write_allowed": False,
+            "live_write_enabled": False,
+            "publish_allowed": False,
+            "destructive_update_allowed": False,
+            "external_write_attempted": False,
+        },
+    }

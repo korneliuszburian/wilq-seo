@@ -391,6 +391,12 @@ live API status later contradicts this state.
   stored in `docs/evals/dashboard-usefulness-audit.md`; reference surfaces
   such as Actions, Opportunities and Knowledge now show safe operator use
   instead of an empty next-step cell.
+- The dashboard usefulness audit now also checks `/content-workflow` against
+  the read-only WordPress authoring profile at
+  `/api/content/wordpress/authoring-profile`. Live proof on 2026-07-02:
+  `REST=configured`, `WP-CLI=configured`, `ACF layouts=21`,
+  `writes blocked=True`. If ACF layout discovery or the write boundary regresses,
+  `/content-workflow` becomes blocked in the readiness report.
 - Source fact / Service Profile coverage is now auditable as a concise Wilku
   readiness report through `scripts/source_fact_coverage_audit.py`. Proof on
   2026-07-02: 12 source facts, 13 review actions, 5 private `ekologus-ai`

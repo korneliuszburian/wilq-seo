@@ -32,6 +32,7 @@ class SurfaceSpec:
     endpoint: str
     method: HttpMethod = "GET"
     request_json: dict[str, Any] | None = None
+    auxiliary_endpoints: tuple[str, ...] = ()
     payload_key: str | None = None
     requires_evidence: bool = True
     requires_source_connector: bool = True
@@ -131,6 +132,7 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         "workflow",
         "production",
         "/api/content/work-items/snapshot",
+        auxiliary_endpoints=("/api/content/wordpress/authoring-profile",),
         requires_decision=True,
         requires_blocker_or_blocked_claim=True,
         demo_priority=42,
@@ -330,6 +332,12 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         sample_next_steps = [spec.reference_next_step]
     language = payload.get("language") if isinstance(payload, dict) else None
     has_blockers = _has_blockers(payload)
+    auxiliary_checks = _evaluate_auxiliary_checks(
+        spec,
+        fetch_result.get("auxiliary_payloads") or {},
+    )
+    for check in auxiliary_checks:
+        errors.extend(check["errors"])
 
     if spec.requires_evidence and not evidence_ids:
         errors.append("missing evidence_ids")
@@ -397,6 +405,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         "sample_action_ids": action_ids[:4],
         "sample_blocked_claims": blocked_claims[:4],
         "sample_next_steps": sample_next_steps,
+        "auxiliary_checks": auxiliary_checks,
         "errors": errors,
     }
 
@@ -444,37 +453,76 @@ def render_markdown(report: dict[str, Any]) -> str:
                 f"- {surface['label']} `{surface['path']}`: "
                 + "; ".join(surface["errors"])
             )
+    auxiliary_checks = [
+        (surface, check)
+        for surface in report["surfaces"]
+        for check in surface.get("auxiliary_checks") or []
+    ]
+    if auxiliary_checks:
+        lines.extend(["", "## Kontrole pomocnicze", ""])
+        for surface, check in auxiliary_checks:
+            lines.append(
+                f"- {surface['label']} `{surface['path']}`: "
+                f"`{check['status']}` - {check['summary']}"
+            )
     return "\n".join(lines)
 
 
 def _safe_fetch(api_base: str, spec: SurfaceSpec) -> dict[str, Any]:
     try:
-        return {"payload": _fetch_json(api_base, spec), "errors": []}
+        payload = _fetch_json(api_base, spec)
     except RuntimeError as error:
         return {
             "payload": {},
             "fetch_error": True,
             "errors": [str(error)],
         }
+    errors: list[str] = []
+    auxiliary_payloads: dict[str, Any] = {}
+    for endpoint in spec.auxiliary_endpoints:
+        try:
+            auxiliary_payloads[endpoint] = _fetch_json_endpoint(api_base, endpoint)
+        except RuntimeError as error:
+            errors.append(str(error))
+    return {
+        "payload": payload,
+        "auxiliary_payloads": auxiliary_payloads,
+        "errors": errors,
+    }
 
 
 def _fetch_json(api_base: str, spec: SurfaceSpec) -> Any:
-    url = f"{api_base.rstrip('/')}{spec.endpoint}"
+    return _fetch_json_endpoint(
+        api_base,
+        spec.endpoint,
+        method=spec.method,
+        request_json=spec.request_json,
+    )
+
+
+def _fetch_json_endpoint(
+    api_base: str,
+    endpoint: str,
+    *,
+    method: HttpMethod = "GET",
+    request_json: dict[str, Any] | None = None,
+) -> Any:
+    url = f"{api_base.rstrip('/')}{endpoint}"
     data = None
     headers = {}
-    if spec.method == "POST":
-        data = json.dumps(spec.request_json or {}).encode("utf-8")
+    if method == "POST":
+        data = json.dumps(request_json or {}).encode("utf-8")
         headers["Content-Type"] = "application/json"
-    request = Request(url, data=data, headers=headers, method=spec.method)
+    request = Request(url, data=data, headers=headers, method=method)
     try:
         with urlopen(request, timeout=25) as response:
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
-        raise RuntimeError(f"{spec.endpoint} returned HTTP {error.code}") from error
+        raise RuntimeError(f"{endpoint} returned HTTP {error.code}") from error
     except (TimeoutError, URLError) as error:
-        raise RuntimeError(f"{spec.endpoint} unreachable: {error}") from error
+        raise RuntimeError(f"{endpoint} unreachable: {error}") from error
     except json.JSONDecodeError as error:
-        raise RuntimeError(f"{spec.endpoint} did not return JSON") from error
+        raise RuntimeError(f"{endpoint} did not return JSON") from error
 
 
 def _find_unique_values(value: Any, key: str) -> set[str]:
@@ -609,6 +657,87 @@ def _has_blockers(value: Any) -> bool:
     if isinstance(value, list):
         return any(_has_blockers(item) for item in value)
     return False
+
+
+def _evaluate_auxiliary_checks(
+    spec: SurfaceSpec,
+    auxiliary_payloads: dict[str, Any],
+) -> list[dict[str, Any]]:
+    checks: list[dict[str, Any]] = []
+    authoring_endpoint = "/api/content/wordpress/authoring-profile"
+    if authoring_endpoint in spec.auxiliary_endpoints:
+        checks.append(
+            _wordpress_authoring_profile_check(
+                auxiliary_payloads.get(authoring_endpoint),
+                authoring_endpoint,
+            )
+        )
+    return checks
+
+
+def _wordpress_authoring_profile_check(
+    payload: Any,
+    endpoint: str,
+) -> dict[str, Any]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return {
+            "id": "wordpress_authoring_profile",
+            "endpoint": endpoint,
+            "status": "blocked",
+            "summary": "Brak profilu authoringu WordPress/ACF.",
+            "errors": ["missing wordpress authoring profile"],
+        }
+    acf = payload.get("acf") if isinstance(payload.get("acf"), dict) else {}
+    rest_api = payload.get("rest_api") if isinstance(payload.get("rest_api"), dict) else {}
+    wp_cli = payload.get("wp_cli") if isinstance(payload.get("wp_cli"), dict) else {}
+    write_boundary = (
+        payload.get("write_boundary")
+        if isinstance(payload.get("write_boundary"), dict)
+        else {}
+    )
+    blockers = payload.get("blockers") if isinstance(payload.get("blockers"), list) else []
+    layout_count = len(acf.get("layouts") or [])
+    if payload.get("profile_version") != "wordpress_authoring_profile_v1":
+        errors.append("wordpress authoring profile version mismatch")
+    if rest_api.get("status") != "configured":
+        errors.append("wordpress REST authoring is not configured")
+    if wp_cli.get("status") != "configured":
+        errors.append("read-only WP-CLI fallback is not configured")
+    if acf.get("layouts_discovered") is not True or layout_count == 0:
+        errors.append("ACF flexible content layouts are not discovered")
+    if blockers:
+        blocker_codes = [
+            str(blocker.get("code") or blocker.get("id") or "unknown")
+            for blocker in blockers
+            if isinstance(blocker, dict)
+        ]
+        errors.append(
+            "wordpress authoring profile has blockers: "
+            + ", ".join(blocker_codes or ["unknown"])
+        )
+    expected_false_fields = (
+        "direct_vendor_write_allowed",
+        "live_write_enabled",
+        "publish_allowed",
+        "destructive_update_allowed",
+        "external_write_attempted",
+    )
+    for field in expected_false_fields:
+        if write_boundary.get(field) is not False:
+            errors.append(f"wordpress authoring write boundary not false: {field}")
+    return {
+        "id": "wordpress_authoring_profile",
+        "endpoint": endpoint,
+        "status": "ready" if not errors else "blocked",
+        "summary": (
+            f"REST={rest_api.get('status') or 'unknown'}, "
+            f"WP-CLI={wp_cli.get('status') or 'unknown'}, "
+            f"ACF layouts={layout_count}, writes blocked="
+            f"{not any(write_boundary.get(field) is not False for field in expected_false_fields)}"
+        ),
+        "errors": errors,
+    }
 
 
 def _readiness(status: SurfaceStatus, score: int, errors: list[str]) -> str:
