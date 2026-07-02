@@ -326,6 +326,19 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         and section.status == "source_backed_review_required"
         for section in response.service_sections
     )
+    public_service_review_actions = [
+        action
+        for action in response.review_actions
+        if action.action_id.startswith("service_profile_review_card_")
+    ]
+    public_review_targets = {action.target_card_id for action in public_service_review_actions}
+    assert "ekologus_service_bdo_reporting" in public_review_targets
+    assert "ekologus_service_operat_wodnoprawny" in public_review_targets
+    assert all(action.mode == "review_request" for action in public_service_review_actions)
+    assert all(
+        "nie promuje" in action.blocked_write_claim
+        for action in public_service_review_actions
+    )
     assert response.private_source_proposal_summary.proposal_protocol_available is True
     assert response.private_source_proposal_summary.proposal_count == 2
     assert response.private_source_proposal_summary.review_required_count == 2

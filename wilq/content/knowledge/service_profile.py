@@ -243,6 +243,7 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         ),
         coverage_gaps=coverage_gaps,
         review_actions=_review_actions(
+            cards=cards,
             coverage_gaps=coverage_gaps,
             private_proposals=private_proposal_registry.proposals,
         ),
@@ -445,6 +446,7 @@ def _coverage_gaps(cards: list[ContentKnowledgeCard]) -> list[ContentServiceProf
 
 def _review_actions(
     *,
+    cards: list[ContentKnowledgeCard],
     coverage_gaps: list[ContentServiceProfileCoverageGap],
     private_proposals: list[PrivateSourceProposal],
 ) -> list[ContentServiceProfileReviewAction]:
@@ -461,6 +463,29 @@ def _review_actions(
             required_human_role="Wilku albo owner wiedzy Ekologus",
         )
     ]
+    for card in cards:
+        if (
+            card.card_type == "service"
+            and _lifecycle(card) == "source_backed_review_required"
+            and "public_site" in card.source_connectors
+        ):
+            actions.append(
+                ContentServiceProfileReviewAction(
+                    action_id=f"service_profile_review_card_{card.id}",
+                    mode="review_request",
+                    label=f"Sprawdź kartę usługi: {card.title}",
+                    reason=(
+                        "Karta ma publiczne źródło, ale wymaga decyzji człowieka "
+                        "zanim stanie się approved-current."
+                    ),
+                    blocked_write_claim=(
+                        "To nie promuje source fact ani knowledge card; "
+                        "potrzebny jest osobny ActionObject i audyt."
+                    ),
+                    required_human_role="Wilku albo owner wiedzy Ekologus",
+                    target_card_id=card.id,
+                )
+            )
     for gap in coverage_gaps:
         actions.append(
             ContentServiceProfileReviewAction(

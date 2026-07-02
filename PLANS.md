@@ -204,6 +204,13 @@ into an approved fact or knowledge card. Live API proof on 2026-07-02 returned
 `private_review_action_count=2`, `approved_count=0` and
 `ready_for_daily_content=false`.
 
+Per-service public review actions are implemented under Beads task
+`wilq-seo-8bq`. Service Profile now emits non-persistent review requests for
+each source-backed public service card, including BDO, waste/packaging and
+operat wodnoprawny. These actions stay `review_request`, keep
+`can_promote_facts=false`, and explicitly say they do not promote source facts
+or knowledge cards without a future ActionObject/audit path.
+
 Redacted per-proposal details are implemented under Beads task `wilq-seo-0ap`.
 Service Profile now shows target card, source class, review status, support
 level, risk tier, confidence label, blocked claims and safe next step for each

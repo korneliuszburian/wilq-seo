@@ -169,6 +169,12 @@ API status later contradicts this state.
   `approved_count=0`, `review_required_count=2`. This tells Wilku what must be
   true before a private proposal can become a reviewed source fact, while still
   blocking automatic promotion.
+- Service Profile review actions now include non-persistent per-service review
+  requests for source-backed public service cards. Live proof after stack
+  restart on 2026-07-02: `review_action_count=10`,
+  `public_card_review_count=6`, targets include
+  `ekologus_service_operat_wodnoprawny`, and `can_promote_facts=false` remains.
+  These actions tell Wilku what to review without promoting facts or cards.
 - The `wilq-content-operator` UAT packet now includes live Service Profile
   evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
   `uat_readiness.status=blocked_for_full_uat`,
