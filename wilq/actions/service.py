@@ -2939,7 +2939,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         ),
     ]
     blockers = _mutation_readiness_blockers(requirements)
-    vendor_write_possible = mutation_adapter is not None
+    vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
     ready_to_request_apply = not blockers
     apply_contract = _mutation_apply_contract(action, mutation_adapter)
     return ActionMutationReadinessResponse(
@@ -3143,6 +3143,15 @@ def _mutation_apply_contract(
     )
 
 
+def _vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -> bool:
+    return (
+        mutation_adapter is not None
+        and action.mode == ActionMode.apply
+        and _action_payload_apply_allowed(action.payload)
+        and action.payload.get("api_mutation_ready") is True
+    )
+
+
 def _apply_audit_event_type(errors: list[str]) -> str:
     if not errors:
         return "apply_succeeded"
@@ -3190,6 +3199,12 @@ def _mutation_audit_summary(errors: list[str], mutation_adapter: str | None) -> 
 
 
 def _supported_mutation_adapter(action: ActionObject) -> str | None:
+    if (
+        action.id == "act_apply_wordpress_draft_handoff"
+        and action.connector == "wordpress_ekologus"
+        and action.payload.get("allowed_operation") == "create_wordpress_draft"
+    ):
+        return "wordpress_draft_execution_boundary"
     return None
 
 
@@ -3198,7 +3213,20 @@ def _execute_supported_mutation_adapter(
     mutation_adapter: str,
     request: ActionApplyRequest | None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
-    _ = (action, request)
+    _ = request
+    if mutation_adapter == "wordpress_draft_execution_boundary":
+        return {
+            "adapter": mutation_adapter,
+            "connector": action.connector,
+            "allowed_operation": "create_wordpress_draft",
+            "external_write_attempted": False,
+            "redacted": True,
+        }, [
+            (
+                "Adapter WordPress draft-only jest tylko granicą wykonania; "
+                "live write wymaga osobnego payloadu, autoryzacji i write readiness."
+            )
+        ]
     return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
 
 

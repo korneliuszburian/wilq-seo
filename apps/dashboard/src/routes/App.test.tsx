@@ -747,7 +747,7 @@ const actionMutationReadinessSummary = {
   vendor_write_possible_count: 0,
   would_attempt_vendor_write_count: 0,
   prepare_only_count: 19,
-  missing_adapter_count: 20,
+  missing_adapter_count: 19,
   high_risk_blocked_count: 0,
   top_blockers: ["missing_mutation_adapter"],
   first_write_candidate_reason:
@@ -776,7 +776,7 @@ const actionMutationReadinessSummary = {
     ready_to_request_apply: false,
     vendor_write_possible: false,
     would_attempt_vendor_write: false,
-    mutation_adapter: null,
+    mutation_adapter: "wordpress_draft_execution_boundary",
     apply_contract: {
       contract: "action_apply_contract_v1",
       action_id: "act_apply_wordpress_draft_handoff",
@@ -787,7 +787,7 @@ const actionMutationReadinessSummary = {
       draft_only: true,
       publication_allowed: false,
       destructive_allowed: false,
-      adapter_status: "not_implemented",
+      adapter_status: "implemented",
       required_env_flags: ["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
       required_input_contracts: ["wordpress_draft_handoff_v1"],
       required_audit_events: [
@@ -806,12 +806,6 @@ const actionMutationReadinessSummary = {
         label: "Payload nadal blokuje apply",
         reason: "Zakres akcji nie pozwala jeszcze na próbę zapisu.",
         next_step: "Najpierw przygotuj bezpieczny payload apply po preview, review i confirm."
-      },
-      {
-        code: "missing_mutation_adapter",
-        label: "Brakuje adaptera zapisu",
-        reason: "WILQ nie ma jeszcze implementacji vendor write dla tej akcji.",
-        next_step: "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live."
       }
     ],
     operator_next_step:
@@ -7898,13 +7892,13 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Aktywuj zapis szkicu WordPress draft-only")).toBeInTheDocument();
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
-    expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
     expect(screen.getByText("Plan aktywacji bez ryzyka")).toBeInTheDocument();
     expect(screen.getByText(/doprowadź apply-mode WordPress draft-only/i)).toBeInTheDocument();
     expect(screen.getByText("Payload nadal blokuje apply")).toBeInTheDocument();
     expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();
     expect(screen.getByText(/wyłącznie szkic WordPress/)).toBeInTheDocument();
     expect(screen.getByText("create_wordpress_draft")).toBeInTheDocument();
+    expect(screen.getByText("gotowy")).toBeInTheDocument();
     expect(screen.getByText("zablokowana")).toBeInTheDocument();
     expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
     expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy/i)).toBeInTheDocument();

@@ -101,6 +101,12 @@ Date: 2026-07-03
   draft apply ActionObject returns blocked with no mutation attempt while
   those fields remain false, closing the gap between review-gate copy and the
   actual apply execution path.
+- 2026-07-03 WordPress draft apply readiness now exposes a named
+  `wordpress_draft_execution_boundary` mutation adapter for
+  `act_apply_wordpress_draft_handoff`, while keeping `vendor_write_possible`
+  and `would_attempt_vendor_write` false until payload and API readiness are
+  explicitly true. This shows the next technical boundary without enabling
+  live write or publication.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
