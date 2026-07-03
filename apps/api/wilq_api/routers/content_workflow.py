@@ -22,6 +22,7 @@ from wilq.content.knowledge.service_profile import (
 )
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
+    build_content_wordpress_draft_activation_packet_response,
     build_content_wordpress_draft_write_readiness_response,
     build_content_work_item_blocked_snapshot_response_for_work_item,
     build_content_work_item_diagnostics_snapshot_response,
@@ -47,6 +48,7 @@ from wilq.content.workflow.api import (
 )
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftWriteReadinessResponse,
+    ContentWordPressDraftActivationPacketResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsRequest,
@@ -125,6 +127,24 @@ def content_wordpress_draft_write_readiness(
     action_id: str = "act_prepare_wordpress_draft_handoff",
 ) -> ContentWordPressDraftWriteReadinessResponse:
     return build_content_wordpress_draft_write_readiness_response(action_id=action_id)
+
+
+@router.get(
+    "/api/content/wordpress/draft-activation-packet",
+    response_model=ContentWordPressDraftActivationPacketResponse,
+)
+def content_wordpress_draft_activation_packet() -> ContentWordPressDraftActivationPacketResponse:
+    diagnostics = build_content_diagnostics()
+    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
+    review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
+    if review is not None:
+        audit = content_workflow_store().latest_audit_for_review(review.id)
+        snapshot = build_content_work_item_diagnostics_snapshot_response(
+            diagnostics,
+            human_review=review,
+            audit=audit,
+        )
+    return build_content_wordpress_draft_activation_packet_response(snapshot)
 
 
 @router.get(

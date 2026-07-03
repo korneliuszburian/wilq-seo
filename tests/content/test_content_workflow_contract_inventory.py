@@ -8,6 +8,8 @@ from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResp
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
 from wilq.content.workflow.api import (
+    ContentWordPressDraftActivationPacketResponse,
+    ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewResponse,
@@ -33,6 +35,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
     ("GET", "/api/content/wordpress/authoring-profile"): WordPressAuthoringProfile,
+    (
+        "GET",
+        "/api/content/wordpress/draft-activation-packet",
+    ): ContentWordPressDraftActivationPacketResponse,
+    (
+        "GET",
+        "/api/content/wordpress/draft-write-readiness",
+    ): ContentWordPressDraftWriteReadinessResponse,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
     ("GET", "/api/content/work-items/snapshot"): ContentWorkItemWorkflowSnapshotResponse,
     (

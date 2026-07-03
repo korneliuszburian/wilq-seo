@@ -275,6 +275,37 @@ class ContentWordPressDraftWriteReadinessResponse(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
 
 
+class ContentWordPressDraftActivationPacketResponse(BaseModel):
+    response_type: Literal["wordpress_draft_activation_packet"] = (
+        "wordpress_draft_activation_packet"
+    )
+    contract: Literal["wordpress_draft_activation_packet_v1"] = (
+        "wordpress_draft_activation_packet_v1"
+    )
+    action_id: str = "act_apply_wordpress_draft_handoff"
+    work_item_id: str
+    topic: str
+    final_canonical_url: str | None = None
+    draft_package_ready: bool = False
+    draft_package_id: str | None = None
+    human_review_ready: bool = False
+    audit_ready: bool = False
+    handoff_ready: bool = False
+    handoff_id: str | None = None
+    dry_run_ready: bool = False
+    live_write_enabled_by_env: bool = False
+    publish_allowed: Literal[False] = False
+    destructive_update_allowed: Literal[False] = False
+    external_write_attempted: Literal[False] = False
+    handoff_blockers: list[str] = Field(default_factory=list)
+    execution_blockers: list[str] = Field(default_factory=list)
+    execution_result: ContentWordPressDraftExecutionResult
+    operator_next_step: str
+    next_steps: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+
+
 class ContentWorkItemWordPressAuthoringPayloadPreviewRequest(BaseModel):
     handoff: ContentWordPressDraftHandoff | None = None
     draft_package: ContentDraftPackage | None = None

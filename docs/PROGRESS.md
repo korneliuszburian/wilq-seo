@@ -131,6 +131,11 @@ Date: 2026-07-03
   metadata-only inventories go to `/api/social/history-inventory/audit` under
   `social_history_inventory_v1`; the result is review-only and still does not
   unlock publication or duplicate-free claims.
+- 2026-07-03 `/api/content/wordpress/draft-activation-packet` now exposes the
+  read-only activation packet for WordPress draft-only. Live proof shows the
+  current content workflow already has a draft package, while human review,
+  audit, handoff and dry-run execution remain blocked; no external write is
+  attempted and live write stays disabled.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

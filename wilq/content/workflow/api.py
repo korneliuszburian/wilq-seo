@@ -84,6 +84,7 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftWriteReadinessBlocker,
     ContentWordPressDraftWriteReadinessRequirement,
     ContentWordPressDraftWriteReadinessResponse,
+    ContentWordPressDraftActivationPacketResponse,
     ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
@@ -380,6 +381,56 @@ def build_content_work_item_wordpress_draft_execution_response(
     )
 
 
+def build_content_wordpress_draft_activation_packet_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    action_id: str = "act_apply_wordpress_draft_handoff",
+) -> ContentWordPressDraftActivationPacketResponse:
+    item = snapshot.preflight.item
+    draft_package = snapshot.draft_package.draft_package_result.draft_package
+    handoff_result = snapshot.wordpress_handoff.handoff_result
+    handoff = handoff_result.handoff
+    execution = execute_content_wordpress_draft_handoff(
+        handoff=handoff,
+        draft_package=draft_package,
+        mode="dry_run",
+        live_write_enabled=False,
+        create_draft=None,
+    )
+    handoff_blockers = [blocker.code for blocker in handoff_result.blockers]
+    execution_blockers = [blocker.code for blocker in execution.blockers]
+    human_review_ready = "missing_human_review" not in handoff_blockers
+    audit_ready = "missing_audit" not in handoff_blockers
+    return ContentWordPressDraftActivationPacketResponse(
+        action_id=action_id,
+        work_item_id=item.id,
+        topic=item.topic,
+        final_canonical_url=item.final_canonical_url,
+        draft_package_ready=draft_package is not None,
+        draft_package_id=draft_package.id if draft_package is not None else None,
+        human_review_ready=human_review_ready,
+        audit_ready=audit_ready,
+        handoff_ready=handoff is not None,
+        handoff_id=handoff.id if handoff is not None else None,
+        dry_run_ready=execution.status == "dry_run_ready",
+        live_write_enabled_by_env=False,
+        handoff_blockers=handoff_blockers,
+        execution_blockers=execution_blockers,
+        execution_result=execution,
+        operator_next_step=_wordpress_draft_activation_next_step(
+            handoff_blockers,
+            execution_blockers,
+        ),
+        next_steps=_wordpress_draft_activation_steps(
+            draft_package_ready=draft_package is not None,
+            handoff_blockers=handoff_blockers,
+            execution_blockers=execution_blockers,
+        ),
+        evidence_ids=item.evidence_ids,
+        source_connectors=item.source_connectors,
+    )
+
+
 def build_content_wordpress_draft_write_readiness_response(
     action_id: str = "act_prepare_wordpress_draft_handoff",
     connector_id: str = "wordpress_ekologus",
@@ -457,6 +508,56 @@ def _wordpress_draft_writes_enabled() -> bool:
         "yes",
         "on",
     }
+
+
+def _wordpress_draft_activation_next_step(
+    handoff_blockers: list[str],
+    execution_blockers: list[str],
+) -> str:
+    blockers = {*handoff_blockers, *execution_blockers}
+    if "missing_human_review" in blockers:
+        return (
+            "Najbliższy krok: zapisz review człowieka dla paczki szkicu. "
+            "Bez tego WILQ nie przygotuje handoffu ani dry-run payloadu WordPress."
+        )
+    if "missing_audit" in blockers:
+        return (
+            "Najbliższy krok: zapisz audit przekazania do WordPress po review. "
+            "Dopiero wtedy dry-run pokaże finalny payload szkicu."
+        )
+    if blockers:
+        return (
+            "Najbliższy krok: usuń blokery handoffu/dry-run i wróć do packetu "
+            "przed jakimkolwiek live write."
+        )
+    return (
+        "Dry-run payload szkicu jest gotowy do review. Live write nadal wymaga "
+        "ActionObject preview/review/confirm/audit i jawnie włączonego env."
+    )
+
+
+def _wordpress_draft_activation_steps(
+    *,
+    draft_package_ready: bool,
+    handoff_blockers: list[str],
+    execution_blockers: list[str],
+) -> list[str]:
+    steps = [
+        "Utrzymaj zakres WordPress draft-only: bez publikacji i bez aktualizacji istniejących wpisów.",
+    ]
+    if not draft_package_ready:
+        steps.append("Przygotuj paczkę szkicu z Claim Ledgerem, sekcjami i dowodami.")
+    if "missing_human_review" in handoff_blockers:
+        steps.append("Zapisz human review dla tej paczki szkicu.")
+    if "missing_audit" in handoff_blockers:
+        steps.append("Zapisz audit przekazania do WordPress po review.")
+    if "missing_handoff" in execution_blockers:
+        steps.append("Wróć do handoffu i dopiero potem sprawdź dry-run execution.")
+    if "missing_draft_package" in execution_blockers and draft_package_ready is False:
+        steps.append("Podepnij tę samą paczkę szkicu do execution dry-run.")
+    if not {*handoff_blockers, *execution_blockers}:
+        steps.append("Sprawdź payload dry-run, a live write zostaw wyłączony do osobnej decyzji.")
+    return steps
 
 
 def _wordpress_draft_write_authorization_verified(

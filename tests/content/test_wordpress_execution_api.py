@@ -80,6 +80,16 @@ def _get_wordpress_write_readiness() -> dict[str, Any]:
     return data
 
 
+def _get_wordpress_activation_packet() -> dict[str, Any]:
+    response = TestClient(app).get(
+        "/api/content/wordpress/draft-activation-packet",
+    )
+    assert response.status_code == 200
+    data = cast(dict[str, Any], response.json())
+    assert data["response_type"] == "wordpress_draft_activation_packet"
+    return data
+
+
 def _write_authorization(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "action_id": "act_prepare_wordpress_draft_handoff",
@@ -91,6 +101,37 @@ def _write_authorization(**overrides: object) -> dict[str, object]:
     }
     payload.update(overrides)
     return payload
+
+
+def test_wordpress_activation_packet_shows_next_draft_only_blockers(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "activation_packet.sqlite3"))
+
+    data = _get_wordpress_activation_packet()
+
+    assert data["contract"] == "wordpress_draft_activation_packet_v1"
+    assert data["action_id"] == "act_apply_wordpress_draft_handoff"
+    assert data["work_item_id"]
+    assert data["draft_package_ready"] is True
+    assert data["draft_package_id"]
+    assert data["human_review_ready"] is False
+    assert data["audit_ready"] is False
+    assert data["handoff_ready"] is False
+    assert data["dry_run_ready"] is False
+    assert data["live_write_enabled_by_env"] is False
+    assert data["publish_allowed"] is False
+    assert data["destructive_update_allowed"] is False
+    assert data["external_write_attempted"] is False
+    assert data["handoff_blockers"] == ["missing_human_review", "missing_audit"]
+    assert set(data["execution_blockers"]) == {"missing_handoff"}
+    assert data["execution_result"]["status"] == "blocked"
+    assert data["execution_result"]["external_write_attempted"] is False
+    assert "review człowieka" in data["operator_next_step"]
+    assert any("human review" in step for step in data["next_steps"])
+    assert data["evidence_ids"]
+    assert "wordpress_ekologus" in data["source_connectors"]
 
 
 def test_wordpress_execution_api_returns_draft_only_dry_run() -> None:
