@@ -910,15 +910,11 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
             decisions = _review_decisions_label(item.get("decision_options", []))
             details = (
                 f"{_review_scope_label(item.get('review_scope'))} -> "
-                f"{item.get('target_card_title') or 'brak targetu'}"
+                f"{_review_target_title_label(item.get('target_card_title'))}"
             )
             if decisions:
                 details += f" (decyzje: {decisions})"
-            lines.append(
-                f"  - `{item.get('action_id')}`: {details}"
-                if item.get("action_id")
-                else f"  - {details}"
-            )
+            lines.append(f"  - {details}")
     if dashboard:
         lines.append(
             "- Dashboard: "
@@ -958,6 +954,19 @@ def _review_decisions_label(value: Any) -> str:
     values = value if isinstance(value, list) else []
     labels = [REVIEW_DECISION_LABELS.get(str(item), str(item)) for item in values]
     return ", ".join(label for label in labels if label) or "brak"
+
+
+def _review_target_title_label(value: Any) -> str:
+    title = str(value or "brak celu")
+    replacements = {
+        "claim policy": "polityka twierdzeń",
+        "Source trace": "Ślad źródłowy",
+        "evidence pack": "pakiet dowodów",
+        "reviewed źródeł": "ocenionych źródeł",
+    }
+    for source, replacement in replacements.items():
+        title = title.replace(source, replacement)
+    return title
 
 
 def is_blank(value: Any) -> bool:

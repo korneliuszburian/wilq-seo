@@ -421,7 +421,12 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "Najnowsze wyniki umiejętności" in markdown
     assert "Następne decyzje w Service Profile" in markdown
     assert "-> Bezpieczeństwo prawne, poufność i zgody" in markdown
+    assert "Ślad źródłowy i pakiet dowodów" in markdown
     assert "decyzje: zatwierdź, wróć z poprawkami" in markdown
+    pre_demo_section = markdown.split("## Bramki przed pokazaniem")[1].split(
+        "## Co odblokowuje"
+    )[0]
+    assert "service_profile_review_" not in pre_demo_section
     assert "Następny materiał do rozmowy" in markdown
     assert "Komenda do wzoru wyniku rozmowy" in markdown
     assert "Sales Brief status: `blocked`" in markdown

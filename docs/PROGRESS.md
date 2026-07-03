@@ -255,6 +255,10 @@ Date: 2026-07-03
   the visible review/UAT/proof/defer layer: "do oceny", "wynik rozmowy",
   "świadome odroczenie", "wiedza do finalnych treści" and Polish dashboard/
   skill-result labels. Raw IDs and commands remain only in technical lines.
+- 2026-07-03 the same completion guard no longer shows Service Profile action
+  IDs inside the visible pre-demo decision queue. It renders human review type,
+  target title and decision options, with source/evidence titles translated to
+  Polish operator language.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
