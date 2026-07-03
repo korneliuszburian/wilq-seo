@@ -49,6 +49,25 @@ REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS = [
     "production-depth readiness",
     "gotowość finalnego draftu albo publikacji",
 ]
+KNOWLEDGE_STATUS_LABELS = {
+    "seeded_contract_proof": "tylko seed/contract proof",
+    "source_backed_review_required": "źródła są, wymagają review",
+    "approved_current": "zatwierdzona aktualna wiedza",
+    "stale": "wiedza wymaga odświeżenia",
+    "rejected": "odrzucone, nie używać w treści",
+}
+REVIEW_SCOPE_LABELS = {
+    "public_service_card": "publiczna karta usługi",
+    "private_claim_policy_proposal": "prywatna propozycja polityki twierdzeń",
+    "private_evidence_policy_proposal": "prywatna propozycja wymagań dowodowych",
+    "private_service_proposal": "prywatna propozycja usługi",
+}
+REVIEW_DECISION_LABELS = {
+    "approve": "zatwierdź",
+    "needs_changes": "wróć z poprawkami",
+    "stale": "oznacz jako nieaktualne",
+    "reject": "odrzuć",
+}
 
 
 def main() -> int:
@@ -771,37 +790,36 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     dashboard = value.get("dashboard_usefulness") or {}
     lines = [
         "- Source facts: "
-        f"`pass={str(source.get('pass')).lower()}`, "
-        f"`knowledge_status={source.get('knowledge_status')}`, "
-        f"`production_depth={source.get('production_depth_percent')}%`, "
-        f"`ready_for_daily_content={str(source.get('ready_for_daily_content')).lower()}`",
+        f"{_gate_label(source.get('pass'))}; "
+        f"stan wiedzy: {_knowledge_status_label(source.get('knowledge_status'))}; "
+        f"production-depth: {source.get('production_depth_percent')}%; "
+        "gotowe do codziennych treści: "
+        f"{_ready_for_daily_content_label(source.get('ready_for_daily_content'))}.",
         "- Claim Ledger gate: "
-        f"`pass={str(claim.get('pass')).lower()}`, "
-        f"`checks={claim.get('passed_count')}/{claim.get('check_count')}`, "
-        f"`publish_ready_locked={str(claim.get('publish_ready_locked')).lower()}`",
+        f"{_gate_label(claim.get('pass'))}; "
+        f"kontrole: {claim.get('passed_count')}/{claim.get('check_count')}; "
+        "publikacja/finalny draft: "
+        f"{_publish_ready_locked_label(claim.get('publish_ready_locked'))}.",
         "- Skill eval coverage: "
-        f"`pass={str(eval_coverage.get('pass')).lower()}`, "
-        f"`cases={eval_coverage.get('case_count')}`, "
-        f"`skills={eval_coverage.get('skill_dir_count')}`, "
-        f"`hard_gaps={eval_coverage.get('hard_gap_count')}`",
+        f"{_gate_label(eval_coverage.get('pass'))}; "
+        f"case'y: {eval_coverage.get('case_count')}; "
+        f"skille: {eval_coverage.get('skill_dir_count')}; "
+        f"twarde braki: {eval_coverage.get('hard_gap_count')}.",
         "- Latest skill eval results: "
-        f"`pass={str(latest_eval.get('pass')).lower()}`, "
-        f"`passing={latest_eval.get('passing_skill_count')}/{latest_eval.get('skill_count')}`, "
-        f"`minimum_score={latest_eval.get('minimum_score')}`, "
-        f"`maximum_score={latest_eval.get('maximum_score')}`, "
-        f"`strong_7_plus={latest_eval.get('strong_skill_count')}`, "
-        f"`wilku_ready_10={latest_eval.get('wilku_ready_skill_count')}`, "
-        f"`blocked_correctly={latest_eval.get('blocked_correctly_count')}`",
+        f"{_gate_label(latest_eval.get('pass'))}; "
+        f"passing: {latest_eval.get('passing_skill_count')}/{latest_eval.get('skill_count')}; "
+        f"score: {latest_eval.get('minimum_score')}-{latest_eval.get('maximum_score')}; "
+        f"mocne 7+: {latest_eval.get('strong_skill_count')}; "
+        f"Wilku-ready 10/10: {latest_eval.get('wilku_ready_skill_count')}; "
+        f"poprawnie zablokowane: {latest_eval.get('blocked_correctly_count')}.",
     ]
     next_review_actions = source.get("next_review_actions") or []
     if next_review_actions:
-        lines.append("- Next Service Profile review actions:")
+        lines.append("- Następne akcje Service Profile review:")
         for item in next_review_actions[:5]:
-            decisions = ", ".join(
-                str(decision) for decision in item.get("decision_options", [])
-            )
+            decisions = _review_decisions_label(item.get("decision_options", []))
             details = (
-                f"`{item.get('review_scope')}` -> "
+                f"{_review_scope_label(item.get('review_scope'))} -> "
                 f"{item.get('target_card_title') or 'brak targetu'}"
             )
             if decisions:
@@ -814,14 +832,42 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     if dashboard:
         lines.append(
             "- Dashboard usefulness: "
-            f"`pass={str(dashboard.get('pass')).lower()}`, "
-            f"`demo_ready={dashboard.get('demo_ready_count')}`, "
-            f"`review_ready={dashboard.get('review_ready_count')}`, "
-            f"`blocked={dashboard.get('blocked_count')}`, "
-            f"`knowledge_records={dashboard.get('knowledge_record_count')}`, "
-            f"`knowledge_lineage={dashboard.get('knowledge_lineage_count')}`"
+            f"{_gate_label(dashboard.get('pass'))}; "
+            f"demo-ready: {dashboard.get('demo_ready_count')}; "
+            f"review-ready: {dashboard.get('review_ready_count')}; "
+            f"blocked: {dashboard.get('blocked_count')}; "
+            f"knowledge records: {dashboard.get('knowledge_record_count')}; "
+            f"lineage traces: {dashboard.get('knowledge_lineage_count')}."
         )
     return lines
+
+
+def _gate_label(value: Any) -> str:
+    return "OK" if value is True else "wymaga sprawdzenia"
+
+
+def _knowledge_status_label(value: Any) -> str:
+    raw = str(value or "")
+    return KNOWLEDGE_STATUS_LABELS.get(raw, raw or "brak")
+
+
+def _ready_for_daily_content_label(value: Any) -> str:
+    return "tak" if value is True else "nie, najpierw review"
+
+
+def _publish_ready_locked_label(value: Any) -> str:
+    return "zablokowane zgodnie z zasadami" if value is True else "wymaga sprawdzenia"
+
+
+def _review_scope_label(value: Any) -> str:
+    raw = str(value or "")
+    return REVIEW_SCOPE_LABELS.get(raw, raw or "brak typu review")
+
+
+def _review_decisions_label(value: Any) -> str:
+    values = value if isinstance(value, list) else []
+    labels = [REVIEW_DECISION_LABELS.get(str(item), str(item)) for item in values]
+    return ", ".join(label for label in labels if label) or "brak"
 
 
 def is_blank(value: Any) -> bool:

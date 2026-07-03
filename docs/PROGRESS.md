@@ -199,6 +199,11 @@ Date: 2026-07-03
   verdict: materials can be shown to Wilku for review, but Goal 005 is not
   complete until UAT JSON proof or owner defer exists. The raw blocked status
   remains as a technical line.
+- 2026-07-03 Goal 005 completion guard pre-demo gates now render in Polish
+  operator language instead of raw `pass=true`/enum strings. Source facts,
+  Claim Ledger, skill evals, dashboard usefulness and next Service Profile
+  review actions keep proof IDs, but statuses and decision options are readable
+  for Wilku/owner handoff.
 - 2026-07-03 `scripts/source_fact_coverage_audit.py --format markdown` now
   renders Goal 005 review queues in operator Polish: human review type labels,
   Polish decision options and proof IDs in a dedicated column. The JSON report,

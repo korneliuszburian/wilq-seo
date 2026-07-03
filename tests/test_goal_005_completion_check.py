@@ -228,8 +228,8 @@ def test_goal_005_pre_demo_audit_summary_can_include_dashboard_usefulness(
     )
 
     assert "Dashboard usefulness" in markdown
-    assert "knowledge_records=15" in markdown
-    assert "knowledge_lineage=49" in markdown
+    assert "knowledge records: 15" in markdown
+    assert "lineage traces: 49" in markdown
 
 
 def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
@@ -410,12 +410,12 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert report["uat_live_provenance"] == provenance
     assert "## Live UAT provenance" in markdown
     assert "## Pre-demo gates" in markdown
-    assert "production_depth=0%" in markdown
-    assert "publish_ready_locked=true" in markdown
+    assert "production-depth: 0%" in markdown
+    assert "publikacja/finalny draft: zablokowane zgodnie z zasadami" in markdown
     assert "Latest skill eval results" in markdown
-    assert "Next Service Profile review actions" in markdown
+    assert "Następne akcje Service Profile review" in markdown
     assert "-> Bezpieczeństwo prawne, poufność i zgody" in markdown
-    assert "decyzje: approve, needs_changes, stale, reject" in markdown
+    assert "decyzje: zatwierdź, wróć z poprawkami" in markdown
     assert "Następny input UAT" in markdown
     assert "Komenda do wygenerowania JSON" in markdown
     assert "Sales Brief status: `blocked`" in markdown
