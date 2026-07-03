@@ -208,6 +208,10 @@ Date: 2026-07-03
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
   decide, what to check, proof IDs and the JSON proof command, without changing
   the review JSON contract or promotion readiness.
+- 2026-07-03 Service Profile review result markdown now opens with a plain
+  Polish verdict, reviewed/approved/follow-up counts and human service names.
+  Raw report type, action IDs and live provenance stay below the fold in
+  technical details, while JSON contracts and promotion behavior are unchanged.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

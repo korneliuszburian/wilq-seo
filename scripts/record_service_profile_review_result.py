@@ -1259,35 +1259,45 @@ def render_promotion_readiness_markdown(report: dict[str, Any]) -> str:
 
 
 def render_markdown(report: dict[str, Any]) -> str:
+    status = str(report["overall_status"])
+    decision_count = int(report["decision_count"])
+    approved_count = int(report["approved_decision_count"])
+    blocking_count = int(report["blocking_decision_count"])
+    if status == "review_ready_for_promotion_request":
+        verdict = (
+            "Review jest gotowy do osobnego promotion request. To nadal nie "
+            "promuje wiedzy automatycznie."
+        )
+    else:
+        verdict = (
+            "Review wymaga follow-upu przed promotion request. Nie promuj tych "
+            "kart/propozycji, dopóki blokujące decyzje nie zostaną domknięte."
+        )
     lines = [
         "# Wynik Service Profile review",
         "",
-        f"- Typ: `{report['report_type']}`",
+        verdict,
+        "",
         f"- Data: `{report['date']}`",
         f"- Reviewer: `{report['reviewer']}`",
         f"- Zakres: {report['scope_label']}",
-        f"- Status: {visible_status(report['overall_status'])}",
-        f"- Decyzje: `{report['decision_count']}`",
-        f"- Zatwierdzone w review: `{report['approved_decision_count']}`",
-        f"- Blokujące: `{report['blocking_decision_count']}`",
-        f"- Promotion allowed: {visible_bool(report['promotion_allowed'])}",
+        f"- Sprawdzone pozycje: `{decision_count}`",
+        f"- Zatwierdzone w review: `{approved_count}`",
+        f"- Wymagają follow-upu: `{blocking_count}`",
+        "- Automatyczna promocja wiedzy: nie",
         "",
         report["safety_note"],
-        "",
-        "## Live provenance",
-        "",
-        render_live_provenance(report.get("live_provenance")),
         "",
         "## Decyzje",
         "",
     ]
     for decision in report["decisions"]:
+        target_label = service_profile_target_label(str(decision["target_card_id"]))
         lines.extend(
             [
-                f"### `{decision['target_card_id']}`",
+                f"### {target_label}",
                 "",
-                f"- action_id: `{decision['action_id']}`",
-                f"- decyzja: `{decision['decision']}`",
+                f"- Decyzja: {review_decision_label(decision['decision'])}",
                 f"- ślad źródłowy czytelny: {visible_bool(decision['source_trace_clear'])}",
                 "- claimy zablokowane sprawdzone: "
                 f"{visible_bool(decision['blocked_claims_reviewed'])}",
@@ -1295,15 +1305,40 @@ def render_markdown(report: dict[str, Any]) -> str:
         )
         for field in PRIVATE_DECISION_BOOLEAN_FIELDS:
             if field in decision:
-                lines.append(f"- {field}: {visible_bool(decision[field])}")
+                lines.append(
+                    f"- {review_requirement_label(field)}: {visible_bool(decision[field])}"
+                )
         lines.append(f"- notatki: {decision['notes']}")
         for task in decision["follow_up_beads"]:
             lines.append(f"- follow-up: {task}")
-        lines.append("")
+        lines.extend(
+            [
+                "- Proof: "
+                f"`{decision['action_id']}` -> `{decision['target_card_id']}`",
+                "",
+            ]
+        )
     lines.extend(["## Follow-up", ""])
     for task in report["follow_up_tasks"] or ["brak"]:
         lines.append(f"- {task}")
-    lines.extend(["", "## Następny krok", "", report["safe_next_step"]])
+    lines.extend(
+        [
+            "",
+            "## Następny krok",
+            "",
+            report["safe_next_step"],
+            "",
+            "## Szczegóły techniczne",
+            "",
+            f"- Typ raportu: `{report['report_type']}`",
+            f"- Status techniczny: `{report['overall_status']}`",
+            f"- Promotion allowed: {visible_bool(report['promotion_allowed'])}",
+            "",
+            "### Live provenance",
+            "",
+            render_live_provenance(report.get("live_provenance")),
+        ]
+    )
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -1380,6 +1415,20 @@ def visible_status(value: Any) -> str:
     if value == "review_ready_for_promotion_request":
         return "review gotowy do osobnego promotion request"
     return "wymaga follow-up przed promotion request"
+
+
+def review_decision_label(value: Any) -> str:
+    text = str(value or "").strip()
+    return REVIEW_DECISION_LABELS.get(text, text or "brak decyzji")
+
+
+def review_requirement_label(value: Any) -> str:
+    labels = {
+        **REQUIRED_DECISION_BOOLEAN_FIELDS,
+        **PRIVATE_DECISION_BOOLEAN_FIELDS,
+    }
+    text = str(value or "").strip()
+    return labels.get(text, text or "wymaganie review")
 
 
 def list_payload(value: Any) -> list[str]:

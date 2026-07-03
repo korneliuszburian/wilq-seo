@@ -66,7 +66,9 @@ def test_service_profile_review_result_records_approved_review_without_promotion
     markdown = render_markdown(report)
     assert "# Wynik Service Profile review" in markdown
     assert "Promotion allowed: nie" in markdown
-    assert "review gotowy do osobnego promotion request" in markdown
+    assert "Review jest gotowy do osobnego promotion request" in markdown
+    assert "- Automatyczna promocja wiedzy: nie" in markdown
+    assert "### BDO i sprawozdawczość środowiskowa" in markdown
 
 
 def test_private_recorder_fields_match_service_profile_review_requirements() -> None:
@@ -328,9 +330,10 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     markdown = render_markdown(report)
     assert "service_profile_private_proposal_review_result_v1" in markdown
     assert "Promotion allowed: nie" in markdown
-    assert "retention_decision_confirmed: tak" in markdown
-    assert "freshness_status_confirmed: tak" in markdown
-    assert "audience_scope_confirmed: tak" in markdown
+    assert "czy decyzja retencji została podjęta albo świadomie zablokowana: tak" in markdown
+    assert "### Eko-Opieka i Eko Kalendarz" in markdown
+    assert "czy aktualność prywatnego źródła została potwierdzona: tak" in markdown
+    assert "czy zakres dostępu/audience prywatnego źródła jest poprawny: tak" in markdown
     assert "Wymagane pola review z live Service Profile" in markdown
     assert "eval_gates_confirmed" in markdown
     assert "Private proposal provenance z live Service Profile" in markdown
