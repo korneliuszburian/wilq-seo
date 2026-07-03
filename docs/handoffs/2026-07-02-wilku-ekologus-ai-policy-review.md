@@ -1,39 +1,39 @@
-# Ekologus-ai policy proposals - materiał do review Wilka
+# Polityki z ekologus-ai - materiał do oceny Wilka
 
 Status: szkic do opinii Wilka. To nie jest zatwierdzona polityka marki,
-interpretacja prawna ani production-depth knowledge.
+interpretacja prawna ani wiedza zatwierdzona do finalnych treści.
 
 Data: 2026-07-02
 
 ## Po co to pokazujemy
 
-WILQ ma już prywatne, redacted propozycje z `ekologus-ai` dla usług
+WILQ ma już prywatne, zredagowane propozycje z `ekologus-ai` dla usług
 Eko-Opieka i Audyt zgodności. Ten materiał dotyczy drugiej części: polityk,
-które mają pilnować jakości claimów w briefach i draftach.
+które mają pilnować jakości twierdzeń w briefach i szkicach.
 
 Sprawdzamy dwie propozycje:
 
 - styl marki i politykę twierdzeń Ekologus;
 - bezpieczeństwo prawne, poufność i zgody.
 
-To jest review z człowiekiem. Propozycje mogą pomóc w UAT i quality review, ale
-nie stają się zatwierdzoną aktualną wiedzą, nie odblokowują production-depth
-ani publicznych draftów bez osobnego review/promotion request.
+To jest ocena z człowiekiem. Propozycje mogą pomóc w testowaniu i kontroli
+jakości, ale nie stają się zatwierdzoną aktualną wiedzą, nie odblokowują
+finalnych treści ani publicznych szkiców bez osobnej decyzji o promocji wiedzy.
 
 ## Skąd WILQ to bierze
 
 - `ekologus-ai`, zatwierdzone materiały wewnętrzne:
   - `materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md`
   - `materials_clean/approved/KB_021_BEZPIECZENSTWO_PRAWNE_POUFNOSC_ZGODY.cleaned.md`
-- WILQ source facts:
+- Fakty źródłowe WILQ:
   - `ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
   - `ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
-- Live Service Profile action IDs:
+- Techniczne akcje Service Profile:
   - `service_profile_review_private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
   - `service_profile_review_private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
 
-Granica: pokazujemy redacted summary i governance fields. Nie pokazujemy raw
-private content, prywatnych przykładów klientów, danych osobowych, kwot,
+Granica: pokazujemy zredagowane podsumowanie i pola kontroli. Nie pokazujemy
+pełnej prywatnej treści, prywatnych przykładów klientów, danych osobowych, kwot,
 transkrypcji ani niezatwierdzonych interpretacji prawnych.
 
 ## Jak WILQ rozumie styl marki
@@ -51,14 +51,14 @@ Co to ma blokować:
 - straszenie bez powodu;
 - pełną interpretację prawną w darmowej treści.
 
-Co może być dozwolone po review:
+Co może być dozwolone po ocenie:
 
 - treść konkretna, spokojna i ekspercka;
 - pokazanie konsekwencji biznesowej i bezpiecznego następnego kroku;
 - CTA prowadzące do konsultacji, audytu, monitoringu, szkolenia albo sprzedaży
   bez gwarancji wyniku.
 
-## Jak WILQ rozumie legal-safety
+## Jak WILQ rozumie bezpieczeństwo prawne
 
 Kierunek z `ekologus-ai`:
 
@@ -72,28 +72,28 @@ Co to ma blokować:
 - podszywanie automatyzacji pod człowieka;
 - gwarantowany wynik administracyjny.
 
-Co może być dozwolone po review:
+Co może być dozwolone po ocenie:
 
 - wskazanie potrzeby przeglądu eksperckiego zamiast udzielania pełnej
   interpretacji;
 - opis procesu i bezpiecznego następnego kroku;
-- oznaczenie claimów o karach, kontrolach, urzędach, danych osobowych i
-  decyzjach administracyjnych jako human-review gated.
+- oznaczenie twierdzeń o karach, kontrolach, urzędach, danych osobowych i
+  decyzjach administracyjnych jako wymagających oceny człowieka.
 
 ## Pytania do Wilka
 
 1. Czy "konkretnie, spokojnie i ekspercko" dobrze opisuje język Ekologus?
-2. Które slogany albo zwroty są zakazane, bo brzmią jak agencja albo generic
+2. Które slogany albo zwroty są zakazane, bo brzmią jak agencja albo generyczne
    SEO?
 3. Czy WILQ może blokować straszenie karami, jeżeli tekst nie ma aktualnego
-   review prawnego?
-4. Czy claimy o WIOŚ, kontrolach, karach, urzędach i decyzjach mają zawsze
-   wymagać human review?
+   przeglądu prawnego?
+4. Czy twierdzenia o WIOŚ, kontrolach, karach, urzędach i decyzjach mają zawsze
+   wymagać oceny człowieka?
 5. Czy można publicznie pisać o procesie i bezpiecznym następnym kroku bez
    obiecywania wyniku?
-6. Czy te dwie propozycje polityk są gotowe do osobnego promotion request, czy
-   wymagają poprawek?
-7. Jeśli wymagają poprawek, jakie follow-up Beads trzeba utworzyć?
+6. Czy te dwie propozycje polityk są gotowe do osobnej decyzji o promocji
+   wiedzy, czy wymagają poprawek?
+7. Jeśli wymagają poprawek, jakie zadanie follow-up trzeba utworzyć?
 
 ## Decyzje do zapisania
 
@@ -107,7 +107,7 @@ W rozmowie użyj normalnych decyzji:
 Techniczne wartości JSON z live Service Profile to: `approve`,
 `needs_changes`, `stale`, `reject`.
 
-Minimalny wynik review dla tych policy proposals:
+Minimalny techniczny wynik oceny dla tych propozycji polityk:
 
 ```json
 {
@@ -148,15 +148,15 @@ Minimalny wynik review dla tych policy proposals:
     }
   ],
   "follow_up_beads": [
-    "wilq-seo-xyz: doprecyzować politykę twierdzeń przed promotion request"
+    "wilq-seo-xyz: doprecyzować politykę twierdzeń przed promocją wiedzy"
   ]
 }
 ```
 
-Sprawdzenie wyniku:
+## Sprawdzenie techniczne po rozmowie
 
 Najpierw wygeneruj aktualny JSON wejściowy z live Service Profile, bo pola
-review są własnością API i mogą się rozszerzać razem z kontraktem:
+oceny są własnością API i mogą się rozszerzać razem z kontraktem:
 
 ```bash
 rtk uv run python scripts/record_service_profile_review_result.py --print-input-example --review-type private_source_proposals --api-base http://127.0.0.1:8000 > .local-lab/proof/service-profile-policy-review-input-YYYYMMDD.json
@@ -168,42 +168,42 @@ Po uzupełnieniu decyzji Wilka/ownera sprawdź wynik:
 rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-policy-review-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
 ```
 
-Potem sprawdź, czy wynik review jest w ogóle gotowy do osobnego promotion
-request:
+Potem sprawdź, czy wynik oceny jest w ogóle gotowy do osobnej promocji wiedzy:
 
 ```bash
 rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-policy-review-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --promotion-readiness --format markdown
 ```
 
-To nadal nie promuje private proposal do source fact. Obecny live stan powinien
-blokować promotion readiness, jeżeli brakuje `evidence_ids` albo decyzja
+To nadal nie promuje prywatnej propozycji do faktu źródłowego. Obecny stan
+powinien blokować gotowość promocji, jeżeli brakuje `evidence_ids` albo decyzja
 retencji nadal jest `pending_owner_decision`.
 
-## Czego ten review nie robi
+## Czego ta ocena nie robi
 
-- Nie promuje private proposal do source fact.
-- Nie kompiluje zatwierdzonej aktualnej knowledge card.
-- Nie odblokowuje production-depth.
-- Nie odblokowuje draftów publicznych ani WordPress.
+- Nie promuje prywatnej propozycji do faktu źródłowego.
+- Nie kompiluje zatwierdzonej aktualnej karty wiedzy.
+- Nie odblokowuje wiedzy do finalnych treści.
+- Nie odblokowuje publicznych szkiców ani WordPress.
 - Nie pozwala WILQ udzielać interpretacji prawnej bez człowieka.
 
 ## Co WILQ powinien zrobić po opinii
 
 Jeżeli Wilku zatwierdzi oba kierunki:
 
-- przygotować osobny, audytowany private source promotion request;
-- po promotion request dopiero używać polityk jako bramek w Claim Ledger i
-  quality review;
-- nadal blokować legal/high-risk claimy bez human review.
+- przygotować osobny, audytowany wniosek o promocję prywatnego źródła;
+- dopiero po tej promocji używać polityk jako bramek w Claim Ledger i kontroli
+  jakości;
+- nadal blokować prawne i wysokiego ryzyka twierdzenia bez oceny człowieka.
 
 Jeżeli Wilku wybierze "wróć z poprawkami":
 
-- zapisać follow-up Beads;
-- nie promować policy proposals;
-- poprawić source facts albo review copy przed kolejną próbą.
+- zapisać zadanie follow-up;
+- nie promować propozycji polityk;
+- poprawić fakty źródłowe albo opis do oceny przed kolejną próbą.
 
 Jeżeli Wilku odrzuci albo oznaczy jako nieaktualne:
 
-- oznaczyć proposal jako odrzucony albo nieaktualny w przyszłej ścieżce review;
-- nie używać tej polityki jako quality gate;
-- usunąć albo zostawić redacted artifact tylko jako historical review note.
+- oznaczyć propozycję jako odrzuconą albo nieaktualną w przyszłej ścieżce oceny;
+- nie używać tej polityki jako bramki jakości;
+- usunąć albo zostawić zredagowany artefakt tylko jako historyczną notatkę z
+  oceny.

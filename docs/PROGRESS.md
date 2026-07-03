@@ -272,6 +272,10 @@ Date: 2026-07-03
   language/source/CTA review. It keeps raw Service Profile status/action IDs in
   the technical API section, while visible decision copy says "ocena", "szkic",
   "wiedza zatwierdzona do finalnych treści" and "zablokowane twierdzenia".
+- 2026-07-03 the `ekologus-ai` policy review handoff now uses Polish operator
+  language for brand voice, legal-safety, human review and promotion-readiness
+  concepts. The JSON example and API commands stay technical, but the visible
+  review layer no longer leads with English policy/proposal jargon.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
