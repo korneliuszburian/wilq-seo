@@ -65,7 +65,7 @@ class ContentWordPressDraftWriteAuthorization(BaseModel):
     preview_audit_id: str
     review_audit_id: str
     confirmation_audit_id: str
-    apply_audit_id: str
+    apply_audit_id: str | None = None
     confirmed_by: str
 
 
@@ -294,11 +294,11 @@ def _live_write_blockers(
                 "Brakuje potwierdzenia ścieżki zapisu",
                 (
                     "Realny szkic WordPress wymaga śladu: podgląd, review, "
-                    "potwierdzenie, apply i osoba potwierdzająca."
+                    "potwierdzenie i osoba potwierdzająca."
                 ),
                 (
                     "Przejdź przez ActionObject validate, preview, review, "
-                    "confirm i apply audit przed uruchomieniem zapisu."
+                    "confirm i audit przed uruchomieniem zapisu."
                 ),
             )
         ]
@@ -330,7 +330,6 @@ def _write_authorization_complete(
             authorization.preview_audit_id,
             authorization.review_audit_id,
             authorization.confirmation_audit_id,
-            authorization.apply_audit_id,
             authorization.confirmed_by,
         )
     )

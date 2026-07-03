@@ -464,8 +464,9 @@ def _wordpress_draft_write_authorization_verified(
         authorization.preview_audit_id: "action_preview_generated",
         authorization.review_audit_id: "human_review_",
         authorization.confirmation_audit_id: "action_apply_confirmed",
-        authorization.apply_audit_id: "apply_succeeded",
     }
+    if authorization.apply_audit_id:
+        required[authorization.apply_audit_id] = "apply_succeeded"
     for event_id, expected_type in required.items():
         event = events.get(event_id)
         if event is None or event.action_id != authorization.action_id:
@@ -474,17 +475,23 @@ def _wordpress_draft_write_authorization_verified(
             if not event.event_type.startswith(expected_type):
                 return False
         elif event.event_type != expected_type:
-            return False
+                return False
     confirmation_event = events.get(authorization.confirmation_audit_id)
-    apply_event = events.get(authorization.apply_audit_id)
+    apply_event = (
+        events.get(authorization.apply_audit_id)
+        if authorization.apply_audit_id is not None
+        else None
+    )
     confirmed_by = authorization.confirmed_by.strip()
-    return bool(
+    if not (
         confirmed_by
         and confirmation_event is not None
-        and apply_event is not None
         and confirmation_event.actor == confirmed_by
-        and apply_event.actor == confirmed_by
-    )
+    ):
+        return False
+    if authorization.apply_audit_id is None:
+        return True
+    return bool(apply_event is not None and apply_event.actor == confirmed_by)
 
 
 def _wordpress_draft_write_audit_readiness(
@@ -501,7 +508,6 @@ def _wordpress_draft_write_audit_readiness(
     preview = _latest_exact_event(events, "action_preview_generated")
     review = _latest_prefix_event(events, "human_review_")
     confirmation = _latest_exact_event(events, "action_apply_confirmed")
-    apply = _latest_exact_event(events, "apply_succeeded")
     requirements = [
         _readiness_requirement(
             event_type="action_preview_generated",
@@ -518,19 +524,12 @@ def _wordpress_draft_write_audit_readiness(
             label="Potwierdzenie operatora zapisane",
             event=confirmation,
         ),
-        _readiness_requirement(
-            event_type="apply_succeeded",
-            label="Audit apply_succeeded zapisany",
-            event=apply,
-        ),
     ]
     if (
         preview is None
         or review is None
         or confirmation is None
-        or apply is None
         or not confirmation.actor.strip()
-        or confirmation.actor != apply.actor
     ):
         return requirements, None
     return requirements, ContentWordPressDraftWriteAuthorization(
@@ -538,7 +537,6 @@ def _wordpress_draft_write_audit_readiness(
         preview_audit_id=preview.id,
         review_audit_id=review.id,
         confirmation_audit_id=confirmation.id,
-        apply_audit_id=apply.id,
         confirmed_by=confirmation.actor,
     )
 
@@ -584,7 +582,6 @@ def _wordpress_draft_write_audit_blockers(
         "action_preview_generated": "missing_action_preview_audit",
         "human_review_*": "missing_human_review_audit",
         "action_apply_confirmed": "missing_action_confirmation_audit",
-        "apply_succeeded": "missing_apply_success_audit",
     }
     blockers = [
         ContentWordPressDraftWriteReadinessBlocker(
@@ -607,11 +604,11 @@ def _wordpress_draft_write_audit_blockers(
                 code="audit_actor_mismatch",
                 label="Audit trail nie wskazuje jednego operatora",
                 reason=(
-                    "Potwierdzenie i apply muszą mieć tego samego niepustego aktora, "
+                    "Potwierdzenie musi mieć niepustego aktora, "
                     "żeby WILQ mógł zbudować write_authorization."
                 ),
                 next_step=(
-                    "Powtórz confirm/apply jedną ścieżką operatora zamiast "
+                    "Powtórz confirm jedną ścieżką operatora zamiast "
                     "składać audit ręcznie."
                 ),
             )

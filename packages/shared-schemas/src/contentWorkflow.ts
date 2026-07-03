@@ -1226,7 +1226,7 @@ export const ContentWordPressDraftWriteAuthorizationSchema = z.object({
   preview_audit_id: z.string(),
   review_audit_id: z.string(),
   confirmation_audit_id: z.string(),
-  apply_audit_id: z.string(),
+  apply_audit_id: z.string().nullable().optional(),
   confirmed_by: z.string()
 });
 

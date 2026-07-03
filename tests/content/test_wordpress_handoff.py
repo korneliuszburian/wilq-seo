@@ -340,7 +340,6 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
             preview_audit_id="audit_preview_123",
             review_audit_id="audit_review_123",
             confirmation_audit_id="audit_confirm_123",
-            apply_audit_id="audit_apply_123",
             confirmed_by="wilku",
         ),
         write_authorization_verified=True,

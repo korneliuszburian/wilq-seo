@@ -86,7 +86,7 @@ def _write_authorization(**overrides: object) -> dict[str, object]:
         "preview_audit_id": "audit_preview_123",
         "review_audit_id": "audit_review_123",
         "confirmation_audit_id": "audit_confirm_123",
-        "apply_audit_id": "audit_apply_123",
+        "apply_audit_id": None,
         "confirmed_by": "wilku",
     }
     payload.update(overrides)
@@ -320,7 +320,6 @@ def test_wordpress_write_readiness_blocks_when_live_env_is_disabled(
         False,
         False,
         False,
-        False,
     ]
 
 
@@ -347,7 +346,6 @@ def test_wordpress_write_readiness_builds_authorization_from_audit_trail(
         True,
         True,
         True,
-        True,
     ]
     assert "gotowa" in data["operator_next_step"]
 
@@ -357,7 +355,6 @@ def _persist_write_authorization_events() -> None:
         ("audit_preview_123", "action_preview_generated", "wilq_api"),
         ("audit_review_123", "human_review_approved_for_prepare", "wilku"),
         ("audit_confirm_123", "action_apply_confirmed", "wilku"),
-        ("audit_apply_123", "apply_succeeded", "wilku"),
     ]:
         local_state_store().save_audit_event(
             AuditEvent(

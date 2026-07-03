@@ -55,6 +55,12 @@ Date: 2026-07-03
   adapters. Even if an adapter is later declared, apply remains blocked unless
   the adapter execution layer returns a redacted success result; focused tests
   cover the "adapter string exists but executor is missing" regression.
+- 2026-07-03 WordPress draft write authorization no longer requires a
+  pre-existing `apply_succeeded` audit before live draft execution. The
+  readiness contract now requires preview, human review and operator
+  confirmation as inputs; adapter execution and apply success are outputs of
+  the write path. Live draft writes remain disabled unless env, REST adapter
+  and audit readiness all pass.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
