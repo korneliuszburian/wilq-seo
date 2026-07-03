@@ -151,6 +151,7 @@ def create_wordpress_draft_post(
             response = client.post(
                 urljoin(credentials.base_url or "", "wp-json/wp/v2/posts"),
                 auth=auth,
+                params={"_fields": "id,status,link"},
                 json={
                     "status": "draft",
                     "title": getattr(payload, "title", ""),
@@ -170,10 +171,20 @@ def create_wordpress_draft_post(
         if owns_client:
             client.close()
 
+    return _created_draft_post_id(response)
+
+
+def _created_draft_post_id(response: httpx.Response) -> str:
     body = response.json()
-    post_id = body.get("id") if isinstance(body, dict) else None
+    if not isinstance(body, dict):
+        raise WordPressDraftWriteError("WordPress zwrócił nieprawidłową odpowiedź szkicu.")
+    post_id = body.get("id")
     if post_id is None:
         raise WordPressDraftWriteError("WordPress nie zwrócił ID utworzonego szkicu.")
+    if body.get("status") != "draft":
+        raise WordPressDraftWriteError(
+            "WordPress nie potwierdził, że utworzony wpis jest szkicem."
+        )
     return str(post_id)
 
 

@@ -237,6 +237,11 @@ Date: 2026-07-03
   Env flag plus adapter is not enough. Focused proof now passes 15/15
   WordPress execution tests, shared schema tests, ruff on touched files and
   live API dry-run/live-blocked checks after stack restart.
+- The WordPress draft adapter now verifies the vendor response before treating
+  a live write as created: HTTP success is not enough; WordPress must return an
+  ID and `status=draft`. Focused connector proof passes with mocked REST:
+  draft-only request shape, non-draft response blocked and publish/destructive
+  payload blocked.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem
