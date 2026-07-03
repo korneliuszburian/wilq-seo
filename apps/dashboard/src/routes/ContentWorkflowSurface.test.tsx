@@ -5,6 +5,7 @@ import {
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
+  getContentWordPressDraftWriteReadiness,
   getWordPressAuthoringProfile,
   postContentWorkItemQualityReview,
   postContentWorkItemRevisionPlan,
@@ -23,6 +24,7 @@ import {
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
+  type ContentWordPressDraftWriteReadinessResponse,
   type WordPressAuthoringProfile
 } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
@@ -35,6 +37,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
+    getContentWordPressDraftWriteReadiness: vi.fn(),
     getWordPressAuthoringProfile: vi.fn(),
     postContentWorkItemQualityReview: vi.fn(),
     postContentWorkItemRevisionPlan: vi.fn(),
@@ -52,6 +55,9 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue(
+      wordpressDraftWriteReadiness()
+    );
     vi.mocked(getWordPressAuthoringProfile).mockResolvedValue(wordpressAuthoringProfile());
     vi.mocked(postContentWorkItemQualityReview).mockResolvedValue(qualityReviewResponse());
     vi.mocked(postContentWorkItemRevisionPlan).mockResolvedValue(revisionPlanResponse());
@@ -143,6 +149,12 @@ describe("ContentWorkflowSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText(/Bezpośredni zapis do WordPress jest zablokowany/))
       .toBeInTheDocument();
+    expect(screen.getByText("WordPress: gotowość realnego draftu")).toBeInTheDocument();
+    expect(screen.getByText(/Publikacja pozostaje zablokowana/)).toBeInTheDocument();
+    expect(screen.getByText("Następny bezpieczny krok")).toBeInTheDocument();
+    expect(screen.getByText(/Zostaw tryb dry-run/)).toBeInTheDocument();
+    expect(screen.getByText("Ślad wymagany przed write")).toBeInTheDocument();
+    expect(screen.getByText("Podgląd akcji wygenerowany")).toBeInTheDocument();
     expect(screen.getByText("Claim Ledger: co wolno powiedzieć")).toBeInTheDocument();
     expect(screen.getAllByText("Do szkicu")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Wymaga review")[0]).toBeInTheDocument();
@@ -169,7 +181,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByRole("button", { name: "Pokaż mapowanie ACF" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" })).toBeDisabled();
     expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
-    expect(screen.getByText("zablokowany")).toBeInTheDocument();
+    expect(screen.getAllByText("zablokowany").length).toBeGreaterThan(0);
     expect(screen.getByText("Nie wolno jeszcze oceniać efektu")).toBeInTheDocument();
     expect(screen.getByText(/Pierwsza ocena po 2026-08-01/)).toBeInTheDocument();
     expect(screen.getByText("Dowody: 2")).toBeInTheDocument();
@@ -1448,6 +1460,58 @@ function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecuti
       external_write_attempted: false,
       blockers: []
     }
+  };
+}
+
+function wordpressDraftWriteReadiness(): ContentWordPressDraftWriteReadinessResponse {
+  return {
+    response_type: "wordpress_draft_write_readiness",
+    contract: "wordpress_draft_write_readiness_v1",
+    connector: "wordpress_ekologus",
+    action_id: "act_prepare_wordpress_draft_handoff",
+    ready: false,
+    live_write_enabled_by_env: false,
+    rest_adapter_configured: true,
+    publish_allowed: false,
+    destructive_update_allowed: false,
+    required_audit_events: [
+      {
+        event_type: "action_preview_generated",
+        label: "Podgląd akcji wygenerowany",
+        satisfied: false,
+        audit_event_id: null,
+        actor: null
+      },
+      {
+        event_type: "human_review_*",
+        label: "Review człowieka zapisane",
+        satisfied: false,
+        audit_event_id: null,
+        actor: null
+      },
+      {
+        event_type: "action_apply_confirmed",
+        label: "Potwierdzenie operatora zapisane",
+        satisfied: false,
+        audit_event_id: null,
+        actor: null
+      }
+    ],
+    suggested_write_authorization: null,
+    blockers: [
+      {
+        code: "draft_writes_env_disabled",
+        label: "Zapis szkiców WordPress jest wyłączony",
+        reason:
+          "WILQ może przygotować i sprawdzić szkic, ale live write wymaga jawnego włączenia WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES.",
+        next_step:
+          "Zostaw tryb dry-run albo włącz env dopiero po potwierdzeniu ścieżki preview, review, confirm i audit."
+      }
+    ],
+    operator_next_step:
+      "Zostaw tryb dry-run albo włącz env dopiero po potwierdzeniu ścieżki preview, review, confirm i audit.",
+    evidence_ids: ["ev_connector_wordpress_ekologus_status"],
+    source_connectors: ["wordpress_ekologus"]
   };
 }
 

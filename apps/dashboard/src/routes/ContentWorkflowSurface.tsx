@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
+  getContentWordPressDraftWriteReadiness,
   getWordPressAuthoringProfile,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
@@ -31,6 +32,7 @@ import {
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
+  type ContentWordPressDraftWriteReadinessResponse,
   type ContentOpportunityEnrichment,
   type ContentOpportunityEnrichmentResponse,
   type WordPressAuthoringProfile
@@ -64,6 +66,10 @@ type ContentOpportunityEnrichmentQuery = UseQueryResult<
   Error
 >;
 type WordPressAuthoringProfileQuery = UseQueryResult<WordPressAuthoringProfile, Error>;
+type WordPressDraftWriteReadinessQuery = UseQueryResult<
+  ContentWordPressDraftWriteReadinessResponse,
+  Error
+>;
 
 export function ContentWorkflowSurface() {
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | null>(null);
@@ -95,11 +101,16 @@ export function ContentWorkflowSurface() {
     queryKey: ["content-workflow", "wordpress-authoring-profile"],
     queryFn: getWordPressAuthoringProfile
   });
+  const draftWriteReadiness = useQuery({
+    queryKey: ["content-workflow", "wordpress-draft-write-readiness"],
+    queryFn: getContentWordPressDraftWriteReadiness
+  });
 
   return (
     <ContentWorkflowRouteState
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
+      draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       queue={queue}
       selectedCandidate={selectedCandidate}
@@ -112,6 +123,7 @@ export function ContentWorkflowSurface() {
 function ContentWorkflowRouteState({
   activeWorkItemId,
   authoringProfile,
+  draftWriteReadiness,
   enrichment,
   queue,
   selectedCandidate,
@@ -120,6 +132,7 @@ function ContentWorkflowRouteState({
 }: {
   activeWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueQuery;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
@@ -132,6 +145,7 @@ function ContentWorkflowRouteState({
     <ContentWorkflowQueueReady
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
+      draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       queue={queue.data}
       selectedCandidate={selectedCandidate}
@@ -144,6 +158,7 @@ function ContentWorkflowRouteState({
 function ContentWorkflowQueueReady({
   activeWorkItemId,
   authoringProfile,
+  draftWriteReadiness,
   enrichment,
   queue,
   selectedCandidate,
@@ -152,6 +167,7 @@ function ContentWorkflowQueueReady({
 }: {
   activeWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
   selectedCandidate: ContentWorkItemQueueCandidate | null;
@@ -173,6 +189,7 @@ function ContentWorkflowQueueReady({
     <ContentWorkflowSelectedReady
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
+      draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       queue={queue}
       workflow={workflow}
@@ -184,6 +201,7 @@ function ContentWorkflowQueueReady({
 function ContentWorkflowSelectedReady({
   activeWorkItemId,
   authoringProfile,
+  draftWriteReadiness,
   enrichment,
   queue,
   workflow,
@@ -191,6 +209,7 @@ function ContentWorkflowSelectedReady({
 }: {
   activeWorkItemId: string;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
   workflow: ContentWorkflowSnapshotQuery;
@@ -202,6 +221,7 @@ function ContentWorkflowSelectedReady({
     <ContentWorkflowLoaded
       data={workflow.data}
       authoringProfile={authoringProfile}
+      draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment.data?.enrichment ?? null}
       queue={queue}
       selectedWorkItemId={activeWorkItemId}
@@ -223,6 +243,7 @@ function ContentWorkflowError() {
 function ContentWorkflowLoaded({
   data,
   authoringProfile,
+  draftWriteReadiness,
   enrichment,
   queue,
   selectedWorkItemId,
@@ -230,6 +251,7 @@ function ContentWorkflowLoaded({
 }: {
   data: ContentWorkflowSnapshot;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
   selectedWorkItemId: string;
@@ -257,6 +279,7 @@ function ContentWorkflowLoaded({
       />
       <WorkflowProofSummary data={data} />
       <WordPressAuthoringReadinessPanel authoringProfile={authoringProfile} />
+      <WordPressDraftWriteReadinessPanel draftWriteReadiness={draftWriteReadiness} />
       <ClaimLedgerGatePanel data={data} />
       <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
       <WorkflowStepsList steps={steps} />
@@ -889,6 +912,97 @@ function WordPressAuthoringReadinessPanel({
               : "Brak blokad authoringu; nadal obowiązuje draft-only review i audyt przed zapisem."
           }
         />
+      </div>
+    </section>
+  );
+}
+
+function WordPressDraftWriteReadinessPanel({
+  draftWriteReadiness
+}: {
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
+}) {
+  if (draftWriteReadiness.isLoading) {
+    return (
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+          WordPress: sprawdzanie gotowości zapisu draftu
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          WILQ sprawdza env, REST i ślad audytu bez zapisu do WordPress.
+        </p>
+      </section>
+    );
+  }
+  if (draftWriteReadiness.error || !draftWriteReadiness.data) {
+    return (
+      <section className="mb-6 rounded-md border border-wait/30 bg-wait/10 p-4">
+        <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
+          WordPress: brak readiness zapisu draftu
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          Nie ma potwierdzenia gotowości zapisu szkicu. Zostań przy dry-run i
+          podglądzie ACF.
+        </p>
+      </section>
+    );
+  }
+
+  const readiness = draftWriteReadiness.data;
+  const firstBlocker = readiness.blockers[0] ?? null;
+
+  return (
+    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-action">
+            WordPress: gotowość realnego draftu
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
+            Ten panel pokazuje, czy WILQ może wykonać wyłącznie zapis szkicu
+            WordPress. Publikacja pozostaje zablokowana; brak warunku oznacza stop,
+            nie ręczne obejście.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+          <FactTile label="Write" value={readiness.ready ? "gotowy" : "zablokowany"} />
+          <FactTile
+            label="Env"
+            value={readiness.live_write_enabled_by_env ? "włączony" : "wyłączony"}
+          />
+          <FactTile
+            label="REST"
+            value={readiness.rest_adapter_configured ? "gotowy" : "brak"}
+          />
+          <FactTile label="Audit" value={`${readiness.required_audit_events.length} kroki`} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Następny bezpieczny krok</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {readiness.operator_next_step}
+          </p>
+          {firstBlocker ? (
+            <p className="mt-3 text-sm leading-6 text-risk">
+              {firstBlocker.label}: {firstBlocker.reason}
+            </p>
+          ) : null}
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Ślad wymagany przed write</h3>
+          <div className="mt-2 grid gap-1 text-sm leading-6 text-slate-700">
+            {readiness.required_audit_events.map((requirement) => (
+              <div key={requirement.event_type} className="flex justify-between gap-3">
+                <span>{requirement.label}</span>
+                <span className={requirement.satisfied ? "text-success" : "text-risk"}>
+                  {requirement.satisfied ? "jest" : "brak"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

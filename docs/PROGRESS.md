@@ -70,6 +70,11 @@ Date: 2026-07-03
   the normal action queue. It explains why WordPress draft-only is the first
   activation target and lists the blockers before any write adapter can run;
   live API still reports zero possible vendor writes.
+- 2026-07-03 `/content-workflow` now consumes
+  `/api/content/wordpress/draft-write-readiness` and shows draft-write
+  readiness beside WordPress authoring readiness. Operators can see env write
+  disabled, REST readiness, required audit events and blockers before any
+  draft-only write path is considered; no write/publish control was enabled.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
