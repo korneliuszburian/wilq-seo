@@ -14,6 +14,7 @@ from scripts.goal_005_completion_check import (
 )
 
 FULL_REVIEW_ARTIFACTS = [
+    "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md",
     "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",

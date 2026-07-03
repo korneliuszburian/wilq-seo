@@ -73,10 +73,9 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         }
     ]
     assert report["missing_recommended_review_artifacts"] == [
-        "docs/handoffs/2026-07-02-wilq-marketing-content-model.md",
-        "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md",
-        "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
-        "docs/handoffs/2026-07-02-wilku-social-history-blocker.md",
+        artifact
+        for artifact in RECOMMENDED_REVIEW_ARTIFACTS
+        if artifact != "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
     ]
     assert "Nie promuje private proposals" in report["safety_note"]
     assert "nie odblokowuje publikacji" in report["safety_note"]
@@ -88,6 +87,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert "decyzja: popraw" in markdown
     assert "dopasowanie CTA 3/5" in markdown
     assert "2026-07-02-wilq-marketing-content-model.md" in markdown
+    assert "2026-07-03-wilku-service-profile-review-now.md" in markdown
     assert "2026-07-02-co-pokazac-wilkowi.md" in markdown
     assert "2026-07-02-wilku-ekologus-ai-policy-review.md" in markdown
     assert "2026-07-02-wilku-social-history-blocker.md" in markdown

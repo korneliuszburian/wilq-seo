@@ -204,6 +204,12 @@ Date: 2026-07-03
   Profile decisions, and points to generated live JSON inputs in
   `.local-lab/proof/service-profile-private-review-input-20260703.json` and
   `.local-lab/proof/service-profile-public-review-input-20260703.json`.
+- 2026-07-03 the Goal 005 UAT input generator now includes that current handoff
+  as the first recommended review artifact. Live proof:
+  `.local-lab/proof/goal-005-content-uat-input-20260703.json` selects
+  `content_work_item_content_decision_https___www_ekologus_pl` and lists the
+  2026-07-03 Service Profile review handoff before the older supporting
+  handoffs.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem
