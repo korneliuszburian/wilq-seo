@@ -234,6 +234,10 @@ Date: 2026-07-03
 - 2026-07-03 Goal 005 completion guard markdown now prints the exact
   `--print-owner-defer-example` command in the unlock section, so the owner
   defer path is discoverable from the same failed completion check.
+- 2026-07-03 Sales Brief signal-quality audit is aligned with current source
+  facts: `operat wodnoprawny` now has a source-backed review-required public
+  card and can support review-level brief analysis, while draft/legal/permit
+  claims remain blocked until human review and approved-current knowledge.
   labels. The JSON report remains unchanged, but the Wilku-facing audit says
   WILQ has review material and still lacks approved production-depth knowledge.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has

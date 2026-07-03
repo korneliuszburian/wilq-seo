@@ -31,7 +31,7 @@ Relevant fresh evidence from the current local API:
 | `beczki` / Ahrefs gap | blocked | typed blocked snapshot | Ahrefs gap has evidence, but no final canonical URL, unresolved duplicate/inventory risk and blocked measurement. Snapshot now returns `blocked_snapshot` with blockers instead of HTTP 404. |
 | `bdo co to` | brief built | usable for review | GSC + WordPress evidence, existing URL, ready enrichment, measurement ready to plan, Sales Brief has 3 source facts and 15 knowledge constraints. |
 | `zielony ład co to` | brief built | thin but reviewable | GSC + WordPress evidence and existing URL are present, but service fit is still generic: `sprawdzenie dopasowania do oferty Ekologus przed szkicem`. Needs Wilku/source review before strong service framing. |
-| `operat wodnoprawny` | brief blocked | blocked by knowledge | GSC + WordPress evidence and enrichment are ready, but Sales Brief blocks with `missing_required_knowledge_card`. |
+| `operat wodnoprawny` | brief built for review | usable for review, draft blocked | GSC + WordPress evidence and enrichment are ready. A source-backed review-required public service card now supports analysis, while legal/permit claims and draft readiness remain blocked for human review. |
 | `magazynowanie odpadów` | brief built for review | usable for review | GSC + WordPress evidence and enrichment are ready. A source-backed review-required waste/packaging service card now supports the brief, while draft remains not publish-ready. |
 
 ## Findings
@@ -40,12 +40,14 @@ Relevant fresh evidence from the current local API:
    The current queue has live GSC and WordPress evidence for four actionable
    refresh candidates.
 
-2. Sales Brief v2 correctly blocks thin knowledge for `operat wodnoprawny`.
-   `magazynowanie odpadów` now has a source-backed review-required card, so it
-   can support brief review/UAT without becoming production-depth knowledge.
-   This is desired behavior: WILQ should not turn GSC demand plus an existing
-   page into a service-depth brief without a matching reviewed or
-   review-required knowledge card.
+2. Sales Brief v2 now allows review-level analysis for `operat wodnoprawny`
+   because a direct public Ekologus source fact compiles into
+   `ekologus_service_operat_wodnoprawny` with lifecycle
+   `source_backed_review_required`. Draft readiness remains blocked: legal,
+   deadline, fee, permit-necessity and authority-decision claims require human
+   review. `magazynowanie odpadów` follows the same useful pattern: a
+   source-backed review-required card can support brief review/UAT without
+   becoming production-depth knowledge.
 
 3. `bdo co to` is the strongest UAT candidate. It has compliance-risk intent,
    GSC demand, WordPress inventory, existing canonical URL, measurement plan and
@@ -69,8 +71,12 @@ Relevant fresh evidence from the current local API:
 ## Exact Follow-Ups
 
 - `wilq-seo-nlz`: added a source-backed review-required card for
-  `magazynowanie odpadów`; `operat wodnoprawny` remains blocked until a direct
-  public/reviewed service source exists.
+  `magazynowanie odpadów`.
+- Follow-up after the water-permit source fact slice: `operat wodnoprawny` now
+  has the direct public/review-required service card
+  `ekologus_service_operat_wodnoprawny`, so it is no longer blocked by
+  `missing_required_knowledge_card`; it still cannot unlock production-depth or
+  legal/permit claims without review.
 - `wilq-seo-ad8`: completed. Blocked Ahrefs content candidates return typed
   `blocked_snapshot` responses without fake workflow fields.
 - Use `bdo co to` as the safest first Wilku UAT candidate.
@@ -95,6 +101,23 @@ google_search_console ev_refresh_refresh_google_search_console_615c887b0dac Zapy
 wordpress_ekologus ev_refresh_refresh_wordpress_ekologus_25f9090bdfe6 Spis WordPress: potwierdzony
 knowledge_card ekologus_service_waste_packaging_obligations source_backed_review_required
 snapshot magazynowanie odpadów brief_built=True blockers=[]
-snapshot operat wodnoprawny brief_built=False blockers=[missing_required_knowledge_card]
+knowledge_card ekologus_service_operat_wodnoprawny source_backed_review_required
+snapshot operat wodnoprawny brief_built=True blockers=[] draft_allowed=False
 snapshot beczki response_type=blocked_snapshot blockers=[duplicate_risk_unresolved, missing_inventory_resolution, missing_final_canonical, duplicate_gate_not_checked]
+```
+
+Update on 2026-07-03:
+
+```bash
+rtk uv run pytest tests/content/test_sales_brief.py::test_sales_brief_allows_water_permit_analysis_but_blocks_draft_readiness tests/content/test_content_knowledge_cards.py::test_water_permit_topic_matches_review_required_public_source_card tests/content/test_content_knowledge_cards.py::test_service_profile_exposes_water_permit_as_review_required_card -q
+```
+
+Current live Service Profile proof:
+
+```text
+service_card_count=8
+coverage_gap_ids=[gap_no_approved_current_cards]
+gap_service_operat_wodnoprawny absent
+ekologus_service_operat_wodnoprawny status=source_backed_review_required
+production_depth_ready=false
 ```
