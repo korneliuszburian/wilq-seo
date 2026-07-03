@@ -159,8 +159,13 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     }
     rendered = "\n".join(render_next_uat_input(next_input))
     assert "Pierwszy Service Profile review" in rendered
-    assert "renamed_public_service_bdo_review" in rendered
-    assert "Wymagane pola pierwszego review: action_id, source_trace_clear" in rendered
+    public_part = rendered.split("Dane techniczne do proof")[0]
+    assert "renamed_public_service_bdo_review" not in public_part
+    assert "Najpierw sprawdź publiczną kartę BDO." in rendered
+    assert "Co trzeba ocenić: którą decyzję zapisujemy" in rendered
+    assert "czy źródło i pochodzenie faktu są jasne" in rendered
+    assert "review=`renamed_public_service_bdo_review`" in rendered
+    assert "Service Profile review - co pokazać teraz" in rendered
     assert "--api-base http://127.0.0.1:8000" in next_input["print_input_command"]
     assert "--print-session-card --api-base http://127.0.0.1:8000" in next_input[
         "session_card_command"

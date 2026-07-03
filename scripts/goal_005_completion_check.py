@@ -13,7 +13,10 @@ from scripts.record_goal_005_content_uat_result import (
     build_content_uat_input_example,
     build_content_uat_result_report,
     first_service_profile_review_label,
+    first_service_profile_review_required_fields_plain_label,
+    humanize_review_decision_text,
     load_json,
+    review_artifact_label,
 )
 from scripts.render_skill_coverage_audit import build_report as build_latest_skill_eval_report
 from scripts.source_fact_coverage_audit import build_report as build_source_fact_coverage_report
@@ -689,7 +692,6 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
     first_review = value.get("first_service_profile_review")
     lines = [
         "- Dostępny: " + ("tak" if value.get("available") is True else "nie"),
-        f"- Wybrany work item: `{value.get('selected_work_item') or 'brak'}`",
         "- Komenda do karty rozmowy: "
         f"`{value.get('session_card_command') or 'brak'}`",
         f"- Komenda do wygenerowania JSON: `{value.get('print_input_command') or 'brak'}`",
@@ -698,20 +700,28 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
         lines.extend(
             [
                 "- Pierwszy Service Profile review: "
-                + first_review_input_label(first_review),
-                "- Wymagane pola pierwszego review: "
-                + (
-                    ", ".join(first_review.get("required_fields") or [])
-                    or "brak"
-                ),
+                + first_review_input_plain_label(first_review),
+                "- Co trzeba ocenić: "
+                + first_review_input_required_fields_plain_label(first_review),
             ]
         )
     if value.get("blocked_reason"):
         lines.append(f"- Blokada pobrania live inputu: {value['blocked_reason']}")
     lines.append(
         "- Materiały review: "
-        + (", ".join(f"`{artifact}`" for artifact in artifacts) or "brak")
+        + (
+            ", ".join(review_artifact_label(artifact) for artifact in artifacts)
+            or "brak"
+        )
     )
+    if isinstance(first_review, dict):
+        lines.append(
+            "- Dane techniczne do proof: "
+            f"work_item=`{value.get('selected_work_item') or 'brak'}`; "
+            f"review={first_review_input_label(first_review)}"
+        )
+    else:
+        lines.append("- Dane techniczne do proof: brak")
     return lines
 
 
@@ -724,6 +734,29 @@ def first_review_input_label(value: dict[str, Any]) -> str:
         str(value.get("safe_next_step")) if value.get("safe_next_step") else None,
     ]
     return " - ".join(part for part in parts if part) or "brak"
+
+
+def first_review_input_plain_label(value: dict[str, Any]) -> str:
+    label = value.get("label")
+    target = value.get("target_card_id")
+    next_step = humanize_review_decision_text(value.get("safe_next_step"))
+    parts = [
+        str(label) if label else None,
+        f"karta `{target}`" if target else None,
+        str(next_step) if next_step else None,
+    ]
+    return " - ".join(part for part in parts if part) or "brak"
+
+
+def first_review_input_required_fields_plain_label(value: dict[str, Any]) -> str:
+    return first_service_profile_review_required_fields_plain_label(
+        {
+            "first_service_profile_review_required_fields": value.get(
+                "required_fields"
+            )
+            or []
+        }
+    )
 
 
 def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:

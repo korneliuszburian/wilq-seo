@@ -191,6 +191,10 @@ Date: 2026-07-03
   `Dane techniczne do proof`. The first screen is now a marketer-facing
   decision card: topic, URL, content decision, reason, safe next step, first
   review decision, materials and questions for Wilku.
+- 2026-07-03 the Goal 005 completion guard now renders its `Następny input UAT`
+  block in the same operator language as the session card: session-card command
+  first, human BDO review wording, translated review checks and labeled review
+  materials. Raw work item/review IDs remain only in the technical proof line.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor
