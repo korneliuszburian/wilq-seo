@@ -74,10 +74,18 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 Jeśli `/api/merchant/diagnostics` zwraca `unknowns`, `product_sample_readiness.status=blocked`, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`, odpowiedź musi mieć sekcję "Czego nie wiemy" i nie może udawać kolejki produkt-po-produkcie, zwrotu z reklam na poziomie produktu, wpływu ceny ani wpływu naprawy na przychód.
 
 Przy `product_performance_readiness` i `price_impact_readiness` odróżniaj
-`required_read_contracts` od `missing_read_contracts`. Nie wolno opisywać całej
-listy wymagań jako brakującej, jeśli WILQ API zwraca węższą listę
-`missing_read_contracts`. Jeśli `missing_read_contracts` jest dostępne,
-wypisz jego wartości literalnie jako faktyczny brak.
+`required_read_contracts` od `missing_read_contracts`. W widocznej odpowiedzi
+dla operatora tłumacz braki na normalny polski, np. "brakuje danych
+skuteczności produktu", "brakuje historii/zdarzenia zmiany ceny" albo
+"brakuje okna porównania wyników produktu". Surowe wartości pól
+`required_read_contracts`, `missing_read_contracts`, `product_performance_readiness`,
+`price_impact_readiness`, `missing_read_contracts`, `required_read_contracts`,
+`merchant_price_change_event_or_snapshot`,
+`google_ads_shopping_product_performance` i
+`google_ads_or_ga4_product_performance_window` zostaw tylko w technicznym
+śladzie/notes, jeśli są potrzebne do audytu. Nie używaj tych raw nazw w
+`label_pl`, `blocked_reason`, `operator_next_step` ani widocznych
+`action_candidates`; tam pisz po ludzku, czego brakuje i co to blokuje.
 
 </evidence_requirements>
 
@@ -85,7 +93,7 @@ wypisz jego wartości literalnie jako faktyczny brak.
 
 <output>
 
-Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki. Nie pokazuj raw nazw pól jako głównej kopii dla marketera, jeśli można je opisać normalnym polskim.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

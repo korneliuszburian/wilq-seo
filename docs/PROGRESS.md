@@ -42,6 +42,12 @@ Date: 2026-07-03
   comparison are development and eval tools, not mandatory steps in normal
   skill use. Daily Command non-interactive eval passed at
   `.local-lab/evals/codex-skill/20260703T053628Z`.
+- 2026-07-03 eval-driven tuning after ceremony reduction produced two useful
+  fixes: Content Operator now has to show human-readable źródła and Polish
+  workflow step names, while Merchant visible copy must translate raw readiness
+  fields into normal blocker language. Passing artifacts:
+  `.local-lab/evals/codex-skill/20260703T054706Z` and
+  `.local-lab/evals/codex-skill/20260703T055715Z`.
 - Dirty copy must be fixed in typed API/schema/view-model/domain source, not
   with React translators, string replacement helpers or stale label maps.
 - Do not preserve deprecated active fields, compatibility aliases or stale

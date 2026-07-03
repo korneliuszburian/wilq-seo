@@ -110,6 +110,50 @@ Result:
   proves the simplified skill instructions still preserve evidence and safety;
   it does not replace real Wilku UAT.
 
+## 2026-07-03 - Content and Merchant eval-driven tuning
+
+Purpose:
+
+- Use non-interactive Codex evals as a usefulness loop after reducing skill
+  ceremony.
+- Fix places where output was technically correct but less useful for a
+  marketer: unclear source wording in Content Operations and raw API markers in
+  Merchant blocked reasons.
+
+Proof:
+
+```bash
+rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Results:
+
+- Content Operator first failed because the actionable output did not say
+  `źródła` clearly enough; the skill now requires visible source explanation,
+  not only evidence IDs.
+- Content Operator then failed because the actionable output used a less direct
+  phrasing than `kontrolę jakości`; the skill now asks for Polish operator
+  step names: enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrolę
+  jakości, review człowieka, szkic WordPress, ACF and okno pomiaru.
+- Passing Content artifact:
+  `.local-lab/evals/codex-skill/20260703T054706Z`, with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true,
+  `blocked=true`, 6 evidence IDs and 4 action candidates.
+- Merchant first failed because visible operator fields contained raw markers
+  such as `product_performance_readiness` and
+  `google_ads_or_ga4_product_performance_window`.
+- The Merchant skill now requires raw readiness/missing-contract fields to stay
+  in technical notes, while visible copy explains the blocker in Polish.
+- The Merchant eval case was also corrected: raw `missing_read_contracts`
+  values belong in technical `notes`, not in marketer-facing copy.
+- Passing Merchant artifact:
+  `.local-lab/evals/codex-skill/20260703T055715Z`, with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true,
+  `blocked=false`, 4 evidence IDs and 2 action candidates.
+- This is still a minimum pass, not a claim that the skills are perfect or that
+  real Wilku UAT happened.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:

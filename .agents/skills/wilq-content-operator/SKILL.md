@@ -36,10 +36,12 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 4. Pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli workflow dotyczy pisania, rewizji albo handoffu.
 5. Pobierz `GET /api/content/service-profile`, gdy sesja dotyczy source trace, knowledge-depth, prywatnych propozycji albo decyzji owner-review.
 6. Pobierz `GET /api/marketing/brief` tylko jako skondensowany marketingowy kontekst, nie jako zamiennik queue/snapshot.
-7. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation API path, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
-8. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Jeśli API zwraca `wordpress_authoring_preview`, pokaż ACF/`elementy` row candidate jako propozycję do ręcznego przeglądu, nie jako zapis. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
-9. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
-10. Jeśli użytkownik jawnie prosi o krótką paczkę UAT dla Wilka, możesz użyć `scripts/build_uat_packet.py`; to narzędzie pomocnicze, nie obowiązkowy start zwykłej sesji content.
+7. W widocznej odpowiedzi nazwij po ludzku źródła decyzji, np. GSC, WordPress, Ahrefs, GA4, Service Profile albo knowledge cards. Wilku ma widzieć "skąd to wiemy", nie tylko techniczne ID.
+8. Kroki workflow opisuj językiem operatora: enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrolę jakości, review człowieka, szkic WordPress, ACF i okno pomiaru. Angielskie nazwy zostaw tylko, gdy są nazwą pola albo endpointu.
+9. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation API path, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
+10. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Jeśli API zwraca `wordpress_authoring_preview`, pokaż ACF/`elementy` row candidate jako propozycję do ręcznego przeglądu, nie jako zapis. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
+11. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
+12. Jeśli użytkownik jawnie prosi o krótką paczkę UAT dla Wilka, możesz użyć `scripts/build_uat_packet.py`; to narzędzie pomocnicze, nie obowiązkowy start zwykłej sesji content.
 
 </workflow>
 
@@ -96,7 +98,7 @@ Adres `ekologus.dev.proudsite.pl` może być tylko preview/design/staging contex
 
 <output>
 
-Odpowiedź ma prowadzić Wilka przez jedną bezpieczną sesję pracy: status, dowody, kolejka treści, diagnoza, sprawdzenie w WILQ, akcje do sprawdzenia, blokady i następny krok.
+Odpowiedź ma prowadzić Wilka przez jedną bezpieczną sesję pracy: status, źródła, dowody, kolejka treści, diagnoza, sprawdzenie w WILQ, akcje do sprawdzenia, blokady i następny krok.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
