@@ -1165,6 +1165,10 @@ Stop and record a blocker if:
   now carries typed `claim_markers` beside backward-compatible
   `claims_allowed`, so future preview/quality gates can reason from claim ID,
   type, status, evidence and reviewer metadata instead of text matching alone.
+- Goal 006 candidate `wilq-seo-1xv` is now closed as implementation-complete:
+  the Claim Ledger / Generation Gate audit passes 13/13 and focused content
+  gate tests pass 65/65. Remaining production-depth blockers stay in Goal 005:
+  reviewed-current knowledge, Wilku/owner review and measurement windows.
 - Claim markers are not just context fields: structured draft preview now
   blocks a section that uses a marker-backed claim without referencing that
   claim's required evidence IDs. This keeps faithfulness local to the section,
