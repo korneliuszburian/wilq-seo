@@ -414,10 +414,17 @@ function useContentWorkflowActions(
 
 function useContentWorkflowMutations(selectedWorkItemId: string) {
   const queryClient = useQueryClient();
-  const refreshWorkflow = () =>
+  const refreshWorkflow = () => {
     queryClient.invalidateQueries({
       queryKey: ["content-workflow", "work-item", selectedWorkItemId]
     });
+    queryClient.invalidateQueries({
+      queryKey: ["content-workflow", "wordpress-draft-activation-packet", selectedWorkItemId]
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["content-workflow", "wordpress-draft-write-readiness"]
+    });
+  };
   const reviewMutation = useMutation({
     mutationFn: (request: ContentWorkItemSnapshotHumanReviewRequest) =>
       saveContentWorkItemSnapshotHumanReview(request, selectedWorkItemId),

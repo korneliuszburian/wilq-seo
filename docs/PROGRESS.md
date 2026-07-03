@@ -154,6 +154,9 @@ Date: 2026-07-04
   and `audit_ready=false`; after matching audit it moves to handoff/dry-run
   ready with a draft-only payload, while live write, publication, destructive
   updates and external write remain blocked.
+- 2026-07-04 `/content-workflow` now refreshes WordPress draft activation
+  packet and draft-write readiness after saving human review or audit, so the
+  operator does not see stale blockers after passing a local WILQ gate.
 - 2026-07-03 WordPress draft activation packet now scopes to the selected
   content work item via `work_item_id`, and `/content-workflow` passes the
   active item ID. This prevents the dashboard from showing activation blockers

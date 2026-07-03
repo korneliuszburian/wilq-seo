@@ -229,6 +229,10 @@ describe("ContentWorkflowSurface", () => {
     await waitFor(() => {
       expect(saveContentWorkItemSnapshotHumanReview).toHaveBeenCalled();
     });
+    await waitFor(() => {
+      expect(getContentWordPressDraftActivationPacket).toHaveBeenCalledTimes(2);
+      expect(getContentWordPressDraftWriteReadiness).toHaveBeenCalledTimes(2);
+    });
     expect(vi.mocked(saveContentWorkItemSnapshotHumanReview).mock.calls[0]?.[0]).toEqual({
         review: expect.objectContaining({
           id: "human_review_content_work_item_bdo",
@@ -263,6 +267,10 @@ describe("ContentWorkflowSurface", () => {
 
     await waitFor(() => {
       expect(saveContentWorkItemSnapshotAudit).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(getContentWordPressDraftActivationPacket).toHaveBeenCalledTimes(2);
+      expect(getContentWordPressDraftWriteReadiness).toHaveBeenCalledTimes(2);
     });
     expect(vi.mocked(saveContentWorkItemSnapshotAudit).mock.calls[0]?.[0]).toEqual({
         audit: {
