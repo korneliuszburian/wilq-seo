@@ -144,6 +144,11 @@ def build_report(eval_root: Path = DEFAULT_EVAL_ROOT) -> dict[str, Any]:
                 "remaining_blocker": _remaining_blocker(result),
             }
         )
+    scores = [
+        int(row["score"])
+        for row in rows
+        if isinstance(row.get("score"), int) and not isinstance(row.get("score"), bool)
+    ]
     return {
         "schema_version": "wilq_latest_skill_coverage_audit_v1",
         "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
@@ -152,6 +157,10 @@ def build_report(eval_root: Path = DEFAULT_EVAL_ROOT) -> dict[str, Any]:
         else str(eval_root),
         "skill_count": len(rows),
         "passing_skill_count": len(rows) - len(missing),
+        "minimum_score": min(scores) if scores else None,
+        "maximum_score": max(scores) if scores else None,
+        "strong_skill_count": sum(1 for score in scores if score >= 7),
+        "wilku_ready_skill_count": sum(1 for score in scores if score >= 10),
         "missing_passing_skills": missing,
         "rows": rows,
         "pass": not missing,
@@ -201,6 +210,13 @@ def render_markdown(report: dict[str, Any]) -> str:
             (
                 f"- {report['passing_skill_count']}/{report['skill_count']} "
                 "WILQ skills have a latest passing non-interactive eval."
+            ),
+            (
+                f"- Score range: `{report.get('minimum_score')}`-"
+                f"`{report.get('maximum_score')}`; "
+                f"`{report.get('strong_skill_count')}` skills are already "
+                "`7+/10`, and "
+                f"`{report.get('wilku_ready_skill_count')}` are `10/10`."
             ),
             (
                 "- Passing means: Polish operator output, WILQ API usage, "

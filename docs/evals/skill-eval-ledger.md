@@ -405,6 +405,9 @@ Focused proof:
 - Artifact: `.local-lab/evals/codex-skill/20260703T073232Z`
 - Result: `operator_usefulness_score=8`, `blocked=false`, `failure_tags=[]`,
   20 evidence IDs, 4 recommendations, 4 actions and all hard gates true.
+- Coverage map: `docs/evals/skill-coverage-audit.md` now reports score range
+  `5-8`, `strong_skill_count=1` for `7+/10` and
+  `wilku_ready_skill_count=0` for `10/10`.
 
 Interpretation:
 

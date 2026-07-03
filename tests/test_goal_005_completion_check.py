@@ -65,6 +65,11 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
         "latest_skill_eval_results"
     ]["skill_count"]
     assert summary["latest_skill_eval_results"]["minimum_score"] >= 5
+    assert summary["latest_skill_eval_results"]["maximum_score"] >= summary[
+        "latest_skill_eval_results"
+    ]["minimum_score"]
+    assert summary["latest_skill_eval_results"]["strong_skill_count"] >= 1
+    assert summary["latest_skill_eval_results"]["wilku_ready_skill_count"] >= 0
 
 
 def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) -> None:

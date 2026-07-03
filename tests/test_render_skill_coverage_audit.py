@@ -84,15 +84,25 @@ def test_build_report_uses_latest_passing_result(tmp_path, monkeypatch) -> None:
         score=5,
         blocked=False,
     )
+    write_result(
+        eval_root / "20260702T030000Z/wilq-example/result.json",
+        skill="wilq-example",
+        score=8,
+        blocked=False,
+    )
 
     report = audit.build_report(eval_root)
 
     assert report["pass"] is True
     assert report["passing_skill_count"] == 1
+    assert report["minimum_score"] == 8
+    assert report["maximum_score"] == 8
+    assert report["strong_skill_count"] == 1
+    assert report["wilku_ready_skill_count"] == 0
     row = report["rows"][0]
     assert row["skill"] == "wilq-example"
-    assert "20260702T020000Z" in row["latest_artifact"]
-    assert row["score"] == 5
+    assert "20260702T030000Z" in row["latest_artifact"]
+    assert row["score"] == 8
     assert row["state"] == "ready / review-only"
     assert "ev_connector_google_ads_status" not in row["what_it_proves"]
     assert "1 evidence IDs" in row["what_it_proves"]
@@ -118,6 +128,10 @@ def test_render_markdown_marks_missing_passing_eval(tmp_path, monkeypatch) -> No
     markdown = audit.render_markdown(report)
 
     assert report["pass"] is False
+    assert report["minimum_score"] is None
+    assert report["maximum_score"] is None
+    assert report["strong_skill_count"] == 0
+    assert report["wilku_ready_skill_count"] == 0
     assert "`wilq-missing`" in markdown
     assert "missing passing eval" in markdown
     assert "Uruchom deterministic smoke" in markdown

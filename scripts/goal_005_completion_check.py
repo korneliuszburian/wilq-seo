@@ -266,6 +266,13 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "passing_skill_count": latest_eval_report["passing_skill_count"],
             "skill_count": latest_eval_report["skill_count"],
             "minimum_score": min(latest_eval_scores) if latest_eval_scores else None,
+            "maximum_score": max(latest_eval_scores) if latest_eval_scores else None,
+            "strong_skill_count": sum(
+                1 for score in latest_eval_scores if int(score) >= 7
+            ),
+            "wilku_ready_skill_count": sum(
+                1 for score in latest_eval_scores if int(score) >= 10
+            ),
             "blocked_correctly_count": sum(
                 1
                 for row in latest_eval_report["rows"]
@@ -609,6 +616,9 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"`pass={str(latest_eval.get('pass')).lower()}`, "
         f"`passing={latest_eval.get('passing_skill_count')}/{latest_eval.get('skill_count')}`, "
         f"`minimum_score={latest_eval.get('minimum_score')}`, "
+        f"`maximum_score={latest_eval.get('maximum_score')}`, "
+        f"`strong_7_plus={latest_eval.get('strong_skill_count')}`, "
+        f"`wilku_ready_10={latest_eval.get('wilku_ready_skill_count')}`, "
         f"`blocked_correctly={latest_eval.get('blocked_correctly_count')}`",
     ]
     next_review_actions = source.get("next_review_actions") or []
