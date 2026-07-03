@@ -36,6 +36,10 @@ Date: 2026-07-03
   review packet at 7.5/10, keeps Goal 005 blocked on real Wilku UAT or owner
   defer, and moved technical IDs/language lower in
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
+- 2026-07-03 Service Profile review recorder now explains review type
+  mismatches directly: a public BDO action pasted into private mode points the
+  operator to `--review-type public_service_cards`, and a private proposal
+  pasted into public mode points to `--review-type private_source_proposals`.
 - 2026-07-03 WordPress draft write readiness is now API-owned at
   `/api/content/wordpress/draft-write-readiness`. Live smoke says REST is
   configured, but live draft write remains blocked until env enablement and the

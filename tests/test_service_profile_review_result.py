@@ -482,7 +482,40 @@ def test_service_profile_review_result_rejects_public_action_in_private_mode() -
         build_review_result_report(payload, live_context=_live_context())
 
     message = str(error.value)
-    assert "action_id nie występuje w live Service Profile" in message
+    assert (
+        "action_id service_profile_review_card_ekologus_service_bdo_reporting "
+        "należy do review_type public_service_cards"
+    ) in message
+    assert "Użyj --review-type public_service_cards" in message
+    assert "target_card_id nie występuje w live Service Profile" in message
+
+
+def test_service_profile_review_result_explains_private_action_in_public_mode() -> None:
+    payload = {
+        "data_review": "2026-07-02",
+        "reviewer": "Wilku",
+        "scope_label": "publiczne karty usług",
+        "decisions": [
+            {
+                "action_id": "renamed_private_eko_opieka_review",
+                "target_card_id": "ekologus_service_eko_opieka_calendar",
+                "decision": "approve",
+                "source_trace_clear": "tak",
+                "blocked_claims_reviewed": "tak",
+                "notes": "To jest prywatna propozycja, nie publiczna karta.",
+            }
+        ],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_review_result_report(payload, live_context=_live_context())
+
+    message = str(error.value)
+    assert (
+        "action_id renamed_private_eko_opieka_review należy do review_type "
+        "private_source_proposals"
+    ) in message
+    assert "Użyj --review-type private_source_proposals" in message
     assert "target_card_id nie występuje w live Service Profile" in message
 
 

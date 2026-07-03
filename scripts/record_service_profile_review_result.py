@@ -533,6 +533,7 @@ def validate_payload(
         )
         review_type = DEFAULT_REVIEW_TYPE
     live_actions = live_review_actions(live_context, review_type=review_type)
+    live_action_review_types = live_review_action_types(live_context)
     live_required_fields = live_required_review_fields(
         live_context,
         review_type=review_type,
@@ -578,10 +579,18 @@ def validate_payload(
         if live_context is not None and action_id:
             live_target = live_actions.get(action_id)
             if live_target is None:
-                errors.append(
-                    f"Decyzja #{index}: action_id nie występuje w live Service Profile: "
-                    f"{action_id}"
-                )
+                opposite_review_type = live_action_review_types.get(action_id)
+                if opposite_review_type is not None:
+                    errors.append(
+                        f"Decyzja #{index}: action_id {action_id} należy do review_type "
+                        f"{opposite_review_type}, a payload używa review_type {review_type}. "
+                        f"Użyj --review-type {opposite_review_type} albo właściwego JSON-a."
+                    )
+                else:
+                    errors.append(
+                        f"Decyzja #{index}: action_id nie występuje w live Service Profile: "
+                        f"{action_id}"
+                    )
             elif target_card_id and live_target != target_card_id:
                 errors.append(
                     f"Decyzja #{index}: target_card_id nie pasuje do live action "
@@ -756,6 +765,32 @@ def live_review_actions(
         if review_scope in expected_scopes and action_id and target_card_id:
             actions[action_id] = target_card_id
     return actions
+
+
+def live_review_action_types(live_context: dict[str, Any] | None) -> dict[str, str]:
+    if live_context is None:
+        return {}
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return {}
+    result: dict[str, str] = {}
+    for action in raw_list(profile.get("review_actions")):
+        if not isinstance(action, dict):
+            continue
+        action_id = str(action.get("action_id") or "").strip()
+        review_scope = str(action.get("review_scope") or "").strip()
+        review_type = review_type_for_scope(review_scope)
+        if action_id and review_type is not None:
+            result[action_id] = review_type
+    return result
+
+
+def review_type_for_scope(scope: str) -> str | None:
+    if scope in PUBLIC_SERVICE_REVIEW_SCOPES:
+        return "public_service_cards"
+    if scope in PRIVATE_SOURCE_REVIEW_SCOPES:
+        return "private_source_proposals"
+    return None
 
 
 def live_required_review_fields(
