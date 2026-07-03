@@ -124,6 +124,12 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
             "sales_brief_traces": {
                 "content_work_item_content_decision_https___www_ekologus_pl": {
                     "status": "ready",
+                    "signal_quality_status": "review_required",
+                    "signal_quality_status_label": "sygnał użyteczny, ale wymaga review",
+                    "evidence_id_count": 2,
+                    "source_connector_count": 2,
+                    "source_fact_count": 2,
+                    "knowledge_constraint_count": 18,
                 }
             },
             "service_profile": {
@@ -177,6 +183,8 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "Najpierw sprawdź publiczną kartę BDO." in rendered
     assert "Co trzeba ocenić: którą decyzję zapisujemy" in rendered
     assert "czy źródło i pochodzenie faktu są jasne" in rendered
+    assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga review" in rendered
+    assert "ograniczenia wiedzy: 18" in rendered
     assert "decyzja `renamed_public_service_bdo_review`" in rendered
     assert "karta `ekologus_service_bdo_reporting`" in rendered
     assert "approve/needs_changes/stale/reject" not in rendered
@@ -436,6 +444,7 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "Następny materiał do rozmowy" in markdown
     assert "Komenda do wzoru wyniku rozmowy" in markdown
     assert "Status briefu sprzedażowego: `blocked`" in markdown
+    assert "Jakość sygnału briefu" in markdown
     assert (
         "Co blokuje brief sprzedażowy: Brakuje karty usługi; Brakuje karty CTA"
         in markdown

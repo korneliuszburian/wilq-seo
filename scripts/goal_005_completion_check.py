@@ -15,8 +15,10 @@ from scripts.record_goal_005_content_uat_result import (
     first_service_profile_review_label,
     first_service_profile_review_required_fields_plain_label,
     humanize_review_decision_text,
+    live_uat_provenance,
     load_json,
     review_artifact_label,
+    selected_sales_brief_signal_quality_label,
 )
 from scripts.render_skill_coverage_audit import build_report as build_latest_skill_eval_report
 from scripts.source_fact_coverage_audit import build_report as build_source_fact_coverage_report
@@ -384,6 +386,11 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
                 ),
             }
     example = build_content_uat_input_example(live_context=live_context)
+    selected_work_item = str(example["wybrany_work_item"])
+    provenance = live_uat_provenance(
+        live_context=live_context,
+        selected_work_item=selected_work_item,
+    )
     first_review = (
         first_service_profile_review_from_live_context(live_context)
         or first_service_profile_review_from_source_coverage()
@@ -394,10 +401,25 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
     )
     return {
         "available": True,
-        "selected_work_item": example["wybrany_work_item"],
+        "selected_work_item": selected_work_item,
         "review_artifacts": example.get("pokazane_materialy_review", []),
         "first_service_profile_review": first_review,
         "private_review_questions": private_review_questions,
+        "selected_sales_brief_status": (
+            provenance.get("selected_sales_brief_status")
+            if isinstance(provenance, dict)
+            else None
+        ),
+        "selected_sales_brief_signal_quality_status_label": (
+            provenance.get("selected_sales_brief_signal_quality_status_label")
+            if isinstance(provenance, dict)
+            else None
+        ),
+        "selected_sales_brief_signal_quality_counts": (
+            provenance.get("selected_sales_brief_signal_quality_counts")
+            if isinstance(provenance, dict)
+            else {}
+        ),
         "session_card_command": (
             "rtk uv run python scripts/record_goal_005_content_uat_result.py "
             + "--print-session-card"
@@ -538,6 +560,16 @@ def uat_live_provenance_summary(value: Any) -> dict[str, Any] | None:
     return {
         "selected_work_item_found": value.get("selected_work_item_found"),
         "selected_sales_brief_status": value.get("selected_sales_brief_status"),
+        "selected_sales_brief_signal_quality_status": value.get(
+            "selected_sales_brief_signal_quality_status"
+        ),
+        "selected_sales_brief_signal_quality_status_label": value.get(
+            "selected_sales_brief_signal_quality_status_label"
+        ),
+        "selected_sales_brief_signal_quality_counts": value.get(
+            "selected_sales_brief_signal_quality_counts"
+        )
+        or {},
         "selected_sales_brief_blocker": value.get("selected_sales_brief_blocker"),
         "selected_sales_brief_blockers": value.get("selected_sales_brief_blockers")
         or [],
@@ -804,6 +836,8 @@ def render_uat_live_provenance(value: dict[str, Any]) -> list[str]:
         + ("tak" if value.get("selected_work_item_found") is True else "nie"),
         "- Status briefu sprzedażowego: "
         f"`{value.get('selected_sales_brief_status') or 'brak'}`",
+        "- Jakość sygnału briefu: "
+        + selected_sales_brief_signal_quality_label(value),
         f"- Co blokuje brief sprzedażowy: {blocker_label}",
         "- Dowody przy ograniczeniu briefu: "
         + (", ".join(evidence_ids) or "brak"),
@@ -868,6 +902,22 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
         lines.append(
             "- Pytania o prywatną wiedzę: "
             + "; ".join(private_review_questions)
+        )
+    signal_quality_label = value.get("selected_sales_brief_signal_quality_status_label")
+    if signal_quality_label:
+        lines.append(
+            "- Jakość sygnału briefu: "
+            + selected_sales_brief_signal_quality_label(
+                {
+                    "selected_sales_brief_signal_quality_status_label": (
+                        signal_quality_label
+                    ),
+                    "selected_sales_brief_signal_quality_counts": value.get(
+                        "selected_sales_brief_signal_quality_counts"
+                    )
+                    or {},
+                }
+            )
         )
     if value.get("blocked_reason"):
         lines.append(f"- Blokada pobrania live inputu: {value['blocked_reason']}")

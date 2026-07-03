@@ -188,6 +188,12 @@ Date: 2026-07-04
   private-review questions. This keeps `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md`,
   the session card and the completion guard aligned for the next real UAT
   conversation.
+- 2026-07-04 Goal 005 UAT session card and completion guard now also render
+  live Sales Brief signal quality for the selected content candidate. Live
+  proof shows `ready` plus `sygnał użyteczny, ale wymaga review` with 2
+  evidence IDs, 2 source connectors, 2 source facts and 18 knowledge
+  constraints, so the handoff no longer hides signal quality behind a raw
+  Sales Brief status.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

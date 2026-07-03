@@ -150,6 +150,8 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "approve/needs_changes/stale/reject" not in card
     assert "Najpierw sprawdź publiczną kartę BDO." in card
     assert "Decyzja Service Profile ID" in card
+    assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga review" in card
+    assert "dowody: 2" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "Prywatna wiedza / ekologus-ai:" in card
     assert (
@@ -733,7 +735,14 @@ def _live_context() -> dict[str, object]:
         "sales_brief_traces": {
             "content_work_item_content_decision_https___www_ekologus_pl": {
                 "status": "ready",
+                "signal_quality_status": "review_required",
+                "signal_quality_status_label": "sygnał użyteczny, ale wymaga review",
+                "evidence_id_count": 2,
+                "source_connector_count": 2,
+                "source_fact_count": 2,
                 "knowledge_constraint_count": 1,
+                "review_required_knowledge_card_count": 1,
+                "measurement_baseline_ready": True,
                 "knowledge_constraint_evidence_ids": [
                     "ev_content_service_profile_source_facts"
                 ],

@@ -321,6 +321,8 @@ def render_content_uat_session_card(
         f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
         "- Status briefu sprzedażowego: "
         f"`{provenance.get('selected_sales_brief_status') or 'brak live proof'}`",
+        "- Jakość sygnału briefu: "
+        f"{selected_sales_brief_signal_quality_label(provenance)}",
         "- Wiedza gotowa do finalnych treści: "
         f"`{visible_bool(provenance.get('production_depth_ready') is True)}`",
         "- Źródła danych: "
@@ -689,6 +691,42 @@ def sales_brief_trace_from_snapshot(snapshot: Any) -> dict[str, Any]:
             if isinstance(signal_quality, dict)
             else None
         ),
+        "signal_quality_status": (
+            signal_quality.get("status") if isinstance(signal_quality, dict) else None
+        ),
+        "signal_quality_reason": (
+            signal_quality.get("reason") if isinstance(signal_quality, dict) else None
+        ),
+        "signal_quality_safe_next_step": (
+            signal_quality.get("safe_next_step")
+            if isinstance(signal_quality, dict)
+            else None
+        ),
+        "evidence_id_count": (
+            signal_quality.get("evidence_id_count")
+            if isinstance(signal_quality, dict)
+            else None
+        ),
+        "source_connector_count": (
+            signal_quality.get("source_connector_count")
+            if isinstance(signal_quality, dict)
+            else None
+        ),
+        "source_fact_count": (
+            signal_quality.get("source_fact_count")
+            if isinstance(signal_quality, dict)
+            else None
+        ),
+        "review_required_knowledge_card_count": (
+            signal_quality.get("review_required_knowledge_card_count")
+            if isinstance(signal_quality, dict)
+            else None
+        ),
+        "measurement_baseline_ready": (
+            signal_quality.get("measurement_baseline_ready")
+            if isinstance(signal_quality, dict)
+            else None
+        ),
         "knowledge_constraint_count": len(constraints),
         "knowledge_constraint_evidence_ids": evidence_ids,
     }
@@ -857,6 +895,34 @@ def live_uat_provenance(
         "selected_sales_brief_constraint_count": selected_sales_brief_trace.get(
             "knowledge_constraint_count"
         ),
+        "selected_sales_brief_signal_quality_status": selected_sales_brief_trace.get(
+            "signal_quality_status"
+        ),
+        "selected_sales_brief_signal_quality_status_label": (
+            selected_sales_brief_trace.get("signal_quality_status_label")
+        ),
+        "selected_sales_brief_signal_quality_reason": selected_sales_brief_trace.get(
+            "signal_quality_reason"
+        ),
+        "selected_sales_brief_signal_quality_safe_next_step": (
+            selected_sales_brief_trace.get("signal_quality_safe_next_step")
+        ),
+        "selected_sales_brief_signal_quality_counts": {
+            "evidence_id_count": selected_sales_brief_trace.get("evidence_id_count"),
+            "source_connector_count": selected_sales_brief_trace.get(
+                "source_connector_count"
+            ),
+            "source_fact_count": selected_sales_brief_trace.get("source_fact_count"),
+            "knowledge_constraint_count": selected_sales_brief_trace.get(
+                "knowledge_constraint_count"
+            ),
+            "review_required_knowledge_card_count": selected_sales_brief_trace.get(
+                "review_required_knowledge_card_count"
+            ),
+            "measurement_baseline_ready": selected_sales_brief_trace.get(
+                "measurement_baseline_ready"
+            ),
+        },
         "selected_sales_brief_constraint_evidence_ids": selected_sales_brief_trace.get(
             "knowledge_constraint_evidence_ids"
         )
@@ -1053,6 +1119,8 @@ def render_live_provenance(value: Any) -> str:
             f"{', '.join(value.get('selected_source_connectors') or []) or 'brak'}",
             "- Brief sprzedażowy wybranego materiału: "
             f"`{value.get('selected_sales_brief_status') or 'brak'}`",
+            "- Jakość sygnału briefu: "
+            f"{selected_sales_brief_signal_quality_label(value)}",
             "- Co blokuje brief sprzedażowy: "
             f"{sales_brief_blocker_label(value)}",
             "- Dowody przy ograniczeniu briefu: "
@@ -1109,6 +1177,29 @@ def sales_brief_blocker_label(value: dict[str, Any]) -> str:
         return str(blocker)
     blockers = sales_brief_blocker_labels(value.get("selected_sales_brief_blockers"))
     return "; ".join(blockers) or "brak"
+
+
+def selected_sales_brief_signal_quality_label(value: dict[str, Any] | None) -> str:
+    if not isinstance(value, dict):
+        return "brak live proof"
+    label = value.get("selected_sales_brief_signal_quality_status_label")
+    if not label:
+        return "brak live proof"
+    counts = value.get("selected_sales_brief_signal_quality_counts")
+    count_labels: list[str] = []
+    if isinstance(counts, dict):
+        if counts.get("evidence_id_count") is not None:
+            count_labels.append(f"dowody: {counts.get('evidence_id_count')}")
+        if counts.get("source_connector_count") is not None:
+            count_labels.append(f"connectory: {counts.get('source_connector_count')}")
+        if counts.get("source_fact_count") is not None:
+            count_labels.append(f"source facts: {counts.get('source_fact_count')}")
+        if counts.get("knowledge_constraint_count") is not None:
+            count_labels.append(
+                f"ograniczenia wiedzy: {counts.get('knowledge_constraint_count')}"
+            )
+    details = f" ({', '.join(count_labels)})" if count_labels else ""
+    return f"{label}{details}"
 
 
 def sales_brief_evidence_label(value: dict[str, Any]) -> str:
