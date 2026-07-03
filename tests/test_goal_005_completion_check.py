@@ -66,6 +66,21 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
 
 
+def test_wilku_service_profile_handoff_includes_private_source_trace() -> None:
+    handoff = Path(
+        "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Prywatny ślad źródłowy do pokazania bez raw private text" in handoff
+    assert "KB_021_BEZPIECZENSTWO_PRAWNE" in handoff
+    assert "KB_014_STYL_MARKI" in handoff
+    assert "goal_005_private_claim_policy_review" in handoff
+    assert "goal_006_claim_ledger_gate" in handoff
+    assert "goal_005_private_evidence_policy_review" in handoff
+    assert "decyzja właściciela wymagana" in handoff
+    assert "zredagowane, trace gotowy, bez promocji do finalnych treści" in handoff
+
+
 def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
     summary = goal_005_pre_demo_audit_summary()
 

@@ -54,6 +54,9 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 completion guard now renders `private_source_trace_items`
   in the next UAT input: topic, scope, source block, eval gate, retention,
   redaction and trace-ready state for the top private `ekologus-ai` proposals.
+- 2026-07-04 the Wilku Service Profile handoff now includes the same private
+  source trace items (`KB_*`, `goal_*`, retention/redaction/trace-ready state)
+  so the document shown to Wilku matches the live completion guard.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

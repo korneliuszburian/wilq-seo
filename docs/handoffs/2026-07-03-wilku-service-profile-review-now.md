@@ -86,6 +86,30 @@ Pytania z aktualnego WILQ API dla prywatnej wiedzy `ekologus-ai`:
 - Które propozycje odrzucić, oznaczyć jako nieaktualne albo zostawić tylko jako
   tło do UAT?
 
+Prywatny ślad źródłowy do pokazania bez raw private text:
+
+1. **Bezpieczeństwo prawne, poufność i zgody**
+   - zakres: polityka twierdzeń;
+   - źródło do wskazania: `KB_021_BEZPIECZENSTWO_PRAWNE`;
+   - eval: `goal_005_private_claim_policy_review`,
+     `goal_006_claim_ledger_gate`;
+   - retencja: decyzja właściciela wymagana;
+   - stan: zredagowane, trace gotowy, bez promocji do finalnych treści.
+2. **Styl marki i polityka twierdzeń Ekologus**
+   - zakres: polityka twierdzeń;
+   - źródło do wskazania: `KB_014_STYL_MARKI`;
+   - eval: `goal_005_private_claim_policy_review`,
+     `goal_006_claim_ledger_gate`;
+   - retencja: decyzja właściciela wymagana;
+   - stan: zredagowane, trace gotowy, bez promocji do finalnych treści.
+3. **Ślad źródłowy i pakiet dowodów dla prywatnych/ocenionych źródeł**
+   - zakres: wymaganie dowodowe;
+   - źródło do wskazania:
+     `ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02`;
+   - eval: `goal_005_private_evidence_policy_review`;
+   - retencja: decyzja właściciela wymagana;
+   - stan: zredagowane, trace gotowy, bez promocji do finalnych treści.
+
 Pytania do rozmowy o kolejności i decyzjach:
 
 1. Czy publiczna karta BDO jest dobrym pierwszym testem Service Profile, czy
