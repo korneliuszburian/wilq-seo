@@ -1255,6 +1255,10 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         )
         if wordpress_draft_action is not None:
             actions[wordpress_draft_action.id] = wordpress_draft_action
+            wordpress_draft_apply_action = _wordpress_draft_apply_action(
+                handoff_action=wordpress_draft_action,
+            )
+            actions[wordpress_draft_apply_action.id] = wordpress_draft_apply_action
 
     google_ads_facts = by_connector.get("google_ads", [])
     demand_gen_action = _demand_gen_readiness_review_action(
@@ -2121,6 +2125,104 @@ def _wordpress_draft_handoff_action(
     )
 
 
+def _wordpress_draft_apply_action(*, handoff_action: ActionObject) -> ActionObject:
+    return ActionObject(
+        id="act_apply_wordpress_draft_handoff",
+        title="Aktywuj zapis szkicu WordPress draft-only",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=handoff_action.evidence_ids,
+        metrics=handoff_action.metrics,
+        human_diagnosis=(
+            "To jest jawny apply-mode kandydat dla pierwszej bezpiecznej klasy "
+            "zapisu: utworzenia szkicu WordPress. Nie publikuje i nie aktualizuje "
+            "istniejących wpisów."
+        ),
+        recommended_reason=(
+            "Użyj tej akcji do sprawdzania gotowości przyszłego zapisu szkicu. "
+            "Dopóki payload, preview, review, confirm, impact check, env i adapter "
+            "nie przejdą readiness, WILQ nie może wykonać vendor write."
+        ),
+        payload={
+            "action_type": "wordpress_draft_handoff",
+            "connector": "wordpress_ekologus",
+            "mode": "apply_blocked",
+            "preview_contract": "wordpress_draft_apply_preview_v1",
+            "depends_on_action_id": handoff_action.id,
+            "allowed_operation": "create_wordpress_draft",
+            "apply_contract": _wordpress_draft_apply_contract_payload(handoff_action),
+            "source_connectors": handoff_action.payload.get("source_connectors", []),
+            "source_metric_names": handoff_action.payload.get("source_metric_names", []),
+            "required_input_contracts": handoff_action.payload.get(
+                "required_input_contracts",
+                [],
+            ),
+            "payload_preview": handoff_action.payload.get("payload_preview", []),
+            "required_validation": [
+                "content_url_preflight_review",
+                "final_canonical_review",
+                "duplicate_or_cannibalization_check",
+                "legal_factual_review",
+                "content_draft_readiness_review",
+                "wordpress_draft_preview_review",
+                "human_confirm_before_wordpress_write",
+                "wordpress_draft_write_readiness",
+            ],
+            "blocked_claims": [
+                "wordpress_publish",
+                "wordpress_update_existing_post",
+                "wordpress_delete_post",
+                "production_wordpress_write",
+                "publish_ready_claim",
+                "obietnica wzrostu pozycji albo leadów",
+            ],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
+
+
+def _wordpress_draft_apply_contract_payload(
+    handoff_action: ActionObject,
+) -> dict[str, Any]:
+    return {
+        "contract": "action_apply_contract_v1",
+        "action_id": "act_apply_wordpress_draft_handoff",
+        "action_type": "wordpress_draft_handoff",
+        "connector": "wordpress_ekologus",
+        "allowed_operation": "create_wordpress_draft",
+        "required_mode": "apply",
+        "draft_only": True,
+        "publication_allowed": False,
+        "destructive_allowed": False,
+        "adapter_status": "not_implemented",
+        "required_env_flags": ["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
+        "required_input_contracts": handoff_action.payload.get("required_input_contracts", []),
+        "required_audit_events": [
+            "action_preview_generated",
+            "human_review_*",
+            "action_apply_confirmed",
+        ],
+        "blocked_outputs": [
+            "wordpress_publish",
+            "wordpress_update_existing_post",
+            "wordpress_delete_post",
+            "production_publish_ready_claim",
+        ],
+        "operator_summary": (
+            "Ten apply-mode obiekt nadal jest zablokowany. Może w przyszłości "
+            "utworzyć tylko szkic WordPress po pełnym preview, review, confirm, "
+            "impact check, env readiness i adapterze z audytem."
+        ),
+    }
+
+
 def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any]:
     source_public_url = (
         item.get("source_public_url") if isinstance(item.get("source_public_url"), str) else None
@@ -2778,6 +2880,12 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
             evidence=action.mode.value,
         ),
         _mutation_requirement(
+            code="payload_apply_allowed",
+            label="Payload dopuszcza apply",
+            satisfied=_action_payload_apply_allowed(action.payload),
+            evidence=str(action.payload.get("apply_allowed", False)).lower(),
+        ),
+        _mutation_requirement(
             code="evidence_present",
             label="Akcja ma dowody źródłowe",
             satisfied=bool(action.evidence_ids),
@@ -2898,6 +3006,9 @@ def _first_write_candidate(
     if not items:
         return None
     for item in items:
+        if item.action_id == "act_apply_wordpress_draft_handoff":
+            return item
+    for item in items:
         if item.action_id == "act_prepare_wordpress_draft_handoff":
             return item
     candidates = [
@@ -2917,7 +3028,10 @@ def _first_write_candidate_reason(
 ) -> str:
     if item is None:
         return "Brak akcji, którą można ocenić jako pierwszy kandydat zapisu."
-    if item.action_id == "act_prepare_wordpress_draft_handoff":
+    if item.action_id in {
+        "act_apply_wordpress_draft_handoff",
+        "act_prepare_wordpress_draft_handoff",
+    }:
         return (
             "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
             "najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i "
@@ -2936,9 +3050,14 @@ def _activation_plan_steps(
         return ["Najpierw utwórz bezpieczną akcję kandydata zapisu z dowodami."]
     steps = [
         "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
-        "Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu.",
     ]
+    if item.action_id == "act_apply_wordpress_draft_handoff":
+        steps.append("Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.")
+    else:
+        steps.append("Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu.")
     blocker_codes = {blocker.code for blocker in item.blockers}
+    if "missing_payload_apply_allowed" in blocker_codes:
+        steps.append("Odblokuj payload apply dopiero po przejściu review i readiness.")
     if "missing_preview_audit" in blocker_codes:
         steps.append("Wygeneruj i zapisz preview zmian przed jakimkolwiek write.")
     if "missing_confirmation_audit" in blocker_codes:
@@ -2957,6 +3076,12 @@ def _activation_next_step(
 ) -> str:
     if item is None:
         return "Brak kandydata zapisu; najpierw wybierz niskiego ryzyka klasę draft-only."
+    if item.action_id == "act_apply_wordpress_draft_handoff":
+        return (
+            "Najbliższy krok: doprowadź apply-mode WordPress draft-only do "
+            "pełnego preview/review/confirm/audit, ale zostaw adapter i env write "
+            "zablokowane do czasu jawnej decyzji."
+        )
     if item.action_id == "act_prepare_wordpress_draft_handoff":
         return (
             "Najbliższy krok: przygotuj osobny apply-capable ActionObject dla "
@@ -2973,7 +3098,10 @@ def _mutation_apply_contract(
     action: ActionObject,
     mutation_adapter: str | None,
 ) -> ActionMutationApplyContract | None:
-    if action.id != "act_prepare_wordpress_draft_handoff":
+    if action.id not in {
+        "act_apply_wordpress_draft_handoff",
+        "act_prepare_wordpress_draft_handoff",
+    }:
         return None
     action_type = action.payload.get("action_type")
     required_input_contracts = [
@@ -3098,6 +3226,11 @@ def _mutation_readiness_blockers(
             "Akcja jest tylko prepare/review",
             "Ta akcja nie ma kontraktu zapisu do zewnętrznego systemu.",
             "Użyj jej do review albo dodaj osobny apply-capable ActionObject.",
+        ),
+        "payload_apply_allowed": (
+            "Payload nadal blokuje apply",
+            "Zakres akcji nie pozwala jeszcze na próbę zapisu.",
+            "Najpierw przygotuj bezpieczny payload apply po preview, review i confirm.",
         ),
         "evidence_present": (
             "Brakuje dowodów źródłowych",

@@ -56,6 +56,28 @@ def test_action_mutation_readiness_blocks_prepare_only_action(monkeypatch, tmp_p
     assert "validate" in data["operator_next_step"]
 
 
+def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "actions_apply.sqlite3"))
+
+    data = _get_mutation_readiness("act_apply_wordpress_draft_handoff")
+
+    assert data["mode"] == "apply"
+    assert data["ready_to_request_apply"] is False
+    assert data["vendor_write_possible"] is False
+    assert data["would_attempt_vendor_write"] is False
+    assert data["mutation_adapter"] is None
+    assert data["apply_contract"]["allowed_operation"] == "create_wordpress_draft"
+    assert data["apply_contract"]["adapter_status"] == "not_implemented"
+    assert data["apply_contract"]["publication_allowed"] is False
+    blocker_codes = [blocker["code"] for blocker in data["blockers"]]
+    assert "missing_apply_mode" not in blocker_codes
+    assert "missing_payload_apply_allowed" in blocker_codes
+    assert "missing_mutation_adapter" in blocker_codes
+
+
 def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     monkeypatch,
     tmp_path,
@@ -69,13 +91,12 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert data["would_attempt_vendor_write_count"] == 0
     assert data["missing_adapter_count"] == data["action_count"]
     assert "missing_mutation_adapter" in data["top_blockers"]
-    assert data["first_write_candidate"]["action_id"] == "act_prepare_wordpress_draft_handoff"
+    assert data["first_write_candidate"]["action_id"] == "act_apply_wordpress_draft_handoff"
     assert data["first_write_candidate"]["vendor_write_possible"] is False
     assert data["first_write_candidate"]["apply_contract"]["adapter_status"] == "not_implemented"
     assert "WordPress draft-only" in data["first_write_candidate_reason"]
     assert any("draft-only" in step for step in data["activation_plan_steps"])
-    assert any("apply-capable ActionObject" in step for step in data["activation_plan_steps"])
-    assert "apply-capable ActionObject" in data["activation_next_step"]
+    assert "apply-mode WordPress draft-only" in data["activation_next_step"]
     assert data["items"][0]["response_type"] == "action_mutation_readiness"
     assert "adapter" in data["operator_next_step"]
 

@@ -91,6 +91,11 @@ Date: 2026-07-03
   confirm audit events, blocks publish/update/delete outputs and marks the
   adapter as `not_implemented`; `/actions` and action detail render the
   contract without enabling any write control.
+- 2026-07-03 WILQ now creates a separate apply-mode
+  `act_apply_wordpress_draft_handoff` ActionObject for the first WordPress
+  draft-only mutation path. It is the first write candidate, but remains
+  blocked because `apply_allowed=false`, audit readiness is missing and no
+  mutation adapter exists; live readiness must still report zero vendor writes.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

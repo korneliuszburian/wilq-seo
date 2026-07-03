@@ -742,32 +742,33 @@ const actions = [
 const actionMutationReadinessSummary = {
   response_type: "action_mutation_readiness_summary",
   contract: "action_mutation_readiness_summary_v1",
-  action_count: 19,
+  action_count: 20,
   ready_to_request_apply_count: 0,
   vendor_write_possible_count: 0,
   would_attempt_vendor_write_count: 0,
   prepare_only_count: 19,
-  missing_adapter_count: 19,
+  missing_adapter_count: 20,
   high_risk_blocked_count: 0,
   top_blockers: ["missing_mutation_adapter"],
   first_write_candidate_reason:
     "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i może zostać zablokowany przez env, audit trail oraz adapter wykonania.",
   activation_plan_steps: [
     "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
-    "Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu.",
+    "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.",
+    "Odblokuj payload apply dopiero po przejściu review i readiness.",
     "Dopiero potem dodaj adapter wykonania z redacted result i audit."
   ],
   activation_next_step:
-    "Najbliższy krok: przygotuj osobny apply-capable ActionObject dla WordPress draft-only.",
+    "Najbliższy krok: doprowadź apply-mode WordPress draft-only do pełnego preview/review/confirm/audit.",
   first_write_candidate: {
     response_type: "action_mutation_readiness",
     contract: "action_mutation_readiness_v1",
-    action_id: "act_prepare_wordpress_draft_handoff",
-    title: "Przygotuj zablokowany podgląd szkicu WordPress",
+    action_id: "act_apply_wordpress_draft_handoff",
+    title: "Aktywuj zapis szkicu WordPress draft-only",
     connector: "wordpress_ekologus",
     connector_label: "WordPress ekologus.pl",
-    mode: "prepare",
-    mode_label: "przygotowanie",
+    mode: "apply",
+    mode_label: "zapis",
     risk: "medium",
     risk_label: "średnie",
     validation_status: "not_validated",
@@ -778,7 +779,7 @@ const actionMutationReadinessSummary = {
     mutation_adapter: null,
     apply_contract: {
       contract: "action_apply_contract_v1",
-      action_id: "act_prepare_wordpress_draft_handoff",
+      action_id: "act_apply_wordpress_draft_handoff",
       action_type: "wordpress_draft_handoff",
       connector: "wordpress_ekologus",
       allowed_operation: "create_wordpress_draft",
@@ -801,10 +802,10 @@ const actionMutationReadinessSummary = {
     requirements: [],
     blockers: [
       {
-        code: "missing_apply_mode",
-        label: "Akcja jest tylko prepare/review",
-        reason: "Ta akcja nie ma kontraktu zapisu do zewnętrznego systemu.",
-        next_step: "Użyj jej do review albo dodaj osobny apply-capable ActionObject."
+        code: "missing_payload_apply_allowed",
+        label: "Payload nadal blokuje apply",
+        reason: "Zakres akcji nie pozwala jeszcze na próbę zapisu.",
+        next_step: "Najpierw przygotuj bezpieczny payload apply po preview, review i confirm."
       },
       {
         code: "missing_mutation_adapter",
@@ -814,7 +815,7 @@ const actionMutationReadinessSummary = {
       }
     ],
     operator_next_step:
-      "Użyj jej do review albo dodaj osobny apply-capable ActionObject.",
+      "Najpierw przygotuj bezpieczny payload apply po preview, review i confirm.",
     evidence_ids: ["ev_refresh_gsc"],
     source_connectors: ["wordpress_ekologus"],
     latest_mutation_audit_id: null,
@@ -7894,12 +7895,13 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Najważniejsze na start")).toBeInTheDocument();
     expect(screen.getByText("Pierwszy kandydat zapisu")).toBeInTheDocument();
-    expect(screen.getByText("Przygotuj zablokowany podgląd szkicu WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Aktywuj zapis szkicu WordPress draft-only")).toBeInTheDocument();
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
     expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
     expect(screen.getByText("Plan aktywacji bez ryzyka")).toBeInTheDocument();
-    expect(screen.getByText(/przygotuj osobny apply-capable ActionObject/)).toBeInTheDocument();
+    expect(screen.getByText(/doprowadź apply-mode WordPress draft-only/i)).toBeInTheDocument();
+    expect(screen.getByText("Payload nadal blokuje apply")).toBeInTheDocument();
     expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();
     expect(screen.getByText(/wyłącznie szkic WordPress/)).toBeInTheDocument();
     expect(screen.getByText("create_wordpress_draft")).toBeInTheDocument();
