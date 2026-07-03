@@ -605,6 +605,16 @@
       "Sprawdzenie w WILQ",
       "zablokowane obietnice"
     ],
+    "required_decision_terms_pl": [
+      "Plan kampanii",
+      "Podgląd bez zapisu",
+      "Co sprawdzić przed kampanią",
+      "Decyzja po review",
+      "Zablokowane obietnice",
+      "Brief dla marketera",
+      "bez zapisu"
+    ],
+    "minimum_operator_usefulness_score": 9,
     "expected_blocked": false,
     "blocked_claim_terms": [
       "skuteczność kampanii",

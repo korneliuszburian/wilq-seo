@@ -76,7 +76,18 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 <output>
 
-Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: jaka propozycja kampanii
+jest możliwa do review, jaki landing/context trzeba sprawdzić, jakie akcje
+dają podgląd bez zapisu i czego nie wolno obiecać.
+
+Widocznie używaj tych sekcji:
+
+- `Plan kampanii`: typ propozycji, usługa/temat, landing page i źródła danych, z których wynika pomysł.
+- `Podgląd bez zapisu`: co można przygotować jako preview/review w WILQ, bez zapisu zmian.
+- `Co sprawdzić przed kampanią`: landing page, intencja z GSC, jakość ruchu z GA4, istniejące kampanie/rekomendacje Ads i brakujące kontrakty.
+- `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, odłożyć kampanię, poprosić o landing/content review albo zablokować temat.
+- `Zablokowane obietnice`: skuteczność kampanii, wzrost konwersji, gwarancja pozycji, zmiana kampanii i zapis bez preview/review/zgody.
+- `Brief dla marketera`: 3-5 zdań normalnym językiem: co WILQ może przygotować, z czego to wynika, czego nie wolno obiecać i jaki jest następny bezpieczny krok.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

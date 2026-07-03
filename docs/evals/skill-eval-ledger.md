@@ -9707,3 +9707,36 @@ Result:
 - The non-interactive eval passed and kept publishing, social performance,
   revenue, conversion and duplicate-free claims blocked until reviewed
   historical metadata exists.
+
+## 2026-07-03 - Campaign Builder raised to 9/10
+
+Purpose:
+
+- Push `wilq-campaign-builder` from baseline usability to a marketer-ready
+  campaign planning workflow.
+- Make the output say what WILQ can prepare as a review-only campaign plan,
+  what must be checked before campaign work and what remains blocked.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-campaign-builder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T153013Z/wilq-campaign-builder/result.json`.
+- The eval passed with `operator_usefulness_score=9`, `blocked=false`,
+  `failure_tags=[]`, 16 evidence IDs, four recommendations, two action
+  candidates and all hard gates true.
+- Source connectors used: `google_ads`, `google_analytics_4`,
+  `google_search_console` and `wordpress_ekologus`.
+- The visible workflow now uses `Plan kampanii`, `Podgląd bez zapisu`,
+  `Co sprawdzić przed kampanią`, `Decyzja po review`,
+  `Zablokowane obietnice` and `Brief dla marketera`.
+- The output keeps writes, effectiveness promises, conversion-growth claims
+  and position guarantees blocked until preview/review/approval and required
+  evidence exist.

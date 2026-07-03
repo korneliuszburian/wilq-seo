@@ -159,6 +159,15 @@ Date: 2026-07-03
   recommendations, 2 actions and all hard gates true. It creates a review-only
   LinkedIn/Facebook packet while blocking publishing and duplicate-free claims
   until historical social metadata exists.
+- 2026-07-03 `wilq-campaign-builder` reached 9/10 campaign planning level
+  after replacing generic campaign output with visible `Plan kampanii`,
+  `Podgląd bez zapisu`, pre-campaign checks, review decision and marketer
+  brief. Artifact:
+  `.local-lab/evals/codex-skill/20260703T153013Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 16 evidence IDs, 4
+  recommendations, 2 actions and all hard gates true. It prepares review-only
+  campaign planning from Ads/GA4/GSC/WordPress proof while blocking write,
+  conversion-growth, position-guarantee and effectiveness claims.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

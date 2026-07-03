@@ -25,15 +25,18 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Plan kampanii`, `Podgląd bez zapisu`, `Co sprawdzić przed kampanią`, `Decyzja po review`, `Zablokowane obietnice`, `Brief dla marketera`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
-2. `Dowody`: `ads_diagnostics`, `content_landing_context`, identyfikatory dowodów, identyfikatory źródeł danych, notatki o świeżości i podsumowania metryk wyłącznie z WILQ API.
-3. `Diagnoza`: co wspierają dowody, z niepewnością gdy dowody są zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: użyj `content_landing_context.query_page_candidates`, `campaign_candidates` z podglądem zmian i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
-5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Plan kampanii`: typ propozycji, usługa/temat, landing page i źródła danych, z których wynika pomysł.
+2. `Podgląd bez zapisu`: co można przygotować jako preview/review w WILQ, bez zapisu zmian.
+3. `Co sprawdzić przed kampanią`: landing page, intencja z GSC, jakość ruchu z GA4, istniejące kampanie/rekomendacje Ads i brakujące kontrakty.
+4. `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, odłożyć kampanię, poprosić o landing/content review albo zablokować temat.
+5. `Zablokowane obietnice`: skuteczność kampanii, wzrost konwersji, gwarancja pozycji, zmiana kampanii i zapis bez preview/review/zgody.
+6. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co WILQ może przygotować, z czego to wynika, czego nie wolno obiecać i jaki jest następny bezpieczny krok.
+7. `Akcje do sprawdzenia`: użyj `content_landing_context.query_page_candidates`, `campaign_candidates` z podglądem zmian i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+8. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
+9. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
 ## Warunki odmowy lub obniżenia do blokady
 
