@@ -2882,6 +2882,8 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
         top_blockers=top_blockers,
         first_write_candidate=first_write_candidate,
         first_write_candidate_reason=_first_write_candidate_reason(first_write_candidate),
+        activation_plan_steps=_activation_plan_steps(first_write_candidate),
+        activation_next_step=_activation_next_step(first_write_candidate),
         operator_next_step=_mutation_readiness_summary_next_step(items, blocker_counts),
         items=items,
     )
@@ -2921,6 +2923,46 @@ def _first_write_candidate_reason(
     return (
         "To najbliższa niskiego/średniego ryzyka akcja do oceny jako przyszły "
         "write adapter; nadal musi przejść readiness, preview, review i confirm."
+    )
+
+
+def _activation_plan_steps(
+    item: ActionMutationReadinessResponse | None,
+) -> list[str]:
+    if item is None:
+        return ["Najpierw utwórz bezpieczną akcję kandydata zapisu z dowodami."]
+    steps = [
+        "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
+        "Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu.",
+    ]
+    blocker_codes = {blocker.code for blocker in item.blockers}
+    if "missing_preview_audit" in blocker_codes:
+        steps.append("Wygeneruj i zapisz preview zmian przed jakimkolwiek write.")
+    if "missing_confirmation_audit" in blocker_codes:
+        steps.append("Zapisz review człowieka i jawne potwierdzenie operatora.")
+    if "missing_impact_check" in blocker_codes:
+        steps.append("Zapisz impact/readiness sanity check dla planowanej zmiany.")
+    if "missing_mutation_adapter" in blocker_codes:
+        steps.append("Dopiero potem dodaj adapter wykonania z redacted result i audit.")
+    if item.vendor_write_possible:
+        steps.append("Przed live write wykonaj apply wyłącznie przez ActionObject i audit.")
+    return steps
+
+
+def _activation_next_step(
+    item: ActionMutationReadinessResponse | None,
+) -> str:
+    if item is None:
+        return "Brak kandydata zapisu; najpierw wybierz niskiego ryzyka klasę draft-only."
+    if item.action_id == "act_prepare_wordpress_draft_handoff":
+        return (
+            "Najbliższy krok: przygotuj osobny apply-capable ActionObject dla "
+            "WordPress draft-only, ale zostaw env write wyłączony i publikację "
+            "zablokowaną do czasu pełnego preview/review/confirm/audit."
+        )
+    return (
+        "Najbliższy krok: doprecyzuj kontrakt apply dla tej akcji i utrzymaj "
+        "write zablokowany do czasu pełnego readiness."
     )
 
 

@@ -622,6 +622,8 @@ class ActionMutationReadinessSummaryResponse(BaseModel):
     top_blockers: list[str] = Field(default_factory=list)
     first_write_candidate: ActionMutationReadinessResponse | None = None
     first_write_candidate_reason: str = ""
+    activation_plan_steps: list[str] = Field(default_factory=list)
+    activation_next_step: str = ""
     operator_next_step: str
     items: list[ActionMutationReadinessResponse] = Field(default_factory=list)
 

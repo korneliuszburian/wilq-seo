@@ -752,6 +752,13 @@ const actionMutationReadinessSummary = {
   top_blockers: ["missing_mutation_adapter"],
   first_write_candidate_reason:
     "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i może zostać zablokowany przez env, audit trail oraz adapter wykonania.",
+  activation_plan_steps: [
+    "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
+    "Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu.",
+    "Dopiero potem dodaj adapter wykonania z redacted result i audit."
+  ],
+  activation_next_step:
+    "Najbliższy krok: przygotuj osobny apply-capable ActionObject dla WordPress draft-only.",
   first_write_candidate: {
     response_type: "action_mutation_readiness",
     contract: "action_mutation_readiness_v1",
@@ -7869,6 +7876,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
     expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
+    expect(screen.getByText("Plan aktywacji bez ryzyka")).toBeInTheDocument();
+    expect(screen.getByText(/przygotuj osobny apply-capable ActionObject/)).toBeInTheDocument();
     expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
     expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy/i)).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")).toBeInTheDocument();

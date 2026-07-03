@@ -214,6 +214,11 @@ const responseByPath: Record<string, unknown> = {
       latest_mutation_audit_status: null
     },
     first_write_candidate_reason: "Pierwszy kandydat do aktywowania zapisu.",
+    activation_plan_steps: [
+      "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
+      "Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu."
+    ],
+    activation_next_step: "Najbliższy krok: przygotuj osobny apply-capable ActionObject.",
     operator_next_step: "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live.",
     items: [
       {

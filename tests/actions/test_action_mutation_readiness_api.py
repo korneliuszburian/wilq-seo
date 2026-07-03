@@ -63,6 +63,9 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert data["first_write_candidate"]["action_id"] == "act_prepare_wordpress_draft_handoff"
     assert data["first_write_candidate"]["vendor_write_possible"] is False
     assert "WordPress draft-only" in data["first_write_candidate_reason"]
+    assert any("draft-only" in step for step in data["activation_plan_steps"])
+    assert any("apply-capable ActionObject" in step for step in data["activation_plan_steps"])
+    assert "apply-capable ActionObject" in data["activation_next_step"]
     assert data["items"][0]["response_type"] == "action_mutation_readiness"
     assert "adapter" in data["operator_next_step"]
 

@@ -80,6 +80,11 @@ Date: 2026-07-03
   readiness in Polish: write blocked/possible state, mode, adapter, attempted
   write state and top blockers. This keeps the WordPress draft candidate
   understandable after clicking through from `/actions`.
+- 2026-07-03 aggregate mutation readiness now includes an API-owned activation
+  plan for the first write candidate. `/actions` renders the next step and
+  ordered plan for WordPress draft-only activation while live API still reports
+  `vendor_write_possible_count=0`; the plan is readiness-only and does not add
+  a write button.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

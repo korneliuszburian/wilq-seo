@@ -330,6 +330,15 @@ function FirstWriteCandidateSection({
           </p>
         </div>
       </div>
+      <div className="mt-4 rounded-md border border-line bg-white p-3 text-sm leading-6 text-slate-700">
+        <div className="font-semibold text-slate-900">Plan aktywacji bez ryzyka</div>
+        <p className="mt-2">{summary.activation_next_step}</p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          {summary.activation_plan_steps.slice(0, 5).map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }
