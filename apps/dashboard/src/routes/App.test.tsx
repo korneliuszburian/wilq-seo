@@ -751,15 +751,16 @@ const actionMutationReadinessSummary = {
   high_risk_blocked_count: 0,
   top_blockers: ["missing_mutation_adapter"],
   first_write_candidate_reason:
-    "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i może zostać zablokowany przez env, audit trail oraz adapter wykonania.",
+    "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: adapter boundary już istnieje, ale szkic nadal wymaga handoffu, paczki treści, preview/review/confirm/audit i jawnie włączonego env live write. Publikacja i destrukcyjne zmiany są zablokowane.",
   activation_plan_steps: [
     "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
     "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.",
+    "Nie dodawaj kolejnego adaptera: boundary istnieje, a live write blokują handoff, paczka szkicu, audyt i env.",
     "Odblokuj payload apply dopiero po przejściu review i readiness.",
-    "Dopiero potem dodaj adapter wykonania z redacted result i audit."
+    "Wygeneruj i zapisz preview zmian przed jakimkolwiek write."
   ],
   activation_next_step:
-    "Najbliższy krok: doprowadź apply-mode WordPress draft-only do pełnego preview/review/confirm/audit.",
+    "Najbliższy krok: przygotuj zatwierdzony handoff i paczkę szkicu dla WordPress draft-only, potem przejdź preview/review/confirm/audit. Adapter boundary już istnieje; live env/write zostaje wyłączony do jawnej decyzji.",
   first_write_candidate: {
     response_type: "action_mutation_readiness",
     contract: "action_mutation_readiness_v1",
@@ -7897,7 +7898,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
     expect(screen.getByText("Plan aktywacji bez ryzyka")).toBeInTheDocument();
-    expect(screen.getByText(/doprowadź apply-mode WordPress draft-only/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Adapter boundary już istnieje/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Payload nadal blokuje apply")).toBeInTheDocument();
     expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();
     expect(screen.getByText(/wyłącznie szkic WordPress/)).toBeInTheDocument();

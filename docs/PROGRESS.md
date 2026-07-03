@@ -365,6 +365,12 @@ Date: 2026-07-03
   `write_authorization_status=missing_audit_trace`, missing preview/review/
   confirm events, `vendor_write_possible=false` and
   `would_attempt_vendor_write=false`.
+- Aggregate mutation readiness copy now distinguishes the implemented
+  WordPress draft execution boundary from still-blocked live writes. Live
+  `/api/actions/mutation-readiness` says the adapter boundary exists, while
+  handoff, draft package, preview/review/confirm/audit and env live write still
+  block execution; it no longer tells the operator to add or keep the adapter
+  blocked.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

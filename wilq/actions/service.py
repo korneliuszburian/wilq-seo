@@ -2982,7 +2982,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         else [],
         requirements=requirements,
         blockers=blockers,
-        operator_next_step=_mutation_readiness_next_step(blockers),
+        operator_next_step=_mutation_readiness_next_step(action, blockers),
         evidence_ids=action.evidence_ids,
         source_connectors=[action.connector],
         latest_mutation_audit_id=latest_mutation_audit.id
@@ -3080,10 +3080,17 @@ def _first_write_candidate_reason(
         "act_apply_wordpress_draft_handoff",
         "act_prepare_wordpress_draft_handoff",
     }:
+        if item.mutation_adapter is not None:
+            return (
+                "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
+                "adapter boundary już istnieje, ale szkic nadal wymaga handoffu, "
+                "paczki treści, preview/review/confirm/audit i jawnie włączonego "
+                "env live write. Publikacja i destrukcyjne zmiany są zablokowane."
+            )
         return (
             "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
             "najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i "
-            "może zostać zablokowany przez env, audit trail oraz adapter wykonania."
+            "wymaga osobnego adaptera wykonania, env i pełnego audit trail."
         )
     return (
         "To najbliższa niskiego/średniego ryzyka akcja do oceny jako przyszły "
@@ -3103,6 +3110,11 @@ def _activation_plan_steps(
         steps.append("Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.")
     else:
         steps.append("Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu.")
+    if item.mutation_adapter is not None:
+        steps.append(
+            "Nie dodawaj kolejnego adaptera: boundary istnieje, a live write blokują "
+            "handoff, paczka szkicu, audyt i env."
+        )
     blocker_codes = {blocker.code for blocker in item.blockers}
     if "missing_payload_apply_allowed" in blocker_codes:
         steps.append("Odblokuj payload apply dopiero po przejściu review i readiness.")
@@ -3129,10 +3141,17 @@ def _activation_next_step(
     if item is None:
         return "Brak kandydata zapisu; najpierw wybierz niskiego ryzyka klasę draft-only."
     if item.action_id == "act_apply_wordpress_draft_handoff":
+        if item.mutation_adapter is not None:
+            return (
+                "Najbliższy krok: przygotuj zatwierdzony handoff i paczkę szkicu "
+                "dla WordPress draft-only, potem przejdź preview/review/confirm/"
+                "audit. Adapter boundary już istnieje; live env/write zostaje "
+                "wyłączony do jawnej decyzji."
+            )
         return (
             "Najbliższy krok: doprowadź apply-mode WordPress draft-only do "
-            "pełnego preview/review/confirm/audit, ale zostaw adapter i env write "
-            "zablokowane do czasu jawnej decyzji."
+            "pełnego preview/review/confirm/audit i dodaj adapter boundary, ale "
+            "env live write zostaje wyłączony do jawnej decyzji."
         )
     if item.action_id == "act_prepare_wordpress_draft_handoff":
         return (
@@ -3546,6 +3565,7 @@ def _mutation_readiness_blockers(
 
 
 def _mutation_readiness_next_step(
+    action: ActionObject,
     blockers: list[ActionMutationReadinessBlocker],
 ) -> str:
     if not blockers:
@@ -3553,6 +3573,26 @@ def _mutation_readiness_next_step(
             "Warunki zapisu są spełnione; apply nadal wymaga osobnego POST z "
             "jawnym potwierdzeniem operatora."
         )
+    if action.id == "act_apply_wordpress_draft_handoff":
+        blocker_codes = {blocker.code for blocker in blockers}
+        if {
+            "missing_wordpress_draft_handoff_ready",
+            "missing_wordpress_draft_package_ready",
+        } & blocker_codes:
+            return (
+                "Najpierw przygotuj zatwierdzony WordPress handoff i paczkę "
+                "szkicu dla wybranego content itemu; adapter boundary już "
+                "istnieje, ale live write zostaje wyłączony."
+            )
+        if {
+            "missing_preview_audit",
+            "missing_confirmation_audit",
+            "missing_wordpress_write_authorization",
+        } & blocker_codes:
+            return (
+                "Przejdź preview, human review i confirm w ActionObject, żeby "
+                "WILQ mógł zbudować write_authorization; live write nadal stop."
+            )
     return blockers[0].next_step
 
 
