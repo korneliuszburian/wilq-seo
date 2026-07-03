@@ -82,10 +82,13 @@ First Goal 005 source-pack proof:
   Brief v2 signal-quality audit. It identifies `bdo co to` as the safest first
   Wilku UAT candidate, `zielony ład co to` as a service-fit review question,
   `magazynowanie odpadów` as now supported by source-backed review-required
-  waste/packaging knowledge, `operat wodnoprawny` as still blocked by missing
-  direct service knowledge, and the Ahrefs `beczki` candidate as correctly
-  blocked with a typed `blocked_snapshot` instead of HTTP 404. The audit also
-  fixed source-fact connector/evidence lineage for enrichment facts.
+  waste/packaging knowledge, `operat wodnoprawny` as now supported by a direct
+  source-backed review-required public service card for review-level analysis,
+  and the Ahrefs `beczki` candidate as correctly blocked with a typed
+  `blocked_snapshot` instead of HTTP 404. `operat wodnoprawny` still does not
+  unlock production-depth, legal/permit claims or draft readiness without human
+  review and approved-current knowledge. The audit also fixed source-fact
+  connector/evidence lineage for enrichment facts.
 - `docs/audits/005-2026-07-01-ekologus-brain-source-catalog-audit.md` records
   the private `krn-ekologus-brain` source-catalog audit. The useful part is not
   an automatic bridge or raw material import; it is a governed private-source
@@ -109,8 +112,10 @@ First Goal 005 source-pack proof:
 - The first Service Profile implementation is now available at
   `GET /api/content/service-profile` and dashboard route `/service-profile`.
   It is read-only, renders source-backed review-required service coverage,
-  exposes `operat wodnoprawny` as a blocker gap, and blocks card edits/fact
-  promotion in the API-owned review policy.
+  exposes `operat wodnoprawny` as source-backed review-required coverage rather
+  than a missing-card gap, and blocks card edits/fact promotion in the
+  API-owned review policy. The current coverage gap is production-depth:
+  no service card is `approved_current` yet.
 - The `wilq-content-operator` UAT packet now reads the Service Profile during
   UAT preparation. It surfaces production-depth readiness, Service Profile gaps
   and redacted private proposal review actions, and can explicitly label a full

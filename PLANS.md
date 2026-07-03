@@ -192,6 +192,13 @@ Endpoint: `GET /api/content/service-profile`; dashboard route:
 gaps `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`, and
 `can_edit_cards=False`.
 
+Superseding 2026-07-03 state: the water-permit public source fact now compiles
+into `ekologus_service_operat_wodnoprawny` as
+`source_backed_review_required`. Live Service Profile proof reports
+`service_card_count=8` and no `gap_service_operat_wodnoprawny`; the remaining
+hard coverage gap is `gap_no_approved_current_cards`, so review-level analysis
+is allowed but production-depth/draft readiness remains blocked.
+
 Redacted private-source proposal display is implemented under Beads task
 `wilq-seo-8ye`. Service Profile now shows redacted `ekologus-ai`
 review-required proposals with `approved_count=0` and `redacted=true`; they do

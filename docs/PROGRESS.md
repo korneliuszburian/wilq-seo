@@ -237,9 +237,13 @@ Date: 2026-07-03
 - 2026-07-03 Sales Brief signal-quality audit is aligned with current source
   facts: `operat wodnoprawny` now has a source-backed review-required public
   card and can support review-level brief analysis, while draft/legal/permit
-  claims remain blocked until human review and approved-current knowledge.
-  labels. The JSON report remains unchanged, but the Wilku-facing audit says
-  WILQ has review material and still lacks approved production-depth knowledge.
+  claims remain blocked until human review and approved-current knowledge. The
+  JSON report remains unchanged, but the Wilku-facing audit says WILQ has
+  review material and still lacks approved production-depth knowledge.
+- 2026-07-03 Goal 005 recovery docs are aligned with the current water-permit
+  state: `operat wodnoprawny` is no longer described as a current missing-card
+  gap. The live/current blocker remains `gap_no_approved_current_cards`, not
+  missing direct public service knowledge for water-permit review analysis.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
