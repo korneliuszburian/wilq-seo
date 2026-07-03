@@ -335,6 +335,42 @@ Result:
   wejścia..." and then separates "Ruch do oceny" for readable landing/source
   rows.
 
+## 2026-07-03 - Custom Segments blocker language tuning
+
+Purpose:
+
+- Fix the same raw-contract readability issue in `wilq-custom-segments`.
+- Keep real source-term review available while making unsupported audience,
+  write and performance claims clearly blocked in normal Polish.
+
+Change:
+
+- The skill now asks visible output to separate:
+  `Można zrobić teraz`, `Co sprawdzić`, `Zablokowane` and `Ślad techniczny`.
+- Raw markers such as `keyword_planner_enrichment`,
+  `forecast_or_audience_size`, `custom_segments_read_contract` and
+  `audience_forecast_read_contract` stay in `notes`.
+- Visible copy translates them as missing Keyword Planner enrichment and
+  missing audience-size forecast.
+
+Proof:
+
+```bash
+rtk uv run python /home/krn/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/wilq-custom-segments
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing artifact:
+  `.local-lab/evals/codex-skill/20260703T071835Z`, with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true and
+  `visible_has_raw=false` in the local marker check.
+- Visible output says the marketer can review a segment proposal from real
+  source terms now, while audience size, ROAS, write-targeting and campaign
+  effectiveness claims remain blocked.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:

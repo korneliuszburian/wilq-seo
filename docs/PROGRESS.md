@@ -75,6 +75,12 @@ Date: 2026-07-03
   `Ruch do oceny`: `(not set)` rows are measurement rows to fix, while readable
   landing/source rows can be reviewed for traffic quality. Passing artifact:
   `.local-lab/evals/codex-skill/20260703T070939Z`.
+- 2026-07-03 Custom Segments visible blocker tuning fixed the same raw-marker
+  problem for audience review. The passing artifact is
+  `.local-lab/evals/codex-skill/20260703T071835Z`; visible copy now says that
+  segment review can start from real source terms, while audience size, ROAS,
+  write and campaign-effect claims stay blocked because Keyword Planner
+  enrichment and audience-size forecast are missing.
 - 2026-07-03 Goal 006 candidate `wilq-seo-1xv` was closed as already
   implementation-complete: `scripts/claim_ledger_gate_audit.py --format json`
   passed 13/13 and focused Claim Ledger/generation gate tests passed 65/65.

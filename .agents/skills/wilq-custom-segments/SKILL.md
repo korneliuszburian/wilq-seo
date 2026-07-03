@@ -77,6 +77,15 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
+Widocznie oddzielaj:
+
+- `Można zrobić teraz`: ręcznie ocenić propozycję segmentu z rzeczywistych haseł źródłowych.
+- `Co sprawdzić`: intencję haseł, dopasowanie do usługi, ryzyko zbyt szerokiego segmentu, landing page i czy termin nie jest przypadkowy.
+- `Zablokowane`: zapis kierowania, rozmiar odbiorców, prognoza, skuteczność kampanii, zwrot z reklam i wzrost konwersji.
+- `Ślad techniczny`: raw kontrakty, identyfikatory dowodów i action_id.
+
+Nie pokazuj marketerowi surowych markerów typu `keyword_planner_enrichment`, `forecast_or_audience_size`, `custom_segments_read_contract` ani `audience_forecast_read_contract`. Tłumacz je normalnie: "brakuje wzbogacenia Keyword Planner" i "brakuje prognozy rozmiaru odbiorców". Surowe wartości zostaw w `notes`.
+
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output>

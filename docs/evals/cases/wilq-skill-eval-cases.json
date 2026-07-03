@@ -613,6 +613,14 @@
       "source_terms",
       "blokady"
     ],
+    "required_decision_terms_pl": [
+      "Można zrobić teraz",
+      "Co sprawdzić",
+      "Zablokowane",
+      "rzeczywistych haseł źródłowych",
+      "brakuje wzbogacenia Keyword Planner",
+      "brakuje prognozy rozmiaru odbiorców"
+    ],
     "blocked_claim_terms": [
       "rozmiar odbiorców",
       "zwrot z reklam",
