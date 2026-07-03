@@ -188,7 +188,9 @@
     "required_decision_terms_pl": [
       "najnowszy dostępny dzień",
       "częściowe dane zapytań i adresów",
-      "partial_possible"
+      "sygnał do ręcznej oceny",
+      "nie gotowa decyzja publikacyjna",
+      "co sprawdzić ręcznie"
     ],
     "forbidden_connectors": [
       "ahrefs"
@@ -349,6 +351,13 @@
       "zapis szkicu WordPress",
       "obietnica wzrostu pozycji albo leadów"
     ],
+    "required_decision_terms_pl": [
+      "Można zrobić teraz",
+      "Zablokowane",
+      "odświeżenie",
+      "scalenie",
+      "nie jako nowy artykuł"
+    ],
     "expected_action_ids": [
       "act_prepare_content_refresh_queue"
     ],
@@ -495,7 +504,7 @@
   {
     "skill": "wilq-social-publisher",
     "surface_path": "/social-publisher",
-    "task_pl": "Przygotuj bezpieczny do sprawdzenia kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",
+    "task_pl": "Przygotuj bezpieczny do sprawdzenia kierunek posta social tylko z dostępnych dowodów. Daj 3-linijkowy szkic do review: temat, teza i CTA. Nie publikuj i nie udawaj uprawnień connectora.",
     "expected_connectors": [
       "linkedin",
       "facebook"
@@ -519,11 +528,13 @@
       "zablokowane obietnice"
     ],
     "required_decision_terms_pl": [
-      "social_history_inventory",
-      "social_history_inventory_v1",
-      "metadata-only",
-      "source_evidence_id",
-      "brak powtórzeń historycznych postów"
+      "Można zrobić teraz",
+      "Szkic do review",
+      "temat",
+      "teza",
+      "CTA",
+      "nie wiemy jeszcze, czy podobny post już był",
+      "nie wolno pisać, że temat jest nowy"
     ],
     "expected_action_ids": [
       "act_prepare_linkedin_social_drafts",

@@ -82,6 +82,15 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
+Oddziel to, co marketer może zrobić od razu, od tego, co jest zablokowane:
+
+- `Można zrobić teraz`: najważniejsza decyzja contentowa i akcja do sprawdzenia.
+- `Dlaczego`: jednozdaniowy dowód łączący źródła, np. istniejący URL w WordPress + sygnał GSC + wniosek "odświeżyć/scalić, nie tworzyć od zera".
+- `Co sprawdzić w briefie`: intencja, odbiorca, obiekcje, H1/H2/FAQ, CTA, kanibalizacja, aktualność prawna i Claim Ledger.
+- `Zablokowane do czasu dowodów`: tematy bez bezpośredniego wiersza dowodowego, finalny draft, publikacja WordPress i obietnice efektu.
+
+Jeśli top-level workflow jest `blocked=true` tylko dlatego, że draft/publikacja/claim są zablokowane, nie chowaj gotowej pracy review. Powiedz jasno: "kolejkę odświeżenia można przygotować teraz; finalny draft i publikacja są zablokowane".
+
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output>

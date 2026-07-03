@@ -197,6 +197,69 @@ Results:
 - These are minimum useful passes. Next tuning should improve first-screen
   decision sharpness and examples, not add more ceremony or raw contract text.
 
+## 2026-07-03 - Reviewer-driven first-screen tuning for content/social skills
+
+Purpose:
+
+- Apply the smallest useful changes from independent reviewer passes over the
+  GSC Content Doctor, Content Strategist and Social Publisher eval artifacts.
+- Improve what Wilku sees first: normal language, clear can-do vs blocked
+  separation, a checklist for content review and a concrete social draft
+  direction.
+
+Reviewer findings:
+
+- GSC Content Doctor worked, but exposed `partial_possible`-style technical
+  language and did not tell the marketer what to inspect on the page.
+- Content Strategist worked, but mixed "BDO queue can be prepared now" with
+  top-level blocked draft/publish status.
+- Social Publisher worked, but the post direction lacked hook/teza/CTA and the
+  social-history blocker showed raw contract language.
+
+Change:
+
+- `wilq-gsc-content-doctor` now asks for: `Można zrobić teraz`, `Dlaczego`,
+  `Co sprawdzić ręcznie` and `Zablokowane`. It translates partial GSC data as
+  a signal for manual review, not a publication-ready decision.
+- `wilq-content-strategist` now separates "kolejkę odświeżenia można
+  przygotować teraz" from blocked final draft, WordPress and claim promises.
+- `wilq-social-publisher` now asks for a three-line `Szkic do review`: temat,
+  główna teza and CTA, while explaining the social-history blocker in normal
+  Polish.
+
+Proof:
+
+```bash
+rtk uv run python /home/krn/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/wilq-gsc-content-doctor
+rtk uv run python /home/krn/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/wilq-content-strategist
+rtk uv run python /home/krn/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/wilq-social-publisher
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Results:
+
+- GSC artifact:
+  `.local-lab/evals/codex-skill/20260703T065259Z`, with
+  `operator_usefulness_score=5`. Raw `partial_possible` stays in technical
+  `notes`; visible operator fields use plain Polish and include a manual review
+  path.
+- Content Strategist artifact:
+  `.local-lab/evals/codex-skill/20260703T065420Z`, with
+  `operator_usefulness_score=5`. The visible next step says the BDO refresh/
+  merge queue can be prepared now while final draft and WordPress handoff stay
+  blocked.
+- Social Publisher artifact:
+  `.local-lab/evals/codex-skill/20260703T065602Z`, with
+  `operator_usefulness_score=5`. Visible text includes `Szkic do review` with
+  temat/teza/CTA and does not expose raw social-history markers; those remain
+  in technical `notes`.
+- The score is still a minimum pass. The real product improvement is that the
+  previously identified reviewer problems are no longer present in visible
+  operator copy.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:

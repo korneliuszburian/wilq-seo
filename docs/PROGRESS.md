@@ -56,6 +56,15 @@ Date: 2026-07-03
   `.local-lab/evals/codex-skill/20260703T061357Z`. All three score the current
   minimum `operator_usefulness_score=5`; treat this as "works out-of-the-box
   with evidence and blockers", not as final BDOS-class sharpness.
+- 2026-07-03 reviewer-driven first-screen tuning landed for the same three
+  content/social skills. GSC now translates partial GSC data into normal
+  operator language and adds a manual review checklist; Content Strategist
+  separates "can prepare refresh queue now" from blocked draft/publish claims;
+  Social Publisher adds a three-line review draft and plain social-history
+  blocker. Passing artifacts:
+  `.local-lab/evals/codex-skill/20260703T065259Z`,
+  `.local-lab/evals/codex-skill/20260703T065420Z` and
+  `.local-lab/evals/codex-skill/20260703T065602Z`.
 - 2026-07-03 Goal 006 candidate `wilq-seo-1xv` was closed as already
   implementation-complete: `scripts/claim_ledger_gate_audit.py --format json`
   passed 13/13 and focused Claim Ledger/generation gate tests passed 65/65.

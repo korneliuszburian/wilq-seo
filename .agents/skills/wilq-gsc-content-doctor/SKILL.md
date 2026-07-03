@@ -79,6 +79,15 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
+Zaczynaj od widocznej decyzji operatorskiej, nie od surowych pól API:
+
+- `Można zrobić teraz`: jedna bezpieczna decyzja lub akcja do sprawdzenia.
+- `Dlaczego`: jednozdaniowe streszczenie dowodów, np. GSC wskazuje sygnał, a WordPress potwierdza istniejący adres.
+- `Co sprawdzić ręcznie`: krótką checklistę intencji zapytań, nagłówków/CTA, kanibalizacji i decyzji odświeżyć vs scalić.
+- `Zablokowane`: co nie jest jeszcze gotową decyzją publikacyjną i dlaczego.
+
+Nie pokazuj marketerowi surowych markerów typu `partial_possible` jako uzasadnienia. Tłumacz je normalnie: "dane są częściowe, więc to sygnał do ręcznej oceny, nie gotowa decyzja publikacyjna". Surowe markery, endpointy i identyfikatory trzymaj w śladzie technicznym.
+
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output>

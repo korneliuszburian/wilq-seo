@@ -77,6 +77,15 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
+W social odpowiedź musi dać coś, co marketer może od razu ocenić:
+
+- `Można zrobić teraz`: przygotować szkic do review, nie publikację.
+- `Szkic do review`: trzy linie: temat, główna teza, CTA do ręcznego sprawdzenia.
+- `Dowód`: krótkie ludzkie streszczenie źródeł, a surowe ID w śladzie technicznym.
+- `Zablokowane`: publikacja, claim o skuteczności i claim o braku powtórek.
+
+Nie pokazuj marketerowi surowych markerów typu `social_history_inventory_v1`, `metadata-only` albo `source_evidence_id` jako wyjaśnienia blokady. Tłumacz to normalnie: "nie wiemy jeszcze, czy podobny post już był na LinkedIn/Facebooku, więc nie wolno pisać, że temat jest nowy albo bezpieczny do powtórzenia".
+
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output>
