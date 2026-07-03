@@ -74,27 +74,43 @@ Powiedz:
 > policy/proposals, bo od nich zależy, czy system będzie mógł robić mniej
 > generyczne briefy i bezpieczniejsze treści.
 
-Pokaż kolejkę:
+Pokaż kolejkę bez technicznych ID w pierwszym widoku:
 
-1. `service_profile_review_card_ekologus_service_bdo_reporting`
-   - zakres: BDO i sprawozdawczość środowiskowa;
-   - typ: public service card;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-2. `service_profile_review_private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
-   - zakres: bezpieczeństwo prawne, poufność, zgody;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-3. `service_profile_review_private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
-   - zakres: styl marki i claim policy Ekologus;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-4. `service_profile_review_private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02`
-   - zakres: source trace i evidence pack dla prywatnych/reviewed źródeł;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-5. `service_profile_review_private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01`
-   - zakres: Audyt zgodności środowiskowej;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-6. `service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`
-   - zakres: Eko-Opieka i Eko Kalendarz;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+1. BDO i sprawozdawczość środowiskowa
+   - typ: publiczna karta usługi;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
+     odrzuć.
+2. Bezpieczeństwo prawne, poufność i zgody
+   - typ: prywatna propozycja polityki twierdzeń;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
+     odrzuć.
+3. Styl marki i polityka twierdzeń Ekologus
+   - typ: prywatna propozycja polityki twierdzeń;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
+     odrzuć.
+4. Source trace i evidence pack
+   - typ: prywatna propozycja wymagań dowodowych;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
+     odrzuć.
+5. Audyt zgodności środowiskowej
+   - typ: prywatna propozycja usługi;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
+     odrzuć.
+6. Eko-Opieka i Eko Kalendarz
+   - typ: prywatna propozycja usługi;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
+     odrzuć.
+
+Techniczne action IDs zostaw pod spodem dopiero przy zapisie JSON proof. W
+rozmowie najpierw pytamy o prawdziwość, język i ryzyko, nie o identyfikatory.
+
+Mini-checklista odpowiedzi Wilka:
+
+- decyzja: zatwierdzić, poprawić, oznaczyć jako nieaktualne albo odrzucić;
+- czy źródło i pochodzenie faktu są jasne;
+- czy zablokowane claimy zostały sprawdzone;
+- co brzmi jak Ekologus, a co jak generyczne SEO/AI;
+- krótka notatka: co poprawić albo dlaczego można zaakceptować.
 
 Zapytaj:
 

@@ -853,11 +853,9 @@ def first_review_input_label(value: dict[str, Any]) -> str:
 
 def first_review_input_plain_label(value: dict[str, Any]) -> str:
     label = value.get("label")
-    target = value.get("target_card_id")
     next_step = humanize_review_decision_text(value.get("safe_next_step"))
     parts = [
         str(label) if label else None,
-        f"karta `{target}`" if target else None,
         str(next_step) if next_step else None,
     ]
     return " - ".join(part for part in parts if part) or "brak"

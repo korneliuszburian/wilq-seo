@@ -166,10 +166,12 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "Pierwszy Service Profile review" in rendered
     public_part = rendered.split("Dane techniczne do proof")[0]
     assert "renamed_public_service_bdo_review" not in public_part
+    assert "ekologus_service_bdo_reporting" not in public_part
     assert "Najpierw sprawdź publiczną kartę BDO." in rendered
     assert "Co trzeba ocenić: którą decyzję zapisujemy" in rendered
     assert "czy źródło i pochodzenie faktu są jasne" in rendered
     assert "review=`renamed_public_service_bdo_review`" in rendered
+    assert "target `ekologus_service_bdo_reporting`" in rendered
     assert "scope publiczna karta usługi" in rendered
     assert "approve/needs_changes/stale/reject" not in rendered
     assert "Service Profile review - co pokazać teraz" in rendered

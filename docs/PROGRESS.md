@@ -244,6 +244,10 @@ Date: 2026-07-03
   state: `operat wodnoprawny` is no longer described as a current missing-card
   gap. The live/current blocker remains `gap_no_approved_current_cards`, not
   missing direct public service knowledge for water-permit review analysis.
+- 2026-07-03 Goal 005 Wilku session card and primary handoff now keep Service
+  Profile action/card IDs below the fold. The first review decision is written
+  as a human Polish BDO review question with allowed decisions and a short
+  checklist; technical IDs stay only in JSON/proof details.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must

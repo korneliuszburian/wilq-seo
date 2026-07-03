@@ -931,12 +931,10 @@ def first_service_profile_review_plain_label(value: dict[str, Any]) -> str:
     next_step = humanize_review_decision_text(
         value.get("first_service_profile_review_next_step")
     )
-    target = value.get("first_service_profile_review_target_card_id")
-    if not any([label, next_step, target]):
+    if not any([label, next_step]):
         return "Brak pierwszej decyzji review w live packet."
     parts = [
         str(label) if label else None,
-        f"karta `{target}`" if target else None,
         str(next_step) if next_step else None,
     ]
     return " - ".join(part for part in parts if part)

@@ -137,7 +137,9 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Work item ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
     public_section = card.split("## Dane techniczne do proof")[0]
     assert "renamed_public_service_bdo_review" not in public_section
+    assert "ekologus_service_bdo_reporting" not in public_section
     assert "renamed_public_service_bdo_review" in card
+    assert "ekologus_service_bdo_reporting" in card
     assert "Sprawdź kartę BDO" in card
     assert "Możliwe decyzje: zatwierdź do dalszego użycia" in card
     assert "wróć z poprawkami" in card
