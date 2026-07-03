@@ -65,6 +65,11 @@ Date: 2026-07-03
   `.local-lab/evals/codex-skill/20260703T065259Z`,
   `.local-lab/evals/codex-skill/20260703T065420Z` and
   `.local-lab/evals/codex-skill/20260703T065602Z`.
+- 2026-07-03 Ads Doctor visible blocker tuning fixed a non-interactive eval
+  failure where raw API/schema markers leaked into operator-facing fields. The
+  passing artifact is `.local-lab/evals/codex-skill/20260703T070219Z`; raw Ads
+  contract fields now stay in technical `notes`, while visible copy says which
+  review queue to open and which claims/writes remain blocked.
 - 2026-07-03 Goal 006 candidate `wilq-seo-1xv` was closed as already
   implementation-complete: `scripts/claim_ledger_gate_audit.py --format json`
   passed 13/13 and focused Claim Ledger/generation gate tests passed 65/65.

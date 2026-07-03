@@ -260,6 +260,46 @@ Results:
   previously identified reviewer problems are no longer present in visible
   operator copy.
 
+## 2026-07-03 - Ads Doctor visible blocker language tuning
+
+Purpose:
+
+- Re-test `wilq-ads-doctor` after the user called the earlier Ads outputs too
+  technical and low-value.
+- Fix the concrete non-interactive eval failure: raw markers such as
+  `latest_refresh_status`, `live_data_available`, `target_roas_or_cpa`,
+  `human_strategy_review`, `keyword_planner_enrichment` and
+  `forecast_or_audience_size` appeared in operator-facing fields.
+
+Change:
+
+- The skill now requires visible Ads answers to use:
+  `Można zrobić teraz`, `Dlaczego teraz`, `Zablokowane` and `Ślad techniczny`.
+- Raw Ads contract markers stay in technical `notes`.
+- Visible blockers translate them into normal Polish, such as "odczyt jest
+  dostępny", "brakuje celu CPA/ROAS albo strategii człowieka" and "brakuje
+  wzbogacenia Keyword Planner albo prognozy rozmiaru odbiorców".
+
+Proof:
+
+```bash
+rtk uv run python /home/krn/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/wilq-ads-doctor
+rtk scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- First eval before the change failed with:
+  `operator-facing fields contain too many raw technical markers`.
+- Passing artifact:
+  `.local-lab/evals/codex-skill/20260703T070219Z`, with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true and
+  `visible_has_raw=false` for the raw marker set checked locally.
+- The visible output starts from the review order: campaigns/budgets,
+  recommendations, search terms, negative keyword safety and custom segments.
+  It keeps CPA/ROAS, wasted budget, write/apply and segment forecast claims
+  blocked without exposing raw schema names to the marketer.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:
