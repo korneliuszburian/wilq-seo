@@ -37,7 +37,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "private_review_actions_czytelne": "nie",
         "private_policy_review_actions_czytelne": "nie",
         "mozna_przejsc_do_pelnego_content_uat": "nie",
-        "follow_up_beads": ["wilq-seo-xyz: doprecyzować private review action copy"],
+        "follow_up_beads": ["wilq-seo-xyz: doprecyzować opis prywatnej decyzji do oceny"],
     }
 
     report = build_content_uat_result_report(payload)
@@ -48,7 +48,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert report["overall_status"] == "needs_follow_up_before_full_content_uat"
     assert report["missing_follow_up_task"] is False
     assert report["follow_up_tasks"] == [
-        "wilq-seo-xyz: doprecyzować private review action copy"
+        "wilq-seo-xyz: doprecyzować opis prywatnej decyzji do oceny"
     ]
     assert report["shown_review_artifacts"] == [
         "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
@@ -113,7 +113,7 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
         "Service Profile - co pokazać teraz"
     )
     assert example["follow_up_beads"] == [
-        "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
+        "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny test treści jest zablokowany>"
     ]
 
 
@@ -184,7 +184,7 @@ def test_content_uat_input_example_is_not_a_completed_uat_result() -> None:
     assert "Brak pola albo placeholder: data sesji" in message
     assert "Brak pola albo placeholder: czas do zrozumienia statusu" in message
     assert "Brak pola albo placeholder: największy brak produktu" in message
-    assert "Gdy pełny content UAT jest zablokowany, wpisz follow_up_beads" in message
+    assert "Gdy pełny test treści jest zablokowany, wpisz follow_up_beads" in message
 
 
 def test_content_uat_result_records_live_packet_provenance_for_selected_item() -> None:
@@ -192,7 +192,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
-        "punkty_niezrozumienia": "Nie było jasne, czemu BDO nie jest live work itemem.",
+        "punkty_niezrozumienia": "Nie było jasne, czemu BDO nie jest aktualnym zadaniem.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "oceny_materialow_review": _scorecard(
@@ -250,7 +250,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
 
     markdown = render_markdown(report)
     assert "## Live provenance" in markdown
-    assert "Wybrany work item znaleziony w live packet: tak" in markdown
+    assert "Wybrane zadanie znalezione w aktualnym pakiecie: tak" in markdown
     assert "Źródła wybranego itemu: google_search_console, wordpress_ekologus" in markdown
     assert "Sales Brief wybranego itemu: `ready`" in markdown
     assert "Sales Brief blocker: brak" in markdown
@@ -258,12 +258,12 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "Sales Brief constraint evidence: ev_content_service_profile_source_facts"
         in markdown
     )
-    assert "Public service review actions: `1`" in markdown
+    assert "Publiczne decyzje oceny kart usług: `1`" in markdown
     assert "Pierwszy Service Profile review" in markdown
     assert "renamed_public_service_bdo_review" in markdown
     assert "Wymagane pola pierwszego review: action_id, source_trace_clear" in markdown
-    assert "Private service review actions: `1`" in markdown
-    assert "Private policy review actions: `0`" in markdown
+    assert "Prywatne decyzje oceny usług: `1`" in markdown
+    assert "Prywatne decyzje oceny polityk: `0`" in markdown
     assert "## Pokazane materiały review" in markdown
     assert "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md" in markdown
 
@@ -348,7 +348,7 @@ def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None
     with pytest.raises(RuntimeError) as error:
         build_content_uat_result_report(payload, live_context=_live_context())
 
-    assert "Wybrany work item nie występuje w aktualnym live UAT packet" in str(
+    assert "Wybrane zadanie nie występuje w aktualnym pakiecie rozmowy" in str(
         error.value
     )
 
@@ -380,8 +380,11 @@ def test_content_uat_result_rejects_placeholders_and_invalid_booleans() -> None:
     assert "Brak pola albo placeholder: czas do zrozumienia statusu" in message
     assert "Brak pola albo placeholder: punkty niezrozumienia" in message
     assert 'Brak pola albo placeholder: pytania "skąd to wzięło?"' in message
-    assert "czy Wilku rozumie blokady pełnego UAT musi mieć wartość tak albo nie" in message
-    assert "czy można przejść do pełnego content UAT musi mieć wartość tak albo nie" in message
+    assert (
+        "czy Wilku rozumie blokady pełnego testu treści musi mieć wartość tak albo nie"
+        in message
+    )
+    assert "czy można przejść do pełnego testu treści musi mieć wartość tak albo nie" in message
 
 
 def test_content_uat_result_requires_existing_review_artifact() -> None:
@@ -457,7 +460,7 @@ def test_content_uat_result_requires_public_service_review_feedback() -> None:
     with pytest.raises(RuntimeError) as error:
         build_content_uat_result_report(payload)
 
-    assert "czy public service review actions są czytelne musi mieć wartość tak albo nie" in str(
+    assert "czy publiczne decyzje oceny kart usług są czytelne musi mieć wartość tak albo nie" in str(
         error.value
     )
 
@@ -485,7 +488,7 @@ def test_content_uat_result_requires_follow_up_when_blocked() -> None:
     with pytest.raises(RuntimeError) as error:
         build_content_uat_result_report(payload)
 
-    assert "Gdy pełny content UAT jest zablokowany, wpisz follow_up_beads" in str(
+    assert "Gdy pełny test treści jest zablokowany, wpisz follow_up_beads" in str(
         error.value
     )
 
@@ -519,8 +522,8 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
     assert report["missing_follow_up_task"] is False
 
     markdown = render_markdown(report)
-    assert "# Wynik Goal 005 content UAT" in markdown
-    assert "Status: gotowe do pełnego content UAT" in markdown
+    assert "# Wynik Goal 005 rozmowy z Wilkiem" in markdown
+    assert "Status: gotowe do pełnego testu treści" in markdown
     assert "Punkty niezrozumienia" in markdown
     assert "Pytania \"skąd to wzięło?\"" in markdown
     assert "Generyczne/off-brand" in markdown

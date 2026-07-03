@@ -13,23 +13,29 @@ REQUIRED_TEXT_FIELDS = {
     "osoba": "osoba",
     "czas_do_zrozumienia_statusu": "czas do zrozumienia statusu",
     "punkty_niezrozumienia": "punkty niezrozumienia",
-    "wybrany_work_item": "wybrany work item",
+    "wybrany_work_item": "wybrane zadanie treściowe",
     "pytania_skad_to_wzielo": 'pytania "skąd to wzięło?"',
     "miejsca_generyczne_off_brand": "miejsca generyczne/off-brand",
     "najwiekszy_brak_produktu": "największy brak produktu",
 }
 
 REQUIRED_BOOLEAN_FIELDS = {
-    "wilku_rozumie_blokady_pelnego_uat": "czy Wilku rozumie blokady pełnego UAT",
+    "wilku_rozumie_blokady_pelnego_uat": (
+        "czy Wilku rozumie blokady pełnego testu treści"
+    ),
     "service_profile_czytelny": "czy Service Profile jest czytelny",
     "public_service_review_actions_czytelne": (
-        "czy public service review actions są czytelne"
+        "czy publiczne decyzje oceny kart usług są czytelne"
     ),
-    "private_review_actions_czytelne": "czy private review actions są czytelne",
+    "private_review_actions_czytelne": (
+        "czy prywatne decyzje oceny propozycji są czytelne"
+    ),
     "private_policy_review_actions_czytelne": (
-        "czy private policy review actions są czytelne"
+        "czy prywatne decyzje oceny polityk są czytelne"
     ),
-    "mozna_przejsc_do_pelnego_content_uat": "czy można przejść do pełnego content UAT",
+    "mozna_przejsc_do_pelnego_content_uat": (
+        "czy można przejść do pełnego testu treści"
+    ),
 }
 REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
 REVIEW_SCORECARD_FIELD = "oceny_materialow_review"
@@ -104,7 +110,7 @@ REVIEW_DECISION_OPTION_LABELS = {
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Waliduje i renderuje wynik Goal 005 Wilku content UAT. "
+            "Waliduje i renderuje wynik Goal 005 rozmowy z Wilkiem. "
             "Nie uruchamia UAT i nie zamyka goalu."
         )
     )
@@ -126,7 +132,7 @@ def main() -> int:
         action="store_true",
         help=(
             "Wypisuje krótką kartę rozmowy dla Wilka, opartą na tym samym "
-            "live UAT input co JSON proof."
+            "aktualny input rozmowy co JSON proof."
         ),
     )
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
@@ -209,7 +215,7 @@ def build_content_uat_input_example(
             "UZUPEŁNIJ: co brzmiało generycznie/off-brand albo brak uwag"
         ),
         "najwiekszy_brak_produktu": (
-            "UZUPEŁNIJ: największa luka przed pełnym content UAT"
+            "UZUPEŁNIJ: największa luka przed pełnym testem treści"
         ),
         "wilku_rozumie_blokady_pelnego_uat": "nie",
         "service_profile_czytelny": "nie",
@@ -218,7 +224,7 @@ def build_content_uat_input_example(
         "private_policy_review_actions_czytelne": "nie",
         "mozna_przejsc_do_pelnego_content_uat": "nie",
         "follow_up_beads": [
-            "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
+            "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny test treści jest zablokowany>"
         ],
     }
 
@@ -345,7 +351,7 @@ def build_content_uat_result_report(
 ) -> dict[str, Any]:
     errors = validate_content_uat_payload(payload, live_context=live_context)
     if errors:
-        raise RuntimeError("Niepoprawny wynik Goal 005 content UAT:\n- " + "\n- ".join(errors))
+        raise RuntimeError("Niepoprawny wynik Goal 005 rozmowy z Wilkiem:\n- " + "\n- ".join(errors))
 
     can_continue = normalize_bool(payload["mozna_przejsc_do_pelnego_content_uat"])
     blockers_understood = normalize_bool(payload["wilku_rozumie_blokady_pelnego_uat"])
@@ -416,7 +422,7 @@ def build_content_uat_result_report(
         ),
         "missing_follow_up_task": missing_follow_up,
         "safety_note": (
-            "Ten raport zapisuje wynik Goal 005 content UAT. Nie promuje private "
+            "Ten raport zapisuje wynik Goal 005 rozmowy z Wilkiem. Nie promuje private "
             "proposals do source facts, nie zatwierdza publicznych service cards "
             "i nie odblokowuje publikacji, WordPress write ani success claims."
         ),
@@ -438,7 +444,7 @@ def validate_content_uat_payload(
     if not list_payload(payload.get("follow_up_beads")) and normalize_bool(
         payload.get("mozna_przejsc_do_pelnego_content_uat")
     ) is False:
-        errors.append("Gdy pełny content UAT jest zablokowany, wpisz follow_up_beads")
+        errors.append("Gdy pełny test treści jest zablokowany, wpisz follow_up_beads")
     errors.extend(validate_review_artifacts(payload.get(REVIEW_ARTIFACTS_FIELD)))
     errors.extend(
         validate_review_scorecard(
@@ -453,7 +459,7 @@ def validate_content_uat_payload(
         candidate_ids = live_context_candidate_ids(live_context)
         if selected_work_item and selected_work_item not in candidate_ids:
             errors.append(
-                "Wybrany work item nie występuje w aktualnym live UAT packet: "
+                "Wybrane zadanie nie występuje w aktualnym pakiecie rozmowy: "
                 f"{selected_work_item}"
             )
     return errors
@@ -461,7 +467,7 @@ def validate_content_uat_payload(
 
 def render_markdown(report: dict[str, Any]) -> str:
     lines = [
-        "# Wynik Goal 005 content UAT",
+        "# Wynik Goal 005 rozmowy z Wilkiem",
         "",
         f"- Typ: `{report['report_type']}`",
         f"- Data: `{report['date']}`",
@@ -479,15 +485,15 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "## Ocena",
         "",
-        f"- Rozumie blokady pełnego UAT: {visible_bool(report['blockers_understood'])}",
+        f"- Rozumie blokady pełnego testu treści: {visible_bool(report['blockers_understood'])}",
         f"- Service Profile czytelny: {visible_bool(report['service_profile_clear'])}",
-        "- Public service review actions czytelne: "
+        "- Publiczne decyzje oceny kart usług czytelne: "
         f"{visible_bool(report['public_service_review_actions_clear'])}",
-        "- Private review actions czytelne: "
+        "- Prywatne decyzje oceny propozycji czytelne: "
         f"{visible_bool(report['private_review_actions_clear'])}",
-        "- Private policy review actions czytelne: "
+        "- Prywatne decyzje oceny polityk czytelne: "
         f"{visible_bool(report['private_policy_review_actions_clear'])}",
-        "- Można przejść do pełnego content UAT: "
+        "- Można przejść do pełnego testu treści: "
         f"{visible_bool(report['can_continue_to_full_content_uat'])}",
         "",
         "## Pokazane materiały review",
@@ -935,7 +941,7 @@ def first_service_profile_review_plain_label(value: dict[str, Any]) -> str:
         value.get("first_service_profile_review_next_step")
     )
     if not any([label, next_step]):
-        return "Brak pierwszej decyzji review w live packet."
+        return "Brak pierwszej decyzji do oceny w aktualnym pakiecie."
     parts = [
         str(label) if label else None,
         str(next_step) if next_step else None,
@@ -963,7 +969,7 @@ def first_service_profile_review_required_fields_plain_label(
 def first_service_profile_review_decision_options_label(value: dict[str, Any]) -> str:
     options = value.get("first_service_profile_review_decision_options") or []
     labels = [REVIEW_DECISION_OPTION_LABELS.get(str(option), str(option)) for option in options]
-    return "; ".join(labels) or "brak opcji z live packet"
+    return "; ".join(labels) or "brak opcji z aktualnego pakietu"
 
 
 def selected_content_candidate_title(value: dict[str, Any]) -> str:
@@ -1028,7 +1034,7 @@ def render_live_provenance(value: Any) -> str:
             f"- API: `{value.get('api_base')}`",
             "- Kolejka: "
             f"`{value.get('queue_status')}`, kandydaci: `{value.get('candidate_count')}`",
-            "- Wybrany work item znaleziony w live packet: "
+            "- Wybrane zadanie znalezione w aktualnym pakiecie: "
             f"{visible_bool(value.get('selected_work_item_found') is True)}",
             f"- Tryb wybranego itemu: `{value.get('selected_recommended_mode')}`",
             "- Źródła wybranego itemu: "
@@ -1047,13 +1053,13 @@ def render_live_provenance(value: Any) -> str:
             f"{first_service_profile_review_label(value)}",
             "- Wymagane pola pierwszego review: "
             f"{first_service_profile_review_required_fields_label(value)}",
-            "- Public service review actions: "
+            "- Publiczne decyzje oceny kart usług: "
             f"`{value.get('public_service_review_action_count')}`",
-            "- Private review actions: "
+            "- Prywatne decyzje oceny propozycji: "
             f"`{value.get('private_review_action_count')}`",
-            "- Private service review actions: "
+            "- Prywatne decyzje oceny usług: "
             f"`{value.get('private_service_review_action_count')}`",
-            "- Private policy review actions: "
+            "- Prywatne decyzje oceny polityk: "
             f"`{value.get('private_policy_review_action_count')}`",
             "- Private proposal promotion ready: "
             f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
@@ -1234,8 +1240,8 @@ def visible_bool(value: Any) -> str:
 
 def visible_status(value: Any) -> str:
     if value == "ready_for_full_content_uat":
-        return "gotowe do pełnego content UAT"
-    return "wymaga follow-up przed pełnym content UAT"
+        return "gotowe do pełnego testu treści"
+    return "wymaga follow-up przed pełnym testem treści"
 
 
 def list_payload(value: Any) -> list[str]:

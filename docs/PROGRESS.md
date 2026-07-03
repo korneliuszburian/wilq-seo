@@ -287,6 +287,11 @@ Date: 2026-07-03
   old 2026-07-01 content UAT proof as the first current-state material. That
   file is now explicitly marked as technical background/recording format, while
   the current first materials are Service Profile review and Claim Ledger.
+- 2026-07-03 Goal 005 UAT input/result recorder keeps stable JSON field names
+  but now renders human labels, placeholders and result headings as "rozmowa z
+  Wilkiem", "pełny test treści", "publiczne decyzje oceny kart usług" and
+  "prywatne decyzje oceny polityk" instead of visible content-UAT/review-action
+  jargon.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
