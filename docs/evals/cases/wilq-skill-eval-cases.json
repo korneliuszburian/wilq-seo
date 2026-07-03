@@ -556,18 +556,19 @@
     ],
     "required_decision_terms_pl": [
       "Można zrobić teraz",
-      "Szkic do review",
+      "Pakiet do review",
+      "Wariant LinkedIn",
+      "Wariant Facebook",
+      "Historia do sprawdzenia",
+      "Decyzja po review",
       "temat",
       "teza",
       "CTA",
-      "social_history_inventory",
-      "social_history_inventory_v1",
-      "metadata-only",
-      "source_evidence_id",
       "brak powtórzeń historycznych postów",
       "nie wiemy jeszcze, czy podobny post już był",
       "nie wolno pisać, że temat jest nowy"
     ],
+    "minimum_operator_usefulness_score": 9,
     "expected_action_ids": [
       "act_prepare_linkedin_social_drafts",
       "act_prepare_facebook_social_drafts"

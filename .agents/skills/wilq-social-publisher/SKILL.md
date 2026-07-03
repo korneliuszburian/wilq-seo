@@ -80,7 +80,11 @@ Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza,
 W social odpowiedź musi dać coś, co marketer może od razu ocenić:
 
 - `Można zrobić teraz`: przygotować szkic do review, nie publikację.
-- `Szkic do review`: trzy linie: temat, główna teza, CTA do ręcznego sprawdzenia.
+- `Pakiet do review`: temat, główna teza, CTA do ręcznego sprawdzenia i źródło inspiracji.
+- `Wariant LinkedIn`: 2-4 zdania szkicu albo kierunku posta, bez obietnic efektu.
+- `Wariant Facebook`: 2-4 zdania szkicu albo kierunku posta, prostszym językiem niż LinkedIn.
+- `Historia do sprawdzenia`: powiedz normalnie, że nie wiemy jeszcze, czy podobny post już był na LinkedIn/Facebooku, więc nie wolno pisać, że temat jest nowy albo bezpieczny do powtórzenia.
+- `Decyzja po review`: co może się stać po sprawdzeniu historii i claimów: zaakceptować szkic do ręcznego przygotowania, przerobić CTA, zablokować temat albo poczekać na historię social.
 - `Dowód`: krótkie ludzkie streszczenie źródeł, a surowe ID w śladzie technicznym.
 - `Zablokowane`: publikacja, claim o skuteczności i claim o braku powtórek.
 

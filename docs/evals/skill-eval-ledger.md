@@ -486,6 +486,15 @@ Focused proof:
   evidence IDs, 5 recommendations, 3 action candidates and all hard gates true.
   The output uses only Ahrefs evidence in the isolated eval, produces a review
   map for content/link gaps and blocks growth/authority promises.
+- Follow-up Social Publisher proof: `wilq-social-publisher` moved from the
+  5/10 baseline to 9/10 after requiring visible `Pakiet do review`,
+  `Wariant LinkedIn`, `Wariant Facebook`, `Historia do sprawdzenia` and
+  `Decyzja po review`. The passing proof is
+  `.local-lab/evals/codex-skill/20260703T130303Z` with
+  `operator_usefulness_score=9`, `blocked=false`, `failure_tags=[]`, 5
+  evidence IDs, 3 recommendations, 2 actions and all hard gates true. The
+  output gives a review-only social packet and blocks publish, performance and
+  duplicate-free claims until historical social metadata exists.
 
 Interpretation:
 

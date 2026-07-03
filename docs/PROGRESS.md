@@ -151,6 +151,14 @@ Date: 2026-07-03
   recommendations, 3 action candidates and all hard gates true. It keeps
   Ahrefs as the only proof source in the isolated eval and blocks growth/
   authority promises.
+- 2026-07-03 `wilq-social-publisher` reached 9/10 social review level after
+  requiring visible `Pakiet do review`, channel variants,
+  `Historia do sprawdzenia` and `Decyzja po review`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T130303Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 5 evidence IDs, 3
+  recommendations, 2 actions and all hard gates true. It creates a review-only
+  LinkedIn/Facebook packet while blocking publishing and duplicate-free claims
+  until historical social metadata exists.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem
