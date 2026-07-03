@@ -11,6 +11,12 @@ from typing import Any
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 
 REVIEW_DECISIONS = {"approve", "needs_changes", "stale", "reject"}
+REVIEW_DECISION_LABELS = {
+    "approve": "zatwierdź",
+    "needs_changes": "wróć z poprawkami",
+    "stale": "oznacz jako nieaktualne",
+    "reject": "odrzuć",
+}
 REVIEW_TYPES = {"public_service_cards", "private_source_proposals"}
 PUBLIC_SERVICE_REVIEW_SCOPES = {"public_service_card"}
 PRIVATE_SOURCE_REVIEW_SCOPES = {
@@ -88,6 +94,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--print-session-card",
+        action="store_true",
+        help=(
+            "Wypisz krótką kartę rozmowy review po polsku. Nie zapisuje wyniku "
+            "i nie promuje kart ani source facts."
+        ),
+    )
+    parser.add_argument(
         "--promotion-readiness",
         action="store_true",
         help=(
@@ -111,6 +125,17 @@ def main() -> int:
                 review_type=args.review_type,
             )
             print(json.dumps(example, ensure_ascii=False, indent=2))
+            return 0
+        if args.print_session_card:
+            if not args.api_base:
+                raise RuntimeError("--print-session-card wymaga --api-base")
+            live_context = load_live_context(args.api_base)
+            print(
+                render_session_card(
+                    live_context,
+                    review_type=args.review_type,
+                )
+            )
             return 0
         if not args.input:
             raise RuntimeError("Podaj ścieżkę input albo użyj --print-input-example")
@@ -192,6 +217,79 @@ def build_input_example(
     }
 
 
+def render_session_card(
+    live_context: dict[str, Any],
+    *,
+    review_type: str,
+) -> str:
+    example = build_input_example(live_context, review_type=review_type)
+    decisions = raw_list(example.get("decisions"))
+    label_by_action_id = live_review_action_labels(live_context)
+    title = (
+        "publiczne karty usług"
+        if review_type == "public_service_cards"
+        else "prywatne propozycje ekologus-ai"
+    )
+    api_base = str(live_context.get("api_base") or "").strip()
+    input_command = (
+        "rtk uv run python scripts/record_service_profile_review_result.py "
+        f"--print-input-example --review-type {review_type}"
+        + (f" --api-base {api_base}" if api_base else "")
+    )
+    check_command = (
+        "rtk uv run python scripts/record_service_profile_review_result.py "
+        f"<plik.json> --review-type {review_type}"
+        + (f" --api-base {api_base}" if api_base else "")
+    )
+    lines = [
+        "# Service Profile review - karta rozmowy",
+        "",
+        "## Decyzja na sesję",
+        "",
+        (
+            f"Sprawdzamy {title}. Wynik tej rozmowy może przygotować osobny "
+            "promotion request, ale sam nie edytuje kart, source facts ani "
+            "production-depth."
+        ),
+        "",
+        "## Co ocenić jako pierwsze",
+        "",
+    ]
+    for index, decision in enumerate(decisions[:5], start=1):
+        if not isinstance(decision, dict):
+            continue
+        target = str(decision.get("target_card_id") or "brak targetu")
+        action_id = str(decision.get("action_id") or "brak action_id")
+        label = label_by_action_id.get(action_id) or service_profile_target_label(target)
+        lines.extend(
+            [
+                f"{index}. {label}",
+                f"   - Możliwe decyzje: {review_decision_options_label()}",
+                f"   - Co sprawdzić: {review_decision_required_fields_label(decision)}",
+                f"   - Proof: `{action_id}` -> `{target}`",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Pytania do Wilka",
+            "",
+            "- Czy opis usługi/propozycji brzmi jak realny Ekologus?",
+            "- Czy źródło i pochodzenie faktu są jasne?",
+            "- Czy zablokowane claimy są dobrze ustawione?",
+            "- Czy decyzja to: zatwierdź, popraw, oznacz jako nieaktualne czy odrzuć?",
+            "- Co trzeba dopisać jako follow-up?",
+            "",
+            "## Jak zapisać wynik",
+            "",
+            f"1. Wygeneruj JSON proof: `{input_command}`",
+            "2. Uzupełnij decyzje po rozmowie.",
+            f"3. Sprawdź wynik: `{check_command}`",
+        ]
+    )
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def first_review_action_id(profile: dict[str, Any]) -> str | None:
     summary = profile.get("review_action_summary")
     if not isinstance(summary, dict):
@@ -256,6 +354,47 @@ def scope_label_for_review_type(review_type: str) -> str:
     if review_type == "private_source_proposals":
         return "prywatne propozycje ekologus-ai"
     return "publiczne karty usług"
+
+
+def service_profile_target_label(target_card_id: str) -> str:
+    labels = {
+        "ekologus_service_bdo_reporting": "BDO i sprawozdawczość środowiskowa",
+        "ekologus_service_operat_wodnoprawny": "Operat wodnoprawny",
+        "ekologus_service_eko_opieka_calendar": "Eko-Opieka i Eko Kalendarz",
+        "ekologus_claim_policy_legal_safety": (
+            "Bezpieczeństwo prawne, poufność i zgody"
+        ),
+        "ekologus_claim_policy_brand_voice": "Styl marki i claim policy Ekologus",
+        "ekologus_evidence_policy_source_trace": (
+            "Source trace i evidence pack"
+        ),
+    }
+    return labels.get(target_card_id, target_card_id or "brak targetu")
+
+
+def review_decision_options_label() -> str:
+    ordered = ["approve", "needs_changes", "stale", "reject"]
+    return ", ".join(REVIEW_DECISION_LABELS[value] for value in ordered)
+
+
+def review_decision_required_fields_label(decision: dict[str, Any]) -> str:
+    labels = {
+        "source_trace_clear": "czy źródło i pochodzenie faktu są jasne",
+        "blocked_claims_reviewed": "czy zablokowane claimy zostały sprawdzone",
+        "data_classes_confirmed": "czy klasy danych prywatnego źródła są poprawne",
+        "source_block_refs_confirmed": "czy source block refs wystarczają do śladu",
+        "freshness_status_confirmed": "czy aktualność źródła jest potwierdzona",
+        "audience_scope_confirmed": "czy zakres dostępu jest poprawny",
+        "retention_decision_confirmed": "czy decyzja retencji jest jasna",
+        "deletion_path_confirmed": "czy ścieżka usunięcia/odrzucenia jest jasna",
+        "eval_gates_confirmed": "czy eval gates blokujące unsafe claimy są wskazane",
+    }
+    fields = [
+        key
+        for key in decision
+        if key not in {"action_id", "target_card_id", "decision", "notes", "follow_up_beads"}
+    ]
+    return "; ".join(labels.get(field, field) for field in fields) or "notatka review"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -765,6 +904,25 @@ def live_review_actions(
         if review_scope in expected_scopes and action_id and target_card_id:
             actions[action_id] = target_card_id
     return actions
+
+
+def live_review_action_labels(live_context: dict[str, Any] | None) -> dict[str, str]:
+    if live_context is None:
+        return {}
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        return {}
+    labels: dict[str, str] = {}
+    for action in raw_list(profile.get("review_actions")):
+        if not isinstance(action, dict):
+            continue
+        action_id = str(action.get("action_id") or "").strip()
+        label = str(action.get("label") or action.get("target_card_title") or "").strip()
+        if label.startswith("Sprawdź kartę usługi: "):
+            label = label.removeprefix("Sprawdź kartę usługi: ").strip()
+        if action_id and label:
+            labels[action_id] = label
+    return labels
 
 
 def live_review_action_types(live_context: dict[str, Any] | None) -> dict[str, str]:

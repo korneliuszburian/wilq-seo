@@ -203,6 +203,11 @@ Date: 2026-07-03
   renders Goal 005 review queues in operator Polish: human review type labels,
   Polish decision options and proof IDs in a dedicated column. The JSON report,
   pass/fail logic and Service Profile data are unchanged.
+- 2026-07-03 `scripts/record_service_profile_review_result.py` now has
+  `--print-session-card` for both public service cards and private
+  `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
+  decide, what to check, proof IDs and the JSON proof command, without changing
+  the review JSON contract or promotion readiness.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

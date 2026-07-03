@@ -10,6 +10,7 @@ from scripts.record_service_profile_review_result import (
     build_promotion_readiness_report,
     build_review_result_report,
     render_markdown,
+    render_session_card,
 )
 from wilq.content.knowledge.service_profile import content_service_profile_response
 
@@ -133,6 +134,23 @@ def test_service_profile_review_input_example_pins_first_public_review_item() ->
         "service_profile_review_card_ekologus_service_bdo_reporting"
     )
     assert decisions[1]["action_id"] == "renamed_public_operat_review"
+
+
+def test_service_profile_review_session_card_is_plain_public_handoff() -> None:
+    card = render_session_card(
+        _live_context(),
+        review_type="public_service_cards",
+    )
+
+    assert "# Service Profile review - karta rozmowy" in card
+    assert "Sprawdzamy publiczne karty usług" in card
+    assert "BDO i sprawozdawczość środowiskowa" in card
+    assert "Możliwe decyzje: zatwierdź, wróć z poprawkami" in card
+    assert "czy źródło i pochodzenie faktu są jasne" in card
+    assert "czy zablokowane claimy zostały sprawdzone" in card
+    assert "Proof: `service_profile_review_card_ekologus_service_bdo_reporting`" in card
+    assert "--print-input-example --review-type public_service_cards" in card
+    assert "<plik.json> --review-type public_service_cards" in card
 
 
 def test_service_profile_review_input_example_orders_private_policy_before_service() -> None:
