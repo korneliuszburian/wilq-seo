@@ -222,6 +222,10 @@ Date: 2026-07-03
   priorities, decision options and private proposal chips into Polish operator
   language. Raw enum values remain in API/test fixtures and technical proof,
   not as the primary review UI for Wilku.
+- 2026-07-03 Goal 005 UAT session card and completion guard now also humanize
+  review decision and scope labels inside the technical proof lines. Live
+  checks no longer show raw `approve/needs_changes/stale/reject` wording in
+  the Wilku handoff path.
   labels. The JSON report remains unchanged, but the Wilku-facing audit says
   WILQ has review material and still lacks approved production-depth knowledge.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has

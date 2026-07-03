@@ -143,9 +143,8 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "wróć z poprawkami" in card
     assert "Co trzeba ocenić: którą decyzję zapisujemy" in card
     assert "czy źródło i pochodzenie faktu są jasne" in card
-    assert "approve/needs_changes/stale/reject" not in card.split(
-        "Techniczny zapis do JSON"
-    )[0]
+    assert "approve/needs_changes/stale/reject" not in card
+    assert "Najpierw sprawdź publiczną kartę BDO." in card
     assert "Service Profile review JSON" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card

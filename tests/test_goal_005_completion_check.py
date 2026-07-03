@@ -168,6 +168,8 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "Co trzeba ocenić: którą decyzję zapisujemy" in rendered
     assert "czy źródło i pochodzenie faktu są jasne" in rendered
     assert "review=`renamed_public_service_bdo_review`" in rendered
+    assert "scope publiczna karta usługi" in rendered
+    assert "approve/needs_changes/stale/reject" not in rendered
     assert "Service Profile review - co pokazać teraz" in rendered
     assert "--api-base http://127.0.0.1:8000" in next_input["print_input_command"]
     assert "--print-session-card --api-base http://127.0.0.1:8000" in next_input[

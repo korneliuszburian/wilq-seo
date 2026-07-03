@@ -79,6 +79,12 @@ PRIVATE_POLICY_REVIEW_SCOPES = {
     "private_claim_policy_proposal",
     "private_evidence_policy_proposal",
 }
+REVIEW_SCOPE_LABELS = {
+    "public_service_card": "publiczna karta usługi",
+    "private_claim_policy_proposal": "prywatna propozycja polityki twierdzeń",
+    "private_evidence_policy_proposal": "prywatna propozycja wymagań dowodowych",
+    "private_service_proposal": "prywatna propozycja usługi",
+}
 REVIEW_REQUIRED_FIELD_LABELS = {
     "action_id": "którą decyzję zapisujemy",
     "target_card_id": "której karty dotyczy decyzja",
@@ -905,13 +911,15 @@ def first_service_profile_review_label(value: dict[str, Any]) -> str:
     label = value.get("first_service_profile_review_label")
     scope = value.get("first_service_profile_review_scope")
     target = value.get("first_service_profile_review_target_card_id")
-    next_step = value.get("first_service_profile_review_next_step")
+    next_step = humanize_review_decision_text(
+        value.get("first_service_profile_review_next_step")
+    )
     if not any([action_id, label, scope, target, next_step]):
         return "brak"
     parts = [
         f"`{action_id}`" if action_id else None,
         str(label) if label else None,
-        f"scope `{scope}`" if scope else None,
+        f"scope {review_scope_label(scope)}" if scope else None,
         f"target `{target}`" if target else None,
         str(next_step) if next_step else None,
     ]
@@ -932,6 +940,11 @@ def first_service_profile_review_plain_label(value: dict[str, Any]) -> str:
         str(next_step) if next_step else None,
     ]
     return " - ".join(part for part in parts if part)
+
+
+def review_scope_label(value: Any) -> str:
+    raw = str(value)
+    return REVIEW_SCOPE_LABELS.get(raw, raw.replace("_", " "))
 
 
 def first_service_profile_review_required_fields_label(value: dict[str, Any]) -> str:

@@ -749,12 +749,17 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
 
 
 def first_review_input_label(value: dict[str, Any]) -> str:
+    next_step = humanize_review_decision_text(value.get("safe_next_step"))
     parts = [
         f"`{value.get('action_id')}`" if value.get("action_id") else None,
         str(value.get("label")) if value.get("label") else None,
-        f"scope `{value.get('scope')}`" if value.get("scope") else None,
+        (
+            f"scope {REVIEW_SCOPE_LABELS.get(str(value.get('scope')), str(value.get('scope')))}"
+            if value.get("scope")
+            else None
+        ),
         f"target `{value.get('target_card_id')}`" if value.get("target_card_id") else None,
-        str(value.get("safe_next_step")) if value.get("safe_next_step") else None,
+        str(next_step) if next_step else None,
     ]
     return " - ".join(part for part in parts if part) or "brak"
 
