@@ -171,6 +171,20 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
         in question
         for question in example["pytania_do_wilka"]
     )
+    assert example["oceny_prywatnego_sladu_zrodlowego"][0] == {
+        "target": "Bezpieczeństwo prawne, poufność i zgody",
+        "scope": "polityka twierdzeń",
+        "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+        "eval_cases": [
+            "goal_005_private_claim_policy_review",
+            "goal_006_claim_ledger_gate",
+        ],
+        "trace_czytelny": "nie",
+        "decyzja": "popraw",
+        "najwazniejsza_poprawka": (
+            "UZUPEŁNIJ: czy ślad jest jasny i co poprawić albo wpisz brak"
+        ),
+    }
     assert example["follow_up_beads"] == [
         "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny test treści jest zablokowany>"
     ]
@@ -281,6 +295,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "oceny_materialow_review": _scorecard(
             ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"]
         ),
+        "oceny_prywatnego_sladu_zrodlowego": _private_trace_scorecard(),
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
         "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
@@ -350,6 +365,20 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
             "safe_next_step": "Pokaż Wilkowi ślad źródłowy bez raw private text.",
         }
     ]
+    assert report["private_source_trace_scorecard"] == [
+        {
+            "target": "Bezpieczeństwo prawne, poufność i zgody",
+            "scope": "polityka twierdzeń",
+            "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+            "eval_cases": [
+                "goal_005_private_claim_policy_review",
+                "goal_006_claim_ledger_gate",
+            ],
+            "trace_czytelny": True,
+            "decyzja": "popraw",
+            "najwazniejsza_poprawka": "Dodać prostszy opis dla Wilka.",
+        }
+    ]
 
     markdown = render_markdown(report)
     assert "## Ślad danych do rozmowy" in markdown
@@ -374,6 +403,9 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert "Prywatne decyzje oceny polityk: `0`" in markdown
     assert "## Pokazane materiały review" in markdown
     assert "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md" in markdown
+    assert "## Ocena prywatnego śladu źródłowego" in markdown
+    assert "trace czytelny: tak" in markdown
+    assert "Dodać prostszy opis dla Wilka." in markdown
 
 
 def test_content_uat_result_has_no_warning_when_plain_show_guide_was_shown() -> None:
@@ -758,6 +790,23 @@ def _scorecard(artifacts: list[str], *, decision: str = "popraw") -> list[dict[s
             "najwazniejsza_poprawka": "Doprecyzować język i kolejny krok.",
         }
         for artifact in artifacts
+    ]
+
+
+def _private_trace_scorecard() -> list[dict[str, object]]:
+    return [
+        {
+            "target": "Bezpieczeństwo prawne, poufność i zgody",
+            "scope": "polityka twierdzeń",
+            "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+            "eval_cases": [
+                "goal_005_private_claim_policy_review",
+                "goal_006_claim_ledger_gate",
+            ],
+            "trace_czytelny": "tak",
+            "decyzja": "popraw",
+            "najwazniejsza_poprawka": "Dodać prostszy opis dla Wilka.",
+        }
     ]
 
 

@@ -39,6 +39,7 @@ REQUIRED_BOOLEAN_FIELDS = {
 }
 REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
 REVIEW_SCORECARD_FIELD = "oceny_materialow_review"
+PRIVATE_SOURCE_TRACE_SCORECARD_FIELD = "oceny_prywatnego_sladu_zrodlowego"
 WILKU_REVIEW_QUESTIONS_FIELD = "pytania_do_wilka"
 WILKU_REVIEW_ANSWERS_FIELD = "odpowiedzi_wilka"
 REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
@@ -232,6 +233,9 @@ def build_content_uat_input_example(
             }
             for question in review_questions
         ],
+        PRIVATE_SOURCE_TRACE_SCORECARD_FIELD: private_source_trace_scorecard_example(
+            provenance
+        ),
         "pytania_skad_to_wzielo": (
             'UZUPEŁNIJ: gdzie Wilku zapytał "skąd to wzięło?" albo "brak pytań"'
         ),
@@ -401,6 +405,9 @@ def build_content_uat_result_report(
         payload.get(REVIEW_SCORECARD_FIELD),
         shown_review_artifacts=shown_review_artifacts,
     )
+    private_source_trace_scorecard = private_source_trace_scorecard_payload(
+        payload.get(PRIVATE_SOURCE_TRACE_SCORECARD_FIELD)
+    )
     missing_recommended_review_artifacts = recommended_review_artifact_gaps(
         shown_review_artifacts
     )
@@ -449,6 +456,7 @@ def build_content_uat_result_report(
         ),
         "review_scorecard": review_scorecard,
         "review_scorecard_summary": review_scorecard_summary(review_scorecard),
+        "private_source_trace_scorecard": private_source_trace_scorecard,
         "review_follow_up_suggestions": review_follow_up_suggestions(review_scorecard),
         "missing_recommended_review_artifacts": missing_recommended_review_artifacts,
         "follow_up_tasks": follow_up_tasks,
@@ -492,6 +500,11 @@ def validate_content_uat_payload(
             ),
         )
     )
+    errors.extend(
+        validate_private_source_trace_scorecard(
+            payload.get(PRIVATE_SOURCE_TRACE_SCORECARD_FIELD)
+        )
+    )
     if live_context is not None:
         selected_work_item = str(payload.get("wybrany_work_item") or "").strip()
         candidate_ids = live_context_candidate_ids(live_context)
@@ -499,6 +512,19 @@ def validate_content_uat_payload(
             errors.append(
                 "Wybrane zadanie nie występuje w aktualnym pakiecie rozmowy: "
                 f"{selected_work_item}"
+            )
+        provenance = live_uat_provenance(
+            live_context=live_context,
+            selected_work_item=selected_work_item,
+        )
+        if raw_list_payload(
+            (provenance or {}).get("private_source_trace_items")
+        ) and not raw_list_payload(
+            payload.get(PRIVATE_SOURCE_TRACE_SCORECARD_FIELD)
+        ):
+            errors.append(
+                "Gdy WILQ pokazuje prywatny ślad źródłowy, wpisz "
+                "oceny_prywatnego_sladu_zrodlowego"
             )
     return errors
 
@@ -547,6 +573,10 @@ def render_markdown(report: dict[str, Any]) -> str:
         render_review_scorecard_summary(report.get("review_scorecard_summary")),
         "",
         *render_review_scorecard(report.get("review_scorecard")),
+        "",
+        *render_private_source_trace_scorecard(
+            report.get("private_source_trace_scorecard")
+        ),
         "",
         "## Sugestie follow-up z ocen",
         "",
@@ -632,6 +662,28 @@ def render_review_scorecard(value: Any) -> list[str]:
                 f"głos Ekologus {row.get('glos_ekologus_1_5')}/5, "
                 f"zaufanie do blokad {row.get('zaufanie_do_blokad_1_5')}/5, "
                 f"CTA {row.get('dopasowanie_cta_1_5')}/5",
+                f"  - najważniejsza poprawka: {row.get('najwazniejsza_poprawka')}",
+            ]
+        )
+    return lines
+
+
+def render_private_source_trace_scorecard(value: Any) -> list[str]:
+    rows = [row for row in raw_list_payload(value) if isinstance(row, dict)]
+    if not rows:
+        return []
+    lines = ["## Ocena prywatnego śladu źródłowego", ""]
+    for row in rows:
+        source_blocks = ", ".join(raw_string_list(row.get("source_blocks"))) or "brak"
+        eval_cases = ", ".join(raw_string_list(row.get("eval_cases"))) or "brak"
+        lines.extend(
+            [
+                f"- {row.get('target')}",
+                f"  - zakres: {row.get('scope')}",
+                f"  - źródło: {source_blocks}",
+                f"  - eval: {eval_cases}",
+                f"  - trace czytelny: {visible_bool(row.get('trace_czytelny') is True)}",
+                f"  - decyzja: {row.get('decyzja')}",
                 f"  - najważniejsza poprawka: {row.get('najwazniejsza_poprawka')}",
             ]
         )
@@ -1409,6 +1461,49 @@ def private_source_trace_item_label(value: dict[str, Any]) -> str:
     return " / ".join(parts)
 
 
+def private_source_trace_scorecard_example(
+    value: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if not isinstance(value, dict):
+        return []
+    return [
+        {
+            "target": item.get("target"),
+            "scope": item.get("scope"),
+            "source_blocks": item.get("source_blocks") or [],
+            "eval_cases": item.get("eval_cases") or [],
+            "trace_czytelny": "nie",
+            "decyzja": "popraw",
+            "najwazniejsza_poprawka": (
+                "UZUPEŁNIJ: czy ślad jest jasny i co poprawić albo wpisz brak"
+            ),
+        }
+        for item in raw_list_payload(value.get("private_source_trace_items"))
+        if isinstance(item, dict)
+    ]
+
+
+def private_source_trace_scorecard_payload(value: Any) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in raw_list_payload(value):
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            {
+                "target": str(item.get("target") or "").strip(),
+                "scope": str(item.get("scope") or "").strip(),
+                "source_blocks": raw_string_list(item.get("source_blocks")),
+                "eval_cases": raw_string_list(item.get("eval_cases")),
+                "trace_czytelny": normalize_bool(item.get("trace_czytelny")),
+                "decyzja": str(item.get("decyzja") or "").strip(),
+                "najwazniejsza_poprawka": str(
+                    item.get("najwazniejsza_poprawka") or ""
+                ).strip(),
+            }
+        )
+    return rows
+
+
 def raw_string_list(value: Any) -> list[str]:
     return [
         str(item).strip()
@@ -1679,6 +1774,53 @@ def validate_review_scorecard(
     ]
     for artifact in missing:
         errors.append(f"Brak scorecardu dla materiału review: {artifact}")
+    return errors
+
+
+def validate_private_source_trace_scorecard(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        return [
+            "oceny_prywatnego_sladu_zrodlowego musi być listą, gdy jest podane"
+        ]
+    errors: list[str] = []
+    seen_targets: set[str] = set()
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, dict):
+            errors.append(f"Ocena prywatnego śladu #{index} musi być obiektem")
+            continue
+        target = str(item.get("target") or "").strip()
+        if is_blank_or_placeholder(target):
+            errors.append(f"Ocena prywatnego śladu #{index} musi mieć target")
+        elif target in seen_targets:
+            errors.append(f"Ocena prywatnego śladu powtarza target: {target}")
+        seen_targets.add(target)
+        if is_blank_or_placeholder(item.get("scope")):
+            errors.append(f"Ocena prywatnego śladu {target or index} musi mieć scope")
+        if not raw_string_list(item.get("source_blocks")):
+            errors.append(
+                f"Ocena prywatnego śladu {target or index} musi mieć source_blocks"
+            )
+        if not raw_string_list(item.get("eval_cases")):
+            errors.append(
+                f"Ocena prywatnego śladu {target or index} musi mieć eval_cases"
+            )
+        if normalize_bool(item.get("trace_czytelny")) is None:
+            errors.append(
+                f"Ocena prywatnego śladu {target or index} musi mieć trace_czytelny: tak albo nie"
+            )
+        decision = str(item.get("decyzja") or "").strip()
+        if decision not in REVIEW_SCORECARD_DECISIONS:
+            errors.append(
+                f"Ocena prywatnego śladu {target or index} musi mieć decyzję: "
+                "zatwierdź, popraw, odrzuć albo odśwież"
+            )
+        if is_blank_or_placeholder(item.get("najwazniejsza_poprawka")):
+            errors.append(
+                f"Ocena prywatnego śladu {target or index} musi mieć "
+                "najwazniejsza_poprawka albo 'brak'"
+            )
     return errors
 
 

@@ -64,6 +64,11 @@ Date: 2026-07-04
   render metadata-only private source trace items from live Service Profile:
   Polish scope labels, source blocks, eval gates, retention/redaction and
   trace-ready state, without exposing raw private `ekologus-ai` text.
+- 2026-07-04 Goal 005 UAT input example now includes
+  `oceny_prywatnego_sladu_zrodlowego`, a fillable scorecard for each
+  metadata-only private source trace item. Live validation requires this
+  scorecard when Service Profile exposes private trace items, so Wilku's result
+  can say which `KB_*`/eval trace was clear, confusing or needs changes.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
