@@ -50,12 +50,12 @@ OWNER_DEFER_FIELDS = {
 REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS = [
     "ukończony Goal 005",
     "realny dowód użyteczności dla Wilka",
-    "production-depth readiness",
+    "zatwierdzona wiedza do finalnych treści",
     "gotowość finalnego draftu albo publikacji",
 ]
 KNOWLEDGE_STATUS_LABELS = {
     "seeded_contract_proof": "tylko seed/contract proof",
-    "source_backed_review_required": "źródła są, wymagają review",
+    "source_backed_review_required": "źródła są, wymagają oceny",
     "approved_current": "zatwierdzona aktualna wiedza",
     "stale": "wiedza wymaga odświeżenia",
     "rejected": "odrzucone, nie używać w treści",
@@ -660,19 +660,19 @@ def blocked_report(
         "next_uat_input": next_uat_input or goal_005_next_uat_input(),
         "pre_demo_audits": pre_demo_audits or goal_005_pre_demo_audit_summary(),
         "safe_scope": (
-            "Service Profile, materiały review i UAT packet można pokazać jako "
-            "przygotowanie, ale nie jako ukończony dowód użyteczności."
+            "Service Profile, materiały do oceny i karta rozmowy można pokazać "
+            "jako przygotowanie, ale nie jako ukończony dowód użyteczności."
         ),
         "blocked_claims": [
             "ukończony Goal 005",
             "realny dowód użyteczności dla Wilka",
-            "production-depth readiness",
+            "zatwierdzona wiedza do finalnych treści",
             "gotowość finalnego draftu albo publikacji",
         ],
         "unblockers": [
             "Przeprowadź realną sesję Wilku i przekaż wynik przez --uat-result.",
-            "Albo zapisz explicit owner defer z residual risk przez --owner-defer.",
-            "Przed completion claim uruchom pełne rtk scripts/verify.sh.",
+            "Albo zapisz świadome odroczenie właściciela z ryzykiem rezydualnym przez --owner-defer.",
+            "Zanim powiesz, że Goal 005 jest domknięty, uruchom pełne rtk scripts/verify.sh.",
         ],
         "owner_defer_example_command": OWNER_DEFER_EXAMPLE_COMMAND.format(
             api_base=api_base
@@ -684,10 +684,10 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Sprawdzenie domknięcia Goal 005",
         "",
-        "- Werdykt: materiały można pokazać Wilkowi jako review, ale Goal 005 "
+        "- Werdykt: materiały można pokazać Wilkowi do oceny, ale Goal 005 "
         "nie jest jeszcze domknięty.",
         "- Następny krok: uruchom kartę rozmowy, zbierz decyzje Wilka i dopiero "
-        "potem zapisz JSON proof albo owner defer.",
+        "potem zapisz wynik rozmowy albo świadome odroczenie.",
         f"- Status techniczny: `{report['status']}`",
     ]
     if report["status"] == "blocked_missing_goal_005_uat_proof":
@@ -711,16 +711,16 @@ def render_markdown(report: dict[str, Any]) -> str:
                 )
             )
         if report.get("next_uat_input"):
-            lines.extend(["", "## Następny input UAT"])
+            lines.extend(["", "## Następny materiał do rozmowy"])
             lines.extend(render_next_uat_input(report["next_uat_input"]))
         if report.get("pre_demo_audits"):
-            lines.extend(["", "## Pre-demo gates"])
+            lines.extend(["", "## Bramki przed pokazaniem"])
             lines.extend(render_pre_demo_audits(report["pre_demo_audits"]))
         lines.extend(["", "## Co odblokowuje domknięcie"])
         lines.extend(f"- {item}" for item in report["unblockers"])
         if report.get("owner_defer_example_command"):
             lines.append(
-                "- Wzór owner defer: "
+                "- Wzór świadomego odroczenia: "
                 f"`{report['owner_defer_example_command']}`"
             )
     else:
@@ -745,7 +745,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         if report.get("residual_risk"):
             lines.extend(["", "## Ryzyko rezydualne", report["residual_risk"]])
         if report.get("next_uat_input"):
-            lines.extend(["", "## Następny input UAT", report["next_uat_input"]])
+            lines.extend(["", "## Następny materiał do rozmowy", report["next_uat_input"]])
         if report.get("blocked_claims"):
             lines.extend(["", "## Obietnice nadal zablokowane"])
             lines.extend(f"- {item}" for item in report["blocked_claims"])
@@ -804,12 +804,12 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
         "- Dostępny: " + ("tak" if value.get("available") is True else "nie"),
         "- Komenda do karty rozmowy: "
         f"`{value.get('session_card_command') or 'brak'}`",
-        f"- Komenda do wygenerowania JSON: `{value.get('print_input_command') or 'brak'}`",
+        f"- Komenda do wzoru wyniku rozmowy: `{value.get('print_input_command') or 'brak'}`",
     ]
     if isinstance(first_review, dict):
         lines.extend(
             [
-                "- Pierwszy Service Profile review: "
+                "- Pierwsza decyzja w Service Profile: "
                 + first_review_input_plain_label(first_review),
                 "- Co trzeba ocenić: "
                 + first_review_input_required_fields_plain_label(first_review),
@@ -818,7 +818,7 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
     if value.get("blocked_reason"):
         lines.append(f"- Blokada pobrania live inputu: {value['blocked_reason']}")
     lines.append(
-        "- Materiały review: "
+        "- Materiały do oceny: "
         + (
             ", ".join(review_artifact_label(artifact) for artifact in artifacts)
             or "brak"
@@ -826,12 +826,12 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
     )
     if isinstance(first_review, dict):
         lines.append(
-            "- Dane techniczne do proof: "
+            "- Dane techniczne do zapisu dowodu: "
             f"work_item=`{value.get('selected_work_item') or 'brak'}`; "
             f"review={first_review_input_label(first_review)}"
         )
     else:
-        lines.append("- Dane techniczne do proof: brak")
+        lines.append("- Dane techniczne do zapisu dowodu: brak")
     return lines
 
 
@@ -879,33 +879,33 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     latest_eval = value.get("latest_skill_eval_results") or {}
     dashboard = value.get("dashboard_usefulness") or {}
     lines = [
-        "- Source facts: "
+        "- Fakty ze źródeł: "
         f"{_gate_label(source.get('pass'))}; "
         f"stan wiedzy: {_knowledge_status_label(source.get('knowledge_status'))}; "
-        f"production-depth: {source.get('production_depth_percent')}%; "
+        f"wiedza do finalnych treści: {source.get('production_depth_percent')}%; "
         "gotowe do codziennych treści: "
         f"{_ready_for_daily_content_label(source.get('ready_for_daily_content'))}.",
-        "- Claim Ledger gate: "
+        "- Lista dozwolonych twierdzeń: "
         f"{_gate_label(claim.get('pass'))}; "
         f"kontrole: {claim.get('passed_count')}/{claim.get('check_count')}; "
         "publikacja/finalny draft: "
         f"{_publish_ready_locked_label(claim.get('publish_ready_locked'))}.",
-        "- Skill eval coverage: "
+        "- Pokrycie testów umiejętności: "
         f"{_gate_label(eval_coverage.get('pass'))}; "
         f"case'y: {eval_coverage.get('case_count')}; "
         f"skille: {eval_coverage.get('skill_dir_count')}; "
         f"twarde braki: {eval_coverage.get('hard_gap_count')}.",
-        "- Latest skill eval results: "
+        "- Najnowsze wyniki umiejętności: "
         f"{_gate_label(latest_eval.get('pass'))}; "
-        f"passing: {latest_eval.get('passing_skill_count')}/{latest_eval.get('skill_count')}; "
-        f"score: {latest_eval.get('minimum_score')}-{latest_eval.get('maximum_score')}; "
+        f"zaliczone: {latest_eval.get('passing_skill_count')}/{latest_eval.get('skill_count')}; "
+        f"ocena: {latest_eval.get('minimum_score')}-{latest_eval.get('maximum_score')}; "
         f"mocne 7+: {latest_eval.get('strong_skill_count')}; "
-        f"Wilku-ready 10/10: {latest_eval.get('wilku_ready_skill_count')}; "
+        f"gotowe dla Wilka 10/10: {latest_eval.get('wilku_ready_skill_count')}; "
         f"poprawnie zablokowane: {latest_eval.get('blocked_correctly_count')}.",
     ]
     next_review_actions = source.get("next_review_actions") or []
     if next_review_actions:
-        lines.append("- Następne akcje Service Profile review:")
+        lines.append("- Następne decyzje w Service Profile:")
         for item in next_review_actions[:5]:
             decisions = _review_decisions_label(item.get("decision_options", []))
             details = (
@@ -921,13 +921,13 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
             )
     if dashboard:
         lines.append(
-            "- Dashboard usefulness: "
+            "- Dashboard: "
             f"{_gate_label(dashboard.get('pass'))}; "
-            f"demo-ready: {dashboard.get('demo_ready_count')}; "
-            f"review-ready: {dashboard.get('review_ready_count')}; "
-            f"blocked: {dashboard.get('blocked_count')}; "
-            f"knowledge records: {dashboard.get('knowledge_record_count')}; "
-            f"lineage traces: {dashboard.get('knowledge_lineage_count')}."
+            f"gotowe do pokazania: {dashboard.get('demo_ready_count')}; "
+            f"do oceny: {dashboard.get('review_ready_count')}; "
+            f"zablokowane: {dashboard.get('blocked_count')}; "
+            f"rekordy wiedzy: {dashboard.get('knowledge_record_count')}; "
+            f"ślady źródłowe: {dashboard.get('knowledge_lineage_count')}."
         )
     return lines
 
@@ -942,7 +942,7 @@ def _knowledge_status_label(value: Any) -> str:
 
 
 def _ready_for_daily_content_label(value: Any) -> str:
-    return "tak" if value is True else "nie, najpierw review"
+    return "tak" if value is True else "nie, najpierw ocena"
 
 
 def _publish_ready_locked_label(value: Any) -> str:

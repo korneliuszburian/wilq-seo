@@ -62,7 +62,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert report["review_follow_up_suggestions"] == [
         {
             "material": "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
-            "nazwa_materialu": "BDO i sprawozdawczość - próbka UAT",
+            "nazwa_materialu": "BDO i sprawozdawczość - próbka rozmowy",
             "decision": "popraw",
             "low_scores": [
                 {
@@ -110,7 +110,7 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
         RECOMMENDED_REVIEW_ARTIFACTS
     )
     assert example["oceny_materialow_review"][0]["nazwa_materialu"] == (
-        "Service Profile review - co pokazać teraz"
+        "Service Profile - co pokazać teraz"
     )
     assert example["follow_up_beads"] == [
         "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
@@ -128,16 +128,16 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Temat rozmowy: SEO: odśwież lub scal \"ekologus\"" in card
     assert "URL / miejsce w serwisie: https://www.ekologus.pl/" in card
     assert "Decyzja contentowa WILQ: odśwież istniejącą treść" in card
-    status_section = card.split("## Pierwsza decyzja review")[0]
+    status_section = card.split("## Pierwsza decyzja w Service Profile")[0]
     assert "content_work_item_content_decision_https___www_ekologus_pl" not in (
         status_section
     )
     assert "google_search_console" not in status_section
     assert "production-depth" not in status_section
     assert "Zatwierdzona wiedza do finalnych treści: nie" in status_section
-    assert "## Dane techniczne do proof" in card
+    assert "## Dane techniczne do zapisu dowodu" in card
     assert "Work item ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
-    public_section = card.split("## Dane techniczne do proof")[0]
+    public_section = card.split("## Dane techniczne do zapisu dowodu")[0]
     assert "renamed_public_service_bdo_review" not in public_section
     assert "ekologus_service_bdo_reporting" not in public_section
     assert "renamed_public_service_bdo_review" in card
@@ -152,12 +152,14 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Service Profile review JSON" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card
-    assert "Service Profile review - co pokazać teraz" in card
-    assert "BDO i sprawozdawczość - próbka UAT" in card
-    assert "Social history blocker - co blokuje repurpose" in card
+    assert "Service Profile - co pokazać teraz" in card
+    assert "BDO i sprawozdawczość - próbka rozmowy" in card
+    assert "Historia social - co blokuje ponowne użycie tematu" in card
     assert "--print-input-example --api-base http://127.0.0.1:8000" in card
     assert "scripts/record_goal_005_content_uat_result.py <plik.json>" in card
     assert "production-depth" in card
+    assert "content UAT" not in public_section
+    assert "JSON proof" not in public_section
 
 
 def test_content_uat_candidate_selection_prefers_actionable_work_item() -> None:

@@ -48,7 +48,7 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert first_review["scope"] == "public_service_card"
     assert "source_trace_clear" in first_review["required_fields"]
     markdown = render_markdown(report)
-    assert "Werdykt: materiały można pokazać Wilkowi jako review" in markdown
+    assert "Werdykt: materiały można pokazać Wilkowi do oceny" in markdown
     assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
 
@@ -163,8 +163,8 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
         "safe_next_step": "Najpierw sprawdź publiczną kartę BDO.",
     }
     rendered = "\n".join(render_next_uat_input(next_input))
-    assert "Pierwszy Service Profile review" in rendered
-    public_part = rendered.split("Dane techniczne do proof")[0]
+    assert "Pierwsza decyzja w Service Profile" in rendered
+    public_part = rendered.split("Dane techniczne do zapisu dowodu")[0]
     assert "renamed_public_service_bdo_review" not in public_part
     assert "ekologus_service_bdo_reporting" not in public_part
     assert "Najpierw sprawdź publiczną kartę BDO." in rendered
@@ -174,7 +174,7 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "target `ekologus_service_bdo_reporting`" in rendered
     assert "scope publiczna karta usługi" in rendered
     assert "approve/needs_changes/stale/reject" not in rendered
-    assert "Service Profile review - co pokazać teraz" in rendered
+    assert "Service Profile - co pokazać teraz" in rendered
     assert "--api-base http://127.0.0.1:8000" in next_input["print_input_command"]
     assert "--print-session-card --api-base http://127.0.0.1:8000" in next_input[
         "session_card_command"
@@ -233,9 +233,9 @@ def test_goal_005_pre_demo_audit_summary_can_include_dashboard_usefulness(
         )
     )
 
-    assert "Dashboard usefulness" in markdown
-    assert "knowledge records: 15" in markdown
-    assert "lineage traces: 49" in markdown
+    assert "Dashboard:" in markdown
+    assert "rekordy wiedzy: 15" in markdown
+    assert "ślady źródłowe: 49" in markdown
 
 
 def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
@@ -415,15 +415,15 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
 
     assert report["uat_live_provenance"] == provenance
     assert "## Live UAT provenance" in markdown
-    assert "## Pre-demo gates" in markdown
-    assert "production-depth: 0%" in markdown
+    assert "## Bramki przed pokazaniem" in markdown
+    assert "wiedza do finalnych treści: 0%" in markdown
     assert "publikacja/finalny draft: zablokowane zgodnie z zasadami" in markdown
-    assert "Latest skill eval results" in markdown
-    assert "Następne akcje Service Profile review" in markdown
+    assert "Najnowsze wyniki umiejętności" in markdown
+    assert "Następne decyzje w Service Profile" in markdown
     assert "-> Bezpieczeństwo prawne, poufność i zgody" in markdown
     assert "decyzje: zatwierdź, wróć z poprawkami" in markdown
-    assert "Następny input UAT" in markdown
-    assert "Komenda do wygenerowania JSON" in markdown
+    assert "Następny materiał do rozmowy" in markdown
+    assert "Komenda do wzoru wyniku rozmowy" in markdown
     assert "Sales Brief status: `blocked`" in markdown
     assert "Sales Brief blocker: Brakuje karty usługi; Brakuje karty CTA" in markdown
     assert "Sales Brief constraint evidence: ev_content_service_profile_source_facts" in markdown
@@ -515,13 +515,13 @@ def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:
                 "czego_nie_wolno_twierdzic": [
                     "ukończony Goal 005",
                     "realny dowód użyteczności dla Wilka",
-                    "production-depth readiness",
+                    "zatwierdzona wiedza do finalnych treści",
                     "gotowość finalnego draftu albo publikacji",
                 ],
                 "nastepny_przeglad": "po realnej sesji z Wilkiem",
                 "nastepny_input_uat": (
-                    "Pokazać Wilkowi live UAT packet, BDO handoff, Eko-Opieka "
-                    "handoff i prywatne governance pola review."
+                    "Pokazać Wilkowi kartę rozmowy, BDO handoff, Eko-Opieka "
+                    "handoff i prywatne pola zarządzania wiedzą do oceny."
                 ),
             },
             ensure_ascii=False,
@@ -534,11 +534,11 @@ def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:
     assert report["status"] == "owner_deferred"
     assert report["proof_type"] == "explicit_goal_005_owner_defer"
     assert "Brak realnej walidacji" in report["residual_risk"]
-    assert "live UAT packet" in report["next_uat_input"]
-    assert "production-depth readiness" in report["blocked_claims"]
+    assert "kartę rozmowy" in report["next_uat_input"]
+    assert "zatwierdzona wiedza do finalnych treści" in report["blocked_claims"]
     markdown = render_markdown(report)
-    assert "Następny input UAT" in markdown
-    assert "prywatne governance pola review" in markdown
+    assert "Następny materiał do rozmowy" in markdown
+    assert "prywatne pola zarządzania wiedzą do oceny" in markdown
 
 
 def test_goal_005_owner_defer_requires_residual_risk(tmp_path: Path) -> None:
@@ -591,7 +591,7 @@ def test_goal_005_owner_defer_requires_core_blocked_claims(tmp_path: Path) -> No
     assert report["valid"] is False
     assert any(
         "czego_nie_wolno_twierdzic musi zawierać" in error
-        and "production-depth readiness" in error
+        and "zatwierdzona wiedza do finalnych treści" in error
         and "gotowość finalnego draftu albo publikacji" in error
         for error in report["errors"]
     )
@@ -606,7 +606,9 @@ def test_owner_defer_example_contains_required_claims_but_needs_owner_input(
     assert example["data"] == "<YYYY-MM-DD>"
     assert "UZUPEŁNIJ" in example["powod"]
     assert "ukończony Goal 005" in example["czego_nie_wolno_twierdzic"]
-    assert "production-depth readiness" in example["czego_nie_wolno_twierdzic"]
+    assert "zatwierdzona wiedza do finalnych treści" in example[
+        "czego_nie_wolno_twierdzic"
+    ]
     assert "Uruchomić kartę rozmowy:" in example["nastepny_input_uat"]
     assert "--print-session-card" in example["nastepny_input_uat"]
 

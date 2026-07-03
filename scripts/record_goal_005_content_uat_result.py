@@ -44,20 +44,20 @@ RECOMMENDED_REVIEW_ARTIFACTS = [
 ]
 REVIEW_ARTIFACT_LABELS = {
     "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md": (
-        "Service Profile review - co pokazać teraz"
+        "Service Profile - co pokazać teraz"
     ),
     "docs/handoffs/2026-07-02-wilq-marketing-content-model.md": (
         "WILQ pod marketing i treści"
     ),
     "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md": "Co pokazać Wilkowi",
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md": (
-        "BDO i sprawozdawczość - próbka UAT"
+        "BDO i sprawozdawczość - próbka rozmowy"
     ),
     "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md": (
-        "Ekologus-ai policy proposals - review"
+        "Ekologus-ai - polityki do oceny"
     ),
     "docs/handoffs/2026-07-02-wilku-social-history-blocker.md": (
-        "Social history blocker - co blokuje repurpose"
+        "Historia social - co blokuje ponowne użycie tematu"
     ),
 }
 REVIEW_SCORECARD_DECISIONS = {"zatwierdź", "popraw", "odrzuć", "odśwież"}
@@ -254,9 +254,9 @@ def render_content_uat_session_card(
         "## Decyzja na sesję",
         "",
         (
-            "Sprawdzamy, czy obecny Service Profile, materiały review i pierwszy "
-            "kandydat contentowy są wystarczająco czytelne, żeby przejść do "
-            "pełnego content UAT. To nie zatwierdza publikacji ani wiedzy do "
+            "Sprawdzamy, czy obecny Service Profile, materiały do oceny i pierwszy "
+            "kandydat treści są wystarczająco czytelne, żeby przejść do "
+            "pełnego testu treści. To nie zatwierdza publikacji ani wiedzy do "
             "finalnych treści."
         ),
         "",
@@ -275,7 +275,7 @@ def render_content_uat_session_card(
         "- Zatwierdzona wiedza do finalnych treści: "
         f"{visible_bool(provenance.get('production_depth_ready') is True)}",
         "",
-        "## Pierwsza decyzja review",
+        "## Pierwsza decyzja w Service Profile",
         "",
         f"- {first_review}",
         f"- Możliwe decyzje: {decision_options}",
@@ -287,15 +287,15 @@ def render_content_uat_session_card(
         "",
         "## Pytania do Wilka",
         "",
-        "- Czy rozumiesz, czemu pełny content UAT jest jeszcze zablokowany?",
+        "- Czy rozumiesz, czemu pełny test treści jest jeszcze zablokowany?",
         "- Czy Service Profile i pierwsza karta BDO są czytelne?",
         "- Gdzie pytasz: skąd WILQ to wziął?",
         "- Co brzmi generycznie albo nie jak Ekologus?",
-        "- Co trzeba poprawić, zanim puścimy pełny content UAT?",
+        "- Co trzeba poprawić, zanim puścimy pełny test treści?",
         "",
         "## Jak zapisać dowód",
         "",
-        f"1. Wygeneruj JSON proof: `{command}`",
+        f"1. Wygeneruj wzór wyniku rozmowy: `{command}`",
         "2. Uzupełnij pola po rozmowie.",
         (
             "3. Sprawdź wynik komendą: `rtk uv run python "
@@ -307,7 +307,7 @@ def render_content_uat_session_card(
             )
         ),
         "",
-        "## Dane techniczne do proof",
+        "## Dane techniczne do zapisu dowodu",
         "",
         f"- Work item ID: `{selected_work_item}`",
         "- Kolejka content: "

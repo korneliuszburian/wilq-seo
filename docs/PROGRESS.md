@@ -251,6 +251,10 @@ Date: 2026-07-03
 - 2026-07-03 the same session card now replaces visible `production-depth`
   jargon with "zatwierdzona wiedza do finalnych treści". The technical
   `production-depth` label remains only below the fold in proof details.
+- 2026-07-03 Goal 005 completion guard now uses Polish operator wording for
+  the visible review/UAT/proof/defer layer: "do oceny", "wynik rozmowy",
+  "świadome odroczenie", "wiedza do finalnych treści" and Polish dashboard/
+  skill-result labels. Raw IDs and commands remain only in technical lines.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
