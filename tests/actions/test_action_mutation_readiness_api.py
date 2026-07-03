@@ -84,6 +84,9 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     assert data["apply_contract"]["allowed_operation"] == "create_wordpress_draft"
     assert data["apply_contract"]["adapter_status"] == "implemented"
     assert data["apply_contract"]["publication_allowed"] is False
+    assert data["target_candidate_id"]
+    assert data["target_label"]
+    assert data["target_url"].startswith("https://")
     blocker_codes = [blocker["code"] for blocker in data["blockers"]]
     requirement_codes = {requirement["code"] for requirement in data["requirements"]}
     assert "missing_apply_mode" not in blocker_codes
@@ -232,6 +235,7 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert data["first_write_candidate"]["action_id"] == "act_apply_wordpress_draft_handoff"
     assert data["first_write_candidate"]["vendor_write_possible"] is False
     assert data["first_write_candidate"]["mutation_adapter"] == "wordpress_draft_execution_boundary"
+    assert data["first_write_candidate"]["target_label"]
     assert data["first_write_candidate"]["apply_contract"]["adapter_status"] == "implemented"
     assert "WordPress draft-only" in data["first_write_candidate_reason"]
     assert any("draft-only" in step for step in data["activation_plan_steps"])
@@ -241,6 +245,7 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert data["items"][0]["response_type"] == "action_mutation_readiness"
     assert "adapter boundary" in data["operator_next_step"]
     assert "handoffu i paczki szkicu" in data["operator_next_step"]
+    assert data["first_write_candidate"]["target_url"] in data["operator_next_step"]
 
 
 def test_action_mutation_readiness_returns_404_for_unknown_action() -> None:

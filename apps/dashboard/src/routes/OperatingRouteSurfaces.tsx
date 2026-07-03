@@ -300,6 +300,11 @@ function FirstWriteCandidateSection({
           <p className="mt-2 text-sm leading-6 text-slate-700">
             {candidate.operator_next_step}
           </p>
+          {candidate.target_label ? (
+            <p className="mt-2 rounded-md border border-line bg-white p-2 text-xs leading-5 text-slate-600">
+              Kandydat treści: {candidate.target_label}
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge value={candidate.mode} label={candidate.mode_label} />
             <StatusBadge value={candidate.risk} label={candidate.risk_label} />

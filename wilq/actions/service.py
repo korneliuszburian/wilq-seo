@@ -2947,6 +2947,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
     vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
     ready_to_request_apply = not blockers
     apply_contract = _mutation_apply_contract(action, mutation_adapter)
+    target = _mutation_readiness_target(action)
     return ActionMutationReadinessResponse(
         action_id=action.id,
         title=action.title,
@@ -2963,6 +2964,9 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         would_attempt_vendor_write=ready_to_request_apply and vendor_write_possible,
         mutation_adapter=mutation_adapter,
         apply_contract=apply_contract,
+        target_candidate_id=target.get("candidate_id"),
+        target_label=target.get("label"),
+        target_url=target.get("url"),
         requirements=requirements,
         blockers=blockers,
         operator_next_step=_mutation_readiness_next_step(blockers),
@@ -2975,6 +2979,24 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         if latest_mutation_audit is not None
         else None,
     )
+
+
+def _mutation_readiness_target(action: ActionObject) -> dict[str, str | None]:
+    preview_items = _payload_preview_items(action.payload)
+    first = preview_items[0] if preview_items else {}
+    candidate_id = first.get("candidate_id")
+    topic = first.get("topic")
+    url = (
+        first.get("final_canonical_url")
+        or first.get("intended_final_url")
+        or first.get("source_public_url")
+    )
+    label_parts = [part for part in [topic, url] if isinstance(part, str) and part.strip()]
+    return {
+        "candidate_id": candidate_id if isinstance(candidate_id, str) else None,
+        "label": " | ".join(label_parts) if label_parts else None,
+        "url": url if isinstance(url, str) else None,
+    }
 
 
 def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
@@ -3529,9 +3551,14 @@ def _mutation_readiness_summary_next_step(
             "missing_wordpress_draft_handoff_ready",
             "missing_wordpress_draft_package_ready",
         } & first_blockers:
+            target = (
+                f" dla: {first_write_candidate.target_label}"
+                if first_write_candidate.target_label
+                else ""
+            )
             return (
                 "Pierwszy kandydat zapisu ma adapter boundary, ale brakuje "
-                "zatwierdzonego handoffu i paczki szkicu. Najpierw przejdź "
+                f"zatwierdzonego handoffu i paczki szkicu{target}. Najpierw przejdź "
                 "wybrany content item przez draft package, human review i "
                 "WordPress handoff; live write nadal zostaje wyłączony."
             )

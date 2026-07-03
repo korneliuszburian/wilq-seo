@@ -777,6 +777,10 @@ const actionMutationReadinessSummary = {
     vendor_write_possible: false,
     would_attempt_vendor_write: false,
     mutation_adapter: "wordpress_draft_execution_boundary",
+    target_candidate_id: "content_brief_gsc_operat_wodnoprawny",
+    target_label:
+      "art 400 prawo wodne | https://www.ekologus.pl/operat-wodnoprawny-wszystko-co-musisz-wiedziec/",
+    target_url: "https://www.ekologus.pl/operat-wodnoprawny-wszystko-co-musisz-wiedziec/",
     apply_contract: {
       contract: "action_apply_contract_v1",
       action_id: "act_apply_wordpress_draft_handoff",

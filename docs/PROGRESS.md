@@ -118,6 +118,10 @@ Date: 2026-07-03
   both labels in Polish. Live smoke after restart still reports
   `vendor_write_possible_count=0` and `would_attempt_vendor_write_count=0` for
   the WordPress draft-only candidate.
+- 2026-07-03 mutation readiness now carries target candidate fields for the
+  first write candidate. WordPress draft-only next step can name the concrete
+  content candidate/URL that needs draft package and handoff before any dry-run
+  or live execution; live smoke must still report zero vendor writes.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

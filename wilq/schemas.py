@@ -617,6 +617,9 @@ class ActionMutationReadinessResponse(BaseModel):
     would_attempt_vendor_write: bool = False
     mutation_adapter: str | None = None
     apply_contract: ActionMutationApplyContract | None = None
+    target_candidate_id: str | None = None
+    target_label: str | None = None
+    target_url: str | None = None
     requirements: list[ActionMutationReadinessRequirement] = Field(default_factory=list)
     blockers: list[ActionMutationReadinessBlocker] = Field(default_factory=list)
     operator_next_step: str
