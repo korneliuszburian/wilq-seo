@@ -37,7 +37,7 @@ def test_source_fact_coverage_audit_reports_current_goal_005_backlog() -> None:
         == report["private_proposal_count"]
     )
     assert report["private_review_value"]["operator_value_score"] >= 7
-    assert "review" in report["private_review_value"]["value_summary"].lower()
+    assert "materiał do oceny" in report["private_review_value"]["value_summary"].lower()
     assert report["review_action_queue"]
     assert report["first_review_action_id"]
     assert report["review_action_queue"][0]["action_id"] == report["first_review_action_id"]
@@ -76,15 +76,15 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
             "buyer_trigger_proposal_count": 2,
             "operator_value_score": 8,
             "value_summary": (
-                "Prywatne propozycje dają materiał do review, "
-                "ale nie odblokowują production-depth."
+                "Prywatne propozycje dają materiał do oceny, "
+                "ale nie odblokowują finalnych treści."
             ),
             "review_value_points": [
                 "konkretniejsze CTA i buyer trigger",
                 "jawne zablokowane twierdzenia",
             ],
         },
-        "safe_next_step": "Pokaż Wilkowi review-required źródła przed treścią.",
+        "safe_next_step": "Pokaż Wilkowi źródła wymagające oceny przed treścią.",
         "private_review_queue": [
             {
                 "scope": "claim_policy",
@@ -102,36 +102,36 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
                 "decision_options": ["approve", "needs_changes", "stale", "reject"],
             }
         ],
-        "blockers": ["Brakuje zatwierdzonych production-depth kart usług Ekologus."],
+        "blockers": ["Brakuje zatwierdzonych kart usług Ekologus do finalnych treści."],
     }
 
     markdown = audit.render_markdown(report)
 
     assert (
-        "WILQ ma materiał do review, ale nie ma jeszcze zatwierdzonej "
-        "production-depth wiedzy do gotowych treści."
+        "WILQ ma materiał do oceny, ale nie ma jeszcze wiedzy zatwierdzonej "
+        "do gotowych treści."
     ) in markdown
-    assert "Stan wiedzy: źródła są, wymagają review" in markdown
-    assert "Gotowe do codziennych treści: nie, najpierw review" in markdown
-    assert "Gotowość usług production-depth: 0%" in markdown
+    assert "Stan wiedzy: źródła są, wymagają oceny" in markdown
+    assert "Gotowe do codziennych treści: nie, najpierw ocena" in markdown
+    assert "Wiedza usług zatwierdzona do finalnych treści: 0%" in markdown
     assert "Knowledge status: `source_backed_review_required`" not in markdown
     assert "Ready for daily content: `false`" not in markdown
-    assert "Pokaż Wilkowi review-required źródła przed treścią." in markdown
-    assert "Pierwszy review item" in markdown
+    assert "Pokaż Wilkowi źródła wymagające oceny przed treścią." in markdown
+    assert "Pierwsza decyzja do oceny" in markdown
     assert (
         "Sprawdź kartę usługi: BDO "
-        "(proof: `service_profile_review_card_ekologus_service_bdo_reporting`)"
+        "(dowód: `service_profile_review_card_ekologus_service_bdo_reporting`)"
     ) in markdown
     assert "## Co wnosi prywatna wiedza" in markdown
-    assert "Prywatne propozycje dają materiał do review" in markdown
+    assert "Prywatne propozycje dają materiał do oceny" in markdown
     assert "konkretniejsze CTA i buyer trigger" in markdown
     assert "| 1 | polityka twierdzeń | Styl marki | wysokie |" in markdown
-    assert "## Konkretne akcje review" in markdown
+    assert "## Konkretne decyzje do oceny" in markdown
     assert "`service_profile_review_card_ekologus_service_bdo_reporting`" in markdown
     assert "zatwierdź, wróć z poprawkami, oznacz jako nieaktualne, odrzuć" in markdown
     assert "`public_service_card`" not in markdown
     assert "approve, needs_changes, stale, reject" not in markdown
-    assert "Brakuje zatwierdzonych production-depth kart usług Ekologus." in markdown
+    assert "Brakuje zatwierdzonych kart usług Ekologus do finalnych treści." in markdown
 
 
 def test_private_review_action_scopes_sort_by_review_risk() -> None:

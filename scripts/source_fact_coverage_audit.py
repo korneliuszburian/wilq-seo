@@ -16,7 +16,7 @@ SCOPE_LABELS = {
     "claim_policy": "polityka twierdzeń",
     "evidence_requirement": "wymaganie dowodowe",
     "service": "usługa",
-    "general_knowledge_review": "ogólny review wiedzy",
+    "general_knowledge_review": "ogólna ocena wiedzy",
 }
 RISK_LABELS = {
     "high": "wysokie",
@@ -30,8 +30,8 @@ DECISION_LABELS = {
     "reject": "odrzuć",
 }
 KNOWLEDGE_STATUS_LABELS = {
-    "seeded_contract_proof": "tylko seed/contract proof",
-    "source_backed_review_required": "źródła są, wymagają review",
+    "seeded_contract_proof": "tylko techniczny seed/proof kontraktu",
+    "source_backed_review_required": "źródła są, wymagają oceny",
     "approved_current": "zatwierdzona aktualna wiedza",
     "stale": "wiedza wymaga odświeżenia",
     "rejected": "odrzucone, nie używać w treści",
@@ -154,27 +154,27 @@ def build_report() -> dict[str, Any]:
 def render_markdown(report: dict[str, Any]) -> str:
     ready = report["ready_for_daily_content"] is True
     verdict = (
-        "WILQ ma production-depth wiedzę gotową do użycia w treściach."
+        "WILQ ma wiedzę zatwierdzoną do użycia w finalnych treściach."
         if ready
         else (
-            "WILQ ma materiał do review, ale nie ma jeszcze zatwierdzonej "
-            "production-depth wiedzy do gotowych treści."
+            "WILQ ma materiał do oceny, ale nie ma jeszcze wiedzy zatwierdzonej "
+            "do gotowych treści."
         )
     )
     lines = [
-        "# Audyt source facts WILQ",
+        "# Audyt faktów źródłowych WILQ",
         "",
         verdict,
         "",
         f"- Workspace: `{report['workspace_id']}`",
         f"- Stan wiedzy: {_knowledge_status_label(report['knowledge_status'])}",
         f"- Gotowe do codziennych treści: {_ready_label(ready)}",
-        f"- Gotowość usług production-depth: {report['production_depth_percent']}%",
+        f"- Wiedza usług zatwierdzona do finalnych treści: {report['production_depth_percent']}%",
         f"- Zatwierdzone karty usług: {report['approved_service_percent']}%",
-        f"- Zatwierdzone source facts: {report['reviewed_fact_percent']}%",
-        f"- Source facts w rejestrze: {report['fact_count']}",
-        f"- Akcje review: {report['review_action_count']}",
-        f"- Prywatne propozycje wymagające review: {report['private_review_required_count']}",
+        f"- Zatwierdzone fakty źródłowe: {report['reviewed_fact_percent']}%",
+        f"- Fakty źródłowe w rejestrze: {report['fact_count']}",
+        f"- Decyzje do oceny: {report['review_action_count']}",
+        f"- Prywatne propozycje wymagające oceny: {report['private_review_required_count']}",
         "",
         "## Co pokazać Wilkowi",
         "",
@@ -187,7 +187,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "| Sygnał | Liczba |",
         "| --- | ---: |",
-        "| Propozycje do review | "
+        "| Propozycje do oceny | "
         f"{report['private_review_value']['proposal_count']} |",
         "| Zablokowane twierdzenia opisane | "
         f"{report['private_review_value']['blocked_claim_proposal_count']} |",
@@ -195,19 +195,19 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"{report['private_review_value']['cta_pattern_proposal_count']} |",
         "| Triggery/problem kupującego | "
         f"{report['private_review_value']['buyer_trigger_proposal_count']} |",
-        "| Promocja bez review | "
+        "| Promocja bez oceny | "
         f"{report['private_review_value']['promotion_allowed_count']} |",
         "",
-        "Najważniejsze punkty review:",
+        "Najważniejsze punkty do oceny:",
         "",
         *[
             f"- {_operator_text(point)}"
             for point in report["private_review_value"]["review_value_points"]
         ],
         "",
-        "## Prywatne propozycje do review",
+        "## Prywatne propozycje do oceny",
         "",
-        "| Priorytet | Typ review | Temat | Ryzyko | Następny krok |",
+        "| Priorytet | Typ oceny | Temat | Ryzyko | Następny krok |",
         "| ---: | --- | --- | --- | --- |",
     ]
     for index, item in enumerate(report["private_review_queue"], start=1):
@@ -215,7 +215,7 @@ def render_markdown(report: dict[str, Any]) -> str:
             "| {index} | {scope} | {target} | {risk} | {next_step} |".format(
                 index=index,
                 scope=_scope_label(item["scope"]),
-                target=_markdown_cell(item["target_card_title"]),
+                target=_markdown_cell(_operator_text(item["target_card_title"])),
                 risk=_risk_label(item["risk_tier"]),
                 next_step=_markdown_cell(_operator_text(item["safe_next_step"])),
             )
@@ -225,9 +225,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         lines.extend(
             [
                 "",
-                "## Konkretne akcje review",
+                "## Konkretne decyzje do oceny",
                 "",
-                "| Priorytet | Typ review | Temat | Decyzje | Proof |",
+                "| Priorytet | Typ oceny | Temat | Decyzje | Dowód |",
                 "| ---: | --- | --- | --- | --- |",
             ]
         )
@@ -237,12 +237,12 @@ def render_markdown(report: dict[str, Any]) -> str:
                     index=index,
                     scope=_scope_label(item["review_scope"]),
                     action_id=item["action_id"],
-                    target=_markdown_cell(item["target_card_title"]),
+                    target=_markdown_cell(_operator_text(item["target_card_title"])),
                     decisions=_markdown_cell(_decision_options_label(item["decision_options"])),
                 )
             )
     if report["blockers"]:
-        lines.extend(["", "## Blokery production-depth", ""])
+        lines.extend(["", "## Blokery wiedzy do finalnych treści", ""])
         for blocker in report["blockers"]:
             lines.append(f"- {_operator_text(blocker)}")
     return "\n".join(lines)
@@ -269,10 +269,10 @@ def _first_review_action_line(report: dict[str, Any]) -> str:
     action_id = report.get("first_review_action_id")
     label = report.get("first_review_action_label")
     if not action_id and not label:
-        return "Pierwszy review item: brak."
+        return "Pierwsza decyzja do oceny: brak."
     if label and action_id:
-        return f"Pierwszy review item: {label} (proof: `{action_id}`)."
-    return "Pierwszy review item: " + str(label or action_id)
+        return f"Pierwsza decyzja do oceny: {label} (dowód: `{action_id}`)."
+    return "Pierwsza decyzja do oceny: " + str(label or action_id)
 
 
 def _scope_label(value: Any) -> str:
@@ -296,7 +296,7 @@ def _knowledge_status_label(value: Any) -> str:
 
 
 def _ready_label(value: bool) -> str:
-    return "tak" if value else "nie, najpierw review"
+    return "tak" if value else "nie, najpierw ocena"
 
 
 def _private_review_value_summary(
@@ -335,7 +335,8 @@ def _private_review_value_summary(
         )
     if promotion_allowed_count == 0 and proposal_count:
         review_value_points.append(
-            "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+            "Żadna prywatna propozycja nie może wejść do wiedzy do finalnych "
+            "treści bez oceny człowieka."
         )
     operator_value_score = 0
     if proposal_count:
@@ -357,9 +358,9 @@ def _private_review_value_summary(
         "buyer_trigger_proposal_count": buyer_trigger_proposal_count,
         "operator_value_score": operator_value_score,
         "value_summary": (
-            "Prywatne propozycje ekologus-ai dają materiał do review "
+            "Prywatne propozycje ekologus-ai dają materiał do oceny "
             "i mogą poprawić konkretność Service Profile, ale nie odblokowują "
-            "production-depth, publikacji ani gotowych twierdzeń bez decyzji człowieka."
+            "finalnych treści, publikacji ani gotowych twierdzeń bez decyzji człowieka."
         ),
         "review_value_points": review_value_points,
     }
@@ -462,8 +463,26 @@ def _operator_text(value: str) -> str:
     return (
         value.replace("claimów", "twierdzeń")
         .replace("claimy", "twierdzenia")
+        .replace(
+            "Brakuje zatwierdzonych production-depth kart usług Ekologus.",
+            "Brakuje zatwierdzonych kart usług Ekologus do finalnych treści.",
+        )
+        .replace("review-required", "wymagające oceny")
+        .replace("reviewed źródeł", "ocenionych źródeł")
+        .replace("reviewed sources", "ocenionych źródeł")
+        .replace("reviewerem", "osobą oceniającą")
+        .replace("reviewerowi", "osobie oceniającej")
         .replace("reviewed policy fact", "zatwierdzonym faktem polityki")
+        .replace("production-depth", "wiedzy do finalnych treści")
+        .replace("seed/contract proof", "techniczny seed/proof kontraktu")
+        .replace("source-backed", "oparte na źródłach")
+        .replace("claim policy", "polityka twierdzeń")
+        .replace("Source trace", "Ślad źródłowy")
+        .replace("evidence pack", "pakiet dowodów")
         .replace("reviewed evidence policy", "zatwierdzoną polityką dowodową")
+        .replace("review", "ocenę")
+        .replace("bez ocenę", "bez oceny")
+        .replace("wymaga ocenę", "wymaga oceny")
         .replace("redacted source fact", "zredagowany fakt źródłowy")
         .replace(
             "wejść do WILQ jako zatwierdzoną polityką dowodową",

@@ -292,6 +292,10 @@ Date: 2026-07-03
   Wilkiem", "pełny test treści", "publiczne decyzje oceny kart usług" and
   "prywatne decyzje oceny polityk" instead of visible content-UAT/review-action
   jargon.
+- 2026-07-03 `scripts/source_fact_coverage_audit.py --format markdown` now
+  renders Wilku/owner-facing copy as "fakty źródłowe", "materiał do oceny",
+  "wiedza zatwierdzona do finalnych treści" and "decyzje do oceny" while
+  preserving JSON field names and proof IDs.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
