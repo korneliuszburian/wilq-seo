@@ -10,7 +10,7 @@ WILQ API pozostaje kanoniczne dla identyfikatorów dowodów, identyfikatory szan
 
 ## Wymagany kontekst API
 
-Pobierz `GET /api/ads/diagnostics` przed analizą Ads. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i użyj osadzonego `ads_diagnostics` jako consistency check, także opcjonalnego `blocked_handoff`. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy gotowość ma znaczenie.
+Pobierz `GET /api/ads/diagnostics` przed analizą Ads. `POST /api/codex/context-pack` jest opcjonalnym wzbogaceniem, gdy wąski endpoint nie wystarcza, użytkownik pyta o pełną kolejkę albo trzeba połączyć Ads z inną powierzchnią WILQ. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy gotowość ma znaczenie.
 
 Jeżeli użytkownik prosi o pełną kolejkę Ads albo miesza wiele obszarów naraz
 budżety, rekomendacje, kampanie, wyszukiwane hasła, wykluczenia i segmenty,
@@ -28,7 +28,7 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od kolejności pracy operatora, nie od eksportu diagnostyki. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Jak sprawdzić`, `Dlaczego teraz`, `Decyzja po review`, `Zablokowane` i `Ślad techniczny`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od kolejności pracy operatora, nie od eksportu diagnostyki. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Jak sprawdzić`, `Dlaczego teraz`, `Decyzja po review`, `Zablokowane` i `Ślad WILQ`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
 1. `Można zrobić teraz`: 3-5 priorytetów review w kolejności działania. Dla pełnej kolejki Ads zwykle prowadź: kampanie/budżety -> rekomendacje -> wyszukiwane hasła i n-gramy -> wykluczenia -> segmenty niestandardowe. Nie dumpuj wszystkich pól.
@@ -36,7 +36,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 3. `Dlaczego teraz`: krótko pokaż, co wspiera `/api/ads/diagnostics`: gotowość źródła, świeżość odczytu, liczba decyzji/akcji albo konkretne sekcje diagnostyki. Jeśli dowody są stare, niepełne albo zablokowane przez OAuth, zacznij od refresh/blokady.
 4. `Decyzja po review`: opisz, co operator może zrobić po ręcznej ocenie: zostawić do obserwacji, odrzucić rekomendację, przygotować pytania do człowieka, poprosić o brakujący kontrakt albo dopiero wtedy przejść do preview akcji.
 5. `Zablokowane`: pokaż po ludzku, czego nie wolno twierdzić ani zapisać: zwrot z reklam, koszt pozyskania celu, zmarnowany budżet, wykluczenia, zmiana budżetu, segmenty i prognoza, jeśli brakuje kontraktów, zgody albo podglądu akcji.
-6. `Ślad techniczny`: identyfikatory dowodów, szans i akcji, wynik walidacji akcji, raw kontrakty i nazwy pól API.
+6. `Ślad WILQ`: identyfikatory dowodów, źródeł danych, szans i akcji. Wynik walidacji akcji pokaż, jeśli użytkownik pyta o podgląd lub zapis. Szczegółowe kontrakty i nazwy pól API zostaw do debug-notatek albo pokaż tylko na jawne życzenie.
 
 W ustrukturyzowanym JSON eval albo handoffie te etykiety nie mogą zostać tylko w `notes`. `Jak sprawdzić` i `Decyzja po review` muszą pojawić się w widocznych polach decyzyjnych, np. w `operator_next_step`, `recommendations[].label_pl` albo `action_candidates[].label_pl`.
 

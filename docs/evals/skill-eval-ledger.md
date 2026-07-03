@@ -87,6 +87,33 @@ Result:
   non-interactive eval runs still decide whether a skill's current answer is
   useful enough for a marketer.
 
+## 2026-07-03 - Ads Doctor trace language stays useful after simplification
+
+Purpose:
+
+- Remove skill instructions that nudged normal Ads answers toward raw API
+  contract dumps.
+- Keep the BDOS-style operator queue: priorities, check questions, decision
+  after review, evidence IDs, source connector and blocked claims.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T214649Z/wilq-ads-doctor/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=false`.
+- Hard gates all true; source connector `google_ads`; 12 evidence IDs, 5
+  review recommendations and 5 action candidates.
+- Visible answer kept the operator order and blocked ROAS, CPA, budget-change,
+  recommendation-apply and negative-keyword-write claims without exposing raw
+  API fields as the main answer.
+
 ## 2026-07-03 - Daily Command after skill ceremony reduction
 
 Purpose:
