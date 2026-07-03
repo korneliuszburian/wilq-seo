@@ -154,6 +154,49 @@ Results:
 - This is still a minimum pass, not a claim that the skills are perfect or that
   real Wilku UAT happened.
 
+## 2026-07-03 - Follow-up content/SEO/social skills after ceremony reduction
+
+Purpose:
+
+- Check that more WILQ skills still work out-of-the-box after removing normal
+  skill-use ceremony around output contracts, smoke scripts and full
+  context-pack comparison.
+- Focus on marketer usefulness: GSC content diagnostics, cross-source content
+  strategy and social draft readiness with duplicate-history blockers.
+
+Proof:
+
+```bash
+rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Results:
+
+- GSC Content Doctor artifact:
+  `.local-lab/evals/codex-skill/20260703T061109Z`, with
+  `operator_usefulness_score=5`, Polish output, API usage, source connectors
+  `google_search_console`, `wordpress_ekologus` and `wordpress_sklep`, five
+  evidence IDs and a validated content refresh queue action candidate.
+- Content Strategist artifact:
+  `.local-lab/evals/codex-skill/20260703T061228Z`, with
+  `operator_usefulness_score=5`, Polish output, API usage, connectors
+  `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`, `ahrefs`
+  and `google_analytics_4`, six evidence IDs and action candidates for content
+  refresh queue, GA4 tracking review and blocked WordPress draft handoff.
+- Social Publisher artifact:
+  `.local-lab/evals/codex-skill/20260703T061357Z`, with
+  `operator_usefulness_score=5`, Polish output, API usage, connectors
+  `linkedin`, `facebook`, `google_search_console`,
+  `google_merchant_center` and `wordpress_ekologus`, five evidence IDs and
+  validated review-only LinkedIn/Facebook draft action candidates.
+- The Social output keeps duplicate-free and publish readiness claims blocked
+  until `social_history_inventory_v1` exists with metadata-only historical post
+  evidence. It may prepare draft directions for review, not publish.
+- These are minimum useful passes. Next tuning should improve first-screen
+  decision sharpness and examples, not add more ceremony or raw contract text.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:

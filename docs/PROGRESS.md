@@ -48,6 +48,14 @@ Date: 2026-07-03
   fields into normal blocker language. Passing artifacts:
   `.local-lab/evals/codex-skill/20260703T054706Z` and
   `.local-lab/evals/codex-skill/20260703T055715Z`.
+- 2026-07-03 follow-up skill usefulness checks passed for
+  `wilq-gsc-content-doctor`, `wilq-content-strategist` and
+  `wilq-social-publisher` after the skill ceremony reduction. Artifacts:
+  `.local-lab/evals/codex-skill/20260703T061109Z`,
+  `.local-lab/evals/codex-skill/20260703T061228Z` and
+  `.local-lab/evals/codex-skill/20260703T061357Z`. All three score the current
+  minimum `operator_usefulness_score=5`; treat this as "works out-of-the-box
+  with evidence and blockers", not as final BDOS-class sharpness.
 - 2026-07-03 Goal 006 candidate `wilq-seo-1xv` was closed as already
   implementation-complete: `scripts/claim_ledger_gate_audit.py --format json`
   passed 13/13 and focused Claim Ledger/generation gate tests passed 65/65.
