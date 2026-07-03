@@ -19,6 +19,75 @@ type ReviewActionSummary = ContentServiceProfileResponse["review_action_summary"
 type PrivateProposal = ContentServiceProfileResponse["private_source_proposals"][number];
 type SourceFactCoverage = ContentServiceProfileResponse["source_fact_coverage"];
 
+const REVIEW_DECISION_LABELS: Record<string, string> = {
+  approve: "zatwierdź",
+  needs_changes: "wróć z poprawkami",
+  stale: "oznacz jako nieaktualne",
+  reject: "odrzuć"
+};
+
+const REVIEW_SCOPE_LABELS: Record<string, string> = {
+  public_service_card: "publiczna karta usługi",
+  private_service_proposal: "prywatna propozycja usługi",
+  private_claim_policy_proposal: "prywatna propozycja polityki twierdzeń",
+  private_evidence_policy_proposal: "prywatna propozycja wymagań dowodowych"
+};
+
+const PRIORITY_LABELS: Record<string, string> = {
+  high: "wysoki priorytet",
+  medium: "średni priorytet",
+  low: "niski priorytet"
+};
+
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  reviewed_internal: "źródło wewnętrzne do review",
+  private_candidate: "prywatny kandydat wiedzy",
+  public_site: "publiczna strona",
+  connector_metric: "metryka z connectora",
+  legal_update: "aktualizacja prawna",
+  uat_feedback: "feedback UAT"
+};
+
+const PRIVACY_CLASS_LABELS: Record<string, string> = {
+  commit_safe: "bezpieczne w repo",
+  private_local: "prywatne lokalnie",
+  redacted_only: "tylko po redakcji"
+};
+
+const FACT_SCOPE_LABELS: Record<string, string> = {
+  service: "zakres: usługa",
+  buyer_problem: "zakres: problem kupującego",
+  cta: "zakres: CTA",
+  claim_policy: "zakres: polityka twierdzeń",
+  evidence_requirement: "zakres: wymaganie dowodowe",
+  metric_signal: "zakres: sygnał metryczny"
+};
+
+const FRESHNESS_LABELS: Record<string, string> = {
+  current: "aktualne",
+  stale: "nieaktualne",
+  unknown: "aktualność niepewna"
+};
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  company_wide: "dla całej firmy",
+  role_restricted: "dla wybranej roli",
+  unknown: "odbiorca niepewny"
+};
+
+const SUPPORT_LEVEL_LABELS: Record<string, string> = {
+  direct: "wsparcie bezpośrednie",
+  partial: "częściowe wsparcie",
+  inferred: "wniosek pośredni",
+  weak: "słabe wsparcie"
+};
+
+const RISK_TIER_LABELS: Record<string, string> = {
+  high: "wysokie ryzyko",
+  medium: "średnie ryzyko",
+  low: "niskie ryzyko"
+};
+
 export function ServiceProfileSurface() {
   const profile = useQuery({
     queryKey: ["content-service-profile"],
@@ -149,9 +218,9 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
               : "brak protokołu",
             `${data.private_source_proposal_summary.proposal_count} propozycji`,
             `${data.private_source_proposal_summary.service_proposal_count} usługowe`,
-            `${data.private_source_proposal_summary.claim_policy_proposal_count} claim-policy`,
+            `${data.private_source_proposal_summary.claim_policy_proposal_count} polityki twierdzeń`,
             data.private_source_proposal_summary.evidence_requirement_proposal_count > 0
-              ? `${data.private_source_proposal_summary.evidence_requirement_proposal_count} evidence-policy`
+              ? `${data.private_source_proposal_summary.evidence_requirement_proposal_count} wymagania dowodowe`
               : null,
             `${data.private_source_proposal_summary.review_required_count} do review`,
             `${data.private_source_proposal_summary.approved_count} zatwierdzonych`,
@@ -207,8 +276,8 @@ function SourceFactCoveragePanel({ coverage }: { coverage: SourceFactCoverage })
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
           <MetricTile label="Production-depth" value={`${coverage.production_depth_percent}%`} />
-          <MetricTile label="Usługi approved" value={`${coverage.approved_service_percent}%`} />
-          <MetricTile label="Fakty approved" value={`${coverage.reviewed_fact_percent}%`} />
+          <MetricTile label="Usługi zatwierdzone" value={`${coverage.approved_service_percent}%`} />
+          <MetricTile label="Fakty zatwierdzone" value={`${coverage.reviewed_fact_percent}%`} />
           <MetricTile label="Wartość ekologus-ai" value={`${coverage.private_review_value.operator_value_score}/10`} />
         </div>
       </div>
@@ -246,7 +315,12 @@ function SourceFactCoveragePanel({ coverage }: { coverage: SourceFactCoverage })
                 <span className="font-semibold text-action">{index + 1}.</span>
                 <span>
                   <span className="font-medium text-ink">{item.target_card_title}</span>
-                  <span className="text-slate-500"> · {item.review_scope} · {item.priority}</span>
+                  <span className="text-slate-500">
+                    {" · "}
+                    {reviewScopeLabel(item.review_scope)}
+                    {" · "}
+                    {priorityLabel(item.priority)}
+                  </span>
                 </span>
               </li>
             ))}
@@ -288,7 +362,7 @@ function ServiceProfileTodayPanel({ data }: { data: ContentServiceProfileRespons
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
           <MetricTile label="Karty" value={data.coverage_summary.card_count} />
-          <MetricTile label="Approved" value={data.coverage_summary.approved_current_count} />
+          <MetricTile label="Zatwierdzone" value={data.coverage_summary.approved_current_count} />
           <MetricTile label="Do review" value={readiness.source_backed_review_required_count} />
           <MetricTile label="ekologus-ai" value={proposals.proposal_count} />
         </div>
@@ -304,7 +378,7 @@ function ServiceProfileTodayPanel({ data }: { data: ContentServiceProfileRespons
             </li>
             <li className="grid grid-cols-[1.5rem_1fr] gap-2">
               <span className="font-semibold text-action">2.</span>
-              <span>Potem prywatne propozycje ekologus-ai: service, claim-policy i evidence-policy.</span>
+              <span>Potem prywatne propozycje ekologus-ai: usługi, polityki twierdzeń i wymagania dowodowe.</span>
             </li>
             <li className="grid grid-cols-[1.5rem_1fr] gap-2">
               <span className="font-semibold text-action">3.</span>
@@ -335,8 +409,12 @@ function ServiceProfileTodayPanel({ data }: { data: ContentServiceProfileRespons
               <PlainChipRow
                 className="mt-2"
                 values={[
-                  review.first_review_action_scope,
-                  review.first_review_action_priority,
+                  review.first_review_action_scope
+                    ? reviewScopeLabel(review.first_review_action_scope)
+                    : null,
+                  review.first_review_action_priority
+                    ? priorityLabel(review.first_review_action_priority)
+                    : null,
                   review.first_review_action_target_card_id,
                   review.first_review_action_gap_id
                 ]}
@@ -378,20 +456,20 @@ function PrivateProposalCards({ proposals }: { proposals: PrivateProposal[] }) {
               </p>
             </div>
             <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
-              {proposal.review_status}
+              {reviewStatusLabel(proposal.review_status)}
             </span>
           </div>
           <PlainChipRow
             className="mt-3"
             values={[
-              proposal.source_type,
-              proposal.privacy_class,
-              `scope: ${proposal.scope}`,
-              proposal.source_class_label,
-              `freshness: ${proposal.freshness_status}`,
-              `audience: ${proposal.audience}`,
-              `support: ${proposal.support_level}`,
-              `risk: ${proposal.risk_tier}`,
+              sourceTypeLabel(proposal.source_type),
+              privacyClassLabel(proposal.privacy_class),
+              factScopeLabel(proposal.scope),
+              sourceClassLabel(proposal.source_class_label),
+              `aktualność: ${freshnessLabel(proposal.freshness_status)}`,
+              `odbiorcy: ${audienceLabel(proposal.audience)}`,
+              supportLevelLabel(proposal.support_level),
+              riskTierLabel(proposal.risk_tier),
               proposal.confidence_label,
               proposal.promotion_allowed ? "promocja dozwolona" : "bez promocji"
             ]}
@@ -456,10 +534,10 @@ function ReviewActions({
         values={[
           `${summary.total_count} razem`,
           `${summary.public_service_review_count} publicznych usług`,
-          `${summary.private_service_review_count} prywatne service`,
-          `${summary.private_policy_review_count} prywatne claim-policy`,
-          `${summary.review_request_count} review request`,
-          summary.prepare_count > 0 ? `${summary.prepare_count} prepare` : null
+          `${summary.private_service_review_count} prywatne usługi`,
+          `${summary.private_policy_review_count} prywatne polityki twierdzeń`,
+          `${summary.review_request_count} prośby o review`,
+          summary.prepare_count > 0 ? `${summary.prepare_count} przygotowań` : null
         ]}
       />
       <p className="mt-2 text-sm leading-6 text-slate-600">{summary.safe_next_step}</p>
@@ -469,19 +547,19 @@ function ReviewActions({
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold">{action.label}</h3>
               <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
-                {action.mode}
+                {actionModeLabel(action.mode)}
               </span>
               <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
-                {action.review_scope}
+                {reviewScopeLabel(action.review_scope)}
               </span>
               <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
-                {action.priority}
+                {priorityLabel(action.priority)}
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-600">{action.reason}</p>
             {action.decision_options.length > 0 ? (
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                Decyzje: {action.decision_options.join(", ")}
+                Decyzje: {action.decision_options.map(reviewDecisionLabel).join(", ")}
               </p>
             ) : null}
             {action.review_requirements.length > 0 ? (
@@ -489,7 +567,7 @@ function ReviewActions({
                 Wymagane pola:{" "}
                 {action.review_requirements
                   .filter((requirement) => requirement.required)
-                  .map((requirement) => `${requirement.label} (${requirement.field})`)
+                  .map((requirement) => requirement.label)
                   .join(", ")}
                 {action.review_requirements.some(
                   (requirement) => requirement.field === "follow_up_beads"
@@ -576,4 +654,71 @@ function formatCounts(counts: Record<string, number>) {
   const entries = Object.entries(counts);
   if (entries.length === 0) return "brak";
   return entries.map(([key, value]) => `${key}: ${value}`).join(", ");
+}
+
+function reviewDecisionLabel(value: string) {
+  return REVIEW_DECISION_LABELS[value] ?? humanizeEnum(value);
+}
+
+function reviewScopeLabel(value: string) {
+  return REVIEW_SCOPE_LABELS[value] ?? humanizeEnum(value);
+}
+
+function priorityLabel(value: string) {
+  return PRIORITY_LABELS[value] ?? humanizeEnum(value);
+}
+
+function reviewStatusLabel(value: string) {
+  if (value === "review_required") return "wymaga review";
+  if (value === "approved") return "zatwierdzone";
+  if (value === "rejected") return "odrzucone";
+  if (value === "stale") return "nieaktualne";
+  return humanizeEnum(value);
+}
+
+function actionModeLabel(value: string) {
+  if (value === "prepare") return "przygotowanie";
+  if (value === "review") return "review";
+  if (value === "apply") return "zapis";
+  return humanizeEnum(value);
+}
+
+function sourceTypeLabel(value: string) {
+  return SOURCE_TYPE_LABELS[value] ?? humanizeEnum(value);
+}
+
+function privacyClassLabel(value: string) {
+  return PRIVACY_CLASS_LABELS[value] ?? humanizeEnum(value);
+}
+
+function factScopeLabel(value: string) {
+  return FACT_SCOPE_LABELS[value] ?? `zakres: ${humanizeEnum(value)}`;
+}
+
+function freshnessLabel(value: string) {
+  return FRESHNESS_LABELS[value] ?? humanizeEnum(value);
+}
+
+function audienceLabel(value: string) {
+  return AUDIENCE_LABELS[value] ?? humanizeEnum(value);
+}
+
+function supportLevelLabel(value: string) {
+  return SUPPORT_LEVEL_LABELS[value] ?? humanizeEnum(value);
+}
+
+function riskTierLabel(value: string) {
+  return RISK_TIER_LABELS[value] ?? humanizeEnum(value);
+}
+
+function sourceClassLabel(value: string) {
+  return value
+    .replace("review-required", "wymaga review")
+    .replace("claim-policy", "polityka twierdzeń")
+    .replace("evidence-policy", "wymaganie dowodowe")
+    .replace("source fact", "fakt źródłowy");
+}
+
+function humanizeEnum(value: string) {
+  return value.replace(/[_-]+/g, " ");
 }

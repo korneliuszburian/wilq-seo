@@ -218,6 +218,10 @@ Date: 2026-07-03
   pass/fail logic and Service Profile data are unchanged.
 - 2026-07-03 source fact coverage audit markdown now opens with a Polish
   readiness verdict instead of raw `source_backed_review_required`/`false`
+- 2026-07-03 `/service-profile` dashboard now translates review scopes,
+  priorities, decision options and private proposal chips into Polish operator
+  language. Raw enum values remain in API/test fixtures and technical proof,
+  not as the primary review UI for Wilku.
   labels. The JSON report remains unchanged, but the Wilku-facing audit says
   WILQ has review material and still lacks approved production-depth knowledge.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has

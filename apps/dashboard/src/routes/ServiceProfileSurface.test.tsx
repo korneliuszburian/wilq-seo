@@ -45,8 +45,8 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("Co blokuje produkcję")).toBeInTheDocument();
     expect(screen.getByText("Audyt pokrycia wiedzy")).toBeInTheDocument();
     expect(screen.getByText("Production-depth")).toBeInTheDocument();
-    expect(screen.getByText("Usługi approved")).toBeInTheDocument();
-    expect(screen.getByText("Fakty approved")).toBeInTheDocument();
+    expect(screen.getByText("Usługi zatwierdzone")).toBeInTheDocument();
+    expect(screen.getByText("Fakty zatwierdzone")).toBeInTheDocument();
     expect(screen.getByText("Wartość ekologus-ai")).toBeInTheDocument();
     expect(screen.getByText("9/10")).toBeInTheDocument();
     expect(screen.getByText("Co to znaczy teraz")).toBeInTheDocument();
@@ -67,10 +67,10 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("source_trace_clear").length).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(
-        "Potem prywatne propozycje ekologus-ai: service, claim-policy i evidence-policy."
+        "Potem prywatne propozycje ekologus-ai: usługi, polityki twierdzeń i wymagania dowodowe."
       )
     ).toBeInTheDocument();
-    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText("Zatwierdzone")).toBeInTheDocument();
     expect(screen.getByText("ekologus-ai")).toBeInTheDocument();
     expect(screen.getByText(/production-depth zablokowane/)).toBeInTheDocument();
     expect(screen.getByText(/źródła są, wymagają review/)).toBeInTheDocument();
@@ -92,8 +92,8 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("Źródła prywatne")).toBeInTheDocument();
     expect(screen.getByText("5 propozycji")).toBeInTheDocument();
     expect(screen.getByText("2 usługowe")).toBeInTheDocument();
-    expect(screen.getByText("2 claim-policy")).toBeInTheDocument();
-    expect(screen.getByText("1 evidence-policy")).toBeInTheDocument();
+    expect(screen.getByText("2 polityki twierdzeń")).toBeInTheDocument();
+    expect(screen.getByText("1 wymagania dowodowe")).toBeInTheDocument();
     expect(screen.getByText("5 do review")).toBeInTheDocument();
     expect(screen.getByText("promocja zablokowana")).toBeInTheDocument();
     expect(screen.getByText("Warunki przed reviewed source fact")).toBeInTheDocument();
@@ -116,13 +116,13 @@ describe("ServiceProfileSurface", () => {
       .toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Source trace i evidence pack").length)
       .toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("support: partial").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("support: direct").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("risk: medium").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("risk: high").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("freshness: current").length).toBeGreaterThanOrEqual(5);
-    expect(screen.getAllByText("audience: company_wide").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText("audience: role_restricted").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("częściowe wsparcie").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("wsparcie bezpośrednie").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("średnie ryzyko").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("wysokie ryzyko").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("aktualność: aktualne").length).toBeGreaterThanOrEqual(5);
+    expect(screen.getAllByText("odbiorcy: dla całej firmy").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("odbiorcy: dla wybranej roli").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("bez promocji").length).toBeGreaterThanOrEqual(5);
     expect(screen.getAllByText("Klasy danych").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("service_strategy").length).toBeGreaterThanOrEqual(1);
@@ -138,43 +138,48 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
     expect(screen.getByText("13 razem")).toBeInTheDocument();
     expect(screen.getByText("6 publicznych usług")).toBeInTheDocument();
-    expect(screen.getByText("2 prywatne service")).toBeInTheDocument();
-    expect(screen.getByText("3 prywatne claim-policy")).toBeInTheDocument();
-    expect(screen.getByText("12 review request")).toBeInTheDocument();
-    expect(screen.getByText("1 prepare")).toBeInTheDocument();
+    expect(screen.getByText("2 prywatne usługi")).toBeInTheDocument();
+    expect(screen.getByText("3 prywatne polityki twierdzeń")).toBeInTheDocument();
+    expect(screen.getByText("12 prośby o review")).toBeInTheDocument();
+    expect(screen.getByText("1 przygotowań")).toBeInTheDocument();
     expect(screen.getAllByText(/Najpierw przejrzyj publiczne karty usług/).length)
       .toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz"))
       .toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus"))
       .toBeInTheDocument();
-    expect(screen.getByText("private_service_proposal")).toBeInTheDocument();
-    expect(screen.getByText("private_claim_policy_proposal")).toBeInTheDocument();
-    expect(screen.getByText("private_evidence_policy_proposal")).toBeInTheDocument();
-    expect(screen.getAllByText("medium").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("high").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Decyzje: approve, needs_changes, stale, reject").length)
+    expect(screen.getByText("prywatna propozycja usługi")).toBeInTheDocument();
+    expect(screen.getByText("prywatna propozycja polityki twierdzeń")).toBeInTheDocument();
+    expect(screen.getByText("prywatna propozycja wymagań dowodowych")).toBeInTheDocument();
+    expect(screen.getAllByText("średni priorytet").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("wysoki priorytet").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText(
+        "Decyzje: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne, odrzuć"
+      ).length
+    )
       .toBeGreaterThanOrEqual(2);
     expect(
-      screen.getAllByText(/Wymagane pola: action ID z live Service Profile \(action_id\)/)
-        .length
+      screen.getAllByText(/Wymagane pola: action ID z live Service Profile/).length
     )
       .toBeGreaterThanOrEqual(2);
     expect(
       screen.getAllByText(
-        /czy decyzja retencji została podjęta albo świadomie zablokowana \(retention_decision_confirmed\)/
+        /czy decyzja retencji została podjęta albo świadomie zablokowana/
       ).length
     ).toBeGreaterThanOrEqual(2);
     expect(
       screen.getAllByText(
-        /czy aktualność prywatnego źródła została potwierdzona \(freshness_status_confirmed\)/
+        /czy aktualność prywatnego źródła została potwierdzona/
       ).length
     ).toBeGreaterThanOrEqual(2);
     expect(
       screen.getAllByText(
-        /czy zakres dostępu\/audience prywatnego źródła jest poprawny \(audience_scope_confirmed\)/
+        /czy zakres dostępu\/audience prywatnego źródła jest poprawny/
       ).length
     ).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText("Decyzje: approve, needs_changes, stale, reject"))
+      .not.toBeInTheDocument();
     expect(screen.getAllByText(/follow_up_beads przy blokadzie/).length)
       .toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/To nie promuje private proposal/).length)
