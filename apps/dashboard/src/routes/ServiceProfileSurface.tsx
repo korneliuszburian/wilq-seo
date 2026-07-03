@@ -18,6 +18,7 @@ type ReviewAction = ContentServiceProfileResponse["review_actions"][number];
 type ReviewActionSummary = ContentServiceProfileResponse["review_action_summary"];
 type PrivateProposal = ContentServiceProfileResponse["private_source_proposals"][number];
 type SourceFactCoverage = ContentServiceProfileResponse["source_fact_coverage"];
+type PrivateReviewValue = ContentServiceProfileResponse["private_review_value"];
 
 const REVIEW_DECISION_LABELS: Record<string, string> = {
   approve: "zatwierdź",
@@ -129,7 +130,10 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
       </div>
 
       <ServiceProfileTodayPanel data={data} />
-      <SourceFactCoveragePanel coverage={data.source_fact_coverage} />
+      <SourceFactCoveragePanel
+        coverage={data.source_fact_coverage}
+        privateReviewValue={data.private_review_value}
+      />
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -259,7 +263,13 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
   );
 }
 
-function SourceFactCoveragePanel({ coverage }: { coverage: SourceFactCoverage }) {
+function SourceFactCoveragePanel({
+  coverage,
+  privateReviewValue
+}: {
+  coverage: SourceFactCoverage;
+  privateReviewValue: PrivateReviewValue;
+}) {
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -271,14 +281,14 @@ function SourceFactCoveragePanel({ coverage }: { coverage: SourceFactCoverage })
             {coverage.safe_next_step}
           </p>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
-            {coverage.private_review_value.value_summary}
+            {privateReviewValue.value_summary}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
           <MetricTile label="Production-depth" value={`${coverage.production_depth_percent}%`} />
           <MetricTile label="Usługi zatwierdzone" value={`${coverage.approved_service_percent}%`} />
           <MetricTile label="Fakty zatwierdzone" value={`${coverage.reviewed_fact_percent}%`} />
-          <MetricTile label="Wartość ekologus-ai" value={`${coverage.private_review_value.operator_value_score}/10`} />
+          <MetricTile label="Wartość ekologus-ai" value={`${privateReviewValue.operator_value_score}/10`} />
         </div>
       </div>
 
@@ -297,7 +307,7 @@ function SourceFactCoveragePanel({ coverage }: { coverage: SourceFactCoverage })
           />
           <List
             label="Dlaczego ekologus-ai pomaga"
-            values={coverage.private_review_value.review_value_points}
+            values={privateReviewValue.review_value_points}
           />
           <List label="Blokery production-depth" values={coverage.blockers.slice(0, 4)} />
         </div>

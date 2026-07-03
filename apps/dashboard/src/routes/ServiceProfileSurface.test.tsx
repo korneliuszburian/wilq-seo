@@ -288,6 +288,21 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       safe_next_step:
         "Użyj protokołu private source proposals dopiero po metadata-only intake i decyzji ownera."
     },
+    private_review_value: {
+      proposal_count: 5,
+      promotion_allowed_count: 0,
+      blocked_claim_proposal_count: 5,
+      cta_pattern_proposal_count: 1,
+      buyer_trigger_proposal_count: 2,
+      operator_value_score: 9,
+      value_summary:
+        "Prywatne propozycje ekologus-ai dają materiał do review i mogą poprawić konkretność Service Profile, ale nie odblokowują production-depth, publikacji ani gotowych twierdzeń bez decyzji człowieka.",
+      review_value_points: [
+        "Prywatne propozycje dodają CTA albo kierunek rozmowy do oceny przez Wilka.",
+        "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
+        "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+      ]
+    },
     private_source_proposals: [
       {
         proposal_id:

@@ -165,6 +165,11 @@ Date: 2026-07-04
   renders it in `/service-profile`: live API shows 14 source facts, 14 review
   actions, 0% production-depth/approved readiness, ekologus-ai review value
   9/10 and the public BDO service card as the first review item.
+- 2026-07-04 Service Profile now also exposes top-level `private_review_value`
+  for ekologus-ai/private-source review value. Live proof says it matches
+  `source_fact_coverage.private_review_value`, has `operator_value_score=9`
+  and `promotion_allowed_count=0`, so it improves handoff clarity without
+  approving private knowledge or unlocking production-depth content.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

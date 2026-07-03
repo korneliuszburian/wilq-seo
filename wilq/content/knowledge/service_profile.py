@@ -331,6 +331,7 @@ class ContentServiceProfileResponse(BaseModel):
     claim_policy_sections: list[ContentServiceProfilePolicySection] = Field(default_factory=list)
     evidence_policy_sections: list[ContentServiceProfilePolicySection] = Field(default_factory=list)
     private_source_proposal_summary: ContentServiceProfilePrivateSourceProposalSummary
+    private_review_value: ContentServiceProfilePrivateReviewValue
     private_source_proposals: list[ContentServiceProfilePrivateSourceProposalSection] = Field(
         default_factory=list
     )
@@ -364,6 +365,16 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         missing_required_area_count=len(coverage_gaps),
         status_label=knowledge.production_depth_readiness.status_label,
         ready_for_daily_content=knowledge.production_depth_readiness.ready_for_daily_content,
+    )
+    source_fact_coverage = _source_fact_coverage_audit(
+        source_facts=source_facts,
+        service_sections=service_sections,
+        private_proposals=private_proposals,
+        coverage_summary=coverage_summary,
+        production_depth_readiness=knowledge.production_depth_readiness,
+        coverage_gaps=coverage_gaps,
+        review_action_summary=review_action_summary,
+        review_actions=review_actions,
     )
     return ContentServiceProfileResponse(
         workspace_id="ekologus",
@@ -401,22 +412,14 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         private_source_proposal_summary=_private_source_proposal_summary(
             private_proposals
         ),
+        private_review_value=source_fact_coverage.private_review_value,
         private_source_proposals=_private_source_proposal_sections(
             private_proposals
         ),
         coverage_gaps=coverage_gaps,
         review_action_summary=review_action_summary,
         review_actions=review_actions,
-        source_fact_coverage=_source_fact_coverage_audit(
-            source_facts=source_facts,
-            service_sections=service_sections,
-            private_proposals=private_proposals,
-            coverage_summary=coverage_summary,
-            production_depth_readiness=knowledge.production_depth_readiness,
-            coverage_gaps=coverage_gaps,
-            review_action_summary=review_action_summary,
-            review_actions=review_actions,
-        ),
+        source_fact_coverage=source_fact_coverage,
         technical_trace=ContentServiceProfileTechnicalTrace(
             knowledge_card_endpoint="/api/content/knowledge-cards",
             source_fact_count=source_fact_registry.fact_count,

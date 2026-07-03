@@ -867,8 +867,11 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         ]
         >= 5
     )
+    assert response.private_review_value == response.source_fact_coverage.private_review_value
     assert response.source_fact_coverage.private_review_value.operator_value_score >= 7
     assert response.source_fact_coverage.private_review_value.promotion_allowed_count == 0
+    assert response.private_review_value.operator_value_score == 9
+    assert response.private_review_value.promotion_allowed_count == 0
     assert response.source_fact_coverage.private_review_queue
     assert response.source_fact_coverage.review_action_queue
     assert response.source_fact_coverage.first_review_action_id

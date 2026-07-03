@@ -751,6 +751,7 @@ export const ContentServiceProfileResponseSchema = z.object({
   claim_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
   evidence_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
   private_source_proposal_summary: ContentServiceProfilePrivateSourceProposalSummarySchema,
+  private_review_value: ContentServiceProfilePrivateReviewValueSchema,
   private_source_proposals: z.array(PrivateProposalSchema).default([]),
   coverage_gaps: z.array(ContentServiceProfileCoverageGapSchema).default([]),
   review_action_summary: ContentServiceProfileReviewActionSummarySchema,

@@ -464,6 +464,20 @@ describe("ContentServiceProfileResponseSchema", () => {
         redacted: true,
         safe_next_step: "Use private proposal protocol."
       },
+      private_review_value: {
+        proposal_count: 1,
+        promotion_allowed_count: 0,
+        blocked_claim_proposal_count: 1,
+        cta_pattern_proposal_count: 0,
+        buyer_trigger_proposal_count: 1,
+        operator_value_score: 7,
+        value_summary:
+          "Prywatne propozycje ekologus-ai dają materiał do review, ale nie odblokowują production-depth.",
+        review_value_points: [
+          "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
+          "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+        ]
+      },
       private_source_proposals: [
         {
           proposal_id:
