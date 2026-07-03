@@ -12,6 +12,17 @@ Powiedz prosto:
 > i dlaczego blokuje pisanie finalnych treści. To nie jest prezentacja gotowego
 > generatora. To jest review systemu decyzyjnego.
 
+Najpierw pokaż tylko trzy rzeczy:
+
+1. status: co już działa i czego WILQ nadal nie wolno nazwać gotowym;
+2. jeden praktyczny przykład, najlepiej BDO albo Service Profile;
+3. decyzję, której potrzebujemy od Wilka: co zatwierdzić, co poprawić, co
+   odrzucić.
+
+Resztę, czyli action ID, evidence ID, eval artifact i nazwy endpointów, trzymaj
+pod spodem jako dowód techniczny. Wilku ma najpierw zrozumieć decyzję, nie
+architekturę.
+
 ## Co pokazać
 
 ### Szybki status
@@ -31,11 +42,12 @@ Najkrótszy stan:
 - `/content-workflow` ma też sprawdzony authoring WordPress/ACF:
   REST `configured`, WP-CLI `configured`, 21 sekcji ACF rozpoznanych,
   zapis i publikacja zablokowane;
-- wiedza Ekologus: 14 source facts, 5 prywatnych propozycji `ekologus-ai`,
-  14 akcji review, 0% production-depth, wszystko nadal review-required;
+- wiedza Ekologus: 14 faktów ze źródeł, 5 prywatnych propozycji `ekologus-ai`,
+  14 akcji review, 0% wiedzy zatwierdzonej do finalnych treści, wszystko nadal
+  wymaga człowieka;
 - Claim Ledger: 13/13 checków, model nie może oznaczyć treści jako gotowej do
   publikacji;
-- evale skilli: 13/13 operator skills przeszło deterministic smoke i
+- testy umiejętności: 13/13 workflowów operatorskich przeszło smoke i
   non-interactive Codex eval z WILQ API;
 - poranna komenda WILQ musi już odpowiedzieć po ludzku: co zrobić najpierw,
   dlaczego teraz, z jakimi dowodami, co jest zablokowane i jaki jest następny
@@ -86,7 +98,7 @@ Zapytaj:
    usługę BDO?
 3. Co musi się zmienić, żeby którąkolwiek z tych kart można było zatwierdzić?
 
-### Co znaczy 13/13 skill eval
+### Co znaczy, że 13 umiejętności przeszło testy
 
 Powiedz:
 

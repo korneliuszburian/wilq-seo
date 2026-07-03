@@ -9,7 +9,7 @@ Goal 001 contract: `docs/goals/001-goal.md`
 
 ## Current Readout
 
-Date: 2026-07-02
+Date: 2026-07-03
 
 - WILQ is the system/product.
 - Wilku is the human marketer/operator persona.
@@ -31,6 +31,11 @@ Date: 2026-07-02
   absent.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
+- 2026-07-03 local Wilku handoff usefulness review is stored in
+  `docs/evals/2026-07-03-wilku-handoff-usefulness-review.md`. It scores the
+  review packet at 7.5/10, keeps Goal 005 blocked on real Wilku UAT or owner
+  defer, and moved technical IDs/language lower in
+  `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
 - Dirty copy must be fixed in typed API/schema/view-model/domain source, not
   with React translators, string replacement helpers or stale label maps.
 - Do not preserve deprecated active fields, compatibility aliases or stale
