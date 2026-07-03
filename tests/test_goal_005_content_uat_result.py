@@ -62,6 +62,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert report["review_follow_up_suggestions"] == [
         {
             "material": "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",
+            "nazwa_materialu": "BDO i sprawozdawczość - próbka UAT",
             "decision": "popraw",
             "low_scores": [
                 {
@@ -107,6 +108,9 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
     assert example["pokazane_materialy_review"] == RECOMMENDED_REVIEW_ARTIFACTS
     assert [row["material"] for row in example["oceny_materialow_review"]] == (
         RECOMMENDED_REVIEW_ARTIFACTS
+    )
+    assert example["oceny_materialow_review"][0]["nazwa_materialu"] == (
+        "Service Profile review - co pokazać teraz"
     )
     assert example["follow_up_beads"] == [
         "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"

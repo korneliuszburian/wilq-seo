@@ -183,6 +183,7 @@ def build_content_uat_input_example(
         REVIEW_SCORECARD_FIELD: [
             {
                 "material": artifact,
+                "nazwa_materialu": review_artifact_title(artifact),
                 "decyzja": "popraw",
                 "czytelnosc_1_5": 3,
                 "uzytecznosc_1_5": 3,
@@ -535,9 +536,11 @@ def render_review_scorecard(value: Any) -> list[str]:
         return ["- Brak ocen materiałów review."]
     lines: list[str] = []
     for row in rows:
+        label = row.get("nazwa_materialu") or review_artifact_title(row.get("material"))
         lines.extend(
             [
-                f"- `{row.get('material')}`",
+                f"- {label}",
+                f"  - proof: `{row.get('material')}`",
                 f"  - decyzja: {row.get('decyzja')}",
                 "  - oceny: "
                 f"czytelność {row.get('czytelnosc_1_5')}/5, "
@@ -557,6 +560,7 @@ def render_review_follow_up_suggestions(value: Any) -> list[str]:
         return ["- Brak automatycznych sugestii ze scorecardu."]
     lines: list[str] = []
     for row in rows:
+        label = row.get("nazwa_materialu") or review_artifact_title(row.get("material"))
         low_scores = [
             f"{item.get('label')} {item.get('score')}/5"
             for item in raw_list_payload(row.get("low_scores"))
@@ -564,7 +568,7 @@ def render_review_follow_up_suggestions(value: Any) -> list[str]:
         ]
         lines.append(
             "- "
-            f"`{row.get('material')}`: decyzja `{row.get('decision')}`; "
+            f"{label}: decyzja `{row.get('decision')}`; "
             f"słabe oceny: {', '.join(low_scores) or 'brak'}; "
             f"poprawka: {row.get('requested_fix')}"
         )
@@ -974,10 +978,14 @@ def selected_content_candidate_next_step(value: dict[str, Any]) -> str:
 
 def review_artifact_label(artifact: Any) -> str:
     path = str(artifact)
-    label = REVIEW_ARTIFACT_LABELS.get(path)
+    label = review_artifact_title(path)
     if label:
         return f"{label} (`{path}`)"
     return f"`{path}`"
+
+
+def review_artifact_title(artifact: Any) -> str:
+    return REVIEW_ARTIFACT_LABELS.get(str(artifact), "")
 
 
 def humanize_review_decision_text(value: Any) -> str | None:
@@ -1077,6 +1085,7 @@ def review_scorecard_payload(
             continue
         row: dict[str, Any] = {
             "material": material,
+            "nazwa_materialu": review_artifact_title(material),
             "decyzja": str(item.get("decyzja") or "").strip(),
             "najwazniejsza_poprawka": str(
                 item.get("najwazniejsza_poprawka") or ""
@@ -1133,6 +1142,7 @@ def review_follow_up_suggestions(rows: list[dict[str, Any]]) -> list[dict[str, A
         suggestions.append(
             {
                 "material": row.get("material"),
+                "nazwa_materialu": row.get("nazwa_materialu"),
                 "decision": decision,
                 "low_scores": low_scores,
                 "requested_fix": requested_fix,

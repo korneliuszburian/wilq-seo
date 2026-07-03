@@ -186,6 +186,10 @@ Date: 2026-07-03
   human title before the file path, so Wilku sees "Service Profile review",
   "BDO i sprawozdawczość - próbka UAT" and "Social history blocker" instead
   of only raw markdown paths.
+- 2026-07-03 Goal 005 UAT JSON proof input now labels each scorecard material
+  with `nazwa_materialu` while preserving the raw `material` path as proof.
+  The UAT result report and follow-up suggestions carry the same label, so
+  Wilku/operator can fill and read scorecards without mapping markdown paths.
 - 2026-07-03 the Goal 005 session card now keeps raw work item IDs, connector
   IDs, Sales Brief status and Service Profile review JSON below the fold in
   `Dane techniczne do proof`. The first screen is now a marketer-facing
