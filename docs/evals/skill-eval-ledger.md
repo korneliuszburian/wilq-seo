@@ -371,6 +371,47 @@ Result:
   source terms now, while audience size, ROAS, write-targeting and campaign
   effectiveness claims remain blocked.
 
+## 2026-07-03 - Full fresh skill eval baseline
+
+Purpose:
+
+- Establish a current same-day baseline after the first-screen tuning passes.
+- Confirm all repo WILQ skills can run out-of-the-box against live WILQ API
+  evidence on production-like Polish prompts.
+
+Proof:
+
+```bash
+rtk scripts/codex_skill_eval.sh --skill wilq-campaign-builder --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Earlier same-day artifacts listed below include the other 11 skills.
+
+| Skill | Artifact | Score | Blocked |
+| --- | --- | --- | --- |
+| `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260703T070219Z` | 5 | false |
+| `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260703T070640Z` | 5 | false |
+| `wilq-campaign-builder` | `.local-lab/evals/codex-skill/20260703T072120Z` | 5 | false |
+| `wilq-content-operator` | `.local-lab/evals/codex-skill/20260703T054706Z` | 5 | true |
+| `wilq-content-strategist` | `.local-lab/evals/codex-skill/20260703T065420Z` | 5 | true |
+| `wilq-custom-segments` | `.local-lab/evals/codex-skill/20260703T071835Z` | 5 | false |
+| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260703T053628Z` | 5 | false |
+| `wilq-demand-gen-operator` | `.local-lab/evals/codex-skill/20260703T072251Z` | 5 | true |
+| `wilq-ga4-analyst` | `.local-lab/evals/codex-skill/20260703T070939Z` | 5 | false |
+| `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260703T065259Z` | 5 | false |
+| `wilq-localo-operator` | `.local-lab/evals/codex-skill/20260703T071153Z` | 5 | false |
+| `wilq-merchant-feed-operator` | `.local-lab/evals/codex-skill/20260703T055715Z` | 5 | false |
+| `wilq-social-publisher` | `.local-lab/evals/codex-skill/20260703T065602Z` | 5 | false |
+
+Result:
+
+- 13/13 WILQ skills have a fresh same-day non-interactive eval pass.
+- All current scores are `operator_usefulness_score=5`. This is a clean
+  baseline, not the target. The next product step is raising selected workflows
+  toward 7-10/10 through richer API-owned decision fields, examples, reviewer
+  scoring and Wilku UAT.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:

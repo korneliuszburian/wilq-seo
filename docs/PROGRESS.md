@@ -81,6 +81,10 @@ Date: 2026-07-03
   segment review can start from real source terms, while audience size, ROAS,
   write and campaign-effect claims stay blocked because Keyword Planner
   enrichment and audience-size forecast are missing.
+- 2026-07-03 fresh full WILQ skill eval baseline is now 13/13 passing for all
+  repo WILQ skills on production-like Polish prompts. Every current score is
+  `operator_usefulness_score=5`, so this proves "works out-of-the-box with
+  evidence and blockers", not the target 10/10 marketer usefulness state.
 - 2026-07-03 Goal 006 candidate `wilq-seo-1xv` was closed as already
   implementation-complete: `scripts/claim_ledger_gate_audit.py --format json`
   passed 13/13 and focused Claim Ledger/generation gate tests passed 65/65.
