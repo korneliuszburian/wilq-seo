@@ -114,6 +114,34 @@ Result:
   recommendation-apply and negative-keyword-write claims without exposing raw
   API fields as the main answer.
 
+## 2026-07-03 - Custom Segments trace language stays review-first
+
+Purpose:
+
+- Remove skill instructions that pushed segment answers toward raw contract
+  dumps.
+- Keep real source terms, intent review, preview without write and blocked
+  audience/ROAS/effectiveness claims visible.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T215047Z/wilq-custom-segments/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=true`.
+- Hard gates all true; source connectors `google_ads` and
+  `google_search_console`; 2 evidence IDs, 3 review recommendations and 1
+  action candidate.
+- Visible answer stays review-only: one segment from real source terms, intent
+  filtering, preview without write and blocked audience-size, forecast, ROAS,
+  effectiveness and conversion-growth claims.
+
 ## 2026-07-03 - Daily Command after skill ceremony reduction
 
 Purpose:

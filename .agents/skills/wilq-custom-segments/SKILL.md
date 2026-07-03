@@ -88,9 +88,11 @@ Widocznie oddzielaj:
 - `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, zawęzić segment, odłożyć temat albo zablokować segment.
 - `Zablokowane`: zapis kierowania, rozmiar odbiorców, prognoza, skuteczność kampanii, zwrot z reklam i wzrost konwersji.
 - `Brief dla marketera`: 3-5 zdań normalnym językiem: co WILQ może przygotować, z czego to wynika, czego brakuje i jaki jest następny bezpieczny krok.
-- `Ślad techniczny`: raw kontrakty, identyfikatory dowodów i action_id.
+- `Ślad WILQ`: identyfikatory dowodów, źródeł danych i action_id. Szczegółowe
+  kontrakty pokazuj tylko w technicznych notatkach/debugu albo gdy użytkownik o
+  nie poprosi.
 
-Nie pokazuj marketerowi surowych markerów typu `keyword_planner_enrichment`, `forecast_or_audience_size`, `custom_segments_read_contract` ani `audience_forecast_read_contract`. Tłumacz je normalnie: "brakuje wzbogacenia Keyword Planner" i "brakuje prognozy rozmiaru odbiorców". Surowe wartości zostaw w `notes`.
+Nie pokazuj marketerowi surowych markerów typu `keyword_planner_enrichment`, `forecast_or_audience_size`, `custom_segments_read_contract` ani `audience_forecast_read_contract`. Tłumacz je normalnie: "brakuje wzbogacenia Keyword Planner" i "brakuje prognozy rozmiaru odbiorców". Surowe wartości pokazuj wyłącznie w technicznych notatkach/debugu.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

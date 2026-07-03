@@ -8,7 +8,7 @@ Oczekiwany wynik: segmenty do sprawdzenia z `source_terms`, `evidence_ids`, pozi
 
 ## Wymagany kontekst API
 
-Pobierz `GET /api/ads/diagnostics` oraz `POST /api/codex/context-pack` z `{"skill":"wilq-custom-segments"}` przed analizą marketingową. `ads_diagnostics.custom_segments_read_contract` jest źródłem prawdy dla akcji do sprawdzenia segmentów. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy gotowość ma znaczenie.
+Pobierz `GET /api/ads/diagnostics` przed analizą marketingową. `POST /api/codex/context-pack` z `{"skill":"wilq-custom-segments"}` jest opcjonalnym wzbogaceniem, gdy wąski endpoint nie wystarcza albo trzeba połączyć Ads z inną powierzchnią WILQ. `ads_diagnostics.custom_segments_read_contract` jest źródłem prawdy dla akcji do sprawdzenia segmentów. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy gotowość ma znaczenie.
 
 Wymagane źródła danych:
 
@@ -53,7 +53,7 @@ Zakazane twierdzenia pokazuj jako blokady w `Status`, `Diagnoza`, `Sprawdzenie w
 rekomendacji segmentu jako zwykłego zdania, nawet z negacją. Etykieta segmentu
 ma opisywać tylko propozycję, `source_terms`, priorytet review i powód review.
 
-Jeśli akcji do sprawdzenia nie ma, pokaż `custom_segments_read_contract.missing_read_contracts` i `next_step`.
+Jeśli akcji do sprawdzenia nie ma, pokaż brakujące dane po ludzku, np. brak wzbogacenia Keyword Planner albo brak prognozy rozmiaru odbiorców. Szczegółowe pola `custom_segments_read_contract.missing_read_contracts` i `next_step` zostaw do technicznych notatek/debugu.
 
 ## Warunki odmowy lub obniżenia do blokady
 
