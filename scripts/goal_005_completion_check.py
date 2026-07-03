@@ -330,6 +330,10 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
                 "blocked_reason": str(error),
                 "selected_work_item": "<work_item_id_z_uat_packet>",
                 "review_artifacts": [],
+                "session_card_command": (
+                    "rtk uv run python scripts/record_goal_005_content_uat_result.py "
+                    f"--print-session-card --api-base {api_base}"
+                ),
                 "print_input_command": (
                     "rtk uv run python scripts/record_goal_005_content_uat_result.py "
                     f"--print-input-example --api-base {api_base}"
@@ -345,6 +349,11 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
         "selected_work_item": example["wybrany_work_item"],
         "review_artifacts": example.get("pokazane_materialy_review", []),
         "first_service_profile_review": first_review,
+        "session_card_command": (
+            "rtk uv run python scripts/record_goal_005_content_uat_result.py "
+            + "--print-session-card"
+            + (f" --api-base {api_base}" if api_base else "")
+        ),
         "print_input_command": (
             "rtk uv run python scripts/record_goal_005_content_uat_result.py "
             + "--print-input-example"
@@ -681,6 +690,8 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
     lines = [
         "- Dostępny: " + ("tak" if value.get("available") is True else "nie"),
         f"- Wybrany work item: `{value.get('selected_work_item') or 'brak'}`",
+        "- Komenda do karty rozmowy: "
+        f"`{value.get('session_card_command') or 'brak'}`",
         f"- Komenda do wygenerowania JSON: `{value.get('print_input_command') or 'brak'}`",
     ]
     if isinstance(first_review, dict):

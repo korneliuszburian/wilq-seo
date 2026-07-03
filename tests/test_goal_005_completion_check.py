@@ -162,6 +162,11 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "renamed_public_service_bdo_review" in rendered
     assert "Wymagane pola pierwszego review: action_id, source_trace_clear" in rendered
     assert "--api-base http://127.0.0.1:8000" in next_input["print_input_command"]
+    assert "--print-session-card --api-base http://127.0.0.1:8000" in next_input[
+        "session_card_command"
+    ]
+    assert "Komenda do karty rozmowy" in rendered
+    assert "--print-session-card" in rendered
 
 
 def test_goal_005_pre_demo_audit_summary_can_include_dashboard_usefulness(
