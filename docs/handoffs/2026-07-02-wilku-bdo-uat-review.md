@@ -1,19 +1,18 @@
 # BDO i sprawozdawczość - materiał do UAT z Wilkiem
 
-Status: materiał do rozmowy i review. To nie jest finalny brief, draft ani
+Status: materiał do rozmowy i oceny. To nie jest finalny brief, szkic ani
 rekomendacja publikacji.
 
 Data: 2026-07-02
 
-## Etykieta UAT
+## Etykieta rozmowy
 
-To jest `review specimen`, czyli próbka do oceny języka, źródeł, CTA i blokad
-WILQ dla tematu BDO.
+To jest próbka do oceny języka, źródeł, CTA i blokad WILQ dla tematu BDO.
 
-To nie jest dzisiejszy aktywny work item z live kolejki, polecenie napisania
-draftu ani rekomendacja publikacji. Jeśli Wilku zatwierdzi kierunek, następnym
-krokiem jest decyzja review dla karty BDO i dopiero później ponowne sprawdzenie
-live kolejki.
+To nie jest dzisiejsze aktywne zadanie z kolejki, polecenie napisania szkicu
+ani rekomendacja publikacji. Jeśli Wilku zatwierdzi kierunek, następnym krokiem
+jest decyzja dla karty BDO i dopiero później ponowne sprawdzenie aktualnej
+kolejki.
 
 ## Po co to pokazujemy
 
@@ -21,45 +20,49 @@ Chcemy sprawdzić, czy WILQ umie zrobić rzecz praktyczną: wziąć temat BDO,
 połączyć go z realnym śladem źródeł i powiedzieć Wilkowi, co można bezpiecznie
 przygotować, a czego nie wolno obiecać.
 
-To jest propozycja do pierwszej rozmowy UAT, bo wcześniejszy audyt Sales Brief v2
-wskazał `bdo co to` jako najmocniejszy temat review. Jednocześnie live kolejka
-z 2026-07-02 nie wystawia dziś BDO jako aktywnego zadania contentowego, więc ten
-materiał nie mówi: "piszemy teraz draft". Mówi: "sprawdźmy, czy kierunek BDO,
-źródła i blokady są zrozumiałe dla Wilka".
+To jest propozycja do pierwszej rozmowy z Wilkiem, bo wcześniejszy audyt Sales
+Brief v2 wskazał `bdo co to` jako najmocniejszy temat do oceny. Jednocześnie
+aktualna kolejka z 2026-07-02 nie wystawia dziś BDO jako aktywnego zadania
+treściowego, więc ten materiał nie mówi: "piszemy teraz szkic". Mówi:
+"sprawdźmy, czy kierunek BDO, źródła i blokady są zrozumiałe dla Wilka".
 
 ## Skąd WILQ to bierze
 
-Live WILQ API, 2026-07-02:
+W skrócie: WILQ ma publiczny artykuł Ekologus o BDO, aktualne dowody z GSC i
+WordPressa oraz kartę BDO gotową do oceny. Nie ma jeszcze decyzji człowieka,
+która pozwalałaby traktować BDO jako wiedzę zatwierdzoną do finalnych treści.
+
+Szczegóły techniczne z WILQ API, 2026-07-02:
 
 - `GET /api/content/service-profile`
   - karta: `ekologus_service_bdo_reporting`
-  - status: `source_backed_review_required`
+  - status techniczny: `source_backed_review_required`
   - źródło: `https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/`
-  - source fact: `ekologus_public_bdo_faq_2026_07_01`
-  - review action: `service_profile_review_card_ekologus_service_bdo_reporting`
+  - fakt źródłowy: `ekologus_public_bdo_faq_2026_07_01`
+  - akcja oceny: `service_profile_review_card_ekologus_service_bdo_reporting`
 - `GET /api/content/diagnostics`
-  - bieżące evidence IDs obejmują m.in.
+  - bieżące identyfikatory dowodów obejmują m.in.
     `ev_refresh_refresh_google_search_console_9b25d4143bea`,
     `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`,
     `ev_connector_google_search_console_status`,
     `ev_connector_wordpress_ekologus_status`
-  - live content queue ma dziś 3 decyzje, ale nie ma osobnej decyzji BDO.
+  - aktualna kolejka treści ma dziś 3 decyzje, ale nie ma osobnej decyzji BDO.
 - `GET /api/content/work-items/queue`
   - `queue_status=blocked`
   - `candidate_count=3`
   - `actionable_candidate_count=1`
-  - BDO nie jest dziś aktywnym work itemem.
+  - BDO nie jest dziś aktywnym zadaniem.
 
-Historyczny proof Goal 005:
+Historyczny dowód Goal 005:
 
 - `docs/audits/005-2026-07-01-sales-brief-signal-quality.md`
-  - `bdo co to` było oznaczone jako `brief built` i `usable for review`
-  - powód: GSC + WordPress evidence, istniejący URL, enrichment, measurement
-    ready to plan, 3 source facts i 15 knowledge constraints.
+  - `bdo co to` było oznaczone jako brief zbudowany i użyteczny do oceny
+  - powód: dowody z GSC i WordPressa, istniejący URL, wzbogacenie kontekstu,
+    gotowość do zaplanowania pomiaru, 3 fakty źródłowe i 15 ograniczeń wiedzy.
 
-Granica: WILQ ma publiczne i live dowody do review kierunku, ale karta BDO
-nadal wymaga decyzji człowieka. Nie wolno traktować jej jako
-`approved_current` ani production-depth.
+Granica: WILQ ma publiczne i aktualne dowody do oceny kierunku, ale karta BDO
+nadal wymaga decyzji człowieka. Nie wolno traktować jej jako wiedzy
+zatwierdzonej do finalnych treści.
 
 ## Jak WILQ rozumie temat
 
@@ -101,7 +104,7 @@ Bezpieczne propozycje:
 - "Jeżeli nie masz pewności, czy BDO dotyczy Twojej działalności, przygotuj opis
   działalności, rodzaj odpadów i dotychczasową dokumentację do rozmowy."
 
-## Czego nie mówić bez review
+## Czego nie mówić bez oceny człowieka
 
 Nie obiecywać:
 
@@ -109,7 +112,7 @@ Nie obiecywać:
 - "na pewno nie musisz rejestrować firmy w BDO",
 - "unikniesz kary",
 - "gwarantujemy zgodność",
-- konkretnych terminów, stawek, sankcji albo interpretacji bez świeżego review,
+- konkretnych terminów, stawek, sankcji albo interpretacji bez świeżej oceny,
 - że WILQ sam rozstrzyga obowiązek konkretnej firmy.
 
 Bezpieczniejszy język:
@@ -118,7 +121,7 @@ Bezpieczniejszy język:
 - "może wymagać weryfikacji",
 - "zależy od działalności i dokumentów firmy",
 - "pomaga przygotować pytania do eksperta",
-- "wymaga review Wilka/ownera przed finalnym draftem".
+- "wymaga oceny Wilka/ownera przed finalnym szkicem".
 
 ## Propozycja krótkiej treści do oceny
 
@@ -186,27 +189,27 @@ działalność firmy. Ekologus może pomóc sprawdzić, od czego zacząć.
 
 Jeżeli Wilku zatwierdzi kierunek:
 
-- zapisać decyzję review dla `service_profile_review_card_ekologus_service_bdo_reporting`,
-- oznaczyć ślad źródłowy i blocked claims jako sprawdzone,
-- przygotować osobny audited promotion request, ale dopiero przez WILQ action
-  path,
-- odświeżyć GSC i WordPress i sprawdzić, czy BDO wraca jako live work item,
-- dopiero potem budować Sales Brief lub draft.
+- zapisać decyzję dla `service_profile_review_card_ekologus_service_bdo_reporting`,
+- oznaczyć ślad źródłowy i zablokowane twierdzenia jako sprawdzone,
+- przygotować osobny wniosek o promocję wiedzy, ale dopiero przez bezpieczną
+  ścieżkę WILQ,
+- odświeżyć GSC i WordPress i sprawdzić, czy BDO wraca jako aktualne zadanie,
+- dopiero potem budować Sales Brief lub szkic.
 
 Jeżeli Wilku poprawi kierunek:
 
-- zapisać, co zmienić w karcie BDO, CTA albo claim policy,
-- utworzyć follow-up Beads, jeśli decyzja nie jest `approve`,
-- nie używać BDO jako production-depth wiedzy do finalnego draftu.
+- zapisać, co zmienić w karcie BDO, CTA albo polityce twierdzeń,
+- utworzyć zadanie follow-up, jeśli decyzja nie brzmi "zatwierdź",
+- nie używać BDO jako wiedzy zatwierdzonej do finalnego szkicu.
 
 Jeżeli Wilku odrzuci kierunek:
 
-- zostawić kartę jako `source_backed_review_required` albo `rejected`,
+- zostawić kartę jako wymagającą dalszej oceny albo odrzuconą,
 - nie używać BDO jako domyślnego CTA w treściach,
-- nie pisać draftu BDO mimo historycznego Sales Brief proof.
+- nie pisać szkicu BDO mimo historycznego dowodu Sales Brief.
 
 ## Jednozdaniowy werdykt dla rozmowy
 
-BDO jest dobrym tematem do UAT wiedzy i języka sprzedażowego, ale nie jest dziś
-aktywnym live work itemem w kolejce treści; najpierw potrzebujemy decyzji Wilka
-o karcie BDO, źródłach, CTA i blokowanych twierdzeniach.
+BDO jest dobrym tematem do oceny wiedzy i języka sprzedażowego, ale nie jest
+dziś aktywnym zadaniem w kolejce treści; najpierw potrzebujemy decyzji Wilka o
+karcie BDO, źródłach, CTA i blokowanych twierdzeniach.

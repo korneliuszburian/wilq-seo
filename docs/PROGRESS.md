@@ -268,6 +268,10 @@ Date: 2026-07-03
   Wilku-facing language: it explains Service Profile, Claim Ledger, social
   history, skill tests and blocked publication in Polish operator terms instead
   of visible production-depth/eval/source-connector jargon.
+- 2026-07-03 the BDO Wilku review handoff now opens as a plain sample for
+  language/source/CTA review. It keeps raw Service Profile status/action IDs in
+  the technical API section, while visible decision copy says "ocena", "szkic",
+  "wiedza zatwierdzona do finalnych treści" and "zablokowane twierdzenia".
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
