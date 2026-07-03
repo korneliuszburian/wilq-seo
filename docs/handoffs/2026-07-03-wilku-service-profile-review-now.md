@@ -57,19 +57,20 @@ dla kolejnych usług:
    - zakres: private evidence-policy proposal;
    - priorytet: high;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-5. **Eko-Opieka / Eko Kalendarz**
+5. **Audyt zgodności środowiskowej**
    - zakres: private service proposal;
    - priorytet: medium;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-6. **Audyt zgodności środowiskowej**
+6. **Eko-Opieka i Eko Kalendarz**
    - zakres: private service proposal;
    - priorytet: medium;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
 
 Pozostałe publiczne karty usług też wymagają review. Najbardziej praktyczne do
 następnych rozmów: konsulting/outsourcing środowiskowy, odpady/opakowania,
-szkolenia, remediacja/monitoring i sorbenty. `Operat wodnoprawny` nadal jest
-luką/blokerem bez bezpośredniej zatwierdzonej wiedzy usługowej.
+operaty wodnoprawne, szkolenia, remediacja/monitoring i sorbenty. Operaty
+wodnoprawne mają już kartę do review, ale nadal nie są `approved_current`, więc
+nie odblokowują production-depth treści.
 
 ## Pytania do Wilka
 
