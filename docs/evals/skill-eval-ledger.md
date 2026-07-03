@@ -172,6 +172,37 @@ Result:
   and blocks product ROAS, recovered revenue, price-impact, reapproval and feed
   write claims.
 
+## 2026-07-03 - Content Operator trace language simplified
+
+Purpose:
+
+- Remove skill instructions that pushed content workflow answers toward
+  endpoint and raw gate dumps.
+- Keep the useful operator shape: one session, source explanation, evidence
+  IDs, selected material, action IDs, clear stop conditions, WordPress
+  draft-only and no publication without review.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T215731Z/wilq-content-operator/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=true`.
+- Hard gates all true; source connectors `google_analytics_4`, `ahrefs`,
+  `google_search_console` and `wordpress_ekologus`; 6 evidence IDs, 4 review
+  recommendations and 2 action candidates.
+- Visible answer now uses `Ślad WILQ` for evidence/source/action trace and
+  keeps endpoints plus detailed workflow gates in technical notes/debug unless
+  the user explicitly asks for them.
+- WordPress remains draft-only, publication stays blocked, and the output
+  explains what to show Wilku without making him read API mechanics first.
+
 ## 2026-07-03 - Daily Command after skill ceremony reduction
 
 Purpose:

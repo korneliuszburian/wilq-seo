@@ -33,14 +33,14 @@ Wymagane źródła danych zależą od itemu i muszą pochodzić z API:
 
 ## Kształt odpowiedzi
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zaczynaj od jednej sesji pracy, nie od raportu bramek. Widoczna odpowiedź musi zawierać polskie etykiety: `Co wybieramy`, `Dlaczego ten temat`, `Plan sesji`, `Kiedy stop`, `Co pokazać Wilkowi` i `Ślad techniczny`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet identyfikatorów dowodów ani źródeł poza technicznymi polami JSON.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zaczynaj od jednej sesji pracy, nie od raportu bramek. Widoczna odpowiedź musi zawierać polskie etykiety: `Co wybieramy`, `Dlaczego ten temat`, `Plan sesji`, `Kiedy stop`, `Co pokazać Wilkowi` i `Ślad WILQ`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet identyfikatorów dowodów ani źródeł poza technicznymi polami JSON.
 
 1. `Co wybieramy`: wybrany `work_item_id`, tryb pracy i decyzja, czy praca jest refresh-first, draft-ready czy zablokowana.
 2. `Dlaczego ten temat`: źródła danych i dowody WILQ po ludzku: GSC, WordPress, Ahrefs, GA4, Service Profile, knowledge cards, final canonical i preview URL tylko jako preview.
 3. `Plan sesji`: 4-6 kroków w kolejności działania: odśwież dane źródłowe, enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrola jakości/review człowieka, WordPress draft-only albo measurement window.
 4. `Kiedy stop`: konkretne warunki zatrzymania: brak świeżych danych, brak Service Profile, forbidden claim, brak human review, WordPress tylko jako szkic, ACF/`elementy` tylko jako preview, measurement outcome niegotowy.
 5. `Co pokazać Wilkowi`: krótki pakiet review: decyzja, źródła, dozwolone twierdzenia, zablokowane twierdzenia i najbliższa akcja do sprawdzenia.
-6. `Ślad techniczny`: endpointy albo work item gates, które trzeba uruchomić dalej: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, structured runtime, quality review, revision plan, revision apply, human review, audit, WordPress draft-only, measurement.
+6. `Ślad WILQ`: identyfikatory dowodów, źródeł danych, wybranego materiału i akcji. Dalsze bramki procesu opisuj po ludzku: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, structured runtime, quality review, revision plan, revision apply, human review, audit, WordPress draft-only, measurement. Endpointy pokazuj tylko w technicznych notatkach/debugu albo na jawne życzenie.
    Jeżeli wybrana propozycja z kolejki ma `action_ids`, pokaż te identyfikatory akcji
    w tej sekcji i sprawdź je przez `POST /api/actions/{action_id}/validate`.
    Globalnie zablokowana kolejka UAT nie usuwa action proofu dla wybranego
