@@ -425,7 +425,10 @@ def build_review_result_report(
         )
 
     review_type = normalize_review_type(payload.get("review_type"))
-    decisions = [normalize_decision(item) for item in raw_list(payload.get("decisions"))]
+    decisions = [
+        attach_blocking_reasons(normalize_decision(item), review_type=review_type)
+        for item in raw_list(payload.get("decisions"))
+    ]
     follow_up_tasks = list_payload(payload.get("follow_up_beads"))
     blocking_decisions = [
         decision
@@ -843,6 +846,25 @@ def private_governance_blocks(decision: dict[str, Any], *, review_type: str) -> 
     if review_type != "private_source_proposals":
         return False
     return any(decision.get(field) is not True for field in PRIVATE_DECISION_BOOLEAN_FIELDS)
+
+
+def attach_blocking_reasons(
+    decision: dict[str, Any],
+    *,
+    review_type: str,
+) -> dict[str, Any]:
+    reasons: list[str] = []
+    if decision["decision"] != "approve":
+        reasons.append(f"decyzja: {review_decision_label(decision['decision'])}")
+    if decision["source_trace_clear"] is not True:
+        reasons.append("ślad źródłowy nie jest czytelny")
+    if decision["blocked_claims_reviewed"] is not True:
+        reasons.append("zablokowane twierdzenia nie są sprawdzone")
+    if review_type == "private_source_proposals":
+        for field in PRIVATE_DECISION_BOOLEAN_FIELDS:
+            if decision.get(field) is not True:
+                reasons.append(review_requirement_label(field))
+    return {**decision, "blocking_reasons": reasons}
 
 
 def load_live_context(api_base: str) -> dict[str, Any]:
@@ -1324,6 +1346,8 @@ def render_markdown(report: dict[str, Any]) -> str:
                 lines.append(
                     f"- {review_requirement_label(field)}: {visible_bool(decision[field])}"
                 )
+        if decision.get("blocking_reasons"):
+            lines.append("- co blokuje: " + "; ".join(decision["blocking_reasons"]))
         lines.append(f"- notatki: {decision['notes']}")
         for task in decision["follow_up_beads"]:
             lines.append(f"- follow-up: {task}")

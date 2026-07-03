@@ -81,6 +81,10 @@ Date: 2026-07-04
   as a real quality gate: even a ready UAT stays blocked if Wilku marks the
   trace unclear, leaves decision as `popraw`/`odrzuć`/`odśwież`, or requests a
   fix for any `KB_*`/eval source trace.
+- 2026-07-04 Service Profile review result now adds marketer-readable
+  `blocking_reasons` per decision and markdown `co blokuje` summaries, so
+  private `ekologus-ai` follow-up names failed source trace, retention,
+  deletion, freshness, access or eval-gate checks directly.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

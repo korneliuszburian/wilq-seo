@@ -301,6 +301,7 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert report["decisions"][0]["retention_decision_confirmed"] is True
     assert report["decisions"][0]["deletion_path_confirmed"] is True
     assert report["decisions"][0]["eval_gates_confirmed"] is True
+    assert report["decisions"][0]["blocking_reasons"] == []
     assert report["live_provenance"] == {
         "api_base": "http://127.0.0.1:8000",
         "service_profile_read_only": True,
@@ -358,6 +359,34 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert "Private proposal provenance z live Service Profile" in markdown
     assert "freshness=current" in markdown
     assert "audience=company_wide" in markdown
+
+
+def test_service_profile_review_result_summarizes_private_blocking_reasons() -> None:
+    payload = _private_eko_opieka_approved_payload()
+    decision = payload["decisions"][0]  # type: ignore[index]
+    decision["decision"] = "needs_changes"  # type: ignore[index]
+    decision["source_trace_clear"] = "nie"  # type: ignore[index]
+    decision["retention_decision_confirmed"] = "nie"  # type: ignore[index]
+    decision["eval_gates_confirmed"] = "nie"  # type: ignore[index]
+    decision["follow_up_beads"] = ["wilq-seo-next: poprawić trace prywatnej propozycji"]  # type: ignore[index]
+    payload["follow_up_beads"] = [  # type: ignore[index]
+        "wilq-seo-next: poprawić trace prywatnej propozycji"
+    ]
+
+    report = build_review_result_report(payload, live_context=_live_context())
+
+    assert report["overall_status"] == "needs_follow_up_before_promotion_request"
+    assert report["decisions"][0]["blocking_reasons"] == [
+        "decyzja: wróć z poprawkami",
+        "ślad źródłowy nie jest czytelny",
+        "czy decyzja retencji została podjęta albo świadomie zablokowana",
+        "czy bramki ewaluacji blokujące ryzykowne twierdzenia są wskazane",
+    ]
+    markdown = render_markdown(report)
+    assert "co blokuje: decyzja: wróć z poprawkami" in markdown
+    assert "ślad źródłowy nie jest czytelny" in markdown
+    assert "czy decyzja retencji została podjęta albo świadomie zablokowana" in markdown
+    assert "czy bramki ewaluacji blokujące ryzykowne twierdzenia są wskazane" in markdown
 
 
 def test_service_profile_promotion_readiness_blocks_private_without_evidence() -> None:
