@@ -85,6 +85,10 @@ Date: 2026-07-04
   `blocking_reasons` per decision and markdown `co blokuje` summaries, so
   private `ekologus-ai` follow-up names failed source trace, retention,
   deletion, freshness, access or eval-gate checks directly.
+- 2026-07-04 private `ekologus-ai` trace safe-next-steps are now written in
+  normal Polish before they reach UAT/completion output; focused regressions
+  block machine-translated artifacts such as `ocenaerowi`, `ocenaed` and
+  `nie odblokowuj wiedza` from returning to Wilku-facing trace text.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

@@ -454,11 +454,16 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
 
     brand_voice = proposals["ekologus_claim_policy_brand_voice"]
     assert brand_voice.scope == "claim_policy"
-    assert brand_voice.source_class_label == "review-required internal claim-policy source fact"
+    assert (
+        brand_voice.source_class_label
+        == "wewnętrzny fakt polityki twierdzeń wymagający oceny"
+    )
     assert brand_voice.support_level == "direct"
     assert brand_voice.risk_tier == "high"
     assert brand_voice.promotion_allowed is False
-    assert "automatycznej bramki bez review" in brand_voice.safe_next_step
+    assert "automatycznej bramki bez decyzji człowieka" in brand_voice.safe_next_step
+    assert "review" not in brand_voice.safe_next_step
+    assert "reviewer" not in brand_voice.safe_next_step
 
     legal_safety = proposals["ekologus_claim_policy_legal_safety"]
     assert legal_safety.scope == "claim_policy"
@@ -468,14 +473,16 @@ def test_service_profile_exposes_private_policy_proposals_without_promotion() ->
     source_trace = proposals["ekologus_evidence_policy_source_trace"]
     assert source_trace.scope == "evidence_requirement"
     assert source_trace.source_class_label == (
-        "review-required internal evidence-policy source fact"
+        "wewnętrzny fakt wymagań dowodowych wymagający oceny"
     )
     assert source_trace.support_level == "direct"
     assert source_trace.risk_tier == "medium"
     assert "evidence_policy" in source_trace.data_classes
     assert "goal_005_private_evidence_policy_review" in source_trace.eval_case_ids
     assert source_trace.promotion_allowed is False
-    assert "reviewed evidence policy" in source_trace.safe_next_step
+    assert "oceniona polityka dowodowa" in source_trace.safe_next_step
+    assert "reviewed" not in source_trace.safe_next_step
+    assert "reviewer" not in source_trace.safe_next_step
 
     action_ids = {action.action_id for action in profile.review_actions}
     assert (

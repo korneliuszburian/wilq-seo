@@ -52,6 +52,14 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert report["next_uat_input"]["private_source_trace_items"][0]["source_blocks"]
     assert report["next_uat_input"]["private_source_trace_items"][0]["eval_cases"]
     assert report["next_uat_input"]["private_source_trace_items"][0]["trace_ready"] is True
+    private_trace_text = json.dumps(
+        report["next_uat_input"]["private_source_trace_items"],
+        ensure_ascii=False,
+    )
+    assert "ocenaerowi" not in private_trace_text
+    assert "ocenaed" not in private_trace_text
+    assert "nie odblokowuj wiedza" not in private_trace_text
+    assert "osobie oceniającej" in private_trace_text
     assert any(
         "CTA" in question
         for question in report["next_uat_input"]["private_review_questions"]

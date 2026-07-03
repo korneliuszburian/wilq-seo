@@ -1459,12 +1459,18 @@ def private_retention_label(value: Any) -> str:
 
 def private_trace_operator_text(value: str) -> str:
     return (
-        value.replace("claim policy", "polityka twierdzeń")
+        value.replace("reviewerowi", "osobie oceniającej")
+        .replace("reviewerem", "osobą oceniającą")
+        .replace("reviewer", "osoba oceniająca")
+        .replace("reviewed source fact", "oceniony fakt źródłowy")
+        .replace("reviewed policy fact", "oceniony fakt polityki")
+        .replace("reviewed evidence policy", "oceniona polityka dowodowa")
+        .replace("reviewed źródeł", "ocenionych źródeł")
+        .replace("reviewed source", "ocenione źródło")
+        .replace("claim policy", "polityka twierdzeń")
         .replace("Source trace", "Ślad źródłowy")
         .replace("source trace", "ślad źródłowy")
         .replace("evidence pack", "pakiet dowodów")
-        .replace("reviewed źródeł", "ocenionych źródeł")
-        .replace("reviewed source", "ocenione źródło")
         .replace("review", "ocena")
         .replace("production-depth", "wiedza do finalnych treści")
         .replace("redacted source fact", "zredagowany fakt źródłowy")

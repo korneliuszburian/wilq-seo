@@ -282,26 +282,29 @@ def _support_level(
 
 def _source_class_label(fact: ContentSourceFact) -> str:
     if fact.scope == "service":
-        return "review-required internal service source fact"
+        return "wewnętrzny fakt źródłowy usługi wymagający oceny"
     if fact.scope == "claim_policy":
-        return "review-required internal claim-policy source fact"
+        return "wewnętrzny fakt polityki twierdzeń wymagający oceny"
     if fact.scope == "evidence_requirement":
-        return "review-required internal evidence-policy source fact"
-    return "review-required internal source fact"
+        return "wewnętrzny fakt wymagań dowodowych wymagający oceny"
+    return "wewnętrzny fakt źródłowy wymagający oceny"
 
 
 def _safe_next_step(fact: ContentSourceFact) -> str:
     if fact.scope == "claim_policy":
         return (
-            "Pokaż Wilkowi/reviewerowi zasady claimów i zdecyduj, czy mają stać "
-            "się reviewed policy fact; nie używaj jako automatycznej bramki bez review."
+            "Pokaż Wilkowi albo osobie oceniającej zasady twierdzeń i zdecyduj, "
+            "czy mogą stać się ocenionym faktem polityki; nie używaj ich jako "
+            "automatycznej bramki bez decyzji człowieka."
         )
     if fact.scope == "evidence_requirement":
         return (
-            "Pokaż wymaganie dowodowe reviewerowi i zdecyduj, czy ma wejść do "
-            "WILQ jako reviewed evidence policy; nie odblokowuj rekomendacji bez decyzji."
+            "Pokaż wymaganie dowodowe osobie oceniającej i zdecyduj, czy ma "
+            "wejść do WILQ jako oceniona polityka dowodowa; nie odblokowuj "
+            "rekomendacji bez decyzji człowieka."
         )
     return (
-        "Pokaż Wilkowi zwykły handoff i zdecyduj, czy ten redacted source "
-        "fact może przejść review; nie odblokowuj production-depth bez decyzji człowieka."
+        "Pokaż Wilkowi zwykły handoff i zdecyduj, czy ten zredagowany fakt "
+        "źródłowy może przejść ocenę; nie odblokowuj wiedzy do finalnych "
+        "treści bez decyzji człowieka."
     )
