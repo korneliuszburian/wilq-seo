@@ -168,6 +168,15 @@ Date: 2026-07-03
   recommendations, 2 actions and all hard gates true. It prepares review-only
   campaign planning from Ads/GA4/GSC/WordPress proof while blocking write,
   conversion-growth, position-guarantee and effectiveness claims.
+- 2026-07-03 `wilq-custom-segments` reached 9/10 segment review level after
+  replacing a generic segment note with visible `Mapa segmentu`,
+  `Hasła źródłowe`, `Review intencji`, `Podgląd bez zapisu`,
+  `Decyzja po review` and `Brief dla marketera`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T153450Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 2 evidence IDs, 4
+  recommendations, 1 action and all hard gates true. It prepares review-only
+  custom segment directions from real Ads/GSC terms while blocking write,
+  audience-size, forecast, ROAS and performance claims.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

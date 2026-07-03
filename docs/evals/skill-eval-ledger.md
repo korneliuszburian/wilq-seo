@@ -9740,3 +9740,36 @@ Result:
 - The output keeps writes, effectiveness promises, conversion-growth claims
   and position guarantees blocked until preview/review/approval and required
   evidence exist.
+
+## 2026-07-03 - Custom Segments raised to 9/10
+
+Purpose:
+
+- Push `wilq-custom-segments` from baseline usability to a review-ready
+  audience/segment workflow.
+- Make the output show the segment idea, exact source terms, manual intent
+  review, preview path and post-review decision without inventing audience
+  terms or performance claims.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T153450Z/wilq-custom-segments/result.json`.
+- The eval passed with `operator_usefulness_score=9`, `blocked=false`,
+  `failure_tags=[]`, two evidence IDs, four recommendations, one action
+  candidate and all hard gates true.
+- Source connectors used: `google_ads` and `google_search_console`.
+- The visible workflow now uses `Mapa segmentu`, `Hasła źródłowe`,
+  `Review intencji`, `Podgląd bez zapisu`, `Decyzja po review`,
+  `Zablokowane` and `Brief dla marketera`.
+- The output keeps write, audience-size, forecast, ROAS, effectiveness and
+  conversion-growth claims blocked until the missing enrichment/forecast
+  contracts and human review exist.

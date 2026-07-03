@@ -75,13 +75,19 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 <output>
 
-Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: jaki segment można sprawdzić,
+z jakich haseł źródłowych wynika, co trzeba odsiać ręcznie, jaki podgląd można
+przygotować bez zapisu i jaka decyzja ma zapaść po review.
 
 Widocznie oddzielaj:
 
-- `Można zrobić teraz`: ręcznie ocenić propozycję segmentu z rzeczywistych haseł źródłowych.
-- `Co sprawdzić`: intencję haseł, dopasowanie do usługi, ryzyko zbyt szerokiego segmentu, landing page i czy termin nie jest przypadkowy.
+- `Mapa segmentu`: nazwa/intent segmentu z API, review_priority, review_score i review_reason jako kolejność ręcznej oceny, nie dowód skuteczności.
+- `Hasła źródłowe`: pokaż tylko `source_terms` z WILQ API; nie dopisuj nowych fraz ani synonimów.
+- `Review intencji`: co trzeba odsiać ręcznie: intencję haseł, dopasowanie do usługi, ryzyko zbyt szerokiego segmentu, landing page i przypadkowe terminy.
+- `Podgląd bez zapisu`: jaki action_id/preview można sprawdzić w WILQ bez zmiany kierowania.
+- `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, zawęzić segment, odłożyć temat albo zablokować segment.
 - `Zablokowane`: zapis kierowania, rozmiar odbiorców, prognoza, skuteczność kampanii, zwrot z reklam i wzrost konwersji.
+- `Brief dla marketera`: 3-5 zdań normalnym językiem: co WILQ może przygotować, z czego to wynika, czego brakuje i jaki jest następny bezpieczny krok.
 - `Ślad techniczny`: raw kontrakty, identyfikatory dowodów i action_id.
 
 Nie pokazuj marketerowi surowych markerów typu `keyword_planner_enrichment`, `forecast_or_audience_size`, `custom_segments_read_contract` ani `audience_forecast_read_contract`. Tłumacz je normalnie: "brakuje wzbogacenia Keyword Planner" i "brakuje prognozy rozmiaru odbiorców". Surowe wartości zostaw w `notes`.

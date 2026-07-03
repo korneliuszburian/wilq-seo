@@ -635,6 +635,7 @@
     "skill": "wilq-custom-segments",
     "surface_path": "/ads-doctor",
     "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować segmenty niestandardowe z realnych source_terms i dowodów. Uwzględnij review_priority, review_score i review_reason, ale nie wymyślaj terminów odbiorców, rozmiaru odbiorców, zwrotu z reklam ani efektu kampanii.",
+    "minimum_operator_usefulness_score": 9,
     "expected_connectors": [
       "google_ads",
       "google_search_console"
@@ -657,10 +658,14 @@
       "blokady"
     ],
     "required_decision_terms_pl": [
-      "Można zrobić teraz",
-      "Co sprawdzić",
+      "Mapa segmentu",
+      "Hasła źródłowe",
+      "Review intencji",
+      "Podgląd bez zapisu",
+      "Decyzja po review",
       "Zablokowane",
-      "rzeczywistych haseł źródłowych",
+      "Brief dla marketera",
+      "source_terms",
       "brakuje wzbogacenia Keyword Planner",
       "brakuje prognozy rozmiaru odbiorców"
     ],
