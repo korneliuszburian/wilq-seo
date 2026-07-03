@@ -235,9 +235,12 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert data["first_write_candidate"]["apply_contract"]["adapter_status"] == "implemented"
     assert "WordPress draft-only" in data["first_write_candidate_reason"]
     assert any("draft-only" in step for step in data["activation_plan_steps"])
+    assert any("handoff" in step for step in data["activation_plan_steps"])
+    assert any("paczkę szkicu" in step for step in data["activation_plan_steps"])
     assert "apply-mode WordPress draft-only" in data["activation_next_step"]
     assert data["items"][0]["response_type"] == "action_mutation_readiness"
-    assert "adapter" in data["operator_next_step"]
+    assert "adapter boundary" in data["operator_next_step"]
+    assert "handoffu i paczki szkicu" in data["operator_next_step"]
 
 
 def test_action_mutation_readiness_returns_404_for_unknown_action() -> None:

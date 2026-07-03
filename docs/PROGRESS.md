@@ -124,6 +124,11 @@ Date: 2026-07-03
   writes, while the first write candidate now names
   `missing_wordpress_draft_handoff_ready` and
   `missing_wordpress_draft_package_ready` before any real write path.
+- 2026-07-03 aggregate mutation readiness next-step copy now follows the
+  selected first write candidate instead of stale global adapter counts. With
+  WordPress draft-only selected, live API tells the operator to prepare an
+  approved handoff and draft package first; it no longer says to add an adapter
+  that already exists as a boundary. Vendor writes remain at zero.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

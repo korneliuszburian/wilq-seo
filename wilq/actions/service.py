@@ -3004,7 +3004,11 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
         first_write_candidate_reason=_first_write_candidate_reason(first_write_candidate),
         activation_plan_steps=_activation_plan_steps(first_write_candidate),
         activation_next_step=_activation_next_step(first_write_candidate),
-        operator_next_step=_mutation_readiness_summary_next_step(items, blocker_counts),
+        operator_next_step=_mutation_readiness_summary_next_step(
+            items,
+            blocker_counts,
+            first_write_candidate,
+        ),
         items=items,
     )
 
@@ -3075,6 +3079,10 @@ def _activation_plan_steps(
         steps.append("Zapisz impact/readiness sanity check dla planowanej zmiany.")
     if "missing_mutation_adapter" in blocker_codes:
         steps.append("Dopiero potem dodaj adapter wykonania z redacted result i audit.")
+    if "missing_wordpress_draft_handoff_ready" in blocker_codes:
+        steps.append("Przygotuj zatwierdzony WordPress handoff dla wybranego work itemu.")
+    if "missing_wordpress_draft_package_ready" in blocker_codes:
+        steps.append("Podepnij zatwierdzoną paczkę szkicu przed próbą dry-run execution.")
     if item.vendor_write_possible:
         steps.append("Przed live write wykonaj apply wyłącznie przez ActionObject i audit.")
     return steps
@@ -3504,6 +3512,7 @@ def _mutation_readiness_next_step(
 def _mutation_readiness_summary_next_step(
     items: list[ActionMutationReadinessResponse],
     blocker_counts: dict[str, int],
+    first_write_candidate: ActionMutationReadinessResponse | None,
 ) -> str:
     if not items:
         return "Brakuje ActionObjectów do oceny gotowości zapisu."
@@ -3512,6 +3521,20 @@ def _mutation_readiness_summary_next_step(
             "Co najmniej jedna akcja spełnia warunki zapisu; przed apply nadal "
             "wymagane jest jawne potwierdzenie operatora."
         )
+    if first_write_candidate is not None and first_write_candidate.action_id == (
+        "act_apply_wordpress_draft_handoff"
+    ):
+        first_blockers = {blocker.code for blocker in first_write_candidate.blockers}
+        if {
+            "missing_wordpress_draft_handoff_ready",
+            "missing_wordpress_draft_package_ready",
+        } & first_blockers:
+            return (
+                "Pierwszy kandydat zapisu ma adapter boundary, ale brakuje "
+                "zatwierdzonego handoffu i paczki szkicu. Najpierw przejdź "
+                "wybrany content item przez draft package, human review i "
+                "WordPress handoff; live write nadal zostaje wyłączony."
+            )
     if blocker_counts.get("missing_mutation_adapter"):
         return (
             "Najpierw wybierz jedną klasę zapisu i dodaj bezpieczny adapter "
