@@ -213,6 +213,9 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert next_input["selected_work_item"] == (
         "content_work_item_content_decision_https___www_ekologus_pl"
     )
+    assert next_input["selected_sales_brief_signal_quality_status_label"] == (
+        "sygnał użyteczny, ale wymaga oceny"
+    )
     assert next_input["fillable_input"]["wybrany_work_item"] == (
         "content_work_item_content_decision_https___www_ekologus_pl"
     )

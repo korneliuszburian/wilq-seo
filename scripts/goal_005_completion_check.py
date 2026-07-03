@@ -17,6 +17,7 @@ from scripts.record_goal_005_content_uat_result import (
     humanize_review_decision_text,
     live_uat_provenance,
     load_json,
+    operator_copy_text,
     review_artifact_label,
     sales_brief_review_questions_label,
     selected_sales_brief_signal_quality_label,
@@ -463,7 +464,9 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
             else None
         ),
         "selected_sales_brief_signal_quality_status_label": (
-            provenance.get("selected_sales_brief_signal_quality_status_label")
+            operator_copy_text(
+                str(provenance.get("selected_sales_brief_signal_quality_status_label") or "")
+            )
             if isinstance(provenance, dict)
             else None
         ),
@@ -710,8 +713,8 @@ def uat_live_provenance_summary(value: Any) -> dict[str, Any] | None:
         "selected_sales_brief_signal_quality_status": value.get(
             "selected_sales_brief_signal_quality_status"
         ),
-        "selected_sales_brief_signal_quality_status_label": value.get(
-            "selected_sales_brief_signal_quality_status_label"
+        "selected_sales_brief_signal_quality_status_label": operator_copy_text(
+            str(value.get("selected_sales_brief_signal_quality_status_label") or "")
         ),
         "selected_sales_brief_signal_quality_counts": value.get(
             "selected_sales_brief_signal_quality_counts"
