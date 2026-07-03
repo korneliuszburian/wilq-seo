@@ -242,6 +242,12 @@ Date: 2026-07-03
   ID and `status=draft`. Focused connector proof passes with mocked REST:
   draft-only request shape, non-draft response blocked and publish/destructive
   payload blocked.
+- WordPress draft live execution now verifies `write_authorization` against
+  persisted audit events for the same action ID before the adapter can run.
+  Fake audit IDs are blocked as `invalid_write_authorization`; the required
+  audit trace is preview, human review, confirmation and apply audit by the
+  confirming operator. Focused proof now passes 19/19 WordPress execution/
+  connector tests plus shared schema tests.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

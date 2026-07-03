@@ -5,6 +5,8 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from wilq.schemas import AuditEvent
+from wilq.storage.local_state import local_state_store
 
 
 def _draft_package(**overrides: object) -> dict[str, object]:
@@ -170,8 +172,42 @@ def test_wordpress_execution_api_live_write_requires_write_authorization(
     ]
 
 
-def test_wordpress_execution_api_live_write_uses_authorized_draft_adapter(
+def test_wordpress_execution_api_live_write_rejects_unpersisted_authorization(
     monkeypatch,
+) -> None:
+    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
+        raise AssertionError("adapter must not run without persisted audit proof")
+
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.create_wordpress_draft_post",
+        create_draft,
+    )
+
+    data = _post_wordpress_execution(
+        {
+            "handoff": _wordpress_handoff(),
+            "draft_package": _draft_package(),
+            "mode": "live",
+            "write_authorization": _write_authorization(),
+        }
+    )
+
+    result = data["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["external_write_attempted"] is False
+    assert result["boundary"]["live_write_enabled"] is True
+    assert result["boundary"]["live_adapter_configured"] is True
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    assert [blocker["code"] for blocker in result["blockers"]] == [
+        "invalid_write_authorization"
+    ]
+
+
+def test_wordpress_execution_api_live_write_uses_persisted_authorization(
+    monkeypatch,
+    tmp_path,
 ) -> None:
     created_titles: list[str] = []
 
@@ -182,11 +218,13 @@ def test_wordpress_execution_api_live_write_uses_authorized_draft_adapter(
         created_titles.append(payload.title)
         return "777"
 
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_write.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
         "wilq.content.workflow.api.create_wordpress_draft_post",
         create_draft,
     )
+    _persist_write_authorization_events()
 
     data = _post_wordpress_execution(
         {
@@ -211,6 +249,7 @@ def test_wordpress_execution_api_live_write_uses_authorized_draft_adapter(
 
 def test_wordpress_execution_api_live_adapter_failure_is_blocked(
     monkeypatch,
+    tmp_path,
 ) -> None:
     class AdapterFailure(RuntimeError):
         public_message = "WordPress odrzucił szkic testowy."
@@ -218,11 +257,13 @@ def test_wordpress_execution_api_live_adapter_failure_is_blocked(
     def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
         raise AdapterFailure("secret technical details")
 
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_failure.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
         "wilq.content.workflow.api.create_wordpress_draft_post",
         create_draft,
     )
+    _persist_write_authorization_events()
 
     data = _post_wordpress_execution(
         {
@@ -243,3 +284,22 @@ def test_wordpress_execution_api_live_adapter_failure_is_blocked(
     ]
     assert result["blockers"][0]["reason"] == "WordPress odrzucił szkic testowy."
     assert "secret technical details" not in str(result)
+
+
+def _persist_write_authorization_events() -> None:
+    for event_id, event_type, actor in [
+        ("audit_preview_123", "action_preview_generated", "wilq_api"),
+        ("audit_review_123", "human_review_approved_for_prepare", "wilku"),
+        ("audit_confirm_123", "action_apply_confirmed", "wilku"),
+        ("audit_apply_123", "apply_succeeded", "wilku"),
+    ]:
+        local_state_store().save_audit_event(
+            AuditEvent(
+                id=event_id,
+                action_id="act_prepare_wordpress_draft_handoff",
+                event_type=event_type,
+                actor=actor,
+                summary="Testowy ślad audytu dla zapisu szkicu.",
+                evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+            )
+        )

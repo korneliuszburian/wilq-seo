@@ -343,6 +343,7 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
             apply_audit_id="audit_apply_123",
             confirmed_by="wilku",
         ),
+        write_authorization_verified=True,
     )
 
     assert result.status == "created"

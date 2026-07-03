@@ -19,6 +19,7 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
     "live_write_not_enabled",
     "missing_live_adapter",
     "missing_write_authorization",
+    "invalid_write_authorization",
     "live_adapter_failed",
 ]
 
@@ -88,6 +89,7 @@ def execute_content_wordpress_draft_handoff(
     live_write_enabled: bool = False,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None = None,
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
+    write_authorization_verified: bool = False,
 ) -> ContentWordPressDraftExecutionResult:
     blockers = content_wordpress_draft_execution_blockers(
         handoff=handoff,
@@ -96,6 +98,7 @@ def execute_content_wordpress_draft_handoff(
         live_write_enabled=live_write_enabled,
         create_draft=create_draft,
         write_authorization=write_authorization,
+        write_authorization_verified=write_authorization_verified,
     )
     if blockers:
         return ContentWordPressDraftExecutionResult(
@@ -172,6 +175,7 @@ def content_wordpress_draft_execution_blockers(
     live_write_enabled: bool = False,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None = None,
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
+    write_authorization_verified: bool = False,
 ) -> list[ContentWordPressDraftExecutionBlocker]:
     blockers: list[ContentWordPressDraftExecutionBlocker] = []
     if handoff is None:
@@ -200,6 +204,7 @@ def content_wordpress_draft_execution_blockers(
                 live_write_enabled,
                 create_draft,
                 write_authorization,
+                write_authorization_verified,
             )
         )
     return blockers
@@ -260,6 +265,7 @@ def _live_write_blockers(
     live_write_enabled: bool,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None,
     write_authorization: ContentWordPressDraftWriteAuthorization | None,
+    write_authorization_verified: bool,
 ) -> list[ContentWordPressDraftExecutionBlocker]:
     if not live_write_enabled:
         return [
@@ -293,6 +299,21 @@ def _live_write_blockers(
                 (
                     "Przejdź przez ActionObject validate, preview, review, "
                     "confirm i apply audit przed uruchomieniem zapisu."
+                ),
+            )
+        ]
+    if not write_authorization_verified:
+        return [
+            _blocker(
+                "invalid_write_authorization",
+                "Ślad zgody nie pasuje do audytu",
+                (
+                    "WILQ dostał dane zgody, ale nie potwierdził ich w zapisanych "
+                    "zdarzeniach audytu."
+                ),
+                (
+                    "Wróć do akcji WordPress i zapisz kolejno: podgląd, review, "
+                    "potwierdzenie oraz apply audit."
                 ),
             )
         ]

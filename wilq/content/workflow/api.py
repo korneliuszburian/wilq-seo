@@ -42,6 +42,7 @@ from wilq.content.handoff.wordpress_authoring import (
     build_content_wordpress_authoring_payload_preview,
 )
 from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.inventory.records import (
@@ -126,6 +127,7 @@ from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.queue import build_content_work_item_queue_response
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
+from wilq.storage.local_state import local_state_store
 
 
 def build_content_work_item_preflight_response(
@@ -367,6 +369,9 @@ def build_content_work_item_wordpress_draft_execution_response(
             live_write_enabled=live_write_enabled,
             create_draft=create_wordpress_draft_post if live_write_enabled else None,
             write_authorization=request.write_authorization,
+            write_authorization_verified=_wordpress_draft_write_authorization_verified(
+                request.write_authorization
+            ),
         ),
     )
 
@@ -378,6 +383,44 @@ def _wordpress_draft_writes_enabled() -> bool:
         "yes",
         "on",
     }
+
+
+def _wordpress_draft_write_authorization_verified(
+    authorization: ContentWordPressDraftWriteAuthorization | None,
+) -> bool:
+    if authorization is None:
+        return False
+    events = {
+        event.id: event
+        for event in local_state_store().list_audit_events(
+            action_id=authorization.action_id
+        )
+    }
+    required = {
+        authorization.preview_audit_id: "action_preview_generated",
+        authorization.review_audit_id: "human_review_",
+        authorization.confirmation_audit_id: "action_apply_confirmed",
+        authorization.apply_audit_id: "apply_succeeded",
+    }
+    for event_id, expected_type in required.items():
+        event = events.get(event_id)
+        if event is None or event.action_id != authorization.action_id:
+            return False
+        if expected_type.endswith("_"):
+            if not event.event_type.startswith(expected_type):
+                return False
+        elif event.event_type != expected_type:
+            return False
+    confirmation_event = events.get(authorization.confirmation_audit_id)
+    apply_event = events.get(authorization.apply_audit_id)
+    confirmed_by = authorization.confirmed_by.strip()
+    return bool(
+        confirmed_by
+        and confirmation_event is not None
+        and apply_event is not None
+        and confirmation_event.actor == confirmed_by
+        and apply_event.actor == confirmed_by
+    )
 
 
 def build_content_work_item_wordpress_authoring_payload_preview_response(
