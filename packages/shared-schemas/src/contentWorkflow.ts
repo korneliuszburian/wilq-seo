@@ -688,6 +688,15 @@ export const ContentServiceProfilePrivateReviewQueueItemSchema = z.object({
   review_status: ContentServiceProfilePrivateSourceProposalReviewStatusSchema,
   promotion_allowed: z.boolean(),
   blocked_claim_count: z.number(),
+  data_classes: z.array(z.string().trim().min(1)).nonempty(),
+  source_block_refs: z.array(z.string().trim().min(1)).nonempty(),
+  retention_decision: ContentServiceProfilePrivateSourceProposalRetentionDecisionSchema,
+  deletion_path: z.array(z.string().trim().min(1)).nonempty(),
+  eval_case_ids: z.array(z.string().trim().min(1)).nonempty(),
+  source_locator_label: z.string().trim().min(1),
+  owner_role: z.string().trim().min(1),
+  redacted: z.boolean(),
+  source_trace_ready: z.boolean(),
   safe_next_step: z.string()
 });
 

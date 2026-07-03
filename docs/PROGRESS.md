@@ -40,6 +40,10 @@ Date: 2026-07-04
   proposal trace metadata: data classes, source block refs, eval case IDs,
   retention/deletion state and redaction, while still blocking promotion to
   final content knowledge before owner review.
+- 2026-07-04 Service Profile API now carries the same private proposal trace
+  metadata in `source_fact_coverage.private_review_queue`, so dashboard and
+  skills can explain provenance/readiness without joining raw proposal records
+  or promoting review-required knowledge.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

@@ -261,6 +261,15 @@ class ContentServiceProfilePrivateReviewQueueItem(BaseModel):
     review_status: PrivateSourceProposalReviewStatus
     promotion_allowed: bool
     blocked_claim_count: int
+    data_classes: list[str] = Field(default_factory=list)
+    source_block_refs: list[str] = Field(default_factory=list)
+    retention_decision: PrivateSourceProposalRetentionDecision
+    deletion_path: list[str] = Field(default_factory=list)
+    eval_case_ids: list[str] = Field(default_factory=list)
+    source_locator_label: str
+    owner_role: str
+    redacted: bool
+    source_trace_ready: bool
     safe_next_step: str
 
 
@@ -523,6 +532,17 @@ def _private_review_queue(
             review_status=proposal.review_status,
             promotion_allowed=False,
             blocked_claim_count=len(proposal.blocked_claims),
+            data_classes=proposal.data_classes,
+            source_block_refs=proposal.source_block_refs,
+            retention_decision=proposal.retention_decision,
+            deletion_path=proposal.deletion_path,
+            eval_case_ids=proposal.eval_case_ids,
+            source_locator_label=proposal.source_locator_label,
+            owner_role=proposal.owner_role,
+            redacted=True,
+            source_trace_ready=bool(
+                proposal.source_block_refs and proposal.eval_case_ids
+            ),
             safe_next_step=proposal.safe_next_step,
         )
         for proposal in proposals

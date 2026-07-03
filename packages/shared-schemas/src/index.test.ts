@@ -628,6 +628,15 @@ describe("ContentServiceProfileResponseSchema", () => {
             review_status: "review_required",
             promotion_allowed: false,
             blocked_claim_count: 1,
+            data_classes: ["service_strategy", "internal_operational"],
+            source_block_refs: ["KB_001_EKO_OPIEKA"],
+            retention_decision: "pending_owner_decision",
+            deletion_path: ["Usuń albo odrzuć redacted proposal."],
+            eval_case_ids: ["goal_005_private_service_review"],
+            source_locator_label: "ekologus-ai reviewed handoff: Eko-Opieka",
+            owner_role: "Wilku albo owner oferty Ekologus",
+            redacted: true,
+            source_trace_ready: true,
             safe_next_step: "Pokazać Wilkowi zwykły handoff."
           }
         ],

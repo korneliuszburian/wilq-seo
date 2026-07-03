@@ -875,6 +875,24 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.private_review_value.review_questions
     assert any("CTA" in question for question in response.private_review_value.review_questions)
     assert response.source_fact_coverage.private_review_queue
+    assert all(
+        item.data_classes for item in response.source_fact_coverage.private_review_queue
+    )
+    assert all(
+        item.source_block_refs for item in response.source_fact_coverage.private_review_queue
+    )
+    assert all(
+        item.eval_case_ids for item in response.source_fact_coverage.private_review_queue
+    )
+    assert all(
+        item.retention_decision == "pending_owner_decision"
+        for item in response.source_fact_coverage.private_review_queue
+    )
+    assert all(item.deletion_path for item in response.source_fact_coverage.private_review_queue)
+    assert all(item.redacted for item in response.source_fact_coverage.private_review_queue)
+    assert all(
+        item.source_trace_ready for item in response.source_fact_coverage.private_review_queue
+    )
     assert response.source_fact_coverage.review_action_queue
     assert response.source_fact_coverage.first_review_action_id
     assert (
