@@ -554,6 +554,8 @@ class ActionMutationAuditRecord(BaseModel):
     action_type: str | None = None
     status: Literal["blocked", "applied", "failed"]
     status_label: str = ""
+    adapter_reached: bool = False
+    external_write_attempted: bool = False
     mutation_attempted: bool = False
     mutation_adapter: str | None = None
     actor: str
@@ -707,6 +709,10 @@ class ActionReviewGate(BaseModel):
     last_mutation_audit_actor: str | None = None
     last_mutation_audit_at: datetime | None = None
     last_mutation_audit_summary: str | None = None
+    last_mutation_adapter_reached: bool | None = None
+    last_mutation_adapter_reached_label: str | None = None
+    last_external_write_attempted: bool | None = None
+    last_external_write_attempted_label: str | None = None
     last_mutation_attempted: bool | None = None
     last_mutation_attempted_label: str | None = None
     last_mutation_adapter: str | None = None

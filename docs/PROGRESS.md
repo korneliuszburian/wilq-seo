@@ -112,6 +112,12 @@ Date: 2026-07-03
   lists env, REST adapter and write-authorization requirements from the same
   API-owned source as `/api/content/wordpress/draft-write-readiness`, so
   operator blockers no longer stop at generic payload/audit/adapter labels.
+- 2026-07-03 ActionObject mutation audit now separates adapter-boundary reach
+  from external vendor write attempt. `adapter_reached` can be true while
+  `external_write_attempted` remains false, and the dashboard review gate shows
+  both labels in Polish. Live smoke after restart still reports
+  `vendor_write_possible_count=0` and `would_attempt_vendor_write_count=0` for
+  the WordPress draft-only candidate.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

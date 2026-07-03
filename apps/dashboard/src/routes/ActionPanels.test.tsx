@@ -44,6 +44,10 @@ describe("ActionPanels", () => {
               last_mutation_audit_summary: "blocked",
               last_mutation_audit_status: "blocked",
               last_mutation_audit_status_label: "zablokowany",
+              last_mutation_adapter_reached: false,
+              last_mutation_adapter_reached_label: "adapter wykonania nie został osiągnięty",
+              last_external_write_attempted: false,
+              last_external_write_attempted_label: "nie próbowano zapisu w systemie zewnętrznym",
               last_mutation_attempted: false,
               last_mutation_attempted_label: "nie próbowano zapisu w systemie zewnętrznym",
               last_mutation_adapter: null,
@@ -66,6 +70,12 @@ describe("ActionPanels", () => {
     expect(screen.getByText("Wynik: zablokowany")).toBeInTheDocument();
     expect(
       screen.getByText("Czy próbowano zapisu: nie próbowano zapisu w systemie zewnętrznym")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Granica adaptera: adapter wykonania nie został osiągnięty")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Vendor write: nie próbowano zapisu w systemie zewnętrznym")
     ).toBeInTheDocument();
     expect(screen.getByText("System zewnętrzny: brak bezpiecznej ścieżki zapisu")).toBeInTheDocument();
     expect(screen.getByText("Ślad bezpieczeństwa: ślad bezpieczeństwa zapisany")).toBeInTheDocument();

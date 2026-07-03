@@ -486,6 +486,8 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             <div>Wynik: {gate.last_mutation_audit_status_label}</div>
             <div>Czy próbowano zapisu: {gate.last_mutation_attempted_label}</div>
+            <div>Granica adaptera: {gate.last_mutation_adapter_reached_label}</div>
+            <div>Vendor write: {gate.last_external_write_attempted_label}</div>
             <div>System zewnętrzny: {gate.last_mutation_adapter_label}</div>
             <div>Ślad bezpieczeństwa: {gate.last_mutation_audit_trace_label}</div>
           </div>

@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from wilq.actions.service import apply_action
+from wilq.schemas import (
+    ActionApplyRequest,
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    AuditEvent,
+    OpportunityDomain,
+)
 
 
 def _get_mutation_readiness(action_id: str) -> dict[str, Any]:
@@ -92,7 +103,8 @@ def test_wordpress_apply_action_blocks_payload_before_vendor_write(
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "actions_apply_block.sqlite3"))
 
-    response = TestClient(app).post(
+    client = TestClient(app)
+    response = client.post(
         "/api/actions/act_apply_wordpress_draft_handoff/apply",
         json={"confirm": True, "confirmed_by": "operator_test"},
     )
@@ -102,11 +114,91 @@ def test_wordpress_apply_action_blocks_payload_before_vendor_write(
     assert detail["status"] == "blocked"
     assert detail["applied"] is False
     assert detail["mutation_audit"]["mutation_attempted"] is False
+    assert detail["mutation_audit"]["adapter_reached"] is False
+    assert detail["mutation_audit"]["external_write_attempted"] is False
     assert detail["mutation_audit"]["mutation_adapter"] == "wordpress_draft_execution_boundary"
     assert detail["adapter_result"] is None
     serialized = str(detail)
     assert "Payload akcji nie pozwala jeszcze na zapis zmian." in serialized
     assert "Payload akcji nie jest gotowy do mutacji API." in serialized
+    action_response = client.get("/api/actions/act_apply_wordpress_draft_handoff")
+    assert action_response.status_code == 200
+    review_gate = action_response.json()["review_gate"]
+    assert review_gate["last_mutation_adapter_reached"] is False
+    assert review_gate["last_external_write_attempted"] is False
+    assert (
+        review_gate["last_mutation_adapter_reached_label"]
+        == "adapter wykonania nie został osiągnięty"
+    )
+
+
+def test_wordpress_apply_audit_separates_adapter_boundary_from_vendor_write(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "wilq.actions.service.get_connector_status",
+        lambda _connector_id: SimpleNamespace(configured=True),
+    )
+    action = ActionObject(
+        id="act_apply_wordpress_draft_handoff",
+        title="Aktywuj zapis szkicu WordPress draft-only",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.medium,
+        status=ActionStatus.ready,
+        evidence_ids=["ev_wordpress_draft_apply_boundary"],
+        human_diagnosis="Testowy apply-mode kandydat dla granicy adaptera WordPress.",
+        recommended_reason="Sprawdza, czy audit nie myli adaptera z vendor write.",
+        payload={
+            "action_type": "wordpress_draft_handoff",
+            "connector": "wordpress_ekologus",
+            "allowed_operation": "create_wordpress_draft",
+            "apply_allowed": True,
+            "api_mutation_ready": True,
+            "destructive": False,
+        },
+        validation_status="valid",
+        created_by="test",
+        audit_events=[
+            AuditEvent(
+                id="audit_preview_test",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_preview_generated",
+                actor="operator_test",
+                summary="Podgląd zapisany.",
+            ),
+            AuditEvent(
+                id="audit_confirm_test",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_apply_confirmed",
+                actor="operator_test",
+                summary="Potwierdzenie zapisane.",
+            ),
+            AuditEvent(
+                id="audit_impact_test",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_impact_check_completed",
+                actor="operator_test",
+                summary="Impact check zapisany.",
+            ),
+        ],
+    )
+
+    result = apply_action(
+        action,
+        ActionApplyRequest(confirm=True, confirmed_by="operator_test"),
+    )
+
+    assert result.applied is False
+    assert result.status == "blocked"
+    assert result.adapter_result is not None
+    assert result.adapter_result["external_write_attempted"] is False
+    assert result.mutation_audit.adapter_reached is True
+    assert result.mutation_audit.external_write_attempted is False
+    assert result.mutation_audit.mutation_attempted is False
+    assert "Mutation adapter reached" in result.mutation_audit.summary
+    assert "No external vendor write was attempted" in result.mutation_audit.summary
 
 
 def test_action_mutation_readiness_summary_reports_no_vendor_writes(

@@ -2829,6 +2829,7 @@ def apply_action(
         actor=actor,
         errors=errors,
         mutation_adapter=mutation_adapter,
+        adapter_result=adapter_result,
     )
     action.audit_events.append(audit)
     if errors:
@@ -3209,9 +3210,16 @@ def _action_mutation_audit_record(
     actor: str,
     errors: list[str],
     mutation_adapter: str | None,
+    adapter_result: dict[str, Any] | None,
 ) -> ActionMutationAuditRecord:
     status: Literal["blocked", "applied"] = "blocked" if errors else "applied"
     action_type = action.payload.get("action_type")
+    adapter_reached = adapter_result is not None
+    external_write_attempted = (
+        adapter_result.get("external_write_attempted") is True
+        if adapter_result is not None
+        else False
+    )
     return ActionMutationAuditRecord(
         id=f"mutation_{action.id}_{uuid4().hex[:12]}",
         action_id=action.id,
@@ -3219,20 +3227,48 @@ def _action_mutation_audit_record(
         action_type=action_type if isinstance(action_type, str) else None,
         status=status,
         status_label=_action_mutation_audit_status_label(status),
-        mutation_attempted=status == "applied",
+        adapter_reached=adapter_reached,
+        external_write_attempted=external_write_attempted,
+        mutation_attempted=external_write_attempted,
         mutation_adapter=mutation_adapter,
         actor=actor,
         audit_event_id=audit_event.id,
         evidence_ids=action.evidence_ids,
         blockers=errors,
-        summary=_mutation_audit_summary(errors, mutation_adapter),
+        summary=_mutation_audit_summary(
+            errors,
+            mutation_adapter,
+            adapter_reached=adapter_reached,
+            external_write_attempted=external_write_attempted,
+        ),
     )
 
 
-def _mutation_audit_summary(errors: list[str], mutation_adapter: str | None) -> str:
+def _mutation_audit_summary(
+    errors: list[str],
+    mutation_adapter: str | None,
+    *,
+    adapter_reached: bool,
+    external_write_attempted: bool,
+) -> str:
     if errors:
+        if adapter_reached:
+            attempted = (
+                "External vendor write was attempted."
+                if external_write_attempted
+                else "No external vendor write was attempted."
+            )
+            return (
+                "Mutation adapter reached but did not complete successfully. "
+                f"{attempted} Blockers: {', '.join(errors)}"
+            )
         return f"Mutation blocked before any vendor API call. Blockers: {', '.join(errors)}"
     adapter = mutation_adapter or "unknown"
+    if not external_write_attempted:
+        return (
+            f"Mutation completed through adapter {adapter}, but no external vendor "
+            "write was attempted; vendor payload remains redacted."
+        )
     return f"Mutation executed through adapter {adapter}; vendor payload remains redacted."
 
 
@@ -4898,6 +4934,12 @@ def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGat
             "last_mutation_attempted_label": _action_mutation_attempted_label(
                 gate.last_mutation_attempted
             ),
+            "last_mutation_adapter_reached_label": _action_mutation_adapter_reached_label(
+                gate.last_mutation_adapter_reached
+            ),
+            "last_external_write_attempted_label": _action_mutation_attempted_label(
+                gate.last_external_write_attempted
+            ),
             "last_mutation_adapter_label": _action_mutation_adapter_label(
                 gate.last_mutation_adapter
             ),
@@ -5057,6 +5099,12 @@ def _action_review_gate(
         if last_mutation_audit is not None
         else None,
         last_mutation_audit_summary=last_mutation_audit.summary
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_adapter_reached=last_mutation_audit.adapter_reached
+        if last_mutation_audit is not None
+        else None,
+        last_external_write_attempted=last_mutation_audit.external_write_attempted
         if last_mutation_audit is not None
         else None,
         last_mutation_attempted=last_mutation_audit.mutation_attempted
@@ -5567,6 +5615,14 @@ def _action_mutation_attempted_label(value: bool | None) -> str:
     if value is False:
         return "nie próbowano zapisu w systemie zewnętrznym"
     return "brak informacji o próbie zapisu"
+
+
+def _action_mutation_adapter_reached_label(value: bool | None) -> str:
+    if value is True:
+        return "adapter wykonania został osiągnięty"
+    if value is False:
+        return "adapter wykonania nie został osiągnięty"
+    return "brak informacji o adapterze wykonania"
 
 
 def _action_mutation_adapter_label(value: str | None) -> str:
