@@ -151,6 +151,11 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Najpierw sprawdź publiczną kartę BDO." in card
     assert "Decyzja Service Profile ID" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
+    assert "Prywatna wiedza / ekologus-ai:" in card
+    assert (
+        "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?"
+        in card
+    )
     assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card
     assert "Service Profile - co pokazać teraz" in card
     assert "BDO i sprawozdawczość - próbka rozmowy" in card
@@ -695,6 +700,12 @@ def _live_context() -> dict[str, object]:
                 ),
             },
             "private_source_proposal_summary": {"promotion_ready": False},
+            "private_review_value": {
+                "review_questions": [
+                    "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?",
+                    "Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami Ekologus?",
+                ]
+            },
             "private_source_proposals": [
                 {
                     "target_card_id": "ekologus_service_eko_opieka_calendar",

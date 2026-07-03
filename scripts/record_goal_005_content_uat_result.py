@@ -295,6 +295,7 @@ def render_content_uat_session_card(
         "",
         "- Czy rozumiesz, czemu pełny test treści jest jeszcze zablokowany?",
         "- Czy Service Profile i pierwsza karta BDO są czytelne?",
+        *private_review_question_lines(provenance),
         "- Gdzie pytasz: skąd WILQ to wziął?",
         "- Co brzmi generycznie albo nie jak Ekologus?",
         "- Co trzeba poprawić, zanim puścimy pełny test treści?",
@@ -803,6 +804,10 @@ def live_uat_provenance(
     private_summary: dict[str, Any] = (
         raw_private_summary if isinstance(raw_private_summary, dict) else {}
     )
+    raw_private_review_value = service_profile.get("private_review_value")
+    private_review_value: dict[str, Any] = (
+        raw_private_review_value if isinstance(raw_private_review_value, dict) else {}
+    )
     raw_sales_brief_traces = live_context.get("sales_brief_traces")
     sales_brief_traces: dict[str, Any] = (
         raw_sales_brief_traces if isinstance(raw_sales_brief_traces, dict) else {}
@@ -908,6 +913,11 @@ def live_uat_provenance(
             ]
         ),
         "private_proposal_promotion_ready": private_summary.get("promotion_ready"),
+        "private_review_questions": [
+            str(question)
+            for question in raw_list_payload(private_review_value.get("review_questions"))
+            if str(question).strip()
+        ],
     }
 
 
@@ -1065,8 +1075,32 @@ def render_live_provenance(value: Any) -> str:
             f"`{value.get('private_policy_review_action_count')}`",
             "- Private proposal promotion ready: "
             f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
+            "- Pytania do prywatnych propozycji: "
+            f"{private_review_questions_label(value)}",
         ]
     )
+
+
+def private_review_question_lines(value: Any) -> list[str]:
+    if not isinstance(value, dict):
+        return []
+    questions = [
+        str(question).strip()
+        for question in raw_list_payload(value.get("private_review_questions"))
+        if str(question).strip()
+    ]
+    if not questions:
+        return []
+    return ["- Prywatna wiedza / ekologus-ai:", *[f"  - {question}" for question in questions]]
+
+
+def private_review_questions_label(value: dict[str, Any]) -> str:
+    questions = [
+        str(question).strip()
+        for question in raw_list_payload(value.get("private_review_questions"))
+        if str(question).strip()
+    ]
+    return "; ".join(questions) or "brak"
 
 
 def sales_brief_blocker_label(value: dict[str, Any]) -> str:

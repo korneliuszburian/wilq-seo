@@ -175,6 +175,11 @@ Date: 2026-07-04
   questions, `operator_value_score=9`, `promotion_allowed_count=0` and matching
   top-level/source-fact coverage values, so the handoff now says what to decide
   instead of only reporting that private material is useful.
+- 2026-07-04 Goal 005 UAT session card now pulls those Service Profile private
+  review questions into the Wilku-facing `Pytania do Wilka` section. Live
+  `--print-session-card --api-base http://127.0.0.1:8000` shows the CTA,
+  buyer-problem, blocked-claim and reject/stale/background questions above
+  technical IDs, while the session still does not approve private knowledge.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run
