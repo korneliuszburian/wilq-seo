@@ -96,6 +96,13 @@ WILQ ma przygotowany live JSON wejściowy do uzupełnienia:
 .local-lab/proof/service-profile-public-review-input-20260703.json
 ```
 
+Jeżeli pliki trzeba odświeżyć z aktualnego API, wygeneruj je tak:
+
+```bash
+rtk uv run python scripts/record_service_profile_review_result.py --print-input-example --review-type public_service_cards --api-base http://127.0.0.1:8000 > .local-lab/proof/service-profile-public-review-input-20260703.json
+rtk uv run python scripts/record_service_profile_review_result.py --print-input-example --review-type private_source_proposals --api-base http://127.0.0.1:8000 > .local-lab/proof/service-profile-private-review-input-20260703.json
+```
+
 Po uzupełnieniu decyzji sprawdzić wynik:
 
 ```bash

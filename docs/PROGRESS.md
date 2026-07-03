@@ -320,6 +320,10 @@ Date: 2026-07-03
   examples start with high-priority claim/evidence policy proposals before
   medium service proposals. This keeps the handoff, completion guard and JSON
   recorder aligned for Wilku review.
+- 2026-07-03 local `.local-lab/proof/service-profile-*-review-input-20260703.json`
+  files were regenerated from the current recorder, and the Wilku handoff now
+  includes the exact regeneration commands. The committed handoff no longer
+  relies on stale local proof ordering.
 - 2026-07-03 the Goal 005 UAT input generator now includes that current handoff
   as the first recommended review artifact. Live proof:
   `.local-lab/proof/goal-005-content-uat-input-20260703.json` selects
