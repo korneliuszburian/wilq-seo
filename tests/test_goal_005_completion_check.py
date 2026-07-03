@@ -738,7 +738,8 @@ def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:
                 "powod": "Wilku nie jest dostępny na sesję tej nocy.",
                 "co_mozna_pokazac": "Można pokazać review handoffs i Service Profile.",
                 "ryzyko_rezydualne": (
-                    "Brak realnej walidacji, czy Wilku rozumie blokady i źródła."
+                    "Brak realnej walidacji, czy Wilku rozumie blokady, "
+                    "prywatny ślad źródłowy ekologus-ai i źródła."
                 ),
                 "czego_nie_wolno_twierdzic": [
                     "ukończony Goal 005",
@@ -762,6 +763,7 @@ def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:
     assert report["status"] == "owner_deferred"
     assert report["proof_type"] == "explicit_goal_005_owner_defer"
     assert "Brak realnej walidacji" in report["residual_risk"]
+    assert "ekologus-ai" in report["residual_risk"]
     assert "kartę rozmowy" in report["next_uat_input"]
     assert "zatwierdzona wiedza do finalnych treści" in report["blocked_claims"]
     markdown = render_markdown(report)
@@ -794,7 +796,9 @@ def test_goal_005_owner_defer_requires_residual_risk(tmp_path: Path) -> None:
     assert "brak pola owner defer: nastepny_input_uat" in report["errors"]
 
 
-def test_goal_005_owner_defer_requires_core_blocked_claims(tmp_path: Path) -> None:
+def test_goal_005_owner_defer_requires_private_source_residual_risk(
+    tmp_path: Path,
+) -> None:
     defer_path = tmp_path / "goal-005-owner-defer.json"
     defer_path.write_text(
         json.dumps(
@@ -805,6 +809,42 @@ def test_goal_005_owner_defer_requires_core_blocked_claims(tmp_path: Path) -> No
                 "powod": "Wilku nie jest dostępny.",
                 "co_mozna_pokazac": "Można pokazać przygotowanie.",
                 "ryzyko_rezydualne": "Brak realnej walidacji z Wilkiem.",
+                "czego_nie_wolno_twierdzic": [
+                    "ukończony Goal 005",
+                    "realny dowód użyteczności dla Wilka",
+                    "zatwierdzona wiedza do finalnych treści",
+                    "gotowość finalnego draftu albo publikacji",
+                ],
+                "nastepny_przeglad": "po sesji",
+                "nastepny_input_uat": "Pokazać Wilkowi UAT packet.",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_owner_defer(defer_path)
+
+    assert report["valid"] is False
+    assert (
+        "ryzyko_rezydualne musi nazwać ryzyko prywatnych źródeł, "
+        "ekologus-ai albo śladu źródłowego"
+    ) in report["errors"]
+
+
+def test_goal_005_owner_defer_requires_core_blocked_claims(tmp_path: Path) -> None:
+    defer_path = tmp_path / "goal-005-owner-defer.json"
+    defer_path.write_text(
+        json.dumps(
+            {
+                "odroczenie_goal_005_uat": True,
+                "data": "2026-07-02",
+                "osoba": "Kornel",
+                "powod": "Wilku nie jest dostępny.",
+                "co_mozna_pokazac": "Można pokazać przygotowanie.",
+                "ryzyko_rezydualne": (
+                    "Brak realnej walidacji prywatnego śladu źródłowego."
+                ),
                 "czego_nie_wolno_twierdzic": ["ukończony UAT"],
                 "nastepny_przeglad": "po sesji",
                 "nastepny_input_uat": "Pokazać Wilkowi UAT packet.",

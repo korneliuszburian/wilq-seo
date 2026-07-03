@@ -56,6 +56,12 @@ REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS = [
     "zatwierdzona wiedza do finalnych treści",
     "gotowość finalnego draftu albo publikacji",
 ]
+OWNER_DEFER_PRIVATE_RISK_TERMS = [
+    "ekologus-ai",
+    "prywat",
+    "ślad źródł",
+    "source trace",
+]
 KNOWLEDGE_STATUS_LABELS = {
     "seeded_contract_proof": "tylko seed/contract proof",
     "source_backed_review_required": "źródła są, wymagają oceny",
@@ -755,6 +761,15 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
                 "czego_nie_wolno_twierdzic musi zawierać: "
                 + ", ".join(missing_required_claims)
             )
+    residual_risk = str(payload.get(OWNER_DEFER_FIELDS["residual_risk"]) or "")
+    if residual_risk and not any(
+        term in normalize_text(residual_risk)
+        for term in OWNER_DEFER_PRIVATE_RISK_TERMS
+    ):
+        errors.append(
+            "ryzyko_rezydualne musi nazwać ryzyko prywatnych źródeł, "
+            "ekologus-ai albo śladu źródłowego"
+        )
 
     if errors:
         return {"valid": False, "errors": errors}
@@ -811,7 +826,8 @@ def build_owner_defer_example(*, api_base: str | None = DEFAULT_API_BASE) -> dic
         ),
         OWNER_DEFER_FIELDS["residual_risk"]: (
             "Brak realnej walidacji, czy Wilku rozumie źródła, blokady, "
-            "Service Profile review i czy materiały brzmią jak Ekologus."
+            "Service Profile review, prywatny ślad źródłowy ekologus-ai "
+            "i czy materiały brzmią jak Ekologus."
         ),
         OWNER_DEFER_FIELDS["blocked_claims"]: REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS,
         OWNER_DEFER_FIELDS["next_review"]: (

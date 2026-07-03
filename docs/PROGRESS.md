@@ -73,6 +73,10 @@ Date: 2026-07-04
   scorecard: with live Service Profile private trace present, an old UAT JSON
   without `oceny_prywatnego_sladu_zrodlowego` stays blocked as an invalid
   Goal 005 UAT result.
+- 2026-07-04 Goal 005 owner-defer now must name private-source /
+  `ekologus-ai` / source-trace residual risk. A generic "Wilku unavailable"
+  defer cannot bypass private knowledge review state while still claiming
+  explicit owner defer.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
