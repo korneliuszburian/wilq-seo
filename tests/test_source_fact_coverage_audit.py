@@ -107,7 +107,15 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
 
     markdown = audit.render_markdown(report)
 
-    assert "Production-depth service readiness: 0%" in markdown
+    assert (
+        "WILQ ma materiał do review, ale nie ma jeszcze zatwierdzonej "
+        "production-depth wiedzy do gotowych treści."
+    ) in markdown
+    assert "Stan wiedzy: źródła są, wymagają review" in markdown
+    assert "Gotowe do codziennych treści: nie, najpierw review" in markdown
+    assert "Gotowość usług production-depth: 0%" in markdown
+    assert "Knowledge status: `source_backed_review_required`" not in markdown
+    assert "Ready for daily content: `false`" not in markdown
     assert "Pokaż Wilkowi review-required źródła przed treścią." in markdown
     assert "Pierwszy review item" in markdown
     assert (
@@ -117,7 +125,7 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
     assert "## Co wnosi prywatna wiedza" in markdown
     assert "Prywatne propozycje dają materiał do review" in markdown
     assert "konkretniejsze CTA i buyer trigger" in markdown
-    assert "| 1 | claim policy | Styl marki | wysokie |" in markdown
+    assert "| 1 | polityka twierdzeń | Styl marki | wysokie |" in markdown
     assert "## Konkretne akcje review" in markdown
     assert "`service_profile_review_card_ekologus_service_bdo_reporting`" in markdown
     assert "zatwierdź, wróć z poprawkami, oznacz jako nieaktualne, odrzuć" in markdown

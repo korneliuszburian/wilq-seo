@@ -10,10 +10,10 @@ from wilq.content.knowledge.source_facts import ekologus_source_fact_registry
 
 SCOPE_LABELS = {
     "public_service_card": "publiczna karta usługi",
-    "private_claim_policy_proposal": "prywatna propozycja claim policy",
+    "private_claim_policy_proposal": "prywatna propozycja polityki twierdzeń",
     "private_evidence_policy_proposal": "prywatna propozycja wymagań dowodowych",
     "private_service_proposal": "prywatna propozycja usługi",
-    "claim_policy": "claim policy",
+    "claim_policy": "polityka twierdzeń",
     "evidence_requirement": "wymaganie dowodowe",
     "service": "usługa",
     "general_knowledge_review": "ogólny review wiedzy",
@@ -28,6 +28,13 @@ DECISION_LABELS = {
     "needs_changes": "wróć z poprawkami",
     "stale": "oznacz jako nieaktualne",
     "reject": "odrzuć",
+}
+KNOWLEDGE_STATUS_LABELS = {
+    "seeded_contract_proof": "tylko seed/contract proof",
+    "source_backed_review_required": "źródła są, wymagają review",
+    "approved_current": "zatwierdzona aktualna wiedza",
+    "stale": "wiedza wymaga odświeżenia",
+    "rejected": "odrzucone, nie używać w treści",
 }
 
 
@@ -145,18 +152,29 @@ def build_report() -> dict[str, Any]:
 
 
 def render_markdown(report: dict[str, Any]) -> str:
+    ready = report["ready_for_daily_content"] is True
+    verdict = (
+        "WILQ ma production-depth wiedzę gotową do użycia w treściach."
+        if ready
+        else (
+            "WILQ ma materiał do review, ale nie ma jeszcze zatwierdzonej "
+            "production-depth wiedzy do gotowych treści."
+        )
+    )
     lines = [
-        "# WILQ source fact coverage audit",
+        "# Audyt source facts WILQ",
+        "",
+        verdict,
         "",
         f"- Workspace: `{report['workspace_id']}`",
-        f"- Knowledge status: `{report['knowledge_status']}`",
-        f"- Ready for daily content: `{str(report['ready_for_daily_content']).lower()}`",
-        f"- Production-depth service readiness: {report['production_depth_percent']}%",
-        f"- Approved service cards: {report['approved_service_percent']}%",
-        f"- Approved source facts: {report['reviewed_fact_percent']}%",
-        f"- Source facts: {report['fact_count']}",
-        f"- Review actions: {report['review_action_count']}",
-        f"- Private proposals requiring review: {report['private_review_required_count']}",
+        f"- Stan wiedzy: {_knowledge_status_label(report['knowledge_status'])}",
+        f"- Gotowe do codziennych treści: {_ready_label(ready)}",
+        f"- Gotowość usług production-depth: {report['production_depth_percent']}%",
+        f"- Zatwierdzone karty usług: {report['approved_service_percent']}%",
+        f"- Zatwierdzone source facts: {report['reviewed_fact_percent']}%",
+        f"- Source facts w rejestrze: {report['fact_count']}",
+        f"- Akcje review: {report['review_action_count']}",
+        f"- Prywatne propozycje wymagające review: {report['private_review_required_count']}",
         "",
         "## Co pokazać Wilkowi",
         "",
@@ -270,6 +288,15 @@ def _risk_label(value: Any) -> str:
 def _decision_options_label(values: list[Any]) -> str:
     labels = [DECISION_LABELS.get(str(value), str(value)) for value in values]
     return ", ".join(labels) or "brak"
+
+
+def _knowledge_status_label(value: Any) -> str:
+    raw = str(value or "")
+    return KNOWLEDGE_STATUS_LABELS.get(raw, raw or "brak")
+
+
+def _ready_label(value: bool) -> str:
+    return "tak" if value else "nie, najpierw review"
 
 
 def _private_review_value_summary(
