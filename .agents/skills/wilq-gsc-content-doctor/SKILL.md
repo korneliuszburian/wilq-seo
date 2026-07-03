@@ -83,7 +83,7 @@ Zaczynaj od widocznej decyzji operatorskiej, nie od surowych pól API:
 
 - `Można zrobić teraz`: jedna bezpieczna decyzja lub akcja do sprawdzenia.
 - `Dlaczego`: jednozdaniowe streszczenie dowodów, np. GSC wskazuje sygnał, a WordPress potwierdza istniejący adres.
-- `Co sprawdzić ręcznie`: krótką checklistę intencji zapytań, nagłówków/CTA, kanibalizacji i decyzji odświeżyć vs scalić.
+- `Co sprawdzić ręcznie`: użyj dokładnie tej etykiety i dodaj krótką checklistę intencji zapytań, nagłówków/CTA, kanibalizacji i decyzji odświeżyć vs scalić.
 - `Zablokowane`: co nie jest jeszcze gotową decyzją publikacyjną i dlaczego.
 
 Nie pokazuj marketerowi surowych markerów typu `partial_possible` jako uzasadnienia. Tłumacz je normalnie: "dane są częściowe, więc to sygnał do ręcznej oceny, nie gotowa decyzja publikacyjna". Surowe markery, endpointy i identyfikatory trzymaj w śladzie technicznym.

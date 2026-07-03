@@ -20,15 +20,14 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od krótkiej decyzji operatorskiej, a nie od surowego raportu API. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Dlaczego`, `Co sprawdzić ręcznie` i `Zablokowane`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
-2. `Dowody`: `content_diagnostics` identyfikatorów sekcji, identyfikatory dowodów, identyfikatory źródeł danych, notatki o świeżości, fakty o zapytaniach i adresach oraz status dopasowania spisu WordPress wyłącznie z WILQ API.
-3. `Diagnoza`: co wspierają dane o zapytaniach, adresach i spisie WordPress, z niepewnością, jeśli dowody są zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: tactical queue item IDs i identyfikatory akcji, szczególnie `act_prepare_content_refresh_queue`, jeśli są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
-5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Można zrobić teraz`: jedna bezpieczna decyzja lub akcja do sprawdzenia, np. która strona/temat idzie do ręcznej oceny refresh/merge/create/block.
+2. `Dlaczego`: jednozdaniowe uzasadnienie z WILQ API, np. GSC pokazuje sygnał zapytań/adresu, a WordPress potwierdza istniejący URL lub brak inventory.
+3. `Co sprawdzić ręcznie`: użyj dokładnie tej etykiety. Wypisz krótką checklistę: intencja zapytań, nagłówki/CTA, kanibalizacja/duplikacja, canonical/inventory i decyzja odświeżyć vs scalić vs utworzyć.
+4. `Zablokowane`: co nie jest gotową decyzją publikacyjną, jakich claims nie wolno powiedzieć i czego brakuje do zapisu albo publikacji.
+5. `Ślad techniczny`: identyfikatory dowodów, źródeł danych, tactical queue item IDs i identyfikatory akcji, szczególnie `act_prepare_content_refresh_queue`, jeśli są dostępne. Surowe endpointy i walidacje pokazuj tu, nie na początku odpowiedzi.
 
 ## Warunki odmowy lub obniżenia do blokady
 

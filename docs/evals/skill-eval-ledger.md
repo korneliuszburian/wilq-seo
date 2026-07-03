@@ -418,6 +418,14 @@ Focused proof:
   `operator_usefulness_score=7`, `blocked=true`, `failure_tags=[]`, 6 evidence
   IDs, 4 recommendations, 2 actions and all hard gates true. The coverage map
   now reports `strong_skill_count=3`.
+- Follow-up GSC content proof: `wilq-gsc-content-doctor` first scored 7 but
+  failed the deterministic decision-term check because visible output omitted
+  the exact section label `Co sprawdzić ręcznie`. The skill/reference contract
+  now require that label, and the passing eval at
+  `.local-lab/evals/codex-skill/20260703T115305Z` has
+  `operator_usefulness_score=7`, `blocked=false`, `failure_tags=[]`, 6
+  evidence IDs, 1 recommendation, 1 action and all hard gates true. The
+  coverage map now reports `strong_skill_count=4`.
 
 Interpretation:
 

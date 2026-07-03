@@ -102,6 +102,13 @@ Date: 2026-07-03
   `operator_usefulness_score=7`, `blocked=true`, 6 evidence IDs, 4
   recommendations, 2 actions and all hard gates true. Skill coverage now
   reports `strong_skill_count=3`.
+- 2026-07-03 `wilq-gsc-content-doctor` reached the strong workflow threshold
+  after aligning its visible answer contract around the exact operator section
+  `Co sprawdzić ręcznie`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T115305Z`; result:
+  `operator_usefulness_score=7`, `blocked=false`, 6 evidence IDs, 1
+  recommendation, 1 action and all hard gates true. Skill coverage now reports
+  `strong_skill_count=4`.
 - 2026-07-03 fresh full WILQ skill eval baseline is now 13/13 passing for all
   repo WILQ skills on production-like Polish prompts. Every current score is
   `operator_usefulness_score=5`, so this proves "works out-of-the-box with
