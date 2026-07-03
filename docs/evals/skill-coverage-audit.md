@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Generated: `2026-07-03T12:07:48+00:00`.
+Generated: `2026-07-03T12:13:14+00:00`.
 
 Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko najnowszy passing artifact i decyzję produktową.
 
@@ -8,7 +8,7 @@ Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebie
 
 | Skill | Latest artifact | Score | State | What it proves | Remaining blocker / next step |
 | --- | --- | ---: | --- | --- | --- |
-| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260703T073232Z/wilq-daily-command/result.json` | 8 | ready / review-only | 20 evidence IDs; connectors: google_merchant_center, ahrefs, google_search_console, wordpress_ekologus, wordpress_sklep, google_analytics_4, google_ads; actions: act_review_mercha… | Co zrobić najpierw: otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego. Dlaczego teraz: command_center.primary_next_step wskazuje Merchant jako pierwszy gotowy… |
+| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260703T121004Z/wilq-daily-command/result.json` | 9 | ready / review-only | 22 evidence IDs; connectors: google_merchant_center, ahrefs, google_search_console, wordpress_ekologus, wordpress_sklep, google_analytics_4, google_ads, localo; actions: act_revie… | Najpierw otwórz widok Merchant w /command-center, przejrzyj kolejkę problemów pliku produktowego i sprawdź akcję w WILQ. To jest pierwszy krok, bo command_center.primary_next_step… |
 | `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260703T120521Z/wilq-ads-doctor/result.json` | 9 | ready / review-only | 12 evidence IDs; connectors: google_ads; actions: act_prepare_ads_campaign_review_queue, act_prepare_google_ads_recommendation_review_queue, act_prepare_custom_segments_from_searc… | Wejdź w /ads-doctor i kliknij najpierw przegląd kampanii oraz budżetów, bo odczyt Google Ads jest świeży i dostępny, a WILQ ma pełną kolejkę review. Jak sprawdzić: zacznij od kamp… |
 | `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260703T115305Z/wilq-gsc-content-doctor/result.json` | 7 | ready / review-only | 6 evidence IDs; connectors: google_search_console, wordpress_ekologus, wordpress_sklep; actions: act_prepare_content_refresh_queue | Otwórz /content-planner i zacznij od strony głównej ekologus.pl: sprawdź ręcznie intencję zapytań, nagłówki, CTA i możliwą kanibalizację, bo najnowszy dostępny dzień GSC to 2026-0… |
 | `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260703T070640Z/wilq-ahrefs-gap-finder/result.json` | 5 | ready / review-only | 8 evidence IDs; connectors: ahrefs | Wejdź w /ahrefs i zacznij od przeglądu luk treściowych oraz linkowych z Ahrefs; pierwszy krok jest bezpieczny, bo WILQ ma gotowe dowody do oceny, ale nie pozwala obiecywać efektu… |

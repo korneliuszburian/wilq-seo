@@ -25,7 +25,7 @@
       "blokada",
       "następny bezpieczny krok"
     ],
-    "minimum_operator_usefulness_score": 5,
+    "minimum_operator_usefulness_score": 9,
     "expected_action_ids": [
       "act_review_merchant_feed_issues",
       "act_prepare_content_refresh_queue",

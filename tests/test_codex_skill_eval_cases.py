@@ -573,7 +573,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "rozmiar odbiorców" in custom_segments_case["blocked_claim_terms"]
     assert "zapis kierowania reklam" in custom_segments_case["blocked_claim_terms"]
     daily_case = cases["wilq-daily-command"]
-    assert daily_case["minimum_operator_usefulness_score"] == 5
+    assert daily_case["minimum_operator_usefulness_score"] == 9
     assert set(daily_case["required_decision_terms_pl"]).issuperset(
         {
             "co zrobić najpierw",

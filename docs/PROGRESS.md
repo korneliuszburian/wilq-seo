@@ -85,11 +85,11 @@ Date: 2026-07-03
   1-10 marketer-usefulness scale. `5` is still the minimum pass, `7+` means a
   strong operator workflow and `10` means Wilku-ready / BDOS-class output. The
   focused proof eval for `wilq-daily-command` passed at
-  `.local-lab/evals/codex-skill/20260703T073232Z` with
-  `operator_usefulness_score=8`, `blocked=false`, 20 evidence IDs, 4
+  `.local-lab/evals/codex-skill/20260703T121004Z` with
+  `operator_usefulness_score=9`, `blocked=false`, 22 evidence IDs, 4
   recommendations, 4 actions and all hard gates true. Treat this as proof that
   the harness can now measure beyond baseline, not as proof that every skill is
-  already 8-10/10.
+  already 9-10/10.
 - 2026-07-03 `wilq-content-operator` reached the strong workflow threshold on
   the 1-10 scale. Artifact:
   `.local-lab/evals/codex-skill/20260703T113839Z`; result:

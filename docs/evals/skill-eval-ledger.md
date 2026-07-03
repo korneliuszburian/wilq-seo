@@ -405,12 +405,12 @@ What changed:
 Focused proof:
 
 - Command: `scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000`
-- Artifact: `.local-lab/evals/codex-skill/20260703T073232Z`
-- Result: `operator_usefulness_score=8`, `blocked=false`, `failure_tags=[]`,
-  20 evidence IDs, 4 recommendations, 4 actions and all hard gates true.
-- Coverage map: `docs/evals/skill-coverage-audit.md` now reports score range
-  `5-8`, `strong_skill_count=1` for `7+/10` and
-  `wilku_ready_skill_count=0` for `10/10`.
+- Artifact: `.local-lab/evals/codex-skill/20260703T121004Z`
+- Result: `operator_usefulness_score=9`, `blocked=false`, `failure_tags=[]`,
+  22 evidence IDs, 4 recommendations, 4 actions and all hard gates true.
+- The current coverage map records Daily Command at 9/10. Later same-day
+  follow-ups below add more 7+ and 9+ proofs; `wilku_ready_skill_count=0`
+  still means no skill is yet certified as 10/10.
 - Follow-up content proof: `wilq-content-operator` passed at
   `.local-lab/evals/codex-skill/20260703T113839Z` with
   `operator_usefulness_score=7`, `blocked=true`, `failure_tags=[]`, 6 evidence
