@@ -10,6 +10,7 @@ from wilq.content.handoff.wordpress import (
 )
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBlocker,
+    ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.review.human import ContentHumanReview
@@ -290,13 +291,24 @@ def test_wordpress_draft_execution_blocks_live_write_without_enabled_adapter() -
         mode="live",
         live_write_enabled=True,
     )
+    missing_authorization = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+        mode="live",
+        live_write_enabled=True,
+        create_draft=lambda _payload: "123",
+    )
 
     assert disabled.status == "blocked"
     assert [blocker.code for blocker in disabled.blockers] == ["live_write_not_enabled"]
     assert disabled.external_write_attempted is False
     assert [blocker.code for blocker in missing_adapter.blockers] == ["missing_live_adapter"]
+    assert [blocker.code for blocker in missing_authorization.blockers] == [
+        "missing_write_authorization"
+    ]
+    assert missing_authorization.external_write_attempted is False
     _assert_execution_blockers_have_no_jargon(
-        [*disabled.blockers, *missing_adapter.blockers]
+        [*disabled.blockers, *missing_adapter.blockers, *missing_authorization.blockers]
     )
 
 
@@ -323,6 +335,14 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
         mode="live",
         live_write_enabled=True,
         create_draft=create_draft,
+        write_authorization=ContentWordPressDraftWriteAuthorization(
+            action_id="act_prepare_wordpress_draft_handoff",
+            preview_audit_id="audit_preview_123",
+            review_audit_id="audit_review_123",
+            confirmation_audit_id="audit_confirm_123",
+            apply_audit_id="audit_apply_123",
+            confirmed_by="wilku",
+        ),
     )
 
     assert result.status == "created"

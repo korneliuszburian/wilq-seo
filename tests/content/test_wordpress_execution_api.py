@@ -68,6 +68,19 @@ def _post_wordpress_execution(payload: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _write_authorization(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "action_id": "act_prepare_wordpress_draft_handoff",
+        "preview_audit_id": "audit_preview_123",
+        "review_audit_id": "audit_review_123",
+        "confirmation_audit_id": "audit_confirm_123",
+        "apply_audit_id": "audit_apply_123",
+        "confirmed_by": "wilku",
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_wordpress_execution_api_returns_draft_only_dry_run() -> None:
     data = _post_wordpress_execution(
         {
@@ -125,7 +138,39 @@ def test_wordpress_execution_api_blocks_live_write() -> None:
     ]
 
 
-def test_wordpress_execution_api_live_write_uses_env_gated_draft_adapter(
+def test_wordpress_execution_api_live_write_requires_write_authorization(
+    monkeypatch,
+) -> None:
+    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
+        raise AssertionError("adapter must not run without write authorization")
+
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.create_wordpress_draft_post",
+        create_draft,
+    )
+
+    data = _post_wordpress_execution(
+        {
+            "handoff": _wordpress_handoff(),
+            "draft_package": _draft_package(),
+            "mode": "live",
+        }
+    )
+
+    result = data["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["external_write_attempted"] is False
+    assert result["boundary"]["live_write_enabled"] is True
+    assert result["boundary"]["live_adapter_configured"] is True
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    assert [blocker["code"] for blocker in result["blockers"]] == [
+        "missing_write_authorization"
+    ]
+
+
+def test_wordpress_execution_api_live_write_uses_authorized_draft_adapter(
     monkeypatch,
 ) -> None:
     created_titles: list[str] = []
@@ -148,6 +193,7 @@ def test_wordpress_execution_api_live_write_uses_env_gated_draft_adapter(
             "handoff": _wordpress_handoff(),
             "draft_package": _draft_package(),
             "mode": "live",
+            "write_authorization": _write_authorization(),
         }
     )
 
@@ -183,6 +229,7 @@ def test_wordpress_execution_api_live_adapter_failure_is_blocked(
             "handoff": _wordpress_handoff(),
             "draft_package": _draft_package(),
             "mode": "live",
+            "write_authorization": _write_authorization(),
         }
     )
 

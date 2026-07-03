@@ -231,6 +231,12 @@ Date: 2026-07-03
   payloads. Focused proof: 14/14 WordPress execution tests passed, ruff passed
   on touched files, and live API dry-run after stack restart returned
   `dry_run_ready` with no external write attempted.
+- WordPress draft live execution now also requires explicit
+  `write_authorization` with ActionObject/audit trace: action ID, preview
+  audit, review audit, confirmation audit, apply audit and confirming person.
+  Env flag plus adapter is not enough. Focused proof now passes 15/15
+  WordPress execution tests, shared schema tests, ruff on touched files and
+  live API dry-run/live-blocked checks after stack restart.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

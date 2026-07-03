@@ -18,6 +18,7 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
     "handoff_not_draft_only",
     "live_write_not_enabled",
     "missing_live_adapter",
+    "missing_write_authorization",
     "live_adapter_failed",
 ]
 
@@ -56,6 +57,17 @@ class ContentWordPressDraftExecutionBoundary(BaseModel):
     destructive_update_allowed: Literal[False] = False
 
 
+class ContentWordPressDraftWriteAuthorization(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    action_id: str
+    preview_audit_id: str
+    review_audit_id: str
+    confirmation_audit_id: str
+    apply_audit_id: str
+    confirmed_by: str
+
+
 class ContentWordPressDraftExecutionResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -75,6 +87,7 @@ def execute_content_wordpress_draft_handoff(
     mode: ContentWordPressDraftExecutionMode = "dry_run",
     live_write_enabled: bool = False,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None = None,
+    write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
 ) -> ContentWordPressDraftExecutionResult:
     blockers = content_wordpress_draft_execution_blockers(
         handoff=handoff,
@@ -82,6 +95,7 @@ def execute_content_wordpress_draft_handoff(
         mode=mode,
         live_write_enabled=live_write_enabled,
         create_draft=create_draft,
+        write_authorization=write_authorization,
     )
     if blockers:
         return ContentWordPressDraftExecutionResult(
@@ -157,6 +171,7 @@ def content_wordpress_draft_execution_blockers(
     mode: ContentWordPressDraftExecutionMode = "dry_run",
     live_write_enabled: bool = False,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None = None,
+    write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
 ) -> list[ContentWordPressDraftExecutionBlocker]:
     blockers: list[ContentWordPressDraftExecutionBlocker] = []
     if handoff is None:
@@ -180,7 +195,13 @@ def content_wordpress_draft_execution_blockers(
     if handoff is not None and draft_package is not None:
         blockers.extend(_handoff_payload_blockers(handoff, draft_package))
     if mode == "live":
-        blockers.extend(_live_write_blockers(live_write_enabled, create_draft))
+        blockers.extend(
+            _live_write_blockers(
+                live_write_enabled,
+                create_draft,
+                write_authorization,
+            )
+        )
     return blockers
 
 
@@ -238,6 +259,7 @@ def _handoff_payload_blockers(
 def _live_write_blockers(
     live_write_enabled: bool,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None,
+    write_authorization: ContentWordPressDraftWriteAuthorization | None,
 ) -> list[ContentWordPressDraftExecutionBlocker]:
     if not live_write_enabled:
         return [
@@ -257,7 +279,40 @@ def _live_write_blockers(
                 "Podłącz adapter zapisu szkicu i zostaw publikację wyłączoną.",
             )
         ]
+    if write_authorization is None or not _write_authorization_complete(
+        write_authorization
+    ):
+        return [
+            _blocker(
+                "missing_write_authorization",
+                "Brakuje potwierdzenia ścieżki zapisu",
+                (
+                    "Realny szkic WordPress wymaga śladu: podgląd, review, "
+                    "potwierdzenie, apply i osoba potwierdzająca."
+                ),
+                (
+                    "Przejdź przez ActionObject validate, preview, review, "
+                    "confirm i apply audit przed uruchomieniem zapisu."
+                ),
+            )
+        ]
     return []
+
+
+def _write_authorization_complete(
+    authorization: ContentWordPressDraftWriteAuthorization,
+) -> bool:
+    return all(
+        bool(value.strip())
+        for value in (
+            authorization.action_id,
+            authorization.preview_audit_id,
+            authorization.review_audit_id,
+            authorization.confirmation_audit_id,
+            authorization.apply_audit_id,
+            authorization.confirmed_by,
+        )
+    )
 
 
 def _execution_boundary(

@@ -1221,6 +1221,15 @@ export const ContentWordPressDraftExecutionBoundarySchema = z.object({
   destructive_update_allowed: z.literal(false)
 });
 
+export const ContentWordPressDraftWriteAuthorizationSchema = z.object({
+  action_id: z.string(),
+  preview_audit_id: z.string(),
+  review_audit_id: z.string(),
+  confirmation_audit_id: z.string(),
+  apply_audit_id: z.string(),
+  confirmed_by: z.string()
+});
+
 export const ContentWordPressDraftExecutionResultSchema = z.object({
   status: z.enum(["dry_run_ready", "created", "blocked"]),
   mode: z.enum(["dry_run", "live"]),
@@ -1234,7 +1243,8 @@ export const ContentWordPressDraftExecutionResultSchema = z.object({
 export const ContentWorkItemWordPressDraftExecutionRequestSchema = z.object({
   handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
   draft_package: ContentDraftPackageSchema.nullable().optional(),
-  mode: z.enum(["dry_run", "live"]).default("dry_run")
+  mode: z.enum(["dry_run", "live"]).default("dry_run"),
+  write_authorization: ContentWordPressDraftWriteAuthorizationSchema.nullable().optional()
 });
 
 export const ContentWorkItemWordPressDraftExecutionResponseSchema = z.object({

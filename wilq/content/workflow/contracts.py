@@ -36,6 +36,7 @@ from wilq.content.handoff.wordpress_authoring import (
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionMode,
     ContentWordPressDraftExecutionResult,
+    ContentWordPressDraftWriteAuthorization,
 )
 from wilq.content.inventory.records import (
     ContentInventoryDuplicateRisk,
@@ -222,6 +223,7 @@ class ContentWorkItemWordPressDraftExecutionRequest(BaseModel):
     handoff: ContentWordPressDraftHandoff | None = None
     draft_package: ContentDraftPackage | None = None
     mode: ContentWordPressDraftExecutionMode = "dry_run"
+    write_authorization: ContentWordPressDraftWriteAuthorization | None = None
 
 
 class ContentWorkItemWordPressDraftExecutionResponse(BaseModel):

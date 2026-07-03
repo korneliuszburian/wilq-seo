@@ -366,6 +366,7 @@ def build_content_work_item_wordpress_draft_execution_response(
             mode=request.mode,
             live_write_enabled=live_write_enabled,
             create_draft=create_wordpress_draft_post if live_write_enabled else None,
+            write_authorization=request.write_authorization,
         ),
     )
 
