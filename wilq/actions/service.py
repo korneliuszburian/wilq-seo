@@ -2944,6 +2944,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         ),
     ]
     requirements.extend(_wordpress_draft_execution_readiness_requirements(action))
+    requirements.extend(_wordpress_draft_target_content_readiness_requirements(action))
     requirements.extend(
         _wordpress_draft_write_readiness_requirements(
             action,
@@ -3130,6 +3131,11 @@ def _activation_plan_steps(
         steps.append("Przygotuj zatwierdzony WordPress handoff dla wybranego work itemu.")
     if "missing_wordpress_draft_package_ready" in blocker_codes:
         steps.append("Podepnij zatwierdzoną paczkę szkicu przed próbą dry-run execution.")
+    if "missing_wordpress_draft_target_content_ready" in blocker_codes:
+        steps.append(
+            "Doprowadź konkretny target przez Claim Ledger, gotowość szkicu i "
+            "human review zanim będzie można tworzyć draft."
+        )
     if item.vendor_write_possible:
         steps.append("Przed live write wykonaj apply wyłącznie przez ActionObject i audit.")
     return steps
@@ -3294,6 +3300,46 @@ def _wordpress_draft_execution_readiness_requirements(
             satisfied="missing_draft_package" not in blocker_codes,
             evidence=blocker_evidence or "ready",
         ),
+    ]
+
+
+def _wordpress_draft_target_content_readiness_requirements(
+    action: ActionObject,
+) -> list[ActionMutationReadinessRequirement]:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return []
+    preview_items = _payload_preview_items(action.payload)
+    if not preview_items:
+        return [
+            _mutation_requirement(
+                code="wordpress_draft_target_content_ready",
+                label="Target treści przeszedł Claim Ledger i review szkicu",
+                satisfied=False,
+                evidence="missing_payload_preview",
+            )
+        ]
+    first = preview_items[0]
+    apply_allowed = first.get("apply_allowed") is True
+    api_mutation_ready = first.get("api_mutation_ready") is True
+    required_validation = [
+        value for value in first.get("required_validation", []) if isinstance(value, str)
+    ]
+    validation_evidence = ", ".join(required_validation[:4])
+    if len(required_validation) > 4:
+        validation_evidence = f"{validation_evidence}, +{len(required_validation) - 4}"
+    evidence_parts = [
+        f"apply_allowed={str(apply_allowed).lower()}",
+        f"api_mutation_ready={str(api_mutation_ready).lower()}",
+    ]
+    if validation_evidence:
+        evidence_parts.append(f"required_validation={validation_evidence}")
+    return [
+        _mutation_requirement(
+            code="wordpress_draft_target_content_ready",
+            label="Target treści przeszedł Claim Ledger i review szkicu",
+            satisfied=apply_allowed and api_mutation_ready,
+            evidence="; ".join(evidence_parts),
+        )
     ]
 
 
@@ -3523,6 +3569,18 @@ def _mutation_readiness_blockers(
             (
                 "Przygotuj draft package z claim ledgerem, sekcjami i dowodami, "
                 "potem wróć do handoffu."
+            ),
+        ),
+        "wordpress_draft_target_content_ready": (
+            "Target treści nie przeszedł jeszcze gotowości szkicu",
+            (
+                "Wybrany URL ma tylko zablokowany podgląd handoffu. Przed draft-only "
+                "write musi przejść Claim Ledger, kontrolę wiedzy/claimów, gotowość "
+                "szkicu i review człowieka."
+            ),
+            (
+                "Doprowadź ten content item przez Claim Ledger, draft package i "
+                "human review; dopiero potem wróć do WordPress handoffu."
             ),
         ),
         "wordpress_draft_live_write_env": (

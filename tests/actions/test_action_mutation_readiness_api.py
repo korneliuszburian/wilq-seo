@@ -101,13 +101,29 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     assert "wordpress_draft_write_readiness" in requirement_codes
     assert "wordpress_draft_handoff_ready" in requirement_codes
     assert "wordpress_draft_package_ready" in requirement_codes
+    assert "wordpress_draft_target_content_ready" in requirement_codes
     assert "wordpress_draft_live_write_env" in requirement_codes
     assert "wordpress_write_authorization" in requirement_codes
     assert "missing_wordpress_draft_handoff_ready" in blocker_codes
     assert "missing_wordpress_draft_package_ready" in blocker_codes
+    assert "missing_wordpress_draft_target_content_ready" in blocker_codes
     assert "missing_wordpress_draft_write_readiness" in blocker_codes
     assert "missing_wordpress_draft_live_write_env" in blocker_codes
     assert "missing_wordpress_write_authorization" in blocker_codes
+    target_requirement = next(
+        requirement
+        for requirement in data["requirements"]
+        if requirement["code"] == "wordpress_draft_target_content_ready"
+    )
+    assert target_requirement["satisfied"] is False
+    assert "api_mutation_ready=false" in target_requirement["evidence"]
+    target_blocker = next(
+        blocker
+        for blocker in data["blockers"]
+        if blocker["code"] == "missing_wordpress_draft_target_content_ready"
+    )
+    assert "Claim Ledger" in target_blocker["reason"]
+    assert "draft package" in target_blocker["next_step"]
 
 
 def test_wordpress_apply_action_blocks_payload_before_vendor_write(
@@ -255,6 +271,7 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert any("boundary istnieje" in step for step in data["activation_plan_steps"])
     assert any("handoff" in step for step in data["activation_plan_steps"])
     assert any("paczkę szkicu" in step for step in data["activation_plan_steps"])
+    assert any("Claim Ledger" in step for step in data["activation_plan_steps"])
     assert "Adapter boundary już istnieje" in data["activation_next_step"]
     assert "zostaw adapter" not in data["activation_next_step"]
     assert data["items"][0]["response_type"] == "action_mutation_readiness"

@@ -122,6 +122,11 @@ Date: 2026-07-03
   both labels in Polish. Live smoke after restart still reports
   `vendor_write_possible_count=0` and `would_attempt_vendor_write_count=0` for
   the WordPress draft-only candidate.
+- 2026-07-03 WordPress draft-only first write candidate now also exposes a
+  target-content readiness blocker. Live mutation readiness says the selected
+  URL still has `apply_allowed=false` and `api_mutation_ready=false`, so it
+  must pass Claim Ledger, draft package and human review before any draft-only
+  adapter execution can be considered.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run
