@@ -149,6 +149,11 @@ Date: 2026-07-04
   checklist. Live proof says the draft package can be reviewed now with 5
   checklist items, while human review, handoff, dry-run, live write,
   publication and external write all remain blocked.
+- 2026-07-04 focused activation-packet proof now covers the next transition:
+  after approved human review the packet moves to `human_review_ready=true`
+  and `audit_ready=false`; after matching audit it moves to handoff/dry-run
+  ready with a draft-only payload, while live write, publication, destructive
+  updates and external write remain blocked.
 - 2026-07-03 WordPress draft activation packet now scopes to the selected
   content work item via `work_item_id`, and `/content-workflow` passes the
   active item ID. This prevents the dashboard from showing activation blockers

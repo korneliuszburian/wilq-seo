@@ -105,6 +105,44 @@ def _write_authorization(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _human_review_from_snapshot(
+    item: dict[str, Any],
+    draft: dict[str, Any],
+    **overrides: object,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "id": f"human_review_{item['id']}",
+        "work_item_id": item["id"],
+        "stage": "draft_package",
+        "reviewed_by": "wilku",
+        "decision": "approved",
+        "notes": "Review zatwierdza wyłącznie szkic WordPress, bez publikacji.",
+        "checked_items": [
+            "Treść brzmi jak Ekologus.",
+            "Claim Ledger i dowody zostały sprawdzone.",
+            "Materiał zostaje szkicem WordPress, bez publikacji.",
+        ],
+        "evidence_ids": item["evidence_ids"],
+        "blocked_claims_handled": draft["claims_removed_or_blocked"],
+        "draft_package_id": draft["id"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _audit_from_review(
+    item: dict[str, Any],
+    review: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "audit_id": f"audit_{item['id']}",
+        "actor": "wilku",
+        "reason": "Zatwierdzony materiał może trafić wyłącznie do szkicu WordPress.",
+        "evidence_ids": item["evidence_ids"],
+        "human_review_id": review["id"],
+    }
+
+
 def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     monkeypatch,
     tmp_path,
@@ -140,6 +178,66 @@ def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     assert any("human review" in step for step in data["next_steps"])
     assert data["evidence_ids"]
     assert "wordpress_ekologus" in data["source_connectors"]
+
+
+def test_wordpress_activation_packet_follows_saved_review_and_audit(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "activation_packet_transition.sqlite3"),
+    )
+    client = TestClient(app)
+
+    initial_packet = _get_wordpress_activation_packet()
+    work_item_id = initial_packet["work_item_id"]
+    snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
+    item = snapshot["preflight"]["item"]
+    draft = snapshot["draft_package"]["draft_package_result"]["draft_package"]
+    assert draft is not None
+
+    review = _human_review_from_snapshot(item, draft)
+    review_response = client.post(
+        f"/api/content/work-items/{work_item_id}/human-review",
+        json={"review": review},
+    )
+    assert review_response.status_code == 200
+    assert review_response.json()["wordpress_handoff_allowed"] is True
+
+    after_review = _get_wordpress_activation_packet(work_item_id)
+    assert after_review["human_review_ready"] is True
+    assert after_review["audit_ready"] is False
+    assert after_review["handoff_ready"] is False
+    assert after_review["dry_run_ready"] is False
+    assert after_review["external_write_attempted"] is False
+    assert after_review["handoff_blockers"] == ["missing_audit"]
+    assert after_review["execution_blockers"] == ["missing_handoff"]
+    assert after_review["human_review_checklist"] == [
+        "Review człowieka jest zapisane; teraz sprawdź audyt i handoff WordPress."
+    ]
+
+    audit_response = client.post(
+        f"/api/content/work-items/{work_item_id}/audit",
+        json={"audit": _audit_from_review(item, review)},
+    )
+    assert audit_response.status_code == 200
+    assert audit_response.json()["handoff_result"]["blockers"] == []
+
+    after_audit = _get_wordpress_activation_packet(work_item_id)
+    assert after_audit["human_review_ready"] is True
+    assert after_audit["audit_ready"] is True
+    assert after_audit["handoff_ready"] is True
+    assert after_audit["dry_run_ready"] is True
+    assert after_audit["live_write_enabled_by_env"] is False
+    assert after_audit["publish_allowed"] is False
+    assert after_audit["destructive_update_allowed"] is False
+    assert after_audit["external_write_attempted"] is False
+    assert after_audit["handoff_blockers"] == []
+    assert after_audit["execution_blockers"] == []
+    assert after_audit["execution_result"]["status"] == "dry_run_ready"
+    assert after_audit["execution_result"]["payload"]["post_status"] == "draft"
+    assert after_audit["execution_result"]["external_write_attempted"] is False
 
 
 def test_wordpress_activation_packet_can_scope_to_selected_work_item(
