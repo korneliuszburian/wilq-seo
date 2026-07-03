@@ -2153,8 +2153,9 @@ def _wordpress_draft_apply_action(*, handoff_action: ActionObject) -> ActionObje
         ),
         recommended_reason=(
             "Użyj tej akcji do sprawdzania gotowości przyszłego zapisu szkicu. "
-            "Dopóki payload, preview, review, confirm, impact check, env i adapter "
-            "nie przejdą readiness, WILQ nie może wykonać vendor write."
+            "Dopóki podgląd zmian, review człowieka, potwierdzenie operatora, "
+            "audyt wpływu, zgoda środowiska i warstwa wykonania nie są gotowe, "
+            "WILQ nie może zapisać szkicu w WordPress."
         ),
         payload={
             "action_type": "wordpress_draft_handoff",
