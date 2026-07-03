@@ -33,19 +33,20 @@ Wymagane źródła danych zależą od itemu i muszą pochodzić z API:
 
 ## Kształt odpowiedzi
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Kolejka treści`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet identyfikatorów dowodów ani źródeł poza technicznymi polami JSON.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zaczynaj od jednej sesji pracy, nie od raportu bramek. Widoczna odpowiedź musi zawierać polskie etykiety: `Co wybieramy`, `Dlaczego ten temat`, `Plan sesji`, `Kiedy stop`, `Co pokazać Wilkowi` i `Ślad techniczny`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet identyfikatorów dowodów ani źródeł poza technicznymi polami JSON.
 
-1. `Status`: dostępność WILQ API, status kolejki, wybrany `work_item_id`, gotowość preflightu, quality review, human review, WordPress draft-only i measurement window.
-2. `Dowody`: identyfikatory dowodów, identyfikatory źródeł danych, final canonical, preview URL jako preview, enrichment facts, karty wiedzy i measurement boundary wyłącznie z WILQ API.
-3. `Kolejka treści`: 3-5 propozycji z `recommended_mode`, blokadami i bezpiecznym kolejnym krokiem. Jeśli kolejka ma mniej gotowych itemów, powiedz to jako blokadę.
-4. `Diagnoza`: co API wspiera dla preserve, refresh, merge, create albo block. Nie zmieniaj rankingu i nie twórz nowego priorytetu z promptu.
-5. `Akcje do sprawdzenia`: endpointy albo work item gates, które trzeba uruchomić dalej: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, structured runtime, quality review, revision plan, revision apply, human review, audit, WordPress draft-only, measurement.
+1. `Co wybieramy`: wybrany `work_item_id`, tryb pracy i decyzja, czy praca jest refresh-first, draft-ready czy zablokowana.
+2. `Dlaczego ten temat`: źródła danych i dowody WILQ po ludzku: GSC, WordPress, Ahrefs, GA4, Service Profile, knowledge cards, final canonical i preview URL tylko jako preview.
+3. `Plan sesji`: 4-6 kroków w kolejności działania: odśwież dane źródłowe, enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrola jakości/review człowieka, WordPress draft-only albo measurement window.
+4. `Kiedy stop`: konkretne warunki zatrzymania: brak świeżych danych, brak Service Profile, forbidden claim, brak human review, WordPress tylko jako szkic, ACF/`elementy` tylko jako preview, measurement outcome niegotowy.
+5. `Co pokazać Wilkowi`: krótki pakiet review: decyzja, źródła, dozwolone twierdzenia, zablokowane twierdzenia i najbliższa akcja do sprawdzenia.
+6. `Ślad techniczny`: endpointy albo work item gates, które trzeba uruchomić dalej: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, structured runtime, quality review, revision plan, revision apply, human review, audit, WordPress draft-only, measurement.
    Jeżeli wybrana propozycja z kolejki ma `action_ids`, pokaż te identyfikatory akcji
    w tej sekcji i sprawdź je przez `POST /api/actions/{action_id}/validate`.
    Globalnie zablokowana kolejka UAT nie usuwa action proofu dla wybranego
    bezpiecznego kroku, np. `act_prepare_content_refresh_queue`.
-6. `Sprawdzenie w WILQ`: potwierdzenie, które bramki przeszły, które są zablokowane, czy `publish_ready=false`, czy WordPress pozostaje draft-only, czy ACF authoring preview jest tylko propozycją wiersza do ręcznego przeglądu i czy measurement outcome jest gotowy.
-7. `Następny krok`: najmniejszy bezpieczny krok operatora, bez obietnicy publikacji albo efektu.
+
+W ustrukturyzowanym JSON eval albo handoffie etykiety `Plan sesji`, `Kiedy stop` i `Co pokazać Wilkowi` muszą pojawić się w widocznych polach decyzyjnych, np. w `operator_next_step`, `recommendations[].label_pl` albo `action_candidates[].label_pl`. Nie wystarczy wrzucić ich do `notes`.
 
 ## Warunki odmowy lub obniżenia do blokady
 

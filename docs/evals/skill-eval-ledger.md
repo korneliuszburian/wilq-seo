@@ -439,6 +439,15 @@ Focused proof:
   campaigns/budgets, recommendations, search terms/n-grams, negative keywords,
   custom segments and change history, while blocking ROAS/waste/write claims.
   The coverage map now reports `strong_skill_count=5` and maximum score `9`.
+- Follow-up Content Operator proof: `wilq-content-operator` first re-evaluated
+  at 8/10, then the content workflow target was tightened to 9+ by requiring a
+  visible one-session structure: `Co wybieramy`, `Plan sesji`, `Kiedy stop`
+  and `Co pokazać Wilkowi`. The passing 9/10 proof is
+  `.local-lab/evals/codex-skill/20260703T121912Z` with
+  `operator_usefulness_score=9`, `blocked=true`, `failure_tags=[]`, 6 evidence
+  IDs, 4 recommendations, 2 actions and all hard gates true. This keeps
+  WordPress publish/final article/measurement success blocked while giving
+  Wilku a concrete review packet for one content session.
 
 Interpretation:
 

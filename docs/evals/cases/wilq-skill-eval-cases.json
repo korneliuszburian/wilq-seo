@@ -460,6 +460,11 @@
       "nie pisz finalnego artykułu"
     ],
     "required_decision_terms_pl": [
+      "Co wybieramy",
+      "Dlaczego ten temat",
+      "Plan sesji",
+      "Kiedy stop",
+      "Co pokazać Wilkowi",
       "/content-workflow",
       "dane wymagają odświeżenia",
       "odśwież dane źródłowe",
@@ -481,6 +486,7 @@
       "nie publikuj",
       "nie pisz finalnego artykułu"
     ],
+    "minimum_operator_usefulness_score": 9,
     "expected_action_ids": [
       "act_prepare_content_refresh_queue"
     ],

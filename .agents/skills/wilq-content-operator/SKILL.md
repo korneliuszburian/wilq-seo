@@ -100,6 +100,17 @@ Adres `ekologus.dev.proudsite.pl` może być tylko preview/design/staging contex
 
 Odpowiedź ma prowadzić Wilka przez jedną bezpieczną sesję pracy: status, źródła, dowody, kolejka treści, diagnoza, sprawdzenie w WILQ, akcje do sprawdzenia, blokady i następny krok.
 
+Widoczny format ma być sesyjny, nie raportowy:
+
+- `Co wybieramy`: wybrany work item albo decyzja, że wybór jest zablokowany.
+- `Dlaczego ten temat`: źródła i dowody WILQ po ludzku, np. GSC, WordPress, Ahrefs, GA4, Service Profile.
+- `Plan sesji`: 4-6 kroków w kolejności: odśwież dane źródłowe, enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrola jakości/review człowieka, WordPress draft-only albo pomiar.
+- `Kiedy stop`: jasne warunki zatrzymania, np. brak świeżych danych, brak Service Profile, forbidden claim, brak human review, WordPress tylko jako szkic, measurement window niegotowe.
+- `Co pokazać Wilkowi`: krótki pakiet review: decyzja, źródła, dozwolone twierdzenia, zablokowane twierdzenia i najbliższa akcja do sprawdzenia.
+- `Ślad techniczny`: identyfikatory dowodów, work itemów, akcji, endpointów i raw bramek.
+
+Jeżeli odpowiadasz w ustrukturyzowanym JSON eval albo krótkim handoffie, widoczne pola decyzyjne (`operator_next_step`, `recommendations[].label_pl`, `action_candidates[].label_pl`) muszą nadal zawierać etykiety `Plan sesji`, `Kiedy stop` i `Co pokazać Wilkowi`, a nie tylko techniczną listę etapów workflow.
+
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output>
