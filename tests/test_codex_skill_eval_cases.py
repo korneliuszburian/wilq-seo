@@ -943,12 +943,21 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     }
     assert "opublikowanie posta" in social_case["blocked_claim_terms"]
     assert "wzrost skuteczności social" in social_case["blocked_claim_terms"]
-    assert set(social_case["required_decision_terms_pl"]).issuperset(
+    assert set(social_case["expected_terms_pl"]).issuperset(
         {
             "social_history_inventory",
             "social_history_inventory_v1",
             "metadata-only",
             "source_evidence_id",
+        }
+    )
+    assert set(social_case["required_decision_terms_pl"]).issuperset(
+        {
+            "Pakiet do review",
+            "Wariant LinkedIn",
+            "Wariant Facebook",
+            "Historia do sprawdzenia",
+            "Decyzja po review",
             "brak powtórzeń historycznych postów",
         }
     )
