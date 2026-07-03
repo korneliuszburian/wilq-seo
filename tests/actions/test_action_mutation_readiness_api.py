@@ -193,7 +193,17 @@ def test_wordpress_apply_audit_separates_adapter_boundary_from_vendor_write(
     assert result.applied is False
     assert result.status == "blocked"
     assert result.adapter_result is not None
+    assert result.adapter_result["execution_status"] == "blocked"
+    assert result.adapter_result["execution_mode"] == "dry_run"
     assert result.adapter_result["external_write_attempted"] is False
+    execution_result = result.adapter_result["execution_result"]
+    assert execution_result["status"] == "blocked"
+    assert execution_result["mode"] == "dry_run"
+    assert execution_result["external_write_attempted"] is False
+    assert [blocker["code"] for blocker in execution_result["blockers"]] == [
+        "missing_handoff",
+        "missing_draft_package",
+    ]
     assert result.mutation_audit.adapter_reached is True
     assert result.mutation_audit.external_write_attempted is False
     assert result.mutation_audit.mutation_attempted is False

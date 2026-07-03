@@ -97,6 +97,7 @@ from wilq.briefing.merchant_labels import (
 )
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
+from wilq.content.handoff.wordpress_execution import execute_content_wordpress_draft_handoff
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
@@ -3289,19 +3290,36 @@ def _execute_supported_mutation_adapter(
 ) -> tuple[dict[str, Any] | None, list[str]]:
     _ = request
     if mutation_adapter == "wordpress_draft_execution_boundary":
+        execution = execute_content_wordpress_draft_handoff(
+            handoff=None,
+            draft_package=None,
+            mode="dry_run",
+            live_write_enabled=False,
+            create_draft=None,
+        )
         return {
             "adapter": mutation_adapter,
             "connector": action.connector,
             "allowed_operation": "create_wordpress_draft",
-            "external_write_attempted": False,
+            "execution_status": execution.status,
+            "execution_mode": execution.mode,
+            "external_write_attempted": execution.external_write_attempted,
+            "execution_result": execution.model_dump(mode="json"),
             "redacted": True,
-        }, [
-            (
-                "Adapter WordPress draft-only jest tylko granicą wykonania; "
-                "live write wymaga osobnego payloadu, autoryzacji i write readiness."
-            )
-        ]
+        }, _wordpress_draft_execution_errors(execution)
     return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
+
+
+def _wordpress_draft_execution_errors(execution: Any) -> list[str]:
+    if execution.status == "dry_run_ready":
+        return []
+    blockers = [
+        f"{blocker.label}: {blocker.reason}"
+        for blocker in execution.blockers
+    ]
+    if blockers:
+        return blockers
+    return ["WordPress draft execution contract blocked the adapter."]
 
 
 def _mutation_requirement(
