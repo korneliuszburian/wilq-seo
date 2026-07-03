@@ -333,6 +333,23 @@ def test_action_ids_are_detected_from_singular_review_action_fields() -> None:
                 "coverage_summary": {
                     "safe_next_step": "Pokaż propozycje Wilkowi przed promocją wiedzy."
                 },
+                "source_fact_coverage": {
+                    "private_review_queue": [
+                        {
+                            "proposal_id": "private_proposal_abc",
+                            "source_id": "ekologus_ai_abc",
+                            "data_classes": ["service_strategy"],
+                            "source_block_refs": ["KB_001_EKO_OPIEKA"],
+                            "retention_decision": "pending_owner_decision",
+                            "deletion_path": ["Usuń zredagowaną propozycję."],
+                            "eval_case_ids": ["goal_005_private_service_review"],
+                            "source_locator_label": "ekologus-ai reviewed handoff",
+                            "owner_role": "Wilku",
+                            "redacted": True,
+                            "source_trace_ready": True,
+                        }
+                    ]
+                },
                 "review_actions": [
                     {
                         "action_id": "service_profile_review_private_proposal_abc",
@@ -346,6 +363,67 @@ def test_action_ids_are_detected_from_singular_review_action_fields() -> None:
 
     assert result["readiness"] == "demo_ready"
     assert result["sample_action_ids"] == ["service_profile_review_private_proposal_abc"]
+    assert result["private_source_trace"]["ready"] is True
+    assert result["private_source_trace"]["trace_ready_count"] == 1
+
+
+def test_service_profile_blocks_when_private_source_trace_is_missing() -> None:
+    audit = load_module()
+    spec = audit.SurfaceSpec(
+        "service_profile",
+        "/service-profile",
+        "Service Profile",
+        "knowledge",
+        "production",
+        "/api/content/service-profile",
+        requires_evidence=True,
+        requires_source_connector=False,
+        requires_action=True,
+        requires_decision=True,
+        requires_private_source_trace=True,
+        requires_blocker_or_blocked_claim=True,
+    )
+
+    result = audit.evaluate_surface(
+        spec,
+        {
+            "payload": {
+                "evidence_ids": ["ev_content_service_profile_source_facts"],
+                "blocked_claims": ["production-depth bez review"],
+                "coverage_summary": {
+                    "safe_next_step": "Pokaż propozycje Wilkowi przed promocją wiedzy."
+                },
+                "source_fact_coverage": {
+                    "private_review_queue": [
+                        {
+                            "proposal_id": "private_proposal_abc",
+                            "source_id": "ekologus_ai_abc",
+                            "source_block_refs": ["KB_001_EKO_OPIEKA"],
+                            "eval_case_ids": ["goal_005_private_service_review"],
+                        }
+                    ]
+                },
+                "review_actions": [
+                    {
+                        "action_id": "service_profile_review_private_proposal_abc",
+                        "safe_next_step": "Zapisz wynik review po decyzji człowieka.",
+                    }
+                ],
+            },
+            "errors": [],
+        },
+    )
+
+    assert result["readiness"] == "blocked"
+    assert result["private_source_trace"]["ready"] is False
+    assert result["private_source_trace"]["trace_ready_count"] == 0
+    assert result["errors"] == [
+        (
+            "private source review item 1 missing trace fields: data_classes, "
+            "retention_decision, source_locator_label, owner_role, redacted, "
+            "source_trace_ready"
+        )
+    ]
 
 
 def test_reference_surface_can_explain_safe_operator_use_without_decision_queue() -> None:

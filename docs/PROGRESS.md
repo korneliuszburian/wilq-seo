@@ -47,6 +47,10 @@ Date: 2026-07-04
 - 2026-07-04 `/service-profile` private source cards now show trace labels in
   Polish (`Bloki źródła`, `Bramki ewaluacji`, readable retention/deletion
   text) while preserving stable `KB_*` and `goal_*` IDs for audit.
+- 2026-07-04 dashboard usefulness audit now requires Service Profile private
+  review queue trace readiness before `/service-profile` can stay
+  `demo_ready`; the live audit passes with 15 surfaces, 13 `demo_ready`, 2
+  `review_ready` and 0 blocked.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

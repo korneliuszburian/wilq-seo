@@ -40,6 +40,7 @@ class SurfaceSpec:
     requires_decision: bool = False
     requires_records: bool = False
     requires_lineage: bool = False
+    requires_private_source_trace: bool = False
     requires_blocker_or_blocked_claim: bool = False
     requires_polish_contract: bool = False
     reference_next_step: str | None = None
@@ -121,6 +122,7 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         requires_action=True,
         requires_source_connector=False,
         requires_decision=True,
+        requires_private_source_trace=True,
         requires_blocker_or_blocked_claim=True,
         requires_polish_contract=True,
         demo_priority=40,
@@ -351,6 +353,9 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         errors.append("missing records")
     if spec.requires_lineage and lineage_count == 0:
         errors.append("missing source lineage")
+    private_source_trace = _private_source_trace_check(payload)
+    if spec.requires_private_source_trace and not private_source_trace["ready"]:
+        errors.extend(private_source_trace["errors"])
     has_blocker_count = _has_positive_count(payload, "blocker_count")
     has_decision_blocker_count = _has_positive_count(payload, "decision_blocker_count")
     if spec.requires_blocker_or_blocked_claim and not (
@@ -405,6 +410,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         "sample_action_ids": action_ids[:4],
         "sample_blocked_claims": blocked_claims[:4],
         "sample_next_steps": sample_next_steps,
+        "private_source_trace": private_source_trace,
         "auxiliary_checks": auxiliary_checks,
         "errors": errors,
     }
@@ -673,6 +679,60 @@ def _evaluate_auxiliary_checks(
             )
         )
     return checks
+
+
+def _private_source_trace_check(payload: Any) -> dict[str, Any]:
+    queue = _private_review_queue(payload)
+    if not queue:
+        return {
+            "ready": False,
+            "item_count": 0,
+            "trace_ready_count": 0,
+            "errors": ["missing private source review queue"],
+        }
+    errors: list[str] = []
+    trace_ready_count = 0
+    required_list_fields = ("data_classes", "source_block_refs", "eval_case_ids")
+    required_text_fields = ("retention_decision", "source_locator_label", "owner_role")
+    for index, item in enumerate(queue, start=1):
+        if not isinstance(item, dict):
+            errors.append(f"private source review item {index} is not an object")
+            continue
+        missing_fields: list[str] = []
+        for field in required_list_fields:
+            value = item.get(field)
+            if not isinstance(value, list) or not any(str(entry).strip() for entry in value):
+                missing_fields.append(field)
+        for field in required_text_fields:
+            if not str(item.get(field) or "").strip():
+                missing_fields.append(field)
+        if item.get("redacted") is not True:
+            missing_fields.append("redacted")
+        if item.get("source_trace_ready") is not True:
+            missing_fields.append("source_trace_ready")
+        if missing_fields:
+            errors.append(
+                f"private source review item {index} missing trace fields: "
+                + ", ".join(missing_fields)
+            )
+        else:
+            trace_ready_count += 1
+    return {
+        "ready": not errors,
+        "item_count": len(queue),
+        "trace_ready_count": trace_ready_count,
+        "errors": errors,
+    }
+
+
+def _private_review_queue(payload: Any) -> list[Any]:
+    if not isinstance(payload, dict):
+        return []
+    source_fact_coverage = payload.get("source_fact_coverage")
+    if not isinstance(source_fact_coverage, dict):
+        return []
+    queue = source_fact_coverage.get("private_review_queue")
+    return queue if isinstance(queue, list) else []
 
 
 def _wordpress_authoring_profile_check(
