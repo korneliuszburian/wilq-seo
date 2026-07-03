@@ -1296,6 +1296,33 @@ export const ContentWordPressDraftExecutionResultSchema = z.object({
   blockers: z.array(ContentWordPressDraftExecutionBlockerSchema).default([])
 });
 
+export const ContentWordPressDraftActivationPacketResponseSchema = z.object({
+  response_type: z.literal("wordpress_draft_activation_packet"),
+  contract: z.literal("wordpress_draft_activation_packet_v1"),
+  action_id: z.string(),
+  work_item_id: z.string(),
+  topic: z.string(),
+  final_canonical_url: z.string().nullable().optional(),
+  draft_package_ready: z.boolean(),
+  draft_package_id: z.string().nullable().optional(),
+  human_review_ready: z.boolean(),
+  audit_ready: z.boolean(),
+  handoff_ready: z.boolean(),
+  handoff_id: z.string().nullable().optional(),
+  dry_run_ready: z.boolean(),
+  live_write_enabled_by_env: z.boolean(),
+  publish_allowed: z.literal(false),
+  destructive_update_allowed: z.literal(false),
+  external_write_attempted: z.literal(false),
+  handoff_blockers: z.array(z.string()).default([]),
+  execution_blockers: z.array(z.string()).default([]),
+  execution_result: ContentWordPressDraftExecutionResultSchema,
+  operator_next_step: z.string(),
+  next_steps: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([])
+});
+
 export const ContentWorkItemWordPressDraftExecutionRequestSchema = z.object({
   handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
   draft_package: ContentDraftPackageSchema.nullable().optional(),
@@ -1602,6 +1629,9 @@ export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
 >;
 export type ContentWordPressDraftWriteReadinessResponse = z.infer<
   typeof ContentWordPressDraftWriteReadinessResponseSchema
+>;
+export type ContentWordPressDraftActivationPacketResponse = z.infer<
+  typeof ContentWordPressDraftActivationPacketResponseSchema
 >;
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema

@@ -45,6 +45,7 @@ import {
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
+  ContentWordPressDraftActivationPacketResponseSchema,
   ContentWordPressDraftWriteReadinessResponseSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
@@ -116,6 +117,7 @@ import {
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWordPressDraftHandoffRequest,
   type ContentWorkItemWordPressDraftHandoffResponse,
+  type ContentWordPressDraftActivationPacketResponse,
   type ContentWordPressDraftWriteReadinessResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
@@ -244,6 +246,15 @@ export function getContentWordPressDraftWriteReadiness(): Promise<
   return apiGet(
     "/api/content/wordpress/draft-write-readiness",
     ContentWordPressDraftWriteReadinessResponseSchema
+  );
+}
+
+export function getContentWordPressDraftActivationPacket(): Promise<
+  ContentWordPressDraftActivationPacketResponse
+> {
+  return apiGet(
+    "/api/content/wordpress/draft-activation-packet",
+    ContentWordPressDraftActivationPacketResponseSchema
   );
 }
 
@@ -639,6 +650,7 @@ export type {
   ContentWorkItemWordPressDraftHandoffRequest,
   ContentWorkItemWordPressDraftHandoffResponse,
   ContentWorkItemWorkflowSnapshotResponse,
+  ContentWordPressDraftActivationPacketResponse,
   ContentWordPressDraftWriteReadinessResponse,
   ConnectorRefreshRun,
   ConnectorStatus,

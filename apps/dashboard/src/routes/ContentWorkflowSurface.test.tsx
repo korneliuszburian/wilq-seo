@@ -5,6 +5,7 @@ import {
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
+  getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
   getWordPressAuthoringProfile,
   postContentWorkItemQualityReview,
@@ -24,6 +25,7 @@ import {
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
+  type ContentWordPressDraftActivationPacketResponse,
   type ContentWordPressDraftWriteReadinessResponse,
   type WordPressAuthoringProfile
 } from "../lib/api";
@@ -37,6 +39,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
+    getContentWordPressDraftActivationPacket: vi.fn(),
     getContentWordPressDraftWriteReadiness: vi.fn(),
     getWordPressAuthoringProfile: vi.fn(),
     postContentWorkItemQualityReview: vi.fn(),
@@ -55,6 +58,9 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue(
+      wordpressDraftActivationPacket()
+    );
     vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue(
       wordpressDraftWriteReadiness()
     );
@@ -143,13 +149,24 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("21 sekcji ACF rozpoznanych")).toBeInTheDocument();
     expect(screen.getByText("WP-CLI")).toBeInTheDocument();
     expect(screen.getAllByText("skonfigurowane").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("Publikacja")).toBeInTheDocument();
+    expect(screen.getAllByText("Publikacja").length).toBeGreaterThan(0);
     expect(screen.getAllByText("zablokowana").length).toBeGreaterThan(0);
     expect(screen.getByText("Ten odczyt nie wykonał żadnego zapisu zewnętrznego."))
       .toBeInTheDocument();
     expect(screen.getByText(/Bezpośredni zapis do WordPress jest zablokowany/))
       .toBeInTheDocument();
     expect(screen.getByText("WordPress: gotowość realnego draftu")).toBeInTheDocument();
+    expect(screen.getByText("Aktywacja szkicu WordPress")).toBeInTheDocument();
+    expect(screen.getByText(/zapisz review człowieka dla paczki szkicu/))
+      .toBeInTheDocument();
+    expect(screen.getAllByText("Paczka szkicu").length).toBeGreaterThan(0);
+    expect(screen.getByText("Review człowieka")).toBeInTheDocument();
+    expect(screen.getByText("Co blokuje aktywację")).toBeInTheDocument();
+    expect(screen.getByText("brakuje review człowieka")).toBeInTheDocument();
+    expect(screen.getByText("brakuje audytu")).toBeInTheDocument();
+    expect(screen.getByText("brakuje handoffu")).toBeInTheDocument();
+    expect(screen.getByText(/Paczka szkicu istnieje w WILQ/)).toBeInTheDocument();
+    expect(screen.getByText(/Dowody: 2 · Źródła: 2/)).toBeInTheDocument();
     expect(screen.getByText(/Publikacja pozostaje zablokowana/)).toBeInTheDocument();
     expect(screen.getByText("Następny bezpieczny krok")).toBeInTheDocument();
     expect(screen.getByText(/Zostaw tryb dry-run/)).toBeInTheDocument();
@@ -1460,6 +1477,63 @@ function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecuti
       external_write_attempted: false,
       blockers: []
     }
+  };
+}
+
+function wordpressDraftActivationPacket(): ContentWordPressDraftActivationPacketResponse {
+  return {
+    response_type: "wordpress_draft_activation_packet",
+    contract: "wordpress_draft_activation_packet_v1",
+    action_id: "act_apply_wordpress_draft_handoff",
+    work_item_id: "content_work_item_bdo",
+    topic: "SEO: odśwież BDO dla firm",
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    draft_package_ready: true,
+    draft_package_id: "draft_package_content_work_item_bdo",
+    human_review_ready: false,
+    audit_ready: false,
+    handoff_ready: false,
+    handoff_id: null,
+    dry_run_ready: false,
+    live_write_enabled_by_env: false,
+    publish_allowed: false,
+    destructive_update_allowed: false,
+    external_write_attempted: false,
+    handoff_blockers: ["missing_human_review", "missing_audit"],
+    execution_blockers: ["missing_handoff"],
+    execution_result: {
+      status: "blocked",
+      mode: "dry_run",
+      boundary: {
+        allowed_operation: "create_wordpress_draft",
+        dry_run_default: true,
+        live_write_enabled: false,
+        live_adapter_configured: false,
+        publish_allowed: false,
+        destructive_update_allowed: false
+      },
+      payload: null,
+      wordpress_post_id: null,
+      external_write_attempted: false,
+      blockers: [
+        {
+          code: "missing_handoff",
+          label: "Brakuje zatwierdzonego przekazania",
+          reason: "Nie można przygotować szkicu WordPress bez zatwierdzonego przekazania.",
+          next_step: "Najpierw zatwierdź szkic, zapisz audyt i przygotuj przekazanie."
+        }
+      ]
+    },
+    operator_next_step:
+      "Najbliższy krok: zapisz review człowieka dla paczki szkicu. Bez tego WILQ nie przygotuje handoffu ani dry-run payloadu WordPress.",
+    next_steps: [
+      "Utrzymaj zakres WordPress draft-only: bez publikacji i bez aktualizacji istniejących wpisów.",
+      "Zapisz human review dla tej paczki szkicu.",
+      "Zapisz audit przekazania do WordPress po review.",
+      "Wróć do handoffu i dopiero potem sprawdź dry-run execution."
+    ],
+    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+    source_connectors: ["google_search_console", "wordpress_ekologus"]
   };
 }
 

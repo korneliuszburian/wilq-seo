@@ -140,6 +140,10 @@ Date: 2026-07-03
   packet for the WordPress draft-only first write candidate. Live proof reports
   the same work item as the packet, `wordpress_draft_package_ready=true`, no
   `missing_wordpress_draft_package_ready` blocker, and still zero vendor writes.
+- 2026-07-03 `/content-workflow` now renders the WordPress draft activation
+  packet. The dashboard shows the draft package is ready, review/audit/handoff
+  are missing, dry-run is blocked, live write is disabled and no external write
+  was attempted.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

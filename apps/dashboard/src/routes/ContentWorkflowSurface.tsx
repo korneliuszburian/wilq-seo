@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
+  getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
   getWordPressAuthoringProfile,
   getContentWorkItemEnrichment,
@@ -32,6 +33,7 @@ import {
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
+  type ContentWordPressDraftActivationPacketResponse,
   type ContentWordPressDraftWriteReadinessResponse,
   type ContentOpportunityEnrichment,
   type ContentOpportunityEnrichmentResponse,
@@ -70,6 +72,10 @@ type WordPressDraftWriteReadinessQuery = UseQueryResult<
   ContentWordPressDraftWriteReadinessResponse,
   Error
 >;
+type WordPressDraftActivationPacketQuery = UseQueryResult<
+  ContentWordPressDraftActivationPacketResponse,
+  Error
+>;
 
 export function ContentWorkflowSurface() {
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | null>(null);
@@ -105,11 +111,16 @@ export function ContentWorkflowSurface() {
     queryKey: ["content-workflow", "wordpress-draft-write-readiness"],
     queryFn: getContentWordPressDraftWriteReadiness
   });
+  const draftActivationPacket = useQuery({
+    queryKey: ["content-workflow", "wordpress-draft-activation-packet"],
+    queryFn: getContentWordPressDraftActivationPacket
+  });
 
   return (
     <ContentWorkflowRouteState
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
+      draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       queue={queue}
@@ -123,6 +134,7 @@ export function ContentWorkflowSurface() {
 function ContentWorkflowRouteState({
   activeWorkItemId,
   authoringProfile,
+  draftActivationPacket,
   draftWriteReadiness,
   enrichment,
   queue,
@@ -132,6 +144,7 @@ function ContentWorkflowRouteState({
 }: {
   activeWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueQuery;
@@ -145,6 +158,7 @@ function ContentWorkflowRouteState({
     <ContentWorkflowQueueReady
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
+      draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       queue={queue.data}
@@ -158,6 +172,7 @@ function ContentWorkflowRouteState({
 function ContentWorkflowQueueReady({
   activeWorkItemId,
   authoringProfile,
+  draftActivationPacket,
   draftWriteReadiness,
   enrichment,
   queue,
@@ -167,6 +182,7 @@ function ContentWorkflowQueueReady({
 }: {
   activeWorkItemId: string | null;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
@@ -189,6 +205,7 @@ function ContentWorkflowQueueReady({
     <ContentWorkflowSelectedReady
       activeWorkItemId={activeWorkItemId}
       authoringProfile={authoringProfile}
+      draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       queue={queue}
@@ -201,6 +218,7 @@ function ContentWorkflowQueueReady({
 function ContentWorkflowSelectedReady({
   activeWorkItemId,
   authoringProfile,
+  draftActivationPacket,
   draftWriteReadiness,
   enrichment,
   queue,
@@ -209,6 +227,7 @@ function ContentWorkflowSelectedReady({
 }: {
   activeWorkItemId: string;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
@@ -221,6 +240,7 @@ function ContentWorkflowSelectedReady({
     <ContentWorkflowLoaded
       data={workflow.data}
       authoringProfile={authoringProfile}
+      draftActivationPacket={draftActivationPacket}
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment.data?.enrichment ?? null}
       queue={queue}
@@ -243,6 +263,7 @@ function ContentWorkflowError() {
 function ContentWorkflowLoaded({
   data,
   authoringProfile,
+  draftActivationPacket,
   draftWriteReadiness,
   enrichment,
   queue,
@@ -251,6 +272,7 @@ function ContentWorkflowLoaded({
 }: {
   data: ContentWorkflowSnapshot;
   authoringProfile: WordPressAuthoringProfileQuery;
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
@@ -279,6 +301,7 @@ function ContentWorkflowLoaded({
       />
       <WorkflowProofSummary data={data} />
       <WordPressAuthoringReadinessPanel authoringProfile={authoringProfile} />
+      <WordPressDraftActivationPacketPanel draftActivationPacket={draftActivationPacket} />
       <WordPressDraftWriteReadinessPanel draftWriteReadiness={draftWriteReadiness} />
       <ClaimLedgerGatePanel data={data} />
       <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
@@ -1015,6 +1038,133 @@ function WordPressDraftWriteReadinessPanel({
       </div>
     </section>
   );
+}
+
+function WordPressDraftActivationPacketPanel({
+  draftActivationPacket
+}: {
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
+}) {
+  if (draftActivationPacket.isLoading) {
+    return (
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+          Aktywacja szkicu WordPress
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          WILQ sprawdza paczkę szkicu, review, audyt, handoff i dry-run bez
+          zapisu do WordPress.
+        </p>
+      </section>
+    );
+  }
+  if (draftActivationPacket.error || !draftActivationPacket.data) {
+    return (
+      <section className="mb-6 rounded-md border border-wait/30 bg-wait/10 p-4">
+        <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
+          Aktywacja szkicu WordPress niedostępna
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          Nie ma API-owned paczki aktywacji, więc WILQ zostaje przy podglądzie
+          i nie próbuje zapisu.
+        </p>
+      </section>
+    );
+  }
+
+  const packet = draftActivationPacket.data;
+  const blockers = [...packet.handoff_blockers, ...packet.execution_blockers];
+
+  return (
+    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-action">
+            Aktywacja szkicu WordPress
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
+            {packet.operator_next_step}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {packet.topic}
+            {packet.final_canonical_url ? ` · ${packet.final_canonical_url}` : ""}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+          <FactTile
+            label="Paczka szkicu"
+            value={readyLabel(packet.draft_package_ready)}
+          />
+          <FactTile
+            label="Review człowieka"
+            value={readyLabel(packet.human_review_ready)}
+          />
+          <FactTile label="Audit" value={readyLabel(packet.audit_ready)} />
+          <FactTile label="Handoff" value={readyLabel(packet.handoff_ready)} />
+          <FactTile label="Dry-run" value={readyLabel(packet.dry_run_ready)} />
+          <FactTile
+            label="Live write"
+            value={packet.live_write_enabled_by_env ? "włączony" : "wyłączony"}
+          />
+          <FactTile label="Publikacja" value="zablokowana" />
+          <FactTile label="Zapis zewnętrzny" value="nie wykonano" />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Co blokuje aktywację</h3>
+          {blockers.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2 text-sm">
+              {blockers.map((blocker) => (
+                <span
+                  key={blocker}
+                  className="rounded-md border border-risk/30 bg-risk/10 px-2 py-1 text-risk"
+                >
+                  {wordpressActivationBlockerLabel(blocker)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Brak blokad w paczce aktywacji, ale publikacja i destrukcyjne
+              aktualizacje nadal są niedozwolone.
+            </p>
+          )}
+          {packet.draft_package_id ? (
+            <p className="mt-3 text-xs text-slate-500">
+              Paczka szkicu istnieje w WILQ i czeka na review.
+            </p>
+          ) : null}
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Następne kroki</h3>
+          <ul className="mt-2 grid gap-1 text-sm leading-6 text-slate-700">
+            {packet.next_steps.map((step) => (
+              <li key={step}>- {step}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-slate-500">
+            Dowody: {packet.evidence_ids.length} · Źródła:{" "}
+            {packet.source_connectors.length}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function readyLabel(ready: boolean): string {
+  return ready ? "gotowe" : "brakuje";
+}
+
+function wordpressActivationBlockerLabel(blocker: string): string {
+  const labels: Record<string, string> = {
+    missing_human_review: "brakuje review człowieka",
+    missing_audit: "brakuje audytu",
+    missing_handoff: "brakuje handoffu"
+  };
+  return labels[blocker] ?? blocker;
 }
 
 function wordpressWriteAuthorizationStatusLabel(status: string): string {
