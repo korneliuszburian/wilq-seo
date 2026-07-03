@@ -279,6 +279,10 @@ Date: 2026-07-03
 - 2026-07-03 the Eko-Opieka and Audyt zgodności proposal handoffs now use the
   same Polish wording for source facts, raw/private material, draft creation
   and claim policy. Remaining English-looking hits are only source file paths.
+- 2026-07-03 the Claim Ledger and social-history blocker handoffs now use
+  Polish operator wording for review/metadata/raw/live-proof concepts. Technical
+  commands, IDs and enum values remain only where they are needed as proof or
+  input examples.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
