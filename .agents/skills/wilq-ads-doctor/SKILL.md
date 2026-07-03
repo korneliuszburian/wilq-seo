@@ -1,11 +1,11 @@
 ---
 name: wilq-ads-doctor
-description: Diagnozuje Google Ads dla Ekologus z dowodami z WILQ API i bezpieczne kontrakty akcji. Użyj, gdy marketer pyta "pokaż przestrzeń do polepszenia adsów", "znajdź ostatnie kampanie i ich efekty", "co pali budżet?", "sprawdź wyszukiwane hasła", "czy dodać wykluczające słowa kluczowe?", "czemu kampania nie dowozi?", albo pyta o rekomendacje Ads, jakość kampanii, koszt pozyskania celu, zwrot z reklam, koszt reklam, przegląd kampanii lub sprawdzenie akcji Ads w WILQ. Nie wolno zmyślać Ads metryk ani omijać sprawdzania w WILQ.
+description: Diagnozuje Google Ads dla Ekologus z dowodami z WILQ API i bezpieczne akcje do sprawdzenia. Użyj, gdy marketer pyta "pokaż przestrzeń do polepszenia adsów", "znajdź ostatnie kampanie i ich efekty", "co pali budżet?", "sprawdź wyszukiwane hasła", "czy dodać wykluczające słowa kluczowe?", "czemu kampania nie dowozi?", albo pyta o rekomendacje Ads, jakość kampanii, koszt pozyskania celu, zwrot z reklam, koszt reklam, przegląd kampanii lub sprawdzenie akcji Ads w WILQ. Nie wolno zmyślać Ads metryk ani omijać sprawdzania w WILQ.
 ---
 
 # WILQ widok Google Ads
 
-## Kontrakt skilla
+## Zasada skilla
 
 <operating_rule>
 
@@ -25,22 +25,20 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </triggers>
 
-## Kontrakt workflow
+## Workflow operatora
 
 <workflow>
 
-1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
-2. Uruchom `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, zmarnowanego kosztu, wyszukiwanych haseł, jakości kampanii, rekomendacji lub wykluczających słów kluczowych.
-4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także opcjonalny `blocked_handoff`, `budget_pacing_read_contract`, `recommendations_read_contract`, `impression_share_read_contract`, `change_history_read_contract`, `search_terms_read_contract`, `search_term_safety_read_contract`, `keyword_match_context_read_contract`, `keyword_planner_read_contract`, `custom_segments_read_contract`, `negative_keywords_read_contract`, ID akcji przeglądu kampanii i identyfikatory akcji.
-5. Gdy użytkownik pyta szeroko o całą kolejkę Ads, czyli budżety, rekomendacje, wskaźniki kampanii, wyszukiwane hasła, wykluczenia i segmenty niestandardowe naraz, pobierz też `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor","full_context":true}` albo użyj pełnego `GET /api/ads/diagnostics` jako kompletnej kolejki decyzji. Domyślny context-pack może być skompaktowany i nie wolno go przedstawiać jako pełnej kolejki, jeśli ma mniej decyzji niż `/api/ads/diagnostics`.
-6. Jeśli ostatni odczyt Google Ads jest stary albo connector status wskazuje stale/requires_refresh, uruchom read-only refresh `POST /api/connectors/google_ads/refresh` z `mode=vendor_read`, o ile źródło danych jest skonfigurowane i użytkownik pyta o aktualny stan. Jeżeli refresh nie jest możliwy, zacznij odpowiedź od blokady świeżości i nie dawaj decyzji operacyjnych na podstawie starego snapshotu.
-7. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-8. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
+1. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, zmarnowanego kosztu, wyszukiwanych haseł, jakości kampanii, rekomendacji lub wykluczających słów kluczowych.
+2. Pobierz `POST /api/codex/context-pack` tylko gdy wąski endpoint nie wystarcza albo potrzebujesz kontekstu wielu powierzchni. Nie rób z tego obowiązkowego kroku.
+3. Gdy użytkownik pyta szeroko o całą kolejkę Ads, czyli budżety, rekomendacje, wskaźniki kampanii, wyszukiwane hasła, wykluczenia i segmenty niestandardowe naraz, pobierz też `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor","full_context":true}` albo użyj pełnego `GET /api/ads/diagnostics` jako kompletnej kolejki decyzji. Domyślny context-pack może być skompaktowany i nie wolno go przedstawiać jako pełnej kolejki, jeśli ma mniej decyzji niż `/api/ads/diagnostics`.
+4. Jeśli ostatni odczyt Google Ads jest stary albo connector status wskazuje stale/requires_refresh, uruchom read-only refresh `POST /api/connectors/google_ads/refresh` z `mode=vendor_read`, o ile źródło danych jest skonfigurowane i użytkownik pyta o aktualny stan. Jeżeli refresh nie jest możliwy, zacznij odpowiedź od blokady świeżości i nie dawaj decyzji operacyjnych na podstawie starego snapshotu.
+5. Jeśli użytkownik prosi o zapis albo podgląd zmiany, użyj `POST /api/actions/{action_id}/validate`; w review-only odpowiedzi wystarczy wskazać action_id i bezpieczny następny krok.
+6. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
 
 </workflow>
 
-## API Contract
+## API
 
 <allowed_endpoints>
 
@@ -62,7 +60,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </allowed_endpoints>
 
-## Kontrakt dowodów
+## Dowody
 
 <evidence_requirements>
 
@@ -72,13 +70,13 @@ Wymagane powierzchnie źródeł danych dla tego skilla:
 
 Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikatory dowodów z WILQ API.
 
-Używaj kontraktów z `/api/ads/diagnostics` jako źródła prawdy:
+Używaj pól z `/api/ads/diagnostics` jako źródła prawdy:
 
 - `status`, `allowed_metrics`, `missing_read_contracts`, `blocked_claims`,
   `action_ids`, pola podglądu zmian i wiersze decyzji mówią, co wolno opisać.
-- Gdy kontrakt jest `ready`, streszczaj wyłącznie fakty i metryki wskazane przez
-  ten kontrakt. Nie dopowiadaj skutku biznesowego bez osobnego pola kontraktu.
-- Gdy kontrakt jest `blocked` albo ma `missing_read_contracts`, pokaż blokadę,
+- Gdy status odczytu jest `ready`, streszczaj wyłącznie fakty i metryki wskazane przez
+  te pola. Nie dopowiadaj skutku biznesowego bez osobnego pola API.
+- Gdy status odczytu jest `blocked` albo ma `missing_read_contracts`, pokaż blokadę,
   brakujące dane źródłowe i zablokowane obietnice zamiast tworzyć diagnozę skuteczności.
 - akcje do sprawdzenia traktuj jako przygotowanie do sprawdzenia w WILQ, dopóki API nie zwraca
   sprawdzonej w WILQ ścieżki zapisu zmian, podglądu, potwierdzenia i audytu.
@@ -88,24 +86,24 @@ Używaj kontraktów z `/api/ads/diagnostics` jako źródła prawdy:
 
 </evidence_requirements>
 
-## Kontrakt odpowiedzi
+## Odpowiedź
 
-<output_contract>
+<output>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
 Szerokie pytania Ads odpowiadaj jak operator, nie jak eksport diagnostyki: najpierw 3-5 priorytetów review, potem najważniejsze blokady, a pełne listy decyzji/metryk streszczaj tylko wtedy, gdy użytkownik o nie prosi. Nie wypisuj wszystkich pól API, jeżeli nie zmieniają kolejności działania.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
+Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
-</output_contract>
+</output>
 
-## Kontrakt bezpieczeństwa
+## Bezpieczeństwo
 
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.

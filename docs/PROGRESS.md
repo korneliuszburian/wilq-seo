@@ -36,6 +36,12 @@ Date: 2026-07-03
   review packet at 7.5/10, keeps Goal 005 blocked on real Wilku UAT or owner
   defer, and moved technical IDs/language lower in
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
+- 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
+  skills now start from narrow API-owned view models and answer the marketer
+  decision directly. Output references, smoke scripts and context-pack
+  comparison are development and eval tools, not mandatory steps in normal
+  skill use. Daily Command non-interactive eval passed at
+  `.local-lab/evals/codex-skill/20260703T053628Z`.
 - Dirty copy must be fixed in typed API/schema/view-model/domain source, not
   with React translators, string replacement helpers or stale label maps.
 - Do not preserve deprecated active fields, compatibility aliases or stale

@@ -5,11 +5,11 @@ description: Prowadzi operacyjny workflow tworzenia treści Ekologus przez WILQ 
 
 # WILQ Content Operator
 
-## Kontrakt skilla
+## Zasada skilla
 
 <operating_rule>
 
-Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako autora tekstu ani prompt-packa. WILQ API jest mózgiem produktu: wybiera propozycje, liczy bramki, buduje enrichment, brief, rejestr twierdzeń, draft package, warianty, quality review, rewizję, human review, WordPress draft-only i pomiar. Codex może prowadzić workflow i wyjaśniać wynik, ale nie może pisać produkcyjnej treści poza kontraktem WILQ API.
+Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako autora tekstu ani prompt-packa. WILQ API jest mózgiem produktu: wybiera propozycje, liczy bramki, buduje enrichment, brief, rejestr twierdzeń, draft package, warianty, quality review, rewizję, human review, WordPress draft-only i pomiar. Codex może prowadzić workflow i wyjaśniać wynik, ale nie może pisać produkcyjnej treści poza ścieżką WILQ API.
 
 </operating_rule>
 
@@ -26,26 +26,24 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 
 </triggers>
 
-## Kontrakt workflow
+## Workflow operatora
 
 <workflow>
 
-1. Przeczytaj `references/output-contract.md` przed odpowiedzią dla operatora.
-2. Uruchom `uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Uruchom `uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5` przy przygotowaniu krótkiego UAT packetu dla Wilka.
-4. Wywołaj `GET /api/health`, a przy awarii zwróć blokadę zamiast planu.
-5. Wywołaj `GET /api/content/work-items/queue` i użyj kolejki jako kanonicznego wejścia. Nie buduj własnej listy tematów z promptu.
-6. Pobierz `GET /api/content/service-profile`, gdy sesja dotyczy UAT, source trace, knowledge-depth albo prywatnych propozycji.
-7. Wybierz `work_item_id` z kolejki albo wyjaśnij, że praca jest zablokowana. Nie odblokowuj propozycji, jeśli API zwraca blocker.
-8. Pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli workflow dotyczy pisania, rewizji albo handoffu.
-9. Pobierz `GET /api/marketing/brief` jako skondensowany marketingowy kontekst route/workflow, nie jako zamiennik queue/snapshot.
-10. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation contract, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
-11. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Jeśli API zwraca `wordpress_authoring_preview`, pokaż ACF/`elementy` row candidate jako propozycję do ręcznego przeglądu, nie jako zapis. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
-12. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
+1. Wywołaj `GET /api/health`, a przy awarii zwróć konkretną blokadę zamiast planu.
+2. Wywołaj `GET /api/content/work-items/queue` i użyj kolejki jako kanonicznego wejścia. Nie buduj własnej listy tematów z promptu.
+3. Wybierz `work_item_id` z kolejki albo wyjaśnij, że praca jest zablokowana. Nie odblokowuj propozycji, jeśli API zwraca blocker.
+4. Pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli workflow dotyczy pisania, rewizji albo handoffu.
+5. Pobierz `GET /api/content/service-profile`, gdy sesja dotyczy source trace, knowledge-depth, prywatnych propozycji albo decyzji owner-review.
+6. Pobierz `GET /api/marketing/brief` tylko jako skondensowany marketingowy kontekst, nie jako zamiennik queue/snapshot.
+7. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation API path, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
+8. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Jeśli API zwraca `wordpress_authoring_preview`, pokaż ACF/`elementy` row candidate jako propozycję do ręcznego przeglądu, nie jako zapis. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
+9. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
+10. Jeśli użytkownik jawnie prosi o krótką paczkę UAT dla Wilka, możesz użyć `scripts/build_uat_packet.py`; to narzędzie pomocnicze, nie obowiązkowy start zwykłej sesji content.
 
 </workflow>
 
-## API Contract
+## API
 
 <allowed_endpoints>
 
@@ -84,7 +82,7 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 
 </allowed_endpoints>
 
-## Kontrakt dowodów
+## Dowody
 
 <evidence_requirements>
 
@@ -94,22 +92,22 @@ Adres `ekologus.dev.proudsite.pl` może być tylko preview/design/staging contex
 
 </evidence_requirements>
 
-## Kontrakt odpowiedzi
+## Odpowiedź
 
-<output_contract>
+<output>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma prowadzić Wilka przez jedną bezpieczną sesję pracy: status, dowody, kolejka treści, diagnoza, sprawdzenie w WILQ, akcje do sprawdzenia, blokady i następny krok.
+Odpowiedź ma prowadzić Wilka przez jedną bezpieczną sesję pracy: status, dowody, kolejka treści, diagnoza, sprawdzenie w WILQ, akcje do sprawdzenia, blokady i następny krok.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
+Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
-</output_contract>
+</output>
 
-## Kontrakt bezpieczeństwa
+## Bezpieczeństwo
 
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, fraz, pozycji, danych GSC, danych GA4, gapów Ahrefs, twierdzeń ani statusów WordPress.
 - Nie pisz finalnego artykułu bez WILQ API structured draft runtime i strict schema.

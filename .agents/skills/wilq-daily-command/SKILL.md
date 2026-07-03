@@ -5,7 +5,7 @@ description: Uruchamia dzienny polski WILQ brief operacyjny dla Ekologus z dowod
 
 # WILQ Dzienny plan
 
-## Kontrakt skilla
+## Zasada skilla
 
 <operating_rule>
 
@@ -24,25 +24,22 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </triggers>
 
-## Kontrakt workflow
+## Workflow operatora
 
 <workflow>
 
-1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
-2. Uruchom `uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj najpierw `GET /api/dashboard/command-center`. To jest kanoniczny first-screen view model operatora dla polskiego marketera.
-4. Wywołaj `GET /api/marketing/brief` dla wspierających daily sections i podsumowania metryk.
-5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-daily-command"}`, żeby pobrać szersze dowody, szanse, akcje, reguły eksperckie i karty wiedzy.
-6. Osadzony w pakiecie kontekstu `command_center` jest celowo kompaktowy: użyj `daily_decisions` jako kanonicznej listy decyzji dnia i potwierdź zgodność z `GET /api/dashboard/command-center` dla `primary_next_step`, liczby blokad, liczby zadań taktycznych oraz pola śladu decyzji dnia. Nie odbudowuj planu ze starych list `operator_brief` albo `action_plan`.
-7. Osadzony `marketing_brief` musi zgadzać się z `GET /api/marketing/brief` dla języka, identyfikatorów sekcji, liczby blokad, liczby rekomendacji, identyfikatorów dowodów i identyfikatorów akcji.
-8. Dzienny plan jest główna pętla dnia, nie pełnym rejestrem. Zachowaj kolejność, statusy i `primary_next_step` z WILQ API; nie nadawaj własnego rankingu domen ani nie promuj gotowości źródeł danych jako zadania marketingowego. Localo i social workflow pokaż tylko wtedy, gdy API zwraca je w `daily_decisions` albo użytkownik jawnie o nie prosi.
-9. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
-10. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-11. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
+1. Wywołaj najpierw `GET /api/dashboard/command-center`. To jest kanoniczny first-screen view model operatora dla polskiego marketera.
+2. Jeśli potrzebujesz krótkiego tła metryk, pobierz `GET /api/marketing/brief`; nie zastępuj nim kolejki dnia.
+3. Odpowiedz jak poranny operator: co zrobić najpierw, dlaczego teraz, jakie są dowody, co jest zablokowane i jaki jest następny bezpieczny krok.
+4. `POST /api/codex/context-pack` pobieraj tylko wtedy, gdy te dwa endpointy nie wystarczają albo użytkownik pyta o wiele powierzchni naraz.
+5. Dzienny plan jest główną pętlą dnia, nie pełnym rejestrem. Zachowaj kolejność, statusy i `primary_next_step` z WILQ API; nie nadawaj własnego rankingu domen.
+6. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
+7. Jeśli użytkownik prosi o zapis albo podgląd zmiany, użyj `POST /api/actions/{action_id}/validate`; w review-only odpowiedzi wystarczy wskazać action_id i bezpieczny następny krok.
+8. Techniczne identyfikatory dodawaj tylko jako ślad techniczny, gdy pomagają sprawdzić decyzję.
 
 </workflow>
 
-## API Contract
+## API
 
 <allowed_endpoints>
 
@@ -67,7 +64,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </allowed_endpoints>
 
-## Kontrakt dowodów
+## Dowody
 
 <evidence_requirements>
 
@@ -86,22 +83,22 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 </evidence_requirements>
 
-## Kontrakt odpowiedzi
+## Odpowiedź
 
-<output_contract>
+<output>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
+Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
-</output_contract>
+</output>
 
-## Kontrakt bezpieczeństwa
+## Bezpieczeństwo
 
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie promuj `act_prepare_linkedin_social_drafts` ani `act_prepare_facebook_social_drafts` w briefie dnia; to należy do `wilq-social-publisher`.

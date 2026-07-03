@@ -75,6 +75,41 @@ Result:
   non-interactive eval runs still decide whether a skill's current answer is
   useful enough for a marketer.
 
+## 2026-07-03 - Daily Command after skill ceremony reduction
+
+Purpose:
+
+- Verify that simplifying WILQ skill instructions did not break the primary
+  BDOS-style operator workflow.
+- Confirm that the skill can still start from WILQ API, return a Polish
+  marketer decision, cite evidence/source connectors and keep unsafe claims
+  blocked without making output-contract or smoke scripts part of normal use.
+
+Proof:
+
+```bash
+rtk scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260703T053628Z`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- The answer used WILQ API, Polish output and 22 evidence IDs across
+  `google_ads`, `google_search_console`, `google_analytics_4`,
+  `google_merchant_center`, `ahrefs`, `localo`, `wordpress_ekologus` and
+  `wordpress_sklep`.
+- It kept the first safe action clear: open Merchant and review the feed issue
+  queue through `act_review_merchant_feed_issues`.
+- It validated/handled four daily actions:
+  `act_review_merchant_feed_issues`, `act_prepare_content_refresh_queue`,
+  `act_review_ga4_tracking_quality` and
+  `act_prepare_ads_campaign_review_queue`.
+- It correctly blocked unsupported GA4, Ads and Merchant business claims. This
+  proves the simplified skill instructions still preserve evidence and safety;
+  it does not replace real Wilku UAT.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:

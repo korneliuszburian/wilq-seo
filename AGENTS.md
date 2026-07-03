@@ -307,11 +307,27 @@ readiness map, not as Wilku UAT proof.
 
 ## Codex skills and hooks rules
 
-Use `$skill-creator` for new skills and major skill updates. Skills must be small operator workflows over WILQ API, not prompt dumps. Long knowledge goes to `references/`, deterministic helpers go to `scripts/`, and every skill must define trigger, allowed endpoints, evidence requirements, output contract, safety rules and smoke test.
+Use `$skill-creator` for new skills and major skill updates. Skills must be small operator workflows over WILQ API, not prompt dumps. Long knowledge goes to `references/`, deterministic helpers go to `scripts/`, and every skill must define trigger, allowed endpoints, evidence requirements, operator answer shape, safety rules and smoke test.
 
-Do not patch product logic, business decisions, dedupe rules, ranking rules, edge-case fixes, or dashboard cleanup logic inside skill references. If a skill needs a smarter decision, implement the typed WILQ API/schema/view-model first, then make the skill consume that field. Skill references may describe how to use an API contract, but must not become the place where the product behavior is invented or repaired.
+Normal WILQ skill use must be idiot-proof. A triggered skill should start from
+the narrowest useful WILQ API endpoint, read the API-owned queue/view-model,
+and answer the operator's decision in Polish. Do not make normal skill use
+depend on reading `references/output-contract.md`, running smoke scripts,
+manually comparing context-pack responses, or explaining schema mechanics.
+References, scripts and detailed output examples are for development,
+debugging and evals. `POST /api/codex/context-pack` is optional enrichment
+when a narrow endpoint is insufficient, not a ritual step. Action validation is
+required when the user asks for a write, preview, confirmation or ActionObject
+check; review-only answers may name the action ID and next safe step without
+running every validation endpoint.
 
-Create or update WILQ skills only after the API endpoints, context-pack contract, connector status contract, and action validation path they call are implemented. Goal 001 skills now live under `.agents/skills/`: `wilq-daily-command` is wired to WILQ API, while the remaining WILQ operator skills are production-shaped stubs with endpoint, evidence, output and smoke-test contracts.
+Do not patch product logic, business decisions, dedupe rules, ranking rules, edge-case fixes, or dashboard cleanup logic inside skill references. If a skill needs a smarter decision, implement the typed WILQ API/schema/view-model first, then make the skill consume that field. Skill references may describe how to use an API surface, but must not become the place where the product behavior is invented or repaired.
+
+Create or update WILQ skills only after the API endpoints, context-pack fields,
+connector status and action validation path they call are implemented. Goal 001
+skills now live under `.agents/skills/`: `wilq-daily-command` is wired to WILQ
+API, while the remaining WILQ operator skills are production-shaped stubs with
+endpoint, evidence, operator answer and smoke-test coverage.
 
 Every WILQ skill must be testable through deterministic smoke scripts and non-interactive Codex evals. Use `scripts/codex_skill_eval.sh` for `codex exec` schema-output checks. Local API evals need network-enabled sandboxing, so the harness defaults to `workspace-write` with network access and a prompt-level no-edit rule. Use `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1` when global MCP/user config causes unrelated transport failures.
 
@@ -322,7 +338,7 @@ evidence IDs and ActionObject IDs where applicable, block unsafe claims, and
 produce an answer that a marketer could act on without developer translation.
 If the output is generic, misses the API-owned decision queue, invents metrics,
 omits evidence/action IDs, mixes English into operator copy, or fails to explain
-the safe next step, fix the WILQ API/schema/view-model or skill contract and run
+the safe next step, fix the WILQ API/schema/view-model or skill instructions and run
 the eval again. Prefer `scripts/codex_skill_eval.sh --skill <skill>
 --api-base http://127.0.0.1:8000` after the deterministic smoke for the touched
 skill whenever changing skill behavior, context-pack compaction, action
@@ -341,7 +357,7 @@ before recommending action. Record useful findings in
 
 ## Skill creation rules
 
-Use `$skill-creator` for new skills and major skill updates. Skills must be small operator workflows over WILQ API, not prompt dumps. Long knowledge goes to `references/`, deterministic helpers go to `scripts/`, and every skill must define trigger, allowed endpoints, evidence requirements, output contract, safety rules and smoke test.
+Use `$skill-creator` for new skills and major skill updates. Skills must be small operator workflows over WILQ API, not prompt dumps. Long knowledge goes to `references/`, deterministic helpers go to `scripts/`, and every skill must define trigger, allowed endpoints, evidence requirements, operator answer shape, safety rules and smoke test.
 
 ## MCP rules
 
@@ -484,9 +500,9 @@ edit.
 - API/schema/action changes: run the smallest affected pytest subset first.
 - Dashboard route/component changes: run the touched route/component test; add
   dashboard typecheck/lint only when props, route contracts or shared types move.
-- Skill contract changes: run the deterministic smoke for the touched skill and
+- Skill instruction or behavior changes: run the deterministic smoke for the touched skill and
   targeted `scripts/codex_skill_eval.sh --skill <skill>` only when the eval
-  contract or skill behavior changed.
+  criteria or skill behavior changed.
 - `scripts/verify.sh` is a final or broad-risk gate: use it before final
   handoff, before claiming cross-surface completion, after broad API/dashboard/
   skill changes, or when focused checks reveal shared regression risk.

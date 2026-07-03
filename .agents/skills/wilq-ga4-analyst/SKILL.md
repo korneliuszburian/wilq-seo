@@ -5,7 +5,7 @@ description: Analizuje zachowanie GA4 dla Ekologus z dowodami z WILQ API. Użyj,
 
 # WILQ Analityka GA4
 
-## Kontrakt skilla
+## Zasada skilla
 
 <operating_rule>
 
@@ -24,22 +24,20 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </triggers>
 
-## Kontrakt workflow
+## Workflow operatora
 
 <workflow>
 
-1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
-2. Uruchom `uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/ga4/diagnostics` przed podsumowaniem zachowania GA4, jakości stron wejścia, gotowości konwersji lub blokad pomiaru.
-4. Użyj `ga4_diagnostics.decision_queue` jako głównej kolejki decyzji i zachowaj etykiety typu, statusu i następnego kroku zwrócone przez API. Techniczne wartości enumów zostaw wyłącznie jako ślad techniczny; nie klasyfikuj GA4 itemów samodzielnie poza kontraktem API.
-5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ga4-analyst"}` i potwierdź, że osadzony kontrakt `ga4_diagnostics` zgadza się z route.
-6. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
-7. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-8. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
+1. Wywołaj `GET /api/ga4/diagnostics` przed podsumowaniem zachowania GA4, jakości stron wejścia, gotowości konwersji lub blokad pomiaru.
+2. Użyj `ga4_diagnostics.decision_queue` jako głównej kolejki decyzji i zachowaj etykiety typu, statusu i następnego kroku zwrócone przez API. Techniczne wartości enumów zostaw wyłącznie jako ślad techniczny; nie klasyfikuj GA4 itemów samodzielnie poza danymi API.
+3. Pobierz `POST /api/codex/context-pack` tylko gdy wąski endpoint nie wystarcza albo potrzebujesz kontekstu wielu powierzchni. Nie rób z tego obowiązkowego kroku.
+4. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
+5. Jeśli użytkownik prosi o zapis albo podgląd zmiany, użyj `POST /api/actions/{action_id}/validate`; w review-only odpowiedzi wystarczy wskazać action_id i bezpieczny następny krok.
+6. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
 
 </workflow>
 
-## API Contract
+## API
 
 <allowed_endpoints>
 
@@ -62,7 +60,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </allowed_endpoints>
 
-## Kontrakt dowodów
+## Dowody
 
 <evidence_requirements>
 
@@ -74,22 +72,22 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 </evidence_requirements>
 
-## Kontrakt odpowiedzi
+## Odpowiedź
 
-<output_contract>
+<output>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
+Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
-</output_contract>
+</output>
 
-## Kontrakt bezpieczeństwa
+## Bezpieczeństwo
 
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.

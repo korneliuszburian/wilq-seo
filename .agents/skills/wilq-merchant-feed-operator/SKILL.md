@@ -5,7 +5,7 @@ description: Analizuje dowody Merchant Center dla produktów i pliku produktoweg
 
 # WILQ Merchant Center
 
-## Kontrakt skilla
+## Zasada skilla
 
 <operating_rule>
 
@@ -24,23 +24,21 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </triggers>
 
-## Kontrakt workflow
+## Workflow operatora
 
 <workflow>
 
-1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
-2. Uruchom `uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/merchant/diagnostics` przed podsumowaniem zdrowia pliku produktowego/produktów, issue queue lub akcji do sprawdzenia produktowych.
-4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-merchant-feed-operator"}` i potwierdź, że `merchant_diagnostics` zgadza się z endpointem Merchant diagnostics.
-5. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
-6. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-7. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
-8. Dla pytań o aktualny stan pliku produktowego użyj `freshness_assessment`: `requires_refresh=true` albo `state=stale|missing|blocked` oznacza nieaktualne dane albo blokadę, chyba że użytkownik jawnie pozwala na odczyt danych źródła danych.
-9. Finalną kolejkę pracy grupuj po `decision_queue`. `issue_clusters` traktuj jako drilldown raportowy; `product_count` przy `count_semantics=reported_issue_occurrences` nie jest liczbą unikalnych SKU ani produktów.
+1. Wywołaj `GET /api/merchant/diagnostics` przed podsumowaniem zdrowia pliku produktowego/produktów, issue queue lub akcji do sprawdzenia produktowych.
+2. Pobierz `POST /api/codex/context-pack` tylko gdy wąski endpoint nie wystarcza albo potrzebujesz kontekstu wielu powierzchni. Nie rób z tego obowiązkowego kroku.
+3. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
+4. Jeśli użytkownik prosi o zapis albo podgląd zmiany, użyj `POST /api/actions/{action_id}/validate`; w review-only odpowiedzi wystarczy wskazać action_id i bezpieczny następny krok.
+5. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
+6. Dla pytań o aktualny stan pliku produktowego użyj `freshness_assessment`: `requires_refresh=true` albo `state=stale|missing|blocked` oznacza nieaktualne dane albo blokadę, chyba że użytkownik jawnie pozwala na odczyt danych źródła danych.
+7. Finalną kolejkę pracy grupuj po `decision_queue`. `issue_clusters` traktuj jako drilldown raportowy; `product_count` przy `count_semantics=reported_issue_occurrences` nie jest liczbą unikalnych SKU ani produktów.
 
 </workflow>
 
-## API Contract
+## API
 
 <allowed_endpoints>
 
@@ -63,7 +61,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </allowed_endpoints>
 
-## Kontrakt dowodów
+## Dowody
 
 <evidence_requirements>
 
@@ -77,28 +75,28 @@ Jeśli `/api/merchant/diagnostics` zwraca `unknowns`, `product_sample_readiness.
 
 Przy `product_performance_readiness` i `price_impact_readiness` odróżniaj
 `required_read_contracts` od `missing_read_contracts`. Nie wolno opisywać całej
-listy wymaganych kontraktów jako brakującej, jeśli WILQ API zwraca węższą listę
+listy wymagań jako brakującej, jeśli WILQ API zwraca węższą listę
 `missing_read_contracts`. Jeśli `missing_read_contracts` jest dostępne,
 wypisz jego wartości literalnie jako faktyczny brak.
 
 </evidence_requirements>
 
-## Kontrakt odpowiedzi
+## Odpowiedź
 
-<output_contract>
+<output>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
+Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
-</output_contract>
+</output>
 
-## Kontrakt bezpieczeństwa
+## Bezpieczeństwo
 
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
