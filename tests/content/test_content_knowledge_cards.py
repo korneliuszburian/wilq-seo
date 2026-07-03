@@ -872,6 +872,8 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.source_fact_coverage.private_review_value.promotion_allowed_count == 0
     assert response.private_review_value.operator_value_score == 9
     assert response.private_review_value.promotion_allowed_count == 0
+    assert response.private_review_value.review_questions
+    assert any("CTA" in question for question in response.private_review_value.review_questions)
     assert response.source_fact_coverage.private_review_queue
     assert response.source_fact_coverage.review_action_queue
     assert response.source_fact_coverage.first_review_action_id

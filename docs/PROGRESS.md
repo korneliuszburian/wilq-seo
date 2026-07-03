@@ -170,6 +170,11 @@ Date: 2026-07-04
   `source_fact_coverage.private_review_value`, has `operator_value_score=9`
   and `promotion_allowed_count=0`, so it improves handoff clarity without
   approving private knowledge or unlocking production-depth content.
+- 2026-07-04 `private_review_value` now includes API-owned `review_questions`
+  for Wilku's ekologus-ai/private proposal review. Live proof shows 4 review
+  questions, `operator_value_score=9`, `promotion_allowed_count=0` and matching
+  top-level/source-fact coverage values, so the handoff now says what to decide
+  instead of only reporting that private material is useful.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

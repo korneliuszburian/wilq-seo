@@ -665,7 +665,8 @@ export const ContentServiceProfilePrivateReviewValueSchema = z.object({
   buyer_trigger_proposal_count: z.number(),
   operator_value_score: z.number().min(0).max(10),
   value_summary: z.string(),
-  review_value_points: z.array(z.string()).default([])
+  review_value_points: z.array(z.string()).default([]),
+  review_questions: z.array(z.string()).default([])
 });
 
 export const ContentServiceProfilePrivateReviewQueueItemSchema = z.object({

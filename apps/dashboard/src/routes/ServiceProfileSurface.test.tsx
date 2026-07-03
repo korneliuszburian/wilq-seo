@@ -54,6 +54,12 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("14 faktów źródłowych")).toBeInTheDocument();
     expect(screen.getByText("13 akcji review")).toBeInTheDocument();
     expect(screen.getByText("5 prywatnych do review")).toBeInTheDocument();
+    expect(screen.getByText("Pytania do Wilka")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?"
+      )
+    ).toBeInTheDocument();
     expect(screen.getByText("Następne review")).toBeInTheDocument();
     expect(screen.getByText(/Zacznij od:/)).toBeInTheDocument();
     expect(screen.getByText("Liczby techniczne")).toBeInTheDocument();
@@ -301,6 +307,10 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         "Prywatne propozycje dodają CTA albo kierunek rozmowy do oceny przez Wilka.",
         "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
         "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+      ],
+      review_questions: [
+        "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?",
+        "Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami Ekologus?"
       ]
     },
     private_source_proposals: [
@@ -572,6 +582,10 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
           "Prywatne propozycje dodają CTA albo kierunek rozmowy do oceny przez Wilka.",
           "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
           "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+        ],
+        review_questions: [
+          "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?",
+          "Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami Ekologus?"
         ]
       },
       private_review_queue: [

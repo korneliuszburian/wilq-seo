@@ -309,6 +309,10 @@ function SourceFactCoveragePanel({
             label="Dlaczego ekologus-ai pomaga"
             values={privateReviewValue.review_value_points}
           />
+          <List
+            label="Pytania do Wilka"
+            values={privateReviewValue.review_questions}
+          />
           <List label="Blokery production-depth" values={coverage.blockers.slice(0, 4)} />
         </div>
 

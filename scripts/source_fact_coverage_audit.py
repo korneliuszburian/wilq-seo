@@ -205,6 +205,13 @@ def render_markdown(report: dict[str, Any]) -> str:
             for point in report["private_review_value"]["review_value_points"]
         ],
         "",
+        "Pytania do Wilka:",
+        "",
+        *[
+            f"- {_operator_text(question)}"
+            for question in report["private_review_value"].get("review_questions", [])
+        ],
+        "",
         "## Prywatne propozycje do oceny",
         "",
         "| Priorytet | Typ oceny | Temat | Ryzyko | Następny krok |",
@@ -320,23 +327,36 @@ def _private_review_value_summary(
         1 for item in private_review_queue if item["promotion_allowed"]
     )
     review_value_points: list[str] = []
+    review_questions: list[str] = []
     if cta_pattern_proposal_count:
         review_value_points.append(
             "Prywatne propozycje dodają CTA lub kierunek rozmowy do oceny przez Wilka."
         )
+        review_questions.append(
+            "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?"
+        )
     if buyer_trigger_proposal_count:
         review_value_points.append(
             "Prywatne propozycje doprecyzowują problemy i triggery kupującego."
+        )
+        review_questions.append(
+            "Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami Ekologus?"
         )
     if blocked_claim_proposal_count:
         review_value_points.append(
             "Każda propozycja niesie jawne zablokowane twierdzenia, więc może "
             "pomagać w Claim Ledgerze bez luzowania bezpieczeństwa."
         )
+        review_questions.append(
+            "Czy zablokowane twierdzenia są kompletne, szczególnie dla prawa, kar, zgodności i efektów?"
+        )
     if promotion_allowed_count == 0 and proposal_count:
         review_value_points.append(
             "Żadna prywatna propozycja nie może wejść do wiedzy do finalnych "
             "treści bez oceny człowieka."
+        )
+        review_questions.append(
+            "Które propozycje odrzucić, oznaczyć jako nieaktualne albo zostawić tylko jako tło do UAT?"
         )
     operator_value_score = 0
     if proposal_count:
@@ -363,6 +383,7 @@ def _private_review_value_summary(
             "finalnych treści, publikacji ani gotowych twierdzeń bez decyzji człowieka."
         ),
         "review_value_points": review_value_points,
+        "review_questions": review_questions,
     }
 
 

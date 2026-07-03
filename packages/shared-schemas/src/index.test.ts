@@ -476,6 +476,10 @@ describe("ContentServiceProfileResponseSchema", () => {
         review_value_points: [
           "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
           "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+        ],
+        review_questions: [
+          "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?",
+          "Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami Ekologus?"
         ]
       },
       private_source_proposals: [
@@ -604,6 +608,10 @@ describe("ContentServiceProfileResponseSchema", () => {
           review_value_points: [
             "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
             "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+          ],
+          review_questions: [
+            "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?",
+            "Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami Ekologus?"
           ]
         },
         private_review_queue: [

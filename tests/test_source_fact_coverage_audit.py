@@ -38,6 +38,10 @@ def test_source_fact_coverage_audit_reports_current_goal_005_backlog() -> None:
     )
     assert report["private_review_value"]["operator_value_score"] >= 7
     assert "materiał do oceny" in report["private_review_value"]["value_summary"].lower()
+    assert report["private_review_value"]["review_questions"]
+    assert any(
+        "CTA" in question for question in report["private_review_value"]["review_questions"]
+    )
     assert report["review_action_queue"]
     assert report["first_review_action_id"]
     assert report["review_action_queue"][0]["action_id"] == report["first_review_action_id"]
@@ -83,6 +87,10 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
                 "konkretniejsze CTA i buyer trigger",
                 "jawne zablokowane twierdzenia",
             ],
+            "review_questions": [
+                "Czy proponowane CTA jest realnym następnym krokiem?",
+                "Czy zablokowane twierdzenia są kompletne?",
+            ],
         },
         "safe_next_step": "Pokaż Wilkowi źródła wymagające oceny przed treścią.",
         "private_review_queue": [
@@ -117,6 +125,8 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
     assert "Knowledge status: `source_backed_review_required`" not in markdown
     assert "Ready for daily content: `false`" not in markdown
     assert "Pokaż Wilkowi źródła wymagające oceny przed treścią." in markdown
+    assert "Pytania do Wilka" in markdown
+    assert "Czy proponowane CTA jest realnym następnym krokiem?" in markdown
     assert "Pierwsza decyzja do oceny" in markdown
     assert (
         "Sprawdź kartę usługi: BDO "
