@@ -208,6 +208,19 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "google_search_console" not in status_section
     assert "production-depth" not in status_section
     assert "Zatwierdzona wiedza do finalnych treści: nie" in status_section
+    assert "## Kolejność rozmowy 15 minut" in card
+    agenda_section = card.split("## Kolejność rozmowy 15 minut", 1)[1].split(
+        "## Pierwsza decyzja w Service Profile",
+        1,
+    )[0]
+    assert "1. Status: czy Wilku rozumie" in agenda_section
+    assert "2. BDO: sprawdzić pierwszą kartę Service Profile" in agenda_section
+    assert "3. Prywatny ślad: sprawdzić, czy `KB_*`" in agenda_section
+    assert "4. Brief: ocenić, czy sygnał wystarcza tylko do oceny" in agenda_section
+    assert "5. Stop/decyzja: zapisać największy brak" in agenda_section
+    assert "surowego prywatnego tekstu" in agenda_section
+    assert "content_work_item_content_decision" not in agenda_section
+    assert "service_profile_review_" not in agenda_section
     assert "## ID do zapisu po rozmowie" in card
     assert "Materiał ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
     public_section = card.split("## ID do zapisu po rozmowie")[0]

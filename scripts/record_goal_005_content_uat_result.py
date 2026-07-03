@@ -309,6 +309,29 @@ def render_content_uat_session_card(
         "- Zatwierdzona wiedza do finalnych treści: "
         f"{visible_bool(provenance.get('production_depth_ready') is True)}",
         "",
+        "## Kolejność rozmowy 15 minut",
+        "",
+        (
+            "1. Status: czy Wilku rozumie, czemu pełny test treści jest jeszcze "
+            "zablokowany."
+        ),
+        (
+            "2. BDO: sprawdzić pierwszą kartę Service Profile i zdecydować: "
+            "zatwierdzić, poprawić, odświeżyć albo odrzucić."
+        ),
+        (
+            "3. Prywatny ślad: sprawdzić, czy `KB_*` i bramki ewaluacji są "
+            "wystarczająco czytelne bez surowego prywatnego tekstu."
+        ),
+        (
+            "4. Brief: ocenić, czy sygnał wystarcza tylko do oceny, czy jest "
+            "zbyt słaby nawet do rozmowy."
+        ),
+        (
+            "5. Stop/decyzja: zapisać największy brak i nie iść dalej, jeżeli "
+            "Wilku pyta `skąd to wzięło?` albo widzi generyczny język."
+        ),
+        "",
         "## Pierwsza decyzja w Service Profile",
         "",
         f"- {first_review}",

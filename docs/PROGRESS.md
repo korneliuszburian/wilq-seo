@@ -96,6 +96,10 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 `next_uat_input` now also exposes the Sales Brief
   signal-quality label as Polish operator copy (`wymaga oceny`) instead of raw
   `wymaga review`, while keeping status enums unchanged.
+- 2026-07-04 Goal 005 Wilku session card now opens with a 15-minute
+  conversation agenda: status, BDO Service Profile review, private source
+  trace, Sales Brief signal and explicit stop/defer decision when source trace
+  or Ekologus-specific language is unclear.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
