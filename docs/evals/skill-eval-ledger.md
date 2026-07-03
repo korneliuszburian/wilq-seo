@@ -413,6 +413,11 @@ Focused proof:
   `operator_usefulness_score=7`, `blocked=true`, `failure_tags=[]`, 6 evidence
   IDs, 2 recommendations, 2 actions and all hard gates true. The coverage map
   now reports `strong_skill_count=2`.
+- Follow-up content-strategy proof: `wilq-content-strategist` passed at
+  `.local-lab/evals/codex-skill/20260703T114415Z` with
+  `operator_usefulness_score=7`, `blocked=true`, `failure_tags=[]`, 6 evidence
+  IDs, 4 recommendations, 2 actions and all hard gates true. The coverage map
+  now reports `strong_skill_count=3`.
 
 Interpretation:
 

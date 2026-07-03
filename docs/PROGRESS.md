@@ -96,6 +96,12 @@ Date: 2026-07-03
   `operator_usefulness_score=7`, `blocked=true`, 6 evidence IDs, 2
   recommendations, 2 actions and all hard gates true. The latest skill
   coverage map now reports `strong_skill_count=2` and `wilku_ready_skill_count=0`.
+- 2026-07-03 `wilq-content-strategist` also reached the strong workflow
+  threshold. Artifact:
+  `.local-lab/evals/codex-skill/20260703T114415Z`; result:
+  `operator_usefulness_score=7`, `blocked=true`, 6 evidence IDs, 4
+  recommendations, 2 actions and all hard gates true. Skill coverage now
+  reports `strong_skill_count=3`.
 - 2026-07-03 fresh full WILQ skill eval baseline is now 13/13 passing for all
   repo WILQ skills on production-like Polish prompts. Every current score is
   `operator_usefulness_score=5`, so this proves "works out-of-the-box with
