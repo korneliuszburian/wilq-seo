@@ -114,6 +114,9 @@ from wilq.schemas import (
     ActionImpactCheckResult,
     ActionMode,
     ActionMutationAuditRecord,
+    ActionMutationReadinessBlocker,
+    ActionMutationReadinessRequirement,
+    ActionMutationReadinessResponse,
     ActionObject,
     ActionPreviewCardViewModel,
     ActionPreviewItemViewModel,
@@ -2735,6 +2738,114 @@ def apply_action(
     )
 
 
+def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessResponse:
+    action = _with_review_gate(
+        _with_persisted_validation_state(action),
+        _persisted_audit_events_for_action(action.id),
+        _persisted_mutation_audits_for_action(action.id),
+    )
+    connector = get_connector_status(action.connector)
+    mutation_adapter = _supported_mutation_adapter(action)
+    latest_preview = _latest_preview_event(action.audit_events)
+    latest_confirmation = _latest_action_confirmation_event(action.audit_events)
+    latest_impact_check = _latest_action_impact_check_event(action.audit_events)
+    latest_mutation_audit = _latest_mutation_audit(
+        _persisted_mutation_audits_for_action(action.id)
+    )
+    requirements = [
+        _mutation_requirement(
+            code="valid_action",
+            label="Akcja sprawdzona w WILQ",
+            satisfied=action.validation_status == "valid",
+            evidence=action.validation_status,
+        ),
+        _mutation_requirement(
+            code="apply_mode",
+            label="Akcja ma tryb zapisu",
+            satisfied=action.mode == ActionMode.apply,
+            evidence=action.mode.value,
+        ),
+        _mutation_requirement(
+            code="evidence_present",
+            label="Akcja ma dowody źródłowe",
+            satisfied=bool(action.evidence_ids),
+            evidence=evidence_count_label(action.evidence_ids),
+        ),
+        _mutation_requirement(
+            code="connector_configured",
+            label="Connector jest skonfigurowany",
+            satisfied=connector is not None and connector.configured,
+            evidence=connector.status.value if connector is not None else "missing",
+        ),
+        _mutation_requirement(
+            code="preview_audit",
+            label="Podgląd zmian zapisany",
+            satisfied=latest_preview is not None,
+            evidence=latest_preview.id if latest_preview is not None else None,
+        ),
+        _mutation_requirement(
+            code="confirmation_audit",
+            label="Potwierdzenie operatora zapisane",
+            satisfied=latest_confirmation is not None,
+            evidence=latest_confirmation.id if latest_confirmation is not None else None,
+        ),
+        _mutation_requirement(
+            code="impact_check",
+            label="Sprawdzenie efektu zapisane",
+            satisfied=_impact_status_from_event(latest_impact_check) == "checked",
+            evidence=latest_impact_check.id if latest_impact_check is not None else None,
+        ),
+        _mutation_requirement(
+            code="risk_allowed",
+            label="Ryzyko akcji dopuszcza zapis",
+            satisfied=action.risk not in {ActionRisk.high, ActionRisk.critical},
+            evidence=action.risk.value,
+        ),
+        _mutation_requirement(
+            code="non_destructive",
+            label="Akcja nie jest destrukcyjna",
+            satisfied=action.payload.get("destructive") is not True,
+            evidence=str(action.payload.get("destructive", False)).lower(),
+        ),
+        _mutation_requirement(
+            code="mutation_adapter",
+            label="Bezpieczny adapter zapisu istnieje",
+            satisfied=mutation_adapter is not None,
+            evidence=mutation_adapter,
+        ),
+    ]
+    blockers = _mutation_readiness_blockers(requirements)
+    vendor_write_possible = mutation_adapter is not None
+    ready_to_request_apply = not blockers
+    return ActionMutationReadinessResponse(
+        action_id=action.id,
+        title=action.title,
+        connector=action.connector,
+        connector_label=action.connector_label,
+        mode=action.mode,
+        mode_label=action.mode_label,
+        risk=action.risk,
+        risk_label=action.risk_label,
+        validation_status=action.validation_status,
+        review_gate_status=action.review_gate.status,
+        ready_to_request_apply=ready_to_request_apply,
+        vendor_write_possible=vendor_write_possible,
+        would_attempt_vendor_write=ready_to_request_apply and vendor_write_possible,
+        mutation_adapter=mutation_adapter,
+        requirements=requirements,
+        blockers=blockers,
+        operator_next_step=_mutation_readiness_next_step(blockers),
+        evidence_ids=action.evidence_ids,
+        source_connectors=[action.connector],
+        latest_mutation_audit_id=latest_mutation_audit.id
+        if latest_mutation_audit is not None
+        else None,
+        latest_mutation_audit_status=latest_mutation_audit.status
+        if latest_mutation_audit is not None
+        else None,
+    )
+
+
 def _apply_audit_event_type(errors: list[str]) -> str:
     if not errors:
         return "apply_succeeded"
@@ -2783,6 +2894,110 @@ def _mutation_audit_summary(errors: list[str], mutation_adapter: str | None) -> 
 
 def _supported_mutation_adapter(action: ActionObject) -> str | None:
     return None
+
+
+def _mutation_requirement(
+    *,
+    code: str,
+    label: str,
+    satisfied: bool,
+    evidence: str | None = None,
+) -> ActionMutationReadinessRequirement:
+    return ActionMutationReadinessRequirement(
+        code=code,
+        label=label,
+        satisfied=satisfied,
+        evidence=evidence,
+    )
+
+
+def _mutation_readiness_blockers(
+    requirements: list[ActionMutationReadinessRequirement],
+) -> list[ActionMutationReadinessBlocker]:
+    blocker_copy = {
+        "valid_action": (
+            "Akcja nie jest jeszcze poprawnie sprawdzona",
+            "Przed zapisem trzeba uruchomić walidację ActionObject i usunąć błędy.",
+            "Uruchom validate dla tej akcji i wróć do readiness.",
+        ),
+        "apply_mode": (
+            "Akcja jest tylko prepare/review",
+            "Ta akcja nie ma kontraktu zapisu do zewnętrznego systemu.",
+            "Użyj jej do review albo dodaj osobny apply-capable ActionObject.",
+        ),
+        "evidence_present": (
+            "Brakuje dowodów źródłowych",
+            "WILQ nie zapisuje zmian bez evidence IDs.",
+            "Podepnij dowody źródłowe do akcji przed rozważeniem zapisu.",
+        ),
+        "connector_configured": (
+            "Connector nie jest skonfigurowany",
+            "Nie ma bezpiecznej ścieżki do vendor API bez działającego connectora.",
+            "Napraw credentials/status connectora i odśwież readiness.",
+        ),
+        "preview_audit": (
+            "Brakuje podglądu zmian",
+            "Operator musi zobaczyć preview zanim WILQ dopuści zapis.",
+            "Uruchom preview dla tej akcji.",
+        ),
+        "confirmation_audit": (
+            "Brakuje potwierdzenia operatora",
+            "WILQ wymaga jawnego confirm przed zapisem.",
+            "Zapisz confirm po review i preview.",
+        ),
+        "impact_check": (
+            "Brakuje sprawdzenia efektu",
+            "Przed zapisem WILQ wymaga sanity checku wpływu/okna efektu.",
+            "Uruchom impact-check lub dodaj odpowiedni kontrakt wpływu.",
+        ),
+        "risk_allowed": (
+            "Ryzyko zapisu jest zbyt wysokie",
+            "High/critical writes nie mają jeszcze obsługiwanej ścieżki bezpieczeństwa.",
+            "Rozbij akcję na niższe ryzyko albo dodaj osobny model akceptacji.",
+        ),
+        "non_destructive": (
+            "Akcja jest destrukcyjna",
+            "Destrukcyjne zmiany są zablokowane do czasu osobnego kontraktu.",
+            "Przygotuj niedestrukcyjną alternatywę albo nowy guard dla tej klasy zmian.",
+        ),
+        "mutation_adapter": (
+            "Brakuje adaptera zapisu",
+            "WILQ nie ma jeszcze implementacji vendor write dla tej akcji.",
+            "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live dla connectora.",
+        ),
+    }
+    blockers: list[ActionMutationReadinessBlocker] = []
+    for requirement in requirements:
+        if requirement.satisfied:
+            continue
+        label, reason, next_step = blocker_copy.get(
+            requirement.code,
+            (
+                f"Niespełniony warunek: {requirement.label}",
+                "Ten warunek blokuje bezpieczny zapis zmian.",
+                "Uzupełnij warunek i sprawdź readiness ponownie.",
+            ),
+        )
+        blockers.append(
+            ActionMutationReadinessBlocker(
+                code=f"missing_{requirement.code}",
+                label=label,
+                reason=reason,
+                next_step=next_step,
+            )
+        )
+    return blockers
+
+
+def _mutation_readiness_next_step(
+    blockers: list[ActionMutationReadinessBlocker],
+) -> str:
+    if not blockers:
+        return (
+            "Warunki zapisu są spełnione; apply nadal wymaga osobnego POST z "
+            "jawnym potwierdzeniem operatora."
+        )
+    return blockers[0].next_step
 
 
 def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[ActionObject]:

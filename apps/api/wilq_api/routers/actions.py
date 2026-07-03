@@ -16,6 +16,7 @@ from wilq.actions.service import (
     get_action,
     impact_check_action,
     list_actions,
+    mutation_readiness_action,
     preview_action,
     record_action_review,
     validate_action,
@@ -25,6 +26,7 @@ from wilq.schemas import (
     ActionConfirmRequest,
     ActionImpactCheckRequest,
     ActionMutationAuditRecord,
+    ActionMutationReadinessResponse,
     ActionPreviewRequest,
     ActionReviewRequest,
     AdsStrategyReviewRecord,
@@ -151,6 +153,16 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
         if not result.applied:
             raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
         return result.model_dump(mode="json")
+
+    @router.get(
+        "/api/actions/{action_id}/mutation-readiness",
+        response_model=ActionMutationReadinessResponse,
+    )
+    def action_mutation_readiness(action_id: str) -> ActionMutationReadinessResponse:
+        action = get_action(action_id)
+        if action is None:
+            raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+        return mutation_readiness_action(action)
 
     @router.get("/api/audit/events", response_model=list[AuditEvent])
     def audit_events(action_id: str | None = None) -> list[AuditEvent]:

@@ -2,6 +2,7 @@ import {
   ActionObjectSchema,
   ActionConfirmResultSchema,
   ActionImpactCheckResultSchema,
+  ActionMutationReadinessResponseSchema,
   ActionPreviewResultSchema,
   ActionReviewResultSchema,
   ActionValidationResultSchema,
@@ -66,6 +67,7 @@ import {
   type ActionConfirmResult,
   type ActionImpactCheckRequest,
   type ActionImpactCheckResult,
+  type ActionMutationReadinessResponse,
   type ActionPreviewCardViewModel,
   type ActionPreviewResult,
   type ActionReviewRequest,
@@ -234,10 +236,21 @@ export function getWordPressAuthoringProfile(): Promise<WordPressAuthoringProfil
   return apiGet("/api/content/wordpress/authoring-profile", WordPressAuthoringProfileSchema);
 }
 
-export function getContentWordPressDraftWriteReadiness(): Promise<ContentWordPressDraftWriteReadinessResponse> {
+export function getContentWordPressDraftWriteReadiness(): Promise<
+  ContentWordPressDraftWriteReadinessResponse
+> {
   return apiGet(
     "/api/content/wordpress/draft-write-readiness",
     ContentWordPressDraftWriteReadinessResponseSchema
+  );
+}
+
+export function getActionMutationReadiness(
+  actionId: string
+): Promise<ActionMutationReadinessResponse> {
+  return apiGet(
+    `/api/actions/${encodeURIComponent(actionId)}/mutation-readiness`,
+    ActionMutationReadinessResponseSchema
   );
 }
 

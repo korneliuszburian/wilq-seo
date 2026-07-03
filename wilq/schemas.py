@@ -565,6 +565,46 @@ class ActionMutationAuditRecord(BaseModel):
     redacted: bool = True
 
 
+class ActionMutationReadinessRequirement(BaseModel):
+    code: str
+    label: str
+    satisfied: bool = False
+    evidence: str | None = None
+
+
+class ActionMutationReadinessBlocker(BaseModel):
+    code: str
+    label: str
+    reason: str
+    next_step: str
+
+
+class ActionMutationReadinessResponse(BaseModel):
+    response_type: Literal["action_mutation_readiness"] = "action_mutation_readiness"
+    contract: Literal["action_mutation_readiness_v1"] = "action_mutation_readiness_v1"
+    action_id: str
+    title: str
+    connector: str
+    connector_label: str = ""
+    mode: ActionMode
+    mode_label: str = ""
+    risk: ActionRisk
+    risk_label: str = ""
+    validation_status: Literal["not_validated", "valid", "invalid"]
+    review_gate_status: str = ""
+    ready_to_request_apply: bool = False
+    vendor_write_possible: bool = False
+    would_attempt_vendor_write: bool = False
+    mutation_adapter: str | None = None
+    requirements: list[ActionMutationReadinessRequirement] = Field(default_factory=list)
+    blockers: list[ActionMutationReadinessBlocker] = Field(default_factory=list)
+    operator_next_step: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    latest_mutation_audit_id: str | None = None
+    latest_mutation_audit_status: Literal["blocked", "applied", "failed"] | None = None
+
+
 ActionReviewOutcome = Literal[
     "approved_for_prepare",
     "needs_changes",

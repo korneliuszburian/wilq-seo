@@ -3,6 +3,7 @@ import type { ContentWorkItem } from "@wilq/shared-schemas";
 
 import {
   actionApiPath,
+  getActionMutationReadiness,
   getContentKnowledgeCards,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
@@ -135,6 +136,45 @@ const responseByPath: Record<string, unknown> = {
         next_step: "Wróć po earliest_verdict_date."
       }
     ]
+  },
+  "/api/actions/act%2Funsafe%3Fx%3D1/mutation-readiness": {
+    response_type: "action_mutation_readiness",
+    contract: "action_mutation_readiness_v1",
+    action_id: "act/unsafe?x=1",
+    title: "Test action",
+    connector: "google_ads",
+    connector_label: "Google Ads",
+    mode: "prepare",
+    mode_label: "przygotowanie",
+    risk: "medium",
+    risk_label: "średnie",
+    validation_status: "valid",
+    review_gate_status: "validated_prepare_only",
+    ready_to_request_apply: false,
+    vendor_write_possible: false,
+    would_attempt_vendor_write: false,
+    mutation_adapter: null,
+    requirements: [
+      {
+        code: "mutation_adapter",
+        label: "Bezpieczny adapter zapisu istnieje",
+        satisfied: false,
+        evidence: null
+      }
+    ],
+    blockers: [
+      {
+        code: "missing_mutation_adapter",
+        label: "Brakuje adaptera zapisu",
+        reason: "WILQ nie ma jeszcze implementacji vendor write dla tej akcji.",
+        next_step: "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live."
+      }
+    ],
+    operator_next_step: "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live.",
+    evidence_ids: ["ev_connector_google_ads_status"],
+    source_connectors: ["google_ads"],
+    latest_mutation_audit_id: null,
+    latest_mutation_audit_status: null
   }
 };
 
@@ -162,6 +202,29 @@ describe("content workflow API helpers", () => {
     expect(actionApiPath(actionId, "/impact-check")).toBe(
       "/api/actions/act%2Funsafe%3Fx%3D1/impact-check"
     );
+    expect(actionApiPath(actionId, "/mutation-readiness")).toBe(
+      "/api/actions/act%2Funsafe%3Fx%3D1/mutation-readiness"
+    );
+  });
+
+  it("gets encoded action mutation readiness through a typed helper", async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      const path = new URL(String(url)).pathname;
+      return {
+        ok: true,
+        json: async () => responseByPath[path]
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const readiness = await getActionMutationReadiness("act/unsafe?x=1");
+
+    expect(readiness.response_type).toBe("action_mutation_readiness");
+    expect(readiness.vendor_write_possible).toBe(false);
+    expect(readiness.blockers[0]?.code).toBe("missing_mutation_adapter");
+    expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+      "/api/actions/act%2Funsafe%3Fx%3D1/mutation-readiness"
+    ]);
   });
 
   it("gets the API-owned diagnostics-derived snapshot for the content workflow route", async () => {

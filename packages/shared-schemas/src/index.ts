@@ -337,6 +337,46 @@ export const ActionMutationAuditRecordSchema = z.object({
   redacted: z.boolean()
 });
 
+export const ActionMutationReadinessRequirementSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  satisfied: z.boolean().default(false),
+  evidence: z.string().nullable().optional()
+});
+
+export const ActionMutationReadinessBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string()
+});
+
+export const ActionMutationReadinessResponseSchema = z.object({
+  response_type: z.literal("action_mutation_readiness"),
+  contract: z.literal("action_mutation_readiness_v1"),
+  action_id: z.string(),
+  title: z.string(),
+  connector: z.string(),
+  connector_label: z.string().default(""),
+  mode: z.enum(["suggest", "prepare", "apply"]),
+  mode_label: z.string().default(""),
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default(""),
+  validation_status: ActionValidationStatusSchema,
+  review_gate_status: z.string().default(""),
+  ready_to_request_apply: z.boolean().default(false),
+  vendor_write_possible: z.boolean().default(false),
+  would_attempt_vendor_write: z.boolean().default(false),
+  mutation_adapter: z.string().nullable().optional(),
+  requirements: z.array(ActionMutationReadinessRequirementSchema).default([]),
+  blockers: z.array(ActionMutationReadinessBlockerSchema).default([]),
+  operator_next_step: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  latest_mutation_audit_id: z.string().nullable().optional(),
+  latest_mutation_audit_status: z.enum(["blocked", "applied", "failed"]).nullable().optional()
+});
+
 export const ActionApplyResultSchema = z.object({
   action_id: z.string(),
   applied: z.boolean(),
@@ -3613,6 +3653,9 @@ export type ActionPreviewCardViewModel = z.infer<typeof ActionPreviewCardViewMod
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type ActionMutationAuditRecord = z.infer<typeof ActionMutationAuditRecordSchema>;
+export type ActionMutationReadinessResponse = z.infer<
+  typeof ActionMutationReadinessResponseSchema
+>;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
 export type ActionPreviewRequest = z.infer<typeof ActionPreviewRequestSchema>;
 export type ActionPreviewResult = z.infer<typeof ActionPreviewResultSchema>;

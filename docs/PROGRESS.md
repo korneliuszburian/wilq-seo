@@ -41,6 +41,11 @@ Date: 2026-07-03
   configured, but live draft write remains blocked until env enablement and the
   full ActionObject audit trail exist. This is the pattern for future real
   write/mutation readiness before Ads or WordPress writes.
+- 2026-07-03 ActionObject mutation readiness is now API-owned at
+  `/api/actions/{action_id}/mutation-readiness`. Live Ads smoke confirms review
+  actions are valid but prepare-only, with vendor write blocked by missing
+  apply mode, preview/confirmation/impact audit and mutation adapter. This lets
+  WILQ expose real write readiness before adding any Ads vendor-write adapter.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
