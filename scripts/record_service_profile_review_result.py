@@ -157,6 +157,13 @@ def build_input_example(
         and str(action.get("review_scope") or "").strip()
         in review_scopes_for_type(review_type)
     ]
+    actions = sorted(
+        actions,
+        key=lambda action: review_input_action_sort_key(
+            action,
+            first_review_action_id=first_review_action_id(profile),
+        ),
+    )
     decisions = [
         input_example_decision(action, required_fields_by_action)
         for action in actions
@@ -176,6 +183,38 @@ def build_input_example(
             "promotion nadal wymaga osobnego, audytowanego kroku."
         ),
     }
+
+
+def first_review_action_id(profile: dict[str, Any]) -> str | None:
+    summary = profile.get("review_action_summary")
+    if not isinstance(summary, dict):
+        return None
+    action_id = str(summary.get("first_review_action_id") or "").strip()
+    return action_id or None
+
+
+def review_input_action_sort_key(
+    action: dict[str, Any],
+    *,
+    first_review_action_id: str | None,
+) -> tuple[int, int, int, str]:
+    action_id = str(action.get("action_id") or "").strip()
+    review_scope = str(action.get("review_scope") or "").strip()
+    priority = str(action.get("priority") or "").strip()
+    first_rank = 0 if first_review_action_id and action_id == first_review_action_id else 1
+    priority_rank = {
+        "critical": 0,
+        "high": 1,
+        "medium": 2,
+        "low": 3,
+    }.get(priority, 4)
+    scope_rank = {
+        "public_service_card": 0,
+        "private_claim_policy_proposal": 1,
+        "private_evidence_policy_proposal": 2,
+        "private_service_proposal": 3,
+    }.get(review_scope, 9)
+    return first_rank, priority_rank, scope_rank, action_id
 
 
 def input_example_decision(

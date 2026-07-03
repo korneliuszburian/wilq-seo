@@ -114,6 +114,52 @@ def test_service_profile_review_input_example_uses_live_private_requirements() -
         assert decision[field] == "tak|nie"
 
 
+def test_service_profile_review_input_example_pins_first_public_review_item() -> None:
+    live_context = _live_context()
+    profile = live_context["service_profile"]  # type: ignore[index]
+    profile["review_action_summary"] = {  # type: ignore[index]
+        "first_review_action_id": "service_profile_review_card_ekologus_service_bdo_reporting"
+    }
+    review_actions = profile["review_actions"]  # type: ignore[index]
+    review_actions[:] = [review_actions[1], review_actions[0], review_actions[2]]
+
+    example = build_input_example(
+        live_context,
+        review_type="public_service_cards",
+    )
+
+    decisions = example["decisions"]
+    assert decisions[0]["action_id"] == (
+        "service_profile_review_card_ekologus_service_bdo_reporting"
+    )
+    assert decisions[1]["action_id"] == "renamed_public_operat_review"
+
+
+def test_service_profile_review_input_example_orders_private_policy_before_service() -> None:
+    live_context = _live_context()
+    profile = live_context["service_profile"]  # type: ignore[index]
+    review_actions = profile["review_actions"]  # type: ignore[index]
+    review_actions.append(
+        {
+            "action_id": "renamed_private_brand_policy_review",
+            "target_card_id": "ekologus_claim_policy_brand_voice",
+            "review_scope": "private_claim_policy_proposal",
+            "priority": "high",
+            "review_requirements": _private_review_requirements(),
+        }
+    )
+    review_actions[2]["priority"] = "medium"
+
+    example = build_input_example(
+        live_context,
+        review_type="private_source_proposals",
+    )
+
+    decisions = example["decisions"]
+    assert decisions[0]["action_id"] == "renamed_private_brand_policy_review"
+    assert decisions[1]["action_id"] == "renamed_private_eko_opieka_review"
+
+
 def test_service_profile_review_input_example_tracks_new_live_required_field() -> None:
     live_context = _live_context()
     review_actions = live_context["service_profile"]["review_actions"]  # type: ignore[index]

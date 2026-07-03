@@ -462,3 +462,4 @@
 {"id":"int-f2fed5a9","kind":"field_change","created_at":"2026-07-03T18:24:52.889508001Z","actor":"korneliuszburian","issue_id":"wilq-seo-awze","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"done"}}
 {"id":"int-72d4e6bf","kind":"field_change","created_at":"2026-07-03T18:28:13.408202295Z","actor":"korneliuszburian","issue_id":"wilq-seo-sun5","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"done"}}
 {"id":"int-28c9f180","kind":"field_change","created_at":"2026-07-03T18:31:16.409852587Z","actor":"korneliuszburian","issue_id":"wilq-seo-pts7","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"done"}}
+{"id":"int-c0a4656a","kind":"field_change","created_at":"2026-07-03T18:33:33.98654969Z","actor":"korneliuszburian","issue_id":"wilq-seo-lyyu","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"done"}}

@@ -315,6 +315,11 @@ Date: 2026-07-03
   into private claim/evidence policy proposals. This removes the previous
   contradiction where the handoff suggested starting from private proposals
   while Goal 005 completion guard pinned BDO first.
+- 2026-07-03 the Service Profile review input generator now follows the same
+  order. Public input examples start with the BDO review action, while private
+  examples start with high-priority claim/evidence policy proposals before
+  medium service proposals. This keeps the handoff, completion guard and JSON
+  recorder aligned for Wilku review.
 - 2026-07-03 the Goal 005 UAT input generator now includes that current handoff
   as the first recommended review artifact. Live proof:
   `.local-lab/proof/goal-005-content-uat-input-20260703.json` selects
