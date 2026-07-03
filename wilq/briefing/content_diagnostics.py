@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 
-from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
 from wilq.briefing.tactical_queue import build_tactical_queue
@@ -124,7 +123,7 @@ def build_content_diagnostics(
         if item.domain == OpportunityDomain.gsc_seo
         or item.source_connectors.count("wordpress_ekologus") > 0
     ]
-    action_ids = _content_action_ids(actions if actions is not None else list_actions())
+    action_ids = _content_action_ids(actions if actions is not None else _list_actions())
     decision_queue = _content_decision_queue(
         all_tactical_items,
         trusted_facts,
@@ -432,6 +431,12 @@ def _content_action_ids(actions: list[ActionObject]) -> list[str]:
         if action.id == "act_prepare_content_refresh_queue"
         or action.domain == OpportunityDomain.content
     ]
+
+
+def _list_actions() -> list[ActionObject]:
+    from wilq.actions.service import list_actions
+
+    return list_actions()
 
 
 def _unique(values: Iterable[object]) -> list[str]:

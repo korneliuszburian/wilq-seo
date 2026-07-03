@@ -105,7 +105,7 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     assert "wordpress_draft_live_write_env" in requirement_codes
     assert "wordpress_write_authorization" in requirement_codes
     assert "missing_wordpress_draft_handoff_ready" in blocker_codes
-    assert "missing_wordpress_draft_package_ready" in blocker_codes
+    assert "missing_wordpress_draft_package_ready" not in blocker_codes
     assert "missing_wordpress_draft_target_content_ready" in blocker_codes
     assert "missing_wordpress_draft_write_readiness" in blocker_codes
     assert "missing_wordpress_draft_live_write_env" in blocker_codes
@@ -116,7 +116,15 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
         if requirement["code"] == "wordpress_draft_target_content_ready"
     )
     assert target_requirement["satisfied"] is False
-    assert "api_mutation_ready=false" in target_requirement["evidence"]
+    assert "draft_package_ready=true" in target_requirement["evidence"]
+    assert "human_review_ready=false" in target_requirement["evidence"]
+    package_requirement = next(
+        requirement
+        for requirement in data["requirements"]
+        if requirement["code"] == "wordpress_draft_package_ready"
+    )
+    assert package_requirement["satisfied"] is True
+    assert package_requirement["evidence"].startswith("draft_package_")
     target_blocker = next(
         blocker
         for blocker in data["blockers"]
@@ -266,17 +274,18 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     ]
     assert data["first_write_candidate"]["apply_contract"]["adapter_status"] == "implemented"
     assert "WordPress draft-only" in data["first_write_candidate_reason"]
-    assert "boundary już istnieje" in data["first_write_candidate_reason"]
+    assert "boundary i paczka szkicu" in data["first_write_candidate_reason"]
     assert any("draft-only" in step for step in data["activation_plan_steps"])
-    assert any("boundary istnieje" in step for step in data["activation_plan_steps"])
+    assert any("boundary i paczka szkicu istnieją" in step for step in data["activation_plan_steps"])
     assert any("handoff" in step for step in data["activation_plan_steps"])
-    assert any("paczkę szkicu" in step for step in data["activation_plan_steps"])
+    assert not any("Podepnij zatwierdzoną paczkę szkicu" in step for step in data["activation_plan_steps"])
     assert any("Claim Ledger" in step for step in data["activation_plan_steps"])
     assert "Adapter boundary już istnieje" in data["activation_next_step"]
     assert "zostaw adapter" not in data["activation_next_step"]
     assert data["items"][0]["response_type"] == "action_mutation_readiness"
     assert "adapter boundary" in data["operator_next_step"]
-    assert "handoffu i paczki szkicu" in data["operator_next_step"]
+    assert "boundary i paczkę szkicu" in data["operator_next_step"]
+    assert "human review i audit" in data["operator_next_step"]
     assert data["first_write_candidate"]["target_url"] in data["operator_next_step"]
 
 

@@ -136,6 +136,10 @@ Date: 2026-07-03
   current content workflow already has a draft package, while human review,
   audit, handoff and dry-run execution remain blocked; no external write is
   attempted and live write stays disabled.
+- 2026-07-03 ActionObject mutation readiness now consumes that activation
+  packet for the WordPress draft-only first write candidate. Live proof reports
+  the same work item as the packet, `wordpress_draft_package_ready=true`, no
+  `missing_wordpress_draft_package_ready` blocker, and still zero vendor writes.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

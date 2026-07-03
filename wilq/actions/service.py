@@ -99,8 +99,15 @@ from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.content.handoff.wordpress_execution import execute_content_wordpress_draft_handoff
 from wilq.content.knowledge.service_profile import content_service_profile_response
-from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
-from wilq.content.workflow.contracts import ContentWordPressDraftWriteReadinessResponse
+from wilq.content.workflow.api import (
+    build_content_wordpress_draft_activation_packet_response,
+    build_content_wordpress_draft_write_readiness_response,
+    build_content_work_item_diagnostics_snapshot_response,
+)
+from wilq.content.workflow.contracts import (
+    ContentWordPressDraftActivationPacketResponse,
+    ContentWordPressDraftWriteReadinessResponse,
+)
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
@@ -2875,6 +2882,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         _persisted_mutation_audits_for_action(action.id)
     )
     wordpress_draft_readiness = _wordpress_draft_write_readiness(action)
+    wordpress_activation_packet = _wordpress_draft_activation_packet(action)
     requirements = [
         _mutation_requirement(
             code="valid_action",
@@ -2943,8 +2951,18 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
             evidence=mutation_adapter,
         ),
     ]
-    requirements.extend(_wordpress_draft_execution_readiness_requirements(action))
-    requirements.extend(_wordpress_draft_target_content_readiness_requirements(action))
+    requirements.extend(
+        _wordpress_draft_execution_readiness_requirements(
+            action,
+            activation_packet=wordpress_activation_packet,
+        )
+    )
+    requirements.extend(
+        _wordpress_draft_target_content_readiness_requirements(
+            action,
+            activation_packet=wordpress_activation_packet,
+        )
+    )
     requirements.extend(
         _wordpress_draft_write_readiness_requirements(
             action,
@@ -2955,7 +2973,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
     vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
     ready_to_request_apply = not blockers
     apply_contract = _mutation_apply_contract(action, mutation_adapter)
-    target = _mutation_readiness_target(action)
+    target = _mutation_readiness_target(action, activation_packet=wordpress_activation_packet)
     return ActionMutationReadinessResponse(
         action_id=action.id,
         title=action.title,
@@ -2995,7 +3013,25 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
     )
 
 
-def _mutation_readiness_target(action: ActionObject) -> dict[str, str | None]:
+def _mutation_readiness_target(
+    action: ActionObject,
+    *,
+    activation_packet: ContentWordPressDraftActivationPacketResponse | None = None,
+) -> dict[str, str | None]:
+    if activation_packet is not None:
+        label_parts = [
+            part
+            for part in [
+                activation_packet.topic,
+                activation_packet.final_canonical_url,
+            ]
+            if isinstance(part, str) and part.strip()
+        ]
+        return {
+            "candidate_id": activation_packet.work_item_id,
+            "label": " | ".join(label_parts) if label_parts else activation_packet.topic,
+            "url": activation_packet.final_canonical_url,
+        }
     preview_items = _payload_preview_items(action.payload)
     first = preview_items[0] if preview_items else {}
     candidate_id = first.get("candidate_id")
@@ -3081,7 +3117,16 @@ def _first_write_candidate_reason(
         "act_apply_wordpress_draft_handoff",
         "act_prepare_wordpress_draft_handoff",
     }:
+        blocker_codes = {blocker.code for blocker in item.blockers}
         if item.mutation_adapter is not None:
+            if "missing_wordpress_draft_package_ready" not in blocker_codes:
+                return (
+                    "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
+                    "adapter boundary i paczka szkicu już istnieją, ale szkic nadal "
+                    "wymaga handoffu, human review, preview/confirm/audit i jawnie "
+                    "włączonego env live write. Publikacja i destrukcyjne zmiany są "
+                    "zablokowane."
+                )
             return (
                 "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
                 "adapter boundary już istnieje, ale szkic nadal wymaga handoffu, "
@@ -3111,12 +3156,18 @@ def _activation_plan_steps(
         steps.append("Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.")
     else:
         steps.append("Zbuduj osobny apply-capable ActionObject dla tej klasy zapisu.")
-    if item.mutation_adapter is not None:
-        steps.append(
-            "Nie dodawaj kolejnego adaptera: boundary istnieje, a live write blokują "
-            "handoff, paczka szkicu, audyt i env."
-        )
     blocker_codes = {blocker.code for blocker in item.blockers}
+    if item.mutation_adapter is not None:
+        if "missing_wordpress_draft_package_ready" in blocker_codes:
+            steps.append(
+                "Nie dodawaj kolejnego adaptera: boundary istnieje, a live write "
+                "blokują handoff, paczka szkicu, audyt i env."
+            )
+        else:
+            steps.append(
+                "Nie dodawaj kolejnego adaptera: boundary i paczka szkicu istnieją, "
+                "a live write blokują handoff, review/confirm/audit i env."
+            )
     if "missing_payload_apply_allowed" in blocker_codes:
         steps.append("Odblokuj payload apply dopiero po przejściu review i readiness.")
     if "missing_preview_audit" in blocker_codes:
@@ -3148,6 +3199,14 @@ def _activation_next_step(
         return "Brak kandydata zapisu; najpierw wybierz niskiego ryzyka klasę draft-only."
     if item.action_id == "act_apply_wordpress_draft_handoff":
         if item.mutation_adapter is not None:
+            blocker_codes = {blocker.code for blocker in item.blockers}
+            if "missing_wordpress_draft_package_ready" not in blocker_codes:
+                return (
+                    "Najbliższy krok: zapisz human review i audit dla gotowej "
+                    "paczki szkicu WordPress draft-only, potem przejdź preview/"
+                    "confirm/audit ActionObject. Adapter boundary już istnieje; "
+                    "live env/write zostaje wyłączony do jawnej decyzji."
+                )
             return (
                 "Najbliższy krok: przygotuj zatwierdzony handoff i paczkę szkicu "
                 "dla WordPress draft-only, potem przejdź preview/review/confirm/"
@@ -3273,11 +3332,52 @@ def _wordpress_draft_write_readiness(
     return build_content_wordpress_draft_write_readiness_response(action_id=action.id)
 
 
+def _wordpress_draft_activation_packet(
+    action: ActionObject,
+) -> ContentWordPressDraftActivationPacketResponse | None:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return None
+    from wilq.briefing.content_diagnostics import build_content_diagnostics
+
+    diagnostics = build_content_diagnostics(actions=[])
+    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
+    return build_content_wordpress_draft_activation_packet_response(
+        snapshot,
+        action_id=action.id,
+    )
+
+
 def _wordpress_draft_execution_readiness_requirements(
     action: ActionObject,
+    *,
+    activation_packet: ContentWordPressDraftActivationPacketResponse | None = None,
 ) -> list[ActionMutationReadinessRequirement]:
     if action.id != "act_apply_wordpress_draft_handoff":
         return []
+    if activation_packet is not None:
+        blocker_evidence = (
+            ", ".join(
+                [
+                    *activation_packet.handoff_blockers,
+                    *activation_packet.execution_blockers,
+                ]
+            )
+            or "ready"
+        )
+        return [
+            _mutation_requirement(
+                code="wordpress_draft_handoff_ready",
+                label="Zatwierdzone przekazanie do WordPress istnieje",
+                satisfied=activation_packet.handoff_ready,
+                evidence=blocker_evidence,
+            ),
+            _mutation_requirement(
+                code="wordpress_draft_package_ready",
+                label="Paczka szkicu WordPress istnieje",
+                satisfied=activation_packet.draft_package_ready,
+                evidence=activation_packet.draft_package_id or blocker_evidence,
+            ),
+        ]
     execution = execute_content_wordpress_draft_handoff(
         handoff=None,
         draft_package=None,
@@ -3305,9 +3405,26 @@ def _wordpress_draft_execution_readiness_requirements(
 
 def _wordpress_draft_target_content_readiness_requirements(
     action: ActionObject,
+    *,
+    activation_packet: ContentWordPressDraftActivationPacketResponse | None = None,
 ) -> list[ActionMutationReadinessRequirement]:
     if action.id != "act_apply_wordpress_draft_handoff":
         return []
+    if activation_packet is not None:
+        evidence_parts = [
+            f"draft_package_ready={str(activation_packet.draft_package_ready).lower()}",
+            f"human_review_ready={str(activation_packet.human_review_ready).lower()}",
+            f"audit_ready={str(activation_packet.audit_ready).lower()}",
+            f"dry_run_ready={str(activation_packet.dry_run_ready).lower()}",
+        ]
+        return [
+            _mutation_requirement(
+                code="wordpress_draft_target_content_ready",
+                label="Target treści przeszedł Claim Ledger i review szkicu",
+                satisfied=activation_packet.dry_run_ready,
+                evidence="; ".join(evidence_parts),
+            )
+        ]
     preview_items = _payload_preview_items(action.payload)
     if not preview_items:
         return [
@@ -3679,6 +3796,13 @@ def _mutation_readiness_summary_next_step(
                 if first_write_candidate.target_label
                 else ""
             )
+            if "missing_wordpress_draft_package_ready" not in first_blockers:
+                return (
+                    "Pierwszy kandydat zapisu ma adapter boundary i paczkę szkicu, "
+                    f"ale brakuje zatwierdzonego handoffu{target}. Najpierw zapisz "
+                    "human review i audit przekazania do WordPress; live write nadal "
+                    "zostaje wyłączony."
+                )
             return (
                 "Pierwszy kandydat zapisu ma adapter boundary, ale brakuje "
                 f"zatwierdzonego handoffu i paczki szkicu{target}. Najpierw przejdź "
