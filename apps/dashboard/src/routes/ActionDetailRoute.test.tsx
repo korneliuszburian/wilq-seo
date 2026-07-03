@@ -1540,6 +1540,9 @@ function mockFetch() {
     "fetch",
     vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
+      if (url.includes("/api/actions/") && url.endsWith("/mutation-readiness")) {
+        return Promise.resolve(Response.json(actionMutationReadinessFixture(url)));
+      }
       if (url.endsWith("/api/actions/act_1")) {
         return Promise.resolve(Response.json(actionFixture));
       }
@@ -1588,6 +1591,58 @@ function mockFetch() {
       return Promise.resolve(Response.json({}));
     })
   );
+}
+
+function actionMutationReadinessFixture(url: string) {
+  const actionId = decodeURIComponent(
+    url.split("/api/actions/")[1]?.replace("/mutation-readiness", "") ?? "act_1"
+  );
+  return {
+    response_type: "action_mutation_readiness",
+    contract: "action_mutation_readiness_v1",
+    action_id: actionId,
+    title: "Gotowość zapisu akcji",
+    connector: "wordpress_ekologus",
+    connector_label: "WordPress ekologus.pl",
+    mode: "prepare",
+    mode_label: "przygotowanie",
+    risk: "medium",
+    risk_label: "średnie ryzyko",
+    validation_status: "valid",
+    review_gate_status: "validated_prepare_only",
+    ready_to_request_apply: false,
+    vendor_write_possible: false,
+    would_attempt_vendor_write: false,
+    mutation_adapter: null,
+    requirements: [
+      {
+        code: "apply_mode",
+        label: "Akcja ma tryb zapisu",
+        satisfied: false,
+        evidence: "prepare"
+      }
+    ],
+    blockers: [
+      {
+        code: "missing_apply_mode",
+        label: "Akcja jest tylko prepare/review",
+        reason: "Ta akcja nie ma kontraktu zapisu do zewnętrznego systemu.",
+        next_step: "Dodaj osobny apply-capable ActionObject."
+      },
+      {
+        code: "missing_mutation_adapter",
+        label: "Brakuje adaptera zapisu",
+        reason: "WILQ nie ma jeszcze implementacji vendor write dla tej akcji.",
+        next_step: "Najpierw dodaj read-only preview i bezpieczny adapter."
+      }
+    ],
+    operator_next_step:
+      "Użyj jej do review albo dodaj osobny apply-capable ActionObject.",
+    evidence_ids: ["ev_refresh_merchant_feed"],
+    source_connectors: ["wordpress_ekologus"],
+    latest_mutation_audit_id: null,
+    latest_mutation_audit_status: null
+  };
 }
 
 describe("Action detail route", () => {
@@ -1643,6 +1698,10 @@ describe("Action detail route", () => {
     expect(screen.queryByText(/online~pl~PL~SKU-001/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/zapis zmian zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Gotowość zapisu tej akcji")).toBeInTheDocument();
+    expect(screen.getByText("write zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("Co blokuje zapis")).toBeInTheDocument();
+    expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
   });
 
   it("renders mutation audit details from API labels", async () => {

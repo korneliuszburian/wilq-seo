@@ -6,6 +6,7 @@ import {
   ActionObject,
   Evidence,
   getAction,
+  getActionMutationReadiness,
   getEvidenceById,
   getOpportunities,
   Opportunity
@@ -25,11 +26,24 @@ export function ActionDetailSurface({ actionId }: { actionId: string }) {
     queryKey: ["actions", actionId],
     queryFn: () => getAction(actionId)
   });
+  const mutationReadiness = useQuery({
+    queryKey: ["actions", actionId, "mutation-readiness"],
+    queryFn: () => getActionMutationReadiness(actionId)
+  });
 
   if (action.isLoading) return <LoadingBand />;
   if (action.error) return <ErrorState />;
 
-  if (action.data) return <ActionDetail action={action.data} />;
+  if (action.data) {
+    return (
+      <ActionDetail
+        action={action.data}
+        mutationReadiness={mutationReadiness.data}
+        mutationReadinessError={mutationReadiness.error}
+        mutationReadinessLoading={mutationReadiness.isLoading}
+      />
+    );
+  }
   return <ErrorState />;
 }
 
@@ -44,7 +58,17 @@ export function OpportunityDetailSurface({ opportunityId }: { opportunityId: str
   return <ErrorState />;
 }
 
-function ActionDetail({ action }: { action: ActionObject }) {
+function ActionDetail({
+  action,
+  mutationReadiness,
+  mutationReadinessError,
+  mutationReadinessLoading
+}: {
+  action: ActionObject;
+  mutationReadiness: Awaited<ReturnType<typeof getActionMutationReadiness>> | undefined;
+  mutationReadinessError: unknown;
+  mutationReadinessLoading: boolean;
+}) {
   const visibleAuditEvents = action.audit_events.slice(0, 6);
   const hiddenAuditEventCount = Math.max(0, action.audit_events.length - visibleAuditEvents.length);
 
@@ -67,6 +91,11 @@ function ActionDetail({ action }: { action: ActionObject }) {
         <ActionPreviewControls action={action} />
         <ActionValidationControls action={action} />
       </section>
+      <ActionMutationReadinessPanel
+        loading={mutationReadinessLoading}
+        error={mutationReadinessError}
+        readiness={mutationReadiness}
+      />
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podgląd zmian" />
         <ActionChangePreviewSummary action={action} />
@@ -104,6 +133,84 @@ function ActionDetail({ action }: { action: ActionObject }) {
         )}
       </section>
     </main>
+  );
+}
+
+function ActionMutationReadinessPanel({
+  loading,
+  error,
+  readiness
+}: {
+  loading: boolean;
+  error: unknown;
+  readiness: Awaited<ReturnType<typeof getActionMutationReadiness>> | undefined;
+}) {
+  if (loading) {
+    return (
+      <section className="mt-6 rounded-md border border-line bg-white p-4">
+        <SectionHeading title="Gotowość zapisu tej akcji" />
+        <p className="text-sm leading-6 text-slate-600">
+          WILQ sprawdza tryb, dowody, preview, confirm, impact check i adapter zapisu.
+        </p>
+      </section>
+    );
+  }
+  if (error || !readiness) {
+    return (
+      <section className="mt-6 rounded-md border border-wait/30 bg-wait/10 p-4">
+        <SectionHeading title="Gotowość zapisu tej akcji" />
+        <p className="text-sm leading-6 text-slate-700">
+          Nie udało się pobrać readiness zapisu. Nie traktuj tej akcji jako gotowej do zmian.
+        </p>
+      </section>
+    );
+  }
+  const blockerLabels = readiness.blockers.slice(0, 6).map((blocker) => blocker.label);
+  return (
+    <section className="mt-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <SectionHeading title="Gotowość zapisu tej akcji" />
+          <p className="text-sm leading-6 text-slate-700">
+            {readiness.operator_next_step}
+          </p>
+        </div>
+        <StatusBadge
+          value={readiness.vendor_write_possible ? "ready" : "blocked"}
+          label={readiness.vendor_write_possible ? "write możliwy" : "write zablokowany"}
+        />
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <ReadinessTile label="Tryb" value={readiness.mode_label} />
+        <ReadinessTile
+          label="Adapter"
+          value={readiness.mutation_adapter ?? "brak adaptera"}
+        />
+        <ReadinessTile
+          label="Próba zapisu"
+          value={readiness.would_attempt_vendor_write ? "możliwa po confirm" : "nie"}
+        />
+      </div>
+      {blockerLabels.length > 0 ? (
+        <div className="mt-4 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+          <div className="font-semibold text-ink">Co blokuje zapis</div>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {blockerLabels.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ReadinessTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3 text-sm">
+      <div className="text-xs font-medium uppercase tracking-normal text-slate-500">{label}</div>
+      <div className="mt-1 font-semibold text-ink">{value}</div>
+    </div>
   );
 }
 

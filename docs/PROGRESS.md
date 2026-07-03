@@ -75,6 +75,11 @@ Date: 2026-07-03
   readiness beside WordPress authoring readiness. Operators can see env write
   disabled, REST readiness, required audit events and blockers before any
   draft-only write path is considered; no write/publish control was enabled.
+- 2026-07-03 action detail pages now consume
+  `/api/actions/{action_id}/mutation-readiness` and show per-action write
+  readiness in Polish: write blocked/possible state, mode, adapter, attempted
+  write state and top blockers. This keeps the WordPress draft candidate
+  understandable after clicking through from `/actions`.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
