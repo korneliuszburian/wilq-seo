@@ -121,6 +121,10 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
         "content_work_item_content_decision_https___www_ekologus_pl"
         in card
     )
+    assert "Temat rozmowy: SEO: odśwież lub scal \"ekologus\"" in card
+    assert "URL / miejsce w serwisie: https://www.ekologus.pl/" in card
+    assert "Decyzja contentowa WILQ: odśwież istniejącą treść" in card
+    assert "Techniczny work item do JSON" in card
     assert "renamed_public_service_bdo_review" in card
     assert "Sprawdź kartę BDO" in card
     assert "Możliwe decyzje: zatwierdź do dalszego użycia" in card
@@ -635,7 +639,13 @@ def _live_context() -> dict[str, object]:
             "candidates": [
                 {
                     "work_item_id": "content_work_item_content_decision_https___www_ekologus_pl",
+                    "title": "SEO: odśwież lub scal \"ekologus\"",
+                    "topic": "ekologus",
                     "recommended_mode": "refresh",
+                    "recommended_mode_label": "odśwież istniejącą treść",
+                    "final_canonical_url": "https://www.ekologus.pl/",
+                    "reason": "GSC pokazuje wyświetlenia bez kliknięć.",
+                    "safe_next_step": "Przygotuj plan odświeżenia strony.",
                     "evidence_ids": ["ev_gsc", "ev_wp"],
                     "source_connectors": [
                         "google_search_console",

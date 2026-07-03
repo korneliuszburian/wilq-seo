@@ -178,6 +178,10 @@ Date: 2026-07-03
   into normal Polish for Wilku. Raw values such as `approve/needs_changes/stale/reject`
   stay only in the technical JSON proof hint, while the visible review section
   says "zatwierdź", "wróć z poprawkami", "oznacz jako nieaktualne" or "odrzuć".
+- 2026-07-03 the Goal 005 session card now leads with the human content
+  candidate from live WILQ API: title/topic, URL, content decision, reason and
+  safe next step. The raw `work_item_id` is still present only as the technical
+  JSON proof value.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

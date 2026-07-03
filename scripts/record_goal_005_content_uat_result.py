@@ -236,7 +236,17 @@ def render_content_uat_session_card(
         "",
         "## Aktualny status WILQ",
         "",
-        f"- Work item do rozmowy: `{selected_work_item}`",
+        "- Temat rozmowy: "
+        f"{selected_content_candidate_title(provenance)}",
+        "- URL / miejsce w serwisie: "
+        f"{selected_content_candidate_url(provenance)}",
+        "- Decyzja contentowa WILQ: "
+        f"{selected_content_candidate_mode(provenance)}",
+        "- Dlaczego ten temat: "
+        f"{selected_content_candidate_reason(provenance)}",
+        "- Bezpieczny następny krok: "
+        f"{selected_content_candidate_next_step(provenance)}",
+        f"- Techniczny work item do JSON: `{selected_work_item}`",
         "- Kolejka content: "
         f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
         "- Service Profile production-depth: "
@@ -783,7 +793,15 @@ def live_uat_provenance(
         "candidate_count": queue.get("candidate_count"),
         "actionable_candidate_count": queue.get("actionable_candidate_count"),
         "selected_work_item_found": bool(selected),
+        "selected_title": selected.get("title"),
+        "selected_topic": selected.get("topic"),
+        "selected_url": selected.get("final_canonical_url")
+        or selected.get("intended_final_url")
+        or selected.get("source_public_url"),
         "selected_recommended_mode": selected.get("recommended_mode"),
+        "selected_recommended_mode_label": selected.get("recommended_mode_label"),
+        "selected_reason": selected.get("reason"),
+        "selected_safe_next_step": selected.get("safe_next_step"),
         "selected_evidence_ids": selected.get("evidence_ids") or [],
         "selected_source_connectors": selected.get("source_connectors") or [],
         "selected_sales_brief_status": selected_sales_brief_trace.get("status"),
@@ -907,6 +925,30 @@ def first_service_profile_review_decision_options_label(value: dict[str, Any]) -
     options = value.get("first_service_profile_review_decision_options") or []
     labels = [REVIEW_DECISION_OPTION_LABELS.get(str(option), str(option)) for option in options]
     return "; ".join(labels) or "brak opcji z live packet"
+
+
+def selected_content_candidate_title(value: dict[str, Any]) -> str:
+    return str(value.get("selected_title") or value.get("selected_topic") or "brak live tytułu")
+
+
+def selected_content_candidate_url(value: dict[str, Any]) -> str:
+    return str(value.get("selected_url") or "brak live URL")
+
+
+def selected_content_candidate_mode(value: dict[str, Any]) -> str:
+    return str(
+        value.get("selected_recommended_mode_label")
+        or value.get("selected_recommended_mode")
+        or "brak live decyzji"
+    )
+
+
+def selected_content_candidate_reason(value: dict[str, Any]) -> str:
+    return str(value.get("selected_reason") or "brak live uzasadnienia")
+
+
+def selected_content_candidate_next_step(value: dict[str, Any]) -> str:
+    return str(value.get("selected_safe_next_step") or "brak live następnego kroku")
 
 
 def humanize_review_decision_text(value: Any) -> str | None:
