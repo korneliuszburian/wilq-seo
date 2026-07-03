@@ -259,6 +259,11 @@ Date: 2026-07-03
   IDs inside the visible pre-demo decision queue. It renders human review type,
   target title and decision options, with source/evidence titles translated to
   Polish operator language.
+- 2026-07-03 the two primary Wilku handoff docs now use Polish-first operator
+  wording for remaining visible jargon: "wiedza zatwierdzona do finalnych
+  treści", "decyzje do oceny", "identyfikatory dowodów", "plik dowodowy",
+  "bramka przed pokazaniem" and "test jakości". Raw JSON enum values and
+  script flags remain only in technical command/proof sections.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must

@@ -10,7 +10,7 @@ Powiedz prosto:
 
 > Chcę Ci pokazać, co WILQ już rozumie o Ekologusie, czego jeszcze nie rozumie
 > i dlaczego blokuje pisanie finalnych treści. To nie jest prezentacja gotowego
-> generatora. To jest review systemu decyzyjnego.
+> generatora. To jest ocena systemu decyzyjnego.
 
 Najpierw pokaż tylko trzy rzeczy:
 
@@ -19,9 +19,9 @@ Najpierw pokaż tylko trzy rzeczy:
 3. decyzję, której potrzebujemy od Wilka: co zatwierdzić, co poprawić, co
    odrzucić.
 
-Resztę, czyli action ID, evidence ID, eval artifact i nazwy endpointów, trzymaj
-pod spodem jako dowód techniczny. Wilku ma najpierw zrozumieć decyzję, nie
-architekturę.
+Resztę, czyli identyfikatory akcji, identyfikatory dowodów, artefakty ewaluacji
+i nazwy endpointów, trzymaj pod spodem jako dowód techniczny. Wilku ma
+najpierw zrozumieć decyzję, nie architekturę.
 
 ## Co pokazać
 
@@ -30,32 +30,33 @@ architekturę.
 Powiedz:
 
 > WILQ ma już działające bramki przed demo. Sprawdza, czy dashboard pokazuje
-> decyzje z dowodami, czy wiedza Ekologus nie jest udawana jako production-depth,
-> czy Claim Ledger blokuje ryzykowne twierdzenia i czy skille mają evale.
-> Nadal nie zamykamy Goal 005, bo brakuje realnej sesji UAT albo świadomego
-> owner-defer.
+> decyzje z dowodami, czy wiedza Ekologus nie jest udawana jako gotowa do
+> finalnych treści, czy Claim Ledger blokuje ryzykowne twierdzenia i czy
+> umiejętności WILQ mają testy jakości. Nadal nie zamykamy Goal 005, bo brakuje
+> realnej rozmowy z Wilkiem albo świadomej decyzji właściciela o odroczeniu.
 
 Najkrótszy stan:
 
-- dashboard usefulness: 13 powierzchni `demo_ready`, 2 `review_ready`
-  (Demand Gen i social), 0 zablokowanych;
+- użyteczność dashboardu: 13 powierzchni gotowych do pokazania, 2 gotowe do
+  oceny (Demand Gen i social), 0 zablokowanych;
 - `/content-workflow` ma też sprawdzony authoring WordPress/ACF:
   REST `configured`, WP-CLI `configured`, 21 sekcji ACF rozpoznanych,
   zapis i publikacja zablokowane;
 - wiedza Ekologus: 14 faktów ze źródeł, 5 prywatnych propozycji `ekologus-ai`,
-  14 akcji review, 0% wiedzy zatwierdzonej do finalnych treści, wszystko nadal
+  14 decyzji do oceny, 0% wiedzy zatwierdzonej do finalnych treści, wszystko nadal
   wymaga człowieka;
 - Claim Ledger: 13/13 checków, model nie może oznaczyć treści jako gotowej do
   publikacji;
 - testy umiejętności: 13/13 workflowów operatorskich przeszło smoke i
-  non-interactive Codex eval z WILQ API;
+  nieinteraktywny test Codexa z WILQ API;
 - poranna komenda WILQ musi już odpowiedzieć po ludzku: co zrobić najpierw,
   dlaczego teraz, z jakimi dowodami, co jest zablokowane i jaki jest następny
   bezpieczny krok;
-- social: WILQ może przygotować kierunki LinkedIn/Facebook do review, ale nie
+- social: WILQ może przygotować kierunki LinkedIn/Facebook do oceny, ale nie
   może obiecać, że temat jest nowy albo niepowielony, dopóki nie ma historii
-  postów jako metadata-only;
-- completion guard nadal blokuje: nie wolno mówić, że Goal 005 jest domknięty.
+  postów w formie samych metadanych;
+- bramka ukończenia nadal blokuje: nie wolno mówić, że Goal 005 jest
+  domknięty.
 
 Zapytaj:
 
@@ -64,14 +65,14 @@ Zapytaj:
 3. Którą część chcesz zobaczyć jako pierwszą: wiedzę usług, treści, Ads/GA4,
    czy social/history?
 
-### Najbliższe decyzje review w Service Profile
+### Najbliższe decyzje do oceny w Service Profile
 
 Powiedz:
 
 > WILQ nie zatwierdza sam wiedzy z `ekologus-ai`. Robi z niej kolejkę decyzji
 > dla człowieka. Live kolejka zaczyna od publicznej karty BDO, bo to najprostszy
 > test źródła, claimów i języka usługi. Potem warto przejść przez prywatne
-> policy/proposals, bo od nich zależy, czy system będzie mógł robić mniej
+> polityki i propozycje, bo od nich zależy, czy system będzie mógł robić mniej
 > generyczne briefy i bezpieczniejsze treści.
 
 Pokaż kolejkę bez technicznych ID w pierwszym widoku:
@@ -88,7 +89,7 @@ Pokaż kolejkę bez technicznych ID w pierwszym widoku:
    - typ: prywatna propozycja polityki twierdzeń;
    - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
      odrzuć.
-4. Source trace i evidence pack
+4. Ślad źródłowy i pakiet dowodów
    - typ: prywatna propozycja wymagań dowodowych;
    - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
      odrzuć.
@@ -101,8 +102,9 @@ Pokaż kolejkę bez technicznych ID w pierwszym widoku:
    - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo
      odrzuć.
 
-Techniczne action IDs zostaw pod spodem dopiero przy zapisie JSON proof. W
-rozmowie najpierw pytamy o prawdziwość, język i ryzyko, nie o identyfikatory.
+Techniczne identyfikatory akcji zostaw pod spodem dopiero przy zapisie pliku
+dowodowego. W rozmowie najpierw pytamy o prawdziwość, język i ryzyko, nie o
+identyfikatory.
 
 Mini-checklista odpowiedzi Wilka:
 
@@ -129,16 +131,16 @@ Powiedz:
 Podział:
 
 - Daily, Ads, Merchant, GA4, GSC, Ahrefs, Localo, Content Strategist, Campaign
-  Builder i Custom Segments są gotowe jako review-operacje;
+  Builder i Custom Segments są gotowe jako operacje do oceny;
 - Content Operator blokuje finalną treść, dopóki nie ma Service Profile, Claim
-  Ledger, human review i measurement window;
-- Content Operator potrafi już pokazać podgląd WordPress/ACF jako dry-run:
+  Ledger, oceny człowieka i okna pomiarowego;
+- Content Operator potrafi już pokazać podgląd WordPress/ACF bez zapisu:
   8 propozycji wierszy `elementy`, pierwsza do ręcznego przeglądu, pola
   `tresc`, `opis`, `podtytul`, `tytul`, bez publikacji i bez zapisu;
 - Demand Gen blokuje rekomendację, bo WILQ widzi 18 kampanii Ads, ale 0
   kampanii Demand Gen, reklam, kreacji i stron wejścia DG;
 - Social Publisher blokuje publikację i "brak powtórek", bo brakuje
-  credentiali oraz historii LinkedIn/Facebook jako metadata-only.
+  dostępów oraz historii LinkedIn/Facebook w formie samych metadanych.
 
 Zapytaj:
 
@@ -151,7 +153,7 @@ Zapytaj:
 Pokaż:
 
 - dashboard `/command-center`
-- eval proof:
+- dowód techniczny testu:
   `.local-lab/evals/codex-skill/20260702T150140Z/wilq-daily-command/result.json`
 
 Powiedz:
@@ -159,7 +161,7 @@ Powiedz:
 > To jest najbliższe temu, co BDOS robi rano. WILQ nie tylko pokazuje kafelki.
 > Ma powiedzieć: co zrobić najpierw, dlaczego teraz, na jakich dowodach, czego
 > nie wolno obiecać i jaka akcja jest bezpieczna do sprawdzenia. W aktualnym
-> proofie najpierw wskazuje Merchant, bo tak wynika z `daily_decisions` i
+> dowodzie technicznym najpierw wskazuje Merchant, bo tak wynika z `daily_decisions` i
 > `primary_next_step`.
 
 Zapytaj:
@@ -187,7 +189,7 @@ Zapytaj:
 1. Czy ten model pracy ma sens dla marketingu Ekologus?
 2. Czy bardziej wartościowa jest sama generacja tekstu, czy decyzja: co wolno,
    czego nie wolno i co ma największy sens?
-3. Jakie historyczne posty LinkedIn/Facebook możemy dodać jako metadata-only,
+3. Jakie historyczne posty LinkedIn/Facebook możemy dodać jako same metadane,
    żeby WILQ nie powielał tematów?
 
 Powiedz też:
@@ -195,8 +197,8 @@ Powiedz też:
 > Dla sociala WILQ ma już twardą blokadę: bez historii postów LinkedIn/Facebook
 > nie może powiedzieć, że temat jest nowy albo że nie powielamy wcześniejszej
 > komunikacji. Na start wystarczą metadane: kanał, data, temat, usługa, claim,
-> CTA, format, URL albo ID posta i źródło dowodu. Nie potrzebujemy raw treści
-> postów ani komentarzy, żeby zbudować pierwszy dedupe contract.
+> CTA, format, URL albo ID posta i źródło dowodu. Nie potrzebujemy pełnych treści
+> postów ani komentarzy, żeby zbudować pierwszą kontrolę powtórek.
 
 ### 2. Aktualny stan WILQ
 
@@ -215,8 +217,8 @@ Powiedz:
 Zapytaj:
 
 1. Czy rozumiesz, czemu WILQ jeszcze nie powinien pisać finalnej treści?
-2. Czy blocker `Brakuje karty usługi; Brakuje karty CTA` jest jasny?
-3. Czy rozdział na dozwolone, wymagające review i zablokowane twierdzenia jest
+2. Czy blokada `Brakuje karty usługi; Brakuje karty CTA` jest jasna?
+3. Czy rozdział na dozwolone, wymagające oceny i zablokowane twierdzenia jest
    użyteczny?
 4. Czy to brzmi jak sensowna kontrola jakości, czy jak techniczny bełkot?
 
@@ -228,7 +230,7 @@ Pokaż:
 
 Powiedz:
 
-> To jest przykład tematu, który wygląda sensownie do pierwszego review:
+> To jest przykład tematu, który wygląda sensownie do pierwszej oceny:
 > BDO i sprawozdawczość. Chcę sprawdzić, czy język, ryzyka i CTA brzmią jak
 > Ekologus.
 
@@ -274,12 +276,12 @@ Powiedz:
 Zapytaj:
 
 1. Czy "konkretnie, spokojnie i ekspercko" dobrze opisuje język Ekologus?
-2. Czy blokować straszenie karami bez aktualnego review prawnego?
+2. Czy blokować straszenie karami bez aktualnej oceny prawnej?
 3. Czy claimy o WIOŚ, kontrolach, karach i decyzjach zawsze mają wymagać
    człowieka?
 4. Jakich sformułowań WILQ ma nigdy nie używać?
 
-### 6. Evale i pre-demo gate
+### 6. Testy jakości i bramka przed pokazaniem
 
 Pokaż wynik komendy, jeśli chcesz mieć dowód techniczny:
 
@@ -289,14 +291,15 @@ rtk scripts/pre_demo_gate.sh --skip-dashboard --skip-shared-schema --no-skills
 
 Powiedz:
 
-> To jest nasz minimalny gate przed pokazaniem. Nie sprawdza tylko, czy coś się
+> To jest nasza minimalna bramka przed pokazaniem. Nie sprawdza tylko, czy coś się
 > odpala. Sprawdza też, czy wiedza nie udaje zatwierdzonej, czy Claim Ledger
-> nadal blokuje ryzykowne twierdzenia i czy wszystkie skille mają evale.
+> nadal blokuje ryzykowne twierdzenia i czy wszystkie umiejętności mają testy
+> jakości.
 
 Zapytaj:
 
-1. Czy taki gate wystarcza jako checkpoint przed pokazaniem kolejnych wersji?
-2. Czy do gate’a dodać jeszcze coś, co z Twojej perspektywy łapie realne ryzyko
+1. Czy taka bramka wystarcza jako checkpoint przed pokazaniem kolejnych wersji?
+2. Czy dodać jeszcze coś, co z Twojej perspektywy łapie realne ryzyko
    marketingowe?
 
 ## Najważniejsze dwa pytania
@@ -313,13 +316,13 @@ Nie mów:
 
 - że Goal 005 jest ukończony;
 - że WILQ jest gotowy do finalnych draftów;
-- że mamy production-depth wiedzę Ekologus;
+- że mamy wiedzę Ekologus zatwierdzoną do finalnych treści;
 - że `ekologus-ai` jest automatycznie zatwierdzoną bazą wiedzy;
-- że WILQ może publikować albo pisać bez review człowieka.
+- że WILQ może publikować albo pisać bez oceny człowieka.
 
 Powiedz zamiast tego:
 
-> Mamy działający system review, źródeł, blokad i pytań do człowieka. Teraz
+> Mamy działający system oceny, źródeł, blokad i pytań do człowieka. Teraz
 > potrzebujemy Twojej opinii, żeby zdecydować, które kierunki można zatwierdzić,
 > które poprawić, a których nie używać.
 
