@@ -93,6 +93,14 @@ REVIEW_SCOPE_LABELS = {
     "private_evidence_policy_proposal": "prywatna propozycja wymagań dowodowych",
     "private_service_proposal": "prywatna propozycja usługi",
 }
+SOURCE_SCOPE_LABELS = {
+    "service": "usługa",
+    "buyer_problem": "problem kupującego",
+    "cta": "CTA",
+    "claim_policy": "polityka twierdzeń",
+    "evidence_requirement": "wymóg dowodowy",
+    "metric_signal": "sygnał metryczny",
+}
 REVIEW_REQUIRED_FIELD_LABELS = {
     "action_id": "którą decyzję zapisujemy",
     "target_card_id": "której karty dotyczy decyzja",
@@ -307,6 +315,7 @@ def render_content_uat_session_card(
         "",
         *[f"- {review_artifact_label(artifact)}" for artifact in artifacts],
         "",
+        *private_source_trace_lines(provenance),
         "## Pytania do Wilka",
         "",
         "- Czy rozumiesz, czemu pełny test treści jest jeszcze zablokowany?",
@@ -903,6 +912,10 @@ def live_uat_provenance(
     private_review_value: dict[str, Any] = (
         raw_private_review_value if isinstance(raw_private_review_value, dict) else {}
     )
+    raw_source_fact_coverage = service_profile.get("source_fact_coverage")
+    source_fact_coverage: dict[str, Any] = (
+        raw_source_fact_coverage if isinstance(raw_source_fact_coverage, dict) else {}
+    )
     raw_sales_brief_traces = live_context.get("sales_brief_traces")
     sales_brief_traces: dict[str, Any] = (
         raw_sales_brief_traces if isinstance(raw_sales_brief_traces, dict) else {}
@@ -1044,6 +1057,9 @@ def live_uat_provenance(
             for question in raw_list_payload(private_review_value.get("review_questions"))
             if str(question).strip()
         ],
+        "private_source_trace_items": private_source_trace_items_from_queue(
+            raw_list_payload(source_fact_coverage.get("private_review_queue"))
+        ),
     }
 
 
@@ -1205,6 +1221,8 @@ def render_live_provenance(value: Any) -> str:
             f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
             "- Pytania do prywatnych propozycji: "
             f"{private_review_questions_label(value)}",
+            "- Prywatny ślad źródłowy do pokazania: "
+            f"{private_source_trace_items_label(value)}",
         ]
     )
 
@@ -1222,6 +1240,24 @@ def private_review_question_lines(value: Any) -> list[str]:
     return [
         "- Prywatna wiedza / ekologus-ai:",
         *[f"  - {question}" for question in questions],
+    ]
+
+
+def private_source_trace_lines(value: Any) -> list[str]:
+    if not isinstance(value, dict):
+        return []
+    items = [
+        item
+        for item in raw_list_payload(value.get("private_source_trace_items"))
+        if isinstance(item, dict)
+    ]
+    if not items:
+        return []
+    return [
+        "## Prywatny ślad źródłowy do pokazania",
+        "",
+        *[f"- {private_source_trace_item_label(item)}" for item in items[:3]],
+        "",
     ]
 
 
@@ -1283,6 +1319,102 @@ def private_review_questions_label(value: dict[str, Any]) -> str:
         if str(question).strip()
     ]
     return "; ".join(questions) or "brak"
+
+
+def private_source_trace_items_label(value: dict[str, Any]) -> str:
+    items = [
+        item
+        for item in raw_list_payload(value.get("private_source_trace_items"))
+        if isinstance(item, dict)
+    ]
+    return "; ".join(private_source_trace_item_label(item) for item in items[:3]) or "brak"
+
+
+def private_source_trace_items_from_queue(queue: list[Any]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for raw_item in queue[:5]:
+        item = raw_item if isinstance(raw_item, dict) else {}
+        target = str(item.get("target_card_title") or "").strip()
+        if not target:
+            continue
+        items.append(
+            {
+                "target": private_trace_operator_text(target),
+                "scope": REVIEW_SCOPE_LABELS.get(
+                    str(item.get("scope") or ""),
+                    SOURCE_SCOPE_LABELS.get(
+                        str(item.get("scope") or ""),
+                        str(item.get("scope") or "brak"),
+                    ),
+                ),
+                "source_blocks": [
+                    str(value).strip()
+                    for value in raw_list_payload(item.get("source_block_refs"))
+                    if str(value).strip()
+                ],
+                "eval_cases": [
+                    str(value).strip()
+                    for value in raw_list_payload(item.get("eval_case_ids"))
+                    if str(value).strip()
+                ],
+                "retention": private_retention_label(item.get("retention_decision")),
+                "redacted": item.get("redacted") is True,
+                "trace_ready": item.get("source_trace_ready") is True,
+                "safe_next_step": humanize_review_decision_text(
+                    private_trace_operator_text(str(item.get("safe_next_step") or ""))
+                ),
+            }
+        )
+    return items
+
+
+def private_retention_label(value: Any) -> str:
+    raw = str(value or "")
+    return {
+        "pending_owner_decision": "decyzja właściciela wymagana",
+        "retain_while_source_approved": "utrzymuj tylko dopóki źródło jest zatwierdzone",
+        "short_window_only": "krótkie okno retencji",
+        "do_not_retain": "nie utrzymuj",
+    }.get(raw, raw or "brak")
+
+
+def private_trace_operator_text(value: str) -> str:
+    return (
+        value.replace("claim policy", "polityka twierdzeń")
+        .replace("Source trace", "Ślad źródłowy")
+        .replace("source trace", "ślad źródłowy")
+        .replace("evidence pack", "pakiet dowodów")
+        .replace("reviewed źródeł", "ocenionych źródeł")
+        .replace("reviewed source", "ocenione źródło")
+        .replace("review", "ocena")
+        .replace("production-depth", "wiedza do finalnych treści")
+        .replace("redacted source fact", "zredagowany fakt źródłowy")
+    )
+
+
+def private_source_trace_item_label(value: dict[str, Any]) -> str:
+    source_blocks = ", ".join(raw_string_list(value.get("source_blocks"))) or "brak"
+    eval_cases = ", ".join(raw_string_list(value.get("eval_cases"))) or "brak"
+    redacted = "zredagowane" if value.get("redacted") is True else "wymaga redakcji"
+    trace_ready = "trace gotowy" if value.get("trace_ready") is True else "trace niepełny"
+    parts = [
+        str(value.get("target") or "brak"),
+        str(value.get("scope") or "brak"),
+        f"źródło: {source_blocks}",
+        f"eval: {eval_cases}",
+        str(value.get("retention") or "brak"),
+        redacted,
+        trace_ready,
+    ]
+    return " / ".join(parts)
+
+
+def raw_string_list(value: Any) -> list[str]:
+    return [
+        str(item).strip()
+        for item in raw_list_payload(value)
+        if str(item).strip()
+    ]
 
 
 def sales_brief_review_question_lines(value: dict[str, Any]) -> list[str]:

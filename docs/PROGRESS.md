@@ -60,6 +60,10 @@ Date: 2026-07-04
 - 2026-07-04 Service Profile review recorder/session card now uses Polish
   operator labels for private proposal review (`polityka twierdzeń`, `Ślad
   źródłowy`, `bramki ewaluacji`) while keeping JSON field names stable.
+- 2026-07-04 Goal 005 content UAT session card and recorded UAT provenance now
+  render metadata-only private source trace items from live Service Profile:
+  Polish scope labels, source blocks, eval gates, retention/redaction and
+  trace-ready state, without exposing raw private `ekologus-ai` text.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

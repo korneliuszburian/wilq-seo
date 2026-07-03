@@ -219,6 +219,16 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Czy powód jakości sygnału jest zrozumiały" in card
     assert "Czy następny krok briefu jest właściwy" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
+    assert "## Prywatny ślad źródłowy do pokazania" in card
+    assert "Bezpieczeństwo prawne, poufność i zgody" in card
+    assert "źródło: KB_021_BEZPIECZENSTWO_PRAWNE" in card
+    assert (
+        "eval: goal_005_private_claim_policy_review, goal_006_claim_ledger_gate"
+        in card
+    )
+    assert "decyzja właściciela wymagana" in card
+    assert "zredagowane" in card
+    assert "trace gotowy" in card
     assert "Prywatna wiedza / ekologus-ai:" in card
     assert (
         "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?"
@@ -325,6 +335,21 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert provenance["private_service_review_action_count"] == 1
     assert provenance["private_policy_review_action_count"] == 0
     assert provenance["private_proposal_promotion_ready"] is False
+    assert provenance["private_source_trace_items"] == [
+        {
+            "target": "Bezpieczeństwo prawne, poufność i zgody",
+            "scope": "polityka twierdzeń",
+            "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+            "eval_cases": [
+                "goal_005_private_claim_policy_review",
+                "goal_006_claim_ledger_gate",
+            ],
+            "retention": "decyzja właściciela wymagana",
+            "redacted": True,
+            "trace_ready": True,
+            "safe_next_step": "Pokaż Wilkowi ślad źródłowy bez raw private text.",
+        }
+    ]
 
     markdown = render_markdown(report)
     assert "## Ślad danych do rozmowy" in markdown
@@ -337,6 +362,11 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         in markdown
     )
     assert "Publiczne decyzje oceny kart usług: `1`" in markdown
+    assert (
+        "Prywatny ślad źródłowy do pokazania: "
+        "Bezpieczeństwo prawne, poufność i zgody"
+        in markdown
+    )
     assert "Pierwszy Service Profile review" in markdown
     assert "renamed_public_service_bdo_review" in markdown
     assert "Wymagane pola pierwszego review: action_id, source_trace_clear" in markdown
@@ -774,6 +804,27 @@ def _live_context() -> dict[str, object]:
                 ),
             },
             "private_source_proposal_summary": {"promotion_ready": False},
+            "source_fact_coverage": {
+                "private_review_queue": [
+                    {
+                        "target_card_title": (
+                            "Bezpieczeństwo prawne, poufność i zgody"
+                        ),
+                        "scope": "claim_policy",
+                        "source_block_refs": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+                        "eval_case_ids": [
+                            "goal_005_private_claim_policy_review",
+                            "goal_006_claim_ledger_gate",
+                        ],
+                        "retention_decision": "pending_owner_decision",
+                        "redacted": True,
+                        "source_trace_ready": True,
+                        "safe_next_step": (
+                            "Pokaż Wilkowi source trace bez raw private text."
+                        ),
+                    }
+                ]
+            },
             "private_review_value": {
                 "review_questions": [
                     (
