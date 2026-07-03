@@ -453,6 +453,8 @@ PY
   if ! timeout "$timeout_s" codex "${codex_args[@]}" - <"$prompt_file" >"$jsonl_file" 2>"$stderr_file"; then
     echo "Codex eval failed for $skill. Stderr tail:" >&2
     tail -n 80 "$stderr_file" >&2 || true
+    echo "Codex eval failed for $skill. Trace tail:" >&2
+    tail -n 80 "$jsonl_file" >&2 || true
     exit 1
   fi
 

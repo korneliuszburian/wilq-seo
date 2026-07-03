@@ -78,6 +78,8 @@ def test_codex_skill_eval_harness_validates_hard_gates_independently_of_score() 
     assert "failure_tags must be empty when all hard gates pass" in harness
     assert "failure_tags must not contain duplicates" in harness
     assert "eval_rubric.evaluator_type must be deterministic_pass_fail" in harness
+    assert "Trace tail" in harness
+    assert 'tail -n 80 "$jsonl_file"' in harness
 
 
 def test_codex_skill_eval_harness_defaults_to_score_five() -> None:
