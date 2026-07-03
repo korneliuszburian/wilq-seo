@@ -69,33 +69,37 @@ Zapytaj:
 Powiedz:
 
 > WILQ nie zatwierdza sam wiedzy z `ekologus-ai`. Robi z niej kolejkę decyzji
-> dla człowieka. Najpierw warto przejrzeć te pięć rzeczy, bo od nich zależy,
-> czy system będzie mógł robić mniej generyczne briefy i bezpieczniejsze
-> treści.
+> dla człowieka. Live kolejka zaczyna od publicznej karty BDO, bo to najprostszy
+> test źródła, claimów i języka usługi. Potem warto przejść przez prywatne
+> policy/proposals, bo od nich zależy, czy system będzie mógł robić mniej
+> generyczne briefy i bezpieczniejsze treści.
 
 Pokaż kolejkę:
 
-1. `service_profile_review_private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
+1. `service_profile_review_card_ekologus_service_bdo_reporting`
+   - zakres: BDO i sprawozdawczość środowiskowa;
+   - typ: public service card;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+2. `service_profile_review_private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
    - zakres: bezpieczeństwo prawne, poufność, zgody;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-2. `service_profile_review_private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
+3. `service_profile_review_private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
    - zakres: styl marki i claim policy Ekologus;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-3. `service_profile_review_private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02`
+4. `service_profile_review_private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02`
    - zakres: source trace i evidence pack dla prywatnych/reviewed źródeł;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-4. `service_profile_review_private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01`
+5. `service_profile_review_private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01`
    - zakres: Audyt zgodności środowiskowej;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-5. `service_profile_review_card_ekologus_service_bdo_reporting`
-   - zakres: BDO i sprawozdawczość środowiskowa;
+6. `service_profile_review_private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`
+   - zakres: Eko-Opieka i Eko Kalendarz;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
 
 Zapytaj:
 
 1. Czy te nazwy decyzji są zrozumiałe?
-2. Czy najpierw sprawdzamy politykę claimów i bezpieczeństwo, czy konkretną
-   usługę BDO?
+2. Czy BDO jest dobrym pierwszym testem publicznej karty usługi?
 3. Co musi się zmienić, żeby którąkolwiek z tych kart można było zatwierdzić?
 
 ### Co znaczy, że 13 umiejętności przeszło testy
