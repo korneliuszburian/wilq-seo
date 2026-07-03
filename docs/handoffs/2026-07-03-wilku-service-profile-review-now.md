@@ -10,13 +10,14 @@ WILQ jest już użyteczny jako system review, ale nie jest jeszcze zatwierdzony
 do finalnych treści.
 
 - Skille operatorskie: 13/13 przeszło non-interactive eval na poziomie 9/10.
-- Wiedza Ekologus: `source_backed_review_required`, nie `approved_current`.
+- Wiedza Ekologus: źródła są zebrane, ale wymagają review; nie są jeszcze
+  zatwierdzoną aktualną wiedzą.
 - Production-depth: 0%.
-- Approved service facts: 0%.
+- Zatwierdzone fakty usługowe: 0%.
 - Service Profile: read-only, 14 akcji review, bez edycji kart i bez promocji
   source facts.
-- Prywatne propozycje `ekologus-ai`: 5, wszystkie `review_required`,
-  redacted-only i bez prawa do production-depth.
+- Prywatne propozycje `ekologus-ai`: 5, wszystkie wymagają review,
+  są zredagowane i nie dają prawa do production-depth.
 
 Powiedz Wilkowi:
 
@@ -31,46 +32,44 @@ Najpierw przejrzeć publiczną kartę usługi BDO, bo to jest obecny pierwszy
 review item z live Service Profile i Goal 005 UAT input:
 
 1. **BDO i sprawozdawczość środowiskowa**
-   - ActionObject:
-     `service_profile_review_card_ekologus_service_bdo_reporting`;
-   - target card: `ekologus_service_bdo_reporting`;
-   - zakres: public service card;
-   - priorytet: medium;
-   - wymagane pola: `action_id`, `target_card_id`, `decision`,
-     `source_trace_clear`, `blocked_claims_reviewed`, `notes`;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`;
+   - typ review: publiczna karta usługi;
+   - priorytet: średni;
+   - decyzja do zapisania: zatwierdź, wróć z poprawkami, oznacz jako
+     nieaktualne albo odrzuć;
+   - trzeba sprawdzić: ślad źródłowy, zablokowane claimy i krótką notatkę
+     dlaczego akceptujemy albo co poprawić;
    - pytanie do Wilka: czy ta karta brzmi jak realna oferta Ekologus i czy
      claimy o BDO są poprawnie zablokowane przed review?
 
-Potem przejrzeć policy/private proposals, bo one ustawiają język i bezpieczeństwo
-dla kolejnych usług:
+Potem przejrzeć polityki i prywatne propozycje, bo one ustawiają język i
+bezpieczeństwo dla kolejnych usług:
 
 2. **Bezpieczeństwo prawne, poufność i zgody**
-   - zakres: private claim-policy proposal;
-   - priorytet: high;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-3. **Styl marki i claim policy Ekologus**
-   - zakres: private claim-policy proposal;
-   - priorytet: high;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+   - typ review: prywatna propozycja polityki twierdzeń;
+   - priorytet: wysoki;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo odrzuć.
+3. **Styl marki i polityka twierdzeń Ekologus**
+   - typ review: prywatna propozycja polityki twierdzeń;
+   - priorytet: wysoki;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo odrzuć.
 4. **Source trace i evidence pack**
-   - zakres: private evidence-policy proposal;
-   - priorytet: high;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+   - typ review: prywatna propozycja wymagań dowodowych;
+   - priorytet: wysoki;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo odrzuć.
 5. **Audyt zgodności środowiskowej**
-   - zakres: private service proposal;
-   - priorytet: medium;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+   - typ review: prywatna propozycja usługi;
+   - priorytet: średni;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo odrzuć.
 6. **Eko-Opieka i Eko Kalendarz**
-   - zakres: private service proposal;
-   - priorytet: medium;
-   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+   - typ review: prywatna propozycja usługi;
+   - priorytet: średni;
+   - decyzja: zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo odrzuć.
 
 Pozostałe publiczne karty usług też wymagają review. Najbardziej praktyczne do
 następnych rozmów: konsulting/outsourcing środowiskowy, odpady/opakowania,
 operaty wodnoprawne, szkolenia, remediacja/monitoring i sorbenty. Operaty
-wodnoprawne mają już kartę do review, ale nadal nie są `approved_current`, więc
-nie odblokowują production-depth treści.
+wodnoprawne mają już kartę do review, ale nadal nie są zatwierdzoną aktualną
+wiedzą, więc nie odblokowują production-depth treści.
 
 ## Pytania do Wilka
 
@@ -78,7 +77,7 @@ nie odblokowują production-depth treści.
    wymaga poprawki zanim cokolwiek przejdzie do production-depth?
 2. Czy źródła i zablokowane claimy przy BDO są czytelne, czy Wilku nadal pyta
    "skąd to wzięliśmy"?
-3. Czy po BDO zatwierdzamy polityki claimów i bezpieczeństwa, czy kolejną
+3. Czy po BDO zatwierdzamy polityki twierdzeń i bezpieczeństwa, czy kolejną
    konkretną usługę?
 4. Czy `Eko-Opieka / Eko Kalendarz` to realna oferta, roboczy język handlowy,
    czy temat do odrzucenia?
@@ -91,6 +90,17 @@ nie odblokowują production-depth treści.
 ## Jak zapisać decyzję
 
 WILQ ma przygotowany live JSON wejściowy do uzupełnienia:
+
+Najwygodniej zacząć od krótkiej karty rozmowy:
+
+```bash
+rtk uv run python scripts/record_service_profile_review_result.py --print-session-card --review-type public_service_cards --api-base http://127.0.0.1:8000
+rtk uv run python scripts/record_service_profile_review_result.py --print-session-card --review-type private_source_proposals --api-base http://127.0.0.1:8000
+```
+
+Techniczne wartości decyzji w JSON to: `approve`, `needs_changes`, `stale`,
+`reject`. W rozmowie mówimy: zatwierdź, wróć z poprawkami, oznacz jako
+nieaktualne albo odrzuć.
 
 ```bash
 .local-lab/proof/service-profile-private-review-input-20260703.json
@@ -124,7 +134,7 @@ rtk uv run python scripts/record_service_profile_review_result.py .local-lab/pro
 Nie musi być pełnego zatwierdzenia. Wystarczy jedno z tych:
 
 - Wilku mówi, które 2-3 propozycje są najbliżej prawdy;
-- Wilku wskazuje, co poprawić w claim policy;
+- Wilku wskazuje, co poprawić w polityce twierdzeń;
 - Wilku odrzuca błędny kierunek, zanim wejdzie do treści;
 - Wilku rozumie, dlaczego WILQ blokuje finalny content.
 

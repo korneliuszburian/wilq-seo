@@ -13,12 +13,12 @@ które mają pilnować jakości claimów w briefach i draftach.
 
 Sprawdzamy dwie propozycje:
 
-- styl marki i claim policy Ekologus;
+- styl marki i politykę twierdzeń Ekologus;
 - bezpieczeństwo prawne, poufność i zgody.
 
 To jest review z człowiekiem. Propozycje mogą pomóc w UAT i quality review, ale
-nie odblokowują `approved_current`, production-depth ani publicznych draftów bez
-osobnego review/promotion request.
+nie stają się zatwierdzoną aktualną wiedzą, nie odblokowują production-depth
+ani publicznych draftów bez osobnego review/promotion request.
 
 ## Skąd WILQ to bierze
 
@@ -91,18 +91,21 @@ Co może być dozwolone po review:
    wymagać human review?
 5. Czy można publicznie pisać o procesie i bezpiecznym następnym kroku bez
    obiecywania wyniku?
-6. Czy te dwie policy proposals są gotowe do osobnego promotion request, czy
+6. Czy te dwie propozycje polityk są gotowe do osobnego promotion request, czy
    wymagają poprawek?
 7. Jeśli wymagają poprawek, jakie follow-up Beads trzeba utworzyć?
 
 ## Decyzje do zapisania
 
-Użyj decision options z live Service Profile:
+W rozmowie użyj normalnych decyzji:
 
-- `approve`
-- `needs_changes`
-- `stale`
-- `reject`
+- zatwierdź;
+- wróć z poprawkami;
+- oznacz jako nieaktualne;
+- odrzuć.
+
+Techniczne wartości JSON z live Service Profile to: `approve`,
+`needs_changes`, `stale`, `reject`.
 
 Minimalny wynik review dla tych policy proposals:
 
@@ -111,7 +114,7 @@ Minimalny wynik review dla tych policy proposals:
   "review_type": "private_source_proposals",
   "data_review": "YYYY-MM-DD",
   "reviewer": "Wilku",
-  "scope_label": "prywatne claim-policy proposals ekologus-ai",
+  "scope_label": "prywatne propozycje polityki twierdzeń ekologus-ai",
   "decisions": [
     {
       "action_id": "service_profile_review_private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
@@ -145,7 +148,7 @@ Minimalny wynik review dla tych policy proposals:
     }
   ],
   "follow_up_beads": [
-    "wilq-seo-xyz: doprecyzować claim policy przed promotion request"
+    "wilq-seo-xyz: doprecyzować politykę twierdzeń przed promotion request"
   ]
 }
 ```
@@ -179,7 +182,7 @@ retencji nadal jest `pending_owner_decision`.
 ## Czego ten review nie robi
 
 - Nie promuje private proposal do source fact.
-- Nie kompiluje `approved_current` knowledge card.
+- Nie kompiluje zatwierdzonej aktualnej knowledge card.
 - Nie odblokowuje production-depth.
 - Nie odblokowuje draftów publicznych ani WordPress.
 - Nie pozwala WILQ udzielać interpretacji prawnej bez człowieka.
@@ -189,18 +192,18 @@ retencji nadal jest `pending_owner_decision`.
 Jeżeli Wilku zatwierdzi oba kierunki:
 
 - przygotować osobny, audytowany private source promotion request;
-- po promotion request dopiero używać polityk jako gates w Claim Ledger i
+- po promotion request dopiero używać polityk jako bramek w Claim Ledger i
   quality review;
 - nadal blokować legal/high-risk claimy bez human review.
 
-Jeżeli Wilku oznaczy `needs_changes`:
+Jeżeli Wilku wybierze "wróć z poprawkami":
 
 - zapisać follow-up Beads;
 - nie promować policy proposals;
 - poprawić source facts albo review copy przed kolejną próbą.
 
-Jeżeli Wilku odrzuci:
+Jeżeli Wilku odrzuci albo oznaczy jako nieaktualne:
 
-- oznaczyć proposal jako rejected/stale w przyszłej ścieżce review;
+- oznaczyć proposal jako odrzucony albo nieaktualny w przyszłej ścieżce review;
 - nie używać tej polityki jako quality gate;
 - usunąć albo zostawić redacted artifact tylko jako historical review note.

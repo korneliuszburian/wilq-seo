@@ -190,6 +190,10 @@ Date: 2026-07-03
   with `nazwa_materialu` while preserving the raw `material` path as proof.
   The UAT result report and follow-up suggestions carry the same label, so
   Wilku/operator can fill and read scorecards without mapping markdown paths.
+- 2026-07-03 Wilku-facing Goal 005 handoff docs now use Polish-first review
+  decisions and policy labels. Raw enum values remain only in JSON/proof
+  instructions, while Service Profile and ekologus-ai policy review sections
+  say "zatwierdź", "wróć z poprawkami", "oznacz jako nieaktualne" or "odrzuć".
 - 2026-07-03 the Goal 005 session card now keeps raw work item IDs, connector
   IDs, Sales Brief status and Service Profile review JSON below the fold in
   `Dane techniczne do proof`. The first screen is now a marketer-facing
