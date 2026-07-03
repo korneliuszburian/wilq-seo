@@ -1178,7 +1178,7 @@ def private_source_trace_item_label(value: dict[str, Any]) -> str:
     source_blocks = ", ".join(raw_string_list(value.get("source_blocks"))) or "brak"
     eval_cases = ", ".join(raw_string_list(value.get("eval_cases"))) or "brak"
     redacted = "zredagowane" if value.get("redacted") is True else "wymaga redakcji"
-    trace_ready = "trace gotowy" if value.get("trace_ready") is True else "trace niepełny"
+    trace_ready = "ślad gotowy" if value.get("trace_ready") is True else "ślad niepełny"
     parts = [
         str(value.get("target") or "brak"),
         str(value.get("scope") or "brak"),

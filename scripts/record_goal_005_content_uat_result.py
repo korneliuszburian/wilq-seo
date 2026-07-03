@@ -1242,7 +1242,7 @@ def review_artifact_title(artifact: Any) -> str:
 def humanize_review_decision_text(value: Any) -> str | None:
     if value is None:
         return None
-    text = str(value)
+    text = operator_copy_text(str(value))
     replacements = {
         "approve/needs_changes/stale/reject": (
             "zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo odrzuć"
@@ -1254,6 +1254,27 @@ def humanize_review_decision_text(value: Any) -> str | None:
         "zablokowane claimy": "zablokowane twierdzenia",
         "claimy": "twierdzenia",
     }
+    for raw, label in replacements.items():
+        text = text.replace(raw, label)
+    return text
+
+
+def operator_copy_text(value: str) -> str:
+    replacements = {
+        "wymaga review": "wymaga oceny",
+        "do review": "do oceny",
+        "bez review": "bez oceny",
+        "decyzję review": "decyzję oceny",
+        "materiał do review": "materiał do oceny",
+        "review człowieka": "ocenę człowieka",
+        "claimy": "twierdzenia",
+        "connectory": "źródła danych",
+        "source facts": "fakty źródłowe",
+        "source fact": "fakt źródłowy",
+        "trace gotowy": "ślad gotowy",
+        "trace niepełny": "ślad niepełny",
+    }
+    text = value
     for raw, label in replacements.items():
         text = text.replace(raw, label)
     return text
@@ -1481,7 +1502,7 @@ def private_source_trace_item_label(value: dict[str, Any]) -> str:
     source_blocks = ", ".join(raw_string_list(value.get("source_blocks"))) or "brak"
     eval_cases = ", ".join(raw_string_list(value.get("eval_cases"))) or "brak"
     redacted = "zredagowane" if value.get("redacted") is True else "wymaga redakcji"
-    trace_ready = "trace gotowy" if value.get("trace_ready") is True else "trace niepełny"
+    trace_ready = "ślad gotowy" if value.get("trace_ready") is True else "ślad niepełny"
     parts = [
         str(value.get("target") or "brak"),
         str(value.get("scope") or "brak"),
@@ -1572,6 +1593,7 @@ def sales_brief_review_questions(value: dict[str, Any] | None) -> list[str]:
         or value.get("signal_quality_status_label")
         or ""
     ).strip()
+    status_label = operator_copy_text(status_label)
     if not status_label:
         return []
 
@@ -1579,7 +1601,7 @@ def sales_brief_review_questions(value: dict[str, Any] | None) -> list[str]:
         (
             "Czy status briefu `"
             + status_label
-            + "` mówi jasno, czy można go pokazać tylko do review?"
+            + "` mówi jasno, czy można go pokazać tylko do oceny?"
         )
     ]
     reason = str(
@@ -1589,7 +1611,8 @@ def sales_brief_review_questions(value: dict[str, Any] | None) -> list[str]:
     ).strip()
     if reason:
         questions.append(
-            "Czy powód jakości sygnału jest zrozumiały: " + reason
+            "Czy powód jakości sygnału jest zrozumiały: "
+            + operator_copy_text(reason)
         )
     safe_next_step = str(
         value.get("selected_sales_brief_signal_quality_safe_next_step")
@@ -1598,7 +1621,8 @@ def sales_brief_review_questions(value: dict[str, Any] | None) -> list[str]:
     ).strip()
     if safe_next_step:
         questions.append(
-            "Czy następny krok briefu jest właściwy: " + safe_next_step
+            "Czy następny krok briefu jest właściwy: "
+            + operator_copy_text(safe_next_step)
         )
 
     counts = value.get("selected_sales_brief_signal_quality_counts")
@@ -1618,9 +1642,9 @@ def sales_brief_review_questions(value: dict[str, Any] | None) -> list[str]:
         for item in (evidence_count, connector_count, fact_count, constraint_count)
     ):
         questions.append(
-            "Czy ta ilość sygnału wystarcza do review: "
-            f"dowody {evidence_count or 0}, connectory {connector_count or 0}, "
-            f"source facts {fact_count or 0}, ograniczenia {constraint_count or 0}?"
+            "Czy ta ilość sygnału wystarcza do oceny: "
+            f"dowody {evidence_count or 0}, źródła danych {connector_count or 0}, "
+            f"fakty źródłowe {fact_count or 0}, ograniczenia {constraint_count or 0}?"
         )
     return questions
 
@@ -1643,15 +1667,18 @@ def selected_sales_brief_signal_quality_label(value: dict[str, Any] | None) -> s
     label = value.get("selected_sales_brief_signal_quality_status_label")
     if not label:
         return "brak live proof"
+    label = operator_copy_text(str(label))
     counts = value.get("selected_sales_brief_signal_quality_counts")
     count_labels: list[str] = []
     if isinstance(counts, dict):
         if counts.get("evidence_id_count") is not None:
             count_labels.append(f"dowody: {counts.get('evidence_id_count')}")
         if counts.get("source_connector_count") is not None:
-            count_labels.append(f"connectory: {counts.get('source_connector_count')}")
+            count_labels.append(
+                f"źródła danych: {counts.get('source_connector_count')}"
+            )
         if counts.get("source_fact_count") is not None:
-            count_labels.append(f"source facts: {counts.get('source_fact_count')}")
+            count_labels.append(f"fakty źródłowe: {counts.get('source_fact_count')}")
         if counts.get("knowledge_constraint_count") is not None:
             count_labels.append(
                 f"ograniczenia wiedzy: {counts.get('knowledge_constraint_count')}"

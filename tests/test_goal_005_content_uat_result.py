@@ -21,7 +21,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
-        "punkty_niezrozumienia": "Nie było jasne, które karty są tylko review-required.",
+        "punkty_niezrozumienia": "Nie było jasne, które karty są tylko ocena-required.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "oceny_materialow_review": _scorecard(
@@ -33,7 +33,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "najwiekszy_brak_produktu": "Brak zatwierdzonej karty dla Eko-Opieki.",
         "pytania_do_wilka": [
             "Czy Service Profile i pierwsza karta BDO są czytelne?",
-            "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
+            "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno?",
         ],
         "odpowiedzi_wilka": [
             {
@@ -42,8 +42,8 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
                 "follow_up": "Przepisać blocker claimów z języka technicznego.",
             },
             {
-                "pytanie": "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
-                "odpowiedz": "Tak, jasne że to tylko review.",
+                "pytanie": "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno?",
+                "odpowiedz": "Tak, jasne że to tylko ocena.",
                 "follow_up": "brak",
             },
             {
@@ -76,7 +76,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     ]
     assert report["wilku_review_questions"] == [
         "Czy Service Profile i pierwsza karta BDO są czytelne?",
-        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
+        "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno?",
     ]
     assert report["wilku_review_answers"] == [
         {
@@ -85,8 +85,8 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
             "follow_up": "Przepisać blocker claimów z języka technicznego.",
         },
         {
-            "pytanie": "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
-            "odpowiedz": "Tak, jasne że to tylko review.",
+            "pytanie": "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno?",
+            "odpowiedz": "Tak, jasne że to tylko ocena.",
             "follow_up": "brak",
         },
     ]
@@ -162,7 +162,7 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
         "pytania_do_wilka"
     ]
     assert any(
-        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno"
         in question
         for question in example["pytania_do_wilka"]
     )
@@ -223,11 +223,11 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "approve/needs_changes/stale/reject" not in card
     assert "Najpierw sprawdź publiczną kartę BDO." in card
     assert "Decyzja Service Profile ID" in card
-    assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga review" in card
+    assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga oceny" in card
     assert "dowody: 2" in card
     assert "Brief sprzedażowy / jakość sygnału:" in card
     assert (
-        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno"
         in card
     )
     assert "Czy powód jakości sygnału jest zrozumiały" in card
@@ -242,7 +242,7 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     )
     assert "decyzja właściciela wymagana" in card
     assert "zredagowane" in card
-    assert "trace gotowy" in card
+    assert "ślad gotowy" in card
     assert "Prywatna wiedza / ekologus-ai:" in card
     assert (
         "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?"
@@ -328,7 +328,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     ]
     assert provenance["selected_sales_brief_review_questions"]
     assert (
-        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno"
         in provenance["selected_sales_brief_review_questions"][0]
     )
     assert provenance["service_profile_read_only"] is True
@@ -928,7 +928,7 @@ def _live_context() -> dict[str, object]:
             "content_work_item_content_decision_https___www_ekologus_pl": {
                 "status": "ready",
                 "signal_quality_status": "review_required",
-                "signal_quality_status_label": "sygnał użyteczny, ale wymaga review",
+                "signal_quality_status_label": "sygnał użyteczny, ale wymaga oceny",
                 "signal_quality_reason": (
                     "Są dowody i źródła, ale część wiedzy wymaga review."
                 ),

@@ -69,7 +69,7 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
     assert "Pytania o prywatną wiedzę" in markdown
     assert "Prywatny ślad źródłowy do pokazania" in markdown
-    assert "trace gotowy" in markdown
+    assert "ślad gotowy" in markdown
     assert "Czy proponowane CTA brzmi jak realny następny krok Ekologus" in markdown
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
 
@@ -86,7 +86,7 @@ def test_wilku_service_profile_handoff_includes_private_source_trace() -> None:
     assert "goal_006_claim_ledger_gate" in handoff
     assert "goal_005_private_evidence_policy_review" in handoff
     assert "decyzja właściciela wymagana" in handoff
-    assert "zredagowane, trace gotowy, bez promocji do finalnych treści" in handoff
+    assert "zredagowane, ślad gotowy, bez promocji do finalnych treści" in handoff
 
 
 def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
@@ -154,7 +154,7 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
                 "content_work_item_content_decision_https___www_ekologus_pl": {
                     "status": "ready",
                     "signal_quality_status": "review_required",
-                    "signal_quality_status_label": "sygnał użyteczny, ale wymaga review",
+                    "signal_quality_status_label": "sygnał użyteczny, ale wymaga oceny",
                     "signal_quality_reason": (
                         "Są dowody i źródła, ale część wiedzy wymaga review."
                     ),
@@ -234,16 +234,16 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "Najpierw sprawdź publiczną kartę BDO." in rendered
     assert "Co trzeba ocenić: którą decyzję zapisujemy" in rendered
     assert "czy źródło i pochodzenie faktu są jasne" in rendered
-    assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga review" in rendered
+    assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga oceny" in rendered
     assert "ograniczenia wiedzy: 18" in rendered
     assert "Pytania o brief sprzedażowy" in rendered
     assert "Prywatny ślad źródłowy do pokazania" in rendered
     assert "Eko-Opieka i Eko Kalendarz / usługa / źródło: KB_001_EKO_OPIEKA" in rendered
     assert "eval: goal_005_private_service_review" in rendered
     assert "decyzja właściciela wymagana" in rendered
-    assert "zredagowane / trace gotowy" in rendered
+    assert "zredagowane / ślad gotowy" in rendered
     assert (
-        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        "Czy status briefu `sygnał użyteczny, ale wymaga oceny` mówi jasno"
         in rendered
     )
     assert "Czy następny krok briefu jest właściwy" in rendered

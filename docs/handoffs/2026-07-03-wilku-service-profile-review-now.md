@@ -38,10 +38,10 @@ element do oceny z aktualnego Service Profile i wejścia do rozmowy Goal 005:
    - priorytet: średni;
    - decyzja do zapisania: zatwierdź, wróć z poprawkami, oznacz jako
      nieaktualne albo odrzuć;
-   - trzeba sprawdzić: ślad źródłowy, zablokowane claimy i krótką notatkę
+   - trzeba sprawdzić: ślad źródłowy, zablokowane twierdzenia i krótką notatkę
      dlaczego akceptujemy albo co poprawić;
    - pytanie do Wilka: czy ta karta brzmi jak realna oferta Ekologus i czy
-     claimy o BDO są poprawnie zablokowane przed oceną?
+     twierdzenia o BDO są poprawnie zablokowane przed oceną?
 
 Potem przejrzeć polityki i prywatne propozycje, bo one ustawiają język i
 bezpieczeństwo dla kolejnych usług:
@@ -94,27 +94,27 @@ Prywatny ślad źródłowy do pokazania bez raw private text:
    - eval: `goal_005_private_claim_policy_review`,
      `goal_006_claim_ledger_gate`;
    - retencja: decyzja właściciela wymagana;
-   - stan: zredagowane, trace gotowy, bez promocji do finalnych treści.
+   - stan: zredagowane, ślad gotowy, bez promocji do finalnych treści.
 2. **Styl marki i polityka twierdzeń Ekologus**
    - zakres: polityka twierdzeń;
    - źródło do wskazania: `KB_014_STYL_MARKI`;
    - eval: `goal_005_private_claim_policy_review`,
      `goal_006_claim_ledger_gate`;
    - retencja: decyzja właściciela wymagana;
-   - stan: zredagowane, trace gotowy, bez promocji do finalnych treści.
+   - stan: zredagowane, ślad gotowy, bez promocji do finalnych treści.
 3. **Ślad źródłowy i pakiet dowodów dla prywatnych/ocenionych źródeł**
    - zakres: wymaganie dowodowe;
    - źródło do wskazania:
      `ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02`;
    - eval: `goal_005_private_evidence_policy_review`;
    - retencja: decyzja właściciela wymagana;
-   - stan: zredagowane, trace gotowy, bez promocji do finalnych treści.
+   - stan: zredagowane, ślad gotowy, bez promocji do finalnych treści.
 
 Pytania do rozmowy o kolejności i decyzjach:
 
 1. Czy publiczna karta BDO jest dobrym pierwszym testem Service Profile, czy
    wymaga poprawki zanim cokolwiek przejdzie do finalnych treści?
-2. Czy źródła i zablokowane claimy przy BDO są czytelne, czy Wilku nadal pyta
+2. Czy źródła i zablokowane twierdzenia przy BDO są czytelne, czy Wilku nadal pyta
    "skąd to wzięliśmy"?
 3. Czy po BDO zatwierdzamy polityki twierdzeń i bezpieczeństwa, czy kolejną
    konkretną usługę?
@@ -122,7 +122,7 @@ Pytania do rozmowy o kolejności i decyzjach:
    czy temat do odrzucenia?
 5. Czy `Audyt zgodności środowiskowej` może być pierwszym płatnym krokiem w
    komunikacji, czy wymaga innej nazwy?
-6. Jakich claimów WILQ ma zawsze blokować bez człowieka: kary, WIOŚ, decyzje,
+6. Jakie twierdzenia WILQ ma zawsze blokować bez człowieka: kary, WIOŚ, decyzje,
    kontrole, pozwolenia, dane klientów?
 7. Co w tych propozycjach brzmi jak Ekologus, a co jak generyczne SEO/AI?
 
@@ -135,22 +135,22 @@ nowy artykuł.
 Live status briefu sprzedażowego:
 
 - status: `ready`;
-- jakość sygnału: `sygnał użyteczny, ale wymaga review`;
-- ślad sygnału: 2 evidence ID, 2 source connectory, 2 source facts i 18
+- jakość sygnału: `sygnał użyteczny, ale wymaga oceny`;
+- ślad sygnału: 2 evidence ID, 2 źródła danych, 2 fakty źródłowe i 18
   ograniczeń wiedzy;
-- bezpieczny zakres: można pokazać jako materiał do review, ale nie jako
+- bezpieczny zakres: można pokazać jako materiał do oceny, ale nie jako
   finalny brief, finalny draft albo dowód gotowości publikacji.
 
 Pytania do Wilka o ten brief:
 
-1. Czy status `sygnał użyteczny, ale wymaga review` jasno mówi, że to tylko
+1. Czy status `sygnał użyteczny, ale wymaga oceny` jasno mówi, że to tylko
    materiał do oceny?
 2. Czy powód jakości sygnału jest zrozumiały: brief ma ślad dowodowy, ale
-   wiedza, claimy albo brakujące elementy nadal wymagają decyzji człowieka?
+   wiedza, twierdzenia albo brakujące elementy nadal wymagają decyzji człowieka?
 3. Czy następny krok jest właściwy: pokazać brief z ograniczeniami wiedzy i nie
-   odblokowywać finalnego draftu bez review?
-4. Czy ta ilość sygnału wystarcza do review: 2 dowody, 2 connectory, 2 source
-   facts i 18 ograniczeń wiedzy?
+   odblokowywać finalnego draftu bez oceny?
+4. Czy ta ilość sygnału wystarcza do oceny: 2 dowody, 2 źródła danych, 2 fakty
+   źródłowe i 18 ograniczeń wiedzy?
 
 Jeżeli Wilku odpowie "nie", to nie poprawiamy tego promptem. Zapisujemy, co
 było nieczytelne: brak źródła, zły język Ekologus, za słaby CTA, za mało
