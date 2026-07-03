@@ -84,6 +84,16 @@ knowledge-card depth audit
 -> precise follow-up blockers or implementation slices
 ```
 
+Current transition note, 2026-07-03: the operator-skill layer has reached the
+current 9/10 usefulness threshold for all 13 WILQ skills, and the pre-demo gate
+passed against the live local stack. This does not complete Goal 005 because
+real Wilku UAT or explicit owner defer is still required. It does mean the next
+development track after this proof is no longer "more skill ceremony": it is
+controlled real execution through write-capable ActionObjects. Start with
+low-risk prepare/apply paths where WILQ can show preview, exact intended
+change, required human confirmation, audit record and rollback/stop condition.
+No skill, prompt or dashboard button may bypass that path.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

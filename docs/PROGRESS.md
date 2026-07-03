@@ -210,6 +210,18 @@ Date: 2026-07-03
   `content_work_item_content_decision_https___www_ekologus_pl` and lists the
   2026-07-03 Service Profile review handoff before the older supporting
   handoffs.
+- 2026-07-03 current pre-demo gate passed after the 13/13 skill eval push to
+  the 9/10 threshold. Proof log:
+  `.local-lab/proof/pre-demo-gate-20260703.log`. The gate verified managed
+  stack readiness, live API contracts, dashboard usefulness, source-fact
+  coverage, Claim Ledger gate, skill eval coverage, context-pack language
+  guard, shared schemas, 13 API-backed dashboard route smokes and core WILQ
+  skill smoke contracts. This is demo/readiness proof, not Goal 005 completion
+  or real Wilku UAT proof.
+- Next development track after the current review/UAT proof is write-capable
+  WILQ execution: real low-risk Ads/WordPress/social/connector actions through
+  ActionObject validation, preview, human confirmation and audit. No direct
+  publish, campaign mutation or vendor write is allowed from skills/prompts.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem
