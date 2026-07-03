@@ -83,6 +83,14 @@ def main() -> int:
             "To nie jest wynik UAT i celowo zawiera placeholdery."
         ),
     )
+    parser.add_argument(
+        "--print-session-card",
+        action="store_true",
+        help=(
+            "Wypisuje krótką kartę rozmowy dla Wilka, opartą na tym samym "
+            "live UAT input co JSON proof."
+        ),
+    )
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     parser.add_argument(
         "--api-base",
@@ -95,6 +103,9 @@ def main() -> int:
 
     try:
         live_context = load_live_uat_context(args.api_base) if args.api_base else None
+        if args.print_session_card:
+            print(render_content_uat_session_card(live_context=live_context))
+            return 0
         if args.print_input_example:
             print(
                 json.dumps(
@@ -171,6 +182,85 @@ def build_content_uat_input_example(
             "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
         ],
     }
+
+
+def render_content_uat_session_card(
+    *,
+    live_context: dict[str, Any] | None = None,
+) -> str:
+    example = build_content_uat_input_example(live_context=live_context)
+    selected_work_item = str(example["wybrany_work_item"])
+    provenance = live_uat_provenance(
+        live_context=live_context,
+        selected_work_item=selected_work_item,
+    )
+    artifacts = example.get(REVIEW_ARTIFACTS_FIELD) or []
+    first_review = first_service_profile_review_label(provenance)
+    required_fields = first_service_profile_review_required_fields_label(provenance)
+    command = (
+        "rtk uv run python scripts/record_goal_005_content_uat_result.py "
+        "--print-input-example"
+        + (
+            f" --api-base {live_context.get('api_base')}"
+            if isinstance(live_context, dict) and live_context.get("api_base")
+            else ""
+        )
+    )
+    lines = [
+        "# Goal 005 - karta rozmowy z Wilkiem",
+        "",
+        "## Decyzja na sesję",
+        "",
+        (
+            "Sprawdzamy, czy obecny Service Profile, materiały review i pierwszy "
+            "kandydat contentowy są wystarczająco czytelne, żeby przejść do "
+            "pełnego content UAT. To nie zatwierdza publikacji ani production-depth."
+        ),
+        "",
+        "## Aktualny status WILQ",
+        "",
+        f"- Work item do rozmowy: `{selected_work_item}`",
+        "- Kolejka content: "
+        f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
+        "- Service Profile production-depth: "
+        f"{visible_bool(provenance.get('production_depth_ready') is True)}",
+        "- Sales Brief wybranego itemu: "
+        f"`{provenance.get('selected_sales_brief_status') or 'brak live proof'}`",
+        "- Źródła wybranego itemu: "
+        f"{', '.join(provenance.get('selected_source_connectors') or []) or 'brak live proof'}",
+        "",
+        "## Pierwsza decyzja review",
+        "",
+        f"- {first_review}",
+        f"- Wymagane pola decyzji: {required_fields}",
+        "",
+        "## Co pokazać",
+        "",
+        *[f"- `{artifact}`" for artifact in artifacts],
+        "",
+        "## Pytania do Wilka",
+        "",
+        "- Czy rozumiesz, czemu pełny content UAT jest jeszcze zablokowany?",
+        "- Czy Service Profile i pierwsza karta BDO są czytelne?",
+        "- Gdzie pytasz: skąd WILQ to wziął?",
+        "- Co brzmi generycznie albo nie jak Ekologus?",
+        "- Co trzeba poprawić, zanim puścimy pełny content UAT?",
+        "",
+        "## Jak zapisać dowód",
+        "",
+        f"1. Wygeneruj JSON proof: `{command}`",
+        "2. Uzupełnij pola po rozmowie.",
+        (
+            "3. Sprawdź wynik komendą: `rtk uv run python "
+            "scripts/record_goal_005_content_uat_result.py <plik.json> "
+            + (
+                f"--api-base {live_context.get('api_base')}`"
+                if isinstance(live_context, dict) and live_context.get("api_base")
+                else "`"
+            )
+        ),
+    ]
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def load_json(path: Path) -> dict[str, Any]:

@@ -8,6 +8,7 @@ from scripts.record_goal_005_content_uat_result import (
     REQUIRED_TEXT_FIELDS,
     build_content_uat_input_example,
     build_content_uat_result_report,
+    render_content_uat_session_card,
     render_markdown,
     sales_brief_blocker_label,
     sales_brief_trace_from_snapshot,
@@ -110,6 +111,23 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
     assert example["follow_up_beads"] == [
         "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny UAT jest zablokowany>"
     ]
+
+
+def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
+    card = render_content_uat_session_card(live_context=_live_context())
+
+    assert "# Goal 005 - karta rozmowy z Wilkiem" in card
+    assert (
+        "content_work_item_content_decision_https___www_ekologus_pl"
+        in card
+    )
+    assert "renamed_public_service_bdo_review" in card
+    assert "Sprawdź kartę BDO" in card
+    assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
+    assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card
+    assert "--print-input-example --api-base http://127.0.0.1:8000" in card
+    assert "scripts/record_goal_005_content_uat_result.py <plik.json>" in card
+    assert "production-depth" in card
 
 
 def test_content_uat_candidate_selection_prefers_actionable_work_item() -> None:

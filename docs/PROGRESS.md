@@ -164,6 +164,12 @@ Date: 2026-07-03
   Profile review item. Completion guard, UAT live provenance and source fact
   coverage audit all point to the BDO public service card first, while Goal 005
   remains blocked on real Wilku UAT or explicit owner defer.
+- 2026-07-03 Goal 005 UAT prep now has a plain Polish session card:
+  `scripts/record_goal_005_content_uat_result.py --print-session-card
+  --api-base http://127.0.0.1:8000`. It uses live WILQ API to show the selected
+  content work item, first BDO Service Profile review action, review materials,
+  questions for Wilku and the JSON proof command; the JSON validation contract
+  remains unchanged.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor
