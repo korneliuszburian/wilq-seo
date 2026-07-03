@@ -30,6 +30,10 @@ REQUIRED_DOCS = [
 ]
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000"
+OWNER_DEFER_EXAMPLE_COMMAND = (
+    "rtk uv run python scripts/goal_005_completion_check.py "
+    "--print-owner-defer-example --api-base {api_base}"
+)
 
 OWNER_DEFER_FIELDS = {
     "flag": "odroczenie_goal_005_uat",
@@ -644,6 +648,9 @@ def blocked_report(
     next_uat_input: dict[str, Any] | None = None,
     pre_demo_audits: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    api_base = DEFAULT_API_BASE
+    if isinstance(next_uat_input, dict) and next_uat_input.get("api_base"):
+        api_base = str(next_uat_input["api_base"])
     return {
         "status": "blocked_missing_goal_005_uat_proof",
         "missing_input": missing_input,
@@ -667,6 +674,9 @@ def blocked_report(
             "Albo zapisz explicit owner defer z residual risk przez --owner-defer.",
             "Przed completion claim uruchom pełne rtk scripts/verify.sh.",
         ],
+        "owner_defer_example_command": OWNER_DEFER_EXAMPLE_COMMAND.format(
+            api_base=api_base
+        ),
     }
 
 
@@ -708,6 +718,11 @@ def render_markdown(report: dict[str, Any]) -> str:
             lines.extend(render_pre_demo_audits(report["pre_demo_audits"]))
         lines.extend(["", "## Co odblokowuje domknięcie"])
         lines.extend(f"- {item}" for item in report["unblockers"])
+        if report.get("owner_defer_example_command"):
+            lines.append(
+                "- Wzór owner defer: "
+                f"`{report['owner_defer_example_command']}`"
+            )
     else:
         lines.extend(
             [

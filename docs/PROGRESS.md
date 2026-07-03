@@ -231,6 +231,9 @@ Date: 2026-07-03
   generated JSON includes required blocked claims, residual risk and live UAT
   next input, but placeholder values intentionally fail validation until an
   owner fills them.
+- 2026-07-03 Goal 005 completion guard markdown now prints the exact
+  `--print-owner-defer-example` command in the unlock section, so the owner
+  defer path is discoverable from the same failed completion check.
   labels. The JSON report remains unchanged, but the Wilku-facing audit says
   WILQ has review material and still lacks approved production-depth knowledge.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has

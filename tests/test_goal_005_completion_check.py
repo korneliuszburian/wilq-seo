@@ -50,6 +50,7 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     markdown = render_markdown(report)
     assert "Werdykt: materiały można pokazać Wilkowi jako review" in markdown
     assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
+    assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
 
 
 def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
