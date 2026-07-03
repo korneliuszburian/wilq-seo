@@ -78,6 +78,27 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     assert "missing_mutation_adapter" in blocker_codes
 
 
+def test_wordpress_apply_action_blocks_payload_before_vendor_write(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "actions_apply_block.sqlite3"))
+
+    response = TestClient(app).post(
+        "/api/actions/act_apply_wordpress_draft_handoff/apply",
+        json={"confirm": True, "confirmed_by": "operator_test"},
+    )
+
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert detail["status"] == "blocked"
+    assert detail["applied"] is False
+    assert detail["mutation_audit"]["mutation_attempted"] is False
+    serialized = str(detail)
+    assert "Payload akcji nie pozwala jeszcze na zapis zmian." in serialized
+    assert "Payload akcji nie jest gotowy do mutacji API." in serialized
+
+
 def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     monkeypatch,
     tmp_path,

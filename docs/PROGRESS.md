@@ -96,6 +96,11 @@ Date: 2026-07-03
   draft-only mutation path. It is the first write candidate, but remains
   blocked because `apply_allowed=false`, audit readiness is missing and no
   mutation adapter exists; live readiness must still report zero vendor writes.
+- 2026-07-03 `apply_action()` now enforces payload-level `apply_allowed` and
+  `api_mutation_ready` before any mutation adapter can run. The WordPress
+  draft apply ActionObject returns blocked with no mutation attempt while
+  those fields remain false, closing the gap between review-gate copy and the
+  actual apply execution path.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

@@ -2797,6 +2797,10 @@ def apply_action(
         errors.append("Zapisy zmian o wysokim i krytycznym ryzyku są zablokowane w Goal 001.")
     if action.payload.get("destructive") is True:
         errors.append("Destrukcyjne zmiany nie są zaimplementowane w Goal 001.")
+    if not _action_payload_apply_allowed(action.payload):
+        errors.append("Payload akcji nie pozwala jeszcze na zapis zmian.")
+    if action.payload.get("api_mutation_ready") is not True:
+        errors.append("Payload akcji nie jest gotowy do mutacji API.")
     if mutation_adapter is None:
         errors.append("Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji.")
     adapter_result: dict[str, Any] | None = None
