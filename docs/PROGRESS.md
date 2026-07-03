@@ -353,6 +353,12 @@ Date: 2026-07-03
   audit trace is preview, human review, confirmation and apply audit by the
   confirming operator. Focused proof now passes 19/19 WordPress execution/
   connector tests plus shared schema tests.
+- WordPress draft write readiness now exposes API-owned
+  `write_authorization_status` and `missing_audit_event_types`, so dashboard
+  and skills do not have to infer the missing ActionObject audit trail. Live
+  proof after restart reports `ready=false`, env write disabled, REST ready,
+  `missing_audit_trace` and missing preview/review/confirm events; no suggested
+  authorization or vendor write is enabled.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

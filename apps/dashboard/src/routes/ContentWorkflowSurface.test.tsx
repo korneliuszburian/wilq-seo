@@ -1497,6 +1497,12 @@ function wordpressDraftWriteReadiness(): ContentWordPressDraftWriteReadinessResp
         actor: null
       }
     ],
+    missing_audit_event_types: [
+      "action_preview_generated",
+      "human_review_*",
+      "action_apply_confirmed"
+    ],
+    write_authorization_status: "missing_audit_trace",
     suggested_write_authorization: null,
     blockers: [
       {

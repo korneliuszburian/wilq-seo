@@ -262,6 +262,12 @@ class ContentWordPressDraftWriteReadinessResponse(BaseModel):
     required_audit_events: list[ContentWordPressDraftWriteReadinessRequirement] = (
         Field(default_factory=list)
     )
+    missing_audit_event_types: list[str] = Field(default_factory=list)
+    write_authorization_status: Literal[
+        "missing_audit_trace",
+        "audit_actor_mismatch",
+        "available",
+    ] = "missing_audit_trace"
     suggested_write_authorization: ContentWordPressDraftWriteAuthorization | None = None
     blockers: list[ContentWordPressDraftWriteReadinessBlocker] = Field(default_factory=list)
     operator_next_step: str

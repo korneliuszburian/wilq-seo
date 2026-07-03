@@ -974,7 +974,16 @@ function WordPressDraftWriteReadinessPanel({
             label="REST"
             value={readiness.rest_adapter_configured ? "gotowy" : "brak"}
           />
-          <FactTile label="Audit" value={`${readiness.required_audit_events.length} kroki`} />
+          <FactTile
+            label="Auth"
+            value={wordpressWriteAuthorizationStatusLabel(
+              readiness.write_authorization_status
+            )}
+          />
+          <FactTile
+            label="Braki"
+            value={`${readiness.missing_audit_event_types.length}`}
+          />
         </div>
       </div>
 
@@ -1006,6 +1015,16 @@ function WordPressDraftWriteReadinessPanel({
       </div>
     </section>
   );
+}
+
+function wordpressWriteAuthorizationStatusLabel(status: string): string {
+  if (status === "available") {
+    return "gotowe";
+  }
+  if (status === "audit_actor_mismatch") {
+    return "aktor";
+  }
+  return "brak audytu";
 }
 
 function ClaimLedgerGatePanel({ data }: { data: ContentWorkflowSnapshot }) {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Literal
 
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.connectors.wordpress.client import create_wordpress_draft_post
@@ -419,6 +420,13 @@ def build_content_wordpress_draft_write_readiness_response(
             )
         )
     blockers.extend(_wordpress_draft_write_audit_blockers(requirements, authorization))
+    missing_audit_event_types = [
+        requirement.event_type for requirement in requirements if not requirement.satisfied
+    ]
+    write_authorization_status = _wordpress_draft_write_authorization_status(
+        requirements,
+        authorization,
+    )
     ready = (
         live_write_enabled
         and rest_adapter_configured
@@ -432,6 +440,8 @@ def build_content_wordpress_draft_write_readiness_response(
         live_write_enabled_by_env=live_write_enabled,
         rest_adapter_configured=rest_adapter_configured,
         required_audit_events=requirements,
+        missing_audit_event_types=missing_audit_event_types,
+        write_authorization_status=write_authorization_status,
         suggested_write_authorization=authorization if ready else None,
         blockers=blockers,
         operator_next_step=_wordpress_draft_write_next_step(ready, blockers),
@@ -614,6 +624,17 @@ def _wordpress_draft_write_audit_blockers(
             )
         )
     return blockers
+
+
+def _wordpress_draft_write_authorization_status(
+    requirements: list[ContentWordPressDraftWriteReadinessRequirement],
+    authorization: ContentWordPressDraftWriteAuthorization | None,
+) -> Literal["missing_audit_trace", "audit_actor_mismatch", "available"]:
+    if any(not requirement.satisfied for requirement in requirements):
+        return "missing_audit_trace"
+    if authorization is None:
+        return "audit_actor_mismatch"
+    return "available"
 
 
 def _wordpress_draft_write_next_step(

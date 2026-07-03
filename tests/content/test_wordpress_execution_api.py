@@ -316,6 +316,12 @@ def test_wordpress_write_readiness_blocks_when_live_env_is_disabled(
     assert data["source_connectors"] == ["wordpress_ekologus"]
     assert data["evidence_ids"] == ["ev_connector_wordpress_ekologus_status"]
     assert "draft_writes_env_disabled" in [blocker["code"] for blocker in data["blockers"]]
+    assert data["write_authorization_status"] == "missing_audit_trace"
+    assert data["missing_audit_event_types"] == [
+        "action_preview_generated",
+        "human_review_*",
+        "action_apply_confirmed",
+    ]
     assert [requirement["satisfied"] for requirement in data["required_audit_events"]] == [
         False,
         False,
@@ -341,6 +347,8 @@ def test_wordpress_write_readiness_builds_authorization_from_audit_trail(
     assert data["live_write_enabled_by_env"] is True
     assert data["rest_adapter_configured"] is True
     assert data["blockers"] == []
+    assert data["write_authorization_status"] == "available"
+    assert data["missing_audit_event_types"] == []
     assert data["suggested_write_authorization"] == _write_authorization()
     assert [requirement["satisfied"] for requirement in data["required_audit_events"]] == [
         True,
@@ -348,6 +356,46 @@ def test_wordpress_write_readiness_builds_authorization_from_audit_trail(
         True,
     ]
     assert "gotowa" in data["operator_next_step"]
+
+
+def test_wordpress_write_readiness_reports_actor_mismatch(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "wordpress_readiness_actor_mismatch.sqlite3"),
+    )
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://example.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "wilq")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+    for event_id, event_type, actor in [
+        ("audit_preview_123", "action_preview_generated", "wilq_api"),
+        ("audit_review_123", "human_review_approved_for_prepare", "wilku"),
+        ("audit_confirm_123", "action_apply_confirmed", ""),
+    ]:
+        local_state_store().save_audit_event(
+            AuditEvent(
+                id=event_id,
+                action_id="act_prepare_wordpress_draft_handoff",
+                event_type=event_type,
+                actor=actor,
+                summary="Testowy ślad audytu z pustym aktorem confirm.",
+                evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+            )
+        )
+
+    data = _get_wordpress_write_readiness()
+
+    assert data["ready"] is False
+    assert data["write_authorization_status"] == "audit_actor_mismatch"
+    assert data["missing_audit_event_types"] == []
+    assert data["suggested_write_authorization"] is None
+    assert [blocker["code"] for blocker in data["blockers"]] == [
+        "audit_actor_mismatch"
+    ]
 
 
 def _persist_write_authorization_events() -> None:
