@@ -20,7 +20,7 @@ to jest dobry kierunek treści/sprzedaży dla Ekologus.
   - `materials_clean/approved/KB_003_AUDYT_ZGODNOSCI.cleaned.md`
   - `materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md`
   - `materials_clean/approved/KB_021_BEZPIECZENSTWO_PRAWNE_POUFNOSC_ZGODY.cleaned.md`
-- WILQ source facts:
+- Fakty źródłowe WILQ:
   - `ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01`
   - `ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
   - `ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
@@ -161,12 +161,12 @@ Jeżeli Wilku potwierdzi kierunek:
 - przygotować brief sprzedażowo-SEO dla strony albo wpisu,
 - sprawdzić WordPress/GSC, czy istnieje już pasująca strona,
 - przygotować claim ledger z blokadami prawnymi i kontrolnymi,
-- dopiero potem tworzyć draft.
+- dopiero potem tworzyć szkic.
 
 Jeżeli Wilku poprawi kierunek:
 
-- zaktualizować source facts i claim policy,
-- nie pisać draftu przed poprawką,
+- zaktualizować fakty źródłowe i politykę twierdzeń,
+- nie pisać szkicu przed poprawką,
 - zapisać decyzję w Goal 005 progress/handoff.
 
 Jeżeli Wilku odrzuci kierunek:

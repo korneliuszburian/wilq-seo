@@ -276,6 +276,9 @@ Date: 2026-07-03
   language for brand voice, legal-safety, human review and promotion-readiness
   concepts. The JSON example and API commands stay technical, but the visible
   review layer no longer leads with English policy/proposal jargon.
+- 2026-07-03 the Eko-Opieka and Audyt zgodności proposal handoffs now use the
+  same Polish wording for source facts, raw/private material, draft creation
+  and claim policy. Remaining English-looking hits are only source file paths.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must

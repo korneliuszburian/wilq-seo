@@ -18,13 +18,13 @@ To jest materiał do rozmowy, nie landing page i nie finalna oferta.
   - `materials_clean/approved/KB_001_EKO_OPIEKA.cleaned.md`
   - `materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md`
   - `materials_clean/approved/KB_021_BEZPIECZENSTWO_PRAWNE_POUFNOSC_ZGODY.cleaned.md`
-- WILQ source facts:
+- Fakty źródłowe WILQ:
   - `ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01`
   - `ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
   - `ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
 
 Granica: WILQ używa tych materiałów jako wiedzy do tworzenia i rozmowy z
-człowiekiem. Nie pokazujemy raw transkrypcji, prywatnych list klientów,
+człowiekiem. Nie pokazujemy pełnych transkrypcji, prywatnych list klientów,
 cashflow, stawek ani danych osobowych.
 
 ## Jak WILQ rozumie ofertę
@@ -155,12 +155,12 @@ Jeżeli Wilku potwierdzi kierunek:
 - przygotować brief SEO/sprzedażowy dla strony lub wpisu,
 - sprawdzić GSC/WordPress, czy istnieje już pasująca strona albo temat,
 - przygotować claim ledger: co wolno pisać, co wymaga człowieka,
-- dopiero potem tworzyć draft.
+- dopiero potem tworzyć szkic.
 
 Jeżeli Wilku poprawi kierunek:
 
-- zaktualizować source facts i claim policy,
-- nie pisać draftu przed poprawką,
+- zaktualizować fakty źródłowe i politykę twierdzeń,
+- nie pisać szkicu przed poprawką,
 - zapisać decyzję w Goal 005 handoff/progress.
 
 Jeżeli Wilku odrzuci kierunek:
