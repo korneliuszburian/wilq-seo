@@ -208,6 +208,13 @@ Date: 2026-07-04
   Sales Brief status/reason/next-step and signal-density questions, so the
   operator can record Wilku's answers without translating completion-guard
   context manually.
+- 2026-07-04 the first Wilku-facing Service Profile handoff now mirrors the
+  same Sales Brief review checklist and UAT commands as the live session card.
+  `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md` explicitly
+  names the selected homepage candidate, review-only Sales Brief signal,
+  2/2/2/18 signal counts and the `record_goal_005_content_uat_result.py`
+  session/input commands, so the static handoff no longer lags behind the API
+  guard.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

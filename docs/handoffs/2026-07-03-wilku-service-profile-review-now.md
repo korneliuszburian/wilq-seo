@@ -102,6 +102,36 @@ Pytania do rozmowy o kolejności i decyzjach:
    kontrole, pozwolenia, dane klientów?
 7. Co w tych propozycjach brzmi jak Ekologus, a co jak generyczne SEO/AI?
 
+## Brief sprzedażowy do oceny
+
+Aktualny pierwszy kandydat do rozmowy Goal 005 to strona główna
+`https://www.ekologus.pl/`: WILQ widzi decyzję odświeżenia albo scalenia, nie
+nowy artykuł.
+
+Live status briefu sprzedażowego:
+
+- status: `ready`;
+- jakość sygnału: `sygnał użyteczny, ale wymaga review`;
+- ślad sygnału: 2 evidence ID, 2 source connectory, 2 source facts i 18
+  ograniczeń wiedzy;
+- bezpieczny zakres: można pokazać jako materiał do review, ale nie jako
+  finalny brief, finalny draft albo dowód gotowości publikacji.
+
+Pytania do Wilka o ten brief:
+
+1. Czy status `sygnał użyteczny, ale wymaga review` jasno mówi, że to tylko
+   materiał do oceny?
+2. Czy powód jakości sygnału jest zrozumiały: brief ma ślad dowodowy, ale
+   wiedza, claimy albo brakujące elementy nadal wymagają decyzji człowieka?
+3. Czy następny krok jest właściwy: pokazać brief z ograniczeniami wiedzy i nie
+   odblokowywać finalnego draftu bez review?
+4. Czy ta ilość sygnału wystarcza do review: 2 dowody, 2 connectory, 2 source
+   facts i 18 ograniczeń wiedzy?
+
+Jeżeli Wilku odpowie "nie", to nie poprawiamy tego promptem. Zapisujemy, co
+było nieczytelne: brak źródła, zły język Ekologus, za słaby CTA, za mało
+wiedzy usługowej, zbyt techniczne blokady albo źle dobrany kandydat.
+
 ## Jak zapisać decyzję
 
 WILQ ma przygotowany plik wejściowy do uzupełnienia po rozmowie:
@@ -109,6 +139,8 @@ WILQ ma przygotowany plik wejściowy do uzupełnienia po rozmowie:
 Najwygodniej zacząć od krótkiej karty rozmowy:
 
 ```bash
+rtk uv run python scripts/record_goal_005_content_uat_result.py --print-session-card --api-base http://127.0.0.1:8000
+rtk uv run python scripts/record_goal_005_content_uat_result.py --print-input-example --api-base http://127.0.0.1:8000
 rtk uv run python scripts/record_service_profile_review_result.py --print-session-card --review-type public_service_cards --api-base http://127.0.0.1:8000
 rtk uv run python scripts/record_service_profile_review_result.py --print-session-card --review-type private_source_proposals --api-base http://127.0.0.1:8000
 ```
