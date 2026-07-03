@@ -187,6 +187,16 @@ Date: 2026-07-03
   rejected manually because it called a stale Localo read "fresh"; the final
   run keeps Localo review-only and treats `local_tasks`, GBP writes and
   visibility-improvement claims as blocked.
+- 2026-07-03 `wilq-demand-gen-operator` reached 9/10 blocker-workflow level
+  after replacing generic readiness reporting with visible `Werdykt Demand Gen`,
+  `Dlaczego stop`, `Co mamy z Ads/GA4`, `Czego brakuje do oceny`,
+  `Podgląd bez zapisu`, `Kiedy wrócić`, `Zablokowane obietnice` and
+  `Brief dla marketera`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T154517Z`; result:
+  `operator_usefulness_score=9`, `blocked=true`, 6 evidence IDs, 4
+  recommendations, 1 action and all hard gates true. It correctly treats zero
+  Demand Gen/Discovery campaigns as a stop condition, not as a reason to invent
+  launch/readiness/creative-performance claims.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

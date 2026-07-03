@@ -9811,3 +9811,35 @@ Result:
 - The output keeps `local_tasks`, GBP write, completed local task and
   visibility-improvement claims blocked until WILQ exposes fresh supporting
   evidence and review.
+
+## 2026-07-03 - Demand Gen Operator raised to 9/10
+
+Purpose:
+
+- Push `wilq-demand-gen-operator` from a baseline blocker to a strong
+  blocker-workflow.
+- Make the output explain why Demand Gen cannot be judged today, what Ads/GA4
+  evidence exists, what evidence is missing and when to return to the topic.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T154517Z/wilq-demand-gen-operator/result.json`.
+- The eval passed with `operator_usefulness_score=9`, `blocked=true`,
+  `failure_tags=[]`, six evidence IDs, four recommendations, one action
+  candidate and all hard gates true.
+- Source connectors used: `google_ads` and `google_analytics_4`.
+- The visible workflow now uses `Werdykt Demand Gen`, `Dlaczego stop`,
+  `Co mamy z Ads/GA4`, `Czego brakuje do oceny`, `Podgląd bez zapisu`,
+  `Kiedy wrócić`, `Zablokowane obietnice` and `Brief dla marketera`.
+- The output keeps launch recommendation, Demand Gen mode readiness, creative
+  quality, asset effectiveness, campaign change and effectiveness-growth
+  claims blocked because WILQ sees zero Demand Gen/Discovery campaigns.

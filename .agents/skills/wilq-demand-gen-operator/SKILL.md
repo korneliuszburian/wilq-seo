@@ -75,7 +75,20 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 <output>
 
-Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: czy Demand Gen da się
+teraz ocenić, dlaczego workflow jest zatrzymany, jakie dowody Ads/GA4 już są,
+czego brakuje do oceny kreacji/ruchu i kiedy warto wrócić do tematu.
+
+Widocznie używaj tych sekcji:
+
+- `Werdykt Demand Gen`: czy WILQ widzi kampanie Demand Gen/Discovery i czy ocena jest review-only albo zablokowana.
+- `Dlaczego stop`: konkretny powód blokady, np. 0 kampanii Demand Gen/Discovery mimo dostępnych danych Ads/GA4.
+- `Co mamy z Ads/GA4`: liczba ocenionych kampanii/kanałów i źródła dowodów tylko z WILQ API.
+- `Czego brakuje do oceny`: kampania Demand Gen/Discovery, dane kreacji/assets, landing-quality per kampania, GA4 traffic-quality dla tej kampanii.
+- `Podgląd bez zapisu`: action_id albo review preview, które można sprawdzić w WILQ bez zmiany kampanii.
+- `Kiedy wrócić`: warunki, po których Demand Gen można oceniać dalej, np. po pojawieniu się kampanii i danych kreacji/ruchu.
+- `Zablokowane obietnice`: rekomendacja uruchomienia, gotowość trybu, ocena jakości kreacji, skuteczność assetów, zmiana kampanii i wzrost skuteczności.
+- `Brief dla marketera`: 3-5 zdań normalnym językiem: co wiemy, dlaczego nie rekomendujemy launchu, co sprawdzić teraz i czego potrzeba do kolejnego kroku.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

@@ -565,7 +565,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "act_review_demand_gen_readiness" in demand_gen_case["expected_validated_action_ids"]
     assert "google_merchant_center" not in demand_gen_case["expected_connectors"]
     assert demand_gen_case["expected_blocked"] is True
-    assert demand_gen_case["minimum_operator_usefulness_score"] == 5
+    assert demand_gen_case["minimum_operator_usefulness_score"] == 9
     assert "rekomendacja uruchomienia Demand Gen" in demand_gen_case["blocked_claim_terms"]
     assert "gotowość trybu Demand Gen" in demand_gen_case["blocked_claim_terms"]
     assert "wzrost skuteczności" in demand_gen_case["blocked_claim_terms"]

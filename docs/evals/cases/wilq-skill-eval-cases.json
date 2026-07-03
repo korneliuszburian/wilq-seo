@@ -702,7 +702,7 @@
     "skill": "wilq-demand-gen-operator",
     "surface_path": "/ads-doctor/demand-gen",
     "task_pl": "Oceń gotowość Demand Gen, jakość materiałów i jakość ruchu tylko z dowodów WILQ oraz sprawdzenia w WILQ.",
-    "minimum_operator_usefulness_score": 5,
+    "minimum_operator_usefulness_score": 9,
     "expected_connectors": [
       "google_ads",
       "google_analytics_4"
@@ -717,6 +717,17 @@
       "demand_gen_campaign_mode_review",
       "demand_gen_readiness_review_action_object",
       "zablokowane obietnice"
+    ],
+    "required_decision_terms_pl": [
+      "Werdykt Demand Gen",
+      "Dlaczego stop",
+      "Co mamy z Ads/GA4",
+      "Czego brakuje do oceny",
+      "Podgląd bez zapisu",
+      "Kiedy wrócić",
+      "Zablokowane obietnice",
+      "Brief dla marketera",
+      "0 kampanii Demand Gen/Discovery"
     ],
     "expected_blocked": true,
     "blocked_claim_terms": [

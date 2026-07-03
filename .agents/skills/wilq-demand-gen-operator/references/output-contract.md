@@ -19,15 +19,20 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Werdykt Demand Gen`, `Dlaczego stop`, `Co mamy z Ads/GA4`, `Czego brakuje do oceny`, `Podgląd bez zapisu`, `Kiedy wrócić`, `Zablokowane obietnice`, `Brief dla marketera`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
-2. `Dowody`: identyfikatory dowodów, identyfikatory źródeł danych, notatki o świeżości i podsumowania metryk wyłącznie z WILQ API.
-3. `Diagnoza`: co wspierają dowody, z niepewnością gdy dowody są zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
-5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Werdykt Demand Gen`: czy WILQ widzi kampanie Demand Gen/Discovery i czy ocena jest review-only albo zablokowana.
+2. `Dlaczego stop`: konkretny powód blokady, np. 0 kampanii Demand Gen/Discovery mimo dostępnych danych Ads/GA4.
+3. `Co mamy z Ads/GA4`: liczba ocenionych kampanii/kanałów i źródła dowodów tylko z WILQ API.
+4. `Czego brakuje do oceny`: kampania Demand Gen/Discovery, dane kreacji/assets, landing-quality per kampania, GA4 traffic-quality dla tej kampanii.
+5. `Podgląd bez zapisu`: action_id albo review preview, które można sprawdzić w WILQ bez zmiany kampanii.
+6. `Kiedy wrócić`: warunki, po których Demand Gen można oceniać dalej, np. po pojawieniu się kampanii i danych kreacji/ruchu.
+7. `Zablokowane obietnice`: rekomendacja uruchomienia, gotowość trybu, ocena jakości kreacji, skuteczność assetów, zmiana kampanii i wzrost skuteczności.
+8. `Brief dla marketera`: 3-5 zdań normalnym językiem: co wiemy, dlaczego nie rekomendujemy launchu, co sprawdzić teraz i czego potrzeba do kolejnego kroku.
+9. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+10. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
+11. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
 ## Warunki odmowy lub obniżenia do blokady
 
