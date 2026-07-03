@@ -490,18 +490,21 @@ function PrivateProposalCards({ proposals }: { proposals: PrivateProposal[] }) {
           />
           <p className="mt-2 text-sm leading-6 text-slate-600">{proposal.safe_next_step}</p>
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            {proposal.blocked_write_claim}
+            {operatorText(proposal.blocked_write_claim)}
           </p>
           <List label="Klasy danych" values={proposal.data_classes} />
-          <List label="Source block refs" values={proposal.source_block_refs} />
+          <List label="Bloki źródła" values={proposal.source_block_refs} />
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            Retencja: {proposal.retention_decision}
+            Retencja: {retentionLabel(proposal.retention_decision)}
           </p>
-          <List label="Ścieżka usunięcia" values={proposal.deletion_path} />
-          <List label="Eval gates" values={proposal.eval_case_ids} />
-          <List label="Claimy zablokowane" values={proposal.blocked_claims} />
+          <List
+            label="Ścieżka usunięcia"
+            values={proposal.deletion_path.map(operatorText)}
+          />
+          <List label="Bramki ewaluacji" values={proposal.eval_case_ids} />
+          <List label="Twierdzenia zablokowane" values={proposal.blocked_claims} />
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            Rola review: {proposal.owner_role}
+            Rola oceny: {operatorText(proposal.owner_role)}
           </p>
         </article>
       ))}
@@ -725,12 +728,36 @@ function riskTierLabel(value: string) {
   return RISK_TIER_LABELS[value] ?? humanizeEnum(value);
 }
 
+function retentionLabel(value: string) {
+  if (value === "pending_owner_decision") return "decyzja właściciela wymagana";
+  if (value === "retain_while_source_approved") {
+    return "utrzymuj tylko dopóki źródło jest zatwierdzone";
+  }
+  if (value === "short_window_only") return "krótkie okno retencji";
+  if (value === "do_not_retain") return "nie utrzymuj";
+  return humanizeEnum(value);
+}
+
 function sourceClassLabel(value: string) {
   return value
-    .replace("review-required", "wymaga review")
+    .replace("review-required", "wymaga oceny")
     .replace("claim-policy", "polityka twierdzeń")
     .replace("evidence-policy", "wymaganie dowodowe")
+    .replace("internal service context", "wewnętrzny kontekst usługi")
     .replace("source fact", "fakt źródłowy");
+}
+
+function operatorText(value: string) {
+  return value
+    .replace("reviewer prawny", "osoba oceniająca prawnie")
+    .replace("reviewerowi", "osobie oceniającej")
+    .replace("To jest redacted proposal", "To jest zredagowana propozycja")
+    .replace("redacted proposal", "zredagowaną propozycję")
+    .replace("redacted", "zredagowane")
+    .replace("do review", "do oceny")
+    .replace("source fact", "faktu źródłowego")
+    .replace("knowledge card", "karty wiedzy")
+    .replace("owner", "właściciela");
 }
 
 function humanizeEnum(value: string) {

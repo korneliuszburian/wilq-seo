@@ -132,14 +132,19 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("bez promocji").length).toBeGreaterThanOrEqual(5);
     expect(screen.getAllByText("Klasy danych").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("service_strategy").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Bloki źródła").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("KB_001_EKO_OPIEKA")).toBeInTheDocument();
-    expect(screen.getAllByText(/Retencja: pending_owner_decision/).length)
+    expect(screen.getAllByText(/Retencja: decyzja właściciela wymagana/).length)
       .toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Bramki ewaluacji").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("goal_005_private_service_review").length)
       .toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Usuń albo odrzuć redacted proposal.").length)
+    expect(screen.getAllByText("Usuń albo odrzuć zredagowaną propozycję.").length)
       .toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Claimy zablokowane").length).toBeGreaterThanOrEqual(5);
+    expect(screen.queryByText(/Retencja: pending_owner_decision/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Source block refs")).not.toBeInTheDocument();
+    expect(screen.queryByText("Eval gates")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Twierdzenia zablokowane").length).toBeGreaterThanOrEqual(5);
     expect(screen.getByText("obietnica stałej zgodności")).toBeInTheDocument();
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
     expect(screen.getByText("13 razem")).toBeInTheDocument();

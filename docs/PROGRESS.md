@@ -44,6 +44,9 @@ Date: 2026-07-04
   metadata in `source_fact_coverage.private_review_queue`, so dashboard and
   skills can explain provenance/readiness without joining raw proposal records
   or promoting review-required knowledge.
+- 2026-07-04 `/service-profile` private source cards now show trace labels in
+  Polish (`Bloki źródła`, `Bramki ewaluacji`, readable retention/deletion
+  text) while preserving stable `KB_*` and `goal_*` IDs for audit.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
