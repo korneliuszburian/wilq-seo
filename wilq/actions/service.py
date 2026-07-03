@@ -2863,6 +2863,7 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
     for item in items:
         for blocker in item.blockers:
             blocker_counts[blocker.code] = blocker_counts.get(blocker.code, 0) + 1
+    first_write_candidate = _first_write_candidate(items)
     top_blockers = [
         code
         for code, _count in sorted(
@@ -2879,8 +2880,47 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
         missing_adapter_count=blocker_counts.get("missing_mutation_adapter", 0),
         high_risk_blocked_count=blocker_counts.get("missing_risk_allowed", 0),
         top_blockers=top_blockers,
+        first_write_candidate=first_write_candidate,
+        first_write_candidate_reason=_first_write_candidate_reason(first_write_candidate),
         operator_next_step=_mutation_readiness_summary_next_step(items, blocker_counts),
         items=items,
+    )
+
+
+def _first_write_candidate(
+    items: list[ActionMutationReadinessResponse],
+) -> ActionMutationReadinessResponse | None:
+    if not items:
+        return None
+    for item in items:
+        if item.action_id == "act_prepare_wordpress_draft_handoff":
+            return item
+    candidates = [
+        item
+        for item in items
+        if item.risk in {ActionRisk.low, ActionRisk.medium}
+        and item.connector.startswith("wordpress")
+    ]
+    if candidates:
+        return candidates[0]
+    low_risk = [item for item in items if item.risk in {ActionRisk.low, ActionRisk.medium}]
+    return low_risk[0] if low_risk else items[0]
+
+
+def _first_write_candidate_reason(
+    item: ActionMutationReadinessResponse | None,
+) -> str:
+    if item is None:
+        return "Brak akcji, którą można ocenić jako pierwszy kandydat zapisu."
+    if item.action_id == "act_prepare_wordpress_draft_handoff":
+        return (
+            "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
+            "najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i "
+            "może zostać zablokowany przez env, audit trail oraz adapter wykonania."
+        )
+    return (
+        "To najbliższa niskiego/średniego ryzyka akcja do oceny jako przyszły "
+        "write adapter; nadal musi przejść readiness, preview, review i confirm."
     )
 
 

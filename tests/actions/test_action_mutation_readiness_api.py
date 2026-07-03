@@ -60,6 +60,9 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert data["would_attempt_vendor_write_count"] == 0
     assert data["missing_adapter_count"] == data["action_count"]
     assert "missing_mutation_adapter" in data["top_blockers"]
+    assert data["first_write_candidate"]["action_id"] == "act_prepare_wordpress_draft_handoff"
+    assert data["first_write_candidate"]["vendor_write_possible"] is False
+    assert "WordPress draft-only" in data["first_write_candidate_reason"]
     assert data["items"][0]["response_type"] == "action_mutation_readiness"
     assert "adapter" in data["operator_next_step"]
 

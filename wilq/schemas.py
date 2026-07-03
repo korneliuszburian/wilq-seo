@@ -620,6 +620,8 @@ class ActionMutationReadinessSummaryResponse(BaseModel):
     missing_adapter_count: int = 0
     high_risk_blocked_count: int = 0
     top_blockers: list[str] = Field(default_factory=list)
+    first_write_candidate: ActionMutationReadinessResponse | None = None
+    first_write_candidate_reason: str = ""
     operator_next_step: str
     items: list[ActionMutationReadinessResponse] = Field(default_factory=list)
 

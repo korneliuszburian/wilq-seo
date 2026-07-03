@@ -61,6 +61,11 @@ Date: 2026-07-03
   confirmation as inputs; adapter execution and apply success are outputs of
   the write path. Live draft writes remain disabled unless env, REST adapter
   and audit readiness all pass.
+- 2026-07-03 aggregate ActionObject mutation readiness now exposes the first
+  write candidate. Live smoke selects `act_prepare_wordpress_draft_handoff` as
+  the safest first activation target because it is WordPress draft-only, not
+  publish; it still reports `vendor_write_possible_count=0` and blocks on
+  apply mode, preview/confirmation/impact audit and missing adapter.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

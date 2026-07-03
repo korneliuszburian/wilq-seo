@@ -388,6 +388,8 @@ export const ActionMutationReadinessSummaryResponseSchema = z.object({
   missing_adapter_count: z.number().int().nonnegative().default(0),
   high_risk_blocked_count: z.number().int().nonnegative().default(0),
   top_blockers: z.array(z.string()).default([]),
+  first_write_candidate: ActionMutationReadinessResponseSchema.nullable().optional(),
+  first_write_candidate_reason: z.string().default(""),
   operator_next_step: z.string(),
   items: z.array(ActionMutationReadinessResponseSchema).default([])
 });
