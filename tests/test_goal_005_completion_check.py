@@ -289,6 +289,13 @@ def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
                 "pytania_skad_to_wzielo": "Źródła danych były jasne.",
                 "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
                 "najwiekszy_brak_produktu": "Brak zatwierdzonych kart usług.",
+                "odpowiedzi_wilka": [
+                    {
+                        "pytanie": "Czy Service Profile i pierwsza karta BDO są czytelne?",
+                        "odpowiedz": "Tak, ale opis claimów nadal jest za techniczny.",
+                        "follow_up": "Uprościć opis zablokowanych claimów.",
+                    }
+                ],
                 "wilku_rozumie_blokady_pelnego_uat": "tak",
                 "service_profile_czytelny": "tak",
                 "public_service_review_actions_czytelne": "tak",
@@ -308,11 +315,20 @@ def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
     assert report["missing_input"] == "goal_005_uat_ready_for_full_content_uat"
     assert any("needs_follow_up_before_full_content_uat" in detail for detail in report["details"])
     assert report["uat_review_follow_up_suggestions"][0]["decision"] == "popraw"
+    assert report["uat_wilku_review_answers"] == [
+        {
+            "pytanie": "Czy Service Profile i pierwsza karta BDO są czytelne?",
+            "odpowiedz": "Tak, ale opis claimów nadal jest za techniczny.",
+            "follow_up": "Uprościć opis zablokowanych claimów.",
+        }
+    ]
     assert any("dopasowanie CTA 3/5" in detail for detail in report["details"])
     assert "realny dowód użyteczności dla Wilka" in report["blocked_claims"]
 
     markdown = render_markdown(report)
     assert "## Follow-up ze scorecardu Wilka" in markdown
+    assert "## Odpowiedzi Wilka na pytania WILQ" in markdown
+    assert "Tak, ale opis claimów nadal jest za techniczny" in markdown
     assert "dopasowanie CTA 3/5" in markdown
 
 

@@ -220,6 +220,12 @@ Date: 2026-07-04
   ignores placeholder answers but preserves filled answers in the markdown
   report, making real UAT proof more specific without adding a new required
   blocker.
+- 2026-07-04 Goal 005 completion guard now carries those filled
+  `odpowiedzi_wilka` into its final markdown for any provided UAT result. A
+  synthetic local smoke confirmed the guard renders the question, Wilku answer
+  and follow-up directly in `Odpowiedzi Wilka na pytania WILQ`, so the final
+  proof no longer hides checklist answers inside the intermediate recorder
+  output.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

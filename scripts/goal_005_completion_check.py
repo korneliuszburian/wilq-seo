@@ -170,6 +170,7 @@ def build_completion_report(
                     ],
                 ],
                 uat_live_provenance=uat_report.get("live_provenance_summary"),
+                uat_wilku_review_answers=uat_report.get("wilku_review_answers"),
                 next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
@@ -193,6 +194,7 @@ def build_completion_report(
                 uat_review_follow_up_suggestions=uat_report.get(
                     "review_follow_up_suggestions"
                 ),
+                uat_wilku_review_answers=uat_report.get("wilku_review_answers"),
                 next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
@@ -205,6 +207,8 @@ def build_completion_report(
                 "selected_work_item": uat_report["selected_work_item"],
                 "shown_review_artifacts": uat_report["shown_review_artifacts"],
                 "uat_live_provenance": uat_report.get("live_provenance_summary"),
+                "uat_wilku_review_answers": uat_report.get("wilku_review_answers")
+                or [],
                 "pre_demo_audits": pre_demo_audits,
                 "safe_scope": (
                     "Goal 005 ma zwalidowany wynik realnego UAT. Domknięcie nadal "
@@ -227,6 +231,7 @@ def build_completion_report(
                 uat_review_follow_up_suggestions=uat_report.get(
                     "review_follow_up_suggestions"
                 ),
+                uat_wilku_review_answers=uat_report.get("wilku_review_answers"),
                 next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
@@ -554,6 +559,7 @@ def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str,
         ],
         "review_follow_up_suggestions": report.get("review_follow_up_suggestions")
         or [],
+        "wilku_review_answers": report.get("wilku_review_answers") or [],
         "live_provenance_summary": uat_live_provenance_summary(
             report.get("live_provenance")
         ),
@@ -727,6 +733,7 @@ def blocked_report(
     *,
     uat_live_provenance: dict[str, Any] | None = None,
     uat_review_follow_up_suggestions: list[dict[str, Any]] | None = None,
+    uat_wilku_review_answers: list[dict[str, Any]] | None = None,
     next_uat_input: dict[str, Any] | None = None,
     pre_demo_audits: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -739,6 +746,7 @@ def blocked_report(
         "details": details,
         "uat_live_provenance": uat_live_provenance,
         "uat_review_follow_up_suggestions": uat_review_follow_up_suggestions or [],
+        "uat_wilku_review_answers": uat_wilku_review_answers or [],
         "next_uat_input": next_uat_input or goal_005_next_uat_input(),
         "pre_demo_audits": pre_demo_audits or goal_005_pre_demo_audit_summary(),
         "safe_scope": (
@@ -795,6 +803,9 @@ def render_markdown(report: dict[str, Any]) -> str:
                     report["uat_review_follow_up_suggestions"]
                 )
             )
+        if report.get("uat_wilku_review_answers"):
+            lines.extend(["", "## Odpowiedzi Wilka na pytania WILQ"])
+            lines.extend(render_uat_wilku_review_answers(report["uat_wilku_review_answers"]))
         if report.get("next_uat_input"):
             lines.extend(["", "## Następny materiał do rozmowy"])
             lines.extend(render_next_uat_input(report["next_uat_input"]))
@@ -827,6 +838,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         if report.get("uat_live_provenance"):
             lines.extend(["", "## Ślad danych do rozmowy"])
             lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
+        if report.get("uat_wilku_review_answers"):
+            lines.extend(["", "## Odpowiedzi Wilka na pytania WILQ"])
+            lines.extend(render_uat_wilku_review_answers(report["uat_wilku_review_answers"]))
         if report.get("pre_demo_audits"):
             lines.extend(["", "## Pre-demo gates"])
             lines.extend(render_pre_demo_audits(report["pre_demo_audits"]))
@@ -870,6 +884,21 @@ def render_review_follow_up_suggestions(value: list[dict[str, Any]]) -> list[str
     if not value:
         return ["- Brak follow-upów ze scorecardu."]
     return [f"- {line}" for line in review_follow_up_detail_lines(value)]
+
+
+def render_uat_wilku_review_answers(value: list[dict[str, Any]]) -> list[str]:
+    lines: list[str] = []
+    for item in value:
+        question = str(item.get("pytanie") or "").strip()
+        answer = str(item.get("odpowiedz") or "").strip()
+        follow_up = str(item.get("follow_up") or "").strip()
+        if not question or not answer:
+            continue
+        lines.append(
+            f"- {question}: {answer}"
+            + (f" (follow-up: {follow_up})" if follow_up else "")
+        )
+    return lines or ["- Brak zapisanych odpowiedzi z checklisty."]
 
 
 def review_follow_up_detail_lines(value: list[dict[str, Any]]) -> list[str]:
