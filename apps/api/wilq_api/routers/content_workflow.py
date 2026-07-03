@@ -47,8 +47,8 @@ from wilq.content.workflow.api import (
     build_content_work_item_wordpress_draft_handoff_response,
 )
 from wilq.content.workflow.contracts import (
-    ContentWordPressDraftWriteReadinessResponse,
     ContentWordPressDraftActivationPacketResponse,
+    ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsRequest,
@@ -133,7 +133,13 @@ def content_wordpress_draft_write_readiness(
     "/api/content/wordpress/draft-activation-packet",
     response_model=ContentWordPressDraftActivationPacketResponse,
 )
-def content_wordpress_draft_activation_packet() -> ContentWordPressDraftActivationPacketResponse:
+def content_wordpress_draft_activation_packet(
+    work_item_id: str | None = None,
+) -> ContentWordPressDraftActivationPacketResponse:
+    if work_item_id is not None:
+        return build_content_wordpress_draft_activation_packet_response(
+            _snapshot_for_work_item_or_404(work_item_id)
+        )
     diagnostics = build_content_diagnostics()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
     review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)

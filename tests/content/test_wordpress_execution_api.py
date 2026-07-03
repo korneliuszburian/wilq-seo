@@ -80,9 +80,11 @@ def _get_wordpress_write_readiness() -> dict[str, Any]:
     return data
 
 
-def _get_wordpress_activation_packet() -> dict[str, Any]:
+def _get_wordpress_activation_packet(work_item_id: str | None = None) -> dict[str, Any]:
+    params = {"work_item_id": work_item_id} if work_item_id is not None else None
     response = TestClient(app).get(
         "/api/content/wordpress/draft-activation-packet",
+        params=params,
     )
     assert response.status_code == 200
     data = cast(dict[str, Any], response.json())
@@ -132,6 +134,40 @@ def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     assert any("human review" in step for step in data["next_steps"])
     assert data["evidence_ids"]
     assert "wordpress_ekologus" in data["source_connectors"]
+
+
+def test_wordpress_activation_packet_can_scope_to_selected_work_item(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "activation_packet_selected.sqlite3"),
+    )
+
+    default_packet = _get_wordpress_activation_packet()
+    selected_packet = _get_wordpress_activation_packet(default_packet["work_item_id"])
+
+    assert selected_packet["work_item_id"] == default_packet["work_item_id"]
+    assert selected_packet["topic"] == default_packet["topic"]
+    assert selected_packet["external_write_attempted"] is False
+
+
+def test_wordpress_activation_packet_returns_404_for_unavailable_work_item(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "activation_packet_missing.sqlite3"),
+    )
+
+    response = TestClient(app).get(
+        "/api/content/wordpress/draft-activation-packet",
+        params={"work_item_id": "content_work_item_missing"},
+    )
+
+    assert response.status_code == 404
 
 
 def test_wordpress_execution_api_returns_draft_only_dry_run() -> None:

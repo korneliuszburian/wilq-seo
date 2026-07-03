@@ -249,11 +249,14 @@ export function getContentWordPressDraftWriteReadiness(): Promise<
   );
 }
 
-export function getContentWordPressDraftActivationPacket(): Promise<
+export function getContentWordPressDraftActivationPacket(
+  workItemId?: string | null
+): Promise<
   ContentWordPressDraftActivationPacketResponse
 > {
+  const query = workItemId ? `?work_item_id=${encodeURIComponent(workItemId)}` : "";
   return apiGet(
-    "/api/content/wordpress/draft-activation-packet",
+    `/api/content/wordpress/draft-activation-packet${query}`,
     ContentWordPressDraftActivationPacketResponseSchema
   );
 }

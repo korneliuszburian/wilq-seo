@@ -112,8 +112,9 @@ export function ContentWorkflowSurface() {
     queryFn: getContentWordPressDraftWriteReadiness
   });
   const draftActivationPacket = useQuery({
-    queryKey: ["content-workflow", "wordpress-draft-activation-packet"],
-    queryFn: getContentWordPressDraftActivationPacket
+    queryKey: ["content-workflow", "wordpress-draft-activation-packet", activeWorkItemId],
+    queryFn: () => getContentWordPressDraftActivationPacket(activeWorkItemId),
+    enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked)
   });
 
   return (

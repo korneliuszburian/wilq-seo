@@ -144,6 +144,10 @@ Date: 2026-07-03
   packet. The dashboard shows the draft package is ready, review/audit/handoff
   are missing, dry-run is blocked, live write is disabled and no external write
   was attempted.
+- 2026-07-03 WordPress draft activation packet now scopes to the selected
+  content work item via `work_item_id`, and `/content-workflow` passes the
+  active item ID. This prevents the dashboard from showing activation blockers
+  for a different topic than the one Wilku selected.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

@@ -191,6 +191,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText(/Po wygenerowaniu szkicu WILQ pokaże treść/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
     expect(screen.getByText(/Ten krok nie wykonuje zewnętrznego zapisu/)).toBeInTheDocument();
+    expect(getContentWordPressDraftActivationPacket).toHaveBeenCalledWith("content_work_item_bdo");
     expect(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Sprawdź jakość szkicu" })).toBeDisabled();
