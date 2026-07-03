@@ -42,6 +42,24 @@ RECOMMENDED_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md",
     "docs/handoffs/2026-07-02-wilku-social-history-blocker.md",
 ]
+REVIEW_ARTIFACT_LABELS = {
+    "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md": (
+        "Service Profile review - co pokazać teraz"
+    ),
+    "docs/handoffs/2026-07-02-wilq-marketing-content-model.md": (
+        "WILQ pod marketing i treści"
+    ),
+    "docs/handoffs/2026-07-02-co-pokazac-wilkowi.md": "Co pokazać Wilkowi",
+    "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md": (
+        "BDO i sprawozdawczość - próbka UAT"
+    ),
+    "docs/handoffs/2026-07-02-wilku-ekologus-ai-policy-review.md": (
+        "Ekologus-ai policy proposals - review"
+    ),
+    "docs/handoffs/2026-07-02-wilku-social-history-blocker.md": (
+        "Social history blocker - co blokuje repurpose"
+    ),
+}
 REVIEW_SCORECARD_DECISIONS = {"zatwierdź", "popraw", "odrzuć", "odśwież"}
 REVIEW_SCORECARD_SCORE_FIELDS = {
     "czytelnosc_1_5": "czytelność",
@@ -266,7 +284,7 @@ def render_content_uat_session_card(
         "",
         "## Co pokazać",
         "",
-        *[f"- `{artifact}`" for artifact in artifacts],
+        *[f"- {review_artifact_label(artifact)}" for artifact in artifacts],
         "",
         "## Pytania do Wilka",
         "",
@@ -949,6 +967,14 @@ def selected_content_candidate_reason(value: dict[str, Any]) -> str:
 
 def selected_content_candidate_next_step(value: dict[str, Any]) -> str:
     return str(value.get("selected_safe_next_step") or "brak live następnego kroku")
+
+
+def review_artifact_label(artifact: Any) -> str:
+    path = str(artifact)
+    label = REVIEW_ARTIFACT_LABELS.get(path)
+    if label:
+        return f"{label} (`{path}`)"
+    return f"`{path}`"
 
 
 def humanize_review_decision_text(value: Any) -> str | None:

@@ -182,6 +182,10 @@ Date: 2026-07-03
   candidate from live WILQ API: title/topic, URL, content decision, reason and
   safe next step. The raw `work_item_id` is still present only as the technical
   JSON proof value.
+- 2026-07-03 the Goal 005 session card now labels review materials by their
+  human title before the file path, so Wilku sees "Service Profile review",
+  "BDO i sprawozdawczość - próbka UAT" and "Social history blocker" instead
+  of only raw markdown paths.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

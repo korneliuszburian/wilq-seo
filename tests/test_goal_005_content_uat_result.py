@@ -137,6 +137,9 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Techniczny zapis do JSON" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card
+    assert "Service Profile review - co pokazać teraz" in card
+    assert "BDO i sprawozdawczość - próbka UAT" in card
+    assert "Social history blocker - co blokuje repurpose" in card
     assert "--print-input-example --api-base http://127.0.0.1:8000" in card
     assert "scripts/record_goal_005_content_uat_result.py <plik.json>" in card
     assert "production-depth" in card
