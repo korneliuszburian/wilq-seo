@@ -180,6 +180,10 @@ Date: 2026-07-04
   `--print-session-card --api-base http://127.0.0.1:8000` shows the CTA,
   buyer-problem, blocked-claim and reject/stale/background questions above
   technical IDs, while the session still does not approve private knowledge.
+- 2026-07-04 Goal 005 completion guard now mirrors the same private-review
+  questions in `Następny materiał do rozmowy`. Live completion markdown still
+  blocks on `goal_005_uat_result_or_owner_defer`, but the next UAT input now
+  includes what Wilku should decide about ekologus-ai/private proposals.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

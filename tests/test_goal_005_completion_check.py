@@ -47,9 +47,16 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert first_review["label"]
     assert first_review["scope"] == "public_service_card"
     assert "source_trace_clear" in first_review["required_fields"]
+    assert report["next_uat_input"]["private_review_questions"]
+    assert any(
+        "CTA" in question
+        for question in report["next_uat_input"]["private_review_questions"]
+    )
     markdown = render_markdown(report)
     assert "Werdykt: materiały można pokazać Wilkowi do oceny" in markdown
     assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
+    assert "Pytania o prywatną wiedzę" in markdown
+    assert "Czy proponowane CTA brzmi jak realny następny krok Ekologus" in markdown
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
 
 

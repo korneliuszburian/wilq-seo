@@ -388,11 +388,16 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
         first_service_profile_review_from_live_context(live_context)
         or first_service_profile_review_from_source_coverage()
     )
+    private_review_questions = (
+        private_review_questions_from_live_context(live_context)
+        or private_review_questions_from_source_coverage()
+    )
     return {
         "available": True,
         "selected_work_item": example["wybrany_work_item"],
         "review_artifacts": example.get("pokazane_materialy_review", []),
         "first_service_profile_review": first_review,
+        "private_review_questions": private_review_questions,
         "session_card_command": (
             "rtk uv run python scripts/record_goal_005_content_uat_result.py "
             + "--print-session-card"
@@ -463,6 +468,41 @@ def first_service_profile_review_from_source_coverage() -> dict[str, Any] | None
         ],
         "safe_next_step": source_report.get("safe_next_step"),
     }
+
+
+def private_review_questions_from_live_context(
+    live_context: dict[str, Any] | None,
+) -> list[str]:
+    if live_context is None:
+        return []
+    raw_service_profile = live_context.get("service_profile")
+    service_profile = raw_service_profile if isinstance(raw_service_profile, dict) else {}
+    raw_private_review_value = service_profile.get("private_review_value")
+    private_review_value = (
+        raw_private_review_value if isinstance(raw_private_review_value, dict) else {}
+    )
+    return [
+        str(question).strip()
+        for question in raw_list_payload(private_review_value.get("review_questions"))
+        if str(question).strip()
+    ]
+
+
+def private_review_questions_from_source_coverage() -> list[str]:
+    source_report = build_source_fact_coverage_report()
+    raw_private_review_value = source_report.get("private_review_value")
+    private_review_value = (
+        raw_private_review_value if isinstance(raw_private_review_value, dict) else {}
+    )
+    return [
+        str(question).strip()
+        for question in raw_list_payload(private_review_value.get("review_questions"))
+        if str(question).strip()
+    ]
+
+
+def raw_list_payload(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
 
 
 def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str, Any]:
@@ -818,6 +858,16 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
                 "- Co trzeba ocenić: "
                 + first_review_input_required_fields_plain_label(first_review),
             ]
+        )
+    private_review_questions = [
+        str(question).strip()
+        for question in raw_list_payload(value.get("private_review_questions"))
+        if str(question).strip()
+    ]
+    if private_review_questions:
+        lines.append(
+            "- Pytania o prywatną wiedzę: "
+            + "; ".join(private_review_questions)
         )
     if value.get("blocked_reason"):
         lines.append(f"- Blokada pobrania live inputu: {value['blocked_reason']}")
