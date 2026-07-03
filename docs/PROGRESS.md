@@ -324,6 +324,10 @@ Date: 2026-07-03
   files were regenerated from the current recorder, and the Wilku handoff now
   includes the exact regeneration commands. The committed handoff no longer
   relies on stale local proof ordering.
+- 2026-07-03 private Service Profile review input ordering now matches the
+  source-fact audit and handoff: legal safety policy first, brand voice second,
+  source-trace/evidence policy third, then medium service proposals. The local
+  private proof input was regenerated with that order.
 - 2026-07-03 the Goal 005 UAT input generator now includes that current handoff
   as the first recommended review artifact. Live proof:
   `.local-lab/proof/goal-005-content-uat-input-20260703.json` selects

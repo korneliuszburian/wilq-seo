@@ -23,6 +23,13 @@ PROMOTION_ACTION_IDS = {
     "public_service_cards": "act_prepare_service_profile_knowledge_promotion",
     "private_source_proposals": "act_prepare_service_profile_private_proposal_promotion",
 }
+REVIEW_INPUT_TARGET_ORDER = {
+    "ekologus_claim_policy_legal_safety": 0,
+    "ekologus_claim_policy_brand_voice": 1,
+    "ekologus_evidence_policy_source_trace": 2,
+    "ekologus_service_environmental_compliance_audit": 3,
+    "ekologus_service_eko_opieka_calendar": 4,
+}
 REQUIRED_TEXT_FIELDS = {
     "data_review": "data review",
     "reviewer": "reviewer",
@@ -197,10 +204,11 @@ def review_input_action_sort_key(
     action: dict[str, Any],
     *,
     first_review_action_id: str | None,
-) -> tuple[int, int, int, str]:
+) -> tuple[int, int, int, int, str]:
     action_id = str(action.get("action_id") or "").strip()
     review_scope = str(action.get("review_scope") or "").strip()
     priority = str(action.get("priority") or "").strip()
+    target_card_id = str(action.get("target_card_id") or "").strip()
     first_rank = 0 if first_review_action_id and action_id == first_review_action_id else 1
     priority_rank = {
         "critical": 0,
@@ -214,7 +222,8 @@ def review_input_action_sort_key(
         "private_evidence_policy_proposal": 2,
         "private_service_proposal": 3,
     }.get(review_scope, 9)
-    return first_rank, priority_rank, scope_rank, action_id
+    target_rank = REVIEW_INPUT_TARGET_ORDER.get(target_card_id, 99)
+    return first_rank, priority_rank, scope_rank, target_rank, action_id
 
 
 def input_example_decision(

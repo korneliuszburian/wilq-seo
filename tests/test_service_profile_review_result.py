@@ -141,6 +141,15 @@ def test_service_profile_review_input_example_orders_private_policy_before_servi
     review_actions = profile["review_actions"]  # type: ignore[index]
     review_actions.append(
         {
+            "action_id": "renamed_private_legal_policy_review",
+            "target_card_id": "ekologus_claim_policy_legal_safety",
+            "review_scope": "private_claim_policy_proposal",
+            "priority": "high",
+            "review_requirements": _private_review_requirements(),
+        }
+    )
+    review_actions.append(
+        {
             "action_id": "renamed_private_brand_policy_review",
             "target_card_id": "ekologus_claim_policy_brand_voice",
             "review_scope": "private_claim_policy_proposal",
@@ -156,8 +165,9 @@ def test_service_profile_review_input_example_orders_private_policy_before_servi
     )
 
     decisions = example["decisions"]
-    assert decisions[0]["action_id"] == "renamed_private_brand_policy_review"
-    assert decisions[1]["action_id"] == "renamed_private_eko_opieka_review"
+    assert decisions[0]["action_id"] == "renamed_private_legal_policy_review"
+    assert decisions[1]["action_id"] == "renamed_private_brand_policy_review"
+    assert decisions[2]["action_id"] == "renamed_private_eko_opieka_review"
 
 
 def test_service_profile_review_input_example_tracks_new_live_required_field() -> None:
