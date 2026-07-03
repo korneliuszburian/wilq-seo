@@ -142,6 +142,36 @@ Result:
   filtering, preview without write and blocked audience-size, forecast, ROAS,
   effectiveness and conversion-growth claims.
 
+## 2026-07-03 - Merchant Feed Operator missing-contract language simplified
+
+Purpose:
+
+- Keep Merchant review useful without making the visible answer cite raw
+  missing-contract fields as the main copy.
+- Preserve the important distinction between issue occurrences, sample
+  products, missing product-performance evidence and blocked product/revenue
+  claims.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T215425Z/wilq-merchant-feed-operator/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=false`.
+- Hard gates all true; source connectors `google_merchant_center` and
+  `google_ads`; 4 evidence IDs, 5 review recommendations and 2 action
+  candidates.
+- Visible answer explains missing product-performance and price-impact data in
+  normal Polish, keeps issue counts separate from unique SKU/product claims,
+  and blocks product ROAS, recovered revenue, price-impact, reapproval and feed
+  write claims.
+
 ## 2026-07-03 - Daily Command after skill ceremony reduction
 
 Purpose:

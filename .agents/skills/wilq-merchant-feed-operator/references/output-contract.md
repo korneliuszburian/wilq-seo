@@ -8,7 +8,7 @@ Oczekiwany wynik: podsumowanie problemów pliku produktowego i produktowe akcje 
 
 ## Wymagany kontekst API
 
-Pobierz `GET /api/merchant/diagnostics` przed analizą Merchant i pliku produktowego. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-merchant-feed-operator"}` i użyj osadzonego `merchant_diagnostics` jako consistency check. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy gotowość ma znaczenie.
+Pobierz `GET /api/merchant/diagnostics` przed analizą Merchant i pliku produktowego. `POST /api/codex/context-pack` z `{"skill":"wilq-merchant-feed-operator"}` jest opcjonalnym wzbogaceniem, gdy wąski endpoint nie wystarcza albo trzeba połączyć Merchant z inną powierzchnią WILQ. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy gotowość ma znaczenie.
 
 Wymagane źródła danych:
 
@@ -32,11 +32,12 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
    unikalnych SKU, powiedz to wprost.
 5. `Przykładowe produkty`: jeśli `product_sample_readiness.sample_products_available=true`, pokaż kilka `sample_product_ids` albo tytułów jako materiał do sprawdzenia. Nie traktuj próbek jako pełnej listy SKU ani zgody na zapis do pliku produktowego.
 6. `Czego nie wiemy`: opisz `unknowns` z `/api/merchant/diagnostics`, szczególnie brak unikalnej liczby produktów, brak pełnego SKU workflow, brak próbek dla części klastrów, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`.
-   Cytuj `missing_read_contracts` jako faktycznie brakujące kontrakty, a
-   `required_read_contracts` tylko jako pełną listę wymagań. Nie łącz tych list
-   w jeden "brak", bo WILQ może mieć część wymagań już spełnioną. Jeśli
-   `missing_read_contracts` jest dostępne, wypisz jego wartości literalnie jako
-   faktyczny brak.
+   W widocznej odpowiedzi tłumacz braki po ludzku, np. "brakuje danych
+   skuteczności produktu", "brakuje historii/zdarzenia zmiany ceny" albo
+   "brakuje okna porównania wyników produktu". Szczegółowe pola
+   `missing_read_contracts` i `required_read_contracts` zostaw do
+   technicznych notatek/debugu. Nie łącz tych list w jeden "brak", bo WILQ
+   może mieć część wymagań już spełnioną.
 7. `Decyzja po review`: powiedz, co może wydarzyć się po ręcznym sprawdzeniu: lista poprawek do feedu, eskalacja landing page error, odświeżenie danych, niskie ryzyko albo blokada do czasu danych skuteczności.
 8. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co WILQ widzi w Merchant, który problem idzie pierwszy, jak czytać liczby i czego nie wolno obiecać.
 9. `Diagnoza`: co `/api/merchant/diagnostics` wspiera, z niepewnością jeśli dowody są zagregowane, nieświeże, niepełne albo zablokowane uprawnieniami.

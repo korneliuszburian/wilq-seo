@@ -84,11 +84,11 @@ skuteczności produktu", "brakuje historii/zdarzenia zmiany ceny" albo
 `merchant_price_change_event_or_snapshot`,
 `google_ads_shopping_product_performance` i
 `google_ads_or_ga4_product_performance_window` zostaw tylko w technicznym
-śladzie/notes, jeśli są potrzebne do audytu. Nie używaj tych raw nazw w
+śladzie/debugu, jeśli są potrzebne do audytu. Nie używaj tych szczegółowych nazw w
 `label_pl`, `blocked_reason`, `operator_next_step` ani widocznych
 `action_candidates`; tam pisz po ludzku, czego brakuje i co to blokuje.
-Dla śladu technicznego przy brakującym kontrakcie wypisz jego wartości literalnie,
-ale nie rób z tego głównej kopii dla marketera.
+Dla debug-notatek przy brakującym kontrakcie można zachować wartości techniczne,
+ale nie rób z nich głównej kopii dla marketera.
 
 </evidence_requirements>
 
@@ -98,8 +98,8 @@ ale nie rób z tego głównej kopii dla marketera.
 
 Odpowiedź ma być krótka i użyteczna dla operatora: co sprawdzić pierwsze,
 jak czytać liczby bez pułapki SKU, czego nie wiemy, jaka decyzja może paść po
-review i co można pokazać marketerowi. Nie pokazuj raw nazw pól jako głównej
-kopii dla marketera, jeśli można je opisać normalnym polskim.
+review i co można pokazać marketerowi. Nie pokazuj szczegółowych nazw pól jako
+głównej kopii dla marketera, jeśli można je opisać normalnym polskim.
 
 Widocznie używaj tych sekcji:
 
