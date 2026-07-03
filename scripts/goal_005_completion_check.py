@@ -80,6 +80,14 @@ def main() -> int:
     parser.add_argument("--uat-result", help="Ścieżka do wypełnionego Goal 005 UAT JSON.")
     parser.add_argument("--owner-defer", help="Ścieżka do explicit owner defer JSON.")
     parser.add_argument(
+        "--print-owner-defer-example",
+        action="store_true",
+        help=(
+            "Wypisuje fillable JSON dla explicit owner defer. To nie jest "
+            "dowód odroczenia, dopóki owner nie uzupełni i nie zatwierdzi pól."
+        ),
+    )
+    parser.add_argument(
         "--api-base",
         default=DEFAULT_API_BASE,
         help=(
@@ -95,6 +103,16 @@ def main() -> int:
         help="Format outputu.",
     )
     args = parser.parse_args()
+
+    if args.print_owner_defer_example:
+        print(
+            json.dumps(
+                build_owner_defer_example(api_base=args.api_base),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
 
     report = build_completion_report(
         uat_result=Path(args.uat_result) if args.uat_result else None,
@@ -563,6 +581,60 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
     }
 
 
+def build_owner_defer_example(*, api_base: str | None = DEFAULT_API_BASE) -> dict[str, Any]:
+    next_input = goal_005_next_uat_input(api_base=api_base)
+    session_command = next_input.get("session_card_command")
+    print_input_command = next_input.get("print_input_command")
+    selected_work_item = next_input.get("selected_work_item")
+    first_review = next_input.get("first_service_profile_review") or {}
+    review_line = (
+        first_review_input_plain_label(first_review)
+        if isinstance(first_review, dict)
+        else "brak live Service Profile review"
+    )
+    next_uat_parts = [
+        f"Uruchomić kartę rozmowy: {session_command}" if session_command else None,
+        (
+            f"Wygenerować JSON UAT po rozmowie: {print_input_command}"
+            if print_input_command
+            else None
+        ),
+        (
+            f"Wybrany work item do sprawdzenia: {selected_work_item}"
+            if selected_work_item
+            else None
+        ),
+        f"Pierwsza decyzja review: {review_line}" if review_line else None,
+    ]
+    return {
+        OWNER_DEFER_FIELDS["flag"]: True,
+        OWNER_DEFER_FIELDS["date"]: "<YYYY-MM-DD>",
+        OWNER_DEFER_FIELDS["owner"]: "<owner, np. Kornel albo Wilku>",
+        OWNER_DEFER_FIELDS["reason"]: (
+            "UZUPEŁNIJ: dlaczego realna sesja Wilku UAT jest świadomie "
+            "odroczona teraz, zamiast udawać completion."
+        ),
+        OWNER_DEFER_FIELDS["safe_scope"]: (
+            "Można pokazać Service Profile, materiały review, UAT session card "
+            "i aktualne blokady jako przygotowanie do rozmowy; nie wolno "
+            "twierdzić, że Goal 005 jest ukończony realnym UAT."
+        ),
+        OWNER_DEFER_FIELDS["residual_risk"]: (
+            "Brak realnej walidacji, czy Wilku rozumie źródła, blokady, "
+            "Service Profile review i czy materiały brzmią jak Ekologus."
+        ),
+        OWNER_DEFER_FIELDS["blocked_claims"]: REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS,
+        OWNER_DEFER_FIELDS["next_review"]: (
+            "Po najbliższej realnej sesji z Wilkiem albo po jawnej decyzji "
+            "ownera, że obecny proof wystarcza tylko jako pre-UAT."
+        ),
+        OWNER_DEFER_FIELDS["next_uat_input"]: "; ".join(
+            part for part in next_uat_parts if part
+        )
+        or "Uruchomić Goal 005 session card i zebrać formalny UAT JSON.",
+    }
+
+
 def blocked_report(
     missing_input: str,
     details: list[str],
@@ -879,7 +951,14 @@ def is_blank(value: Any) -> bool:
     if value is None:
         return True
     text = str(value).strip()
-    return not text or text.startswith("<") or text in {"-", "TODO", "todo"}
+    lowered = text.casefold()
+    return (
+        not text
+        or text.startswith("<")
+        or text in {"-", "TODO", "todo"}
+        or lowered.startswith("uzupełnij:")
+        or lowered.startswith("uzupelnij:")
+    )
 
 
 def normalize_text(value: object) -> str:

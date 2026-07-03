@@ -226,6 +226,11 @@ Date: 2026-07-03
   review decision and scope labels inside the technical proof lines. Live
   checks no longer show raw `approve/needs_changes/stale/reject` wording in
   the Wilku handoff path.
+- 2026-07-03 Goal 005 completion guard now has
+  `--print-owner-defer-example` for the explicit owner-defer path. The
+  generated JSON includes required blocked claims, residual risk and live UAT
+  next input, but placeholder values intentionally fail validation until an
+  owner fills them.
   labels. The JSON report remains unchanged, but the Wilku-facing audit says
   WILQ has review material and still lacks approved production-depth knowledge.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has

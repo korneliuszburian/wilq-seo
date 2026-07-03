@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.goal_005_completion_check import (
     blocked_report,
     build_completion_report,
+    build_owner_defer_example,
     goal_005_next_uat_input,
     goal_005_pre_demo_audit_summary,
     render_markdown,
@@ -591,3 +592,26 @@ def test_goal_005_owner_defer_requires_core_blocked_claims(tmp_path: Path) -> No
         and "gotowość finalnego draftu albo publikacji" in error
         for error in report["errors"]
     )
+
+
+def test_owner_defer_example_contains_required_claims_but_needs_owner_input(
+    tmp_path: Path,
+) -> None:
+    example = build_owner_defer_example(api_base=None)
+
+    assert example["odroczenie_goal_005_uat"] is True
+    assert example["data"] == "<YYYY-MM-DD>"
+    assert "UZUPEŁNIJ" in example["powod"]
+    assert "ukończony Goal 005" in example["czego_nie_wolno_twierdzic"]
+    assert "production-depth readiness" in example["czego_nie_wolno_twierdzic"]
+    assert "Uruchomić kartę rozmowy:" in example["nastepny_input_uat"]
+    assert "--print-session-card" in example["nastepny_input_uat"]
+
+    defer_path = tmp_path / "owner-defer-example.json"
+    defer_path.write_text(json.dumps(example, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_owner_defer(defer_path)
+
+    assert report["valid"] is False
+    assert "brak pola owner defer: data" in report["errors"]
+    assert "brak pola owner defer: powod" in report["errors"]
