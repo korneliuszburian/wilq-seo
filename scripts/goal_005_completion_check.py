@@ -583,7 +583,11 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Sprawdzenie domknięcia Goal 005",
         "",
-        f"- Status: `{report['status']}`",
+        "- Werdykt: materiały można pokazać Wilkowi jako review, ale Goal 005 "
+        "nie jest jeszcze domknięty.",
+        "- Następny krok: uruchom kartę rozmowy, zbierz decyzje Wilka i dopiero "
+        "potem zapisz JSON proof albo owner defer.",
+        f"- Status techniczny: `{report['status']}`",
     ]
     if report["status"] == "blocked_missing_goal_005_uat_proof":
         lines.extend(

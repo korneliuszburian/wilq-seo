@@ -195,6 +195,10 @@ Date: 2026-07-03
   block in the same operator language as the session card: session-card command
   first, human BDO review wording, translated review checks and labeled review
   materials. Raw work item/review IDs remain only in the technical proof line.
+- 2026-07-03 the Goal 005 completion guard header now opens with a plain Polish
+  verdict: materials can be shown to Wilku for review, but Goal 005 is not
+  complete until UAT JSON proof or owner defer exists. The raw blocked status
+  remains as a technical line.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

@@ -46,6 +46,9 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert first_review["label"]
     assert first_review["scope"] == "public_service_card"
     assert "source_trace_clear" in first_review["required_fields"]
+    markdown = render_markdown(report)
+    assert "Werdykt: materiały można pokazać Wilkowi jako review" in markdown
+    assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
 
 
 def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
