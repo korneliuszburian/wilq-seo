@@ -110,14 +110,19 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
     assert "Production-depth service readiness: 0%" in markdown
     assert "Pokaż Wilkowi review-required źródła przed treścią." in markdown
     assert "Pierwszy review item" in markdown
-    assert "service_profile_review_card_ekologus_service_bdo_reporting" in markdown
+    assert (
+        "Sprawdź kartę usługi: BDO "
+        "(proof: `service_profile_review_card_ekologus_service_bdo_reporting`)"
+    ) in markdown
     assert "## Co wnosi prywatna wiedza" in markdown
     assert "Prywatne propozycje dają materiał do review" in markdown
     assert "konkretniejsze CTA i buyer trigger" in markdown
-    assert "| 1 | `claim_policy` | Styl marki | `high` |" in markdown
+    assert "| 1 | claim policy | Styl marki | wysokie |" in markdown
     assert "## Konkretne akcje review" in markdown
     assert "`service_profile_review_card_ekologus_service_bdo_reporting`" in markdown
-    assert "approve, needs_changes, stale, reject" in markdown
+    assert "zatwierdź, wróć z poprawkami, oznacz jako nieaktualne, odrzuć" in markdown
+    assert "`public_service_card`" not in markdown
+    assert "approve, needs_changes, stale, reject" not in markdown
     assert "Brakuje zatwierdzonych production-depth kart usług Ekologus." in markdown
 
 

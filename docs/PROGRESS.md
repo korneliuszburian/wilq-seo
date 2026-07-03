@@ -199,6 +199,10 @@ Date: 2026-07-03
   verdict: materials can be shown to Wilku for review, but Goal 005 is not
   complete until UAT JSON proof or owner defer exists. The raw blocked status
   remains as a technical line.
+- 2026-07-03 `scripts/source_fact_coverage_audit.py --format markdown` now
+  renders Goal 005 review queues in operator Polish: human review type labels,
+  Polish decision options and proof IDs in a dedicated column. The JSON report,
+  pass/fail logic and Service Profile data are unchanged.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

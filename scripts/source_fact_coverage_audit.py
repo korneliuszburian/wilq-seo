@@ -8,6 +8,28 @@ from typing import Any
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.knowledge.source_facts import ekologus_source_fact_registry
 
+SCOPE_LABELS = {
+    "public_service_card": "publiczna karta usługi",
+    "private_claim_policy_proposal": "prywatna propozycja claim policy",
+    "private_evidence_policy_proposal": "prywatna propozycja wymagań dowodowych",
+    "private_service_proposal": "prywatna propozycja usługi",
+    "claim_policy": "claim policy",
+    "evidence_requirement": "wymaganie dowodowe",
+    "service": "usługa",
+    "general_knowledge_review": "ogólny review wiedzy",
+}
+RISK_LABELS = {
+    "high": "wysokie",
+    "medium": "średnie",
+    "low": "niskie",
+}
+DECISION_LABELS = {
+    "approve": "zatwierdź",
+    "needs_changes": "wróć z poprawkami",
+    "stale": "oznacz jako nieaktualne",
+    "reject": "odrzuć",
+}
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -167,16 +189,16 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "## Prywatne propozycje do review",
         "",
-        "| Priorytet | Scope | Target | Ryzyko | Następny krok |",
+        "| Priorytet | Typ review | Temat | Ryzyko | Następny krok |",
         "| ---: | --- | --- | --- | --- |",
     ]
     for index, item in enumerate(report["private_review_queue"], start=1):
         lines.append(
-            "| {index} | `{scope}` | {target} | `{risk}` | {next_step} |".format(
+            "| {index} | {scope} | {target} | {risk} | {next_step} |".format(
                 index=index,
-                scope=item["scope"],
+                scope=_scope_label(item["scope"]),
                 target=_markdown_cell(item["target_card_title"]),
-                risk=item["risk_tier"],
+                risk=_risk_label(item["risk_tier"]),
                 next_step=_markdown_cell(_operator_text(item["safe_next_step"])),
             )
         )
@@ -187,18 +209,18 @@ def render_markdown(report: dict[str, Any]) -> str:
                 "",
                 "## Konkretne akcje review",
                 "",
-                "| Priorytet | Scope | ActionObject | Target | Decyzje |",
+                "| Priorytet | Typ review | Temat | Decyzje | Proof |",
                 "| ---: | --- | --- | --- | --- |",
             ]
         )
         for index, item in enumerate(review_actions[:8], start=1):
             lines.append(
-                "| {index} | `{scope}` | `{action_id}` | {target} | {decisions} |".format(
+                "| {index} | {scope} | {target} | {decisions} | `{action_id}` |".format(
                     index=index,
-                    scope=item["review_scope"],
+                    scope=_scope_label(item["review_scope"]),
                     action_id=item["action_id"],
                     target=_markdown_cell(item["target_card_title"]),
-                    decisions=_markdown_cell(", ".join(item["decision_options"])),
+                    decisions=_markdown_cell(_decision_options_label(item["decision_options"])),
                 )
             )
     if report["blockers"]:
@@ -230,9 +252,24 @@ def _first_review_action_line(report: dict[str, Any]) -> str:
     label = report.get("first_review_action_label")
     if not action_id and not label:
         return "Pierwszy review item: brak."
-    return "Pierwszy review item: " + " - ".join(
-        part for part in [f"`{action_id}`" if action_id else None, label] if part
-    )
+    if label and action_id:
+        return f"Pierwszy review item: {label} (proof: `{action_id}`)."
+    return "Pierwszy review item: " + str(label or action_id)
+
+
+def _scope_label(value: Any) -> str:
+    raw = str(value or "")
+    return SCOPE_LABELS.get(raw, raw or "brak")
+
+
+def _risk_label(value: Any) -> str:
+    raw = str(value or "")
+    return RISK_LABELS.get(raw, raw or "brak")
+
+
+def _decision_options_label(values: list[Any]) -> str:
+    labels = [DECISION_LABELS.get(str(value), str(value)) for value in values]
+    return ", ".join(labels) or "brak"
 
 
 def _private_review_value_summary(
