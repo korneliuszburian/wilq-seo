@@ -460,6 +460,15 @@ Focused proof:
   evidence IDs, 4 recommendations, 2 actions and all hard gates true. This
   keeps final draft/publish claims blocked while making BDO vs Zielony Ład vs
   GA4 measurement gaps understandable as a content decision map.
+- Follow-up GA4 Analyst proof: `wilq-ga4-analyst` moved from the 5/10 baseline
+  to 9/10 after requiring visible `Kolejność triage`,
+  `Decyzja po review` and `Brief dla marketera`. The passing proof is
+  `.local-lab/evals/codex-skill/20260703T124506Z` with
+  `operator_usefulness_score=9`, `blocked=false`, `failure_tags=[]`, 19
+  evidence IDs, 4 recommendations, 1 action and all hard gates true. The
+  output separates `(not set)` as measurement repair from readable
+  landing/source/campaign rows as traffic-quality review and blocks ROI,
+  revenue, conversion and GA4 write claims.
 
 Interpretation:
 

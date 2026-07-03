@@ -722,10 +722,14 @@
     "required_decision_terms_pl": [
       "Pomiar do naprawy",
       "Ruch do oceny",
+      "Kolejność triage",
+      "Decyzja po review",
+      "Brief dla marketera",
       "(not set)",
       "nie oceniaj",
       "GA4 nie podało strony wejścia"
     ],
+    "minimum_operator_usefulness_score": 9,
     "blocked_claim_terms": [
       "opłacalność",
       "ROI",

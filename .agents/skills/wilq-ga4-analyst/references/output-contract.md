@@ -18,15 +18,18 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Pomiar do naprawy`, `Ruch do oceny`, `Kolejność triage`, `Decyzja po review`, `Brief dla marketera`, `Czego nie wolno twierdzić`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
-2. `Dowody`: `ga4_diagnostics.decision_queue`, `ga4_diagnostics.sections`, identyfikatory dowodów, identyfikatory źródeł danych, metryki stron wejścia, źródeł ruchu i kampanii, identyfikatory zadań taktycznych oraz notatki o świeżości wyłącznie z WILQ API.
-3. `Diagnoza`: użyj najpierw `decision_queue`. W podstawowej odpowiedzi raportuj etykietę typu decyzji, status i następny krok zwrócony przez WILQ API; techniczne wartości enumów zostaw wyłącznie jako ślad techniczny. Nie klasyfikuj elementów samodzielnie w opisie. Wyjaśnij, co wspierają dowody, i dodaj niepewność, gdy dowody są zagregowane, stare, nie ma faktów podobnych do konwersji albo ma tylko metryki zachowania.
-4. `Akcje do sprawdzenia`: identyfikatory decyzji, identyfikatory szans, identyfikatory kolejki taktycznej i identyfikatory akcji, jeśli są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
-5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Pomiar do naprawy`: wskaż wiersze `(not set)` jako problem przypisania strony wejścia, źródła albo kampanii. Nie oceniaj po nich kampanii, SEO ani strony.
+2. `Ruch do oceny`: wskaż czytelne landing/source/campaign rows, które można sprawdzać pod kątem dopasowania komunikatu i landing page.
+3. `Kolejność triage`: najpierw `(not set)` i tracking/reporting, potem czytelne wiersze ruchu, potem ActionObject review.
+4. `Decyzja po review`: powiedz, jakie decyzje są możliwe po ręcznym sprawdzeniu: problem pomiaru, content/landing review, brak decyzji albo dalsze dane.
+5. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co GA4 pokazuje, czego nie pokazuje, co jest problemem pomiaru, co jest ruchem do oceny i jaki jest następny bezpieczny krok.
+6. `Czego nie wolno twierdzić`: ROI, przychód, spadek konwersji, współczynnik konwersji, zwrot z reklam, naprawiony pomiar i zapis w GA4 bez osobnych dowodów.
+7. `Akcje do sprawdzenia`: identyfikatory decyzji, identyfikatory szans, identyfikatory kolejki taktycznej i identyfikatory akcji, jeśli są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+8. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
+9. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
 ## Warunki odmowy lub obniżenia do blokady
 

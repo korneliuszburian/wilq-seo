@@ -127,15 +127,23 @@ Date: 2026-07-03
   `.local-lab/evals/codex-skill/20260703T122515Z`; result:
   `operator_usefulness_score=9`, `blocked=true`, 11 evidence IDs, 4
   recommendations, 2 actions and all hard gates true.
+- 2026-07-03 `wilq-ga4-analyst` reached 9/10 analytics workflow level after
+  requiring visible `Kolejność triage`, `Decyzja po review` and
+  `Brief dla marketera`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T124506Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 19 evidence IDs, 4
+  recommendations, 1 action and all hard gates true. It separates `(not set)`
+  measurement repair from readable landing/source/campaign traffic review and
+  blocks ROI/revenue/conversion/write claims.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem
   triggers, `promotion_allowed_count=0`, `operator_value_score=9`; production
   depth and daily-content readiness remain blocked until review.
 - 2026-07-03 fresh full WILQ skill eval baseline is now 13/13 passing for all
-  repo WILQ skills on production-like Polish prompts. Every current score is
-  `operator_usefulness_score=5`, so this proves "works out-of-the-box with
-  evidence and blockers", not the target 10/10 marketer usefulness state.
+  repo WILQ skills on production-like Polish prompts. The baseline originally
+  proved "works out-of-the-box with evidence and blockers"; follow-up slices
+  are now pushing core skills from that baseline toward 9/10.
 - 2026-07-03 Goal 006 candidate `wilq-seo-1xv` was closed as already
   implementation-complete: `scripts/claim_ledger_gate_audit.py --format json`
   passed 13/13 and focused Claim Ledger/generation gate tests passed 65/65.

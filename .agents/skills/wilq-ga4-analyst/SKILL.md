@@ -76,12 +76,17 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 <output>
 
-Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: rozdziel, co jest
+problemem pomiaru, co można oceniać jako ruch, w jakiej kolejności to
+sprawdzić i jakiej decyzji nie wolno jeszcze podjąć.
 
 Widocznie rozdzielaj trzy rzeczy:
 
 - `Pomiar do naprawy`: wiersze z `(not set)` traktuj jako brak przypisania strony wejścia, źródła albo kampanii. Nie oceniaj po nich kampanii, SEO ani strony.
 - `Ruch do oceny`: wiersze z czytelną stroną wejścia i źródłem ruchu można sprawdzać pod kątem dopasowania intencji do landing page.
+- `Kolejność triage`: najpierw napraw/wyjaśnij `(not set)`, potem oceniaj tylko czytelne landing/source/campaign rows, na końcu sprawdzaj ActionObject review.
+- `Decyzja po review`: powiedz, co marketer może zrobić po ręcznym sprawdzeniu, np. oznaczyć wiersz jako problem pomiaru, skierować stronę do content review albo zostawić bez decyzji.
+- `Brief dla marketera`: 3-5 zdań normalnym językiem: co GA4 pokazuje, czego nie pokazuje, które wiersze są pomiarem, które ruchem i jaki jest następny bezpieczny krok.
 - `Czego nie wolno twierdzić`: ROI, przychód, spadek konwersji, współczynnik konwersji, zwrot z reklam, naprawiony pomiar albo zapis w GA4 bez osobnych dowodów.
 
 Nie rób z `(not set)` dowodu słabej kampanii. Tłumacz to normalnie: "GA4 nie podało strony wejścia albo źródła, więc to najpierw sprawdzamy jako pomiar". Surowe typy decyzji, endpointy i identyfikatory trzymaj w śladzie technicznym.
