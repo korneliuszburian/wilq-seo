@@ -7085,6 +7085,8 @@ const socialPublisherContextPack = {
     duplicate_risk_status_label: "nie oceniono ryzyka powtórzenia treści social",
     required_history_sources: ["linkedin", "facebook"],
     missing_history_evidence: ["linkedin_historical_posts", "facebook_historical_posts"],
+    history_audit_endpoint: "/api/social/history-inventory/audit",
+    history_audit_contract: "social_history_inventory_v1",
     social_history_inventory: {
       contract: "social_history_inventory_v1",
       read_only: true,
@@ -9014,6 +9016,13 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("CTA")).toBeInTheDocument();
     expect(screen.getByText("URL albo ID posta")).toBeInTheDocument();
     expect(screen.getByText("Dowód źródłowy")).toBeInTheDocument();
+    const auditSection = screen
+      .getByText("Jak sprawdzić zebrane metadane")
+      .closest("div");
+    expect(auditSection).toHaveTextContent("/api/social/history-inventory/audit");
+    expect(auditSection).toHaveTextContent("metadata-only JSON");
+    expect(auditSection).toHaveTextContent("social_history_inventory_v1");
+    expect(auditSection).toHaveTextContent("review metadanych");
     expect(screen.getAllByText("brakuje dostępu")).toHaveLength(2);
     expect(screen.getAllByText(/Pełna treść posta nie jest wymagana/)).toHaveLength(2);
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();

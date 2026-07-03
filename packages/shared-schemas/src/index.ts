@@ -3675,6 +3675,8 @@ export const SocialDraftContextSchema = z.object({
   required_history_sources: z.array(z.enum(["linkedin", "facebook"])),
   missing_history_evidence: z.array(z.string()),
   social_history_inventory: SocialHistoryInventorySchema,
+  history_audit_endpoint: z.literal("/api/social/history-inventory/audit"),
+  history_audit_contract: z.literal("social_history_inventory_v1"),
   operator_next_step: z.string()
 });
 

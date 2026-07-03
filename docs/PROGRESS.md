@@ -127,6 +127,10 @@ Date: 2026-07-03
   URL still has `apply_allowed=false` and `api_mutation_ready=false`, so it
   must pass Claim Ledger, draft package and human review before any draft-only
   adapter execution can be considered.
+- 2026-07-03 `/social-publisher` now shows the WILQ social history audit path:
+  metadata-only inventories go to `/api/social/history-inventory/audit` under
+  `social_history_inventory_v1`; the result is review-only and still does not
+  unlock publication or duplicate-free claims.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

@@ -68,7 +68,7 @@ export function SocialPublisherSurface() {
 
       <div className="grid gap-6">
         <SocialDecisionSummary socialContext={socialContext} inventory={inventory} />
-        <SocialHistoryBlocker inventory={inventory} />
+        <SocialHistoryBlocker inventory={inventory} socialContext={socialContext} />
         <ActionFocus actions={actions} />
       </div>
     </main>
@@ -118,7 +118,13 @@ function SocialDecisionSummary({
   );
 }
 
-function SocialHistoryBlocker({ inventory }: { inventory: SocialHistoryInventory }) {
+function SocialHistoryBlocker({
+  inventory,
+  socialContext
+}: {
+  inventory: SocialHistoryInventory;
+  socialContext: SocialDraftContext;
+}) {
   const metadataFields = inventory.sources[0]?.required_metadata_fields ?? [];
 
   return (
@@ -173,6 +179,22 @@ function SocialHistoryBlocker({ inventory }: { inventory: SocialHistoryInventory
             </span>
           ))}
         </div>
+      </div>
+      <div className="mt-4 rounded-md border border-line bg-white p-3">
+        <h3 className="text-sm font-semibold text-ink">Jak sprawdzić zebrane metadane</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Wyślij metadata-only JSON do WILQ API. Audit sprawdzi kompletność LinkedIn/Facebook
+          i odrzuci raw treść, komentarze, dane użytkowników oraz tokeny. Wynik nadal jest
+          tylko do review: nie odblokowuje publikacji ani claimu o braku powtórek.
+        </p>
+        <LabelChipRow
+          className="mt-3"
+          chips={[
+            { label: "Endpoint", value: socialContext.history_audit_endpoint },
+            { label: "Kontrakt", value: socialContext.history_audit_contract },
+            { label: "Efekt", value: "review metadanych" }
+          ]}
+        />
       </div>
       {inventory.discovery_seeds.length > 0 ? (
         <div className="mt-4 rounded-md border border-line bg-slate-50 p-3">
