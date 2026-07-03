@@ -177,6 +177,16 @@ Date: 2026-07-03
   recommendations, 1 action and all hard gates true. It prepares review-only
   custom segment directions from real Ads/GSC terms while blocking write,
   audience-size, forecast, ROAS and performance claims.
+- 2026-07-03 `wilq-localo-operator` reached 9/10 local visibility review
+  level after requiring visible `Czy Localo działa`, `Mapa lokalna`,
+  `Kolejność review`, `Braki i blokady`, `Podgląd bez zapisu`,
+  `Decyzja po review` and `Brief dla marketera`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T154040Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 2 evidence IDs, 5
+  recommendations, 1 action and all hard gates true. The first 9/10 run was
+  rejected manually because it called a stale Localo read "fresh"; the final
+  run keeps Localo review-only and treats `local_tasks`, GBP writes and
+  visibility-improvement claims as blocked.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

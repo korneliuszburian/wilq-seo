@@ -9773,3 +9773,41 @@ Result:
 - The output keeps write, audience-size, forecast, ROAS, effectiveness and
   conversion-growth claims blocked until the missing enrichment/forecast
   contracts and human review exist.
+
+## 2026-07-03 - Localo Operator raised to 9/10
+
+Purpose:
+
+- Push `wilq-localo-operator` from baseline status reporting to a local
+  visibility review workflow.
+- Make the output show whether Localo works for diagnostics, the local map,
+  review order, missing/stale pieces, preview path and post-review decision
+  without promising GBP writes, local task completion or visibility growth.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260703T154040Z/wilq-localo-operator/result.json`.
+- The eval passed with `operator_usefulness_score=9`, `blocked=false`,
+  `failure_tags=[]`, two evidence IDs, five recommendations, one action
+  candidate and all hard gates true.
+- Source connector used: `localo`.
+- The visible workflow now uses `Czy Localo działa`, `Mapa lokalna`,
+  `Kolejność review`, `Braki i blokady`, `Podgląd bez zapisu`,
+  `Decyzja po review` and `Brief dla marketera`.
+- A previous 9/10 run at
+  `.local-lab/evals/codex-skill/20260703T153906Z/wilq-localo-operator/result.json`
+  was rejected manually because visible text called a stale read "fresh".
+  The final contract now requires "do odświeżenia" handling for stale Localo
+  reads.
+- The output keeps `local_tasks`, GBP write, completed local task and
+  visibility-improvement claims blocked until WILQ exposes fresh supporting
+  evidence and review.

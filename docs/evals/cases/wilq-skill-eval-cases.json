@@ -277,6 +277,7 @@
     "surface_path": "/localo",
     "task_pl": "Oceń aktualne dowody Localo dla Ekologus: pokaż dostęp MCP oraz agregaty place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ je zwraca. Jasno oddziel przegląd agregatów od brakujących danych local_tasks, zapisu zmian w profilu firmy i poprawy widoczności lokalnej; nie twierdź, że zadania lokalne, zapis zmian albo wzrost widoczności są odblokowane.",
     "messy_task_pl": "Localo finalnie działa czy nie działa? Daj mi konkretnie co wiemy o lokalnej widoczności i czego nadal nie wolno obiecać.",
+    "minimum_operator_usefulness_score": 9,
     "expected_connectors": [
       "localo"
     ],
@@ -302,6 +303,20 @@
       "GBP",
       "widoczno",
       "Zablokowane"
+    ],
+    "required_decision_terms_pl": [
+      "Czy Localo działa",
+      "Mapa lokalna",
+      "Kolejność review",
+      "Braki i blokady",
+      "Podgląd bez zapisu",
+      "Decyzja po review",
+      "Brief dla marketera",
+      "local_tasks",
+      "do odświeżenia"
+    ],
+    "forbidden_terms_pl": [
+      "świeży ukończony odczyt"
     ],
     "blocked_claim_terms": [
       "ukończone zadanie lokalne",
