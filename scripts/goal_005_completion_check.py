@@ -326,7 +326,10 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
                 ),
             }
     example = build_content_uat_input_example(live_context=live_context)
-    first_review = first_service_profile_review_from_live_context(live_context)
+    first_review = (
+        first_service_profile_review_from_live_context(live_context)
+        or first_service_profile_review_from_source_coverage()
+    )
     return {
         "available": True,
         "selected_work_item": example["wybrany_work_item"],
@@ -363,6 +366,39 @@ def first_service_profile_review_from_live_context(
         "gap_id": summary.get("first_review_action_gap_id"),
         "required_fields": summary.get("first_review_required_fields") or [],
         "safe_next_step": summary.get("first_review_safe_next_step"),
+    }
+
+
+def first_service_profile_review_from_source_coverage() -> dict[str, Any] | None:
+    source_report = build_source_fact_coverage_report()
+    action_id = source_report.get("first_review_action_id")
+    label = source_report.get("first_review_action_label")
+    review_actions = source_report.get("review_action_queue") or []
+    first_action = review_actions[0] if review_actions else {}
+    if not action_id and isinstance(first_action, dict):
+        action_id = first_action.get("action_id")
+    if not label and isinstance(first_action, dict):
+        label = first_action.get("target_card_title")
+    if not action_id and not label:
+        return None
+    if not isinstance(first_action, dict):
+        first_action = {}
+    return {
+        "action_id": action_id,
+        "label": label,
+        "scope": first_action.get("review_scope"),
+        "priority": first_action.get("priority"),
+        "target_card_id": first_action.get("target_card_id"),
+        "gap_id": None,
+        "required_fields": [
+            "action_id",
+            "target_card_id",
+            "decision",
+            "source_trace_clear",
+            "blocked_claims_reviewed",
+            "notes",
+        ],
+        "safe_next_step": source_report.get("safe_next_step"),
     }
 
 

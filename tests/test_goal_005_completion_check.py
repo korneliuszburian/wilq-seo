@@ -41,6 +41,11 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert report["pre_demo_audits"]["skill_eval_coverage"]["hard_gap_count"] == 0
     assert report["next_uat_input"]["available"] is True
     assert report["next_uat_input"]["selected_work_item"] == "<work_item_id_z_uat_packet>"
+    first_review = report["next_uat_input"]["first_service_profile_review"]
+    assert first_review["action_id"]
+    assert first_review["label"]
+    assert first_review["scope"] == "public_service_card"
+    assert "source_trace_clear" in first_review["required_fields"]
 
 
 def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
