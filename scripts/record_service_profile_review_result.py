@@ -54,7 +54,7 @@ REQUIRED_DECISION_BOOLEAN_FIELDS = {
 PRIVATE_DECISION_BOOLEAN_FIELDS = {
     "data_classes_confirmed": "czy klasy danych prywatnego źródła są poprawne",
     "source_block_refs_confirmed": (
-        "czy source block refs są wystarczające do śladu źródłowego"
+        "czy bloki źródła są wystarczające do śladu źródłowego"
     ),
     "freshness_status_confirmed": (
         "czy aktualność prywatnego źródła została potwierdzona"
@@ -66,7 +66,9 @@ PRIVATE_DECISION_BOOLEAN_FIELDS = {
         "czy decyzja retencji została podjęta albo świadomie zablokowana"
     ),
     "deletion_path_confirmed": "czy ścieżka usunięcia/odrzucenia proposal jest jasna",
-    "eval_gates_confirmed": "czy eval gates blokujące unsafe claimy są wskazane",
+    "eval_gates_confirmed": (
+        "czy bramki ewaluacji blokujące ryzykowne twierdzenia są wskazane"
+    ),
 }
 
 
@@ -276,7 +278,7 @@ def render_session_card(
             "",
             "- Czy opis usługi/propozycji brzmi jak realny Ekologus?",
             "- Czy źródło i pochodzenie faktu są jasne?",
-            "- Czy zablokowane claimy są dobrze ustawione?",
+            "- Czy zablokowane twierdzenia są dobrze ustawione?",
             "- Czy decyzja to: zatwierdź, popraw, oznacz jako nieaktualne czy odrzuć?",
             "- Co trzeba dopisać jako follow-up?",
             "",
@@ -364,9 +366,9 @@ def service_profile_target_label(target_card_id: str) -> str:
         "ekologus_claim_policy_legal_safety": (
             "Bezpieczeństwo prawne, poufność i zgody"
         ),
-        "ekologus_claim_policy_brand_voice": "Styl marki i claim policy Ekologus",
+        "ekologus_claim_policy_brand_voice": "Styl marki i polityka twierdzeń Ekologus",
         "ekologus_evidence_policy_source_trace": (
-            "Source trace i evidence pack"
+            "Ślad źródłowy i pakiet dowodów"
         ),
     }
     return labels.get(target_card_id, target_card_id or "brak targetu")
@@ -380,14 +382,16 @@ def review_decision_options_label() -> str:
 def review_decision_required_fields_label(decision: dict[str, Any]) -> str:
     labels = {
         "source_trace_clear": "czy źródło i pochodzenie faktu są jasne",
-        "blocked_claims_reviewed": "czy zablokowane claimy zostały sprawdzone",
+        "blocked_claims_reviewed": "czy zablokowane twierdzenia zostały sprawdzone",
         "data_classes_confirmed": "czy klasy danych prywatnego źródła są poprawne",
-        "source_block_refs_confirmed": "czy source block refs wystarczają do śladu",
+        "source_block_refs_confirmed": "czy bloki źródła wystarczają do śladu",
         "freshness_status_confirmed": "czy aktualność źródła jest potwierdzona",
         "audience_scope_confirmed": "czy zakres dostępu jest poprawny",
         "retention_decision_confirmed": "czy decyzja retencji jest jasna",
         "deletion_path_confirmed": "czy ścieżka usunięcia/odrzucenia jest jasna",
-        "eval_gates_confirmed": "czy eval gates blokujące unsafe claimy są wskazane",
+        "eval_gates_confirmed": (
+            "czy bramki ewaluacji blokujące ryzykowne twierdzenia są wskazane"
+        ),
     }
     fields = [
         key
@@ -796,8 +800,8 @@ def safe_next_step_for_review_type(review_type: str, *, overall_status: str) -> 
         return "Zamknij follow-upy review przed przygotowaniem promotion request."
     if review_type == "private_source_proposals":
         return (
-            "Przygotuj osobny, audytowany private source promotion request dla "
-            "zatwierdzonych redacted propozycji."
+            "Przygotuj osobny, audytowany wniosek promocji prywatnego źródła "
+            "dla zatwierdzonych zredagowanych propozycji."
         )
     return "Przygotuj osobny, audytowany promotion request dla zatwierdzonych kart."
 
@@ -805,9 +809,10 @@ def safe_next_step_for_review_type(review_type: str, *, overall_status: str) -> 
 def safety_note_for_review_type(review_type: str) -> str:
     if review_type == "private_source_proposals":
         return (
-            "Ten raport zapisuje wynik review prywatnych redacted propozycji. Nie "
-            "edytuje source_facts.json, nie zapisuje raw private text, nie promuje "
-            "source fact ani knowledge card i nie odblokowuje production-depth."
+            "Ten raport zapisuje wynik oceny prywatnych zredagowanych propozycji. "
+            "Nie edytuje source_facts.json, nie zapisuje raw private text, nie "
+            "promuje faktu źródłowego ani karty wiedzy i nie odblokowuje wiedzy "
+            "do finalnych treści."
         )
     return (
         "Ten raport zapisuje wynik review publicznych kart usług. Nie edytuje "
@@ -920,9 +925,20 @@ def live_review_action_labels(live_context: dict[str, Any] | None) -> dict[str, 
         label = str(action.get("label") or action.get("target_card_title") or "").strip()
         if label.startswith("Sprawdź kartę usługi: "):
             label = label.removeprefix("Sprawdź kartę usługi: ").strip()
+        label = service_profile_operator_label(label)
         if action_id and label:
             labels[action_id] = label
     return labels
+
+
+def service_profile_operator_label(value: str) -> str:
+    return (
+        value.replace("claim policy", "polityka twierdzeń")
+        .replace("Source trace", "Ślad źródłowy")
+        .replace("source trace", "ślad źródłowy")
+        .replace("evidence pack", "pakiet dowodów")
+        .replace("reviewed źródeł", "ocenionych źródeł")
+    )
 
 
 def live_review_action_types(live_context: dict[str, Any] | None) -> dict[str, str]:

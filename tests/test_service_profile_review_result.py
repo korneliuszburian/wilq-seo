@@ -11,6 +11,8 @@ from scripts.record_service_profile_review_result import (
     build_review_result_report,
     render_markdown,
     render_session_card,
+    service_profile_operator_label,
+    service_profile_target_label,
 )
 from wilq.content.knowledge.service_profile import content_service_profile_response
 
@@ -149,7 +151,7 @@ def test_service_profile_review_session_card_is_plain_public_handoff() -> None:
     assert "BDO i sprawozdawczość środowiskowa" in card
     assert "Możliwe decyzje: zatwierdź, wróć z poprawkami" in card
     assert "czy źródło i pochodzenie faktu są jasne" in card
-    assert "czy zablokowane claimy zostały sprawdzone" in card
+    assert "czy zablokowane twierdzenia zostały sprawdzone" in card
     assert "Proof: `service_profile_review_card_ekologus_service_bdo_reporting`" in card
     assert "--print-input-example --review-type public_service_cards" in card
     assert "<plik.json> --review-type public_service_cards" in card
@@ -188,6 +190,21 @@ def test_service_profile_review_input_example_orders_private_policy_before_servi
     assert decisions[0]["action_id"] == "renamed_private_legal_policy_review"
     assert decisions[1]["action_id"] == "renamed_private_brand_policy_review"
     assert decisions[2]["action_id"] == "renamed_private_eko_opieka_review"
+
+
+def test_service_profile_review_operator_labels_are_polish() -> None:
+    assert service_profile_target_label("ekologus_claim_policy_brand_voice") == (
+        "Styl marki i polityka twierdzeń Ekologus"
+    )
+    assert service_profile_target_label("ekologus_evidence_policy_source_trace") == (
+        "Ślad źródłowy i pakiet dowodów"
+    )
+    assert service_profile_operator_label(
+        "Sprawdź prywatną propozycję: Source trace i evidence pack dla prywatnych/reviewed źródeł"
+    ) == (
+        "Sprawdź prywatną propozycję: Ślad źródłowy i pakiet dowodów "
+        "dla prywatnych/ocenionych źródeł"
+    )
 
 
 def test_service_profile_review_input_example_tracks_new_live_required_field() -> None:
@@ -274,7 +291,9 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert report["blocking_decision_count"] == 0
     assert report["promotion_allowed"] is False
     assert "nie zapisuje raw private text" in report["safety_note"]
-    assert report["safe_next_step"].startswith("Przygotuj osobny, audytowany private")
+    assert report["safe_next_step"].startswith(
+        "Przygotuj osobny, audytowany wniosek promocji prywatnego źródła"
+    )
     assert report["decisions"][0]["data_classes_confirmed"] is True
     assert report["decisions"][0]["source_block_refs_confirmed"] is True
     assert report["decisions"][0]["freshness_status_confirmed"] is True
@@ -457,7 +476,9 @@ def test_service_profile_review_result_requires_private_governance_checks() -> N
                 "source_block_refs_confirmed": "tak",
                 "retention_decision_confirmed": "nie",
                 "deletion_path_confirmed": "tak",
-                "notes": "Brakuje eval gates, świeżości, audience i decyzji retencji.",
+                "notes": (
+                    "Brakuje bramek ewaluacji, świeżości, audience i decyzji retencji."
+                ),
             }
         ],
     }
@@ -467,7 +488,8 @@ def test_service_profile_review_result_requires_private_governance_checks() -> N
 
     message = str(error.value)
     assert (
-        "czy eval gates blokujące unsafe claimy są wskazane musi mieć wartość tak albo nie"
+        "czy bramki ewaluacji blokujące ryzykowne twierdzenia są wskazane "
+        "musi mieć wartość tak albo nie"
         in message
     )
     assert (

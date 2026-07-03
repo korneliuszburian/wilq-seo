@@ -57,6 +57,9 @@ Date: 2026-07-04
 - 2026-07-04 the Wilku Service Profile handoff now includes the same private
   source trace items (`KB_*`, `goal_*`, retention/redaction/trace-ready state)
   so the document shown to Wilku matches the live completion guard.
+- 2026-07-04 Service Profile review recorder/session card now uses Polish
+  operator labels for private proposal review (`polityka twierdzeń`, `Ślad
+  źródłowy`, `bramki ewaluacji`) while keeping JSON field names stable.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
