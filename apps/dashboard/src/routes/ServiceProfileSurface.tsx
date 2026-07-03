@@ -235,6 +235,39 @@ function ServiceProfileTodayPanel({ data }: { data: ContentServiceProfileRespons
           <p className="mt-3 text-sm font-medium leading-6 text-ink">
             {review.safe_next_step}
           </p>
+          {review.first_review_action_label ? (
+            <div className="mt-3 rounded-md border border-action/30 bg-action/5 p-3">
+              <div className="text-xs font-semibold uppercase tracking-normal text-action">
+                Pierwszy review item
+              </div>
+              <p className="mt-1 text-sm font-semibold leading-6 text-ink">
+                {review.first_review_action_label}
+              </p>
+              {review.first_review_action_reason ? (
+                <p className="mt-1 text-sm leading-6 text-slate-700">
+                  {review.first_review_action_reason}
+                </p>
+              ) : null}
+              {review.first_review_safe_next_step ? (
+                <p className="mt-1 text-sm leading-6 text-slate-700">
+                  {review.first_review_safe_next_step}
+                </p>
+              ) : null}
+              <PlainChipRow
+                className="mt-2"
+                values={[
+                  review.first_review_action_scope,
+                  review.first_review_action_priority,
+                  review.first_review_action_target_card_id,
+                  review.first_review_action_gap_id
+                ]}
+              />
+              <List
+                label="Wymagane pola review"
+                values={review.first_review_required_fields}
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-md border border-line bg-white p-3">

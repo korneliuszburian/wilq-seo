@@ -44,6 +44,11 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("Kolejność review")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje produkcję")).toBeInTheDocument();
     expect(screen.getByText("Najpierw publiczne karty usług Ekologus.")).toBeInTheDocument();
+    expect(screen.getByText("Pierwszy review item")).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa"))
+      .toBeInTheDocument();
+    expect(screen.getByText("Wymagane pola review")).toBeInTheDocument();
+    expect(screen.getAllByText("source_trace_clear").length).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(
         "Potem prywatne propozycje ekologus-ai: service, claim-policy i evidence-policy."
@@ -475,6 +480,24 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       private_review_count: 5,
       private_service_review_count: 2,
       private_policy_review_count: 3,
+      first_review_action_id: "service_profile_review_card_ekologus_service_bdo_reporting",
+      first_review_action_label: "Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa",
+      first_review_action_reason:
+        "Karta ma publiczne źródło, ale wymaga decyzji człowieka zanim stanie się approved-current.",
+      first_review_action_scope: "public_service_card",
+      first_review_action_priority: "medium",
+      first_review_action_target_card_id: "ekologus_service_bdo_reporting",
+      first_review_action_gap_id: null,
+      first_review_required_fields: [
+        "action_id",
+        "target_card_id",
+        "decision",
+        "source_trace_clear",
+        "blocked_claims_reviewed",
+        "notes"
+      ],
+      first_review_safe_next_step:
+        "Weź tę publiczną kartę jako pierwszą: sprawdź źródło, zablokowane claimy i dopiero potem zdecyduj approve/needs_changes/stale/reject.",
       safe_next_step:
         "Najpierw przejrzyj publiczne karty usług, potem prywatne propozycje service, claim-policy i evidence-policy."
     },

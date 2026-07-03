@@ -635,6 +635,25 @@ export const ContentServiceProfileReviewActionSummarySchema = z.object({
   private_review_count: z.number(),
   private_service_review_count: z.number(),
   private_policy_review_count: z.number(),
+  first_review_action_id: z.string().nullable().optional(),
+  first_review_action_label: z.string().nullable().optional(),
+  first_review_action_reason: z.string().nullable().optional(),
+  first_review_action_scope: z
+    .enum([
+      "general_knowledge_review",
+      "public_service_card",
+      "coverage_gap",
+      "private_service_proposal",
+      "private_claim_policy_proposal",
+      "private_evidence_policy_proposal"
+    ])
+    .nullable()
+    .optional(),
+  first_review_action_priority: z.enum(["high", "medium", "low"]).nullable().optional(),
+  first_review_action_target_card_id: z.string().nullable().optional(),
+  first_review_action_gap_id: z.string().nullable().optional(),
+  first_review_required_fields: z.array(z.string()).default([]),
+  first_review_safe_next_step: z.string().nullable().optional(),
   safe_next_step: z.string()
 });
 

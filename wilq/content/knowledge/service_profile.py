@@ -220,6 +220,15 @@ class ContentServiceProfileReviewActionSummary(BaseModel):
     private_review_count: int
     private_service_review_count: int
     private_policy_review_count: int
+    first_review_action_id: str | None = None
+    first_review_action_label: str | None = None
+    first_review_action_reason: str | None = None
+    first_review_action_scope: ServiceProfileReviewActionScope | None = None
+    first_review_action_priority: ServiceProfileReviewActionPriority | None = None
+    first_review_action_target_card_id: str | None = None
+    first_review_action_gap_id: str | None = None
+    first_review_required_fields: list[str] = Field(default_factory=list)
+    first_review_safe_next_step: str | None = None
     safe_next_step: str
 
 
@@ -760,6 +769,7 @@ def _review_action_summary(
     *,
     review_actions: list[ContentServiceProfileReviewAction],
 ) -> ContentServiceProfileReviewActionSummary:
+    first_review_action = _first_review_action(review_actions)
     private_actions = [
         action
         for action in review_actions
@@ -796,12 +806,105 @@ def _review_action_summary(
         private_review_count=len(private_actions),
         private_service_review_count=len(private_service_actions),
         private_policy_review_count=len(private_policy_actions),
+        first_review_action_id=first_review_action.action_id
+        if first_review_action is not None
+        else None,
+        first_review_action_label=first_review_action.label
+        if first_review_action is not None
+        else None,
+        first_review_action_reason=first_review_action.reason
+        if first_review_action is not None
+        else None,
+        first_review_action_scope=first_review_action.review_scope
+        if first_review_action is not None
+        else None,
+        first_review_action_priority=first_review_action.priority
+        if first_review_action is not None
+        else None,
+        first_review_action_target_card_id=first_review_action.target_card_id
+        if first_review_action is not None
+        else None,
+        first_review_action_gap_id=first_review_action.gap_id
+        if first_review_action is not None
+        else None,
+        first_review_required_fields=_required_review_fields(first_review_action)
+        if first_review_action is not None
+        else [],
+        first_review_safe_next_step=_first_review_safe_next_step(first_review_action)
+        if first_review_action is not None
+        else None,
         safe_next_step=(
             "Najpierw przejrzyj publiczne karty usług, potem prywatne propozycje "
             "service i claim-policy; żadna akcja review nie promuje faktów bez "
             "osobnego prepare-only preview i audytu."
         ),
     )
+
+
+def _first_review_action(
+    review_actions: list[ContentServiceProfileReviewAction],
+) -> ContentServiceProfileReviewAction | None:
+    priority_order: dict[ServiceProfileReviewActionPriority, int] = {
+        "high": 0,
+        "medium": 1,
+        "low": 2,
+    }
+    scope_order: dict[ServiceProfileReviewActionScope, int] = {
+        "public_service_card": 0,
+        "private_service_proposal": 1,
+        "private_claim_policy_proposal": 2,
+        "private_evidence_policy_proposal": 3,
+        "coverage_gap": 4,
+        "general_knowledge_review": 5,
+    }
+    candidates = [
+        action for action in review_actions if action.mode == "review_request"
+    ] or review_actions
+    if not candidates:
+        return None
+    return sorted(
+        candidates,
+        key=lambda action: (
+            scope_order[action.review_scope],
+            priority_order[action.priority],
+            action.label,
+            action.action_id,
+        ),
+    )[0]
+
+
+def _required_review_fields(action: ContentServiceProfileReviewAction) -> list[str]:
+    return [
+        requirement.field
+        for requirement in action.review_requirements
+        if requirement.required
+    ]
+
+
+def _first_review_safe_next_step(
+    action: ContentServiceProfileReviewAction,
+) -> str:
+    if action.review_scope == "public_service_card":
+        return (
+            "Weź tę publiczną kartę jako pierwszą: sprawdź źródło, zablokowane "
+            "claimy i dopiero potem zdecyduj approve/needs_changes/stale/reject."
+        )
+    if action.review_scope == "private_service_proposal":
+        return (
+            "Pokaż redacted propozycję Wilkowi jako pytanie UAT; nie promuj jej "
+            "do source fact bez potwierdzenia klas danych, aktualności i retencji."
+        )
+    if action.review_scope in {
+        "private_claim_policy_proposal",
+        "private_evidence_policy_proposal",
+    }:
+        return (
+            "Sprawdź najpierw claim-policy/evidence-policy, bo od tego zależy, "
+            "czego WILQ nie może powiedzieć w treściach."
+        )
+    if action.review_scope == "coverage_gap":
+        return "Najpierw znajdź źródło dla luki, potem dopiero przygotuj kartę review."
+    return "Zbierz decyzję review człowieka przed jakąkolwiek promocją wiedzy."
 
 
 def _lifecycle(card: ContentKnowledgeCard) -> ContentKnowledgeLifecycleStatus:

@@ -122,6 +122,10 @@ Date: 2026-07-03
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run
   or live execution; live smoke must still report zero vendor writes.
+- 2026-07-03 Service Profile review summary now names the first concrete
+  review item. Live API keeps `read_only=true` and `ready_for_daily_content=false`,
+  but tells Wilku to start from the public BDO service card and lists the
+  required review fields before any knowledge promotion request.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

@@ -520,6 +520,14 @@ def test_service_profile_review_summary_uses_typed_scopes_not_action_ids() -> No
             mode="review_request",
             review_scope="public_service_card",
             priority="medium",
+            review_requirements=[
+                {
+                    "field": "source_trace_clear",
+                    "label": "czy ślad źródłowy jest czytelny",
+                    "requirement_type": "boolean",
+                    "required": True,
+                }
+            ],
             label="Sprawdź publiczną kartę",
             reason="Publiczna karta wymaga review.",
             blocked_write_claim="To nie promuje knowledge card.",
@@ -570,6 +578,12 @@ def test_service_profile_review_summary_uses_typed_scopes_not_action_ids() -> No
     assert summary.private_review_count == 2
     assert summary.private_service_review_count == 1
     assert summary.private_policy_review_count == 1
+    assert summary.first_review_action_id == "renamed_public_service_action"
+    assert summary.first_review_action_scope == "public_service_card"
+    assert summary.first_review_action_target_card_id == "public_card"
+    assert summary.first_review_required_fields == ["source_trace_clear"]
+    assert summary.first_review_safe_next_step
+    assert "publiczną kartę" in summary.first_review_safe_next_step
 
 
 def test_source_backed_waste_storage_card_matches_review_required_topic() -> None:
@@ -986,6 +1000,21 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.review_action_summary.review_request_count >= 10
     assert response.review_action_summary.prepare_count >= 1
     assert "nie promuje faktów" in response.review_action_summary.safe_next_step
+    assert response.review_action_summary.first_review_action_id
+    assert response.review_action_summary.first_review_action_label
+    assert response.review_action_summary.first_review_action_reason
+    assert response.review_action_summary.first_review_action_scope == "public_service_card"
+    assert response.review_action_summary.first_review_action_priority == "medium"
+    assert (
+        response.review_action_summary.first_review_action_target_card_id
+        in public_review_targets
+    )
+    assert response.review_action_summary.first_review_action_gap_id is None
+    assert required_review_fields <= set(
+        response.review_action_summary.first_review_required_fields
+    )
+    assert response.review_action_summary.first_review_safe_next_step
+    assert "publiczną kartę" in response.review_action_summary.first_review_safe_next_step
     private_review_actions = [
         action
         for action in response.review_actions

@@ -505,6 +505,15 @@ describe("ContentServiceProfileResponseSchema", () => {
         private_review_count: 0,
         private_service_review_count: 0,
         private_policy_review_count: 0,
+        first_review_action_id: "service_profile_request_knowledge_review",
+        first_review_action_label: "Poproś o review",
+        first_review_action_reason: "Review required.",
+        first_review_action_scope: "general_knowledge_review",
+        first_review_action_priority: "medium",
+        first_review_action_target_card_id: null,
+        first_review_action_gap_id: null,
+        first_review_required_fields: ["action_id", "source_trace_clear"],
+        first_review_safe_next_step: "Zbierz decyzję review człowieka.",
         safe_next_step: "Review public cards, then private proposals."
       },
       technical_trace: {
