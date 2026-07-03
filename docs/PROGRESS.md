@@ -135,6 +135,14 @@ Date: 2026-07-03
   recommendations, 1 action and all hard gates true. It separates `(not set)`
   measurement repair from readable landing/source/campaign traffic review and
   blocks ROI/revenue/conversion/write claims.
+- 2026-07-03 `wilq-merchant-feed-operator` reached 9/10 feed review level
+  after requiring visible `Kolejność review`, `Liczby bez pułapki`,
+  `Decyzja po review` and `Brief dla marketera`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T125343Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 4 evidence IDs, 5
+  recommendations, 6 action candidates and all hard gates true. It separates
+  issue occurrences from unique SKU, keeps product ROAS/revenue/reapproval/
+  write claims blocked and gives a first review queue.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

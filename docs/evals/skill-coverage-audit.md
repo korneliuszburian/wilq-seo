@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Generated: `2026-07-03T12:46:34+00:00`.
+Generated: `2026-07-03T12:55:27+00:00`.
 
 Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko najnowszy passing artifact i decyzję produktową.
 
@@ -20,12 +20,12 @@ Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebie
 | `wilq-custom-segments` | `.local-lab/evals/codex-skill/20260703T071835Z/wilq-custom-segments/result.json` | 5 | ready / review-only | 2 evidence IDs; connectors: google_ads, google_search_console; actions: act_prepare_custom_segments_from_search_terms | Można zrobić teraz: otwórz /ads-doctor i sprawdź pierwszą propozycję segmentu z rzeczywistych haseł źródłowych. Najpierw oceń intencję i usuń słabe lub przypadkowe frazy, bo WILQ… |
 | `wilq-demand-gen-operator` | `.local-lab/evals/codex-skill/20260703T072251Z/wilq-demand-gen-operator/result.json` | 5 | blocked correctly / review-only | 20 evidence IDs; connectors: google_ads, google_analytics_4; actions: act_review_demand_gen_readiness | Brak kampanii Demand Gen/Discovery w danych WILQ blokuje pełną ocenę. Zablokowane obietnice: rekomendacja uruchomienia Demand Gen, gotowość trybu Demand Gen, ocena jakości kreacji… |
 | `wilq-ga4-analyst` | `.local-lab/evals/codex-skill/20260703T124506Z/wilq-ga4-analyst/result.json` | 9 | ready / review-only | 19 evidence IDs; connectors: google_analytics_4, wordpress_ekologus; actions: act_review_ga4_tracking_quality | Najpierw Pomiar do naprawy: wyjaśnij wiersze (not set), bo GA4 nie podało strony wejścia albo źródła. Potem Ruch do oceny: przejrzyj tylko czytelne wiersze landing/source/campaign… |
-| `wilq-merchant-feed-operator` | `.local-lab/evals/codex-skill/20260703T055715Z/wilq-merchant-feed-operator/result.json` | 5 | ready / review-only | 4 evidence IDs; connectors: google_merchant_center, google_ads; actions: act_review_merchant_feed_issues | Otwórz /merchant i zacznij od kolejki Merchant: sprawdź grupę z miarą ceny jednostkowej, porównaj konteksty raportowania i uruchom sprawdzenie w WILQ dla przygotowania podglądu be… |
+| `wilq-merchant-feed-operator` | `.local-lab/evals/codex-skill/20260703T125343Z/wilq-merchant-feed-operator/result.json` | 9 | ready / review-only | 4 evidence IDs; connectors: google_merchant_center, google_ads; actions: act_review_merchant_feed_issues | Otwórz /merchant i zacznij od Kolejność review: największa grupa to miara ceny jednostkowej. Liczby bez pułapki: traktuj 1245 jako zgłoszenia raportowe, a 415 jako skalę największ… |
 
 ## Product Readout
 
 - 13/13 WILQ skills have a latest passing non-interactive eval.
-- Score range: `5`-`9`; `6` skills are already `7+/10`, and `0` are `10/10`.
+- Score range: `5`-`9`; `7` skills are already `7+/10`, and `0` are `10/10`.
 - Passing means: Polish operator output, WILQ API usage, source connectors, evidence IDs, blocked-claim handling and all hard gates true.
 - `blocked correctly / review-only` is a useful state when WILQ has evidence for the blocker but not enough proof for an action or claim.
 - If this file drifts, regenerate it with `rtk uv run python scripts/render_skill_coverage_audit.py --write docs/evals/skill-coverage-audit.md`.

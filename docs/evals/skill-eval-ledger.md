@@ -469,6 +469,15 @@ Focused proof:
   output separates `(not set)` as measurement repair from readable
   landing/source/campaign rows as traffic-quality review and blocks ROI,
   revenue, conversion and GA4 write claims.
+- Follow-up Merchant proof: `wilq-merchant-feed-operator` moved from the 5/10
+  baseline to 9/10 after requiring visible `Kolejność review`,
+  `Liczby bez pułapki`, `Decyzja po review` and `Brief dla marketera`. The
+  passing proof is `.local-lab/evals/codex-skill/20260703T125343Z` with
+  `operator_usefulness_score=9`, `blocked=false`, `failure_tags=[]`, 4
+  evidence IDs, 5 recommendations, 6 action candidates and all hard gates true.
+  The output tells the operator that Merchant counts are issue occurrences /
+  samples, not unique SKU, blocks product ROAS/revenue/reapproval/write claims
+  and gives the first review queue.
 
 Interpretation:
 

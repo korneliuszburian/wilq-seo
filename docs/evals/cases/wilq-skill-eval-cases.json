@@ -777,6 +777,16 @@
       "wpływ zmiany ceny",
       "zwrot z reklam na poziomie produktu"
     ],
+    "required_decision_terms_pl": [
+      "Kolejność review",
+      "Liczby bez pułapki",
+      "Czego nie wiemy",
+      "Decyzja po review",
+      "Brief dla marketera",
+      "zgłoszenia",
+      "nie unikalne SKU"
+    ],
+    "minimum_operator_usefulness_score": 9,
     "blocked_claim_terms": [
       "zwrot z reklam na poziomie produktu",
       "odzyskany przychód produktu",

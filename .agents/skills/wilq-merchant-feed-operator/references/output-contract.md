@@ -18,23 +18,31 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Kolejność review`, `Liczby bez pułapki`, `Przykładowe produkty`, `Czego nie wiemy`, `Decyzja po review`, `Brief dla marketera`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
 1. `Status`: zasięg API, gotowość źródeł danych, `freshness_assessment` i znane blokady. Jeśli `freshness_assessment.requires_refresh=true` albo `state=stale|missing|blocked`, oznacz wynik jako przegląd nieświeżych danych lub blokad zamiast aktualnego stanu produkcyjnego.
 2. `Dowody`: Merchant diagnostics identyfikatorów sekcji, identyfikatory dowodów, identyfikatory źródeł danych, stan ostatniego odczytu, wymiary problemów, podsumowania metryk, gotowość próbek produktów, `product_performance_readiness` i `price_impact_readiness` wyłącznie z WILQ API.
 3. `Kolejka review`: grupuj finalne rekomendacje po `decision_queue`. `issue_clusters` pokazuj tylko jako drilldown raportowania. Jeśli `count_semantics=reported_issue_occurrences`, wartości `product_count`, `issue_count`, `max zgłoszeń` i `raporty razem` opisuj jako wystąpienia/zgłoszenia problemu, nie jako unikalne produkty, SKU ani listę produktów do poprawy.
-4. `Przykładowe produkty`: jeśli `product_sample_readiness.sample_products_available=true`, pokaż kilka `sample_product_ids` albo tytułów jako materiał do sprawdzenia. Nie traktuj próbek jako pełnej listy SKU ani zgody na zapis do pliku produktowego.
-5. `Czego nie wiemy`: opisz `unknowns` z `/api/merchant/diagnostics`, szczególnie brak unikalnej liczby produktów, brak pełnego SKU workflow, brak próbek dla części klastrów, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`.
+   W widocznej odpowiedzi użyj etykiety `Kolejność review` i wskaż pierwszy
+   krok pracy: największa grupa problemów, najwyższe ryzyko, mapping
+   Ads/product state albo próbki produktów.
+4. `Liczby bez pułapki`: wyjaśnij, czy liczby oznaczają zgłoszenia/wystąpienia
+   problemów, próbki produktów czy unikalne SKU. Jeśli WILQ nie ma liczby
+   unikalnych SKU, powiedz to wprost.
+5. `Przykładowe produkty`: jeśli `product_sample_readiness.sample_products_available=true`, pokaż kilka `sample_product_ids` albo tytułów jako materiał do sprawdzenia. Nie traktuj próbek jako pełnej listy SKU ani zgody na zapis do pliku produktowego.
+6. `Czego nie wiemy`: opisz `unknowns` z `/api/merchant/diagnostics`, szczególnie brak unikalnej liczby produktów, brak pełnego SKU workflow, brak próbek dla części klastrów, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`.
    Cytuj `missing_read_contracts` jako faktycznie brakujące kontrakty, a
    `required_read_contracts` tylko jako pełną listę wymagań. Nie łącz tych list
    w jeden "brak", bo WILQ może mieć część wymagań już spełnioną. Jeśli
    `missing_read_contracts` jest dostępne, wypisz jego wartości literalnie jako
    faktyczny brak.
-6. `Diagnoza`: co `/api/merchant/diagnostics` wspiera, z niepewnością jeśli dowody są zagregowane, nieświeże, niepełne albo zablokowane uprawnieniami.
-7. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
-8. `Sprawdzenie w WILQ`: pokaż różnicę między statusem akcji w pakiecie kontekstuu a bieżącym wynikiem `POST /api/actions/{action_id}/validate`. `valid=true` oznacza tylko ścieżkę sprawdzenia/przygotowania, nie zapis zmian.
-9. `Następny krok`: najmniejszy bezpieczny krok operatora.
+7. `Decyzja po review`: powiedz, co może wydarzyć się po ręcznym sprawdzeniu: lista poprawek do feedu, eskalacja landing page error, odświeżenie danych, niskie ryzyko albo blokada do czasu danych skuteczności.
+8. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co WILQ widzi w Merchant, który problem idzie pierwszy, jak czytać liczby i czego nie wolno obiecać.
+9. `Diagnoza`: co `/api/merchant/diagnostics` wspiera, z niepewnością jeśli dowody są zagregowane, nieświeże, niepełne albo zablokowane uprawnieniami.
+10. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+11. `Sprawdzenie w WILQ`: pokaż różnicę między statusem akcji w pakiecie kontekstuu a bieżącym wynikiem `POST /api/actions/{action_id}/validate`. `valid=true` oznacza tylko ścieżkę sprawdzenia/przygotowania, nie zapis zmian.
+12. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
 ## Warunki odmowy lub obniżenia do blokady
 
