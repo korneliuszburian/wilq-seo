@@ -688,6 +688,13 @@
       "review_traffic_quality",
       "landing/source/campaign"
     ],
+    "required_decision_terms_pl": [
+      "Pomiar do naprawy",
+      "Ruch do oceny",
+      "(not set)",
+      "nie oceniaj",
+      "GA4 nie podało strony wejścia"
+    ],
     "blocked_claim_terms": [
       "opłacalność",
       "ROI",

@@ -300,6 +300,41 @@ Result:
   It keeps CPA/ROAS, wasted budget, write/apply and segment forecast claims
   blocked without exposing raw schema names to the marketer.
 
+## 2026-07-03 - GA4 not-set wording tune
+
+Purpose:
+
+- Reduce operator confusion around GA4 `(not set)` rows and WILQ blocker
+  language.
+- Make the skill explain that `(not set)` is GA4 measurement/attribution data
+  to repair, not proof that a campaign or landing page is weak.
+
+Change:
+
+- `wilq-ga4-analyst` now separates:
+  - `Pomiar do naprawy`: rows with `(not set)` landing/source/campaign data.
+  - `Ruch do oceny`: rows with readable landing page and source/campaign.
+  - `Czego nie wolno twierdzić`: ROI, revenue, conversion and GA4-write claims.
+- The eval case now requires those human-readable decision terms instead of
+  relying only on raw decision types.
+
+Proof:
+
+```bash
+rtk uv run python /home/krn/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/wilq-ga4-analyst
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing artifact:
+  `.local-lab/evals/codex-skill/20260703T070939Z`, with
+  `operator_usefulness_score=5`, `failure_tags=[]` and all hard gates true.
+- Visible output starts with: "Pomiar do naprawy: GA4 nie podało strony
+  wejścia..." and then separates "Ruch do oceny" for readable landing/source
+  rows.
+
 ## 2026-07-02 - Daily Command usefulness eval
 
 Purpose:

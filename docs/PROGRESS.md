@@ -70,6 +70,11 @@ Date: 2026-07-03
   passing artifact is `.local-lab/evals/codex-skill/20260703T070219Z`; raw Ads
   contract fields now stay in technical `notes`, while visible copy says which
   review queue to open and which claims/writes remain blocked.
+- 2026-07-03 GA4 `(not set)` wording was tuned after the operator confusion
+  around "blocked" rows. The skill now separates `Pomiar do naprawy` from
+  `Ruch do oceny`: `(not set)` rows are measurement rows to fix, while readable
+  landing/source rows can be reviewed for traffic quality. Passing artifact:
+  `.local-lab/evals/codex-skill/20260703T070939Z`.
 - 2026-07-03 Goal 006 candidate `wilq-seo-1xv` was closed as already
   implementation-complete: `scripts/claim_ledger_gate_audit.py --format json`
   passed 13/13 and focused Claim Ledger/generation gate tests passed 65/65.
