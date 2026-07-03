@@ -230,6 +230,45 @@ class ContentWorkItemWordPressDraftExecutionResponse(BaseModel):
     execution_result: ContentWordPressDraftExecutionResult
 
 
+class ContentWordPressDraftWriteReadinessRequirement(BaseModel):
+    event_type: str
+    label: str
+    satisfied: bool = False
+    audit_event_id: str | None = None
+    actor: str | None = None
+
+
+class ContentWordPressDraftWriteReadinessBlocker(BaseModel):
+    code: str
+    label: str
+    reason: str
+    next_step: str
+
+
+class ContentWordPressDraftWriteReadinessResponse(BaseModel):
+    response_type: Literal["wordpress_draft_write_readiness"] = (
+        "wordpress_draft_write_readiness"
+    )
+    contract: Literal["wordpress_draft_write_readiness_v1"] = (
+        "wordpress_draft_write_readiness_v1"
+    )
+    connector: str = "wordpress_ekologus"
+    action_id: str = "act_prepare_wordpress_draft_handoff"
+    ready: bool = False
+    live_write_enabled_by_env: bool = False
+    rest_adapter_configured: bool = False
+    publish_allowed: Literal[False] = False
+    destructive_update_allowed: Literal[False] = False
+    required_audit_events: list[ContentWordPressDraftWriteReadinessRequirement] = (
+        Field(default_factory=list)
+    )
+    suggested_write_authorization: ContentWordPressDraftWriteAuthorization | None = None
+    blockers: list[ContentWordPressDraftWriteReadinessBlocker] = Field(default_factory=list)
+    operator_next_step: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+
+
 class ContentWorkItemWordPressAuthoringPayloadPreviewRequest(BaseModel):
     handoff: ContentWordPressDraftHandoff | None = None
     draft_package: ContentDraftPackage | None = None

@@ -36,6 +36,11 @@ Date: 2026-07-03
   review packet at 7.5/10, keeps Goal 005 blocked on real Wilku UAT or owner
   defer, and moved technical IDs/language lower in
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
+- 2026-07-03 WordPress draft write readiness is now API-owned at
+  `/api/content/wordpress/draft-write-readiness`. Live smoke says REST is
+  configured, but live draft write remains blocked until env enablement and the
+  full ActionObject audit trail exist. This is the pattern for future real
+  write/mutation readiness before Ads or WordPress writes.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

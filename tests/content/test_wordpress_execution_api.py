@@ -70,6 +70,16 @@ def _post_wordpress_execution(payload: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _get_wordpress_write_readiness() -> dict[str, Any]:
+    response = TestClient(app).get(
+        "/api/content/wordpress/draft-write-readiness",
+    )
+    assert response.status_code == 200
+    data = cast(dict[str, Any], response.json())
+    assert data["response_type"] == "wordpress_draft_write_readiness"
+    return data
+
+
 def _write_authorization(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "action_id": "act_prepare_wordpress_draft_handoff",
@@ -284,6 +294,62 @@ def test_wordpress_execution_api_live_adapter_failure_is_blocked(
     ]
     assert result["blockers"][0]["reason"] == "WordPress odrzucił szkic testowy."
     assert "secret technical details" not in str(result)
+
+
+def test_wordpress_write_readiness_blocks_when_live_env_is_disabled(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_readiness.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    monkeypatch.delenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", raising=False)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://example.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "wilq")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+    data = _get_wordpress_write_readiness()
+
+    assert data["ready"] is False
+    assert data["live_write_enabled_by_env"] is False
+    assert data["rest_adapter_configured"] is True
+    assert data["suggested_write_authorization"] is None
+    assert data["source_connectors"] == ["wordpress_ekologus"]
+    assert data["evidence_ids"] == ["ev_connector_wordpress_ekologus_status"]
+    assert "draft_writes_env_disabled" in [blocker["code"] for blocker in data["blockers"]]
+    assert [requirement["satisfied"] for requirement in data["required_audit_events"]] == [
+        False,
+        False,
+        False,
+        False,
+    ]
+
+
+def test_wordpress_write_readiness_builds_authorization_from_audit_trail(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_readiness_ready.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://example.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "wilq")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+    _persist_write_authorization_events()
+
+    data = _get_wordpress_write_readiness()
+
+    assert data["ready"] is True
+    assert data["live_write_enabled_by_env"] is True
+    assert data["rest_adapter_configured"] is True
+    assert data["blockers"] == []
+    assert data["suggested_write_authorization"] == _write_authorization()
+    assert [requirement["satisfied"] for requirement in data["required_audit_events"]] == [
+        True,
+        True,
+        True,
+        True,
+    ]
+    assert "gotowa" in data["operator_next_step"]
 
 
 def _persist_write_authorization_events() -> None:

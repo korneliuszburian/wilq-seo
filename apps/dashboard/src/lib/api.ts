@@ -43,6 +43,7 @@ import {
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
+  ContentWordPressDraftWriteReadinessResponseSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
   EvidenceSchema,
@@ -111,6 +112,7 @@ import {
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWordPressDraftHandoffRequest,
   type ContentWorkItemWordPressDraftHandoffResponse,
+  type ContentWordPressDraftWriteReadinessResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
@@ -230,6 +232,13 @@ export function getSocialHistoryInventory(): Promise<SocialHistoryInventory> {
 
 export function getWordPressAuthoringProfile(): Promise<WordPressAuthoringProfile> {
   return apiGet("/api/content/wordpress/authoring-profile", WordPressAuthoringProfileSchema);
+}
+
+export function getContentWordPressDraftWriteReadiness(): Promise<ContentWordPressDraftWriteReadinessResponse> {
+  return apiGet(
+    "/api/content/wordpress/draft-write-readiness",
+    ContentWordPressDraftWriteReadinessResponseSchema
+  );
 }
 
 export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
@@ -608,6 +617,7 @@ export type {
   ContentWorkItemWordPressDraftHandoffRequest,
   ContentWorkItemWordPressDraftHandoffResponse,
   ContentWorkItemWorkflowSnapshotResponse,
+  ContentWordPressDraftWriteReadinessResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   DemandGenReadinessContract,

@@ -80,6 +80,9 @@ from wilq.content.review.human import (
 )
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.contracts import (
+    ContentWordPressDraftWriteReadinessBlocker,
+    ContentWordPressDraftWriteReadinessRequirement,
+    ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
@@ -126,7 +129,7 @@ from wilq.content.workflow.decision_mapping import (
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.queue import build_content_work_item_queue_response
 from wilq.credentials.runtime import variable_value
-from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
+from wilq.schemas import AuditEvent, ContentDecisionItem, ContentDiagnosticsResponse
 from wilq.storage.local_state import local_state_store
 
 
@@ -376,6 +379,67 @@ def build_content_work_item_wordpress_draft_execution_response(
     )
 
 
+def build_content_wordpress_draft_write_readiness_response(
+    action_id: str = "act_prepare_wordpress_draft_handoff",
+    connector_id: str = "wordpress_ekologus",
+) -> ContentWordPressDraftWriteReadinessResponse:
+    live_write_enabled = _wordpress_draft_writes_enabled()
+    profile = build_wordpress_authoring_profile(connector_id)
+    rest_adapter_configured = profile.rest_api.status == "configured"
+    requirements, authorization = _wordpress_draft_write_audit_readiness(action_id)
+    blockers: list[ContentWordPressDraftWriteReadinessBlocker] = []
+    if not live_write_enabled:
+        blockers.append(
+            ContentWordPressDraftWriteReadinessBlocker(
+                code="draft_writes_env_disabled",
+                label="Zapis szkiców WordPress jest wyłączony",
+                reason=(
+                    "WILQ może przygotować i sprawdzić szkic, ale live write wymaga "
+                    "jawnego włączenia WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES."
+                ),
+                next_step=(
+                    "Zostaw tryb dry-run albo włącz env dopiero po potwierdzeniu "
+                    "ścieżki preview, review, confirm i audit."
+                ),
+            )
+        )
+    if not rest_adapter_configured:
+        blockers.append(
+            ContentWordPressDraftWriteReadinessBlocker(
+                code="wordpress_rest_adapter_not_configured",
+                label="Adapter REST WordPress nie jest gotowy",
+                reason=(
+                    "Brakuje kompletnej konfiguracji REST: adresu WordPress i "
+                    "uwierzytelnienia aplikacyjnego."
+                ),
+                next_step=(
+                    "Uzupełnij konfigurację WordPress REST dla connectora, potem "
+                    "sprawdź authoring profile i dopiero wróć do live write."
+                ),
+            )
+        )
+    blockers.extend(_wordpress_draft_write_audit_blockers(requirements, authorization))
+    ready = (
+        live_write_enabled
+        and rest_adapter_configured
+        and authorization is not None
+        and not blockers
+    )
+    return ContentWordPressDraftWriteReadinessResponse(
+        connector=connector_id,
+        action_id=action_id,
+        ready=ready,
+        live_write_enabled_by_env=live_write_enabled,
+        rest_adapter_configured=rest_adapter_configured,
+        required_audit_events=requirements,
+        suggested_write_authorization=authorization if ready else None,
+        blockers=blockers,
+        operator_next_step=_wordpress_draft_write_next_step(ready, blockers),
+        evidence_ids=profile.evidence_ids,
+        source_connectors=profile.source_connectors or [connector_id],
+    )
+
+
 def _wordpress_draft_writes_enabled() -> bool:
     return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
         "1",
@@ -421,6 +485,152 @@ def _wordpress_draft_write_authorization_verified(
         and confirmation_event.actor == confirmed_by
         and apply_event.actor == confirmed_by
     )
+
+
+def _wordpress_draft_write_audit_readiness(
+    action_id: str,
+) -> tuple[
+    list[ContentWordPressDraftWriteReadinessRequirement],
+    ContentWordPressDraftWriteAuthorization | None,
+]:
+    events = sorted(
+        local_state_store().list_audit_events(action_id=action_id),
+        key=lambda event: event.created_at,
+        reverse=True,
+    )
+    preview = _latest_exact_event(events, "action_preview_generated")
+    review = _latest_prefix_event(events, "human_review_")
+    confirmation = _latest_exact_event(events, "action_apply_confirmed")
+    apply = _latest_exact_event(events, "apply_succeeded")
+    requirements = [
+        _readiness_requirement(
+            event_type="action_preview_generated",
+            label="Podgląd akcji wygenerowany",
+            event=preview,
+        ),
+        _readiness_requirement(
+            event_type="human_review_*",
+            label="Review człowieka zapisane",
+            event=review,
+        ),
+        _readiness_requirement(
+            event_type="action_apply_confirmed",
+            label="Potwierdzenie operatora zapisane",
+            event=confirmation,
+        ),
+        _readiness_requirement(
+            event_type="apply_succeeded",
+            label="Audit apply_succeeded zapisany",
+            event=apply,
+        ),
+    ]
+    if (
+        preview is None
+        or review is None
+        or confirmation is None
+        or apply is None
+        or not confirmation.actor.strip()
+        or confirmation.actor != apply.actor
+    ):
+        return requirements, None
+    return requirements, ContentWordPressDraftWriteAuthorization(
+        action_id=action_id,
+        preview_audit_id=preview.id,
+        review_audit_id=review.id,
+        confirmation_audit_id=confirmation.id,
+        apply_audit_id=apply.id,
+        confirmed_by=confirmation.actor,
+    )
+
+
+def _latest_exact_event(
+    events: list[AuditEvent],
+    event_type: str,
+) -> AuditEvent | None:
+    return next((event for event in events if event.event_type == event_type), None)
+
+
+def _latest_prefix_event(
+    events: list[AuditEvent],
+    event_type_prefix: str,
+) -> AuditEvent | None:
+    return next(
+        (event for event in events if event.event_type.startswith(event_type_prefix)),
+        None,
+    )
+
+
+def _readiness_requirement(
+    *,
+    event_type: str,
+    label: str,
+    event: AuditEvent | None,
+) -> ContentWordPressDraftWriteReadinessRequirement:
+    return ContentWordPressDraftWriteReadinessRequirement(
+        event_type=event_type,
+        label=label,
+        satisfied=event is not None,
+        audit_event_id=event.id if event is not None else None,
+        actor=event.actor if event is not None else None,
+    )
+
+
+def _wordpress_draft_write_audit_blockers(
+    requirements: list[ContentWordPressDraftWriteReadinessRequirement],
+    authorization: ContentWordPressDraftWriteAuthorization | None,
+) -> list[ContentWordPressDraftWriteReadinessBlocker]:
+    missing = [requirement for requirement in requirements if not requirement.satisfied]
+    blocker_codes = {
+        "action_preview_generated": "missing_action_preview_audit",
+        "human_review_*": "missing_human_review_audit",
+        "action_apply_confirmed": "missing_action_confirmation_audit",
+        "apply_succeeded": "missing_apply_success_audit",
+    }
+    blockers = [
+        ContentWordPressDraftWriteReadinessBlocker(
+            code=blocker_codes.get(requirement.event_type, "missing_action_audit"),
+            label=f"Brakuje: {requirement.label}",
+            reason=(
+                "Live write wymaga pełnego śladu ActionObject zanim adapter "
+                "WordPress może zapisać szkic."
+            ),
+            next_step=(
+                "Wykonaj validate/preview, review człowieka i confirm/apply "
+                "w WILQ, bez ręcznego składania ID."
+            ),
+        )
+        for requirement in missing
+    ]
+    if not missing and authorization is None:
+        blockers.append(
+            ContentWordPressDraftWriteReadinessBlocker(
+                code="audit_actor_mismatch",
+                label="Audit trail nie wskazuje jednego operatora",
+                reason=(
+                    "Potwierdzenie i apply muszą mieć tego samego niepustego aktora, "
+                    "żeby WILQ mógł zbudować write_authorization."
+                ),
+                next_step=(
+                    "Powtórz confirm/apply jedną ścieżką operatora zamiast "
+                    "składać audit ręcznie."
+                ),
+            )
+        )
+    return blockers
+
+
+def _wordpress_draft_write_next_step(
+    ready: bool,
+    blockers: list[ContentWordPressDraftWriteReadinessBlocker],
+) -> str:
+    if ready:
+        return (
+            "Ścieżka zapisu szkicu jest gotowa: użyj suggested_write_authorization "
+            "tylko dla trybu live i nadal zapisuj wyłącznie draft."
+        )
+    if blockers:
+        return blockers[0].next_step
+    return "Uruchom readiness ponownie po przygotowaniu ścieżki ActionObject."
 
 
 def build_content_work_item_wordpress_authoring_payload_preview_response(

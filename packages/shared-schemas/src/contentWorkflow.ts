@@ -1230,6 +1230,39 @@ export const ContentWordPressDraftWriteAuthorizationSchema = z.object({
   confirmed_by: z.string()
 });
 
+export const ContentWordPressDraftWriteReadinessRequirementSchema = z.object({
+  event_type: z.string(),
+  label: z.string(),
+  satisfied: z.boolean().default(false),
+  audit_event_id: z.string().nullable().optional(),
+  actor: z.string().nullable().optional()
+});
+
+export const ContentWordPressDraftWriteReadinessBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string()
+});
+
+export const ContentWordPressDraftWriteReadinessResponseSchema = z.object({
+  response_type: z.literal("wordpress_draft_write_readiness"),
+  contract: z.literal("wordpress_draft_write_readiness_v1"),
+  connector: z.string(),
+  action_id: z.string(),
+  ready: z.boolean(),
+  live_write_enabled_by_env: z.boolean(),
+  rest_adapter_configured: z.boolean(),
+  publish_allowed: z.literal(false),
+  destructive_update_allowed: z.literal(false),
+  required_audit_events: z.array(ContentWordPressDraftWriteReadinessRequirementSchema).default([]),
+  suggested_write_authorization: ContentWordPressDraftWriteAuthorizationSchema.nullable().optional(),
+  blockers: z.array(ContentWordPressDraftWriteReadinessBlockerSchema).default([]),
+  operator_next_step: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([])
+});
+
 export const ContentWordPressDraftExecutionResultSchema = z.object({
   status: z.enum(["dry_run_ready", "created", "blocked"]),
   mode: z.enum(["dry_run", "live"]),
@@ -1543,6 +1576,9 @@ export type ContentWorkItemWordPressDraftExecutionRequest = z.input<
 >;
 export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
   typeof ContentWorkItemWordPressDraftExecutionResponseSchema
+>;
+export type ContentWordPressDraftWriteReadinessResponse = z.infer<
+  typeof ContentWordPressDraftWriteReadinessResponseSchema
 >;
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema

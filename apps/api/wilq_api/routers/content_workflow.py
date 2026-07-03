@@ -22,6 +22,7 @@ from wilq.content.knowledge.service_profile import (
 )
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
+    build_content_wordpress_draft_write_readiness_response,
     build_content_work_item_blocked_snapshot_response_for_work_item,
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_diagnostics_snapshot_response_for_work_item,
@@ -45,6 +46,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_wordpress_draft_handoff_response,
 )
 from wilq.content.workflow.contracts import (
+    ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsRequest,
@@ -113,6 +115,16 @@ def content_service_profile() -> ContentServiceProfileResponse:
 )
 def content_wordpress_authoring_profile() -> WordPressAuthoringProfile:
     return build_wordpress_authoring_profile("wordpress_ekologus")
+
+
+@router.get(
+    "/api/content/wordpress/draft-write-readiness",
+    response_model=ContentWordPressDraftWriteReadinessResponse,
+)
+def content_wordpress_draft_write_readiness(
+    action_id: str = "act_prepare_wordpress_draft_handoff",
+) -> ContentWordPressDraftWriteReadinessResponse:
+    return build_content_wordpress_draft_write_readiness_response(action_id=action_id)
 
 
 @router.get(
