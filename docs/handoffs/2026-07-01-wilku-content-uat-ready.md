@@ -1,15 +1,22 @@
-# Wilku Content UAT - przygotowanie sesji
+# Historyczne zaplecze Goal 005 content UAT
 
 Data przygotowania: 2026-07-01
 Ostatnia aktualizacja: 2026-07-02 09:55 CEST
 
-Status: gotowe do pokazania jako sesja review/blokad i traceability, nie jako
-ukończony UAT.
+Status: zaplecze techniczne i format zapisu wyniku. Nie używaj jako pierwszego
+materiału do pokazania Wilkowi.
 
 Zacznij od krótkiej instrukcji:
 `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`. Ten dokument poniżej jest
 szczegółowym zapleczem i formatem zapisu wyniku, nie pierwszą rzeczą do
 czytania na głos.
+
+Aktualne materiały do rozmowy są krótsze i bardziej ludzkie:
+
+- `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md`
+- `docs/handoffs/2026-07-02-wilku-bdo-uat-review.md`
+- `docs/handoffs/2026-07-02-wilku-claim-ledger-gate.md`
+- `docs/handoffs/2026-07-02-wilku-social-history-blocker.md`
 
 Aktualizacja po rozdzieleniu review actions: UAT packet pokazuje teraz osobno
 publiczne review actions dla kart usług i prywatne review actions z

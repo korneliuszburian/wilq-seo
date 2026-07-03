@@ -283,6 +283,10 @@ Date: 2026-07-03
   Polish operator wording for review/metadata/raw/live-proof concepts. Technical
   commands, IDs and enum values remain only where they are needed as proof or
   input examples.
+- 2026-07-03 the primary "Co pokazać Wilkowi" handoff no longer points at the
+  old 2026-07-01 content UAT proof as the first current-state material. That
+  file is now explicitly marked as technical background/recording format, while
+  the current first materials are Service Profile review and Claim Ledger.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must

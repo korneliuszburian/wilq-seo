@@ -204,7 +204,7 @@ Powiedz też:
 
 Pokaż:
 
-- `docs/handoffs/2026-07-01-wilku-content-uat-ready.md`
+- `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md`
 - `docs/handoffs/2026-07-02-wilku-claim-ledger-gate.md`
 
 Powiedz:
@@ -213,6 +213,10 @@ Powiedz:
 > finalnych treści. Blokuje pełny brief, bo brakuje zatwierdzonej karty usługi
 > i zatwierdzonego CTA. Dodatkowo ma Claim Ledger, czyli listę tego, co wolno
 > powiedzieć, co wymaga człowieka i czego model nie może przemycić do szkicu.
+
+Stary plik `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` traktuj jako
+zaplecze techniczne i format zapisu wyniku, nie jako materiał do czytania
+Wilkowi jako pierwszy.
 
 Zapytaj:
 
