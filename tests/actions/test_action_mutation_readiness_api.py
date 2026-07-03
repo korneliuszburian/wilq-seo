@@ -90,8 +90,12 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     assert "missing_payload_apply_allowed" in blocker_codes
     assert "missing_mutation_adapter" not in blocker_codes
     assert "wordpress_draft_write_readiness" in requirement_codes
+    assert "wordpress_draft_handoff_ready" in requirement_codes
+    assert "wordpress_draft_package_ready" in requirement_codes
     assert "wordpress_draft_live_write_env" in requirement_codes
     assert "wordpress_write_authorization" in requirement_codes
+    assert "missing_wordpress_draft_handoff_ready" in blocker_codes
+    assert "missing_wordpress_draft_package_ready" in blocker_codes
     assert "missing_wordpress_draft_write_readiness" in blocker_codes
     assert "missing_wordpress_draft_live_write_env" in blocker_codes
     assert "missing_wordpress_write_authorization" in blocker_codes

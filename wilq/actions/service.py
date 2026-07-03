@@ -2941,6 +2941,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
             evidence=mutation_adapter,
         ),
     ]
+    requirements.extend(_wordpress_draft_execution_readiness_requirements(action))
     requirements.extend(_wordpress_draft_write_readiness_requirements(action))
     blockers = _mutation_readiness_blockers(requirements)
     vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
@@ -3192,6 +3193,36 @@ def _wordpress_draft_write_readiness_requirements(
     ]
 
 
+def _wordpress_draft_execution_readiness_requirements(
+    action: ActionObject,
+) -> list[ActionMutationReadinessRequirement]:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return []
+    execution = execute_content_wordpress_draft_handoff(
+        handoff=None,
+        draft_package=None,
+        mode="dry_run",
+        live_write_enabled=False,
+        create_draft=None,
+    )
+    blocker_codes = {blocker.code for blocker in execution.blockers}
+    blocker_evidence = ", ".join(blocker.code for blocker in execution.blockers) or None
+    return [
+        _mutation_requirement(
+            code="wordpress_draft_handoff_ready",
+            label="Zatwierdzone przekazanie do WordPress istnieje",
+            satisfied="missing_handoff" not in blocker_codes,
+            evidence=blocker_evidence or "ready",
+        ),
+        _mutation_requirement(
+            code="wordpress_draft_package_ready",
+            label="Paczka szkicu WordPress istnieje",
+            satisfied="missing_draft_package" not in blocker_codes,
+            evidence=blocker_evidence or "ready",
+        ),
+    ]
+
+
 def _apply_audit_event_type(errors: list[str]) -> str:
     if not errors:
         return "apply_succeeded"
@@ -3400,6 +3431,25 @@ def _mutation_readiness_blockers(
             "WordPress draft write readiness blokuje zapis",
             "Osobny kontrakt WordPress draft write readiness nie pozwala jeszcze na live write.",
             "Sprawdź env, REST adapter i audyty w readiness szkicu WordPress.",
+        ),
+        "wordpress_draft_handoff_ready": (
+            "Brakuje zatwierdzonego przekazania do WordPress",
+            (
+                "Adapter draft-only nie ma jeszcze zatwierdzonego handoffu, "
+                "który wolno zamienić na szkic."
+            ),
+            "Doprowadź wybrany work item przez draft package, human review i WordPress handoff.",
+        ),
+        "wordpress_draft_package_ready": (
+            "Brakuje paczki szkicu WordPress",
+            (
+                "Adapter nie może tworzyć wpisu z samego ActionObject; "
+                "potrzebuje zatwierdzonej paczki treści."
+            ),
+            (
+                "Przygotuj draft package z claim ledgerem, sekcjami i dowodami, "
+                "potem wróć do handoffu."
+            ),
         ),
         "wordpress_draft_live_write_env": (
             "Env nie pozwala na zapis szkicu WordPress",

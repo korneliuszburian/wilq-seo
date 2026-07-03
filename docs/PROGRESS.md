@@ -118,6 +118,12 @@ Date: 2026-07-03
   both labels in Polish. Live smoke after restart still reports
   `vendor_write_possible_count=0` and `would_attempt_vendor_write_count=0` for
   the WordPress draft-only candidate.
+- 2026-07-03 WordPress draft apply readiness now also exposes execution
+  blockers from the real WordPress dry-run contract: missing approved handoff
+  and missing draft package. Live smoke still reports zero possible vendor
+  writes, while the first write candidate now names
+  `missing_wordpress_draft_handoff_ready` and
+  `missing_wordpress_draft_package_ready` before any real write path.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
