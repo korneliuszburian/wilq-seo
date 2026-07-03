@@ -124,7 +124,15 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Temat rozmowy: SEO: odśwież lub scal \"ekologus\"" in card
     assert "URL / miejsce w serwisie: https://www.ekologus.pl/" in card
     assert "Decyzja contentowa WILQ: odśwież istniejącą treść" in card
-    assert "Techniczny work item do JSON" in card
+    status_section = card.split("## Pierwsza decyzja review")[0]
+    assert "content_work_item_content_decision_https___www_ekologus_pl" not in (
+        status_section
+    )
+    assert "google_search_console" not in status_section
+    assert "## Dane techniczne do proof" in card
+    assert "Work item ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
+    public_section = card.split("## Dane techniczne do proof")[0]
+    assert "renamed_public_service_bdo_review" not in public_section
     assert "renamed_public_service_bdo_review" in card
     assert "Sprawdź kartę BDO" in card
     assert "Możliwe decyzje: zatwierdź do dalszego użycia" in card
@@ -134,7 +142,7 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "approve/needs_changes/stale/reject" not in card.split(
         "Techniczny zapis do JSON"
     )[0]
-    assert "Techniczny zapis do JSON" in card
+    assert "Service Profile review JSON" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card
     assert "Service Profile review - co pokazać teraz" in card

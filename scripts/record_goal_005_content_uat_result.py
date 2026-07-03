@@ -264,23 +264,14 @@ def render_content_uat_session_card(
         f"{selected_content_candidate_reason(provenance)}",
         "- Bezpieczny następny krok: "
         f"{selected_content_candidate_next_step(provenance)}",
-        f"- Techniczny work item do JSON: `{selected_work_item}`",
-        "- Kolejka content: "
-        f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
         "- Service Profile production-depth: "
         f"{visible_bool(provenance.get('production_depth_ready') is True)}",
-        "- Sales Brief wybranego itemu: "
-        f"`{provenance.get('selected_sales_brief_status') or 'brak live proof'}`",
-        "- Źródła wybranego itemu: "
-        f"{', '.join(provenance.get('selected_source_connectors') or []) or 'brak live proof'}",
         "",
         "## Pierwsza decyzja review",
         "",
         f"- {first_review}",
         f"- Możliwe decyzje: {decision_options}",
         f"- Co trzeba ocenić: {required_fields}",
-        "- Techniczny zapis do JSON: "
-        f"{first_service_profile_review_label(provenance)}",
         "",
         "## Co pokazać",
         "",
@@ -307,6 +298,18 @@ def render_content_uat_session_card(
                 else "`"
             )
         ),
+        "",
+        "## Dane techniczne do proof",
+        "",
+        f"- Work item ID: `{selected_work_item}`",
+        "- Kolejka content: "
+        f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
+        "- Sales Brief status: "
+        f"`{provenance.get('selected_sales_brief_status') or 'brak live proof'}`",
+        "- Źródła danych: "
+        f"{', '.join(provenance.get('selected_source_connectors') or []) or 'brak live proof'}",
+        "- Service Profile review JSON: "
+        f"{first_service_profile_review_label(provenance)}",
     ]
     return "\n".join(lines).rstrip() + "\n"
 
