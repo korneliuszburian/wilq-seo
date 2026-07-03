@@ -1,0 +1,102 @@
+# Service Profile review - co pokazać Wilkowi teraz
+
+Status: materiał do rozmowy review, nie dowód ukończenia Goal 005.
+
+Data: 2026-07-03
+
+## Najkrótszy status
+
+WILQ jest już użyteczny jako system review, ale nie jest jeszcze zatwierdzony
+do finalnych treści.
+
+- Skille operatorskie: 13/13 przeszło non-interactive eval na poziomie 9/10.
+- Wiedza Ekologus: `source_backed_review_required`, nie `approved_current`.
+- Production-depth: 0%.
+- Approved service facts: 0%.
+- Service Profile: read-only, 14 akcji review, bez edycji kart i bez promocji
+  source facts.
+- Prywatne propozycje `ekologus-ai`: 5, wszystkie `review_required`,
+  redacted-only i bez prawa do production-depth.
+
+Powiedz Wilkowi:
+
+> WILQ nie udaje, że już zna ofertę Ekologus. Ma kolejkę decyzji: co zatwierdzić,
+> co poprawić, co odrzucić i czego nadal nie wolno używać w treściach.
+
+## Co pokazać jako pierwsze
+
+Pokaż `/service-profile`, ale zacznij od decyzji, nie od technicznych ID.
+
+Najpierw przejrzeć:
+
+1. **Bezpieczeństwo prawne, poufność i zgody**
+   - zakres: private claim-policy proposal;
+   - priorytet: high;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+2. **Styl marki i claim policy Ekologus**
+   - zakres: private claim-policy proposal;
+   - priorytet: high;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+3. **Source trace i evidence pack**
+   - zakres: private evidence-policy proposal;
+   - priorytet: high;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+4. **Eko-Opieka / Eko Kalendarz**
+   - zakres: private service proposal;
+   - priorytet: medium;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+5. **Audyt zgodności środowiskowej**
+   - zakres: private service proposal;
+   - priorytet: medium;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+
+Publiczne karty usług też wymagają review. Najbardziej praktyczne do rozmowy:
+BDO/sprawozdawczość, operat wodnoprawny, odpady/opakowania, szkolenia,
+remediacja/monitoring i konsulting/outsourcing środowiskowy.
+
+## Pytania do Wilka
+
+1. Czy najpierw zatwierdzamy polityki claimów i bezpieczeństwa, czy konkretną
+   usługę typu BDO?
+2. Czy `Eko-Opieka / Eko Kalendarz` to realna oferta, roboczy język handlowy,
+   czy temat do odrzucenia?
+3. Czy `Audyt zgodności środowiskowej` może być pierwszym płatnym krokiem w
+   komunikacji, czy wymaga innej nazwy?
+4. Jakich claimów WILQ ma zawsze blokować bez człowieka: kary, WIOŚ, decyzje,
+   kontrole, pozwolenia, dane klientów?
+5. Co w tych propozycjach brzmi jak Ekologus, a co jak generyczne SEO/AI?
+
+## Jak zapisać decyzję
+
+WILQ ma przygotowany live JSON wejściowy do uzupełnienia:
+
+```bash
+.local-lab/proof/service-profile-private-review-input-20260703.json
+.local-lab/proof/service-profile-public-review-input-20260703.json
+```
+
+Po uzupełnieniu decyzji sprawdzić wynik:
+
+```bash
+rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-private-review-result-20260703.json --api-base http://127.0.0.1:8000 --format markdown
+rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-public-review-result-20260703.json --api-base http://127.0.0.1:8000 --format markdown
+```
+
+## Czego nie mówić
+
+- Nie mówimy, że Goal 005 jest ukończony.
+- Nie mówimy, że WILQ ma production-depth knowledge.
+- Nie mówimy, że prywatne propozycje `ekologus-ai` są zatwierdzone.
+- Nie mówimy, że WILQ może pisać finalne treści bez human review.
+- Nie promujemy source facts ani kart bez osobnego review/promotion request.
+
+## Co będzie sukcesem tej rozmowy
+
+Nie musi być pełnego zatwierdzenia. Wystarczy jedno z tych:
+
+- Wilku mówi, które 2-3 propozycje są najbliżej prawdy;
+- Wilku wskazuje, co poprawić w claim policy;
+- Wilku odrzuca błędny kierunek, zanim wejdzie do treści;
+- Wilku rozumie, dlaczego WILQ blokuje finalny content.
+
+To będzie realny proof użyteczności, a nie tylko zielony test.

@@ -197,6 +197,13 @@ Date: 2026-07-03
   recommendations, 1 action and all hard gates true. It correctly treats zero
   Demand Gen/Discovery campaigns as a stop condition, not as a reason to invent
   launch/readiness/creative-performance claims.
+- 2026-07-03 current Wilku Service Profile review handoff is available at
+  `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md`. It is a
+  normal review artifact, not a new product layer: it summarizes live state
+  after the 13/13 skill eval 9/10 push, names the first private/public Service
+  Profile decisions, and points to generated live JSON inputs in
+  `.local-lab/proof/service-profile-private-review-input-20260703.json` and
+  `.local-lab/proof/service-profile-public-review-input-20260703.json`.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem
