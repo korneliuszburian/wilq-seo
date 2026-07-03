@@ -184,6 +184,10 @@ Date: 2026-07-04
   questions in `Następny materiał do rozmowy`. Live completion markdown still
   blocks on `goal_005_uat_result_or_owner_defer`, but the next UAT input now
   includes what Wilku should decide about ekologus-ai/private proposals.
+- 2026-07-04 the Wilku Service Profile handoff now includes the same API-owned
+  private-review questions. This keeps `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md`,
+  the session card and the completion guard aligned for the next real UAT
+  conversation.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

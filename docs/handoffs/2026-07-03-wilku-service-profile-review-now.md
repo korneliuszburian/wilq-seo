@@ -75,6 +75,19 @@ wiedzą, więc nie odblokowują finalnych treści.
 
 ## Pytania do Wilka
 
+Pytania z aktualnego WILQ API dla prywatnej wiedzy `ekologus-ai`:
+
+- Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica
+  wyniku?
+- Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami
+  Ekologus?
+- Czy zablokowane twierdzenia są kompletne, szczególnie dla prawa, kar,
+  zgodności i efektów?
+- Które propozycje odrzucić, oznaczyć jako nieaktualne albo zostawić tylko jako
+  tło do UAT?
+
+Pytania do rozmowy o kolejności i decyzjach:
+
 1. Czy publiczna karta BDO jest dobrym pierwszym testem Service Profile, czy
    wymaga poprawki zanim cokolwiek przejdzie do finalnych treści?
 2. Czy źródła i zablokowane claimy przy BDO są czytelne, czy Wilku nadal pyta
