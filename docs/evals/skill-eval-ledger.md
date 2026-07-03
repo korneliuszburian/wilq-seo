@@ -853,6 +853,33 @@ Result:
   concept, Eko Kalendarz, audience, CTA direction and forbidden claims. It does
   not yet unlock production content; Wilku/owner review is still required.
 
+## 2026-07-03 - Private source review value in source fact audit
+
+Purpose:
+
+- Make the Goal 005 source-fact audit show whether private `ekologus-ai`
+  proposals are useful review material, not only that they are blocked.
+- Keep the safety boundary explicit: private proposals can improve Service
+  Profile specificity, but cannot unlock production-depth or publishing without
+  human review.
+
+Proof:
+
+```bash
+rtk uv run python scripts/source_fact_coverage_audit.py --format json
+rtk uv run python scripts/source_fact_coverage_audit.py --format markdown
+rtk uv run pytest tests/test_source_fact_coverage_audit.py tests/test_goal_005_completion_check.py -q
+```
+
+Result:
+
+- Live audit reports 5 private proposals, 5 with blocked claims, 5 with CTA
+  patterns, 5 with buyer/problem triggers, `promotion_allowed_count=0` and
+  `operator_value_score=9`.
+- Markdown now includes `Co wnosi prywatna wiedza`, with a Wilku-readable
+  explanation that private proposals add CTA/review direction and buyer
+  triggers while still blocking production-depth, publishing and ready claims.
+
 ## 2026-07-02 - Ads Doctor dashboard usefulness review
 
 Purpose:

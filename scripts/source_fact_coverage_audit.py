@@ -64,6 +64,10 @@ def build_report() -> dict[str, Any]:
             item["target_card_title"],
         )
     )
+    private_review_value = _private_review_value_summary(
+        facts=facts,
+        private_review_queue=private_review_queue,
+    )
     title_by_card_id = _target_title_lookup(service_sections, private_proposals)
     review_action_queue = [
         _review_action_item(action, title_by_card_id=title_by_card_id)
@@ -104,6 +108,7 @@ def build_report() -> dict[str, Any]:
         "private_review_required_count": (
             profile.private_source_proposal_summary.review_required_count
         ),
+        "private_review_value": private_review_value,
         "private_review_queue": private_review_queue,
         "review_action_queue": review_action_queue,
         "blockers": blockers,
@@ -128,6 +133,25 @@ def render_markdown(report: dict[str, Any]) -> str:
         "## Co pokazać Wilkowi",
         "",
         _operator_text(report["safe_next_step"]),
+        "",
+        "## Co wnosi prywatna wiedza",
+        "",
+        _operator_text(report["private_review_value"]["value_summary"]),
+        "",
+        "| Sygnał | Liczba |",
+        "| --- | ---: |",
+        f"| Propozycje do review | {report['private_review_value']['proposal_count']} |",
+        f"| Zablokowane twierdzenia opisane | {report['private_review_value']['blocked_claim_proposal_count']} |",
+        f"| CTA do oceny | {report['private_review_value']['cta_pattern_proposal_count']} |",
+        f"| Triggery/problem kupującego | {report['private_review_value']['buyer_trigger_proposal_count']} |",
+        f"| Promocja bez review | {report['private_review_value']['promotion_allowed_count']} |",
+        "",
+        "Najważniejsze punkty review:",
+        "",
+        *[
+            f"- {_operator_text(point)}"
+            for point in report["private_review_value"]["review_value_points"]
+        ],
         "",
         "## Prywatne propozycje do review",
         "",
@@ -186,6 +210,71 @@ def _private_review_item(proposal: Any) -> dict[str, Any]:
         "promotion_allowed": proposal.promotion_allowed,
         "blocked_claim_count": len(proposal.blocked_claims),
         "safe_next_step": proposal.safe_next_step,
+    }
+
+
+def _private_review_value_summary(
+    *,
+    facts: list[Any],
+    private_review_queue: list[dict[str, Any]],
+) -> dict[str, Any]:
+    private_source_ids = {item["source_id"] for item in private_review_queue}
+    private_facts = [fact for fact in facts if fact.source_id in private_source_ids]
+    proposal_count = len(private_review_queue)
+    blocked_claim_proposal_count = sum(
+        1 for item in private_review_queue if item["blocked_claim_count"] > 0
+    )
+    cta_pattern_proposal_count = sum(1 for fact in private_facts if fact.cta_patterns)
+    buyer_trigger_proposal_count = sum(
+        1
+        for fact in private_facts
+        if fact.buyer_triggers or fact.buyer_problem_terms
+    )
+    promotion_allowed_count = sum(
+        1 for item in private_review_queue if item["promotion_allowed"]
+    )
+    review_value_points: list[str] = []
+    if cta_pattern_proposal_count:
+        review_value_points.append(
+            "Prywatne propozycje dodają CTA lub kierunek rozmowy do oceny przez Wilka."
+        )
+    if buyer_trigger_proposal_count:
+        review_value_points.append(
+            "Prywatne propozycje doprecyzowują problemy i triggery kupującego."
+        )
+    if blocked_claim_proposal_count:
+        review_value_points.append(
+            "Każda propozycja niesie jawne zablokowane twierdzenia, więc może pomagać w Claim Ledgerze bez luzowania bezpieczeństwa."
+        )
+    if promotion_allowed_count == 0 and proposal_count:
+        review_value_points.append(
+            "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+        )
+    operator_value_score = 0
+    if proposal_count:
+        operator_value_score += 2
+    if cta_pattern_proposal_count:
+        operator_value_score += 2
+    if buyer_trigger_proposal_count:
+        operator_value_score += 2
+    if blocked_claim_proposal_count == proposal_count and proposal_count:
+        operator_value_score += 2
+    if promotion_allowed_count == 0:
+        operator_value_score += 1
+    operator_value_score = min(operator_value_score, 9)
+    return {
+        "proposal_count": proposal_count,
+        "promotion_allowed_count": promotion_allowed_count,
+        "blocked_claim_proposal_count": blocked_claim_proposal_count,
+        "cta_pattern_proposal_count": cta_pattern_proposal_count,
+        "buyer_trigger_proposal_count": buyer_trigger_proposal_count,
+        "operator_value_score": operator_value_score,
+        "value_summary": (
+            "Prywatne propozycje ekologus-ai dają materiał do review "
+            "i mogą poprawić konkretność Service Profile, ale nie odblokowują "
+            "production-depth, publikacji ani gotowych twierdzeń bez decyzji człowieka."
+        ),
+        "review_value_points": review_value_points,
     }
 
 
