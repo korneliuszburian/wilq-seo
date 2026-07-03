@@ -776,6 +776,28 @@ const actionMutationReadinessSummary = {
     vendor_write_possible: false,
     would_attempt_vendor_write: false,
     mutation_adapter: null,
+    apply_contract: {
+      contract: "action_apply_contract_v1",
+      action_id: "act_prepare_wordpress_draft_handoff",
+      action_type: "wordpress_draft_handoff",
+      connector: "wordpress_ekologus",
+      allowed_operation: "create_wordpress_draft",
+      required_mode: "apply",
+      draft_only: true,
+      publication_allowed: false,
+      destructive_allowed: false,
+      adapter_status: "not_implemented",
+      required_env_flags: ["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
+      required_input_contracts: ["wordpress_draft_handoff_v1"],
+      required_audit_events: [
+        "action_preview_generated",
+        "human_review_*",
+        "action_apply_confirmed"
+      ],
+      blocked_outputs: ["wordpress_publish"],
+      operator_summary:
+        "Ten kontrakt może w przyszłości zapisać wyłącznie szkic WordPress."
+    },
     requirements: [],
     blockers: [
       {
@@ -7878,6 +7900,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
     expect(screen.getByText("Plan aktywacji bez ryzyka")).toBeInTheDocument();
     expect(screen.getByText(/przygotuj osobny apply-capable ActionObject/)).toBeInTheDocument();
+    expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();
+    expect(screen.getByText(/wyłącznie szkic WordPress/)).toBeInTheDocument();
+    expect(screen.getByText("create_wordpress_draft")).toBeInTheDocument();
+    expect(screen.getByText("zablokowana")).toBeInTheDocument();
     expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
     expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy/i)).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")).toBeInTheDocument();

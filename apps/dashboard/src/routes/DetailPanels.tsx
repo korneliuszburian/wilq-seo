@@ -201,6 +201,26 @@ function ActionMutationReadinessPanel({
           </ul>
         </div>
       ) : null}
+      {readiness.apply_contract ? (
+        <div className="mt-4 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+          <div className="font-semibold text-ink">Kontrakt przyszłego apply</div>
+          <p className="mt-2">{readiness.apply_contract.operator_summary}</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <ReadinessTile
+              label="Operacja"
+              value={readiness.apply_contract.allowed_operation}
+            />
+            <ReadinessTile
+              label="Adapter"
+              value={readiness.apply_contract.adapter_status === "implemented" ? "gotowy" : "brak"}
+            />
+            <ReadinessTile
+              label="Publikacja"
+              value={readiness.apply_contract.publication_allowed ? "dozwolona" : "zablokowana"}
+            />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

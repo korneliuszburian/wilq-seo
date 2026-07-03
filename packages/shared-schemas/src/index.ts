@@ -351,6 +351,24 @@ export const ActionMutationReadinessBlockerSchema = z.object({
   next_step: z.string()
 });
 
+export const ActionMutationApplyContractSchema = z.object({
+  contract: z.literal("action_apply_contract_v1"),
+  action_id: z.string(),
+  action_type: z.string(),
+  connector: z.string(),
+  allowed_operation: z.string(),
+  required_mode: z.literal("apply").default("apply"),
+  draft_only: z.boolean().default(true),
+  publication_allowed: z.boolean().default(false),
+  destructive_allowed: z.boolean().default(false),
+  adapter_status: z.enum(["not_implemented", "implemented"]).default("not_implemented"),
+  required_env_flags: z.array(z.string()).default([]),
+  required_input_contracts: z.array(z.string()).default([]),
+  required_audit_events: z.array(z.string()).default([]),
+  blocked_outputs: z.array(z.string()).default([]),
+  operator_summary: z.string()
+});
+
 export const ActionMutationReadinessResponseSchema = z.object({
   response_type: z.literal("action_mutation_readiness"),
   contract: z.literal("action_mutation_readiness_v1"),
@@ -368,6 +386,7 @@ export const ActionMutationReadinessResponseSchema = z.object({
   vendor_write_possible: z.boolean().default(false),
   would_attempt_vendor_write: z.boolean().default(false),
   mutation_adapter: z.string().nullable().optional(),
+  apply_contract: ActionMutationApplyContractSchema.nullable().optional(),
   requirements: z.array(ActionMutationReadinessRequirementSchema).default([]),
   blockers: z.array(ActionMutationReadinessBlockerSchema).default([]),
   operator_next_step: z.string(),

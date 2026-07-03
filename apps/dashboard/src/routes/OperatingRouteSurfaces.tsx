@@ -339,6 +339,26 @@ function FirstWriteCandidateSection({
           ))}
         </ol>
       </div>
+      {candidate.apply_contract ? (
+        <div className="mt-4 rounded-md border border-line bg-white p-3 text-sm leading-6 text-slate-700">
+          <div className="font-semibold text-slate-900">Kontrakt przyszłego apply</div>
+          <p className="mt-2">{candidate.apply_contract.operator_summary}</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <ReadinessTile
+              label="Operacja"
+              value={candidate.apply_contract.allowed_operation}
+            />
+            <ReadinessTile
+              label="Adapter"
+              value={candidate.apply_contract.adapter_status === "implemented" ? "gotowy" : "brak"}
+            />
+            <ReadinessTile
+              label="Publikacja"
+              value={candidate.apply_contract.publication_allowed ? "dozwolona" : "zablokowana"}
+            />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -347,6 +367,15 @@ function getPriorityActions(actions: ActionObject[]) {
   const byId = new Map(actions.map((action) => [action.id, action]));
   return PRIORITY_ACTION_IDS.map((id) => byId.get(id)).filter(
     (action): action is ActionObject => Boolean(action)
+  );
+}
+
+function ReadinessTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3 text-sm">
+      <div className="text-xs font-medium uppercase tracking-normal text-slate-500">{label}</div>
+      <div className="mt-1 font-semibold text-ink">{value}</div>
+    </div>
   );
 }
 

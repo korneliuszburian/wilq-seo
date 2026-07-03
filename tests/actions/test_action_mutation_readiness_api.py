@@ -37,6 +37,15 @@ def test_action_mutation_readiness_blocks_prepare_only_action(monkeypatch, tmp_p
     assert data["mode"] == "prepare"
     assert data["source_connectors"] == ["wordpress_ekologus"]
     assert data["evidence_ids"]
+    apply_contract = data["apply_contract"]
+    assert apply_contract["allowed_operation"] == "create_wordpress_draft"
+    assert apply_contract["required_mode"] == "apply"
+    assert apply_contract["draft_only"] is True
+    assert apply_contract["publication_allowed"] is False
+    assert apply_contract["destructive_allowed"] is False
+    assert apply_contract["adapter_status"] == "not_implemented"
+    assert "WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES" in apply_contract["required_env_flags"]
+    assert "wordpress_publish" in apply_contract["blocked_outputs"]
     blocker_codes = [blocker["code"] for blocker in data["blockers"]]
     assert "missing_apply_mode" in blocker_codes
     assert "missing_mutation_adapter" in blocker_codes
@@ -62,6 +71,7 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert "missing_mutation_adapter" in data["top_blockers"]
     assert data["first_write_candidate"]["action_id"] == "act_prepare_wordpress_draft_handoff"
     assert data["first_write_candidate"]["vendor_write_possible"] is False
+    assert data["first_write_candidate"]["apply_contract"]["adapter_status"] == "not_implemented"
     assert "WordPress draft-only" in data["first_write_candidate_reason"]
     assert any("draft-only" in step for step in data["activation_plan_steps"])
     assert any("apply-capable ActionObject" in step for step in data["activation_plan_steps"])

@@ -579,6 +579,24 @@ class ActionMutationReadinessBlocker(BaseModel):
     next_step: str
 
 
+class ActionMutationApplyContract(BaseModel):
+    contract: Literal["action_apply_contract_v1"] = "action_apply_contract_v1"
+    action_id: str
+    action_type: str
+    connector: str
+    allowed_operation: str
+    required_mode: Literal["apply"] = "apply"
+    draft_only: bool = True
+    publication_allowed: bool = False
+    destructive_allowed: bool = False
+    adapter_status: Literal["not_implemented", "implemented"] = "not_implemented"
+    required_env_flags: list[str] = Field(default_factory=list)
+    required_input_contracts: list[str] = Field(default_factory=list)
+    required_audit_events: list[str] = Field(default_factory=list)
+    blocked_outputs: list[str] = Field(default_factory=list)
+    operator_summary: str
+
+
 class ActionMutationReadinessResponse(BaseModel):
     response_type: Literal["action_mutation_readiness"] = "action_mutation_readiness"
     contract: Literal["action_mutation_readiness_v1"] = "action_mutation_readiness_v1"
@@ -596,6 +614,7 @@ class ActionMutationReadinessResponse(BaseModel):
     vendor_write_possible: bool = False
     would_attempt_vendor_write: bool = False
     mutation_adapter: str | None = None
+    apply_contract: ActionMutationApplyContract | None = None
     requirements: list[ActionMutationReadinessRequirement] = Field(default_factory=list)
     blockers: list[ActionMutationReadinessBlocker] = Field(default_factory=list)
     operator_next_step: str

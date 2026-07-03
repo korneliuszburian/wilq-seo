@@ -113,6 +113,7 @@ from wilq.schemas import (
     ActionImpactCheckRequest,
     ActionImpactCheckResult,
     ActionMode,
+    ActionMutationApplyContract,
     ActionMutationAuditRecord,
     ActionMutationReadinessBlocker,
     ActionMutationReadinessRequirement,
@@ -2828,6 +2829,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
     blockers = _mutation_readiness_blockers(requirements)
     vendor_write_possible = mutation_adapter is not None
     ready_to_request_apply = not blockers
+    apply_contract = _mutation_apply_contract(action, mutation_adapter)
     return ActionMutationReadinessResponse(
         action_id=action.id,
         title=action.title,
@@ -2843,6 +2845,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         vendor_write_possible=vendor_write_possible,
         would_attempt_vendor_write=ready_to_request_apply and vendor_write_possible,
         mutation_adapter=mutation_adapter,
+        apply_contract=apply_contract,
         requirements=requirements,
         blockers=blockers,
         operator_next_step=_mutation_readiness_next_step(blockers),
@@ -2963,6 +2966,48 @@ def _activation_next_step(
     return (
         "Najbliższy krok: doprecyzuj kontrakt apply dla tej akcji i utrzymaj "
         "write zablokowany do czasu pełnego readiness."
+    )
+
+
+def _mutation_apply_contract(
+    action: ActionObject,
+    mutation_adapter: str | None,
+) -> ActionMutationApplyContract | None:
+    if action.id != "act_prepare_wordpress_draft_handoff":
+        return None
+    action_type = action.payload.get("action_type")
+    required_input_contracts = [
+        value
+        for value in action.payload.get("required_input_contracts", [])
+        if isinstance(value, str)
+    ]
+    return ActionMutationApplyContract(
+        action_id=action.id,
+        action_type=action_type if isinstance(action_type, str) else "wordpress_draft_handoff",
+        connector=action.connector,
+        allowed_operation="create_wordpress_draft",
+        draft_only=True,
+        publication_allowed=False,
+        destructive_allowed=False,
+        adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
+        required_env_flags=["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
+        required_input_contracts=required_input_contracts,
+        required_audit_events=[
+            "action_preview_generated",
+            "human_review_*",
+            "action_apply_confirmed",
+        ],
+        blocked_outputs=[
+            "wordpress_publish",
+            "wordpress_update_existing_post",
+            "wordpress_delete_post",
+            "production_publish_ready_claim",
+        ],
+        operator_summary=(
+            "Ten kontrakt może w przyszłości zapisać wyłącznie szkic WordPress. "
+            "Nie wolno publikować, aktualizować istniejącego wpisu ani omijać "
+            "preview, review, confirm i audytu ActionObject."
+        ),
     )
 
 

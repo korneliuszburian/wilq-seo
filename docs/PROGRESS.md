@@ -85,6 +85,12 @@ Date: 2026-07-03
   ordered plan for WordPress draft-only activation while live API still reports
   `vendor_write_possible_count=0`; the plan is readiness-only and does not add
   a write button.
+- 2026-07-03 action mutation readiness now exposes a typed `apply_contract`
+  for the WordPress draft-only candidate. The contract allows only
+  `create_wordpress_draft`, requires future apply mode plus preview/review/
+  confirm audit events, blocks publish/update/delete outputs and marks the
+  adapter as `not_implemented`; `/actions` and action detail render the
+  contract without enabling any write control.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

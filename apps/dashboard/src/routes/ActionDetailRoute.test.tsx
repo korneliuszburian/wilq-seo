@@ -1614,6 +1614,28 @@ function actionMutationReadinessFixture(url: string) {
     vendor_write_possible: false,
     would_attempt_vendor_write: false,
     mutation_adapter: null,
+    apply_contract: {
+      contract: "action_apply_contract_v1",
+      action_id: actionId,
+      action_type: "wordpress_draft_handoff",
+      connector: "wordpress_ekologus",
+      allowed_operation: "create_wordpress_draft",
+      required_mode: "apply",
+      draft_only: true,
+      publication_allowed: false,
+      destructive_allowed: false,
+      adapter_status: "not_implemented",
+      required_env_flags: ["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
+      required_input_contracts: ["wordpress_draft_handoff_v1"],
+      required_audit_events: [
+        "action_preview_generated",
+        "human_review_*",
+        "action_apply_confirmed"
+      ],
+      blocked_outputs: ["wordpress_publish"],
+      operator_summary:
+        "Ten kontrakt może w przyszłości zapisać wyłącznie szkic WordPress."
+    },
     requirements: [
       {
         code: "apply_mode",
@@ -1702,6 +1724,9 @@ describe("Action detail route", () => {
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje zapis")).toBeInTheDocument();
     expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
+    expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();
+    expect(screen.getByText(/wyłącznie szkic WordPress/)).toBeInTheDocument();
+    expect(screen.getByText("create_wordpress_draft")).toBeInTheDocument();
   });
 
   it("renders mutation audit details from API labels", async () => {
