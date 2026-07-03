@@ -657,6 +657,80 @@ export const ContentServiceProfileReviewActionSummarySchema = z.object({
   safe_next_step: z.string()
 });
 
+export const ContentServiceProfilePrivateReviewValueSchema = z.object({
+  proposal_count: z.number(),
+  promotion_allowed_count: z.number(),
+  blocked_claim_proposal_count: z.number(),
+  cta_pattern_proposal_count: z.number(),
+  buyer_trigger_proposal_count: z.number(),
+  operator_value_score: z.number().min(0).max(10),
+  value_summary: z.string(),
+  review_value_points: z.array(z.string()).default([])
+});
+
+export const ContentServiceProfilePrivateReviewQueueItemSchema = z.object({
+  proposal_id: z.string(),
+  source_id: z.string(),
+  scope: z.enum([
+    "service",
+    "buyer_problem",
+    "cta",
+    "claim_policy",
+    "evidence_requirement",
+    "metric_signal"
+  ]),
+  target_card_id: z.string(),
+  target_card_title: z.string(),
+  risk_tier: ContentServiceProfilePrivateSourceProposalRiskTierSchema,
+  freshness_status: ContentServiceProfilePrivateSourceProposalFreshnessStatusSchema,
+  audience: ContentServiceProfilePrivateSourceProposalAudienceSchema,
+  review_status: ContentServiceProfilePrivateSourceProposalReviewStatusSchema,
+  promotion_allowed: z.boolean(),
+  blocked_claim_count: z.number(),
+  safe_next_step: z.string()
+});
+
+export const ContentServiceProfileReviewQueueItemSchema = z.object({
+  action_id: z.string(),
+  review_scope: z.enum([
+    "general_knowledge_review",
+    "public_service_card",
+    "coverage_gap",
+    "private_service_proposal",
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal"
+  ]),
+  priority: z.enum(["high", "medium", "low"]),
+  target_card_id: z.string().nullable().optional(),
+  target_card_title: z.string(),
+  decision_options: z.array(z.enum(["approve", "needs_changes", "stale", "reject"])).default([])
+});
+
+export const ContentServiceProfileSourceFactCoverageAuditSchema = z.object({
+  pass_state: z.boolean(),
+  knowledge_status: ContentKnowledgeLifecycleStatusSchema,
+  ready_for_daily_content: z.boolean(),
+  production_depth_percent: z.number().min(0).max(100),
+  approved_service_percent: z.number().min(0).max(100),
+  reviewed_fact_percent: z.number().min(0).max(100),
+  fact_count: z.number(),
+  fact_review_counts: z.record(z.string(), z.number()).default({}),
+  fact_scope_counts: z.record(z.string(), z.number()).default({}),
+  fact_connector_counts: z.record(z.string(), z.number()).default({}),
+  service_card_count: z.number(),
+  coverage_gap_count: z.number(),
+  review_action_count: z.number(),
+  first_review_action_id: z.string().nullable().optional(),
+  first_review_action_label: z.string().nullable().optional(),
+  private_proposal_count: z.number(),
+  private_review_required_count: z.number(),
+  private_review_value: ContentServiceProfilePrivateReviewValueSchema,
+  private_review_queue: z.array(ContentServiceProfilePrivateReviewQueueItemSchema).default([]),
+  review_action_queue: z.array(ContentServiceProfileReviewQueueItemSchema).default([]),
+  blockers: z.array(z.string()).default([]),
+  safe_next_step: z.string()
+});
+
 export const ContentServiceProfileTechnicalTraceSchema = z.object({
   knowledge_card_endpoint: z.string(),
   source_fact_count: z.number(),
@@ -681,6 +755,7 @@ export const ContentServiceProfileResponseSchema = z.object({
   coverage_gaps: z.array(ContentServiceProfileCoverageGapSchema).default([]),
   review_action_summary: ContentServiceProfileReviewActionSummarySchema,
   review_actions: z.array(ContentServiceProfileReviewActionSchema).default([]),
+  source_fact_coverage: ContentServiceProfileSourceFactCoverageAuditSchema,
   technical_trace: ContentServiceProfileTechnicalTraceSchema
 });
 

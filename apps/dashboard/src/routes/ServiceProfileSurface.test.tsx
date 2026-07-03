@@ -43,10 +43,26 @@ describe("ServiceProfileSurface", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Kolejność review")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje produkcję")).toBeInTheDocument();
+    expect(screen.getByText("Audyt pokrycia wiedzy")).toBeInTheDocument();
+    expect(screen.getByText("Production-depth")).toBeInTheDocument();
+    expect(screen.getByText("Usługi approved")).toBeInTheDocument();
+    expect(screen.getByText("Fakty approved")).toBeInTheDocument();
+    expect(screen.getByText("Wartość ekologus-ai")).toBeInTheDocument();
+    expect(screen.getByText("9/10")).toBeInTheDocument();
+    expect(screen.getByText("Co to znaczy teraz")).toBeInTheDocument();
+    expect(screen.getByText("audyt spójny")).toBeInTheDocument();
+    expect(screen.getByText("14 faktów źródłowych")).toBeInTheDocument();
+    expect(screen.getByText("13 akcji review")).toBeInTheDocument();
+    expect(screen.getByText("5 prywatnych do review")).toBeInTheDocument();
+    expect(screen.getByText("Następne review")).toBeInTheDocument();
+    expect(screen.getByText(/Zacznij od:/)).toBeInTheDocument();
+    expect(screen.getByText("Liczby techniczne")).toBeInTheDocument();
     expect(screen.getByText("Najpierw publiczne karty usług Ekologus.")).toBeInTheDocument();
     expect(screen.getByText("Pierwszy review item")).toBeInTheDocument();
-    expect(screen.getByText("Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa"))
-      .toBeInTheDocument();
+    expect(
+      screen.getAllByText("Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa")
+        .length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Wymagane pola review")).toBeInTheDocument();
     expect(screen.getAllByText("source_trace_clear").length).toBeGreaterThanOrEqual(1);
     expect(
@@ -62,7 +78,8 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText(/Edycja kart i promocja faktów wymagają/)).toBeInTheDocument();
     expect(screen.getByText("Brak bezpośredniej karty usługi dla operatu wodnoprawnego"))
       .toBeInTheDocument();
-    expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
+    expect(screen.getAllByText("BDO i sprawozdawczość środowiskowa").length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Źródła i review")).toBeInTheDocument();
     expect(screen.getByText("Poproś Wilka/ownera o decyzję.")).toBeInTheDocument();
     expect(screen.getByText("public_site")).toBeInTheDocument();
@@ -93,9 +110,12 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("ekologus-ai reviewed handoff: Source trace").length)
       .toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Eko-Opieka / Eko Kalendarz")).toBeInTheDocument();
-    expect(screen.getByText("Styl marki i claim policy Ekologus")).toBeInTheDocument();
-    expect(screen.getByText("Bezpieczeństwo prawne, poufność i zgody")).toBeInTheDocument();
-    expect(screen.getByText("Source trace i evidence pack")).toBeInTheDocument();
+    expect(screen.getAllByText("Styl marki i claim policy Ekologus").length)
+      .toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Bezpieczeństwo prawne, poufność i zgody").length)
+      .toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Source trace i evidence pack").length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("support: partial").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("support: direct").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("risk: medium").length).toBeGreaterThanOrEqual(1);
@@ -500,6 +520,82 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         "Weź tę publiczną kartę jako pierwszą: sprawdź źródło, zablokowane claimy i dopiero potem zdecyduj approve/needs_changes/stale/reject.",
       safe_next_step:
         "Najpierw przejrzyj publiczne karty usług, potem prywatne propozycje service, claim-policy i evidence-policy."
+    },
+    source_fact_coverage: {
+      pass_state: true,
+      knowledge_status: "source_backed_review_required",
+      ready_for_daily_content: false,
+      production_depth_percent: 0,
+      approved_service_percent: 0,
+      reviewed_fact_percent: 0,
+      fact_count: 14,
+      fact_review_counts: { review_required: 14 },
+      fact_scope_counts: { claim_policy: 2, cta: 1, evidence_requirement: 2, service: 9 },
+      fact_connector_counts: { ekologus_ai_private_source_catalog: 5, public_site: 9 },
+      service_card_count: 8,
+      coverage_gap_count: 1,
+      review_action_count: 13,
+      first_review_action_id: "service_profile_review_card_ekologus_service_bdo_reporting",
+      first_review_action_label: "Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa",
+      private_proposal_count: 5,
+      private_review_required_count: 5,
+      private_review_value: {
+        proposal_count: 5,
+        promotion_allowed_count: 0,
+        blocked_claim_proposal_count: 5,
+        cta_pattern_proposal_count: 1,
+        buyer_trigger_proposal_count: 2,
+        operator_value_score: 9,
+        value_summary:
+          "Prywatne propozycje ekologus-ai dają materiał do review i mogą poprawić konkretność Service Profile, ale nie odblokowują production-depth, publikacji ani gotowych twierdzeń bez decyzji człowieka.",
+        review_value_points: [
+          "Prywatne propozycje dodają CTA albo kierunek rozmowy do oceny przez Wilka.",
+          "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
+          "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+        ]
+      },
+      private_review_queue: [
+        {
+          proposal_id:
+            "private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+          source_id: "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+          scope: "claim_policy",
+          target_card_id: "ekologus_claim_policy_legal_safety",
+          target_card_title: "Bezpieczeństwo prawne, poufność i zgody",
+          risk_tier: "high",
+          freshness_status: "current",
+          audience: "role_restricted",
+          review_status: "review_required",
+          promotion_allowed: false,
+          blocked_claim_count: 1,
+          safe_next_step: "Pokaż Wilkowi/reviewerowi zasady claimów."
+        }
+      ],
+      review_action_queue: [
+        {
+          action_id: "service_profile_review_card_ekologus_service_bdo_reporting",
+          review_scope: "public_service_card",
+          priority: "medium",
+          target_card_id: "ekologus_service_bdo_reporting",
+          target_card_title: "BDO i sprawozdawczość środowiskowa",
+          decision_options: ["approve", "needs_changes", "stale", "reject"]
+        },
+        {
+          action_id:
+            "service_profile_review_private_proposal_ekologus_ai_brand_voice_2026_07_01",
+          review_scope: "private_claim_policy_proposal",
+          priority: "high",
+          target_card_id: "ekologus_claim_policy_brand_voice",
+          target_card_title: "Styl marki i claim policy Ekologus",
+          decision_options: ["approve", "needs_changes", "stale", "reject"]
+        }
+      ],
+      blockers: [
+        "Brakuje zatwierdzonych production-depth kart usług Ekologus.",
+        "WILQ nie powinien dopasowywać szerokiej karty środowiskowej do usługi bez źródła."
+      ],
+      safe_next_step:
+        "Przejrzyj karty review-required i luki usługowe z Wilkiem przed użyciem ich jako production-depth."
     },
     technical_trace: {
       knowledge_card_endpoint: "/api/content/knowledge-cards",

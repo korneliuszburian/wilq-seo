@@ -560,6 +560,68 @@ describe("ContentServiceProfileResponseSchema", () => {
         first_review_safe_next_step: "Zbierz decyzję review człowieka.",
         safe_next_step: "Review public cards, then private proposals."
       },
+      source_fact_coverage: {
+        pass_state: true,
+        knowledge_status: "source_backed_review_required",
+        ready_for_daily_content: false,
+        production_depth_percent: 0,
+        approved_service_percent: 0,
+        reviewed_fact_percent: 0,
+        fact_count: 5,
+        fact_review_counts: { review_required: 5 },
+        fact_scope_counts: { service: 4, claim_policy: 1 },
+        fact_connector_counts: { public_site: 4, ekologus_ai_private_source_catalog: 1 },
+        service_card_count: 5,
+        coverage_gap_count: 1,
+        review_action_count: 1,
+        first_review_action_id: "service_profile_request_knowledge_review",
+        first_review_action_label: "Poproś o review",
+        private_proposal_count: 1,
+        private_review_required_count: 1,
+        private_review_value: {
+          proposal_count: 1,
+          promotion_allowed_count: 0,
+          blocked_claim_proposal_count: 1,
+          cta_pattern_proposal_count: 0,
+          buyer_trigger_proposal_count: 1,
+          operator_value_score: 7,
+          value_summary:
+            "Prywatne propozycje ekologus-ai dają materiał do review, ale nie odblokowują production-depth.",
+          review_value_points: [
+            "Prywatne propozycje doprecyzowują problemy i triggery kupującego.",
+            "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+          ]
+        },
+        private_review_queue: [
+          {
+            proposal_id:
+              "private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+            source_id: "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+            scope: "service",
+            target_card_id: "ekologus_service_eko_opieka_calendar",
+            target_card_title: "Eko-Opieka / Eko Kalendarz",
+            risk_tier: "medium",
+            freshness_status: "current",
+            audience: "company_wide",
+            review_status: "review_required",
+            promotion_allowed: false,
+            blocked_claim_count: 1,
+            safe_next_step: "Pokazać Wilkowi zwykły handoff."
+          }
+        ],
+        review_action_queue: [
+          {
+            action_id: "service_profile_request_knowledge_review",
+            review_scope: "general_knowledge_review",
+            priority: "medium",
+            target_card_id: null,
+            target_card_title: "ogólny przegląd wiedzy",
+            decision_options: ["approve", "needs_changes", "stale", "reject"]
+          }
+        ],
+        blockers: ["Brakuje zatwierdzonych kart."],
+        safe_next_step: "Review cards."
+      },
       technical_trace: {
         knowledge_card_endpoint: "/api/content/knowledge-cards",
         source_fact_count: 5,

@@ -17,6 +17,7 @@ type CoverageGap = ContentServiceProfileResponse["coverage_gaps"][number];
 type ReviewAction = ContentServiceProfileResponse["review_actions"][number];
 type ReviewActionSummary = ContentServiceProfileResponse["review_action_summary"];
 type PrivateProposal = ContentServiceProfileResponse["private_source_proposals"][number];
+type SourceFactCoverage = ContentServiceProfileResponse["source_fact_coverage"];
 
 export function ServiceProfileSurface() {
   const profile = useQuery({
@@ -59,6 +60,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
       </div>
 
       <ServiceProfileTodayPanel data={data} />
+      <SourceFactCoveragePanel coverage={data.source_fact_coverage} />
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -185,6 +187,83 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
         </details>
       </section>
     </main>
+  );
+}
+
+function SourceFactCoveragePanel({ coverage }: { coverage: SourceFactCoverage }) {
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Audyt pokrycia wiedzy
+          </div>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+            {coverage.safe_next_step}
+          </p>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">
+            {coverage.private_review_value.value_summary}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          <MetricTile label="Production-depth" value={`${coverage.production_depth_percent}%`} />
+          <MetricTile label="Usługi approved" value={`${coverage.approved_service_percent}%`} />
+          <MetricTile label="Fakty approved" value={`${coverage.reviewed_fact_percent}%`} />
+          <MetricTile label="Wartość ekologus-ai" value={`${coverage.private_review_value.operator_value_score}/10`} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Co to znaczy teraz</h3>
+          <PlainChipRow
+            className="mt-2"
+            values={[
+              coverage.pass_state ? "audyt spójny" : "audyt wymaga naprawy",
+              coverage.ready_for_daily_content ? "daily content ready" : "daily content zablokowane",
+              `${coverage.fact_count} faktów źródłowych`,
+              `${coverage.review_action_count} akcji review`,
+              `${coverage.private_review_required_count} prywatnych do review`
+            ]}
+          />
+          <List
+            label="Dlaczego ekologus-ai pomaga"
+            values={coverage.private_review_value.review_value_points}
+          />
+          <List label="Blokery production-depth" values={coverage.blockers.slice(0, 4)} />
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Następne review</h3>
+          {coverage.first_review_action_label ? (
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Zacznij od: <span className="font-semibold text-ink">{coverage.first_review_action_label}</span>
+            </p>
+          ) : null}
+          <ol className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+            {coverage.review_action_queue.slice(0, 4).map((item, index) => (
+              <li key={item.action_id} className="grid grid-cols-[1.5rem_1fr] gap-2">
+                <span className="font-semibold text-action">{index + 1}.</span>
+                <span>
+                  <span className="font-medium text-ink">{item.target_card_title}</span>
+                  <span className="text-slate-500"> · {item.review_scope} · {item.priority}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <details className="mt-3 text-xs text-slate-500">
+            <summary className="cursor-pointer font-semibold text-slate-600">
+              Liczby techniczne
+            </summary>
+            <div className="mt-2 space-y-1">
+              <p>Review statusy: {formatCounts(coverage.fact_review_counts)}</p>
+              <p>Scope faktów: {formatCounts(coverage.fact_scope_counts)}</p>
+              <p>Connectory: {formatCounts(coverage.fact_connector_counts)}</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -491,4 +570,10 @@ function List({ label, values }: { label: string; values: string[] }) {
       </ul>
     </div>
   );
+}
+
+function formatCounts(counts: Record<string, number>) {
+  const entries = Object.entries(counts);
+  if (entries.length === 0) return "brak";
+  return entries.map(([key, value]) => `${key}: ${value}`).join(", ");
 }

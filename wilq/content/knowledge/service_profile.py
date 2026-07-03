@@ -25,6 +25,7 @@ from wilq.content.knowledge.private_source_proposals import (
 )
 from wilq.content.knowledge.source_facts import (
     ContentKnowledgeLifecycleStatus,
+    ContentSourceFact,
     ekologus_source_fact_registry,
 )
 
@@ -232,6 +233,80 @@ class ContentServiceProfileReviewActionSummary(BaseModel):
     safe_next_step: str
 
 
+class ContentServiceProfilePrivateReviewValue(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    proposal_count: int
+    promotion_allowed_count: int
+    blocked_claim_proposal_count: int
+    cta_pattern_proposal_count: int
+    buyer_trigger_proposal_count: int
+    operator_value_score: int = Field(ge=0, le=10)
+    value_summary: str
+    review_value_points: list[str] = Field(default_factory=list)
+
+
+class ContentServiceProfilePrivateReviewQueueItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    proposal_id: str
+    source_id: str
+    scope: PrivateSourceProposalScope
+    target_card_id: str
+    target_card_title: str
+    risk_tier: ServiceProfilePrivateProposalRiskTier
+    freshness_status: PrivateSourceProposalFreshnessStatus
+    audience: PrivateSourceProposalAudience
+    review_status: PrivateSourceProposalReviewStatus
+    promotion_allowed: bool
+    blocked_claim_count: int
+    safe_next_step: str
+
+
+class ContentServiceProfileReviewQueueItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    action_id: str
+    review_scope: ServiceProfileReviewActionScope
+    priority: ServiceProfileReviewActionPriority
+    target_card_id: str | None = None
+    target_card_title: str
+    decision_options: list[ServiceProfileReviewDecisionOption] = Field(
+        default_factory=list
+    )
+
+
+class ContentServiceProfileSourceFactCoverageAudit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    pass_state: bool
+    knowledge_status: ContentKnowledgeLifecycleStatus
+    ready_for_daily_content: bool
+    production_depth_percent: int = Field(ge=0, le=100)
+    approved_service_percent: int = Field(ge=0, le=100)
+    reviewed_fact_percent: int = Field(ge=0, le=100)
+    fact_count: int
+    fact_review_counts: dict[str, int] = Field(default_factory=dict)
+    fact_scope_counts: dict[str, int] = Field(default_factory=dict)
+    fact_connector_counts: dict[str, int] = Field(default_factory=dict)
+    service_card_count: int
+    coverage_gap_count: int
+    review_action_count: int
+    first_review_action_id: str | None = None
+    first_review_action_label: str | None = None
+    private_proposal_count: int
+    private_review_required_count: int
+    private_review_value: ContentServiceProfilePrivateReviewValue
+    private_review_queue: list[ContentServiceProfilePrivateReviewQueueItem] = Field(
+        default_factory=list
+    )
+    review_action_queue: list[ContentServiceProfileReviewQueueItem] = Field(
+        default_factory=list
+    )
+    blockers: list[str] = Field(default_factory=list)
+    safe_next_step: str
+
+
 class ContentServiceProfileTechnicalTrace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -262,6 +337,7 @@ class ContentServiceProfileResponse(BaseModel):
     coverage_gaps: list[ContentServiceProfileCoverageGap] = Field(default_factory=list)
     review_action_summary: ContentServiceProfileReviewActionSummary
     review_actions: list[ContentServiceProfileReviewAction] = Field(default_factory=list)
+    source_fact_coverage: ContentServiceProfileSourceFactCoverageAudit
     technical_trace: ContentServiceProfileTechnicalTrace
 
 
@@ -270,6 +346,7 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
     source_fact_registry = ekologus_source_fact_registry()
     private_proposal_registry = ekologus_private_source_proposal_registry()
     cards = knowledge.cards
+    source_facts = list(source_fact_registry.facts)
     service_sections = [_service_section(card) for card in cards if card.card_type == "service"]
     coverage_gaps = _coverage_gaps(cards)
     private_proposals = private_proposal_registry.proposals
@@ -277,6 +354,16 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         cards=cards,
         coverage_gaps=coverage_gaps,
         private_proposals=private_proposals,
+    )
+    review_action_summary = _review_action_summary(
+        review_actions=review_actions,
+    )
+    coverage_summary = _coverage_summary(
+        cards=cards,
+        private_candidate_count=private_proposal_registry.proposal_count,
+        missing_required_area_count=len(coverage_gaps),
+        status_label=knowledge.production_depth_readiness.status_label,
+        ready_for_daily_content=knowledge.production_depth_readiness.ready_for_daily_content,
     )
     return ContentServiceProfileResponse(
         workspace_id="ekologus",
@@ -297,13 +384,7 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             ),
         ),
         production_depth_readiness=knowledge.production_depth_readiness,
-        coverage_summary=_coverage_summary(
-            cards=cards,
-            private_candidate_count=private_proposal_registry.proposal_count,
-            missing_required_area_count=len(coverage_gaps),
-            status_label=knowledge.production_depth_readiness.status_label,
-            ready_for_daily_content=knowledge.production_depth_readiness.ready_for_daily_content,
-        ),
+        coverage_summary=coverage_summary,
         service_sections=service_sections,
         claim_policy_sections=[
             _policy_section(card)
@@ -324,10 +405,18 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             private_proposals
         ),
         coverage_gaps=coverage_gaps,
-        review_action_summary=_review_action_summary(
+        review_action_summary=review_action_summary,
+        review_actions=review_actions,
+        source_fact_coverage=_source_fact_coverage_audit(
+            source_facts=source_facts,
+            service_sections=service_sections,
+            private_proposals=private_proposals,
+            coverage_summary=coverage_summary,
+            production_depth_readiness=knowledge.production_depth_readiness,
+            coverage_gaps=coverage_gaps,
+            review_action_summary=review_action_summary,
             review_actions=review_actions,
         ),
-        review_actions=review_actions,
         technical_trace=ContentServiceProfileTechnicalTrace(
             knowledge_card_endpoint="/api/content/knowledge-cards",
             source_fact_count=source_fact_registry.fact_count,
@@ -338,6 +427,232 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             private_source_protocol_doc="docs/architecture/private-source-proposal-protocol.md",
         ),
     )
+
+
+def _source_fact_coverage_audit(
+    *,
+    source_facts: list[ContentSourceFact],
+    service_sections: list[ContentServiceProfileServiceSection],
+    private_proposals: list[PrivateSourceProposal],
+    coverage_summary: ContentServiceProfileCoverageSummary,
+    production_depth_readiness: ContentKnowledgeProductionDepthReadiness,
+    coverage_gaps: list[ContentServiceProfileCoverageGap],
+    review_action_summary: ContentServiceProfileReviewActionSummary,
+    review_actions: list[ContentServiceProfileReviewAction],
+) -> ContentServiceProfileSourceFactCoverageAudit:
+    fact_review_counts = Counter(fact.review_status for fact in source_facts)
+    fact_scope_counts = Counter(fact.scope for fact in source_facts)
+    fact_connector_counts = Counter(
+        connector for fact in source_facts for connector in fact.source_connectors
+    )
+    approved_service_count = sum(
+        1 for section in service_sections if section.status == "approved_current"
+    )
+    private_review_queue = _private_review_queue(private_proposals)
+    private_review_value = _private_review_value_summary(
+        facts=source_facts,
+        private_review_queue=private_review_queue,
+    )
+    review_action_queue = _review_action_queue(
+        review_actions=review_actions,
+        service_sections=service_sections,
+        private_proposals=private_proposals,
+        first_review_action_id=review_action_summary.first_review_action_id,
+    )
+    blockers = [
+        *production_depth_readiness.blocker_labels,
+        *(gap.reason for gap in coverage_gaps),
+    ]
+    pass_state = bool(source_facts) and bool(review_actions) and not any(
+        proposal.promotion_allowed for proposal in private_review_queue
+    )
+    return ContentServiceProfileSourceFactCoverageAudit(
+        pass_state=pass_state,
+        knowledge_status=production_depth_readiness.status,
+        ready_for_daily_content=production_depth_readiness.ready_for_daily_content,
+        production_depth_percent=_percent(
+            production_depth_readiness.production_depth_card_count,
+            max(coverage_summary.service_card_count, 1),
+        ),
+        approved_service_percent=_percent(
+            approved_service_count,
+            max(len(service_sections), 1),
+        ),
+        reviewed_fact_percent=_percent(
+            fact_review_counts["approved"],
+            max(len(source_facts), 1),
+        ),
+        fact_count=len(source_facts),
+        fact_review_counts=dict(sorted(fact_review_counts.items())),
+        fact_scope_counts=dict(sorted(fact_scope_counts.items())),
+        fact_connector_counts=dict(sorted(fact_connector_counts.items())),
+        service_card_count=coverage_summary.service_card_count,
+        coverage_gap_count=len(coverage_gaps),
+        review_action_count=review_action_summary.total_count,
+        first_review_action_id=review_action_summary.first_review_action_id,
+        first_review_action_label=review_action_summary.first_review_action_label,
+        private_proposal_count=len(private_proposals),
+        private_review_required_count=(
+            sum(1 for proposal in private_proposals if proposal.review_status == "review_required")
+        ),
+        private_review_value=private_review_value,
+        private_review_queue=private_review_queue,
+        review_action_queue=review_action_queue,
+        blockers=blockers,
+        safe_next_step=coverage_summary.safe_next_step,
+    )
+
+
+def _private_review_queue(
+    proposals: list[PrivateSourceProposal],
+) -> list[ContentServiceProfilePrivateReviewQueueItem]:
+    queue = [
+        ContentServiceProfilePrivateReviewQueueItem(
+            proposal_id=proposal.proposal_id,
+            source_id=proposal.source_id,
+            scope=proposal.scope,
+            target_card_id=proposal.target_card_id,
+            target_card_title=proposal.target_card_title,
+            risk_tier=proposal.risk_tier,
+            freshness_status=proposal.freshness_status,
+            audience=proposal.audience,
+            review_status=proposal.review_status,
+            promotion_allowed=False,
+            blocked_claim_count=len(proposal.blocked_claims),
+            safe_next_step=proposal.safe_next_step,
+        )
+        for proposal in proposals
+    ]
+    return sorted(
+        queue,
+        key=lambda item: (
+            _risk_order(item.risk_tier),
+            _source_scope_order(item.scope),
+            item.target_card_title,
+        ),
+    )
+
+
+def _private_review_value_summary(
+    *,
+    facts: list[ContentSourceFact],
+    private_review_queue: list[ContentServiceProfilePrivateReviewQueueItem],
+) -> ContentServiceProfilePrivateReviewValue:
+    private_source_ids = {item.source_id for item in private_review_queue}
+    private_facts = [fact for fact in facts if fact.source_id in private_source_ids]
+    proposal_count = len(private_review_queue)
+    blocked_claim_proposal_count = sum(
+        1 for item in private_review_queue if item.blocked_claim_count > 0
+    )
+    cta_pattern_proposal_count = sum(1 for fact in private_facts if fact.cta_patterns)
+    buyer_trigger_proposal_count = sum(
+        1
+        for fact in private_facts
+        if fact.buyer_triggers or fact.buyer_problem_terms
+    )
+    promotion_allowed_count = sum(
+        1 for item in private_review_queue if item.promotion_allowed
+    )
+    review_value_points: list[str] = []
+    if cta_pattern_proposal_count:
+        review_value_points.append(
+            "Prywatne propozycje dodają CTA albo kierunek rozmowy do oceny przez Wilka."
+        )
+    if buyer_trigger_proposal_count:
+        review_value_points.append(
+            "Prywatne propozycje doprecyzowują problemy i triggery kupującego."
+        )
+    if blocked_claim_proposal_count:
+        review_value_points.append(
+            "Każda propozycja niesie jawne zablokowane twierdzenia, więc może pomagać "
+            "w Claim Ledgerze bez luzowania bezpieczeństwa."
+        )
+    if promotion_allowed_count == 0 and proposal_count:
+        review_value_points.append(
+            "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
+        )
+    operator_value_score = 0
+    if proposal_count:
+        operator_value_score += 2
+    if cta_pattern_proposal_count:
+        operator_value_score += 2
+    if buyer_trigger_proposal_count:
+        operator_value_score += 2
+    if blocked_claim_proposal_count == proposal_count and proposal_count:
+        operator_value_score += 2
+    if promotion_allowed_count == 0:
+        operator_value_score += 1
+    return ContentServiceProfilePrivateReviewValue(
+        proposal_count=proposal_count,
+        promotion_allowed_count=promotion_allowed_count,
+        blocked_claim_proposal_count=blocked_claim_proposal_count,
+        cta_pattern_proposal_count=cta_pattern_proposal_count,
+        buyer_trigger_proposal_count=buyer_trigger_proposal_count,
+        operator_value_score=min(operator_value_score, 9),
+        value_summary=(
+            "Prywatne propozycje ekologus-ai dają materiał do review i mogą poprawić "
+            "konkretność Service Profile, ale nie odblokowują production-depth, "
+            "publikacji ani gotowych twierdzeń bez decyzji człowieka."
+        ),
+        review_value_points=review_value_points,
+    )
+
+
+def _review_action_queue(
+    *,
+    review_actions: list[ContentServiceProfileReviewAction],
+    service_sections: list[ContentServiceProfileServiceSection],
+    private_proposals: list[PrivateSourceProposal],
+    first_review_action_id: str | None,
+) -> list[ContentServiceProfileReviewQueueItem]:
+    title_by_card_id = _target_title_lookup(service_sections, private_proposals)
+    queue = [
+        ContentServiceProfileReviewQueueItem(
+            action_id=action.action_id,
+            review_scope=action.review_scope,
+            priority=action.priority,
+            target_card_id=action.target_card_id,
+            target_card_title=(
+                title_by_card_id.get(action.target_card_id or "")
+                or action.target_card_id
+                or "ogólny przegląd wiedzy"
+            ),
+            decision_options=action.decision_options,
+        )
+        for action in review_actions
+    ]
+    queue = sorted(
+        queue,
+        key=lambda item: (
+            _priority_order(item.priority),
+            _review_scope_order(item.review_scope),
+            item.target_card_title,
+            item.action_id,
+        ),
+    )
+    if not first_review_action_id:
+        return queue
+    first_items = [item for item in queue if item.action_id == first_review_action_id]
+    if not first_items:
+        return queue
+    return [
+        first_items[0],
+        *(item for item in queue if item.action_id != first_review_action_id),
+    ]
+
+
+def _target_title_lookup(
+    service_sections: list[ContentServiceProfileServiceSection],
+    private_proposals: list[PrivateSourceProposal],
+) -> dict[str, str]:
+    lookup = {section.card_id: section.title for section in service_sections}
+    lookup.update(
+        {
+            proposal.target_card_id: proposal.target_card_title
+            for proposal in private_proposals
+        }
+    )
+    return lookup
 
 
 def _private_source_proposal_sections(
@@ -905,6 +1220,42 @@ def _first_review_safe_next_step(
     if action.review_scope == "coverage_gap":
         return "Najpierw znajdź źródło dla luki, potem dopiero przygotuj kartę review."
     return "Zbierz decyzję review człowieka przed jakąkolwiek promocją wiedzy."
+
+
+def _percent(value: int, total: int) -> int:
+    if total <= 0:
+        return 0
+    return round((value / total) * 100)
+
+
+def _risk_order(value: ServiceProfilePrivateProposalRiskTier) -> int:
+    return {"high": 0, "medium": 1, "low": 2, "unknown": 3}[value]
+
+
+def _priority_order(value: ServiceProfileReviewActionPriority) -> int:
+    return {"high": 0, "medium": 1, "low": 2}[value]
+
+
+def _source_scope_order(value: PrivateSourceProposalScope) -> int:
+    return {
+        "claim_policy": 0,
+        "evidence_requirement": 1,
+        "service": 2,
+        "buyer_problem": 3,
+        "cta": 4,
+        "metric_signal": 5,
+    }[value]
+
+
+def _review_scope_order(value: ServiceProfileReviewActionScope) -> int:
+    return {
+        "private_claim_policy_proposal": 0,
+        "private_evidence_policy_proposal": 1,
+        "public_service_card": 2,
+        "private_service_proposal": 3,
+        "coverage_gap": 4,
+        "general_knowledge_review": 5,
+    }[value]
 
 
 def _lifecycle(card: ContentKnowledgeCard) -> ContentKnowledgeLifecycleStatus:

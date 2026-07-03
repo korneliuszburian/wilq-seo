@@ -852,6 +852,33 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.coverage_summary.ready_for_daily_content is False
     assert response.coverage_summary.source_backed_review_required_count >= 5
     assert response.coverage_summary.approved_current_count == 0
+    assert response.source_fact_coverage.pass_state is True
+    assert response.source_fact_coverage.knowledge_status == "source_backed_review_required"
+    assert response.source_fact_coverage.ready_for_daily_content is False
+    assert response.source_fact_coverage.production_depth_percent == 0
+    assert response.source_fact_coverage.approved_service_percent == 0
+    assert response.source_fact_coverage.reviewed_fact_percent == 0
+    assert response.source_fact_coverage.fact_count >= 10
+    assert response.source_fact_coverage.fact_review_counts["review_required"] >= 10
+    assert response.source_fact_coverage.fact_connector_counts["public_site"] >= 1
+    assert (
+        response.source_fact_coverage.fact_connector_counts[
+            "ekologus_ai_private_source_catalog"
+        ]
+        >= 5
+    )
+    assert response.source_fact_coverage.private_review_value.operator_value_score >= 7
+    assert response.source_fact_coverage.private_review_value.promotion_allowed_count == 0
+    assert response.source_fact_coverage.private_review_queue
+    assert response.source_fact_coverage.review_action_queue
+    assert response.source_fact_coverage.first_review_action_id
+    assert (
+        response.source_fact_coverage.review_action_queue[0].action_id
+        == response.source_fact_coverage.first_review_action_id
+    )
+    assert response.source_fact_coverage.review_action_queue[0].review_scope == (
+        "public_service_card"
+    )
     assert response.service_sections
     assert any(
         section.card_id == "ekologus_service_bdo_reporting"
