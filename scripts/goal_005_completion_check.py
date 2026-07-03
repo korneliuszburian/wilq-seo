@@ -26,6 +26,8 @@ REQUIRED_DOCS = [
     Path("docs/handoffs/2026-07-01-wilku-content-uat-ready.md"),
 ]
 
+DEFAULT_API_BASE = "http://127.0.0.1:8000"
+
 OWNER_DEFER_FIELDS = {
     "flag": "odroczenie_goal_005_uat",
     "date": "data",
@@ -55,7 +57,15 @@ def main() -> int:
     )
     parser.add_argument("--uat-result", help="Ścieżka do wypełnionego Goal 005 UAT JSON.")
     parser.add_argument("--owner-defer", help="Ścieżka do explicit owner defer JSON.")
-    parser.add_argument("--api-base", help="Opcjonalnie waliduje UAT result przeciw live WILQ API.")
+    parser.add_argument(
+        "--api-base",
+        default=DEFAULT_API_BASE,
+        help=(
+            "Adres WILQ API dla live UAT packet/provenance. Domyślnie używa "
+            f"lokalnego runtime: {DEFAULT_API_BASE}. Podaj pustą wartość tylko "
+            "gdy chcesz wymusić offline placeholdery."
+        ),
+    )
     parser.add_argument(
         "--format",
         choices=("json", "markdown"),
