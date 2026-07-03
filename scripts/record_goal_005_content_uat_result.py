@@ -39,6 +39,7 @@ REQUIRED_BOOLEAN_FIELDS = {
 }
 REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
 REVIEW_SCORECARD_FIELD = "oceny_materialow_review"
+WILKU_REVIEW_QUESTIONS_FIELD = "pytania_do_wilka"
 REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
 RECOMMENDED_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md",
@@ -183,6 +184,10 @@ def build_content_uat_input_example(
     selected_work_item = "<work_item_id_z_uat_packet>"
     if live_context is not None:
         selected_work_item = select_uat_candidate_id(live_context) or selected_work_item
+    provenance = live_uat_provenance(
+        live_context=live_context,
+        selected_work_item=selected_work_item,
+    )
     return {
         "data_sesji": "<YYYY-MM-DD>",
         "osoba": "Wilku",
@@ -208,6 +213,7 @@ def build_content_uat_input_example(
             }
             for artifact in RECOMMENDED_REVIEW_ARTIFACTS
         ],
+        WILKU_REVIEW_QUESTIONS_FIELD: wilku_review_questions(provenance),
         "pytania_skad_to_wzielo": (
             'UZUPEŁNIJ: gdzie Wilku zapytał "skąd to wzięło?" albo "brak pytań"'
         ),
@@ -416,6 +422,9 @@ def build_content_uat_result_report(
         "largest_product_gap": str(payload["najwiekszy_brak_produktu"]).strip(),
         "can_continue_to_full_content_uat": can_continue,
         "shown_review_artifacts": shown_review_artifacts,
+        "wilku_review_questions": list_payload(
+            payload.get(WILKU_REVIEW_QUESTIONS_FIELD)
+        ),
         "review_scorecard": review_scorecard,
         "review_scorecard_summary": review_scorecard_summary(review_scorecard),
         "review_follow_up_suggestions": review_follow_up_suggestions(review_scorecard),
@@ -507,6 +516,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         *[f"- `{artifact}`" for artifact in report["shown_review_artifacts"]],
         "",
+        *render_wilku_review_questions(report.get("wilku_review_questions")),
+        "",
         "## Scorecard Wilka",
         "",
         render_review_scorecard_summary(report.get("review_scorecard_summary")),
@@ -550,6 +561,17 @@ def render_review_scorecard_summary(value: Any) -> str:
             f"- Decyzje: {decision_label or 'brak'}",
         ]
     )
+
+
+def render_wilku_review_questions(value: Any) -> list[str]:
+    questions = list_payload(value)
+    if not questions:
+        return []
+    return [
+        "## Pytania prowadzące z WILQ",
+        "",
+        *[f"- {question}" for question in questions],
+    ]
 
 
 def render_review_scorecard(value: Any) -> list[str]:
@@ -1166,7 +1188,41 @@ def private_review_question_lines(value: Any) -> list[str]:
     ]
     if not questions:
         return []
-    return ["- Prywatna wiedza / ekologus-ai:", *[f"  - {question}" for question in questions]]
+    return [
+        "- Prywatna wiedza / ekologus-ai:",
+        *[f"  - {question}" for question in questions],
+    ]
+
+
+def wilku_review_questions(value: dict[str, Any] | None) -> list[str]:
+    questions = [
+        "Czy rozumiesz, czemu pełny test treści jest jeszcze zablokowany?",
+        "Czy Service Profile i pierwsza karta BDO są czytelne?",
+    ]
+    if isinstance(value, dict):
+        questions.extend(
+            [
+                str(question).strip()
+                for question in raw_list_payload(value.get("private_review_questions"))
+                if str(question).strip()
+            ]
+        )
+        questions.extend(sales_brief_review_questions(value))
+    questions.extend(
+        [
+            'Gdzie pytasz: "skąd WILQ to wziął?"',
+            "Co brzmi generycznie albo nie jak Ekologus?",
+            "Co trzeba poprawić, zanim puścimy pełny test treści?",
+        ]
+    )
+    seen: set[str] = set()
+    unique_questions: list[str] = []
+    for question in questions:
+        if question in seen:
+            continue
+        seen.add(question)
+        unique_questions.append(question)
+    return unique_questions
 
 
 def private_review_questions_label(value: dict[str, Any]) -> str:

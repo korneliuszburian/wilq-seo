@@ -201,6 +201,13 @@ Date: 2026-07-04
   source facts and 18 knowledge constraints are enough for a review-level
   brief. This improves the next UAT conversation without approving knowledge
   or unlocking final draft/publication.
+- 2026-07-04 Goal 005 fillable UAT JSON now includes `pytania_do_wilka`, a
+  concrete checklist assembled from the live Service Profile/private-source
+  and Sales Brief signal-quality questions. Live proof shows the JSON example
+  includes BDO/Profile readability, ekologus-ai/private review, review-only
+  Sales Brief status/reason/next-step and signal-density questions, so the
+  operator can record Wilku's answers without translating completion-guard
+  context manually.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run

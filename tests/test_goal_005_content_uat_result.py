@@ -31,6 +31,10 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "pytania_skad_to_wzielo": "Chce widzieć publiczny URL obok evidence ID.",
         "miejsca_generyczne_off_brand": "CTA było za szerokie dla usług środowiskowych.",
         "najwiekszy_brak_produktu": "Brak zatwierdzonej karty dla Eko-Opieki.",
+        "pytania_do_wilka": [
+            "Czy Service Profile i pierwsza karta BDO są czytelne?",
+            "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
+        ],
         "wilku_rozumie_blokady_pelnego_uat": "tak",
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
@@ -52,6 +56,10 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     ]
     assert report["shown_review_artifacts"] == [
         "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"
+    ]
+    assert report["wilku_review_questions"] == [
+        "Czy Service Profile i pierwsza karta BDO są czytelne?",
+        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
     ]
     assert report["review_scorecard_summary"] == {
         "artifact_count": 1,
@@ -83,6 +91,8 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert "nie odblokowuje publikacji" in report["safety_note"]
 
     markdown = render_markdown(report)
+    assert "## Pytania prowadzące z WILQ" in markdown
+    assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in markdown
     assert "## Ostrzeżenia materiałów review" in markdown
     assert "## Scorecard Wilka" in markdown
     assert "## Sugestie follow-up z ocen" in markdown
@@ -111,6 +121,20 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
     )
     assert example["oceny_materialow_review"][0]["nazwa_materialu"] == (
         "Service Profile - co pokazać teraz"
+    )
+    assert example["pytania_do_wilka"]
+    assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in example[
+        "pytania_do_wilka"
+    ]
+    assert any(
+        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        in question
+        for question in example["pytania_do_wilka"]
+    )
+    assert any(
+        "Czy proponowane CTA brzmi jak realny następny krok Ekologus"
+        in question
+        for question in example["pytania_do_wilka"]
     )
     assert example["follow_up_beads"] == [
         "<wilq-seo-...: opisz follow-up po sesji, jeżeli pełny test treści jest zablokowany>"
