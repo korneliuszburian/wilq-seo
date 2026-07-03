@@ -164,15 +164,14 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     }
     rendered = "\n".join(render_next_uat_input(next_input))
     assert "Pierwsza decyzja w Service Profile" in rendered
-    public_part = rendered.split("Dane techniczne do zapisu dowodu")[0]
+    public_part = rendered.split("ID do zapisu po rozmowie")[0]
     assert "renamed_public_service_bdo_review" not in public_part
     assert "ekologus_service_bdo_reporting" not in public_part
     assert "Najpierw sprawdź publiczną kartę BDO." in rendered
     assert "Co trzeba ocenić: którą decyzję zapisujemy" in rendered
     assert "czy źródło i pochodzenie faktu są jasne" in rendered
-    assert "review=`renamed_public_service_bdo_review`" in rendered
-    assert "target `ekologus_service_bdo_reporting`" in rendered
-    assert "scope publiczna karta usługi" in rendered
+    assert "decyzja `renamed_public_service_bdo_review`" in rendered
+    assert "karta `ekologus_service_bdo_reporting`" in rendered
     assert "approve/needs_changes/stale/reject" not in rendered
     assert "Service Profile - co pokazać teraz" in rendered
     assert "--api-base http://127.0.0.1:8000" in next_input["print_input_command"]
@@ -414,7 +413,7 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     markdown = render_markdown(report)
 
     assert report["uat_live_provenance"] == provenance
-    assert "## Live UAT provenance" in markdown
+    assert "## Ślad danych do rozmowy" in markdown
     assert "## Bramki przed pokazaniem" in markdown
     assert "wiedza do finalnych treści: 0%" in markdown
     assert "publikacja/finalny draft: zablokowane zgodnie z zasadami" in markdown
@@ -429,10 +428,13 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "service_profile_review_" not in pre_demo_section
     assert "Następny materiał do rozmowy" in markdown
     assert "Komenda do wzoru wyniku rozmowy" in markdown
-    assert "Sales Brief status: `blocked`" in markdown
-    assert "Sales Brief blocker: Brakuje karty usługi; Brakuje karty CTA" in markdown
-    assert "Sales Brief constraint evidence: ev_content_service_profile_source_facts" in markdown
-    assert "Production-depth ready: nie" in markdown
+    assert "Status briefu sprzedażowego: `blocked`" in markdown
+    assert (
+        "Co blokuje brief sprzedażowy: Brakuje karty usługi; Brakuje karty CTA"
+        in markdown
+    )
+    assert "Dowody przy ograniczeniu briefu: ev_content_service_profile_source_facts" in markdown
+    assert "Wiedza gotowa do finalnych treści: nie" in markdown
 
 
 def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> None:

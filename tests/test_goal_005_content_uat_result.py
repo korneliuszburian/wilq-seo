@@ -135,9 +135,9 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "google_search_console" not in status_section
     assert "production-depth" not in status_section
     assert "Zatwierdzona wiedza do finalnych treści: nie" in status_section
-    assert "## Dane techniczne do zapisu dowodu" in card
-    assert "Work item ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
-    public_section = card.split("## Dane techniczne do zapisu dowodu")[0]
+    assert "## ID do zapisu po rozmowie" in card
+    assert "Materiał ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
+    public_section = card.split("## ID do zapisu po rozmowie")[0]
     assert "renamed_public_service_bdo_review" not in public_section
     assert "ekologus_service_bdo_reporting" not in public_section
     assert "renamed_public_service_bdo_review" in card
@@ -149,7 +149,7 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "czy źródło i pochodzenie faktu są jasne" in card
     assert "approve/needs_changes/stale/reject" not in card
     assert "Najpierw sprawdź publiczną kartę BDO." in card
-    assert "Service Profile review JSON" in card
+    assert "Decyzja Service Profile ID" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card
     assert "Service Profile - co pokazać teraz" in card
@@ -157,7 +157,7 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Historia social - co blokuje ponowne użycie tematu" in card
     assert "--print-input-example --api-base http://127.0.0.1:8000" in card
     assert "scripts/record_goal_005_content_uat_result.py <plik.json>" in card
-    assert "production-depth" in card
+    assert "production-depth" not in card
     assert "content UAT" not in public_section
     assert "JSON proof" not in public_section
 
@@ -249,13 +249,13 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert provenance["private_proposal_promotion_ready"] is False
 
     markdown = render_markdown(report)
-    assert "## Live provenance" in markdown
-    assert "Wybrane zadanie znalezione w aktualnym pakiecie: tak" in markdown
-    assert "Źródła wybranego itemu: google_search_console, wordpress_ekologus" in markdown
-    assert "Sales Brief wybranego itemu: `ready`" in markdown
-    assert "Sales Brief blocker: brak" in markdown
+    assert "## Ślad danych do rozmowy" in markdown
+    assert "Wybrany materiał znaleziony w aktualnym pakiecie: tak" in markdown
+    assert "Źródła wybranego materiału: google_search_console, wordpress_ekologus" in markdown
+    assert "Brief sprzedażowy wybranego materiału: `ready`" in markdown
+    assert "Co blokuje brief sprzedażowy: brak" in markdown
     assert (
-        "Sales Brief constraint evidence: ev_content_service_profile_source_facts"
+        "Dowody przy ograniczeniu briefu: ev_content_service_profile_source_facts"
         in markdown
     )
     assert "Publiczne decyzje oceny kart usług: `1`" in markdown

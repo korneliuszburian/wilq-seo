@@ -604,7 +604,7 @@ def build_owner_defer_example(*, api_base: str | None = DEFAULT_API_BASE) -> dic
             else None
         ),
         (
-            f"Wybrany work item do sprawdzenia: {selected_work_item}"
+            f"Wybrany materiał do sprawdzenia: {selected_work_item}"
             if selected_work_item
             else None
         ),
@@ -701,7 +701,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         )
         lines.extend(f"- {item}" for item in report["blocked_claims"])
         if report.get("uat_live_provenance"):
-            lines.extend(["", "## Live UAT provenance"])
+            lines.extend(["", "## Ślad danych do rozmowy"])
             lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
         if report.get("uat_review_follow_up_suggestions"):
             lines.extend(["", "## Follow-up ze scorecardu Wilka"])
@@ -732,12 +732,15 @@ def render_markdown(report: dict[str, Any]) -> str:
             ]
         )
         if report.get("selected_work_item"):
-            lines.append(f"- Wybrany work item: `{report['selected_work_item']}`")
+            lines.append(
+                "- Wybrany materiał do sprawdzenia: "
+                f"`{report['selected_work_item']}`"
+            )
         if report.get("shown_review_artifacts"):
             lines.extend(["", "## Pokazane materiały review"])
             lines.extend(f"- `{item}`" for item in report["shown_review_artifacts"])
         if report.get("uat_live_provenance"):
-            lines.extend(["", "## Live UAT provenance"])
+            lines.extend(["", "## Ślad danych do rozmowy"])
             lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
         if report.get("pre_demo_audits"):
             lines.extend(["", "## Pre-demo gates"])
@@ -757,13 +760,14 @@ def render_uat_live_provenance(value: dict[str, Any]) -> list[str]:
     blocker_label = value.get("selected_sales_brief_blocker") or "; ".join(blockers) or "brak"
     evidence_ids = value.get("selected_sales_brief_constraint_evidence_ids") or []
     return [
-        "- Wybrany work item znaleziony: "
+        "- Wybrany materiał znaleziony: "
         + ("tak" if value.get("selected_work_item_found") is True else "nie"),
-        f"- Sales Brief status: `{value.get('selected_sales_brief_status') or 'brak'}`",
-        f"- Sales Brief blocker: {blocker_label}",
-        "- Sales Brief constraint evidence: "
+        "- Status briefu sprzedażowego: "
+        f"`{value.get('selected_sales_brief_status') or 'brak'}`",
+        f"- Co blokuje brief sprzedażowy: {blocker_label}",
+        "- Dowody przy ograniczeniu briefu: "
         + (", ".join(evidence_ids) or "brak"),
-        "- Production-depth ready: "
+        "- Wiedza gotowa do finalnych treści: "
         + ("tak" if value.get("production_depth_ready") is True else "nie"),
         "- Pierwszy Service Profile review: "
         + first_service_profile_review_label(value),
@@ -826,12 +830,13 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
     )
     if isinstance(first_review, dict):
         lines.append(
-            "- Dane techniczne do zapisu dowodu: "
-            f"work_item=`{value.get('selected_work_item') or 'brak'}`; "
-            f"review={first_review_input_label(first_review)}"
+            "- ID do zapisu po rozmowie: "
+            f"materiał `{value.get('selected_work_item') or 'brak'}`; "
+            f"decyzja `{first_review.get('action_id') or 'brak'}`; "
+            f"karta `{first_review.get('target_card_id') or 'brak'}`"
         )
     else:
-        lines.append("- Dane techniczne do zapisu dowodu: brak")
+        lines.append("- ID do zapisu po rozmowie: brak")
     return lines
 
 
@@ -841,11 +846,12 @@ def first_review_input_label(value: dict[str, Any]) -> str:
         f"`{value.get('action_id')}`" if value.get("action_id") else None,
         str(value.get("label")) if value.get("label") else None,
         (
-            f"scope {REVIEW_SCOPE_LABELS.get(str(value.get('scope')), str(value.get('scope')))}"
+            "zakres: "
+            f"{REVIEW_SCOPE_LABELS.get(str(value.get('scope')), str(value.get('scope')))}"
             if value.get("scope")
             else None
         ),
-        f"target `{value.get('target_card_id')}`" if value.get("target_card_id") else None,
+        f"karta: `{value.get('target_card_id')}`" if value.get("target_card_id") else None,
         str(next_step) if next_step else None,
     ]
     return " - ".join(part for part in parts if part) or "brak"

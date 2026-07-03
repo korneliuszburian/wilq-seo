@@ -96,7 +96,7 @@ REVIEW_REQUIRED_FIELD_LABELS = {
     "target_card_id": "której karty dotyczy decyzja",
     "decision": "werdykt: zatwierdzić, poprawić, oznaczyć jako nieaktualne albo odrzucić",
     "source_trace_clear": "czy źródło i pochodzenie faktu są jasne",
-    "blocked_claims_reviewed": "czy zablokowane claimy zostały sprawdzone",
+    "blocked_claims_reviewed": "czy zablokowane twierdzenia zostały sprawdzone",
     "notes": "krótka notatka co poprawić albo dlaczego zaakceptować",
 }
 REVIEW_DECISION_OPTION_LABELS = {
@@ -313,18 +313,18 @@ def render_content_uat_session_card(
             )
         ),
         "",
-        "## Dane techniczne do zapisu dowodu",
+        "## ID do zapisu po rozmowie",
         "",
-        f"- Work item ID: `{selected_work_item}`",
+        f"- Materiał ID: `{selected_work_item}`",
         "- Kolejka content: "
         f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
-        "- Sales Brief status: "
+        "- Status briefu sprzedażowego: "
         f"`{provenance.get('selected_sales_brief_status') or 'brak live proof'}`",
-        "- Service Profile production-depth: "
+        "- Wiedza gotowa do finalnych treści: "
         f"`{visible_bool(provenance.get('production_depth_ready') is True)}`",
         "- Źródła danych: "
         f"{', '.join(provenance.get('selected_source_connectors') or []) or 'brak live proof'}",
-        "- Service Profile review JSON: "
+        "- Decyzja Service Profile ID: "
         f"{first_service_profile_review_label(provenance)}",
     ]
     return "\n".join(lines).rstrip() + "\n"
@@ -472,14 +472,14 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Typ: `{report['report_type']}`",
         f"- Data: `{report['date']}`",
         f"- Osoba: `{report['person']}`",
-        f"- Work item: `{report['selected_work_item']}`",
+        f"- Materiał: `{report['selected_work_item']}`",
         f"- Status: {visible_status(report['overall_status'])}",
         f"- Czas do zrozumienia statusu: {report['time_to_status_understanding']}",
         f"- Punkty niezrozumienia: {report['confusion_points']}",
         "",
         report["safety_note"],
         "",
-        "## Live provenance",
+        "## Ślad danych do rozmowy",
         "",
         render_live_provenance(report.get("live_provenance")),
         "",
@@ -928,8 +928,8 @@ def first_service_profile_review_label(value: dict[str, Any]) -> str:
     parts = [
         f"`{action_id}`" if action_id else None,
         str(label) if label else None,
-        f"scope {review_scope_label(scope)}" if scope else None,
-        f"target `{target}`" if target else None,
+        f"zakres: {review_scope_label(scope)}" if scope else None,
+        f"karta: `{target}`" if target else None,
         str(next_step) if next_step else None,
     ]
     return " - ".join(part for part in parts if part)
@@ -1020,6 +1020,8 @@ def humanize_review_decision_text(value: Any) -> str | None:
         "needs_changes": "wróć z poprawkami",
         "stale": "oznacz jako nieaktualne",
         "reject": "odrzuć",
+        "zablokowane claimy": "zablokowane twierdzenia",
+        "claimy": "twierdzenia",
     }
     for raw, label in replacements.items():
         text = text.replace(raw, label)
@@ -1034,20 +1036,20 @@ def render_live_provenance(value: Any) -> str:
             f"- API: `{value.get('api_base')}`",
             "- Kolejka: "
             f"`{value.get('queue_status')}`, kandydaci: `{value.get('candidate_count')}`",
-            "- Wybrane zadanie znalezione w aktualnym pakiecie: "
+            "- Wybrany materiał znaleziony w aktualnym pakiecie: "
             f"{visible_bool(value.get('selected_work_item_found') is True)}",
-            f"- Tryb wybranego itemu: `{value.get('selected_recommended_mode')}`",
-            "- Źródła wybranego itemu: "
+            f"- Tryb wybranego materiału: `{value.get('selected_recommended_mode')}`",
+            "- Źródła wybranego materiału: "
             f"{', '.join(value.get('selected_source_connectors') or []) or 'brak'}",
-            "- Sales Brief wybranego itemu: "
+            "- Brief sprzedażowy wybranego materiału: "
             f"`{value.get('selected_sales_brief_status') or 'brak'}`",
-            "- Sales Brief blocker: "
+            "- Co blokuje brief sprzedażowy: "
             f"{sales_brief_blocker_label(value)}",
-            "- Sales Brief constraint evidence: "
+            "- Dowody przy ograniczeniu briefu: "
             f"{sales_brief_evidence_label(value)}",
             "- Service Profile read-only: "
             f"{visible_bool(value.get('service_profile_read_only') is True)}",
-            "- Production-depth ready: "
+            "- Wiedza gotowa do finalnych treści: "
             f"{visible_bool(value.get('production_depth_ready') is True)}",
             "- Pierwszy Service Profile review: "
             f"{first_service_profile_review_label(value)}",
