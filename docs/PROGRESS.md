@@ -66,6 +66,10 @@ Date: 2026-07-03
   the safest first activation target because it is WordPress draft-only, not
   publish; it still reports `vendor_write_possible_count=0` and blocks on
   apply mode, preview/confirmation/impact audit and missing adapter.
+- 2026-07-03 `/actions` dashboard now shows the first write candidate above
+  the normal action queue. It explains why WordPress draft-only is the first
+  activation target and lists the blockers before any write adapter can run;
+  live API still reports zero possible vendor writes.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack

@@ -739,6 +739,62 @@ const actions = [
   }
 ];
 
+const actionMutationReadinessSummary = {
+  response_type: "action_mutation_readiness_summary",
+  contract: "action_mutation_readiness_summary_v1",
+  action_count: 19,
+  ready_to_request_apply_count: 0,
+  vendor_write_possible_count: 0,
+  would_attempt_vendor_write_count: 0,
+  prepare_only_count: 19,
+  missing_adapter_count: 19,
+  high_risk_blocked_count: 0,
+  top_blockers: ["missing_mutation_adapter"],
+  first_write_candidate_reason:
+    "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i może zostać zablokowany przez env, audit trail oraz adapter wykonania.",
+  first_write_candidate: {
+    response_type: "action_mutation_readiness",
+    contract: "action_mutation_readiness_v1",
+    action_id: "act_prepare_wordpress_draft_handoff",
+    title: "Przygotuj zablokowany podgląd szkicu WordPress",
+    connector: "wordpress_ekologus",
+    connector_label: "WordPress ekologus.pl",
+    mode: "prepare",
+    mode_label: "przygotowanie",
+    risk: "medium",
+    risk_label: "średnie",
+    validation_status: "not_validated",
+    review_gate_status: "pending_validation",
+    ready_to_request_apply: false,
+    vendor_write_possible: false,
+    would_attempt_vendor_write: false,
+    mutation_adapter: null,
+    requirements: [],
+    blockers: [
+      {
+        code: "missing_apply_mode",
+        label: "Akcja jest tylko prepare/review",
+        reason: "Ta akcja nie ma kontraktu zapisu do zewnętrznego systemu.",
+        next_step: "Użyj jej do review albo dodaj osobny apply-capable ActionObject."
+      },
+      {
+        code: "missing_mutation_adapter",
+        label: "Brakuje adaptera zapisu",
+        reason: "WILQ nie ma jeszcze implementacji vendor write dla tej akcji.",
+        next_step: "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live."
+      }
+    ],
+    operator_next_step:
+      "Użyj jej do review albo dodaj osobny apply-capable ActionObject.",
+    evidence_ids: ["ev_refresh_gsc"],
+    source_connectors: ["wordpress_ekologus"],
+    latest_mutation_audit_id: null,
+    latest_mutation_audit_status: null
+  },
+  operator_next_step: "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live.",
+  items: []
+};
+
 const evidence = [
   {
     id: "ev_connector_google_ads_status",
@@ -7404,6 +7460,7 @@ function mockDiagnosticApi(url: string) {
     ["/api/metrics/status", metricStoreStatus],
     ["/api/opportunities", opportunities],
     ["/api/actions", actions],
+    ["/api/actions/mutation-readiness", actionMutationReadinessSummary],
     ["/api/codex/context-pack", socialPublisherContextPack]
   ];
   const exactResponse = exactResponses.find(([path]) => url.endsWith(path));
@@ -7807,6 +7864,11 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Akcje do sprawdzenia" })).toBeInTheDocument()
     );
     expect(screen.getByText("Najważniejsze na start")).toBeInTheDocument();
+    expect(screen.getByText("Pierwszy kandydat zapisu")).toBeInTheDocument();
+    expect(screen.getByText("Przygotuj zablokowany podgląd szkicu WordPress")).toBeInTheDocument();
+    expect(screen.getByText("write zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
+    expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
     expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
     expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy/i)).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")).toBeInTheDocument();
