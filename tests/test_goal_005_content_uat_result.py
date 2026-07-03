@@ -152,6 +152,13 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Decyzja Service Profile ID" in card
     assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga review" in card
     assert "dowody: 2" in card
+    assert "Brief sprzedażowy / jakość sygnału:" in card
+    assert (
+        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        in card
+    )
+    assert "Czy powód jakości sygnału jest zrozumiały" in card
+    assert "Czy następny krok briefu jest właściwy" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "Prywatna wiedza / ekologus-ai:" in card
     assert (
@@ -235,6 +242,11 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert provenance["selected_sales_brief_constraint_evidence_ids"] == [
         "ev_content_service_profile_source_facts"
     ]
+    assert provenance["selected_sales_brief_review_questions"]
+    assert (
+        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        in provenance["selected_sales_brief_review_questions"][0]
+    )
     assert provenance["service_profile_read_only"] is True
     assert provenance["production_depth_ready"] is False
     assert provenance["first_service_profile_review_action_id"] == (
@@ -467,8 +479,9 @@ def test_content_uat_result_requires_public_service_review_feedback() -> None:
     with pytest.raises(RuntimeError) as error:
         build_content_uat_result_report(payload)
 
-    assert "czy publiczne decyzje oceny kart usług są czytelne musi mieć wartość tak albo nie" in str(
-        error.value
+    assert (
+        "czy publiczne decyzje oceny kart usług są czytelne musi mieć wartość tak albo nie"
+        in str(error.value)
     )
 
 
@@ -704,8 +717,14 @@ def _live_context() -> dict[str, object]:
             "private_source_proposal_summary": {"promotion_ready": False},
             "private_review_value": {
                 "review_questions": [
-                    "Czy proponowane CTA brzmi jak realny następny krok Ekologus, a nie obietnica wyniku?",
-                    "Czy opisany problem kupującego faktycznie pasuje do rozmów z klientami Ekologus?",
+                    (
+                        "Czy proponowane CTA brzmi jak realny następny krok "
+                        "Ekologus, a nie obietnica wyniku?"
+                    ),
+                    (
+                        "Czy opisany problem kupującego faktycznie pasuje do "
+                        "rozmów z klientami Ekologus?"
+                    ),
                 ]
             },
             "private_source_proposals": [
@@ -737,6 +756,12 @@ def _live_context() -> dict[str, object]:
                 "status": "ready",
                 "signal_quality_status": "review_required",
                 "signal_quality_status_label": "sygnał użyteczny, ale wymaga review",
+                "signal_quality_reason": (
+                    "Są dowody i źródła, ale część wiedzy wymaga review."
+                ),
+                "signal_quality_safe_next_step": (
+                    "Pokaż brief Wilkowi i zapisz decyzję review."
+                ),
                 "evidence_id_count": 2,
                 "source_connector_count": 2,
                 "source_fact_count": 2,

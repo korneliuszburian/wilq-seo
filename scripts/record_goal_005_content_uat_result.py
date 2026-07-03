@@ -296,6 +296,7 @@ def render_content_uat_session_card(
         "- Czy rozumiesz, czemu pełny test treści jest jeszcze zablokowany?",
         "- Czy Service Profile i pierwsza karta BDO są czytelne?",
         *private_review_question_lines(provenance),
+        *sales_brief_review_question_lines(provenance),
         "- Gdzie pytasz: skąd WILQ to wziął?",
         "- Co brzmi generycznie albo nie jak Ekologus?",
         "- Co trzeba poprawić, zanim puścimy pełny test treści?",
@@ -354,7 +355,10 @@ def build_content_uat_result_report(
 ) -> dict[str, Any]:
     errors = validate_content_uat_payload(payload, live_context=live_context)
     if errors:
-        raise RuntimeError("Niepoprawny wynik Goal 005 rozmowy z Wilkiem:\n- " + "\n- ".join(errors))
+        raise RuntimeError(
+            "Niepoprawny wynik Goal 005 rozmowy z Wilkiem:\n- "
+            + "\n- ".join(errors)
+        )
 
     can_continue = normalize_bool(payload["mozna_przejsc_do_pelnego_content_uat"])
     blockers_understood = normalize_bool(payload["wilku_rozumie_blokady_pelnego_uat"])
@@ -927,6 +931,9 @@ def live_uat_provenance(
             "knowledge_constraint_evidence_ids"
         )
         or [],
+        "selected_sales_brief_review_questions": sales_brief_review_questions(
+            selected_sales_brief_trace
+        ),
         "service_profile_read_only": service_profile.get("read_only"),
         "production_depth_ready": coverage.get("ready_for_daily_content"),
         "first_service_profile_review_action_id": first_review_action_id,
@@ -1169,6 +1176,90 @@ def private_review_questions_label(value: dict[str, Any]) -> str:
         if str(question).strip()
     ]
     return "; ".join(questions) or "brak"
+
+
+def sales_brief_review_question_lines(value: dict[str, Any]) -> list[str]:
+    questions = sales_brief_review_questions(value)
+    if not questions:
+        return []
+    return [
+        "- Brief sprzedażowy / jakość sygnału:",
+        *[f"  - {question}" for question in questions],
+    ]
+
+
+def sales_brief_review_questions(value: dict[str, Any] | None) -> list[str]:
+    if not isinstance(value, dict):
+        return []
+    explicit_questions = [
+        str(question).strip()
+        for question in raw_list_payload(
+            value.get("selected_sales_brief_review_questions")
+        )
+        if str(question).strip()
+    ]
+    if explicit_questions:
+        return explicit_questions
+    status_label = str(
+        value.get("selected_sales_brief_signal_quality_status_label")
+        or value.get("signal_quality_status_label")
+        or ""
+    ).strip()
+    if not status_label:
+        return []
+
+    questions = [
+        (
+            "Czy status briefu `"
+            + status_label
+            + "` mówi jasno, czy można go pokazać tylko do review?"
+        )
+    ]
+    reason = str(
+        value.get("selected_sales_brief_signal_quality_reason")
+        or value.get("signal_quality_reason")
+        or ""
+    ).strip()
+    if reason:
+        questions.append(
+            "Czy powód jakości sygnału jest zrozumiały: " + reason
+        )
+    safe_next_step = str(
+        value.get("selected_sales_brief_signal_quality_safe_next_step")
+        or value.get("signal_quality_safe_next_step")
+        or ""
+    ).strip()
+    if safe_next_step:
+        questions.append(
+            "Czy następny krok briefu jest właściwy: " + safe_next_step
+        )
+
+    counts = value.get("selected_sales_brief_signal_quality_counts")
+    if not isinstance(counts, dict):
+        counts = {
+            "evidence_id_count": value.get("evidence_id_count"),
+            "source_connector_count": value.get("source_connector_count"),
+            "source_fact_count": value.get("source_fact_count"),
+            "knowledge_constraint_count": value.get("knowledge_constraint_count"),
+        }
+    evidence_count = counts.get("evidence_id_count")
+    connector_count = counts.get("source_connector_count")
+    fact_count = counts.get("source_fact_count")
+    constraint_count = counts.get("knowledge_constraint_count")
+    if any(
+        item is not None
+        for item in (evidence_count, connector_count, fact_count, constraint_count)
+    ):
+        questions.append(
+            "Czy ta ilość sygnału wystarcza do review: "
+            f"dowody {evidence_count or 0}, connectory {connector_count or 0}, "
+            f"source facts {fact_count or 0}, ograniczenia {constraint_count or 0}?"
+        )
+    return questions
+
+
+def sales_brief_review_questions_label(value: dict[str, Any]) -> str:
+    return "; ".join(sales_brief_review_questions(value)) or "brak"
 
 
 def sales_brief_blocker_label(value: dict[str, Any]) -> str:

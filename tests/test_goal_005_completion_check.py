@@ -126,6 +126,12 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
                     "status": "ready",
                     "signal_quality_status": "review_required",
                     "signal_quality_status_label": "sygnał użyteczny, ale wymaga review",
+                    "signal_quality_reason": (
+                        "Są dowody i źródła, ale część wiedzy wymaga review."
+                    ),
+                    "signal_quality_safe_next_step": (
+                        "Pokaż brief Wilkowi i zapisz decyzję review."
+                    ),
                     "evidence_id_count": 2,
                     "source_connector_count": 2,
                     "source_fact_count": 2,
@@ -185,6 +191,12 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "czy źródło i pochodzenie faktu są jasne" in rendered
     assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga review" in rendered
     assert "ograniczenia wiedzy: 18" in rendered
+    assert "Pytania o brief sprzedażowy" in rendered
+    assert (
+        "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
+        in rendered
+    )
+    assert "Czy następny krok briefu jest właściwy" in rendered
     assert "decyzja `renamed_public_service_bdo_review`" in rendered
     assert "karta `ekologus_service_bdo_reporting`" in rendered
     assert "approve/needs_changes/stale/reject" not in rendered

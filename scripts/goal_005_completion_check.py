@@ -18,6 +18,7 @@ from scripts.record_goal_005_content_uat_result import (
     live_uat_provenance,
     load_json,
     review_artifact_label,
+    sales_brief_review_questions_label,
     selected_sales_brief_signal_quality_label,
 )
 from scripts.render_skill_coverage_audit import build_report as build_latest_skill_eval_report
@@ -420,6 +421,11 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
             if isinstance(provenance, dict)
             else {}
         ),
+        "selected_sales_brief_review_questions": (
+            provenance.get("selected_sales_brief_review_questions")
+            if isinstance(provenance, dict)
+            else []
+        ),
         "session_card_command": (
             "rtk uv run python scripts/record_goal_005_content_uat_result.py "
             + "--print-session-card"
@@ -570,6 +576,10 @@ def uat_live_provenance_summary(value: Any) -> dict[str, Any] | None:
             "selected_sales_brief_signal_quality_counts"
         )
         or {},
+        "selected_sales_brief_review_questions": value.get(
+            "selected_sales_brief_review_questions"
+        )
+        or [],
         "selected_sales_brief_blocker": value.get("selected_sales_brief_blocker"),
         "selected_sales_brief_blockers": value.get("selected_sales_brief_blockers")
         or [],
@@ -743,7 +753,10 @@ def blocked_report(
         ],
         "unblockers": [
             "Przeprowadź realną sesję Wilku i przekaż wynik przez --uat-result.",
-            "Albo zapisz świadome odroczenie właściciela z ryzykiem rezydualnym przez --owner-defer.",
+            (
+                "Albo zapisz świadome odroczenie właściciela z ryzykiem "
+                "rezydualnym przez --owner-defer."
+            ),
             "Zanim powiesz, że Goal 005 jest domknięty, uruchom pełne rtk scripts/verify.sh.",
         ],
         "owner_defer_example_command": OWNER_DEFER_EXAMPLE_COMMAND.format(
@@ -919,6 +932,9 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
                 }
             )
         )
+    brief_questions = sales_brief_review_questions_label(value)
+    if brief_questions != "brak":
+        lines.append("- Pytania o brief sprzedażowy: " + brief_questions)
     if value.get("blocked_reason"):
         lines.append(f"- Blokada pobrania live inputu: {value['blocked_reason']}")
     lines.append(
