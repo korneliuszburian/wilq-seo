@@ -143,6 +143,14 @@ Date: 2026-07-03
   recommendations, 6 action candidates and all hard gates true. It separates
   issue occurrences from unique SKU, keeps product ROAS/revenue/reapproval/
   write claims blocked and gives a first review queue.
+- 2026-07-03 `wilq-ahrefs-gap-finder` reached 9/10 SEO gap review level after
+  requiring visible `Mapa luk`, `Kolejność review`, `Co porównać ręcznie`,
+  `Decyzja po review` and `Brief dla marketera`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T125813Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 8 evidence IDs, 5
+  recommendations, 3 action candidates and all hard gates true. It keeps
+  Ahrefs as the only proof source in the isolated eval and blocks growth/
+  authority promises.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

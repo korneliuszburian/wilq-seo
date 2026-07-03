@@ -241,6 +241,15 @@
       "do sprawdzenia w WILQ",
       "Zablokowane obietnice"
     ],
+    "required_decision_terms_pl": [
+      "Mapa luk",
+      "Kolejność review",
+      "Co porównać ręcznie",
+      "Decyzja po review",
+      "Brief dla marketera",
+      "Zablokowane obietnice"
+    ],
+    "minimum_operator_usefulness_score": 9,
     "expected_blocked": false,
     "expected_no_action_ids": true,
     "blocked_claim_terms": [

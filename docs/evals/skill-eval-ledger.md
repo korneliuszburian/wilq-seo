@@ -478,6 +478,14 @@ Focused proof:
   The output tells the operator that Merchant counts are issue occurrences /
   samples, not unique SKU, blocks product ROAS/revenue/reapproval/write claims
   and gives the first review queue.
+- Follow-up Ahrefs proof: `wilq-ahrefs-gap-finder` moved from the 5/10 baseline
+  to 9/10 after requiring visible `Mapa luk`, `Kolejność review`,
+  `Co porównać ręcznie`, `Decyzja po review` and `Brief dla marketera`. The
+  passing proof is `.local-lab/evals/codex-skill/20260703T125813Z` with
+  `operator_usefulness_score=9`, `blocked=false`, `failure_tags=[]`, 8
+  evidence IDs, 5 recommendations, 3 action candidates and all hard gates true.
+  The output uses only Ahrefs evidence in the isolated eval, produces a review
+  map for content/link gaps and blocks growth/authority promises.
 
 Interpretation:
 

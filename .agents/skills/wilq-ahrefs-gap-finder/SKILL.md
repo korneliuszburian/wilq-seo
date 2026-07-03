@@ -76,7 +76,18 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 <output>
 
-Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+Odpowiedź ma być krótka i użyteczna dla operatora: jakie luki można
+przejrzeć, w jakiej kolejności, co porównać ręcznie i czego nie wolno obiecać
+na podstawie samych danych Ahrefs.
+
+Widocznie używaj tych sekcji:
+
+- `Mapa luk`: rozdziel luki treści, luki linków, strony konkurencji, organic keywords i kontekst autorytetu.
+- `Kolejność review`: wskaż pierwszy typ luki do ręcznego sprawdzenia i dlaczego teraz.
+- `Co porównać ręcznie`: podaj checklistę: temat konkurenta, istniejący URL Ekologus, intencja, pokrycie treści, możliwość linkowania/źródeł.
+- `Decyzja po review`: powiedz, czy po sprawdzeniu temat idzie do content briefu, link-review, dalszego GSC/WordPress cross-checku albo zostaje zablokowany.
+- `Brief dla marketera`: 3-5 zdań normalnym językiem: co Ahrefs pokazuje, co to znaczy dla planu treści/linków, czego nie wolno jeszcze obiecać.
+- `Zablokowane obietnice`: wzrost ruchu, wzrost autorytetu, przewaga konkurencyjna, produkcyjna treść i efekt SEO bez dalszego sprawdzenia.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

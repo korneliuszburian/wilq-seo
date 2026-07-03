@@ -20,15 +20,17 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Mapa luk`, `Kolejność review`, `Co porównać ręcznie`, `Decyzja po review`, `Brief dla marketera`, `Zablokowane obietnice`, `Dowody` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
-2. `Dowody`: identyfikatory dowodów, identyfikatory źródeł danych, notatki freshness i podsumowania metryk wyłącznie z WILQ API.
-3. `Diagnoza`: co wspierają dowody, z niepewnością gdy dowody są zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane i dowody potrzebne do ich utworzenia.
-5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Mapa luk`: rozdziel luki treści, luki linków, strony konkurencji, organic keywords i kontekst autorytetu. Nie mieszaj ich w jedną ogólną "szansę SEO".
+2. `Kolejność review`: wskaż pierwszy typ luki do ręcznego sprawdzenia i powód z WILQ/Ahrefs, np. rekordy luk są dostępne, ale efekt wymaga dalszego cross-checku.
+3. `Co porównać ręcznie`: wypisz checklistę: temat konkurenta, istniejący URL Ekologus, intencja, pokrycie treści, możliwość linkowania/źródeł i czy temat wymaga GSC/WordPress cross-checku.
+4. `Decyzja po review`: powiedz, co może się wydarzyć po sprawdzeniu: content brief, link-review, dalszy cross-check albo blokada tematu.
+5. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co Ahrefs pokazuje, do czego to służy i czego nie wolno jeszcze obiecać.
+6. `Zablokowane obietnice`: wzrost ruchu, wzrost autorytetu, przewaga konkurencyjna, produkcyjna treść i efekt SEO bez dalszego sprawdzenia.
+7. `Dowody`: identyfikatory dowodów, identyfikatory źródeł danych, notatki freshness i podsumowania metryk wyłącznie z WILQ API.
+8. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
 ## Warunki odmowy lub obniżenia do blokady
 
