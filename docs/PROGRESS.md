@@ -309,6 +309,12 @@ Date: 2026-07-03
   Profile decisions, and points to generated live JSON inputs in
   `.local-lab/proof/service-profile-private-review-input-20260703.json` and
   `.local-lab/proof/service-profile-public-review-input-20260703.json`.
+- 2026-07-03 the same handoff now matches the live API-owned first review item:
+  Wilku should start with
+  `service_profile_review_card_ekologus_service_bdo_reporting`, then continue
+  into private claim/evidence policy proposals. This removes the previous
+  contradiction where the handoff suggested starting from private proposals
+  while Goal 005 completion guard pinned BDO first.
 - 2026-07-03 the Goal 005 UAT input generator now includes that current handoff
   as the first recommended review artifact. Live proof:
   `.local-lab/proof/goal-005-content-uat-input-20260703.json` selects

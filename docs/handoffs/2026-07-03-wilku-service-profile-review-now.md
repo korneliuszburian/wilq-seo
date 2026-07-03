@@ -27,44 +27,65 @@ Powiedz Wilkowi:
 
 Pokaż `/service-profile`, ale zacznij od decyzji, nie od technicznych ID.
 
-Najpierw przejrzeć:
+Najpierw przejrzeć publiczną kartę usługi BDO, bo to jest obecny pierwszy
+review item z live Service Profile i Goal 005 UAT input:
 
-1. **Bezpieczeństwo prawne, poufność i zgody**
+1. **BDO i sprawozdawczość środowiskowa**
+   - ActionObject:
+     `service_profile_review_card_ekologus_service_bdo_reporting`;
+   - target card: `ekologus_service_bdo_reporting`;
+   - zakres: public service card;
+   - priorytet: medium;
+   - wymagane pola: `action_id`, `target_card_id`, `decision`,
+     `source_trace_clear`, `blocked_claims_reviewed`, `notes`;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`;
+   - pytanie do Wilka: czy ta karta brzmi jak realna oferta Ekologus i czy
+     claimy o BDO są poprawnie zablokowane przed review?
+
+Potem przejrzeć policy/private proposals, bo one ustawiają język i bezpieczeństwo
+dla kolejnych usług:
+
+2. **Bezpieczeństwo prawne, poufność i zgody**
    - zakres: private claim-policy proposal;
    - priorytet: high;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-2. **Styl marki i claim policy Ekologus**
+3. **Styl marki i claim policy Ekologus**
    - zakres: private claim-policy proposal;
    - priorytet: high;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-3. **Source trace i evidence pack**
+4. **Source trace i evidence pack**
    - zakres: private evidence-policy proposal;
    - priorytet: high;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-4. **Eko-Opieka / Eko Kalendarz**
+5. **Eko-Opieka / Eko Kalendarz**
    - zakres: private service proposal;
    - priorytet: medium;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
-5. **Audyt zgodności środowiskowej**
+6. **Audyt zgodności środowiskowej**
    - zakres: private service proposal;
    - priorytet: medium;
    - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
 
-Publiczne karty usług też wymagają review. Najbardziej praktyczne do rozmowy:
-BDO/sprawozdawczość, operat wodnoprawny, odpady/opakowania, szkolenia,
-remediacja/monitoring i konsulting/outsourcing środowiskowy.
+Pozostałe publiczne karty usług też wymagają review. Najbardziej praktyczne do
+następnych rozmów: konsulting/outsourcing środowiskowy, odpady/opakowania,
+szkolenia, remediacja/monitoring i sorbenty. `Operat wodnoprawny` nadal jest
+luką/blokerem bez bezpośredniej zatwierdzonej wiedzy usługowej.
 
 ## Pytania do Wilka
 
-1. Czy najpierw zatwierdzamy polityki claimów i bezpieczeństwa, czy konkretną
-   usługę typu BDO?
-2. Czy `Eko-Opieka / Eko Kalendarz` to realna oferta, roboczy język handlowy,
+1. Czy publiczna karta BDO jest dobrym pierwszym testem Service Profile, czy
+   wymaga poprawki zanim cokolwiek przejdzie do production-depth?
+2. Czy źródła i zablokowane claimy przy BDO są czytelne, czy Wilku nadal pyta
+   "skąd to wzięliśmy"?
+3. Czy po BDO zatwierdzamy polityki claimów i bezpieczeństwa, czy kolejną
+   konkretną usługę?
+4. Czy `Eko-Opieka / Eko Kalendarz` to realna oferta, roboczy język handlowy,
    czy temat do odrzucenia?
-3. Czy `Audyt zgodności środowiskowej` może być pierwszym płatnym krokiem w
+5. Czy `Audyt zgodności środowiskowej` może być pierwszym płatnym krokiem w
    komunikacji, czy wymaga innej nazwy?
-4. Jakich claimów WILQ ma zawsze blokować bez człowieka: kary, WIOŚ, decyzje,
+6. Jakich claimów WILQ ma zawsze blokować bez człowieka: kary, WIOŚ, decyzje,
    kontrole, pozwolenia, dane klientów?
-5. Co w tych propozycjach brzmi jak Ekologus, a co jak generyczne SEO/AI?
+7. Co w tych propozycjach brzmi jak Ekologus, a co jak generyczne SEO/AI?
 
 ## Jak zapisać decyzję
 
