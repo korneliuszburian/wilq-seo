@@ -48,6 +48,10 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert first_review["scope"] == "public_service_card"
     assert "source_trace_clear" in first_review["required_fields"]
     assert report["next_uat_input"]["private_review_questions"]
+    assert report["next_uat_input"]["private_source_trace_items"]
+    assert report["next_uat_input"]["private_source_trace_items"][0]["source_blocks"]
+    assert report["next_uat_input"]["private_source_trace_items"][0]["eval_cases"]
+    assert report["next_uat_input"]["private_source_trace_items"][0]["trace_ready"] is True
     assert any(
         "CTA" in question
         for question in report["next_uat_input"]["private_review_questions"]
@@ -56,6 +60,8 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Werdykt: materiały można pokazać Wilkowi do oceny" in markdown
     assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
     assert "Pytania o prywatną wiedzę" in markdown
+    assert "Prywatny ślad źródłowy do pokazania" in markdown
+    assert "trace gotowy" in markdown
     assert "Czy proponowane CTA brzmi jak realny następny krok Ekologus" in markdown
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
 
@@ -152,6 +158,22 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
                     "first_review_safe_next_step": (
                         "Najpierw sprawdź publiczną kartę BDO."
                     ),
+                },
+                "source_fact_coverage": {
+                    "private_review_queue": [
+                        {
+                            "target_card_title": "Eko-Opieka i Eko Kalendarz",
+                            "scope": "service",
+                            "source_block_refs": ["KB_001_EKO_OPIEKA"],
+                            "eval_case_ids": ["goal_005_private_service_review"],
+                            "retention_decision": "pending_owner_decision",
+                            "redacted": True,
+                            "source_trace_ready": True,
+                            "safe_next_step": (
+                                "Pokaż Wilkowi zwykły handoff i zdecyduj o review."
+                            ),
+                        }
+                    ]
                 }
             },
         }
@@ -192,6 +214,11 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga review" in rendered
     assert "ograniczenia wiedzy: 18" in rendered
     assert "Pytania o brief sprzedażowy" in rendered
+    assert "Prywatny ślad źródłowy do pokazania" in rendered
+    assert "Eko-Opieka i Eko Kalendarz / usługa / źródło: KB_001_EKO_OPIEKA" in rendered
+    assert "eval: goal_005_private_service_review" in rendered
+    assert "decyzja właściciela wymagana" in rendered
+    assert "zredagowane / trace gotowy" in rendered
     assert (
         "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno"
         in rendered

@@ -69,6 +69,14 @@ REVIEW_SCOPE_LABELS = {
     "private_evidence_policy_proposal": "prywatna propozycja wymagań dowodowych",
     "private_service_proposal": "prywatna propozycja usługi",
 }
+SOURCE_SCOPE_LABELS = {
+    "service": "usługa",
+    "buyer_problem": "problem kupującego",
+    "cta": "CTA",
+    "claim_policy": "polityka twierdzeń",
+    "evidence_requirement": "wymaganie dowodowe",
+    "metric_signal": "sygnał metryczny",
+}
 REVIEW_DECISION_LABELS = {
     "approve": "zatwierdź",
     "needs_changes": "wróć z poprawkami",
@@ -405,12 +413,17 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
         private_review_questions_from_live_context(live_context)
         or private_review_questions_from_source_coverage()
     )
+    private_source_trace_items = (
+        private_source_trace_items_from_live_context(live_context)
+        or private_source_trace_items_from_source_coverage()
+    )
     return {
         "available": True,
         "selected_work_item": selected_work_item,
         "review_artifacts": example.get("pokazane_materialy_review", []),
         "first_service_profile_review": first_review,
         "private_review_questions": private_review_questions,
+        "private_source_trace_items": private_source_trace_items,
         "selected_sales_brief_status": (
             provenance.get("selected_sales_brief_status")
             if isinstance(provenance, dict)
@@ -532,6 +545,91 @@ def private_review_questions_from_source_coverage() -> list[str]:
         for question in raw_list_payload(private_review_value.get("review_questions"))
         if str(question).strip()
     ]
+
+
+def private_source_trace_items_from_live_context(
+    live_context: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if live_context is None:
+        return []
+    raw_service_profile = live_context.get("service_profile")
+    service_profile = raw_service_profile if isinstance(raw_service_profile, dict) else {}
+    raw_source_fact_coverage = service_profile.get("source_fact_coverage")
+    source_fact_coverage = (
+        raw_source_fact_coverage if isinstance(raw_source_fact_coverage, dict) else {}
+    )
+    return private_source_trace_items_from_queue(
+        raw_list_payload(source_fact_coverage.get("private_review_queue"))
+    )
+
+
+def private_source_trace_items_from_source_coverage() -> list[dict[str, Any]]:
+    source_report = build_source_fact_coverage_report()
+    return private_source_trace_items_from_queue(
+        raw_list_payload(source_report.get("private_review_queue"))
+    )
+
+
+def private_source_trace_items_from_queue(queue: list[Any]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for raw_item in queue[:5]:
+        item = raw_item if isinstance(raw_item, dict) else {}
+        target = str(item.get("target_card_title") or "").strip()
+        if not target:
+            continue
+        items.append(
+            {
+                "target": private_trace_operator_text(target),
+                "scope": REVIEW_SCOPE_LABELS.get(
+                    str(item.get("scope") or ""),
+                    SOURCE_SCOPE_LABELS.get(
+                        str(item.get("scope") or ""),
+                        str(item.get("scope") or "brak"),
+                    ),
+                ),
+                "source_blocks": [
+                    str(value).strip()
+                    for value in raw_list_payload(item.get("source_block_refs"))
+                    if str(value).strip()
+                ],
+                "eval_cases": [
+                    str(value).strip()
+                    for value in raw_list_payload(item.get("eval_case_ids"))
+                    if str(value).strip()
+                ],
+                "retention": private_retention_label(item.get("retention_decision")),
+                "redacted": item.get("redacted") is True,
+                "trace_ready": item.get("source_trace_ready") is True,
+                "safe_next_step": humanize_review_decision_text(
+                    private_trace_operator_text(str(item.get("safe_next_step") or ""))
+                ),
+            }
+        )
+    return items
+
+
+def private_retention_label(value: Any) -> str:
+    raw = str(value or "")
+    return {
+        "pending_owner_decision": "decyzja właściciela wymagana",
+        "retain_while_source_approved": "utrzymuj tylko dopóki źródło jest zatwierdzone",
+        "short_window_only": "krótkie okno retencji",
+        "do_not_retain": "nie utrzymuj",
+    }.get(raw, raw or "brak")
+
+
+def private_trace_operator_text(value: str) -> str:
+    return (
+        value.replace("claim policy", "polityka twierdzeń")
+        .replace("Source trace", "Ślad źródłowy")
+        .replace("source trace", "ślad źródłowy")
+        .replace("evidence pack", "pakiet dowodów")
+        .replace("reviewed źródeł", "ocenionych źródeł")
+        .replace("reviewed source", "ocenione źródło")
+        .replace("review", "ocena")
+        .replace("production-depth", "wiedza do finalnych treści")
+        .replace("redacted source fact", "zredagowany fakt źródłowy")
+    )
 
 
 def raw_list_payload(value: Any) -> list[Any]:
@@ -945,6 +1043,19 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
             "- Pytania o prywatną wiedzę: "
             + "; ".join(private_review_questions)
         )
+    private_source_trace_items = [
+        item
+        for item in raw_list_payload(value.get("private_source_trace_items"))
+        if isinstance(item, dict)
+    ]
+    if private_source_trace_items:
+        lines.append(
+            "- Prywatny ślad źródłowy do pokazania: "
+            + "; ".join(
+                private_source_trace_item_label(item)
+                for item in private_source_trace_items[:3]
+            )
+        )
     signal_quality_label = value.get("selected_sales_brief_signal_quality_status_label")
     if signal_quality_label:
         lines.append(
@@ -983,6 +1094,31 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
     else:
         lines.append("- ID do zapisu po rozmowie: brak")
     return lines
+
+
+def private_source_trace_item_label(value: dict[str, Any]) -> str:
+    source_blocks = ", ".join(raw_string_list(value.get("source_blocks"))) or "brak"
+    eval_cases = ", ".join(raw_string_list(value.get("eval_cases"))) or "brak"
+    redacted = "zredagowane" if value.get("redacted") is True else "wymaga redakcji"
+    trace_ready = "trace gotowy" if value.get("trace_ready") is True else "trace niepełny"
+    parts = [
+        str(value.get("target") or "brak"),
+        str(value.get("scope") or "brak"),
+        f"źródło: {source_blocks}",
+        f"eval: {eval_cases}",
+        str(value.get("retention") or "brak"),
+        redacted,
+        trace_ready,
+    ]
+    return " / ".join(parts)
+
+
+def raw_string_list(value: Any) -> list[str]:
+    return [
+        str(item).strip()
+        for item in raw_list_payload(value)
+        if str(item).strip()
+    ]
 
 
 def first_review_input_label(value: dict[str, Any]) -> str:
