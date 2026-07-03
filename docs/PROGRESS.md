@@ -69,6 +69,10 @@ Date: 2026-07-04
   metadata-only private source trace item. Live validation requires this
   scorecard when Service Profile exposes private trace items, so Wilku's result
   can say which `KB_*`/eval trace was clear, confusing or needs changes.
+- 2026-07-04 Goal 005 completion guard has regression coverage for that UAT
+  scorecard: with live Service Profile private trace present, an old UAT JSON
+  without `oceny_prywatnego_sladu_zrodlowego` stays blocked as an invalid
+  Goal 005 UAT result.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

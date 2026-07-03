@@ -474,6 +474,141 @@ def test_goal_005_completion_check_blocks_ready_uat_with_scorecard_follow_up(
     assert "## Follow-up ze scorecardu Wilka" in render_markdown(report)
 
 
+def test_goal_005_completion_check_blocks_live_uat_without_private_trace_scorecard(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from scripts import goal_005_completion_check, record_goal_005_content_uat_result
+
+    def fake_pre_demo_audits(api_base: str | None = None) -> dict[str, object]:
+        assert api_base in {None, "http://127.0.0.1:8000"}
+        return {}
+
+    def fake_next_uat_input(api_base: str | None = None) -> dict[str, object]:
+        assert api_base == "http://127.0.0.1:8000"
+        return {"available": True}
+
+    def fake_live_context(api_base: str) -> dict[str, object]:
+        assert api_base == "http://127.0.0.1:8000"
+        return {
+            "api_base": api_base,
+            "queue": {
+                "queue_status": "ready",
+                "candidate_count": 1,
+                "actionable_candidate_count": 1,
+                "candidates": [
+                    {
+                        "work_item_id": (
+                            "content_work_item_content_decision_https___www_ekologus_pl"
+                        ),
+                        "title": "SEO: odśwież lub scal \"ekologus\"",
+                        "recommended_mode": "refresh",
+                        "final_canonical_url": "https://www.ekologus.pl/",
+                        "source_connectors": [
+                            "google_search_console",
+                            "wordpress_ekologus",
+                        ],
+                    }
+                ],
+            },
+            "service_profile": {
+                "read_only": True,
+                "coverage_summary": {"ready_for_daily_content": False},
+                "review_action_summary": {},
+                "private_source_proposal_summary": {"promotion_ready": False},
+                "source_fact_coverage": {
+                    "private_review_queue": [
+                        {
+                            "target_card_title": (
+                                "Bezpieczeństwo prawne, poufność i zgody"
+                            ),
+                            "scope": "claim_policy",
+                            "source_block_refs": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+                            "eval_case_ids": [
+                                "goal_005_private_claim_policy_review"
+                            ],
+                            "retention_decision": "pending_owner_decision",
+                            "redacted": True,
+                            "source_trace_ready": True,
+                        }
+                    ]
+                },
+                "review_actions": [],
+            },
+            "sales_brief_traces": {
+                "content_work_item_content_decision_https___www_ekologus_pl": {
+                    "status": "ready",
+                    "signal_quality_status": "ready",
+                    "evidence_id_count": 2,
+                    "source_connector_count": 2,
+                    "source_fact_count": 2,
+                    "knowledge_constraint_count": 1,
+                }
+            },
+        }
+
+    monkeypatch.setattr(
+        goal_005_completion_check,
+        "goal_005_pre_demo_audit_summary",
+        fake_pre_demo_audits,
+    )
+    monkeypatch.setattr(
+        goal_005_completion_check,
+        "goal_005_next_uat_input",
+        fake_next_uat_input,
+    )
+    monkeypatch.setattr(
+        record_goal_005_content_uat_result,
+        "load_live_uat_context",
+        fake_live_context,
+    )
+
+    result_path = tmp_path / "goal-005-uat-result.json"
+    result_path.write_text(
+        json.dumps(
+            {
+                "data_sesji": "2026-07-02",
+                "osoba": "Wilku",
+                "czas_do_zrozumienia_statusu": "8 minut",
+                "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
+                "wybrany_work_item": (
+                    "content_work_item_content_decision_https___www_ekologus_pl"
+                ),
+                "pokazane_materialy_review": FULL_REVIEW_ARTIFACTS,
+                "oceny_materialow_review": _scorecard(
+                    FULL_REVIEW_ARTIFACTS,
+                    decision="zatwierdź",
+                    cta_score=5,
+                ),
+                "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+                "miejsca_generyczne_off_brand": "Nie znaleziono krytycznych miejsc.",
+                "najwiekszy_brak_produktu": "Brak dalszych blokad dla tego testu.",
+                "wilku_rozumie_blokady_pelnego_uat": "tak",
+                "service_profile_czytelny": "tak",
+                "public_service_review_actions_czytelne": "tak",
+                "private_review_actions_czytelne": "tak",
+                "private_policy_review_actions_czytelne": "tak",
+                "mozna_przejsc_do_pelnego_content_uat": "tak",
+                "follow_up_beads": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_completion_report(
+        uat_result=result_path,
+        api_base="http://127.0.0.1:8000",
+    )
+
+    assert report["status"] == "blocked_missing_goal_005_uat_proof"
+    assert report["missing_input"] == "valid_goal_005_uat_result"
+    assert any(
+        "oceny_prywatnego_sladu_zrodlowego" in detail
+        for detail in report["details"]
+    )
+
+
 def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     provenance = uat_live_provenance_summary(
         {
