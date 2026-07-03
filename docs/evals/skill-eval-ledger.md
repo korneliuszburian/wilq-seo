@@ -408,6 +408,11 @@ Focused proof:
 - Coverage map: `docs/evals/skill-coverage-audit.md` now reports score range
   `5-8`, `strong_skill_count=1` for `7+/10` and
   `wilku_ready_skill_count=0` for `10/10`.
+- Follow-up content proof: `wilq-content-operator` passed at
+  `.local-lab/evals/codex-skill/20260703T113839Z` with
+  `operator_usefulness_score=7`, `blocked=true`, `failure_tags=[]`, 6 evidence
+  IDs, 2 recommendations, 2 actions and all hard gates true. The coverage map
+  now reports `strong_skill_count=2`.
 
 Interpretation:
 
