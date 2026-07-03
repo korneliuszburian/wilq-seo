@@ -76,6 +76,9 @@ a schema-validity badge:
 - `7`: strong operator output with a clear first action, why-now reasoning,
   evidence, blockers, freshness/repair handling and a concrete checklist,
   example or review draft.
+- `9`: very strong operator workflow; it also gives the work order, check
+  questions or decision criteria for key steps, a decision after review and
+  leaves little manual interpretation work for the marketer.
 - `10`: Wilku-ready / BDOS-class output. It can be shown or used directly, is
   specific to Ekologus, prioritizes the work, saves time and avoids generic
   advice or unsupported claims.

@@ -28,15 +28,17 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od kolejności pracy operatora, nie od eksportu diagnostyki. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Jak sprawdzić`, `Dlaczego teraz`, `Decyzja po review`, `Zablokowane` i `Ślad techniczny`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych, świeżość ostatniego odczytu, `blocked_handoff.status` jeśli istnieje, i znane blokady. Jeśli odczyt jest stary, najpierw wskaż read-only refresh albo blokadę świeżości.
-2. `Dowody`: Ads diagnostics identyfikatorów sekcji, identyfikatory dowodów, identyfikatory źródeł danych, status ostatniego odczytu, notatki o świeżości i podsumowania metryk wyłącznie z WILQ API.
-3. `Diagnoza`: 3-5 priorytetów review w kolejności działania, nie dump wszystkich pól. Wyjaśnij krótko, co wspiera `/api/ads/diagnostics`, z niepewnością, jeśli dowody są zagregowane, stare, niepełne albo zablokowane przez OAuth. Używaj `allowed_metrics`, `missing_read_contracts` i `blocked_claims` z kontraktów API zamiast własnych reguł w opisie.
-4. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia. Akcje do sprawdzenia opisuj jako kolejkę sprawdzenia bezpieczeństwa, dopóki akcja nie ma wsparcia sprawdzonego w WILQ zapisu zmian, potwierdzenia i audytu.
-5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Można zrobić teraz`: 3-5 priorytetów review w kolejności działania. Dla pełnej kolejki Ads zwykle prowadź: kampanie/budżety -> rekomendacje -> wyszukiwane hasła i n-gramy -> wykluczenia -> segmenty niestandardowe. Nie dumpuj wszystkich pól.
+2. `Jak sprawdzić`: do każdego priorytetu dodaj jedno pytanie kontrolne lub kryterium decyzji, np. co porównać w kampanii, co odrzucić w rekomendacji, co sprawdzić w intencji wyszukiwanych haseł albo co blokuje segment.
+3. `Dlaczego teraz`: krótko pokaż, co wspiera `/api/ads/diagnostics`: gotowość źródła, świeżość odczytu, liczba decyzji/akcji albo konkretne sekcje diagnostyki. Jeśli dowody są stare, niepełne albo zablokowane przez OAuth, zacznij od refresh/blokady.
+4. `Decyzja po review`: opisz, co operator może zrobić po ręcznej ocenie: zostawić do obserwacji, odrzucić rekomendację, przygotować pytania do człowieka, poprosić o brakujący kontrakt albo dopiero wtedy przejść do preview akcji.
+5. `Zablokowane`: pokaż po ludzku, czego nie wolno twierdzić ani zapisać: zwrot z reklam, koszt pozyskania celu, zmarnowany budżet, wykluczenia, zmiana budżetu, segmenty i prognoza, jeśli brakuje kontraktów, zgody albo podglądu akcji.
+6. `Ślad techniczny`: identyfikatory dowodów, szans i akcji, wynik walidacji akcji, raw kontrakty i nazwy pól API.
+
+W ustrukturyzowanym JSON eval albo handoffie te etykiety nie mogą zostać tylko w `notes`. `Jak sprawdzić` i `Decyzja po review` muszą pojawić się w widocznych polach decyzyjnych, np. w `operator_next_step`, `recommendations[].label_pl` albo `action_candidates[].label_pl`.
 
 ## Warunki odmowy lub obniżenia do blokady
 

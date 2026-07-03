@@ -96,10 +96,14 @@ Szerokie pytania Ads odpowiadaj jak operator, nie jak eksport diagnostyki: najpi
 
 Widoczne odpowiedzi układaj w prosty schemat:
 
-- `Można zrobić teraz`: 3-5 pozycji review, np. kampanie i budżety, rekomendacje, wyszukiwane hasła, wykluczenia, segmenty.
+- `Można zrobić teraz`: 3-5 pozycji review w kolejności działania, np. kampanie i budżety, rekomendacje, wyszukiwane hasła, wykluczenia, segmenty.
+- `Jak sprawdzić`: przy każdej pozycji podaj jedno konkretne pytanie kontrolne albo kryterium decyzji, które Wilku ma sprawdzić po wejściu w `/ads-doctor`.
 - `Dlaczego teraz`: jednozdaniowy dowód, np. odczyt Google Ads jest dostępny i WILQ ma kolejkę decyzji do ręcznej oceny.
+- `Decyzja po review`: co może być następną bezpieczną decyzją po ręcznym sprawdzeniu, np. przygotować listę pytań, zostawić do obserwacji, odrzucić rekomendację, poprosić o brakujący kontrakt albo dopiero wtedy przejść do preview akcji.
 - `Zablokowane`: czego nie wolno twierdzić ani zapisać bez brakujących dowodów lub zgody.
 - `Ślad techniczny`: identyfikatory dowodów, akcji, raw kontrakty i nazwy pól API.
+
+Jeżeli odpowiadasz w ustrukturyzowanym JSON eval albo krótkim handoffie, widoczne pola decyzyjne (`operator_next_step`, `recommendations[].label_pl`, `action_candidates[].label_pl`) muszą nadal zawierać etykiety `Jak sprawdzić` i `Decyzja po review`, a nie tylko ogólną listę priorytetów.
 
 Nie pokazuj marketerowi surowych markerów typu `latest_refresh_status`, `live_data_available`, `target_roas_or_cpa`, `human_strategy_review`, `keyword_planner_enrichment` albo `forecast_or_audience_size`. Tłumacz je normalnie: "odczyt jest dostępny", "brakuje celu kosztu pozyskania albo zwrotu z reklam lub strategii człowieka", "brakuje wzbogacenia Keyword Planner albo prognozy rozmiaru odbiorców". Surowe wartości zostaw w `notes`.
 

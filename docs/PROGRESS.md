@@ -109,6 +109,13 @@ Date: 2026-07-03
   `operator_usefulness_score=7`, `blocked=false`, 6 evidence IDs, 1
   recommendation, 1 action and all hard gates true. Skill coverage now reports
   `strong_skill_count=4`.
+- 2026-07-03 `wilq-ads-doctor` re-evaluated at 9/10 core workflow level
+  after tightening the visible operator contract around `Jak sprawdzić` and
+  `Decyzja po review`. Artifact:
+  `.local-lab/evals/codex-skill/20260703T120521Z`; result:
+  `operator_usefulness_score=9`, `blocked=false`, 12 evidence IDs, 5
+  recommendations, 5 actions and all hard gates true. Skill coverage now
+  reports `strong_skill_count=5` and maximum score `9`.
 - 2026-07-03 fresh full WILQ skill eval baseline is now 13/13 passing for all
   repo WILQ skills on production-like Polish prompts. Every current score is
   `operator_usefulness_score=5`, so this proves "works out-of-the-box with

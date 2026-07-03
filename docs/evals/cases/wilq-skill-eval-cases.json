@@ -107,6 +107,11 @@
       "negative_keywords_read_contract",
       "90_day_safety_check"
     ],
+    "required_decision_terms_pl": [
+      "Jak sprawdzić",
+      "Decyzja po review"
+    ],
+    "minimum_operator_usefulness_score": 9,
     "forbidden_terms_pl": [
       "bez match context",
       "bez keyword match context",

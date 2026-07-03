@@ -20,6 +20,9 @@ Usefulness is scored on a 1-10 scale:
 - `7`: strong operator workflow with a clear first action, why-now reasoning,
   evidence, blockers, freshness/repair handling and a concrete checklist,
   example or review draft.
+- `9`: very strong operator workflow with work order, check questions or
+  decision criteria for key steps, a decision after review and little manual
+  interpretation left for the marketer.
 - `10`: Wilku-ready / BDOS-class output that can be shown or used directly.
 
 `failure_tags` are eval failures in the skill answer, not normal WILQ product
@@ -426,6 +429,16 @@ Focused proof:
   `operator_usefulness_score=7`, `blocked=false`, `failure_tags=[]`, 6
   evidence IDs, 1 recommendation, 1 action and all hard gates true. The
   coverage map now reports `strong_skill_count=4`.
+- Follow-up Ads Doctor proof: `wilq-ads-doctor` first re-evaluated at 8/10,
+  then the core workflow target was tightened to 9+ by requiring visible
+  `Jak sprawdzić` and `Decyzja po review` decision terms. The passing 9/10
+  proof is `.local-lab/evals/codex-skill/20260703T120521Z` with
+  `operator_usefulness_score=9`, `blocked=false`, `failure_tags=[]`, 12
+  evidence IDs, 5 recommendations, 5 actions and all hard gates true. The
+  output gives the operator a clear review order and per-step check criteria:
+  campaigns/budgets, recommendations, search terms/n-grams, negative keywords,
+  custom segments and change history, while blocking ROAS/waste/write claims.
+  The coverage map now reports `strong_skill_count=5` and maximum score `9`.
 
 Interpretation:
 

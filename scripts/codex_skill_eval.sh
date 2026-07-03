@@ -294,6 +294,10 @@ Ten eval mierzy BDOS-class usefulness, nie samo przejście schema.
 - 5: minimalny pass; marketer może użyć wyniku bez tłumaczenia surowych pól API.
 - 7: mocny wynik operatorski; pierwszy krok, "dlaczego teraz", dowody, blokady,
   świeżość/repair path i konkretna checklista albo przykład są jasne od razu.
+- 9: bardzo mocny workflow operatorski; oprócz poziomu 7 zawiera kolejność
+  pracy, pytania kontrolne lub kryteria decyzji dla kluczowych kroków,
+  decyzję po review i minimalizuje potrzebę ręcznej interpretacji przez
+  marketera.
 - 10: Wilku-ready / BDOS-class; odpowiedź nadaje się do pokazania lub użycia
   bez dopisku, jest konkretna dla Ekologus, priorytetyzuje pracę, oszczędza czas
   i nie zawiera generycznych porad ani unsupported claims.
