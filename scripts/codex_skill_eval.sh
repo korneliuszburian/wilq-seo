@@ -285,11 +285,19 @@ Zadanie: {task_pl}
 {forbidden_connectors_instruction}
 
 <quality_bar>
-Ten eval mierzy BDOS-class usefulness, nie samo przejście schema. Domyślny
-minimalny próg to operator_usefulness_score >= {minimum_operator_usefulness_score}.
-Ustaw 4 tylko wtedy, gdy odpowiedź daje konkretną decyzję, priorytet, dowody,
-blokady, freshness/refresh handling i bezpieczny następny krok. Ustaw 5 tylko
-wtedy, gdy marketer może realnie użyć wyniku bez tłumaczenia surowych pól API.
+Ten eval mierzy BDOS-class usefulness, nie samo przejście schema.
+`operator_usefulness_score` jest skalą 1-10:
+- 1-3: odpowiedź nie spełnia hard gate'ów, jest generyczna, gubi dowody albo
+  wymaga produktu/dev-a do zrozumienia; przy false hard gate score musi być <=3.
+- 4: odpowiedź ma zalążek użytecznej decyzji, ale wymaga follow-upu przed
+  liczeniem jej jako jakościowy workflow operatorski.
+- 5: minimalny pass; marketer może użyć wyniku bez tłumaczenia surowych pól API.
+- 7: mocny wynik operatorski; pierwszy krok, "dlaczego teraz", dowody, blokady,
+  świeżość/repair path i konkretna checklista albo przykład są jasne od razu.
+- 10: Wilku-ready / BDOS-class; odpowiedź nadaje się do pokazania lub użycia
+  bez dopisku, jest konkretna dla Ekologus, priorytetyzuje pracę, oszczędza czas
+  i nie zawiera generycznych porad ani unsupported claims.
+Domyślny minimalny próg to operator_usefulness_score >= {minimum_operator_usefulness_score}.
 Wypełnij `eval_rubric` jako deterministic pass/fail gates dla realnego workflow:
 każdy hard gate ma mówić, czy odpowiedź poprawnie obsłużyła wymaganie, także
 przez blocker lub repair path. `failure_tags` opisują awarie odpowiedzi skilla,

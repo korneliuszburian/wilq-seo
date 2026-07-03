@@ -64,11 +64,21 @@ Every WILQ skill eval must answer five questions:
    developer translating raw API state?
 
 The default non-interactive gate requires `operator_usefulness_score >= 5` and
-all `eval_rubric.hard_gates` to pass. Score `4` means the workflow still needs
-product follow-up before it can count as BDOS-class operator quality. Score `3`
-is a guardrail pass only and must be treated as a product gap, not as marketer
-value. If any hard gate is false, the harness requires a matching
-`failure_tags` value and caps usefulness at 3.
+all `eval_rubric.hard_gates` to pass. The score is a 1-10 usefulness scale, not
+a schema-validity badge:
+
+- `1-3`: failure or guardrail-only output. If any hard gate is false, the
+  harness requires a matching `failure_tags` value and caps usefulness at 3.
+- `4`: useful direction, but still follow-up worthy before BDOS-class operator
+  quality.
+- `5`: minimum pass; the marketer can use the result without a developer
+  translating raw API state.
+- `7`: strong operator output with a clear first action, why-now reasoning,
+  evidence, blockers, freshness/repair handling and a concrete checklist,
+  example or review draft.
+- `10`: Wilku-ready / BDOS-class output. It can be shown or used directly, is
+  specific to Ekologus, prioritizes the work, saves time and avoids generic
+  advice or unsupported claims.
 
 ## Eval Case Requirements
 

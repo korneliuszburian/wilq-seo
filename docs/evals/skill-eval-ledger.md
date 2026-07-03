@@ -11,10 +11,19 @@ This protocol follows the OpenAI eval pattern described in
 testing criteria, deterministic graders, failure analysis and iteration. Schema
 validity is only the floor; the default marketer-value gate is
 `operator_usefulness_score >= 5` plus all `eval_rubric.hard_gates=true`.
-Score 4 means useful but still follow-up worthy; score 3 means guardrail-only
-quality and must create product follow-up before claiming BDOS-class
-usefulness. `failure_tags` are eval failures in the skill answer, not normal
-WILQ product blockers.
+Usefulness is scored on a 1-10 scale:
+
+- `1-3`: failure or guardrail-only quality; if any hard gate fails, the score
+  must stay at most 3 and a matching `failure_tags` value is required.
+- `4`: useful direction, but still follow-up worthy.
+- `5`: minimum pass; usable without developer translation.
+- `7`: strong operator workflow with a clear first action, why-now reasoning,
+  evidence, blockers, freshness/repair handling and a concrete checklist,
+  example or review draft.
+- `10`: Wilku-ready / BDOS-class output that can be shown or used directly.
+
+`failure_tags` are eval failures in the skill answer, not normal WILQ product
+blockers.
 
 For each skill:
 
@@ -370,6 +379,41 @@ Result:
 - Visible output says the marketer can review a segment proposal from real
   source terms now, while audience size, ROAS, write-targeting and campaign
   effectiveness claims remain blocked.
+
+## 2026-07-03 - Skill eval scale upgraded to 10
+
+Why:
+
+- The previous schema capped `operator_usefulness_score` at `5`, so all strong
+  passes looked like the same baseline result.
+- Goal 005 needs a real path toward `7-10/10` operator usefulness, not only
+  schema validity and evidence presence.
+
+What changed:
+
+- `docs/evals/schemas/wilq-skill-eval-result.schema.json` now allows
+  `operator_usefulness_score` from `1` to `10`.
+- `scripts/codex_skill_eval.sh` defines the score rubric:
+  `1-3` failure/guardrail-only, `4` useful but follow-up worthy, `5` minimum
+  pass, `7` strong operator workflow and `10` Wilku-ready / BDOS-class output.
+- The minimum gate remains `operator_usefulness_score >= 5` plus all hard
+  gates true.
+
+Focused proof:
+
+- Command: `scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000`
+- Artifact: `.local-lab/evals/codex-skill/20260703T073232Z`
+- Result: `operator_usefulness_score=8`, `blocked=false`, `failure_tags=[]`,
+  20 evidence IDs, 4 recommendations, 4 actions and all hard gates true.
+
+Interpretation:
+
+- This proves the eval harness can now distinguish a strong operator workflow
+  from a baseline pass.
+- It does not mean every skill is already `8-10/10`; the previous 13/13
+  baseline remains a minimum pass map, while future tuning should push each
+  important skill toward `7+` and reserve `10` for output that can be shown or
+  used directly by Wilku.
 
 ## 2026-07-03 - Full fresh skill eval baseline
 

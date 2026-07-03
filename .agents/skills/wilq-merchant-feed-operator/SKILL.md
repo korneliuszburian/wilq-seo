@@ -35,6 +35,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 5. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
 6. Dla pytań o aktualny stan pliku produktowego użyj `freshness_assessment`: `requires_refresh=true` albo `state=stale|missing|blocked` oznacza nieaktualne dane albo blokadę, chyba że użytkownik jawnie pozwala na odczyt danych źródła danych.
 7. Finalną kolejkę pracy grupuj po `decision_queue`. `issue_clusters` traktuj jako drilldown raportowy; `product_count` przy `count_semantics=reported_issue_occurrences` nie jest liczbą unikalnych SKU ani produktów.
+8. Nie wolno opisywać całej listy produktów na podstawie próbek ani liczby zgłoszeń jako liczby unikalnych SKU. Próbki pokazuj jako punkty do ręcznego sprawdzenia.
 
 </workflow>
 
@@ -86,6 +87,8 @@ skuteczności produktu", "brakuje historii/zdarzenia zmiany ceny" albo
 śladzie/notes, jeśli są potrzebne do audytu. Nie używaj tych raw nazw w
 `label_pl`, `blocked_reason`, `operator_next_step` ani widocznych
 `action_candidates`; tam pisz po ludzku, czego brakuje i co to blokuje.
+Dla śladu technicznego przy brakującym kontrakcie wypisz jego wartości literalnie,
+ale nie rób z tego głównej kopii dla marketera.
 
 </evidence_requirements>
 

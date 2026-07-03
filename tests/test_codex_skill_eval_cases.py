@@ -46,6 +46,11 @@ def test_codex_skill_eval_schema_requires_openai_style_hard_gates() -> None:
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     required = set(schema["required"])
     assert {"eval_rubric", "failure_tags"}.issubset(required)
+    assert schema["properties"]["operator_usefulness_score"] == {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10,
+    }
 
     rubric = schema["properties"]["eval_rubric"]
     assert rubric["properties"]["evaluator_type"]["enum"] == ["deterministic_pass_fail"]
@@ -80,6 +85,17 @@ def test_codex_skill_eval_harness_defaults_to_score_five() -> None:
 
     assert 'case.get("minimum_operator_usefulness_score", 5)' in harness
     assert 'case.get("minimum_operator_usefulness_score", 4)' not in harness
+
+
+def test_codex_skill_eval_harness_defines_ten_point_usefulness_rubric() -> None:
+    harness = HARNESS_PATH.read_text(encoding="utf-8")
+
+    assert "`operator_usefulness_score` jest skalą 1-10" in harness
+    assert "1-3: odpowiedź nie spełnia hard gate'ów" in harness
+    assert "4: odpowiedź ma zalążek użytecznej decyzji" in harness
+    assert "5: minimalny pass" in harness
+    assert "7: mocny wynik operatorski" in harness
+    assert "10: Wilku-ready / BDOS-class" in harness
 
 
 def test_active_eval_prompts_do_not_reintroduce_ads_polglish() -> None:

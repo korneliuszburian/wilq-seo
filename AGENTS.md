@@ -348,8 +348,9 @@ workflow surface. Use the OpenAI-aligned eval contract in
 testing criteria, deterministic graders and a failure loop. Run
 `uv run python scripts/audit_skill_eval_coverage.py --strict` when changing
 eval cases/schema/harness. The default minimum `operator_usefulness_score` is
-5; score 4 means follow-up is needed, and score 3 is a product gap, not a
-marketer-value pass. Stale connector
+5 on a 1-10 usefulness scale: score 4 means follow-up is needed, score 3 is a
+product gap, score 7 is a strong operator workflow and score 10 means
+Wilku-ready / BDOS-class output that can be shown or used directly. Stale connector
 snapshots must not be treated as enough for "działamy zajebiście": the skill
 must refresh, provide a concrete refresh/repair path, or block the conclusion
 before recommending action. Record useful findings in
