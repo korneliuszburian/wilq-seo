@@ -248,6 +248,9 @@ Date: 2026-07-03
   Profile action/card IDs below the fold. The first review decision is written
   as a human Polish BDO review question with allowed decisions and a short
   checklist; technical IDs stay only in JSON/proof details.
+- 2026-07-03 the same session card now replaces visible `production-depth`
+  jargon with "zatwierdzona wiedza do finalnych treści". The technical
+  `production-depth` label remains only below the fold in proof details.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must

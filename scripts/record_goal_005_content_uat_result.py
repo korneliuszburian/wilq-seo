@@ -256,7 +256,8 @@ def render_content_uat_session_card(
         (
             "Sprawdzamy, czy obecny Service Profile, materiały review i pierwszy "
             "kandydat contentowy są wystarczająco czytelne, żeby przejść do "
-            "pełnego content UAT. To nie zatwierdza publikacji ani production-depth."
+            "pełnego content UAT. To nie zatwierdza publikacji ani wiedzy do "
+            "finalnych treści."
         ),
         "",
         "## Aktualny status WILQ",
@@ -271,7 +272,7 @@ def render_content_uat_session_card(
         f"{selected_content_candidate_reason(provenance)}",
         "- Bezpieczny następny krok: "
         f"{selected_content_candidate_next_step(provenance)}",
-        "- Service Profile production-depth: "
+        "- Zatwierdzona wiedza do finalnych treści: "
         f"{visible_bool(provenance.get('production_depth_ready') is True)}",
         "",
         "## Pierwsza decyzja review",
@@ -313,6 +314,8 @@ def render_content_uat_session_card(
         f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
         "- Sales Brief status: "
         f"`{provenance.get('selected_sales_brief_status') or 'brak live proof'}`",
+        "- Service Profile production-depth: "
+        f"`{visible_bool(provenance.get('production_depth_ready') is True)}`",
         "- Źródła danych: "
         f"{', '.join(provenance.get('selected_source_connectors') or []) or 'brak live proof'}",
         "- Service Profile review JSON: "

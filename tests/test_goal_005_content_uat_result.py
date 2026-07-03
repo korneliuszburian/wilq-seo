@@ -133,6 +133,8 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
         status_section
     )
     assert "google_search_console" not in status_section
+    assert "production-depth" not in status_section
+    assert "Zatwierdzona wiedza do finalnych treści: nie" in status_section
     assert "## Dane techniczne do proof" in card
     assert "Work item ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
     public_section = card.split("## Dane techniczne do proof")[0]
