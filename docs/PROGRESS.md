@@ -545,6 +545,11 @@ live API status later contradicts this state.
   returns `duplicate_free_claim_allowed=false` plus `publish_allowed=false`.
   Live smoke on 2026-07-03 returned `review_ready` for complete metadata and
   `invalid` for a payload containing `raw_post_body`.
+- `wilq-social-publisher` context now exposes that same API path as
+  `history_audit_endpoint=/api/social/history-inventory/audit` with
+  `history_audit_contract=social_history_inventory_v1`, so skills/operators
+  can validate metadata-only history through WILQ API instead of a local
+  script while duplicate-free and publish claims remain blocked.
 - Pre-demo gate proof after the latest Goal 005 slices:
   `rtk scripts/pre_demo_gate.sh` passed on 2026-07-02. It verified the managed
   local stack, API health, live contracts, dashboard usefulness, source fact

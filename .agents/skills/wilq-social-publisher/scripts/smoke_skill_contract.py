@@ -125,6 +125,12 @@ def main() -> int:
         raise SystemExit("Social draft context must expose missing historical social inventory")
     if social_draft_context.get("duplicate_risk_status") != "blocked_until_social_history_review":
         raise SystemExit("Social draft context must block duplicate-free social claims")
+    if social_draft_context.get("history_audit_endpoint") != (
+        "/api/social/history-inventory/audit"
+    ):
+        raise SystemExit("Social draft context must expose social history audit endpoint")
+    if social_draft_context.get("history_audit_contract") != "social_history_inventory_v1":
+        raise SystemExit("Social draft context must expose social history audit contract")
     if "brak powtórzeń historycznych postów" not in (
         social_draft_context.get("blocked_claims") or []
     ):
@@ -213,6 +219,12 @@ def main() -> int:
                     ),
                     "missing_history_evidence": social_draft_context.get(
                         "missing_history_evidence"
+                    ),
+                    "history_audit_endpoint": social_draft_context.get(
+                        "history_audit_endpoint"
+                    ),
+                    "history_audit_contract": social_draft_context.get(
+                        "history_audit_contract"
                     ),
                     "social_history_inventory": social_history_inventory,
                     "direct_inventory_seed_count": len(

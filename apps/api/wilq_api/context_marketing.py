@@ -266,6 +266,8 @@ def social_draft_context_for_context(
         "required_history_sources": SOCIAL_HISTORY_REQUIRED_SOURCES,
         "missing_history_evidence": SOCIAL_HISTORY_MISSING_EVIDENCE_IDS,
         "social_history_inventory": social_history_inventory,
+        "history_audit_endpoint": "/api/social/history-inventory/audit",
+        "history_audit_contract": "social_history_inventory_v1",
         "operator_next_step": (
             "Przygotuj szkice do sprawdzenia z dowodami; publikacja i claim "
             "o braku powtórzeń pozostają zablokowane do czasu konfiguracji "

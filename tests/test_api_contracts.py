@@ -19177,6 +19177,10 @@ def test_social_context_pack_exposes_review_only_draft_context(
         "linkedin_historical_posts",
         "facebook_historical_posts",
     ]
+    assert social_context["history_audit_endpoint"] == (
+        "/api/social/history-inventory/audit"
+    )
+    assert social_context["history_audit_contract"] == "social_history_inventory_v1"
     history_inventory = social_context["social_history_inventory"]
     assert history_inventory["contract"] == "social_history_inventory_v1"
     assert history_inventory["read_only"] is True
