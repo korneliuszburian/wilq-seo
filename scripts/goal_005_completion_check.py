@@ -12,6 +12,7 @@ from scripts.dashboard_usefulness_audit import build_report as build_dashboard_u
 from scripts.record_goal_005_content_uat_result import (
     build_content_uat_input_example,
     build_content_uat_result_report,
+    first_service_profile_review_label,
     load_json,
 )
 from scripts.render_skill_coverage_audit import build_report as build_latest_skill_eval_report
@@ -325,16 +326,43 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
                 ),
             }
     example = build_content_uat_input_example(live_context=live_context)
+    first_review = first_service_profile_review_from_live_context(live_context)
     return {
         "available": True,
         "selected_work_item": example["wybrany_work_item"],
         "review_artifacts": example.get("pokazane_materialy_review", []),
+        "first_service_profile_review": first_review,
         "print_input_command": (
             "rtk uv run python scripts/record_goal_005_content_uat_result.py "
             + "--print-input-example"
             + (f" --api-base {api_base}" if api_base else "")
         ),
         "fillable_input": example,
+    }
+
+
+def first_service_profile_review_from_live_context(
+    live_context: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if live_context is None:
+        return None
+    raw_service_profile = live_context.get("service_profile")
+    service_profile = raw_service_profile if isinstance(raw_service_profile, dict) else {}
+    raw_summary = service_profile.get("review_action_summary")
+    summary = raw_summary if isinstance(raw_summary, dict) else {}
+    action_id = summary.get("first_review_action_id")
+    label = summary.get("first_review_action_label")
+    if not action_id and not label:
+        return None
+    return {
+        "action_id": action_id,
+        "label": label,
+        "scope": summary.get("first_review_action_scope"),
+        "priority": summary.get("first_review_action_priority"),
+        "target_card_id": summary.get("first_review_action_target_card_id"),
+        "gap_id": summary.get("first_review_action_gap_id"),
+        "required_fields": summary.get("first_review_required_fields") or [],
+        "safe_next_step": summary.get("first_review_safe_next_step"),
     }
 
 
@@ -379,6 +407,25 @@ def uat_live_provenance_summary(value: Any) -> dict[str, Any] | None:
         )
         or [],
         "production_depth_ready": value.get("production_depth_ready"),
+        "first_service_profile_review_action_id": value.get(
+            "first_service_profile_review_action_id"
+        ),
+        "first_service_profile_review_label": value.get(
+            "first_service_profile_review_label"
+        ),
+        "first_service_profile_review_scope": value.get(
+            "first_service_profile_review_scope"
+        ),
+        "first_service_profile_review_target_card_id": value.get(
+            "first_service_profile_review_target_card_id"
+        ),
+        "first_service_profile_review_required_fields": value.get(
+            "first_service_profile_review_required_fields"
+        )
+        or [],
+        "first_service_profile_review_next_step": value.get(
+            "first_service_profile_review_next_step"
+        ),
     }
 
 
@@ -550,6 +597,13 @@ def render_uat_live_provenance(value: dict[str, Any]) -> list[str]:
         + (", ".join(evidence_ids) or "brak"),
         "- Production-depth ready: "
         + ("tak" if value.get("production_depth_ready") is True else "nie"),
+        "- Pierwszy Service Profile review: "
+        + first_service_profile_review_label(value),
+        "- Wymagane pola pierwszego review: "
+        + (
+            ", ".join(value.get("first_service_profile_review_required_fields") or [])
+            or "brak"
+        ),
     ]
 
 
@@ -577,11 +631,24 @@ def review_follow_up_detail_lines(value: list[dict[str, Any]]) -> list[str]:
 
 def render_next_uat_input(value: dict[str, Any]) -> list[str]:
     artifacts = value.get("review_artifacts") or []
+    first_review = value.get("first_service_profile_review")
     lines = [
         "- Dostępny: " + ("tak" if value.get("available") is True else "nie"),
         f"- Wybrany work item: `{value.get('selected_work_item') or 'brak'}`",
         f"- Komenda do wygenerowania JSON: `{value.get('print_input_command') or 'brak'}`",
     ]
+    if isinstance(first_review, dict):
+        lines.extend(
+            [
+                "- Pierwszy Service Profile review: "
+                + first_review_input_label(first_review),
+                "- Wymagane pola pierwszego review: "
+                + (
+                    ", ".join(first_review.get("required_fields") or [])
+                    or "brak"
+                ),
+            ]
+        )
     if value.get("blocked_reason"):
         lines.append(f"- Blokada pobrania live inputu: {value['blocked_reason']}")
     lines.append(
@@ -589,6 +656,17 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
         + (", ".join(f"`{artifact}`" for artifact in artifacts) or "brak")
     )
     return lines
+
+
+def first_review_input_label(value: dict[str, Any]) -> str:
+    parts = [
+        f"`{value.get('action_id')}`" if value.get("action_id") else None,
+        str(value.get("label")) if value.get("label") else None,
+        f"scope `{value.get('scope')}`" if value.get("scope") else None,
+        f"target `{value.get('target_card_id')}`" if value.get("target_card_id") else None,
+        str(value.get("safe_next_step")) if value.get("safe_next_step") else None,
+    ]
+    return " - ".join(part for part in parts if part) or "brak"
 
 
 def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:

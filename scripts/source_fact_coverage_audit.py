@@ -81,6 +81,10 @@ def build_report() -> dict[str, Any]:
             item["action_id"],
         )
     )
+    review_action_queue = _pin_first_review_action(
+        review_action_queue,
+        first_review_action_id=profile.review_action_summary.first_review_action_id,
+    )
     blockers = list(profile.production_depth_readiness.blocker_labels)
     blockers.extend(gap.reason for gap in profile.coverage_gaps)
 
@@ -104,6 +108,8 @@ def build_report() -> dict[str, Any]:
         "service_card_count": profile.coverage_summary.service_card_count,
         "coverage_gap_count": len(profile.coverage_gaps),
         "review_action_count": profile.review_action_summary.total_count,
+        "first_review_action_id": profile.review_action_summary.first_review_action_id,
+        "first_review_action_label": profile.review_action_summary.first_review_action_label,
         "private_proposal_count": len(private_proposals),
         "private_review_required_count": (
             profile.private_source_proposal_summary.review_required_count
@@ -133,6 +139,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         "## Co pokazać Wilkowi",
         "",
         _operator_text(report["safe_next_step"]),
+        _first_review_action_line(report),
         "",
         "## Co wnosi prywatna wiedza",
         "",
@@ -140,11 +147,16 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         "| Sygnał | Liczba |",
         "| --- | ---: |",
-        f"| Propozycje do review | {report['private_review_value']['proposal_count']} |",
-        f"| Zablokowane twierdzenia opisane | {report['private_review_value']['blocked_claim_proposal_count']} |",
-        f"| CTA do oceny | {report['private_review_value']['cta_pattern_proposal_count']} |",
-        f"| Triggery/problem kupującego | {report['private_review_value']['buyer_trigger_proposal_count']} |",
-        f"| Promocja bez review | {report['private_review_value']['promotion_allowed_count']} |",
+        "| Propozycje do review | "
+        f"{report['private_review_value']['proposal_count']} |",
+        "| Zablokowane twierdzenia opisane | "
+        f"{report['private_review_value']['blocked_claim_proposal_count']} |",
+        "| CTA do oceny | "
+        f"{report['private_review_value']['cta_pattern_proposal_count']} |",
+        "| Triggery/problem kupującego | "
+        f"{report['private_review_value']['buyer_trigger_proposal_count']} |",
+        "| Promocja bez review | "
+        f"{report['private_review_value']['promotion_allowed_count']} |",
         "",
         "Najważniejsze punkty review:",
         "",
@@ -213,6 +225,16 @@ def _private_review_item(proposal: Any) -> dict[str, Any]:
     }
 
 
+def _first_review_action_line(report: dict[str, Any]) -> str:
+    action_id = report.get("first_review_action_id")
+    label = report.get("first_review_action_label")
+    if not action_id and not label:
+        return "Pierwszy review item: brak."
+    return "Pierwszy review item: " + " - ".join(
+        part for part in [f"`{action_id}`" if action_id else None, label] if part
+    )
+
+
 def _private_review_value_summary(
     *,
     facts: list[Any],
@@ -244,7 +266,8 @@ def _private_review_value_summary(
         )
     if blocked_claim_proposal_count:
         review_value_points.append(
-            "Każda propozycja niesie jawne zablokowane twierdzenia, więc może pomagać w Claim Ledgerze bez luzowania bezpieczeństwa."
+            "Każda propozycja niesie jawne zablokowane twierdzenia, więc może "
+            "pomagać w Claim Ledgerze bez luzowania bezpieczeństwa."
         )
     if promotion_allowed_count == 0 and proposal_count:
         review_value_points.append(
@@ -298,6 +321,24 @@ def _review_action_item(
         "target_card_title": target_title,
         "decision_options": list(getattr(action, "decision_options", []) or []),
     }
+
+
+def _pin_first_review_action(
+    review_action_queue: list[dict[str, Any]],
+    *,
+    first_review_action_id: str | None,
+) -> list[dict[str, Any]]:
+    if not first_review_action_id:
+        return review_action_queue
+    first_items = [
+        item for item in review_action_queue if item["action_id"] == first_review_action_id
+    ]
+    if not first_items:
+        return review_action_queue
+    remaining = [
+        item for item in review_action_queue if item["action_id"] != first_review_action_id
+    ]
+    return [first_items[0], *remaining]
 
 
 def _target_title_lookup(

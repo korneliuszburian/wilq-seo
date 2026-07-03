@@ -180,6 +180,18 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     ]
     assert provenance["service_profile_read_only"] is True
     assert provenance["production_depth_ready"] is False
+    assert provenance["first_service_profile_review_action_id"] == (
+        "renamed_public_service_bdo_review"
+    )
+    assert provenance["first_service_profile_review_label"] == "Sprawdź kartę BDO"
+    assert provenance["first_service_profile_review_scope"] == "public_service_card"
+    assert provenance["first_service_profile_review_target_card_id"] == (
+        "ekologus_service_bdo_reporting"
+    )
+    assert provenance["first_service_profile_review_required_fields"] == [
+        "action_id",
+        "source_trace_clear",
+    ]
     assert provenance["public_service_review_action_count"] == 1
     assert provenance["private_review_action_count"] == 1
     assert provenance["private_service_review_action_count"] == 1
@@ -197,6 +209,9 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         in markdown
     )
     assert "Public service review actions: `1`" in markdown
+    assert "Pierwszy Service Profile review" in markdown
+    assert "renamed_public_service_bdo_review" in markdown
+    assert "Wymagane pola pierwszego review: action_id, source_trace_clear" in markdown
     assert "Private service review actions: `1`" in markdown
     assert "Private policy review actions: `0`" in markdown
     assert "## Pokazane materiały review" in markdown
@@ -606,6 +621,20 @@ def _live_context() -> dict[str, object]:
         "service_profile": {
             "read_only": True,
             "coverage_summary": {"ready_for_daily_content": False},
+            "review_action_summary": {
+                "first_review_action_id": "renamed_public_service_bdo_review",
+                "first_review_action_label": "Sprawdź kartę BDO",
+                "first_review_action_scope": "public_service_card",
+                "first_review_action_priority": "medium",
+                "first_review_action_target_card_id": "ekologus_service_bdo_reporting",
+                "first_review_required_fields": [
+                    "action_id",
+                    "source_trace_clear",
+                ],
+                "first_review_safe_next_step": (
+                    "Najpierw sprawdź publiczną kartę BDO."
+                ),
+            },
             "private_source_proposal_summary": {"promotion_ready": False},
             "private_source_proposals": [
                 {

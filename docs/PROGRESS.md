@@ -126,6 +126,10 @@ Date: 2026-07-03
   review item. Live API keeps `read_only=true` and `ready_for_daily_content=false`,
   but tells Wilku to start from the public BDO service card and lists the
   required review fields before any knowledge promotion request.
+- 2026-07-03 Goal 005 UAT/completion proof now consumes that same first Service
+  Profile review item. Completion guard, UAT live provenance and source fact
+  coverage audit all point to the BDO public service card first, while Goal 005
+  remains blocked on real Wilku UAT or explicit owner defer.
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

@@ -635,6 +635,10 @@ def live_uat_provenance(
     )
     raw_coverage = service_profile.get("coverage_summary")
     coverage: dict[str, Any] = raw_coverage if isinstance(raw_coverage, dict) else {}
+    raw_review_summary = service_profile.get("review_action_summary")
+    review_summary: dict[str, Any] = (
+        raw_review_summary if isinstance(raw_review_summary, dict) else {}
+    )
     raw_private_summary = service_profile.get("private_source_proposal_summary")
     private_summary: dict[str, Any] = (
         raw_private_summary if isinstance(raw_private_summary, dict) else {}
@@ -677,6 +681,25 @@ def live_uat_provenance(
         or [],
         "service_profile_read_only": service_profile.get("read_only"),
         "production_depth_ready": coverage.get("ready_for_daily_content"),
+        "first_service_profile_review_action_id": review_summary.get(
+            "first_review_action_id"
+        ),
+        "first_service_profile_review_label": review_summary.get(
+            "first_review_action_label"
+        ),
+        "first_service_profile_review_scope": review_summary.get(
+            "first_review_action_scope"
+        ),
+        "first_service_profile_review_target_card_id": review_summary.get(
+            "first_review_action_target_card_id"
+        ),
+        "first_service_profile_review_required_fields": review_summary.get(
+            "first_review_required_fields"
+        )
+        or [],
+        "first_service_profile_review_next_step": review_summary.get(
+            "first_review_safe_next_step"
+        ),
         "public_service_review_action_count": len(
             [
                 action
@@ -713,6 +736,28 @@ def review_scope(action: dict[str, Any]) -> str:
     return str(action.get("review_scope") or "").strip()
 
 
+def first_service_profile_review_label(value: dict[str, Any]) -> str:
+    action_id = value.get("first_service_profile_review_action_id")
+    label = value.get("first_service_profile_review_label")
+    scope = value.get("first_service_profile_review_scope")
+    target = value.get("first_service_profile_review_target_card_id")
+    next_step = value.get("first_service_profile_review_next_step")
+    if not any([action_id, label, scope, target, next_step]):
+        return "brak"
+    parts = [
+        f"`{action_id}`" if action_id else None,
+        str(label) if label else None,
+        f"scope `{scope}`" if scope else None,
+        f"target `{target}`" if target else None,
+        str(next_step) if next_step else None,
+    ]
+    return " - ".join(part for part in parts if part)
+
+
+def first_service_profile_review_required_fields_label(value: dict[str, Any]) -> str:
+    return ", ".join(value.get("first_service_profile_review_required_fields") or []) or "brak"
+
+
 def render_live_provenance(value: Any) -> str:
     if not isinstance(value, dict):
         return "- Nie sprawdzono live WILQ API dla tego wyniku."
@@ -736,6 +781,10 @@ def render_live_provenance(value: Any) -> str:
             f"{visible_bool(value.get('service_profile_read_only') is True)}",
             "- Production-depth ready: "
             f"{visible_bool(value.get('production_depth_ready') is True)}",
+            "- Pierwszy Service Profile review: "
+            f"{first_service_profile_review_label(value)}",
+            "- Wymagane pola pierwszego review: "
+            f"{first_service_profile_review_required_fields_label(value)}",
             "- Public service review actions: "
             f"`{value.get('public_service_review_action_count')}`",
             "- Private review actions: "

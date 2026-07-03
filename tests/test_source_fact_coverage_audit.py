@@ -32,10 +32,16 @@ def test_source_fact_coverage_audit_reports_current_goal_005_backlog() -> None:
     assert report["private_review_queue"][0]["risk_tier"] == "high"
     assert report["private_review_value"]["proposal_count"] == report["private_proposal_count"]
     assert report["private_review_value"]["promotion_allowed_count"] == 0
-    assert report["private_review_value"]["blocked_claim_proposal_count"] == report["private_proposal_count"]
+    assert (
+        report["private_review_value"]["blocked_claim_proposal_count"]
+        == report["private_proposal_count"]
+    )
     assert report["private_review_value"]["operator_value_score"] >= 7
     assert "review" in report["private_review_value"]["value_summary"].lower()
     assert report["review_action_queue"]
+    assert report["first_review_action_id"]
+    assert report["review_action_queue"][0]["action_id"] == report["first_review_action_id"]
+    assert report["review_action_queue"][0]["review_scope"] == "public_service_card"
     assert any(
         item["review_scope"] == "public_service_card"
         for item in report["review_action_queue"]
@@ -57,6 +63,10 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
         "reviewed_fact_percent": 0,
         "fact_count": 12,
         "review_action_count": 13,
+        "first_review_action_id": (
+            "service_profile_review_card_ekologus_service_bdo_reporting"
+        ),
+        "first_review_action_label": "Sprawdź kartę usługi: BDO",
         "private_review_required_count": 5,
         "private_review_value": {
             "proposal_count": 5,
@@ -65,7 +75,10 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
             "cta_pattern_proposal_count": 2,
             "buyer_trigger_proposal_count": 2,
             "operator_value_score": 8,
-            "value_summary": "Prywatne propozycje dają materiał do review, ale nie odblokowują production-depth.",
+            "value_summary": (
+                "Prywatne propozycje dają materiał do review, "
+                "ale nie odblokowują production-depth."
+            ),
             "review_value_points": [
                 "konkretniejsze CTA i buyer trigger",
                 "jawne zablokowane twierdzenia",
@@ -96,6 +109,8 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
 
     assert "Production-depth service readiness: 0%" in markdown
     assert "Pokaż Wilkowi review-required źródła przed treścią." in markdown
+    assert "Pierwszy review item" in markdown
+    assert "service_profile_review_card_ekologus_service_bdo_reporting" in markdown
     assert "## Co wnosi prywatna wiedza" in markdown
     assert "Prywatne propozycje dają materiał do review" in markdown
     assert "konkretniejsze CTA i buyer trigger" in markdown

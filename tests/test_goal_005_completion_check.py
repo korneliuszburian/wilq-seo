@@ -9,6 +9,7 @@ from scripts.goal_005_completion_check import (
     goal_005_next_uat_input,
     goal_005_pre_demo_audit_summary,
     render_markdown,
+    render_next_uat_input,
     uat_live_provenance_summary,
     validate_owner_defer,
 )
@@ -108,6 +109,22 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
                     "status": "ready",
                 }
             },
+            "service_profile": {
+                "review_action_summary": {
+                    "first_review_action_id": "renamed_public_service_bdo_review",
+                    "first_review_action_label": "Sprawdź kartę BDO",
+                    "first_review_action_scope": "public_service_card",
+                    "first_review_action_priority": "medium",
+                    "first_review_action_target_card_id": "ekologus_service_bdo_reporting",
+                    "first_review_required_fields": [
+                        "action_id",
+                        "source_trace_clear",
+                    ],
+                    "first_review_safe_next_step": (
+                        "Najpierw sprawdź publiczną kartę BDO."
+                    ),
+                }
+            },
         }
 
     monkeypatch.setattr(
@@ -125,6 +142,20 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert next_input["fillable_input"]["wybrany_work_item"] == (
         "content_work_item_content_decision_https___www_ekologus_pl"
     )
+    assert next_input["first_service_profile_review"] == {
+        "action_id": "renamed_public_service_bdo_review",
+        "label": "Sprawdź kartę BDO",
+        "scope": "public_service_card",
+        "priority": "medium",
+        "target_card_id": "ekologus_service_bdo_reporting",
+        "gap_id": None,
+        "required_fields": ["action_id", "source_trace_clear"],
+        "safe_next_step": "Najpierw sprawdź publiczną kartę BDO.",
+    }
+    rendered = "\n".join(render_next_uat_input(next_input))
+    assert "Pierwszy Service Profile review" in rendered
+    assert "renamed_public_service_bdo_review" in rendered
+    assert "Wymagane pola pierwszego review: action_id, source_trace_clear" in rendered
     assert "--api-base http://127.0.0.1:8000" in next_input["print_input_command"]
 
 
