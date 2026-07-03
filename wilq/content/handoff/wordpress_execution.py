@@ -18,6 +18,7 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
     "handoff_not_draft_only",
     "live_write_not_enabled",
     "missing_live_adapter",
+    "live_adapter_failed",
 ]
 
 
@@ -112,7 +113,30 @@ def execute_content_wordpress_draft_handoff(
 
     if create_draft is None:
         raise RuntimeError("Live WordPress draft creator passed execution blockers as None.")
-    wordpress_post_id = create_draft(payload)
+    try:
+        wordpress_post_id = create_draft(payload)
+    except Exception as exc:  # pragma: no cover - adapter failures are integration-specific
+        return ContentWordPressDraftExecutionResult(
+            status="blocked",
+            mode=mode,
+            boundary=_execution_boundary(
+                live_write_enabled=live_write_enabled,
+                create_draft=create_draft,
+            ),
+            payload=payload,
+            external_write_attempted=True,
+            blockers=[
+                _blocker(
+                    "live_adapter_failed",
+                    "Adapter WordPress zwrócił błąd",
+                    _adapter_error_reason(exc),
+                    (
+                        "Nie ponawiaj zapisu automatycznie. Sprawdź konfigurację "
+                        "WordPress i wróć do podglądu szkicu."
+                    ),
+                )
+            ],
+        )
     return ContentWordPressDraftExecutionResult(
         status="created",
         mode=mode,
@@ -244,6 +268,16 @@ def _execution_boundary(
     return ContentWordPressDraftExecutionBoundary(
         live_write_enabled=live_write_enabled,
         live_adapter_configured=create_draft is not None,
+    )
+
+
+def _adapter_error_reason(exc: Exception) -> str:
+    public_message = getattr(exc, "public_message", None)
+    if isinstance(public_message, str) and public_message.strip():
+        return public_message.strip()
+    return (
+        "Adapter przerwał zapis szkicu bez ujawniania danych technicznych "
+        f"({type(exc).__name__})."
     )
 
 

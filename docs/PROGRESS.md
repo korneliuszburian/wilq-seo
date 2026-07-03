@@ -222,6 +222,15 @@ Date: 2026-07-03
   WILQ execution: real low-risk Ads/WordPress/social/connector actions through
   ActionObject validation, preview, human confirmation and audit. No direct
   publish, campaign mutation or vendor write is allowed from skills/prompts.
+- First write-capable bridge slice landed for WordPress draft creation:
+  `/api/content/work-items/wordpress-draft-execution` can now call a
+  draft-only WordPress REST adapter only when
+  `WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES` is explicitly enabled. Default live
+  write remains blocked; dry-run still reports `external_write_attempted=false`;
+  the adapter creates only `status=draft` posts and blocks publish/destructive
+  payloads. Focused proof: 14/14 WordPress execution tests passed, ruff passed
+  on touched files, and live API dry-run after stack restart returned
+  `dry_run_ready` with no external write attempted.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

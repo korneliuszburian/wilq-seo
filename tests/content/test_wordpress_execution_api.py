@@ -123,3 +123,76 @@ def test_wordpress_execution_api_blocks_live_write() -> None:
     assert [blocker["code"] for blocker in result["blockers"]] == [
         "live_write_not_enabled"
     ]
+
+
+def test_wordpress_execution_api_live_write_uses_env_gated_draft_adapter(
+    monkeypatch,
+) -> None:
+    created_titles: list[str] = []
+
+    def create_draft(payload) -> str:  # type: ignore[no-untyped-def]
+        assert payload.post_status == "draft"
+        assert payload.publish_allowed is False
+        assert payload.destructive_update_allowed is False
+        created_titles.append(payload.title)
+        return "777"
+
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.create_wordpress_draft_post",
+        create_draft,
+    )
+
+    data = _post_wordpress_execution(
+        {
+            "handoff": _wordpress_handoff(),
+            "draft_package": _draft_package(),
+            "mode": "live",
+        }
+    )
+
+    result = data["execution_result"]
+    assert result["status"] == "created"
+    assert result["mode"] == "live"
+    assert result["wordpress_post_id"] == "777"
+    assert result["external_write_attempted"] is True
+    assert result["boundary"]["live_write_enabled"] is True
+    assert result["boundary"]["live_adapter_configured"] is True
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    assert created_titles == ["BDO dla firm: co trzeba sprawdzić przed działaniem"]
+
+
+def test_wordpress_execution_api_live_adapter_failure_is_blocked(
+    monkeypatch,
+) -> None:
+    class AdapterFailure(RuntimeError):
+        public_message = "WordPress odrzucił szkic testowy."
+
+    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
+        raise AdapterFailure("secret technical details")
+
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.create_wordpress_draft_post",
+        create_draft,
+    )
+
+    data = _post_wordpress_execution(
+        {
+            "handoff": _wordpress_handoff(),
+            "draft_package": _draft_package(),
+            "mode": "live",
+        }
+    )
+
+    result = data["execution_result"]
+    assert result["status"] == "blocked"
+    assert result["external_write_attempted"] is True
+    assert result["boundary"]["live_write_enabled"] is True
+    assert result["boundary"]["live_adapter_configured"] is True
+    assert [blocker["code"] for blocker in result["blockers"]] == [
+        "live_adapter_failed"
+    ]
+    assert result["blockers"][0]["reason"] == "WordPress odrzucił szkic testowy."
+    assert "secret technical details" not in str(result)

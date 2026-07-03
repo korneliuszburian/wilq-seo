@@ -57,6 +57,12 @@ class WordPressCredentials:
     site_kind: str
 
 
+class WordPressDraftWriteError(RuntimeError):
+    def __init__(self, public_message: str) -> None:
+        super().__init__(public_message)
+        self.public_message = public_message
+
+
 def refresh_wordpress_content_inventory(
     connector_id: str,
     request: ConnectorRefreshRequest,
@@ -110,6 +116,65 @@ def refresh_wordpress_content_inventory(
         metric_summary=metric_summary,
         metric_facts=metric_facts,
     )
+
+
+def create_wordpress_draft_post(
+    payload: object,
+    *,
+    connector_id: str = "wordpress_ekologus",
+    http_client: httpx.Client | None = None,
+) -> str:
+    credentials = _wordpress_credentials(connector_id)
+    if credentials is None:
+        raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
+    missing = _missing_credentials(connector_id, credentials)
+    if missing:
+        raise WordPressDraftWriteError(
+            "Brakuje konfiguracji WordPress wymaganej do utworzenia szkicu."
+        )
+    if getattr(payload, "connector", connector_id) != connector_id:
+        raise WordPressDraftWriteError("Payload szkicu nie pasuje do connectora WordPress.")
+    if getattr(payload, "post_status", None) != "draft":
+        raise WordPressDraftWriteError("Adapter może utworzyć wyłącznie szkic WordPress.")
+    if getattr(payload, "publish_allowed", True) or getattr(
+        payload, "destructive_update_allowed", True
+    ):
+        raise WordPressDraftWriteError(
+            "Adapter blokuje publikację i destrukcyjne aktualizacje."
+        )
+
+    owns_client = http_client is None
+    client = http_client or httpx.Client(timeout=30)
+    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
+    try:
+        try:
+            response = client.post(
+                urljoin(credentials.base_url or "", "wp-json/wp/v2/posts"),
+                auth=auth,
+                json={
+                    "status": "draft",
+                    "title": getattr(payload, "title", ""),
+                    "content": getattr(payload, "content_markdown", ""),
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise WordPressDraftWriteError(
+                f"WordPress odrzucił utworzenie szkicu HTTP {exc.response.status_code}."
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise WordPressDraftWriteError(
+                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
+            ) from exc
+    finally:
+        if owns_client:
+            client.close()
+
+    body = response.json()
+    post_id = body.get("id") if isinstance(body, dict) else None
+    if post_id is None:
+        raise WordPressDraftWriteError("WordPress nie zwrócił ID utworzonego szkicu.")
+    return str(post_id)
 
 
 def _wordpress_credentials(connector_id: str) -> WordPressCredentials | None:

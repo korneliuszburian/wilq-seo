@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
+from wilq.connectors.wordpress.client import create_wordpress_draft_post
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefBuildResult,
@@ -123,6 +124,7 @@ from wilq.content.workflow.decision_mapping import (
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.queue import build_content_work_item_queue_response
+from wilq.credentials.runtime import variable_value
 from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
 
 
@@ -356,14 +358,25 @@ def build_content_work_item_wordpress_draft_handoff_response(
 def build_content_work_item_wordpress_draft_execution_response(
     request: ContentWorkItemWordPressDraftExecutionRequest,
 ) -> ContentWorkItemWordPressDraftExecutionResponse:
+    live_write_enabled = _wordpress_draft_writes_enabled()
     return ContentWorkItemWordPressDraftExecutionResponse(
         execution_result=execute_content_wordpress_draft_handoff(
             handoff=request.handoff,
             draft_package=request.draft_package,
             mode=request.mode,
-            live_write_enabled=False,
+            live_write_enabled=live_write_enabled,
+            create_draft=create_wordpress_draft_post if live_write_enabled else None,
         ),
     )
+
+
+def _wordpress_draft_writes_enabled() -> bool:
+    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def build_content_work_item_wordpress_authoring_payload_preview_response(
