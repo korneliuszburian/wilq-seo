@@ -174,6 +174,10 @@ Date: 2026-07-03
   the JSON proof command. Live `next_uat_input` includes both
   `session_card_command` and `print_input_command`, so the next operator handoff
   starts from the Wilku-facing card instead of raw JSON.
+- 2026-07-03 the Goal 005 session card now translates first review enum/options
+  into normal Polish for Wilku. Raw values such as `approve/needs_changes/stale/reject`
+  stay only in the technical JSON proof hint, while the visible review section
+  says "zatwierdź", "wróć z poprawkami", "oznacz jako nieaktualne" or "odrzuć".
 - 2026-07-03 WordPress draft apply readiness now also exposes execution
   blockers from the real WordPress dry-run contract: missing approved handoff
   and missing draft package. Live smoke still reports zero possible vendor

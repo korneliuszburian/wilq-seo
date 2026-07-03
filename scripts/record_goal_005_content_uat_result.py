@@ -61,6 +61,20 @@ PRIVATE_POLICY_REVIEW_SCOPES = {
     "private_claim_policy_proposal",
     "private_evidence_policy_proposal",
 }
+REVIEW_REQUIRED_FIELD_LABELS = {
+    "action_id": "którą decyzję zapisujemy",
+    "target_card_id": "której karty dotyczy decyzja",
+    "decision": "werdykt: zatwierdzić, poprawić, oznaczyć jako nieaktualne albo odrzucić",
+    "source_trace_clear": "czy źródło i pochodzenie faktu są jasne",
+    "blocked_claims_reviewed": "czy zablokowane claimy zostały sprawdzone",
+    "notes": "krótka notatka co poprawić albo dlaczego zaakceptować",
+}
+REVIEW_DECISION_OPTION_LABELS = {
+    "approve": "zatwierdź do dalszego użycia",
+    "needs_changes": "wróć z poprawkami",
+    "stale": "oznacz jako nieaktualne",
+    "reject": "odrzuć",
+}
 
 
 def main() -> int:
@@ -195,8 +209,11 @@ def render_content_uat_session_card(
         selected_work_item=selected_work_item,
     )
     artifacts = example.get(REVIEW_ARTIFACTS_FIELD) or []
-    first_review = first_service_profile_review_label(provenance)
-    required_fields = first_service_profile_review_required_fields_label(provenance)
+    first_review = first_service_profile_review_plain_label(provenance)
+    required_fields = first_service_profile_review_required_fields_plain_label(
+        provenance
+    )
+    decision_options = first_service_profile_review_decision_options_label(provenance)
     command = (
         "rtk uv run python scripts/record_goal_005_content_uat_result.py "
         "--print-input-example"
@@ -232,7 +249,10 @@ def render_content_uat_session_card(
         "## Pierwsza decyzja review",
         "",
         f"- {first_review}",
-        f"- Wymagane pola decyzji: {required_fields}",
+        f"- Możliwe decyzje: {decision_options}",
+        f"- Co trzeba ocenić: {required_fields}",
+        "- Techniczny zapis do JSON: "
+        f"{first_service_profile_review_label(provenance)}",
         "",
         "## Co pokazać",
         "",
@@ -748,6 +768,15 @@ def live_uat_provenance(
         for action in raw_list_payload(service_profile.get("review_actions"))
         if isinstance(action, dict)
     ]
+    first_review_action_id = review_summary.get("first_review_action_id")
+    first_review_action = next(
+        (
+            action
+            for action in review_actions
+            if action.get("action_id") == first_review_action_id
+        ),
+        {},
+    )
     return {
         "api_base": live_context.get("api_base"),
         "queue_status": queue.get("queue_status"),
@@ -771,9 +800,7 @@ def live_uat_provenance(
         or [],
         "service_profile_read_only": service_profile.get("read_only"),
         "production_depth_ready": coverage.get("ready_for_daily_content"),
-        "first_service_profile_review_action_id": review_summary.get(
-            "first_review_action_id"
-        ),
+        "first_service_profile_review_action_id": first_review_action_id,
         "first_service_profile_review_label": review_summary.get(
             "first_review_action_label"
         ),
@@ -790,6 +817,10 @@ def live_uat_provenance(
         "first_service_profile_review_next_step": review_summary.get(
             "first_review_safe_next_step"
         ),
+        "first_service_profile_review_decision_options": first_review_action.get(
+            "decision_options"
+        )
+        or [],
         "public_service_review_action_count": len(
             [
                 action
@@ -844,8 +875,56 @@ def first_service_profile_review_label(value: dict[str, Any]) -> str:
     return " - ".join(part for part in parts if part)
 
 
+def first_service_profile_review_plain_label(value: dict[str, Any]) -> str:
+    label = value.get("first_service_profile_review_label")
+    next_step = humanize_review_decision_text(
+        value.get("first_service_profile_review_next_step")
+    )
+    target = value.get("first_service_profile_review_target_card_id")
+    if not any([label, next_step, target]):
+        return "Brak pierwszej decyzji review w live packet."
+    parts = [
+        str(label) if label else None,
+        f"karta `{target}`" if target else None,
+        str(next_step) if next_step else None,
+    ]
+    return " - ".join(part for part in parts if part)
+
+
 def first_service_profile_review_required_fields_label(value: dict[str, Any]) -> str:
     return ", ".join(value.get("first_service_profile_review_required_fields") or []) or "brak"
+
+
+def first_service_profile_review_required_fields_plain_label(
+    value: dict[str, Any],
+) -> str:
+    fields = value.get("first_service_profile_review_required_fields") or []
+    labels = [REVIEW_REQUIRED_FIELD_LABELS.get(str(field), str(field)) for field in fields]
+    return "; ".join(labels) or "brak"
+
+
+def first_service_profile_review_decision_options_label(value: dict[str, Any]) -> str:
+    options = value.get("first_service_profile_review_decision_options") or []
+    labels = [REVIEW_DECISION_OPTION_LABELS.get(str(option), str(option)) for option in options]
+    return "; ".join(labels) or "brak opcji z live packet"
+
+
+def humanize_review_decision_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value)
+    replacements = {
+        "approve/needs_changes/stale/reject": (
+            "zatwierdź, wróć z poprawkami, oznacz jako nieaktualne albo odrzuć"
+        ),
+        "approve": "zatwierdź",
+        "needs_changes": "wróć z poprawkami",
+        "stale": "oznacz jako nieaktualne",
+        "reject": "odrzuć",
+    }
+    for raw, label in replacements.items():
+        text = text.replace(raw, label)
+    return text
 
 
 def render_live_provenance(value: Any) -> str:

@@ -123,6 +123,14 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     )
     assert "renamed_public_service_bdo_review" in card
     assert "Sprawdź kartę BDO" in card
+    assert "Możliwe decyzje: zatwierdź do dalszego użycia" in card
+    assert "wróć z poprawkami" in card
+    assert "Co trzeba ocenić: którą decyzję zapisujemy" in card
+    assert "czy źródło i pochodzenie faktu są jasne" in card
+    assert "approve/needs_changes/stale/reject" not in card.split(
+        "Techniczny zapis do JSON"
+    )[0]
+    assert "Techniczny zapis do JSON" in card
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in card
     assert "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md" in card
     assert "--print-input-example --api-base http://127.0.0.1:8000" in card
@@ -664,6 +672,12 @@ def _live_context() -> dict[str, object]:
                 {
                     "action_id": "renamed_public_service_bdo_review",
                     "review_scope": "public_service_card",
+                    "decision_options": [
+                        "approve",
+                        "needs_changes",
+                        "stale",
+                        "reject",
+                    ],
                 },
                 {
                     "action_id": "renamed_private_service_review",
