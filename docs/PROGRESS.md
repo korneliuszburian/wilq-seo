@@ -264,6 +264,10 @@ Date: 2026-07-03
   treści", "decyzje do oceny", "identyfikatory dowodów", "plik dowodowy",
   "bramka przed pokazaniem" and "test jakości". Raw JSON enum values and
   script flags remain only in technical command/proof sections.
+- 2026-07-03 the WILQ marketing/content model handoff now matches the same
+  Wilku-facing language: it explains Service Profile, Claim Ledger, social
+  history, skill tests and blocked publication in Polish operator terms instead
+  of visible production-depth/eval/source-connector jargon.
 - 2026-07-03 `scripts/record_service_profile_review_result.py` now has
   `--print-session-card` for both public service cards and private
   `ekologus-ai` proposals. It prints a Polish review card with what Wilku must
