@@ -457,6 +457,9 @@ def build_content_uat_result_report(
         "review_scorecard": review_scorecard,
         "review_scorecard_summary": review_scorecard_summary(review_scorecard),
         "private_source_trace_scorecard": private_source_trace_scorecard,
+        "private_source_trace_follow_up_suggestions": (
+            private_source_trace_follow_up_suggestions(private_source_trace_scorecard)
+        ),
         "review_follow_up_suggestions": review_follow_up_suggestions(review_scorecard),
         "missing_recommended_review_artifacts": missing_recommended_review_artifacts,
         "follow_up_tasks": follow_up_tasks,
@@ -688,6 +691,30 @@ def render_private_source_trace_scorecard(value: Any) -> list[str]:
             ]
         )
     return lines
+
+
+def private_source_trace_follow_up_suggestions(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    suggestions: list[dict[str, Any]] = []
+    for row in rows:
+        decision = str(row.get("decyzja") or "")
+        trace_clear = row.get("trace_czytelny") is True
+        requested_fix = str(row.get("najwazniejsza_poprawka") or "").strip()
+        if decision == "zatwierdź" and trace_clear and requested_fix.lower() == "brak":
+            continue
+        suggestions.append(
+            {
+                "target": row.get("target"),
+                "scope": row.get("scope"),
+                "decision": decision,
+                "trace_clear": trace_clear,
+                "requested_fix": requested_fix,
+                "source_blocks": row.get("source_blocks") or [],
+                "eval_cases": row.get("eval_cases") or [],
+            }
+        )
+    return suggestions
 
 
 def render_review_follow_up_suggestions(value: Any) -> list[str]:

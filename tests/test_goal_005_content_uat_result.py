@@ -379,6 +379,20 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
             "najwazniejsza_poprawka": "Dodać prostszy opis dla Wilka.",
         }
     ]
+    assert report["private_source_trace_follow_up_suggestions"] == [
+        {
+            "target": "Bezpieczeństwo prawne, poufność i zgody",
+            "scope": "polityka twierdzeń",
+            "decision": "popraw",
+            "trace_clear": True,
+            "requested_fix": "Dodać prostszy opis dla Wilka.",
+            "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
+            "eval_cases": [
+                "goal_005_private_claim_policy_review",
+                "goal_006_claim_ledger_gate",
+            ],
+        }
+    ]
 
     markdown = render_markdown(report)
     assert "## Ślad danych do rozmowy" in markdown

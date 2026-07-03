@@ -212,6 +212,30 @@ def build_completion_report(
                 next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
+        if (
+            uat_report["valid"]
+            and uat_report["overall_status"] == "ready_for_full_content_uat"
+            and uat_report.get("private_source_trace_follow_up_suggestions")
+        ):
+            return blocked_report(
+                "goal_005_private_trace_scorecard_follow_up",
+                [
+                    "UAT result is valid, but Wilku's private source trace "
+                    "scorecard still contains follow-up suggestions.",
+                    "Resolve these private trace follow-ups before claiming "
+                    "Goal 005 completion:",
+                    *private_trace_follow_up_detail_lines(
+                        uat_report["private_source_trace_follow_up_suggestions"]
+                    ),
+                ],
+                uat_live_provenance=uat_report.get("live_provenance_summary"),
+                uat_private_source_trace_follow_up_suggestions=uat_report.get(
+                    "private_source_trace_follow_up_suggestions"
+                ),
+                uat_wilku_review_answers=uat_report.get("wilku_review_answers"),
+                next_uat_input=next_uat_input,
+                pre_demo_audits=pre_demo_audits,
+            )
         if uat_report["valid"] and uat_report["overall_status"] == "ready_for_full_content_uat":
             return {
                 "status": "complete_with_uat",
@@ -244,6 +268,9 @@ def build_completion_report(
                 uat_live_provenance=uat_report.get("live_provenance_summary"),
                 uat_review_follow_up_suggestions=uat_report.get(
                     "review_follow_up_suggestions"
+                ),
+                uat_private_source_trace_follow_up_suggestions=uat_report.get(
+                    "private_source_trace_follow_up_suggestions"
                 ),
                 uat_wilku_review_answers=uat_report.get("wilku_review_answers"),
                 next_uat_input=next_uat_input,
@@ -663,6 +690,10 @@ def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str,
         ],
         "review_follow_up_suggestions": report.get("review_follow_up_suggestions")
         or [],
+        "private_source_trace_follow_up_suggestions": report.get(
+            "private_source_trace_follow_up_suggestions"
+        )
+        or [],
         "wilku_review_answers": report.get("wilku_review_answers") or [],
         "live_provenance_summary": uat_live_provenance_summary(
             report.get("live_provenance")
@@ -847,6 +878,7 @@ def blocked_report(
     *,
     uat_live_provenance: dict[str, Any] | None = None,
     uat_review_follow_up_suggestions: list[dict[str, Any]] | None = None,
+    uat_private_source_trace_follow_up_suggestions: list[dict[str, Any]] | None = None,
     uat_wilku_review_answers: list[dict[str, Any]] | None = None,
     next_uat_input: dict[str, Any] | None = None,
     pre_demo_audits: dict[str, Any] | None = None,
@@ -860,6 +892,9 @@ def blocked_report(
         "details": details,
         "uat_live_provenance": uat_live_provenance,
         "uat_review_follow_up_suggestions": uat_review_follow_up_suggestions or [],
+        "uat_private_source_trace_follow_up_suggestions": (
+            uat_private_source_trace_follow_up_suggestions or []
+        ),
         "uat_wilku_review_answers": uat_wilku_review_answers or [],
         "next_uat_input": next_uat_input or goal_005_next_uat_input(),
         "pre_demo_audits": pre_demo_audits or goal_005_pre_demo_audit_summary(),
@@ -915,6 +950,13 @@ def render_markdown(report: dict[str, Any]) -> str:
             lines.extend(
                 render_review_follow_up_suggestions(
                     report["uat_review_follow_up_suggestions"]
+                )
+            )
+        if report.get("uat_private_source_trace_follow_up_suggestions"):
+            lines.extend(["", "## Follow-up prywatnego śladu źródłowego"])
+            lines.extend(
+                render_private_trace_follow_up_suggestions(
+                    report["uat_private_source_trace_follow_up_suggestions"]
                 )
             )
         if report.get("uat_wilku_review_answers"):
@@ -1000,6 +1042,12 @@ def render_review_follow_up_suggestions(value: list[dict[str, Any]]) -> list[str
     return [f"- {line}" for line in review_follow_up_detail_lines(value)]
 
 
+def render_private_trace_follow_up_suggestions(value: list[dict[str, Any]]) -> list[str]:
+    if not value:
+        return ["- Brak follow-upów prywatnego śladu źródłowego."]
+    return [f"- {line}" for line in private_trace_follow_up_detail_lines(value)]
+
+
 def render_uat_wilku_review_answers(value: list[dict[str, Any]]) -> list[str]:
     lines: list[str] = []
     for item in value:
@@ -1027,6 +1075,20 @@ def review_follow_up_detail_lines(value: list[dict[str, Any]]) -> list[str]:
             f"{item.get('material')}: decyzja `{item.get('decision')}`, "
             f"słabe oceny: {', '.join(low_scores) or 'brak'}, "
             f"poprawka: {item.get('requested_fix')}"
+        )
+    return lines
+
+
+def private_trace_follow_up_detail_lines(value: list[dict[str, Any]]) -> list[str]:
+    lines: list[str] = []
+    for item in value:
+        source_blocks = ", ".join(raw_string_list(item.get("source_blocks"))) or "brak"
+        eval_cases = ", ".join(raw_string_list(item.get("eval_cases"))) or "brak"
+        trace_clear = "tak" if item.get("trace_clear") is True else "nie"
+        lines.append(
+            f"{item.get('target')}: decyzja `{item.get('decision')}`, "
+            f"trace czytelny: {trace_clear}, źródło: {source_blocks}, "
+            f"eval: {eval_cases}, poprawka: {item.get('requested_fix')}"
         )
     return lines
 

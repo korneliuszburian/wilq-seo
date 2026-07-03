@@ -77,6 +77,10 @@ Date: 2026-07-04
   `ekologus-ai` / source-trace residual risk. A generic "Wilku unavailable"
   defer cannot bypass private knowledge review state while still claiming
   explicit owner defer.
+- 2026-07-04 Goal 005 completion now treats the private source trace scorecard
+  as a real quality gate: even a ready UAT stays blocked if Wilku marks the
+  trace unclear, leaves decision as `popraw`/`odrzuć`/`odśwież`, or requests a
+  fix for any `KB_*`/eval source trace.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
