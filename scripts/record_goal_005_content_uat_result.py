@@ -40,6 +40,7 @@ REQUIRED_BOOLEAN_FIELDS = {
 REVIEW_ARTIFACTS_FIELD = "pokazane_materialy_review"
 REVIEW_SCORECARD_FIELD = "oceny_materialow_review"
 WILKU_REVIEW_QUESTIONS_FIELD = "pytania_do_wilka"
+WILKU_REVIEW_ANSWERS_FIELD = "odpowiedzi_wilka"
 REVIEW_ARTIFACTS_ROOT = Path("docs/handoffs")
 RECOMMENDED_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md",
@@ -188,6 +189,7 @@ def build_content_uat_input_example(
         live_context=live_context,
         selected_work_item=selected_work_item,
     )
+    review_questions = wilku_review_questions(provenance)
     return {
         "data_sesji": "<YYYY-MM-DD>",
         "osoba": "Wilku",
@@ -213,7 +215,15 @@ def build_content_uat_input_example(
             }
             for artifact in RECOMMENDED_REVIEW_ARTIFACTS
         ],
-        WILKU_REVIEW_QUESTIONS_FIELD: wilku_review_questions(provenance),
+        WILKU_REVIEW_QUESTIONS_FIELD: review_questions,
+        WILKU_REVIEW_ANSWERS_FIELD: [
+            {
+                "pytanie": question,
+                "odpowiedz": "UZUPEŁNIJ: odpowiedź Wilka albo brak odpowiedzi",
+                "follow_up": "UZUPEŁNIJ: co poprawić albo brak follow-upu",
+            }
+            for question in review_questions
+        ],
         "pytania_skad_to_wzielo": (
             'UZUPEŁNIJ: gdzie Wilku zapytał "skąd to wzięło?" albo "brak pytań"'
         ),
@@ -425,6 +435,9 @@ def build_content_uat_result_report(
         "wilku_review_questions": list_payload(
             payload.get(WILKU_REVIEW_QUESTIONS_FIELD)
         ),
+        "wilku_review_answers": wilku_review_answer_payload(
+            payload.get(WILKU_REVIEW_ANSWERS_FIELD)
+        ),
         "review_scorecard": review_scorecard,
         "review_scorecard_summary": review_scorecard_summary(review_scorecard),
         "review_follow_up_suggestions": review_follow_up_suggestions(review_scorecard),
@@ -518,6 +531,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "",
         *render_wilku_review_questions(report.get("wilku_review_questions")),
         "",
+        *render_wilku_review_answers(report.get("wilku_review_answers")),
+        "",
         "## Scorecard Wilka",
         "",
         render_review_scorecard_summary(report.get("review_scorecard_summary")),
@@ -572,6 +587,22 @@ def render_wilku_review_questions(value: Any) -> list[str]:
         "",
         *[f"- {question}" for question in questions],
     ]
+
+
+def render_wilku_review_answers(value: Any) -> list[str]:
+    rows = [row for row in raw_list_payload(value) if isinstance(row, dict)]
+    if not rows:
+        return []
+    lines = ["## Odpowiedzi Wilka na pytania WILQ", ""]
+    for row in rows:
+        lines.extend(
+            [
+                f"- {row.get('pytanie')}",
+                f"  - odpowiedź: {row.get('odpowiedz')}",
+                f"  - follow-up: {row.get('follow_up') or 'brak'}",
+            ]
+        )
+    return lines
 
 
 def render_review_scorecard(value: Any) -> list[str]:
@@ -1223,6 +1254,26 @@ def wilku_review_questions(value: dict[str, Any] | None) -> list[str]:
         seen.add(question)
         unique_questions.append(question)
     return unique_questions
+
+
+def wilku_review_answer_payload(value: Any) -> list[dict[str, str]]:
+    answers: list[dict[str, str]] = []
+    for item in raw_list_payload(value):
+        if not isinstance(item, dict):
+            continue
+        question = str(item.get("pytanie") or "").strip()
+        answer = str(item.get("odpowiedz") or "").strip()
+        if is_blank_or_placeholder(question) or is_blank_or_placeholder(answer):
+            continue
+        follow_up = str(item.get("follow_up") or "").strip()
+        answers.append(
+            {
+                "pytanie": question,
+                "odpowiedz": answer,
+                "follow_up": "" if is_blank_or_placeholder(follow_up) else follow_up,
+            }
+        )
+    return answers
 
 
 def private_review_questions_label(value: dict[str, Any]) -> str:

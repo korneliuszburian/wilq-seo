@@ -35,6 +35,23 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
             "Czy Service Profile i pierwsza karta BDO są czytelne?",
             "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
         ],
+        "odpowiedzi_wilka": [
+            {
+                "pytanie": "Czy Service Profile i pierwsza karta BDO są czytelne?",
+                "odpowiedz": "Tak, ale trzeba uprościć opis zablokowanych claimów.",
+                "follow_up": "Przepisać blocker claimów z języka technicznego.",
+            },
+            {
+                "pytanie": "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
+                "odpowiedz": "Tak, jasne że to tylko review.",
+                "follow_up": "brak",
+            },
+            {
+                "pytanie": "Czy placeholder nie powinien wejść do proof?",
+                "odpowiedz": "UZUPEŁNIJ: odpowiedź Wilka albo brak odpowiedzi",
+                "follow_up": "UZUPEŁNIJ: co poprawić albo brak follow-upu",
+            },
+        ],
         "wilku_rozumie_blokady_pelnego_uat": "tak",
         "service_profile_czytelny": "tak",
         "public_service_review_actions_czytelne": "tak",
@@ -60,6 +77,18 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert report["wilku_review_questions"] == [
         "Czy Service Profile i pierwsza karta BDO są czytelne?",
         "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
+    ]
+    assert report["wilku_review_answers"] == [
+        {
+            "pytanie": "Czy Service Profile i pierwsza karta BDO są czytelne?",
+            "odpowiedz": "Tak, ale trzeba uprościć opis zablokowanych claimów.",
+            "follow_up": "Przepisać blocker claimów z języka technicznego.",
+        },
+        {
+            "pytanie": "Czy status briefu `sygnał użyteczny, ale wymaga review` mówi jasno?",
+            "odpowiedz": "Tak, jasne że to tylko review.",
+            "follow_up": "brak",
+        },
     ]
     assert report["review_scorecard_summary"] == {
         "artifact_count": 1,
@@ -92,7 +121,9 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
 
     markdown = render_markdown(report)
     assert "## Pytania prowadzące z WILQ" in markdown
+    assert "## Odpowiedzi Wilka na pytania WILQ" in markdown
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in markdown
+    assert "Tak, ale trzeba uprościć opis zablokowanych claimów." in markdown
     assert "## Ostrzeżenia materiałów review" in markdown
     assert "## Scorecard Wilka" in markdown
     assert "## Sugestie follow-up z ocen" in markdown
@@ -123,6 +154,10 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
         "Service Profile - co pokazać teraz"
     )
     assert example["pytania_do_wilka"]
+    assert [row["pytanie"] for row in example["odpowiedzi_wilka"]] == example[
+        "pytania_do_wilka"
+    ]
+    assert example["odpowiedzi_wilka"][0]["odpowiedz"].startswith("UZUPEŁNIJ:")
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in example[
         "pytania_do_wilka"
     ]

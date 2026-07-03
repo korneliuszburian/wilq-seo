@@ -215,6 +215,11 @@ Date: 2026-07-04
   2/2/2/18 signal counts and the `record_goal_005_content_uat_result.py`
   session/input commands, so the static handoff no longer lags behind the API
   guard.
+- 2026-07-04 Goal 005 UAT proof input now also includes `odpowiedzi_wilka`:
+  one answer/follow-up slot per live `pytania_do_wilka` question. The recorder
+  ignores placeholder answers but preserves filled answers in the markdown
+  report, making real UAT proof more specific without adding a new required
+  blocker.
 - 2026-07-03 mutation readiness now carries target candidate fields for the
   first write candidate. WordPress draft-only next step can name the concrete
   content candidate/URL that needs draft package and handoff before any dry-run
