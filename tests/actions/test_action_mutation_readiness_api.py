@@ -61,6 +61,7 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     tmp_path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "actions_apply.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "0")
 
     data = _get_mutation_readiness("act_apply_wordpress_draft_handoff")
 
@@ -73,9 +74,16 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     assert data["apply_contract"]["adapter_status"] == "implemented"
     assert data["apply_contract"]["publication_allowed"] is False
     blocker_codes = [blocker["code"] for blocker in data["blockers"]]
+    requirement_codes = {requirement["code"] for requirement in data["requirements"]}
     assert "missing_apply_mode" not in blocker_codes
     assert "missing_payload_apply_allowed" in blocker_codes
     assert "missing_mutation_adapter" not in blocker_codes
+    assert "wordpress_draft_write_readiness" in requirement_codes
+    assert "wordpress_draft_live_write_env" in requirement_codes
+    assert "wordpress_write_authorization" in requirement_codes
+    assert "missing_wordpress_draft_write_readiness" in blocker_codes
+    assert "missing_wordpress_draft_live_write_env" in blocker_codes
+    assert "missing_wordpress_write_authorization" in blocker_codes
 
 
 def test_wordpress_apply_action_blocks_payload_before_vendor_write(
@@ -106,6 +114,7 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     tmp_path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "actions_summary.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "0")
 
     data = _get_mutation_readiness_summary()
 

@@ -98,6 +98,7 @@ from wilq.briefing.merchant_labels import (
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.content.knowledge.service_profile import content_service_profile_response
+from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
@@ -2938,6 +2939,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
             evidence=mutation_adapter,
         ),
     ]
+    requirements.extend(_wordpress_draft_write_readiness_requirements(action))
     blockers = _mutation_readiness_blockers(requirements)
     vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
     ready_to_request_apply = not blockers
@@ -3152,6 +3154,42 @@ def _vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -
     )
 
 
+def _wordpress_draft_write_readiness_requirements(
+    action: ActionObject,
+) -> list[ActionMutationReadinessRequirement]:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return []
+    readiness = build_content_wordpress_draft_write_readiness_response(action_id=action.id)
+    authorization_ready = readiness.suggested_write_authorization is not None
+    blocker_codes = ", ".join(blocker.code for blocker in readiness.blockers[:4]) or None
+    return [
+        _mutation_requirement(
+            code="wordpress_draft_write_readiness",
+            label="WordPress draft write readiness przechodzi",
+            satisfied=readiness.ready,
+            evidence=blocker_codes or "ready",
+        ),
+        _mutation_requirement(
+            code="wordpress_draft_live_write_env",
+            label="Env pozwala na zapis szkicu WordPress",
+            satisfied=readiness.live_write_enabled_by_env,
+            evidence=str(readiness.live_write_enabled_by_env).lower(),
+        ),
+        _mutation_requirement(
+            code="wordpress_rest_adapter_configured",
+            label="REST adapter WordPress jest skonfigurowany",
+            satisfied=readiness.rest_adapter_configured,
+            evidence=str(readiness.rest_adapter_configured).lower(),
+        ),
+        _mutation_requirement(
+            code="wordpress_write_authorization",
+            label="Autoryzacja write z audytu jest gotowa",
+            satisfied=authorization_ready,
+            evidence="ready" if authorization_ready else "missing",
+        ),
+    ]
+
+
 def _apply_audit_event_type(errors: list[str]) -> str:
     if not errors:
         return "apply_succeeded"
@@ -3303,6 +3341,26 @@ def _mutation_readiness_blockers(
             "Brakuje adaptera zapisu",
             "WILQ nie ma jeszcze implementacji vendor write dla tej akcji.",
             "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live dla connectora.",
+        ),
+        "wordpress_draft_write_readiness": (
+            "WordPress draft write readiness blokuje zapis",
+            "Osobny kontrakt WordPress draft write readiness nie pozwala jeszcze na live write.",
+            "Sprawdź env, REST adapter i audyty w readiness szkicu WordPress.",
+        ),
+        "wordpress_draft_live_write_env": (
+            "Env nie pozwala na zapis szkicu WordPress",
+            "WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES nie jest jawnie włączone.",
+            "Zostaw write wyłączony albo włącz env dopiero po pełnym preview/review/confirm.",
+        ),
+        "wordpress_rest_adapter_configured": (
+            "REST adapter WordPress nie jest gotowy",
+            "Connector WordPress nie ma pełnej konfiguracji REST do utworzenia szkicu.",
+            "Uzupełnij konfigurację WordPress REST i sprawdź authoring profile.",
+        ),
+        "wordpress_write_authorization": (
+            "Brakuje autoryzacji write z audytu",
+            "WILQ nie zbudował jeszcze write_authorization z preview, review i confirm.",
+            "Przejdź validate, preview, human review i confirm w ActionObject.",
         ),
     }
     blockers: list[ActionMutationReadinessBlocker] = []

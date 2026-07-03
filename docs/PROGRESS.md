@@ -107,6 +107,11 @@ Date: 2026-07-03
   and `would_attempt_vendor_write` false until payload and API readiness are
   explicitly true. This shows the next technical boundary without enabling
   live write or publication.
+- 2026-07-03 `act_apply_wordpress_draft_handoff` mutation readiness now also
+  consumes the WordPress draft write readiness contract. The action readiness
+  lists env, REST adapter and write-authorization requirements from the same
+  API-owned source as `/api/content/wordpress/draft-write-readiness`, so
+  operator blockers no longer stop at generic payload/audit/adapter labels.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
