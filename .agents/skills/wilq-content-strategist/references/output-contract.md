@@ -22,15 +22,18 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od decyzji contentowej, nie od raportu pól API. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Dlaczego`, `Mapa decyzji`, `Co sprawdzić w briefie`, `Brief do pokazania Wilkowi` i `Zablokowane do czasu dowodów`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
-2. `Dowody`: `content_diagnostics` identyfikatorów sekcji, identyfikatory zadań taktycznych, identyfikatory dowodów, identyfikatory źródeł danych, świeżość danych, fakty o zapytaniach/stronach i status dopasowania w spisie treści WordPress wyłącznie z WILQ API.
-3. `Diagnoza`: co dowody wspierają dla zachowania, odświeżenia, scalenia, nowej treści albo blokady, z niepewnością, jeśli dowody są zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: tactical queue item IDs, identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
-5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Można zrobić teraz`: najważniejsza decyzja contentowa i akcja do sprawdzenia.
+2. `Dlaczego`: jednozdaniowy dowód łączący źródła, np. istniejący URL w WordPress + sygnał GSC + wniosek "odświeżyć/scalić, nie tworzyć od zera".
+3. `Mapa decyzji`: rozdziel co idzie jako odświeżyć/scalić, co zostaje do ręcznej oceny i czego nie pisać bez dowodów.
+4. `Co sprawdzić w briefie`: intencja, odbiorca, obiekcje, H1/H2/FAQ, CTA, kanibalizacja, aktualność prawna i Claim Ledger.
+5. `Brief do pokazania Wilkowi`: krótki pakiet review: rekomendowany tryb, źródła, kąt treści, odbiorca, CTA, ryzyka duplikacji i zablokowane twierdzenia.
+6. `Zablokowane do czasu dowodów`: tematy bez bezpośredniego wiersza dowodowego, finalny draft, publikacja WordPress i obietnice efektu.
+7. `Ślad techniczny`: tactical queue item IDs, identyfikatory szans, identyfikatory akcji, evidence IDs i wynik wymaganego sprawdzenia w WILQ.
+
+W ustrukturyzowanym JSON eval albo handoffie etykiety `Mapa decyzji` i `Brief do pokazania Wilkowi` muszą pojawić się w widocznych polach decyzyjnych, np. w `operator_next_step`, `recommendations[].label_pl` albo `action_candidates[].label_pl`. Nie wystarczy wrzucić ich do `notes`.
 
 ## Kolejka decyzji
 

@@ -122,6 +122,12 @@ Date: 2026-07-03
   Artifact: `.local-lab/evals/codex-skill/20260703T121912Z`; result:
   `operator_usefulness_score=9`, `blocked=true`, 6 evidence IDs, 4
   recommendations, 2 actions and all hard gates true.
+- 2026-07-03 `wilq-content-strategist` reached 9/10 content strategy level
+  after requiring a decision map and review brief packet instead of only
+  blocker-led planning. Artifact:
+  `.local-lab/evals/codex-skill/20260703T122515Z`; result:
+  `operator_usefulness_score=9`, `blocked=true`, 11 evidence IDs, 4
+  recommendations, 2 actions and all hard gates true.
 - 2026-07-03 fresh full WILQ skill eval baseline is now 13/13 passing for all
   repo WILQ skills on production-like Polish prompts. Every current score is
   `operator_usefulness_score=5`, so this proves "works out-of-the-box with

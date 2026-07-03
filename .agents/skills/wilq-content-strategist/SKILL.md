@@ -86,10 +86,14 @@ Oddziel to, co marketer może zrobić od razu, od tego, co jest zablokowane:
 
 - `Można zrobić teraz`: najważniejsza decyzja contentowa i akcja do sprawdzenia.
 - `Dlaczego`: jednozdaniowy dowód łączący źródła, np. istniejący URL w WordPress + sygnał GSC + wniosek "odświeżyć/scalić, nie tworzyć od zera".
+- `Mapa decyzji`: rozdziel co idzie jako odświeżyć/scalić, co zostaje do ręcznej oceny, a czego nie pisać bez dowodów.
 - `Co sprawdzić w briefie`: intencja, odbiorca, obiekcje, H1/H2/FAQ, CTA, kanibalizacja, aktualność prawna i Claim Ledger.
+- `Brief do pokazania Wilkowi`: krótki pakiet review: rekomendowany tryb, źródła, kąt treści, odbiorca, CTA, ryzyka duplikacji i zablokowane twierdzenia.
 - `Zablokowane do czasu dowodów`: tematy bez bezpośredniego wiersza dowodowego, finalny draft, publikacja WordPress i obietnice efektu.
 
 Jeśli top-level workflow jest `blocked=true` tylko dlatego, że draft/publikacja/claim są zablokowane, nie chowaj gotowej pracy review. Powiedz jasno: "kolejkę odświeżenia można przygotować teraz; finalny draft i publikacja są zablokowane".
+
+Jeżeli odpowiadasz w ustrukturyzowanym JSON eval albo krótkim handoffie, widoczne pola decyzyjne (`operator_next_step`, `recommendations[].label_pl`, `action_candidates[].label_pl`) muszą zawierać etykiety `Mapa decyzji` i `Brief do pokazania Wilkowi`, a nie tylko ogólny opis blokad.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

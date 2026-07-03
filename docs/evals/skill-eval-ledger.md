@@ -448,6 +448,14 @@ Focused proof:
   IDs, 4 recommendations, 2 actions and all hard gates true. This keeps
   WordPress publish/final article/measurement success blocked while giving
   Wilku a concrete review packet for one content session.
+- Follow-up Content Strategist proof: `wilq-content-strategist` first
+  re-evaluated at 8/10, then the strategy target was tightened to 9+ by
+  requiring `Mapa decyzji` and `Brief do pokazania Wilkowi`. The passing 9/10
+  proof is `.local-lab/evals/codex-skill/20260703T122515Z` with
+  `operator_usefulness_score=9`, `blocked=true`, `failure_tags=[]`, 11
+  evidence IDs, 4 recommendations, 2 actions and all hard gates true. This
+  keeps final draft/publish claims blocked while making BDO vs Zielony Ład vs
+  GA4 measurement gaps understandable as a content decision map.
 
 Interpretation:
 

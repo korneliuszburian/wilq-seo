@@ -358,11 +358,14 @@
     ],
     "required_decision_terms_pl": [
       "Można zrobić teraz",
+      "Mapa decyzji",
+      "Brief do pokazania Wilkowi",
       "Zablokowane",
       "odświeżenie",
       "scalenie",
       "nie jako nowy artykuł"
     ],
+    "minimum_operator_usefulness_score": 9,
     "expected_action_ids": [
       "act_prepare_content_refresh_queue"
     ],
