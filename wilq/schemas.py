@@ -790,6 +790,7 @@ class ActionApplyResult(BaseModel):
     audit_event: AuditEvent
     mutation_audit: ActionMutationAuditRecord
     errors: list[str] = Field(default_factory=list)
+    adapter_result: dict[str, Any] | None = None
 
 
 class ActionPreviewRequest(BaseModel):

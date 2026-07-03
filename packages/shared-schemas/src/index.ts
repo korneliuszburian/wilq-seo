@@ -399,7 +399,8 @@ export const ActionApplyResultSchema = z.object({
   status_label: z.string().default(""),
   audit_event: AuditEventSchema,
   mutation_audit: ActionMutationAuditRecordSchema,
-  errors: z.array(z.string())
+  errors: z.array(z.string()),
+  adapter_result: z.record(z.string(), z.unknown()).nullable().optional()
 });
 
 export const ActionPreviewRequestSchema = z.object({

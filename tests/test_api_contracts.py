@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+import wilq.actions.service as action_service
 from apps.api.wilq_api.context_compaction import (
     compact_audit_event_for_daily_context,
     compact_audit_event_for_skill_context,
@@ -1471,6 +1472,94 @@ def test_apply_ready_action_blocks_without_mutation_adapter(
         result.model_dump(mode="json"),
         ensure_ascii=False,
     )
+
+
+def test_apply_ready_action_blocks_when_adapter_executor_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.setenv(key, "configured")
+    monkeypatch.setattr(
+        action_service,
+        "_supported_mutation_adapter",
+        lambda _action: "synthetic_google_ads_adapter",
+    )
+    action = ActionObject(
+        id="act_synthetic_apply_ready_with_adapter",
+        title="Synthetic apply-ready action with adapter",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.apply,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_synthetic_apply_ready"],
+        metrics=[
+            MetricFact(
+                name="cost_micros",
+                value=1000,
+                period="last_7_days",
+                source_connector="google_ads",
+                evidence_id="ev_synthetic_apply_ready",
+            )
+        ],
+        human_diagnosis="Synthetic action that should not apply without executor.",
+        recommended_reason="Regression guard for adapter execution boundary.",
+        payload={
+            "action_type": "synthetic_google_ads_mutation",
+            "apply_allowed": True,
+            "destructive": False,
+            "payload_preview": [
+                {
+                    "operation_type": "SyntheticOperation",
+                    "apply_allowed": True,
+                    "required_validation": ["human_confirm_before_apply"],
+                }
+            ],
+        },
+        validation_status="valid",
+        created_by="test",
+        audit_events=[
+            AuditEvent(
+                id="audit_preview",
+                action_id="act_synthetic_apply_ready_with_adapter",
+                event_type="action_preview_generated",
+                actor="operator_test",
+                summary="Preview generated.",
+                evidence_ids=["ev_synthetic_apply_ready"],
+            ),
+            AuditEvent(
+                id="audit_confirm",
+                action_id="act_synthetic_apply_ready_with_adapter",
+                event_type="action_apply_confirmed",
+                actor="operator_test",
+                summary="Preview confirmed.",
+                evidence_ids=["ev_synthetic_apply_ready"],
+            ),
+            AuditEvent(
+                id="audit_impact",
+                action_id="act_synthetic_apply_ready_with_adapter",
+                event_type="action_impact_check_completed",
+                actor="operator_test",
+                summary="Impact checked.",
+                evidence_ids=["ev_synthetic_apply_ready"],
+            ),
+        ],
+    )
+
+    result = action_service.apply_action(
+        action,
+        ActionApplyRequest(confirm=True, confirmed_by="operator_test"),
+    )
+
+    assert result.applied is False
+    assert result.status == "blocked"
+    assert result.audit_event.event_type == "apply_blocked"
+    assert result.mutation_audit.status == "blocked"
+    assert result.mutation_audit.mutation_attempted is False
+    assert result.mutation_audit.mutation_adapter == "synthetic_google_ads_adapter"
+    assert result.adapter_result is None
+    result_json = json.dumps(result.model_dump(mode="json"), ensure_ascii=False)
+    assert "synthetic_google_ads_adapter nie ma implementacji wykonania" in result_json
 
 
 def test_action_operator_labels_are_specific(

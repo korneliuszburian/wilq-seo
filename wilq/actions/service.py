@@ -2696,6 +2696,14 @@ def apply_action(
         errors.append("Destrukcyjne zmiany nie są zaimplementowane w Goal 001.")
     if mutation_adapter is None:
         errors.append("Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji.")
+    adapter_result: dict[str, Any] | None = None
+    if not errors and mutation_adapter is not None:
+        adapter_result, adapter_errors = _execute_supported_mutation_adapter(
+            action,
+            mutation_adapter,
+            request,
+        )
+        errors.extend(adapter_errors)
 
     actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
     audit = AuditEvent(
@@ -2726,6 +2734,7 @@ def apply_action(
             audit_event=_audit_event_with_operator_label(audit),
             mutation_audit=mutation_audit,
             errors=errors,
+            adapter_result=adapter_result,
         )
     action.status = ActionStatus.applied
     action.review_gate = _action_review_gate(action)
@@ -2736,6 +2745,7 @@ def apply_action(
         status_label=_action_result_status_label("applied"),
         audit_event=_audit_event_with_operator_label(audit),
         mutation_audit=mutation_audit,
+        adapter_result=adapter_result,
     )
 
 
@@ -2922,6 +2932,15 @@ def _mutation_audit_summary(errors: list[str], mutation_adapter: str | None) -> 
 
 def _supported_mutation_adapter(action: ActionObject) -> str | None:
     return None
+
+
+def _execute_supported_mutation_adapter(
+    action: ActionObject,
+    mutation_adapter: str,
+    request: ActionApplyRequest | None,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    _ = (action, request)
+    return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
 
 
 def _mutation_requirement(

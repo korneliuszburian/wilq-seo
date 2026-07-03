@@ -51,6 +51,10 @@ Date: 2026-07-03
   writes possible, 19 prepare-only actions and 19 missing adapters, so WILQ can
   honestly show "no external write can run yet" while selecting the first safe
   write class to implement.
+- 2026-07-03 `apply_action` now has an executor guard for future mutation
+  adapters. Even if an adapter is later declared, apply remains blocked unless
+  the adapter execution layer returns a redacted success result; focused tests
+  cover the "adapter string exists but executor is missing" regression.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
