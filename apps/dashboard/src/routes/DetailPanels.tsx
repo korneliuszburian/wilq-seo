@@ -191,6 +191,19 @@ function ActionMutationReadinessPanel({
           value={readiness.would_attempt_vendor_write ? "możliwa po confirm" : "nie"}
         />
       </div>
+      {readiness.write_authorization_status ? (
+        <div className="mt-4 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+          <div className="font-semibold text-ink">Autoryzacja write</div>
+          <p className="mt-2">
+            {actionWriteAuthorizationStatusLabel(readiness.write_authorization_status)}
+          </p>
+          {readiness.missing_audit_event_types.length > 0 ? (
+            <p className="mt-1 text-slate-600">
+              Brakuje: {readiness.missing_audit_event_types.join(", ")}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {blockerLabels.length > 0 ? (
         <div className="mt-4 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
           <div className="font-semibold text-ink">Co blokuje zapis</div>
@@ -223,6 +236,16 @@ function ActionMutationReadinessPanel({
       ) : null}
     </section>
   );
+}
+
+function actionWriteAuthorizationStatusLabel(status: string): string {
+  if (status === "available") {
+    return "Write authorization jest gotowe z audytu ActionObject.";
+  }
+  if (status === "audit_actor_mismatch") {
+    return "Audit istnieje, ale nie wskazuje jednego operatora potwierdzającego.";
+  }
+  return "Brakuje pełnego śladu audytu ActionObject przed live write.";
 }
 
 function ReadinessTile({ label, value }: { label: string; value: string }) {

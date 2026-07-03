@@ -1614,6 +1614,12 @@ function actionMutationReadinessFixture(url: string) {
     vendor_write_possible: false,
     would_attempt_vendor_write: false,
     mutation_adapter: null,
+    write_authorization_status: "missing_audit_trace",
+    missing_audit_event_types: [
+      "action_preview_generated",
+      "human_review_*",
+      "action_apply_confirmed"
+    ],
     apply_contract: {
       contract: "action_apply_contract_v1",
       action_id: actionId,
@@ -1722,6 +1728,13 @@ describe("Action detail route", () => {
     expect(screen.getAllByText(/zapis zmian zablokowany/).length).toBeGreaterThan(0);
     expect(screen.getByText("Gotowość zapisu tej akcji")).toBeInTheDocument();
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("Autoryzacja write")).toBeInTheDocument();
+    expect(
+      screen.getByText("Brakuje pełnego śladu audytu ActionObject przed live write.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Brakuje: action_preview_generated, human_review_*, action_apply_confirmed")
+    ).toBeInTheDocument();
     expect(screen.getByText("Co blokuje zapis")).toBeInTheDocument();
     expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
     expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();

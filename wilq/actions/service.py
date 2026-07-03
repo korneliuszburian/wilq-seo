@@ -100,6 +100,7 @@ from wilq.connectors.registry import get_connector_status
 from wilq.content.handoff.wordpress_execution import execute_content_wordpress_draft_handoff
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
+from wilq.content.workflow.contracts import ContentWordPressDraftWriteReadinessResponse
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
@@ -2873,6 +2874,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
     latest_mutation_audit = _latest_mutation_audit(
         _persisted_mutation_audits_for_action(action.id)
     )
+    wordpress_draft_readiness = _wordpress_draft_write_readiness(action)
     requirements = [
         _mutation_requirement(
             code="valid_action",
@@ -2942,7 +2944,12 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         ),
     ]
     requirements.extend(_wordpress_draft_execution_readiness_requirements(action))
-    requirements.extend(_wordpress_draft_write_readiness_requirements(action))
+    requirements.extend(
+        _wordpress_draft_write_readiness_requirements(
+            action,
+            wordpress_draft_readiness=wordpress_draft_readiness,
+        )
+    )
     blockers = _mutation_readiness_blockers(requirements)
     vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
     ready_to_request_apply = not blockers
@@ -2967,6 +2974,12 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         target_candidate_id=target.get("candidate_id"),
         target_label=target.get("label"),
         target_url=target.get("url"),
+        write_authorization_status=wordpress_draft_readiness.write_authorization_status
+        if wordpress_draft_readiness is not None
+        else None,
+        missing_audit_event_types=wordpress_draft_readiness.missing_audit_event_types
+        if wordpress_draft_readiness is not None
+        else [],
         requirements=requirements,
         blockers=blockers,
         operator_next_step=_mutation_readiness_next_step(blockers),
@@ -3189,10 +3202,14 @@ def _vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -
 
 def _wordpress_draft_write_readiness_requirements(
     action: ActionObject,
+    *,
+    wordpress_draft_readiness: ContentWordPressDraftWriteReadinessResponse | None = None,
 ) -> list[ActionMutationReadinessRequirement]:
     if action.id != "act_apply_wordpress_draft_handoff":
         return []
-    readiness = build_content_wordpress_draft_write_readiness_response(action_id=action.id)
+    readiness = wordpress_draft_readiness or build_content_wordpress_draft_write_readiness_response(
+        action_id=action.id
+    )
     authorization_ready = readiness.suggested_write_authorization is not None
     blocker_codes = ", ".join(blocker.code for blocker in readiness.blockers[:4]) or None
     return [
@@ -3221,6 +3238,14 @@ def _wordpress_draft_write_readiness_requirements(
             evidence="ready" if authorization_ready else "missing",
         ),
     ]
+
+
+def _wordpress_draft_write_readiness(
+    action: ActionObject,
+) -> ContentWordPressDraftWriteReadinessResponse | None:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return None
+    return build_content_wordpress_draft_write_readiness_response(action_id=action.id)
 
 
 def _wordpress_draft_execution_readiness_requirements(

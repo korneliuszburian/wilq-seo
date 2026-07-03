@@ -87,6 +87,12 @@ def test_action_mutation_readiness_exposes_blocked_wordpress_apply_action(
     assert data["target_candidate_id"]
     assert data["target_label"]
     assert data["target_url"].startswith("https://")
+    assert data["write_authorization_status"] == "missing_audit_trace"
+    assert data["missing_audit_event_types"] == [
+        "action_preview_generated",
+        "human_review_*",
+        "action_apply_confirmed",
+    ]
     blocker_codes = [blocker["code"] for blocker in data["blockers"]]
     requirement_codes = {requirement["code"] for requirement in data["requirements"]}
     assert "missing_apply_mode" not in blocker_codes
@@ -236,6 +242,12 @@ def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     assert data["first_write_candidate"]["vendor_write_possible"] is False
     assert data["first_write_candidate"]["mutation_adapter"] == "wordpress_draft_execution_boundary"
     assert data["first_write_candidate"]["target_label"]
+    assert data["first_write_candidate"]["write_authorization_status"] == "missing_audit_trace"
+    assert data["first_write_candidate"]["missing_audit_event_types"] == [
+        "action_preview_generated",
+        "human_review_*",
+        "action_apply_confirmed",
+    ]
     assert data["first_write_candidate"]["apply_contract"]["adapter_status"] == "implemented"
     assert "WordPress draft-only" in data["first_write_candidate_reason"]
     assert any("draft-only" in step for step in data["activation_plan_steps"])

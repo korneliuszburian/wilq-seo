@@ -359,6 +359,12 @@ Date: 2026-07-03
   proof after restart reports `ready=false`, env write disabled, REST ready,
   `missing_audit_trace` and missing preview/review/confirm events; no suggested
   authorization or vendor write is enabled.
+- ActionObject mutation readiness now consumes the same WordPress draft audit
+  readiness fields. Live `/api/actions/act_apply_wordpress_draft_handoff/
+  mutation-readiness` and aggregate first write candidate both report
+  `write_authorization_status=missing_audit_trace`, missing preview/review/
+  confirm events, `vendor_write_possible=false` and
+  `would_attempt_vendor_write=false`.
 - 2026-07-03 source fact coverage audit now reports the operator value of
   private `ekologus-ai` proposals, not only the backlog. Live audit: 5 private
   proposals, 5 with blocked claims, 5 with CTA patterns, 5 with buyer/problem

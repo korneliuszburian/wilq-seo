@@ -620,6 +620,12 @@ class ActionMutationReadinessResponse(BaseModel):
     target_candidate_id: str | None = None
     target_label: str | None = None
     target_url: str | None = None
+    write_authorization_status: Literal[
+        "missing_audit_trace",
+        "audit_actor_mismatch",
+        "available",
+    ] | None = None
+    missing_audit_event_types: list[str] = Field(default_factory=list)
     requirements: list[ActionMutationReadinessRequirement] = Field(default_factory=list)
     blockers: list[ActionMutationReadinessBlocker] = Field(default_factory=list)
     operator_next_step: str
