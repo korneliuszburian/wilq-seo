@@ -195,8 +195,12 @@
       "częściowe dane zapytań i adresów",
       "sygnał do ręcznej oceny",
       "nie gotowa decyzja publikacyjna",
-      "co sprawdzić ręcznie"
+      "co sprawdzić ręcznie",
+      "Mapa decyzji",
+      "Jak sprawdzić na stronie",
+      "Brief do pokazania Wilkowi"
     ],
+    "minimum_operator_usefulness_score": 9,
     "forbidden_connectors": [
       "ahrefs"
     ],

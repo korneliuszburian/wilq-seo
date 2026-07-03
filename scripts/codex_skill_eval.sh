@@ -341,6 +341,11 @@ Oczekiwane connector surfaces: {connectors}
   z niepustym `action_id`. Dla bramek workflow, endpointów check-only albo
   kroków bez `action_id` używaj `pending_validation`, `blocked` albo `missing`.
 - Wszystkie wartości opisowe dla operatora zwróć po polsku z polskimi znakami.
+- Jeżeli case wymaga terminów decyzyjnych, umieść je w widocznych polach
+  decyzji: `operator_next_step`, `recommendations[].label_pl`,
+  `recommendations[].blocked_reason`, `action_candidates[].label_pl` albo
+  `action_candidates[].blocked_reason`. Nie chowaj wymaganych etykiet wyłącznie
+  w `notes` lub technicznym śladzie.
 - Identyfikatory endpointów, connectorów, dowodów, szans i akcji zostaw w
   polach technicznych bez tłumaczenia, ale nie używaj ich jako widocznych
   etykiet dla operatora.

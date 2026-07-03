@@ -421,14 +421,18 @@ Focused proof:
   `operator_usefulness_score=7`, `blocked=true`, `failure_tags=[]`, 6 evidence
   IDs, 4 recommendations, 2 actions and all hard gates true. The coverage map
   now reports `strong_skill_count=3`.
-- Follow-up GSC content proof: `wilq-gsc-content-doctor` first scored 7 but
-  failed the deterministic decision-term check because visible output omitted
-  the exact section label `Co sprawdzić ręcznie`. The skill/reference contract
-  now require that label, and the passing eval at
-  `.local-lab/evals/codex-skill/20260703T115305Z` has
-  `operator_usefulness_score=7`, `blocked=false`, `failure_tags=[]`, 6
-  evidence IDs, 1 recommendation, 1 action and all hard gates true. The
-  coverage map now reports `strong_skill_count=4`.
+- Follow-up GSC content proof: `wilq-gsc-content-doctor` first scored 7, then
+  the SEO/content diagnostic target was tightened to 9+ by requiring visible
+  `Mapa decyzji`, `Jak sprawdzić na stronie` and
+  `Brief do pokazania Wilkowi` decision terms. The first 9/10 artifact
+  had the right score but failed because one required label was hidden from
+  actionable output; the harness now tells Codex to place required decision
+  terms in visible decision fields. The passing 9/10 proof is
+  `.local-lab/evals/codex-skill/20260703T123952Z` with
+  `operator_usefulness_score=9`, `blocked=false`, `failure_tags=[]`, 5
+  evidence IDs, 4 recommendations, 1 action and all hard gates true. The
+  output gives the operator a concrete URL/topic review, latest available GSC
+  day, partial query/page caveat, page-check list and Wilku-facing brief.
 - Follow-up Ads Doctor proof: `wilq-ads-doctor` first re-evaluated at 8/10,
   then the core workflow target was tightened to 9+ by requiring visible
   `Jak sprawdzić` and `Decyzja po review` decision terms. The passing 9/10

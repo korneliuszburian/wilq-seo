@@ -20,14 +20,17 @@ Wymagane źródła danych:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od krótkiej decyzji operatorskiej, a nie od surowego raportu API. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Dlaczego`, `Co sprawdzić ręcznie` i `Zablokowane`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od krótkiej decyzji operatorskiej, a nie od surowego raportu API. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Dlaczego`, `Mapa decyzji`, `Co sprawdzić ręcznie`, `Jak sprawdzić na stronie`, `Brief do pokazania Wilkowi` i `Zablokowane`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
 1. `Można zrobić teraz`: jedna bezpieczna decyzja lub akcja do sprawdzenia, np. która strona/temat idzie do ręcznej oceny refresh/merge/create/block.
 2. `Dlaczego`: jednozdaniowe uzasadnienie z WILQ API, np. GSC pokazuje sygnał zapytań/adresu, a WordPress potwierdza istniejący URL lub brak inventory.
-3. `Co sprawdzić ręcznie`: użyj dokładnie tej etykiety. Wypisz krótką checklistę: intencja zapytań, nagłówki/CTA, kanibalizacja/duplikacja, canonical/inventory i decyzja odświeżyć vs scalić vs utworzyć.
-4. `Zablokowane`: co nie jest gotową decyzją publikacyjną, jakich claims nie wolno powiedzieć i czego brakuje do zapisu albo publikacji.
-5. `Ślad techniczny`: identyfikatory dowodów, źródeł danych, tactical queue item IDs i identyfikatory akcji, szczególnie `act_prepare_content_refresh_queue`, jeśli są dostępne. Surowe endpointy i walidacje pokazuj tu, nie na początku odpowiedzi.
+3. `Mapa decyzji`: wskaż tryb decyzji (`odświeżyć`, `scalić`, `utworzyć` albo `zablokować`), URL albo temat, poziom gotowości i powód z kolejki WILQ.
+4. `Co sprawdzić ręcznie`: użyj dokładnie tej etykiety. Wypisz krótką checklistę: intencja zapytań, nagłówki/CTA, kanibalizacja/duplikacja, canonical/inventory i decyzja odświeżyć vs scalić vs utworzyć.
+5. `Jak sprawdzić na stronie`: podaj konkretny przegląd strony: title/meta, H1/H2, brakujące sekcje pod intencję, CTA/usługa, canonical i linkowanie wewnętrzne.
+6. `Brief do pokazania Wilkowi`: 3-5 zdań bez technicznego żargonu: co WILQ proponuje, z czego to wynika, co jest tylko sygnałem i jaka decyzja review jest potrzebna.
+7. `Zablokowane`: co nie jest gotową decyzją publikacyjną, jakich claims nie wolno powiedzieć i czego brakuje do zapisu albo publikacji.
+8. `Ślad techniczny`: identyfikatory dowodów, źródeł danych, tactical queue item IDs i identyfikatory akcji, szczególnie `act_prepare_content_refresh_queue`, jeśli są dostępne. Surowe endpointy i walidacje pokazuj tu, nie na początku odpowiedzi.
 
 ## Warunki odmowy lub obniżenia do blokady
 
