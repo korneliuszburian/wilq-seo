@@ -4,6 +4,7 @@ import type { ContentWorkItem } from "@wilq/shared-schemas";
 import {
   actionApiPath,
   getActionMutationReadiness,
+  getActionsMutationReadiness,
   getContentKnowledgeCards,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
@@ -175,6 +176,46 @@ const responseByPath: Record<string, unknown> = {
     source_connectors: ["google_ads"],
     latest_mutation_audit_id: null,
     latest_mutation_audit_status: null
+  },
+  "/api/actions/mutation-readiness": {
+    response_type: "action_mutation_readiness_summary",
+    contract: "action_mutation_readiness_summary_v1",
+    action_count: 1,
+    ready_to_request_apply_count: 0,
+    vendor_write_possible_count: 0,
+    would_attempt_vendor_write_count: 0,
+    prepare_only_count: 1,
+    missing_adapter_count: 1,
+    high_risk_blocked_count: 0,
+    top_blockers: ["missing_mutation_adapter"],
+    operator_next_step: "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live.",
+    items: [
+      {
+        response_type: "action_mutation_readiness",
+        contract: "action_mutation_readiness_v1",
+        action_id: "act_prepare_ads_campaign_review_queue",
+        title: "Przygotuj kolejkę przeglądu kampanii Google Ads",
+        connector: "google_ads",
+        connector_label: "Google Ads",
+        mode: "prepare",
+        mode_label: "przygotowanie",
+        risk: "medium",
+        risk_label: "średnie",
+        validation_status: "valid",
+        review_gate_status: "validated_prepare_only",
+        ready_to_request_apply: false,
+        vendor_write_possible: false,
+        would_attempt_vendor_write: false,
+        mutation_adapter: null,
+        requirements: [],
+        blockers: [],
+        operator_next_step: "Użyj jej do review albo dodaj osobny apply-capable ActionObject.",
+        evidence_ids: ["ev_connector_google_ads_status"],
+        source_connectors: ["google_ads"],
+        latest_mutation_audit_id: null,
+        latest_mutation_audit_status: null
+      }
+    ]
   }
 };
 
@@ -224,6 +265,26 @@ describe("content workflow API helpers", () => {
     expect(readiness.blockers[0]?.code).toBe("missing_mutation_adapter");
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/actions/act%2Funsafe%3Fx%3D1/mutation-readiness"
+    ]);
+  });
+
+  it("gets the action mutation readiness summary through a typed helper", async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      const path = new URL(String(url)).pathname;
+      return {
+        ok: true,
+        json: async () => responseByPath[path]
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const readiness = await getActionsMutationReadiness();
+
+    expect(readiness.response_type).toBe("action_mutation_readiness_summary");
+    expect(readiness.vendor_write_possible_count).toBe(0);
+    expect(readiness.items[0]?.action_id).toBe("act_prepare_ads_campaign_review_queue");
+    expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+      "/api/actions/mutation-readiness"
     ]);
   });
 

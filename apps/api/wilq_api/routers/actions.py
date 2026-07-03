@@ -17,6 +17,7 @@ from wilq.actions.service import (
     impact_check_action,
     list_actions,
     mutation_readiness_action,
+    mutation_readiness_actions,
     preview_action,
     record_action_review,
     validate_action,
@@ -27,6 +28,7 @@ from wilq.schemas import (
     ActionImpactCheckRequest,
     ActionMutationAuditRecord,
     ActionMutationReadinessResponse,
+    ActionMutationReadinessSummaryResponse,
     ActionPreviewRequest,
     ActionReviewRequest,
     AdsStrategyReviewRecord,
@@ -42,6 +44,13 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
     @router.get("/api/actions")
     def actions() -> list[dict[str, Any]]:
         return [action.model_dump(mode="json") for action in list_actions()]
+
+    @router.get(
+        "/api/actions/mutation-readiness",
+        response_model=ActionMutationReadinessSummaryResponse,
+    )
+    def actions_mutation_readiness() -> ActionMutationReadinessSummaryResponse:
+        return mutation_readiness_actions()
 
     @router.get("/api/actions/{action_id}")
     def action_detail(action_id: str) -> dict[str, Any]:

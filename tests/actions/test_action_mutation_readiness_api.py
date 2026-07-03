@@ -17,6 +17,14 @@ def _get_mutation_readiness(action_id: str) -> dict[str, Any]:
     return data
 
 
+def _get_mutation_readiness_summary() -> dict[str, Any]:
+    response = TestClient(app).get("/api/actions/mutation-readiness")
+    assert response.status_code == 200
+    data = cast(dict[str, Any], response.json())
+    assert data["response_type"] == "action_mutation_readiness_summary"
+    return data
+
+
 def test_action_mutation_readiness_blocks_prepare_only_action(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "actions.sqlite3"))
 
@@ -37,6 +45,23 @@ def test_action_mutation_readiness_blocks_prepare_only_action(monkeypatch, tmp_p
         for requirement in data["requirements"]
     )
     assert "validate" in data["operator_next_step"]
+
+
+def test_action_mutation_readiness_summary_reports_no_vendor_writes(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "actions_summary.sqlite3"))
+
+    data = _get_mutation_readiness_summary()
+
+    assert data["action_count"] >= 1
+    assert data["vendor_write_possible_count"] == 0
+    assert data["would_attempt_vendor_write_count"] == 0
+    assert data["missing_adapter_count"] == data["action_count"]
+    assert "missing_mutation_adapter" in data["top_blockers"]
+    assert data["items"][0]["response_type"] == "action_mutation_readiness"
+    assert "adapter" in data["operator_next_step"]
 
 
 def test_action_mutation_readiness_returns_404_for_unknown_action() -> None:

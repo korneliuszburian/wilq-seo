@@ -605,6 +605,25 @@ class ActionMutationReadinessResponse(BaseModel):
     latest_mutation_audit_status: Literal["blocked", "applied", "failed"] | None = None
 
 
+class ActionMutationReadinessSummaryResponse(BaseModel):
+    response_type: Literal["action_mutation_readiness_summary"] = (
+        "action_mutation_readiness_summary"
+    )
+    contract: Literal["action_mutation_readiness_summary_v1"] = (
+        "action_mutation_readiness_summary_v1"
+    )
+    action_count: int = 0
+    ready_to_request_apply_count: int = 0
+    vendor_write_possible_count: int = 0
+    would_attempt_vendor_write_count: int = 0
+    prepare_only_count: int = 0
+    missing_adapter_count: int = 0
+    high_risk_blocked_count: int = 0
+    top_blockers: list[str] = Field(default_factory=list)
+    operator_next_step: str
+    items: list[ActionMutationReadinessResponse] = Field(default_factory=list)
+
+
 ActionReviewOutcome = Literal[
     "approved_for_prepare",
     "needs_changes",

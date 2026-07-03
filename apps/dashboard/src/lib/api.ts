@@ -3,6 +3,7 @@ import {
   ActionConfirmResultSchema,
   ActionImpactCheckResultSchema,
   ActionMutationReadinessResponseSchema,
+  ActionMutationReadinessSummaryResponseSchema,
   ActionPreviewResultSchema,
   ActionReviewResultSchema,
   ActionValidationResultSchema,
@@ -68,6 +69,7 @@ import {
   type ActionImpactCheckRequest,
   type ActionImpactCheckResult,
   type ActionMutationReadinessResponse,
+  type ActionMutationReadinessSummaryResponse,
   type ActionPreviewCardViewModel,
   type ActionPreviewResult,
   type ActionReviewRequest,
@@ -251,6 +253,13 @@ export function getActionMutationReadiness(
   return apiGet(
     `/api/actions/${encodeURIComponent(actionId)}/mutation-readiness`,
     ActionMutationReadinessResponseSchema
+  );
+}
+
+export function getActionsMutationReadiness(): Promise<ActionMutationReadinessSummaryResponse> {
+  return apiGet(
+    "/api/actions/mutation-readiness",
+    ActionMutationReadinessSummaryResponseSchema
   );
 }
 

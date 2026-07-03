@@ -377,6 +377,21 @@ export const ActionMutationReadinessResponseSchema = z.object({
   latest_mutation_audit_status: z.enum(["blocked", "applied", "failed"]).nullable().optional()
 });
 
+export const ActionMutationReadinessSummaryResponseSchema = z.object({
+  response_type: z.literal("action_mutation_readiness_summary"),
+  contract: z.literal("action_mutation_readiness_summary_v1"),
+  action_count: z.number().int().nonnegative().default(0),
+  ready_to_request_apply_count: z.number().int().nonnegative().default(0),
+  vendor_write_possible_count: z.number().int().nonnegative().default(0),
+  would_attempt_vendor_write_count: z.number().int().nonnegative().default(0),
+  prepare_only_count: z.number().int().nonnegative().default(0),
+  missing_adapter_count: z.number().int().nonnegative().default(0),
+  high_risk_blocked_count: z.number().int().nonnegative().default(0),
+  top_blockers: z.array(z.string()).default([]),
+  operator_next_step: z.string(),
+  items: z.array(ActionMutationReadinessResponseSchema).default([])
+});
+
 export const ActionApplyResultSchema = z.object({
   action_id: z.string(),
   applied: z.boolean(),
@@ -3655,6 +3670,9 @@ export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema
 export type ActionMutationAuditRecord = z.infer<typeof ActionMutationAuditRecordSchema>;
 export type ActionMutationReadinessResponse = z.infer<
   typeof ActionMutationReadinessResponseSchema
+>;
+export type ActionMutationReadinessSummaryResponse = z.infer<
+  typeof ActionMutationReadinessSummaryResponseSchema
 >;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
 export type ActionPreviewRequest = z.infer<typeof ActionPreviewRequestSchema>;

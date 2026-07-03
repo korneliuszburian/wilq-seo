@@ -46,6 +46,11 @@ Date: 2026-07-03
   actions are valid but prepare-only, with vendor write blocked by missing
   apply mode, preview/confirmation/impact audit and mutation adapter. This lets
   WILQ expose real write readiness before adding any Ads vendor-write adapter.
+- 2026-07-03 aggregate mutation readiness is now API-owned at
+  `/api/actions/mutation-readiness`. Live smoke reports 19 actions, 0 vendor
+  writes possible, 19 prepare-only actions and 19 missing adapters, so WILQ can
+  honestly show "no external write can run yet" while selecting the first safe
+  write class to implement.
 - 2026-07-03 skill ceremony reduction completed for the current slice: WILQ
   skills now start from narrow API-owned view models and answer the marketer
   decision directly. Output references, smoke scripts and context-pack
