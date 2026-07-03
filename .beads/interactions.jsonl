@@ -469,3 +469,6 @@
 {"id":"int-3bb24b64","kind":"field_change","created_at":"2026-07-03T18:42:06.290939063Z","actor":"korneliuszburian","issue_id":"wilq-seo-kify","extra":{"field":"status","new_value":"in_progress","old_value":"open"}}
 {"id":"int-1d396757","kind":"field_change","created_at":"2026-07-03T18:42:06.291031367Z","actor":"korneliuszburian","issue_id":"wilq-seo-kify","extra":{"field":"assignee","new_value":"korneliuszburian","old_value":""}}
 {"id":"int-e373b99b","kind":"field_change","created_at":"2026-07-03T18:44:22.840474247Z","actor":"korneliuszburian","issue_id":"wilq-seo-kify","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"done"}}
+{"id":"int-46620f95","kind":"field_change","created_at":"2026-07-03T18:45:32.481864816Z","actor":"korneliuszburian","issue_id":"wilq-seo-vnyy","extra":{"field":"status","new_value":"in_progress","old_value":"open"}}
+{"id":"int-f0f0d098","kind":"field_change","created_at":"2026-07-03T18:45:32.481963372Z","actor":"korneliuszburian","issue_id":"wilq-seo-vnyy","extra":{"field":"assignee","new_value":"korneliuszburian","old_value":""}}
+{"id":"int-ddd30270","kind":"field_change","created_at":"2026-07-03T18:47:48.84356496Z","actor":"korneliuszburian","issue_id":"wilq-seo-vnyy","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"done"}}

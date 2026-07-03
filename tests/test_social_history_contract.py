@@ -197,3 +197,40 @@ def test_social_history_inventory_endpoint_exposes_public_discovery_seed(
     assert payload["discovery_seeds"][0]["source_url"] == EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL
     assert payload["discovery_seeds"][0]["safe_collection_mode"] == "metadata_only"
     assert payload["discovery_seeds"][0]["raw_post_body_allowed"] is False
+
+
+def test_social_history_inventory_audit_endpoint_accepts_metadata_only_history() -> None:
+    response = client.post(
+        "/api/social/history-inventory/audit",
+        json=social_history_input_example(),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["contract"] == "social_history_inventory_v1"
+    assert payload["read_only"] is True
+    assert payload["status"] == "review_ready"
+    assert payload["channel_counts"] == {"facebook": 1, "linkedin": 1}
+    assert payload["duplicate_free_claim_allowed"] is False
+    assert payload["publish_allowed"] is False
+    assert "bez powtórek" in payload["operator_next_step"]
+
+
+def test_social_history_inventory_audit_endpoint_rejects_raw_fields() -> None:
+    example = social_history_input_example()
+    example["items"][0]["raw_post_body"] = "Pełna treść posta"  # type: ignore[index]
+    example["items"] = [example["items"][0]]  # type: ignore[index]
+
+    response = client.post(
+        "/api/social/history-inventory/audit",
+        json=example,
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "invalid"
+    assert payload["item_count"] == 0
+    assert payload["duplicate_free_claim_allowed"] is False
+    assert payload["publish_allowed"] is False
+    assert any("raw_post_body" in error for error in payload["errors"])
+    assert payload["missing_required_sources"] == ["linkedin", "facebook"]

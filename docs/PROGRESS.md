@@ -539,6 +539,12 @@ live API status later contradicts this state.
   `discovery_seed`, and `wilq-social-publisher` smoke passed with
   `direct_inventory_seed_count=1`; non-interactive eval passed at
   `.local-lab/evals/codex-skill/20260702T205202Z`.
+- Social history metadata review is now API-owned, not only script-owned.
+  `POST /api/social/history-inventory/audit` validates metadata-only
+  LinkedIn/Facebook history, rejects raw post/comment/private fields and still
+  returns `duplicate_free_claim_allowed=false` plus `publish_allowed=false`.
+  Live smoke on 2026-07-03 returned `review_ready` for complete metadata and
+  `invalid` for a payload containing `raw_post_body`.
 - Pre-demo gate proof after the latest Goal 005 slices:
   `rtk scripts/pre_demo_gate.sh` passed on 2026-07-02. It verified the managed
   local stack, API health, live contracts, dashboard usefulness, source fact

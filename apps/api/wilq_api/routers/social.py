@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from typing import Any
+
+from fastapi import APIRouter, Body
 
 from wilq.connectors.registry import list_connector_statuses
-from wilq.social.history import SocialHistoryInventory, build_social_history_inventory
+from wilq.social.history import (
+    SocialHistoryImportAudit,
+    SocialHistoryInventory,
+    audit_social_history_metadata_payload,
+    build_social_history_inventory,
+)
 
 router = APIRouter()
+SOCIAL_HISTORY_AUDIT_BODY = Body(...)
 
 
 @router.get(
@@ -25,3 +33,13 @@ def social_history_inventory() -> SocialHistoryInventory:
         connector_status_by_id,
         missing_publish_access,
     )
+
+
+@router.post(
+    "/api/social/history-inventory/audit",
+    response_model=SocialHistoryImportAudit,
+)
+def social_history_inventory_audit(
+    payload: Any = SOCIAL_HISTORY_AUDIT_BODY,  # noqa: ANN401 - accepts arbitrary JSON.
+) -> SocialHistoryImportAudit:
+    return audit_social_history_metadata_payload(payload)

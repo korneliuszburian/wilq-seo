@@ -35,6 +35,7 @@ import {
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
   MerchantDiagnosticsResponseSchema,
+  SocialHistoryImportAuditSchema,
   SocialHistoryInventorySchema,
   SocialHistoryInventorySourceSchema,
   WordPressAuthoringProfileSchema
@@ -103,6 +104,49 @@ describe("SocialHistoryInventorySourceSchema", () => {
       SocialHistoryInventorySourceSchema.safeParse({
         ...validSource,
         raw_post_body_allowed: true
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("SocialHistoryImportAuditSchema", () => {
+  it("keeps social history audit read-only and blocks publish claims", () => {
+    const validAudit = {
+      contract: "social_history_inventory_v1",
+      read_only: true,
+      status: "review_ready",
+      item_count: 2,
+      channel_counts: { facebook: 1, linkedin: 1 },
+      missing_required_sources: [],
+      required_metadata_fields: [
+        "channel",
+        "published_at",
+        "topic",
+        "service",
+        "claim",
+        "cta",
+        "format",
+        "post_url_or_id",
+        "source_evidence_id"
+      ],
+      forbidden_metadata_fields: ["raw_post_body", "comments", "access_token"],
+      errors: [],
+      duplicate_free_claim_allowed: false,
+      publish_allowed: false,
+      operator_next_step: "Przekaż metadata-only historię do review dedupe."
+    };
+
+    expect(SocialHistoryImportAuditSchema.safeParse(validAudit).success).toBe(true);
+    expect(
+      SocialHistoryImportAuditSchema.safeParse({
+        ...validAudit,
+        publish_allowed: true
+      }).success
+    ).toBe(false);
+    expect(
+      SocialHistoryImportAuditSchema.safeParse({
+        ...validAudit,
+        duplicate_free_claim_allowed: true
       }).success
     ).toBe(false);
   });

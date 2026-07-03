@@ -3449,6 +3449,21 @@ export const SocialHistoryInventorySchema = z.object({
   operator_next_step: z.string()
 });
 
+export const SocialHistoryImportAuditSchema = z.object({
+  contract: z.literal("social_history_inventory_v1"),
+  read_only: z.literal(true),
+  status: z.enum(["invalid", "review_ready"]),
+  item_count: z.number(),
+  channel_counts: z.record(z.string(), z.number()),
+  missing_required_sources: z.array(z.enum(["linkedin", "facebook"])),
+  required_metadata_fields: z.array(z.string()),
+  forbidden_metadata_fields: z.array(z.string()),
+  errors: z.array(z.string()),
+  duplicate_free_claim_allowed: z.literal(false),
+  publish_allowed: z.literal(false),
+  operator_next_step: z.string()
+});
+
 const WordPressAuthoringReadinessSchema = z.enum([
   "available",
   "configured",
