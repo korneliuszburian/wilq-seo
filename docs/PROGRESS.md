@@ -36,6 +36,10 @@ Date: 2026-07-04
   review packet at 7.5/10, keeps Goal 005 blocked on real Wilku UAT or owner
   defer, and moved technical IDs/language lower in
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
+- 2026-07-04 source fact coverage audit now exposes private `ekologus-ai`
+  proposal trace metadata: data classes, source block refs, eval case IDs,
+  retention/deletion state and redaction, while still blocking promotion to
+  final content knowledge before owner review.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

@@ -53,6 +53,18 @@ def test_source_fact_coverage_audit_reports_current_goal_005_backlog() -> None:
     assert all(item["action_id"] for item in report["review_action_queue"])
     assert all(item["decision_options"] for item in report["review_action_queue"])
     assert all(not item["promotion_allowed"] for item in report["private_review_queue"])
+    assert all(item["data_classes"] for item in report["private_review_queue"])
+    assert all(item["source_block_refs"] for item in report["private_review_queue"])
+    assert all(item["eval_case_ids"] for item in report["private_review_queue"])
+    assert all(item["deletion_path"] for item in report["private_review_queue"])
+    assert all(item["retention_decision"] for item in report["private_review_queue"])
+    assert all(item["redacted"] is True for item in report["private_review_queue"])
+    assert all(item["source_trace_ready"] is True for item in report["private_review_queue"])
+    assert any(
+        "goal_005_private" in eval_case_id
+        for item in report["private_review_queue"]
+        for eval_case_id in item["eval_case_ids"]
+    )
     assert report["blockers"]
 
 
@@ -98,6 +110,22 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
                 "scope": "claim_policy",
                 "target_card_title": "Styl marki",
                 "risk_tier": "high",
+                "data_classes": [
+                    "brand_policy",
+                    "legal_or_claim_policy",
+                    "internal_operational",
+                ],
+                "source_block_refs": ["KB_014_STYL_MARKI"],
+                "eval_case_ids": [
+                    "goal_005_private_claim_policy_review",
+                    "goal_006_claim_ledger_gate",
+                ],
+                "retention_decision": "pending_owner_decision",
+                "deletion_path": [
+                    "Odrzuć redacted proposal w Service Profile review.",
+                    "Nie kompiluj knowledge card.",
+                ],
+                "redacted": True,
                 "safe_next_step": "Sprawdź zasady claimów z reviewerem.",
             }
         ],
@@ -136,6 +164,13 @@ def test_source_fact_coverage_markdown_is_wilku_readable() -> None:
     assert "Prywatne propozycje dają materiał do oceny" in markdown
     assert "konkretniejsze CTA i buyer trigger" in markdown
     assert "| 1 | polityka twierdzeń | Styl marki | wysokie |" in markdown
+    assert "## Ślad źródłowy prywatnych propozycji" in markdown
+    assert "To jest trace do oceny źródeł, nie zgoda na promocję wiedzy" in markdown
+    assert "brand_policy, legal_or_claim_policy, internal_operational" in markdown
+    assert "KB_014_STYL_MARKI" in markdown
+    assert "goal_005_private_claim_policy_review" in markdown
+    assert "decyzja właściciela wymagana" in markdown
+    assert "zredagowane" in markdown
     assert "## Konkretne decyzje do oceny" in markdown
     assert "`service_profile_review_card_ekologus_service_bdo_reporting`" in markdown
     assert "zatwierdź, wróć z poprawkami, oznacz jako nieaktualne, odrzuć" in markdown

@@ -227,6 +227,40 @@ def render_markdown(report: dict[str, Any]) -> str:
                 next_step=_markdown_cell(_operator_text(item["safe_next_step"])),
             )
         )
+    if report["private_review_queue"]:
+        lines.extend(
+            [
+                "",
+                "## Ślad źródłowy prywatnych propozycji",
+                "",
+                (
+                    "To jest trace do oceny źródeł, nie zgoda na promocję wiedzy "
+                    "do finalnych treści."
+                ),
+                "",
+                "| Temat | Dane | Bloki źródła | Eval | Retencja i usunięcie | Redakcja |",
+                "| --- | --- | --- | --- | --- | --- |",
+            ]
+        )
+        for item in report["private_review_queue"]:
+            lines.append(
+                (
+                    "| {target} | {data_classes} | {source_blocks} | {evals} | "
+                    "{retention} | {redacted} |"
+                ).format(
+                    target=_markdown_cell(_operator_text(item["target_card_title"])),
+                    data_classes=_markdown_list_cell(item.get("data_classes", [])),
+                    source_blocks=_markdown_list_cell(item.get("source_block_refs", [])),
+                    evals=_markdown_list_cell(item.get("eval_case_ids", [])),
+                    retention=_markdown_cell(
+                        _retention_label(item.get("retention_decision"))
+                        + "; "
+                        + _deletion_path_label(item.get("deletion_path", [])),
+                        limit=240,
+                    ),
+                    redacted=_redacted_label(item.get("redacted")),
+                )
+            )
     review_actions = report.get("review_action_queue") or []
     if review_actions:
         lines.extend(
@@ -268,6 +302,17 @@ def _private_review_item(proposal: Any) -> dict[str, Any]:
         "review_status": proposal.review_status,
         "promotion_allowed": proposal.promotion_allowed,
         "blocked_claim_count": len(proposal.blocked_claims),
+        "data_classes": list(proposal.data_classes),
+        "source_block_refs": list(proposal.source_block_refs),
+        "retention_decision": proposal.retention_decision,
+        "deletion_path": list(proposal.deletion_path),
+        "eval_case_ids": list(proposal.eval_case_ids),
+        "source_locator_label": proposal.source_locator_label,
+        "owner_role": proposal.owner_role,
+        "redacted": proposal.redacted,
+        "source_trace_ready": bool(
+            proposal.redacted and proposal.source_block_refs and proposal.eval_case_ids
+        ),
         "safe_next_step": proposal.safe_next_step,
     }
 
@@ -348,7 +393,8 @@ def _private_review_value_summary(
             "pomagać w Claim Ledgerze bez luzowania bezpieczeństwa."
         )
         review_questions.append(
-            "Czy zablokowane twierdzenia są kompletne, szczególnie dla prawa, kar, zgodności i efektów?"
+            "Czy zablokowane twierdzenia są kompletne, szczególnie dla prawa, "
+            "kar, zgodności i efektów?"
         )
     if promotion_allowed_count == 0 and proposal_count:
         review_value_points.append(
@@ -356,7 +402,8 @@ def _private_review_value_summary(
             "treści bez oceny człowieka."
         )
         review_questions.append(
-            "Które propozycje odrzucić, oznaczyć jako nieaktualne albo zostawić tylko jako tło do UAT?"
+            "Które propozycje odrzucić, oznaczyć jako nieaktualne albo "
+            "zostawić tylko jako tło do UAT?"
         )
     operator_value_score = 0
     if proposal_count:
@@ -476,8 +523,40 @@ def _scope_order(value: str) -> int:
     }.get(value, 6)
 
 
-def _markdown_cell(value: str) -> str:
-    return value.replace("|", "\\|").replace("\n", " ")[:180]
+def _markdown_cell(value: str, *, limit: int = 180) -> str:
+    return str(value).replace("|", "\\|").replace("\n", " ")[:limit]
+
+
+def _markdown_list_cell(values: list[Any]) -> str:
+    return _markdown_cell(_join_short(values))
+
+
+def _join_short(values: list[Any]) -> str:
+    labels = [str(value).strip() for value in values if str(value).strip()]
+    return ", ".join(labels) or "brak"
+
+
+def _deletion_path_label(values: list[Any]) -> str:
+    labels = [
+        _operator_text(str(value).strip()).rstrip(".")
+        for value in values
+        if str(value).strip()
+    ]
+    return "; ".join(labels) or "brak"
+
+
+def _retention_label(value: Any) -> str:
+    raw = str(value or "")
+    return {
+        "pending_owner_decision": "decyzja właściciela wymagana",
+        "retain_while_source_approved": "trzymaj tylko dopóki źródło zatwierdzone",
+        "short_window_only": "krótkie okno retencji",
+        "do_not_retain": "nie utrzymuj",
+    }.get(raw, raw or "brak")
+
+
+def _redacted_label(value: Any) -> str:
+    return "zredagowane" if value is True else "wymaga redakcji"
 
 
 def _operator_text(value: str) -> str:
@@ -501,10 +580,18 @@ def _operator_text(value: str) -> str:
         .replace("Source trace", "Ślad źródłowy")
         .replace("evidence pack", "pakiet dowodów")
         .replace("reviewed evidence policy", "zatwierdzoną polityką dowodową")
+        .replace("Service Profile review", "ocenie Service Profile")
         .replace("review", "ocenę")
         .replace("bez ocenę", "bez oceny")
         .replace("wymaga ocenę", "wymaga oceny")
+        .replace("redacted proposal", "zredagowaną propozycję")
         .replace("redacted source fact", "zredagowany fakt źródłowy")
+        .replace("source fact", "fakt źródłowy")
+        .replace("knowledge card", "kartę wiedzy")
+        .replace("derived artifact", "artefakt pochodny")
+        .replace("owner", "właściciel")
+        .replace("Nie promuj fakt źródłowy", "Nie promuj faktu źródłowego")
+        .replace("nie kompiluj kartę wiedzy", "nie kompiluj karty wiedzy")
         .replace(
             "wejść do WILQ jako zatwierdzoną polityką dowodową",
             "wejść do WILQ jako zatwierdzona polityka dowodowa",
