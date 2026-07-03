@@ -288,6 +288,9 @@ class ContentWordPressDraftActivationPacketResponse(BaseModel):
     final_canonical_url: str | None = None
     draft_package_ready: bool = False
     draft_package_id: str | None = None
+    review_preview_ready: bool = False
+    review_preview_status_label: str
+    human_review_checklist: list[str] = Field(default_factory=list)
     human_review_ready: bool = False
     audit_ready: bool = False
     handoff_ready: bool = False

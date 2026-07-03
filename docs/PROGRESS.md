@@ -9,7 +9,7 @@ Goal 001 contract: `docs/goals/001-goal.md`
 
 ## Current Readout
 
-Date: 2026-07-03
+Date: 2026-07-04
 
 - WILQ is the system/product.
 - Wilku is the human marketer/operator persona.
@@ -144,6 +144,11 @@ Date: 2026-07-03
   packet. The dashboard shows the draft package is ready, review/audit/handoff
   are missing, dry-run is blocked, live write is disabled and no external write
   was attempted.
+- 2026-07-04 WordPress draft activation packet now exposes API-owned
+  `review_preview_ready`, `review_preview_status_label` and a human review
+  checklist. Live proof says the draft package can be reviewed now with 5
+  checklist items, while human review, handoff, dry-run, live write,
+  publication and external write all remain blocked.
 - 2026-07-03 WordPress draft activation packet now scopes to the selected
   content work item via `work_item_id`, and `/content-workflow` passes the
   active item ID. This prevents the dashboard from showing activation blockers

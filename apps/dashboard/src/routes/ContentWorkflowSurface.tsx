@@ -1112,7 +1112,7 @@ function WordPressDraftActivationPacketPanel({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Co blokuje aktywację</h3>
           {blockers.length > 0 ? (
@@ -1136,6 +1136,19 @@ function WordPressDraftActivationPacketPanel({
             <p className="mt-3 text-xs text-slate-500">
               Paczka szkicu istnieje w WILQ i czeka na review.
             </p>
+          ) : null}
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Review przed handoffem</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {packet.review_preview_status_label}
+          </p>
+          {packet.human_review_checklist.length ? (
+            <ul className="mt-2 grid gap-1 text-sm leading-6 text-slate-700">
+              {packet.human_review_checklist.map((item) => (
+                <li key={item}>- {item}</li>
+              ))}
+            </ul>
           ) : null}
         </div>
         <div className="rounded-md border border-line bg-white p-3">

@@ -118,6 +118,12 @@ def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     assert data["work_item_id"]
     assert data["draft_package_ready"] is True
     assert data["draft_package_id"]
+    assert data["review_preview_ready"] is True
+    assert (
+        data["review_preview_status_label"]
+        == "Paczka szkicu jest gotowa do review człowieka."
+    )
+    assert "generyczny artykuł SEO" in " ".join(data["human_review_checklist"])
     assert data["human_review_ready"] is False
     assert data["audit_ready"] is False
     assert data["handoff_ready"] is False

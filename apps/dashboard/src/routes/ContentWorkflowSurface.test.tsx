@@ -166,6 +166,8 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("brakuje audytu")).toBeInTheDocument();
     expect(screen.getByText("brakuje handoffu")).toBeInTheDocument();
     expect(screen.getByText(/Paczka szkicu istnieje w WILQ/)).toBeInTheDocument();
+    expect(screen.getByText("Review przed handoffem")).toBeInTheDocument();
+    expect(screen.getByText(/brzmi jak Ekologus/)).toBeInTheDocument();
     expect(screen.getByText(/Dowody: 2 · Źródła: 2/)).toBeInTheDocument();
     expect(screen.getByText(/Publikacja pozostaje zablokowana/)).toBeInTheDocument();
     expect(screen.getByText("Następny bezpieczny krok")).toBeInTheDocument();
@@ -1491,6 +1493,12 @@ function wordpressDraftActivationPacket(): ContentWordPressDraftActivationPacket
     final_canonical_url: "https://ekologus.pl/bdo/",
     draft_package_ready: true,
     draft_package_id: "draft_package_content_work_item_bdo",
+    review_preview_ready: true,
+    review_preview_status_label: "Paczka szkicu jest gotowa do review człowieka.",
+    human_review_checklist: [
+      "Czy treść brzmi jak Ekologus, a nie jak generyczny artykuł SEO?",
+      "Czy materiał ma zostać tylko szkicem WordPress, bez publikacji?"
+    ],
     human_review_ready: false,
     audit_ready: false,
     handoff_ready: false,

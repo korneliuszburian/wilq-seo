@@ -408,6 +408,14 @@ def build_content_wordpress_draft_activation_packet_response(
         final_canonical_url=item.final_canonical_url,
         draft_package_ready=draft_package is not None,
         draft_package_id=draft_package.id if draft_package is not None else None,
+        review_preview_ready=draft_package is not None,
+        review_preview_status_label=_wordpress_draft_review_preview_status_label(
+            draft_package is not None
+        ),
+        human_review_checklist=_wordpress_draft_human_review_checklist(
+            draft_package_ready=draft_package is not None,
+            human_review_ready=human_review_ready,
+        ),
         human_review_ready=human_review_ready,
         audit_ready=audit_ready,
         handoff_ready=handoff is not None,
@@ -429,6 +437,37 @@ def build_content_wordpress_draft_activation_packet_response(
         evidence_ids=item.evidence_ids,
         source_connectors=item.source_connectors,
     )
+
+
+def _wordpress_draft_review_preview_status_label(
+    draft_package_ready: bool,
+) -> str:
+    if draft_package_ready:
+        return "Paczka szkicu jest gotowa do review człowieka."
+    return "Najpierw przygotuj paczkę szkicu z Claim Ledgerem i dowodami."
+
+
+def _wordpress_draft_human_review_checklist(
+    *,
+    draft_package_ready: bool,
+    human_review_ready: bool,
+) -> list[str]:
+    if human_review_ready:
+        return [
+            "Review człowieka jest zapisane; teraz sprawdź audyt i handoff WordPress.",
+        ]
+    if not draft_package_ready:
+        return [
+            "Przygotuj paczkę szkicu z tytułem, sekcjami, mapą dowodów i Claim Ledgerem.",
+            "Nie oceniaj handoffu WordPress przed paczką szkicu.",
+        ]
+    return [
+        "Czy tytuł, sekcje i kolejność odpowiadają intencji wybranego tematu?",
+        "Czy każdy claim ma dowód albo jest jawnie zablokowany w Claim Ledger?",
+        "Czy treść brzmi jak Ekologus, a nie jak generyczny artykuł SEO?",
+        "Czy CTA jest konsultacyjne i nie obiecuje wyniku, decyzji ani braku kar?",
+        "Czy materiał ma zostać tylko szkicem WordPress, bez publikacji i bez aktualizacji istniejącego wpisu?",
+    ]
 
 
 def build_content_wordpress_draft_write_readiness_response(
