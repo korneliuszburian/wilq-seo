@@ -121,6 +121,12 @@ under "Jak ruszyć review wiedzy", including the first BDO review action and
 blocking checklist. This makes the main handoff actionable for Wilku/owner
 without requiring them to inspect dashboard internals or raw API JSON.
 
+2026-07-04 update: Goal 005 completion guard now carries
+`approval_readiness` in `next_uat_input` and renders it in "Następny materiał
+do rozmowy". This keeps the official UAT/defer blocker aligned with Service
+Profile API, dashboard and stage snapshot: blocked approval request, blocked
+mutation, blocked final-content readiness and a concrete review checklist.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

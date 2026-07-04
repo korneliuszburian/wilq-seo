@@ -212,6 +212,11 @@ Date: 2026-07-04
   request status, first BDO review action, mutation/production-depth lock and
   the four checklist blockers. The snapshot is now enough to explain the
   next owner/Wilku review step without opening raw API JSON.
+- 2026-07-04 Goal 005 completion guard now includes Service Profile
+  `approval_readiness` in `next_uat_input` and renders it in "Następny
+  materiał do rozmowy": blocked approval request, mutation/final-content lock,
+  first BDO review step and blocking checklist. The guard still exits blocked
+  until real Wilku UAT or explicit owner defer is provided.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

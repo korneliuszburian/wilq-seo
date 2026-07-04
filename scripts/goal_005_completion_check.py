@@ -586,11 +586,16 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
         private_source_trace_items_from_live_context(live_context)
         or private_source_trace_items_from_source_coverage()
     )
+    approval_readiness = (
+        approval_readiness_from_live_context(live_context)
+        or approval_readiness_from_local_service_profile()
+    )
     return {
         "available": True,
         "selected_work_item": selected_work_item,
         "review_artifacts": example.get("pokazane_materialy_review", []),
         "first_service_profile_review": first_review,
+        "approval_readiness": approval_readiness,
         "private_review_questions": private_review_questions,
         "private_source_trace_items": private_source_trace_items,
         "selected_sales_brief_status": (
@@ -626,6 +631,61 @@ def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
             + (f" --api-base {api_base}" if api_base else "")
         ),
         "fillable_input": example,
+    }
+
+
+def approval_readiness_from_live_context(
+    live_context: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if live_context is None:
+        return None
+    raw_service_profile = live_context.get("service_profile")
+    service_profile = raw_service_profile if isinstance(raw_service_profile, dict) else {}
+    raw_readiness = service_profile.get("approval_readiness")
+    readiness = raw_readiness if isinstance(raw_readiness, dict) else {}
+    return approval_readiness_summary(readiness)
+
+
+def approval_readiness_from_local_service_profile() -> dict[str, Any] | None:
+    try:
+        from wilq.content.knowledge.service_profile import (
+            content_service_profile_response,
+        )
+    except Exception:
+        return None
+    readiness = content_service_profile_response().approval_readiness
+    return approval_readiness_summary(readiness.model_dump(mode="json"))
+
+
+def approval_readiness_summary(readiness: dict[str, Any]) -> dict[str, Any] | None:
+    if not readiness:
+        return None
+    raw_checklist = raw_list_payload(readiness.get("checklist"))
+    blocking_items = [
+        {
+            "code": str(item.get("code") or "").strip(),
+            "label": str(item.get("label") or "").strip(),
+            "next_step": operator_copy_text(str(item.get("next_step") or "").strip()),
+        }
+        for item in raw_checklist
+        if isinstance(item, dict) and item.get("blocking") is True
+    ]
+    return {
+        "status": str(readiness.get("status") or "blocked").strip(),
+        "status_label": operator_copy_text(
+            str(readiness.get("status_label") or "wniosek o zatwierdzenie zablokowany")
+        ),
+        "can_request_promotion": bool(readiness.get("can_request_promotion")),
+        "mutation_allowed": bool(readiness.get("mutation_allowed")),
+        "production_depth_unlocked": bool(readiness.get("production_depth_unlocked")),
+        "first_action_id": readiness.get("first_action_id"),
+        "first_action_label": operator_copy_text(
+            str(readiness.get("first_action_label") or "")
+        ),
+        "blocking_checklist": blocking_items[:4],
+        "safe_next_step": operator_copy_text(
+            str(readiness.get("safe_next_step") or "")
+        ),
     }
 
 
@@ -1268,6 +1328,9 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
                 + first_review_input_required_fields_plain_label(first_review),
             ]
         )
+    approval_readiness = value.get("approval_readiness")
+    if isinstance(approval_readiness, dict):
+        lines.extend(render_approval_readiness_input(approval_readiness))
     private_review_questions = [
         str(question).strip()
         for question in raw_list_payload(value.get("private_review_questions"))
@@ -1328,6 +1391,41 @@ def render_next_uat_input(value: dict[str, Any]) -> list[str]:
         )
     else:
         lines.append("- ID do zapisu po rozmowie: brak")
+    return lines
+
+
+def render_approval_readiness_input(value: dict[str, Any]) -> list[str]:
+    mutation_label = (
+        "dozwolona" if value.get("mutation_allowed") is True else "zablokowana"
+    )
+    production_label = (
+        "odblokowane"
+        if value.get("production_depth_unlocked") is True
+        else "zablokowane"
+    )
+    lines = [
+        "- Gotowość zatwierdzenia wiedzy: "
+        + str(value.get("status_label") or "wniosek o zatwierdzenie zablokowany"),
+        f"- Mutacja wiedzy: {mutation_label}; finalne treści: {production_label}.",
+    ]
+    if value.get("first_action_label"):
+        lines.append(
+            "- Pierwszy krok zatwierdzenia: "
+            + str(value.get("first_action_label"))
+        )
+    checklist = [
+        item
+        for item in raw_list_payload(value.get("blocking_checklist"))
+        if isinstance(item, dict)
+    ]
+    if checklist:
+        lines.append(
+            "- Blokady zatwierdzenia: "
+            + "; ".join(
+                f"{item.get('label')}: {item.get('next_step')}"
+                for item in checklist[:4]
+            )
+        )
     return lines
 
 

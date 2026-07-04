@@ -52,6 +52,12 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert first_review["label"]
     assert first_review["scope"] == "public_service_card"
     assert "source_trace_clear" in first_review["required_fields"]
+    approval_readiness = report["next_uat_input"]["approval_readiness"]
+    assert approval_readiness["status"] == "blocked"
+    assert approval_readiness["can_request_promotion"] is False
+    assert approval_readiness["mutation_allowed"] is False
+    assert approval_readiness["production_depth_unlocked"] is False
+    assert approval_readiness["blocking_checklist"]
     assert report["next_uat_input"]["private_review_questions"]
     assert report["next_uat_input"]["private_source_trace_items"]
     assert report["next_uat_input"]["private_source_trace_items"][0]["source_blocks"]
@@ -73,6 +79,9 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Werdykt: materiały można pokazać Wilkowi do oceny" in markdown
     assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
     assert "Pytania o prywatną wiedzę" in markdown
+    assert "Gotowość zatwierdzenia wiedzy" in markdown
+    assert "wniosek o zatwierdzenie zablokowany" in markdown
+    assert "Mutacja wiedzy: zablokowana; finalne treści: zablokowane" in markdown
     assert "Prywatny ślad źródłowy do pokazania" in markdown
     assert "Historia social do dedupe" in markdown
     assert "punkty startowe: linkedin, facebook" in markdown
@@ -298,6 +307,24 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
                         "Najpierw sprawdź publiczną kartę BDO."
                     ),
                 },
+                "approval_readiness": {
+                    "status": "blocked",
+                    "status_label": "wniosek o zatwierdzenie zablokowany",
+                    "can_request_promotion": False,
+                    "mutation_allowed": False,
+                    "production_depth_unlocked": False,
+                    "first_action_id": "renamed_public_service_bdo_review",
+                    "first_action_label": "Sprawdź kartę BDO",
+                    "checklist": [
+                        {
+                            "code": "public_service_review",
+                            "label": "Publiczne karty usług sprawdzone",
+                            "blocking": True,
+                            "next_step": "Zapisz decyzję publicznej karty.",
+                        }
+                    ],
+                    "safe_next_step": "Najpierw zapisz wynik review.",
+                },
                 "source_fact_coverage": {
                     "private_review_queue": [
                         {
@@ -345,12 +372,20 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
         "required_fields": ["action_id", "source_trace_clear"],
         "safe_next_step": "Najpierw sprawdź publiczną kartę BDO.",
     }
+    assert next_input["approval_readiness"]["status_label"] == (
+        "wniosek o zatwierdzenie zablokowany"
+    )
+    assert next_input["approval_readiness"]["mutation_allowed"] is False
+    assert next_input["approval_readiness"]["production_depth_unlocked"] is False
     rendered = "\n".join(render_next_uat_input(next_input))
     assert "Pierwsza decyzja w Service Profile" in rendered
     public_part = rendered.split("ID do zapisu po rozmowie")[0]
     assert "renamed_public_service_bdo_review" not in public_part
     assert "ekologus_service_bdo_reporting" not in public_part
     assert "Najpierw sprawdź publiczną kartę BDO." in rendered
+    assert "Gotowość zatwierdzenia wiedzy" in rendered
+    assert "Mutacja wiedzy: zablokowana; finalne treści: zablokowane" in rendered
+    assert "Publiczne karty usług sprawdzone: Zapisz decyzję publicznej karty." in rendered
     assert "Co trzeba ocenić: którą decyzję zapisujemy" in rendered
     assert "czy źródło i pochodzenie faktu są jasne" in rendered
     assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga oceny" in rendered
