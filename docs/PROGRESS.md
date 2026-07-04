@@ -169,6 +169,12 @@ Date: 2026-07-04
   public/private Service Profile review session-card commands. This connects
   the `gap_no_approved_current_cards` blocker to the next owner/Wilku review
   action without inventing approval.
+- 2026-07-04 the stage snapshot now also pulls the first private
+  `ekologus-ai` review decision from
+  `record_service_profile_review_result.py --review-type private_source_proposals`.
+  Live output starts from `ekologus_claim_policy_legal_safety` and lists the
+  private trace/freshness/audience/retention/deletion/eval fields needed before
+  any reviewed/private source can move toward approval.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

@@ -59,6 +59,23 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
                 }
             },
         },
+        private_review_example={
+            "decisions": [
+                {
+                    "action_id": (
+                        "service_profile_review_private_proposal_"
+                        "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01"
+                    ),
+                    "target_card_id": "ekologus_claim_policy_legal_safety",
+                    "decision": "approve|needs_changes|stale|reject",
+                    "notes": "<krótka decyzja>",
+                    "source_trace_clear": "tak|nie",
+                    "blocked_claims_reviewed": "tak|nie",
+                    "data_classes_confirmed": "tak|nie",
+                    "source_block_refs_confirmed": "tak|nie",
+                }
+            ]
+        },
         api_base="http://127.0.0.1:8000",
     )
 
@@ -95,6 +112,20 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
         "--review-type private_source_proposals" in command
         for command in snapshot["owner_review"]["commands"]
     )
+    assert snapshot["owner_review"]["first_private_decision"] == {
+        "action_id": (
+            "service_profile_review_private_proposal_"
+            "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01"
+        ),
+        "target_card_id": "ekologus_claim_policy_legal_safety",
+        "label": "Bezpieczeństwo prawne, poufność i zgody",
+        "required_fields": [
+            "source_trace_clear",
+            "blocked_claims_reviewed",
+            "data_classes_confirmed",
+            "source_block_refs_confirmed",
+        ],
+    }
 
 
 def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
@@ -136,6 +167,19 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
                 }
             },
         },
+        private_review_example={
+            "decisions": [
+                {
+                    "action_id": "service_profile_review_private_proposal_example",
+                    "target_card_id": "ekologus_claim_policy_legal_safety",
+                    "decision": "approve|needs_changes|stale|reject",
+                    "notes": "<krótka decyzja>",
+                    "source_trace_clear": "tak|nie",
+                    "blocked_claims_reviewed": "tak|nie",
+                    "data_classes_confirmed": "tak|nie",
+                }
+            ]
+        },
     )
 
     markdown = stage.render_markdown(snapshot)
@@ -149,7 +193,9 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
     assert "`wilq-ga4-analyst` (9/10): Uprość opis problemów (not set)." in markdown
     assert "brakuje realnego wyniku UAT albo jawnego owner deferu" in markdown
     assert "Jak ruszyć review wiedzy" in markdown
-    assert "Pierwsza decyzja: Sprawdź kartę BDO" in markdown
+    assert "Pierwsza publiczna decyzja: Sprawdź kartę BDO" in markdown
+    assert "Pierwsza prywatna decyzja ekologus-ai" in markdown
+    assert "Bezpieczeństwo prawne, poufność i zgody" in markdown
     assert "--review-type public_service_cards" in markdown
     assert "--review-type private_source_proposals" in markdown
     assert "Co pokazać Wilkowi" in markdown

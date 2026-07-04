@@ -7,6 +7,11 @@ from typing import Any
 
 from dashboard_usefulness_audit import build_report as build_dashboard_report
 from goal_005_completion_check import build_completion_report
+from record_service_profile_review_result import (
+    build_input_example,
+    load_live_context,
+    service_profile_target_label,
+)
 from render_skill_coverage_audit import build_report as build_skill_report
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000"
@@ -75,10 +80,15 @@ def build_stage_snapshot(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
     dashboard_report = build_dashboard_report(api_base)
     skill_report = build_skill_report()
     completion_report = build_completion_report(api_base=api_base)
+    private_review_example = build_input_example(
+        load_live_context(api_base),
+        review_type="private_source_proposals",
+    )
     return build_stage_snapshot_from_reports(
         dashboard_report=dashboard_report,
         skill_report=skill_report,
         completion_report=completion_report,
+        private_review_example=private_review_example,
         api_base=api_base,
     )
 
@@ -88,6 +98,7 @@ def build_stage_snapshot_from_reports(
     dashboard_report: dict[str, Any],
     skill_report: dict[str, Any],
     completion_report: dict[str, Any],
+    private_review_example: dict[str, Any] | None = None,
     api_base: str = DEFAULT_API_BASE,
 ) -> dict[str, Any]:
     dashboard_surfaces = int(dashboard_report.get("surface_count") or 0)
@@ -105,7 +116,11 @@ def build_stage_snapshot_from_reports(
     completion_status = str(completion_report.get("status") or "unknown")
     blocker = _completion_blocker_label(completion_report)
     is_goal_closed = completion_status in {"complete_with_uat", "owner_deferred"}
-    owner_review = _owner_review_next_step(completion_report, api_base=api_base)
+    owner_review = _owner_review_next_step(
+        completion_report,
+        private_review_example=private_review_example,
+        api_base=api_base,
+    )
 
     current_stage = (
         "demo/review-ready, ale nie production-ready"
@@ -235,7 +250,7 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
         if owner_review.get("first_decision"):
             decision = owner_review["first_decision"]
             lines.append(
-                f"- Pierwsza decyzja: {decision['label']} "
+                f"- Pierwsza publiczna decyzja: {decision['label']} "
                 f"(`{decision['target_card_id']}`)."
             )
             if decision.get("required_fields"):
@@ -246,6 +261,18 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
                 )
             if decision.get("next_step"):
                 lines.append(f"- Następny krok: {decision['next_step']}")
+        if owner_review.get("first_private_decision"):
+            private_decision = owner_review["first_private_decision"]
+            lines.append(
+                f"- Pierwsza prywatna decyzja ekologus-ai: "
+                f"{private_decision['label']} (`{private_decision['target_card_id']}`)."
+            )
+            if private_decision.get("required_fields"):
+                lines.append(
+                    "- Prywatne pola do sprawdzenia: "
+                    + ", ".join(private_decision["required_fields"])
+                    + "."
+                )
         for command in owner_review.get("commands") or []:
             lines.append(f"- `{command}`")
     lines.extend(["", "## Co pokazać Wilkowi", ""])
@@ -278,6 +305,7 @@ def _score_range(min_score: Any, max_score: Any) -> str:
 def _owner_review_next_step(
     completion_report: dict[str, Any],
     *,
+    private_review_example: dict[str, Any] | None,
     api_base: str,
 ) -> dict[str, Any]:
     next_uat_input = completion_report.get("next_uat_input")
@@ -296,16 +324,43 @@ def _owner_review_next_step(
             f"--api-base {api_base.rstrip('/')}"
         ),
     ]
-    if not isinstance(first_review, dict) or not first_review:
-        return {"commands": commands}
-    return {
-        "first_decision": {
+    owner_review: dict[str, Any] = {"commands": commands}
+    if isinstance(first_review, dict) and first_review:
+        owner_review["first_decision"] = {
             "label": first_review.get("label") or "pierwsza decyzja Service Profile",
             "target_card_id": first_review.get("target_card_id") or "brak",
             "required_fields": first_review.get("required_fields") or [],
             "next_step": first_review.get("next_step") or "",
-        },
-        "commands": commands,
+        }
+    first_private = _first_private_review_decision(private_review_example)
+    if first_private:
+        owner_review["first_private_decision"] = first_private
+    return owner_review
+
+
+def _first_private_review_decision(
+    private_review_example: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if not isinstance(private_review_example, dict):
+        return None
+    decisions = private_review_example.get("decisions") or []
+    if not isinstance(decisions, list) or not decisions:
+        return None
+    first = decisions[0]
+    if not isinstance(first, dict):
+        return None
+    target_card_id = str(first.get("target_card_id") or "").strip()
+    required_fields = [
+        key
+        for key, value in first.items()
+        if key not in {"action_id", "target_card_id", "decision", "notes", "follow_up_beads"}
+        and value
+    ]
+    return {
+        "action_id": first.get("action_id") or "",
+        "target_card_id": target_card_id or "brak",
+        "label": service_profile_target_label(target_card_id) if target_card_id else "brak",
+        "required_fields": required_fields,
     }
 
 
