@@ -247,6 +247,22 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "completion proof" not in verdict_section
     assert "content_work_item_content_decision" not in verdict_section
     assert "service_profile_review_" not in verdict_section
+    wordpress_section = card.split("## Czego nie pokazujemy jako gotowe", 1)[
+        1
+    ].split("## Pierwsza decyzja w Service Profile", 1)[0]
+    assert "WordPress draft-only nie jest jeszcze gotowy do zapisu ani publikacji" in (
+        wordpress_section
+    )
+    assert "To jest plan aktywacji, nie zgoda na publikację" in wordpress_section
+    assert "Plan aktywacji WordPress draft-only" in wordpress_section
+    assert "Utrzymaj zakres draft-only i brak publikacji" in wordpress_section
+    assert "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm" in (
+        wordpress_section
+    )
+    assert "Nie dodawaj kolejnego adaptera" in wordpress_section
+    assert "Odblokuj payload apply dopiero po przejściu review i readiness" in (
+        wordpress_section
+    )
     assert "## ID do zapisu po rozmowie" in card
     assert "Materiał ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
     public_section = card.split("## ID do zapisu po rozmowie")[0]
@@ -1008,6 +1024,21 @@ def _live_context() -> dict[str, object]:
                     "target_card_id": "ekologus_service_eko_opieka_calendar",
                 }
             ],
+        },
+        "action_mutation_readiness": {
+            "activation_plan_steps": [
+                "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
+                (
+                    "Doprowadź apply-mode ActionObject przez validate, preview, "
+                    "review i confirm."
+                ),
+                (
+                    "Nie dodawaj kolejnego adaptera: boundary i paczka szkicu "
+                    "istnieją, a live write blokują handoff, review/confirm/audit i env."
+                ),
+                "Odblokuj payload apply dopiero po przejściu review i readiness.",
+                "Zapisz review człowieka i jawne potwierdzenie operatora.",
+            ]
         },
         "sales_brief_traces": {
             "content_work_item_content_decision_https___www_ekologus_pl": {

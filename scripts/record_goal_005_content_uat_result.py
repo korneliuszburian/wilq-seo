@@ -282,6 +282,7 @@ def render_content_uat_session_card(
         provenance
     )
     decision_options = first_service_profile_review_decision_options_label(provenance)
+    wordpress_activation_steps = wordpress_draft_activation_plan_steps(live_context)
     command = (
         "rtk uv run python scripts/record_goal_005_content_uat_result.py "
         "--print-input-example"
@@ -364,6 +365,15 @@ def render_content_uat_session_card(
             "wybierz `zostań przy review` albo `popraw materiały i wróć`."
         ),
         "",
+        "## Czego nie pokazujemy jako gotowe",
+        "",
+        (
+            "- WordPress draft-only nie jest jeszcze gotowy do zapisu ani "
+            "publikacji. To jest plan aktywacji, nie zgoda na publikację."
+        ),
+        "- Plan aktywacji WordPress draft-only:",
+        *[f"  - {step}" for step in wordpress_activation_steps],
+        "",
         "## Pierwsza decyzja w Service Profile",
         "",
         f"- {first_review}",
@@ -416,6 +426,27 @@ def render_content_uat_session_card(
         f"{first_service_profile_review_label(provenance)}",
     ]
     return "\n".join(lines).rstrip() + "\n"
+
+
+def wordpress_draft_activation_plan_steps(
+    live_context: dict[str, Any] | None,
+) -> list[str]:
+    if not isinstance(live_context, dict):
+        return ["Brak live kontekstu readiness, więc nie wolno deklarować gotowości."]
+    readiness = live_context.get("action_mutation_readiness")
+    if not isinstance(readiness, dict):
+        return [
+            "Brak odczytu gotowości zapisów, więc WordPress pozostaje review-only."
+        ]
+    raw_steps = readiness.get("activation_plan_steps")
+    steps = [
+        str(step).strip()
+        for step in raw_list_payload(raw_steps)
+        if str(step).strip()
+    ]
+    return steps[:4] or [
+        "Brak kroków aktywacji z API, więc WordPress pozostaje review-only."
+    ]
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -822,14 +853,20 @@ def load_live_uat_context(api_base: str) -> dict[str, Any]:
         raise RuntimeError(f"WILQ API health is not ok at {api_base}")
     queue = request_json(api_base, "GET", "/api/content/work-items/queue")
     service_profile = request_json(api_base, "GET", "/api/content/service-profile")
+    action_mutation_readiness = request_json(
+        api_base, "GET", "/api/actions/mutation-readiness"
+    )
     if not isinstance(queue, dict):
         raise RuntimeError("Live content work-item queue must be an object")
     if not isinstance(service_profile, dict):
         raise RuntimeError("Live Service Profile must be an object")
+    if not isinstance(action_mutation_readiness, dict):
+        raise RuntimeError("Live action mutation readiness must be an object")
     return {
         "api_base": api_base.rstrip("/"),
         "queue": queue,
         "service_profile": service_profile,
+        "action_mutation_readiness": action_mutation_readiness,
         "sales_brief_traces": load_sales_brief_traces(api_base, queue),
     }
 

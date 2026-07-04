@@ -99,6 +99,10 @@ Date: 2026-07-04
   guard still blocks live writes, but it now shows the sequence: keep draft-only
   scope, use the existing boundary, finish review/confirm/audit and pass Claim
   Ledger/human review before any draft creation attempt.
+- 2026-07-04 Goal 005 Wilku session card now repeats that same WordPress
+  draft-only activation plan in the "Czego nie pokazujemy jako gotowe" block,
+  so the material shown to Wilku cannot be mistaken for write/publish
+  readiness.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
