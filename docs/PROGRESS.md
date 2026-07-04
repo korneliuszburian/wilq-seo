@@ -120,6 +120,10 @@ Date: 2026-07-04
   `bramka: goal_*` w sekcji `Prywatny ślad źródłowy do pokazania`; live
   markdown nadal kończy się statusem blokującym bez UAT, ale nie pokazuje już
   technicznego `eval:` w widocznej liście śladu.
+- 2026-07-04 karta rozmowy Goal 005 wyjaśnia teraz, że temat treściowy
+  (`ekologus` homepage z kolejki content) i pierwsza decyzja Service Profile
+  (BDO jako pierwsza karta wiedzy do oceny) są dwoma sprawdzeniami w jednej
+  sesji, więc Wilku nie musi zgadywać, czemu te wątki występują razem.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

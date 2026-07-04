@@ -212,6 +212,12 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "google_search_console" not in status_section
     assert "production-depth" not in status_section
     assert "Zatwierdzona wiedza do finalnych treści: nie" in status_section
+    assert "Jak czytać tę sesję" in status_section
+    assert "temat treściowy i pierwsza decyzja Service Profile to dwa sprawdzenia" in (
+        status_section
+    )
+    assert "Temat treści mówi, co WILQ wybrał z kolejki content" in status_section
+    assert "którą kartę wiedzy trzeba ocenić jako pierwszą" in status_section
     assert "## Kolejność rozmowy 15 minut" in card
     agenda_section = card.split("## Kolejność rozmowy 15 minut", 1)[1].split(
         "## Pierwsza decyzja w Service Profile",

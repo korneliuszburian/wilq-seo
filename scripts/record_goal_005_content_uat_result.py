@@ -317,6 +317,12 @@ def render_content_uat_session_card(
         f"{selected_content_candidate_next_step(provenance)}",
         "- Zatwierdzona wiedza do finalnych treści: "
         f"{visible_bool(provenance.get('production_depth_ready') is True)}",
+        (
+            "- Jak czytać tę sesję: temat treściowy i pierwsza decyzja Service "
+            "Profile to dwa sprawdzenia. Temat treści mówi, co WILQ wybrał z "
+            "kolejki content; decyzja Service Profile mówi, którą kartę wiedzy "
+            "trzeba ocenić jako pierwszą."
+        ),
         "",
         "## Kolejność rozmowy 15 minut",
         "",
