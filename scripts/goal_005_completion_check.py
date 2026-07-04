@@ -25,6 +25,7 @@ from scripts.record_goal_005_content_uat_result import (
 )
 from scripts.render_skill_coverage_audit import build_report as build_latest_skill_eval_report
 from scripts.source_fact_coverage_audit import build_report as build_source_fact_coverage_report
+from wilq.actions.service import mutation_readiness_actions
 from wilq.connectors.registry import list_connector_statuses
 from wilq.social.history import build_social_history_inventory_from_env
 
@@ -355,6 +356,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
     eval_report = build_skill_eval_coverage_report()
     latest_eval_report = build_latest_skill_eval_report()
     social_history = goal_005_social_history_inventory_summary()
+    mutation_readiness = goal_005_action_mutation_readiness_summary()
     latest_eval_scores = [
         row["score"] for row in latest_eval_report["rows"] if row.get("score") is not None
     ]
@@ -422,6 +424,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "stale_passing_skills": latest_eval_report["stale_passing_skills"],
         },
         "social_history_inventory": social_history,
+        "action_mutation_readiness": mutation_readiness,
     }
     if api_base:
         dashboard_report = build_dashboard_usefulness_report(api_base)
@@ -446,6 +449,56 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "knowledge_lineage_count": knowledge_surface.get("lineage_count"),
         }
     return summary
+
+
+def goal_005_action_mutation_readiness_summary() -> dict[str, Any]:
+    readiness = mutation_readiness_actions().model_dump(mode="json")
+    first = readiness.get("first_write_candidate") or {}
+    apply_contract = first.get("apply_contract") or {}
+    blockers = first.get("blockers") or []
+    blocker_summaries = [
+        {
+            "code": blocker.get("code"),
+            "label": blocker.get("label"),
+            "next_step": blocker.get("next_step"),
+        }
+        for blocker in blockers[:5]
+        if isinstance(blocker, dict)
+    ]
+    return {
+        "action_count": readiness["action_count"],
+        "ready_to_request_apply_count": readiness["ready_to_request_apply_count"],
+        "vendor_write_possible_count": readiness["vendor_write_possible_count"],
+        "would_attempt_vendor_write_count": readiness["would_attempt_vendor_write_count"],
+        "prepare_only_count": readiness["prepare_only_count"],
+        "top_blockers": readiness["top_blockers"],
+        "first_write_candidate": {
+            "action_id": first.get("action_id"),
+            "title": first.get("title"),
+            "target_label": first.get("target_label"),
+            "target_url": first.get("target_url"),
+            "ready_to_request_apply": first.get("ready_to_request_apply"),
+            "vendor_write_possible": first.get("vendor_write_possible"),
+            "would_attempt_vendor_write": first.get("would_attempt_vendor_write"),
+            "mutation_adapter": first.get("mutation_adapter"),
+            "write_authorization_status": first.get("write_authorization_status"),
+            "operator_next_step": first.get("operator_next_step"),
+            "blocker_count": len(blockers),
+            "blockers": blocker_summaries,
+            "apply_contract_draft_only": apply_contract.get("draft_only"),
+            "apply_contract_publication_allowed": apply_contract.get(
+                "publication_allowed"
+            ),
+            "apply_contract_destructive_allowed": apply_contract.get(
+                "destructive_allowed"
+            ),
+        }
+        if first
+        else None,
+        "first_write_candidate_reason": readiness.get("first_write_candidate_reason"),
+        "activation_next_step": readiness.get("activation_next_step"),
+        "operator_next_step": readiness.get("operator_next_step"),
+    }
 
 
 def goal_005_social_history_inventory_summary() -> dict[str, Any]:
@@ -1314,6 +1367,8 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     eval_coverage = value.get("skill_eval_coverage") or {}
     latest_eval = value.get("latest_skill_eval_results") or {}
     social_history = value.get("social_history_inventory") or {}
+    mutation_readiness = value.get("action_mutation_readiness") or {}
+    first_write = mutation_readiness.get("first_write_candidate") or {}
     dashboard = value.get("dashboard_usefulness") or {}
     lines = [
         "- Fakty ze źródeł: "
@@ -1347,6 +1402,13 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"pozycje: {social_history.get('item_count')}; "
         f"brakujące dowody: {len(social_history.get('missing_evidence_ids') or [])}; "
         "publikacja i claim o braku powtórek: zablokowane.",
+        "- Gotowość realnych zapisów: "
+        f"kandydat: {_write_candidate_label(first_write)}; "
+        f"gotowe do apply: {mutation_readiness.get('ready_to_request_apply_count')}/"
+        f"{mutation_readiness.get('action_count')}; "
+        f"vendor write możliwy: {mutation_readiness.get('vendor_write_possible_count')}; "
+        f"próba live write: {mutation_readiness.get('would_attempt_vendor_write_count')}; "
+        f"pierwsze blokady: {_first_write_blockers_label(first_write)}.",
     ]
     next_review_actions = source.get("next_review_actions") or []
     if next_review_actions:
@@ -1400,6 +1462,30 @@ def _social_history_status_label(value: dict[str, Any]) -> str:
     if status == "invalid":
         return "spis historii social wymaga poprawy"
     return "brak spisu historycznych postów LinkedIn/Facebook"
+
+
+def _write_candidate_label(value: dict[str, Any]) -> str:
+    action_id = str(value.get("action_id") or "").strip()
+    title = str(value.get("title") or "").strip()
+    target = str(value.get("target_label") or "").strip()
+    if not action_id:
+        return "brak kandydata"
+    if target:
+        return f"{title or action_id} -> {target}"
+    return title or action_id
+
+
+def _first_write_blockers_label(value: dict[str, Any]) -> str:
+    blockers = value.get("blockers")
+    if not isinstance(blockers, list) or not blockers:
+        return "brak zgłoszonych blokad"
+    labels = [
+        str(item.get("label") or item.get("code") or "").strip()
+        for item in blockers
+        if isinstance(item, dict)
+    ]
+    labels = [label for label in labels if label]
+    return ", ".join(labels[:3]) or "brak zgłoszonych blokad"
 
 
 def _review_scope_label(value: Any) -> str:

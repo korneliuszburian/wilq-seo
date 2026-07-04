@@ -75,6 +75,9 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Prywatny ślad źródłowy do pokazania" in markdown
     assert "Historia social do dedupe" in markdown
     assert "publikacja i claim o braku powtórek: zablokowane" in markdown
+    assert "Gotowość realnych zapisów" in markdown
+    assert "Aktywuj zapis szkicu WordPress draft-only" in markdown
+    assert "próba live write: 0" in markdown
     assert "ślad gotowy" in markdown
     assert "Czy proponowane CTA brzmi jak realny następny krok Ekologus" in markdown
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
@@ -153,6 +156,20 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
     ]
     assert social_history["publish_allowed"] is False
     assert social_history["duplicate_free_claim_allowed"] is False
+    mutation_readiness = summary["action_mutation_readiness"]
+    assert mutation_readiness["action_count"] >= 1
+    assert mutation_readiness["vendor_write_possible_count"] == 0
+    assert mutation_readiness["would_attempt_vendor_write_count"] == 0
+    first_write = mutation_readiness["first_write_candidate"]
+    assert first_write["action_id"] == "act_apply_wordpress_draft_handoff"
+    assert first_write["mutation_adapter"] == "wordpress_draft_execution_boundary"
+    assert first_write["ready_to_request_apply"] is False
+    assert first_write["vendor_write_possible"] is False
+    assert first_write["would_attempt_vendor_write"] is False
+    assert first_write["apply_contract_draft_only"] is True
+    assert first_write["apply_contract_publication_allowed"] is False
+    assert first_write["apply_contract_destructive_allowed"] is False
+    assert first_write["blocker_count"] >= 1
 
 
 def test_goal_005_pre_demo_audit_summary_surfaces_review_ready_social_history(
