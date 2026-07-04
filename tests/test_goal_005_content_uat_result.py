@@ -299,14 +299,18 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "## Prywatny ślad źródłowy do pokazania" in card
     assert "Bezpieczeństwo prawne, poufność i zgody" in card
     assert "źródło: KB_021_BEZPIECZENSTWO_PRAWNE" in card
-    assert (
-        "bramka: goal_005_private_claim_policy_review, goal_006_claim_ledger_gate"
-        in card
-    )
+    assert "bramka: review polityki twierdzeń" in card
+    assert "bramka listy dozwolonych twierdzeń" in card
     public_private_trace_section = card.split(
         "## Prywatny ślad źródłowy do pokazania", 1
     )[1].split("## Pytania do Wilka", 1)[0]
     assert "eval:" not in public_private_trace_section
+    assert "goal_005_private_claim_policy_review" not in public_private_trace_section
+    assert "goal_006_claim_ledger_gate" not in public_private_trace_section
+    assert "ekologus_ai_evidence_policy_source_trace_review_candidate" not in (
+        public_private_trace_section
+    )
+    assert "propozycja ekologus-ai: ślad dowodowy" in public_private_trace_section
     assert "decyzja właściciela wymagana" in card
     assert "zredagowane" in card
     assert "ślad gotowy" in card
@@ -431,7 +435,21 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
             "redacted": True,
             "trace_ready": True,
             "safe_next_step": "Pokaż Wilkowi ślad źródłowy bez raw private text.",
-        }
+        },
+        {
+            "target": (
+                "Ślad źródłowy i pakiet dowodów dla prywatnych/ocenionych źródeł"
+            ),
+            "scope": "wymóg dowodowy",
+            "source_blocks": [
+                "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02"
+            ],
+            "eval_cases": ["goal_005_private_evidence_policy_review"],
+            "retention": "decyzja właściciela wymagana",
+            "redacted": True,
+            "trace_ready": True,
+            "safe_next_step": "Pokaż Wilkowi metadane śladu bez surowego tekstu.",
+        },
     ]
     assert report["private_source_trace_scorecard"] == [
         {
@@ -994,7 +1012,25 @@ def _live_context() -> dict[str, object]:
                         "safe_next_step": (
                             "Pokaż Wilkowi source trace bez raw private text."
                         ),
-                    }
+                    },
+                    {
+                        "target_card_title": (
+                            "Ślad źródłowy i pakiet dowodów dla prywatnych/ocenionych źródeł"
+                        ),
+                        "scope": "evidence_requirement",
+                        "source_block_refs": [
+                            "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02"
+                        ],
+                        "eval_case_ids": [
+                            "goal_005_private_evidence_policy_review",
+                        ],
+                        "retention_decision": "pending_owner_decision",
+                        "redacted": True,
+                        "source_trace_ready": True,
+                        "safe_next_step": (
+                            "Pokaż Wilkowi metadane śladu bez surowego tekstu."
+                        ),
+                    },
                 ]
             },
             "private_review_value": {

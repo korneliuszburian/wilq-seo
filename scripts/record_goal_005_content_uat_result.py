@@ -1641,8 +1641,8 @@ def private_trace_operator_text(value: str) -> str:
 
 
 def private_source_trace_item_label(value: dict[str, Any]) -> str:
-    source_blocks = ", ".join(raw_string_list(value.get("source_blocks"))) or "brak"
-    eval_cases = ", ".join(raw_string_list(value.get("eval_cases"))) or "brak"
+    source_blocks = private_source_block_labels(value.get("source_blocks"))
+    eval_cases = private_eval_case_labels(value.get("eval_cases"))
     redacted = "zredagowane" if value.get("redacted") is True else "wymaga redakcji"
     trace_ready = "ślad gotowy" if value.get("trace_ready") is True else "ślad niepełny"
     parts = [
@@ -1655,6 +1655,34 @@ def private_source_trace_item_label(value: dict[str, Any]) -> str:
         trace_ready,
     ]
     return " / ".join(parts)
+
+
+def private_source_block_labels(value: Any) -> str:
+    labels = {
+        "ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02": (
+            "propozycja ekologus-ai: ślad dowodowy"
+        ),
+    }
+    items = [
+        labels.get(str(item), str(item))
+        for item in raw_string_list(value)
+        if str(item).strip()
+    ]
+    return ", ".join(items) if items else "brak"
+
+
+def private_eval_case_labels(value: Any) -> str:
+    labels = {
+        "goal_005_private_claim_policy_review": "review polityki twierdzeń",
+        "goal_006_claim_ledger_gate": "bramka listy dozwolonych twierdzeń",
+        "goal_005_private_evidence_policy_review": "review śladu dowodowego",
+    }
+    items = [
+        labels.get(str(item), str(item))
+        for item in raw_string_list(value)
+        if str(item).strip()
+    ]
+    return ", ".join(items) if items else "brak"
 
 
 def private_source_trace_scorecard_example(

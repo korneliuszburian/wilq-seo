@@ -117,6 +117,10 @@ Date: 2026-07-04
   draft-only activation steps and connector labels for the visible handoff:
   no `apply-mode ActionObject`, `payload apply`, raw connector IDs or
   `boundary/live write/env` wording in that block.
+- 2026-07-04 Goal 005 Wilku session card now also normalizes private
+  `ekologus-ai` trace labels in the visible source-trace block: `goal_*`
+  eval gates and long `ekologus_ai_*` source refs render as Polish review
+  labels, while short `KB_*` audit markers stay visible.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
