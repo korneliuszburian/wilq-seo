@@ -54,7 +54,7 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 - Żądana metryka albo akcja nie występuje w pakiecie kontekstu, dowodach, odczytach źródeł danych, regułach eksperckich ani akcjach do sprawdzenia.
 - Pakiet kontekstu skilla nie zawiera `social_draft_context`.
 - `historical_social_inventory_status` ma wartość `missing`; wtedy nie wolno twierdzić, że temat nie powiela wcześniejszych postów LinkedIn/Facebook.
-- `social_history_inventory.status` ma wartość `missing`; wtedy pokaż wymagane metadata-only pola historii (`channel`, `published_at`, `topic`, `service`, `claim`, `cta`, `format`, `post_url_or_id`, `source_evidence_id`) i nie używaj raw treści postów jako wymogu. Jeśli `discovery_seeds` zawiera publiczny URL LinkedIn, nazwij go tylko seedem discovery.
+- `social_history_inventory.status` ma wartość `missing`; wtedy pokaż wymagane metadata-only pola historii (`channel`, `published_at`, `topic`, `service`, `claim`, `cta`, `format`, `post_url_or_id`, `source_evidence_id`) i nie używaj raw treści postów jako wymogu. Jeśli `discovery_seeds` zawiera publiczne adresy LinkedIn/Facebook, nazwij je tylko punktami startowymi discovery.
 - Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
 ## Reguły dowodów

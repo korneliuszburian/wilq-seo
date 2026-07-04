@@ -841,7 +841,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "required_read_contracts" in merchant_skill_doc
     assert "missing_read_contracts" in merchant_skill_doc
     assert "Nie wolno opisywać całej" in merchant_skill_doc
-    assert "wypisz jego wartości literalnie" in merchant_skill_doc
+    assert "Próbki pokazuj jako punkty do ręcznego sprawdzenia" in merchant_skill_doc
     merchant_validation_call = (
         'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
     )
@@ -957,8 +957,11 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             "Wariant LinkedIn",
             "Wariant Facebook",
             "Historia do sprawdzenia",
+            "Od czego zacząć historię",
             "Decyzja po review",
             "brak powtórzeń historycznych postów",
+            "https://www.linkedin.com/company/ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-szkolenia-sorbenty/posts/?feedView=all",
+            "https://www.facebook.com/ekologus/?locale=pl_PL",
         }
     )
     old_post_publish_claim = "post " + "published"
@@ -973,6 +976,9 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     )
     assert social_validation_call in social_smoke_script
     assert '"action_validations": action_validations' in social_smoke_script
+    assert "EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL" in social_smoke_script
+    assert '"direct_inventory_seed_channels"' in social_smoke_script
+    assert "Social history inventory must expose LinkedIn and Facebook seeds" in social_smoke_script
 
     campaign_case = cases_by_skill["wilq-campaign-builder"]
     assert set(campaign_case["expected_validated_action_ids"]) == {

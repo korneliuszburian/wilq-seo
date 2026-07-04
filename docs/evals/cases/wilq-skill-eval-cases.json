@@ -575,13 +575,16 @@
       "Wariant LinkedIn",
       "Wariant Facebook",
       "Historia do sprawdzenia",
+      "Od czego zacząć historię",
       "Decyzja po review",
       "temat",
       "teza",
       "CTA",
       "brak powtórzeń historycznych postów",
       "nie wiemy jeszcze, czy podobny post już był",
-      "nie wolno pisać, że temat jest nowy"
+      "nie wolno pisać, że temat jest nowy",
+      "https://www.linkedin.com/company/ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-szkolenia-sorbenty/posts/?feedView=all",
+      "https://www.facebook.com/ekologus/?locale=pl_PL"
     ],
     "minimum_operator_usefulness_score": 9,
     "expected_action_ids": [

@@ -1666,6 +1666,45 @@ Result:
 - Handoff:
   `docs/handoffs/2026-07-02-wilku-social-history-blocker.md`.
 
+## 2026-07-04 - `wilq-social-publisher` uses social discovery seeds
+
+Purpose:
+
+- Make the social skill use the same public discovery start points as the API,
+  dashboard and Goal 005 guard.
+- Keep the visible answer review-only and useful: direction, variants, history
+  check, decision after review and public seed URLs, without claiming that the
+  historical inventory already exists.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260704T020059Z/wilq-social-publisher/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=false`.
+- Hard gates all true: evidence, source connectors, blocked claims, action
+  validation, freshness/blocker and workflow specificity.
+- Source connectors used: `linkedin`, `facebook`,
+  `google_search_console`, `google_merchant_center` and
+  `wordpress_ekologus`.
+- Evidence IDs include `ev_connector_linkedin_status`,
+  `ev_connector_facebook_status`,
+  `ev_refresh_refresh_google_search_console_26ac28f4939b`,
+  `ev_refresh_refresh_google_merchant_center_a04a45a6e6fd` and
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`.
+- Action validation passed for `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts`.
+- The answer now includes "Od czego zacząć historię", "Decyzja po review" and
+  the two public seed URLs for LinkedIn and Facebook as start points for
+  collecting metadata. It still blocks publication and the duplicate-free
+  claim until reviewed `social_history_inventory_v1` metadata exist.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

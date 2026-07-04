@@ -89,6 +89,11 @@ Date: 2026-07-04
   both public discovery links, LinkedIn and Facebook, in the visible "Od czego
   zacząć discovery" section while keeping publication and duplicate-free claims
   blocked.
+- 2026-07-04 `wilq-social-publisher` skill now uses the same discovery seed
+  path. Its non-interactive Codex eval passes with usefulness score 9, action
+  validation for LinkedIn/Facebook draft actions and explicit public seed URLs
+  for collecting history metadata, while publication and duplicate-free claims
+  remain blocked.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

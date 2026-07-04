@@ -27,6 +27,7 @@ EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL = (
     "ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-"
     "szkolenia-sorbenty/posts/?feedView=all"
 )
+EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL = "https://www.facebook.com/ekologus/?locale=pl_PL"
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -230,6 +231,10 @@ def main() -> int:
                     "direct_inventory_seed_count": len(
                         direct_inventory.get("discovery_seeds") or []
                     ),
+                    "direct_inventory_seed_channels": [
+                        seed.get("channel")
+                        for seed in (direct_inventory.get("discovery_seeds") or [])
+                    ],
                     "source_input_count": len(social_draft_context.get("source_inputs", [])),
                     "source_inputs": social_draft_context.get("source_inputs", [])[:4],
                     "draft_action_ids": social_draft_context.get("draft_action_ids", []),
@@ -270,18 +275,25 @@ def _assert_public_discovery_seed(inventory: dict[str, Any]) -> None:
     seeds = inventory.get("discovery_seeds")
     if not isinstance(seeds, list) or not seeds:
         raise SystemExit("Social history inventory must expose public discovery seeds")
-    linkedin_seed = next(
-        (seed for seed in seeds if seed.get("channel") == "linkedin"),
-        None,
-    )
-    if not isinstance(linkedin_seed, dict):
-        raise SystemExit("Social history inventory must expose a LinkedIn discovery seed")
-    if linkedin_seed.get("source_url") != EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL:
-        raise SystemExit("LinkedIn discovery seed URL does not match the public Ekologus posts URL")
-    if linkedin_seed.get("safe_collection_mode") != "metadata_only":
-        raise SystemExit("LinkedIn discovery seed must remain metadata_only")
-    if linkedin_seed.get("raw_post_body_allowed") is not False:
-        raise SystemExit("LinkedIn discovery seed must not allow raw post bodies")
+    seeds_by_channel = {
+        str(seed.get("channel")): seed for seed in seeds if isinstance(seed, dict)
+    }
+    expected_urls = {
+        "linkedin": EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
+        "facebook": EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL,
+    }
+    if set(expected_urls) - set(seeds_by_channel):
+        raise SystemExit("Social history inventory must expose LinkedIn and Facebook seeds")
+    for channel, expected_url in expected_urls.items():
+        seed = seeds_by_channel[channel]
+        if seed.get("source_url") != expected_url:
+            raise SystemExit(
+                f"{channel} discovery seed URL does not match the public Ekologus URL"
+            )
+        if seed.get("safe_collection_mode") != "metadata_only":
+            raise SystemExit(f"{channel} discovery seed must remain metadata_only")
+        if seed.get("raw_post_body_allowed") is not False:
+            raise SystemExit(f"{channel} discovery seed must not allow raw post bodies")
 
 
 if __name__ == "__main__":

@@ -84,7 +84,8 @@ W social odpowiedź musi dać coś, co marketer może od razu ocenić:
 - `Wariant LinkedIn`: 2-4 zdania szkicu albo kierunku posta, bez obietnic efektu.
 - `Wariant Facebook`: 2-4 zdania szkicu albo kierunku posta, prostszym językiem niż LinkedIn.
 - `Historia do sprawdzenia`: powiedz normalnie, że nie wiemy jeszcze, czy podobny post już był na LinkedIn/Facebooku, więc nie wolno pisać, że temat jest nowy albo bezpieczny do powtórzenia.
-- `Decyzja po review`: co może się stać po sprawdzeniu historii i twierdzeń: zaakceptować szkic do ręcznego przygotowania, przerobić CTA, zablokować temat albo poczekać na historię social.
+- `Od czego zacząć historię`: jeśli `social_history_inventory.discovery_seeds` podaje publiczne adresy LinkedIn/Facebook, wypisz te adresy jako punkty startowe do zebrania metadanych historii. Wyjaśnij, że same adresy nie są jeszcze historią postów.
+- `Decyzja po review`: użyj tej etykiety dokładnie i powiedz, co może się stać po sprawdzeniu historii i twierdzeń: zaakceptować szkic do ręcznego przygotowania, przerobić CTA, zablokować temat albo poczekać na historię social.
 - `Dowód`: krótkie ludzkie streszczenie źródeł, a surowe ID w śladzie technicznym.
 - `Zablokowane`: publikacja, claim o skuteczności i claim o braku powtórek.
 
