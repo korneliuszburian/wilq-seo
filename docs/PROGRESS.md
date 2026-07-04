@@ -105,6 +105,10 @@ Date: 2026-07-04
   (`przejdź do pełnego testu treści`, `zostań przy review`,
   `popraw materiały i wróć`, `odrzuć ten kierunek`) instead of inferred from
   several boolean fields.
+- 2026-07-04 Goal 005 completion guard now requires the explicit
+  `werdykt_po_15_minutach` value `przejdź do pełnego testu treści` before it
+  can return `complete_with_uat`; a valid UAT that still says `zostań przy
+  review` remains blocked as follow-up evidence, not completion proof.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

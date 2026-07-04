@@ -326,6 +326,7 @@ def test_goal_005_completion_check_blocks_uat_result_that_needs_follow_up(
             {
                 "data_sesji": "2026-07-02",
                 "osoba": "Wilku",
+                "werdykt_po_15_minutach": "przejdź do pełnego testu treści",
                 "czas_do_zrozumienia_statusu": "8 minut",
                 "punkty_niezrozumienia": (
                     "Nie było jasne, czemu pełny UAT nadal jest zablokowany."
@@ -394,6 +395,7 @@ def test_goal_005_completion_check_blocks_ready_uat_without_plain_review_model(
             {
                 "data_sesji": "2026-07-02",
                 "osoba": "Wilku",
+                "werdykt_po_15_minutach": "przejdź do pełnego testu treści",
                 "czas_do_zrozumienia_statusu": "8 minut",
                 "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
                 "wybrany_work_item": (
@@ -449,6 +451,7 @@ def test_goal_005_completion_check_blocks_ready_uat_with_scorecard_follow_up(
             {
                 "data_sesji": "2026-07-02",
                 "osoba": "Wilku",
+                "werdykt_po_15_minutach": "przejdź do pełnego testu treści",
                 "czas_do_zrozumienia_statusu": "8 minut",
                 "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
                 "wybrany_work_item": (
@@ -580,6 +583,7 @@ def test_goal_005_completion_check_blocks_live_uat_without_private_trace_scoreca
             {
                 "data_sesji": "2026-07-02",
                 "osoba": "Wilku",
+                "werdykt_po_15_minutach": "przejdź do pełnego testu treści",
                 "czas_do_zrozumienia_statusu": "8 minut",
                 "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
                 "wybrany_work_item": (
@@ -656,6 +660,7 @@ def test_goal_005_completion_check_blocks_ready_uat_with_private_trace_follow_up
             {
                 "data_sesji": "2026-07-02",
                 "osoba": "Wilku",
+                "werdykt_po_15_minutach": "przejdź do pełnego testu treści",
                 "czas_do_zrozumienia_statusu": "8 minut",
                 "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
                 "wybrany_work_item": (
@@ -768,6 +773,7 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
             {
                 "data_sesji": "2026-07-02",
                 "osoba": "Wilku",
+                "werdykt_po_15_minutach": "przejdź do pełnego testu treści",
                 "czas_do_zrozumienia_statusu": "8 minut",
                 "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
                 "wybrany_work_item": (
@@ -807,6 +813,54 @@ def test_goal_005_completion_check_accepts_ready_uat_result(tmp_path: Path) -> N
     markdown = render_markdown(report)
     assert "# Sprawdzenie domknięcia Goal 005" in markdown
     assert "Pokazane materiały review" in markdown
+
+
+def test_goal_005_completion_check_blocks_ready_uat_without_ready_session_verdict(
+    tmp_path: Path,
+) -> None:
+    result_path = tmp_path / "goal-005-uat-result.json"
+    result_path.write_text(
+        json.dumps(
+            {
+                "data_sesji": "2026-07-02",
+                "osoba": "Wilku",
+                "werdykt_po_15_minutach": "zostań przy review",
+                "czas_do_zrozumienia_statusu": "8 minut",
+                "punkty_niezrozumienia": "Brak krytycznych punktów niezrozumienia.",
+                "wybrany_work_item": (
+                    "content_work_item_content_decision_https___www_ekologus_pl"
+                ),
+                "pokazane_materialy_review": FULL_REVIEW_ARTIFACTS,
+                "oceny_materialow_review": _scorecard(
+                    FULL_REVIEW_ARTIFACTS,
+                    decision="zatwierdź",
+                    cta_score=4,
+                ),
+                "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+                "miejsca_generyczne_off_brand": "Nie znaleziono krytycznych miejsc.",
+                "najwiekszy_brak_produktu": "Brak dalszych blokad dla tego testu.",
+                "wilku_rozumie_blokady_pelnego_uat": "tak",
+                "service_profile_czytelny": "tak",
+                "public_service_review_actions_czytelne": "tak",
+                "private_review_actions_czytelne": "tak",
+                "private_policy_review_actions_czytelne": "tak",
+                "mozna_przejsc_do_pelnego_content_uat": "tak",
+                "follow_up_beads": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_completion_report(uat_result=result_path)
+
+    assert report["status"] == "blocked_missing_goal_005_uat_proof"
+    assert report["missing_input"] == "goal_005_session_verdict_not_ready"
+    assert any("zostań przy review" in detail for detail in report["details"])
+    assert any(
+        "przejdź do pełnego testu treści" in detail for detail in report["details"]
+    )
+    assert "realny dowód użyteczności dla Wilka" in report["blocked_claims"]
 
 
 def _scorecard(

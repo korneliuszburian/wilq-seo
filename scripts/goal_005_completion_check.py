@@ -10,6 +10,7 @@ from scripts.audit_skill_eval_coverage import build_report as build_skill_eval_c
 from scripts.claim_ledger_gate_audit import build_report as build_claim_ledger_gate_report
 from scripts.dashboard_usefulness_audit import build_report as build_dashboard_usefulness_report
 from scripts.record_goal_005_content_uat_result import (
+    SESSION_VERDICT_FIELD,
     build_content_uat_input_example,
     build_content_uat_result_report,
     first_service_profile_review_label,
@@ -63,6 +64,7 @@ OWNER_DEFER_PRIVATE_RISK_TERMS = [
     "ślad źródł",
     "source trace",
 ]
+GOAL_005_READY_SESSION_VERDICT = "przejdź do pełnego testu treści"
 KNOWLEDGE_STATUS_LABELS = {
     "seeded_contract_proof": "tylko seed/contract proof",
     "source_backed_review_required": "źródła są, wymagają oceny",
@@ -168,6 +170,33 @@ def build_completion_report(
 
     if uat_result is not None:
         uat_report = validate_uat_result(uat_result, api_base=api_base)
+        if (
+            uat_report["valid"]
+            and uat_report["overall_status"] == "ready_for_full_content_uat"
+            and uat_report.get("session_verdict") != GOAL_005_READY_SESSION_VERDICT
+        ):
+            return blocked_report(
+                "goal_005_session_verdict_not_ready",
+                [
+                    "UAT result is valid, but Wilku's 15-minute verdict does "
+                    "not approve moving to the full content test.",
+                    f"UAT verdict: {uat_report.get('session_verdict') or 'brak'}",
+                    (
+                        "Required verdict for Goal 005 completion: "
+                        f"{GOAL_005_READY_SESSION_VERDICT}"
+                    ),
+                ],
+                uat_live_provenance=uat_report.get("live_provenance_summary"),
+                uat_review_follow_up_suggestions=uat_report.get(
+                    "review_follow_up_suggestions"
+                ),
+                uat_private_source_trace_follow_up_suggestions=uat_report.get(
+                    "private_source_trace_follow_up_suggestions"
+                ),
+                uat_wilku_review_answers=uat_report.get("wilku_review_answers"),
+                next_uat_input=next_uat_input,
+                pre_demo_audits=pre_demo_audits,
+            )
         if (
             uat_report["valid"]
             and uat_report["overall_status"] == "ready_for_full_content_uat"
@@ -686,6 +715,8 @@ def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str,
     return {
         "valid": True,
         "overall_status": report["overall_status"],
+        "session_verdict": report.get("session_verdict")
+        or str(payload.get(SESSION_VERDICT_FIELD) or "").strip(),
         "selected_work_item": report["selected_work_item"],
         "shown_review_artifacts": report["shown_review_artifacts"],
         "missing_recommended_review_artifacts": report[
