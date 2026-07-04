@@ -14,6 +14,7 @@ from wilq.schemas import (
     FreshnessState,
 )
 from wilq.social.history import (
+    EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL,
     EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
     SOCIAL_HISTORY_INVENTORY_FILE_ENV,
     SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS,
@@ -112,7 +113,23 @@ def test_social_history_inventory_is_metadata_only_and_read_only() -> None:
                 "postów, dopóki metadata-only inventory nie zostanie zebrane i "
                 "sprawdzone."
             ),
-        }
+        },
+        {
+            "id": "social_history_seed_ekologus_facebook_posts",
+            "channel": "facebook",
+            "source_type": "public_posts_url",
+            "source_url": EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL,
+            "status": "seeded_not_collected",
+            "safe_collection_mode": "metadata_only",
+            "raw_post_body_allowed": False,
+            "required_review": True,
+            "operator_note": (
+                "Publiczny adres strony Facebook Ekologus jest tylko punktem "
+                "startowym discovery. WILQ nie traktuje go jako gotowej historii "
+                "postów, dopóki metadata-only inventory nie zostanie zebrane i "
+                "sprawdzone."
+            ),
+        },
     ]
 
 
@@ -268,9 +285,17 @@ def test_social_history_inventory_endpoint_exposes_public_discovery_seed(
     assert {
         source["connector_access_status"] for source in payload["sources"]
     } == {"missing_credentials"}
-    assert payload["discovery_seeds"][0]["source_url"] == EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL
-    assert payload["discovery_seeds"][0]["safe_collection_mode"] == "metadata_only"
-    assert payload["discovery_seeds"][0]["raw_post_body_allowed"] is False
+    assert {
+        seed["source_url"] for seed in payload["discovery_seeds"]
+    } == {
+        EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
+        EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL,
+    }
+    assert all(
+        seed["safe_collection_mode"] == "metadata_only"
+        for seed in payload["discovery_seeds"]
+    )
+    assert all(seed["raw_post_body_allowed"] is False for seed in payload["discovery_seeds"])
 
 
 def test_social_history_inventory_endpoint_uses_local_metadata_file(

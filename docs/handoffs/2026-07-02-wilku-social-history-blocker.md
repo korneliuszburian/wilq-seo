@@ -25,6 +25,9 @@ To jest poprawne zachowanie: WILQ ma nie generować pewności z braku danych.
 - WILQ może użyć danych z GSC, Merchant i WordPress jako dowodów do
   kierunku posta.
 - WILQ blokuje twierdzenie `brak powtórzeń historycznych postów`.
+- WILQ zna publiczne punkty startowe discovery dla LinkedIn i Facebooka, ale
+  traktuje je tylko jako adresy do zebrania metadanych. Same adresy nie są
+  historią postów i nie zdejmują blokady duplikacji.
 
 ## Czego brakuje
 

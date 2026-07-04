@@ -76,6 +76,11 @@ Date: 2026-07-04
   WILQ command should return (`expected_codex_output`) next to "Kopiuj
   polecenie". This keeps raw prompts and skill IDs hidden while making the
   first-screen "run the right skill" path easier for the marketer.
+- 2026-07-04 social history discovery now exposes both public starting points:
+  Ekologus LinkedIn posts and the Ekologus Facebook page. They are
+  `seeded_not_collected`, metadata-only, review-required inputs and do not
+  unlock duplicate-free, safe-repeat or publish claims without a reviewed
+  `social_history_inventory_v1` file.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

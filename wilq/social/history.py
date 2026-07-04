@@ -39,6 +39,7 @@ EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL = (
     "ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-"
     "szkolenia-sorbenty/posts/?feedView=all"
 )
+EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL = "https://www.facebook.com/ekologus/?locale=pl_PL"
 SOCIAL_HISTORY_FORBIDDEN_METADATA_FIELDS = [
     "raw_post_body",
     "post_body",
@@ -88,6 +89,35 @@ class SocialHistoryDiscoverySeed(BaseModel):
     operator_note: str
 
 
+def _social_history_discovery_seeds() -> list[SocialHistoryDiscoverySeed]:
+    return [
+        SocialHistoryDiscoverySeed(
+            id="social_history_seed_ekologus_linkedin_posts",
+            channel="linkedin",
+            source_type="public_posts_url",
+            source_url=EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
+            operator_note=(
+                "Publiczny adres postów LinkedIn Ekologus jest tylko punktem "
+                "startowym discovery. WILQ nie traktuje go jako gotowej historii "
+                "postów, dopóki metadata-only inventory nie zostanie zebrane i "
+                "sprawdzone."
+            ),
+        ),
+        SocialHistoryDiscoverySeed(
+            id="social_history_seed_ekologus_facebook_posts",
+            channel="facebook",
+            source_type="public_posts_url",
+            source_url=EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL,
+            operator_note=(
+                "Publiczny adres strony Facebook Ekologus jest tylko punktem "
+                "startowym discovery. WILQ nie traktuje go jako gotowej historii "
+                "postów, dopóki metadata-only inventory nie zostanie zebrane i "
+                "sprawdzone."
+            ),
+        ),
+    ]
+
+
 class SocialHistoryInventory(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -111,20 +141,7 @@ class SocialHistoryInventory(BaseModel):
     import_errors: list[str] = Field(default_factory=list)
     sources: list[SocialHistoryInventorySource]
     discovery_seeds: list[SocialHistoryDiscoverySeed] = Field(
-        default_factory=lambda: [
-            SocialHistoryDiscoverySeed(
-                id="social_history_seed_ekologus_linkedin_posts",
-                channel="linkedin",
-                source_type="public_posts_url",
-                source_url=EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
-                operator_note=(
-                    "Publiczny adres postów LinkedIn Ekologus jest tylko punktem "
-                    "startowym discovery. WILQ nie traktuje go jako gotowej historii "
-                    "postów, dopóki metadata-only inventory nie zostanie zebrane i "
-                    "sprawdzone."
-                ),
-            )
-        ]
+        default_factory=_social_history_discovery_seeds
     )
     allowed_uses: list[str] = Field(
         default_factory=lambda: [
