@@ -1405,6 +1405,16 @@ export const ContentWordPressDraftActivationPacketResponseSchema = z.object({
   external_write_attempted: z.literal(false),
   handoff_blockers: z.array(z.string()).default([]),
   execution_blockers: z.array(z.string()).default([]),
+  activation_missing_step: z.enum([
+    "draft_package",
+    "human_review",
+    "audit",
+    "handoff",
+    "dry_run",
+    "ready"
+  ]),
+  activation_missing_step_label: z.string(),
+  activation_missing_readiness_labels: z.array(z.string()).default([]),
   execution_result: ContentWordPressDraftExecutionResultSchema,
   operator_next_step: z.string(),
   next_steps: z.array(z.string()).default([]),

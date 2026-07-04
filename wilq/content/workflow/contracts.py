@@ -302,6 +302,16 @@ class ContentWordPressDraftActivationPacketResponse(BaseModel):
     external_write_attempted: Literal[False] = False
     handoff_blockers: list[str] = Field(default_factory=list)
     execution_blockers: list[str] = Field(default_factory=list)
+    activation_missing_step: Literal[
+        "draft_package",
+        "human_review",
+        "audit",
+        "handoff",
+        "dry_run",
+        "ready",
+    ] = "draft_package"
+    activation_missing_step_label: str
+    activation_missing_readiness_labels: list[str] = Field(default_factory=list)
     execution_result: ContentWordPressDraftExecutionResult
     operator_next_step: str
     next_steps: list[str] = Field(default_factory=list)

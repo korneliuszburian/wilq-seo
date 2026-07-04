@@ -59,6 +59,10 @@ Date: 2026-07-04
   missing audit labels and additional write blockers in the visible panel, so
   the operator sees the concrete trail to draft-only write readiness without
   opening raw technical data.
+- 2026-07-04 WordPress draft activation packet now exposes API-owned next
+  missing step fields (`activation_missing_step`, label and missing readiness
+  labels). `/content-workflow` renders "Najpierw domknij" from that contract,
+  so the UI no longer has to infer the next handoff/review/audit step.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

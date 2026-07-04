@@ -1117,6 +1117,9 @@ function WordPressDraftActivationPacketPanel({
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
             {packet.operator_next_step}
           </p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink">
+            Najpierw domknij: {packet.activation_missing_step_label}.
+          </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {packet.topic}
             {packet.final_canonical_url ? ` · ${packet.final_canonical_url}` : ""}
@@ -1166,6 +1169,11 @@ function WordPressDraftActivationPacketPanel({
           {packet.draft_package_id ? (
             <p className="mt-3 text-xs text-slate-500">
               Paczka szkicu istnieje w WILQ i czeka na review.
+            </p>
+          ) : null}
+          {packet.activation_missing_readiness_labels.length > 0 ? (
+            <p className="mt-3 text-xs leading-5 text-slate-600">
+              Brakuje etapów: {packet.activation_missing_readiness_labels.join(", ")}.
             </p>
           ) : null}
         </div>

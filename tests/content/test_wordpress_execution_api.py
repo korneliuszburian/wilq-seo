@@ -172,6 +172,14 @@ def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     assert data["external_write_attempted"] is False
     assert data["handoff_blockers"] == ["missing_human_review", "missing_audit"]
     assert set(data["execution_blockers"]) == {"missing_handoff"}
+    assert data["activation_missing_step"] == "human_review"
+    assert data["activation_missing_step_label"] == "zapisz review człowieka"
+    assert data["activation_missing_readiness_labels"] == [
+        "review człowieka",
+        "audit przekazania",
+        "handoff WordPress",
+        "podgląd dry-run",
+    ]
     assert data["execution_result"]["status"] == "blocked"
     assert data["execution_result"]["external_write_attempted"] is False
     assert "review człowieka" in data["operator_next_step"]
@@ -213,6 +221,16 @@ def test_wordpress_activation_packet_follows_saved_review_and_audit(
     assert after_review["external_write_attempted"] is False
     assert after_review["handoff_blockers"] == ["missing_audit"]
     assert after_review["execution_blockers"] == ["missing_handoff"]
+    assert after_review["activation_missing_step"] == "audit"
+    assert (
+        after_review["activation_missing_step_label"]
+        == "zapisz audit przekazania do WordPress"
+    )
+    assert after_review["activation_missing_readiness_labels"] == [
+        "audit przekazania",
+        "handoff WordPress",
+        "podgląd dry-run",
+    ]
     assert after_review["human_review_checklist"] == [
         "Review człowieka jest zapisane; teraz sprawdź audyt i handoff WordPress."
     ]
@@ -235,6 +253,12 @@ def test_wordpress_activation_packet_follows_saved_review_and_audit(
     assert after_audit["external_write_attempted"] is False
     assert after_audit["handoff_blockers"] == []
     assert after_audit["execution_blockers"] == []
+    assert after_audit["activation_missing_step"] == "ready"
+    assert (
+        after_audit["activation_missing_step_label"]
+        == "podgląd draft-only jest gotowy do review"
+    )
+    assert after_audit["activation_missing_readiness_labels"] == []
     assert after_audit["execution_result"]["status"] == "dry_run_ready"
     assert after_audit["execution_result"]["payload"]["post_status"] == "draft"
     assert after_audit["execution_result"]["external_write_attempted"] is False

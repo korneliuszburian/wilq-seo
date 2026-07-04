@@ -162,6 +162,10 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText("Paczka szkicu").length).toBeGreaterThan(0);
     expect(screen.getByText("Review człowieka")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje aktywację")).toBeInTheDocument();
+    expect(screen.getByText(/Najpierw domknij: zapisz review człowieka/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/Brakuje etapów: review człowieka, audit przekazania/))
+      .toBeInTheDocument();
     expect(screen.getByText("brakuje review człowieka")).toBeInTheDocument();
     expect(screen.getByText("brakuje audytu")).toBeInTheDocument();
     expect(screen.getByText("brakuje handoffu")).toBeInTheDocument();
@@ -1521,6 +1525,14 @@ function wordpressDraftActivationPacket(): ContentWordPressDraftActivationPacket
     external_write_attempted: false,
     handoff_blockers: ["missing_human_review", "missing_audit"],
     execution_blockers: ["missing_handoff"],
+    activation_missing_step: "human_review",
+    activation_missing_step_label: "zapisz review człowieka",
+    activation_missing_readiness_labels: [
+      "review człowieka",
+      "audit przekazania",
+      "handoff WordPress",
+      "podgląd dry-run"
+    ],
     execution_result: {
       status: "blocked",
       mode: "dry_run",
