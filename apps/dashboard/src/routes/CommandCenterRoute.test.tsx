@@ -239,6 +239,13 @@ describe("CommandCenter route", () => {
     expect(screen.getByText("luki linków")).toBeInTheDocument();
     expect(screen.getByText("Polecenie: plik produktowy Merchant")).toBeInTheDocument();
     expect(screen.getByText("Polecenie: strategia treści")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Po skopiowaniu: Polskie podsumowanie przeglądu problemów pliku produktowego z dowodami źródłowymi."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText("Po skopiowaniu: Polski content brief bez obietnic pozycji."))
+      .toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Kopiuj polecenie" })).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Otwórz Merchant" })).toHaveAttribute(
       "href",
@@ -301,6 +308,7 @@ describe("CommandCenter route", () => {
     expect(routeSource).toContain("item.decision_state_label");
     expect(routeSource).toContain("item.freshness_label");
     expect(routeSource).toContain("item.skill_label");
+    expect(routeSource).toContain("item.expected_codex_output");
     expect(routeSource).toContain("item.source_connector_labels");
     expect(routeSource).toContain("item.blocked_claim_labels");
     expect(routeSource).toContain("item.cta_label");

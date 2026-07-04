@@ -72,6 +72,10 @@ Date: 2026-07-04
   passes with 15 surfaces, 13 `demo_ready`, 2 `review_ready`, 0 blocked and
   score 10/10 for every audited surface. This updates readiness confidence,
   but it is still not Wilku UAT proof and does not complete Goal 005.
+- 2026-07-04 `/command-center` daily decision cards now show what the copied
+  WILQ command should return (`expected_codex_output`) next to "Kopiuj
+  polecenie". This keeps raw prompts and skill IDs hidden while making the
+  first-screen "run the right skill" path easier for the marketer.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

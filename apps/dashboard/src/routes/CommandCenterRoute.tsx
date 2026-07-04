@@ -93,18 +93,27 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               {item.bezpieczny_next_step}
             </p>
             {item.skill_id && item.codex_prompt ? (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
-                  <Copy aria-hidden="true" size={15} />
-                  Polecenie: {item.skill_label ?? "workflow WILQ"}
+              <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
+                      <Copy aria-hidden="true" size={15} />
+                      Polecenie: {item.skill_label ?? "workflow WILQ"}
+                    </div>
+                    {item.expected_codex_output ? (
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        Po skopiowaniu: {item.expected_codex_output}
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyPromptToClipboard(item.codex_prompt ?? "")}
+                    className="inline-flex h-8 items-center rounded-md border border-action/30 px-3 text-xs font-semibold uppercase tracking-normal text-action hover:bg-action/10"
+                  >
+                    Kopiuj polecenie
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => copyPromptToClipboard(item.codex_prompt ?? "")}
-                  className="inline-flex h-8 items-center rounded-md border border-action/30 px-3 text-xs font-semibold uppercase tracking-normal text-action hover:bg-action/10"
-                >
-                  Kopiuj polecenie
-                </button>
               </div>
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
