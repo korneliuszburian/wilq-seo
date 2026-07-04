@@ -68,6 +68,10 @@ Date: 2026-07-04
   adapter boundary and block on missing executor, Ads change-history review
   exposes typed Polish preview cards, and WordPress draft apply-preview reuses
   the draft handoff preview card instead of falling back to raw payload data.
+- 2026-07-04 live dashboard usefulness audit against `http://127.0.0.1:8000`
+  passes with 15 surfaces, 13 `demo_ready`, 2 `review_ready`, 0 blocked and
+  score 10/10 for every audited surface. This updates readiness confidence,
+  but it is still not Wilku UAT proof and does not complete Goal 005.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

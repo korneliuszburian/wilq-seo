@@ -286,24 +286,25 @@ Current dashboard usefulness map, updated by replacing rows rather than
 appending history. The canonical live check is:
 `rtk uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown`.
 
-Snapshot from 2026-07-02 live API audit: 15 surfaces checked, 13
-`demo_ready`, 2 `review_ready`, 0 `blocked`, pass=true. Treat this as a
-readiness map, not as Wilku UAT proof.
+Snapshot from 2026-07-04 live API audit: 15 surfaces checked, 13
+`demo_ready`, 2 `review_ready`, 0 `blocked`, pass=true, every audited surface
+scored 10/10 for current dashboard usefulness. Treat this as a readiness map,
+not as Wilku UAT proof.
 
 | Surface | Current usefulness state | Next tuning target |
 | --- | --- | --- |
 | `/command-center` | `demo_ready`; 22 evidence IDs, 10 actions and 20 decisions. It can tell Wilku what to open first today: Merchant. | Add a lower-friction "run the right skill" path and API-owned explanation for why the top decision is first. |
 | `/ads-doctor` | `demo_ready`; 2 evidence IDs, 9 actions and 55 decision/proof rows. It is useful for campaign, budget, recommendation, search-term and safe-action review, but not for ROAS/waste claims without missing contracts. | Improve per-action preview clarity so the marketer sees "what this action checks" before raw payload details. |
 | `/merchant` | `demo_ready`; 4 evidence IDs, 1 action and 42 issue/decision rows. It is currently the first daily work item from Command Center. | Show product-state mapping and biggest attribute issue side by side, then add Ads/GA4 product-performance joins before revenue/ROAS product claims. |
-| `/content-planner` | `demo_ready`; 16 evidence IDs, 5 actions and 55 content decisions. It can queue refresh/merge/create/block work from GSC, WordPress, Ahrefs, GA4 and knowledge evidence. | Connect the full Claim Ledger to draft gating and add historical LinkedIn/Facebook metadata before claiming topics are new or safe to repurpose. |
+| `/content-planner` | `demo_ready`; 16 evidence IDs, 6 actions and 55 content decisions. It can queue refresh/merge/create/block work from GSC, WordPress, Ahrefs, GA4 and knowledge evidence. | Connect the full Claim Ledger to draft gating and add historical LinkedIn/Facebook metadata before claiming topics are new or safe to repurpose. |
 | `/ga4` | `demo_ready`; 19 evidence IDs, 1 action and 33 decision/proof rows. It separates traffic-quality review from measurement problems such as `(not set)`. | Make conversion-readiness and action-panel copy less technical without implying ROAS, revenue or conversion proof. |
-| `/service-profile` | `demo_ready`; 1 evidence ID, 14 review actions and 41 knowledge/service decisions. It is useful for owner review, but production-depth knowledge is still blocked. | Run real Wilku/owner review for selected cards/proposals, then persist reviewer, freshness, confidence and source lineage toward approved-current cards. |
+| `/service-profile` | `demo_ready`; 1 evidence ID, 14 review actions and 47 knowledge/service decisions. It is useful for owner review, but production-depth knowledge is still blocked. | Run real Wilku/owner review for selected cards/proposals, then persist reviewer, freshness, confidence and source lineage toward approved-current cards. |
 | `/content-workflow` | `demo_ready`; 3 evidence IDs and 36 workflow/claim-gate decisions. It shows the active proposal, API-owned blocker/next-step chain, read-only WordPress/ACF readiness and dry-run "Mapowanie ACF" preview, including nested `glowny_opis`/`elementy` fields plus one `elementy` row candidate for manual review, without allowing publish/write. | Run one approved-current knowledge item through preflight -> Sales Brief -> Claim Ledger -> draft-only package -> human review proof, then keep ACF preview readable above raw payloads. |
-| `/ahrefs` | `demo_ready`; 8 evidence IDs and 20 gap/authority decisions. | Pair Ahrefs gaps with GSC and WordPress inventory before turning them into content actions. |
+| `/ahrefs` | `demo_ready`; 7 evidence IDs and 20 gap/authority decisions. | Pair Ahrefs gaps with GSC and WordPress inventory before turning them into content actions. |
 | `/localo` | `demo_ready`; 2 evidence IDs, 1 action and 35 local-readiness rows. | Keep local claims review-only until ranking/GBP/competitor evidence is exposed beyond OAuth/initialize proof. |
 | `/ads-doctor/demand-gen` | `review_ready`; 12 evidence IDs, 1 action and 1 readiness decision. It remains experimental. | Confirm landing-page quality data and creative/asset readiness before proposing Demand Gen launch or mode changes. |
 | `/social-publisher` | `review_ready`; 7 evidence IDs, 2 draft actions and 2 social decisions. It can prepare review-only post directions, but publish access and duplicate-free claims stay blocked because social history and credentials are missing. | Add metadata-only historical post inventory (`social_history_inventory_v1`) before claiming duplicate-free repurposing or safe repeat topics. |
-| `/actions` | `demo_ready`; 19 ActionObjects and 41 evidence IDs. | Keep marketer summaries above raw payloads; raw audit details stay below the fold. |
+| `/actions` | `demo_ready`; 20 ActionObjects and 44 evidence IDs. | Keep marketer summaries above raw payloads; raw audit details stay below the fold. |
 | `/opportunities` | `demo_ready`; 5 opportunities, 22 evidence IDs and 9 actions. | Make each opportunity answer "why now?" and "what is the next safe action?" without developer translation. |
 | `/workflows` | `demo_ready`; 15 workflow records, 20 evidence IDs, 10 actions and 15 decisions. | Route operators back to Command Center priority order instead of making workflows feel like a separate product. |
 | `/knowledge` | `demo_ready`; 15 records and 49 lineage traces. | Keep knowledge review honest: records with lineage are not automatically approved-current production knowledge. |
