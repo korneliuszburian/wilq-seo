@@ -413,9 +413,9 @@ def render_content_uat_session_card(
         "",
         f"- Materiał ID: `{selected_work_item}`",
         "- Kolejka content: "
-        f"`{provenance.get('queue_status') or 'nie sprawdzono live API'}`",
+        f"{content_queue_status_label(provenance.get('queue_status'))}",
         "- Status briefu sprzedażowego: "
-        f"`{provenance.get('selected_sales_brief_status') or 'brak live proof'}`",
+        f"{sales_brief_status_label(provenance.get('selected_sales_brief_status'))}",
         "- Jakość sygnału briefu: "
         f"{selected_sales_brief_signal_quality_label(provenance)}",
         "- Wiedza gotowa do finalnych treści: "
@@ -447,6 +447,28 @@ def wordpress_draft_activation_plan_steps(
     return steps[:4] or [
         "Brak kroków aktywacji z API, więc WordPress pozostaje review-only."
     ]
+
+
+def content_queue_status_label(value: Any) -> str:
+    raw = str(value or "").strip()
+    labels = {
+        "blocked": "zablokowana do czasu oceny",
+        "ready": "gotowa do pracy",
+        "review_required": "wymaga oceny",
+        "missing": "brak odczytu kolejki",
+    }
+    return labels.get(raw, raw or "nie sprawdzono live API")
+
+
+def sales_brief_status_label(value: Any) -> str:
+    raw = str(value or "").strip()
+    labels = {
+        "ready": "gotowy tylko do oceny",
+        "blocked": "zablokowany",
+        "review_required": "wymaga oceny",
+        "missing": "brak briefu",
+    }
+    return labels.get(raw, raw or "brak live proof")
 
 
 def wordpress_draft_activation_step_label(value: Any) -> str:

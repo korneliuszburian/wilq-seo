@@ -121,6 +121,10 @@ Date: 2026-07-04
   `ekologus-ai` trace labels in the visible source-trace block: `goal_*`
   eval gates and long `ekologus_ai_*` source refs render as Polish review
   labels, while short `KB_*` audit markers stay visible.
+- 2026-07-04 Goal 005 Wilku session card now renders queue and Sales Brief
+  statuses as Polish operator labels in the save/provenance section
+  (`zablokowana do czasu oceny`, `gotowy tylko do oceny`) instead of raw
+  `blocked`/`ready` enums.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

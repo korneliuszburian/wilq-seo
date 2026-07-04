@@ -271,6 +271,11 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "payload apply" not in wordpress_section
     assert "## ID do zapisu po rozmowie" in card
     assert "Materiał ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
+    id_section = card.split("## ID do zapisu po rozmowie", 1)[1]
+    assert "Kolejka content: zablokowana do czasu oceny" in id_section
+    assert "Status briefu sprzedażowego: gotowy tylko do oceny" in id_section
+    assert "Kolejka content: `blocked`" not in id_section
+    assert "Status briefu sprzedażowego: `ready`" not in id_section
     public_section = card.split("## ID do zapisu po rozmowie")[0]
     assert "renamed_public_service_bdo_review" not in public_section
     assert "ekologus_service_bdo_reporting" not in public_section
