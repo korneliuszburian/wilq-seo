@@ -103,6 +103,10 @@ Date: 2026-07-04
   draft-only activation plan in the "Czego nie pokazujemy jako gotowe" block,
   so the material shown to Wilku cannot be mistaken for write/publish
   readiness.
+- 2026-07-04 Goal 005 pre-demo audit now explains why current skills are
+  still below `10/10`: it lists the first three `9/10` skills, renders their
+  state in Polish and shows the next review/workflow blocker instead of only
+  reporting `gotowe dla Wilka 10/10: 0`.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

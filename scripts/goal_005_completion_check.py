@@ -360,6 +360,16 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
     latest_eval_scores = [
         row["score"] for row in latest_eval_report["rows"] if row.get("score") is not None
     ]
+    top_wilku_ready_blockers = [
+        {
+            "skill": row.get("skill"),
+            "score": row.get("score"),
+            "state": row.get("state"),
+            "next_step": row.get("remaining_blocker"),
+        }
+        for row in latest_eval_report["rows"]
+        if row.get("score") is not None and int(row.get("score") or 0) < 10
+    ][:3]
     summary = {
         "source_fact_coverage": {
             "pass": source_report["pass"],
@@ -420,6 +430,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
                 for row in latest_eval_report["rows"]
                 if str(row.get("state", "")).startswith("blocked correctly")
             ),
+            "top_wilku_ready_blockers": top_wilku_ready_blockers,
             "missing_passing_skills": latest_eval_report["missing_passing_skills"],
             "stale_passing_skills": latest_eval_report["stale_passing_skills"],
         },
@@ -1401,7 +1412,20 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"mocne 7+: {latest_eval.get('strong_skill_count')}; "
         f"gotowe dla Wilka 10/10: {latest_eval.get('wilku_ready_skill_count')}; "
         f"poprawnie zablokowane: {latest_eval.get('blocked_correctly_count')}.",
-        "- Historia social do dedupe: "
+    ]
+    skill_blockers = latest_eval.get("top_wilku_ready_blockers") or []
+    if skill_blockers:
+        lines.append("- Co trzyma skille poniżej 10/10:")
+        for row in skill_blockers[:3]:
+            lines.append(
+                "  - "
+                f"{row.get('skill')}: {row.get('score')}/10, "
+                f"{_skill_eval_state_label(row.get('state'))} -> "
+                f"{row.get('next_step')}"
+            )
+    lines.extend(
+        [
+            "- Historia social do dedupe: "
         f"{_social_history_status_label(social_history)}; "
         f"metadane: {social_history.get('metadata_source_status') or 'brak'}; "
         f"pozycje: {social_history.get('item_count')}; "
@@ -1416,7 +1440,8 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"vendor write możliwy: {mutation_readiness.get('vendor_write_possible_count')}; "
         f"próba live write: {mutation_readiness.get('would_attempt_vendor_write_count')}; "
         f"pierwsze blokady: {_first_write_blockers_label(first_write)}.",
-    ]
+        ]
+    )
     activation_steps = [
         str(step).strip()
         for step in (mutation_readiness.get("activation_plan_steps") or [])[:4]
@@ -1452,6 +1477,18 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
 
 def _gate_label(value: Any) -> str:
     return "OK" if value is True else "wymaga sprawdzenia"
+
+
+def _skill_eval_state_label(value: Any) -> str:
+    labels = {
+        "ready / review-only": "gotowy do review",
+        "ready / read-only": "gotowy do odczytu",
+        "blocked correctly / review-only": "poprawnie zablokowany do review",
+        "stale passing eval": "wymaga ponownego evala",
+        "missing passing eval": "brak aktualnego evala",
+    }
+    raw = str(value or "")
+    return labels.get(raw, raw or "brak stanu")
 
 
 def _knowledge_status_label(value: Any) -> str:

@@ -148,6 +148,14 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
     ]["minimum_score"]
     assert summary["latest_skill_eval_results"]["strong_skill_count"] >= 1
     assert summary["latest_skill_eval_results"]["wilku_ready_skill_count"] >= 0
+    assert summary["latest_skill_eval_results"]["top_wilku_ready_blockers"]
+    first_skill_blocker = summary["latest_skill_eval_results"][
+        "top_wilku_ready_blockers"
+    ][0]
+    assert first_skill_blocker["skill"]
+    assert first_skill_blocker["score"] < 10
+    assert first_skill_blocker["state"]
+    assert first_skill_blocker["next_step"]
     social_history = summary["social_history_inventory"]
     assert social_history["status"] == "missing"
     assert social_history["metadata_source_configured"] is False
@@ -844,6 +852,10 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "wiedza do finalnych treści: 0%" in markdown
     assert "publikacja/finalny draft: zablokowane zgodnie z zasadami" in markdown
     assert "Najnowsze wyniki umiejętności" in markdown
+    assert "Co trzyma skille poniżej 10/10" in markdown
+    assert "wilq-daily-command" in markdown
+    assert "gotowy do review" in markdown
+    assert "ready / review-only" not in markdown
     assert "Następne decyzje w Service Profile" in markdown
     assert "-> Bezpieczeństwo prawne, poufność i zgody" in markdown
     assert "Ślad źródłowy i pakiet dowodów" in markdown
