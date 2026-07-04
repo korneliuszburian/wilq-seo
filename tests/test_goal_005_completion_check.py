@@ -79,7 +79,10 @@ def test_wilku_service_profile_handoff_includes_private_source_trace() -> None:
         "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md"
     ).read_text(encoding="utf-8")
 
-    assert "Prywatny ślad źródłowy do pokazania bez raw private text" in handoff
+    assert (
+        "Prywatny ślad źródłowy do pokazania bez surowego prywatnego tekstu"
+        in handoff
+    )
     assert "KB_021_BEZPIECZENSTWO_PRAWNE" in handoff
     assert "KB_014_STYL_MARKI" in handoff
     assert "goal_005_private_claim_policy_review" in handoff
@@ -87,6 +90,15 @@ def test_wilku_service_profile_handoff_includes_private_source_trace() -> None:
     assert "goal_005_private_evidence_policy_review" in handoff
     assert "decyzja właściciela wymagana" in handoff
     assert "zredagowane, ślad gotowy, bez promocji do finalnych treści" in handoff
+    private_trace_section = handoff.split(
+        "Prywatny ślad źródłowy do pokazania", 1
+    )[1].split("Pytania do rozmowy", 1)[0]
+    assert "bez surowego prywatnego tekstu" in private_trace_section
+    assert "bramka: `goal_005_private_claim_policy_review`" in private_trace_section
+    assert "bramka: `goal_005_private_evidence_policy_review`" in private_trace_section
+    assert "eval:" not in private_trace_section
+    assert "raw private text" not in private_trace_section
+    assert "finalny content" not in handoff
 
 
 def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:

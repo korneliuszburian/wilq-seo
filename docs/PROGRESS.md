@@ -124,6 +124,11 @@ Date: 2026-07-04
   (`ekologus` homepage z kolejki treści) i pierwsza decyzja Service Profile
   (BDO jako pierwsza karta wiedzy do oceny) są dwoma sprawdzeniami w jednej
   sesji, więc Wilku nie musi zgadywać, czemu te wątki występują razem.
+- 2026-07-04 główny handoff
+  `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md` używa tych
+  samych etykiet co karta rozmowy i completion guard: prywatny ślad pokazuje
+  `bramka: goal_*`, nie `eval: goal_*`, oraz unika `raw private text` i
+  `finalny content` w widocznym tekście.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
