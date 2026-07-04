@@ -19336,6 +19336,16 @@ def test_social_context_pack_exposes_review_only_draft_context(
         "post_url_or_id",
         "source_evidence_id",
     }.issubset(history_inventory["sources"][0]["required_metadata_fields"])
+    input_template = history_inventory["input_template"]
+    assert input_template["contract"] == "social_history_inventory_v1"
+    assert {item["channel"] for item in input_template["items"]} == {
+        "linkedin",
+        "facebook",
+    }
+    assert "metadata-only" in input_template["_instruction"]
+    serialized_input_template = json.dumps(input_template, ensure_ascii=False)
+    assert "raw_post_body" not in serialized_input_template
+    assert "comments" not in serialized_input_template
     assert "twierdzenie że temat jest nowy bez historii postów" in history_inventory[
         "blocked_uses"
     ]
@@ -19392,6 +19402,7 @@ def test_social_context_pack_uses_review_ready_history_inventory_file(
     inventory = social_context["social_history_inventory"]
     assert inventory["metadata_source_configured"] is True
     assert inventory["metadata_source_status"] == "review_ready"
+    assert inventory["input_template"]["contract"] == "social_history_inventory_v1"
     assert inventory["item_count"] == 2
     assert inventory["channel_counts"] == {"facebook": 1, "linkedin": 1}
     assert inventory["import_errors"] == []

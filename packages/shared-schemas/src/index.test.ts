@@ -248,6 +248,36 @@ describe("SocialHistoryInventorySchema", () => {
           operator_note: "Publiczny seed discovery nie jest gotową historią postów."
         }
       ],
+      input_template: {
+        contract: "social_history_inventory_v1",
+        collected_at: "<YYYY-MM-DD>",
+        reviewer: "<Wilku albo owner>",
+        items: [
+          {
+            channel: "linkedin",
+            published_at: "2026-01-15",
+            topic: "BDO",
+            service: "BDO",
+            claim: "Ekologus pomaga uporządkować obowiązki BDO",
+            cta: "kontakt z doradcą",
+            format: "post edukacyjny",
+            post_url_or_id: "https://www.linkedin.com/posts/...",
+            source_evidence_id: "linkedin_historical_posts"
+          },
+          {
+            channel: "facebook",
+            published_at: "2026-01-20",
+            topic: "BDO",
+            service: "BDO",
+            claim: "Ekologus pomaga uporządkować obowiązki BDO",
+            cta: "kontakt z doradcą",
+            format: "post edukacyjny",
+            post_url_or_id: "facebook-post-id-or-url",
+            source_evidence_id: "facebook_historical_posts"
+          }
+        ],
+        _instruction: "To jest metadata-only format. Nie dodawaj raw treści postów."
+      },
       allowed_uses: ["sprawdzenie powtórek"],
       blocked_uses: ["twierdzenie że temat jest nowy bez historii postów"],
       dedupe_requirements: ["porównać temat, claim i CTA"],

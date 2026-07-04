@@ -88,6 +88,12 @@ def test_social_history_inventory_is_metadata_only_and_read_only() -> None:
         for source in payload["sources"]
     )
     assert all(source["raw_post_body_allowed"] is False for source in payload["sources"])
+    assert payload["input_template"]["contract"] == "social_history_inventory_v1"
+    assert payload["input_template"]["items"][0]["channel"] == "linkedin"
+    assert payload["input_template"]["items"][1]["channel"] == "facebook"
+    assert "raw treści postów" in payload["input_template"]["_instruction"]
+    assert "raw_post_body" not in str(payload["input_template"])
+    assert "comments" not in str(payload["input_template"])
     assert "twierdzenie że temat jest nowy bez historii postów" in payload[
         "blocked_uses"
     ]

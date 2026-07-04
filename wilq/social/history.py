@@ -143,6 +143,9 @@ class SocialHistoryInventory(BaseModel):
     discovery_seeds: list[SocialHistoryDiscoverySeed] = Field(
         default_factory=_social_history_discovery_seeds
     )
+    input_template: dict[str, object] = Field(
+        default_factory=lambda: social_history_input_example()
+    )
     allowed_uses: list[str] = Field(
         default_factory=lambda: [
             "sprawdzenie czy temat, claim albo CTA powtarza wcześniejsze posty",

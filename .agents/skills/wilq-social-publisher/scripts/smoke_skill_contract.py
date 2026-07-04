@@ -171,6 +171,29 @@ def main() -> int:
         raise SystemExit("Social history inventory must expose non-secret access status")
     if any("credential_status" in source for source in sources):
         raise SystemExit("Social history inventory must avoid redacted credential_status key")
+    input_template = social_history_inventory.get("input_template")
+    if not isinstance(input_template, dict):
+        raise SystemExit("Social history inventory must expose input_template")
+    if input_template.get("contract") != "social_history_inventory_v1":
+        raise SystemExit("Social history input_template must keep the versioned contract")
+    template_items = input_template.get("items") or []
+    if {item.get("channel") for item in template_items if isinstance(item, dict)} != {
+        "linkedin",
+        "facebook",
+    }:
+        raise SystemExit("Social history input_template must include LinkedIn and Facebook items")
+    template_text = json.dumps(input_template, ensure_ascii=False)
+    forbidden_template_markers = {
+        "raw_post_body",
+        "post_body",
+        "comments",
+        "comment_text",
+        "access_token",
+    }
+    if any(marker in template_text for marker in forbidden_template_markers):
+        raise SystemExit("Social history input_template must not expose raw/private fields")
+    if "metadata-only" not in str(input_template.get("_instruction") or ""):
+        raise SystemExit("Social history input_template must explain metadata-only collection")
     _assert_public_discovery_seed(social_history_inventory)
 
     direct_inventory = request_json(args.api_base, "GET", "/api/social/history-inventory")

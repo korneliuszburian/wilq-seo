@@ -220,6 +220,23 @@ function SocialHistoryBlocker({
           ]}
         />
       </div>
+      <div className="mt-4 rounded-md border border-line bg-slate-50 p-3">
+        <h3 className="text-sm font-semibold text-ink">Gotowy szablon metadanych</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          {inventory.input_template._instruction}
+        </p>
+        <LabelChipRow
+          className="mt-3"
+          chips={[
+            { label: "Data zebrania", value: inventory.input_template.collected_at },
+            { label: "Reviewer", value: inventory.input_template.reviewer },
+            {
+              label: "Kanały w szablonie",
+              value: inventory.input_template.items.map((item) => item.channel).join(", ")
+            }
+          ]}
+        />
+      </div>
       {inventory.discovery_seeds.length > 0 ? (
         <div className="mt-4 rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Od czego zacząć discovery</h3>

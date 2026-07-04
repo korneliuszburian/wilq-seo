@@ -3475,6 +3475,23 @@ export const SocialHistoryInventorySchema = z.object({
   import_errors: z.array(z.string()),
   sources: z.array(SocialHistoryInventorySourceSchema),
   discovery_seeds: z.array(SocialHistoryDiscoverySeedSchema),
+  input_template: z.object({
+    contract: z.literal("social_history_inventory_v1"),
+    collected_at: z.string(),
+    reviewer: z.string(),
+    items: z.array(z.object({
+      channel: z.enum(["linkedin", "facebook"]),
+      published_at: z.string(),
+      topic: z.string(),
+      service: z.string(),
+      claim: z.string(),
+      cta: z.string(),
+      format: z.string(),
+      post_url_or_id: z.string(),
+      source_evidence_id: z.string()
+    })),
+    _instruction: z.string()
+  }),
   allowed_uses: z.array(z.string()),
   blocked_uses: z.array(z.string()),
   dedupe_requirements: z.array(z.string()),

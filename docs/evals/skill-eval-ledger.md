@@ -161,6 +161,45 @@ Result:
   adresów..." in API-owned wording, so the skill cannot silently turn partial
   query/page evidence into a full traffic conclusion.
 
+## 2026-07-04 - Social history metadata template is API-owned
+
+Purpose:
+
+- Reduce the social-history blocker from "go collect something" to a concrete
+  metadata-only collection template exposed by WILQ API.
+- Keep the contract safe: no raw post body, comments, user data or tokens, and
+  no duplicate-free/publication claim without review.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_social_history_contract.py tests/test_api_contracts.py::test_social_context_pack_exposes_review_only_draft_context tests/test_api_contracts.py::test_social_context_pack_uses_review_ready_history_inventory_file -q
+rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+rtk uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run ruff check wilq/social/history.py tests/test_social_history_contract.py tests/test_api_contracts.py .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py
+rtk uv run mypy wilq/social/history.py
+rtk pnpm --dir packages/shared-schemas typecheck
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-social-publisher --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260704T042313Z/wilq-social-publisher/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=false`.
+- Source connectors: `linkedin`, `facebook`, `google_search_console`,
+  `google_merchant_center`, `wordpress_ekologus`; evidence count: 5.
+- Action candidates remained review-only and validated:
+  `act_prepare_linkedin_social_drafts`, `act_prepare_facebook_social_drafts`.
+- `/api/social/history-inventory` and the social context now expose
+  `input_template` with LinkedIn/Facebook items, reviewer/date fields and a
+  metadata-only instruction. `/social-publisher` renders the template summary
+  beside discovery links and the audit endpoint.
+
 ## 2026-07-04 - Ads Doctor freshness is API-owned and visible
 
 Purpose:

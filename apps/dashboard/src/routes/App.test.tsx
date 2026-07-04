@@ -7195,6 +7195,37 @@ const socialPublisherContextPack = {
             "Publiczny adres strony Facebook Ekologus jest tylko punktem startowym discovery."
         }
       ],
+      input_template: {
+        contract: "social_history_inventory_v1",
+        collected_at: "<YYYY-MM-DD>",
+        reviewer: "<Wilku albo owner>",
+        items: [
+          {
+            channel: "linkedin",
+            published_at: "2026-01-15",
+            topic: "BDO i sprawozdawczość środowiskowa",
+            service: "BDO",
+            claim: "Ekologus pomaga uporządkować obowiązki BDO",
+            cta: "kontakt z doradcą",
+            format: "post edukacyjny",
+            post_url_or_id: "https://www.linkedin.com/posts/...",
+            source_evidence_id: "linkedin_historical_posts"
+          },
+          {
+            channel: "facebook",
+            published_at: "2026-01-20",
+            topic: "BDO i sprawozdawczość środowiskowa",
+            service: "BDO",
+            claim: "Ekologus pomaga uporządkować obowiązki BDO",
+            cta: "kontakt z doradcą",
+            format: "post edukacyjny",
+            post_url_or_id: "facebook-post-id-or-url",
+            source_evidence_id: "facebook_historical_posts"
+          }
+        ],
+        _instruction:
+          "To jest metadata-only format. Nie dodawaj raw treści postów, komentarzy, danych użytkowników ani tokenów."
+      },
       allowed_uses: ["sprawdzenie czy temat, claim albo CTA powtarza wcześniejsze posty"],
       blocked_uses: [
         "twierdzenie że temat jest nowy bez historii postów",
@@ -9078,6 +9109,10 @@ describe("WILQ dashboard", () => {
     expect(auditSection).toHaveTextContent("metadata-only JSON");
     expect(auditSection).toHaveTextContent("social_history_inventory_v1");
     expect(auditSection).toHaveTextContent("review metadanych");
+    const templateSection = screen.getByText("Gotowy szablon metadanych").closest("div");
+    expect(templateSection).not.toBeNull();
+    expect(screen.getByText(/Nie dodawaj raw treści postów/)).toBeInTheDocument();
+    expect(templateSection).toHaveTextContent("linkedin, facebook");
     expect(screen.getByText("Od czego zacząć discovery")).toBeInTheDocument();
     expect(
       screen.getByText(
