@@ -145,6 +145,11 @@ the full operator next step, proof counts, action list and a 30-second
 usefulness checklist without changing the score. Stage snapshot links the
 packet command for each nearest tuning item.
 
+2026-07-04 update: skill tuning packets now include a fillable reviewer
+scorecard with decision, 1-5 criteria, 10/10 readiness, rerun-eval need and
+follow-up slots. This turns "skill is 9/10" into a concrete reviewer pass
+instead of another abstract quality note.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

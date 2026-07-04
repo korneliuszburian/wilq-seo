@@ -59,6 +59,7 @@ def build_packet(*, skill: str | None = None) -> dict[str, Any]:
             "wykonaj test użyteczności albo rerun eval po realnej poprawie outputu."
         ),
         "thirty_second_test": _thirty_second_test(row["skill"], result),
+        "reviewer_scorecard": _reviewer_scorecard(row["skill"]),
         "next_tuning_action": _next_tuning_action(row["skill"], result),
     }
 
@@ -83,6 +84,18 @@ def render_markdown(packet: dict[str, Any]) -> str:
         "",
     ]
     lines.extend(f"- {item}" for item in packet["thirty_second_test"])
+    scorecard = packet.get("reviewer_scorecard") or {}
+    if scorecard:
+        lines.extend(["", "## Formularz oceny reviewer pass", ""])
+        lines.append(f"- Reviewer: {scorecard['reviewer']}")
+        lines.append(f"- Decyzja: {scorecard['decision']}")
+        lines.append(f"- Czy można rozważyć 10/10: {scorecard['can_consider_10']}")
+        lines.append(f"- Czy trzeba rerun eval: {scorecard['rerun_eval_required']}")
+        lines.append("- Kryteria 1-5:")
+        for item in scorecard["criteria"]:
+            lines.append(f"  - {item['field']}: {item['question']} -> {item['score']}")
+        lines.append("- Follow-upy:")
+        lines.extend(f"  - {item}" for item in scorecard["follow_up_slots"])
     lines.extend(["", "## Co sprawdzić w outputcie", ""])
     for item in packet["recommendations"][:5]:
         lines.append(f"- Rekomendacja: {item['label_pl']}")
@@ -165,6 +178,47 @@ def _thirty_second_test(skill: str, result: dict[str, Any]) -> list[str]:
             f"({action_count}) bez obiecywania zapisu zmian?"
         ),
     ]
+
+
+def _reviewer_scorecard(skill: str) -> dict[str, Any]:
+    criteria = [
+        (
+            "decyzja_w_30_sekund",
+            "Czy marketer wie w 30 sekund, co otworzyć i co sprawdzić najpierw?",
+        ),
+        (
+            "dowody_i_zrodla",
+            "Czy dowody WILQ i źródła danych wystarczają bez czytania raw JSON?",
+        ),
+        (
+            "blokady_praktyczne",
+            "Czy blokady mówią jasno czego nie wolno twierdzić ani zapisać?",
+        ),
+        (
+            "ekologus_specific",
+            "Czy output brzmi jak praca dla Ekologus, a nie ogólna porada marketingowa?",
+        ),
+        (
+            "oszczednosc_czasu",
+            "Czy wynik oszczędza czas względem ręcznego czytania dashboardu?",
+        ),
+    ]
+    return {
+        "skill": skill,
+        "reviewer": "UZUPEŁNIJ: kto ocenia",
+        "decision": "popraw|rerun_eval|candidate_for_10",
+        "can_consider_10": "nie",
+        "rerun_eval_required": "tak",
+        "criteria": [
+            {"field": field, "question": question, "score": "UZUPEŁNIJ 1-5"}
+            for field, question in criteria
+        ],
+        "follow_up_slots": [
+            "co było niejasne: UZUPEŁNIJ albo brak",
+            "co trzeba poprawić w API/dashboard/skill: UZUPEŁNIJ albo brak",
+            "czy rerun non-interactive eval jest potrzebny: tak/nie + dlaczego",
+        ],
+    }
 
 
 def _next_tuning_action(skill: str, result: dict[str, Any]) -> str:

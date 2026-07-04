@@ -232,6 +232,10 @@ Date: 2026-07-04
   evidence-based packet for the nearest sub-10 skill, including full
   `operator_next_step`, proof counts, action list and a 30-second usefulness
   test. Stage snapshot links the command for each nearest skill tuning item.
+- 2026-07-04 skill tuning packets now include a fillable reviewer scorecard:
+  decision, 1-5 criteria, whether 10/10 can be considered, rerun-eval need
+  and follow-up slots. Sub-10 skills now have a concrete review form instead
+  of a vague "poprawić jakość" note.
 - 2026-07-04 Goal 005 completion guard now also links those skill tuning
   packet commands beside Ads/GSC/Ahrefs sub-10 blockers, so the official
   Wilku/owner blocker list points directly to the next usefulness review.

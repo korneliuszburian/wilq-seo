@@ -93,7 +93,15 @@ def test_skill_tuning_packet_preserves_full_next_step(tmp_path, monkeypatch) -> 
     assert packet["evidence_count"] == 1
     assert packet["source_connectors"] == ["google_ads"]
     assert packet["actions"][0]["action_id"] == "act_prepare_ads_campaign_review_queue"
+    assert packet["reviewer_scorecard"]["skill"] == "wilq-ads-doctor"
+    assert packet["reviewer_scorecard"]["decision"] == "popraw|rerun_eval|candidate_for_10"
+    assert packet["reviewer_scorecard"]["can_consider_10"] == "nie"
+    assert packet["reviewer_scorecard"]["rerun_eval_required"] == "tak"
+    assert len(packet["reviewer_scorecard"]["criteria"]) == 5
     assert "Test 30 sekund" in markdown
+    assert "Formularz oceny reviewer pass" in markdown
+    assert "decyzja_w_30_sekund" in markdown
+    assert "czy rerun non-interactive eval jest potrzebny" in markdown
     assert "Czy marketer po pierwszym akapicie wie" in markdown
     assert "bez zapisu zmian." in markdown
 
