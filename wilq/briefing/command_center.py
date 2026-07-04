@@ -418,6 +418,11 @@ def build_daily_decisions(
             freshness_by_connector,
         )
         decision_state = _daily_decision_state(plan_item.status, freshness)
+        operator_action = _daily_decision_operator_action(plan_item, decision_state)
+        expected_codex_output = _daily_decision_expected_codex_output(
+            plan_item,
+            decision_state,
+        )
         decisions.append(
             DailyDecision(
                 id=plan_item.id.replace("plan_", "decision_", 1),
@@ -440,9 +445,9 @@ def build_daily_decisions(
                     brief_by_plan_id.get(plan_item.id),
                 ),
                 dlaczego_to_ma_znaczenie=plan_item.why_it_matters,
-                bezpieczny_next_step=plan_item.operator_action,
+                bezpieczny_next_step=operator_action,
                 why_it_matters=plan_item.why_it_matters,
-                operator_action=plan_item.operator_action,
+                operator_action=operator_action,
                 source_connectors=plan_item.source_connectors,
                 source_connector_labels=[
                     _connector_label(connector_id, connector_labels)
@@ -458,7 +463,7 @@ def build_daily_decisions(
                 skill_label=_skill_label(plan_item.skill_id),
                 codex_prompt=plan_item.codex_prompt,
                 codex_context_endpoint=plan_item.codex_context_endpoint,
-                expected_codex_output=plan_item.expected_codex_output,
+                expected_codex_output=expected_codex_output,
                 risk=plan_item.risk,
             )
         )
@@ -484,6 +489,46 @@ def _decision_state_label(state: DecisionState) -> str:
         "missing": "dane niepotwierdzone",
         "unknown": "status niepotwierdzony",
     }.get(state, "status niepotwierdzony")
+
+
+def _daily_decision_operator_action(
+    plan_item: CommandCenterActionPlanItem,
+    decision_state: DecisionState,
+) -> str:
+    if decision_state == "stale":
+        if plan_item.id == "plan_review_merchant_feed_issues":
+            return (
+                "Najpierw odśwież dane Merchant Center, potem wróć do kolejki problemów "
+                "pliku produktowego i sprawdź akcję w WILQ."
+            )
+        return (
+            "Najpierw odśwież dane źródłowe dla tej decyzji, potem wróć do review i "
+            "sprawdź akcję w WILQ."
+        )
+    if decision_state in {"missing", "unknown"}:
+        return (
+            "Najpierw potwierdź dostęp i świeżość danych źródłowych, potem wróć do "
+            "review tej decyzji."
+        )
+    return plan_item.operator_action
+
+
+def _daily_decision_expected_codex_output(
+    plan_item: CommandCenterActionPlanItem,
+    decision_state: DecisionState,
+) -> str | None:
+    if decision_state == "stale":
+        base = plan_item.expected_codex_output or "Polska decyzja operatora z dowodami."
+        return (
+            f"{base} Zacznij od informacji, że dane wymagają odświeżenia, i podaj "
+            "ścieżkę odczytu przed ręcznym review."
+        )
+    if decision_state in {"missing", "unknown"}:
+        return (
+            "Polska blokada operatora: czego brakuje w dostępie albo świeżości danych, "
+            "jak to potwierdzić i kiedy wrócić do review."
+        )
+    return plan_item.expected_codex_output
 
 
 def _priority_label(priority: int) -> str:

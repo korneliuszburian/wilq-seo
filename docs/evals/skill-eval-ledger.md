@@ -87,6 +87,39 @@ Result:
   non-interactive eval runs still decide whether a skill's current answer is
   useful enough for a marketer.
 
+## 2026-07-04 - Daily Command reaches first 10/10 after stale-first API fix
+
+Purpose:
+
+- Improve the primary `/command-center` morning workflow without adding prompt
+  ceremony.
+- Make stale daily decisions tell the operator to refresh source data before
+  manual review, so WILQ does not push Wilku into decisions from old snapshots.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py::test_daily_decision_with_stale_sources_refreshes_before_review tests/test_api_contracts.py::test_command_center_exposes_polish_operator_brief -q
+rtk uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py
+rtk uv run mypy wilq/briefing/command_center.py
+rtk uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+rtk uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260704T035024Z/wilq-daily-command/result.json`.
+- `operator_usefulness_score=10`, `failure_tags=[]`, `blocked=false`.
+- Hard gates all true; 20 evidence IDs and connectors:
+  `google_merchant_center`, `ahrefs`, `google_search_console`,
+  `wordpress_ekologus`, `wordpress_sklep`, `google_analytics_4`,
+  `google_ads`.
+- `/api/dashboard/command-center` now makes stale DailyDecision next steps
+  start from data refresh or data-access confirmation before review. Live
+  stage snapshot reports `score range 9-10` and `1` skill at `10/10`.
+
 ## 2026-07-03 - Ads Doctor trace language stays useful after simplification
 
 Purpose:

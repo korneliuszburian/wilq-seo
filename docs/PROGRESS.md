@@ -37,8 +37,10 @@ Date: 2026-07-04
   Codex eval no longer counts as current proof if the skill source changed
   afterward; after rerunning the touched skills, the current map reports
   `13/13` latest passing evals, `13/13` fresh passing evals, score range
-  `9-9` and zero stale skills. This is strong review-only proof, not a 10/10
-  Wilku-ready claim.
+  `9-10` and zero stale skills. Daily Command is the first current `10/10`
+  skill after stale daily decisions started telling the operator to refresh
+  source data before manual review. This is strong review-only proof, not full
+  Wilku UAT.
 - 2026-07-04 social history inventory can now be loaded from a local
   metadata-only JSON via `WILQ_SOCIAL_HISTORY_INVENTORY_FILE`. A valid file
   changes the social inventory from `missing` to `review_ready` and exposes

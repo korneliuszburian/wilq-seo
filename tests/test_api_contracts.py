@@ -75,7 +75,11 @@ from wilq.briefing.ahrefs_diagnostics import (
     _ahrefs_status_label,
     _missing_authority_summary,
 )
-from wilq.briefing.command_center import _decision_state_label, _source_connectors_with_evidence
+from wilq.briefing.command_center import (
+    _decision_state_label,
+    _source_connectors_with_evidence,
+    build_daily_decisions,
+)
 from wilq.briefing.content_diagnostics import build_content_diagnostics, build_content_preflight
 from wilq.briefing.ga4_diagnostics import (
     _ga4_connector_status_label,
@@ -184,6 +188,7 @@ from wilq.schemas import (
     AdsSearchTermReviewRow,
     AdsSearchTermSafetyRow,
     AuditEvent,
+    CommandCenterActionPlanItem,
     CommandCenterBriefItem,
     CommandCenterResponse,
     ConnectorCapability,
@@ -6691,14 +6696,18 @@ def test_command_center_exposes_polish_operator_brief(
         merchant_decision["why_it_matters"]
         == plan_by_id["plan_review_merchant_feed_issues"]["why_it_matters"]
     )
-    assert (
-        merchant_decision["bezpieczny_next_step"]
-        == plan_by_id["plan_review_merchant_feed_issues"]["operator_action"]
-    )
-    assert (
-        merchant_decision["operator_action"]
-        == plan_by_id["plan_review_merchant_feed_issues"]["operator_action"]
-    )
+    if merchant_decision["decision_state"] == "ready":
+        assert (
+            merchant_decision["bezpieczny_next_step"]
+            == plan_by_id["plan_review_merchant_feed_issues"]["operator_action"]
+        )
+    else:
+        assert merchant_decision["bezpieczny_next_step"].startswith("Najpierw")
+        assert any(
+            phrase in merchant_decision["bezpieczny_next_step"]
+            for phrase in ("odśwież dane", "potwierdź dostęp")
+        )
+    assert merchant_decision["operator_action"] == merchant_decision["bezpieczny_next_step"]
     assert merchant_decision["skill_id"] == "wilq-merchant-feed-operator"
     assert "Użyj skilla wilq-merchant-feed-operator" in merchant_decision["codex_prompt"]
     assert merchant_decision["evidence_ids"]
@@ -6798,6 +6807,51 @@ def test_command_center_exposes_polish_operator_brief(
         for item in payload["daily_decisions"]
     ]
     assert context_command["primary_next_step"] == payload["primary_next_step"]
+
+
+def test_daily_decision_with_stale_sources_refreshes_before_review() -> None:
+    plan_item = CommandCenterActionPlanItem(
+        id="plan_review_merchant_feed_issues",
+        title="Przejrzyj kolejkę problemów Merchant Center",
+        route="/merchant",
+        status="ready",
+        priority=10,
+        category="Merchant Center",
+        why_it_matters="WILQ widzi zgłoszenia problemów pliku produktowego.",
+        operator_action="Otwórz Merchant i sprawdź kolejkę problemów.",
+        expected_codex_output="Polskie podsumowanie problemów pliku produktowego.",
+        source_connectors=["google_merchant_center"],
+        evidence_ids=["ev_refresh_refresh_google_merchant_center_stale"],
+        action_ids=["act_review_merchant_feed_issues"],
+        blocked_claims=["ponowne zatwierdzenie produktu"],
+        risk=ActionRisk.medium,
+    )
+    connector = ConnectorStatus(
+        id="google_merchant_center",
+        label="Merchant Center",
+        status=ConnectorStatusValue.configured,
+        configured=True,
+        freshness=FreshnessState(state="stale", notes="Dane wymagają odświeżenia."),
+        capabilities=ConnectorCapability(read=True, write=False),
+        health_check="test",
+    )
+
+    decisions = build_daily_decisions(
+        [plan_item],
+        operator_brief=[],
+        connectors=[connector],
+        refresh_runs=[],
+    )
+
+    decision = decisions[0]
+    assert decision.decision_state == "stale"
+    assert decision.decision_state_label == "do odświeżenia"
+    assert decision.bezpieczny_next_step.startswith("Najpierw odśwież dane Merchant Center")
+    assert decision.operator_action == decision.bezpieczny_next_step
+    assert "potem wróć do kolejki problemów" in decision.operator_action
+    assert decision.expected_codex_output is not None
+    assert "dane wymagają odświeżenia" in decision.expected_codex_output
+    assert "ścieżkę odczytu przed ręcznym review" in decision.expected_codex_output
 
 
 def test_command_center_ads_plan_uses_live_review_queues(

@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Generated: `2026-07-04T02:49:24+00:00`.
+Generated: `2026-07-04T03:51:39+00:00`.
 
 Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko najnowszy passing artifact i decyzję produktową.
 
@@ -8,7 +8,7 @@ Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebie
 
 | Skill | Latest artifact | Score | State | What it proves | Remaining blocker / next step |
 | --- | --- | ---: | --- | --- | --- |
-| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260703T121004Z/wilq-daily-command/result.json` | 9 | gotowy do review | 22 evidence IDs; connectors: google_merchant_center, ahrefs, google_search_console, wordpress_ekologus, wordpress_sklep, google_analytics_4, google_ads, localo; actions: act_revie… | Najpierw otwórz widok Merchant w /command-center, przejrzyj kolejkę problemów pliku produktowego i sprawdź akcję w WILQ. To jest pierwszy krok, bo priorytet wskazany przez Command Center… |
+| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260704T035024Z/wilq-daily-command/result.json` | 10 | gotowy do review | 20 evidence IDs; connectors: google_merchant_center, ahrefs, google_search_console, wordpress_ekologus, wordpress_sklep, google_analytics_4, google_ads; actions: act_review_mercha… | Co zrobić najpierw: otwórz /command-center, przejdź do Merchant i przejrzyj kolejkę problemów pliku produktowego. Dlaczego teraz: primary_next_step z WILQ wskazuje Merchant jako p… |
 | `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260703T214649Z/wilq-ads-doctor/result.json` | 9 | gotowy do review | 12 evidence IDs; connectors: google_ads; actions: act_prepare_ads_campaign_review_queue, act_prepare_google_ads_recommendation_review_queue, act_prepare_custom_segments_from_searc… | Najpierw otwórz /ads-doctor i przejdź priorytet: kampanie oraz budżety, potem rekomendacje, wyszukiwane hasła z wykluczeniami, segmenty i historię zmian. Jak sprawdzić: przy każde… |
 | `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260703T123952Z/wilq-gsc-content-doctor/result.json` | 9 | gotowy do review | 5 evidence IDs; connectors: google_search_console, wordpress_ekologus, wordpress_sklep; actions: act_prepare_content_refresh_queue | Najpierw otwórz /content-planner i przejdź przez Mapa decyzji dla strony https://www.ekologus.pl/: najnowszy dostępny dzień szczegółów GSC to 2026-06-29, a częściowe dane zapytań… |
 | `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260704T003318Z/wilq-ahrefs-gap-finder/result.json` | 9 | gotowy do review | 8 evidence IDs; connectors: ahrefs | Najpierw otwórz Mapa luk na /ahrefs, wybierz rekordy luk treści i najlepsze strony konkurentów, a potem wykonaj Kolejność review: Co porównać ręcznie, Decyzja po review i Brief dl… |
@@ -26,7 +26,7 @@ Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebie
 
 - 13/13 WILQ skills have a latest passing non-interactive eval.
 - 13/13 passing evals are fresh against current skill instructions.
-- Score range: `9`-`9`; `13` skills are already `7+/10`, and `0` are `10/10`.
+- Score range: `9`-`10`; `13` skills are already `7+/10`, and `1` are `10/10`.
 - Passing means: Polish operator output, WILQ API usage, source connectors, evidence IDs, blocked-claim handling and all hard gates true.
 - `poprawnie zablokowany do review` is a useful state when WILQ has evidence for the blocker but not enough proof for an action or claim.
 - If this file drifts, regenerate it with `rtk uv run python scripts/render_skill_coverage_audit.py --write docs/evals/skill-coverage-audit.md`.
