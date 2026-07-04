@@ -94,6 +94,11 @@ Date: 2026-07-04
   validation for LinkedIn/Facebook draft actions and explicit public seed URLs
   for collecting history metadata, while publication and duplicate-free claims
   remain blocked.
+- 2026-07-04 Goal 005 completion guard now renders the API-owned WordPress
+  draft-only activation plan steps below the write-readiness blocker line. The
+  guard still blocks live writes, but it now shows the sequence: keep draft-only
+  scope, use the existing boundary, finish review/confirm/audit and pass Claim
+  Ledger/human review before any draft creation attempt.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

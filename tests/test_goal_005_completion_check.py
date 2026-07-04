@@ -78,6 +78,8 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "publikacja i claim o braku powtórek: zablokowane" in markdown
     assert "Gotowość realnych zapisów" in markdown
     assert "Aktywuj zapis szkicu WordPress draft-only" in markdown
+    assert "Plan aktywacji WordPress draft-only" in markdown
+    assert "Utrzymaj zakres draft-only" in markdown
     assert "próba live write: 0" in markdown
     assert "ślad gotowy" in markdown
     assert "Czy proponowane CTA brzmi jak realny następny krok Ekologus" in markdown
@@ -163,6 +165,12 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
     assert mutation_readiness["action_count"] >= 1
     assert mutation_readiness["vendor_write_possible_count"] == 0
     assert mutation_readiness["would_attempt_vendor_write_count"] == 0
+    assert any(
+        "draft-only" in step for step in mutation_readiness["activation_plan_steps"]
+    )
+    assert any(
+        "Claim Ledger" in step for step in mutation_readiness["activation_plan_steps"]
+    )
     first_write = mutation_readiness["first_write_candidate"]
     assert first_write["action_id"] == "act_apply_wordpress_draft_handoff"
     assert first_write["mutation_adapter"] == "wordpress_draft_execution_boundary"

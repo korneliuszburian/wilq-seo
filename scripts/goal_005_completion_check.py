@@ -496,6 +496,7 @@ def goal_005_action_mutation_readiness_summary() -> dict[str, Any]:
         if first
         else None,
         "first_write_candidate_reason": readiness.get("first_write_candidate_reason"),
+        "activation_plan_steps": readiness.get("activation_plan_steps") or [],
         "activation_next_step": readiness.get("activation_next_step"),
         "operator_next_step": readiness.get("operator_next_step"),
     }
@@ -1416,6 +1417,14 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"próba live write: {mutation_readiness.get('would_attempt_vendor_write_count')}; "
         f"pierwsze blokady: {_first_write_blockers_label(first_write)}.",
     ]
+    activation_steps = [
+        str(step).strip()
+        for step in (mutation_readiness.get("activation_plan_steps") or [])[:4]
+        if str(step).strip()
+    ]
+    if activation_steps:
+        lines.append("- Plan aktywacji WordPress draft-only:")
+        lines.extend(f"  - {step}" for step in activation_steps)
     next_review_actions = source.get("next_review_actions") or []
     if next_review_actions:
         lines.append("- Następne decyzje w Service Profile:")
