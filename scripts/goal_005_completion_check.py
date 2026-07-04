@@ -1464,15 +1464,18 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         "publikacja i claim o braku powtórek: zablokowane.",
         "- Gotowość realnych zapisów: "
         f"kandydat: {_write_candidate_label(first_write)}; "
-        f"gotowe do apply: {mutation_readiness.get('ready_to_request_apply_count')}/"
+        "gotowe do prośby o zapis: "
+        f"{mutation_readiness.get('ready_to_request_apply_count')}/"
         f"{mutation_readiness.get('action_count')}; "
-        f"vendor write możliwy: {mutation_readiness.get('vendor_write_possible_count')}; "
-        f"próba live write: {mutation_readiness.get('would_attempt_vendor_write_count')}; "
+        "zapis w zewnętrznym systemie możliwy: "
+        f"{mutation_readiness.get('vendor_write_possible_count')}; "
+        "próba zapisu na WordPressie: "
+        f"{mutation_readiness.get('would_attempt_vendor_write_count')}; "
         f"pierwsze blokady: {_first_write_blockers_label(first_write)}.",
         ]
     )
     activation_steps = [
-        str(step).strip()
+        _wordpress_draft_activation_step_label(step)
         for step in (mutation_readiness.get("activation_plan_steps") or [])[:4]
         if str(step).strip()
     ]
@@ -1597,12 +1600,43 @@ def _first_write_blockers_label(value: dict[str, Any]) -> str:
     if not isinstance(blockers, list) or not blockers:
         return "brak zgłoszonych blokad"
     labels = [
-        str(item.get("label") or item.get("code") or "").strip()
+        _write_blocker_label(item.get("label") or item.get("code"))
         for item in blockers
         if isinstance(item, dict)
     ]
     labels = [label for label in labels if label]
     return ", ".join(labels[:3]) or "brak zgłoszonych blokad"
+
+
+def _write_blocker_label(value: Any) -> str:
+    raw = str(value or "").strip()
+    labels = {
+        "Payload nadal blokuje apply": "Paczka zapisu nadal blokuje wykonanie",
+        "Brakuje potwierdzenia operatora": "Brakuje potwierdzenia operatora",
+        "Brakuje sprawdzenia efektu": "Brakuje sprawdzenia efektu",
+    }
+    return labels.get(raw, raw)
+
+
+def _wordpress_draft_activation_step_label(value: Any) -> str:
+    raw = str(value or "").strip()
+    labels = {
+        "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.": (
+            "Doprowadź akcję zapisu przez sprawdzenie, podgląd, review i "
+            "potwierdzenie operatora."
+        ),
+        (
+            "Nie dodawaj kolejnego adaptera: boundary i paczka szkicu istnieją, "
+            "a live write blokują handoff, review/confirm/audit i env."
+        ): (
+            "Nie dodawaj kolejnej warstwy technicznej: najpierw domknij "
+            "przekazanie szkicu, review, potwierdzenie i audyt."
+        ),
+        "Odblokuj payload apply dopiero po przejściu review i readiness.": (
+            "Odblokuj zapis dopiero po review i sprawdzeniu gotowości."
+        ),
+    }
+    return labels.get(raw, raw)
 
 
 def _review_scope_label(value: Any) -> str:

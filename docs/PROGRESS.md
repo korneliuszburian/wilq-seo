@@ -137,6 +137,10 @@ Date: 2026-07-04
   `poprawnie zablokowany do review`, `priorytet wskazany przez Command
   Center`) instead of raw `ready / review-only`,
   `blocked correctly / review-only` or `command_center.primary_next_step`.
+- 2026-07-04 Goal 005 completion guard now also renders the WordPress
+  draft-only write-readiness block in operator language: `gotowe do prośby o
+  zapis`, `próba zapisu na WordPressie`, readable write blockers and normal
+  activation steps instead of raw apply/vendor/live-write/env wording.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

@@ -81,7 +81,14 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Aktywuj zapis szkicu WordPress draft-only" in markdown
     assert "Plan aktywacji WordPress draft-only" in markdown
     assert "Utrzymaj zakres draft-only" in markdown
-    assert "próba live write: 0" in markdown
+    assert "gotowe do prośby o zapis: 0/" in markdown
+    assert "próba zapisu na WordPressie: 0" in markdown
+    assert "Doprowadź akcję zapisu przez sprawdzenie" in markdown
+    assert "Paczka zapisu nadal blokuje wykonanie" in markdown
+    assert "apply-mode ActionObject" not in markdown
+    assert "payload apply" not in markdown
+    assert "vendor write" not in markdown
+    assert "live write" not in markdown
     assert "ślad gotowy" in markdown
     assert "Czy proponowane CTA brzmi jak realny następny krok Ekologus" in markdown
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
