@@ -77,6 +77,10 @@ def build_content_marketer_decision(
         mode_label=_content_marketer_mode_label(decision.decision_type),
         why_it_matters=_content_marketer_why(decision),
         safe_next_action=_content_marketer_next_action(decision),
+        review_decision_after_review=_content_marketer_review_decision(decision),
+        review_question_for_wilku=_content_marketer_review_question(decision),
+        review_next_safe_click=_content_marketer_review_next_click(decision),
+        review_action_ids=_content_marketer_review_action_ids(decision),
         metric_tiles=_content_marketer_metric_tiles(decision),
         content_angle=_content_marketer_content_angle(decision),
         h1_direction=_content_marketer_h1_direction(decision),
@@ -337,6 +341,76 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
             "do sprawdzenia, nie gotową decyzję."
         )
     return "Uruchom odczyt danych GSC i spisu treści WordPress, potem odśwież widok treści."
+
+
+def _content_marketer_review_decision(decision: ContentDecisionItem) -> str:
+    if decision.decision_type == "refresh_or_merge":
+        return (
+            "Po sprawdzeniu strony zatwierdź odświeżenie albo scalenie istniejącego URL-a, "
+            "nie nowy artykuł."
+        )
+    if decision.decision_type in {
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+    }:
+        return (
+            "Po kontroli spisu treści wybierz scalenie z istniejącym URL-em, nową treść "
+            "albo blokadę tematu."
+        )
+    if decision.decision_type == "block_as_tracking_not_content":
+        return "Najpierw potwierdź problem pomiaru; decyzja contentowa zostaje zablokowana."
+    if decision.decision_type == "review_ahrefs_gap_records":
+        return (
+            "Traktuj lukę jako temat do ręcznej oceny; decyzja powstaje dopiero po "
+            "sprawdzeniu GSC i WordPress."
+        )
+    return "Nie zatwierdzaj decyzji contentowej, dopóki nie wrócą dane GSC i WordPress."
+
+
+def _content_marketer_review_question(decision: ContentDecisionItem) -> str:
+    topic = _content_marketer_topic(decision)
+    if decision.decision_type == "refresh_or_merge":
+        return (
+            f"Czy istniejąca strona ma dalej obsługiwać intencję `{topic}`, czy lepiej "
+            "przenieść część tematu do osobnej podstrony usługowej?"
+        )
+    if decision.decision_type in {
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+    }:
+        return (
+            f"Czy temat `{topic}` już istnieje w treściach Ekologus, a jeśli tak, "
+            "który adres ma być kanoniczny?"
+        )
+    if decision.decision_type == "block_as_tracking_not_content":
+        return "Czy problem dotyczy pomiaru GA4, czy faktycznie treści na stronie?"
+    if decision.decision_type == "review_ahrefs_gap_records":
+        return (
+            f"Czy temat `{topic}` pasuje do oferty Ekologus i ma potwierdzenie poza Ahrefs?"
+        )
+    return "Czy możemy odświeżyć dane GSC i WordPress przed decyzją?"
+
+
+def _content_marketer_review_next_click(decision: ContentDecisionItem) -> str:
+    if "act_prepare_content_refresh_queue" in decision.action_ids:
+        return (
+            "Kliknij podgląd `act_prepare_content_refresh_queue`; to przygotuje review, "
+            "bez zapisu i bez publikacji."
+        )
+    if decision.action_ids:
+        return (
+            f"Kliknij podgląd `{decision.action_ids[0]}`; to jest krok review, "
+            "bez zapisu i bez publikacji."
+        )
+    return "Najpierw odśwież dane albo wybierz decyzję z kolejki; nie publikuj."
+
+
+def _content_marketer_review_action_ids(decision: ContentDecisionItem) -> list[str]:
+    return _unique(
+        action_id
+        for action_id in decision.action_ids
+        if action_id == "act_prepare_content_refresh_queue"
+    )
 
 
 def _content_marketer_metric_tiles(decision: ContentDecisionItem) -> dict[str, int | float | str]:

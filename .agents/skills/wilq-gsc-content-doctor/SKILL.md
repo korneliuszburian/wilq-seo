@@ -93,6 +93,10 @@ Zaczynaj od widocznej decyzji operatorskiej, nie od surowych pól API:
   Karta ma mówić, czy po ręcznym sprawdzeniu marketer ma zatwierdzić
   odświeżenie, scalenie, zmianę briefu albo blokadę tematu. Nie może obiecywać
   publikacji, wzrostu SEO ani zapisu WordPress.
+  Jeśli API zwraca `marketer_decision.review_*`, użyj tych pól jako źródła
+  karty. To jest notatka decyzyjna dla Wilka, nie osobny ActionObject; jako
+  action candidate traktuj tylko prawdziwe `review_action_ids` lub `action_ids`
+  zwrócone przez WILQ API.
 - `Zablokowane`: co nie jest jeszcze gotową decyzją publikacyjną i dlaczego.
 
 Nie pokazuj marketerowi surowych markerów typu `partial_possible` jako uzasadnienia. Tłumacz je normalnie: "dane są częściowe, więc to sygnał do ręcznej oceny, nie gotowa decyzja publikacyjna". Surowe markery, endpointy i identyfikatory trzymaj w śladzie technicznym.

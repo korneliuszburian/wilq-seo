@@ -256,6 +256,13 @@ Date: 2026-07-04
   Wilka` with `Decyzja po review`, `Pytanie do Wilka` and `Następny bezpieczny
   klik`. Latest rerun includes that card but stays 9/10, so the product state
   remains honest: good review workflow, not yet Wilku-ready 10/10.
+- 2026-07-04 GSC Content Doctor review card is now API-owned on
+  `marketer_decision.review_*`. The smoke and eval case enforce that
+  `action_candidates` contains only real WILQ ActionObject IDs for this skill.
+  Latest rerun:
+  `.local-lab/evals/codex-skill/20260704T064843Z/wilq-gsc-content-doctor/result.json`;
+  score remains `9/10`, with one validated action candidate and no null
+  pseudo-actions.
 - 2026-07-04 Ahrefs Gap Finder now requires a visible `Karta cross-checku
   GSC/WordPress` with `Sprawdź w GSC`, `Sprawdź w WordPress` and `Decyzja po
   cross-checku`. Latest rerun

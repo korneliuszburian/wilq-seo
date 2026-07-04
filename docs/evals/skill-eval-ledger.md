@@ -10233,7 +10233,7 @@ Result:
 - `scripts/wilq_stage_snapshot.py` now shows this reviewer-pass summary in the
   main WILQ stage readout.
 
-## 2026-07-04 - GSC decision card tuning remains 9/10
+## 2026-07-04 - GSC API-owned Wilku decision card remains 9/10
 
 Purpose:
 
@@ -10242,26 +10242,38 @@ Purpose:
   decision.
 - Keep the score honest when GSC query/page evidence is partial and the output
   still requires manual inventory/content review.
+- Move the Wilku card from prompt-only wording into the typed
+  `marketer_decision.review_*` API contract and prevent fake action candidates.
 
 Proof:
 
 ```bash
-rtk uv run pytest tests/test_codex_skill_eval_cases.py tests/test_skill_tuning_packet.py tests/test_skill_reviewer_scorecard_audit.py tests/test_wilq_stage_snapshot.py -q
+rtk uv run pytest tests/test_api_contracts.py -q -k 'content_diagnostics_exposes_query_page_inventory_queue or content_diagnostics_blocks_without_vendor_read'
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
 rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
 CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
-rtk uv run python scripts/audit_skill_reviewer_scorecards.py --strict
 ```
 
 Result:
 
-- Skill instructions and eval case now require `Karta decyzji dla Wilka`,
-  `Decyzja po review`, `Pytanie do Wilka` and `Następny bezpieczny klik`.
+- `/api/content/diagnostics` now exposes the review card fields on
+  `marketer_decision`: `review_card_label`, `review_decision_after_review`,
+  `review_question_for_wilku`, `review_next_safe_click` and
+  `review_action_ids`.
+- The GSC smoke script now fails if live diagnostics lack the Wilku review card
+  or if the card invents action IDs.
+- The eval case sets `action_candidates_only_with_action_id=true`, so manual
+  review/checklist steps must stay in recommendations or blockers instead of
+  appearing as fake action candidates.
 - Latest passing proof:
-  `.local-lab/evals/codex-skill/20260704T055356Z/wilq-gsc-content-doctor/result.json`.
-- The output now includes a concrete owner decision card:
-  refresh homepage vs merge into a better service page, ask whether the
-  homepage should sell environmental documentation/environmental consulting in
-  Silesia, then prepare the refresh queue without publishing.
+  `.local-lab/evals/codex-skill/20260704T064843Z/wilq-gsc-content-doctor/result.json`.
+- The output has exactly one action candidate:
+  `act_prepare_content_refresh_queue` with `validation_state=validated`.
+- The output includes the concrete owner decision card: review the homepage,
+  decide refresh vs merge, ask whether the homepage should continue serving
+  the `ekologus` intent or move part of the topic to a service page, then open
+  the refresh queue preview without write or publication.
 - `operator_usefulness_score` remains `9`, not `10`. This is accepted as an
   honest state: partial GSC query/page evidence and manual inventory review
   still prevent treating the skill as fully Wilku-ready.

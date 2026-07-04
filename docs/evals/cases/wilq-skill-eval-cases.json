@@ -213,7 +213,8 @@
     ],
     "expected_validated_action_ids": [
       "act_prepare_content_refresh_queue"
-    ]
+    ],
+    "action_candidates_only_with_action_id": true
   },
   {
     "skill": "wilq-ahrefs-gap-finder",

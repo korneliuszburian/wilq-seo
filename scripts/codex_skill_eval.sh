@@ -133,6 +133,7 @@ expected_terms = case.get("expected_terms_pl", [])
 required_decision_terms = case.get("required_decision_terms_pl", [])
 expected_action_ids = case.get("expected_action_ids", [])
 expected_validated_action_ids = case.get("expected_validated_action_ids", [])
+action_candidates_only_with_action_id = bool(case.get("action_candidates_only_with_action_id"))
 expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
 expected_expert_rule_ids = case.get("expected_expert_rule_ids", [])
 minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 5))
@@ -200,6 +201,15 @@ expected_actions_instruction = (
     "\n<expected_action_ids>\nJeżeli WILQ API zwraca te action IDs, uwzględnij je "
     f"w `action_candidates`: {', '.join(expected_action_ids)}.\n</expected_action_ids>\n"
     if expected_action_ids
+    else ""
+)
+action_candidates_only_instruction = (
+    "\n<action_candidates_contract>\nDla tego case'a `action_candidates` służy wyłącznie "
+    "do prawdziwych WILQ ActionObject IDs. Ręczne checklisty, kroki review, decyzje "
+    "po review i bramki bez `action_id` umieszczaj w `recommendations`, `blocked_reason` "
+    "albo `operator_next_step`, nie jako osobne `action_candidates` z pustym `action_id`.\n"
+    "</action_candidates_contract>\n"
+    if action_candidates_only_with_action_id
     else ""
 )
 expected_validated_actions_instruction = (
@@ -275,6 +285,7 @@ Zadanie: {task_pl}
 {expected_terms_instruction}
 {required_decision_terms_instruction}
 {expected_actions_instruction}
+{action_candidates_only_instruction}
 {expected_validated_actions_instruction}
 {expected_lineage_instruction}
 {expected_blocker_instruction}
@@ -803,6 +814,8 @@ for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
 
 for idx, action in enumerate(data.get("action_candidates", []), start=1):
     state = action.get("validation_state")
+    if case.get("action_candidates_only_with_action_id") and not action.get("action_id"):
+        errors.append(f"action candidate {idx} is missing action_id")
     if state == "validated" and not action.get("action_id"):
         errors.append(f"action candidate {idx} is validated without action_id")
     action_text = json.dumps(action, ensure_ascii=False).lower()

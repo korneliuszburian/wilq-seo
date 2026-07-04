@@ -4223,6 +4223,11 @@ class ContentMarketerDecision(BaseModel):
     mode_label: str
     why_it_matters: str
     safe_next_action: str
+    review_card_label: str = "Karta decyzji dla Wilka"
+    review_decision_after_review: str
+    review_question_for_wilku: str
+    review_next_safe_click: str
+    review_action_ids: list[str] = Field(default_factory=list)
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     content_angle: str | None = None
     h1_direction: str | None = None

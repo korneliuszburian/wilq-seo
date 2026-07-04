@@ -275,6 +275,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "action_ids": {"act_prepare_content_refresh_queue"},
             "validated_action_ids": {"act_prepare_content_refresh_queue"},
             "forbidden_connectors": {"ahrefs"},
+            "action_candidates_only_with_action_id": True,
         },
         "wilq-ahrefs-gap-finder": {
             "surface_path": "/ahrefs",
@@ -513,6 +514,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         assert expected_validated_action_ids.issuperset(contract.get("validated_action_ids", set()))
         assert set(case.get("forbidden_connectors", [])).issuperset(
             contract.get("forbidden_connectors", set())
+        )
+        assert bool(case.get("action_candidates_only_with_action_id")) is bool(
+            contract.get("action_candidates_only_with_action_id", False)
         )
         assert case["expected_connectors"]
 
@@ -898,6 +902,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             assert "Decyzja po review" in content_skill_doc
             assert "Pytanie do Wilka" in content_skill_doc
             assert "Następny bezpieczny klik" in content_skill_doc
+            assert "review_action_ids" in content_skill_doc
+            assert "marketer_review_card" in content_smoke_script
         if skill == "wilq-content-strategist":
             assert '"content_brief_preview_type": "content_brief_preview_v1"' in (
                 content_smoke_script

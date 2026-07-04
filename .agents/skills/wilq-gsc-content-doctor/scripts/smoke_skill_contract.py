@@ -242,6 +242,38 @@ def main() -> int:
     if compaction.get("ahrefs_decisions_removed") is not True:
         raise SystemExit("GSC context pack must mark removed Ahrefs decisions")
 
+    marketer_decision = content_diagnostics.get("marketer_decision")
+    if content_diagnostics.get("live_data_available") is True:
+        if not isinstance(marketer_decision, dict):
+            raise SystemExit("Content diagnostics must expose marketer_decision")
+        if marketer_decision.get("review_card_label") != "Karta decyzji dla Wilka":
+            raise SystemExit("Content marketer decision must expose Wilku review card label")
+        required_review_fields = {
+            "review_decision_after_review",
+            "review_question_for_wilku",
+            "review_next_safe_click",
+        }
+        missing_review_fields = [
+            field
+            for field in sorted(required_review_fields)
+            if not str(marketer_decision.get(field) or "").strip()
+        ]
+        if missing_review_fields:
+            raise SystemExit(
+                "Content marketer decision missing Wilku review fields: "
+                + ", ".join(missing_review_fields)
+            )
+        if "publik" not in str(marketer_decision.get("review_next_safe_click") or "").lower():
+            raise SystemExit("Wilku review next click must explicitly block publication")
+        review_action_ids = marketer_decision.get("review_action_ids")
+        if CONTENT_ACTION_ID in (content_diagnostics.get("action_ids") or []):
+            if review_action_ids != [CONTENT_ACTION_ID]:
+                raise SystemExit(
+                    "Wilku review card must point only to content refresh review action"
+                )
+        elif review_action_ids:
+            raise SystemExit("Wilku review card must not invent review action IDs")
+
     gsc_metric_facts = request_json(
         args.api_base,
         "GET",
@@ -444,6 +476,29 @@ def main() -> int:
                         else None,
                     },
                     "gsc_query_page_metric_fact_count": gsc_query_page_fact_count,
+                    "marketer_review_card": {
+                        "label": (marketer_decision or {}).get("review_card_label")
+                        if isinstance(marketer_decision, dict)
+                        else None,
+                        "decision_after_review": (marketer_decision or {}).get(
+                            "review_decision_after_review"
+                        )
+                        if isinstance(marketer_decision, dict)
+                        else None,
+                        "question_for_wilku": (marketer_decision or {}).get(
+                            "review_question_for_wilku"
+                        )
+                        if isinstance(marketer_decision, dict)
+                        else None,
+                        "next_safe_click": (marketer_decision or {}).get(
+                            "review_next_safe_click"
+                        )
+                        if isinstance(marketer_decision, dict)
+                        else None,
+                        "action_ids": (marketer_decision or {}).get("review_action_ids")
+                        if isinstance(marketer_decision, dict)
+                        else [],
+                    },
                     "latest_gsc_refresh_evidence_id": latest_gsc_refresh_evidence_id,
                     "gsc_refresh_evidence_ids": gsc_refresh_evidence_ids,
                     "blocker_count": content_diagnostics.get("blocker_count"),

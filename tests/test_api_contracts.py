@@ -15705,6 +15705,11 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert "GSC" in diagnostics.marketer_decision.decision
     assert "automatyczna publikacja" in diagnostics.marketer_decision.blocked_claims
     assert all("_" not in value for value in diagnostics.marketer_decision.missing_inputs)
+    assert diagnostics.marketer_decision.review_card_label == "Karta decyzji dla Wilka"
+    assert "Nie zatwierdzaj" in diagnostics.marketer_decision.review_decision_after_review
+    assert "GSC" in diagnostics.marketer_decision.review_question_for_wilku
+    assert "nie publikuj" in diagnostics.marketer_decision.review_next_safe_click.lower()
+    assert diagnostics.marketer_decision.review_action_ids == []
 
     preflight = build_content_preflight(diagnostics)
     assert preflight.primary_item is not None
@@ -16024,6 +16029,13 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert marketer_decision["decision"]
     assert marketer_decision["why_it_matters"]
     assert marketer_decision["safe_next_action"]
+    assert marketer_decision["review_card_label"] == "Karta decyzji dla Wilka"
+    assert marketer_decision["review_decision_after_review"]
+    assert marketer_decision["review_question_for_wilku"]
+    assert marketer_decision["review_next_safe_click"]
+    assert marketer_decision["review_action_ids"] == ["act_prepare_content_refresh_queue"]
+    assert "bez zapisu" in marketer_decision["review_next_safe_click"]
+    assert "publikacji" in marketer_decision["review_next_safe_click"]
     assert marketer_decision["metric_tiles"]
     assert marketer_decision["content_angle"]
     assert marketer_decision["h1_direction"]
@@ -16046,6 +16058,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert not any("_" in value for value in marketer_decision["missing_inputs"])
     assert not any(
         "ActionObject" in value for value in marketer_decision.values() if isinstance(value, str)
+    )
+    assert not any(
+        "publish" in value.lower() for value in marketer_decision.values() if isinstance(value, str)
     )
     first_decision = next(
         decision
