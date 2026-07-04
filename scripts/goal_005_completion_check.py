@@ -982,6 +982,12 @@ def build_owner_defer_example(*, api_base: str | None = DEFAULT_API_BASE) -> dic
         ),
         f"Pierwsza decyzja review: {review_line}" if review_line else None,
     ]
+    next_material = {
+        "karta_rozmowy": session_command or "",
+        "wzor_wyniku_rozmowy": print_input_command or "",
+        "wybrany_material_do_sprawdzenia": selected_work_item or "",
+        "pierwsza_decyzja_review": review_line or "",
+    }
     return {
         OWNER_DEFER_FIELDS["flag"]: True,
         OWNER_DEFER_FIELDS["date"]: "<YYYY-MM-DD>",
@@ -1001,6 +1007,17 @@ def build_owner_defer_example(*, api_base: str | None = DEFAULT_API_BASE) -> dic
             "i czy materiały brzmią jak Ekologus."
         ),
         OWNER_DEFER_FIELDS["blocked_claims"]: REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS,
+        "co_owner_swiadomie_potwierdza": [
+            "To jest świadome odroczenie realnej sesji Wilku, nie dowód UAT.",
+            "Materiały można pokazać jako przygotowanie do rozmowy, nie jako ukończony Goal 005.",
+            "Wiedza, prywatny ślad źródłowy i finalne treści pozostają review-gated.",
+        ],
+        "ryzyka_do_przyjecia": [
+            "Nie wiemy jeszcze, czy Wilku rozumie źródła i blokady bez tłumaczenia.",
+            "Nie wiemy jeszcze, czy prywatny ślad ekologus-ai jest czytelny dla ownera.",
+            "Nie wiemy jeszcze, czy materiały brzmią wystarczająco jak Ekologus.",
+        ],
+        "nastepny_material_do_rozmowy": next_material,
         OWNER_DEFER_FIELDS["next_review"]: (
             "Po najbliższej realnej sesji z Wilkiem albo po jawnej decyzji "
             "ownera, że obecny proof wystarcza tylko jako pre-UAT."

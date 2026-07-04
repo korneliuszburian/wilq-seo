@@ -150,6 +150,11 @@ Date: 2026-07-04
   private source trace scoring: `zrodlo_do_oceny` and `warunki_review`.
   Stable `source_blocks` and `eval_cases` remain for audit, but Wilku/owner no
   longer has to decode raw private-source or eval IDs before scoring the trace.
+- 2026-07-04 Goal 005 owner-defer example now includes readable owner
+  confirmation fields, accepted residual risks and a structured
+  `nastepny_material_do_rozmowy` block beside the required legacy
+  `nastepny_input_uat` string, so explicit defer can be reviewed without
+  decoding one long command line.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

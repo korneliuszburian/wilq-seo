@@ -828,6 +828,8 @@ def test_goal_005_completion_check_blocks_ready_uat_with_private_trace_follow_up
             "decision": "popraw",
             "trace_clear": False,
             "requested_fix": "Dopisać prostszy opis źródła dla Wilka.",
+            "source_label": "KB_021_BEZPIECZENSTWO_PRAWNE",
+            "review_gate_label": "review polityki twierdzeń",
             "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
             "eval_cases": ["goal_005_private_claim_policy_review"],
         }
@@ -1253,6 +1255,27 @@ def test_owner_defer_example_contains_required_claims_but_needs_owner_input(
     assert "ukończony Goal 005" in example["czego_nie_wolno_twierdzic"]
     assert "zatwierdzona wiedza do finalnych treści" in example[
         "czego_nie_wolno_twierdzic"
+    ]
+    assert example["co_owner_swiadomie_potwierdza"] == [
+        "To jest świadome odroczenie realnej sesji Wilku, nie dowód UAT.",
+        "Materiały można pokazać jako przygotowanie do rozmowy, nie jako ukończony Goal 005.",
+        "Wiedza, prywatny ślad źródłowy i finalne treści pozostają review-gated.",
+    ]
+    assert any("ekologus-ai" in item for item in example["ryzyka_do_przyjecia"])
+    assert "--print-session-card" in example["nastepny_material_do_rozmowy"][
+        "karta_rozmowy"
+    ]
+    assert "--api-base" not in example["nastepny_material_do_rozmowy"][
+        "karta_rozmowy"
+    ]
+    assert "--print-input-example" in example["nastepny_material_do_rozmowy"][
+        "wzor_wyniku_rozmowy"
+    ]
+    assert example["nastepny_material_do_rozmowy"][
+        "wybrany_material_do_sprawdzenia"
+    ]
+    assert "Sprawdź kartę" in example["nastepny_material_do_rozmowy"][
+        "pierwsza_decyzja_review"
     ]
     assert "Uruchomić kartę rozmowy:" in example["nastepny_input_uat"]
     assert "--print-session-card" in example["nastepny_input_uat"]
