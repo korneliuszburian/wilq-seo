@@ -246,6 +246,10 @@ Date: 2026-07-04
   `popraw` until its first step includes stronger GSC/WordPress cross-checking.
   `scripts/audit_skill_reviewer_scorecards.py --strict` validates 3/3 and
   `scripts/wilq_stage_snapshot.py` renders the reviewer-pass summary.
+- 2026-07-04 GSC Content Doctor now requires a visible `Karta decyzji dla
+  Wilka` with `Decyzja po review`, `Pytanie do Wilka` and `Następny bezpieczny
+  klik`. Latest rerun includes that card but stays 9/10, so the product state
+  remains honest: good review workflow, not yet Wilku-ready 10/10.
 - 2026-07-04 Goal 005 completion guard now also links those skill tuning
   packet commands beside Ads/GSC/Ahrefs sub-10 blockers, so the official
   Wilku/owner blocker list points directly to the next usefulness review.

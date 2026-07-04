@@ -198,7 +198,11 @@
       "co sprawdzić ręcznie",
       "Mapa decyzji",
       "Jak sprawdzić na stronie",
-      "Brief do pokazania Wilkowi"
+      "Brief do pokazania Wilkowi",
+      "Karta decyzji dla Wilka",
+      "Decyzja po review",
+      "Pytanie do Wilka",
+      "Następny bezpieczny klik"
     ],
     "minimum_operator_usefulness_score": 9,
     "forbidden_connectors": [

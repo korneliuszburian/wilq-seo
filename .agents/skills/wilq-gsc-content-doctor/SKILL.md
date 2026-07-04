@@ -88,6 +88,11 @@ Zaczynaj od widocznej decyzji operatorskiej, nie od surowych pól API:
 - `Co sprawdzić ręcznie`: użyj dokładnie tej etykiety i dodaj krótką checklistę intencji zapytań, nagłówków/CTA, kanibalizacji i decyzji odświeżyć vs scalić.
 - `Jak sprawdzić na stronie`: podaj 3-5 konkretnych miejsc do obejrzenia: title/meta, H1/H2, sekcje brakujące wobec intencji, CTA/usługa, canonical/linkowanie wewnętrzne.
 - `Brief do pokazania Wilkowi`: 3-5 zdań normalnym językiem: co WILQ proponuje, z jakich dowodów, czego nie wolno jeszcze obiecać i jaka jest decyzja review.
+- `Karta decyzji dla Wilka`: na końcu dopisz krótką kartę z trzema polami:
+  `Decyzja po review`, `Pytanie do Wilka` i `Następny bezpieczny klik`.
+  Karta ma mówić, czy po ręcznym sprawdzeniu marketer ma zatwierdzić
+  odświeżenie, scalenie, zmianę briefu albo blokadę tematu. Nie może obiecywać
+  publikacji, wzrostu SEO ani zapisu WordPress.
 - `Zablokowane`: co nie jest jeszcze gotową decyzją publikacyjną i dlaczego.
 
 Nie pokazuj marketerowi surowych markerów typu `partial_possible` jako uzasadnienia. Tłumacz je normalnie: "dane są częściowe, więc to sygnał do ręcznej oceny, nie gotowa decyzja publikacyjna". Surowe markery, endpointy i identyfikatory trzymaj w śladzie technicznym.

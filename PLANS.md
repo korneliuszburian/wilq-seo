@@ -163,6 +163,12 @@ GSC/WordPress cross-checking before it can be treated as Wilku-ready `10/10`.
 The stage snapshot now renders scorecard count, fulfilled candidates and open
 candidates in the main status.
 
+2026-07-04 update: GSC Content Doctor now explicitly asks for a `Karta decyzji
+dla Wilka` with `Decyzja po review`, `Pytanie do Wilka` and `Następny
+bezpieczny klik`. The rerun output contains the card, but the score remains
+`9/10`; this is the right outcome while GSC query/page evidence is partial and
+manual inventory/content review still blocks a fully final decision.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

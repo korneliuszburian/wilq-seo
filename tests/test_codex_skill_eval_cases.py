@@ -890,6 +890,11 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             assert '"POST"' in content_smoke_script
             assert "/api/actions/{quoted_action}/validate" in content_smoke_script
             assert '"action_validations": action_validations' in content_smoke_script
+        if skill == "wilq-gsc-content-doctor":
+            assert "Karta decyzji dla Wilka" in content_skill_doc
+            assert "Decyzja po review" in content_skill_doc
+            assert "Pytanie do Wilka" in content_skill_doc
+            assert "Następny bezpieczny klik" in content_skill_doc
         if skill == "wilq-content-strategist":
             assert '"content_brief_preview_type": "content_brief_preview_v1"' in (
                 content_smoke_script

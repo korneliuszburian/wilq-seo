@@ -10232,3 +10232,36 @@ Result:
   `0` open candidates, `3` requiring rerun eval and `0` failures.
 - `scripts/wilq_stage_snapshot.py` now shows this reviewer-pass summary in the
   main WILQ stage readout.
+
+## 2026-07-04 - GSC decision card tuning remains 9/10
+
+Purpose:
+
+- Check whether `wilq-gsc-content-doctor` can move from a strong review
+  checklist to a Wilku-ready decision card without inventing a publication
+  decision.
+- Keep the score honest when GSC query/page evidence is partial and the output
+  still requires manual inventory/content review.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py tests/test_skill_tuning_packet.py tests/test_skill_reviewer_scorecard_audit.py tests/test_wilq_stage_snapshot.py -q
+rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+rtk uv run python scripts/audit_skill_reviewer_scorecards.py --strict
+```
+
+Result:
+
+- Skill instructions and eval case now require `Karta decyzji dla Wilka`,
+  `Decyzja po review`, `Pytanie do Wilka` and `Następny bezpieczny klik`.
+- Latest passing proof:
+  `.local-lab/evals/codex-skill/20260704T055356Z/wilq-gsc-content-doctor/result.json`.
+- The output now includes a concrete owner decision card:
+  refresh homepage vs merge into a better service page, ask whether the
+  homepage should sell environmental documentation/environmental consulting in
+  Silesia, then prepare the refresh queue without publishing.
+- `operator_usefulness_score` remains `9`, not `10`. This is accepted as an
+  honest state: partial GSC query/page evidence and manual inventory review
+  still prevent treating the skill as fully Wilku-ready.
