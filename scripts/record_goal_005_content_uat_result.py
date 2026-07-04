@@ -341,6 +341,23 @@ def render_content_uat_session_card(
             "Wilku pyta `skąd to wzięło?` albo widzi generyczny język."
         ),
         "",
+        "## Werdykt po 15 minutach",
+        "",
+        (
+            "- Do pola `werdykt_po_15_minutach` wpisz dokładnie jedną z opcji: "
+            "`przejdź do pełnego testu treści`, `zostań przy review`, "
+            "`popraw materiały i wróć`, `odrzuć ten kierunek`."
+        ),
+        (
+            "- Tylko `przejdź do pełnego testu treści` może odblokować "
+            "domknięcie Goal 005. Pozostałe werdykty są wartościowym wynikiem "
+            "UAT, ale oznaczają follow-up zamiast completion proof."
+        ),
+        (
+            "- Jeżeli Wilku nie rozumie źródeł, blokad albo języka Ekologus, "
+            "wybierz `zostań przy review` albo `popraw materiały i wróć`."
+        ),
+        "",
         "## Pierwsza decyzja w Service Profile",
         "",
         f"- {first_review}",

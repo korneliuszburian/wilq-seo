@@ -225,6 +225,19 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "surowego prywatnego tekstu" in agenda_section
     assert "content_work_item_content_decision" not in agenda_section
     assert "service_profile_review_" not in agenda_section
+    verdict_section = card.split("## Werdykt po 15 minutach", 1)[1].split(
+        "## Pierwsza decyzja w Service Profile",
+        1,
+    )[0]
+    assert "`werdykt_po_15_minutach`" in verdict_section
+    assert "`przejdź do pełnego testu treści`" in verdict_section
+    assert "`zostań przy review`" in verdict_section
+    assert "`popraw materiały i wróć`" in verdict_section
+    assert "`odrzuć ten kierunek`" in verdict_section
+    assert "może odblokować domknięcie Goal 005" in verdict_section
+    assert "follow-up zamiast completion proof" in verdict_section
+    assert "content_work_item_content_decision" not in verdict_section
+    assert "service_profile_review_" not in verdict_section
     assert "## ID do zapisu po rozmowie" in card
     assert "Materiał ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
     public_section = card.split("## ID do zapisu po rozmowie")[0]
