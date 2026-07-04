@@ -141,6 +141,11 @@ Date: 2026-07-04
   draft-only write-readiness block in operator language: `gotowe do prośby o
   zapis`, `próba zapisu na WordPressie`, readable write blockers and normal
   activation steps instead of raw apply/vendor/live-write/env wording.
+- 2026-07-04 Goal 005 session card now uses the same simpler WordPress wording
+  (`WordPress: tylko szkic`, `Plan aktywacji WordPress: tylko szkic`,
+  `Kolejka treści`) and replaces `bramki ewaluacji` with `warunki review`.
+  The completion guard also labels the first WordPress write candidate as
+  `Aktywuj zapis szkicu WordPress jako szkic`.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

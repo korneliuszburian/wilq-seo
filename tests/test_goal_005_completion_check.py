@@ -78,9 +78,10 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "punkty startowe: linkedin, facebook" in markdown
     assert "publikacja i claim o braku powtórek: zablokowane" in markdown
     assert "Gotowość realnych zapisów" in markdown
-    assert "Aktywuj zapis szkicu WordPress draft-only" in markdown
-    assert "Plan aktywacji WordPress draft-only" in markdown
-    assert "Utrzymaj zakres draft-only" in markdown
+    assert "Aktywuj zapis szkicu WordPress jako szkic" in markdown
+    assert "Aktywuj zapis szkicu WordPress draft-only" not in markdown
+    assert "Plan aktywacji WordPress: tylko szkic" in markdown
+    assert "Utrzymaj zakres: tylko szkic" in markdown
     assert "gotowe do prośby o zapis: 0/" in markdown
     assert "próba zapisu na WordPressie: 0" in markdown
     assert "Doprowadź akcję zapisu przez sprawdzenie" in markdown

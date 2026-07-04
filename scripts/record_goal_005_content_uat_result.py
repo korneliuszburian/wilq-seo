@@ -342,7 +342,7 @@ def render_content_uat_session_card(
             "zatwierdzić, poprawić, odświeżyć albo odrzucić."
         ),
         (
-            "3. Prywatny ślad: sprawdzić, czy `KB_*` i bramki ewaluacji są "
+            "3. Prywatny ślad: sprawdzić, czy `KB_*` i warunki review są "
             "wystarczająco czytelne bez surowego prywatnego tekstu."
         ),
         (
@@ -374,10 +374,10 @@ def render_content_uat_session_card(
         "## Czego nie pokazujemy jako gotowe",
         "",
         (
-            "- WordPress draft-only nie jest jeszcze gotowy do zapisu ani "
+            "- WordPress: tylko szkic nie jest jeszcze gotowy do zapisu ani "
             "publikacji. To jest plan aktywacji, nie zgoda na publikację."
         ),
-        "- Plan aktywacji WordPress draft-only:",
+        "- Plan aktywacji WordPress: tylko szkic:",
         *[f"  - {step}" for step in wordpress_activation_steps],
         "",
         "## Pierwsza decyzja w Service Profile",
@@ -418,7 +418,7 @@ def render_content_uat_session_card(
         "## ID do zapisu po rozmowie",
         "",
         f"- Materiał ID: `{selected_work_item}`",
-        "- Kolejka content: "
+        "- Kolejka treści: "
         f"{content_queue_status_label(provenance.get('queue_status'))}",
         "- Status briefu sprzedażowego: "
         f"{sales_brief_status_label(provenance.get('selected_sales_brief_status'))}",
@@ -488,6 +488,9 @@ def sales_brief_status_label(value: Any) -> str:
 def wordpress_draft_activation_step_label(value: Any) -> str:
     text = str(value or "").strip()
     replacements = {
+        "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.": (
+            "Utrzymaj zakres: tylko szkic, bez publikacji i destrukcyjnych zmian."
+        ),
         "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.": (
             "Doprowadź akcję zapisu przez sprawdzenie, podgląd, review i "
             "potwierdzenie operatora."

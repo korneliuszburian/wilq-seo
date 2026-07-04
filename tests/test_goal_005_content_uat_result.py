@@ -250,12 +250,12 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     wordpress_section = card.split("## Czego nie pokazujemy jako gotowe", 1)[
         1
     ].split("## Pierwsza decyzja w Service Profile", 1)[0]
-    assert "WordPress draft-only nie jest jeszcze gotowy do zapisu ani publikacji" in (
+    assert "WordPress: tylko szkic nie jest jeszcze gotowy do zapisu ani publikacji" in (
         wordpress_section
     )
     assert "To jest plan aktywacji, nie zgoda na publikację" in wordpress_section
-    assert "Plan aktywacji WordPress draft-only" in wordpress_section
-    assert "Utrzymaj zakres draft-only i brak publikacji" in wordpress_section
+    assert "Plan aktywacji WordPress: tylko szkic" in wordpress_section
+    assert "Utrzymaj zakres: tylko szkic, bez publikacji" in wordpress_section
     assert "Doprowadź akcję zapisu przez sprawdzenie, podgląd, review" in (
         wordpress_section
     )
@@ -272,9 +272,10 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "## ID do zapisu po rozmowie" in card
     assert "Materiał ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
     id_section = card.split("## ID do zapisu po rozmowie", 1)[1]
-    assert "Kolejka content: zablokowana do czasu oceny" in id_section
+    assert "Kolejka treści: zablokowana do czasu oceny" in id_section
     assert "Status briefu sprzedażowego: gotowy tylko do oceny" in id_section
-    assert "Kolejka content: `blocked`" not in id_section
+    assert "Kolejka content" not in id_section
+    assert "Kolejka treści: `blocked`" not in id_section
     assert "Status briefu sprzedażowego: `ready`" not in id_section
     public_section = card.split("## ID do zapisu po rozmowie")[0]
     assert "renamed_public_service_bdo_review" not in public_section

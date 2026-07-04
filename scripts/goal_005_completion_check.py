@@ -1480,7 +1480,7 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         if str(step).strip()
     ]
     if activation_steps:
-        lines.append("- Plan aktywacji WordPress draft-only:")
+        lines.append("- Plan aktywacji WordPress: tylko szkic:")
         lines.extend(f"  - {step}" for step in activation_steps)
     next_review_actions = source.get("next_review_actions") or []
     if next_review_actions:
@@ -1586,13 +1586,23 @@ def _join_labels(value: Any) -> str:
 
 def _write_candidate_label(value: dict[str, Any]) -> str:
     action_id = str(value.get("action_id") or "").strip()
-    title = str(value.get("title") or "").strip()
+    title = _write_candidate_title_label(value.get("title"))
     target = str(value.get("target_label") or "").strip()
     if not action_id:
         return "brak kandydata"
     if target:
         return f"{title or action_id} -> {target}"
     return title or action_id
+
+
+def _write_candidate_title_label(value: Any) -> str:
+    raw = str(value or "").strip()
+    labels = {
+        "Aktywuj zapis szkicu WordPress draft-only": (
+            "Aktywuj zapis szkicu WordPress jako szkic"
+        )
+    }
+    return labels.get(raw, raw)
 
 
 def _first_write_blockers_label(value: dict[str, Any]) -> str:
@@ -1621,6 +1631,9 @@ def _write_blocker_label(value: Any) -> str:
 def _wordpress_draft_activation_step_label(value: Any) -> str:
     raw = str(value or "").strip()
     labels = {
+        "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.": (
+            "Utrzymaj zakres: tylko szkic, bez publikacji i destrukcyjnych zmian."
+        ),
         "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.": (
             "Doprowadź akcję zapisu przez sprawdzenie, podgląd, review i "
             "potwierdzenie operatora."
