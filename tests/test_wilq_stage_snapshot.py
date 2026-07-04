@@ -50,6 +50,14 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
         completion_report={
             "status": "blocked_missing_goal_005_uat_proof",
             "missing_input": "goal_005_uat_result_or_owner_defer",
+            "next_uat_input": {
+                "first_service_profile_review": {
+                    "label": "Sprawdź kartę BDO",
+                    "target_card_id": "ekologus_service_bdo_reporting",
+                    "required_fields": ["źródła danych", "twierdzenia"],
+                    "next_step": "Najpierw sprawdź publiczną kartę BDO.",
+                }
+            },
         },
         api_base="http://127.0.0.1:8000",
     )
@@ -73,6 +81,20 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
     )
     assert snapshot["maturity_ranges"][0]["done"] == "75-80%"
     assert snapshot["maturity_ranges"][2]["remaining"] == "55-65%"
+    assert snapshot["owner_review"]["first_decision"] == {
+        "label": "Sprawdź kartę BDO",
+        "target_card_id": "ekologus_service_bdo_reporting",
+        "required_fields": ["źródła danych", "twierdzenia"],
+        "next_step": "Najpierw sprawdź publiczną kartę BDO.",
+    }
+    assert any(
+        "--review-type public_service_cards" in command
+        for command in snapshot["owner_review"]["commands"]
+    )
+    assert any(
+        "--review-type private_source_proposals" in command
+        for command in snapshot["owner_review"]["commands"]
+    )
 
 
 def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
@@ -105,6 +127,14 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
         completion_report={
             "status": "blocked_missing_goal_005_uat_proof",
             "missing_input": "goal_005_uat_result_or_owner_defer",
+            "next_uat_input": {
+                "first_service_profile_review": {
+                    "label": "Sprawdź kartę BDO",
+                    "target_card_id": "ekologus_service_bdo_reporting",
+                    "required_fields": ["źródła danych", "twierdzenia"],
+                    "next_step": "Najpierw sprawdź publiczną kartę BDO.",
+                }
+            },
         },
     )
 
@@ -118,6 +148,10 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
     assert "Dlaczego skille nie są jeszcze 10/10" in markdown
     assert "`wilq-ga4-analyst` (9/10): Uprość opis problemów (not set)." in markdown
     assert "brakuje realnego wyniku UAT albo jawnego owner deferu" in markdown
+    assert "Jak ruszyć review wiedzy" in markdown
+    assert "Pierwsza decyzja: Sprawdź kartę BDO" in markdown
+    assert "--review-type public_service_cards" in markdown
+    assert "--review-type private_source_proposals" in markdown
     assert "Co pokazać Wilkowi" in markdown
     assert "pełnym BDOS-class systemem codziennego wykonania" in markdown
     assert "production-ready" in markdown

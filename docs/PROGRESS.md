@@ -164,6 +164,11 @@ Date: 2026-07-04
   sub-10/10 skill quality blockers from the latest skill coverage report, so
   "0 skills at 10/10" becomes an actionable tuning queue instead of a vague
   quality statement.
+- 2026-07-04 the stage snapshot now also includes "Jak ruszyć review wiedzy":
+  the first live Service Profile decision, required review fields and exact
+  public/private Service Profile review session-card commands. This connects
+  the `gap_no_approved_current_cards` blocker to the next owner/Wilku review
+  action without inventing approval.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

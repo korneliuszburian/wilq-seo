@@ -105,6 +105,7 @@ def build_stage_snapshot_from_reports(
     completion_status = str(completion_report.get("status") or "unknown")
     blocker = _completion_blocker_label(completion_report)
     is_goal_closed = completion_status in {"complete_with_uat", "owner_deferred"}
+    owner_review = _owner_review_next_step(completion_report, api_base=api_base)
 
     current_stage = (
         "demo/review-ready, ale nie production-ready"
@@ -158,6 +159,7 @@ def build_stage_snapshot_from_reports(
             "Measurement loop nie może jeszcze rościć sukcesu bez okna obserwacji.",
         ],
         "next_work": NEXT_WORK,
+        "owner_review": owner_review,
         "show_to_wilku": [
             "Pokaż Command Center jako poranny cockpit: co dziś otworzyć i dlaczego.",
             "Pokaż Service Profile: co WILQ wie, co wymaga review i czego nie wolno jeszcze mówić.",
@@ -227,6 +229,25 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
     lines.extend(f"- {item}" for item in snapshot["main_gaps"])
     lines.extend(["", "## Następny ruch", ""])
     lines.extend(f"- {item}" for item in snapshot["next_work"])
+    if snapshot.get("owner_review"):
+        owner_review = snapshot["owner_review"]
+        lines.extend(["", "## Jak ruszyć review wiedzy", ""])
+        if owner_review.get("first_decision"):
+            decision = owner_review["first_decision"]
+            lines.append(
+                f"- Pierwsza decyzja: {decision['label']} "
+                f"(`{decision['target_card_id']}`)."
+            )
+            if decision.get("required_fields"):
+                lines.append(
+                    "- Pola do sprawdzenia: "
+                    + ", ".join(decision["required_fields"])
+                    + "."
+                )
+            if decision.get("next_step"):
+                lines.append(f"- Następny krok: {decision['next_step']}")
+        for command in owner_review.get("commands") or []:
+            lines.append(f"- `{command}`")
     lines.extend(["", "## Co pokazać Wilkowi", ""])
     lines.extend(f"- {item}" for item in snapshot["show_to_wilku"])
     return "\n".join(lines)
@@ -252,6 +273,40 @@ def _score_range(min_score: Any, max_score: Any) -> str:
     if min_score == max_score:
         return str(min_score)
     return f"{min_score}-{max_score}"
+
+
+def _owner_review_next_step(
+    completion_report: dict[str, Any],
+    *,
+    api_base: str,
+) -> dict[str, Any]:
+    next_uat_input = completion_report.get("next_uat_input")
+    if not isinstance(next_uat_input, dict):
+        return {}
+    first_review = next_uat_input.get("first_service_profile_review")
+    commands = [
+        (
+            "rtk uv run python scripts/record_service_profile_review_result.py "
+            "--print-session-card --review-type public_service_cards "
+            f"--api-base {api_base.rstrip('/')}"
+        ),
+        (
+            "rtk uv run python scripts/record_service_profile_review_result.py "
+            "--print-session-card --review-type private_source_proposals "
+            f"--api-base {api_base.rstrip('/')}"
+        ),
+    ]
+    if not isinstance(first_review, dict) or not first_review:
+        return {"commands": commands}
+    return {
+        "first_decision": {
+            "label": first_review.get("label") or "pierwsza decyzja Service Profile",
+            "target_card_id": first_review.get("target_card_id") or "brak",
+            "required_fields": first_review.get("required_fields") or [],
+            "next_step": first_review.get("next_step") or "",
+        },
+        "commands": commands,
+    }
 
 
 def _skill_quality_blockers(
