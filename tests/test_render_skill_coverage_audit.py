@@ -39,7 +39,10 @@ def write_result(path: Path, *, skill: str, score: int, blocked: bool) -> None:
                 "blocked_reason": "Brak wystarczających danych do rekomendacji."
                 if blocked
                 else None,
-                "operator_next_step": "Otwórz powierzchnię review i sprawdź akcję.",
+                "operator_next_step": (
+                    "Otwórz powierzchnię review i sprawdź akcję, bo "
+                    "command_center.primary_next_step wskazało ten priorytet."
+                ),
                 "operator_usefulness_score": score,
                 "eval_rubric": {
                     "hard_gates": {
@@ -104,9 +107,11 @@ def test_build_report_uses_latest_passing_result(tmp_path, monkeypatch) -> None:
     assert row["skill"] == "wilq-example"
     assert "20260702T030000Z" in row["latest_artifact"]
     assert row["score"] == 8
-    assert row["state"] == "ready / review-only"
+    assert row["state"] == "gotowy do review"
     assert "ev_connector_google_ads_status" not in row["what_it_proves"]
     assert "1 evidence IDs" in row["what_it_proves"]
+    assert "command_center.primary_next_step" not in row["remaining_blocker"]
+    assert "priorytet wskazany przez Command Center" in row["remaining_blocker"]
 
 
 def test_render_markdown_marks_missing_passing_eval(tmp_path, monkeypatch) -> None:
@@ -136,6 +141,39 @@ def test_render_markdown_marks_missing_passing_eval(tmp_path, monkeypatch) -> No
     assert "`wilq-missing`" in markdown
     assert "missing passing eval" in markdown
     assert "Uruchom deterministic smoke" in markdown
+
+
+def test_render_markdown_uses_operator_labels(tmp_path, monkeypatch) -> None:
+    audit = load_module()
+    cases_path = tmp_path / "cases.json"
+    cases_path.write_text(
+        json.dumps(
+            [
+                {
+                    "skill": "wilq-example",
+                    "minimum_operator_usefulness_score": 5,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(audit, "CASES_PATH", cases_path)
+
+    eval_root = tmp_path / "evals"
+    write_result(
+        eval_root / "20260702T010000Z/wilq-example/result.json",
+        skill="wilq-example",
+        score=9,
+        blocked=False,
+    )
+
+    markdown = audit.render_markdown(audit.build_report(eval_root))
+
+    assert "ready / review-only" not in markdown
+    assert "blocked correctly / review-only" not in markdown
+    assert "command_center.primary_next_step" not in markdown
+    assert "gotowy do review" in markdown
+    assert "priorytet wskazany przez Command Center" in markdown
 
 
 def test_build_report_floors_minimum_operator_usefulness_at_five(

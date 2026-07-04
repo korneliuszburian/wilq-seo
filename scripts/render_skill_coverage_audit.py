@@ -92,10 +92,10 @@ def _is_stale_result(path: Path, skill_root: Path, skill: str) -> bool:
 def _status_label(result: dict[str, Any]) -> str:
     actions = result.get("action_candidates") or []
     if result.get("blocked") is True:
-        return "blocked correctly / review-only"
+        return "poprawnie zablokowany do review"
     if actions:
-        return "ready / review-only"
-    return "ready / read-only"
+        return "gotowy do review"
+    return "gotowy do odczytu"
 
 
 def _short_text(value: Any, *, max_len: int = 130) -> str:
@@ -127,8 +127,21 @@ def _what_it_proves(result: dict[str, Any]) -> str:
 
 def _remaining_blocker(result: dict[str, Any]) -> str:
     if result.get("blocked"):
-        return _short_text(result.get("blocked_reason"), max_len=180)
-    return _short_text(result.get("operator_next_step"), max_len=180)
+        return _operator_label(result.get("blocked_reason"), max_len=180)
+    return _operator_label(result.get("operator_next_step"), max_len=180)
+
+
+def _operator_label(value: Any, *, max_len: int = 180) -> str:
+    text = _short_text(value, max_len=max_len)
+    replacements = {
+        "command_center.primary_next_step": "priorytet wskazany przez Command Center",
+        "ready / review-only": "gotowy do review",
+        "blocked correctly / review-only": "poprawnie zablokowany do review",
+        "review-only": "tylko do review",
+    }
+    for raw, label in replacements.items():
+        text = text.replace(raw, label)
+    return text
 
 
 def build_report(
@@ -270,15 +283,15 @@ def render_markdown(report: dict[str, Any]) -> str:
                 f"`{report.get('wilku_ready_skill_count')}` are `10/10`."
             ),
             (
-                "- Passing means: Polish operator output, WILQ API usage, "
-                "source connectors, evidence IDs, blocked-claim handling and "
-                "all hard gates true."
-            ),
-            (
-                "- `blocked correctly / review-only` is a useful state when "
-                "WILQ has evidence for the blocker but not enough proof for an "
-                "action or claim."
-            ),
+            "- Passing means: Polish operator output, WILQ API usage, "
+            "source connectors, evidence IDs, blocked-claim handling and "
+            "all hard gates true."
+        ),
+        (
+            "- `poprawnie zablokowany do review` is a useful state when WILQ "
+            "has evidence for the blocker but not enough proof for an action "
+            "or claim."
+        ),
             (
                 "- If this file drifts, regenerate it with `rtk uv run python "
                 "scripts/render_skill_coverage_audit.py --write "

@@ -132,6 +132,11 @@ Date: 2026-07-04
   source-trace labels as the Wilku session card, so the "next material"
   section no longer exposes raw `goal_*` eval gates or long `ekologus_ai_*`
   source refs.
+- 2026-07-04 skill coverage recovery report now renders visible skill states
+  and next-step markers as Polish operator labels (`gotowy do review`,
+  `poprawnie zablokowany do review`, `priorytet wskazany przez Command
+  Center`) instead of raw `ready / review-only`,
+  `blocked correctly / review-only` or `command_center.primary_next_step`.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
