@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,6 +38,11 @@ ServiceProfileReviewActionMode = Literal["prepare", "review_request"]
 ServiceProfileReviewActionPriority = Literal["high", "medium", "low"]
 ServiceProfileReviewDecisionOption = Literal["approve", "needs_changes", "stale", "reject"]
 ServiceProfileReviewRequirementType = Literal["text", "boolean", "follow_up"]
+ServiceProfileApprovalReadinessStatus = Literal[
+    "blocked",
+    "ready_for_review",
+    "ready_for_promotion_request",
+]
 ServiceProfilePrivateProposalRiskTier = Literal["low", "medium", "high", "unknown"]
 ServiceProfilePrivateProposalSupportLevel = Literal[
     "direct", "partial", "background", "conflicting"
@@ -317,6 +322,38 @@ class ContentServiceProfileSourceFactCoverageAudit(BaseModel):
     safe_next_step: str
 
 
+class ContentServiceProfileApprovalReadinessItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    label: str
+    status: ServiceProfileApprovalReadinessStatus
+    blocking: bool
+    detail: str
+    next_step: str
+    related_action_id: str | None = None
+
+
+class ContentServiceProfileApprovalReadiness(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ServiceProfileApprovalReadinessStatus
+    status_label: str
+    can_request_promotion: bool
+    mutation_allowed: bool
+    production_depth_unlocked: bool
+    reviewed_output_required: bool
+    approved_current_count: int
+    review_required_count: int
+    first_action_id: str | None = None
+    first_action_label: str | None = None
+    blockers: list[str] = Field(default_factory=list)
+    checklist: list[ContentServiceProfileApprovalReadinessItem] = Field(
+        default_factory=list
+    )
+    safe_next_step: str
+
+
 class ContentServiceProfileTechnicalTrace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -349,6 +386,7 @@ class ContentServiceProfileResponse(BaseModel):
     review_action_summary: ContentServiceProfileReviewActionSummary
     review_actions: list[ContentServiceProfileReviewAction] = Field(default_factory=list)
     source_fact_coverage: ContentServiceProfileSourceFactCoverageAudit
+    approval_readiness: ContentServiceProfileApprovalReadiness
     technical_trace: ContentServiceProfileTechnicalTrace
 
 
@@ -430,6 +468,11 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         review_action_summary=review_action_summary,
         review_actions=review_actions,
         source_fact_coverage=source_fact_coverage,
+        approval_readiness=_approval_readiness(
+            coverage_summary=coverage_summary,
+            review_action_summary=review_action_summary,
+            private_proposals=private_proposals,
+        ),
         technical_trace=ContentServiceProfileTechnicalTrace(
             knowledge_card_endpoint="/api/content/knowledge-cards",
             source_fact_count=source_fact_registry.fact_count,
@@ -440,6 +483,128 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             private_source_protocol_doc="docs/architecture/private-source-proposal-protocol.md",
         ),
     )
+
+
+def _approval_readiness(
+    *,
+    coverage_summary: ContentServiceProfileCoverageSummary,
+    review_action_summary: ContentServiceProfileReviewActionSummary,
+    private_proposals: list[PrivateSourceProposal],
+) -> ContentServiceProfileApprovalReadiness:
+    approved_current_count = coverage_summary.approved_current_count
+    review_required_count = coverage_summary.source_backed_review_required_count
+    private_pending_count = sum(
+        1
+        for proposal in private_proposals
+        if proposal.retention_decision == "pending_owner_decision"
+        or proposal.review_status == "review_required"
+    )
+    checklist = [
+        ContentServiceProfileApprovalReadinessItem(
+            code="public_service_review",
+            label="Publiczne karty usług sprawdzone przez człowieka",
+            status=(
+                "ready_for_review"
+                if review_action_summary.public_service_review_count
+                else "blocked"
+            ),
+            blocking=approved_current_count == 0,
+            detail=(
+                f"{review_action_summary.public_service_review_count} publicznych kart "
+                "czeka na decyzję review; żadna nie jest jeszcze zatwierdzona jako "
+                "wiedza do finalnych treści."
+                if approved_current_count == 0
+                else f"{approved_current_count} kart ma status zatwierdzonej wiedzy."
+            ),
+            next_step=(
+                "Zacznij od pierwszej publicznej karty usługi i zapisz decyzję: "
+                "zatwierdź, popraw, oznacz jako nieaktualne albo odrzuć."
+            ),
+            related_action_id=review_action_summary.first_review_action_id,
+        ),
+        ContentServiceProfileApprovalReadinessItem(
+            code="source_trace_review",
+            label="Ślad źródłowy i zablokowane twierdzenia sprawdzone",
+            status=(
+                "ready_for_review"
+                if review_action_summary.first_review_required_fields
+                else "blocked"
+            ),
+            blocking=True,
+            detail=(
+                "Review musi potwierdzić czytelny ślad źródłowy, zablokowane "
+                "twierdzenia, notatkę review i decyzję człowieka."
+            ),
+            next_step=(
+                "Użyj pól review z Service Profile zamiast ręcznie zgadywać, "
+                "co Wilku ma podpisać."
+            ),
+            related_action_id=review_action_summary.first_review_action_id,
+        ),
+        ContentServiceProfileApprovalReadinessItem(
+            code="private_source_governance",
+            label="Prywatne propozycje ekologus-ai mają decyzję ownera",
+            status="blocked" if private_pending_count else "ready_for_review",
+            blocking=private_pending_count > 0,
+            detail=(
+                f"{private_pending_count} prywatnych propozycji nadal wymaga decyzji "
+                "review, retencji albo aktualności; nie może odblokować finalnych "
+                "treści."
+            )
+            if private_pending_count
+            else "Prywatne propozycje nie blokują obecnej ścieżki review.",
+            next_step=(
+                "Dla prywatnych propozycji potwierdź klasy danych, bloki źródła, "
+                "aktualność, odbiorców, retencję, ścieżkę usunięcia i bramki ewaluacji."
+            ),
+        ),
+        ContentServiceProfileApprovalReadinessItem(
+            code="promotion_request_packet",
+            label="Osobny wniosek o zatwierdzenie jest gotowy do przygotowania",
+            status="blocked",
+            blocking=True,
+            detail=(
+                "WILQ nie ma jeszcze zatwierdzonego wyniku review, więc nie wolno "
+                "przygotować wniosku jako gotowego do promocji wiedzy."
+            ),
+            next_step=(
+                "Najpierw zapisz wynik rozmowy review skryptem "
+                "record_service_profile_review_result.py; dopiero raport ready może "
+                "zasilić osobny wniosek."
+            ),
+        ),
+    ]
+    blockers = [item.label for item in checklist if item.blocking]
+    can_request_promotion = not blockers and approved_current_count > 0
+    return ContentServiceProfileApprovalReadiness(
+        status="ready_for_promotion_request" if can_request_promotion else "blocked",
+        status_label=(
+            "wniosek o zatwierdzenie można przygotować"
+            if can_request_promotion
+            else "wniosek o zatwierdzenie zablokowany"
+        ),
+        can_request_promotion=can_request_promotion,
+        mutation_allowed=False,
+        production_depth_unlocked=False,
+        reviewed_output_required=True,
+        approved_current_count=approved_current_count,
+        review_required_count=review_required_count,
+        first_action_id=review_action_summary.first_review_action_id,
+        first_action_label=review_action_summary.first_review_action_label,
+        blockers=blockers,
+        checklist=checklist,
+        safe_next_step=(
+            "Przeprowadź review pierwszej karty Service Profile i zapisz wynik "
+            "review; WILQ nadal nie zmieni kart ani source facts bez osobnej "
+            "audytowanej ścieżki."
+        ),
+    )
+
+
+def _source_fact_coverage_knowledge_status(status: str) -> ContentKnowledgeLifecycleStatus:
+    if status == "production_depth":
+        return "approved_current"
+    return cast(ContentKnowledgeLifecycleStatus, status)
 
 
 def _source_fact_coverage_audit(
@@ -481,7 +646,9 @@ def _source_fact_coverage_audit(
     )
     return ContentServiceProfileSourceFactCoverageAudit(
         pass_state=pass_state,
-        knowledge_status=production_depth_readiness.status,
+        knowledge_status=_source_fact_coverage_knowledge_status(
+            production_depth_readiness.status
+        ),
         ready_for_daily_content=production_depth_readiness.ready_for_daily_content,
         production_depth_percent=_percent(
             production_depth_readiness.production_depth_card_count,
@@ -599,14 +766,16 @@ def _private_review_value_summary(
             "w Claim Ledgerze bez luzowania bezpieczeństwa."
         )
         review_questions.append(
-            "Czy zablokowane twierdzenia są kompletne, szczególnie dla prawa, kar, zgodności i efektów?"
+            "Czy zablokowane twierdzenia są kompletne, szczególnie dla prawa, "
+            "kar, zgodności i efektów?"
         )
     if promotion_allowed_count == 0 and proposal_count:
         review_value_points.append(
             "Żadna prywatna propozycja nie może wejść do production-depth bez review człowieka."
         )
         review_questions.append(
-            "Które propozycje odrzucić, oznaczyć jako nieaktualne albo zostawić tylko jako tło do UAT?"
+            "Które propozycje odrzucić, oznaczyć jako nieaktualne albo zostawić "
+            "tylko jako tło do UAT?"
         )
     operator_value_score = 0
     if proposal_count:

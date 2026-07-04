@@ -859,6 +859,29 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.coverage_summary.ready_for_daily_content is False
     assert response.coverage_summary.source_backed_review_required_count >= 5
     assert response.coverage_summary.approved_current_count == 0
+    assert response.approval_readiness.status == "blocked"
+    assert response.approval_readiness.can_request_promotion is False
+    assert response.approval_readiness.mutation_allowed is False
+    assert response.approval_readiness.production_depth_unlocked is False
+    assert response.approval_readiness.reviewed_output_required is True
+    assert response.approval_readiness.approved_current_count == 0
+    assert response.approval_readiness.review_required_count >= 5
+    assert response.approval_readiness.first_action_id
+    assert response.approval_readiness.checklist
+    readiness_codes = {item.code for item in response.approval_readiness.checklist}
+    assert {
+        "public_service_review",
+        "source_trace_review",
+        "private_source_governance",
+        "promotion_request_packet",
+    } <= readiness_codes
+    assert "Publiczne karty usług sprawdzone przez człowieka" in (
+        response.approval_readiness.blockers
+    )
+    assert all(
+        "approved_current" not in item.detail
+        for item in response.approval_readiness.checklist
+    )
     assert response.source_fact_coverage.pass_state is True
     assert response.source_fact_coverage.knowledge_status == "source_backed_review_required"
     assert response.source_fact_coverage.ready_for_daily_content is False
@@ -1198,6 +1221,11 @@ def test_content_service_profile_endpoint_exposes_read_only_view_model() -> None
     assert payload["review_policy"]["can_promote_facts"] is False
     assert payload["coverage_summary"]["ready_for_daily_content"] is False
     assert payload["production_depth_readiness"]["status"] == "source_backed_review_required"
+    assert payload["approval_readiness"]["status"] == "blocked"
+    assert payload["approval_readiness"]["can_request_promotion"] is False
+    assert payload["approval_readiness"]["mutation_allowed"] is False
+    assert payload["approval_readiness"]["production_depth_unlocked"] is False
+    assert payload["approval_readiness"]["checklist"]
     assert payload["private_source_proposals"]
     assert payload["private_source_proposals"][0]["promotion_allowed"] is False
     gap_ids = {gap["gap_id"] for gap in payload["coverage_gaps"]}

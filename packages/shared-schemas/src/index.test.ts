@@ -688,6 +688,43 @@ describe("ContentServiceProfileResponseSchema", () => {
         blockers: ["Brakuje zatwierdzonych kart."],
         safe_next_step: "Review cards."
       },
+      approval_readiness: {
+        status: "blocked",
+        status_label: "wniosek o zatwierdzenie zablokowany",
+        can_request_promotion: false,
+        mutation_allowed: false,
+        production_depth_unlocked: false,
+        reviewed_output_required: true,
+        approved_current_count: 0,
+        review_required_count: 5,
+        first_action_id: "service_profile_request_knowledge_review",
+        first_action_label: "Poproś o review",
+        blockers: [
+          "Publiczne karty usług sprawdzone przez człowieka",
+          "Ślad źródłowy i zablokowane twierdzenia sprawdzone"
+        ],
+        checklist: [
+          {
+            code: "public_service_review",
+            label: "Publiczne karty usług sprawdzone przez człowieka",
+            status: "ready_for_review",
+            blocking: true,
+            detail: "Jedna publiczna karta czeka na decyzję review.",
+            next_step: "Zacznij od pierwszej publicznej karty usługi.",
+            related_action_id: "service_profile_request_knowledge_review"
+          },
+          {
+            code: "promotion_request_packet",
+            label: "Osobny wniosek o zatwierdzenie jest gotowy do przygotowania",
+            status: "blocked",
+            blocking: true,
+            detail: "Brak zatwierdzonego wyniku review.",
+            next_step: "Najpierw zapisz wynik rozmowy review."
+          }
+        ],
+        safe_next_step:
+          "Przeprowadź review pierwszej karty Service Profile i zapisz wynik review."
+      },
       technical_trace: {
         knowledge_card_endpoint: "/api/content/knowledge-cards",
         source_fact_count: 5,
@@ -703,6 +740,8 @@ describe("ContentServiceProfileResponseSchema", () => {
     expect(parsed.review_policy.can_edit_cards).toBe(false);
     expect(parsed.coverage_gaps[0]?.gap_id).toBe("gap_service_operat_wodnoprawny");
     expect(parsed.private_source_proposals[0]?.promotion_allowed).toBe(false);
+    expect(parsed.approval_readiness.can_request_promotion).toBe(false);
+    expect(parsed.approval_readiness.checklist[0]?.code).toBe("public_service_review");
   });
 });
 

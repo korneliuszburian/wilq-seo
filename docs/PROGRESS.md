@@ -202,6 +202,11 @@ Date: 2026-07-04
   źródłowe`, `dowody`, `źródła danych`, `wiedza do finalnych treści` and
   `surowy prywatny tekst` replace visible promotion/source-fact/
   production-depth/raw-private jargon in review summaries.
+- 2026-07-04 Service Profile API now exposes `approval_readiness`: a
+  marketer-readable checklist for what must be reviewed before a separate
+  approval request can even be prepared. Live state remains blocked:
+  no mutation, no production-depth unlock, no source fact promotion and first
+  action `service_profile_review_card_ekologus_service_bdo_reporting`.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

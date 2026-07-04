@@ -109,6 +109,13 @@ counts in `/api/social/history-inventory` plus the `wilq-social-publisher`
 context. This still does not unlock publishing or duplicate-free claims; it
 creates the review input needed before repurposing topics safely.
 
+2026-07-04 update: Service Profile now exposes API-owned
+`approval_readiness` for owner/Wilku review. It lists the concrete checklist
+before any separate approval request: public service-card review, source trace
+and blocked-claim review, private `ekologus-ai` governance, and a reviewed
+result packet. Current live state is still blocked: no source fact promotion,
+no `approved_current` unlock, no mutation and no final-content readiness.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

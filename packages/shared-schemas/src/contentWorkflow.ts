@@ -741,6 +741,38 @@ export const ContentServiceProfileSourceFactCoverageAuditSchema = z.object({
   safe_next_step: z.string()
 });
 
+export const ContentServiceProfileApprovalReadinessStatusSchema = z.enum([
+  "blocked",
+  "ready_for_review",
+  "ready_for_promotion_request"
+]);
+
+export const ContentServiceProfileApprovalReadinessItemSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  status: ContentServiceProfileApprovalReadinessStatusSchema,
+  blocking: z.boolean(),
+  detail: z.string(),
+  next_step: z.string(),
+  related_action_id: z.string().nullable().optional()
+});
+
+export const ContentServiceProfileApprovalReadinessSchema = z.object({
+  status: ContentServiceProfileApprovalReadinessStatusSchema,
+  status_label: z.string(),
+  can_request_promotion: z.boolean(),
+  mutation_allowed: z.boolean(),
+  production_depth_unlocked: z.boolean(),
+  reviewed_output_required: z.boolean(),
+  approved_current_count: z.number(),
+  review_required_count: z.number(),
+  first_action_id: z.string().nullable().optional(),
+  first_action_label: z.string().nullable().optional(),
+  blockers: z.array(z.string()).default([]),
+  checklist: z.array(ContentServiceProfileApprovalReadinessItemSchema).default([]),
+  safe_next_step: z.string()
+});
+
 export const ContentServiceProfileTechnicalTraceSchema = z.object({
   knowledge_card_endpoint: z.string(),
   source_fact_count: z.number(),
@@ -767,6 +799,7 @@ export const ContentServiceProfileResponseSchema = z.object({
   review_action_summary: ContentServiceProfileReviewActionSummarySchema,
   review_actions: z.array(ContentServiceProfileReviewActionSchema).default([]),
   source_fact_coverage: ContentServiceProfileSourceFactCoverageAuditSchema,
+  approval_readiness: ContentServiceProfileApprovalReadinessSchema,
   technical_trace: ContentServiceProfileTechnicalTraceSchema
 });
 

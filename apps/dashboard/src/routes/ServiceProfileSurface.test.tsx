@@ -43,6 +43,17 @@ describe("ServiceProfileSurface", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Kolejność review")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje produkcję")).toBeInTheDocument();
+    expect(screen.getByText("Gotowość zatwierdzenia wiedzy")).toBeInTheDocument();
+    expect(screen.getByText("wniosek o zatwierdzenie zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("wniosek zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("bez mutacji")).toBeInTheDocument();
+    expect(screen.getByText("wymaga wyniku review")).toBeInTheDocument();
+    expect(
+      screen.getByText("Publiczne karty usług sprawdzone przez człowieka")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Osobny wniosek o zatwierdzenie jest gotowy do przygotowania")
+    ).toBeInTheDocument();
     expect(screen.getByText("Audyt pokrycia wiedzy")).toBeInTheDocument();
     expect(screen.getByText("Production-depth")).toBeInTheDocument();
     expect(screen.getByText("Usługi zatwierdzone")).toBeInTheDocument();
@@ -76,9 +87,10 @@ describe("ServiceProfileSurface", () => {
         "Potem prywatne propozycje ekologus-ai: usługi, polityki twierdzeń i wymagania dowodowe."
       )
     ).toBeInTheDocument();
-    expect(screen.getByText("Zatwierdzone")).toBeInTheDocument();
+    expect(screen.getAllByText("Zatwierdzone").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("ekologus-ai")).toBeInTheDocument();
-    expect(screen.getByText(/production-depth zablokowane/)).toBeInTheDocument();
+    expect(screen.getAllByText(/production-depth zablokowane/).length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/źródła są, wymagają review/)).toBeInTheDocument();
     expect(screen.getByText("Polityka zapisu")).toBeInTheDocument();
     expect(screen.getByText(/Edycja kart i promocja faktów wymagają/)).toBeInTheDocument();
@@ -644,6 +656,68 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       ],
       safe_next_step:
         "Przejrzyj karty review-required i luki usługowe z Wilkiem przed użyciem ich jako production-depth."
+    },
+    approval_readiness: {
+      status: "blocked",
+      status_label: "wniosek o zatwierdzenie zablokowany",
+      can_request_promotion: false,
+      mutation_allowed: false,
+      production_depth_unlocked: false,
+      reviewed_output_required: true,
+      approved_current_count: 0,
+      review_required_count: 5,
+      first_action_id: "service_profile_review_card_ekologus_service_bdo_reporting",
+      first_action_label: "Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa",
+      blockers: [
+        "Publiczne karty usług sprawdzone przez człowieka",
+        "Ślad źródłowy i zablokowane twierdzenia sprawdzone",
+        "Prywatne propozycje ekologus-ai mają decyzję ownera",
+        "Osobny wniosek o zatwierdzenie jest gotowy do przygotowania"
+      ],
+      checklist: [
+        {
+          code: "public_service_review",
+          label: "Publiczne karty usług sprawdzone przez człowieka",
+          status: "ready_for_review",
+          blocking: true,
+          detail:
+            "6 publicznych kart czeka na decyzję review; żadna nie jest jeszcze zatwierdzona jako wiedza do finalnych treści.",
+          next_step:
+            "Zacznij od pierwszej publicznej karty usługi i zapisz decyzję.",
+          related_action_id: "service_profile_review_card_ekologus_service_bdo_reporting"
+        },
+        {
+          code: "source_trace_review",
+          label: "Ślad źródłowy i zablokowane twierdzenia sprawdzone",
+          status: "ready_for_review",
+          blocking: true,
+          detail:
+            "Review musi potwierdzić czytelny ślad źródłowy, zablokowane twierdzenia, notatkę review i decyzję człowieka.",
+          next_step: "Użyj pól review z Service Profile.",
+          related_action_id: "service_profile_review_card_ekologus_service_bdo_reporting"
+        },
+        {
+          code: "private_source_governance",
+          label: "Prywatne propozycje ekologus-ai mają decyzję ownera",
+          status: "blocked",
+          blocking: true,
+          detail:
+            "5 prywatnych propozycji nadal wymaga decyzji review, retencji albo aktualności.",
+          next_step:
+            "Dla prywatnych propozycji potwierdź klasy danych, bloki źródła, aktualność i retencję."
+        },
+        {
+          code: "promotion_request_packet",
+          label: "Osobny wniosek o zatwierdzenie jest gotowy do przygotowania",
+          status: "blocked",
+          blocking: true,
+          detail:
+            "WILQ nie ma jeszcze zatwierdzonego wyniku review, więc nie wolno przygotować wniosku jako gotowego do promocji wiedzy.",
+          next_step: "Najpierw zapisz wynik rozmowy review."
+        }
+      ],
+      safe_next_step:
+        "Przeprowadź review pierwszej karty Service Profile i zapisz wynik review; WILQ nadal nie zmieni kart ani source facts bez osobnej audytowanej ścieżki."
     },
     technical_trace: {
       knowledge_card_endpoint: "/api/content/knowledge-cards",
