@@ -113,6 +113,9 @@ Date: 2026-07-04
   `werdykt_po_15_minutach` i wyjaśnia, że tylko `przejdź do pełnego testu
   treści` może odblokować domknięcie; pozostałe werdykty są użytecznym
   wynikiem UAT, ale oznaczają dalsze prace, nie dowód domknięcia.
+- 2026-07-04 ta sama karta rozmowy pokazuje prywatne bramki źródłowe jako
+  `bramka: goal_*` zamiast technicznego `eval: goal_*`, więc Wilku widzi
+  zrozumiałą etykietę bez utraty stabilnych ID do audytu.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

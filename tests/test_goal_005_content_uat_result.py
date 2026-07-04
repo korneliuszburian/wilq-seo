@@ -268,9 +268,13 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Bezpieczeństwo prawne, poufność i zgody" in card
     assert "źródło: KB_021_BEZPIECZENSTWO_PRAWNE" in card
     assert (
-        "eval: goal_005_private_claim_policy_review, goal_006_claim_ledger_gate"
+        "bramka: goal_005_private_claim_policy_review, goal_006_claim_ledger_gate"
         in card
     )
+    public_private_trace_section = card.split(
+        "## Prywatny ślad źródłowy do pokazania", 1
+    )[1].split("## Pytania do Wilka", 1)[0]
+    assert "eval:" not in public_private_trace_section
     assert "decyzja właściciela wymagana" in card
     assert "zredagowane" in card
     assert "ślad gotowy" in card

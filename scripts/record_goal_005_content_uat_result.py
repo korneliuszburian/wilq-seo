@@ -1564,7 +1564,7 @@ def private_source_trace_item_label(value: dict[str, Any]) -> str:
         str(value.get("target") or "brak"),
         str(value.get("scope") or "brak"),
         f"źródło: {source_blocks}",
-        f"eval: {eval_cases}",
+        f"bramka: {eval_cases}",
         str(value.get("retention") or "brak"),
         redacted,
         trace_ready,
