@@ -421,7 +421,7 @@ def render_content_uat_session_card(
         "- Wiedza gotowa do finalnych treści: "
         f"`{visible_bool(provenance.get('production_depth_ready') is True)}`",
         "- Źródła danych: "
-        f"{', '.join(provenance.get('selected_source_connectors') or []) or 'brak live proof'}",
+        f"{source_connector_labels(provenance.get('selected_source_connectors'))}",
         "- Decyzja Service Profile ID: "
         f"{first_service_profile_review_label(provenance)}",
     ]
@@ -440,13 +440,55 @@ def wordpress_draft_activation_plan_steps(
         ]
     raw_steps = readiness.get("activation_plan_steps")
     steps = [
-        str(step).strip()
+        wordpress_draft_activation_step_label(step)
         for step in raw_list_payload(raw_steps)
         if str(step).strip()
     ]
     return steps[:4] or [
         "Brak kroków aktywacji z API, więc WordPress pozostaje review-only."
     ]
+
+
+def wordpress_draft_activation_step_label(value: Any) -> str:
+    text = str(value or "").strip()
+    replacements = {
+        "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm.": (
+            "Doprowadź akcję zapisu przez sprawdzenie, podgląd, review i "
+            "potwierdzenie operatora."
+        ),
+        (
+            "Nie dodawaj kolejnego adaptera: boundary i paczka szkicu istnieją, "
+            "a live write blokują handoff, review/confirm/audit i env."
+        ): (
+            "Nie dodawaj kolejnej warstwy technicznej: najpierw domknij "
+            "przekazanie szkicu, review, potwierdzenie i audyt."
+        ),
+        "Odblokuj payload apply dopiero po przejściu review i readiness.": (
+            "Odblokuj zapis dopiero po review i sprawdzeniu gotowości."
+        ),
+    }
+    return replacements.get(text, text)
+
+
+def source_connector_labels(value: Any) -> str:
+    labels = {
+        "google_search_console": "Google Search Console",
+        "wordpress_ekologus": "WordPress ekologus.pl",
+        "wordpress_sklep": "WordPress sklep",
+        "google_analytics_4": "GA4",
+        "google_ads": "Google Ads",
+        "google_merchant_center": "Merchant Center",
+        "ahrefs": "Ahrefs",
+        "localo": "Localo",
+        "linkedin": "LinkedIn",
+        "facebook": "Facebook",
+    }
+    connectors = [
+        labels.get(str(item), str(item))
+        for item in raw_list_payload(value)
+        if str(item).strip()
+    ]
+    return ", ".join(connectors) if connectors else "brak live proof"
 
 
 def load_json(path: Path) -> dict[str, Any]:

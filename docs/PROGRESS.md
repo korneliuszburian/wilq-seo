@@ -113,6 +113,10 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 pre-demo audit now renders social-history metadata
   readiness as Polish operator text (`brak pliku metadanych`) instead of the
   raw `not_configured` enum.
+- 2026-07-04 Goal 005 Wilku session card now normalizes the WordPress
+  draft-only activation steps and connector labels for the visible handoff:
+  no `apply-mode ActionObject`, `payload apply`, raw connector IDs or
+  `boundary/live write/env` wording in that block.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

@@ -256,13 +256,19 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "To jest plan aktywacji, nie zgoda na publikację" in wordpress_section
     assert "Plan aktywacji WordPress draft-only" in wordpress_section
     assert "Utrzymaj zakres draft-only i brak publikacji" in wordpress_section
-    assert "Doprowadź apply-mode ActionObject przez validate, preview, review i confirm" in (
+    assert "Doprowadź akcję zapisu przez sprawdzenie, podgląd, review" in (
         wordpress_section
     )
-    assert "Nie dodawaj kolejnego adaptera" in wordpress_section
-    assert "Odblokuj payload apply dopiero po przejściu review i readiness" in (
+    assert "apply-mode ActionObject" not in wordpress_section
+    assert "Nie dodawaj kolejnej warstwy technicznej" in wordpress_section
+    assert "najpierw domknij przekazanie szkicu" in wordpress_section
+    assert "boundary" not in wordpress_section
+    assert "live write" not in wordpress_section
+    assert "env" not in wordpress_section
+    assert "Odblokuj zapis dopiero po review i sprawdzeniu gotowości" in (
         wordpress_section
     )
+    assert "payload apply" not in wordpress_section
     assert "## ID do zapisu po rozmowie" in card
     assert "Materiał ID: `content_work_item_content_decision_https___www_ekologus_pl`" in card
     public_section = card.split("## ID do zapisu po rozmowie")[0]
@@ -279,6 +285,8 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "Najpierw sprawdź publiczną kartę BDO." in card
     assert "Decyzja Service Profile ID" in card
     assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga oceny" in card
+    assert "Źródła danych: Google Search Console, WordPress ekologus.pl" in card
+    assert "Źródła danych: google_search_console" not in card
     assert "dowody: 2" in card
     assert "Brief sprzedażowy / jakość sygnału:" in card
     assert (
