@@ -14,6 +14,10 @@ from scripts.goal_005_completion_check import (
     uat_live_provenance_summary,
     validate_owner_defer,
 )
+from wilq.social.history import (
+    SOCIAL_HISTORY_INVENTORY_FILE_ENV,
+    social_history_input_example,
+)
 
 FULL_REVIEW_ARTIFACTS = [
     "docs/handoffs/2026-07-03-wilku-service-profile-review-now.md",
@@ -69,6 +73,8 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Status techniczny: `blocked_missing_goal_005_uat_proof`" in markdown
     assert "Pytania o prywatną wiedzę" in markdown
     assert "Prywatny ślad źródłowy do pokazania" in markdown
+    assert "Historia social do dedupe" in markdown
+    assert "publikacja i claim o braku powtórek: zablokowane" in markdown
     assert "ślad gotowy" in markdown
     assert "Czy proponowane CTA brzmi jak realny następny krok Ekologus" in markdown
     assert "--print-owner-defer-example --api-base http://127.0.0.1:8000" in markdown
@@ -101,7 +107,9 @@ def test_wilku_service_profile_handoff_includes_private_source_trace() -> None:
     assert "finalny content" not in handoff
 
 
-def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
+def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> None:
+    monkeypatch.delenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, raising=False)
+
     summary = goal_005_pre_demo_audit_summary()
 
     assert summary["source_fact_coverage"]["pass"] is True
@@ -134,6 +142,42 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
     ]["minimum_score"]
     assert summary["latest_skill_eval_results"]["strong_skill_count"] >= 1
     assert summary["latest_skill_eval_results"]["wilku_ready_skill_count"] >= 0
+    social_history = summary["social_history_inventory"]
+    assert social_history["status"] == "missing"
+    assert social_history["metadata_source_configured"] is False
+    assert social_history["metadata_source_status"] == "not_configured"
+    assert social_history["item_count"] == 0
+    assert social_history["missing_evidence_ids"] == [
+        "linkedin_historical_posts",
+        "facebook_historical_posts",
+    ]
+    assert social_history["publish_allowed"] is False
+    assert social_history["duplicate_free_claim_allowed"] is False
+
+
+def test_goal_005_pre_demo_audit_summary_surfaces_review_ready_social_history(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    history_path = tmp_path / "social-history.json"
+    history_path.write_text(
+        json.dumps(social_history_input_example(), ensure_ascii=False),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, str(history_path))
+
+    summary = goal_005_pre_demo_audit_summary()
+
+    social_history = summary["social_history_inventory"]
+    assert social_history["status"] == "review_ready"
+    assert social_history["metadata_source_configured"] is True
+    assert social_history["metadata_source_status"] == "review_ready"
+    assert social_history["item_count"] == 2
+    assert social_history["channel_counts"] == {"facebook": 1, "linkedin": 1}
+    assert social_history["missing_evidence_ids"] == []
+    assert social_history["import_error_count"] == 0
+    assert social_history["publish_allowed"] is False
+    assert social_history["duplicate_free_claim_allowed"] is False
 
 
 def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) -> None:

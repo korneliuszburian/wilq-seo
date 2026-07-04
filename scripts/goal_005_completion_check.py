@@ -25,6 +25,8 @@ from scripts.record_goal_005_content_uat_result import (
 )
 from scripts.render_skill_coverage_audit import build_report as build_latest_skill_eval_report
 from scripts.source_fact_coverage_audit import build_report as build_source_fact_coverage_report
+from wilq.connectors.registry import list_connector_statuses
+from wilq.social.history import build_social_history_inventory_from_env
 
 REQUIRED_DOCS = [
     Path("PLANS.md"),
@@ -352,6 +354,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
     claim_report = build_claim_ledger_gate_report()
     eval_report = build_skill_eval_coverage_report()
     latest_eval_report = build_latest_skill_eval_report()
+    social_history = goal_005_social_history_inventory_summary()
     latest_eval_scores = [
         row["score"] for row in latest_eval_report["rows"] if row.get("score") is not None
     ]
@@ -418,6 +421,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "missing_passing_skills": latest_eval_report["missing_passing_skills"],
             "stale_passing_skills": latest_eval_report["stale_passing_skills"],
         },
+        "social_history_inventory": social_history,
     }
     if api_base:
         dashboard_report = build_dashboard_usefulness_report(api_base)
@@ -442,6 +446,35 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "knowledge_lineage_count": knowledge_surface.get("lineage_count"),
         }
     return summary
+
+
+def goal_005_social_history_inventory_summary() -> dict[str, Any]:
+    connectors = list_connector_statuses()
+    connector_status_by_id = {connector.id: connector for connector in connectors}
+    missing_publish_access = {
+        connector_id: connector_status_by_id[connector_id].missing_credentials
+        for connector_id in ("linkedin", "facebook")
+        if connector_id in connector_status_by_id
+        and connector_status_by_id[connector_id].missing_credentials
+    }
+    inventory = build_social_history_inventory_from_env(
+        connector_status_by_id,
+        missing_publish_access,
+    ).model_dump(mode="json")
+    return {
+        "status": inventory["status"],
+        "status_label": inventory["status_label"],
+        "metadata_source_configured": inventory["metadata_source_configured"],
+        "metadata_source_status": inventory["metadata_source_status"],
+        "item_count": inventory["item_count"],
+        "channel_counts": inventory["channel_counts"],
+        "missing_evidence_ids": inventory["missing_evidence_ids"],
+        "duplicate_risk_status": inventory["duplicate_risk_status"],
+        "import_error_count": len(inventory["import_errors"]),
+        "publish_allowed": False,
+        "duplicate_free_claim_allowed": False,
+        "operator_next_step": inventory["operator_next_step"],
+    }
 
 
 def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
@@ -1280,6 +1313,7 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
     claim = value.get("claim_ledger_gate") or {}
     eval_coverage = value.get("skill_eval_coverage") or {}
     latest_eval = value.get("latest_skill_eval_results") or {}
+    social_history = value.get("social_history_inventory") or {}
     dashboard = value.get("dashboard_usefulness") or {}
     lines = [
         "- Fakty ze źródeł: "
@@ -1307,6 +1341,12 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"mocne 7+: {latest_eval.get('strong_skill_count')}; "
         f"gotowe dla Wilka 10/10: {latest_eval.get('wilku_ready_skill_count')}; "
         f"poprawnie zablokowane: {latest_eval.get('blocked_correctly_count')}.",
+        "- Historia social do dedupe: "
+        f"{_social_history_status_label(social_history)}; "
+        f"metadane: {social_history.get('metadata_source_status') or 'brak'}; "
+        f"pozycje: {social_history.get('item_count')}; "
+        f"brakujące dowody: {len(social_history.get('missing_evidence_ids') or [])}; "
+        "publikacja i claim o braku powtórek: zablokowane.",
     ]
     next_review_actions = source.get("next_review_actions") or []
     if next_review_actions:
@@ -1348,6 +1388,18 @@ def _ready_for_daily_content_label(value: Any) -> str:
 
 def _publish_ready_locked_label(value: Any) -> str:
     return "zablokowane zgodnie z zasadami" if value is True else "wymaga sprawdzenia"
+
+
+def _social_history_status_label(value: dict[str, Any]) -> str:
+    label = str(value.get("status_label") or "").strip()
+    if label:
+        return label
+    status = str(value.get("status") or "").strip()
+    if status == "review_ready":
+        return "spis historii social gotowy do oceny"
+    if status == "invalid":
+        return "spis historii social wymaga poprawy"
+    return "brak spisu historycznych postów LinkedIn/Facebook"
 
 
 def _review_scope_label(value: Any) -> str:

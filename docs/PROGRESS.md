@@ -45,6 +45,9 @@ Date: 2026-07-04
   item/channel counts in `/api/social/history-inventory` and the
   `wilq-social-publisher` context, while still blocking publication and
   duplicate-free claims until human review.
+- 2026-07-04 Goal 005 pre-demo audit now also reports social-history readiness:
+  status, metadata source status, item/channel counts, missing evidence IDs and
+  the explicit lock on publication plus duplicate-free claims.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
