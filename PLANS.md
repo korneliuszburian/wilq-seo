@@ -139,6 +139,12 @@ recommendation labels or action labels end with ellipsis, and coverage keeps a
 full `remaining_blocker_full` for stage-snapshot planning beside the shortened
 markdown table cell.
 
+2026-07-04 update: `scripts/skill_tuning_packet.py` now turns a latest eval
+artifact into a small reviewer packet for the nearest sub-10 skill. It shows
+the full operator next step, proof counts, action list and a 30-second
+usefulness checklist without changing the score. Stage snapshot links the
+packet command for each nearest tuning item.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

@@ -261,6 +261,8 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
                     f"- `{item['skill']}`: {item['test']} "
                     f"Cel poprawy: {item['improvement_target']}"
                 )
+                if item.get("packet_command"):
+                    lines.append(f"  - Packet do testu: `{item['packet_command']}`")
     lines.extend(["", "## Główne braki", ""])
     lines.extend(f"- {item}" for item in snapshot["main_gaps"])
     lines.extend(["", "## Następny ruch", ""])
@@ -487,6 +489,10 @@ def _skill_to_10_plan(blockers: list[dict[str, Any]]) -> list[dict[str, str]]:
             {
                 "skill": skill,
                 "state": state,
+                "packet_command": (
+                    "rtk uv run python scripts/skill_tuning_packet.py "
+                    f"--skill {skill}"
+                ),
                 "test": _skill_test_instruction(skill, state, next_step),
                 "improvement_target": _skill_improvement_target(state, next_step),
             }

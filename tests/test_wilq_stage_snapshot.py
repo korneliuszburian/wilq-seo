@@ -122,6 +122,10 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
         {
             "skill": "wilq-daily-command",
             "state": "gotowy do review",
+            "packet_command": (
+                "rtk uv run python scripts/skill_tuning_packet.py "
+                "--skill wilq-daily-command"
+            ),
             "test": (
                 "wykonaj wskazany ekran/workflow z odpowiedzi skilla i oceń, czy "
                 "marketer w 30 sekund wie, co kliknąć albo sprawdzić."
@@ -278,6 +282,7 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
     assert "odtwórz pełny operator_next_step" in markdown
     assert "ucięty tekst nie wystarcza do oceny 10/10" in markdown
     assert "bez zgadywania brakującego końca zdania" in markdown
+    assert "scripts/skill_tuning_packet.py --skill wilq-ga4-analyst" in markdown
     assert "brakuje realnego wyniku UAT albo jawnego owner deferu" in markdown
     assert "Jak ruszyć review wiedzy" in markdown
     assert "Pierwsza publiczna decyzja: Sprawdź kartę BDO" in markdown

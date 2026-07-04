@@ -228,6 +228,10 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 completion guard now also uses that full skill blocker
   text. The official "Co trzyma skille poniżej 10/10" section renders full
   Ads/GSC/Ahrefs next steps instead of shortened table snippets.
+- 2026-07-04 `scripts/skill_tuning_packet.py` now renders a small
+  evidence-based packet for the nearest sub-10 skill, including full
+  `operator_next_step`, proof counts, action list and a 30-second usefulness
+  test. Stage snapshot links the command for each nearest skill tuning item.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
