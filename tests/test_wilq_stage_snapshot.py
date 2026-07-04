@@ -38,6 +38,14 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
             "maximum_score": 9,
             "wilku_ready_skill_count": 0,
             "pass": True,
+            "rows": [
+                {
+                    "skill": "wilq-daily-command",
+                    "score": 9,
+                    "state": "gotowy do review",
+                    "remaining_blocker": "Sprawdź pierwszy priorytet w Command Center.",
+                }
+            ],
         },
         completion_report={
             "status": "blocked_missing_goal_005_uat_proof",
@@ -50,6 +58,14 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
     assert snapshot["live_proof"]["dashboard"]["demo_ready_count"] == 13
     assert snapshot["live_proof"]["skills"]["score_range"] == "9"
     assert snapshot["live_proof"]["skills"]["wilku_ready_skill_count"] == 0
+    assert snapshot["live_proof"]["skills"]["nearest_10_blockers"] == [
+        {
+            "skill": "wilq-daily-command",
+            "score": 9,
+            "state": "gotowy do review",
+            "next_step": "Sprawdź pierwszy priorytet w Command Center.",
+        }
+    ]
     assert snapshot["live_proof"]["goal_005"]["closed"] is False
     assert (
         snapshot["live_proof"]["goal_005"]["blocker"]
@@ -77,6 +93,14 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
             "maximum_score": 9,
             "wilku_ready_skill_count": 0,
             "pass": True,
+            "rows": [
+                {
+                    "skill": "wilq-ga4-analyst",
+                    "score": 9,
+                    "state": "gotowy do review",
+                    "remaining_blocker": "Uprość opis problemów (not set).",
+                }
+            ],
         },
         completion_report={
             "status": "blocked_missing_goal_005_uat_proof",
@@ -91,6 +115,8 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
     assert "gotowe około **75-80%**" in markdown
     assert "13/15 ekranów demo-ready" in markdown
     assert "score range 8-9" in markdown
+    assert "Dlaczego skille nie są jeszcze 10/10" in markdown
+    assert "`wilq-ga4-analyst` (9/10): Uprość opis problemów (not set)." in markdown
     assert "brakuje realnego wyniku UAT albo jawnego owner deferu" in markdown
     assert "Co pokazać Wilkowi" in markdown
     assert "pełnym BDOS-class systemem codziennego wykonania" in markdown

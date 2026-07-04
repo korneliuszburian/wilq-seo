@@ -160,6 +160,10 @@ Date: 2026-07-04
   completion guard. Current live output says: Wilku demo readiness `75-80%`,
   daily Ekologus work `55-65%`, BDOS-class multi-client MOS `35-45%`, with
   Goal 005 still blocked on real Wilku UAT or explicit owner defer.
+- 2026-07-04 the same stage snapshot now also names the first three
+  sub-10/10 skill quality blockers from the latest skill coverage report, so
+  "0 skills at 10/10" becomes an actionable tuning queue instead of a vague
+  quality statement.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

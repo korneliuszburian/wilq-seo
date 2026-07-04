@@ -100,6 +100,7 @@ def build_stage_snapshot_from_reports(
     wilku_ready_skills = int(skill_report.get("wilku_ready_skill_count") or 0)
     min_score = skill_report.get("minimum_score")
     max_score = skill_report.get("maximum_score")
+    skill_quality_blockers = _skill_quality_blockers(skill_report)
 
     completion_status = str(completion_report.get("status") or "unknown")
     blocker = _completion_blocker_label(completion_report)
@@ -133,6 +134,7 @@ def build_stage_snapshot_from_reports(
                 "fresh_passing_skill_count": fresh_skills,
                 "score_range": _score_range(min_score, max_score),
                 "wilku_ready_skill_count": wilku_ready_skills,
+                "nearest_10_blockers": skill_quality_blockers,
                 "pass": bool(skill_report.get("pass")),
             },
             "goal_005": {
@@ -215,6 +217,12 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
         ]
     )
     lines.extend(f"- {item}" for item in snapshot["what_is_real_now"])
+    if skills.get("nearest_10_blockers"):
+        lines.extend(["", "## Dlaczego skille nie są jeszcze 10/10", ""])
+        for item in skills["nearest_10_blockers"]:
+            lines.append(
+                f"- `{item['skill']}` ({item['score']}/10): {item['next_step']}"
+            )
     lines.extend(["", "## Główne braki", ""])
     lines.extend(f"- {item}" for item in snapshot["main_gaps"])
     lines.extend(["", "## Następny ruch", ""])
@@ -244,6 +252,28 @@ def _score_range(min_score: Any, max_score: Any) -> str:
     if min_score == max_score:
         return str(min_score)
     return f"{min_score}-{max_score}"
+
+
+def _skill_quality_blockers(
+    skill_report: dict[str, Any],
+    *,
+    limit: int = 3,
+) -> list[dict[str, Any]]:
+    rows = skill_report.get("rows") or []
+    blockers: list[dict[str, Any]] = []
+    for row in rows:
+        score = row.get("score")
+        if not isinstance(score, int) or isinstance(score, bool) or score >= 10:
+            continue
+        blockers.append(
+            {
+                "skill": row.get("skill"),
+                "score": score,
+                "state": row.get("state"),
+                "next_step": str(row.get("remaining_blocker") or "").strip(),
+            }
+        )
+    return blockers[:limit]
 
 
 if __name__ == "__main__":
