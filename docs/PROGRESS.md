@@ -81,6 +81,10 @@ Date: 2026-07-04
   `seeded_not_collected`, metadata-only, review-required inputs and do not
   unlock duplicate-free, safe-repeat or publish claims without a reviewed
   `social_history_inventory_v1` file.
+- 2026-07-04 Goal 005 completion guard now includes the social discovery seed
+  channels in the "Historia social do dedupe" line, so the blocker says where
+  to start collecting metadata without implying that social history has already
+  been reviewed.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

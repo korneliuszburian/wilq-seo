@@ -74,6 +74,7 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     assert "Pytania o prywatną wiedzę" in markdown
     assert "Prywatny ślad źródłowy do pokazania" in markdown
     assert "Historia social do dedupe" in markdown
+    assert "punkty startowe: linkedin, facebook" in markdown
     assert "publikacja i claim o braku powtórek: zablokowane" in markdown
     assert "Gotowość realnych zapisów" in markdown
     assert "Aktywuj zapis szkicu WordPress draft-only" in markdown
@@ -150,6 +151,8 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
     assert social_history["metadata_source_configured"] is False
     assert social_history["metadata_source_status"] == "not_configured"
     assert social_history["item_count"] == 0
+    assert social_history["discovery_seed_count"] == 2
+    assert social_history["discovery_seed_channels"] == ["linkedin", "facebook"]
     assert social_history["missing_evidence_ids"] == [
         "linkedin_historical_posts",
         "facebook_historical_posts",
@@ -190,6 +193,8 @@ def test_goal_005_pre_demo_audit_summary_surfaces_review_ready_social_history(
     assert social_history["metadata_source_configured"] is True
     assert social_history["metadata_source_status"] == "review_ready"
     assert social_history["item_count"] == 2
+    assert social_history["discovery_seed_count"] == 2
+    assert social_history["discovery_seed_channels"] == ["linkedin", "facebook"]
     assert social_history["channel_counts"] == {"facebook": 1, "linkedin": 1}
     assert social_history["missing_evidence_ids"] == []
     assert social_history["import_error_count"] == 0

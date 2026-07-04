@@ -522,6 +522,10 @@ def goal_005_social_history_inventory_summary() -> dict[str, Any]:
         "item_count": inventory["item_count"],
         "channel_counts": inventory["channel_counts"],
         "missing_evidence_ids": inventory["missing_evidence_ids"],
+        "discovery_seed_count": len(inventory["discovery_seeds"]),
+        "discovery_seed_channels": [
+            seed["channel"] for seed in inventory["discovery_seeds"]
+        ],
         "duplicate_risk_status": inventory["duplicate_risk_status"],
         "import_error_count": len(inventory["import_errors"]),
         "publish_allowed": False,
@@ -1401,6 +1405,8 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         f"metadane: {social_history.get('metadata_source_status') or 'brak'}; "
         f"pozycje: {social_history.get('item_count')}; "
         f"brakujące dowody: {len(social_history.get('missing_evidence_ids') or [])}; "
+        "punkty startowe: "
+        f"{_join_labels(social_history.get('discovery_seed_channels'))}; "
         "publikacja i claim o braku powtórek: zablokowane.",
         "- Gotowość realnych zapisów: "
         f"kandydat: {_write_candidate_label(first_write)}; "
@@ -1462,6 +1468,13 @@ def _social_history_status_label(value: dict[str, Any]) -> str:
     if status == "invalid":
         return "spis historii social wymaga poprawy"
     return "brak spisu historycznych postów LinkedIn/Facebook"
+
+
+def _join_labels(value: Any) -> str:
+    if not isinstance(value, list):
+        return "brak"
+    labels = [str(item).strip() for item in value if str(item).strip()]
+    return ", ".join(labels) if labels else "brak"
 
 
 def _write_candidate_label(value: dict[str, Any]) -> str:
