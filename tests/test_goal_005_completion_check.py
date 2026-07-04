@@ -340,11 +340,12 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "Pytania o brief sprzedażowy" in rendered
     assert "Prywatny ślad źródłowy do pokazania" in rendered
     assert "Eko-Opieka i Eko Kalendarz / usługa / źródło: KB_001_EKO_OPIEKA" in rendered
-    assert "bramka: goal_005_private_service_review" in rendered
+    assert "bramka: review prywatnej propozycji usługi" in rendered
     private_trace_section = rendered.split(
         "Prywatny ślad źródłowy do pokazania", 1
     )[1].split("Jakość sygnału briefu", 1)[0]
     assert "eval:" not in private_trace_section
+    assert "goal_005_private_service_review" not in private_trace_section
     assert "decyzja właściciela wymagana" in rendered
     assert "zredagowane / ślad gotowy" in rendered
     assert (
@@ -849,6 +850,18 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert report["uat_live_provenance"] == provenance
     assert "## Ślad danych do rozmowy" in markdown
     assert "## Bramki przed pokazaniem" in markdown
+    next_material_section = markdown.split("## Następny materiał do rozmowy", 1)[
+        1
+    ].split("## Bramki przed pokazaniem", 1)[0]
+    assert "bramka: review polityki twierdzeń" in next_material_section
+    assert "bramka listy dozwolonych twierdzeń" in next_material_section
+    assert "review śladu dowodowego" in next_material_section
+    assert "propozycja ekologus-ai: ślad dowodowy" in next_material_section
+    assert "goal_005_private_claim_policy_review" not in next_material_section
+    assert "goal_006_claim_ledger_gate" not in next_material_section
+    assert "ekologus_ai_evidence_policy_source_trace_review_candidate" not in (
+        next_material_section
+    )
     assert "wiedza do finalnych treści: 0%" in markdown
     assert "publikacja/finalny draft: zablokowane zgodnie z zasadami" in markdown
     assert "Najnowsze wyniki umiejętności" in markdown

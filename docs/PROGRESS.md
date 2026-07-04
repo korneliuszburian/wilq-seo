@@ -128,6 +128,10 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 Wilku session card now splits the Service Profile
   save/provenance line into readable fields: decision label, next step,
   decision ID, knowledge card ID and review scope.
+- 2026-07-04 Goal 005 completion guard now uses the same Polish private
+  source-trace labels as the Wilku session card, so the "next material"
+  section no longer exposes raw `goal_*` eval gates or long `ekologus_ai_*`
+  source refs.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
