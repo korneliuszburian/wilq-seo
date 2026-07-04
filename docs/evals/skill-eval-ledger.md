@@ -117,8 +117,49 @@ Result:
   `wordpress_ekologus`, `wordpress_sklep`, `google_analytics_4`,
   `google_ads`.
 - `/api/dashboard/command-center` now makes stale DailyDecision next steps
-  start from data refresh or data-access confirmation before review. Live
-  stage snapshot reports `score range 9-10` and `1` skill at `10/10`.
+  start from data refresh or data-access confirmation before review.
+- Live stage snapshot reports `score range 9-10` and `1` skill at `10/10`.
+
+## 2026-07-04 - Content/GSC freshness is API-owned and visible
+
+Purpose:
+
+- Make `/api/content/diagnostics` expose one operator-readable freshness
+  decision for GSC, WordPress, GA4 and Ahrefs instead of leaving freshness only
+  in scattered connector rows.
+- Keep `wilq-gsc-content-doctor` honest about stale source reads and partial
+  GSC query/page data before recommending refresh/merge/create work.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue -q
+rtk uv run ruff check wilq/briefing/content_diagnostics.py wilq/schemas.py tests/test_api_contracts.py
+rtk uv run mypy wilq/briefing/content_diagnostics.py
+rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand
+rtk pnpm --dir packages/shared-schemas typecheck
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260704T041430Z/wilq-gsc-content-doctor/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=false`.
+- Source connectors: `google_search_console`, `wordpress_ekologus`,
+  `wordpress_sklep`; evidence count: 6; action:
+  `act_prepare_content_refresh_queue`.
+- Live `/api/content/diagnostics` reported
+  `freshness_assessment.state=stale`, `requires_refresh=true` and readable
+  connector labels requiring refresh: Google Search Console, WordPress
+  ekologus.pl, WordPress sklep.ekologus.pl, Google Analytics 4 and Ahrefs.
+- The GSC Search Analytics contract now says "Częściowe dane zapytań i
+  adresów..." in API-owned wording, so the skill cannot silently turn partial
+  query/page evidence into a full traffic conclusion.
 
 ## 2026-07-04 - Ads Doctor freshness is API-owned and visible
 

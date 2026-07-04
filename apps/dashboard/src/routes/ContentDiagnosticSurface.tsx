@@ -92,9 +92,14 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
           <PlainChipRow
             values={[
               data.live_data_status_label || "stan danych treści do sprawdzenia",
+              data.freshness_assessment.state_label,
               ...data.connectors.map((connector) => `${connector.label}: ${connector.status_label}`)
             ]}
           />
+        </div>
+        <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+          <p>{data.freshness_assessment.summary}</p>
+          <p className="mt-1 font-medium text-ink">{data.freshness_assessment.next_step}</p>
         </div>
         <TraceLine label="Ostatnie odczyty" values={latestStatuses} />
       </section>

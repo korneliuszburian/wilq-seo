@@ -73,6 +73,23 @@ def main() -> int:
     if not isinstance(decision_queue, list):
         raise SystemExit("Content diagnostics must expose decision_queue")
     api_gsc_contract = content_diagnostics.get("gsc_search_analytics_contract")
+    freshness_assessment = content_diagnostics.get("freshness_assessment")
+    if not isinstance(freshness_assessment, dict):
+        raise SystemExit("Content diagnostics must expose freshness_assessment")
+    if freshness_assessment.get("state") not in {"fresh", "stale", "missing", "blocked"}:
+        raise SystemExit("Content diagnostics freshness_assessment has invalid state")
+    if not str(freshness_assessment.get("state_label") or "").strip():
+        raise SystemExit("Content diagnostics freshness_assessment state_label is missing")
+    if not str(freshness_assessment.get("summary") or "").strip():
+        raise SystemExit("Content diagnostics freshness_assessment summary is missing")
+    if not str(freshness_assessment.get("next_step") or "").strip():
+        raise SystemExit("Content diagnostics freshness_assessment next_step is missing")
+    if freshness_assessment.get("requires_refresh") is True and not (
+        freshness_assessment.get("connector_labels_requiring_refresh") or []
+    ):
+        raise SystemExit(
+            "Content diagnostics freshness_assessment requires refresh but lists no connectors"
+        )
     packed_content = pack.get("content_diagnostics", {})
     packed_evidence_ids = packed_content.get("evidence_ids") or []
     endpoint_evidence_ids = content_diagnostics.get("evidence_ids") or []
@@ -331,6 +348,7 @@ def main() -> int:
                 "action_validations": action_validations,
                 "content_diagnostics": {
                     "live_data_available": content_diagnostics.get("live_data_available"),
+                    "freshness_assessment": freshness_assessment,
                     "query_page_count": content_diagnostics.get("query_page_count"),
                     "matched_inventory_count": content_diagnostics.get("matched_inventory_count"),
                     "decision_count": len(decision_queue),

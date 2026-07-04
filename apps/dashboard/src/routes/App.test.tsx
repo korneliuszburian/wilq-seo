@@ -5292,6 +5292,20 @@ const contentDiagnostics = {
     }
   ],
   live_data_available: true,
+  live_data_status_label: "dane GSC i WordPress dostępne",
+  freshness_assessment: {
+    state: "fresh",
+    state_label: "dane treści świeże",
+    checked_at: "2026-06-17T10:00:02Z",
+    stale_after_hours: 48,
+    requires_refresh: false,
+    missing_connector_ids: [],
+    blocked_connector_ids: [],
+    stale_connector_ids: [],
+    connector_labels_requiring_refresh: [],
+    summary: "Podstawowe dane treści mieszczą się w progu 48h.",
+    next_step: "Można użyć content diagnostics do review bez dodatkowego odświeżenia."
+  },
   query_page_count: 1,
   matched_inventory_count: 1,
   operator_summary: {
@@ -8841,6 +8855,10 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Czy można pisać?")).toBeInTheDocument();
     expect(screen.getByText("Treści: co dziś zrobić")).toBeInTheDocument();
+    expect(screen.getByText("Podstawowe dane treści mieszczą się w progu 48h.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Można użyć content diagnostics do review bez dodatkowego odświeżenia.")
+    ).toBeInTheDocument();
     expect(screen.getByText("Najpierw decyzja contentowa, potem szkic")).toBeInTheDocument();
     expect(screen.getByText("Kolejność pracy")).toBeInTheDocument();
     expect(screen.getByText("Czego nie obiecywać")).toBeInTheDocument();

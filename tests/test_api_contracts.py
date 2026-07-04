@@ -15783,6 +15783,13 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert all(refresh["connector_label"] for refresh in payload["latest_refreshes"])
     assert payload["live_data_available"] is True
     assert payload["live_data_status_label"] == "dane GSC i WordPress dostępne"
+    freshness = payload["freshness_assessment"]
+    assert freshness["state"] == "fresh"
+    assert freshness["state_label"] == "dane treści świeże"
+    assert freshness["requires_refresh"] is False
+    assert freshness["stale_after_hours"] == 48
+    assert "Podstawowe dane treści" in freshness["summary"]
+    assert "bez dodatkowego odświeżenia" in freshness["next_step"]
     gsc_contract = payload["gsc_search_analytics_contract"]
     assert gsc_contract["source_connector"] == "google_search_console"
     assert "ev_refresh_" in " ".join(gsc_contract["evidence_ids"])

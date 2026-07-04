@@ -48,8 +48,10 @@ from wilq.operator_labels import (
 from wilq.schemas import (
     ActionObject,
     ConnectorRefreshRun,
+    ConnectorStatus,
     ContentDecisionItem,
     ContentDiagnosticsResponse,
+    ContentFreshnessAssessment,
     ContentGscSearchAnalyticsContract,
     ContentPreflightResponse,
     MetricFact,
@@ -70,6 +72,7 @@ PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
+CONTENT_STALE_AFTER_HOURS = 48
 GSC_CONTENT_KNOWLEDGE_CARD_IDS = (
     "card_gsc_seo_content_playbook",
     "card_wordpress_content_refresh_playbook",
@@ -183,6 +186,11 @@ def build_content_diagnostics(
         latest_refreshes=[content_refresh_with_api_label(refresh) for refresh in latest_refreshes],
         live_data_available=live_data_available,
         live_data_status_label=content_live_data_status_label(live_data_available),
+        freshness_assessment=_content_freshness_assessment(
+            connectors,
+            latest_refreshes,
+            live_data_available=live_data_available,
+        ),
         gsc_search_analytics_contract=_gsc_search_analytics_contract(latest_refreshes),
         query_page_count=query_page_count,
         matched_inventory_count=matched_inventory_count,
@@ -256,6 +264,116 @@ def _latest_refreshes(connector_ids: Iterable[str]) -> list[ConnectorRefreshRun]
     return latest
 
 
+def _content_freshness_assessment(
+    connectors: Iterable[ConnectorStatus],
+    latest_refreshes: Iterable[ConnectorRefreshRun],
+    *,
+    live_data_available: bool,
+) -> ContentFreshnessAssessment:
+    connector_by_id = {connector.id: connector for connector in connectors}
+    refresh_by_connector = {refresh.connector_id: refresh for refresh in latest_refreshes}
+
+    missing_ids = [
+        connector_id
+        for connector_id in PRIMARY_CONTENT_CONNECTORS
+        if connector_id not in refresh_by_connector
+    ]
+    blocked_ids = [
+        connector_id
+        for connector_id in PRIMARY_CONTENT_CONNECTORS
+        if (refresh := refresh_by_connector.get(connector_id)) is not None
+        and not connector_refresh_has_live_data(refresh)
+    ]
+    stale_ids = [
+        connector_id
+        for connector_id in CONTENT_CONNECTOR_IDS
+        if connector_by_id.get(connector_id) is not None
+        and connector_by_id[connector_id].freshness.state == "stale"
+    ]
+    requiring_refresh_ids = _unique([*missing_ids, *blocked_ids, *stale_ids])
+    requiring_refresh_labels = [
+        _content_connector_short_label(connector_by_id.get(connector_id), connector_id)
+        for connector_id in requiring_refresh_ids
+    ]
+
+    if missing_ids:
+        return ContentFreshnessAssessment(
+            state="missing",
+            state_label="brak odczytu treści",
+            stale_after_hours=CONTENT_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            missing_connector_ids=missing_ids,
+            blocked_connector_ids=blocked_ids,
+            stale_connector_ids=stale_ids,
+            connector_labels_requiring_refresh=requiring_refresh_labels,
+            summary=(
+                "Brakuje podstawowego odczytu danych treści dla: "
+                f"{_join_labels(requiring_refresh_labels)}."
+            ),
+            next_step=(
+                "Uruchom odczyt GSC i WordPress przed decyzją o odświeżeniu, "
+                "scaleniu albo utworzeniu treści."
+            ),
+        )
+
+    if blocked_ids or not live_data_available:
+        blocked_labels = [
+            _content_connector_short_label(connector_by_id.get(connector_id), connector_id)
+            for connector_id in (blocked_ids or list(PRIMARY_CONTENT_CONNECTORS))
+        ]
+        return ContentFreshnessAssessment(
+            state="blocked",
+            state_label="odczyt treści zablokowany",
+            stale_after_hours=CONTENT_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            missing_connector_ids=missing_ids,
+            blocked_connector_ids=blocked_ids,
+            stale_connector_ids=stale_ids,
+            connector_labels_requiring_refresh=requiring_refresh_labels or blocked_labels,
+            summary=(
+                "Podstawowe dane treści nie mają pełnego odczytu metryk dla: "
+                f"{_join_labels(blocked_labels)}."
+            ),
+            next_step=(
+                "Napraw blocker odczytu i uruchom ponownie GSC/WordPress, zanim WILQ "
+                "zarekomenduje aktualną decyzję contentową."
+            ),
+        )
+
+    if stale_ids:
+        return ContentFreshnessAssessment(
+            state="stale",
+            state_label="dane treści wymagają odświeżenia",
+            stale_after_hours=CONTENT_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            missing_connector_ids=missing_ids,
+            blocked_connector_ids=blocked_ids,
+            stale_connector_ids=stale_ids,
+            connector_labels_requiring_refresh=requiring_refresh_labels,
+            summary=(
+                "Dane treści są do odświeżenia dla: "
+                f"{_join_labels(requiring_refresh_labels)}. "
+                "Można je czytać jako review nieświeżych sygnałów, ale nie jako "
+                "bieżącą decyzję publikacyjną."
+            ),
+            next_step=(
+                "Uruchom odczyt danych dla wskazanych źródeł, jeśli pytanie dotyczy "
+                "aktualnych zapytań, spisu treści, luk Ahrefs albo jakości ruchu."
+            ),
+        )
+
+    return ContentFreshnessAssessment(
+        state="fresh",
+        state_label="dane treści świeże",
+        stale_after_hours=CONTENT_STALE_AFTER_HOURS,
+        requires_refresh=False,
+        summary=(
+            f"Podstawowe dane treści mieszczą się w progu {CONTENT_STALE_AFTER_HOURS}h."
+        ),
+        next_step="Można użyć content diagnostics do review bez dodatkowego odświeżenia.",
+    )
+
+
 def _gsc_search_analytics_contract(
     latest_refreshes: Iterable[ConnectorRefreshRun],
 ) -> ContentGscSearchAnalyticsContract | None:
@@ -311,8 +429,8 @@ def _gsc_search_analytics_contract(
         ),
         summary_label=_gsc_search_analytics_summary_label(detail_date_end),
         partial_detail_warning_label=(
-            "Dane zapytań i adresów z Search Analytics są sygnałem do decyzji "
-            "treściowej, nie pełną sumą całego ruchu."
+            "Częściowe dane zapytań i adresów z Search Analytics są sygnałem "
+            "do decyzji treściowej, nie pełną sumą całego ruchu."
         ),
         paging_label=_gsc_search_analytics_paging_label(row_limit, max_rows, rows_truncated),
         official_limits_label=(
@@ -363,6 +481,31 @@ def _gsc_search_analytics_paging_label(
         f"Paginacja zapytań i adresów: rowLimit={row_limit}, max rows={max_rows}; "
         f"{truncation}."
     )
+
+
+def _content_connector_short_label(
+    connector: ConnectorStatus | None,
+    connector_id: str,
+) -> str:
+    if connector is not None and connector.label:
+        return connector.label
+    labels = {
+        "google_search_console": "Google Search Console",
+        "wordpress_ekologus": "WordPress ekologus.pl",
+        "wordpress_sklep": "WordPress sklep.ekologus.pl",
+        "google_analytics_4": "Google Analytics 4",
+        "ahrefs": "Ahrefs",
+    }
+    return labels.get(connector_id, connector_id)
+
+
+def _join_labels(labels: Iterable[str]) -> str:
+    values = [label for label in labels if label]
+    if not values:
+        return "brak wskazanych źródeł"
+    if len(values) == 1:
+        return values[0]
+    return ", ".join(values[:-1]) + f" i {values[-1]}"
 
 
 def _optional_text(value: object) -> str | None:

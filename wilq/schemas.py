@@ -4348,6 +4348,20 @@ class ContentGscSearchAnalyticsContract(BaseModel):
     wilq_internal_cap_label: str = ""
 
 
+class ContentFreshnessAssessment(BaseModel):
+    state: Literal["fresh", "stale", "missing", "blocked"]
+    state_label: str = ""
+    checked_at: datetime = Field(default_factory=utc_now)
+    stale_after_hours: int = 48
+    requires_refresh: bool
+    missing_connector_ids: list[str] = Field(default_factory=list)
+    blocked_connector_ids: list[str] = Field(default_factory=list)
+    stale_connector_ids: list[str] = Field(default_factory=list)
+    connector_labels_requiring_refresh: list[str] = Field(default_factory=list)
+    summary: str
+    next_step: str
+
+
 class ContentDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -4356,6 +4370,7 @@ class ContentDiagnosticsResponse(BaseModel):
     latest_refreshes: list[ConnectorRefreshRun] = Field(default_factory=list)
     live_data_available: bool
     live_data_status_label: str = ""
+    freshness_assessment: ContentFreshnessAssessment
     gsc_search_analytics_contract: ContentGscSearchAnalyticsContract | None = None
     query_page_count: int = 0
     matched_inventory_count: int = 0
