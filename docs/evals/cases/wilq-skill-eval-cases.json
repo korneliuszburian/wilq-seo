@@ -291,9 +291,9 @@
   {
     "skill": "wilq-localo-operator",
     "surface_path": "/localo",
-    "task_pl": "Oceń aktualne dowody Localo dla Ekologus: pokaż dostęp MCP oraz agregaty place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ je zwraca. Jasno oddziel przegląd agregatów od brakujących danych local_tasks, zapisu zmian w profilu firmy i poprawy widoczności lokalnej; nie twierdź, że zadania lokalne, zapis zmian albo wzrost widoczności są odblokowane.",
+    "task_pl": "Oceń aktualne dowody Localo dla Ekologus: pokaż dostęp MCP oraz agregaty place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ je zwraca. Jasno oddziel przegląd agregatów od brakujących danych local_tasks, zapisu zmian w profilu firmy i poprawy widoczności lokalnej; nie twierdź, że zadania lokalne, zapis zmian albo wzrost widoczności są odblokowane. Zwróć kartę review gotową do pokazania Wilkowi bez dopisku od developera: czy Localo działa, co sprawdzić najpierw, pytanie review i jeden bezpieczny klik bez zapisu.",
     "messy_task_pl": "Localo finalnie działa czy nie działa? Daj mi konkretnie co wiemy o lokalnej widoczności i czego nadal nie wolno obiecać.",
-    "minimum_operator_usefulness_score": 9,
+    "minimum_operator_usefulness_score": 10,
     "expected_connectors": [
       "localo"
     ],
@@ -328,6 +328,7 @@
       "Podgląd bez zapisu",
       "Decyzja po review",
       "Brief dla marketera",
+      "gotową do pokazania Wilkowi",
       "local_tasks",
       "do odświeżenia"
     ],

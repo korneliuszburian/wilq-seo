@@ -10384,7 +10384,7 @@ Result:
 - `operator_usefulness_score` is now `10/10`, with all decision-quality gates
   true and empty `failure_tags`.
 
-## 2026-07-04 - Localo API-owned review card remains 9/10
+## 2026-07-04 - Localo Wilku-ready review card reaches 10/10
 
 Purpose:
 
@@ -10393,6 +10393,9 @@ Purpose:
 - Keep the Localo workflow useful without pretending that local tasks, GBP
   writes or visibility improvement are unlocked.
 - Prevent fake/manual steps from appearing as action candidates in the eval.
+- Require the answer to be a review card ready to show Wilku without developer
+  translation: does Localo work, what should be checked first, what question
+  needs review and which preview is safe to click without writes.
 
 Proof:
 
@@ -10414,10 +10417,11 @@ Result:
 - The eval case sets `action_candidates_only_with_action_id=true`, so manual
   review steps must stay in recommendations or blockers.
 - Latest passing proof:
-  `.local-lab/evals/codex-skill/20260704T065555Z/wilq-localo-operator/result.json`.
+  `.local-lab/evals/codex-skill/20260704T072607Z/wilq-localo-operator/result.json`.
 - The output has exactly one action candidate:
   `act_review_localo_visibility_facts` with `validation_state=validated`.
-- `operator_usefulness_score` remains `9`, not `10`: Localo is useful for a
-  review-only marketer workflow, but final Wilku-ready status still needs a
-  reviewer pass and local task readiness instead of only aggregate visibility
-  proof.
+- `operator_usefulness_score` is now `10/10`, with all decision-quality gates
+  true and empty `failure_tags`.
+- The workflow remains review-only: `local_tasks`, GBP writes and visibility
+  improvement claims stay blocked until WILQ exposes the missing proof and
+  review path.

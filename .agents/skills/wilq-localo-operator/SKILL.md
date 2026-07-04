@@ -78,6 +78,11 @@ Odpowiedź ma być krótka i użyteczna dla operatora: czy Localo działa do
 diagnostyki, jakie obszary lokalne są gotowe do review, co trzeba sprawdzić
 najpierw, co jest stare/brakujące i jaka decyzja ma zapaść po review.
 
+Traktuj odpowiedź jak kartę review gotową do pokazania Wilkowi bez dopisku od
+developera: po pierwszych 30 sekundach ma być jasne, czy Localo działa, które
+agregaty sprawdzić najpierw, jakie pytanie ma odpowiedzieć Wilku/marketer i
+który podgląd można bezpiecznie kliknąć bez zapisu ani zmian w GBP.
+
 Widocznie używaj tych sekcji:
 
 - `Czy Localo działa`: dostęp, świeżość odczytu i czy workflow jest review-only.

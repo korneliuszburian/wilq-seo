@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Generated: `2026-07-04T07:16:57+00:00`.
+Generated: `2026-07-04T07:27:16+00:00`.
 
 Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko najnowszy passing artifact i decyzję produktową.
 
@@ -12,7 +12,7 @@ Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebie
 | `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260704T053954Z/wilq-ads-doctor/result.json` | 10 | gotowy do review | 12 evidence IDs; connectors: google_ads; actions: act_prepare_ads_campaign_review_queue, act_prepare_google_ads_recommendation_review_queue, act_prepare_custom_segments_from_searc… | Wejdź w /ads-doctor i kliknij najpierw przegląd kampanii: odczyt Google Ads jest dostępny, więc priorytetem jest review kampanii i budżetów, potem rekomendacje, wyszukiwane hasła,… |
 | `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260704T071545Z/wilq-gsc-content-doctor/result.json` | 10 | gotowy do review | 6 evidence IDs; connectors: google_search_console, wordpress_ekologus, wordpress_sklep; actions: act_prepare_content_refresh_queue | Otwórz /content-planner i zacznij od karty strony https://www.ekologus.pl/: Mapa decyzji to odświeżyć albo scalić po review. Dlaczego teraz: najnowszy dostępny dzień GSC to 2026-0… |
 | `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260704T070718Z/wilq-ahrefs-gap-finder/result.json` | 10 | gotowy do review | 11 evidence IDs; connectors: ahrefs, google_search_console, wordpress_ekologus; actions: act_prepare_content_refresh_queue | Otwórz /ahrefs i zacznij od Mapy luk: wybierz jeden temat z Ahrefs, sprawdź go w GSC i WordPress, a potem podejmij Decyzję po review, czy idzie do briefu, scalenia, link-review al… |
-| `wilq-localo-operator` | `.local-lab/evals/codex-skill/20260704T065555Z/wilq-localo-operator/result.json` | 9 | gotowy do review | 2 evidence IDs; connectors: localo; actions: act_review_localo_visibility_facts | Otwórz /localo i jako pierwszy krok uruchom Podgląd bez zapisu dla sprawdzenia faktów Localo; to odpowiada na pytanie „Czy Localo działa”, pokazuje Mapę lokalną i daje Kolejność r… |
+| `wilq-localo-operator` | `.local-lab/evals/codex-skill/20260704T072607Z/wilq-localo-operator/result.json` | 10 | gotowy do review | 2 evidence IDs; connectors: localo; actions: act_review_localo_visibility_facts | Czy Localo działa: tak, do diagnostyki i review. Otwórz /localo, kliknij Podgląd bez zapisu dla akcji do sprawdzenia, potem przejdź przez Mapa lokalna w kolejności: miejsca, ranki… |
 | `wilq-content-strategist` | `.local-lab/evals/codex-skill/20260704T003413Z/wilq-content-strategist/result.json` | 9 | poprawnie zablokowany do review | 18 evidence IDs; connectors: google_search_console, wordpress_ekologus, wordpress_sklep, ahrefs, google_analytics_4; actions: act_prepare_content_refresh_queue, act_prepare_wordpr… | Zablokowane dla finalnego draftu i efektowych claimów: nie wolno obiecać gwarancja braku duplikatów, gwarancja pozycji, obietnica wzrostu pozycji albo leadów, wzrost liczby leadów… |
 | `wilq-content-operator` | `.local-lab/evals/codex-skill/20260703T215731Z/wilq-content-operator/result.json` | 9 | poprawnie zablokowany do review | 6 evidence IDs; connectors: google_analytics_4, ahrefs, google_search_console, wordpress_ekologus; actions: act_prepare_content_refresh_queue | Workflow jest tylko do review: nie publikuj, nie pisz finalnego artykułu, nie obiecuj sukcesu SEO, wzrostu pozycji, wzrostu liczby leadów ani wpływu na przychód. Dane wymagają odśwież… |
 | `wilq-social-publisher` | `.local-lab/evals/codex-skill/20260704T042313Z/wilq-social-publisher/result.json` | 9 | gotowy do review | 5 evidence IDs; connectors: linkedin, facebook, google_search_console, google_merchant_center, wordpress_ekologus; actions: act_prepare_linkedin_social_drafts, act_prepare_faceboo… | Można zrobić teraz: przygotuj Pakiet do review dla LinkedIn i Facebook, zaczynając od tematu, tezy i CTA powyżej. Najpierw sprawdź historię postów z podanych adresów, bo nie wiemy… |
@@ -26,7 +26,7 @@ Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebie
 
 - 13/13 WILQ skills have a latest passing non-interactive eval.
 - 13/13 passing evals are fresh against current skill instructions.
-- Score range: `9`-`10`; `13` skills are already `7+/10`, and `4` are `10/10`.
+- Score range: `9`-`10`; `13` skills are already `7+/10`, and `5` are `10/10`.
 - Passing means: Polish operator output, WILQ API usage, source connectors, evidence IDs, blocked-claim handling and all hard gates true.
 - `poprawnie zablokowany do review` is a useful state when WILQ has evidence for the blocker but not enough proof for an action or claim.
 - If this file drifts, regenerate it with `rtk uv run python scripts/render_skill_coverage_audit.py --write docs/evals/skill-coverage-audit.md`.

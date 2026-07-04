@@ -655,6 +655,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "poprawa widoczności lokalnej",
     ):
         assert term in localo_case["blocked_claim_terms"]
+    assert "gotową do pokazania Wilkowi" in localo_case["required_decision_terms_pl"]
+    assert localo_case["minimum_operator_usefulness_score"] == 10
 
     merchant_case = cases["wilq-merchant-feed-operator"]
     assert "zwrot z reklam na poziomie produktu" in merchant_case["blocked_claim_terms"]

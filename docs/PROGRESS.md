@@ -63,9 +63,10 @@ Date: 2026-07-04
   `operator_summary.review_*`. The Localo smoke and eval case enforce that
   `action_candidates` contains only real WILQ ActionObject IDs for this skill.
   Latest rerun:
-  `.local-lab/evals/codex-skill/20260704T065555Z/wilq-localo-operator/result.json`;
-  score remains `9/10`, with one validated `act_review_localo_visibility_facts`
-  candidate and no fake manual action.
+  `.local-lab/evals/codex-skill/20260704T072607Z/wilq-localo-operator/result.json`;
+  score is now `10/10`, with one validated `act_review_localo_visibility_facts`
+  candidate, no fake manual action and review-only blocks preserved for
+  `local_tasks`, GBP writes and visibility-improvement claims.
 - 2026-07-04 social history inventory can now be loaded from a local
   metadata-only JSON via `WILQ_SOCIAL_HISTORY_INVENTORY_FILE`. A valid file
   changes the social inventory from `missing` to `review_ready` and exposes
