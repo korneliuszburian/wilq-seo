@@ -351,7 +351,7 @@ def render_content_uat_session_card(
         (
             "- Tylko `przejdź do pełnego testu treści` może odblokować "
             "domknięcie Goal 005. Pozostałe werdykty są wartościowym wynikiem "
-            "UAT, ale oznaczają follow-up zamiast completion proof."
+            "UAT, ale oznaczają dalsze prace zamiast dowodu domknięcia."
         ),
         (
             "- Jeżeli Wilku nie rozumie źródeł, blokad albo języka Ekologus, "

@@ -109,10 +109,10 @@ Date: 2026-07-04
   `werdykt_po_15_minutach` value `przejdź do pełnego testu treści` before it
   can return `complete_with_uat`; a valid UAT that still says `zostań przy
   review` remains blocked as follow-up evidence, not completion proof.
-- 2026-07-04 Goal 005 Wilku session card now shows the exact
-  `werdykt_po_15_minutach` options and explains that only `przejdź do pełnego
-  testu treści` can unlock completion; other verdicts stay useful UAT evidence
-  but mean follow-up, not proof.
+- 2026-07-04 karta rozmowy Goal 005 dla Wilka pokazuje dokładne opcje
+  `werdykt_po_15_minutach` i wyjaśnia, że tylko `przejdź do pełnego testu
+  treści` może odblokować domknięcie; pozostałe werdykty są użytecznym
+  wynikiem UAT, ale oznaczają dalsze prace, nie dowód domknięcia.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

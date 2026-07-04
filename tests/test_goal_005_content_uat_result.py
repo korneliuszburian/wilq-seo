@@ -235,7 +235,8 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "`popraw materiały i wróć`" in verdict_section
     assert "`odrzuć ten kierunek`" in verdict_section
     assert "może odblokować domknięcie Goal 005" in verdict_section
-    assert "follow-up zamiast completion proof" in verdict_section
+    assert "dalsze prace zamiast dowodu domknięcia" in verdict_section
+    assert "completion proof" not in verdict_section
     assert "content_work_item_content_decision" not in verdict_section
     assert "service_profile_review_" not in verdict_section
     assert "## ID do zapisu po rozmowie" in card
