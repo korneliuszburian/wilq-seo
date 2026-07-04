@@ -217,6 +217,10 @@ Date: 2026-07-04
   materiał do rozmowy": blocked approval request, mutation/final-content lock,
   first BDO review step and blocking checklist. The guard still exits blocked
   until real Wilku UAT or explicit owner defer is provided.
+- 2026-07-04 `scripts/wilq_stage_snapshot.py` now turns the nearest sub-10
+  skill blockers into an explicit "Jak podbić skille do 10/10" test plan:
+  run the indicated screen/workflow, check whether a marketer can decide in
+  30 seconds, and tune toward decision, proof, blocker and safe next step.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

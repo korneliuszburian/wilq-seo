@@ -127,6 +127,12 @@ do rozmowy". This keeps the official UAT/defer blocker aligned with Service
 Profile API, dashboard and stage snapshot: blocked approval request, blocked
 mutation, blocked final-content readiness and a concrete review checklist.
 
+2026-07-04 update: the stage snapshot now also turns the nearest 9/10 skill
+blockers into a concrete tuning plan. For each skill closest to 10/10 it says
+which screen/workflow to execute, what a marketer must be able to decide in
+30 seconds, and that the improvement target is a Wilku-ready sequence:
+decision, proof, blocker and next safe step.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

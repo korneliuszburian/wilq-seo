@@ -159,6 +159,7 @@ def build_stage_snapshot_from_reports(
                 "score_range": _score_range(min_score, max_score),
                 "wilku_ready_skill_count": wilku_ready_skills,
                 "nearest_10_blockers": skill_quality_blockers,
+                "nearest_10_plan": _skill_to_10_plan(skill_quality_blockers),
                 "pass": bool(skill_report.get("pass")),
             },
             "goal_005": {
@@ -243,11 +244,18 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
     )
     lines.extend(f"- {item}" for item in snapshot["what_is_real_now"])
     if skills.get("nearest_10_blockers"):
-        lines.extend(["", "## Dlaczego skille nie są jeszcze 10/10", ""])
+        lines.extend(["", "## Jak podbić skille do 10/10", ""])
         for item in skills["nearest_10_blockers"]:
             lines.append(
                 f"- `{item['skill']}` ({item['score']}/10): {item['next_step']}"
             )
+        if skills.get("nearest_10_plan"):
+            lines.extend(["", "Plan testu najbliższych skillów:"])
+            for item in skills["nearest_10_plan"]:
+                lines.append(
+                    f"- `{item['skill']}`: {item['test']} "
+                    f"Cel poprawy: {item['improvement_target']}"
+                )
     lines.extend(["", "## Główne braki", ""])
     lines.extend(f"- {item}" for item in snapshot["main_gaps"])
     lines.extend(["", "## Następny ruch", ""])
@@ -450,10 +458,71 @@ def _skill_quality_blockers(
                 "skill": row.get("skill"),
                 "score": score,
                 "state": row.get("state"),
+                "what_it_proves": str(row.get("what_it_proves") or "").strip(),
                 "next_step": str(row.get("remaining_blocker") or "").strip(),
             }
         )
     return blockers[:limit]
+
+
+def _skill_to_10_plan(blockers: list[dict[str, Any]]) -> list[dict[str, str]]:
+    plan: list[dict[str, str]] = []
+    for item in blockers:
+        skill = str(item.get("skill") or "").strip()
+        state = str(item.get("state") or "").strip()
+        next_step = str(item.get("next_step") or "").strip()
+        if not skill:
+            continue
+        plan.append(
+            {
+                "skill": skill,
+                "state": state,
+                "test": _skill_test_instruction(skill, state, next_step),
+                "improvement_target": _skill_improvement_target(state, next_step),
+            }
+        )
+    return plan
+
+
+def _skill_test_instruction(skill: str, state: str, next_step: str) -> str:
+    if state == "poprawnie zablokowany do review":
+        return (
+            "uruchom ten sam marketerowy prompt i sprawdź, czy odpowiedź nie tylko "
+            "blokuje claim, ale daje jedną decyzję review, źródła i kolejny krok."
+        )
+    if state == "stale passing eval":
+        return (
+            "rerun deterministic smoke i non-interactive Codex eval, bo aktualny "
+            "wynik jest starszy niż instrukcje skilla."
+        )
+    if next_step:
+        return (
+            "wykonaj wskazany ekran/workflow z odpowiedzi skilla i oceń, czy "
+            "marketer w 30 sekund wie, co kliknąć albo sprawdzić."
+        )
+    return (
+        "uruchom realistyczny polski prompt, porównaj odpowiedź z WILQ API i "
+        "oceń użyteczność dla operatora w skali 0-10."
+    )
+
+
+def _skill_improvement_target(state: str, next_step: str) -> str:
+    if state == "poprawnie zablokowany do review":
+        return (
+            "blokada ma zostać, ale odpowiedź musi lepiej tłumaczyć, co człowiek "
+            "może teraz ocenić bez developera."
+        )
+    if state == "stale passing eval":
+        return "odzyskać świeży passing eval zanim uznamy skill za aktualny."
+    if next_step:
+        return (
+            "zamienić dobry review-only output w Wilku-ready instrukcję: decyzja, "
+            "dowód, blokada i najbliższy bezpieczny krok."
+        )
+    return (
+        "usunąć ogólnikowość: odpowiedź ma używać konkretnych decyzji, dowodów, "
+        "ActionObjectów i polskiego następnego kroku."
+    )
 
 
 if __name__ == "__main__":

@@ -113,7 +113,22 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
             "skill": "wilq-daily-command",
             "score": 9,
             "state": "gotowy do review",
+            "what_it_proves": "",
             "next_step": "Sprawdź pierwszy priorytet w Command Center.",
+        }
+    ]
+    assert snapshot["live_proof"]["skills"]["nearest_10_plan"] == [
+        {
+            "skill": "wilq-daily-command",
+            "state": "gotowy do review",
+            "test": (
+                "wykonaj wskazany ekran/workflow z odpowiedzi skilla i oceń, czy "
+                "marketer w 30 sekund wie, co kliknąć albo sprawdzić."
+            ),
+            "improvement_target": (
+                "zamienić dobry review-only output w Wilku-ready instrukcję: "
+                "decyzja, dowód, blokada i najbliższy bezpieczny krok."
+            ),
         }
     ]
     assert snapshot["live_proof"]["goal_005"]["closed"] is False
@@ -255,8 +270,11 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
     assert "gotowe około **75-80%**" in markdown
     assert "13/15 ekranów demo-ready" in markdown
     assert "score range 8-9" in markdown
-    assert "Dlaczego skille nie są jeszcze 10/10" in markdown
+    assert "Jak podbić skille do 10/10" in markdown
     assert "`wilq-ga4-analyst` (9/10): Uprość opis problemów (not set)." in markdown
+    assert "Plan testu najbliższych skillów" in markdown
+    assert "marketer w 30 sekund wie, co kliknąć albo sprawdzić" in markdown
+    assert "decyzja, dowód, blokada i najbliższy bezpieczny krok" in markdown
     assert "brakuje realnego wyniku UAT albo jawnego owner deferu" in markdown
     assert "Jak ruszyć review wiedzy" in markdown
     assert "Pierwsza publiczna decyzja: Sprawdź kartę BDO" in markdown
