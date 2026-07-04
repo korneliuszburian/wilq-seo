@@ -121,7 +121,7 @@ Date: 2026-07-04
   markdown nadal kończy się statusem blokującym bez UAT, ale nie pokazuje już
   technicznego `eval:` w widocznej liście śladu.
 - 2026-07-04 karta rozmowy Goal 005 wyjaśnia teraz, że temat treściowy
-  (`ekologus` homepage z kolejki content) i pierwsza decyzja Service Profile
+  (`ekologus` homepage z kolejki treści) i pierwsza decyzja Service Profile
   (BDO jako pierwsza karta wiedzy do oceny) są dwoma sprawdzeniami w jednej
   sesji, więc Wilku nie musi zgadywać, czemu te wątki występują razem.
 - 2026-07-03 Service Profile review recorder now explains review type

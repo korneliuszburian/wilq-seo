@@ -204,7 +204,7 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     )
     assert "Temat rozmowy: SEO: odśwież lub scal \"ekologus\"" in card
     assert "URL / miejsce w serwisie: https://www.ekologus.pl/" in card
-    assert "Decyzja contentowa WILQ: odśwież istniejącą treść" in card
+    assert "Decyzja treściowa WILQ: odśwież istniejącą treść" in card
     status_section = card.split("## Pierwsza decyzja w Service Profile")[0]
     assert "content_work_item_content_decision_https___www_ekologus_pl" not in (
         status_section
@@ -216,7 +216,9 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "temat treściowy i pierwsza decyzja Service Profile to dwa sprawdzenia" in (
         status_section
     )
-    assert "Temat treści mówi, co WILQ wybrał z kolejki content" in status_section
+    assert "Temat treści mówi, co WILQ wybrał z kolejki treści" in status_section
+    assert "Decyzja contentowa" not in status_section
+    assert "kolejki content" not in status_section
     assert "którą kartę wiedzy trzeba ocenić jako pierwszą" in status_section
     assert "## Kolejność rozmowy 15 minut" in card
     agenda_section = card.split("## Kolejność rozmowy 15 minut", 1)[1].split(

@@ -309,7 +309,7 @@ def render_content_uat_session_card(
         f"{selected_content_candidate_title(provenance)}",
         "- URL / miejsce w serwisie: "
         f"{selected_content_candidate_url(provenance)}",
-        "- Decyzja contentowa WILQ: "
+        "- Decyzja treściowa WILQ: "
         f"{selected_content_candidate_mode(provenance)}",
         "- Dlaczego ten temat: "
         f"{selected_content_candidate_reason(provenance)}",
@@ -320,7 +320,7 @@ def render_content_uat_session_card(
         (
             "- Jak czytać tę sesję: temat treściowy i pierwsza decyzja Service "
             "Profile to dwa sprawdzenia. Temat treści mówi, co WILQ wybrał z "
-            "kolejki content; decyzja Service Profile mówi, którą kartę wiedzy "
+            "kolejki treści; decyzja Service Profile mówi, którą kartę wiedzy "
             "trzeba ocenić jako pierwszą."
         ),
         "",
