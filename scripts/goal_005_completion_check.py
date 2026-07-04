@@ -1121,8 +1121,8 @@ def private_trace_follow_up_detail_lines(value: list[dict[str, Any]]) -> list[st
         trace_clear = "tak" if item.get("trace_clear") is True else "nie"
         lines.append(
             f"{item.get('target')}: decyzja `{item.get('decision')}`, "
-            f"trace czytelny: {trace_clear}, źródło: {source_blocks}, "
-            f"eval: {eval_cases}, poprawka: {item.get('requested_fix')}"
+            f"ślad czytelny: {trace_clear}, źródło: {source_blocks}, "
+            f"bramka: {eval_cases}, poprawka: {item.get('requested_fix')}"
         )
     return lines
 
@@ -1217,7 +1217,7 @@ def private_source_trace_item_label(value: dict[str, Any]) -> str:
         str(value.get("target") or "brak"),
         str(value.get("scope") or "brak"),
         f"źródło: {source_blocks}",
-        f"eval: {eval_cases}",
+        f"bramka: {eval_cases}",
         str(value.get("retention") or "brak"),
         redacted,
         trace_ready,

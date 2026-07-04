@@ -116,6 +116,10 @@ Date: 2026-07-04
 - 2026-07-04 ta sama karta rozmowy pokazuje prywatne bramki źródłowe jako
   `bramka: goal_*` zamiast technicznego `eval: goal_*`, więc Wilku widzi
   zrozumiałą etykietę bez utraty stabilnych ID do audytu.
+- 2026-07-04 completion guard Goal 005 używa tej samej etykiety
+  `bramka: goal_*` w sekcji `Prywatny ślad źródłowy do pokazania`; live
+  markdown nadal kończy się statusem blokującym bez UAT, ale nie pokazuje już
+  technicznego `eval:` w widocznej liście śladu.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

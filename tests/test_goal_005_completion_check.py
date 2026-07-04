@@ -242,7 +242,11 @@ def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) 
     assert "Pytania o brief sprzedażowy" in rendered
     assert "Prywatny ślad źródłowy do pokazania" in rendered
     assert "Eko-Opieka i Eko Kalendarz / usługa / źródło: KB_001_EKO_OPIEKA" in rendered
-    assert "eval: goal_005_private_service_review" in rendered
+    assert "bramka: goal_005_private_service_review" in rendered
+    private_trace_section = rendered.split(
+        "Prywatny ślad źródłowy do pokazania", 1
+    )[1].split("Jakość sygnału briefu", 1)[0]
+    assert "eval:" not in private_trace_section
     assert "decyzja właściciela wymagana" in rendered
     assert "zredagowane / ślad gotowy" in rendered
     assert (
@@ -711,7 +715,11 @@ def test_goal_005_completion_check_blocks_ready_uat_with_private_trace_follow_up
             "eval_cases": ["goal_005_private_claim_policy_review"],
         }
     ]
-    assert any("trace czytelny: nie" in detail for detail in report["details"])
+    assert any("ślad czytelny: nie" in detail for detail in report["details"])
+    assert any(
+        "bramka: goal_005_private_claim_policy_review" in detail
+        for detail in report["details"]
+    )
     markdown = render_markdown(report)
     assert "## Follow-up prywatnego śladu źródłowego" in markdown
     assert "Dopisać prostszy opis źródła dla Wilka." in markdown
