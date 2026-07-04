@@ -51,6 +51,8 @@ def test_reviewer_scorecard_audit_accepts_candidate_for_10(
     assert report["pass"] is True
     assert report["scorecard_count"] == 1
     assert report["candidate_for_10_count"] == 1
+    assert report["fulfilled_candidate_count"] == 0
+    assert report["open_candidate_count"] == 1
     assert report["rows"][0]["next_step"].startswith("uruchom rerun")
     assert "candidate_for_10" in markdown
 
@@ -90,6 +92,41 @@ def test_reviewer_scorecard_audit_strict_requires_files(tmp_path) -> None:
 
     assert report["pass"] is False
     assert report["scorecard_count"] == 0
+
+
+def test_reviewer_scorecard_audit_marks_candidate_fulfilled(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    audit_module = load_module()
+    scorecard_dir = tmp_path / "scorecards"
+    scorecard_dir.mkdir()
+    scorecard_path = scorecard_dir / "ads.json"
+    scorecard_path.write_text(
+        json.dumps(
+            {
+                "skill": "wilq-ads-doctor",
+                "decision": "candidate_for_10",
+                "can_consider_10": "tak",
+                "rerun_eval_required": "tak",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_packet_10(*, skill: str, reviewer_scorecard_path: Path):
+        packet = fake_packet(skill=skill, reviewer_scorecard_path=reviewer_scorecard_path)
+        packet["score"] = 10
+        return packet
+
+    monkeypatch.setattr(audit_module, "build_packet", fake_packet_10)
+
+    report = audit_module.build_report(scorecard_dir, strict=True)
+
+    assert report["pass"] is True
+    assert report["fulfilled_candidate_count"] == 1
+    assert report["open_candidate_count"] == 0
+    assert report["rows"][0]["candidate_fulfilled"] is True
 
 
 def fake_packet(*, skill: str, reviewer_scorecard_path: Path):

@@ -256,9 +256,11 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
     if skills.get("reviewer_scorecards", {}).get("scorecard_count"):
         scorecards = skills["reviewer_scorecards"]
         lines.append(
-            f"- Reviewer pass: {scorecards['scorecard_count']} scorecardy, "
-            f"{scorecards['candidate_for_10_count']} kandydatów do 10/10, "
-            f"{scorecards['rerun_required_count']} wymagają rerun eval."
+            f"- Reviewer pass: scorecardy {scorecards['scorecard_count']}, "
+            f"kandydaci do 10/10 {scorecards['candidate_for_10_count']}, "
+            f"potwierdzeni przez eval {scorecards['fulfilled_candidate_count']}, "
+            f"otwarci kandydaci {scorecards['open_candidate_count']}, "
+            f"rerun eval wymagany {scorecards['rerun_required_count']}."
         )
     lines.extend(f"- {item}" for item in snapshot["what_is_real_now"])
     if skills.get("nearest_10_blockers"):
@@ -502,6 +504,8 @@ def _reviewer_scorecard_summary(
         return {
             "scorecard_count": 0,
             "candidate_for_10_count": 0,
+            "fulfilled_candidate_count": 0,
+            "open_candidate_count": 0,
             "rerun_required_count": 0,
             "failure_count": 0,
             "rows": [],
@@ -512,6 +516,7 @@ def _reviewer_scorecard_summary(
             "decision": row.get("decision"),
             "can_consider_10": row.get("can_consider_10"),
             "rerun_eval_required": row.get("rerun_eval_required"),
+            "candidate_fulfilled": row.get("candidate_fulfilled"),
             "next_step": row.get("next_step"),
         }
         for row in report.get("rows") or []
@@ -520,6 +525,8 @@ def _reviewer_scorecard_summary(
     return {
         "scorecard_count": int(report.get("scorecard_count") or 0),
         "candidate_for_10_count": int(report.get("candidate_for_10_count") or 0),
+        "fulfilled_candidate_count": int(report.get("fulfilled_candidate_count") or 0),
+        "open_candidate_count": int(report.get("open_candidate_count") or 0),
         "rerun_required_count": int(report.get("rerun_required_count") or 0),
         "failure_count": int(report.get("failure_count") or 0),
         "rows": rows,

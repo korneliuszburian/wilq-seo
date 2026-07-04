@@ -1,8 +1,8 @@
 {
   "skill": "wilq-gsc-content-doctor",
   "reviewer": "Codex reviewer: SEO/content strategist",
-  "decision": "candidate_for_10",
-  "can_consider_10": "tak",
+  "decision": "popraw",
+  "can_consider_10": "nie",
   "rerun_eval_required": "tak",
   "criteria": [
     {
@@ -32,9 +32,9 @@
     }
   ],
   "follow_up_slots": [
-    "Rerun non-interactive eval po utrzymaniu caveatu o częściowych danych GSC i ręcznej ocenie strony głównej.",
-    "Jeżeli rerun zachowa zawężenie do adresu, dowody GSC/WordPress i blokadę decyzji publikacyjnej, można rozważyć 10/10.",
+    "Rerun non-interactive eval 20260704T054131Z nadal dał score 9/10, więc nie traktować tego jako kandydata do 10/10.",
+    "Poprawić output tak, żeby z ręcznego checku strony głównej wynikała jeszcze bardziej gotowa karta decyzji dla Wilka: co zmienić, czego nie ruszać i jakie pytanie zadać ownerowi.",
     "Nie używać tego jako dowodu publikacyjnej gotowości; to tylko jakość skilla review."
   ],
-  "notes": "Reviewer pass uznaje GSC Content Doctor za kandydata do 10/10, bo output jest konkretny i Ekologus-specific, ale wymaga świeżego rerun eval."
+  "notes": "Po rerun eval 20260704T054131Z GSC Content Doctor pozostaje mocnym 9/10. Przed 10/10 potrzebuje bardziej gotowej decyzji dla Wilka, nie tylko bardzo dobrej instrukcji ręcznej oceny."
 }

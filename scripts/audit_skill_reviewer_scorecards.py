@@ -54,6 +54,15 @@ def build_report(scorecard_dir: Path, *, strict: bool = False) -> dict[str, Any]
         "rerun_required_count": sum(
             1 for row in rows if row.get("rerun_eval_required") == "tak"
         ),
+        "fulfilled_candidate_count": sum(
+            1 for row in rows if row.get("candidate_fulfilled") is True
+        ),
+        "open_candidate_count": sum(
+            1
+            for row in rows
+            if row.get("decision") == "candidate_for_10"
+            and row.get("candidate_fulfilled") is not True
+        ),
         "pass": pass_state,
         "rows": rows,
     }
@@ -66,6 +75,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Scorecards: {report['scorecard_count']}",
         f"- Failures: {report['failure_count']}",
         f"- Candidate for 10/10: {report['candidate_for_10_count']}",
+        f"- Fulfilled candidates: {report['fulfilled_candidate_count']}",
+        f"- Open candidates: {report['open_candidate_count']}",
         f"- Rerun eval required: {report['rerun_required_count']}",
         f"- Pass: {'tak' if report['pass'] else 'nie'}",
         "",
@@ -75,7 +86,7 @@ def render_markdown(report: dict[str, Any]) -> str:
     for row in report["rows"]:
         lines.append(
             f"- `{row['path']}`: {row['skill']} -> {row.get('decision') or 'brak'} "
-            f"({row['status']})"
+            f"({row['status']}, score {row.get('score') or 'brak'})"
         )
         if row.get("error"):
             lines.append(f"  - Error: {row['error']}")
@@ -105,6 +116,7 @@ def _validate_scorecard(path: Path) -> dict[str, Any]:
                 "rerun_eval_required": scorecard["rerun_eval_required"],
                 "criteria_count": len(scorecard["criteria"]),
                 "criteria_total": sum(item["score"] for item in scorecard["criteria"]),
+                "candidate_fulfilled": _candidate_fulfilled(scorecard, packet),
                 "next_step": _next_step(scorecard),
             }
         )
@@ -132,6 +144,15 @@ def _next_step(scorecard: dict[str, Any]) -> str:
     if decision == "rerun_eval":
         return "uruchom rerun eval po sprawdzeniu, że output nadal spełnia scorecard"
     return "popraw API/dashboard/skill według follow-upów, potem rerun eval"
+
+
+def _candidate_fulfilled(scorecard: dict[str, Any], packet: dict[str, Any]) -> bool:
+    return (
+        scorecard["decision"] == "candidate_for_10"
+        and isinstance(packet.get("score"), int)
+        and not isinstance(packet.get("score"), bool)
+        and int(packet["score"]) >= 10
+    )
 
 
 if __name__ == "__main__":

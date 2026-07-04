@@ -10218,13 +10218,17 @@ rtk uv run python scripts/wilq_stage_snapshot.py --api-base http://127.0.0.1:800
 Result:
 
 - Reviewer scorecards live in `docs/evals/skill-reviewer-scorecards/`.
-- `wilq-ads-doctor` and `wilq-gsc-content-doctor` are marked
-  `candidate_for_10`, but still require rerun non-interactive eval before any
-  official score change.
-- `wilq-ahrefs-gap-finder` is marked `popraw`: it remains useful, but should
-  show a stronger GSC/WordPress cross-check before being considered `10/10`.
+- `wilq-ads-doctor` is marked `candidate_for_10` and the rerun eval
+  `.local-lab/evals/codex-skill/20260704T053954Z/wilq-ads-doctor/result.json`
+  confirmed `operator_usefulness_score=10`.
+- `wilq-gsc-content-doctor` was rerun at
+  `.local-lab/evals/codex-skill/20260704T054131Z/wilq-gsc-content-doctor/result.json`
+  and remained `9/10`; its scorecard is therefore `popraw`, not candidate.
+- `wilq-ahrefs-gap-finder` is also marked `popraw`: it remains useful, but
+  should show a stronger GSC/WordPress cross-check before being considered
+  `10/10`.
 - `scripts/audit_skill_reviewer_scorecards.py --strict` reports
-  `3` valid scorecards, `2` candidates for `10/10`, `3` requiring rerun eval
-  and `0` failures.
+  `3` valid scorecards, `1` candidate for `10/10`, `1` fulfilled candidate,
+  `0` open candidates, `3` requiring rerun eval and `0` failures.
 - `scripts/wilq_stage_snapshot.py` now shows this reviewer-pass summary in the
   main WILQ stage readout.

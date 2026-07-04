@@ -32,9 +32,9 @@
     }
   ],
   "follow_up_slots": [
-    "Rerun non-interactive eval po najbliższej zmianie Ads Doctor outputu.",
-    "Jeżeli rerun zachowa pierwszy krok, dowody, blokady i 5 akcji bez zapisu, można rozważyć podniesienie do 10/10.",
-    "Nie zmieniać score ręcznie bez nowego eval artifactu."
+    "Rerun non-interactive eval 20260704T053954Z potwierdził score 10/10.",
+    "Utrzymać pierwszy krok, dowody, blokady i 5 akcji bez zapisu w kolejnych zmianach Ads Doctor.",
+    "Nie zmieniać score ręcznie; aktualny score wynika z eval artifactu."
   ],
-  "notes": "Reviewer pass uznaje Ads Doctor za kandydata do 10/10, ale wymaga rerun eval; obecny oficjalny score pozostaje 9."
+  "notes": "Reviewer pass uznaje Ads Doctor za potwierdzonego kandydata: rerun eval 20260704T053954Z osiągnął 10/10."
 }

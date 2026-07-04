@@ -241,10 +241,11 @@ Date: 2026-07-04
   reviewer decision and 1-5 criteria, then renders "Wynik reviewer pass"
   without changing eval scores automatically.
 - 2026-07-04 auditable reviewer scorecards now exist for the nearest sub-10
-  skills. `scripts/audit_skill_reviewer_scorecards.py --strict` validates 3/3:
-  Ads Doctor and GSC Content Doctor are candidates for 10/10 after rerun eval;
-  Ahrefs Gap Finder still needs cross-source GSC/WordPress improvement first.
-  `scripts/wilq_stage_snapshot.py` renders this reviewer-pass summary.
+  skills. Ads Doctor rerun eval reached 10/10. GSC Content Doctor rerun stayed
+  9/10, so its scorecard is now `popraw`; Ahrefs Gap Finder also stays
+  `popraw` until its first step includes stronger GSC/WordPress cross-checking.
+  `scripts/audit_skill_reviewer_scorecards.py --strict` validates 3/3 and
+  `scripts/wilq_stage_snapshot.py` renders the reviewer-pass summary.
 - 2026-07-04 Goal 005 completion guard now also links those skill tuning
   packet commands beside Ads/GSC/Ahrefs sub-10 blockers, so the official
   Wilku/owner blocker list points directly to the next usefulness review.
