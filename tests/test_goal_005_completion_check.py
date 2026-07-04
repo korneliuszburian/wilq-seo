@@ -179,6 +179,9 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
     assert first_skill_blocker["next_step"]
     assert first_skill_blocker["next_step_truncated"] is False
     assert not first_skill_blocker["next_step"].endswith(("...", "…"))
+    assert first_skill_blocker["packet_command"].startswith(
+        "rtk uv run python scripts/skill_tuning_packet.py --skill "
+    )
     social_history = summary["social_history_inventory"]
     assert social_history["status"] == "missing"
     assert social_history["metadata_source_configured"] is False
@@ -923,11 +926,12 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "publikacja/finalny draft: zablokowane zgodnie z zasadami" in markdown
     assert "Najnowsze wyniki umiejętności" in markdown
     assert "Co trzyma skille poniżej 10/10" in markdown
-    assert "wilq-daily-command" in markdown
+    assert "Packet do testu:" in markdown
+    assert "scripts/skill_tuning_packet.py --skill" in markdown
+    assert "wilq-ads-doctor" in markdown
     assert "gotowy do review" in markdown
     assert "ready / review-only" not in markdown
     assert "command_center.primary_next_step" not in markdown
-    assert "priorytet wskazany przez Command Center" in markdown
     assert "not_configured" not in markdown
     assert "metadane: brak pliku metadanych" in markdown
     assert "Następne decyzje w Service Profile" in markdown

@@ -368,6 +368,10 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "next_step": row.get("remaining_blocker_full")
             or row.get("remaining_blocker"),
             "next_step_truncated": bool(row.get("truncated_visible_output")),
+            "packet_command": (
+                "rtk uv run python scripts/skill_tuning_packet.py "
+                f"--skill {row.get('skill')}"
+            ),
         }
         for row in latest_eval_report["rows"]
         if row.get("score") is not None and int(row.get("score") or 0) < 10
@@ -1569,6 +1573,8 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
                 f"{_skill_eval_state_label(row.get('state'))} -> "
                 f"{_skill_eval_next_step_label(row.get('next_step'))}"
             )
+            if row.get("packet_command"):
+                lines.append(f"    Packet do testu: `{row.get('packet_command')}`")
     lines.extend(
         [
             "- Historia social do dedupe: "
