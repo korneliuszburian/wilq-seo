@@ -8,12 +8,19 @@ from scripts.record_goal_005_content_uat_result import (
     REQUIRED_TEXT_FIELDS,
     build_content_uat_input_example,
     build_content_uat_result_report,
+    private_eval_case_labels,
     render_content_uat_session_card,
     render_markdown,
     sales_brief_blocker_label,
     sales_brief_trace_from_snapshot,
     select_uat_candidate_id,
 )
+
+
+def test_private_eval_case_labels_include_service_review_labels() -> None:
+    assert private_eval_case_labels(
+        ["goal_005_private_service_review", "goal_005_service_profile_uat"]
+    ) == "review prywatnej propozycji usługi, review użyteczności Service Profile"
 
 
 def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
@@ -178,6 +185,10 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
     assert example["oceny_prywatnego_sladu_zrodlowego"][0] == {
         "target": "Bezpieczeństwo prawne, poufność i zgody",
         "scope": "polityka twierdzeń",
+        "zrodlo_do_oceny": "KB_021_BEZPIECZENSTWO_PRAWNE",
+        "warunki_review": (
+            "review polityki twierdzeń, bramka listy dozwolonych twierdzeń"
+        ),
         "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
         "eval_cases": [
             "goal_005_private_claim_policy_review",
@@ -470,6 +481,10 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         {
             "target": "Bezpieczeństwo prawne, poufność i zgody",
             "scope": "polityka twierdzeń",
+            "zrodlo_do_oceny": "KB_021_BEZPIECZENSTWO_PRAWNE",
+            "warunki_review": (
+                "review polityki twierdzeń, bramka listy dozwolonych twierdzeń"
+            ),
             "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
             "eval_cases": [
                 "goal_005_private_claim_policy_review",
@@ -487,6 +502,10 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
             "decision": "popraw",
             "trace_clear": True,
             "requested_fix": "Dodać prostszy opis dla Wilka.",
+            "source_label": "KB_021_BEZPIECZENSTWO_PRAWNE",
+            "review_gate_label": (
+                "review polityki twierdzeń, bramka listy dozwolonych twierdzeń"
+            ),
             "source_blocks": ["KB_021_BEZPIECZENSTWO_PRAWNE"],
             "eval_cases": [
                 "goal_005_private_claim_policy_review",
@@ -519,6 +538,12 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert "## Pokazane materiały review" in markdown
     assert "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md" in markdown
     assert "## Ocena prywatnego śladu źródłowego" in markdown
+    assert "źródło do rozmowy: KB_021_BEZPIECZENSTWO_PRAWNE" in markdown
+    assert (
+        "warunki review: review polityki twierdzeń, "
+        "bramka listy dozwolonych twierdzeń"
+    ) in markdown
+    assert "identyfikatory źródła: KB_021_BEZPIECZENSTWO_PRAWNE" in markdown
     assert "ślad czytelny: tak" in markdown
     assert "Dodać prostszy opis dla Wilka." in markdown
 

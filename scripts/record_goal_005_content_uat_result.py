@@ -854,12 +854,16 @@ def render_private_source_trace_scorecard(value: Any) -> list[str]:
     for row in rows:
         source_blocks = ", ".join(raw_string_list(row.get("source_blocks"))) or "brak"
         eval_cases = ", ".join(raw_string_list(row.get("eval_cases"))) or "brak"
+        source_label = str(row.get("zrodlo_do_oceny") or "").strip()
+        eval_label = str(row.get("warunki_review") or "").strip()
         lines.extend(
             [
                 f"- {row.get('target')}",
                 f"  - zakres: {row.get('scope')}",
-                f"  - źródło: {source_blocks}",
-                f"  - bramka: {eval_cases}",
+                f"  - źródło do rozmowy: {source_label or source_blocks}",
+                f"  - warunki review: {eval_label or eval_cases}",
+                f"  - identyfikatory źródła: {source_blocks}",
+                f"  - identyfikatory warunków: {eval_cases}",
                 f"  - ślad czytelny: {visible_bool(row.get('trace_czytelny') is True)}",
                 f"  - decyzja: {row.get('decyzja')}",
                 f"  - najważniejsza poprawka: {row.get('najwazniejsza_poprawka')}",
@@ -885,6 +889,11 @@ def private_source_trace_follow_up_suggestions(
                 "decision": decision,
                 "trace_clear": trace_clear,
                 "requested_fix": requested_fix,
+                "source_label": row.get("zrodlo_do_oceny") or private_source_block_labels(
+                    row.get("source_blocks")
+                ),
+                "review_gate_label": row.get("warunki_review")
+                or private_eval_case_labels(row.get("eval_cases")),
                 "source_blocks": row.get("source_blocks") or [],
                 "eval_cases": row.get("eval_cases") or [],
             }
@@ -1715,6 +1724,8 @@ def private_eval_case_labels(value: Any) -> str:
         "goal_005_private_claim_policy_review": "review polityki twierdzeń",
         "goal_006_claim_ledger_gate": "bramka listy dozwolonych twierdzeń",
         "goal_005_private_evidence_policy_review": "review śladu dowodowego",
+        "goal_005_private_service_review": "review prywatnej propozycji usługi",
+        "goal_005_service_profile_uat": "review użyteczności Service Profile",
     }
     items = [
         labels.get(str(item), str(item))
@@ -1730,12 +1741,16 @@ def private_source_trace_scorecard_example(
     if not isinstance(value, dict):
         return []
     return [
-        {
-            "target": item.get("target"),
-            "scope": item.get("scope"),
-            "source_blocks": item.get("source_blocks") or [],
-            "eval_cases": item.get("eval_cases") or [],
-            "trace_czytelny": "nie",
+            {
+                "target": item.get("target"),
+                "scope": item.get("scope"),
+                "zrodlo_do_oceny": private_source_block_labels(
+                    item.get("source_blocks")
+                ),
+                "warunki_review": private_eval_case_labels(item.get("eval_cases")),
+                "source_blocks": item.get("source_blocks") or [],
+                "eval_cases": item.get("eval_cases") or [],
+                "trace_czytelny": "nie",
             "decyzja": "popraw",
             "najwazniejsza_poprawka": (
                 "UZUPEŁNIJ: czy ślad jest jasny i co poprawić albo wpisz brak"
@@ -1751,12 +1766,19 @@ def private_source_trace_scorecard_payload(value: Any) -> list[dict[str, Any]]:
     for item in raw_list_payload(value):
         if not isinstance(item, dict):
             continue
+        source_blocks = raw_string_list(item.get("source_blocks"))
+        eval_cases = raw_string_list(item.get("eval_cases"))
+        source_label = str(item.get("zrodlo_do_oceny") or "").strip()
+        eval_label = str(item.get("warunki_review") or "").strip()
         rows.append(
             {
                 "target": str(item.get("target") or "").strip(),
                 "scope": str(item.get("scope") or "").strip(),
-                "source_blocks": raw_string_list(item.get("source_blocks")),
-                "eval_cases": raw_string_list(item.get("eval_cases")),
+                "zrodlo_do_oceny": source_label
+                or private_source_block_labels(source_blocks),
+                "warunki_review": eval_label or private_eval_case_labels(eval_cases),
+                "source_blocks": source_blocks,
+                "eval_cases": eval_cases,
                 "trace_czytelny": normalize_bool(item.get("trace_czytelny")),
                 "decyzja": str(item.get("decyzja") or "").strip(),
                 "najwazniejsza_poprawka": str(

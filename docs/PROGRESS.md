@@ -146,6 +146,10 @@ Date: 2026-07-04
   `Kolejka treści`) and replaces `bramki ewaluacji` with `warunki review`.
   The completion guard also labels the first WordPress write candidate as
   `Aktywuj zapis szkicu WordPress jako szkic`.
+- 2026-07-04 Goal 005 UAT input example now adds readable helper fields for
+  private source trace scoring: `zrodlo_do_oceny` and `warunki_review`.
+  Stable `source_blocks` and `eval_cases` remain for audit, but Wilku/owner no
+  longer has to decode raw private-source or eval IDs before scoring the trace.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
