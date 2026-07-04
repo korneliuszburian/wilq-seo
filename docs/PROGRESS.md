@@ -107,6 +107,9 @@ Date: 2026-07-04
   still below `10/10`: it lists the first three `9/10` skills, renders their
   state in Polish and shows the next review/workflow blocker instead of only
   reporting `gotowe dla Wilka 10/10: 0`.
+- 2026-07-04 Goal 005 pre-demo audit now also normalizes technical skill
+  next-step markers such as `command_center.primary_next_step` into
+  marketer-readable Polish before rendering the Wilku-facing blocker list.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

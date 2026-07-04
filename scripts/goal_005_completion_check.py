@@ -1421,7 +1421,7 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
                 "  - "
                 f"{row.get('skill')}: {row.get('score')}/10, "
                 f"{_skill_eval_state_label(row.get('state'))} -> "
-                f"{row.get('next_step')}"
+                f"{_skill_eval_next_step_label(row.get('next_step'))}"
             )
     lines.extend(
         [
@@ -1489,6 +1489,17 @@ def _skill_eval_state_label(value: Any) -> str:
     }
     raw = str(value or "")
     return labels.get(raw, raw or "brak stanu")
+
+
+def _skill_eval_next_step_label(value: Any) -> str:
+    text = str(value or "").strip()
+    replacements = {
+        "command_center.primary_next_step": "priorytet wskazany przez Command Center",
+        "command_center.action_plan": "plan działań z Command Center",
+    }
+    for raw, label in replacements.items():
+        text = text.replace(raw, label)
+    return text or "brak następnego kroku"
 
 
 def _knowledge_status_label(value: Any) -> str:
