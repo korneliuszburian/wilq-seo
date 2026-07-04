@@ -80,8 +80,9 @@ def build_stage_snapshot(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
     dashboard_report = build_dashboard_report(api_base)
     skill_report = build_skill_report()
     completion_report = build_completion_report(api_base=api_base)
+    live_context = load_live_context(api_base)
     private_review_example = build_input_example(
-        load_live_context(api_base),
+        live_context,
         review_type="private_source_proposals",
     )
     return build_stage_snapshot_from_reports(
@@ -89,6 +90,11 @@ def build_stage_snapshot(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
         skill_report=skill_report,
         completion_report=completion_report,
         private_review_example=private_review_example,
+        approval_readiness=(
+            live_context.get("service_profile", {}).get("approval_readiness")
+            if isinstance(live_context.get("service_profile"), dict)
+            else None
+        ),
         api_base=api_base,
     )
 
@@ -99,6 +105,7 @@ def build_stage_snapshot_from_reports(
     skill_report: dict[str, Any],
     completion_report: dict[str, Any],
     private_review_example: dict[str, Any] | None = None,
+    approval_readiness: dict[str, Any] | None = None,
     api_base: str = DEFAULT_API_BASE,
 ) -> dict[str, Any]:
     dashboard_surfaces = int(dashboard_report.get("surface_count") or 0)
@@ -119,6 +126,7 @@ def build_stage_snapshot_from_reports(
     owner_review = _owner_review_next_step(
         completion_report,
         private_review_example=private_review_example,
+        approval_readiness=approval_readiness,
         api_base=api_base,
     )
 
@@ -273,6 +281,19 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
                     + ", ".join(private_decision["required_fields"])
                     + "."
                 )
+        if owner_review.get("approval_readiness"):
+            readiness = owner_review["approval_readiness"]
+            lines.append(
+                f"- Gotowość zatwierdzenia: {readiness['status_label']} "
+                f"(mutacja: {readiness['mutation_label']}, "
+                f"production-depth: {readiness['production_depth_label']})."
+            )
+            if readiness.get("first_action_label"):
+                lines.append(
+                    f"- Pierwszy krok zatwierdzenia: {readiness['first_action_label']}."
+                )
+            for item in readiness.get("blocking_checklist") or []:
+                lines.append(f"- Blokada checklisty: {item['label']} - {item['next_step']}")
         for command in owner_review.get("commands") or []:
             lines.append(f"- `{command}`")
     lines.extend(["", "## Co pokazać Wilkowi", ""])
@@ -306,6 +327,7 @@ def _owner_review_next_step(
     completion_report: dict[str, Any],
     *,
     private_review_example: dict[str, Any] | None,
+    approval_readiness: dict[str, Any] | None,
     api_base: str,
 ) -> dict[str, Any]:
     next_uat_input = completion_report.get("next_uat_input")
@@ -335,7 +357,55 @@ def _owner_review_next_step(
     first_private = _first_private_review_decision(private_review_example)
     if first_private:
         owner_review["first_private_decision"] = first_private
+    readiness = _approval_readiness_summary(approval_readiness)
+    if readiness:
+        owner_review["approval_readiness"] = readiness
     return owner_review
+
+
+def _approval_readiness_summary(
+    approval_readiness: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if not isinstance(approval_readiness, dict):
+        return None
+    checklist = [
+        item
+        for item in approval_readiness.get("checklist") or []
+        if isinstance(item, dict)
+    ]
+    blocking_checklist = [
+        {
+            "code": str(item.get("code") or "").strip(),
+            "label": str(item.get("label") or "").strip(),
+            "next_step": str(item.get("next_step") or "").strip(),
+        }
+        for item in checklist
+        if item.get("blocking") is True
+    ]
+    return {
+        "status": str(approval_readiness.get("status") or "blocked").strip(),
+        "status_label": str(
+            approval_readiness.get("status_label") or "wniosek zablokowany"
+        ).strip(),
+        "can_request_promotion": bool(
+            approval_readiness.get("can_request_promotion")
+        ),
+        "mutation_allowed": bool(approval_readiness.get("mutation_allowed")),
+        "production_depth_unlocked": bool(
+            approval_readiness.get("production_depth_unlocked")
+        ),
+        "mutation_label": (
+            "dozwolona" if approval_readiness.get("mutation_allowed") else "zablokowana"
+        ),
+        "production_depth_label": (
+            "odblokowane"
+            if approval_readiness.get("production_depth_unlocked")
+            else "zablokowane"
+        ),
+        "first_action_id": approval_readiness.get("first_action_id"),
+        "first_action_label": approval_readiness.get("first_action_label"),
+        "blocking_checklist": blocking_checklist[:4],
+    }
 
 
 def _first_private_review_decision(

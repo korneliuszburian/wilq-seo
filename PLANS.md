@@ -116,6 +116,11 @@ and blocked-claim review, private `ekologus-ai` governance, and a reviewed
 result packet. Current live state is still blocked: no source fact promotion,
 no `approved_current` unlock, no mutation and no final-content readiness.
 
+2026-07-04 update: the stage snapshot now renders that same approval readiness
+under "Jak ruszyć review wiedzy", including the first BDO review action and
+blocking checklist. This makes the main handoff actionable for Wilku/owner
+without requiring them to inspect dashboard internals or raw API JSON.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

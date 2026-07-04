@@ -207,6 +207,11 @@ Date: 2026-07-04
   approval request can even be prepared. Live state remains blocked:
   no mutation, no production-depth unlock, no source fact promotion and first
   action `service_profile_review_card_ekologus_service_bdo_reporting`.
+- 2026-07-04 `scripts/wilq_stage_snapshot.py` now includes that same
+  `approval_readiness` in "Jak ruszyć review wiedzy": blocked approval
+  request status, first BDO review action, mutation/production-depth lock and
+  the four checklist blockers. The snapshot is now enough to explain the
+  next owner/Wilku review step without opening raw API JSON.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

@@ -76,6 +76,31 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
                 }
             ]
         },
+        approval_readiness={
+            "status": "blocked",
+            "status_label": "wniosek o zatwierdzenie zablokowany",
+            "can_request_promotion": False,
+            "mutation_allowed": False,
+            "production_depth_unlocked": False,
+            "first_action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+            "first_action_label": (
+                "Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa"
+            ),
+            "checklist": [
+                {
+                    "code": "public_service_review",
+                    "label": "Publiczne karty usług sprawdzone przez człowieka",
+                    "blocking": True,
+                    "next_step": "Zacznij od pierwszej publicznej karty usługi.",
+                },
+                {
+                    "code": "promotion_request_packet",
+                    "label": "Osobny wniosek o zatwierdzenie jest gotowy do przygotowania",
+                    "blocking": True,
+                    "next_step": "Najpierw zapisz wynik rozmowy review.",
+                },
+            ],
+        },
         api_base="http://127.0.0.1:8000",
     )
 
@@ -124,6 +149,31 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
             "blocked_claims_reviewed",
             "data_classes_confirmed",
             "source_block_refs_confirmed",
+        ],
+    }
+    assert snapshot["owner_review"]["approval_readiness"] == {
+        "status": "blocked",
+        "status_label": "wniosek o zatwierdzenie zablokowany",
+        "can_request_promotion": False,
+        "mutation_allowed": False,
+        "production_depth_unlocked": False,
+        "mutation_label": "zablokowana",
+        "production_depth_label": "zablokowane",
+        "first_action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
+        "first_action_label": (
+            "Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa"
+        ),
+        "blocking_checklist": [
+            {
+                "code": "public_service_review",
+                "label": "Publiczne karty usług sprawdzone przez człowieka",
+                "next_step": "Zacznij od pierwszej publicznej karty usługi.",
+            },
+            {
+                "code": "promotion_request_packet",
+                "label": "Osobny wniosek o zatwierdzenie jest gotowy do przygotowania",
+                "next_step": "Najpierw zapisz wynik rozmowy review.",
+            },
         ],
     }
 
@@ -180,6 +230,22 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
                 }
             ]
         },
+        approval_readiness={
+            "status": "blocked",
+            "status_label": "wniosek o zatwierdzenie zablokowany",
+            "can_request_promotion": False,
+            "mutation_allowed": False,
+            "production_depth_unlocked": False,
+            "first_action_label": "Sprawdź kartę usługi: BDO",
+            "checklist": [
+                {
+                    "code": "public_service_review",
+                    "label": "Publiczne karty usług sprawdzone przez człowieka",
+                    "blocking": True,
+                    "next_step": "Zacznij od pierwszej publicznej karty usługi.",
+                }
+            ],
+        },
     )
 
     markdown = stage.render_markdown(snapshot)
@@ -196,6 +262,10 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
     assert "Pierwsza publiczna decyzja: Sprawdź kartę BDO" in markdown
     assert "Pierwsza prywatna decyzja ekologus-ai" in markdown
     assert "Bezpieczeństwo prawne, poufność i zgody" in markdown
+    assert "Gotowość zatwierdzenia: wniosek o zatwierdzenie zablokowany" in markdown
+    assert "mutacja: zablokowana" in markdown
+    assert "production-depth: zablokowane" in markdown
+    assert "Blokada checklisty: Publiczne karty usług sprawdzone przez człowieka" in markdown
     assert "--review-type public_service_cards" in markdown
     assert "--review-type private_source_proposals" in markdown
     assert "Co pokazać Wilkowi" in markdown
