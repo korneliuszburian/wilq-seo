@@ -85,6 +85,10 @@ Date: 2026-07-04
   channels in the "Historia social do dedupe" line, so the blocker says where
   to start collecting metadata without implying that social history has already
   been reviewed.
+- 2026-07-04 `/social-publisher` dashboard regression coverage now protects
+  both public discovery links, LinkedIn and Facebook, in the visible "Od czego
+  zacząć discovery" section while keeping publication and duplicate-free claims
+  blocked.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

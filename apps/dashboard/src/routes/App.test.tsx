@@ -7155,6 +7155,18 @@ const socialPublisherContextPack = {
           required_review: true,
           operator_note:
             "Publiczny adres postów LinkedIn Ekologus jest tylko punktem startowym discovery."
+        },
+        {
+          id: "social_history_seed_ekologus_facebook_posts",
+          channel: "facebook",
+          source_type: "public_posts_url",
+          source_url: "https://www.facebook.com/ekologus/?locale=pl_PL",
+          status: "seeded_not_collected",
+          safe_collection_mode: "metadata_only",
+          raw_post_body_allowed: false,
+          required_review: true,
+          operator_note:
+            "Publiczny adres strony Facebook Ekologus jest tylko punktem startowym discovery."
         }
       ],
       allowed_uses: ["sprawdzenie czy temat, claim albo CTA powtarza wcześniejsze posty"],
@@ -9030,6 +9042,13 @@ describe("WILQ dashboard", () => {
     expect(auditSection).toHaveTextContent("metadata-only JSON");
     expect(auditSection).toHaveTextContent("social_history_inventory_v1");
     expect(auditSection).toHaveTextContent("review metadanych");
+    expect(screen.getByText("Od czego zacząć discovery")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "https://www.linkedin.com/company/ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-szkolenia-sorbenty/posts/?feedView=all"
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText("https://www.facebook.com/ekologus/?locale=pl_PL")).toBeInTheDocument();
     expect(screen.getAllByText("brakuje dostępu")).toHaveLength(2);
     expect(screen.getAllByText(/Pełna treść posta nie jest wymagana/)).toHaveLength(2);
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
