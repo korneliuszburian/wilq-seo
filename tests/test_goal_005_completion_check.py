@@ -177,6 +177,8 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
     assert first_skill_blocker["score"] < 10
     assert first_skill_blocker["state"]
     assert first_skill_blocker["next_step"]
+    assert first_skill_blocker["next_step_truncated"] is False
+    assert not first_skill_blocker["next_step"].endswith(("...", "…"))
     social_history = summary["social_history_inventory"]
     assert social_history["status"] == "missing"
     assert social_history["metadata_source_configured"] is False

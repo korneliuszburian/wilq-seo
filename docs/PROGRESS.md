@@ -225,6 +225,9 @@ Date: 2026-07-04
   ending with ellipsis and coverage exposes full `remaining_blocker_full`
   beside the shortened table cell. Stage snapshot uses the full field, so
   Ads/GSC/Ahrefs tuning is no longer distorted by report truncation.
+- 2026-07-04 Goal 005 completion guard now also uses that full skill blocker
+  text. The official "Co trzyma skille poniżej 10/10" section renders full
+  Ads/GSC/Ahrefs next steps instead of shortened table snippets.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

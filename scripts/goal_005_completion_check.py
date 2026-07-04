@@ -365,7 +365,9 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "skill": row.get("skill"),
             "score": row.get("score"),
             "state": row.get("state"),
-            "next_step": row.get("remaining_blocker"),
+            "next_step": row.get("remaining_blocker_full")
+            or row.get("remaining_blocker"),
+            "next_step_truncated": bool(row.get("truncated_visible_output")),
         }
         for row in latest_eval_report["rows"]
         if row.get("score") is not None and int(row.get("score") or 0) < 10
