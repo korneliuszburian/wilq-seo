@@ -858,6 +858,8 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "ready / review-only" not in markdown
     assert "command_center.primary_next_step" not in markdown
     assert "priorytet wskazany przez Command Center" in markdown
+    assert "not_configured" not in markdown
+    assert "metadane: brak pliku metadanych" in markdown
     assert "Następne decyzje w Service Profile" in markdown
     assert "-> Bezpieczeństwo prawne, poufność i zgody" in markdown
     assert "Ślad źródłowy i pakiet dowodów" in markdown

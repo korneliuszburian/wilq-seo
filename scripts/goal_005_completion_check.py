@@ -1427,7 +1427,7 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         [
             "- Historia social do dedupe: "
         f"{_social_history_status_label(social_history)}; "
-        f"metadane: {social_history.get('metadata_source_status') or 'brak'}; "
+        f"metadane: {_social_metadata_status_label(social_history)}; "
         f"pozycje: {social_history.get('item_count')}; "
         f"brakujące dowody: {len(social_history.get('missing_evidence_ids') or [])}; "
         "punkty startowe: "
@@ -1525,6 +1525,17 @@ def _social_history_status_label(value: dict[str, Any]) -> str:
     if status == "invalid":
         return "spis historii social wymaga poprawy"
     return "brak spisu historycznych postów LinkedIn/Facebook"
+
+
+def _social_metadata_status_label(value: dict[str, Any]) -> str:
+    raw = str(value.get("metadata_source_status") or "").strip()
+    labels = {
+        "not_configured": "brak pliku metadanych",
+        "review_ready": "metadane gotowe do review",
+        "invalid": "plik metadanych wymaga poprawy",
+        "missing": "brak metadanych",
+    }
+    return labels.get(raw, raw or "brak")
 
 
 def _join_labels(value: Any) -> str:

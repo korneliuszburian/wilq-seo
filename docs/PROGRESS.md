@@ -110,6 +110,9 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 pre-demo audit now also normalizes technical skill
   next-step markers such as `command_center.primary_next_step` into
   marketer-readable Polish before rendering the Wilku-facing blocker list.
+- 2026-07-04 Goal 005 pre-demo audit now renders social-history metadata
+  readiness as Polish operator text (`brak pliku metadanych`) instead of the
+  raw `not_configured` enum.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
