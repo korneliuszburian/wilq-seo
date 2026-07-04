@@ -172,8 +172,53 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
         <MetricTile label="Luki do sprawdzenia" value={contract.gap_records.length} />
         <MetricTile label="Brakujące dane" value={contract.missing_read_contract_summary_label} />
         <MetricTile label="Zablokowane obietnice" value={contract.blocked_claim_summary_label} />
+        <MetricTile
+          label="Dopasowania GSC"
+          value={contract.cross_check_gsc_match_count}
+        />
+        <MetricTile
+          label="Dopasowania WordPress"
+          value={contract.cross_check_wordpress_match_count}
+        />
+        <MetricTile label="Cross-check" value={contract.cross_check_status_label} />
       </div>
       <p className="mt-3 text-sm font-semibold leading-6 text-ink">{contract.next_step}</p>
+      {contract.cross_check_summary ? (
+        <div className="mt-3 rounded-md border border-line bg-slate-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Cross-check GSC/WordPress
+          </p>
+          <p className="mt-1 text-sm leading-6 text-slate-700">
+            {contract.cross_check_summary}
+          </p>
+          <p className="mt-2 text-xs font-semibold leading-5 text-ink">
+            {contract.cross_check_next_step}
+          </p>
+          {contract.cross_check_candidates.length > 0 ? (
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {contract.cross_check_candidates.slice(0, 4).map((candidate) => (
+                <article key={candidate.id} className="rounded-md border border-line bg-white p-3">
+                  <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                    {candidate.gap_type_label || "kandydat Ahrefs"}
+                  </p>
+                  <h3 className="mt-1 text-sm font-semibold">{candidate.topic}</h3>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                    <span className="rounded-md border border-line px-2 py-1">
+                      GSC: {candidate.gsc_demand_label}
+                    </span>
+                    <span className="rounded-md border border-line px-2 py-1">
+                      WP: {candidate.wordpress_inventory_match_label}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-700">
+                    {candidate.next_step}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
           label="Brakujące dane"

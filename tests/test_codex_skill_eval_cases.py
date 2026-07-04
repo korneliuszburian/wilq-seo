@@ -616,8 +616,10 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert old_ranking_opportunity_claim not in ahrefs_case["blocked_claim_terms"]
     assert "wzrost ruchu" in ahrefs_case["blocked_claim_terms"]
     assert old_competitor_gap_claim not in ahrefs_case["blocked_claim_terms"]
-    assert "google_search_console" in ahrefs_case["forbidden_connectors"]
-    assert "wordpress_ekologus" in ahrefs_case["forbidden_connectors"]
+    assert "google_search_console" in ahrefs_case["expected_connectors"]
+    assert "wordpress_ekologus" in ahrefs_case["expected_connectors"]
+    assert "google_search_console" not in ahrefs_case["forbidden_connectors"]
+    assert "wordpress_ekologus" not in ahrefs_case["forbidden_connectors"]
     assert "act_prepare_content_refresh_queue" in ahrefs_case["forbidden_action_ids"]
 
     localo_case = cases["wilq-localo-operator"]
@@ -916,6 +918,11 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     ).read_text(encoding="utf-8")
     assert "GET /api/ahrefs/diagnostics" in ahrefs_skill_doc
     assert "Karta cross-checku GSC/WordPress" in ahrefs_skill_doc
+    assert "cross_check_status" in ahrefs_skill_doc
+    assert "cross_check_summary" in ahrefs_skill_doc
+    assert "cross_check_source_connectors" in ahrefs_skill_doc
+    assert "cross_check_evidence_ids" in ahrefs_skill_doc
+    assert "cross_check_candidates" in ahrefs_skill_doc
     assert "Sprawdź w GSC" in ahrefs_skill_doc
     assert "Sprawdź w WordPress" in ahrefs_skill_doc
     assert "Decyzja po cross-checku" in ahrefs_skill_doc

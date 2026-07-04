@@ -4845,6 +4845,15 @@ class AhrefsGapReadContract(BaseModel):
     action_summary_label: str = ""
     gap_records: list[AhrefsGapRecord] = Field(default_factory=list)
     gap_record_count: int = 0
+    cross_check_status: Literal["api_backed", "manual_required", "missing"] = "missing"
+    cross_check_status_label: str = ""
+    cross_check_summary: str = ""
+    cross_check_next_step: str = ""
+    cross_check_gsc_match_count: int = 0
+    cross_check_wordpress_match_count: int = 0
+    cross_check_source_connectors: list[str] = Field(default_factory=list)
+    cross_check_evidence_ids: list[str] = Field(default_factory=list)
+    cross_check_candidates: list[ContentAhrefsCandidateRow] = Field(default_factory=list)
     next_step: str
     risk: ActionRisk = ActionRisk.medium
 

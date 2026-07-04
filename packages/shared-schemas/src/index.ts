@@ -2995,6 +2995,43 @@ export const AhrefsGapReadContractSchema = z.object({
   action_summary_label: z.string().default(""),
   gap_records: z.array(AhrefsGapRecordSchema),
   gap_record_count: z.number(),
+  cross_check_status: z.enum(["api_backed", "manual_required", "missing"]).default("missing"),
+  cross_check_status_label: z.string().default(""),
+  cross_check_summary: z.string().default(""),
+  cross_check_next_step: z.string().default(""),
+  cross_check_gsc_match_count: z.number().default(0),
+  cross_check_wordpress_match_count: z.number().default(0),
+  cross_check_source_connectors: z.array(z.string()).default([]),
+  cross_check_evidence_ids: z.array(z.string()).default([]),
+  cross_check_candidates: z
+    .array(
+      z.object({
+        id: z.string(),
+        topic: z.string(),
+        gap_type: z.string(),
+        gap_type_label: z.string().default(""),
+        relevance_status: z.enum(["relevant", "review", "off_topic"]),
+        relevance_status_label: z.string().default(""),
+        relevance_score: z.number(),
+        business_relevance_reasons: z.array(z.string()).default([]),
+        business_relevance_reason_labels: z.array(z.string()).default([]),
+        gsc_demand: z.enum(["present", "missing"]),
+        gsc_demand_label: z.string().default(""),
+        wordpress_inventory_match: z.enum(["present", "missing"]),
+        wordpress_inventory_match_label: z.string().default(""),
+        gsc_overlap_terms: z.array(z.string()).default([]),
+        wordpress_overlap_urls: z.array(z.string()).default([]),
+        keyword: z.string().nullable().optional(),
+        competitor_domain: z.string().nullable().optional(),
+        source_url: z.string().nullable().optional(),
+        referenced_public_url: z.string().nullable().optional(),
+        metric_name: z.string(),
+        metric_value: z.union([z.string(), z.number()]),
+        evidence_ids: z.array(z.string()),
+        next_step: z.string()
+      })
+    )
+    .default([]),
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high", "critical"])
 });

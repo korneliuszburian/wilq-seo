@@ -6398,6 +6398,44 @@ const ahrefsDiagnostics = {
       }
     ],
     gap_record_count: 6,
+    cross_check_status: "api_backed",
+    cross_check_status_label: "sprawdzenie GSC/WordPress ma dopasowania z API",
+    cross_check_summary:
+      "WILQ znalazł 1 kandydata Ahrefs do walidacji: 1 ma dopasowanie w GSC, a 1 ma dopasowanie w spisie WordPress.",
+    cross_check_next_step:
+      "Otwórz kandydatów z dopasowaniem GSC/WordPress i zdecyduj: brief, scalenie, obserwacja albo blokada tematu.",
+    cross_check_gsc_match_count: 1,
+    cross_check_wordpress_match_count: 1,
+    cross_check_source_connectors: ["google_search_console", "wordpress_ekologus"],
+    cross_check_evidence_ids: ["ev_refresh_gsc_cross_check", "ev_refresh_wp_cross_check"],
+    cross_check_candidates: [
+      {
+        id: "ahrefs_candidate_audyt_srodowiskowy",
+        topic: "audyt środowiskowy",
+        gap_type: "content_gap",
+        gap_type_label: "luka treści",
+        relevance_status: "relevant",
+        relevance_status_label: "pasuje",
+        relevance_score: 6,
+        business_relevance_reasons: ["gsc_overlap", "wordpress_inventory_overlap"],
+        business_relevance_reason_labels: ["pokrywa się z GSC", "pokrywa się z WordPress"],
+        gsc_demand: "present",
+        gsc_demand_label: "jest w GSC",
+        wordpress_inventory_match: "present",
+        wordpress_inventory_match_label: "jest w WordPress",
+        gsc_overlap_terms: ["audyt środowiskowy"],
+        wordpress_overlap_urls: ["https://www.ekologus.pl/audyt-srodowiskowy/"],
+        keyword: "audyt środowiskowy",
+        competitor_domain: "competitor.example",
+        source_url: "https://competitor.example/audyt-srodowiskowy",
+        referenced_public_url: null,
+        metric_name: "ahrefs_content_gap_count",
+        metric_value: 1,
+        evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+        next_step:
+          "Zweryfikuj audyt środowiskowy z GSC i spisem treści WordPress, potem zdecyduj: odświeżenie, scalenie, utworzenie albo blokada."
+      }
+    ],
     next_step: "Połącz luki Ahrefs z GSC i WordPress i przygotuj kolejkę sprawdzenia.",
     risk: "medium"
   },
@@ -9229,6 +9267,13 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Dozwolone dowody/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Brakujące dane: brak/)).not.toBeInTheDocument();
     expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Cross-check GSC/WordPress")).toBeInTheDocument();
+    expect(
+      screen.getByText(/WILQ znalazł 1 kandydata Ahrefs do walidacji/)
+    ).toBeInTheDocument();
+    expect(screen.getByText("audyt środowiskowy")).toBeInTheDocument();
+    expect(screen.getByText("GSC: jest w GSC")).toBeInTheDocument();
+    expect(screen.getByText("WP: jest w WordPress")).toBeInTheDocument();
     expect(screen.getByText("Dane kompletne dla tej decyzji")).toBeInTheDocument();
     expect(screen.getByText("2 zablokowane obietnice")).toBeInTheDocument();
     expect(screen.queryByText(/typed Ahrefs gap records/i)).not.toBeInTheDocument();

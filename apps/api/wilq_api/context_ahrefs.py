@@ -50,6 +50,17 @@ def compact_ahrefs_diagnostics_for_context(
             gap_contract["gap_record_count"] = (
                 len(gap_records) if isinstance(gap_records, list) else 0
             )
+        cross_check_candidates = gap_contract.get("cross_check_candidates")
+        if isinstance(cross_check_candidates, list):
+            gap_contract["cross_check_candidates_total"] = len(cross_check_candidates)
+            gap_contract["cross_check_candidates"] = [
+                compact_ahrefs_cross_check_candidate_for_context(candidate)
+                for candidate in cross_check_candidates[:4]
+                if isinstance(candidate, dict)
+            ]
+            gap_contract["cross_check_candidates_included"] = len(
+                gap_contract["cross_check_candidates"]
+            )
         gap_contract["gap_records_omitted"] = True
         gap_contract["gap_records_total"] = len(gap_records) if isinstance(gap_records, list) else 0
     operator_summary = compact.get("operator_summary")
@@ -80,6 +91,26 @@ def compact_ahrefs_diagnostics_for_context(
         "full_endpoint": "/api/ahrefs/diagnostics",
     }
     return compact
+
+
+def compact_ahrefs_cross_check_candidate_for_context(
+    candidate: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        key: candidate[key]
+        for key in (
+            "topic",
+            "gap_type_label",
+            "relevance_status_label",
+            "gsc_demand_label",
+            "wordpress_inventory_match_label",
+            "gsc_overlap_terms",
+            "wordpress_overlap_urls",
+            "next_step",
+            "evidence_ids",
+        )
+        if key in candidate
+    }
 
 
 def compact_ahrefs_decision_for_context(decision: dict[str, Any]) -> dict[str, Any]:

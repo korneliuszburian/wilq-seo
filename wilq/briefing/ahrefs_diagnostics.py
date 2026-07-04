@@ -8,6 +8,7 @@ from typing import Literal, cast
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
+from wilq.content.planning.ahrefs import ahrefs_cross_source_candidate_rows
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import evidence_count_label, source_connector_labels
 from wilq.schemas import (
@@ -35,7 +36,13 @@ AhrefsGapType = Literal[
 ]
 
 AHREFS_CONNECTOR_ID = "ahrefs"
+AHREFS_CROSS_CHECK_CONNECTOR_IDS = (
+    "google_search_console",
+    "wordpress_ekologus",
+    "wordpress_sklep",
+)
 AHREFS_METRIC_FACT_LIMIT = 1000
+AHREFS_CROSS_CHECK_METRIC_FACT_LIMIT = 1200
 AHREFS_AUTHORITY_FACT_NAMES = {"domain_rating", "ahrefs_rank"}
 AHREFS_COMPETITOR_READ_FACT_NAMES = {
     "organic_competitor_read_status",
@@ -234,6 +241,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         AHREFS_COMPETITOR_READ_FACT_NAMES,
     )
     gap_facts = _gap_facts(metric_facts)
+    cross_check_facts = _cross_check_metric_facts()
     live_data_available = bool(authority_facts or competitor_read_facts or gap_facts)
     sections = _ahrefs_sections(
         connector_missing=connector.missing_credentials,
@@ -255,6 +263,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         latest_refresh=latest_refresh,
         authority_facts=authority_facts,
         gap_facts=gap_facts,
+        cross_check_facts=cross_check_facts,
     )
     labeled_gap_read_contract = _label_ahrefs_gap_read_contract(gap_read_contract)
 
@@ -398,13 +407,41 @@ def _ahrefs_gap_read_contract(
     latest_refresh: ConnectorRefreshRun | None,
     authority_facts: list[MetricFact],
     gap_facts: list[MetricFact],
+    cross_check_facts: list[MetricFact],
 ) -> AhrefsGapReadContract:
     missing_contracts = _missing_gap_contracts(gap_facts)
     gap_records = _ahrefs_gap_records(gap_facts)
+    cross_check_candidates = ahrefs_cross_source_candidate_rows(
+        gap_facts,
+        cross_check_facts,
+        limit=6,
+    )
+    gsc_match_count = sum(
+        1 for candidate in cross_check_candidates if candidate.gsc_demand == "present"
+    )
+    wordpress_match_count = sum(
+        1
+        for candidate in cross_check_candidates
+        if candidate.wordpress_inventory_match == "present"
+    )
+    cross_check_status = _ahrefs_cross_check_status(
+        gap_records=gap_records,
+        gsc_match_count=gsc_match_count,
+        wordpress_match_count=wordpress_match_count,
+    )
+    cross_check_source_connectors, cross_check_evidence_ids = _ahrefs_cross_check_trace(
+        cross_check_candidates,
+        cross_check_facts,
+    )
     blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
-    evidence_ids = _evidence_ids_for_facts_or_refresh(
-        [*gap_facts, *authority_facts],
-        latest_refresh,
+    evidence_ids = _unique(
+        [
+            *_evidence_ids_for_facts_or_refresh(
+                [*gap_facts, *authority_facts],
+                latest_refresh,
+            ),
+            *cross_check_evidence_ids,
+        ]
     )
     available_contracts = []
     if authority_facts:
@@ -449,10 +486,24 @@ def _ahrefs_gap_read_contract(
             ],
             _ahrefs_review_gate_label,
         ),
-        source_connectors=[AHREFS_CONNECTOR_ID],
+        source_connectors=_unique([AHREFS_CONNECTOR_ID, *cross_check_source_connectors]),
         evidence_ids=evidence_ids,
         gap_records=gap_records,
         gap_record_count=len(gap_records),
+        cross_check_status=cross_check_status,
+        cross_check_status_label=_ahrefs_cross_check_status_label(cross_check_status),
+        cross_check_summary=_ahrefs_cross_check_summary(
+            status=cross_check_status,
+            candidate_count=len(cross_check_candidates),
+            gsc_match_count=gsc_match_count,
+            wordpress_match_count=wordpress_match_count,
+        ),
+        cross_check_next_step=_ahrefs_cross_check_next_step(cross_check_status),
+        cross_check_gsc_match_count=gsc_match_count,
+        cross_check_wordpress_match_count=wordpress_match_count,
+        cross_check_source_connectors=cross_check_source_connectors,
+        cross_check_evidence_ids=cross_check_evidence_ids,
+        cross_check_candidates=cross_check_candidates,
         next_step=(
             "Dodaj odczyty danych dla konkurencyjnych stron, luk treści, luk linków zwrotnych, "
             "organicznych słów dla URL i najlepszych stron konkurencji. Do tego "
@@ -462,6 +513,110 @@ def _ahrefs_gap_read_contract(
         ),
         risk=ActionRisk.medium,
     )
+
+
+def _cross_check_metric_facts() -> list[MetricFact]:
+    facts: list[MetricFact] = []
+    for connector_id in AHREFS_CROSS_CHECK_CONNECTOR_IDS:
+        facts.extend(
+            metric_store().list_metric_facts(
+                connector_id=connector_id,
+                limit=AHREFS_CROSS_CHECK_METRIC_FACT_LIMIT,
+            )
+        )
+    return facts
+
+
+def _ahrefs_cross_check_trace(
+    candidates: Iterable[object],
+    facts: list[MetricFact],
+) -> tuple[list[str], list[str]]:
+    labels = _cross_check_candidate_labels(candidates)
+    if not labels:
+        return [], []
+    matched_facts = [
+        fact for fact in facts if _cross_check_fact_matches_labels(fact, labels)
+    ]
+    return (
+        _unique(fact.source_connector for fact in matched_facts),
+        _unique(fact.evidence_id for fact in matched_facts if fact.evidence_id),
+    )
+
+
+def _cross_check_candidate_labels(candidates: Iterable[object]) -> set[str]:
+    labels: set[str] = set()
+    for candidate in candidates:
+        gsc_terms = getattr(candidate, "gsc_overlap_terms", [])
+        wordpress_urls = getattr(candidate, "wordpress_overlap_urls", [])
+        labels.update(str(value) for value in gsc_terms if value)
+        labels.update(str(value) for value in wordpress_urls if value)
+    return labels
+
+
+def _cross_check_fact_matches_labels(fact: MetricFact, labels: set[str]) -> bool:
+    for key in ("query", "page", "content_url", "title", "slug", "path"):
+        value = fact.dimensions.get(key)
+        if value in labels:
+            return True
+    return False
+
+
+def _ahrefs_cross_check_status(
+    *,
+    gap_records: list[AhrefsGapRecord],
+    gsc_match_count: int,
+    wordpress_match_count: int,
+) -> Literal["api_backed", "manual_required", "missing"]:
+    if not gap_records:
+        return "missing"
+    if gsc_match_count or wordpress_match_count:
+        return "api_backed"
+    return "manual_required"
+
+
+def _ahrefs_cross_check_status_label(status: str) -> str:
+    labels = {
+        "api_backed": "sprawdzenie GSC/WordPress ma dopasowania z API",
+        "manual_required": "sprawdzenie GSC/WordPress wymaga ręcznej oceny",
+        "missing": "brak rekordów Ahrefs do cross-checku",
+    }
+    return labels.get(status, "cross-check do sprawdzenia")
+
+
+def _ahrefs_cross_check_summary(
+    *,
+    status: str,
+    candidate_count: int,
+    gsc_match_count: int,
+    wordpress_match_count: int,
+) -> str:
+    if status == "missing":
+        return "Brak rekordów Ahrefs, więc WILQ nie ma czego łączyć z GSC ani WordPress."
+    if status == "api_backed":
+        return (
+            f"WILQ znalazł {candidate_count} kandydatów Ahrefs do walidacji: "
+            f"{gsc_match_count} ma dopasowanie w GSC, a {wordpress_match_count} "
+            "ma dopasowanie w spisie WordPress."
+        )
+    return (
+        f"WILQ ma {candidate_count} kandydatów Ahrefs, ale nie znalazł jeszcze "
+        "dopasowania w GSC ani WordPress. To zostaje ręcznym cross-checkiem, "
+        "nie brief-ready decyzją."
+    )
+
+
+def _ahrefs_cross_check_next_step(status: str) -> str:
+    if status == "api_backed":
+        return (
+            "Otwórz kandydatów z dopasowaniem GSC/WordPress i zdecyduj: brief, "
+            "scalenie, obserwacja albo blokada tematu."
+        )
+    if status == "manual_required":
+        return (
+            "Sprawdź ręcznie GSC i spis WordPress dla tematów Ahrefs przed "
+            "tworzeniem briefu."
+        )
+    return "Najpierw odczytaj rekordy luk Ahrefs, potem wykonaj cross-check GSC/WordPress."
 
 
 def _latest_relevant_ahrefs_refresh(

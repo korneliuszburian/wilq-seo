@@ -256,6 +256,15 @@ Date: 2026-07-04
   `.local-lab/evals/codex-skill/20260704T055929Z/wilq-ahrefs-gap-finder/result.json`
   passed at 9/10. It stays below 10/10 until WILQ has API-backed cross-source
   matching from Ahrefs topic to GSC query/page evidence or WordPress inventory.
+- 2026-07-04 Ahrefs diagnostics now has that API-backed cross-source matching:
+  `gap_read_contract` exposes cross-check status, summary, GSC/WordPress source
+  connectors, evidence IDs and compact candidate rows. Live proof after stack
+  restart showed `cross_check_status=api_backed`, 6 GSC matches, 6 WordPress
+  matches and 3 cross-check evidence IDs. Latest Ahrefs eval
+  `.local-lab/evals/codex-skill/20260704T061849Z/wilq-ahrefs-gap-finder/result.json`
+  used Ahrefs, GSC and WordPress with 10 evidence IDs and no failures, but still
+  scores 9/10 until a concrete candidate can move into a safe brief/ActionObject
+  handoff instead of only review order.
 - 2026-07-04 Goal 005 completion guard now also links those skill tuning
   packet commands beside Ads/GSC/Ahrefs sub-10 blockers, so the official
   Wilku/owner blocker list points directly to the next usefulness review.

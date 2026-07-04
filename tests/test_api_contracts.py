@@ -8153,6 +8153,13 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert gap_contract["status"] == "blocked"
     assert gap_contract["status_label"] == "zablokowane"
     assert gap_contract["gap_records"] == []
+    assert gap_contract["cross_check_status"] == "missing"
+    assert gap_contract["cross_check_status_label"] == "brak rekordów Ahrefs do cross-checku"
+    assert gap_contract["cross_check_gsc_match_count"] == 0
+    assert gap_contract["cross_check_wordpress_match_count"] == 0
+    assert gap_contract["cross_check_source_connectors"] == []
+    assert gap_contract["cross_check_evidence_ids"] == []
+    assert gap_contract["cross_check_candidates"] == []
     assert gap_contract["available_read_contracts"] == ["ahrefs_authority_summary"]
     assert "ahrefs_content_gap_records" in gap_contract["missing_read_contracts"]
     assert gap_contract["evidence_summary_label"] == "1 dowód źródłowy"
@@ -8255,6 +8262,9 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert context_gap_contract["evidence_summary_label"] == gap_contract["evidence_summary_label"]
     assert context_gap_contract["action_summary_label"] == gap_contract["action_summary_label"]
     assert context_gap_contract["gap_record_count"] == gap_contract["gap_record_count"]
+    assert context_gap_contract["cross_check_status"] == "missing"
+    assert context_gap_contract["cross_check_candidates_total"] == 0
+    assert context_gap_contract["cross_check_candidates_included"] == 0
     assert context_gap_contract["gap_records_omitted"] is True
     assert "gap_records" not in context_gap_contract
     assert context_payload["ahrefs_diagnostics"]["decision_queue"][0]["id"] in decision_by_id
@@ -8467,6 +8477,56 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
             ),
         ],
     )
+    gsc_run = ConnectorRefreshRun(
+        id="refresh_gsc_ahrefs_cross_check_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_gsc_ahrefs_cross_check_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"query_page_rows": 1},
+        summary="GSC cross-check fixture.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "impressions",
+                10,
+                {
+                    "query": "bdo szkolenie",
+                    "page": "https://www.ekologus.pl/bdo/",
+                },
+                period="last_28_days",
+            ),
+        ],
+    )
+    wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_ahrefs_cross_check_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wordpress_ahrefs_cross_check_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"content_object_count": 1},
+        summary="WordPress cross-check fixture.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "content_object_seen",
+                1,
+                {
+                    "title": "BDO szkolenie",
+                    "content_url": "https://www.ekologus.pl/bdo/",
+                },
+                period="wordpress_inventory",
+            ),
+        ],
+    )
 
     response = client.get("/api/ahrefs/diagnostics")
 
@@ -8481,6 +8541,33 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     gap_contract = payload["gap_read_contract"]
     assert gap_contract["status"] == "ready"
     assert gap_contract["status_label"] == "gotowe"
+    assert gap_contract["cross_check_status"] == "api_backed"
+    assert (
+        gap_contract["cross_check_status_label"]
+        == "sprawdzenie GSC/WordPress ma dopasowania z API"
+    )
+    assert gap_contract["cross_check_gsc_match_count"] >= 1
+    assert gap_contract["cross_check_wordpress_match_count"] >= 1
+    assert "google_search_console" in gap_contract["cross_check_source_connectors"]
+    assert "wordpress_ekologus" in gap_contract["cross_check_source_connectors"]
+    assert "ev_refresh_gsc_ahrefs_cross_check_test" in gap_contract["cross_check_evidence_ids"]
+    assert (
+        "ev_refresh_wordpress_ahrefs_cross_check_test"
+        in gap_contract["cross_check_evidence_ids"]
+    )
+    assert "google_search_console" in gap_contract["source_connectors"]
+    assert "wordpress_ekologus" in gap_contract["source_connectors"]
+    assert "dopasowanie w GSC" in gap_contract["cross_check_summary"]
+    assert "dopasowaniem GSC/WordPress" in gap_contract["cross_check_next_step"]
+    cross_check_candidate = next(
+        candidate
+        for candidate in gap_contract["cross_check_candidates"]
+        if candidate["topic"] == "bdo szkolenie"
+    )
+    assert cross_check_candidate["gsc_demand_label"] == "jest w GSC"
+    assert cross_check_candidate["wordpress_inventory_match_label"] == "jest w WordPress"
+    assert cross_check_candidate["gsc_overlap_terms"] == ["bdo szkolenie"]
+    assert cross_check_candidate["wordpress_overlap_urls"] == ["https://www.ekologus.pl/bdo/"]
     assert gap_contract["evidence_summary_label"]
     assert (
         gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
@@ -8575,6 +8662,27 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     context_gap_contract = context_payload["ahrefs_diagnostics"]["gap_read_contract"]
     assert context_gap_contract["status"] == gap_contract["status"]
     assert context_gap_contract["gap_record_count"] == gap_contract["gap_record_count"]
+    assert context_gap_contract["cross_check_status"] == "api_backed"
+    assert context_gap_contract["cross_check_gsc_match_count"] >= 1
+    assert context_gap_contract["cross_check_wordpress_match_count"] >= 1
+    assert "google_search_console" in context_gap_contract["cross_check_source_connectors"]
+    assert "wordpress_ekologus" in context_gap_contract["cross_check_source_connectors"]
+    assert "ev_refresh_gsc_ahrefs_cross_check_test" in context_gap_contract[
+        "cross_check_evidence_ids"
+    ]
+    assert context_gap_contract["cross_check_candidates_total"] == len(
+        gap_contract["cross_check_candidates"]
+    )
+    assert context_gap_contract["cross_check_candidates_included"] == min(
+        4,
+        len(gap_contract["cross_check_candidates"]),
+    )
+    assert {
+        "topic",
+        "gsc_demand_label",
+        "wordpress_inventory_match_label",
+        "next_step",
+    }.issubset(context_gap_contract["cross_check_candidates"][0])
     assert context_gap_contract["gap_records_omitted"] is True
     assert context_gap_contract["gap_records_total"] == len(gap_contract["gap_records"])
     assert "gap_records" not in context_gap_contract

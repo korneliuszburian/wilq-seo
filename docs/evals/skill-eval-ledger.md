@@ -10298,3 +10298,40 @@ Result:
   but the final `10/10` state needs API-backed cross-source matching: the Ahrefs
   topic should be visibly matched to GSC query/page evidence or WordPress
   inventory before WILQ treats it as a brief-ready decision.
+
+## 2026-07-04 - Ahrefs API-backed cross-check trace
+
+Purpose:
+
+- Move Ahrefs from a manual GSC/WordPress cross-check instruction to an
+  API-owned cross-source contract.
+- Keep traceability explicit: if WILQ says a topic has GSC/WordPress validation,
+  the contract must carry source connectors and evidence IDs for that
+  cross-check.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/content/test_ahrefs_planning.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ahrefs_diagnostics or ahrefs_gap_record_decisions or ahrefs_skill'
+rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand -t "ahrefs route renders"
+rtk uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- `/api/ahrefs/diagnostics` now exposes `cross_check_status`,
+  `cross_check_summary`, `cross_check_next_step`,
+  `cross_check_source_connectors`, `cross_check_evidence_ids` and compact
+  candidate rows on `gap_read_contract`.
+- Live state after restart: `cross_check_status=api_backed`, sources
+  `google_search_console` and `wordpress_ekologus`, 3 cross-check evidence IDs,
+  6 GSC matches and 6 WordPress matches.
+- Latest passing eval:
+  `.local-lab/evals/codex-skill/20260704T061849Z/wilq-ahrefs-gap-finder/result.json`.
+- Eval output used `ahrefs`, `google_search_console` and `wordpress_ekologus`
+  with 10 evidence IDs and no failure tags.
+- Score remains `9/10`, not forced to `10/10`: Ahrefs now has API-backed
+  cross-check proof, but the next product step is a safe handoff from a concrete
+  candidate to content brief/ActionObject review, not only a review-only order.

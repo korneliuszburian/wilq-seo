@@ -176,6 +176,16 @@ cross-checku GSC/WordPress` with `Sprawdź w GSC`, `Sprawdź w WordPress` and
 passed at `9/10`, but it stays below `10/10` until WILQ can make the
 cross-source match through API evidence instead of a manual validation card.
 
+2026-07-04 update: Ahrefs diagnostics now makes that cross-source match through
+API evidence. `gap_read_contract` carries `cross_check_status`,
+`cross_check_summary`, GSC/WordPress source connectors, evidence IDs and compact
+candidate rows. Live proof after restart showed `cross_check_status=api_backed`,
+6 GSC matches and 6 WordPress matches. The latest eval
+`.local-lab/evals/codex-skill/20260704T061849Z/wilq-ahrefs-gap-finder/result.json`
+uses Ahrefs, GSC and WordPress with 10 evidence IDs and no failures, but remains
+`9/10` until WILQ can hand a concrete cross-checked candidate into a safe
+brief/ActionObject review path.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

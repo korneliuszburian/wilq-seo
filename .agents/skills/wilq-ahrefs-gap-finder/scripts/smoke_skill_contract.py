@@ -111,6 +111,15 @@ def main() -> int:
         )
     if not missing_read_contract_count and "ahrefs_review_gap_records" not in decision_ids:
         raise SystemExit("Ahrefs diagnostics must expose ready gap review decision")
+    cross_check_status = gap_contract.get("cross_check_status")
+    if cross_check_status not in {"api_backed", "manual_required", "missing"}:
+        raise SystemExit("Ahrefs diagnostics must expose cross_check_status")
+    if not gap_contract.get("cross_check_summary"):
+        raise SystemExit("Ahrefs diagnostics must expose cross_check_summary")
+    if not gap_contract.get("cross_check_next_step"):
+        raise SystemExit("Ahrefs diagnostics must expose cross_check_next_step")
+    if gap_record_count and not isinstance(gap_contract.get("cross_check_candidates_total"), int):
+        raise SystemExit("Ahrefs context pack must expose cross_check_candidates_total")
     freshness_states = sorted(
         {
             str(fact.get("freshness_state"))
@@ -203,6 +212,11 @@ def main() -> int:
                     "gap_records_omitted": bool(gap_contract.get("gap_records_omitted")),
                     "missing_read_contracts": missing_read_contracts,
                     "blocked_claims": gap_contract.get("blocked_claims", []),
+                    "cross_check_status": cross_check_status,
+                    "cross_check_summary": gap_contract.get("cross_check_summary"),
+                    "cross_check_candidates_total": gap_contract.get(
+                        "cross_check_candidates_total"
+                    ),
                     "freshness_states": freshness_states,
                     "freshness_labels": freshness_labels[:5],
                     "review_mode": "validation-only",
