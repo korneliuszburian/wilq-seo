@@ -36,6 +36,7 @@ AhrefsGapType = Literal[
 ]
 
 AHREFS_CONNECTOR_ID = "ahrefs"
+AHREFS_CONTENT_REFRESH_ACTION_ID = "act_prepare_content_refresh_queue"
 AHREFS_CROSS_CHECK_CONNECTOR_IDS = (
     "google_search_console",
     "wordpress_ekologus",
@@ -271,6 +272,14 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
             *(evidence_id for decision in decision_queue for evidence_id in decision.evidence_ids),
+            *labeled_gap_read_contract.evidence_ids,
+        ]
+    )
+    action_ids = _unique(
+        [
+            *(action_id for section in sections for action_id in section.action_ids),
+            *(action_id for decision in decision_queue for action_id in decision.action_ids),
+            *labeled_gap_read_contract.action_ids,
         ]
     )
     response_source_connectors = _unique(
@@ -304,7 +313,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         evidence_ids=evidence_ids,
         evidence_summary_label=evidence_count_label(evidence_ids),
         source_connector_labels=source_connector_labels(response_source_connectors),
-        action_ids=[],
+        action_ids=action_ids,
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
 
@@ -362,7 +371,10 @@ def _operator_summary(
                 ]
             ),
             action_ids=_unique(
-                action_id for decision in top_decisions for action_id in decision.action_ids
+                [
+                    *(action_id for decision in top_decisions for action_id in decision.action_ids),
+                    *gap_read_contract.action_ids,
+                ]
             ),
             blocked_claims=_unique(
                 [
@@ -450,6 +462,11 @@ def _ahrefs_gap_read_contract(
         available_contracts.append("ahrefs_gap_metric_facts")
         available_contracts.extend(_available_gap_contracts(missing_contracts))
     allowed_evidence = _allowed_gap_evidence(authority_facts, gap_facts)
+    action_ids = _ahrefs_gap_action_ids(
+        gap_records=gap_records,
+        missing_contracts=missing_contracts,
+        cross_check_status=cross_check_status,
+    )
     return AhrefsGapReadContract(
         status="ready" if gap_records and not missing_contracts else "blocked",
         title="Luki SEO z Ahrefs",
@@ -488,6 +505,7 @@ def _ahrefs_gap_read_contract(
         ),
         source_connectors=_unique([AHREFS_CONNECTOR_ID, *cross_check_source_connectors]),
         evidence_ids=evidence_ids,
+        action_ids=action_ids,
         gap_records=gap_records,
         gap_record_count=len(gap_records),
         cross_check_status=cross_check_status,
@@ -513,6 +531,17 @@ def _ahrefs_gap_read_contract(
         ),
         risk=ActionRisk.medium,
     )
+
+
+def _ahrefs_gap_action_ids(
+    *,
+    gap_records: list[AhrefsGapRecord],
+    missing_contracts: list[str],
+    cross_check_status: str,
+) -> list[str]:
+    if gap_records and not missing_contracts and cross_check_status == "api_backed":
+        return [AHREFS_CONTENT_REFRESH_ACTION_ID]
+    return []
 
 
 def _cross_check_metric_facts() -> list[MetricFact]:

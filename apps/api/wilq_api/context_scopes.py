@@ -84,7 +84,7 @@ SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
         "act_prepare_negative_keyword_review_queue",
         KEYWORD_PLANNER_ACCESS_ACTION_ID,
     },
-    "wilq-ahrefs-gap-finder": set(),
+    "wilq-ahrefs-gap-finder": {"act_prepare_content_refresh_queue"},
     "wilq-campaign-builder": {
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",

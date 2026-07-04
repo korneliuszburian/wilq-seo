@@ -261,7 +261,13 @@
     ],
     "minimum_operator_usefulness_score": 9,
     "expected_blocked": false,
-    "expected_no_action_ids": true,
+    "expected_no_action_ids": false,
+    "expected_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_content_refresh_queue"
+    ],
     "blocked_claim_terms": [
       "wzrost ruchu",
       "wzrost autorytetu"
@@ -273,7 +279,6 @@
       "google_merchant_center"
     ],
     "forbidden_action_ids": [
-      "act_prepare_content_refresh_queue",
       "act_prepare_negative_keyword_review_queue",
       "act_prepare_custom_segments_from_search_terms",
       "act_review_merchant_feed_issues",

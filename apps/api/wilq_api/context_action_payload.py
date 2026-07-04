@@ -90,6 +90,7 @@ def compact_action_dump_for_context(action: dict[str, Any], *, skill: str) -> di
 
 def _action_payload_should_survive_skill_context(action_id: str, *, skill: str) -> bool:
     allowed_by_skill: dict[str, set[str]] = {
+        "wilq-ahrefs-gap-finder": {"act_prepare_content_refresh_queue"},
         "wilq-content-strategist": {"act_prepare_content_refresh_queue"},
         "wilq-gsc-content-doctor": {"act_prepare_content_refresh_queue"},
         "wilq-ga4-analyst": {"act_review_ga4_tracking_quality"},

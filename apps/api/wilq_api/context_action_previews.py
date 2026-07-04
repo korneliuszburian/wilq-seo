@@ -186,6 +186,9 @@ def compact_content_brief_preview_for_context(
     for item in preview_items[:4]:
         if isinstance(item, dict):
             compact_item = {key: item[key] for key in keep_keys if key in item}
+            if compact_item.get("source_type") == "ahrefs_gap_review":
+                compact_item.pop("metric_snapshot", None)
+                compact_item.pop("metric_snapshot_labels", None)
             for key, limit in (
                 ("key_objections", 3),
                 ("h2_direction", 4),
@@ -218,6 +221,8 @@ def compact_content_source_facts_for_context(values: list[Any]) -> list[Any]:
     for value in values:
         if isinstance(value, str) and value.startswith("Strona z GSC:"):
             compact_values.append("Strona z GSC: publiczny adres strony")
+        elif isinstance(value, str) and value.startswith("metric_name=ahrefs_"):
+            compact_values.append("Metryka Ahrefs: sygnał luki do ręcznego review")
         else:
             compact_values.append(value)
     return compact_values

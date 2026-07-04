@@ -36,6 +36,12 @@ def stateful_context_actions(
         and ads_diagnostics.get("live_data_available") is True
     ):
         return [action for action in actions if action.id != "act_configure_google_ads_env"]
+    ahrefs_diagnostics = diagnostics.get("ahrefs_diagnostics")
+    if skill == "wilq-ahrefs-gap-finder" and isinstance(ahrefs_diagnostics, dict):
+        active_action_ids = {
+            str(action_id) for action_id in ahrefs_diagnostics.get("action_ids", [])
+        }
+        return [action for action in actions if action.id in active_action_ids]
     return actions
 
 

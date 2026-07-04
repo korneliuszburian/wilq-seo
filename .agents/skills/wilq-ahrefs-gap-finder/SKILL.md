@@ -100,6 +100,10 @@ Widocznie używaj tych sekcji:
 - `Decyzja po review`: użyj dokładnie tej etykiety i powiedz, czy po
   sprawdzeniu temat idzie do content briefu, link-review, dalszego GSC i
   WordPress cross-checku albo zostaje zablokowany.
+- `Akcja do sprawdzenia`: jeśli WILQ API zwraca
+  `act_prepare_content_refresh_queue`, nazwij ją jako bezpieczny handoff do
+  kolejki odświeżenia treści. Nie opisuj jej jako zapisu, publikacji ani
+  automatycznego briefu; to tylko przygotowanie review w widoku Treści.
 - `Brief dla marketera`: 3-5 zdań normalnym językiem: co Ahrefs pokazuje, co to znaczy dla planu treści/linków, czego nie wolno jeszcze obiecać.
 - `Zablokowane obietnice`: wzrost ruchu, wzrost autorytetu, przewaga konkurencyjna, produkcyjna treść i efekt SEO bez dalszego sprawdzenia.
 

@@ -10,6 +10,7 @@ import urllib.request
 from typing import Any
 
 SKILL_NAME = "wilq-ahrefs-gap-finder"
+CONTENT_REFRESH_ACTION_ID = "act_prepare_content_refresh_queue"
 REQUIRED_CONNECTORS = ["ahrefs", "google_search_console", "wordpress_ekologus"]
 REQUIRED_CONTEXT_KEYS = {
     "ahrefs_diagnostics",
@@ -150,6 +151,17 @@ def main() -> int:
         for item in (pack.get("active_action_objects") or [])
         if isinstance(item, dict) and item.get("id")
     ]
+    if cross_check_status == "api_backed":
+        if CONTENT_REFRESH_ACTION_ID not in diagnostics_action_ids:
+            raise SystemExit(
+                "Ahrefs diagnostics must expose content refresh handoff when "
+                "cross-check is API-backed"
+            )
+        if CONTENT_REFRESH_ACTION_ID not in context_action_ids:
+            raise SystemExit(
+                "Ahrefs context pack must expose content refresh ActionObject when "
+                "cross-check is API-backed"
+            )
     if not diagnostics_action_ids and context_action_ids:
         raise SystemExit(
             "Ahrefs context pack must not expose adjacent actions when "
@@ -203,6 +215,7 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "diagnostics_action_ids": diagnostics_action_ids[:20],
                 "ahrefs_authority_fact_count": ahrefs_diagnostics.get("authority_fact_count"),
                 "ahrefs_gap_fact_count": ahrefs_diagnostics.get("gap_fact_count"),
                 "ahrefs_blocker_count": ahrefs_diagnostics.get("blocker_count"),

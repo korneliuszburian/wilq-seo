@@ -41,6 +41,12 @@ Date: 2026-07-04
   skill after stale daily decisions started telling the operator to refresh
   source data before manual review. This is strong review-only proof, not full
   Wilku UAT.
+- 2026-07-04 Ahrefs API-backed cross-check now exposes the safe
+  `act_prepare_content_refresh_queue` handoff in `/api/ahrefs/diagnostics` and
+  the `wilq-ahrefs-gap-finder` context-pack only when GSC/WordPress cross-check
+  is API-backed. The fresh Ahrefs eval passes at
+  `.local-lab/evals/codex-skill/20260704T063519Z/wilq-ahrefs-gap-finder/result.json`
+  with score `9/10`, validated action candidate and no failure tags.
 - 2026-07-04 Ads Doctor freshness is now API-owned and visible on `/ads-doctor`:
   `/api/ads/diagnostics` exposes `freshness_assessment` with refresh/blocker
   state, age, summary and next step. Current Ads eval remains `9/10`, but live

@@ -301,10 +301,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "do sprawdzenia w WILQ",
                 "Zablokowane obietnice",
             },
-            "action_ids": set(),
+            "action_ids": {"act_prepare_content_refresh_queue"},
+            "validated_action_ids": {"act_prepare_content_refresh_queue"},
             "forbidden_connectors": {
-                "google_search_console",
-                "wordpress_ekologus",
                 "wordpress_sklep",
                 "google_analytics_4",
                 "google_ads",
@@ -606,7 +605,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     }
     ahrefs_case = cases["wilq-ahrefs-gap-finder"]
     assert ahrefs_case["expected_blocked"] is False
-    assert ahrefs_case["expected_no_action_ids"] is True
+    assert ahrefs_case["expected_no_action_ids"] is False
     old_content_gap_claim = "content " + "gap"
     old_backlink_gap_claim = "backlink " + "gap"
     old_ranking_opportunity_claim = "ranking " + "opportunity"
@@ -620,7 +619,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "wordpress_ekologus" in ahrefs_case["expected_connectors"]
     assert "google_search_console" not in ahrefs_case["forbidden_connectors"]
     assert "wordpress_ekologus" not in ahrefs_case["forbidden_connectors"]
-    assert "act_prepare_content_refresh_queue" in ahrefs_case["forbidden_action_ids"]
+    assert "act_prepare_content_refresh_queue" in ahrefs_case["expected_action_ids"]
+    assert "act_prepare_content_refresh_queue" in ahrefs_case["expected_validated_action_ids"]
+    assert "act_prepare_content_refresh_queue" not in ahrefs_case["forbidden_action_ids"]
 
     localo_case = cases["wilq-localo-operator"]
     for term in (

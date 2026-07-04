@@ -8569,9 +8569,10 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert cross_check_candidate["gsc_overlap_terms"] == ["bdo szkolenie"]
     assert cross_check_candidate["wordpress_overlap_urls"] == ["https://www.ekologus.pl/bdo/"]
     assert gap_contract["evidence_summary_label"]
-    assert (
-        gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
-    )
+    assert gap_contract["action_ids"] == ["act_prepare_content_refresh_queue"]
+    assert gap_contract["action_summary_label"] == "1 akcja do sprawdzenia"
+    assert payload["action_ids"] == ["act_prepare_content_refresh_queue"]
+    assert payload["action_summary_label"] == "1 akcja do sprawdzenia"
     assert gap_contract["missing_read_contracts"] == []
     assert gap_contract["available_read_contracts"] == [
         "ahrefs_authority_summary",
@@ -8652,6 +8653,8 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert operator_summary["gap_read_status_label"] == "gotowe"
     assert "rekordami luk Ahrefs" in operator_summary["next_step"]
     assert "bez rekordów" not in operator_summary["next_step"]
+    assert operator_summary["action_ids"] == ["act_prepare_content_refresh_queue"]
+    assert operator_summary["action_summary_label"] == "1 akcja do sprawdzenia"
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -8695,7 +8698,12 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         context_payload["ahrefs_diagnostics"]["context_pack_compaction"]["full_endpoint"]
         == "/api/ahrefs/diagnostics"
     )
-    assert context_payload["active_action_objects"] == []
+    actions_by_id = {action["id"]: action for action in context_payload["active_action_objects"]}
+    assert "act_prepare_content_refresh_queue" in actions_by_id
+    context_action = actions_by_id["act_prepare_content_refresh_queue"]
+    assert context_action["mode_label"] == "przygotowanie"
+    assert "action_plan" in context_action
+    assert context_action["action_plan"]["content_plan_items"]
 
 
 def test_ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noisy(
