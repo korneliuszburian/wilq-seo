@@ -133,6 +133,12 @@ which screen/workflow to execute, what a marketer must be able to decide in
 30 seconds, and that the improvement target is a Wilku-ready sequence:
 decision, proof, blocker and next safe step.
 
+2026-07-04 update: skill eval proof now protects visible operator fields from
+truncated endings. New non-interactive eval JSON fails if `operator_next_step`,
+recommendation labels or action labels end with ellipsis, and coverage keeps a
+full `remaining_blocker_full` for stage-snapshot planning beside the shortened
+markdown table cell.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

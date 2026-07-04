@@ -82,6 +82,15 @@ def test_codex_skill_eval_harness_validates_hard_gates_independently_of_score() 
     assert 'tail -n 80 "$jsonl_file"' in harness
 
 
+def test_codex_skill_eval_harness_rejects_truncated_visible_operator_fields() -> None:
+    harness = HARNESS_PATH.read_text(encoding="utf-8")
+
+    assert "def _looks_truncated" in harness
+    assert "visible_operator_fields" in harness
+    assert "appears truncated" in harness
+    assert "must not end with ellipsis" in harness
+
+
 def test_codex_skill_eval_harness_defaults_to_score_five() -> None:
     harness = HARNESS_PATH.read_text(encoding="utf-8")
 

@@ -458,14 +458,18 @@ def _skill_quality_blockers(
         score = row.get("score")
         if not isinstance(score, int) or isinstance(score, bool) or score >= 10:
             continue
+        raw_next_step = (
+            row.get("remaining_blocker_full") or row.get("remaining_blocker") or ""
+        )
         blockers.append(
             {
                 "skill": row.get("skill"),
                 "score": score,
                 "state": row.get("state"),
                 "what_it_proves": str(row.get("what_it_proves") or "").strip(),
-                "next_step": str(row.get("remaining_blocker") or "").strip(),
-                "next_step_truncated": _looks_truncated(row.get("remaining_blocker")),
+                "next_step": str(raw_next_step).strip(),
+                "next_step_truncated": bool(row.get("truncated_visible_output"))
+                or _looks_truncated(raw_next_step),
             }
         )
     return blockers[:limit]

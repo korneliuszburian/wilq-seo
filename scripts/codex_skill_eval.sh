@@ -524,6 +524,11 @@ def _connector_from_evidence_id(evidence_id: str) -> str | None:
     return None
 
 
+def _looks_truncated(value) -> bool:
+    text = str(value or "").strip()
+    return text.endswith("…") or text.endswith("...")
+
+
 if data.get("skill") != expected_skill:
     errors.append(f"wrong skill: {data.get('skill')!r}")
 if data.get("language") != "pl-PL":
@@ -635,6 +640,22 @@ visible_operator_parts.extend(rec.get("blocked_reason") or "" for rec in data.ge
 visible_operator_parts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
 visible_operator_parts.extend(action.get("blocked_reason") or "" for action in data.get("action_candidates", []))
 visible_operator_text = " ".join(str(part) for part in visible_operator_parts if part)
+visible_operator_fields = {
+    "operator_next_step": data.get("operator_next_step"),
+    "blocked_reason": data.get("blocked_reason"),
+    "decision_quality.notes_pl": decision_quality.get("notes_pl"),
+}
+for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
+    visible_operator_fields[f"recommendations[{idx}].label_pl"] = recommendation.get("label_pl")
+    visible_operator_fields[f"recommendations[{idx}].blocked_reason"] = recommendation.get("blocked_reason")
+for idx, action in enumerate(data.get("action_candidates", []), start=1):
+    visible_operator_fields[f"action_candidates[{idx}].label_pl"] = action.get("label_pl")
+    visible_operator_fields[f"action_candidates[{idx}].blocked_reason"] = action.get("blocked_reason")
+for field, value in visible_operator_fields.items():
+    if _looks_truncated(value):
+        errors.append(
+            f"{field} appears truncated; visible operator decision fields must not end with ellipsis"
+        )
 decision_text_parts = [
     data.get("operator_next_step", ""),
     data.get("blocked_reason") or "",

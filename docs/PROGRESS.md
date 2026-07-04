@@ -221,9 +221,10 @@ Date: 2026-07-04
   skill blockers into an explicit "Jak podbić skille do 10/10" test plan:
   run the indicated screen/workflow, check whether a marketer can decide in
   30 seconds, and tune toward decision, proof, blocker and safe next step.
-- 2026-07-04 the same snapshot now flags truncated skill next-step text in
-  eval artifacts. Live Ads/GSC/Ahrefs tuning starts by regenerating or
-  improving full `operator_next_step` text before claiming a 10/10 skill.
+- 2026-07-04 skill eval hardening now rejects future visible operator fields
+  ending with ellipsis and coverage exposes full `remaining_blocker_full`
+  beside the shortened table cell. Stage snapshot uses the full field, so
+  Ads/GSC/Ahrefs tuning is no longer distorted by report truncation.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

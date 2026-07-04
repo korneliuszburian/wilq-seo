@@ -59,6 +59,40 @@ def write_result(path: Path, *, skill: str, score: int, blocked: bool) -> None:
     )
 
 
+def test_build_report_flags_truncated_visible_operator_output(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    audit = load_module()
+    cases_path = tmp_path / "cases.json"
+    cases_path.write_text(
+        json.dumps(
+            [
+                {
+                    "skill": "wilq-truncated",
+                    "minimum_operator_usefulness_score": 5,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(audit, "CASES_PATH", cases_path)
+
+    eval_root = tmp_path / "evals"
+    result_path = eval_root / "20260702T010000Z/wilq-truncated/result.json"
+    write_result(result_path, skill="wilq-truncated", score=9, blocked=False)
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    payload["operator_next_step"] = "Otwórz /ads-doctor i przejdź przez kolejkę..."
+    result_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    report = audit.build_report(eval_root)
+    markdown = audit.render_markdown(report)
+
+    assert report["rows"][0]["truncated_visible_output"] is True
+    assert "widoczne pole decyzyjne jest ucięte" in markdown
+    assert "pełnym opisem przed oceną 10/10" in markdown
+
+
 def test_build_report_uses_latest_passing_result(tmp_path, monkeypatch) -> None:
     audit = load_module()
     cases_path = tmp_path / "cases.json"
@@ -112,6 +146,8 @@ def test_build_report_uses_latest_passing_result(tmp_path, monkeypatch) -> None:
     assert "1 evidence IDs" in row["what_it_proves"]
     assert "command_center.primary_next_step" not in row["remaining_blocker"]
     assert "priorytet wskazany przez Command Center" in row["remaining_blocker"]
+    assert "command_center.primary_next_step" not in row["remaining_blocker_full"]
+    assert "priorytet wskazany przez Command Center" in row["remaining_blocker_full"]
 
 
 def test_render_markdown_marks_missing_passing_eval(tmp_path, monkeypatch) -> None:

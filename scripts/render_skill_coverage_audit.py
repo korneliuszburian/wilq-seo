@@ -131,8 +131,41 @@ def _remaining_blocker(result: dict[str, Any]) -> str:
     return _operator_label(result.get("operator_next_step"), max_len=180)
 
 
+def _remaining_blocker_full(result: dict[str, Any]) -> str:
+    if result.get("blocked"):
+        return _operator_label_full(result.get("blocked_reason"))
+    return _operator_label_full(result.get("operator_next_step"))
+
+
+def _visible_text_truncated(result: dict[str, Any]) -> bool:
+    values: list[Any] = [
+        result.get("operator_next_step"),
+        result.get("blocked_reason"),
+        (result.get("decision_quality") or {}).get("notes_pl"),
+    ]
+    values.extend(item.get("label_pl") for item in result.get("recommendations", []))
+    values.extend(item.get("blocked_reason") for item in result.get("recommendations", []))
+    values.extend(item.get("label_pl") for item in result.get("action_candidates", []))
+    values.extend(item.get("blocked_reason") for item in result.get("action_candidates", []))
+    return any(_looks_truncated(value) for value in values)
+
+
+def _looks_truncated(value: Any) -> bool:
+    text = str(value or "").strip()
+    return text.endswith("…") or text.endswith("...")
+
+
 def _operator_label(value: Any, *, max_len: int = 180) -> str:
     text = _short_text(value, max_len=max_len)
+    return _replace_operator_markers(text)
+
+
+def _operator_label_full(value: Any) -> str:
+    text = str(value or "").replace("\n", " ").strip()
+    return _replace_operator_markers(text)
+
+
+def _replace_operator_markers(text: str) -> str:
     replacements = {
         "command_center.primary_next_step": "priorytet wskazany przez Command Center",
         "ready / review-only": "gotowy do review",
@@ -183,6 +216,7 @@ def build_report(
         if result_is_stale:
             stale.append(skill)
         artifact = str(path.relative_to(REPO_ROOT)) if path.is_relative_to(REPO_ROOT) else str(path)
+        truncated_visible_output = _visible_text_truncated(result)
         rows.append(
             {
                 "skill": skill,
@@ -196,7 +230,14 @@ def build_report(
                     if result_is_stale
                     else _remaining_blocker(result)
                 ),
+                "remaining_blocker_full": (
+                    "Skill instructions or references changed after this eval; "
+                    "rerun smoke and non-interactive Codex eval."
+                    if result_is_stale
+                    else _remaining_blocker_full(result)
+                ),
                 "stale": result_is_stale,
+                "truncated_visible_output": truncated_visible_output,
             }
         )
     scores = [
@@ -257,7 +298,7 @@ def render_markdown(report: dict[str, Any]) -> str:
                     score,
                     _md_cell(row["state"]),
                     _md_cell(row["what_it_proves"]),
-                    _md_cell(row["remaining_blocker"]),
+                    _md_cell(_render_remaining_blocker_cell(row)),
                 ]
             )
             + " |"
@@ -308,6 +349,17 @@ def render_markdown(report: dict[str, Any]) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+def _render_remaining_blocker_cell(row: dict[str, Any]) -> str:
+    blocker = str(row.get("remaining_blocker") or "")
+    if row.get("truncated_visible_output"):
+        return (
+            blocker
+            + " Uwaga: widoczne pole decyzyjne jest ucięte; rerun eval "
+            "z pełnym opisem przed oceną 10/10."
+        )
+    return blocker
 
 
 def main() -> int:
