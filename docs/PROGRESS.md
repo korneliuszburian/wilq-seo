@@ -29,6 +29,10 @@ Date: 2026-07-04
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
   absent.
+- 2026-07-04 `scripts/marketer_language_guard.py` now also checks the current
+  Goal 005 Wilku-facing UAT/handoff materials for repeated technical wording
+  regressions such as technical eval labels, English private-source wording,
+  content/kolejka hybrids and old trace labels.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
@@ -108,18 +112,18 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 completion guard now requires the explicit
   `werdykt_po_15_minutach` value `przejdź do pełnego testu treści` before it
   can return `complete_with_uat`; a valid UAT that still says `zostań przy
-  review` remains blocked as follow-up evidence, not completion proof.
+  review` remains blocked as follow-up evidence, not proof of completion.
 - 2026-07-04 karta rozmowy Goal 005 dla Wilka pokazuje dokładne opcje
   `werdykt_po_15_minutach` i wyjaśnia, że tylko `przejdź do pełnego testu
   treści` może odblokować domknięcie; pozostałe werdykty są użytecznym
   wynikiem UAT, ale oznaczają dalsze prace, nie dowód domknięcia.
 - 2026-07-04 ta sama karta rozmowy pokazuje prywatne bramki źródłowe jako
-  `bramka: goal_*` zamiast technicznego `eval: goal_*`, więc Wilku widzi
+  `bramka: goal_*` zamiast technicznej etykiety eval, więc Wilku widzi
   zrozumiałą etykietę bez utraty stabilnych ID do audytu.
 - 2026-07-04 completion guard Goal 005 używa tej samej etykiety
   `bramka: goal_*` w sekcji `Prywatny ślad źródłowy do pokazania`; live
   markdown nadal kończy się statusem blokującym bez UAT, ale nie pokazuje już
-  technicznego `eval:` w widocznej liście śladu.
+  technicznej etykiety eval w widocznej liście śladu.
 - 2026-07-04 karta rozmowy Goal 005 wyjaśnia teraz, że temat treściowy
   (`ekologus` homepage z kolejki treści) i pierwsza decyzja Service Profile
   (BDO jako pierwsza karta wiedzy do oceny) są dwoma sprawdzeniami w jednej
@@ -127,8 +131,8 @@ Date: 2026-07-04
 - 2026-07-04 główny handoff
   `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md` używa tych
   samych etykiet co karta rozmowy i completion guard: prywatny ślad pokazuje
-  `bramka: goal_*`, nie `eval: goal_*`, oraz unika `raw private text` i
-  `finalny content` w widocznym tekście.
+  `bramka: goal_*` zamiast technicznej etykiety eval oraz unika angielskiego
+  opisu surowego prywatnego tekstu i finalnych treści w widocznym tekście.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
@@ -327,7 +331,7 @@ Date: 2026-07-04
   review item. Live API keeps `read_only=true` and `ready_for_daily_content=false`,
   but tells Wilku to start from the public BDO service card and lists the
   required review fields before any knowledge promotion request.
-- 2026-07-03 Goal 005 UAT/completion proof now consumes that same first Service
+- 2026-07-03 Goal 005 UAT/completion evidence now consumes that same first Service
   Profile review item. Completion guard, UAT live provenance and source fact
   coverage audit all point to the BDO public service card first, while Goal 005
   remains blocked on real Wilku UAT or explicit owner defer.
@@ -1603,7 +1607,7 @@ live API status later contradicts this state.
   `docs/handoffs/2026-07-02-wilku-informal-positive-feedback.md`: the user
   reported that Wilku said the current WILQ direction/materials are very good.
   Treat this as a strong positive direction signal, not as structured Goal 005
-  UAT completion proof.
+  UAT completion evidence.
 - Service Profile review recorder now validates live API-owned
   `review_requirements` per action. Private `ekologus-ai` proposal review
   results must satisfy the required governance fields currently exposed by

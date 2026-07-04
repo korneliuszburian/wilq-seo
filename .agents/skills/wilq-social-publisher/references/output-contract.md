@@ -39,7 +39,7 @@ W tekście dla operatora unikaj artefaktowego skrótu łączącego "tylko" z
 3. `Wariant LinkedIn`: 2-4 zdania szkicu albo kierunku posta, bardziej ekspercko i bez obietnic efektu.
 4. `Wariant Facebook`: 2-4 zdania szkicu albo kierunku posta, prostszym językiem i bez obietnic efektu.
 5. `Historia do sprawdzenia`: powiedz normalnie, że nie wiemy jeszcze, czy podobny post już był na LinkedIn/Facebooku; nie wolno pisać, że temat jest nowy ani bezpieczny do powtórzenia.
-6. `Decyzja po review`: co może się stać po sprawdzeniu historii i claimów: zaakceptować szkic do ręcznego przygotowania, przerobić CTA, zablokować temat albo poczekać na historię social.
+6. `Decyzja po review`: co może się stać po sprawdzeniu historii i twierdzeń: zaakceptować szkic do ręcznego przygotowania, przerobić CTA, zablokować temat albo poczekać na historię social.
 7. `Dowód`: `social_draft_context`, `source_inputs`, identyfikatory dowodów, identyfikatory źródeł danych, notatki o świeżości i podsumowania metryk wyłącznie z WILQ API. Surowe pola techniczne trzymaj tutaj albo w notes, nie jako główną kopię.
 8. `Zablokowane`: publikacja, opublikowanie posta, wzrost skuteczności social, brak powtórzeń historycznych postów, zwrot z reklam i przychód.
 9. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.

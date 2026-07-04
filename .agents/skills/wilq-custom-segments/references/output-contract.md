@@ -24,7 +24,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 1. `Mapa segmentu`: nazwa/intent segmentu z API, review_priority, review_score i review_reason jako kolejność ręcznej oceny, nie dowód skuteczności.
 2. `Hasła źródłowe`: pokaż tylko `source_terms` z WILQ API; nie dopisuj nowych fraz ani synonimów.
-3. `Review intencji`: co trzeba odsiać ręcznie: intencję haseł, dopasowanie do usługi, ryzyko zbyt szerokiego segmentu, landing page i przypadkowe terminy.
+3. `Review intencji`: co trzeba odsiać ręcznie: intencję haseł, dopasowanie do usługi, ryzyko zbyt szerokiego segmentu, strona wejścia i przypadkowe terminy.
 4. `Podgląd bez zapisu`: jaki action_id/preview można sprawdzić w WILQ bez zmiany kierowania.
 5. `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, zawęzić segment, odłożyć temat albo zablokować segment.
 6. `Zablokowane`: zapis kierowania, rozmiar odbiorców, prognoza, skuteczność kampanii, zwrot z reklam i wzrost konwersji.

@@ -39,7 +39,7 @@ Traktować jako mocny sygnał, że warto kontynuować obecny kierunek:
 
 - zwykłe handoffy do Wilka zamiast specjalnych "paczek";
 - Service Profile i source facts jako źródło wiedzy;
-- review-required private `ekologus-ai` facts bez raw private text;
+- prywatne fakty `ekologus-ai` wymagające oceny, bez surowego prywatnego tekstu;
 - Claim Ledger i blokady unsafe claimów;
 - social/content dedupe z historią WordPress + LinkedIn/Facebook;
 - evale skillów jako realny proof jakości odpowiedzi.

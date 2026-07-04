@@ -41,7 +41,7 @@ wszystko z prywatnych/reviewed źródeł nadal wymaga decyzji Wilka albo ownera.
 - Nie twierdzić, że karta jest approved-current, skoro `approved_current_count=0`.
 - Nie odblokowywać production-depth draftu tylko dlatego, że ekologus-ai coś
   podpowiada.
-- Nie przepisywać raw private text do promptów ani treści.
+- Nie przepisywać surowego prywatnego tekstu do promptów ani treści.
 
 ## Ocena użyteczności
 

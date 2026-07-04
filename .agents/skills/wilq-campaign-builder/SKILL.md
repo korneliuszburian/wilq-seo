@@ -30,8 +30,8 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Wywołaj `GET /api/ads/diagnostics`, żeby sprawdzić gotowość konta, kampanii, search terms, rekomendacji i brakujące dane przed planem kampanii.
 2. Pobierz `GET /api/marketing/brief` tylko jako tło marketingowe; nie używaj go zamiast danych Ads.
-3. `POST /api/codex/context-pack` pobieraj tylko gdy potrzebujesz połączyć Ads z GA4/GSC/WordPress albo przygotować szerszy podgląd kampanii.
-4. Odpowiedz jako plan do sprawdzenia: struktura, ryzyka, dowody, zablokowane claimy i action ID do preview/review. Nie zapisuj kampanii.
+3. `POST /api/codex/context-pack` pobieraj tylko gdy potrzebujesz połączyć Ads z GA4, GSC i WordPress albo przygotować szerszy podgląd kampanii.
+4. Odpowiedz jako plan do sprawdzenia: struktura, ryzyka, dowody, zablokowane twierdzenia i action ID do preview/review. Nie zapisuj kampanii.
 5. Jeśli użytkownik prosi o zapis albo podgląd zmiany, użyj `POST /api/actions/{action_id}/validate`; w review-only odpowiedzi wystarczy wskazać action_id i bezpieczny następny krok.
 6. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
 
@@ -82,9 +82,9 @@ dają podgląd bez zapisu i czego nie wolno obiecać.
 
 Widocznie używaj tych sekcji:
 
-- `Plan kampanii`: typ propozycji, usługa/temat, landing page i źródła danych, z których wynika pomysł.
+- `Plan kampanii`: typ propozycji, usługa/temat, strona wejścia i źródła danych, z których wynika pomysł.
 - `Podgląd bez zapisu`: co można przygotować jako preview/review w WILQ, bez zapisu zmian.
-- `Co sprawdzić przed kampanią`: landing page, intencja z GSC, jakość ruchu z GA4, istniejące kampanie/rekomendacje Ads i brakujące kontrakty.
+- `Co sprawdzić przed kampanią`: strona wejścia, intencja z GSC, jakość ruchu z GA4, istniejące kampanie/rekomendacje Ads i brakujące kontrakty.
 - `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, odłożyć kampanię, poprosić o landing/content review albo zablokować temat.
 - `Zablokowane obietnice`: skuteczność kampanii, wzrost konwersji, gwarancja pozycji, zmiana kampanii i zapis bez preview/review/zgody.
 - `Brief dla marketera`: 3-5 zdań normalnym językiem: co WILQ może przygotować, z czego to wynika, czego nie wolno obiecać i jaki jest następny bezpieczny krok.

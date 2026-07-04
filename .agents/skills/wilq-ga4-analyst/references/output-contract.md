@@ -22,7 +22,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 
 1. `Pomiar do naprawy`: wskaż wiersze `(not set)` jako problem przypisania strony wejścia, źródła albo kampanii. Nie oceniaj po nich kampanii, SEO ani strony.
-2. `Ruch do oceny`: wskaż czytelne landing/source/campaign rows, które można sprawdzać pod kątem dopasowania komunikatu i landing page.
+2. `Ruch do oceny`: wskaż czytelne wiersze strony wejścia, źródła i kampanii, które można sprawdzać pod kątem dopasowania komunikatu do strony wejścia.
 3. `Kolejność triage`: najpierw `(not set)` i tracking/reporting, potem czytelne wiersze ruchu, potem ActionObject review.
 4. `Decyzja po review`: powiedz, jakie decyzje są możliwe po ręcznym sprawdzeniu: problem pomiaru, content/landing review, brak decyzji albo dalsze dane.
 5. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co GA4 pokazuje, czego nie pokazuje, co jest problemem pomiaru, co jest ruchem do oceny i jaki jest następny bezpieczny krok.

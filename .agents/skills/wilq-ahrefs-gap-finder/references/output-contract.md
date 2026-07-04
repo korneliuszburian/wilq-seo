@@ -25,7 +25,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 1. `Mapa luk`: rozdziel luki treści, luki linków, strony konkurencji, organic keywords i kontekst autorytetu. Nie mieszaj ich w jedną ogólną "szansę SEO".
 2. `Kolejność review`: wskaż pierwszy typ luki do ręcznego sprawdzenia i powód z WILQ/Ahrefs, np. rekordy luk są dostępne, ale efekt wymaga dalszego cross-checku.
-3. `Co porównać ręcznie`: wypisz checklistę: temat konkurenta, istniejący URL Ekologus, intencja, pokrycie treści, możliwość linkowania/źródeł i czy temat wymaga GSC/WordPress cross-checku.
+3. `Co porównać ręcznie`: wypisz checklistę: temat konkurenta, istniejący URL Ekologus, intencja, pokrycie treści, możliwość linkowania/źródeł i czy temat wymaga GSC i WordPress cross-checku.
 4. `Decyzja po review`: powiedz, co może się wydarzyć po sprawdzeniu: content brief, link-review, dalszy cross-check albo blokada tematu.
 5. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co Ahrefs pokazuje, do czego to służy i czego nie wolno jeszcze obiecać.
 6. `Zablokowane obietnice`: wzrost ruchu, wzrost autorytetu, przewaga konkurencyjna, produkcyjna treść i efekt SEO bez dalszego sprawdzenia.

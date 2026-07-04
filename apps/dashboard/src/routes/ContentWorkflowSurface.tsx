@@ -972,8 +972,8 @@ function WordPressDraftWriteReadinessPanel({
           WordPress: brak readiness zapisu draftu
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-700">
-          Nie ma potwierdzenia gotowości zapisu szkicu. Zostań przy dry-run i
-          podglądzie ACF.
+          Nie ma potwierdzenia gotowości zapisu szkicu. Zostań przy podglądzie
+          zmian i podglądzie ACF.
         </p>
       </section>
     );
@@ -1060,8 +1060,8 @@ function WordPressDraftActivationPacketPanel({
           Aktywacja szkicu WordPress
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          WILQ sprawdza paczkę szkicu, review, audyt, handoff i dry-run bez
-          zapisu do WordPress.
+          WILQ sprawdza paczkę szkicu, review, audyt, handoff i podgląd zmian
+          bez zapisu do WordPress.
         </p>
       </section>
     );
@@ -1109,7 +1109,7 @@ function WordPressDraftActivationPacketPanel({
           />
           <FactTile label="Audit" value={readyLabel(packet.audit_ready)} />
           <FactTile label="Handoff" value={readyLabel(packet.handoff_ready)} />
-          <FactTile label="Dry-run" value={readyLabel(packet.dry_run_ready)} />
+          <FactTile label="Podgląd zmian" value={readyLabel(packet.dry_run_ready)} />
           <FactTile
             label="Live write"
             value={packet.live_write_enabled_by_env ? "włączony" : "wyłączony"}

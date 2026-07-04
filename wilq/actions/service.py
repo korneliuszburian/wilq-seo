@@ -2147,7 +2147,7 @@ def _wordpress_draft_apply_action(*, handoff_action: ActionObject) -> ActionObje
         evidence_ids=handoff_action.evidence_ids,
         metrics=handoff_action.metrics,
         human_diagnosis=(
-            "To jest jawny apply-mode kandydat dla pierwszej bezpiecznej klasy "
+            "To jest jawna propozycja apply-mode dla pierwszej bezpiecznej klasy "
             "zapisu: utworzenia szkicu WordPress. Nie publikuje i nie aktualizuje "
             "istniejących wpisów."
         ),
@@ -3113,7 +3113,7 @@ def _first_write_candidate_reason(
     item: ActionMutationReadinessResponse | None,
 ) -> str:
     if item is None:
-        return "Brak akcji, którą można ocenić jako pierwszy kandydat zapisu."
+        return "Brak akcji, którą można ocenić jako pierwszą propozycję zapisu."
     if item.action_id in {
         "act_apply_wordpress_draft_handoff",
         "act_prepare_wordpress_draft_handoff",
@@ -3122,20 +3122,20 @@ def _first_write_candidate_reason(
         if item.mutation_adapter is not None:
             if "missing_wordpress_draft_package_ready" not in blocker_codes:
                 return (
-                    "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
+                    "Pierwsza propozycja aktywowania zapisu to WordPress draft-only: "
                     "adapter boundary i paczka szkicu już istnieją, ale szkic nadal "
                     "wymaga handoffu, human review, preview/confirm/audit i jawnie "
                     "włączonego env live write. Publikacja i destrukcyjne zmiany są "
                     "zablokowane."
                 )
             return (
-                "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
+                "Pierwsza propozycja aktywowania zapisu to WordPress draft-only: "
                 "adapter boundary już istnieje, ale szkic nadal wymaga handoffu, "
                 "paczki treści, preview/review/confirm/audit i jawnie włączonego "
                 "env live write. Publikacja i destrukcyjne zmiany są zablokowane."
             )
         return (
-            "Pierwszy kandydat do aktywowania zapisu to WordPress draft-only: "
+            "Pierwsza propozycja aktywowania zapisu to WordPress draft-only: "
             "najpierw tworzy szkic, nie publikuje, ma osobny readiness endpoint i "
             "wymaga osobnego adaptera wykonania, env i pełnego audit trail."
         )
@@ -3149,7 +3149,7 @@ def _activation_plan_steps(
     item: ActionMutationReadinessResponse | None,
 ) -> list[str]:
     if item is None:
-        return ["Najpierw utwórz bezpieczną akcję kandydata zapisu z dowodami."]
+        return ["Najpierw utwórz bezpieczną propozycję zapisu z dowodami."]
     steps = [
         "Utrzymaj zakres draft-only i brak publikacji/destrukcyjnych zmian.",
     ]
@@ -3182,7 +3182,9 @@ def _activation_plan_steps(
     if "missing_wordpress_draft_handoff_ready" in blocker_codes:
         steps.append("Przygotuj zatwierdzony WordPress handoff dla wybranego work itemu.")
     if "missing_wordpress_draft_package_ready" in blocker_codes:
-        steps.append("Podepnij zatwierdzoną paczkę szkicu przed próbą dry-run execution.")
+        steps.append(
+            "Podepnij zatwierdzoną paczkę szkicu przed próbą podglądu wykonania."
+        )
     if "missing_wordpress_draft_target_content_ready" in blocker_codes:
         steps.append(
             "Doprowadź konkretny target przez Claim Ledger, gotowość szkicu i "
@@ -3197,7 +3199,7 @@ def _activation_next_step(
     item: ActionMutationReadinessResponse | None,
 ) -> str:
     if item is None:
-        return "Brak kandydata zapisu; najpierw wybierz niskiego ryzyka klasę draft-only."
+        return "Brak propozycji zapisu; najpierw wybierz niskiego ryzyka klasę draft-only."
     if item.action_id == "act_apply_wordpress_draft_handoff":
         if item.mutation_adapter is not None:
             blocker_codes = {blocker.code for blocker in item.blockers}
@@ -3627,7 +3629,7 @@ def _mutation_readiness_blockers(
         ),
         "evidence_present": (
             "Brakuje dowodów źródłowych",
-            "WILQ nie zapisuje zmian bez evidence IDs.",
+            "WILQ nie zapisuje zmian bez identyfikatorów dowodów.",
             "Podepnij dowody źródłowe do akcji przed rozważeniem zapisu.",
         ),
         "connector_configured": (
@@ -3663,7 +3665,7 @@ def _mutation_readiness_blockers(
         "mutation_adapter": (
             "Brakuje adaptera zapisu",
             "WILQ nie ma jeszcze implementacji vendor write dla tej akcji.",
-            "Najpierw dodaj read-only preview i bezpieczny adapter dry-run/live dla connectora.",
+            "Najpierw dodaj read-only preview i bezpieczny adapter podglądu/live dla connectora.",
         ),
         "wordpress_draft_write_readiness": (
             "WordPress draft write readiness blokuje zapis",
@@ -3693,7 +3695,7 @@ def _mutation_readiness_blockers(
             "Target treści nie przeszedł jeszcze gotowości szkicu",
             (
                 "Wybrany URL ma tylko zablokowany podgląd handoffu. Przed draft-only "
-                "write musi przejść Claim Ledger, kontrolę wiedzy/claimów, gotowość "
+                "write musi przejść Claim Ledger, kontrolę wiedzy/twierdzeń, gotowość "
                 "szkicu i review człowieka."
             ),
             (
@@ -3799,13 +3801,13 @@ def _mutation_readiness_summary_next_step(
             )
             if "missing_wordpress_draft_package_ready" not in first_blockers:
                 return (
-                    "Pierwszy kandydat zapisu ma adapter boundary i paczkę szkicu, "
+                    "Pierwsza propozycja zapisu ma adapter boundary i paczkę szkicu, "
                     f"ale brakuje zatwierdzonego handoffu{target}. Najpierw zapisz "
                     "human review i audit przekazania do WordPress; live write nadal "
                     "zostaje wyłączony."
                 )
             return (
-                "Pierwszy kandydat zapisu ma adapter boundary, ale brakuje "
+                "Pierwsza propozycja zapisu ma adapter boundary, ale brakuje "
                 f"zatwierdzonego handoffu i paczki szkicu{target}. Najpierw przejdź "
                 "wybrany content item przez draft package, human review i "
                 "WordPress handoff; live write nadal zostaje wyłączony."
@@ -3813,7 +3815,7 @@ def _mutation_readiness_summary_next_step(
     if blocker_counts.get("missing_mutation_adapter"):
         return (
             "Najpierw wybierz jedną klasę zapisu i dodaj bezpieczny adapter "
-            "dry-run/live; obecnie żaden vendor write nie powinien zostać wykonany."
+            "podglądu/live; obecnie żaden vendor write nie powinien zostać wykonany."
         )
     if blocker_counts.get("missing_apply_mode"):
         return "Najpierw dodaj apply-capable ActionObject dla wybranej klasy zmian."

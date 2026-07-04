@@ -462,7 +462,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     assert "## Pokazane materiały review" in markdown
     assert "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md" in markdown
     assert "## Ocena prywatnego śladu źródłowego" in markdown
-    assert "trace czytelny: tak" in markdown
+    assert "ślad czytelny: tak" in markdown
     assert "Dodać prostszy opis dla Wilka." in markdown
 
 

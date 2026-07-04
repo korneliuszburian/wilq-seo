@@ -30,6 +30,15 @@ ACTIVE_CONTRACT_FILES = (
     Path("tests/test_codex_skill_eval_cases.py"),
 )
 
+GOAL_005_WILKU_MATERIAL_FILES = (
+    Path("scripts/record_goal_005_content_uat_result.py"),
+    Path("scripts/goal_005_completion_check.py"),
+    Path("docs/handoffs/2026-07-03-wilku-service-profile-review-now.md"),
+    Path("docs/handoffs/2026-07-02-wilku-service-profile-start-card.md"),
+    Path("docs/handoffs/2026-07-02-wilku-informal-positive-feedback.md"),
+    Path("docs/handoffs/2026-07-01-wilku-content-uat-ready.md"),
+)
+
 ACTIVE_PLAN_FILES = (
     Path("PLAN.md"),
     Path("PLANS.md"),
@@ -839,11 +848,47 @@ FORBIDDEN_PLAN_RULE_PHRASES = (
     "must not invent metrics",
 )
 
+GOAL_005_WILKU_FORBIDDEN_PHRASES = (
+    ForbiddenPhrase(
+        "eval:",
+        "Use bramka: in Goal 005 Wilku-facing source trace output.",
+    ),
+    ForbiddenPhrase(
+        "raw private text",
+        "Use surowy prywatny tekst / surowego prywatnego tekstu.",
+    ),
+    ForbiddenPhrase(
+        "completion proof",
+        "Use Polish completion/evidence wording in Wilku-facing materials.",
+    ),
+    ForbiddenPhrase(
+        "finalny content",
+        "Use finalne treści.",
+    ),
+    ForbiddenPhrase(
+        "Decyzja contentowa",
+        "Use Decyzja treściowa WILQ.",
+    ),
+    ForbiddenPhrase(
+        "kolejki content",
+        "Use kolejki treści.",
+    ),
+    ForbiddenPhrase(
+        "kolejka content",
+        "Use kolejka treści.",
+    ),
+    ForbiddenPhrase(
+        "trace czytelny",
+        "Use ślad czytelny.",
+    ),
+)
+
 
 def main() -> None:
     errors: list[str] = []
     errors.extend(_active_goal_file_errors())
     errors.extend(_active_plan_rule_errors())
+    errors.extend(_goal_005_wilku_material_errors())
     for path in _iter_active_files():
         text = path.read_text(encoding="utf-8", errors="replace")
         for forbidden in FORBIDDEN_PHRASES:
@@ -887,6 +932,24 @@ def _active_plan_rule_errors() -> list[str]:
                     f"{path.as_posix()}:{line_number}: old English rule wording "
                     f"{phrase!r} is forbidden in active plan/recovery docs. "
                     f"Use Polish WILQ operating language. Line: {line.strip()}"
+                )
+    return errors
+
+
+def _goal_005_wilku_material_errors() -> list[str]:
+    errors: list[str] = []
+    for path in GOAL_005_WILKU_MATERIAL_FILES:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for forbidden in GOAL_005_WILKU_FORBIDDEN_PHRASES:
+            if forbidden.phrase not in text:
+                continue
+            for line_number, line in _matching_lines(text, forbidden.phrase):
+                errors.append(
+                    f"{path.as_posix()}:{line_number}: forbidden Goal 005 Wilku-facing "
+                    f"phrase {forbidden.phrase!r}. {forbidden.reason} "
+                    f"Line: {line.strip()}"
                 )
     return errors
 

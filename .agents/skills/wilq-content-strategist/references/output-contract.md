@@ -31,7 +31,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 4. `Co sprawdzić w briefie`: intencja, odbiorca, obiekcje, H1/H2/FAQ, CTA, kanibalizacja, aktualność prawna i Claim Ledger.
 5. `Brief do pokazania Wilkowi`: krótki pakiet review: rekomendowany tryb, źródła, kąt treści, odbiorca, CTA, ryzyka duplikacji i zablokowane twierdzenia.
 6. `Zablokowane do czasu dowodów`: tematy bez bezpośredniego wiersza dowodowego, finalny draft, publikacja WordPress i obietnice efektu.
-7. `Ślad techniczny`: tactical queue item IDs, identyfikatory szans, identyfikatory akcji, evidence IDs i wynik wymaganego sprawdzenia w WILQ.
+7. `Ślad techniczny`: tactical queue item IDs, identyfikatory szans, identyfikatory akcji, identyfikatory dowodów i wynik wymaganego sprawdzenia w WILQ.
 
 W ustrukturyzowanym JSON eval albo handoffie etykiety `Mapa decyzji` i `Brief do pokazania Wilkowi` muszą pojawić się w widocznych polach decyzyjnych, np. w `operator_next_step`, `recommendations[].label_pl` albo `action_candidates[].label_pl`. Nie wystarczy wrzucić ich do `notes`.
 

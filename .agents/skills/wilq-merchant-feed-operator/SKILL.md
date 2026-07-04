@@ -106,7 +106,7 @@ Widocznie używaj tych sekcji:
 - `Kolejność review`: najpierw najwyższe ryzyko lub największa grupa problemów z `decision_queue`, potem mapping Ads/product state, potem próbki produktów.
 - `Liczby bez pułapki`: powiedz, czy liczby oznaczają zgłoszenia/wystąpienia problemów, próbki czy unikalne SKU. Jeśli unikalnych SKU nie ma, napisz to wprost.
 - `Czego nie wiemy`: brakujące kontrakty, brak pełnej listy SKU, brak wpływu ceny, brak skuteczności produktu albo nieświeżość danych.
-- `Decyzja po review`: co można zrobić po ręcznym sprawdzeniu: przygotować listę poprawek, poprosić o odświeżenie danych, eskalować landing page error albo zostawić jako niskie ryzyko.
+- `Decyzja po review`: co można zrobić po ręcznym sprawdzeniu: przygotować listę poprawek, poprosić o odświeżenie danych, eskalować strona wejścia error albo zostawić jako niskie ryzyko.
 - `Brief dla marketera`: 3-5 zdań normalnym językiem: co WILQ widzi w Merchant, co sprawdzić pierwsze, czego nie wolno obiecać i jaki jest następny bezpieczny krok.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.

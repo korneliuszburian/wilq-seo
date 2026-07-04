@@ -28,9 +28,9 @@ Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Plan kampanii`, `Podgląd bez zapisu`, `Co sprawdzić przed kampanią`, `Decyzja po review`, `Zablokowane obietnice`, `Brief dla marketera`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Plan kampanii`: typ propozycji, usługa/temat, landing page i źródła danych, z których wynika pomysł.
+1. `Plan kampanii`: typ propozycji, usługa/temat, strona wejścia i źródła danych, z których wynika pomysł.
 2. `Podgląd bez zapisu`: co można przygotować jako preview/review w WILQ, bez zapisu zmian.
-3. `Co sprawdzić przed kampanią`: landing page, intencja z GSC, jakość ruchu z GA4, istniejące kampanie/rekomendacje Ads i brakujące kontrakty.
+3. `Co sprawdzić przed kampanią`: strona wejścia, intencja z GSC, jakość ruchu z GA4, istniejące kampanie/rekomendacje Ads i brakujące kontrakty.
 4. `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, odłożyć kampanię, poprosić o landing/content review albo zablokować temat.
 5. `Zablokowane obietnice`: skuteczność kampanii, wzrost konwersji, gwarancja pozycji, zmiana kampanii i zapis bez preview/review/zgody.
 6. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co WILQ może przygotować, z czego to wynika, czego nie wolno obiecać i jaki jest następny bezpieczny krok.

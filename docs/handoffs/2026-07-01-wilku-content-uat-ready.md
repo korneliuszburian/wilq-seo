@@ -99,7 +99,7 @@ UAT readiness:
 - zakres, który można uczciwie pokazać: review/blokady i traceability;
 - blokady pełnej sesji: Service Profile nie jest production-depth, publiczne
   karty usług wymagają review Wilka/ownera, prywatne propozycje wymagają review
-  Wilka/ownera, kolejka content workflow ma status `blocked`;
+  Wilka/ownera, kolejka workflow treści ma status `blocked`;
 - liczba gotowych kandydatów w kolejce: 1.
 - kolejka: `candidate_count=3`, `actionable_candidate_count=1`,
   `queue_status=blocked`.

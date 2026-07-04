@@ -30,7 +30,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Wywołaj `GET /api/social/history-inventory`, żeby sprawdzić, czy WILQ ma historię postów i czy wolno mówić o braku powtórek.
 2. Pobierz `POST /api/codex/context-pack` tylko wtedy, gdy przygotowujesz szkice z wielu źródeł albo potrzebujesz `social_draft_context`.
-3. Odpowiedz review-only: kierunek posta, dowody, zablokowane claimy, ryzyko powtórki i następny krok. Nie publikuj.
+3. Odpowiedz review-only: kierunek posta, dowody, zablokowane twierdzenia, ryzyko powtórki i następny krok. Nie publikuj.
 4. Jeśli użytkownik prosi o zapis albo podgląd zmiany, użyj `POST /api/actions/{action_id}/validate`; w review-only odpowiedzi wystarczy wskazać action_id i bezpieczny następny krok.
 5. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
 
@@ -84,7 +84,7 @@ W social odpowiedź musi dać coś, co marketer może od razu ocenić:
 - `Wariant LinkedIn`: 2-4 zdania szkicu albo kierunku posta, bez obietnic efektu.
 - `Wariant Facebook`: 2-4 zdania szkicu albo kierunku posta, prostszym językiem niż LinkedIn.
 - `Historia do sprawdzenia`: powiedz normalnie, że nie wiemy jeszcze, czy podobny post już był na LinkedIn/Facebooku, więc nie wolno pisać, że temat jest nowy albo bezpieczny do powtórzenia.
-- `Decyzja po review`: co może się stać po sprawdzeniu historii i claimów: zaakceptować szkic do ręcznego przygotowania, przerobić CTA, zablokować temat albo poczekać na historię social.
+- `Decyzja po review`: co może się stać po sprawdzeniu historii i twierdzeń: zaakceptować szkic do ręcznego przygotowania, przerobić CTA, zablokować temat albo poczekać na historię social.
 - `Dowód`: krótkie ludzkie streszczenie źródeł, a surowe ID w śladzie technicznym.
 - `Zablokowane`: publikacja, claim o skuteczności i claim o braku powtórek.
 

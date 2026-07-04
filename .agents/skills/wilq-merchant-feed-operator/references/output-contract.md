@@ -38,7 +38,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
    `missing_read_contracts` i `required_read_contracts` zostaw do
    technicznych notatek/debugu. Nie łącz tych list w jeden "brak", bo WILQ
    może mieć część wymagań już spełnioną.
-7. `Decyzja po review`: powiedz, co może wydarzyć się po ręcznym sprawdzeniu: lista poprawek do feedu, eskalacja landing page error, odświeżenie danych, niskie ryzyko albo blokada do czasu danych skuteczności.
+7. `Decyzja po review`: powiedz, co może wydarzyć się po ręcznym sprawdzeniu: lista poprawek do pliku produktowego, eskalacja błędu strony wejścia, odświeżenie danych, niskie ryzyko albo blokada do czasu danych skuteczności.
 8. `Brief dla marketera`: 3-5 zdań bez technicznego żargonu: co WILQ widzi w Merchant, który problem idzie pierwszy, jak czytać liczby i czego nie wolno obiecać.
 9. `Diagnoza`: co `/api/merchant/diagnostics` wspiera, z niepewnością jeśli dowody są zagregowane, nieświeże, niepełne albo zablokowane uprawnieniami.
 10. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.

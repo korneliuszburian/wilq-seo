@@ -42,7 +42,7 @@ const PRIORITY_LABELS: Record<string, string> = {
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   reviewed_internal: "źródło wewnętrzne do review",
-  private_candidate: "prywatny kandydat wiedzy",
+  private_candidate: "prywatna propozycja wiedzy",
   public_site: "publiczna strona",
   connector_metric: "metryka z connectora",
   legal_update: "aktualizacja prawna",

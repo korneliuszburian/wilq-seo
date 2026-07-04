@@ -747,8 +747,8 @@ def render_private_source_trace_scorecard(value: Any) -> list[str]:
                 f"- {row.get('target')}",
                 f"  - zakres: {row.get('scope')}",
                 f"  - źródło: {source_blocks}",
-                f"  - eval: {eval_cases}",
-                f"  - trace czytelny: {visible_bool(row.get('trace_czytelny') is True)}",
+                f"  - bramka: {eval_cases}",
+                f"  - ślad czytelny: {visible_bool(row.get('trace_czytelny') is True)}",
                 f"  - decyzja: {row.get('decyzja')}",
                 f"  - najważniejsza poprawka: {row.get('najwazniejsza_poprawka')}",
             ]

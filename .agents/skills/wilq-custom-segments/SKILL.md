@@ -83,7 +83,7 @@ Widocznie oddzielaj:
 
 - `Mapa segmentu`: nazwa/intent segmentu z API, review_priority, review_score i review_reason jako kolejność ręcznej oceny, nie dowód skuteczności.
 - `Hasła źródłowe`: pokaż tylko `source_terms` z WILQ API; nie dopisuj nowych fraz ani synonimów.
-- `Review intencji`: co trzeba odsiać ręcznie: intencję haseł, dopasowanie do usługi, ryzyko zbyt szerokiego segmentu, landing page i przypadkowe terminy.
+- `Review intencji`: co trzeba odsiać ręcznie: intencję haseł, dopasowanie do usługi, ryzyko zbyt szerokiego segmentu, strona wejścia i przypadkowe terminy.
 - `Podgląd bez zapisu`: jaki action_id/preview można sprawdzić w WILQ bez zmiany kierowania.
 - `Decyzja po review`: po sprawdzeniu operator może przygotować podgląd, zawęzić segment, odłożyć temat albo zablokować segment.
 - `Zablokowane`: zapis kierowania, rozmiar odbiorców, prognoza, skuteczność kampanii, zwrot z reklam i wzrost konwersji.
