@@ -5,9 +5,7 @@ from typing import Any
 from apps.api.wilq_api import context_compaction
 from wilq.schemas import ActionObject, ConnectorStatus, MarketingBrief, TacticalQueueResponse
 from wilq.social.history import (
-    SOCIAL_HISTORY_MISSING_EVIDENCE_IDS,
-    SOCIAL_HISTORY_REQUIRED_SOURCES,
-    build_social_history_inventory,
+    build_social_history_inventory_from_env,
 )
 
 
@@ -242,7 +240,7 @@ def social_draft_context_for_context(
                 str(item) for item in payload.get("source_connectors", []) if item
             )
         evidence_ids.extend(action.evidence_ids)
-    social_history_inventory = build_social_history_inventory(
+    social_history_inventory = build_social_history_inventory_from_env(
         connector_status_by_id,
         missing_publish_access,
     ).model_dump(mode="json")
@@ -257,14 +255,16 @@ def social_draft_context_for_context(
         "source_metric_names": sorted(set(source_metric_names)),
         "source_connectors": sorted(set(source_connectors)),
         "evidence_ids": list(dict.fromkeys(evidence_ids))[:12],
-        "historical_social_inventory_status": "missing",
-        "historical_social_inventory_status_label": "brak spisu historycznych postów",
-        "duplicate_risk_status": "blocked_until_social_history_review",
+        "historical_social_inventory_status": social_history_inventory["status"],
+        "historical_social_inventory_status_label": social_history_inventory[
+            "status_label"
+        ],
+        "duplicate_risk_status": social_history_inventory["duplicate_risk_status"],
         "duplicate_risk_status_label": (
             "nie oceniono ryzyka powtórzenia treści social"
         ),
-        "required_history_sources": SOCIAL_HISTORY_REQUIRED_SOURCES,
-        "missing_history_evidence": SOCIAL_HISTORY_MISSING_EVIDENCE_IDS,
+        "required_history_sources": social_history_inventory["required_sources"],
+        "missing_history_evidence": social_history_inventory["missing_evidence_ids"],
         "social_history_inventory": social_history_inventory,
         "history_audit_endpoint": "/api/social/history-inventory/audit",
         "history_audit_contract": "social_history_inventory_v1",

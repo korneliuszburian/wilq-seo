@@ -39,6 +39,12 @@ Date: 2026-07-04
   `13/13` latest passing evals, `13/13` fresh passing evals, score range
   `9-9` and zero stale skills. This is strong review-only proof, not a 10/10
   Wilku-ready claim.
+- 2026-07-04 social history inventory can now be loaded from a local
+  metadata-only JSON via `WILQ_SOCIAL_HISTORY_INVENTORY_FILE`. A valid file
+  changes the social inventory from `missing` to `review_ready` and exposes
+  item/channel counts in `/api/social/history-inventory` and the
+  `wilq-social-publisher` context, while still blocking publication and
+  duplicate-free claims until human review.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

@@ -215,6 +215,10 @@ from wilq.schemas import (
     connector_refresh_run_status_label,
 )
 from wilq.security.redaction import redact_mapping
+from wilq.social.history import (
+    SOCIAL_HISTORY_INVENTORY_FILE_ENV,
+    social_history_input_example,
+)
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 from wilq.workflows.models import Workflow, _workflow_run_status_label
@@ -19125,6 +19129,7 @@ def test_social_context_pack_exposes_review_only_draft_context(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.delenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, raising=False)
     seed_action_candidate_metric_facts(tmp_path, monkeypatch)
 
     context_response = client.post(
@@ -19165,7 +19170,7 @@ def test_social_context_pack_exposes_review_only_draft_context(
     assert social_context["historical_social_inventory_status"] == "missing"
     assert (
         social_context["historical_social_inventory_status_label"]
-        == "brak spisu historycznych postów"
+        == "brak spisu historycznych postów LinkedIn/Facebook"
     )
     assert social_context["duplicate_risk_status"] == "blocked_until_social_history_review"
     assert (
@@ -19265,6 +19270,46 @@ def test_social_context_pack_exposes_review_only_draft_context(
         context_payload["tactical_queue"]["context_pack_compaction"]["metric_facts_removed"] is True
     )
     assert len(json.dumps(context_payload, ensure_ascii=False).encode()) < 140_000
+
+
+def test_social_context_pack_uses_review_ready_history_inventory_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    history_file = tmp_path / "social-history.json"
+    history_file.write_text(
+        json.dumps(social_history_input_example(), ensure_ascii=False),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, str(history_file))
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-social-publisher"},
+    )
+
+    assert context_response.status_code == 200
+    social_context = context_response.json()["social_draft_context"]
+    assert social_context["publish_allowed"] is False
+    assert social_context["historical_social_inventory_status"] == "review_ready"
+    assert social_context["historical_social_inventory_status_label"] == (
+        "spis historii social gotowy do oceny"
+    )
+    assert social_context["duplicate_risk_status"] == (
+        "blocked_until_social_history_review"
+    )
+    assert social_context["missing_history_evidence"] == []
+    inventory = social_context["social_history_inventory"]
+    assert inventory["metadata_source_configured"] is True
+    assert inventory["metadata_source_status"] == "review_ready"
+    assert inventory["item_count"] == 2
+    assert inventory["channel_counts"] == {"facebook": 1, "linkedin": 1}
+    assert inventory["import_errors"] == []
+    assert {source["inventory_status"] for source in inventory["sources"]} == {
+        "review_ready"
+    }
+    assert "brak powtórzeń historycznych postów" in social_context["blocked_claims"]
 
 
 def test_social_draft_actions_exclude_dev_site_inventory_inputs() -> None:

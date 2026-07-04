@@ -102,6 +102,13 @@ score range `9-9`, with `0` skills at 10/10. Treat this as strong review-only
 operator proof, not as formal Wilku UAT or permission to bypass ActionObject
 write gates.
 
+2026-07-04 update: social history is no longer only a missing blocker. WILQ
+can read a local metadata-only JSON via `WILQ_SOCIAL_HISTORY_INVENTORY_FILE`,
+validate it through `social_history_inventory_v1`, and expose `review_ready`
+counts in `/api/social/history-inventory` plus the `wilq-social-publisher`
+context. This still does not unlock publishing or duplicate-free claims; it
+creates the review input needed before repurposing topics safely.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import os
 from collections import Counter
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -8,11 +11,14 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from wilq.schemas import ConnectorStatus
 
 SocialHistoryChannel = Literal["linkedin", "facebook"]
+SocialHistoryInventoryStatus = Literal["missing", "invalid", "review_ready"]
+SocialHistoryMetadataSourceStatus = Literal["not_configured", "invalid", "review_ready"]
 
 SOCIAL_HISTORY_REQUIRED_SOURCES: tuple[SocialHistoryChannel, ...] = (
     "linkedin",
     "facebook",
 )
+SOCIAL_HISTORY_INVENTORY_FILE_ENV = "WILQ_SOCIAL_HISTORY_INVENTORY_FILE"
 SOCIAL_HISTORY_MISSING_EVIDENCE_IDS = [
     "linkedin_historical_posts",
     "facebook_historical_posts",
@@ -54,7 +60,7 @@ class SocialHistoryInventorySource(BaseModel):
 
     channel: SocialHistoryChannel
     connector_id: SocialHistoryChannel
-    inventory_status: Literal["missing"] = "missing"
+    inventory_status: Literal["missing", "review_ready"] = "missing"
     connector_access_status: Literal[
         "configured",
         "missing_credentials",
@@ -87,7 +93,7 @@ class SocialHistoryInventory(BaseModel):
 
     contract: Literal["social_history_inventory_v1"] = "social_history_inventory_v1"
     read_only: Literal[True] = True
-    status: Literal["missing"] = "missing"
+    status: SocialHistoryInventoryStatus = "missing"
     status_label: str = "brak spisu historycznych postów LinkedIn/Facebook"
     duplicate_risk_status: Literal[
         "blocked_until_social_history_review"
@@ -98,6 +104,11 @@ class SocialHistoryInventory(BaseModel):
     missing_evidence_ids: list[str] = Field(
         default_factory=lambda: list(SOCIAL_HISTORY_MISSING_EVIDENCE_IDS)
     )
+    metadata_source_configured: bool = False
+    metadata_source_status: SocialHistoryMetadataSourceStatus = "not_configured"
+    item_count: int = 0
+    channel_counts: dict[str, int] = Field(default_factory=dict)
+    import_errors: list[str] = Field(default_factory=list)
     sources: list[SocialHistoryInventorySource]
     discovery_seeds: list[SocialHistoryDiscoverySeed] = Field(
         default_factory=lambda: [
@@ -147,7 +158,20 @@ class SocialHistoryInventory(BaseModel):
 def build_social_history_inventory(
     connector_status_by_id: dict[str, ConnectorStatus],
     missing_publish_access: dict[str, list[str]],
+    import_audit: SocialHistoryImportAudit | None = None,
+    *,
+    metadata_source_configured: bool = False,
 ) -> SocialHistoryInventory:
+    channel_counts = (
+        dict(import_audit.channel_counts)
+        if import_audit is not None and import_audit.status == "review_ready"
+        else {}
+    )
+    missing_evidence_ids = [
+        f"{channel}_historical_posts"
+        for channel in SOCIAL_HISTORY_REQUIRED_SOURCES
+        if channel_counts.get(channel, 0) <= 0
+    ]
     sources = []
     for channel in SOCIAL_HISTORY_REQUIRED_SOURCES:
         connector = connector_status_by_id.get(channel)
@@ -166,11 +190,43 @@ def build_social_history_inventory(
             SocialHistoryInventorySource(
                 channel=channel,
                 connector_id=channel,
+                inventory_status=(
+                    "review_ready" if channel_counts.get(channel, 0) > 0 else "missing"
+                ),
                 connector_access_status=connector_access_status,
                 required_evidence_id=f"{channel}_historical_posts",
             )
         )
-    return SocialHistoryInventory(sources=sources)
+    status = _inventory_status(import_audit, metadata_source_configured)
+    return SocialHistoryInventory(
+        status=status,
+        status_label=_inventory_status_label(status),
+        missing_evidence_ids=missing_evidence_ids,
+        metadata_source_configured=metadata_source_configured,
+        metadata_source_status=_metadata_source_status(import_audit),
+        item_count=import_audit.item_count if import_audit is not None else 0,
+        channel_counts=channel_counts,
+        import_errors=import_audit.errors if import_audit is not None else [],
+        sources=sources,
+        operator_next_step=_inventory_next_step(status),
+    )
+
+
+def build_social_history_inventory_from_env(
+    connector_status_by_id: dict[str, ConnectorStatus],
+    missing_publish_access: dict[str, list[str]],
+) -> SocialHistoryInventory:
+    configured_path = os.getenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV)
+    if not configured_path:
+        return build_social_history_inventory(connector_status_by_id, missing_publish_access)
+
+    audit = _audit_social_history_inventory_file(Path(configured_path))
+    return build_social_history_inventory(
+        connector_status_by_id,
+        missing_publish_access,
+        audit,
+        metadata_source_configured=True,
+    )
 
 
 class SocialHistoryMetadataRecord(BaseModel):
@@ -271,6 +327,69 @@ def audit_social_history_metadata_payload(payload: object) -> SocialHistoryImpor
         missing_required_sources=missing_sources,
         errors=errors,
         operator_next_step=_social_history_import_next_step(status),
+    )
+
+
+def _audit_social_history_inventory_file(path: Path) -> SocialHistoryImportAudit:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError:
+        return _invalid_social_history_import(
+            ["Could not read configured social history inventory file"],
+            item_count=0,
+        )
+    except json.JSONDecodeError:
+        return _invalid_social_history_import(
+            ["Configured social history inventory file is not valid JSON"],
+            item_count=0,
+        )
+    return audit_social_history_metadata_payload(payload)
+
+
+def _inventory_status(
+    import_audit: SocialHistoryImportAudit | None,
+    metadata_source_configured: bool,
+) -> SocialHistoryInventoryStatus:
+    if import_audit is None:
+        return "missing"
+    if metadata_source_configured and import_audit.status == "review_ready":
+        return "review_ready"
+    return "invalid"
+
+
+def _metadata_source_status(
+    import_audit: SocialHistoryImportAudit | None,
+) -> SocialHistoryMetadataSourceStatus:
+    if import_audit is None:
+        return "not_configured"
+    return import_audit.status
+
+
+def _inventory_status_label(status: SocialHistoryInventoryStatus) -> str:
+    if status == "review_ready":
+        return "spis historii social gotowy do oceny"
+    if status == "invalid":
+        return "spis historii social wymaga poprawy"
+    return "brak spisu historycznych postów LinkedIn/Facebook"
+
+
+def _inventory_next_step(status: SocialHistoryInventoryStatus) -> str:
+    if status == "review_ready":
+        return (
+            "Porównaj temat, usługę, claim i CTA z metadanymi historii social. "
+            "Dopiero po review zdecyduj, czy szkic jest powtórką, repurpose z innym "
+            "kątem czy temat do odrzucenia. Publikacja nadal wymaga osobnej zgody."
+        )
+    if status == "invalid":
+        return (
+            "Popraw lokalny metadata-only JSON historii social. WILQ nie pokazuje "
+            "ścieżki pliku ani raw treści, ale blokuje claim o braku powtórek do "
+            "czasu poprawnej walidacji LinkedIn i Facebook."
+        )
+    return (
+        "Zbierz albo zaimportuj metadata-only historię LinkedIn/Facebook: kanał, data, "
+        "temat, usługa, claim, CTA, format i post ID. Do tego czasu WILQ może "
+        "przygotować tylko review-only kierunki postów i nie może obiecać braku powtórzeń."
     )
 
 

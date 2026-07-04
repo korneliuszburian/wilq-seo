@@ -229,6 +229,11 @@ describe("SocialHistoryInventorySchema", () => {
       duplicate_risk_status: "blocked_until_social_history_review",
       required_sources: ["linkedin", "facebook"],
       missing_evidence_ids: ["linkedin_historical_posts", "facebook_historical_posts"],
+      metadata_source_configured: false,
+      metadata_source_status: "not_configured",
+      item_count: 0,
+      channel_counts: {},
+      import_errors: [],
       sources: [],
       discovery_seeds: [
         {

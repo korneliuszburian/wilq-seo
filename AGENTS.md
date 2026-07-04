@@ -154,7 +154,10 @@ sprawdzone" until WordPress inventory, canonical/duplicate checks and
 LinkedIn/Facebook historical metadata are available. For social history, WILQ
 needs metadata only: channel, published date, topic, service, claim, CTA,
 format, post URL/ID and source evidence ID. Raw post bodies, comments and user
-data are not required for the initial dedupe contract.
+data are not required for the initial dedupe contract. If a local reviewed
+metadata JSON exists, point `WILQ_SOCIAL_HISTORY_INVENTORY_FILE` at it; WILQ
+may then mark the inventory `review_ready`, but duplicate-free and publish
+claims still remain blocked until human review and ActionObject flow.
 
 ## Recovery index
 

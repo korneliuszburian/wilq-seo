@@ -7095,6 +7095,11 @@ const socialPublisherContextPack = {
       duplicate_risk_status: "blocked_until_social_history_review",
       required_sources: ["linkedin", "facebook"],
       missing_evidence_ids: ["linkedin_historical_posts", "facebook_historical_posts"],
+      metadata_source_configured: false,
+      metadata_source_status: "not_configured",
+      item_count: 0,
+      channel_counts: {},
+      import_errors: [],
       sources: [
         {
           channel: "linkedin",
@@ -7895,7 +7900,9 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Akcje do sprawdzenia" })).toBeInTheDocument()
     );
     expect(screen.getByText("Najważniejsze na start")).toBeInTheDocument();
-    expect(screen.getByText("Pierwszy kandydat zapisu")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Pierwsza propozycja zapisu")).toBeInTheDocument()
+    );
     expect(screen.getByText("Aktywuj zapis szkicu WordPress draft-only")).toBeInTheDocument();
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();

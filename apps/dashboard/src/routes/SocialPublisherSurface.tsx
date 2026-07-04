@@ -157,6 +157,7 @@ function SocialHistoryBlocker({
             <LabelChipRow
               className="mt-3"
               chips={[
+                { label: "Spis", value: formatInventoryStatus(source.inventory_status) },
                 { label: "Tryb", value: source.safe_collection_mode },
                 {
                   label: "Raw treść",
@@ -167,6 +168,29 @@ function SocialHistoryBlocker({
           </article>
         ))}
       </div>
+      <LabelChipRow
+        className="mt-4"
+        chips={[
+          { label: "Status spisu", value: inventory.status_label },
+          { label: "Pozycji", value: String(inventory.item_count) },
+          {
+            label: "Lokalne źródło",
+            value: inventory.metadata_source_configured
+              ? formatMetadataSourceStatus(inventory.metadata_source_status)
+              : "niepodpięte"
+          }
+        ]}
+      />
+      {inventory.import_errors.length > 0 ? (
+        <div className="mt-4 rounded-md border border-danger/30 bg-danger/10 p-3">
+          <h3 className="text-sm font-semibold text-danger">Co poprawić w spisie</h3>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">
+            {inventory.import_errors.slice(0, 5).map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="mt-4 rounded-md border border-line bg-slate-50 p-3">
         <h3 className="text-sm font-semibold text-ink">Jakie pola trzeba zebrać</h3>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -244,4 +268,15 @@ function formatAccessStatus(status: string) {
   if (status === "missing_credentials") return "brakuje dostępu";
   if (status === "configured") return "dostęp skonfigurowany";
   return "niedostępne";
+}
+
+function formatInventoryStatus(status: string) {
+  if (status === "review_ready") return "gotowy do oceny";
+  return "brak";
+}
+
+function formatMetadataSourceStatus(status: string) {
+  if (status === "review_ready") return "poprawne metadane";
+  if (status === "invalid") return "wymaga poprawy";
+  return "niepodpięte";
 }

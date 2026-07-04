@@ -15,10 +15,12 @@ from wilq.schemas import (
 )
 from wilq.social.history import (
     EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL,
+    SOCIAL_HISTORY_INVENTORY_FILE_ENV,
     SOCIAL_HISTORY_REQUIRED_METADATA_FIELDS,
     SocialHistoryInventorySource,
     audit_social_history_metadata_payload,
     build_social_history_inventory,
+    build_social_history_inventory_from_env,
     social_history_input_example,
 )
 
@@ -89,6 +91,11 @@ def test_social_history_inventory_is_metadata_only_and_read_only() -> None:
         "blocked_uses"
     ]
     assert "automatyczne zatwierdzenie" in " ".join(payload["blocked_uses"])
+    assert payload["metadata_source_configured"] is False
+    assert payload["metadata_source_status"] == "not_configured"
+    assert payload["item_count"] == 0
+    assert payload["channel_counts"] == {}
+    assert payload["import_errors"] == []
     assert payload["discovery_seeds"] == [
         {
             "id": "social_history_seed_ekologus_linkedin_posts",
@@ -173,6 +180,72 @@ def test_social_history_metadata_audit_rejects_raw_private_fields() -> None:
     assert any("comments" in error for error in audit["errors"])
 
 
+def test_social_history_inventory_from_env_marks_review_ready_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    history_file = tmp_path / "social-history.json"
+    history_file.write_text(
+        social_history_input_example_json(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, str(history_file))
+
+    inventory = build_social_history_inventory_from_env(
+        {
+            "linkedin": _connector_status("linkedin", configured=False),
+            "facebook": _connector_status("facebook", configured=False),
+        },
+        {
+            "linkedin": ["LINKEDIN_ACCESS_TOKEN"],
+            "facebook": ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+        },
+    ).model_dump(mode="json")
+
+    assert inventory["status"] == "review_ready"
+    assert inventory["status_label"] == "spis historii social gotowy do oceny"
+    assert inventory["duplicate_risk_status"] == "blocked_until_social_history_review"
+    assert inventory["metadata_source_configured"] is True
+    assert inventory["metadata_source_status"] == "review_ready"
+    assert inventory["item_count"] == 2
+    assert inventory["channel_counts"] == {"facebook": 1, "linkedin": 1}
+    assert inventory["missing_evidence_ids"] == []
+    assert inventory["import_errors"] == []
+    assert {source["inventory_status"] for source in inventory["sources"]} == {
+        "review_ready"
+    }
+    assert "braku powtórek" not in inventory["status_label"]
+
+
+def test_social_history_inventory_from_env_reports_invalid_without_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    history_file = tmp_path / "social-history.json"
+    history_file.write_text("{not-json", encoding="utf-8")
+    monkeypatch.setenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, str(history_file))
+
+    inventory = build_social_history_inventory_from_env(
+        {
+            "linkedin": _connector_status("linkedin", configured=False),
+            "facebook": _connector_status("facebook", configured=False),
+        },
+        {
+            "linkedin": ["LINKEDIN_ACCESS_TOKEN"],
+            "facebook": ["FACEBOOK_PAGE_ACCESS_TOKEN"],
+        },
+    ).model_dump(mode="json")
+
+    serialized = str(inventory)
+    assert inventory["status"] == "invalid"
+    assert inventory["metadata_source_configured"] is True
+    assert inventory["metadata_source_status"] == "invalid"
+    assert inventory["import_errors"] == [
+        "Configured social history inventory file is not valid JSON"
+    ]
+    assert str(history_file) not in serialized
+
+
 def test_social_history_inventory_endpoint_exposes_public_discovery_seed(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -183,6 +256,7 @@ def test_social_history_inventory_endpoint_exposes_public_discovery_seed(
     monkeypatch.delenv("LINKEDIN_ACCESS_TOKEN", raising=False)
     monkeypatch.delenv("FACEBOOK_PAGE_ID", raising=False)
     monkeypatch.delenv("FACEBOOK_PAGE_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, raising=False)
 
     response = client.get("/api/social/history-inventory")
 
@@ -197,6 +271,36 @@ def test_social_history_inventory_endpoint_exposes_public_discovery_seed(
     assert payload["discovery_seeds"][0]["source_url"] == EKOLOGUS_LINKEDIN_PUBLIC_POSTS_URL
     assert payload["discovery_seeds"][0]["safe_collection_mode"] == "metadata_only"
     assert payload["discovery_seeds"][0]["raw_post_body_allowed"] is False
+
+
+def test_social_history_inventory_endpoint_uses_local_metadata_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    history_file = tmp_path / "social-history.json"
+    history_file.write_text(
+        social_history_input_example_json(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "social_history.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "social_history.duckdb"))
+    monkeypatch.setenv(SOCIAL_HISTORY_INVENTORY_FILE_ENV, str(history_file))
+    monkeypatch.delenv("LINKEDIN_ORGANIZATION_ID", raising=False)
+    monkeypatch.delenv("LINKEDIN_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv("FACEBOOK_PAGE_ID", raising=False)
+    monkeypatch.delenv("FACEBOOK_PAGE_ACCESS_TOKEN", raising=False)
+
+    response = client.get("/api/social/history-inventory")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "review_ready"
+    assert payload["metadata_source_configured"] is True
+    assert payload["metadata_source_status"] == "review_ready"
+    assert payload["item_count"] == 2
+    assert payload["channel_counts"] == {"facebook": 1, "linkedin": 1}
+    assert payload["missing_evidence_ids"] == []
+    assert payload["duplicate_risk_status"] == "blocked_until_social_history_review"
 
 
 def test_social_history_inventory_audit_endpoint_accepts_metadata_only_history() -> None:
@@ -234,3 +338,9 @@ def test_social_history_inventory_audit_endpoint_rejects_raw_fields() -> None:
     assert payload["publish_allowed"] is False
     assert any("raw_post_body" in error for error in payload["errors"])
     assert payload["missing_required_sources"] == ["linkedin", "facebook"]
+
+
+def social_history_input_example_json() -> str:
+    import json
+
+    return json.dumps(social_history_input_example(), ensure_ascii=False)

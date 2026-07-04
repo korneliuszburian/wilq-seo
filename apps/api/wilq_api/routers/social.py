@@ -9,7 +9,7 @@ from wilq.social.history import (
     SocialHistoryImportAudit,
     SocialHistoryInventory,
     audit_social_history_metadata_payload,
-    build_social_history_inventory,
+    build_social_history_inventory_from_env,
 )
 
 router = APIRouter()
@@ -29,7 +29,7 @@ def social_history_inventory() -> SocialHistoryInventory:
         if connector_id in connector_status_by_id
         and connector_status_by_id[connector_id].missing_credentials
     }
-    return build_social_history_inventory(
+    return build_social_history_inventory_from_env(
         connector_status_by_id,
         missing_publish_access,
     )
