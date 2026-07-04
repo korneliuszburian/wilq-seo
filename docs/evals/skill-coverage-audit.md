@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Generated: `2026-07-04T03:51:39+00:00`.
+Generated: `2026-07-04T04:02:46+00:00`.
 
 Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko najnowszy passing artifact i decyzję produktową.
 
@@ -9,7 +9,7 @@ Cel: krótka mapa recovery dla WILQ skills po aktualnych evalach. Pełne przebie
 | Skill | Latest artifact | Score | State | What it proves | Remaining blocker / next step |
 | --- | --- | ---: | --- | --- | --- |
 | `wilq-daily-command` | `.local-lab/evals/codex-skill/20260704T035024Z/wilq-daily-command/result.json` | 10 | gotowy do review | 20 evidence IDs; connectors: google_merchant_center, ahrefs, google_search_console, wordpress_ekologus, wordpress_sklep, google_analytics_4, google_ads; actions: act_review_mercha… | Co zrobić najpierw: otwórz /command-center, przejdź do Merchant i przejrzyj kolejkę problemów pliku produktowego. Dlaczego teraz: primary_next_step z WILQ wskazuje Merchant jako p… |
-| `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260703T214649Z/wilq-ads-doctor/result.json` | 9 | gotowy do review | 12 evidence IDs; connectors: google_ads; actions: act_prepare_ads_campaign_review_queue, act_prepare_google_ads_recommendation_review_queue, act_prepare_custom_segments_from_searc… | Najpierw otwórz /ads-doctor i przejdź priorytet: kampanie oraz budżety, potem rekomendacje, wyszukiwane hasła z wykluczeniami, segmenty i historię zmian. Jak sprawdzić: przy każde… |
+| `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260704T040113Z/wilq-ads-doctor/result.json` | 9 | gotowy do review | 12 evidence IDs; connectors: google_ads; actions: act_prepare_ads_campaign_review_queue, act_prepare_google_ads_recommendation_review_queue, act_prepare_custom_segments_from_searc… | Wejdź w /ads-doctor i kliknij najpierw przegląd kampanii oraz budżetów, bo odczyt Google Ads jest dostępny i WILQ ma pełną kolejkę review. Jak sprawdzić: zacznij od kampanii, pote… |
 | `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260703T123952Z/wilq-gsc-content-doctor/result.json` | 9 | gotowy do review | 5 evidence IDs; connectors: google_search_console, wordpress_ekologus, wordpress_sklep; actions: act_prepare_content_refresh_queue | Najpierw otwórz /content-planner i przejdź przez Mapa decyzji dla strony https://www.ekologus.pl/: najnowszy dostępny dzień szczegółów GSC to 2026-06-29, a częściowe dane zapytań… |
 | `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260704T003318Z/wilq-ahrefs-gap-finder/result.json` | 9 | gotowy do review | 8 evidence IDs; connectors: ahrefs | Najpierw otwórz Mapa luk na /ahrefs, wybierz rekordy luk treści i najlepsze strony konkurentów, a potem wykonaj Kolejność review: Co porównać ręcznie, Decyzja po review i Brief dl… |
 | `wilq-localo-operator` | `.local-lab/evals/codex-skill/20260703T154040Z/wilq-localo-operator/result.json` | 9 | gotowy do review | 2 evidence IDs; connectors: localo; actions: act_review_localo_visibility_facts | Najpierw otwórz /localo i wykonaj Podgląd bez zapisu dla akcji przeglądu widoczności. Decyzja: Czy Localo działa? Tak, jako diagnostyka i Mapa lokalna do review. Kolejność review:… |

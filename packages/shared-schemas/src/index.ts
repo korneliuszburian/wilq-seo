@@ -1980,6 +1980,19 @@ export const AdsOperatorSummarySchema = z.object({
   top_blocked_claim_summary_label: z.string().optional().default("")
 });
 
+export const AdsFreshnessAssessmentSchema = z.object({
+  state: z.enum(["fresh", "stale", "missing", "blocked"]),
+  state_label: z.string().default(""),
+  checked_at: z.string().nullable().optional(),
+  latest_refresh_id: z.string().nullable().optional(),
+  latest_refresh_completed_at: z.string().nullable().optional(),
+  age_hours: z.number().nullable().optional(),
+  stale_after_hours: z.number(),
+  requires_refresh: z.boolean(),
+  summary: z.string(),
+  next_step: z.string()
+});
+
 export const AdsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1990,6 +2003,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   latest_refresh_status_label: z.string().nullable().optional(),
   live_data_status_label: z.string().default(""),
   live_data_available: z.boolean(),
+  freshness_assessment: AdsFreshnessAssessmentSchema,
   campaign_read_contract: AdsCampaignReadContractSchema,
   account_currency_read_contract: AdsAccountCurrencyReadContractSchema,
   business_context_read_contract: AdsBusinessContextReadContractSchema,

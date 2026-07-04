@@ -888,6 +888,18 @@ const adsDiagnostics = {
   connector_status_label: "dostęp skonfigurowany",
   latest_refresh_status_label: "zakończony",
   live_data_status_label: "metryki Google Ads dostępne",
+  freshness_assessment: {
+    state: "fresh",
+    state_label: "dane świeże",
+    checked_at: "2026-06-17T10:00:02Z",
+    latest_refresh_id: "refresh_google_ads_test",
+    latest_refresh_completed_at: "2026-06-17T10:00:01Z",
+    age_hours: 0,
+    stale_after_hours: 48,
+    requires_refresh: false,
+    summary: "Ostatni odczyt danych Google Ads mieści się w progu świeżości.",
+    next_step: "Można użyć danych Google Ads do review bez dodatkowego odświeżenia."
+  },
   connector: {
     ...connectors[0],
     status: "configured",
@@ -7988,6 +8000,12 @@ describe("WILQ dashboard", () => {
       await screen.findByRole("heading", { name: "Google Ads" }, { timeout: 5000 })
     ).toBeInTheDocument();
     expect(screen.getByText("Google Ads: co dziś zrobić")).toBeInTheDocument();
+    expect(
+      screen.getByText("Ostatni odczyt danych Google Ads mieści się w progu świeżości.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Można użyć danych Google Ads do review bez dodatkowego odświeżenia.")
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kolejność pracy" })).toBeInTheDocument();
     expect(screen.getAllByText(/werdykt zwrotu z reklam/).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();

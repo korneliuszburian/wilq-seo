@@ -10852,6 +10852,14 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     assert payload["blocker_count"] >= 1
     assert payload["latest_refresh"]["status"] == "failed"
     assert payload["latest_refresh"]["vendor_data_collected"] is False
+    assert payload["freshness_assessment"]["state"] == "blocked"
+    assert payload["freshness_assessment"]["requires_refresh"] is True
+    assert "nie zakończył się pełnym pobraniem metryk" in payload["freshness_assessment"][
+        "summary"
+    ]
+    assert "uruchom ponownie odczyt danych Google Ads" in payload["freshness_assessment"][
+        "next_step"
+    ]
     oauth_section = next(
         section for section in payload["sections"] if section["id"] == "ads_oauth_blocker"
     )
@@ -11495,6 +11503,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     payload = response.json()
     assert payload["live_data_available"] is True
     assert payload["latest_refresh"]["status"] == "completed"
+    assert payload["freshness_assessment"]["state"] == "fresh"
+    assert payload["freshness_assessment"]["state_label"] == "dane świeże"
+    assert payload["freshness_assessment"]["requires_refresh"] is False
+    assert payload["freshness_assessment"]["stale_after_hours"] == 48
+    assert "Google Ads" in payload["freshness_assessment"]["summary"]
     assert payload["blocked_handoff"] is None
     read_contract = payload["campaign_read_contract"]
     assert read_contract["status"] == "ready"

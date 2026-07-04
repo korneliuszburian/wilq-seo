@@ -98,9 +98,14 @@ export function AdsDoctorSurface() {
             values={[
               `${data.connector.label}: ${data.connector_status_label}`,
               data.live_data_status_label,
+              data.freshness_assessment.state_label,
               latestRefresh ? `ostatni odczyt: ${data.latest_refresh_status_label}` : null
             ]}
           />
+        </div>
+        <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+          <p>{data.freshness_assessment.summary}</p>
+          <p className="mt-1 font-medium text-ink">{data.freshness_assessment.next_step}</p>
         </div>
         {latestRefresh?.errors.length ? (
           <div className="mt-3 rounded-md border border-risk/30 bg-risk/10 p-3 text-sm text-risk">

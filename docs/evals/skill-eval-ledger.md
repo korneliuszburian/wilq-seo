@@ -120,6 +120,44 @@ Result:
   start from data refresh or data-access confirmation before review. Live
   stage snapshot reports `score range 9-10` and `1` skill at `10/10`.
 
+## 2026-07-04 - Ads Doctor freshness is API-owned and visible
+
+Purpose:
+
+- Stop making Ads Doctor infer source freshness from refresh runs or skill
+  prose.
+- Expose Google Ads read freshness as a typed API/dashboard field so the
+  operator sees whether to refresh before reviewing budgets, recommendations,
+  search terms, exclusions or segments.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py::test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts -q
+rtk uv run ruff check wilq/briefing/ads_diagnostics.py wilq/schemas.py tests/test_api_contracts.py
+rtk uv run mypy wilq/briefing/ads_diagnostics.py
+rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand
+rtk pnpm --dir packages/shared-schemas typecheck
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/dashboard_usefulness_audit.py --api-base http://127.0.0.1:8000 --format markdown
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260704T040113Z/wilq-ads-doctor/result.json`.
+- `operator_usefulness_score=9`, `failure_tags=[]`, `blocked=false`.
+- Hard gates all true; source connector `google_ads`; 12 evidence IDs.
+- `/api/ads/diagnostics` now exposes `freshness_assessment` with
+  `fresh/stale/missing/blocked`, `requires_refresh`, age, summary and next
+  step. `/ads-doctor` renders this on the first screen.
+- Live dashboard usefulness audit now uses the Ads freshness next step:
+  "Uruchom odczyt danych Google Ads..." when the current read is stale.
+
 ## 2026-07-03 - Ads Doctor trace language stays useful after simplification
 
 Purpose:

@@ -41,6 +41,10 @@ Date: 2026-07-04
   skill after stale daily decisions started telling the operator to refresh
   source data before manual review. This is strong review-only proof, not full
   Wilku UAT.
+- 2026-07-04 Ads Doctor freshness is now API-owned and visible on `/ads-doctor`:
+  `/api/ads/diagnostics` exposes `freshness_assessment` with refresh/blocker
+  state, age, summary and next step. Current Ads eval remains `9/10`, but live
+  dashboard guidance now starts from refreshing Google Ads when the read is stale.
 - 2026-07-04 social history inventory can now be loaded from a local
   metadata-only JSON via `WILQ_SOCIAL_HISTORY_INVENTORY_FILE`. A valid file
   changes the social inventory from `missing` to `review_ready` and exposes

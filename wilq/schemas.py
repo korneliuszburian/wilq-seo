@@ -3602,6 +3602,19 @@ class AdsOperatorSummary(BaseModel):
         return self
 
 
+class AdsFreshnessAssessment(BaseModel):
+    state: Literal["fresh", "stale", "missing", "blocked"]
+    state_label: str = ""
+    checked_at: datetime = Field(default_factory=utc_now)
+    latest_refresh_id: str | None = None
+    latest_refresh_completed_at: datetime | None = None
+    age_hours: float | None = None
+    stale_after_hours: int = 48
+    requires_refresh: bool
+    summary: str
+    next_step: str
+
+
 class AdsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -3612,6 +3625,7 @@ class AdsDiagnosticsResponse(BaseModel):
     latest_refresh_status_label: str | None = None
     live_data_status_label: str = ""
     live_data_available: bool
+    freshness_assessment: AdsFreshnessAssessment
     campaign_read_contract: AdsCampaignReadContract
     account_currency_read_contract: AdsAccountCurrencyReadContract
     business_context_read_contract: AdsBusinessContextReadContract
