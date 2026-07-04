@@ -20,6 +20,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "8 minut",
         "punkty_niezrozumienia": "Nie było jasne, które karty są tylko ocena-required.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -65,6 +66,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
 
     assert report["report_type"] == "goal_005_content_uat_result_v1"
     assert report["selected_work_item"] == payload["wybrany_work_item"]
+    assert report["session_verdict"] == "popraw materiały i wróć"
     assert report["confusion_points"] == payload["punkty_niezrozumienia"]
     assert report["overall_status"] == "needs_follow_up_before_full_content_uat"
     assert report["missing_follow_up_task"] is False
@@ -120,6 +122,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
     assert "nie odblokowuje publikacji" in report["safety_note"]
 
     markdown = render_markdown(report)
+    assert "Werdykt po 15 minutach: popraw materiały i wróć" in markdown
     assert "## Pytania prowadzące z WILQ" in markdown
     assert "## Odpowiedzi Wilka na pytania WILQ" in markdown
     assert "Czy Service Profile i pierwsza karta BDO są czytelne?" in markdown
@@ -142,6 +145,7 @@ def test_content_uat_input_example_uses_live_candidate_and_review_artifacts() ->
     assert example["wybrany_work_item"] == (
         "content_work_item_content_decision_https___www_ekologus_pl"
     )
+    assert example["werdykt_po_15_minutach"] == "popraw materiały i wróć"
     for key in REQUIRED_TEXT_FIELDS:
         assert key in example
     for key in REQUIRED_BOOLEAN_FIELDS:
@@ -301,6 +305,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "8 minut",
         "punkty_niezrozumienia": "Nie było jasne, czemu BDO nie jest aktualnym zadaniem.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -439,6 +444,7 @@ def test_content_uat_result_has_no_warning_when_plain_show_guide_was_shown() -> 
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "7 minut",
         "punkty_niezrozumienia": "Prosty przewodnik pomógł odczytać techniczne handoffy.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -496,6 +502,7 @@ def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "8 minut",
         "punkty_niezrozumienia": "Nie wiadomo, czemu ten item jest poza kolejką.",
         "wybrany_work_item": "content_work_item_fake",
@@ -524,6 +531,7 @@ def test_content_uat_result_rejects_placeholders_and_invalid_booleans() -> None:
     payload = {
         "data_sesji": "<YYYY-MM-DD>",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "-",
         "punkty_niezrozumienia": "TODO",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -558,6 +566,7 @@ def test_content_uat_result_requires_existing_review_artifact() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "8 minut",
         "punkty_niezrozumienia": "Brak widocznego materiału review blokuje interpretację.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -584,6 +593,7 @@ def test_content_uat_result_requires_review_artifact_list() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "8 minut",
         "punkty_niezrozumienia": "Nie wiadomo, które materiały pokazano.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -609,6 +619,7 @@ def test_content_uat_result_requires_public_service_review_feedback() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "10 minut",
         "punkty_niezrozumienia": "Brak oceny publicznych akcji review.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -637,6 +648,7 @@ def test_content_uat_result_requires_follow_up_when_blocked() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "12 minut",
         "punkty_niezrozumienia": "Nie wiadomo, co trzeba poprawić przed pełnym UAT.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -665,6 +677,7 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "6 minut",
         "punkty_niezrozumienia": "Brak nowych punktów niezrozumienia po review.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -704,6 +717,7 @@ def test_content_uat_result_has_no_scorecard_follow_up_for_strong_approved_mater
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "5 minut",
         "punkty_niezrozumienia": "Brak.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -741,6 +755,7 @@ def test_content_uat_result_requires_scorecard_for_shown_artifacts() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "8 minut",
         "punkty_niezrozumienia": "Brak oceny materiału review.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -767,6 +782,7 @@ def test_content_uat_result_rejects_invalid_scorecard_values() -> None:
     payload = {
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
+        "werdykt_po_15_minutach": "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "8 minut",
         "punkty_niezrozumienia": "Skala ocen była niejasna.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
@@ -802,6 +818,36 @@ def test_content_uat_result_rejects_invalid_scorecard_values() -> None:
     assert "musi mieć decyzję: zatwierdź, popraw, odrzuć albo odśwież" in message
     assert "musi mieć czytelność 1-5" in message
     assert "musi mieć najwazniejsza_poprawka" in message
+
+
+def test_content_uat_result_rejects_invalid_session_verdict() -> None:
+    payload = {
+        "data_sesji": "2026-07-02",
+        "osoba": "Wilku",
+        "werdykt_po_15_minutach": "może chyba tak",
+        "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Werdykt był niejednoznaczny.",
+        "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+        "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
+        "oceny_materialow_review": _scorecard(
+            ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"]
+        ),
+        "pytania_skad_to_wzielo": "Źródła danych były jasne.",
+        "miejsca_generyczne_off_brand": "Brak.",
+        "najwiekszy_brak_produktu": "Brak.",
+        "wilku_rozumie_blokady_pelnego_uat": "tak",
+        "service_profile_czytelny": "tak",
+        "public_service_review_actions_czytelne": "tak",
+        "private_review_actions_czytelne": "tak",
+        "private_policy_review_actions_czytelne": "tak",
+        "mozna_przejsc_do_pelnego_content_uat": "nie",
+        "follow_up_beads": ["wilq-seo-next: zapisać jednoznaczny werdykt"],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_content_uat_result_report(payload)
+
+    assert "werdykt po 15 minutach musi być jednym z" in str(error.value)
 
 
 def _scorecard(artifacts: list[str], *, decision: str = "popraw") -> list[dict[str, object]]:

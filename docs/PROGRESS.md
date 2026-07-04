@@ -100,6 +100,11 @@ Date: 2026-07-04
   conversation agenda: status, BDO Service Profile review, private source
   trace, Sales Brief signal and explicit stop/defer decision when source trace
   or Ekologus-specific language is unclear.
+- 2026-07-04 Goal 005 UAT proof JSON now requires
+  `werdykt_po_15_minutach`, so the session outcome is explicit
+  (`przejdź do pełnego testu treści`, `zostań przy review`,
+  `popraw materiały i wróć`, `odrzuć ten kierunek`) instead of inferred from
+  several boolean fields.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal

@@ -11,6 +11,7 @@ from typing import Any
 REQUIRED_TEXT_FIELDS = {
     "data_sesji": "data sesji",
     "osoba": "osoba",
+    "werdykt_po_15_minutach": "werdykt po 15 minutach",
     "czas_do_zrozumienia_statusu": "czas do zrozumienia statusu",
     "punkty_niezrozumienia": "punkty niezrozumienia",
     "wybrany_work_item": "wybrane zadanie treściowe",
@@ -70,6 +71,13 @@ REVIEW_ARTIFACT_LABELS = {
     ),
 }
 REVIEW_SCORECARD_DECISIONS = {"zatwierdź", "popraw", "odrzuć", "odśwież"}
+SESSION_VERDICT_FIELD = "werdykt_po_15_minutach"
+SESSION_VERDICTS = {
+    "przejdź do pełnego testu treści",
+    "zostań przy review",
+    "popraw materiały i wróć",
+    "odrzuć ten kierunek",
+}
 REVIEW_SCORECARD_SCORE_FIELDS = {
     "czytelnosc_1_5": "czytelność",
     "uzytecznosc_1_5": "użyteczność",
@@ -202,6 +210,7 @@ def build_content_uat_input_example(
     return {
         "data_sesji": "<YYYY-MM-DD>",
         "osoba": "Wilku",
+        SESSION_VERDICT_FIELD: "popraw materiały i wróć",
         "czas_do_zrozumienia_statusu": "UZUPEŁNIJ: np. 8 minut",
         "punkty_niezrozumienia": (
             "UZUPEŁNIJ: co było niejasne w statusie, blokadach albo kolejce"
@@ -454,6 +463,7 @@ def build_content_uat_result_report(
         "report_type": "goal_005_content_uat_result_v1",
         "date": str(payload["data_sesji"]).strip(),
         "person": str(payload["osoba"]).strip(),
+        "session_verdict": str(payload[SESSION_VERDICT_FIELD]).strip(),
         "selected_work_item": selected_work_item,
         "time_to_status_understanding": str(
             payload["czas_do_zrozumienia_statusu"]
@@ -513,6 +523,12 @@ def validate_content_uat_payload(
     for key, label in REQUIRED_BOOLEAN_FIELDS.items():
         if normalize_bool(payload.get(key)) is None:
             errors.append(f"{label} musi mieć wartość tak albo nie")
+    session_verdict = str(payload.get(SESSION_VERDICT_FIELD) or "").strip()
+    if session_verdict and session_verdict not in SESSION_VERDICTS:
+        errors.append(
+            "werdykt po 15 minutach musi być jednym z: "
+            + ", ".join(sorted(SESSION_VERDICTS))
+        )
     if not list_payload(payload.get("follow_up_beads")) and normalize_bool(
         payload.get("mozna_przejsc_do_pelnego_content_uat")
     ) is False:
@@ -562,6 +578,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Typ: `{report['report_type']}`",
         f"- Data: `{report['date']}`",
         f"- Osoba: `{report['person']}`",
+        f"- Werdykt po 15 minutach: {report['session_verdict']}",
         f"- Materiał: `{report['selected_work_item']}`",
         f"- Status: {visible_status(report['overall_status'])}",
         f"- Czas do zrozumienia statusu: {report['time_to_status_understanding']}",
