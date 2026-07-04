@@ -175,6 +175,11 @@ Date: 2026-07-04
   Live output starts from `ekologus_claim_policy_legal_safety` and lists the
   private trace/freshness/audience/retention/deletion/eval fields needed before
   any reviewed/private source can move toward approval.
+- 2026-07-04 Service Profile review session cards now use normal Polish for
+  owner/Wilku review: `wniosek o zatwierdzenie`, `źródła`, `finalne treści`,
+  `Ślad techniczny` and `JSON wyniku` replace visible `promotion request`,
+  `source facts`, `production-depth`, `Proof` and `JSON proof` wording in the
+  conversation card while keeping technical IDs available as audit trace.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

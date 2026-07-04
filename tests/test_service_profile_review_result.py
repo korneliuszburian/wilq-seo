@@ -148,11 +148,20 @@ def test_service_profile_review_session_card_is_plain_public_handoff() -> None:
 
     assert "# Service Profile review - karta rozmowy" in card
     assert "Sprawdzamy publiczne karty usług" in card
+    assert "wniosek o zatwierdzenie" in card
     assert "BDO i sprawozdawczość środowiskowa" in card
     assert "Możliwe decyzje: zatwierdź, wróć z poprawkami" in card
     assert "czy źródło i pochodzenie faktu są jasne" in card
     assert "czy zablokowane twierdzenia zostały sprawdzone" in card
-    assert "Proof: `service_profile_review_card_ekologus_service_bdo_reporting`" in card
+    assert (
+        "Ślad techniczny: `service_profile_review_card_ekologus_service_bdo_reporting`"
+        in card
+    )
+    assert "promotion request" not in card
+    assert "source facts" not in card
+    assert "production-depth" not in card
+    assert "Proof:" not in card
+    assert "JSON wyniku" in card
     assert "--print-input-example --review-type public_service_cards" in card
     assert "<plik.json> --review-type public_service_cards" in card
 

@@ -230,7 +230,7 @@ def render_session_card(
     title = (
         "publiczne karty usług"
         if review_type == "public_service_cards"
-        else "prywatne propozycje ekologus-ai"
+        else "prywatne propozycje z ekologus-ai"
     )
     api_base = str(live_context.get("api_base") or "").strip()
     input_command = (
@@ -250,8 +250,8 @@ def render_session_card(
         "",
         (
             f"Sprawdzamy {title}. Wynik tej rozmowy może przygotować osobny "
-            "promotion request, ale sam nie edytuje kart, source facts ani "
-            "production-depth."
+            "wniosek o zatwierdzenie, ale sam nie zatwierdza wiedzy, nie "
+            "edytuje źródeł i nie odblokowuje finalnych treści."
         ),
         "",
         "## Co ocenić jako pierwsze",
@@ -268,7 +268,7 @@ def render_session_card(
                 f"{index}. {label}",
                 f"   - Możliwe decyzje: {review_decision_options_label()}",
                 f"   - Co sprawdzić: {review_decision_required_fields_label(decision)}",
-                f"   - Proof: `{action_id}` -> `{target}`",
+                f"   - Ślad techniczny: `{action_id}` -> `{target}`",
             ]
         )
     lines.extend(
@@ -284,7 +284,7 @@ def render_session_card(
             "",
             "## Jak zapisać wynik",
             "",
-            f"1. Wygeneruj JSON proof: `{input_command}`",
+            f"1. Wygeneruj JSON wyniku: `{input_command}`",
             "2. Uzupełnij decyzje po rozmowie.",
             f"3. Sprawdź wynik: `{check_command}`",
         ]
