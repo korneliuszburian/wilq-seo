@@ -91,22 +91,19 @@ Prywatny ślad źródłowy do pokazania bez surowego prywatnego tekstu:
 1. **Bezpieczeństwo prawne, poufność i zgody**
    - zakres: polityka twierdzeń;
    - źródło do wskazania: `KB_021_BEZPIECZENSTWO_PRAWNE`;
-   - bramka: `goal_005_private_claim_policy_review`,
-     `goal_006_claim_ledger_gate`;
+   - bramka: review polityki twierdzeń, bramka listy dozwolonych twierdzeń;
    - retencja: decyzja właściciela wymagana;
    - stan: zredagowane, ślad gotowy, bez promocji do finalnych treści.
 2. **Styl marki i polityka twierdzeń Ekologus**
    - zakres: polityka twierdzeń;
    - źródło do wskazania: `KB_014_STYL_MARKI`;
-   - bramka: `goal_005_private_claim_policy_review`,
-     `goal_006_claim_ledger_gate`;
+   - bramka: review polityki twierdzeń, bramka listy dozwolonych twierdzeń;
    - retencja: decyzja właściciela wymagana;
    - stan: zredagowane, ślad gotowy, bez promocji do finalnych treści.
 3. **Ślad źródłowy i pakiet dowodów dla prywatnych/ocenionych źródeł**
    - zakres: wymaganie dowodowe;
-   - źródło do wskazania:
-     `ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02`;
-   - bramka: `goal_005_private_evidence_policy_review`;
+   - źródło do wskazania: propozycja ekologus-ai: ślad dowodowy;
+   - bramka: review śladu dowodowego;
    - retencja: decyzja właściciela wymagana;
    - stan: zredagowane, ślad gotowy, bez promocji do finalnych treści.
 

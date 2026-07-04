@@ -217,21 +217,24 @@ Date: 2026-07-04
   treści` może odblokować domknięcie; pozostałe werdykty są użytecznym
   wynikiem UAT, ale oznaczają dalsze prace, nie dowód domknięcia.
 - 2026-07-04 ta sama karta rozmowy pokazuje prywatne bramki źródłowe jako
-  `bramka: goal_*` zamiast technicznej etykiety eval, więc Wilku widzi
-  zrozumiałą etykietę bez utraty stabilnych ID do audytu.
-- 2026-07-04 completion guard Goal 005 używa tej samej etykiety
-  `bramka: goal_*` w sekcji `Prywatny ślad źródłowy do pokazania`; live
-  markdown nadal kończy się statusem blokującym bez UAT, ale nie pokazuje już
-  technicznej etykiety eval w widocznej liście śladu.
+  normalne etykiety review (`review polityki twierdzeń`, `bramka listy
+  dozwolonych twierdzeń`, `review śladu dowodowego`), więc Wilku widzi
+  zrozumiały ślad bez dekodowania wewnętrznych identyfikatorów.
+- 2026-07-04 completion guard Goal 005 używa tych samych polskich etykiet w
+  sekcji `Prywatny ślad źródłowy do pokazania`; live markdown nadal kończy się
+  statusem blokującym bez UAT, ale nie pokazuje już technicznej etykiety eval
+  ani raw bramek w widocznej liście śladu.
 - 2026-07-04 karta rozmowy Goal 005 wyjaśnia teraz, że temat treściowy
   (`ekologus` homepage z kolejki treści) i pierwsza decyzja Service Profile
   (BDO jako pierwsza karta wiedzy do oceny) są dwoma sprawdzeniami w jednej
   sesji, więc Wilku nie musi zgadywać, czemu te wątki występują razem.
 - 2026-07-04 główny handoff
   `docs/handoffs/2026-07-03-wilku-service-profile-review-now.md` używa tych
-  samych etykiet co karta rozmowy i completion guard: prywatny ślad pokazuje
-  `bramka: goal_*` zamiast technicznej etykiety eval oraz unika angielskiego
-  opisu surowego prywatnego tekstu i finalnych treści w widocznym tekście.
+  samych polskich etykiet co karta rozmowy i completion guard: prywatny ślad
+  pokazuje review polityki twierdzeń, listę dozwolonych twierdzeń i review
+  śladu dowodowego zamiast raw `goal_*` / `ekologus_ai_*` oraz unika
+  angielskiego opisu surowego prywatnego tekstu i finalnych treści w widocznym
+  tekście.
 - 2026-07-03 Service Profile review recorder now explains review type
   mismatches directly: a public BDO action pasted into private mode points the
   operator to `--review-type public_service_cards`, and a private proposal
