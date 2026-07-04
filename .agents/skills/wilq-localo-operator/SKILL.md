@@ -88,6 +88,11 @@ Widocznie używaj tych sekcji:
 - `Decyzja po review`: po sprawdzeniu operator może odświeżyć Localo, przygotować listę działań lokalnych, odłożyć temat albo zablokować claim.
 - `Brief dla marketera`: 3-5 zdań normalnym językiem: co wiemy, co można sprawdzić, czego brakuje i następny bezpieczny krok.
 
+Jeśli API zwraca `operator_summary.review_*`, użyj tych pól jako źródła
+`Decyzja po review`, pytania review i następnego bezpiecznego kliknięcia.
+To jest karta decyzyjna, nie osobny ActionObject; jako action candidate traktuj
+tylko prawdziwe `review_action_ids` albo `action_ids` zwrócone przez WILQ API.
+
 Jeśli `connector.freshness.state` jest `stale` albo notatka mówi `do
 odświeżenia`, nie nazywaj odczytu świeżym. Powiedz: "dostęp działa, ale odczyt
 jest do odświeżenia" i ustaw odświeżenie Localo jako pierwszy krok przed

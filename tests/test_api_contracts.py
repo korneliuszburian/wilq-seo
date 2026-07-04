@@ -7766,6 +7766,13 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     operator_summary = payload["operator_summary"]
     assert operator_summary["visibility_fact_count"] == 4
     assert "agregaty widoczności" in operator_summary["summary"]
+    assert operator_summary["review_card_label"] == "Karta review Localo"
+    assert "listę lokalnych obserwacji" in operator_summary["review_decision_after_review"]
+    assert "brakujące dane" in operator_summary["review_question_for_operator"]
+    assert operator_summary["review_action_ids"] == [LOCALO_VISIBILITY_REVIEW_ACTION_ID]
+    assert LOCALO_VISIBILITY_REVIEW_ACTION_ID in operator_summary["review_next_safe_click"]
+    assert "bez zapisu" in operator_summary["review_next_safe_click"]
+    assert "bez publikacji zmian" in operator_summary["review_next_safe_click"]
     assert "4 agregatów Localo" not in review_decision["summary"]
     assert "Przejrzyj agregaty Localo" in operator_summary["next_step"]
     assert (

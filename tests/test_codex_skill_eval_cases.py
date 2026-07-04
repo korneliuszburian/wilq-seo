@@ -438,6 +438,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             },
             "action_ids": {"act_review_localo_visibility_facts"},
             "validated_action_ids": {"act_review_localo_visibility_facts"},
+            "action_candidates_only_with_action_id": True,
         },
         "wilq-social-publisher": {
             "surface_path": "/social-publisher",
@@ -916,6 +917,16 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             assert '"faq_direction": (preview.get("faq_direction") or [])[:4]' in (
                 content_smoke_script
             )
+
+    localo_skill_doc = Path(".agents/skills/wilq-localo-operator/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    localo_smoke_script = Path(
+        ".agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    assert "operator_summary.review_*" in localo_skill_doc
+    assert "localo_review_card" in localo_smoke_script
+    assert "review_action_ids" in localo_smoke_script
 
     ahrefs_skill_doc = Path(".agents/skills/wilq-ahrefs-gap-finder/SKILL.md").read_text(
         encoding="utf-8"

@@ -168,6 +168,19 @@ def _operator_summary(
             title="Co marketer ma wiedzieć o Localo",
             summary=_operator_summary_text(visibility_fact_count, missing_contracts),
             next_step=_operator_summary_next_step(visibility_fact_count, missing_contracts),
+            review_decision_after_review=_operator_review_decision_after_review(
+                visibility_fact_count,
+                missing_contracts,
+            ),
+            review_question_for_operator=_operator_review_question(
+                visibility_fact_count,
+                missing_contracts,
+            ),
+            review_next_safe_click=_operator_review_next_safe_click(
+                visibility_fact_count,
+                top_decisions,
+            ),
+            review_action_ids=_operator_review_action_ids(top_decisions),
             top_decision_ids=[decision.id for decision in top_decisions],
             access_status=access_probe.status,
             visibility_fact_count=visibility_fact_count,
@@ -248,6 +261,66 @@ def _operator_summary_next_step(
         "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań "
         "SEO ani zmian w profilu firmy w Google, dopóki odczyt danych Localo "
         "nie dostarczy danych widoczności."
+    )
+
+
+def _operator_review_decision_after_review(
+    visibility_fact_count: int,
+    missing_contracts: list[str],
+) -> str:
+    if visibility_fact_count:
+        if missing_contracts:
+            return (
+                "Po review przygotuj tylko listę lokalnych obserwacji i braków; "
+                "zadania lokalne, zapis GBP i obietnicę poprawy widoczności zostaw zablokowane."
+            )
+        return (
+            "Po review można przygotować listę lokalnych działań do osobnej akcji, "
+            "ale bez zapisu GBP i bez obietnicy wzrostu widoczności."
+        )
+    return (
+        "Po review potwierdź tylko stan dostępu Localo; decyzje lokalnego SEO zostają "
+        "zablokowane do czasu odczytu danych widoczności."
+    )
+
+
+def _operator_review_question(
+    visibility_fact_count: int,
+    missing_contracts: list[str],
+) -> str:
+    if visibility_fact_count:
+        missing_phrase = _localo_missing_contracts_phrase(missing_contracts)
+        return (
+            "Czy dostępne agregaty Localo wystarczą do briefu lokalnego review, "
+            f"czy najpierw uzupełnić brakujące dane: {missing_phrase}?"
+        )
+    return (
+        "Czy mamy odświeżyć Localo, zanim pokażemy marketerowi lokalne rankingi, GBP, "
+        "konkurencję albo recenzje jako podstawę decyzji?"
+    )
+
+
+def _operator_review_next_safe_click(
+    visibility_fact_count: int,
+    decisions: list[LocaloDecisionItem],
+) -> str:
+    action_ids = _operator_review_action_ids(decisions)
+    if action_ids:
+        return (
+            f"Kliknij podgląd `{action_ids[0]}`; to przygotuje review Localo, "
+            "bez zapisu w profilu firmy i bez publikacji zmian."
+        )
+    if visibility_fact_count:
+        return "Przejrzyj agregaty Localo i odśwież brakujące kontrakty przed decyzją."
+    return "Uruchom odczyt Localo; nie oceniaj lokalnej widoczności z samego dostępu."
+
+
+def _operator_review_action_ids(decisions: list[LocaloDecisionItem]) -> list[str]:
+    return _unique(
+        action_id
+        for decision in decisions
+        for action_id in decision.action_ids
+        if action_id == LOCALO_VISIBILITY_REVIEW_ACTION_ID
     )
 
 

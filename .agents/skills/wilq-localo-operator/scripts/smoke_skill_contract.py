@@ -108,6 +108,25 @@ def main() -> int:
         raise SystemExit("Localo diagnostics must expose evidence IDs")
     if not decision_queue:
         raise SystemExit("Localo diagnostics must expose a decision queue")
+    operator_summary = localo_diagnostics.get("operator_summary") or {}
+    if not isinstance(operator_summary, dict):
+        raise SystemExit("Localo diagnostics must expose operator_summary")
+    if operator_summary.get("review_card_label") != "Karta review Localo":
+        raise SystemExit("Localo operator summary must expose review card label")
+    missing_review_fields = [
+        field
+        for field in (
+            "review_decision_after_review",
+            "review_question_for_operator",
+            "review_next_safe_click",
+        )
+        if not str(operator_summary.get(field) or "").strip()
+    ]
+    if missing_review_fields:
+        raise SystemExit(
+            "Localo operator summary missing review fields: "
+            + ", ".join(missing_review_fields)
+        )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     action_objects = pack.get("active_action_objects") or []
@@ -285,6 +304,12 @@ def main() -> int:
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
             raise SystemExit(f"Localo action validation failed: {validation}")
+    review_action_ids = operator_summary.get("review_action_ids") or []
+    if LOCALO_VISIBILITY_REVIEW_ACTION_ID in active_action_ids:
+        if review_action_ids != [LOCALO_VISIBILITY_REVIEW_ACTION_ID]:
+            raise SystemExit("Localo review card must point only to the review action")
+    elif review_action_ids:
+        raise SystemExit("Localo review card must not invent review action IDs")
 
     print(
         json.dumps(
@@ -301,6 +326,17 @@ def main() -> int:
                 ),
                 "localo_metric_summary": metric_summary,
                 "localo_access_status": access_probe.get("status"),
+                "localo_review_card": {
+                    "label": operator_summary.get("review_card_label"),
+                    "decision_after_review": operator_summary.get(
+                        "review_decision_after_review"
+                    ),
+                    "question_for_operator": operator_summary.get(
+                        "review_question_for_operator"
+                    ),
+                    "next_safe_click": operator_summary.get("review_next_safe_click"),
+                    "action_ids": review_action_ids,
+                },
                 "localo_decision_ids": sorted(
                     decision_id for decision_id in decision_ids if decision_id
                 ),

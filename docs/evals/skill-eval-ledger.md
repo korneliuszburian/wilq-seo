@@ -10347,3 +10347,41 @@ Result:
 - Score remains `9/10`, not forced to `10/10`: Ahrefs now has API-backed
   cross-check proof, but the next product step is a safe handoff from a concrete
   candidate to content brief/ActionObject review, not only a review-only order.
+
+## 2026-07-04 - Localo API-owned review card remains 9/10
+
+Purpose:
+
+- Move the Localo review decision from skill wording into the typed
+  `operator_summary.review_*` API contract.
+- Keep the Localo workflow useful without pretending that local tasks, GBP
+  writes or visibility improvement are unlocked.
+- Prevent fake/manual steps from appearing as action candidates in the eval.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k 'localo_diagnostics_exposes_partial_visibility_contracts'
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk pnpm --filter @wilq/shared-schemas test -- --runInBand
+rtk uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- `/api/localo/diagnostics` now exposes `operator_summary.review_card_label`,
+  `review_decision_after_review`, `review_question_for_operator`,
+  `review_next_safe_click` and `review_action_ids`.
+- The Localo smoke script now verifies the API-owned review card and fails if
+  it invents action IDs.
+- The eval case sets `action_candidates_only_with_action_id=true`, so manual
+  review steps must stay in recommendations or blockers.
+- Latest passing proof:
+  `.local-lab/evals/codex-skill/20260704T065555Z/wilq-localo-operator/result.json`.
+- The output has exactly one action candidate:
+  `act_review_localo_visibility_facts` with `validation_state=validated`.
+- `operator_usefulness_score` remains `9`, not `10`: Localo is useful for a
+  review-only marketer workflow, but final Wilku-ready status still needs a
+  reviewer pass and local task readiness instead of only aggregate visibility
+  proof.

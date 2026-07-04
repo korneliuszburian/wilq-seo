@@ -343,7 +343,8 @@
     ],
     "expected_validated_action_ids": [
       "act_review_localo_visibility_facts"
-    ]
+    ],
+    "action_candidates_only_with_action_id": true
   },
   {
     "skill": "wilq-content-strategist",
