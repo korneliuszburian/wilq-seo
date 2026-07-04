@@ -173,6 +173,9 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Następny bezpieczny krok")).toBeInTheDocument();
     expect(screen.getByText(/Zostaw tryb dry-run/)).toBeInTheDocument();
     expect(screen.getByText("Ślad wymagany przed write")).toBeInTheDocument();
+    expect(screen.getByText(/Brakuje: Podgląd akcji wygenerowany/)).toBeInTheDocument();
+    expect(screen.getByText("Pozostałe blokady")).toBeInTheDocument();
+    expect(screen.getByText(/Adapter REST WordPress nie jest gotowy/)).toBeInTheDocument();
     expect(screen.getByText("Podgląd akcji wygenerowany")).toBeInTheDocument();
     expect(screen.getByText("Claim Ledger: co wolno powiedzieć")).toBeInTheDocument();
     expect(screen.getAllByText("Do szkicu")[0]).toBeInTheDocument();
@@ -1603,6 +1606,12 @@ function wordpressDraftWriteReadiness(): ContentWordPressDraftWriteReadinessResp
           "WILQ może przygotować i sprawdzić szkic, ale live write wymaga jawnego włączenia WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES.",
         next_step:
           "Zostaw tryb dry-run albo włącz env dopiero po potwierdzeniu ścieżki preview, review, confirm i audit."
+      },
+      {
+        code: "wordpress_rest_adapter_not_configured",
+        label: "Adapter REST WordPress nie jest gotowy",
+        reason: "Brakuje kompletnej konfiguracji REST.",
+        next_step: "Uzupełnij REST adapter przed powrotem do live write."
       }
     ],
     operator_next_step:

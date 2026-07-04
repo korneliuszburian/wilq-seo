@@ -981,6 +981,9 @@ function WordPressDraftWriteReadinessPanel({
 
   const readiness = draftWriteReadiness.data;
   const firstBlocker = readiness.blockers[0] ?? null;
+  const missingAuditLabels = readiness.required_audit_events
+    .filter((requirement) => !requirement.satisfied)
+    .map((requirement) => requirement.label);
 
   return (
     <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
@@ -1029,9 +1032,30 @@ function WordPressDraftWriteReadinessPanel({
               {firstBlocker.label}: {firstBlocker.reason}
             </p>
           ) : null}
+          {readiness.blockers.length > 1 ? (
+            <div className="mt-3">
+              <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                Pozostałe blokady
+              </div>
+              <ul className="mt-1 grid gap-1 text-sm leading-6 text-slate-700">
+                {readiness.blockers.slice(1, 5).map((blocker) => (
+                  <li key={blocker.code}>- {blocker.label}: {blocker.next_step}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Ślad wymagany przed write</h3>
+          {missingAuditLabels.length > 0 ? (
+            <p className="mt-2 text-sm leading-6 text-risk">
+              Brakuje: {missingAuditLabels.join(", ")}.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-success">
+              Wymagany ślad audytu jest kompletny.
+            </p>
+          )}
           <div className="mt-2 grid gap-1 text-sm leading-6 text-slate-700">
             {readiness.required_audit_events.map((requirement) => (
               <div key={requirement.event_type} className="flex justify-between gap-3">

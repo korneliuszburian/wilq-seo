@@ -55,6 +55,10 @@ Date: 2026-07-04
   readiness: action counts, first WordPress draft-only write candidate,
   blocker summary, draft-only contract flags and explicit zero live-write
   attempts/possibility.
+- 2026-07-04 `/content-workflow` WordPress draft write readiness now shows
+  missing audit labels and additional write blockers in the visible panel, so
+  the operator sees the concrete trail to draft-only write readiness without
+  opening raw technical data.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
