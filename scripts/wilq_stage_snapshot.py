@@ -5,6 +5,12 @@ import argparse
 import json
 from typing import Any
 
+from audit_skill_reviewer_scorecards import (
+    DEFAULT_SCORECARD_DIR,
+)
+from audit_skill_reviewer_scorecards import (
+    build_report as build_scorecard_report,
+)
 from dashboard_usefulness_audit import build_report as build_dashboard_report
 from goal_005_completion_check import build_completion_report
 from record_service_profile_review_result import (
@@ -79,6 +85,7 @@ def main() -> int:
 def build_stage_snapshot(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
     dashboard_report = build_dashboard_report(api_base)
     skill_report = build_skill_report()
+    scorecard_report = build_scorecard_report(DEFAULT_SCORECARD_DIR, strict=False)
     completion_report = build_completion_report(api_base=api_base)
     live_context = load_live_context(api_base)
     private_review_example = build_input_example(
@@ -88,6 +95,7 @@ def build_stage_snapshot(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
     return build_stage_snapshot_from_reports(
         dashboard_report=dashboard_report,
         skill_report=skill_report,
+        reviewer_scorecard_report=scorecard_report,
         completion_report=completion_report,
         private_review_example=private_review_example,
         approval_readiness=(
@@ -104,6 +112,7 @@ def build_stage_snapshot_from_reports(
     dashboard_report: dict[str, Any],
     skill_report: dict[str, Any],
     completion_report: dict[str, Any],
+    reviewer_scorecard_report: dict[str, Any] | None = None,
     private_review_example: dict[str, Any] | None = None,
     approval_readiness: dict[str, Any] | None = None,
     api_base: str = DEFAULT_API_BASE,
@@ -119,6 +128,7 @@ def build_stage_snapshot_from_reports(
     min_score = skill_report.get("minimum_score")
     max_score = skill_report.get("maximum_score")
     skill_quality_blockers = _skill_quality_blockers(skill_report)
+    reviewer_scorecards = _reviewer_scorecard_summary(reviewer_scorecard_report)
 
     completion_status = str(completion_report.get("status") or "unknown")
     blocker = _completion_blocker_label(completion_report)
@@ -160,6 +170,7 @@ def build_stage_snapshot_from_reports(
                 "wilku_ready_skill_count": wilku_ready_skills,
                 "nearest_10_blockers": skill_quality_blockers,
                 "nearest_10_plan": _skill_to_10_plan(skill_quality_blockers),
+                "reviewer_scorecards": reviewer_scorecards,
                 "pass": bool(skill_report.get("pass")),
             },
             "goal_005": {
@@ -242,6 +253,13 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
             "",
         ]
     )
+    if skills.get("reviewer_scorecards", {}).get("scorecard_count"):
+        scorecards = skills["reviewer_scorecards"]
+        lines.append(
+            f"- Reviewer pass: {scorecards['scorecard_count']} scorecardy, "
+            f"{scorecards['candidate_for_10_count']} kandydatów do 10/10, "
+            f"{scorecards['rerun_required_count']} wymagają rerun eval."
+        )
     lines.extend(f"- {item}" for item in snapshot["what_is_real_now"])
     if skills.get("nearest_10_blockers"):
         lines.extend(["", "## Jak podbić skille do 10/10", ""])
@@ -475,6 +493,37 @@ def _skill_quality_blockers(
             }
         )
     return blockers[:limit]
+
+
+def _reviewer_scorecard_summary(
+    report: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(report, dict):
+        return {
+            "scorecard_count": 0,
+            "candidate_for_10_count": 0,
+            "rerun_required_count": 0,
+            "failure_count": 0,
+            "rows": [],
+        }
+    rows = [
+        {
+            "skill": row.get("skill"),
+            "decision": row.get("decision"),
+            "can_consider_10": row.get("can_consider_10"),
+            "rerun_eval_required": row.get("rerun_eval_required"),
+            "next_step": row.get("next_step"),
+        }
+        for row in report.get("rows") or []
+        if isinstance(row, dict) and row.get("status") == "valid"
+    ]
+    return {
+        "scorecard_count": int(report.get("scorecard_count") or 0),
+        "candidate_for_10_count": int(report.get("candidate_for_10_count") or 0),
+        "rerun_required_count": int(report.get("rerun_required_count") or 0),
+        "failure_count": int(report.get("failure_count") or 0),
+        "rows": rows,
+    }
 
 
 def _skill_to_10_plan(blockers: list[dict[str, Any]]) -> list[dict[str, str]]:

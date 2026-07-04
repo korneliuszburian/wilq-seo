@@ -1,0 +1,40 @@
+{
+  "skill": "wilq-gsc-content-doctor",
+  "reviewer": "Codex reviewer: SEO/content strategist",
+  "decision": "candidate_for_10",
+  "can_consider_10": "tak",
+  "rerun_eval_required": "tak",
+  "criteria": [
+    {
+      "field": "decyzja_w_30_sekund",
+      "question": "Czy marketer wie w 30 sekund, co otworzyć i co sprawdzić najpierw?",
+      "score": 5
+    },
+    {
+      "field": "dowody_i_zrodla",
+      "question": "Czy dowody WILQ i źródła danych wystarczają bez czytania raw JSON?",
+      "score": 5
+    },
+    {
+      "field": "blokady_praktyczne",
+      "question": "Czy blokady mówią jasno czego nie wolno twierdzić ani zapisać?",
+      "score": 5
+    },
+    {
+      "field": "ekologus_specific",
+      "question": "Czy output brzmi jak praca dla Ekologus, a nie ogólna porada marketingowa?",
+      "score": 5
+    },
+    {
+      "field": "oszczednosc_czasu",
+      "question": "Czy wynik oszczędza czas względem ręcznego czytania dashboardu?",
+      "score": 5
+    }
+  ],
+  "follow_up_slots": [
+    "Rerun non-interactive eval po utrzymaniu caveatu o częściowych danych GSC i ręcznej ocenie strony głównej.",
+    "Jeżeli rerun zachowa zawężenie do adresu, dowody GSC/WordPress i blokadę decyzji publikacyjnej, można rozważyć 10/10.",
+    "Nie używać tego jako dowodu publikacyjnej gotowości; to tylko jakość skilla review."
+  ],
+  "notes": "Reviewer pass uznaje GSC Content Doctor za kandydata do 10/10, bo output jest konkretny i Ekologus-specific, ale wymaga świeżego rerun eval."
+}

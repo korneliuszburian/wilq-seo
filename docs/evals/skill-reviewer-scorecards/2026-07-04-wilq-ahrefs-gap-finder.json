@@ -1,0 +1,40 @@
+{
+  "skill": "wilq-ahrefs-gap-finder",
+  "reviewer": "Codex reviewer: SEO/content strategist",
+  "decision": "popraw",
+  "can_consider_10": "nie",
+  "rerun_eval_required": "tak",
+  "criteria": [
+    {
+      "field": "decyzja_w_30_sekund",
+      "question": "Czy marketer wie w 30 sekund, co otworzyć i co sprawdzić najpierw?",
+      "score": 5
+    },
+    {
+      "field": "dowody_i_zrodla",
+      "question": "Czy dowody WILQ i źródła danych wystarczają bez czytania raw JSON?",
+      "score": 4
+    },
+    {
+      "field": "blokady_praktyczne",
+      "question": "Czy blokady mówią jasno czego nie wolno twierdzić ani zapisać?",
+      "score": 5
+    },
+    {
+      "field": "ekologus_specific",
+      "question": "Czy output brzmi jak praca dla Ekologus, a nie ogólna porada marketingowa?",
+      "score": 4
+    },
+    {
+      "field": "oszczednosc_czasu",
+      "question": "Czy wynik oszczędza czas względem ręcznego czytania dashboardu?",
+      "score": 4
+    }
+  ],
+  "follow_up_slots": [
+    "Przed 10/10 połączyć Ahrefs gap z GSC i WordPress inventory w pierwszym następnym kroku.",
+    "Rerun eval po dodaniu cross-checku: czy temat konkurenta ma istniejący adres Ekologus, query proof albo blokadę tworzenia nowej treści.",
+    "Utrzymać blokadę obietnic efektu SEO/linków; Ahrefs ma wskazywać review, nie gwarancję wzrostu."
+  ],
+  "notes": "Ahrefs Gap Finder jest użyteczny jako review map, ale nie powinien jeszcze być 10/10, bo pierwszy krok nadal opiera się głównie na Ahrefs bez widocznego cross-source rozstrzygnięcia."
+}

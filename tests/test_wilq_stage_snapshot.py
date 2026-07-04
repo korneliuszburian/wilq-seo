@@ -59,6 +59,22 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
                 }
             },
         },
+        reviewer_scorecard_report={
+            "scorecard_count": 3,
+            "candidate_for_10_count": 2,
+            "rerun_required_count": 3,
+            "failure_count": 0,
+            "rows": [
+                {
+                    "status": "valid",
+                    "skill": "wilq-daily-command",
+                    "decision": "candidate_for_10",
+                    "can_consider_10": "tak",
+                    "rerun_eval_required": "tak",
+                    "next_step": "uruchom rerun eval",
+                }
+            ],
+        },
         private_review_example={
             "decisions": [
                 {
@@ -136,6 +152,21 @@ def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None
             ),
         }
     ]
+    assert snapshot["live_proof"]["skills"]["reviewer_scorecards"] == {
+        "scorecard_count": 3,
+        "candidate_for_10_count": 2,
+        "rerun_required_count": 3,
+        "failure_count": 0,
+        "rows": [
+            {
+                "skill": "wilq-daily-command",
+                "decision": "candidate_for_10",
+                "can_consider_10": "tak",
+                "rerun_eval_required": "tak",
+                "next_step": "uruchom rerun eval",
+            }
+        ],
+    }
     assert snapshot["live_proof"]["goal_005"]["closed"] is False
     assert (
         snapshot["live_proof"]["goal_005"]["blocker"]
@@ -237,6 +268,13 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
                 }
             },
         },
+        reviewer_scorecard_report={
+            "scorecard_count": 3,
+            "candidate_for_10_count": 2,
+            "rerun_required_count": 3,
+            "failure_count": 0,
+            "rows": [],
+        },
         private_review_example={
             "decisions": [
                 {
@@ -275,6 +313,8 @@ def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
     assert "gotowe około **75-80%**" in markdown
     assert "13/15 ekranów demo-ready" in markdown
     assert "score range 8-9" in markdown
+    assert "Reviewer pass: 3 scorecardy, 2 kandydatów do 10/10" in markdown
+    assert "3 wymagają rerun eval" in markdown
     assert "Jak podbić skille do 10/10" in markdown
     assert "`wilq-ga4-analyst` (9/10): Uprość opis problemów (not set)…" in markdown
     assert "opis kroku jest ucięty w eval artefakcie" in markdown

@@ -1,0 +1,40 @@
+{
+  "skill": "wilq-ads-doctor",
+  "reviewer": "Codex reviewer: ads/analytics operator",
+  "decision": "candidate_for_10",
+  "can_consider_10": "tak",
+  "rerun_eval_required": "tak",
+  "criteria": [
+    {
+      "field": "decyzja_w_30_sekund",
+      "question": "Czy marketer wie w 30 sekund, co otworzyć i co sprawdzić najpierw?",
+      "score": 5
+    },
+    {
+      "field": "dowody_i_zrodla",
+      "question": "Czy dowody WILQ i źródła danych wystarczają bez czytania raw JSON?",
+      "score": 5
+    },
+    {
+      "field": "blokady_praktyczne",
+      "question": "Czy blokady mówią jasno czego nie wolno twierdzić ani zapisać?",
+      "score": 5
+    },
+    {
+      "field": "ekologus_specific",
+      "question": "Czy output brzmi jak praca dla Ekologus, a nie ogólna porada marketingowa?",
+      "score": 4
+    },
+    {
+      "field": "oszczednosc_czasu",
+      "question": "Czy wynik oszczędza czas względem ręcznego czytania dashboardu?",
+      "score": 5
+    }
+  ],
+  "follow_up_slots": [
+    "Rerun non-interactive eval po najbliższej zmianie Ads Doctor outputu.",
+    "Jeżeli rerun zachowa pierwszy krok, dowody, blokady i 5 akcji bez zapisu, można rozważyć podniesienie do 10/10.",
+    "Nie zmieniać score ręcznie bez nowego eval artifactu."
+  ],
+  "notes": "Reviewer pass uznaje Ads Doctor za kandydata do 10/10, ale wymaga rerun eval; obecny oficjalny score pozostaje 9."
+}

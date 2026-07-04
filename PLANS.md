@@ -155,6 +155,13 @@ instead of another abstract quality note.
 decision values, and renders the reviewer result without automatically changing
 the eval score. This keeps sub-10-to-10 tuning evidence explicit and auditable.
 
+2026-07-04 update: committed reviewer scorecards now cover the nearest sub-10
+skills. Ads Doctor and GSC Content Doctor are `candidate_for_10`, but require
+rerun non-interactive eval before any score claim changes. Ahrefs Gap Finder is
+explicitly `popraw`: it needs stronger GSC/WordPress cross-checking before it
+can be treated as Wilku-ready `10/10`. The stage snapshot now renders the
+scorecard count and candidate count in the main status.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

@@ -10196,3 +10196,35 @@ Result:
   `stale_passing_skills=[]`.
 - This keeps the "skills are 9/10" claim tied to current instructions, not to
   old artifacts.
+
+## 2026-07-04 - Reviewer scorecards for nearest sub-10 skills
+
+Purpose:
+
+- Turn the nearest `9/10` skill blockers into auditable reviewer-pass evidence,
+  not vague "make it better" notes.
+- Separate two cases: skills that can be considered for `10/10` after a rerun
+  eval, and skills that need API/dashboard/skill improvement first.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_skill_tuning_packet.py tests/test_skill_reviewer_scorecard_audit.py tests/test_wilq_stage_snapshot.py -q
+rtk uv run ruff check scripts/skill_tuning_packet.py scripts/audit_skill_reviewer_scorecards.py scripts/wilq_stage_snapshot.py tests/test_skill_tuning_packet.py tests/test_skill_reviewer_scorecard_audit.py tests/test_wilq_stage_snapshot.py
+rtk uv run python scripts/audit_skill_reviewer_scorecards.py --strict
+rtk uv run python scripts/wilq_stage_snapshot.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Reviewer scorecards live in `docs/evals/skill-reviewer-scorecards/`.
+- `wilq-ads-doctor` and `wilq-gsc-content-doctor` are marked
+  `candidate_for_10`, but still require rerun non-interactive eval before any
+  official score change.
+- `wilq-ahrefs-gap-finder` is marked `popraw`: it remains useful, but should
+  show a stronger GSC/WordPress cross-check before being considered `10/10`.
+- `scripts/audit_skill_reviewer_scorecards.py --strict` reports
+  `3` valid scorecards, `2` candidates for `10/10`, `3` requiring rerun eval
+  and `0` failures.
+- `scripts/wilq_stage_snapshot.py` now shows this reviewer-pass summary in the
+  main WILQ stage readout.
