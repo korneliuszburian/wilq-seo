@@ -4887,6 +4887,11 @@ class AhrefsOperatorSummary(BaseModel):
     title: str
     summary: str
     next_step: str
+    review_card_label: str = "Karta review Ahrefs"
+    review_decision_after_review: str = ""
+    review_question_for_operator: str = ""
+    review_next_safe_click: str = ""
+    review_action_ids: list[str] = Field(default_factory=list)
     top_decision_ids: list[str] = Field(default_factory=list)
     gap_read_status: Literal["ready", "blocked"]
     gap_read_status_label: str = ""

@@ -91,6 +91,20 @@ def main() -> int:
     gap_contract = ahrefs_diagnostics.get("gap_read_contract") or {}
     if not isinstance(gap_contract, dict):
         raise SystemExit("Ahrefs diagnostics gap_read_contract must be an object")
+    operator_summary = ahrefs_diagnostics.get("operator_summary") or {}
+    if not isinstance(operator_summary, dict):
+        raise SystemExit("Ahrefs diagnostics operator_summary must be an object")
+    if operator_summary.get("review_card_label") != "Karta review Ahrefs":
+        raise SystemExit("Ahrefs diagnostics must expose review_card_label")
+    for field in (
+        "review_decision_after_review",
+        "review_question_for_operator",
+        "review_next_safe_click",
+    ):
+        if not operator_summary.get(field):
+            raise SystemExit(f"Ahrefs diagnostics must expose {field}")
+    if not isinstance(operator_summary.get("review_action_ids"), list):
+        raise SystemExit("Ahrefs diagnostics must expose review_action_ids")
     missing_read_contracts = gap_contract.get("missing_read_contracts") or []
     missing_read_contract_count = gap_contract.get("missing_read_contracts_total")
     if not isinstance(missing_read_contract_count, int):
@@ -146,6 +160,22 @@ def main() -> int:
         if required_term not in serialized_ahrefs:
             raise SystemExit(f"Ahrefs diagnostics missing {required_term}")
     diagnostics_action_ids = ahrefs_diagnostics.get("action_ids") or []
+    action_validations: dict[str, dict[str, Any]] = {}
+    for action_id in diagnostics_action_ids:
+        if not isinstance(action_id, str) or not action_id:
+            continue
+        quoted_action = urllib.parse.quote(action_id, safe="")
+        validation = request_json(
+            args.api_base,
+            "POST",
+            f"/api/actions/{quoted_action}/validate",
+            timeout_seconds=args.timeout_seconds,
+        )
+        action_validations[action_id] = {
+            "valid": validation.get("valid"),
+            "status": validation.get("status"),
+            "errors": validation.get("errors", []),
+        }
     context_action_ids = [
         item.get("id")
         for item in (pack.get("active_action_objects") or [])
@@ -157,6 +187,19 @@ def main() -> int:
                 "Ahrefs diagnostics must expose content refresh handoff when "
                 "cross-check is API-backed"
             )
+        if CONTENT_REFRESH_ACTION_ID not in operator_summary.get("review_action_ids", []):
+            raise SystemExit(
+                "Ahrefs operator summary must expose content refresh review action "
+                "when cross-check is API-backed"
+            )
+        if CONTENT_REFRESH_ACTION_ID not in str(
+            operator_summary.get("review_next_safe_click", "")
+        ):
+            raise SystemExit(
+                "Ahrefs operator summary must name the safe content refresh click"
+            )
+        if not action_validations.get(CONTENT_REFRESH_ACTION_ID, {}).get("valid"):
+            raise SystemExit("Ahrefs content refresh action must validate as valid")
         if CONTENT_REFRESH_ACTION_ID not in context_action_ids:
             raise SystemExit(
                 "Ahrefs context pack must expose content refresh ActionObject when "
@@ -216,6 +259,7 @@ def main() -> int:
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
                 "diagnostics_action_ids": diagnostics_action_ids[:20],
+                "action_validations": action_validations,
                 "ahrefs_authority_fact_count": ahrefs_diagnostics.get("authority_fact_count"),
                 "ahrefs_gap_fact_count": ahrefs_diagnostics.get("gap_fact_count"),
                 "ahrefs_blocker_count": ahrefs_diagnostics.get("blocker_count"),
@@ -233,6 +277,19 @@ def main() -> int:
                     "freshness_states": freshness_states,
                     "freshness_labels": freshness_labels[:5],
                     "review_mode": "validation-only",
+                },
+                "ahrefs_review_card": {
+                    "review_card_label": operator_summary.get("review_card_label"),
+                    "review_decision_after_review": operator_summary.get(
+                        "review_decision_after_review"
+                    ),
+                    "review_question_for_operator": operator_summary.get(
+                        "review_question_for_operator"
+                    ),
+                    "review_next_safe_click": operator_summary.get(
+                        "review_next_safe_click"
+                    ),
+                    "review_action_ids": operator_summary.get("review_action_ids", []),
                 },
                 "ahrefs_decision_ids": sorted(decision_ids),
                 "evidence_ids": [

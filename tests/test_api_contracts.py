@@ -8247,6 +8247,15 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     )
     assert "luka treści" in operator_summary["blocked_claims"]
     assert "luka treści" in operator_summary["blocked_claim_labels"]
+    assert operator_summary["review_card_label"] == "Karta review Ahrefs"
+    assert "tylko jako kontekstu autorytetu" in operator_summary[
+        "review_decision_after_review"
+    ]
+    assert "rekordy luk treści i linków" in operator_summary[
+        "review_question_for_operator"
+    ]
+    assert operator_summary["review_action_ids"] == []
+    assert "nie ma bezpiecznego kliknięcia" in operator_summary["review_next_safe_click"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     assert all(fact["source_connector"] == "ahrefs" for fact in authority_decision["metric_facts"])
@@ -8662,6 +8671,17 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert "bez rekordów" not in operator_summary["next_step"]
     assert operator_summary["action_ids"] == ["act_prepare_content_refresh_queue"]
     assert operator_summary["action_summary_label"] == "1 akcja do sprawdzenia"
+    assert operator_summary["review_card_label"] == "Karta review Ahrefs"
+    assert "odświeżenia albo scalenia" in operator_summary[
+        "review_decision_after_review"
+    ]
+    assert "Cross-check GSC/WordPress jest dostępny" in operator_summary[
+        "review_decision_after_review"
+    ]
+    assert "nowy brief" in operator_summary["review_question_for_operator"]
+    assert operator_summary["review_action_ids"] == ["act_prepare_content_refresh_queue"]
+    assert "act_prepare_content_refresh_queue" in operator_summary["review_next_safe_click"]
+    assert "bez zapisu" in operator_summary["review_next_safe_click"]
 
     context_response = client.post(
         "/api/codex/context-pack",

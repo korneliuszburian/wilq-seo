@@ -336,6 +336,14 @@ def _operator_summary(
                 "lub linków zwrotnych wymagają konkretnych danych Ahrefs."
             ),
             next_step=_operator_summary_next_step(gap_read_contract),
+            review_decision_after_review=_ahrefs_review_decision_after_review(
+                gap_read_contract
+            ),
+            review_question_for_operator=_ahrefs_review_question_for_operator(
+                gap_read_contract
+            ),
+            review_next_safe_click=_ahrefs_review_next_safe_click(gap_read_contract),
+            review_action_ids=list(gap_read_contract.action_ids),
             top_decision_ids=[decision.id for decision in top_decisions],
             gap_read_status=gap_read_contract.status,
             authority_fact_count=authority_fact_count,
@@ -396,6 +404,57 @@ def _operator_summary_next_step(gap_read_contract: AhrefsGapReadContract) -> str
         "Użyj najważniejszych decyzji Ahrefs jako kontekstu dla widoku Treści. "
         "Nie twierdź o lukach treści, lukach linków ani wzroście widoczności "
         "bez konkretnych danych Ahrefs."
+    )
+
+
+def _ahrefs_review_decision_after_review(
+    gap_read_contract: AhrefsGapReadContract,
+) -> str:
+    if gap_read_contract.status == "ready":
+        if gap_read_contract.cross_check_status == "api_backed":
+            return (
+                "Po review wybierz, czy temat z Ahrefs idzie do odświeżenia albo "
+                "scalenia istniejącej treści, osobnego briefu contentowego, link-review "
+                "czy zostaje w obserwacji. Cross-check GSC/WordPress jest dostępny, "
+                "ale nadal nie odblokowuje obietnic wzrostu ruchu ani autorytetu."
+            )
+        return (
+            "Po review zdecyduj, czy luka z Ahrefs ma przejść do dalszego "
+            "cross-checku GSC/WordPress, briefu contentowego, link-review czy "
+            "obserwacji. Bez cross-checku nie traktuj jej jako gotowego tematu."
+        )
+    return (
+        "Po review możesz użyć Ahrefs tylko jako kontekstu autorytetu. Luki treści, "
+        "luki linków i przewaga konkurencji zostają zablokowane do czasu brakujących "
+        "rekordów Ahrefs."
+    )
+
+
+def _ahrefs_review_question_for_operator(
+    gap_read_contract: AhrefsGapReadContract,
+) -> str:
+    if gap_read_contract.status == "ready":
+        return (
+            "Który temat z Ahrefs ma największy sens dla Ekologus po porównaniu "
+            "intencji, istniejącego URL, GSC i WordPress: odświeżenie, scalenie, "
+            "nowy brief, link-review czy obserwacja?"
+        )
+    return (
+        "Czy dostępne dane Ahrefs wystarczają tylko do kontekstu autorytetu, "
+        "czy najpierw trzeba odświeżyć/uzupełnić rekordy luk treści i linków?"
+    )
+
+
+def _ahrefs_review_next_safe_click(gap_read_contract: AhrefsGapReadContract) -> str:
+    if AHREFS_CONTENT_REFRESH_ACTION_ID in gap_read_contract.action_ids:
+        return (
+            f"Uruchom podgląd bez zapisu dla {AHREFS_CONTENT_REFRESH_ACTION_ID}, "
+            "ale dopiero po ręcznym review intencji, GSC, WordPress i zakresu "
+            "treści/linków. To nie publikuje treści i nie tworzy automatycznego briefu."
+        )
+    return (
+        "Najpierw odśwież lub uzupełnij dane Ahrefs; bez rekordów luk nie ma "
+        "bezpiecznego kliknięcia do kolejki treści."
     )
 
 

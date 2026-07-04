@@ -310,6 +310,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "google_ads",
                 "google_merchant_center",
             },
+            "action_candidates_only_with_action_id": True,
         },
         "wilq-merchant-feed-operator": {
             "surface_path": "/merchant",
@@ -946,6 +947,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "Decyzja po cross-checku" in ahrefs_skill_doc
     assert '"POST"' in ahrefs_smoke_script
     assert '"/api/codex/context-pack"' in ahrefs_smoke_script
+    assert "/api/actions/{quoted_action}/validate" in ahrefs_smoke_script
+    assert '"action_validations": action_validations' in ahrefs_smoke_script
     assert "ahrefs_diagnostics" in ahrefs_smoke_script
     assert "ahrefs_review_gap_records" in ahrefs_smoke_script
     assert "Context pack ahrefs_diagnostics must be an object" in ahrefs_smoke_script

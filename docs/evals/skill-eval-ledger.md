@@ -10348,6 +10348,43 @@ Result:
   cross-check proof, but the next product step is a safe handoff from a concrete
   candidate to content brief/ActionObject review, not only a review-only order.
 
+## 2026-07-04 - Ahrefs API-owned review card reaches 10/10
+
+Purpose:
+
+- Move the final Ahrefs review decision into typed
+  `operator_summary.review_*` fields, matching the GSC/Localo review-card
+  pattern.
+- Prove the Ahrefs skill can return one real WILQ action candidate with
+  `validation_state=validated`, not a pseudo-action or manual checklist.
+
+Proof:
+
+```bash
+rtk uv run ruff check wilq/schemas.py wilq/briefing/ahrefs_diagnostics.py .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py
+rtk uv run mypy wilq/briefing/ahrefs_diagnostics.py
+rtk uv run pytest tests/test_api_contracts.py -q -k 'ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims or ahrefs_diagnostics_builds_gap_review_records_from_metric_facts'
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk pnpm --filter @wilq/shared-schemas test -- --runInBand
+rtk uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- `/api/ahrefs/diagnostics` now exposes `operator_summary.review_card_label`,
+  `review_decision_after_review`, `review_question_for_operator`,
+  `review_next_safe_click` and `review_action_ids`.
+- The Ahrefs smoke script validates `act_prepare_content_refresh_queue` through
+  `POST /api/actions/{action_id}/validate` and exposes `action_validations`.
+- The eval case now requires `action_candidates_only_with_action_id=true`.
+- Latest passing proof:
+  `.local-lab/evals/codex-skill/20260704T070718Z/wilq-ahrefs-gap-finder/result.json`.
+- The output has exactly one action candidate:
+  `act_prepare_content_refresh_queue` with `validation_state=validated`.
+- `operator_usefulness_score` is now `10/10`, with all decision-quality gates
+  true and empty `failure_tags`.
+
 ## 2026-07-04 - Localo API-owned review card remains 9/10
 
 Purpose:

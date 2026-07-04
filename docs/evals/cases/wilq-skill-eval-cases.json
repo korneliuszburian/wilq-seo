@@ -263,6 +263,7 @@
     "minimum_operator_usefulness_score": 9,
     "expected_blocked": false,
     "expected_no_action_ids": false,
+    "action_candidates_only_with_action_id": true,
     "expected_action_ids": [
       "act_prepare_content_refresh_queue"
     ],
