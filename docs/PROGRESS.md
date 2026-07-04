@@ -250,6 +250,12 @@ Date: 2026-07-04
   Wilka` with `Decyzja po review`, `Pytanie do Wilka` and `Następny bezpieczny
   klik`. Latest rerun includes that card but stays 9/10, so the product state
   remains honest: good review workflow, not yet Wilku-ready 10/10.
+- 2026-07-04 Ahrefs Gap Finder now requires a visible `Karta cross-checku
+  GSC/WordPress` with `Sprawdź w GSC`, `Sprawdź w WordPress` and `Decyzja po
+  cross-checku`. Latest rerun
+  `.local-lab/evals/codex-skill/20260704T055929Z/wilq-ahrefs-gap-finder/result.json`
+  passed at 9/10. It stays below 10/10 until WILQ has API-backed cross-source
+  matching from Ahrefs topic to GSC query/page evidence or WordPress inventory.
 - 2026-07-04 Goal 005 completion guard now also links those skill tuning
   packet commands beside Ads/GSC/Ahrefs sub-10 blockers, so the official
   Wilku/owner blocker list points directly to the next usefulness review.

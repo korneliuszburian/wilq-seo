@@ -169,6 +169,13 @@ bezpieczny klik`. The rerun output contains the card, but the score remains
 `9/10`; this is the right outcome while GSC query/page evidence is partial and
 manual inventory/content review still blocks a fully final decision.
 
+2026-07-04 update: Ahrefs Gap Finder now explicitly asks for a `Karta
+cross-checku GSC/WordPress` with `Sprawdź w GSC`, `Sprawdź w WordPress` and
+`Decyzja po cross-checku`. Rerun proof
+`.local-lab/evals/codex-skill/20260704T055929Z/wilq-ahrefs-gap-finder/result.json`
+passed at `9/10`, but it stays below `10/10` until WILQ can make the
+cross-source match through API evidence instead of a manual validation card.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

@@ -10265,3 +10265,36 @@ Result:
 - `operator_usefulness_score` remains `9`, not `10`. This is accepted as an
   honest state: partial GSC query/page evidence and manual inventory review
   still prevent treating the skill as fully Wilku-ready.
+
+## 2026-07-04 - Ahrefs cross-check card remains 9/10
+
+Purpose:
+
+- Make `wilq-ahrefs-gap-finder` visibly route Ahrefs gap topics through
+  GSC/WordPress validation before a content brief.
+- Keep the evidence boundary honest: the isolated Ahrefs skill may name
+  GSC/WordPress as the next validation step, but must not pretend they are
+  current Ahrefs evidence unless the API returns them as source connectors.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Skill instructions and eval case now require `Karta cross-checku
+  GSC/WordPress`, `Sprawdź w GSC`, `Sprawdź w WordPress` and `Decyzja po
+  cross-checku`.
+- Latest passing proof:
+  `.local-lab/evals/codex-skill/20260704T055929Z/wilq-ahrefs-gap-finder/result.json`.
+- The rerun passed with `operator_usefulness_score=9`, `failure_tags=[]`,
+  `source_connectors=["ahrefs"]` and 7 evidence IDs.
+- The score remains `9`, not `10`, by design. The card is useful for a marketer,
+  but the final `10/10` state needs API-backed cross-source matching: the Ahrefs
+  topic should be visibly matched to GSC query/page evidence or WordPress
+  inventory before WILQ treats it as a brief-ready decision.

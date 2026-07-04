@@ -251,7 +251,11 @@
       "Co porównać ręcznie",
       "Decyzja po review",
       "Brief dla marketera",
-      "Zablokowane obietnice"
+      "Zablokowane obietnice",
+      "Karta cross-checku GSC/WordPress",
+      "Sprawdź w GSC",
+      "Sprawdź w WordPress",
+      "Decyzja po cross-checku"
     ],
     "minimum_operator_usefulness_score": 9,
     "expected_blocked": false,

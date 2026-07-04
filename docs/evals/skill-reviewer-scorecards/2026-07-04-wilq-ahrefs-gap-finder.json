@@ -32,9 +32,9 @@
     }
   ],
   "follow_up_slots": [
-    "Przed 10/10 połączyć Ahrefs gap z GSC i WordPress inventory w pierwszym następnym kroku.",
-    "Rerun eval po dodaniu cross-checku: czy temat konkurenta ma istniejący adres Ekologus, query proof albo blokadę tworzenia nowej treści.",
+    "Rerun non-interactive eval 20260704T055929Z dodał Kartę cross-checku GSC/WordPress, ale score pozostał 9/10.",
+    "Przed 10/10 cross-check powinien być API-backed: temat Ahrefs musi mieć widoczne dopasowanie do GSC query/page albo WordPress inventory, nie tylko instrukcję ręczną.",
     "Utrzymać blokadę obietnic efektu SEO/linków; Ahrefs ma wskazywać review, nie gwarancję wzrostu."
   ],
-  "notes": "Ahrefs Gap Finder jest użyteczny jako review map, ale nie powinien jeszcze być 10/10, bo pierwszy krok nadal opiera się głównie na Ahrefs bez widocznego cross-source rozstrzygnięcia."
+  "notes": "Ahrefs Gap Finder ma teraz widoczną Kartę cross-checku GSC/WordPress, ale pozostaje 9/10. Do 10/10 potrzebuje API-backed cross-source rozstrzygnięcia, nie tylko ręcznej walidacji."
 }

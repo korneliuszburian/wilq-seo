@@ -85,6 +85,13 @@ Widocznie używaj tych sekcji:
 - `Mapa luk`: rozdziel luki treści, luki linków, strony konkurencji, organic keywords i kontekst autorytetu.
 - `Kolejność review`: wskaż pierwszy typ luki do ręcznego sprawdzenia i dlaczego teraz.
 - `Co porównać ręcznie`: podaj checklistę: temat konkurenta, istniejący URL Ekologus, intencja, pokrycie treści, możliwość linkowania/źródeł.
+- `Karta cross-checku GSC/WordPress`: zawsze dopisz krótką kartę z trzema
+  polami: `Sprawdź w GSC`, `Sprawdź w WordPress` i `Decyzja po cross-checku`.
+  Karta ma mówić, czy temat z Ahrefs idzie dalej do content briefu, wymaga
+  scalenia z istniejącą treścią, zostaje tylko w obserwacji albo jest
+  zablokowany. Nie traktuj GSC/WordPress jako dowodów Ahrefs, jeśli nie są
+  zwrócone w `source_connectors`; nazwij je kolejnym krokiem walidacji przed
+  briefem, nie źródłem bieżącej rekomendacji Ahrefs.
 - `Decyzja po review`: powiedz, czy po sprawdzeniu temat idzie do content briefu, link-review, dalszego GSC i WordPress cross-checku albo zostaje zablokowany.
 - `Brief dla marketera`: 3-5 zdań normalnym językiem: co Ahrefs pokazuje, co to znaczy dla planu treści/linków, czego nie wolno jeszcze obiecać.
 - `Zablokowane obietnice`: wzrost ruchu, wzrost autorytetu, przewaga konkurencyjna, produkcyjna treść i efekt SEO bez dalszego sprawdzenia.

@@ -915,6 +915,10 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         ".agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/ahrefs/diagnostics" in ahrefs_skill_doc
+    assert "Karta cross-checku GSC/WordPress" in ahrefs_skill_doc
+    assert "Sprawdź w GSC" in ahrefs_skill_doc
+    assert "Sprawdź w WordPress" in ahrefs_skill_doc
+    assert "Decyzja po cross-checku" in ahrefs_skill_doc
     assert '"POST"' in ahrefs_smoke_script
     assert '"/api/codex/context-pack"' in ahrefs_smoke_script
     assert "ahrefs_diagnostics" in ahrefs_smoke_script
