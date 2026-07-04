@@ -249,6 +249,11 @@ def render_markdown(snapshot: dict[str, Any]) -> str:
             lines.append(
                 f"- `{item['skill']}` ({item['score']}/10): {item['next_step']}"
             )
+            if item.get("next_step_truncated"):
+                lines.append(
+                    "  - Uwaga: opis kroku jest ucięty w eval artefakcie; "
+                    "najpierw odtwórz pełny operator_next_step."
+                )
         if skills.get("nearest_10_plan"):
             lines.extend(["", "Plan testu najbliższych skillów:"])
             for item in skills["nearest_10_plan"]:
@@ -460,6 +465,7 @@ def _skill_quality_blockers(
                 "state": row.get("state"),
                 "what_it_proves": str(row.get("what_it_proves") or "").strip(),
                 "next_step": str(row.get("remaining_blocker") or "").strip(),
+                "next_step_truncated": _looks_truncated(row.get("remaining_blocker")),
             }
         )
     return blockers[:limit]
@@ -485,6 +491,12 @@ def _skill_to_10_plan(blockers: list[dict[str, Any]]) -> list[dict[str, str]]:
 
 
 def _skill_test_instruction(skill: str, state: str, next_step: str) -> str:
+    if _looks_truncated(next_step):
+        return (
+            "najpierw odtwórz pełny operator_next_step w eval artefakcie albo "
+            "rerun non-interactive eval z pełniejszym next stepem; ucięty tekst "
+            "nie wystarcza do oceny 10/10."
+        )
     if state == "poprawnie zablokowany do review":
         return (
             "uruchom ten sam marketerowy prompt i sprawdź, czy odpowiedź nie tylko "
@@ -507,6 +519,11 @@ def _skill_test_instruction(skill: str, state: str, next_step: str) -> str:
 
 
 def _skill_improvement_target(state: str, next_step: str) -> str:
+    if _looks_truncated(next_step):
+        return (
+            "pełny opis kolejnego kroku ma być wystarczający do wykonania testu "
+            "bez zgadywania brakującego końca zdania."
+        )
     if state == "poprawnie zablokowany do review":
         return (
             "blokada ma zostać, ale odpowiedź musi lepiej tłumaczyć, co człowiek "
@@ -523,6 +540,11 @@ def _skill_improvement_target(state: str, next_step: str) -> str:
         "usunąć ogólnikowość: odpowiedź ma używać konkretnych decyzji, dowodów, "
         "ActionObjectów i polskiego następnego kroku."
     )
+
+
+def _looks_truncated(value: Any) -> bool:
+    text = str(value or "").strip()
+    return text.endswith("…") or text.endswith("...")
 
 
 if __name__ == "__main__":
