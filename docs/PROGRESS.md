@@ -236,6 +236,10 @@ Date: 2026-07-04
   decision, 1-5 criteria, whether 10/10 can be considered, rerun-eval need
   and follow-up slots. Sub-10 skills now have a concrete review form instead
   of a vague "poprawić jakość" note.
+- 2026-07-04 `scripts/skill_tuning_packet.py` can now also read a filled
+  `--reviewer-scorecard` JSON. It validates the target skill, concrete
+  reviewer decision and 1-5 criteria, then renders "Wynik reviewer pass"
+  without changing eval scores automatically.
 - 2026-07-04 Goal 005 completion guard now also links those skill tuning
   packet commands beside Ads/GSC/Ahrefs sub-10 blockers, so the official
   Wilku/owner blocker list points directly to the next usefulness review.

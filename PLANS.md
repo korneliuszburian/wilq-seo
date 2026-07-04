@@ -150,6 +150,11 @@ scorecard with decision, 1-5 criteria, 10/10 readiness, rerun-eval need and
 follow-up slots. This turns "skill is 9/10" into a concrete reviewer pass
 instead of another abstract quality note.
 
+2026-07-04 update: the same packet script now accepts a filled
+`--reviewer-scorecard` JSON, validates skill match and concrete reviewer
+decision values, and renders the reviewer result without automatically changing
+the eval score. This keeps sub-10-to-10 tuning evidence explicit and auditable.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

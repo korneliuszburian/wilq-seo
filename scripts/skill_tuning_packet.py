@@ -9,6 +9,8 @@ from typing import Any
 from render_skill_coverage_audit import build_report as build_skill_report
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+REVIEWER_DECISIONS = {"popraw", "rerun_eval", "candidate_for_10"}
+YES_NO_VALUES = {"tak", "nie"}
 
 
 def main() -> int:
@@ -20,9 +22,17 @@ def main() -> int:
     )
     parser.add_argument("--skill", help="Skill name. Defaults to first sub-10 skill.")
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
+    parser.add_argument(
+        "--reviewer-scorecard",
+        type=Path,
+        help="Optional filled reviewer scorecard JSON for this skill.",
+    )
     args = parser.parse_args()
 
-    packet = build_packet(skill=args.skill)
+    packet = build_packet(
+        skill=args.skill,
+        reviewer_scorecard_path=args.reviewer_scorecard,
+    )
     if args.format == "json":
         print(json.dumps(packet, ensure_ascii=False, indent=2))
     else:
@@ -30,7 +40,11 @@ def main() -> int:
     return 0
 
 
-def build_packet(*, skill: str | None = None) -> dict[str, Any]:
+def build_packet(
+    *,
+    skill: str | None = None,
+    reviewer_scorecard_path: Path | None = None,
+) -> dict[str, Any]:
     report = build_skill_report()
     row = _select_row(report["rows"], skill=skill)
     artifact = row.get("latest_artifact")
@@ -38,6 +52,11 @@ def build_packet(*, skill: str | None = None) -> dict[str, Any]:
         raise RuntimeError(f"Skill {row.get('skill') or skill!r} has no latest artifact")
     result_path = REPO_ROOT / str(artifact)
     result = json.loads(result_path.read_text(encoding="utf-8"))
+    reviewer_scorecard = (
+        _load_reviewer_scorecard(reviewer_scorecard_path, skill=row["skill"])
+        if reviewer_scorecard_path
+        else _reviewer_scorecard(row["skill"])
+    )
     return {
         "schema_version": "wilq_skill_tuning_packet_v1",
         "skill": row["skill"],
@@ -59,7 +78,7 @@ def build_packet(*, skill: str | None = None) -> dict[str, Any]:
             "wykonaj test użyteczności albo rerun eval po realnej poprawie outputu."
         ),
         "thirty_second_test": _thirty_second_test(row["skill"], result),
-        "reviewer_scorecard": _reviewer_scorecard(row["skill"]),
+        "reviewer_scorecard": reviewer_scorecard,
         "next_tuning_action": _next_tuning_action(row["skill"], result),
     }
 
@@ -86,7 +105,12 @@ def render_markdown(packet: dict[str, Any]) -> str:
     lines.extend(f"- {item}" for item in packet["thirty_second_test"])
     scorecard = packet.get("reviewer_scorecard") or {}
     if scorecard:
-        lines.extend(["", "## Formularz oceny reviewer pass", ""])
+        heading = (
+            "Wynik reviewer pass"
+            if scorecard.get("filled")
+            else "Formularz oceny reviewer pass"
+        )
+        lines.extend(["", f"## {heading}", ""])
         lines.append(f"- Reviewer: {scorecard['reviewer']}")
         lines.append(f"- Decyzja: {scorecard['decision']}")
         lines.append(f"- Czy można rozważyć 10/10: {scorecard['can_consider_10']}")
@@ -205,6 +229,7 @@ def _reviewer_scorecard(skill: str) -> dict[str, Any]:
     ]
     return {
         "skill": skill,
+        "filled": False,
         "reviewer": "UZUPEŁNIJ: kto ocenia",
         "decision": "popraw|rerun_eval|candidate_for_10",
         "can_consider_10": "nie",
@@ -219,6 +244,76 @@ def _reviewer_scorecard(skill: str) -> dict[str, Any]:
             "czy rerun non-interactive eval jest potrzebny: tak/nie + dlaczego",
         ],
     }
+
+
+def _load_reviewer_scorecard(path: Path, *, skill: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"Reviewer scorecard file not found: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Reviewer scorecard is not valid JSON: {path}") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("Reviewer scorecard root must be an object")
+    if payload.get("skill") != skill:
+        raise RuntimeError(
+            "Reviewer scorecard skill mismatch: "
+            f"expected {skill!r}, got {payload.get('skill')!r}"
+        )
+    decision = _required_string(payload, "decision")
+    if decision not in REVIEWER_DECISIONS:
+        raise RuntimeError(
+            "Reviewer scorecard decision must be one of: "
+            + ", ".join(sorted(REVIEWER_DECISIONS))
+        )
+    can_consider_10 = _required_string(payload, "can_consider_10")
+    rerun_eval_required = _required_string(payload, "rerun_eval_required")
+    if can_consider_10 not in YES_NO_VALUES:
+        raise RuntimeError("Reviewer scorecard can_consider_10 must be `tak` or `nie`")
+    if rerun_eval_required not in YES_NO_VALUES:
+        raise RuntimeError(
+            "Reviewer scorecard rerun_eval_required must be `tak` or `nie`"
+        )
+    criteria = payload.get("criteria")
+    if not isinstance(criteria, list) or not criteria:
+        raise RuntimeError("Reviewer scorecard criteria must be a non-empty list")
+    normalized_criteria = [_normalize_criterion(item) for item in criteria]
+    follow_ups = payload.get("follow_up_slots") or []
+    if not isinstance(follow_ups, list) or not all(
+        isinstance(item, str) and item.strip() for item in follow_ups
+    ):
+        raise RuntimeError("Reviewer scorecard follow_up_slots must be a list of text")
+    return {
+        "skill": skill,
+        "filled": True,
+        "reviewer": _required_string(payload, "reviewer"),
+        "decision": decision,
+        "can_consider_10": can_consider_10,
+        "rerun_eval_required": rerun_eval_required,
+        "criteria": normalized_criteria,
+        "follow_up_slots": [item.strip() for item in follow_ups],
+        "notes": str(payload.get("notes") or "").strip(),
+    }
+
+
+def _normalize_criterion(item: object) -> dict[str, Any]:
+    if not isinstance(item, dict):
+        raise RuntimeError("Reviewer scorecard criteria items must be objects")
+    field = _required_string(item, "field")
+    question = _required_string(item, "question")
+    score = item.get("score")
+    if not isinstance(score, int) or isinstance(score, bool) or score < 1 or score > 5:
+        raise RuntimeError(
+            f"Reviewer scorecard criterion {field!r} score must be an integer 1-5"
+        )
+    return {"field": field, "question": question, "score": score}
+
+
+def _required_string(payload: dict[str, Any], field: str) -> str:
+    value = payload.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise RuntimeError(f"Reviewer scorecard field {field!r} must be non-empty text")
+    return value.strip()
 
 
 def _next_tuning_action(skill: str, result: dict[str, Any]) -> str:
