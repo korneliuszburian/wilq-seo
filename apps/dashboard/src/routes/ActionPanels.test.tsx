@@ -141,9 +141,16 @@ describe("ActionPanels", () => {
     expect(screen.getByText("2 dowody źródłowe")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Merchant Center")).toBeInTheDocument();
     expect(screen.getByText("Tryb pracy: przygotowanie")).toBeInTheDocument();
+    expect(screen.getByText("Co sprawdzić przed decyzją")).toBeInTheDocument();
+    expect(screen.getByText("WILQ ma dowody z Merchant Center.")).toBeInTheDocument();
+    expect(screen.getByText(/Najpierw sprawdź/)).toBeInTheDocument();
+    expect(screen.getAllByText(/sprawdź podgląd zmian/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Przed zapisem blokuje/)).toBeInTheDocument();
+    expect(screen.getAllByText(/1 blokada/).length).toBeGreaterThan(0);
     expect(screen.queryByText("Merchant Center / przygotowanie")).not.toBeInTheDocument();
     expect(screen.queryByText("evidence_merchant_feed_status")).not.toBeInTheDocument();
     expect(screen.queryByText("evidence_merchant_policy_status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/vendor_mutation_adapter_required/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "dowód 1" })).toHaveAttribute(
       "href",
       "/evidence/evidence_merchant_feed_status"

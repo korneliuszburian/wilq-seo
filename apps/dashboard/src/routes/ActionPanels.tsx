@@ -62,6 +62,7 @@ export function ActionFocus({ actions }: { actions: ActionObject[] }) {
                 Najpierw sprawdzenie w WILQ, podgląd zmian i jawna zgoda operatora.
               </div>
             ) : null}
+            <ActionDecisionSummary action={action} />
             <ActionReviewGatePanel action={action} />
             <ActionPayloadSummary action={action} />
             <ActionHumanReviewControls action={action} />
@@ -123,6 +124,35 @@ function ActionEvidenceTrace({ action }: { action: ActionObject }) {
 }
 
 type PayloadRecord = Record<string, unknown>;
+
+function ActionDecisionSummary({ action }: { action: ActionObject }) {
+  const firstChecks = action.review_gate.operator_checklist_labels.slice(0, 3);
+  const writeBlockerSummary = action.review_gate.apply_blocker_summary_label.trim();
+  const reason = action.recommended_reason.trim();
+
+  return (
+    <div className="mt-3 rounded-md border border-action/20 bg-action/5 p-3 text-xs leading-5 text-slate-700">
+      <div className="font-semibold uppercase tracking-normal text-slate-600">
+        Co sprawdzić przed decyzją
+      </div>
+      <p className="mt-1">
+        {reason || "WILQ przygotował akcję do ręcznego przeglądu na podstawie dowodów."}
+      </p>
+      <div className="mt-2 grid gap-2 md:grid-cols-2">
+        <TraceLine
+          label="Najpierw sprawdź"
+          values={firstChecks}
+          empty="WILQ nie podał szczegółowej checklisty; zacznij od dowodów, podglądu i decyzji człowieka."
+        />
+        <TraceLine
+          label="Przed zapisem blokuje"
+          values={writeBlockerSummary ? [writeBlockerSummary] : []}
+          empty="WILQ nie podał blokad zapisu; nadal wymagaj podglądu i jawnej zgody."
+        />
+      </div>
+    </div>
+  );
+}
 
 function asRecord(value: unknown): PayloadRecord | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;

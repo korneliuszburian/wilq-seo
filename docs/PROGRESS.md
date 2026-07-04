@@ -48,6 +48,9 @@ Date: 2026-07-04
 - 2026-07-04 Goal 005 pre-demo audit now also reports social-history readiness:
   status, metadata source status, item/channel counts, missing evidence IDs and
   the explicit lock on publication plus duplicate-free claims.
+- 2026-07-04 dashboard ActionObject cards now show a short "Co sprawdzić
+  przed decyzją" summary before review/payload controls: reason, first checks
+  and write blockers in Polish, with raw IDs still kept out of the first view.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
