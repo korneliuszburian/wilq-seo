@@ -10,6 +10,7 @@ from scripts.record_service_profile_review_result import (
     build_promotion_readiness_report,
     build_review_result_report,
     render_markdown,
+    render_promotion_readiness_markdown,
     render_session_card,
     service_profile_operator_label,
     service_profile_target_label,
@@ -41,7 +42,10 @@ def test_service_profile_review_result_records_approved_review_without_promotion
     assert report["approved_decision_count"] == 1
     assert report["blocking_decision_count"] == 0
     assert report["promotion_allowed"] is False
-    assert "nie ustawia approved_current" in report["safety_note"]
+    assert "nie zatwierdza wiedzy" in report["safety_note"]
+    assert "approved_current" not in report["safety_note"]
+    assert "production-depth" not in report["safety_note"]
+    assert "source_facts" not in report["safety_note"]
     assert report["live_provenance"] == {
         "api_base": "http://127.0.0.1:8000",
         "service_profile_read_only": True,
@@ -67,9 +71,13 @@ def test_service_profile_review_result_records_approved_review_without_promotion
 
     markdown = render_markdown(report)
     assert "# Wynik Service Profile review" in markdown
-    assert "Promotion allowed: nie" in markdown
-    assert "Review jest gotowy do osobnego promotion request" in markdown
+    assert "Review jest gotowy do osobnego wniosku o zatwierdzenie" in markdown
+    assert "promotion request" not in markdown
     assert "- Automatyczna promocja wiedzy: nie" in markdown
+    assert "- Automatyczne zatwierdzenie dozwolone: nie" in markdown
+    assert "Promotion allowed" not in markdown
+    assert "Production-depth ready" not in markdown
+    assert "Proof:" not in markdown
     assert "### BDO i sprawozdawczość środowiskowa" in markdown
 
 
@@ -287,7 +295,7 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
                 "retention_decision_confirmed": "tak",
                 "deletion_path_confirmed": "tak",
                 "eval_gates_confirmed": "tak",
-                "notes": "Redacted opis wystarcza do przygotowania osobnego promotion request.",
+                "notes": "Redacted opis wystarcza do przygotowania osobnego wniosku.",
             }
         ],
     }
@@ -299,7 +307,9 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert report["approved_decision_count"] == 1
     assert report["blocking_decision_count"] == 0
     assert report["promotion_allowed"] is False
-    assert "nie zapisuje raw private text" in report["safety_note"]
+    assert "nie zapisuje surowego prywatnego tekstu" in report["safety_note"]
+    assert "raw private text" not in report["safety_note"]
+    assert "source_facts" not in report["safety_note"]
     assert report["safe_next_step"].startswith(
         "Przygotuj osobny, audytowany wniosek promocji prywatnego źródła"
     )
@@ -358,16 +368,20 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
 
     markdown = render_markdown(report)
     assert "service_profile_private_proposal_review_result_v1" in markdown
-    assert "Promotion allowed: nie" in markdown
+    assert "Automatyczne zatwierdzenie dozwolone: nie" in markdown
     assert "czy decyzja retencji została podjęta albo świadomie zablokowana: tak" in markdown
     assert "### Eko-Opieka i Eko Kalendarz" in markdown
     assert "czy aktualność prywatnego źródła została potwierdzona: tak" in markdown
     assert "czy zakres dostępu/audience prywatnego źródła jest poprawny: tak" in markdown
     assert "Wymagane pola review z live Service Profile" in markdown
     assert "eval_gates_confirmed" in markdown
-    assert "Private proposal provenance z live Service Profile" in markdown
+    assert "Ślad prywatnych propozycji z live Service Profile" in markdown
     assert "freshness=current" in markdown
     assert "audience=company_wide" in markdown
+    assert "promotion request" not in markdown
+    assert "Promotion allowed" not in markdown
+    assert "Production-depth ready" not in markdown
+    assert "Proof:" not in markdown
 
 
 def test_service_profile_review_result_summarizes_private_blocking_reasons() -> None:
@@ -416,7 +430,22 @@ def test_service_profile_promotion_readiness_blocks_private_without_evidence() -
     assert preview["source_connectors"] == ["ekologus_ai_private_source_catalog"]
     assert preview["blocked_claims"]
     assert preview["promotion_ready"] is False
-    assert "nie edytuje source_facts.json" in report["safety_note"].lower()
+    assert "nie edytuje źródeł" in report["safety_note"].lower()
+    assert "source_facts" not in report["safety_note"]
+    assert "production-depth" not in report["safety_note"]
+    assert "approved_current" not in report["safety_note"]
+
+    markdown = render_promotion_readiness_markdown(report)
+    assert "# Gotowość zatwierdzenia Service Profile" in markdown
+    assert "Wniosek o zatwierdzenie gotowy: nie" in markdown
+    assert "Wiedza do finalnych treści odblokowana: nie" in markdown
+    assert "fakty źródłowe:" in markdown
+    assert "dowody:" in markdown
+    assert "źródła danych:" in markdown
+    assert "promotion request" not in markdown
+    assert "source facts:" not in markdown
+    assert "Production-depth" not in markdown
+    assert "Raw private text" not in markdown
 
 
 def test_service_profile_promotion_readiness_prepares_complete_private_preview(

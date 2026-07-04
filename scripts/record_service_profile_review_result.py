@@ -512,8 +512,8 @@ def build_promotion_readiness_report(
         "promotion_request_preview": rows,
         "safe_next_step": promotion_readiness_next_step(promotion_request_ready),
         "safety_note": (
-            "Ten raport jest prepare-only. Nie edytuje source_facts.json, nie ustawia "
-            "approved_current i nie odblokowuje production-depth."
+            "Ten raport jest tylko przygotowaniem. Nie edytuje źródeł, nie "
+            "zatwierdza wiedzy i nie odblokowuje finalnych treści."
         ),
     }
 
@@ -647,12 +647,12 @@ def promotion_row_blockers(row: dict[str, Any]) -> list[str]:
 def promotion_readiness_next_step(ready: bool) -> str:
     if ready:
         return (
-            "Przygotuj osobny ActionObject promotion request z preview i audytem; "
-            "nadal bez bezpośredniej edycji source facts."
+            "Przygotuj osobny, audytowany wniosek o zatwierdzenie z podglądem; "
+            "nadal bez bezpośredniej edycji źródeł."
         )
     return (
-        "Uzupełnij blokery promotion readiness przed osobnym promotion request. "
-        "Najczęściej brakuje evidence IDs albo decyzji retencji/freshness dla "
+        "Uzupełnij blokery gotowości zatwierdzenia przed osobnym wnioskiem. "
+        "Najczęściej brakuje dowodów albo decyzji retencji/aktualności dla "
         "prywatnych propozycji."
     )
 
@@ -800,27 +800,27 @@ def report_type_for_review_type(review_type: str) -> str:
 
 def safe_next_step_for_review_type(review_type: str, *, overall_status: str) -> str:
     if overall_status != "review_ready_for_promotion_request":
-        return "Zamknij follow-upy review przed przygotowaniem promotion request."
+        return "Zamknij follow-upy review przed przygotowaniem wniosku o zatwierdzenie."
     if review_type == "private_source_proposals":
         return (
             "Przygotuj osobny, audytowany wniosek promocji prywatnego źródła "
             "dla zatwierdzonych zredagowanych propozycji."
         )
-    return "Przygotuj osobny, audytowany promotion request dla zatwierdzonych kart."
+    return "Przygotuj osobny, audytowany wniosek o zatwierdzenie dla kart."
 
 
 def safety_note_for_review_type(review_type: str) -> str:
     if review_type == "private_source_proposals":
         return (
             "Ten raport zapisuje wynik oceny prywatnych zredagowanych propozycji. "
-            "Nie edytuje source_facts.json, nie zapisuje raw private text, nie "
-            "promuje faktu źródłowego ani karty wiedzy i nie odblokowuje wiedzy "
-            "do finalnych treści."
+            "Nie edytuje źródeł, nie zapisuje surowego prywatnego tekstu, nie "
+            "zatwierdza faktu źródłowego ani karty wiedzy i nie odblokowuje "
+            "wiedzy do finalnych treści."
         )
     return (
         "Ten raport zapisuje wynik review publicznych kart usług. Nie edytuje "
-        "source_facts.json, nie zmienia lifecycle kart, nie ustawia "
-        "approved_current i nie odblokowuje production-depth."
+        "źródeł, nie zmienia statusu kart, nie zatwierdza wiedzy i nie "
+        "odblokowuje finalnych treści."
     )
 
 
@@ -1252,16 +1252,19 @@ def source_fact_by_id() -> dict[str, Any]:
 
 def render_promotion_readiness_markdown(report: dict[str, Any]) -> str:
     lines = [
-        "# Service Profile promotion readiness",
+        "# Gotowość zatwierdzenia Service Profile",
         "",
         f"- Typ: `{report['report_type']}`",
         f"- Review type: `{report['review_type']}`",
-        f"- Review ready: {visible_bool(report['review_ready'])}",
-        f"- Promotion request ready: {visible_bool(report['promotion_request_ready'])}",
-        f"- Promotion allowed: {visible_bool(report['promotion_allowed'])}",
-        f"- Mutation allowed: {visible_bool(report['mutation_allowed'])}",
-        f"- Production-depth unlocked: {visible_bool(report['production_depth_unlocked'])}",
-        f"- Raw private text included: {visible_bool(report['raw_private_text_included'])}",
+        f"- Review gotowe: {visible_bool(report['review_ready'])}",
+        f"- Wniosek o zatwierdzenie gotowy: {visible_bool(report['promotion_request_ready'])}",
+        f"- Automatyczne zatwierdzenie dozwolone: {visible_bool(report['promotion_allowed'])}",
+        f"- Zapis zmian dozwolony: {visible_bool(report['mutation_allowed'])}",
+        (
+            "- Wiedza do finalnych treści odblokowana: "
+            f"{visible_bool(report['production_depth_unlocked'])}"
+        ),
+        f"- Surowy prywatny tekst w raporcie: {visible_bool(report['raw_private_text_included'])}",
         "",
         report["safety_note"],
         "",
@@ -1277,13 +1280,13 @@ def render_promotion_readiness_markdown(report: dict[str, Any]) -> str:
                 f"### `{row['target_card_id']}`",
                 "",
                 f"- action_id: `{row['action_id']}`",
-                f"- promotion_ready: {visible_bool(row['promotion_ready'])}",
-                f"- source facts: {', '.join(row['source_fact_ids']) or 'brak'}",
-                f"- evidence IDs: {', '.join(row['evidence_ids']) or 'brak'}",
-                f"- source connectors: {', '.join(row['source_connectors']) or 'brak'}",
-                f"- blocked claims: {', '.join(row['blocked_claims']) or 'brak'}",
-                f"- freshness: `{row['freshness']}`",
-                f"- confidence: `{row['confidence']}`",
+                f"- gotowe do wniosku: {visible_bool(row['promotion_ready'])}",
+                f"- fakty źródłowe: {', '.join(row['source_fact_ids']) or 'brak'}",
+                f"- dowody: {', '.join(row['evidence_ids']) or 'brak'}",
+                f"- źródła danych: {', '.join(row['source_connectors']) or 'brak'}",
+                f"- zablokowane twierdzenia: {', '.join(row['blocked_claims']) or 'brak'}",
+                f"- aktualność: `{row['freshness']}`",
+                f"- pewność: `{row['confidence']}`",
                 "- blokery: "
                 + (
                     ", ".join(f"`{blocker}`" for blocker in row["promotion_blockers"])
@@ -1303,13 +1306,14 @@ def render_markdown(report: dict[str, Any]) -> str:
     blocking_count = int(report["blocking_decision_count"])
     if status == "review_ready_for_promotion_request":
         verdict = (
-            "Review jest gotowy do osobnego promotion request. To nadal nie "
-            "promuje wiedzy automatycznie."
+            "Review jest gotowy do osobnego wniosku o zatwierdzenie. To nadal "
+            "nie zatwierdza wiedzy automatycznie."
         )
     else:
         verdict = (
-            "Review wymaga follow-upu przed promotion request. Nie promuj tych "
-            "kart/propozycji, dopóki blokujące decyzje nie zostaną domknięte."
+            "Review wymaga follow-upu przed wnioskiem o zatwierdzenie. Nie "
+            "zatwierdzaj tych kart/propozycji, dopóki blokujące decyzje nie "
+            "zostaną domknięte."
         )
     lines = [
         "# Wynik Service Profile review",
@@ -1353,7 +1357,7 @@ def render_markdown(report: dict[str, Any]) -> str:
             lines.append(f"- follow-up: {task}")
         lines.extend(
             [
-                "- Proof: "
+                "- Ślad techniczny: "
                 f"`{decision['action_id']}` -> `{decision['target_card_id']}`",
                 "",
             ]
@@ -1372,7 +1376,7 @@ def render_markdown(report: dict[str, Any]) -> str:
             "",
             f"- Typ raportu: `{report['report_type']}`",
             f"- Status techniczny: `{report['overall_status']}`",
-            f"- Promotion allowed: {visible_bool(report['promotion_allowed'])}",
+            f"- Automatyczne zatwierdzenie dozwolone: {visible_bool(report['promotion_allowed'])}",
             "",
             "### Live provenance",
             "",
@@ -1387,19 +1391,19 @@ def render_live_provenance(value: Any) -> str:
         return "- Nie sprawdzono live Service Profile."
     lines = [
         f"- API: `{value.get('api_base')}`",
-        "- Service Profile read-only: "
+        "- Service Profile tylko do odczytu: "
         f"{visible_bool(value.get('service_profile_read_only') is True)}",
-        "- Production-depth ready: "
+        "- Wiedza do finalnych treści gotowa: "
         f"{visible_bool(value.get('production_depth_ready') is True)}",
     ]
     if "live_private_review_action_count" in value:
         lines.extend(
             [
-                "- Private review actions live: "
+                "- Prywatne akcje review live: "
                 f"`{value.get('live_private_review_action_count')}`",
-                "- Private promotion preview rows live: "
+                "- Prywatne wiersze podglądu zatwierdzenia live: "
                 f"`{value.get('live_private_promotion_preview_count')}`",
-                "- Private proposal promotion ready: "
+                "- Prywatne propozycje gotowe do zatwierdzenia: "
                 f"{visible_bool(value.get('private_proposal_promotion_ready') is True)}",
             ]
         )
@@ -1421,7 +1425,7 @@ def render_live_provenance(value: Any) -> str:
             lines.append(f"  - `{action_id}`: {rendered_fields}")
     private_proposals = value.get("reviewed_private_proposal_provenance")
     if isinstance(private_proposals, dict) and private_proposals:
-        lines.append("- Private proposal provenance z live Service Profile:")
+        lines.append("- Ślad prywatnych propozycji z live Service Profile:")
         for target_card_id, proposal in private_proposals.items():
             if not isinstance(proposal, dict):
                 continue
@@ -1453,8 +1457,8 @@ def visible_bool(value: Any) -> str:
 
 def visible_status(value: Any) -> str:
     if value == "review_ready_for_promotion_request":
-        return "review gotowy do osobnego promotion request"
-    return "wymaga follow-up przed promotion request"
+        return "review gotowy do osobnego wniosku o zatwierdzenie"
+    return "wymaga follow-up przed wnioskiem o zatwierdzenie"
 
 
 def review_decision_label(value: Any) -> str:

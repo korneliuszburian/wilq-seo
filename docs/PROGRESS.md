@@ -180,6 +180,11 @@ Date: 2026-07-04
   `Ślad techniczny` and `JSON wyniku` replace visible `promotion request`,
   `source facts`, `production-depth`, `Proof` and `JSON proof` wording in the
   conversation card while keeping technical IDs available as audit trace.
+- 2026-07-04 Service Profile review result and approval-readiness markdown now
+  use the same owner-facing wording: `wniosek o zatwierdzenie`, `fakty
+  źródłowe`, `dowody`, `źródła danych`, `wiedza do finalnych treści` and
+  `surowy prywatny tekst` replace visible promotion/source-fact/
+  production-depth/raw-private jargon in review summaries.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
