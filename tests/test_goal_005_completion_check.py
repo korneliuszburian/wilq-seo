@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from scripts.goal_005_completion_check import (
+    _skill_eval_state_is_blocked_correctly,
     blocked_report,
     build_completion_report,
     build_owner_defer_example,
@@ -97,17 +98,20 @@ def test_wilku_service_profile_handoff_includes_private_source_trace() -> None:
     )
     assert "KB_021_BEZPIECZENSTWO_PRAWNE" in handoff
     assert "KB_014_STYL_MARKI" in handoff
-    assert "goal_005_private_claim_policy_review" in handoff
-    assert "goal_006_claim_ledger_gate" in handoff
-    assert "goal_005_private_evidence_policy_review" in handoff
+    assert "review polityki twierdzeń" in handoff
+    assert "bramka listy dozwolonych twierdzeń" in handoff
+    assert "review śladu dowodowego" in handoff
+    assert "goal_005_private_claim_policy_review" not in handoff
+    assert "goal_006_claim_ledger_gate" not in handoff
+    assert "goal_005_private_evidence_policy_review" not in handoff
     assert "decyzja właściciela wymagana" in handoff
     assert "zredagowane, ślad gotowy, bez promocji do finalnych treści" in handoff
     private_trace_section = handoff.split(
         "Prywatny ślad źródłowy do pokazania", 1
     )[1].split("Pytania do rozmowy", 1)[0]
     assert "bez surowego prywatnego tekstu" in private_trace_section
-    assert "bramka: `goal_005_private_claim_policy_review`" in private_trace_section
-    assert "bramka: `goal_005_private_evidence_policy_review`" in private_trace_section
+    assert "bramka: review polityki twierdzeń" in private_trace_section
+    assert "bramka: review śladu dowodowego" in private_trace_section
     assert "eval:" not in private_trace_section
     assert "raw private text" not in private_trace_section
     assert "finalny content" not in handoff
@@ -189,6 +193,12 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
     assert first_write["apply_contract_publication_allowed"] is False
     assert first_write["apply_contract_destructive_allowed"] is False
     assert first_write["blocker_count"] >= 1
+
+
+def test_skill_eval_blocked_correctly_label_accepts_polish_state() -> None:
+    assert _skill_eval_state_is_blocked_correctly("blocked correctly / review-only")
+    assert _skill_eval_state_is_blocked_correctly("poprawnie zablokowany do review")
+    assert not _skill_eval_state_is_blocked_correctly("gotowy do review")
 
 
 def test_goal_005_pre_demo_audit_summary_surfaces_review_ready_social_history(

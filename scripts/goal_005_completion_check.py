@@ -428,7 +428,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "blocked_correctly_count": sum(
                 1
                 for row in latest_eval_report["rows"]
-                if str(row.get("state", "")).startswith("blocked correctly")
+                if _skill_eval_state_is_blocked_correctly(row.get("state"))
             ),
             "top_wilku_ready_blockers": top_wilku_ready_blockers,
             "missing_passing_skills": latest_eval_report["missing_passing_skills"],
@@ -1518,6 +1518,13 @@ def _skill_eval_state_label(value: Any) -> str:
     }
     raw = str(value or "")
     return labels.get(raw, raw or "brak stanu")
+
+
+def _skill_eval_state_is_blocked_correctly(value: Any) -> bool:
+    raw = str(value or "").strip().lower()
+    return raw.startswith("blocked correctly") or raw.startswith(
+        "poprawnie zablokowany"
+    )
 
 
 def _skill_eval_next_step_label(value: Any) -> str:
