@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+
+def load_module():
+    scripts_dir = Path(__file__).resolve().parents[1] / "scripts"
+    module_path = scripts_dir / "wilq_stage_snapshot.py"
+    sys.path.insert(0, str(scripts_dir))
+    try:
+        spec = importlib.util.spec_from_file_location("wilq_stage_snapshot", module_path)
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.path.remove(str(scripts_dir))
+
+
+def test_stage_snapshot_summarizes_live_readiness_without_closing_goal() -> None:
+    stage = load_module()
+
+    snapshot = stage.build_stage_snapshot_from_reports(
+        dashboard_report={
+            "surface_count": 15,
+            "demo_ready_count": 13,
+            "review_ready_count": 2,
+            "blocked_count": 0,
+            "pass": True,
+        },
+        skill_report={
+            "skill_count": 13,
+            "fresh_passing_skill_count": 13,
+            "minimum_score": 9,
+            "maximum_score": 9,
+            "wilku_ready_skill_count": 0,
+            "pass": True,
+        },
+        completion_report={
+            "status": "blocked_missing_goal_005_uat_proof",
+            "missing_input": "goal_005_uat_result_or_owner_defer",
+        },
+        api_base="http://127.0.0.1:8000",
+    )
+
+    assert snapshot["current_stage"] == "demo/review-ready, ale nie production-ready"
+    assert snapshot["live_proof"]["dashboard"]["demo_ready_count"] == 13
+    assert snapshot["live_proof"]["skills"]["score_range"] == "9"
+    assert snapshot["live_proof"]["skills"]["wilku_ready_skill_count"] == 0
+    assert snapshot["live_proof"]["goal_005"]["closed"] is False
+    assert (
+        snapshot["live_proof"]["goal_005"]["blocker"]
+        == "brakuje realnego wyniku UAT albo jawnego owner deferu"
+    )
+    assert snapshot["maturity_ranges"][0]["done"] == "75-80%"
+    assert snapshot["maturity_ranges"][2]["remaining"] == "55-65%"
+
+
+def test_stage_snapshot_markdown_is_wilku_readable_and_actionable() -> None:
+    stage = load_module()
+
+    snapshot = stage.build_stage_snapshot_from_reports(
+        dashboard_report={
+            "surface_count": 15,
+            "demo_ready_count": 13,
+            "review_ready_count": 2,
+            "blocked_count": 0,
+            "pass": True,
+        },
+        skill_report={
+            "skill_count": 13,
+            "fresh_passing_skill_count": 13,
+            "minimum_score": 8,
+            "maximum_score": 9,
+            "wilku_ready_skill_count": 0,
+            "pass": True,
+        },
+        completion_report={
+            "status": "blocked_missing_goal_005_uat_proof",
+            "missing_input": "goal_005_uat_result_or_owner_defer",
+        },
+    )
+
+    markdown = stage.render_markdown(snapshot)
+
+    assert "## Ile zostało" in markdown
+    assert "Pokazanie Wilkowi" in markdown
+    assert "gotowe około **75-80%**" in markdown
+    assert "13/15 ekranów demo-ready" in markdown
+    assert "score range 8-9" in markdown
+    assert "brakuje realnego wyniku UAT albo jawnego owner deferu" in markdown
+    assert "Co pokazać Wilkowi" in markdown
+    assert "pełnym BDOS-class systemem codziennego wykonania" in markdown
+    assert "production-ready" in markdown

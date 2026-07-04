@@ -155,6 +155,11 @@ Date: 2026-07-04
   `nastepny_material_do_rozmowy` block beside the required legacy
   `nastepny_input_uat` string, so explicit defer can be reviewed without
   decoding one long command line.
+- 2026-07-04 `scripts/wilq_stage_snapshot.py` now generates a short live WILQ
+  stage card from dashboard usefulness, skill eval coverage and the Goal 005
+  completion guard. Current live output says: Wilku demo readiness `75-80%`,
+  daily Ekologus work `55-65%`, BDOS-class multi-client MOS `35-45%`, with
+  Goal 005 still blocked on real Wilku UAT or explicit owner defer.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
