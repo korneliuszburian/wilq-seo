@@ -54,9 +54,11 @@ Date: 2026-07-04
 - 2026-07-04 Content/GSC freshness is now API-owned and visible on
   `/content-planner`: `/api/content/diagnostics` exposes
   `freshness_assessment` with stale/missing/blocked/fresh state, source labels
-  requiring refresh, summary and next step. Current GSC Content Doctor eval
-  remains `9/10`, but the workflow now starts from stale source handling and
-  explicitly preserves the "częściowe dane zapytań i adresów" GSC caveat.
+  requiring refresh, summary and next step. GSC Content Doctor now has a
+  Wilku-ready review-card eval at
+  `.local-lab/evals/codex-skill/20260704T071545Z/wilq-gsc-content-doctor/result.json`
+  with score `10/10`, one validated `act_prepare_content_refresh_queue`
+  candidate and the "częściowe dane zapytań i adresów" GSC caveat preserved.
 - 2026-07-04 Localo review card is now API-owned on
   `operator_summary.review_*`. The Localo smoke and eval case enforce that
   `action_candidates` contains only real WILQ ActionObject IDs for this skill.

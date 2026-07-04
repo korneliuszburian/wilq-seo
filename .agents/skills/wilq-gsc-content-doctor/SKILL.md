@@ -79,6 +79,10 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 Odpowiedź ma być krótka i użyteczna dla operatora: wybór strony lub tematu,
 powód, tryb decyzji, ręczny check strony, blokady i następne bezpieczne kroki.
+Traktuj ją jak kartę review gotową do pokazania Wilkowi bez dopisku od
+developera: po pierwszych 30 sekundach ma być jasne, którą stronę sprawdzić,
+dlaczego teraz, jakie pytanie ma odpowiedzieć Wilku i który podgląd można
+bezpiecznie kliknąć bez zapisu ani publikacji.
 
 Zaczynaj od widocznej decyzji operatorskiej, nie od surowych pól API:
 

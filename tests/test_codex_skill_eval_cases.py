@@ -272,6 +272,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "inventory_check_before_create",
                 "gsc_content_doctor_context",
             },
+            "decision_terms": {
+                "gotowe do pokazania Wilkowi",
+            },
             "action_ids": {"act_prepare_content_refresh_queue"},
             "validated_action_ids": {"act_prepare_content_refresh_queue"},
             "forbidden_connectors": {"ahrefs"},
@@ -511,7 +514,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         expected_validated_action_ids = set(
             str(action_id) for action_id in case.get("expected_validated_action_ids", [])
         )
+        expected_decision_terms = set(
+            str(term) for term in case.get("required_decision_terms_pl", [])
+        )
         assert expected_terms.issuperset(contract["terms"])
+        assert expected_decision_terms.issuperset(contract.get("decision_terms", set()))
         assert expected_action_ids.issuperset(contract["action_ids"])
         assert expected_validated_action_ids.issuperset(contract.get("validated_action_ids", set()))
         assert set(case.get("forbidden_connectors", [])).issuperset(

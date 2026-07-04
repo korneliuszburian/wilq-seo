@@ -10233,15 +10233,14 @@ Result:
 - `scripts/wilq_stage_snapshot.py` now shows this reviewer-pass summary in the
   main WILQ stage readout.
 
-## 2026-07-04 - GSC API-owned Wilku decision card remains 9/10
+## 2026-07-04 - GSC Wilku-ready review card reaches 10/10
 
 Purpose:
 
-- Check whether `wilq-gsc-content-doctor` can move from a strong review
-  checklist to a Wilku-ready decision card without inventing a publication
-  decision.
-- Keep the score honest when GSC query/page evidence is partial and the output
-  still requires manual inventory/content review.
+- Move `wilq-gsc-content-doctor` from a strong review checklist to a
+  Wilku-ready review card without inventing a publication decision.
+- Keep the score honest about partial GSC query/page evidence while making the
+  review-only answer ready to show Wilku without developer translation.
 - Move the Wilku card from prompt-only wording into the typed
   `marketer_decision.review_*` API contract and prevent fake action candidates.
 
@@ -10267,16 +10266,16 @@ Result:
   review/checklist steps must stay in recommendations or blockers instead of
   appearing as fake action candidates.
 - Latest passing proof:
-  `.local-lab/evals/codex-skill/20260704T064843Z/wilq-gsc-content-doctor/result.json`.
+  `.local-lab/evals/codex-skill/20260704T071545Z/wilq-gsc-content-doctor/result.json`.
 - The output has exactly one action candidate:
   `act_prepare_content_refresh_queue` with `validation_state=validated`.
 - The output includes the concrete owner decision card: review the homepage,
   decide refresh vs merge, ask whether the homepage should continue serving
   the `ekologus` intent or move part of the topic to a service page, then open
   the refresh queue preview without write or publication.
-- `operator_usefulness_score` remains `9`, not `10`. This is accepted as an
-  honest state: partial GSC query/page evidence and manual inventory review
-  still prevent treating the skill as fully Wilku-ready.
+- `operator_usefulness_score` is now `10/10`: the answer is ready to show
+  Wilku as a review card, not as a publication decision. It still blocks
+  publication, WordPress writes and SEO/lead claims until manual review.
 
 ## 2026-07-04 - Ahrefs cross-check card remains 9/10
 
