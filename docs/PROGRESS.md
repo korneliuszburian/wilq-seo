@@ -63,6 +63,11 @@ Date: 2026-07-04
   missing step fields (`activation_missing_step`, label and missing readiness
   labels). `/content-workflow` renders "Najpierw domknij" from that contract,
   so the UI no longer has to infer the next handoff/review/audit step.
+- 2026-07-04 ActionObject preview/apply contract is hardened for the next
+  write-readiness slice: generic apply-ready previews now reach the mutation
+  adapter boundary and block on missing executor, Ads change-history review
+  exposes typed Polish preview cards, and WordPress draft apply-preview reuses
+  the draft handoff preview card instead of falling back to raw payload data.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in
