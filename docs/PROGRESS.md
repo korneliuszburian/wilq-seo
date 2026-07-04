@@ -125,6 +125,9 @@ Date: 2026-07-04
   statuses as Polish operator labels in the save/provenance section
   (`zablokowana do czasu oceny`, `gotowy tylko do oceny`) instead of raw
   `blocked`/`ready` enums.
+- 2026-07-04 Goal 005 Wilku session card now splits the Service Profile
+  save/provenance line into readable fields: decision label, next step,
+  decision ID, knowledge card ID and review scope.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

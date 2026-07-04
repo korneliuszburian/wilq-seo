@@ -288,7 +288,16 @@ def test_content_uat_session_card_is_plain_wilku_handoff() -> None:
     assert "czy źródło i pochodzenie faktu są jasne" in card
     assert "approve/needs_changes/stale/reject" not in card
     assert "Najpierw sprawdź publiczną kartę BDO." in card
-    assert "Decyzja Service Profile ID" in card
+    assert "Decyzja Service Profile: Sprawdź kartę BDO" in id_section
+    assert "Następny krok Service Profile: Najpierw sprawdź publiczną kartę BDO." in (
+        id_section
+    )
+    assert "ID decyzji Service Profile: `renamed_public_service_bdo_review`" in (
+        id_section
+    )
+    assert "Karta wiedzy do oceny: `ekologus_service_bdo_reporting`" in id_section
+    assert "Zakres decyzji: publiczna karta usługi" in id_section
+    assert "Decyzja Service Profile ID" not in id_section
     assert "Jakość sygnału briefu: sygnał użyteczny, ale wymaga oceny" in card
     assert "Źródła danych: Google Search Console, WordPress ekologus.pl" in card
     assert "Źródła danych: google_search_console" not in card

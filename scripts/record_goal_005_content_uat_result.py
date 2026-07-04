@@ -283,6 +283,12 @@ def render_content_uat_session_card(
     )
     decision_options = first_service_profile_review_decision_options_label(provenance)
     wordpress_activation_steps = wordpress_draft_activation_plan_steps(live_context)
+    service_profile_next_step = (
+        humanize_review_decision_text(
+            provenance.get("first_service_profile_review_next_step")
+        )
+        or "brak"
+    )
     command = (
         "rtk uv run python scripts/record_goal_005_content_uat_result.py "
         "--print-input-example"
@@ -422,8 +428,16 @@ def render_content_uat_session_card(
         f"`{visible_bool(provenance.get('production_depth_ready') is True)}`",
         "- Źródła danych: "
         f"{source_connector_labels(provenance.get('selected_source_connectors'))}",
-        "- Decyzja Service Profile ID: "
-        f"{first_service_profile_review_label(provenance)}",
+        "- Decyzja Service Profile: "
+        f"{provenance.get('first_service_profile_review_label') or 'brak'}",
+        "- Następny krok Service Profile: "
+        f"{service_profile_next_step}",
+        "- ID decyzji Service Profile: "
+        f"`{provenance.get('first_service_profile_review_action_id') or 'brak'}`",
+        "- Karta wiedzy do oceny: "
+        f"`{provenance.get('first_service_profile_review_target_card_id') or 'brak'}`",
+        "- Zakres decyzji: "
+        f"{review_scope_label(provenance.get('first_service_profile_review_scope'))}",
     ]
     return "\n".join(lines).rstrip() + "\n"
 
