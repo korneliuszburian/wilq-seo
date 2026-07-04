@@ -94,6 +94,14 @@ low-risk prepare/apply paths where WILQ can show preview, exact intended
 change, required human confirmation, audit record and rollback/stop condition.
 No skill, prompt or dashboard button may bypass that path.
 
+2026-07-04 update: skill proof now tracks freshness against current skill
+source files. After marketer-language cleanup, seven touched skills were rerun
+through deterministic smoke and non-interactive Codex evals. The coverage audit
+now reports `13/13` latest passing evals and `13/13` fresh passing evals,
+score range `9-9`, with `0` skills at 10/10. Treat this as strong review-only
+operator proof, not as formal Wilku UAT or permission to bypass ActionObject
+write gates.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.

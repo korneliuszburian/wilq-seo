@@ -9959,3 +9959,50 @@ Result:
 - The output keeps launch recommendation, Demand Gen mode readiness, creative
   quality, asset effectiveness, campaign change and effectiveness-growth
   claims blocked because WILQ sees zero Demand Gen/Discovery campaigns.
+
+## 2026-07-04 - Freshness gate for skill eval proof
+
+Purpose:
+
+- Stop stale non-interactive eval artifacts from counting as current proof
+  after `SKILL.md` or `references/` changes.
+- Verify the seven skills touched by marketer-language cleanup still produce
+  useful Polish operator output against live WILQ API.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_render_skill_coverage_audit.py -q
+rtk uv run ruff check scripts/render_skill_coverage_audit.py tests/test_render_skill_coverage_audit.py
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk uv run python scripts/render_skill_coverage_audit.py --json
+```
+
+Refreshed non-interactive evals:
+
+- `wilq-ahrefs-gap-finder`:
+  `.local-lab/evals/codex-skill/20260704T003318Z/wilq-ahrefs-gap-finder/result.json`
+- `wilq-content-strategist`:
+  `.local-lab/evals/codex-skill/20260704T003413Z/wilq-content-strategist/result.json`
+- `wilq-social-publisher`:
+  `.local-lab/evals/codex-skill/20260704T003547Z/wilq-social-publisher/result.json`
+- `wilq-campaign-builder`:
+  `.local-lab/evals/codex-skill/20260704T003643Z/wilq-campaign-builder/result.json`
+- `wilq-custom-segments`:
+  `.local-lab/evals/codex-skill/20260704T003752Z/wilq-custom-segments/result.json`
+- `wilq-ga4-analyst`:
+  `.local-lab/evals/codex-skill/20260704T003851Z/wilq-ga4-analyst/result.json`
+- `wilq-merchant-feed-operator`:
+  `.local-lab/evals/codex-skill/20260704T004002Z/wilq-merchant-feed-operator/result.json`
+
+Result:
+
+- `scripts/render_skill_coverage_audit.py` now reports
+  `fresh_passing_skill_count` and `stale_passing_skills`.
+- A passing eval becomes `stale passing eval` if current skill source files are
+  newer than the latest passing `result.json`.
+- The current coverage map now reports `13/13` latest passing evals and
+  `13/13` fresh passing evals, with score range `9-9` and
+  `stale_passing_skills=[]`.
+- This keeps the "skills are 9/10" claim tied to current instructions, not to
+  old artifacts.

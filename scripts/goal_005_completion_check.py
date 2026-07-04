@@ -398,6 +398,9 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
         "latest_skill_eval_results": {
             "pass": latest_eval_report["pass"],
             "passing_skill_count": latest_eval_report["passing_skill_count"],
+            "fresh_passing_skill_count": latest_eval_report[
+                "fresh_passing_skill_count"
+            ],
             "skill_count": latest_eval_report["skill_count"],
             "minimum_score": min(latest_eval_scores) if latest_eval_scores else None,
             "maximum_score": max(latest_eval_scores) if latest_eval_scores else None,
@@ -413,6 +416,7 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
                 if str(row.get("state", "")).startswith("blocked correctly")
             ),
             "missing_passing_skills": latest_eval_report["missing_passing_skills"],
+            "stale_passing_skills": latest_eval_report["stale_passing_skills"],
         },
     }
     if api_base:
@@ -1297,6 +1301,8 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
         "- Najnowsze wyniki umiejętności: "
         f"{_gate_label(latest_eval.get('pass'))}; "
         f"zaliczone: {latest_eval.get('passing_skill_count')}/{latest_eval.get('skill_count')}; "
+        f"świeże względem instrukcji: {latest_eval.get('fresh_passing_skill_count')}/"
+        f"{latest_eval.get('skill_count')}; "
         f"ocena: {latest_eval.get('minimum_score')}-{latest_eval.get('maximum_score')}; "
         f"mocne 7+: {latest_eval.get('strong_skill_count')}; "
         f"gotowe dla Wilka 10/10: {latest_eval.get('wilku_ready_skill_count')}; "

@@ -33,6 +33,12 @@ Date: 2026-07-04
   Goal 005 Wilku-facing UAT/handoff materials for repeated technical wording
   regressions such as technical eval labels, English private-source wording,
   content/kolejka hybrids and old trace labels.
+- 2026-07-04 skill coverage proof now has freshness semantics. A passing
+  Codex eval no longer counts as current proof if the skill source changed
+  afterward; after rerunning the touched skills, the current map reports
+  `13/13` latest passing evals, `13/13` fresh passing evals, score range
+  `9-9` and zero stale skills. This is strong review-only proof, not a 10/10
+  Wilku-ready claim.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - 2026-07-03 local Wilku handoff usefulness review is stored in

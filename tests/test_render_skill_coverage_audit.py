@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -169,3 +170,48 @@ def test_build_report_floors_minimum_operator_usefulness_at_five(
     assert report["pass"] is False
     assert report["missing_passing_skills"] == ["wilq-low-floor"]
     assert report["rows"][0]["state"] == "missing passing eval"
+
+
+def test_build_report_marks_eval_stale_when_skill_changed_after_result(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    audit = load_module()
+    cases_path = tmp_path / "cases.json"
+    cases_path.write_text(
+        json.dumps(
+            [
+                {
+                    "skill": "wilq-stale",
+                    "minimum_operator_usefulness_score": 5,
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(audit, "CASES_PATH", cases_path)
+
+    eval_root = tmp_path / "evals"
+    result_path = eval_root / "20260702T010000Z/wilq-stale/result.json"
+    write_result(result_path, skill="wilq-stale", score=9, blocked=False)
+
+    skill_path = tmp_path / "skills/wilq-stale/SKILL.md"
+    skill_path.parent.mkdir(parents=True, exist_ok=True)
+    skill_path.write_text("---\nname: wilq-stale\n---\nchanged\n", encoding="utf-8")
+
+    old = 1_700_000_000
+    new = old + 60
+    os.utime(result_path, (old, old))
+    os.utime(skill_path, (new, new))
+
+    report = audit.build_report(eval_root, skill_root=tmp_path / "skills")
+    markdown = audit.render_markdown(report)
+
+    assert report["pass"] is False
+    assert report["passing_skill_count"] == 1
+    assert report["fresh_passing_skill_count"] == 0
+    assert report["stale_passing_skills"] == ["wilq-stale"]
+    assert report["rows"][0]["state"] == "stale passing eval"
+    assert report["rows"][0]["stale"] is True
+    assert "passing evals are fresh" in markdown
+    assert "rerun smoke and non-interactive Codex eval" in markdown

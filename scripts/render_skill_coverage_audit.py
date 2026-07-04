@@ -10,7 +10,10 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CASES_PATH = REPO_ROOT / "docs/evals/cases/wilq-skill-eval-cases.json"
 DEFAULT_EVAL_ROOT = REPO_ROOT / ".local-lab/evals/codex-skill"
+DEFAULT_SKILL_ROOT = REPO_ROOT / ".agents/skills"
 MINIMUM_OPERATOR_USEFULNESS_SCORE = 5
+SKILL_SOURCE_SUFFIXES = {".md", ".py", ".json", ".yaml", ".yml", ".sh"}
+SKIP_SOURCE_PARTS = {"__pycache__"}
 
 
 def _load_json(path: Path) -> Any:
@@ -61,6 +64,31 @@ def _load_latest_passing_result(
     return candidates[-1]
 
 
+def _skill_source_paths(skill_root: Path, skill: str) -> list[Path]:
+    skill_dir = skill_root / skill
+    if not skill_dir.exists():
+        return []
+    return sorted(
+        path
+        for path in skill_dir.rglob("*")
+        if path.is_file()
+        and path.suffix in SKILL_SOURCE_SUFFIXES
+        and not any(part in SKIP_SOURCE_PARTS for part in path.parts)
+    )
+
+
+def _latest_skill_source_mtime(skill_root: Path, skill: str) -> float | None:
+    mtimes = [path.stat().st_mtime for path in _skill_source_paths(skill_root, skill)]
+    return max(mtimes) if mtimes else None
+
+
+def _is_stale_result(path: Path, skill_root: Path, skill: str) -> bool:
+    latest_source_mtime = _latest_skill_source_mtime(skill_root, skill)
+    if latest_source_mtime is None:
+        return False
+    return latest_source_mtime > path.stat().st_mtime
+
+
 def _status_label(result: dict[str, Any]) -> str:
     actions = result.get("action_candidates") or []
     if result.get("blocked") is True:
@@ -103,9 +131,14 @@ def _remaining_blocker(result: dict[str, Any]) -> str:
     return _short_text(result.get("operator_next_step"), max_len=180)
 
 
-def build_report(eval_root: Path = DEFAULT_EVAL_ROOT) -> dict[str, Any]:
+def build_report(
+    eval_root: Path = DEFAULT_EVAL_ROOT,
+    *,
+    skill_root: Path = DEFAULT_SKILL_ROOT,
+) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     missing: list[str] = []
+    stale: list[str] = []
     for case in _cases():
         skill = str(case["skill"])
         minimum_score = max(
@@ -133,15 +166,24 @@ def build_report(eval_root: Path = DEFAULT_EVAL_ROOT) -> dict[str, Any]:
                 }
             )
             continue
+        result_is_stale = _is_stale_result(path, skill_root, skill)
+        if result_is_stale:
+            stale.append(skill)
         artifact = str(path.relative_to(REPO_ROOT)) if path.is_relative_to(REPO_ROOT) else str(path)
         rows.append(
             {
                 "skill": skill,
                 "latest_artifact": artifact,
                 "score": int(result.get("operator_usefulness_score") or 0),
-                "state": _status_label(result),
+                "state": "stale passing eval" if result_is_stale else _status_label(result),
                 "what_it_proves": _what_it_proves(result),
-                "remaining_blocker": _remaining_blocker(result),
+                "remaining_blocker": (
+                    "Skill instructions or references changed after this eval; "
+                    "rerun smoke and non-interactive Codex eval."
+                    if result_is_stale
+                    else _remaining_blocker(result)
+                ),
+                "stale": result_is_stale,
             }
         )
     scores = [
@@ -155,15 +197,20 @@ def build_report(eval_root: Path = DEFAULT_EVAL_ROOT) -> dict[str, Any]:
         "eval_root": str(eval_root.relative_to(REPO_ROOT))
         if eval_root.is_relative_to(REPO_ROOT)
         else str(eval_root),
+        "skill_root": str(skill_root.relative_to(REPO_ROOT))
+        if skill_root.is_relative_to(REPO_ROOT)
+        else str(skill_root),
         "skill_count": len(rows),
         "passing_skill_count": len(rows) - len(missing),
+        "fresh_passing_skill_count": len(rows) - len(missing) - len(stale),
         "minimum_score": min(scores) if scores else None,
         "maximum_score": max(scores) if scores else None,
         "strong_skill_count": sum(1 for score in scores if score >= 7),
         "wilku_ready_skill_count": sum(1 for score in scores if score >= 10),
         "missing_passing_skills": missing,
+        "stale_passing_skills": stale,
         "rows": rows,
-        "pass": not missing,
+        "pass": not missing and not stale,
     }
 
 
@@ -212,6 +259,10 @@ def render_markdown(report: dict[str, Any]) -> str:
                 "WILQ skills have a latest passing non-interactive eval."
             ),
             (
+                f"- {report['fresh_passing_skill_count']}/{report['skill_count']} "
+                "passing evals are fresh against current skill instructions."
+            ),
+            (
                 f"- Score range: `{report.get('minimum_score')}`-"
                 f"`{report.get('maximum_score')}`; "
                 f"`{report.get('strong_skill_count')}` skills are already "
@@ -249,6 +300,7 @@ def render_markdown(report: dict[str, Any]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--eval-root", type=Path, default=DEFAULT_EVAL_ROOT)
+    parser.add_argument("--skill-root", type=Path, default=DEFAULT_SKILL_ROOT)
     parser.add_argument("--json", action="store_true", help="print JSON instead of markdown")
     parser.add_argument("--write", type=Path, help="write rendered markdown to this path")
     parser.add_argument(
@@ -258,7 +310,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    report = build_report(args.eval_root)
+    report = build_report(args.eval_root, skill_root=args.skill_root)
     if args.json:
         output = json.dumps(report, ensure_ascii=False, indent=2)
     else:

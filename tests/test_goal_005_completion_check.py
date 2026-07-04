@@ -124,6 +124,10 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
     assert summary["latest_skill_eval_results"]["passing_skill_count"] == summary[
         "latest_skill_eval_results"
     ]["skill_count"]
+    assert summary["latest_skill_eval_results"]["fresh_passing_skill_count"] == summary[
+        "latest_skill_eval_results"
+    ]["skill_count"]
+    assert summary["latest_skill_eval_results"]["stale_passing_skills"] == []
     assert summary["latest_skill_eval_results"]["minimum_score"] >= 5
     assert summary["latest_skill_eval_results"]["maximum_score"] >= summary[
         "latest_skill_eval_results"
