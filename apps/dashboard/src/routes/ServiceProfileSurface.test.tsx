@@ -51,7 +51,7 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("wniosek o zatwierdzenie zablokowany")).toBeInTheDocument();
     expect(screen.getByText("wniosek zablokowany")).toBeInTheDocument();
     expect(screen.getByText("bez mutacji")).toBeInTheDocument();
-    expect(screen.getByText("wymaga wyniku review")).toBeInTheDocument();
+    expect(screen.getByText("wymaga decyzji review")).toBeInTheDocument();
     expect(
       screen.getByText("Publiczne karty usług sprawdzone przez człowieka")
     ).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe("ServiceProfileSurface", () => {
       screen.getByText("Osobny wniosek o zatwierdzenie jest gotowy do przygotowania")
     ).toBeInTheDocument();
     expect(screen.getByText("Audyt pokrycia wiedzy")).toBeInTheDocument();
-    expect(screen.getByText("Production-depth")).toBeInTheDocument();
+    expect(screen.getByText("Wiedza produkcyjna")).toBeInTheDocument();
     expect(screen.getByText("Usługi zatwierdzone")).toBeInTheDocument();
     expect(screen.getByText("Fakty zatwierdzone")).toBeInTheDocument();
     expect(screen.getByText("Wartość ekologus-ai")).toBeInTheDocument();
@@ -84,8 +84,9 @@ describe("ServiceProfileSurface", () => {
       screen.getAllByText("Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa")
         .length
     ).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Wymagane pola review")).toBeInTheDocument();
-    expect(screen.getAllByText("source_trace_clear").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Co trzeba sprawdzić")).toBeInTheDocument();
+    expect(screen.getAllByText("czy źródła są jasne i wystarczające").length)
+      .toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(
         "Potem prywatne propozycje ekologus-ai: usługi, polityki twierdzeń i wymagania dowodowe."
@@ -93,7 +94,7 @@ describe("ServiceProfileSurface", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("Zatwierdzone").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("ekologus-ai")).toBeInTheDocument();
-    expect(screen.getAllByText(/production-depth zablokowane/).length)
+    expect(screen.getAllByText(/wiedza produkcyjna zablokowana/i).length)
       .toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/źródła są, wymagają review/)).toBeInTheDocument();
     expect(screen.getByText("Polityka zapisu")).toBeInTheDocument();

@@ -658,9 +658,14 @@ function NearestSafeActionCard({
   const actionId = candidate?.action_id ?? action?.id ?? "";
   const area = action ? areaFromDomain(action.domain) : areaFromDomain(candidate?.connector ?? "actions");
   const operatorNextStep = candidate?.operator_next_step ?? action?.recommended_reason ?? action?.human_diagnosis ?? "";
-  const modeLabel = candidate?.apply_contract?.draft_only ? "draft-only" : candidate?.mode_label ?? action?.mode_label ?? "prepare";
+  const modeLabel = marketerModeLabel(
+    candidate?.apply_contract?.draft_only ? "draft-only" : candidate?.mode_label ?? action?.mode_label ?? "prepare"
+  );
   const reviewLabel = actionReviewRequirement(action);
-  const writeState = candidate?.vendor_write_possible ? "write możliwy" : "write zablokowany";
+  const writeState = candidate?.vendor_write_possible ? "zapis możliwy po zgodzie" : "zapis zablokowany";
+  const operationLabel = marketerOperationLabel(
+    candidate?.apply_contract?.allowed_operation ?? String(action?.payload?.action_type ?? action?.mode ?? "prepare")
+  );
 
   return (
     <section className="overflow-hidden rounded-md border border-action/30 bg-white shadow-sm">
@@ -682,13 +687,13 @@ function NearestSafeActionCard({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <StatusPill label="preview gotowy" tone="green" />
+          <StatusPill label="podgląd gotowy" tone="green" />
           <StatusPill label={reviewLabel} tone="amber" />
           <StatusPill label={writeState} tone={candidate?.vendor_write_possible ? "green" : "red"} />
         </div>
 
         <div className="mt-5 grid gap-3 rounded-md border border-line bg-slate-50 p-3 sm:grid-cols-3">
-          <ActionFact label="Typ akcji" value={candidate?.apply_contract?.allowed_operation ?? String(action?.payload?.action_type ?? action?.mode ?? "prepare")} />
+          <ActionFact label="Co przygotowuje" value={operationLabel} />
           <ActionFact label="Obszar" value={area} />
           <ActionFact label="Wymaga" value={reviewLabel} />
         </div>
@@ -726,7 +731,7 @@ function WriteBlockersPanel({ blockers }: { blockers: string[] }) {
           <div key={blocker} className="flex items-start gap-3 px-4 py-3">
             <CheckCircle2 aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-slate-500" />
             <div>
-              <div className="text-sm font-semibold text-ink">{blocker}</div>
+              <div className="text-sm font-semibold text-ink">{marketerActionBlockerLabel(blocker)}</div>
               <p className="mt-1 text-xs leading-5 text-slate-500">
                 Niepotwierdzone zmiany czekają na review.
               </p>
@@ -839,10 +844,10 @@ function conciseActionTitle(title: string) {
 }
 
 function actionStatusLabel(action: ActionObject) {
-  if (action.review_gate?.apply_allowed === false) return "write zablokowany";
-  if (action.validation_status === "valid") return "gotowe do review";
-  if (action.preview_cards?.length || action.payload?.payload_preview) return "preview gotowy";
-  if (action.mode === "prepare") return "draft-only";
+  if (action.review_gate?.apply_allowed === false) return "zapis zablokowany";
+  if (action.validation_status === "valid") return "gotowe do sprawdzenia";
+  if (action.preview_cards?.length || action.payload?.payload_preview) return "podgląd gotowy";
+  if (action.mode === "prepare") return "tylko przygotowanie";
   return action.status_label || "wymaga review";
 }
 
@@ -868,6 +873,33 @@ function actionNextStep(action: ActionObject) {
   if (action.preview_cards?.length || action.payload?.payload_preview) return "Sprawdź zmiany";
   if (action.domain.includes("content")) return "Otwórz brief SEO";
   return "Przejdź do review";
+}
+
+function marketerModeLabel(label: string) {
+  return label
+    .replace("draft-only", "tylko szkic")
+    .replace("prepare", "tylko przygotowanie")
+    .replace("review", "do sprawdzenia")
+    .replace("apply", "zapis");
+}
+
+function marketerOperationLabel(label: string) {
+  return label
+    .replace("create_wordpress_draft", "Szkic WordPress")
+    .replace("prepare_content_refresh", "Plan odświeżenia treści")
+    .replace("merchant_feed_review", "Przegląd produktów")
+    .replace("negative_keyword_review", "Przegląd wykluczeń Ads")
+    .replace("prepare", "Przygotowanie")
+    .replace("apply", "Zapis");
+}
+
+function marketerActionBlockerLabel(label: string) {
+  if (label === "Payload nadal blokuje apply") return "Ten pakiet nie pozwala jeszcze na zapis";
+  if (label === "Akcja jest tylko prepare/review") {
+    return "To jest akcja do przygotowania i review, bez zapisu";
+  }
+  if (label === "Brakuje adaptera zapisu") return "Brak bezpiecznej ścieżki zapisu";
+  return label.replaceAll("ActionObject", "akcja WILQ").replaceAll("apply", "zapis");
 }
 
 function actionAreaIcon(area: string) {

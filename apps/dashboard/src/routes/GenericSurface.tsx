@@ -538,15 +538,15 @@ function KnowledgeSurfaceSections({
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KnowledgeStatTile value={cards.length} label="kart" cta="Zobacz wszystkie" />
         <KnowledgeStatTile value={serviceCount} label="usług" cta="Zobacz wszystkie" tone="success" />
-        <KnowledgeStatTile value={reviewCount} label="do review" cta="Przejdź do kolejki" tone="wait" />
-        <KnowledgeStatTile value={approvedCurrentCount} label="approved-current" cta="Zobacz zatwierdzone" tone="action" />
+        <KnowledgeStatTile value={reviewCount} label="do sprawdzenia" cta="Przejdź do kolejki" tone="wait" />
+        <KnowledgeStatTile value={approvedCurrentCount} label="zatwierdzonych" cta="Zobacz zatwierdzone" tone="action" />
       </section>
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-md border border-line bg-white">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <h2 className="text-base font-semibold text-ink">Najbliższy review</h2>
+            <h2 className="text-base font-semibold text-ink">Najbliższa wiedza do sprawdzenia</h2>
             <span className="rounded bg-wait/10 px-2 py-1 text-xs font-semibold text-wait">
-              Wymaga review
+              Wymaga sprawdzenia
             </span>
           </div>
           <div className="p-4">
@@ -554,8 +554,8 @@ function KnowledgeSurfaceSections({
               Sprawdź kartę: {nearestTitle}
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
-              Karta ma źródła, ale wymaga decyzji człowieka zanim stanie się approved-current
-              i zanim WILQ użyje jej jako wiedzy produkcyjnej.
+              Karta ma źródła, ale wymaga decyzji człowieka zanim stanie się
+              zatwierdzoną wiedzą produkcyjną.
             </p>
             <div className="mt-4">
               <div className="text-sm font-semibold text-ink">Wymagane sprawdzenia</div>
@@ -564,7 +564,7 @@ function KnowledgeSurfaceSections({
                   "decyzja właściciela",
                   "źródła są jasne",
                   "claimy sprawdzone",
-                  "notatka review"
+                  "notatka z decyzji"
                 ].map((label) => (
                   <span
                     key={label}
@@ -580,7 +580,7 @@ function KnowledgeSurfaceSections({
                 href="#knowledge-review-queue"
                 className="inline-flex rounded-md bg-action px-4 py-2 text-sm font-semibold text-white"
               >
-                Przejdź do review karty
+                Sprawdź kartę
               </a>
               <button
                 type="button"
@@ -599,7 +599,7 @@ function KnowledgeSurfaceSections({
           <div className="divide-y divide-line">
             <KnowledgeBlockerRow
               title="Brak zatwierdzenia człowieka"
-              description="Karty i propozycje treści wymagają review przed użyciem jako production-depth."
+              description="Karty i propozycje treści wymagają sprawdzenia przed użyciem jako wiedza produkcyjna."
             />
             <KnowledgeBlockerRow
               title="Zablokowane claimy"
@@ -611,7 +611,7 @@ function KnowledgeSurfaceSections({
             />
             <KnowledgeBlockerRow
               title="Wymagane review"
-              description="Publiczne i prywatne źródła Ekologus wymagają oceny człowieka przed promocją do wiedzy produkcyjnej."
+              description="Publiczne i prywatne źródła Ekologus wymagają oceny człowieka przed użyciem w treściach."
             />
           </div>
           <div className="border-t border-line px-4 py-3">
@@ -628,7 +628,7 @@ function KnowledgeSurfaceSections({
       <section className="grid gap-4 xl:grid-cols-[1fr_280px]">
         <article id="knowledge-review-queue" className="rounded-md border border-line bg-white">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <h2 className="text-base font-semibold text-ink">Kolejka review wiedzy</h2>
+            <h2 className="text-base font-semibold text-ink">Kolejka sprawdzania wiedzy</h2>
             <button
               type="button"
               className="text-sm font-semibold text-action"
@@ -696,10 +696,10 @@ function KnowledgeSurfaceSections({
       <section className="rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-ink">Brak osobnego prepare-only review.</h2>
+            <h2 className="text-base font-semibold text-ink">Brak osobnego etapu przygotowania.</h2>
             <p className="mt-1 text-sm leading-6 text-slate-700">
-              Review i zatwierdzenie promują fakty bezpośrednio do production-depth dopiero po
-              decyzji człowieka. Każda decyzja jest rejestrowana i audytowalna.
+              Fakty trafiają do wiedzy produkcyjnej dopiero po decyzji człowieka.
+              Każda decyzja jest rejestrowana i możliwa do sprawdzenia.
             </p>
           </div>
           <button

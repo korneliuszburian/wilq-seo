@@ -302,6 +302,14 @@ function actionBlockerLabel(label: string): string {
   return label.replaceAll("ActionObject", "akcja WILQ").replaceAll("apply", "zapis");
 }
 
+function readinessModeLabel(label: string): string {
+  return label
+    .replace("draft-only", "tylko szkic")
+    .replace("prepare", "tylko przygotowanie")
+    .replace("review", "do sprawdzenia")
+    .replace("apply", "zapis");
+}
+
 function OperatorDecisionTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-line bg-slate-50 p-3 text-sm">
@@ -352,11 +360,11 @@ function ActionMutationReadinessPanel({
         </div>
         <StatusBadge
           value={readiness.vendor_write_possible ? "ready" : "blocked"}
-          label={readiness.vendor_write_possible ? "write możliwy" : "write zablokowany"}
+          label={readiness.vendor_write_possible ? "zapis możliwy po zgodzie" : "zapis zablokowany"}
         />
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <ReadinessTile label="Tryb pracy" value={readiness.mode_label} />
+        <ReadinessTile label="Tryb pracy" value={readinessModeLabel(readiness.mode_label)} />
         <ReadinessTile
           label="Ścieżka zapisu"
           value={readiness.mutation_adapter ? "skonfigurowana" : "brak bezpiecznej ścieżki"}

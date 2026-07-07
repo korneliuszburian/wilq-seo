@@ -8051,10 +8051,10 @@ describe("WILQ dashboard", () => {
       expect(screen.getByText("Najbliższa bezpieczna akcja")).toBeInTheDocument()
     );
     expect(screen.getByText("Aktywuj zapis szkicu WordPress draft-only")).toBeInTheDocument();
-    expect(screen.getAllByText("write zablokowany").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("zapis zablokowany").length).toBeGreaterThan(0);
     expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
-    expect(screen.getByText("Payload nadal blokuje apply")).toBeInTheDocument();
-    expect(screen.getByText("create_wordpress_draft")).toBeInTheDocument();
+    expect(screen.queryByText("Payload nadal blokuje apply")).not.toBeInTheDocument();
+    expect(screen.getByText("Szkic WordPress")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kolejka akcji" })).toBeInTheDocument();
     expect(screen.getByText("Merchant review produktów")).toBeInTheDocument();
     expect(screen.getByText("Brief SEO: nowy wpis blogowy")).toBeInTheDocument();
@@ -8407,15 +8407,15 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Wiedza" })).toBeInTheDocument()
     );
     expect(screen.getByText("Wiedza oparta na źródłach, claimy usług, status review i stan zatwierdzenia.")).toBeInTheDocument();
-    expect(screen.getByText("Najbliższy review")).toBeInTheDocument();
+    expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Karta ma źródła, ale wymaga decyzji człowieka/)).toBeInTheDocument();
     expect(screen.getByText("Co blokuje produkcję treści")).toBeInTheDocument();
     expect(screen.getByText("Brak zatwierdzenia człowieka")).toBeInTheDocument();
     expect(screen.getByText("Zablokowane claimy")).toBeInTheDocument();
-    expect(screen.getByText("Kolejka review wiedzy")).toBeInTheDocument();
+    expect(screen.getByText("Kolejka sprawdzania wiedzy")).toBeInTheDocument();
     expect(screen.getByText("Status claimów")).toBeInTheDocument();
-    expect(screen.getByText("approved-current")).toBeInTheDocument();
-    expect(screen.getByText("Brak osobnego prepare-only review.")).toBeInTheDocument();
+    expect(screen.getByText("zatwierdzonych")).toBeInTheDocument();
+    expect(screen.getByText("Brak osobnego etapu przygotowania.")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText("ocena zmarnowanego budżetu")).toBeInTheDocument()
     );
@@ -8469,8 +8469,8 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Wiedza" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Najbliższy review")).toBeInTheDocument();
-    expect(screen.getByText("Kolejka review wiedzy")).toBeInTheDocument();
+    expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Kolejka sprawdzania wiedzy")).toBeInTheDocument();
     expect(screen.getByText("Status claimów")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż kartę" })).toBeInTheDocument();

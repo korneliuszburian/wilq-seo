@@ -119,14 +119,14 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
           <h1 className="text-2xl font-semibold tracking-normal">Profil usług Ekologus</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Read-only przegląd tego, co WILQ wie o usługach, claimach i wymaganych
-            dowodach. Ten widok nie edytuje kart i nie promuje faktów do production-depth.
+            dowodach. Ten widok nie edytuje kart i nie zatwierdza faktów jako wiedzy produkcyjnej.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
           <MetricTile label="Karty" value={data.coverage_summary.card_count} />
           <MetricTile label="Usługi" value={data.coverage_summary.service_card_count} />
           <MetricTile
-            label="Do review"
+            label="Do sprawdzenia"
             value={data.coverage_summary.source_backed_review_required_count}
           />
           <MetricTile label="Luki" value={data.coverage_summary.missing_required_area_count} />
@@ -184,8 +184,8 @@ function ServiceProfileFullReview({ data }: { data: ContentServiceProfileRespons
           <PlainChipRow
             values={[
               data.coverage_summary.ready_for_daily_content
-                ? "production-depth gotowe"
-                : "production-depth zablokowane",
+                ? "wiedza produkcyjna gotowa"
+                : "wiedza produkcyjna zablokowana",
               data.review_policy.can_request_review ? "review request dostępny" : null,
               data.read_only ? "tylko odczyt" : null
             ]}
@@ -329,8 +329,8 @@ function ApprovalReadinessPanel({ readiness }: { readiness: ApprovalReadiness })
         values={[
           readiness.can_request_promotion ? "można przygotować wniosek" : "wniosek zablokowany",
           readiness.mutation_allowed ? "mutacja dostępna" : "bez mutacji",
-          readiness.production_depth_unlocked ? "production-depth odblokowane" : "production-depth zablokowane",
-          readiness.reviewed_output_required ? "wymaga wyniku review" : null,
+          readiness.production_depth_unlocked ? "wiedza produkcyjna odblokowana" : "wiedza produkcyjna zablokowana",
+          readiness.reviewed_output_required ? "wymaga decyzji review" : null,
           readiness.first_action_label ? `zacznij: ${readiness.first_action_label}` : null
         ]}
       />
@@ -356,7 +356,7 @@ function ApprovalReadinessPanel({ readiness }: { readiness: ApprovalReadiness })
             </p>
             {item.related_action_id ? (
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                ActionObject: {item.related_action_id}
+                Powiązana akcja WILQ: {item.related_action_id}
               </p>
             ) : null}
           </article>
@@ -388,7 +388,7 @@ function SourceFactCoveragePanel({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-          <MetricTile label="Production-depth" value={`${coverage.production_depth_percent}%`} />
+          <MetricTile label="Wiedza produkcyjna" value={`${coverage.production_depth_percent}%`} />
           <MetricTile label="Usługi zatwierdzone" value={`${coverage.approved_service_percent}%`} />
           <MetricTile label="Fakty zatwierdzone" value={`${coverage.reviewed_fact_percent}%`} />
           <MetricTile label="Wartość ekologus-ai" value={`${privateReviewValue.operator_value_score}/10`} />
@@ -402,7 +402,7 @@ function SourceFactCoveragePanel({
             className="mt-2"
             values={[
               coverage.pass_state ? "audyt spójny" : "audyt wymaga naprawy",
-              coverage.ready_for_daily_content ? "daily content ready" : "daily content zablokowane",
+              coverage.ready_for_daily_content ? "treści dzienne gotowe" : "treści dzienne zablokowane",
               `${coverage.fact_count} faktów źródłowych`,
               `${coverage.review_action_count} akcji review`,
               `${coverage.private_review_required_count} prywatnych do review`
@@ -416,7 +416,7 @@ function SourceFactCoveragePanel({
             label="Pytania do Wilka"
             values={privateReviewValue.review_questions}
           />
-          <List label="Blokery production-depth" values={coverage.blockers.slice(0, 4)} />
+          <List label="Co blokuje wiedzę produkcyjną" values={coverage.blockers.slice(0, 4).map(marketerKnowledgeLabel)} />
         </div>
 
         <div className="rounded-md border border-line bg-slate-50 p-3">
@@ -537,8 +537,8 @@ function ServiceProfileTodayPanel({ data }: { data: ContentServiceProfileRespons
                 ]}
               />
               <List
-                label="Wymagane pola review"
-                values={review.first_review_required_fields}
+                label="Co trzeba sprawdzić"
+                values={reviewRequiredFieldLabels(review.first_review_required_fields)}
               />
             </div>
           ) : null}
@@ -557,6 +557,18 @@ function ServiceProfileTodayPanel({ data }: { data: ContentServiceProfileRespons
       </div>
     </section>
   );
+}
+
+function reviewRequiredFieldLabels(fields: string[]) {
+  const labels: Record<string, string> = {
+    action_id: "jaka decyzja ma zostać zapisana",
+    target_card_id: "której karty wiedzy dotyczy review",
+    decision: "czy właściciel zatwierdza, odrzuca albo zostawia do poprawy",
+    source_trace_clear: "czy źródła są jasne i wystarczające",
+    blocked_claims_reviewed: "czy ryzykowne claimy zostały sprawdzone",
+    notes: "krótka notatka z decyzji"
+  };
+  return fields.map((field) => labels[field] ?? field.replaceAll("_", " "));
 }
 
 function PrivateProposalCards({ proposals }: { proposals: PrivateProposal[] }) {
@@ -867,6 +879,14 @@ function operatorText(value: string) {
     .replace("source fact", "faktu źródłowego")
     .replace("knowledge card", "karty wiedzy")
     .replace("owner", "właściciela");
+}
+
+function marketerKnowledgeLabel(value: string) {
+  return operatorText(value)
+    .replaceAll("production-depth", "wiedzy produkcyjnej")
+    .replaceAll("review-required", "wymagająca oceny")
+    .replaceAll("approved-current", "zatwierdzona")
+    .replaceAll("review", "ocena");
 }
 
 function humanizeEnum(value: string) {

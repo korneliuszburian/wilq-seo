@@ -1732,7 +1732,7 @@ describe("Action detail route", () => {
     expect(screen.getAllByText("Zapis zablokowany").length).toBeGreaterThan(0);
     expect(screen.getByText("Podgląd, review i walidacja")).toBeInTheDocument();
     expect(screen.getByText("Czy można zapisać zmianę")).toBeInTheDocument();
-    expect(screen.getByText("write zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("zapis zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Potwierdzenie operatora")).toBeInTheDocument();
     expect(
       screen.getByText("Brakuje pełnego śladu review i potwierdzenia przed zapisem.")

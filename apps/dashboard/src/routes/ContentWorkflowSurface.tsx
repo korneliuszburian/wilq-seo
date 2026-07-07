@@ -424,10 +424,10 @@ function ContentWorkflowDecisionPanel({
           <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-700">
             <li>
               <span className="font-semibold text-ink">Brak zatwierdzenia człowieka.</span>{" "}
-              Plan, claimy i paczka szkicu muszą przejść review przed użyciem jako production-depth.
+              Plan, claimy i paczka szkicu muszą przejść review przed użyciem jako wiedza produkcyjna.
             </li>
             <li>
-              <span className="font-semibold text-ink">WordPress zostaje draft-only.</span>{" "}
+              <span className="font-semibold text-ink">WordPress zostaje tylko szkicem.</span>{" "}
               WILQ może przygotować podgląd, ale nie publikuje ani nie nadpisuje strony.
             </li>
             {blockedSteps.slice(0, 3).map((step) => (
@@ -1077,7 +1077,7 @@ function WordPressAuthoringReadinessPanel({
           text={
             blocker
               ? `${blocker.reason} Następny krok: ${blocker.next_step}`
-              : "Brak blokad authoringu; nadal obowiązuje draft-only review i audyt przed zapisem."
+              : "Brak blokad przygotowania szkicu; nadal obowiązuje review i audyt przed zapisem."
           }
         />
       </div>
