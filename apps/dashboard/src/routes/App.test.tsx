@@ -8361,17 +8361,25 @@ describe("WILQ dashboard", () => {
 
   it("knowledge route renders compiled cards and playbooks", async () => {
     renderApp("/knowledge");
-    await waitFor(() => expect(screen.getByText("Ocena Ads")).toBeInTheDocument());
-    expect(screen.getByText("Co ta wiedza zmienia w decyzjach")).toBeInTheDocument();
-    expect(screen.getByText("Ocena Ads")).toBeInTheDocument();
-    expect(screen.getAllByText(/Następny krok|Co zrobić dalej/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
-    expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
-    expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Zakazane obietnice: 1 zablokowana obietnica")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż zasady pracy" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Wiedza" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("Wiedza oparta na źródłach, claimy usług, status review i stan zatwierdzenia.")).toBeInTheDocument();
+    expect(screen.getByText("Najbliższy review")).toBeInTheDocument();
+    expect(screen.getByText(/Karta ma źródła, ale wymaga decyzji człowieka/)).toBeInTheDocument();
+    expect(screen.getByText("Co blokuje produkcję treści")).toBeInTheDocument();
+    expect(screen.getByText("Brak zatwierdzenia człowieka")).toBeInTheDocument();
+    expect(screen.getByText("Zablokowane claimy")).toBeInTheDocument();
+    expect(screen.getByText("Kolejka review wiedzy")).toBeInTheDocument();
+    expect(screen.getByText("Status claimów")).toBeInTheDocument();
+    expect(screen.getByText("approved-current")).toBeInTheDocument();
+    expect(screen.getByText("Brak osobnego prepare-only review.")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("ocena zmarnowanego budżetu")).toBeInTheDocument()
+    );
+    expect(screen.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż kartę" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Zasady pracy z wiedzą" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("Skill: dostępny")).not.toBeInTheDocument();
     expect(screen.queryByText("Karty wiedzy: 1")).not.toBeInTheDocument();
     expect(screen.queryByText("Playbooki: 1")).not.toBeInTheDocument();
@@ -8382,11 +8390,10 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
     expect(screen.queryByText("Powiązania")).not.toBeInTheDocument();
     expect(screen.queryByText("wzorzec Ads / playbook marketingowy")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż źródła wiedzy" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż kartę" }));
     expect(screen.queryByText("Google Ads search diagnostics")).not.toBeInTheDocument();
-    const playbooksToggle = screen.getByRole("button", { name: "Pokaż zasady pracy" });
+    const playbooksToggle = screen.getAllByRole("button", { name: "Zasady pracy z wiedzą" })[0];
     fireEvent.click(playbooksToggle);
-    expect(playbooksToggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByText("Wymagane dowody: search_terms, evidence_ids")).not.toBeInTheDocument();
     expect(screen.queryByText("Okazja z wyszukiwanych haseł oparta o dowody.")).not.toBeInTheDocument();
     expect(screen.queryByText("Knowledge Cards")).not.toBeInTheDocument();
@@ -8418,12 +8425,13 @@ describe("WILQ dashboard", () => {
     renderApp("/knowledge");
 
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Baza wiedzy WILQ" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "Wiedza" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Co ta wiedza zmienia w decyzjach")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż zasady pracy" })).toBeInTheDocument();
+    expect(screen.getByText("Najbliższy review")).toBeInTheDocument();
+    expect(screen.getByText("Kolejka review wiedzy")).toBeInTheDocument();
+    expect(screen.getByText("Status claimów")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż kartę" })).toBeInTheDocument();
     expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBe(1);
   });
 

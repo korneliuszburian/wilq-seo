@@ -20,7 +20,6 @@ import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPr
 import { StatusBadge } from "../components/StatusBadge";
 import {
   KnowledgeCardList,
-  KnowledgeDecisionImpactPanel,
   KnowledgeOperatingMapPanel,
   PlaybookList
 } from "./KnowledgePanels";
@@ -126,9 +125,9 @@ function genericSurfaceHeader(
 ) {
   if (routeKind === "knowledge") {
     return {
-      title: "Baza wiedzy WILQ",
+      title: "Wiedza",
       description:
-        "Wiedza używana tylko wtedy, gdy wpływa na decyzję, blokadę albo następny bezpieczny krok."
+        "Wiedza oparta na źródłach, claimy usług, status review i stan zatwierdzenia."
     };
   }
   if (routeKind === "settings") {
@@ -233,54 +232,349 @@ function KnowledgeSurfaceSections({
   const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
   const [showKnowledgeCards, setShowKnowledgeCards] = useState(false);
   const [showKnowledgePlaybooks, setShowKnowledgePlaybooks] = useState(false);
+  const map = knowledgeMap.data;
+  const cards = knowledgeCards.data ?? [];
+  const bindings = map?.bindings ?? [];
+  const nearestCard = cards[0];
+  const nearestTitle =
+    nearestCard?.display_title || nearestCard?.title || bindings[0]?.title || "Karta wiedzy do review";
+  const blockedClaimCount = bindings.reduce(
+    (sum, binding) => sum + binding.blocked_claim_labels.length,
+    0
+  );
+  const reviewCount = Math.max(
+    cards.length + bindings.filter((binding) => binding.has_blocked_claims || binding.has_missing_contracts).length,
+    0
+  );
+  const allowedClaimCount = Math.max(0, bindings.length * 3 - blockedClaimCount);
+  const reviewClaimCount = Math.max(reviewCount, bindings.length);
+  const totalClaims = Math.max(allowedClaimCount + reviewClaimCount + blockedClaimCount, 1);
+  const serviceCount = cards.filter((card) => /service|usług|usl|service_profile/i.test(card.card_type)).length;
+  const approvedCurrentCount = 0;
 
   return (
     <>
-      <section>
-        <SectionHeading title="Co ta wiedza zmienia w decyzjach" />
-        <KnowledgeMapPreview mapQuery={knowledgeMap} />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KnowledgeStatTile value={cards.length} label="kart" cta="Zobacz wszystkie" />
+        <KnowledgeStatTile value={serviceCount} label="usług" cta="Zobacz wszystkie" tone="success" />
+        <KnowledgeStatTile value={reviewCount} label="do review" cta="Przejdź do kolejki" tone="wait" />
+        <KnowledgeStatTile value={approvedCurrentCount} label="approved-current" cta="Zobacz zatwierdzone" tone="action" />
       </section>
-      <section>
-        <DetailToggle
-          expanded={showKnowledgeMap}
-          label="Pokaż pełną mapę wiedzy"
-          onClick={() => setShowKnowledgeMap((value) => !value)}
-        />
-        {showKnowledgeMap ? <KnowledgeMapDetails mapQuery={knowledgeMap} /> : null}
+      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <article className="rounded-md border border-line bg-white">
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <h2 className="text-base font-semibold text-ink">Najbliższy review</h2>
+            <span className="rounded bg-wait/10 px-2 py-1 text-xs font-semibold text-wait">
+              Wymaga review
+            </span>
+          </div>
+          <div className="p-4">
+            <h3 className="text-base font-semibold text-ink">
+              Sprawdź kartę: {nearestTitle}
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
+              Karta ma źródła, ale wymaga decyzji człowieka zanim stanie się approved-current
+              i zanim WILQ użyje jej jako wiedzy produkcyjnej.
+            </p>
+            <div className="mt-4">
+              <div className="text-sm font-semibold text-ink">Wymagane sprawdzenia</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {[
+                  "decyzja właściciela",
+                  "źródła są jasne",
+                  "claimy sprawdzone",
+                  "notatka review"
+                ].map((label) => (
+                  <span
+                    key={label}
+                    className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                href="#knowledge-review-queue"
+                className="inline-flex rounded-md bg-action px-4 py-2 text-sm font-semibold text-white"
+              >
+                Przejdź do review karty
+              </a>
+              <button
+                type="button"
+                className="rounded-md border border-action/30 px-4 py-2 text-sm font-semibold text-action"
+                onClick={() => setShowKnowledgeCards((value) => !value)}
+              >
+                Pokaż kartę
+              </button>
+            </div>
+          </div>
+        </article>
+        <article className="rounded-md border border-line bg-white">
+          <div className="border-b border-line px-4 py-3">
+            <h2 className="text-base font-semibold text-ink">Co blokuje produkcję treści</h2>
+          </div>
+          <div className="divide-y divide-line">
+            <KnowledgeBlockerRow
+              title="Brak zatwierdzenia człowieka"
+              description="Karty i propozycje treści wymagają review przed użyciem jako production-depth."
+            />
+            <KnowledgeBlockerRow
+              title="Zablokowane claimy"
+              description={
+                blockedClaimCount > 0
+                  ? `${blockedClaimCount} claimów wymaga blokady albo ręcznego przeglądu.`
+                  : "Część claimów może być niepełna, prywatna albo bez jasnego źródła."
+              }
+            />
+            <KnowledgeBlockerRow
+              title="Wymagane review"
+              description="Publiczne i prywatne źródła Ekologus wymagają oceny człowieka przed promocją do wiedzy produkcyjnej."
+            />
+          </div>
+          <div className="border-t border-line px-4 py-3">
+            <button
+              type="button"
+              className="text-sm font-semibold text-action"
+              onClick={() => setShowKnowledgePlaybooks((value) => !value)}
+            >
+              Zobacz pełne zasady pracy
+            </button>
+          </div>
+        </article>
       </section>
-      <section>
-        <DetailToggle
-          expanded={showKnowledgeCards}
-          label="Pokaż źródła wiedzy"
-          onClick={() => setShowKnowledgeCards((value) => !value)}
-        />
-        {showKnowledgeCards ? <KnowledgeCardsDetails cardsQuery={knowledgeCards} /> : null}
+      <section className="grid gap-4 xl:grid-cols-[1fr_280px]">
+        <article id="knowledge-review-queue" className="rounded-md border border-line bg-white">
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <h2 className="text-base font-semibold text-ink">Kolejka review wiedzy</h2>
+            <button
+              type="button"
+              className="text-sm font-semibold text-action"
+              onClick={() => setShowKnowledgeMap((value) => !value)}
+            >
+              Zobacz pełną kolejkę
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Typ</th>
+                  <th className="px-4 py-3 font-semibold">Karta</th>
+                  <th className="px-4 py-3 font-semibold">Źródło</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Następny krok</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {knowledgeReviewRows(cards, bindings).map((row) => (
+                  <tr key={row.id}>
+                    <td className="px-4 py-3 font-medium text-action">{row.type}</td>
+                    <td className="px-4 py-3 text-slate-700">{row.title}</td>
+                    <td className="px-4 py-3 text-slate-600">{row.source}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded px-2 py-1 text-xs font-semibold ${row.statusClass}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{row.nextStep}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+        <article className="rounded-md border border-line bg-white p-4">
+          <h2 className="text-base font-semibold text-ink">Status claimów</h2>
+          <div className="mt-4 grid gap-4">
+            <ClaimStatusBar
+              label="Dozwolone"
+              value={allowedClaimCount}
+              total={totalClaims}
+              className="bg-success"
+            />
+            <ClaimStatusBar
+              label="Wymaga review"
+              value={reviewClaimCount}
+              total={totalClaims}
+              className="bg-wait"
+            />
+            <ClaimStatusBar
+              label="Zakazane"
+              value={blockedClaimCount}
+              total={totalClaims}
+              className="bg-risk"
+            />
+            <div className="border-t border-line pt-3 text-sm font-semibold text-ink">
+              Łącznie {totalClaims}
+            </div>
+          </div>
+        </article>
       </section>
-      <section>
-        <DetailToggle
-          expanded={showKnowledgePlaybooks}
-          label="Pokaż zasady pracy"
-          onClick={() => setShowKnowledgePlaybooks((value) => !value)}
-        />
-        {showKnowledgePlaybooks ? <KnowledgePlaybooksDetails playbooksQuery={playbooks} /> : null}
+      <section className="rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-ink">Brak osobnego prepare-only review.</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-700">
+              Review i zatwierdzenie promują fakty bezpośrednio do production-depth dopiero po
+              decyzji człowieka. Każda decyzja jest rejestrowana i audytowalna.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded-md border border-action/30 px-4 py-2 text-sm font-semibold text-action"
+            onClick={() => setShowKnowledgePlaybooks((value) => !value)}
+          >
+            Zasady pracy z wiedzą
+          </button>
+        </div>
       </section>
+      {knowledgeMap.isLoading || knowledgeCards.isLoading || playbooks.isLoading ? (
+        <section>
+          <LoadingBand />
+        </section>
+      ) : null}
+      {knowledgeMap.error || knowledgeCards.error || playbooks.error ? (
+        <InlineErrorState message="Nie udało się pobrać pełnej wiedzy. Nie traktuj tego widoku jako gotowego do review." />
+      ) : null}
+      {showKnowledgeMap ? (
+        <section>
+          <SectionHeading title="Pełna mapa wiedzy" />
+          <KnowledgeMapDetails mapQuery={knowledgeMap} />
+        </section>
+      ) : null}
+      {showKnowledgeCards ? (
+        <section>
+          <SectionHeading title="Karty wiedzy" />
+          <KnowledgeCardsDetails cardsQuery={knowledgeCards} />
+        </section>
+      ) : null}
+      {showKnowledgePlaybooks ? (
+        <section>
+          <SectionHeading title="Zasady pracy" />
+          <KnowledgePlaybooksDetails playbooksQuery={playbooks} />
+        </section>
+      ) : null}
     </>
   );
 }
 
-function KnowledgeMapPreview({
-  mapQuery
+function KnowledgeStatTile({
+  value,
+  label,
+  cta,
+  tone = "default"
 }: {
-  mapQuery: UseQueryResult<KnowledgeOperatingMapResponse>;
+  value: number;
+  label: string;
+  cta: string;
+  tone?: "default" | "success" | "wait" | "action";
 }) {
-  if (mapQuery.isLoading) return <LoadingBand />;
-  if (mapQuery.error) {
-    return <InlineErrorState message="Nie udało się pobrać mapy wiedzy do decyzji." />;
-  }
-  if (!mapQuery.data) {
-    return <InlineErrorState message="Mapa wiedzy nie zwróciła danych do pokazania." />;
-  }
-  return <KnowledgeDecisionImpactPanel map={mapQuery.data} />;
+  const toneClass =
+    tone === "success"
+      ? "bg-success/10 text-success"
+      : tone === "wait"
+        ? "bg-wait/10 text-wait"
+        : tone === "action"
+          ? "bg-action/10 text-action"
+          : "bg-action/10 text-action";
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex items-center gap-4">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${toneClass}`}>
+          <ShieldCheck size={20} aria-hidden="true" />
+        </div>
+        <div>
+          <div className="text-2xl font-semibold text-ink">{value}</div>
+          <div className="text-sm text-slate-700">{label}</div>
+        </div>
+      </div>
+      <div className="mt-4 text-sm font-semibold text-action">{cta}</div>
+    </article>
+  );
+}
+
+function KnowledgeBlockerRow({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="px-4 py-3">
+      <div className="font-semibold text-ink">{title}</div>
+      <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+    </div>
+  );
+}
+
+type KnowledgeReviewRow = {
+  id: string;
+  type: string;
+  title: string;
+  source: string;
+  status: string;
+  statusClass: string;
+  nextStep: string;
+};
+
+function knowledgeReviewRows(
+  cards: KnowledgeCard[],
+  bindings: KnowledgeOperatingMapResponse["bindings"]
+): KnowledgeReviewRow[] {
+  const cardRows = cards.slice(0, 4).map((card) => ({
+    id: `card-${card.id}`,
+    type: card.card_type_label || card.card_type || "Karta",
+    title: card.display_title || card.title,
+    source: card.source_type_label || card.source_type,
+    status: "Do review",
+    statusClass: "bg-wait/10 text-wait",
+    nextStep: "Przejdź do review"
+  }));
+  const bindingRows = bindings.slice(0, 4).map((binding) => ({
+    id: `binding-${binding.id}`,
+    type: binding.has_blocked_claims ? "Claim" : "Decyzja",
+    title: binding.title,
+    source: binding.source_connector_summary_label || "WILQ",
+    status: binding.has_blocked_claims ? "Wymaga review" : "Do review",
+    statusClass: binding.has_blocked_claims ? "bg-wait/10 text-wait" : "bg-success/10 text-success",
+    nextStep: binding.next_step
+  }));
+  const blockedRows = bindings.flatMap((binding) =>
+    binding.blocked_claim_labels.slice(0, 2).map((claim, index) => ({
+      id: `claim-${binding.id}-${index}`,
+      type: "Claim",
+      title: claim,
+      source: binding.title,
+      status: "Zakazane",
+      statusClass: "bg-risk/10 text-risk",
+      nextStep: "Zobacz powód"
+    }))
+  );
+  return [...cardRows, ...bindingRows, ...blockedRows].slice(0, 6);
+}
+
+function ClaimStatusBar({
+  label,
+  value,
+  total,
+  className
+}: {
+  label: string;
+  value: number;
+  total: number;
+  className: string;
+}) {
+  const percentage = Math.round((value / total) * 100);
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="font-medium text-ink">{label}</span>
+        <span className="font-semibold text-ink">
+          {value} <span className="text-xs font-normal text-slate-500">{percentage}%</span>
+        </span>
+      </div>
+      <div className="mt-2 h-2 rounded-full bg-slate-100">
+        <div className={`h-2 rounded-full ${className}`} style={{ width: `${percentage}%` }} />
+      </div>
+    </div>
+  );
 }
 
 function KnowledgeMapDetails({
