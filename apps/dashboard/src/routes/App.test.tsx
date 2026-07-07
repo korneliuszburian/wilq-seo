@@ -8919,19 +8919,26 @@ describe("WILQ dashboard", () => {
   it("content route renders condensed selected decision with expandable detail", async () => {
     renderApp("/content-planner");
     await waitFor(
-      () => expect(screen.getByText("Stan danych treści")).toBeInTheDocument(),
+      () => expect(screen.getByText("Dzisiejszy plan treści do sprawdzenia")).toBeInTheDocument(),
       { timeout: 5_000 }
     );
+    const firstScreenText = document.body.textContent ?? "";
+    expect(firstScreenText.indexOf("Dzisiejszy plan treści do sprawdzenia")).toBeLessThan(
+      firstScreenText.indexOf("Stan danych treści")
+    );
+    expect(firstScreenText.indexOf("Dzisiejszy plan treści do sprawdzenia")).toBeLessThan(
+      firstScreenText.indexOf("Czy można pisać?")
+    );
+    expect(screen.getByText("Stan danych treści")).toBeInTheDocument();
     expect(screen.getByText("Czy można pisać?")).toBeInTheDocument();
-    expect(screen.getByText("Treści: co dziś zrobić")).toBeInTheDocument();
+    expect(screen.queryByText("Treści: co dziś zrobić")).not.toBeInTheDocument();
     expect(screen.getByText("Podstawowe dane treści mieszczą się w progu 48h.")).toBeInTheDocument();
     expect(
       screen.getByText("Można użyć content diagnostics do review bez dodatkowego odświeżenia.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Najpierw decyzja contentowa, potem szkic")).toBeInTheDocument();
-    expect(screen.getByText("Kolejność pracy")).toBeInTheDocument();
-    expect(screen.getByText("Czego nie obiecywać")).toBeInTheDocument();
-    expect(screen.getByText(/bez okna pomiarowego WILQ/)).toBeInTheDocument();
+    expect(screen.queryByText("Najpierw decyzja contentowa, potem szkic")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kolejność pracy")).not.toBeInTheDocument();
+    expect(screen.queryByText("Czego nie obiecywać")).not.toBeInTheDocument();
     expect(screen.getByText("Rekomendowany kierunek")).toBeInTheDocument();
     expect(screen.getAllByText("odświeżyć").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wymaga sprawdzenia").length).toBeGreaterThan(0);

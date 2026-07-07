@@ -29,6 +29,13 @@ Date: 2026-07-04
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
   absent.
+- 2026-07-07 dashboard roast changed the `/content-planner` direction from
+  "many correct cards" to decision-first. The selected content decision now
+  appears before source status and preflight, the duplicate `Treści: co dziś
+  zrobić` panel is gone from the default view, and a narrow Playwright proof
+  checks that the first visible content task is above technical detail. Next
+  roast targets: `/content-workflow`, `/knowledge`, `/service-profile` and
+  `/actions`.
 - 2026-07-04 `scripts/marketer_language_guard.py` now also checks the current
   Goal 005 Wilku-facing UAT/handoff materials for repeated technical wording
   regressions such as technical eval labels, English private-source wording,

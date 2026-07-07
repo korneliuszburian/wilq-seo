@@ -74,8 +74,18 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/content-planner", "/api/content/diagnostics");
     await expect(page.getByRole("heading", { name: "Treści", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();
+    const selectedDecisionBox = await page
+      .getByRole("heading", { name: "Adresy i podgląd" })
+      .boundingBox();
+    const dataStatusBox = await page
+      .getByRole("heading", { name: "Stan danych treści" })
+      .boundingBox();
+    expect(selectedDecisionBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(
+      dataStatusBox?.y ?? Number.POSITIVE_INFINITY
+    );
+    await expect(page.getByText("Treści: co dziś zrobić")).toHaveCount(0);
     await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
     await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
     await page.screenshot({
