@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -43,6 +43,10 @@ describe("ServiceProfileSurface", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Kolejność review")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje produkcję")).toBeInTheDocument();
+    expect(screen.getByText("Pełny przegląd wiedzy")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż pełny przegląd wiedzy" })).toBeInTheDocument();
+    expect(screen.queryByText("Gotowość zatwierdzenia wiedzy")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd wiedzy" }));
     expect(screen.getByText("Gotowość zatwierdzenia wiedzy")).toBeInTheDocument();
     expect(screen.getByText("wniosek o zatwierdzenie zablokowany")).toBeInTheDocument();
     expect(screen.getByText("wniosek zablokowany")).toBeInTheDocument();

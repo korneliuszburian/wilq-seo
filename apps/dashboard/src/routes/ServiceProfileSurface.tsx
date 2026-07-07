@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, LockKeyhole, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 
 import {
   getContentServiceProfile,
@@ -109,6 +110,8 @@ export function ServiceProfileSurface() {
 }
 
 function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse }) {
+  const [showFullReview, setShowFullReview] = useState(false);
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -131,6 +134,36 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
       </div>
 
       <ServiceProfileTodayPanel data={data} />
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Pełny przegląd wiedzy
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Pierwszy ekran pokazuje najbliższy review item. Rozwiń pełny
+              przegląd, gdy chcesz zobaczyć gotowość zatwierdzenia, źródła,
+              luki, usługi, claim policy i prywatne propozycje ekologus-ai.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="min-h-9 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-action hover:text-action"
+            onClick={() => setShowFullReview((value) => !value)}
+          >
+            {showFullReview ? "Ukryj pełny przegląd wiedzy" : "Pokaż pełny przegląd wiedzy"}
+          </button>
+        </div>
+      </section>
+
+      {showFullReview ? <ServiceProfileFullReview data={data} /> : null}
+    </main>
+  );
+}
+
+function ServiceProfileFullReview({ data }: { data: ContentServiceProfileResponse }) {
+  return (
+    <>
       <ApprovalReadinessPanel readiness={data.approval_readiness} />
       <SourceFactCoveragePanel
         coverage={data.source_fact_coverage}
@@ -261,7 +294,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
           </div>
         </details>
       </section>
-    </main>
+    </>
   );
 }
 
