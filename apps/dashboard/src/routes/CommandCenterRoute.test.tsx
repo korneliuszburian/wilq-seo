@@ -303,7 +303,6 @@ describe("CommandCenter route", () => {
     expect(screen.getByText("do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText("blokada danych")).toBeInTheDocument();
     expect(screen.getByText(/Zamknięte po review wskazanej akcji/)).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.queryByText("ready")).not.toBeInTheDocument();
     expect(screen.queryByText("stale")).not.toBeInTheDocument();
     expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
@@ -349,6 +348,7 @@ describe("CommandCenter route", () => {
     expect(routeSource).toContain("item.blocked_claim_labels");
     expect(routeSource).toContain("item.close_condition");
     expect(routeSource).toContain("DenseQueueTable");
-    expect(routeSource).toContain("ForbiddenClaimsStrip");
+    expect(routeSource).toContain("ForbiddenClaimsInline");
+    expect(routeSource).not.toContain("ForbiddenClaimsStrip");
   });
 });

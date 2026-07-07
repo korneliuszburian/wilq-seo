@@ -14,7 +14,6 @@ import {
   CompactStatTile,
   DashboardToolbar,
   DenseQueueTable,
-  ForbiddenClaimsStrip,
   PriorityBadge,
   SourceFreshnessStrip,
   StatusPill
@@ -39,6 +38,7 @@ export function CommandCenter() {
   if (error || !data) return <ErrorState />;
 
   const workOrders = data.work_orders;
+  const activeOrders = workOrders.filter((item) => item.status !== "done");
   const blockedOrders = workOrders.filter((item) => item.status === "blocked");
   const reviewOrders = workOrders.filter((item) => item.status === "review_required");
   const staleOrders = workOrders.filter((item) => item.freshness.state === "stale");
@@ -56,7 +56,7 @@ export function CommandCenter() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <CompactStatTile
-          value={reviewOrders.length}
+          value={activeOrders.length}
           label="decyzje"
           actionLabel="Wymagają Twojej decyzji"
           tone="blue"
@@ -152,10 +152,6 @@ export function CommandCenter() {
             }
           ]}
         />
-      </div>
-
-      <div className="mt-5">
-        <ForbiddenClaimsStrip claims={forbiddenClaims} />
       </div>
     </main>
   );
