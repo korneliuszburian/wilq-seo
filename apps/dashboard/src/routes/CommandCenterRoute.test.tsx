@@ -267,22 +267,19 @@ describe("CommandCenter route", () => {
   it("renders the Polish daily decision cockpit without raw trace IDs on the first screen", async () => {
     renderCommandCenter();
 
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Centrum pracy" })).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Dzisiaj" })).toBeInTheDocument());
 
-    expect(screen.getByText("Dzisiejsze zlecenia pracy")).toBeInTheDocument();
-    expect(
-      screen.getByText("Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego.")
-    ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Plan dnia w kolejności" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Blokady dnia" })).toBeInTheDocument();
-    expect(screen.getByText("Brak blokad w decyzjach dnia; nadal sprawdzaj dowody i akcje przed zapisem.")).toBeInTheDocument();
-    const planSection = screen.getByRole("heading", { name: "Plan dnia w kolejności" }).closest("div");
-    expect(planSection).not.toBeNull();
-    expect(planSection).toHaveTextContent("Przejrzyj kolejkę problemów Merchant Center");
-    expect(planSection).toHaveTextContent("Merchant");
-    expect(planSection).toHaveTextContent("do sprawdzenia");
+    expect(screen.getByText("Twoje dzienne centrum operacyjne. Skup się na tym, co ma największy wpływ."))
+      .toBeInTheDocument();
+    expect(screen.getByText("Wymagają Twojej decyzji")).toBeInTheDocument();
+    expect(screen.getByText("Zatrzymują pracę")).toBeInTheDocument();
+    expect(screen.getByText("Zadania do wykonania")).toBeInTheDocument();
+    expect(screen.getByText("Dane są nieświeże")).toBeInTheDocument();
+    expect(screen.getByLabelText("Świeżość źródeł")).toHaveTextContent("Merchantświeże dane");
+    expect(screen.getByLabelText("Świeżość źródeł")).toHaveTextContent("Treścidane wymagają odświeżenia");
+    expect(screen.getByRole("heading", { name: "Następna najlepsza praca" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Blokady, których nie obchodź" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kolejka dziś" })).toBeInTheDocument();
     expect(screen.getAllByText("Przejrzyj kolejkę problemów Merchant Center").length).toBeGreaterThan(0);
     expect(
       screen.getAllByText("Przejrzyj kolejkę SEO z GSC i WordPress").length
@@ -290,30 +287,15 @@ describe("CommandCenter route", () => {
     expect(
       screen.getByText("Merchant Center ma potwierdzone dane problemów pliku produktowego.")
     ).toBeInTheDocument();
-    expect(screen.getByText(/WILQ ma dane treści: 10 zapytań i adresów z GSC/)).toBeInTheDocument();
+    expect(screen.queryByText(/WILQ ma dane treści: 10 zapytań i adresów z GSC/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Najpierw sprawdź dopasowania WordPress/)).not.toBeInTheDocument();
-    expect(screen.getByText("120 wyświetleń może uzasadniać sprawdzenie treści."))
-      .toBeInTheDocument();
-    expect(screen.getByText("10 900")).toBeInTheDocument();
-    expect(screen.getByText("zapytania i adresy z GSC")).toBeInTheDocument();
-    expect(screen.getByText("dopasowania WordPress")).toBeInTheDocument();
-    expect(screen.getByText("ocena Ahrefs")).toBeInTheDocument();
-    expect(screen.getByText("luki linków")).toBeInTheDocument();
-    expect(screen.getByText("Polecenie: plik produktowy Merchant")).toBeInTheDocument();
-    expect(screen.getByText("Polecenie: strategia treści")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Po skopiowaniu: Polskie podsumowanie przeglądu problemów pliku produktowego z dowodami źródłowymi."
-      )
-    ).toBeInTheDocument();
-    expect(screen.getByText("Po skopiowaniu: Polski content brief bez obietnic pozycji."))
-      .toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Kopiuj polecenie" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Otwórz pracę" })[0]).toHaveAttribute(
+    expect(screen.queryByText("120 wyświetleń może uzasadniać sprawdzenie treści."))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz pracę" })).toHaveAttribute(
       "href",
       "/merchant"
     );
-    expect(screen.getAllByRole("link", { name: "Otwórz pracę" })[1]).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Otwórz Treści" })).toHaveAttribute(
       "href",
       "/content-planner"
     );
@@ -321,22 +303,14 @@ describe("CommandCenter route", () => {
     expect(screen.getByText("do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText("blokada danych")).toBeInTheDocument();
     expect(screen.getByText(/Zamknięte po review wskazanej akcji/)).toBeInTheDocument();
-    expect(screen.getByText(/Zamknięte po odświeżeniu źródeł/)).toBeInTheDocument();
-    expect(screen.getByText("3 dowody źródłowe")).toBeInTheDocument();
-    expect(screen.getByText("2 akcje do sprawdzenia")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Źródła decyzji dnia: Merchant Center, Google Search Console, WordPress ekologus\.pl, GA4/)
-    ).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.queryByText("ready")).not.toBeInTheDocument();
     expect(screen.queryByText("stale")).not.toBeInTheDocument();
-    expect(screen.getByText(/Świeżość źródeł: świeże dane/)).toBeInTheDocument();
-    expect(screen.getByText(/Świeżość źródeł: dane wymagają odświeżenia/)).toBeInTheDocument();
     expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
     expect(screen.queryByText("Kopiuj prompt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kopiuj polecenie")).not.toBeInTheDocument();
     expect(screen.queryByText(/^Codex:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Użyj skilla wilq-merchant-feed-operator/)).not.toBeInTheDocument();
-    expect(screen.getByText("Źródła i ograniczenia")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Otwórz ustawienia" })).toBeInTheDocument();
     expect(screen.getAllByText(/potwierdzony ślad|potwierdzonych śladów/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/bezpieczna akcja do sprawdzenia/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
@@ -371,10 +345,10 @@ describe("CommandCenter route", () => {
     expect(routeSource).toContain("item.summary");
     expect(routeSource).toContain("item.status_label");
     expect(routeSource).toContain("item.freshness_label");
-    expect(routeSource).toContain("decision.skill_label");
-    expect(routeSource).toContain("decision.expected_codex_output");
     expect(routeSource).toContain("item.source_connector_labels");
     expect(routeSource).toContain("item.blocked_claim_labels");
     expect(routeSource).toContain("item.close_condition");
+    expect(routeSource).toContain("DenseQueueTable");
+    expect(routeSource).toContain("ForbiddenClaimsStrip");
   });
 });

@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldAlert } from "lucide-react";
+import {
+  BookOpenCheck,
+  FileText,
+  ListChecks,
+  SearchCheck,
+  ShieldAlert,
+  TrendingUp
+} from "lucide-react";
 
 import {
   ActionObject,
@@ -17,10 +24,20 @@ import {
   LabelChipRow,
   LoadingBand,
   MetricTile,
-  PlainChipRow
 } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
+import {
+  ActionLifecycleStrip,
+  BlockerPanel,
+  CompactStatTile,
+  DashboardToolbar,
+  DenseQueueTable,
+  ForbiddenClaimsStrip,
+  RiskPill,
+  SourceFreshnessStrip,
+  StatusPill
+} from "../components/DashboardMockupPrimitives";
 import {
   ActionFocus,
   ActionIdFocus,
@@ -29,7 +46,6 @@ import { shortPath } from "./TacticalQueuePanel";
 
 type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
 type ContentMetricFact = ContentDiagnosticsResponse["sections"][number]["metric_facts"][number];
-type ContentMarketerDecision = NonNullable<ContentDiagnosticsResponse["marketer_decision"]>;
 type ContentPreflightItem = ContentPreflightResponse["items"][number];
 
 export function ContentDiagnosticSurface({ title }: { title: string }) {
@@ -58,53 +74,10 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 
   const data = diagnostics.data;
   const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
-  const operatorMetricTiles = contentOperatorMetricTiles(data);
-  const latestStatuses = data.latest_refreshes.map((refresh) => {
-    return `${refresh.connector_label}: ${refresh.status_label}`;
-  });
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok SEO i treści z danych WILQ. Łączy zapytania i adresy z GSC,
-            spis treści WordPress i akcje do sprawdzenia, żeby marketer wiedział co odświeżyć,
-            scalić, utworzyć albo zablokować bez duplikowania treści.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          {operatorMetricTiles.slice(0, 3).map(([label, value]) => (
-            <MetricTile key={label} label={label} value={value} />
-          ))}
-        </div>
-      </div>
-
-      <ContentSelectedDecisionPanel data={data} />
-
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Stan danych treści
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
-          </div>
-          <PlainChipRow
-            values={[
-              data.live_data_status_label || "stan danych treści do sprawdzenia",
-              data.freshness_assessment.state_label,
-              ...data.connectors.map((connector) => `${connector.label}: ${connector.status_label}`)
-            ]}
-          />
-        </div>
-        <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
-          <p>{data.freshness_assessment.summary}</p>
-          <p className="mt-1 font-medium text-ink">{data.freshness_assessment.next_step}</p>
-        </div>
-        <TraceLine label="Ostatnie odczyty" values={latestStatuses} />
-      </section>
+      <ContentPlannerMockupViewport title={title} data={data} preflight={preflight.data} />
 
       <ContentPreflightPanel data={preflight.data} isLoading={preflight.isLoading} isError={Boolean(preflight.error)} />
 
@@ -121,6 +94,435 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
       />
     </main>
   );
+}
+
+function ContentPlannerMockupViewport({
+  title,
+  data,
+  preflight
+}: {
+  title: string;
+  data: ContentDiagnosticsResponse;
+  preflight: ContentPreflightResponse | undefined;
+}) {
+  const selectedDecision = contentSelectedPrimaryDecision(data);
+  const primaryPreflight = preflight?.primary_item ?? undefined;
+  const blockedClaims = contentForbiddenClaims(data, primaryPreflight);
+  const rows = contentQueueRows(data);
+
+  return (
+    <div className="mb-6 grid gap-5">
+      <DashboardToolbar
+        title={title}
+        description="Kolejka decyzji SEO i treści: GSC pokazuje popyt, WordPress chroni przed duplikacją, Ahrefs jest pomocniczym tropem, a szkic lub publikacja wymagają review."
+        dateLabel="Dzisiaj"
+        refreshLabel="Odśwież dane"
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {contentPlannerStatTiles(data, primaryPreflight).map((tile) => (
+          <CompactStatTile
+            key={tile.label}
+            value={tile.value}
+            label={tile.label}
+            actionLabel={tile.actionLabel}
+            tone={tile.tone}
+            icon={tile.icon}
+          />
+        ))}
+      </div>
+
+      <SourceFreshnessStrip items={contentSourceFreshnessItems(data)} />
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
+        <ContentNearestDecisionCard decision={selectedDecision} preflight={primaryPreflight} />
+        <BlockerPanel
+          title="Czego WILQ nie obiecuje"
+          badgeLabel="review required"
+          items={contentBlockerPanelItems(data, primaryPreflight)}
+        />
+      </div>
+
+      <ForbiddenClaimsStrip claims={blockedClaims} />
+
+      <DenseQueueTable
+        title="Kolejka treści i SEO"
+        rows={rows}
+        getRowKey={(row) => row.id}
+        selectedRowKey={selectedDecision?.id}
+        columns={[
+          {
+            key: "topic",
+            header: "Temat",
+            render: (row) => (
+              <div className="min-w-64">
+                <div className="font-semibold text-ink">{row.title}</div>
+                <div className="mt-1 text-xs leading-5 text-slate-500">{row.detail}</div>
+              </div>
+            )
+          },
+          {
+            key: "mode",
+            header: "Decyzja",
+            render: (row) => <StatusPill label={row.modeLabel} tone={row.modeTone} />
+          },
+          {
+            key: "signals",
+            header: "Sygnały",
+            render: (row) => (
+              <div className="grid gap-1 text-xs leading-5 text-slate-600">
+                {row.signals.map((signal) => (
+                  <span key={`${row.id}:${signal}`}>{signal}</span>
+                ))}
+              </div>
+            )
+          },
+          {
+            key: "gate",
+            header: "Brama",
+            render: (row) => <RiskPill label={row.gateLabel} risk={row.risk} />
+          },
+          {
+            key: "next",
+            header: "Następny krok",
+            render: (row) => (
+              <span className="text-sm font-medium leading-5 text-action">{row.nextStep}</span>
+            )
+          }
+        ]}
+      />
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
+        <ActionLifecycleStrip
+          steps={[
+            { label: "Dane", state: data.live_data_available ? "done" : "blocked" },
+            { label: "Preflight", state: primaryPreflight ? "current" : "waiting" },
+            {
+              label: "Plan",
+              state: primaryPreflight?.sales_brief_allowed ? "current" : "waiting"
+            },
+            {
+              label: "Review",
+              state: primaryPreflight?.draft_allowed || primaryPreflight?.wordpress_draft_allowed ? "current" : "waiting"
+            },
+            { label: "Publikacja", state: "blocked" }
+          ]}
+        />
+        <ContentSeoSignalPreview data={data} decision={selectedDecision} preflight={primaryPreflight} />
+      </div>
+    </div>
+  );
+}
+
+function ContentNearestDecisionCard({
+  decision,
+  preflight
+}: {
+  decision: ContentDecisionItem | undefined;
+  preflight: ContentPreflightItem | undefined;
+}) {
+  if (!decision) {
+    return (
+      <section className="rounded-md border border-action/30 bg-white p-4 shadow-sm">
+        <h2 className="text-base font-semibold text-ink">Najbliższa decyzja</h2>
+        <BlockerNotice message="Brak decyzji contentowych. Najpierw odśwież GSC, WordPress i dane pomocnicze." />
+      </section>
+    );
+  }
+
+  const url = decision.final_canonical_url ?? decision.intended_final_url ?? decision.page;
+  const statusLabel = preflight?.status_label ?? decision.status_label ?? "do sprawdzenia";
+  const modeLabel = preflight?.recommended_mode_label ?? decision.decision_type_label ?? "decyzja treści";
+  const reviewRequired = !(preflight?.draft_allowed || preflight?.wordpress_draft_allowed);
+
+  return (
+    <section className="overflow-hidden rounded-md border border-action/30 bg-white shadow-sm">
+      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-action/20 bg-blue-50 px-4 py-3">
+        <h2 className="text-base font-semibold text-ink">Najbliższa decyzja treści</h2>
+        <StatusPill label={statusLabel} tone={reviewRequired ? "amber" : "green"} />
+      </div>
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-blue-100 p-3 text-action">
+            <BookOpenCheck aria-hidden="true" size={24} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold leading-6 text-ink">{decision.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{decision.summary ?? decision.rationale}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <StatusPill label={modeLabel} tone="blue" />
+          <StatusPill
+            label={preflight?.sales_brief_allowed ? "plan treści możliwy" : "plan treści zablokowany"}
+            tone={preflight?.sales_brief_allowed ? "green" : "red"}
+          />
+          <StatusPill label="publikacja zablokowana" tone="red" />
+        </div>
+
+        <div className="mt-4 grid gap-3 rounded-md border border-line bg-slate-50 p-3 md:grid-cols-3">
+          <MetricTile label="Typ" value={decision.decision_type_label || "decyzja treści"} />
+          <MetricTile label="Dowody" value={decision.evidence_summary_label} />
+          <MetricTile label="Akcje" value={decision.action_summary_label} />
+        </div>
+
+        <div className="mt-4 grid gap-2 text-sm leading-6 text-slate-700">
+          <TraceLine
+            label="Adres"
+            values={url ? [shortPath(url)] : []}
+            empty="adres do potwierdzenia przed szkicem"
+          />
+          <p className="text-xs leading-5 text-slate-500">
+            Podgląd techniczny nie jest adresem SEO; nie traktuj dev hosta jako adresu kanonicznego.
+          </p>
+          <TraceLine
+            label="Zapytania"
+            values={decision.queries.slice(0, 4)}
+            empty="brakuje potwierdzonych zapytań GSC"
+          />
+          <TraceLine
+            label="Bezpieczny krok"
+            values={[preflight?.next_step ?? decision.next_step]}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContentSeoSignalPreview({
+  data,
+  decision,
+  preflight
+}: {
+  data: ContentDiagnosticsResponse;
+  decision: ContentDecisionItem | undefined;
+  preflight: ContentPreflightItem | undefined;
+}) {
+  const facts = uniqueMetricFacts([
+    ...(decision?.metric_facts ?? []),
+    ...data.sections.flatMap((section) => section.metric_facts)
+  ]).slice(0, 4);
+  const ahrefsRows = data.decision_queue.flatMap((item) => item.ahrefs_candidate_rows).slice(0, 2);
+
+  return (
+    <section className="rounded-md border border-line bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-ink">Podgląd sygnałów SEO</h2>
+          <p className="mt-1 text-sm leading-5 text-slate-600">
+            Sygnały pomagają wybrać review. Nie są obietnicą ruchu, leadów ani pozycji.
+          </p>
+        </div>
+        <StatusPill label={data.evidence_summary_label} tone="purple" />
+      </div>
+
+      {facts.length > 0 ? (
+        <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs">
+          {facts.map((fact, index) => (
+            <MetricTile
+              key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
+              label={fact.metric_label}
+              value={formatContentMetricValue(fact.name, fact.value)}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid gap-2 text-xs leading-5 text-slate-600">
+        <TraceLine label="Źródła" values={data.source_connector_labels} />
+        <TraceLine
+          label="Preflight"
+          values={[
+            preflight?.inventory_gate_status_label,
+            preflight?.canonical_gate_status_label,
+            preflight?.duplicate_gate_status_label,
+            preflight?.claim_gate_status_label
+          ].filter(isPresentLabel)}
+          empty="bramka preflight nie jest jeszcze dostępna"
+        />
+        <TraceLine
+          label="Ahrefs pomocniczo"
+          values={ahrefsRows.map((row) => `${row.topic}: ${row.relevance_status_label || "do sprawdzenia"}`)}
+          empty="brak pomocniczych rekordów Ahrefs"
+        />
+      </div>
+    </section>
+  );
+}
+
+function contentPlannerStatTiles(
+  data: ContentDiagnosticsResponse,
+  preflight: ContentPreflightItem | undefined
+) {
+  const metricTiles = contentOperatorMetricTiles(data);
+  const ahrefsDecisionCount = data.decision_queue.filter((decision) =>
+    decision.source_connectors.includes("ahrefs")
+  ).length;
+
+  return [
+    {
+      value: metricTiles[0]?.[1] ?? data.query_page_count,
+      label: metricTiles[0]?.[0] ?? "Zapytania i adresy z GSC",
+      actionLabel: "Sprawdź popyt",
+      tone: "blue" as const,
+      icon: <SearchCheck aria-hidden="true" size={22} />
+    },
+    {
+      value: metricTiles[1]?.[1] ?? data.matched_inventory_count,
+      label: metricTiles[1]?.[0] ?? "Treści znalezione w WordPress",
+      actionLabel: "Chroń przed duplikatem",
+      tone: "green" as const,
+      icon: <FileText aria-hidden="true" size={22} />
+    },
+    {
+      value: metricTiles[2]?.[1] ?? ahrefsDecisionCount,
+      label: metricTiles[2]?.[0] ?? "Ahrefs pomocniczo",
+      actionLabel: "Tylko trop do review",
+      tone: "purple" as const,
+      icon: <TrendingUp aria-hidden="true" size={22} />
+    },
+    {
+      value: preflight?.recommended_mode_label ?? data.decision_queue.length,
+      label: preflight ? "Najbliższa bramka treści" : "Decyzje treści",
+      actionLabel: preflight?.wordpress_draft_allowed ? "Szkic po review" : "Publikacja zablokowana",
+      tone: preflight?.wordpress_draft_allowed ? ("green" as const) : ("red" as const),
+      icon: <ShieldAlert aria-hidden="true" size={22} />
+    }
+  ];
+}
+
+function contentSourceFreshnessItems(data: ContentDiagnosticsResponse) {
+  const refreshByConnector = new Map(
+    data.latest_refreshes.map((refresh) => [refresh.connector_id, refresh])
+  );
+  const sources = [
+    { id: "google_search_console", label: "GSC", icon: <SearchCheck aria-hidden="true" size={16} /> },
+    { id: "wordpress_ekologus", label: "WordPress", icon: <FileText aria-hidden="true" size={16} /> },
+    { id: "ahrefs", label: "Ahrefs", icon: <TrendingUp aria-hidden="true" size={16} /> }
+  ];
+
+  const items = sources.map((source) => {
+    const connector = data.connectors.find((item) => item.id === source.id);
+    const refresh = refreshByConnector.get(source.id);
+    const connectorLabel = refresh ? refresh.connector_label : connector?.label ?? source.label;
+    const status = refresh ? refresh.status_label : connector ? connector.status_label : "do sprawdzenia";
+    return {
+      label: source.label,
+      detail: connectorLabel === source.label ? status : `${connectorLabel}: ${status}`,
+      tone: contentFreshnessTone(refresh?.status ?? connector?.status),
+      icon: source.icon
+    };
+  });
+
+  return [
+    ...items,
+    {
+      label: "Treści",
+      detail: data.freshness_assessment.state_label,
+      tone: data.freshness_assessment.requires_refresh ? ("amber" as const) : ("green" as const),
+      icon: <ListChecks aria-hidden="true" size={16} />
+    }
+  ];
+}
+
+function contentFreshnessTone(status: string | undefined) {
+  if (status === "completed" || status === "configured" || status === "ready") return "green" as const;
+  if (status === "missing_credentials" || status === "blocked" || status === "failed") return "red" as const;
+  if (status === "stale" || status === "pending") return "amber" as const;
+  return "neutral" as const;
+}
+
+function contentBlockerPanelItems(
+  data: ContentDiagnosticsResponse,
+  preflight: ContentPreflightItem | undefined
+) {
+  const firstBlockedClaims = contentForbiddenClaims(data, preflight).slice(0, 4);
+  const baseItems = firstBlockedClaims.map((claim) => ({
+    title: claim,
+    description: "Blokada pozostaje aktywna bez dowodu, preflightu i review człowieka.",
+    tone: "red" as const
+  }));
+
+  return [
+    ...baseItems,
+    {
+      title: "Publikacja bez review",
+      description: preflight?.wordpress_draft_allowed
+        ? "Nawet przygotowany szkic wymaga potwierdzenia przed zapisem i publikacją."
+        : "WordPress pozostaje zablokowany; można pracować tylko na planie i podglądzie.",
+      tone: "red" as const
+    },
+    {
+      title: "Ahrefs jako uzasadnienie publikacji",
+      description: "Ahrefs jest pomocniczym tropem. Decyzję treści muszą potwierdzić GSC, WordPress i bramka treści.",
+      tone: "amber" as const
+    }
+  ].slice(0, 5);
+}
+
+function contentForbiddenClaims(
+  data: ContentDiagnosticsResponse,
+  preflight: ContentPreflightItem | undefined
+) {
+  return uniqueValues([
+    ...data.operator_summary.blocked_claim_labels,
+    ...data.sections.flatMap((section) => section.blocked_claim_labels),
+    ...data.decision_queue.flatMap((decision) => decision.blocked_claim_labels),
+    ...(preflight?.blocked_claims ?? []),
+    "publikacja bez review",
+    "Ahrefs jako samodzielne uzasadnienie publikacji"
+  ]).slice(0, 8);
+}
+
+function contentQueueRows(data: ContentDiagnosticsResponse) {
+  return data.decision_queue.map((decision) => {
+    const gateLabel =
+      decision.duplicate_gate_status_label ??
+      decision.inventory_gate_status_label ??
+      decision.canonical_gate_status_label ??
+      "review wymagany";
+
+    return {
+      id: decision.id,
+      title: decision.title,
+      detail: decision.page ? shortPath(decision.page) : decision.primary_query ?? decision.decision_type_label,
+      modeLabel: decision.decision_type_label || "decyzja treści",
+      modeTone: decision.source_connectors.includes("ahrefs") ? ("purple" as const) : ("blue" as const),
+      signals: contentQueueSignals(decision),
+      gateLabel,
+      risk: contentDecisionRisk(decision),
+      nextStep: decision.next_step
+    };
+  });
+}
+
+function contentQueueSignals(decision: ContentDecisionItem) {
+  const metricTiles = Object.entries(decision.metric_tiles).slice(0, 3).map(([label, value]) => `${label}: ${value}`);
+  const querySignal = decision.primary_query ? [`zapytanie: ${decision.primary_query}`] : [];
+  const sourceSignal = decision.source_connector_labels.length
+    ? [`źródła: ${decision.source_connector_labels.join(", ")}`]
+    : [];
+  return [...metricTiles, ...querySignal, ...sourceSignal].slice(0, 4);
+}
+
+function contentDecisionRisk(decision: ContentDecisionItem) {
+  if (decision.risk === "high") return "high" as const;
+  if (decision.risk === "medium") return "medium" as const;
+  if (decision.status === "blocked") return "blocked" as const;
+  if (decision.risk === "low") return "low" as const;
+  return "unknown" as const;
+}
+
+function uniqueMetricFacts(facts: ContentMetricFact[]) {
+  const seen = new Set<string>();
+  return facts.filter((fact) => {
+    const key = `${fact.source_connector}:${fact.name}:${fact.evidence_id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function ContentExpandableBriefPanel({ actions }: { actions: ActionObject[] }) {
@@ -453,52 +855,6 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
   );
 }
 
-function ContentSelectedDecisionPanel({
-  data
-}: {
-  data: ContentDiagnosticsResponse;
-}) {
-  const model = contentSelectedDecisionModel(data);
-
-  if (!model) {
-    return (
-      <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
-        <h2 className="text-base font-semibold tracking-normal text-ink">
-          Dzisiejszy plan treści do sprawdzenia
-        </h2>
-        <BlockerNotice message="Brak decyzji contentowych. Najpierw odśwież dane GSC, WordPress i Ahrefs w WILQ." />
-      </section>
-    );
-  }
-
-  return (
-    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
-      <ContentSelectedDecisionHeader model={model} />
-      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <ContentSelectedReasonCards model={model} />
-        <ContentSelectedDirectionCard marketerDecision={model.marketerDecision} />
-        <ContentSelectedUrlCard model={model} />
-        <ContentSelectedEvidenceCard model={model} />
-        <ContentSelectedBlockersCard model={model} />
-      </div>
-      <ContentSelectedMeasurementCard measurementPlan={model.panelMeasurementPlan} />
-    </section>
-  );
-}
-
-function contentSelectedDecisionModel(data: ContentDiagnosticsResponse) {
-  const primaryDecision = contentSelectedPrimaryDecision(data);
-  if (!primaryDecision) return null;
-
-  const marketerDecision = data.marketer_decision ?? null;
-  const panelText = contentSelectedPanelText(primaryDecision, marketerDecision);
-  return {
-    marketerDecision,
-    primaryDecision,
-    ...panelText
-  };
-}
-
 function contentSelectedPrimaryDecision(data: ContentDiagnosticsResponse) {
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
   const selectedDecisionId = data.marketer_decision?.technical_decision_id;
@@ -506,302 +862,6 @@ function contentSelectedPrimaryDecision(data: ContentDiagnosticsResponse) {
   const topDecisionId = data.operator_summary.top_decision_ids[0];
   if (topDecisionId) return decisionsById.get(topDecisionId) ?? data.decision_queue[0];
   return data.decision_queue[0];
-}
-
-function contentSelectedPanelText(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return {
-    titleLabel: contentSelectedTitleLabel(marketerDecision),
-    title: contentSelectedTitle(primaryDecision, marketerDecision),
-    intro: contentSelectedIntro(primaryDecision, marketerDecision),
-    whyItMatters: contentSelectedWhy(primaryDecision, marketerDecision),
-    safeNextAction: contentSelectedNextAction(primaryDecision, marketerDecision),
-    panelBlockedClaims: contentSelectedBlockedClaims(primaryDecision, marketerDecision),
-    panelMissingInputs: contentSelectedMissingInputs(primaryDecision, marketerDecision),
-    panelEvidenceSummary: contentSelectedEvidenceSummary(primaryDecision, marketerDecision),
-    panelSourceConnectors: contentSelectedSourceConnectors(primaryDecision, marketerDecision),
-    panelMeasurementPlan: contentSelectedMeasurementPlanText(marketerDecision),
-    sourceUrlValues: contentSelectedSourceUrlValues(primaryDecision, marketerDecision),
-    previewUrlValues: contentSelectedPreviewUrlValues(marketerDecision),
-    finalUrlValues: contentSelectedFinalUrlValues(marketerDecision)
-  };
-}
-
-function contentSelectedTitleLabel(marketerDecision: ContentMarketerDecision | null) {
-  return marketerDecision?.mode_label ?? "Dzisiejszy plan treści do sprawdzenia";
-}
-
-function contentSelectedTitle(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return (
-    marketerDecision?.decision ??
-    primaryDecision.title ??
-    "Wybrany temat do zachowania albo odświeżenia"
-  );
-}
-
-function contentSelectedIntro(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return marketerDecision?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale;
-}
-
-function contentSelectedWhy(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return marketerDecision?.why_it_matters ?? primaryDecision.rationale;
-}
-
-function contentSelectedNextAction(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return marketerDecision?.safe_next_action ?? primaryDecision.next_step;
-}
-
-function contentSelectedBlockedClaims(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return marketerDecision?.blocked_claims ?? uniqueValues(primaryDecision.blocked_claims);
-}
-
-function contentSelectedMissingInputs(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return marketerDecision?.missing_inputs ?? contentSelectedGateLabels(primaryDecision);
-}
-
-function contentSelectedEvidenceSummary(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return (
-    marketerDecision?.evidence_summary ??
-    primaryDecision.evidence_summary_label ??
-    "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
-  );
-}
-
-function contentSelectedSourceConnectors(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  if (marketerDecision?.source_connector_labels?.length) {
-    return marketerDecision.source_connector_labels;
-  }
-  return uniqueValues(primaryDecision.source_connector_labels);
-}
-
-function contentSelectedMeasurementPlanText(marketerDecision: ContentMarketerDecision | null) {
-  return marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan();
-}
-
-function contentSelectedGateLabels(primaryDecision: ContentDecisionItem) {
-  return uniqueValues([
-    primaryDecision.inventory_gate_status_label,
-    primaryDecision.canonical_gate_status_label,
-    primaryDecision.duplicate_gate_status_label
-  ].filter(isPresentLabel));
-}
-
-function contentSelectedSourceUrlValues(
-  primaryDecision: ContentDecisionItem,
-  marketerDecision: ContentMarketerDecision | null
-) {
-  return [marketerDecision?.source_public_url ?? primaryDecision.page ?? ""]
-    .filter(Boolean)
-    .map(shortPath);
-}
-
-function contentSelectedPreviewUrlValues(marketerDecision: ContentMarketerDecision | null) {
-  return [marketerDecision?.preview_url ?? ""].filter(Boolean).map(shortPath);
-}
-
-function contentSelectedFinalUrlValues(marketerDecision: ContentMarketerDecision | null) {
-  return [
-    marketerDecision?.final_canonical_url ??
-      marketerDecision?.intended_final_url ??
-      ""
-  ]
-    .filter(Boolean)
-    .map(shortPath);
-}
-
-function ContentSelectedDecisionHeader({
-  model
-}: {
-  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
-}) {
-  const { marketerDecision, primaryDecision } = model;
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <div className="text-xs font-semibold uppercase tracking-normal text-action">
-          {model.titleLabel}
-        </div>
-        <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
-          {model.title}
-        </h2>
-        <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
-          {model.intro}
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-        {contentSelectedMetricTiles(primaryDecision, marketerDecision?.metric_tiles).map(([label, value]) => (
-          <MetricTile key={label} label={label} value={value} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ContentSelectedReasonCards({
-  model
-}: {
-  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
-}) {
-  return (
-    <>
-      <div className="rounded-md border border-line bg-white p-3">
-        <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          {model.whyItMatters}
-        </p>
-      </div>
-      <div className="rounded-md border border-line bg-white p-3">
-        <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
-        <p className="mt-2 text-sm font-medium leading-6 text-ink">
-          {model.safeNextAction}
-        </p>
-      </div>
-    </>
-  );
-}
-
-function ContentSelectedDirectionCard({
-  marketerDecision
-}: {
-  marketerDecision: ContentMarketerDecision | null | undefined;
-}) {
-  return (
-    <div className="rounded-md border border-line bg-white p-3">
-      <h3 className="text-sm font-semibold text-ink">Kierunek treści</h3>
-      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-        <TraceLine
-          label="H1"
-          values={marketerDecision?.h1_direction ? [marketerDecision.h1_direction] : []}
-          empty="do doprecyzowania w planie treści"
-        />
-        <TraceLine
-          label="H2"
-          values={marketerDecision?.h2_direction?.slice(0, 3) ?? []}
-          empty="do doprecyzowania w planie treści"
-        />
-        <TraceLine
-          label="FAQ"
-          values={marketerDecision?.faq_direction?.slice(0, 3) ?? []}
-          empty="do doprecyzowania w planie treści"
-        />
-        <TraceLine
-          label="Wezwanie do działania"
-          values={marketerDecision?.cta_direction ? [marketerDecision.cta_direction] : []}
-          empty="do doprecyzowania w planie treści"
-        />
-      </div>
-    </div>
-  );
-}
-
-function ContentSelectedUrlCard({
-  model
-}: {
-  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
-}) {
-  return (
-    <div className="rounded-md border border-line bg-white p-3">
-      <h3 className="text-sm font-semibold text-ink">Adresy i podgląd</h3>
-      <p className="mt-1 text-xs leading-5 text-slate-500">
-        ekologus.pl i sklep.ekologus.pl są źródłem prawdy. Adres podglądu jest
-        opcjonalny i nie jest docelowym adresem SEO.
-      </p>
-      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-        <TraceLine
-          label="Źródło"
-          values={model.sourceUrlValues}
-          empty="adres źródłowy do potwierdzenia"
-        />
-        <TraceLine
-          label="Podgląd"
-          values={model.previewUrlValues}
-          empty="Adres podglądu nie jest podany; nie traktuj dev hosta jako adresu kanonicznego."
-        />
-        <TraceLine
-          label="Docelowo"
-          values={model.finalUrlValues}
-          empty="do potwierdzenia"
-        />
-      </div>
-    </div>
-  );
-}
-
-function ContentSelectedEvidenceCard({
-  model
-}: {
-  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
-}) {
-  return (
-    <div className="rounded-md border border-line bg-white p-3">
-      <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
-      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-        <TraceLine label="Dowody" values={[model.panelEvidenceSummary]} />
-        <TraceLine label="Źródła" values={model.panelSourceConnectors} />
-        <TraceLine
-          label="Fakty"
-          values={model.marketerDecision?.source_facts?.slice(0, 4) ?? []}
-          empty="zobacz szczegóły niżej"
-        />
-      </div>
-    </div>
-  );
-}
-
-function ContentSelectedBlockersCard({
-  model
-}: {
-  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
-}) {
-  return (
-    <div className="rounded-md border border-line bg-white p-3">
-      <h3 className="text-sm font-semibold text-ink">Czego WILQ nie zrobi teraz</h3>
-      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-        <TraceLine
-          label="Blokady"
-          values={model.panelBlockedClaims.slice(0, 6)}
-        />
-        <TraceLine label="Brakuje" values={model.panelMissingInputs.slice(0, 6)} />
-      </div>
-    </div>
-  );
-}
-
-function ContentSelectedMeasurementCard({ measurementPlan }: { measurementPlan: string }) {
-  return (
-    <div className="mt-3 rounded-md border border-line bg-white p-3">
-      <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-700">
-        {measurementPlan}
-      </p>
-    </div>
-  );
 }
 
 function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
@@ -1117,21 +1177,6 @@ function contentActionPreviewCardsFromActions(actions: ActionObject[], kind: str
       .filter((card) => card.kind === kind)
       .map((card) => ({ actionId: action.id, card }))
   );
-}
-
-function contentSelectedMetricTiles(
-  decision: ContentDecisionItem,
-  marketerMetricTiles: Record<string, string | number> | undefined
-): Array<[string, string | number]> {
-  const marketerRows = Object.entries(marketerMetricTiles ?? {}).slice(0, 4);
-  if (marketerRows.length) return marketerRows;
-  return Object.entries(decision.metric_tiles)
-    .slice(0, 4)
-    .map(([label, value]): [string, string | number] => [label, value]);
-}
-
-function contentSelectedMeasurementPlan() {
-  return "Najpierw zapisz sprawdzenie planu treści. Bez publikacji oraz danych po publikacji WILQ nie ocenia sukcesu ani porażki.";
 }
 
 function uniqueValues(values: string[]) {

@@ -1,174 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardCheck, Copy } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Database,
+  ListChecks,
+  RefreshCw,
+  ShieldAlert
+} from "lucide-react";
 
-import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
-import { StatusBadge } from "../components/StatusBadge";
-import { TraceLine } from "../components/TraceLine";
-import { CommandCenterResponse, getCommandCenter } from "../lib/api";
-
-function copyPromptToClipboard(prompt: string) {
-  if (!navigator.clipboard) return;
-  void navigator.clipboard.writeText(prompt);
-}
-
-function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
-  const workOrders = data.work_orders;
-  const decisionById = new Map(data.daily_decisions.map((item) => [item.id, item]));
-  const blockedWorkOrders = workOrders.filter(
-    (item) => item.status === "blocked"
-  );
-
-  return (
-    <section>
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-          <ClipboardCheck aria-hidden="true" size={18} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dzisiejsze zlecenia pracy
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            {data.primary_next_step}
-          </p>
-        </div>
-      </div>
-      <div className="mb-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-md border border-line bg-white p-4">
-          <h3 className="text-sm font-semibold text-ink">Plan dnia w kolejności</h3>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-700">
-            {workOrders.map((item) => (
-              <li key={`order-${item.id}`}>
-                <span className="font-medium text-ink">{item.title}</span>
-                <span className="text-slate-500"> · {item.route_label} · {item.status_label}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="rounded-md border border-risk/25 bg-risk/10 p-4">
-          <h3 className="text-sm font-semibold text-ink">Blokady dnia</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            {data.blocker_count > 0
-              ? `${data.blocker_count} decyzje wymagają wyjaśnienia przed końcowym wnioskiem.`
-              : "Brak blokad w decyzjach dnia; nadal sprawdzaj dowody i akcje przed zapisem."}
-          </p>
-          <TraceLine
-            label="Najpierw nie przeskakuj"
-            values={blockedWorkOrders.map((item) => item.title)}
-            empty="Brak zablokowanych decyzji w planie dnia."
-          />
-        </div>
-      </div>
-      <div className="grid gap-3 xl:grid-cols-2">
-        {workOrders.map((item) => {
-          const decision = item.decision_id ? decisionById.get(item.decision_id) : undefined;
-          return (
-          <article key={item.id} className="rounded-md border border-line bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <LabelChipRow
-                  chips={[
-                    { label: "Typ", value: "decyzja" },
-                    { label: "Priorytet", value: `P${item.priority}` }
-                  ]}
-                />
-                <h3 className="mt-1 text-base font-semibold tracking-normal">
-                  {item.title}
-                </h3>
-              </div>
-              <StatusBadge value={item.status} label={item.status_label} />
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">
-              {item.summary}
-            </p>
-            {decision && Object.keys(decision.metric_tiles ?? {}).length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3">
-                {Object.entries(decision.metric_tiles).map(([label, value]) => (
-                  <MetricTile key={label} label={label} value={value} />
-                ))}
-              </div>
-            ) : null}
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              {item.why_it_matters}
-            </p>
-            <p className="mt-2 text-sm font-medium text-ink">
-              {item.next_safe_step}
-            </p>
-            {decision?.skill_id && decision.codex_prompt ? (
-              <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
-                      <Copy aria-hidden="true" size={15} />
-                      Polecenie: {decision.skill_label ?? "workflow WILQ"}
-                    </div>
-                    {decision.expected_codex_output ? (
-                      <p className="mt-1 text-xs leading-5 text-slate-600">
-                        Po skopiowaniu: {decision.expected_codex_output}
-                      </p>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyPromptToClipboard(decision.codex_prompt ?? "")}
-                    className="inline-flex h-8 items-center rounded-md border border-action/30 px-3 text-xs font-semibold uppercase tracking-normal text-action hover:bg-action/10"
-                  >
-                    Kopiuj polecenie
-                  </button>
-                </div>
-              </div>
-            ) : null}
-            <div className="mt-3 grid gap-2 text-xs text-slate-600">
-              <TraceLine label="Źródła danych" values={item.source_connector_labels} />
-              <TraceLine label="Świeżość źródeł" values={[item.freshness_label]} />
-              <TraceLine label="Dowody w WILQ" values={[item.evidence_summary]} />
-              <TraceLine label="Akcje do sprawdzenia" values={[item.action_summary]} />
-              <TraceLine label="Czego nie twierdzimy" values={item.blocked_claim_labels} />
-              <TraceLine label="Warunek zamknięcia" values={[item.close_condition]} />
-            </div>
-            <a
-              href={item.route}
-              className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
-            >
-              Otwórz pracę
-            </a>
-          </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function SourceHealthSummary({ data }: { data: CommandCenterResponse }) {
-  return (
-    <section className="rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Źródła i ograniczenia
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            To jest tylko skrót zdrowia źródeł. Pełne statusy źródeł danych, braki
-            uprawnień i etykiety źródeł dostępu są w ustawieniach, nie w planie dnia.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Źródła" value={data.connector_summary.total} />
-          <MetricTile label="Aktywne" value={data.connector_summary.configured} />
-          <MetricTile label="Do naprawy" value={data.connector_summary.missing_credentials} />
-        </div>
-      </div>
-      <a
-        href="/settings"
-        className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
-      >
-        Otwórz ustawienia
-      </a>
-    </section>
-  );
-}
+import { BlockerNotice, LoadingBand } from "../components/OperatorPrimitives";
+import {
+  BlockerPanel,
+  CompactStatTile,
+  DashboardToolbar,
+  DenseQueueTable,
+  ForbiddenClaimsStrip,
+  PriorityBadge,
+  SourceFreshnessStrip,
+  StatusPill
+} from "../components/DashboardMockupPrimitives";
+import { CommandCenterResponse, getCommandCenter, type WorkOrder } from "../lib/api";
 
 function ErrorState() {
   return (
@@ -179,45 +30,283 @@ function ErrorState() {
 }
 
 export function CommandCenter() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["command-center"],
     queryFn: getCommandCenter
   });
 
   if (isLoading) return <LoadingBand />;
   if (error || !data) return <ErrorState />;
-  const sourceLabels =
-    data.source_connector_labels.length > 0
-      ? data.source_connector_labels
-      : Array.from(new Set(data.daily_decisions.flatMap((item) => item.source_connector_labels)));
-  const evidenceSummary =
-    data.evidence_summary || `${data.evidence_ids.length} dowodów źródłowych`;
-  const actionSummary = data.action_summary || `${data.action_ids.length} akcji do sprawdzenia`;
+
+  const workOrders = data.work_orders;
+  const blockedOrders = workOrders.filter((item) => item.status === "blocked");
+  const reviewOrders = workOrders.filter((item) => item.status === "review_required");
+  const staleOrders = workOrders.filter((item) => item.freshness.state === "stale");
+  const topWork = workOrders[0];
+  const forbiddenClaims = uniqueLabels(workOrders.flatMap((item) => item.blocked_claim_labels));
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-semibold tracking-normal">Centrum pracy</h1>
-          <p className="mt-1 text-sm text-slate-600">{data.strict_instruction}</p>
-          <TraceLine
-            label="Źródła decyzji dnia"
-            values={sourceLabels}
-            empty="Brak potwierdzonych źródeł decyzji dnia."
-          />
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Prace" value={data.work_orders.length} />
-          <MetricTile label="Dowody" value={evidenceSummary} />
-          <MetricTile label="Akcje" value={actionSummary} />
-        </div>
+      <DashboardToolbar
+        title="Dzisiaj"
+        description="Twoje dzienne centrum operacyjne. Skup się na tym, co ma największy wpływ."
+        dateLabel="Dzisiaj"
+        onRefresh={() => void refetch()}
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <CompactStatTile
+          value={reviewOrders.length}
+          label="decyzje"
+          actionLabel="Wymagają Twojej decyzji"
+          tone="blue"
+          icon={<CheckCircle2 aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={blockedOrders.length}
+          label="blokady krytyczne"
+          actionLabel="Zatrzymują pracę"
+          tone="red"
+          icon={<AlertTriangle aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={data.action_ids.length}
+          label="akcji do sprawdzenia"
+          actionLabel="Zadania do wykonania"
+          tone="amber"
+          icon={<ListChecks aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={staleOrders.length}
+          label="źródła wymagają odświeżenia"
+          actionLabel="Dane są nieświeże"
+          tone="purple"
+          icon={<RefreshCw aria-hidden="true" size={22} />}
+        />
       </div>
 
-      <div className="grid gap-8">
-        <DailyDecisionBoard data={data} />
+      <div className="mt-4">
+        <SourceFreshnessStrip
+          items={workOrders.slice(0, 4).map((item) => ({
+            label: item.route_label || item.domain,
+            detail: item.freshness_label || item.freshness.state,
+            tone: freshnessTone(item.freshness.state),
+            icon: <Database aria-hidden="true" size={16} />
+          }))}
+        />
+      </div>
 
-        <SourceHealthSummary data={data} />
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_0.9fr]">
+        {topWork ? <NextBestWorkCard item={topWork} /> : <EmptyWorkCard />}
+        <BlockerPanel
+          title="Blokady, których nie obchodź"
+          badgeLabel={blockedOrders.length > 0 ? `${blockedOrders.length} krytyczne` : undefined}
+          items={blockerRows(data, blockedOrders)}
+          footer={<ForbiddenClaimsInline claims={forbiddenClaims.slice(0, 4)} />}
+        />
+      </div>
+
+      <div className="mt-5">
+        <DenseQueueTable
+          title="Kolejka dziś"
+          rows={workOrders}
+          getRowKey={(item) => item.id}
+          selectedRowKey={topWork?.id}
+          emptyLabel="Brak zleceń pracy na dziś."
+          columns={[
+            {
+              key: "priority",
+              header: "Priorytet",
+              render: (item) => <PriorityBadge value={priorityBadge(item.priority)} />
+            },
+            {
+              key: "area",
+              header: "Obszar",
+              render: (item) => item.route_label || item.domain
+            },
+            {
+              key: "decision",
+              header: "Decyzja",
+              render: (item) => item.title
+            },
+            {
+              key: "proof",
+              header: "Dowody",
+              render: (item) => item.evidence_summary || `${item.evidence_ids.length} dowodów`
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (item) => (
+                <StatusPill label={item.status_label} tone={statusTone(item.status)} />
+              )
+            },
+            {
+              key: "next",
+              header: "Następny krok",
+              render: (item) => (
+                <a href={item.route} className="font-medium text-action hover:underline">
+                  {nextStepLabel(item)}
+                </a>
+              )
+            }
+          ]}
+        />
+      </div>
+
+      <div className="mt-5">
+        <ForbiddenClaimsStrip claims={forbiddenClaims} />
       </div>
     </main>
   );
+}
+
+function NextBestWorkCard({ item }: { item: WorkOrder }) {
+  return (
+    <section className="overflow-hidden rounded-md border border-line bg-white shadow-sm">
+      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 py-3">
+        <h2 className="text-base font-semibold text-ink">Następna najlepsza praca</h2>
+        <StatusPill label={`Priorytet ${priorityBadge(item.priority)}`} tone="blue" />
+      </div>
+      <div className="p-4">
+        <div className="flex items-start gap-4">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-action">
+            <ListChecks aria-hidden="true" size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-ink">{item.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{item.summary}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <EvidenceBox label="Dowód" value={item.evidence_summary || `${item.evidence_ids.length} dowodów`} />
+          <EvidenceBox label="Akcja" value={item.action_summary || `${item.action_ids.length} akcji`} />
+        </div>
+
+        <h4 className="mt-5 text-sm font-semibold text-ink">Najbezpieczniejszy następny krok</h4>
+        <p className="mt-2 text-sm leading-6 text-slate-700">{item.next_safe_step}</p>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          <a
+            href={item.route}
+            className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+          >
+            Otwórz pracę
+          </a>
+          <details className="inline-flex">
+            <summary className="inline-flex h-10 cursor-pointer items-center rounded-md border border-action/30 px-4 text-sm font-semibold text-action hover:bg-action/10">
+              Pokaż dowody
+            </summary>
+            <p className="mt-3 max-w-xl rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
+              {item.source_connector_labels.join(", ") || "Brak nazw źródeł"} · {item.close_condition}
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function EmptyWorkCard() {
+  return (
+    <section className="rounded-md border border-line bg-white p-4 shadow-sm">
+      <h2 className="text-base font-semibold text-ink">Następna najlepsza praca</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-700">
+        Brak zleceń pracy z WILQ API. Odśwież źródła albo sprawdź status systemu.
+      </p>
+    </section>
+  );
+}
+
+function EvidenceBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-slate-50 px-3 py-3">
+      <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">{label}</div>
+      <div className="mt-1 text-sm text-slate-700">{value}</div>
+    </div>
+  );
+}
+
+function ForbiddenClaimsInline({ claims }: { claims: string[] }) {
+  if (claims.length === 0) {
+    return (
+      <p className="text-sm leading-6 text-slate-700">
+        Brak dodatkowych blokowanych claimów w kolejce dnia. Nadal trzymaj się dowodów.
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-ink">Nie wolno dziś twierdzić</h3>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {claims.map((claim) => (
+          <div key={claim} className="flex items-center gap-2 text-sm text-slate-700">
+            <ShieldAlert aria-hidden="true" size={16} className="text-amber-600" />
+            <span>{claim}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function blockerRows(data: CommandCenterResponse, blockedOrders: WorkOrder[]) {
+  if (blockedOrders.length > 0) {
+    return blockedOrders.map((item) => ({
+      title: item.title,
+      description: item.next_safe_step,
+      href: item.route,
+      tone: "red" as const
+    }));
+  }
+
+  if (data.blocker_count > 0) {
+    return [
+      {
+        title: `${data.blocker_count} blokady w danych WILQ`,
+        description: "Sprawdź kolejkę i nie wyciągaj końcowych wniosków bez dowodów.",
+        href: "/opportunities",
+        tone: "red" as const
+      }
+    ];
+  }
+
+  return [
+    {
+      title: "Brak krytycznych blokad w kolejce dnia",
+      description: "Możesz przejść do pierwszej pracy, nadal bez omijania review.",
+      tone: "green" as const
+    }
+  ];
+}
+
+function priorityBadge(priority: number): "P1" | "P2" | "P3" | "-" {
+  if (priority <= 10) return "P1";
+  if (priority <= 20) return "P2";
+  if (priority <= 40) return "P3";
+  return "-";
+}
+
+function statusTone(status: WorkOrder["status"]) {
+  if (status === "done") return "green";
+  if (status === "blocked") return "red";
+  return "amber";
+}
+
+function freshnessTone(state: WorkOrder["freshness"]["state"]) {
+  if (state === "fresh") return "green";
+  if (state === "stale") return "amber";
+  if (state === "missing") return "red";
+  return "neutral";
+}
+
+function nextStepLabel(item: WorkOrder) {
+  if (item.route_label) return `Otwórz ${item.route_label}`;
+  return "Otwórz pracę";
+}
+
+function uniqueLabels(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
 }

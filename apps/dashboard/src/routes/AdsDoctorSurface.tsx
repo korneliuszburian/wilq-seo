@@ -1,26 +1,43 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import {
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  CircleSlash,
+  Gauge,
+  LineChart,
+  Megaphone,
+  MousePointerClick,
+  RefreshCw,
+  ShieldAlert,
+  Sparkles,
+  Target
+} from "lucide-react";
 
 import {
   ActionObject,
   AdsDiagnosticsResponse,
+  DemandGenReadinessContract,
+  Ga4DiagnosticsResponse,
   getActions,
   getAdsDiagnosticsSummary,
-  getConnectors
+  getDemandGenDiagnostics,
+  getGa4Diagnostics
 } from "../lib/api";
+import { BlockerNotice, LoadingBand } from "../components/OperatorPrimitives";
 import {
-  BlockerNotice,
-  LoadingBand,
-  MetricTile,
-  PlainChipRow
-} from "../components/OperatorPrimitives";
-import { AdsMetricEvidencePanel } from "../components/AdsMetricEvidencePanel";
-import { AdsOperatorSummary } from "../components/AdsOperatorSummaryPanels";
-import { AdsCondensedDecisionPanel, AdsMarketSnapshot } from "../components/AdsOverviewPanels";
-import { TraceLine } from "../components/TraceLine";
-import { ActionFocus } from "./ActionPanels";
+  CompactStatTile,
+  DashboardToolbar,
+  DenseQueueTable,
+  ForbiddenClaimsStrip,
+  PriorityBadge,
+  RiskPill,
+  SourceFreshnessStrip,
+  StatusPill
+} from "../components/DashboardMockupPrimitives";
 
-type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
+type AdsDecision = AdsDiagnosticsResponse["decision_queue"][number];
 
 export function AdsDoctorSurface() {
   const diagnostics = useQuery({
@@ -31,12 +48,19 @@ export function AdsDoctorSurface() {
     queryKey: ["actions"],
     queryFn: getActions
   });
-  const connectors = useQuery({
-    queryKey: ["connectors"],
-    queryFn: getConnectors
+  const ga4 = useQuery({
+    queryKey: ["ga4-diagnostics"],
+    queryFn: getGa4Diagnostics
+  });
+  const demandGen = useQuery({
+    queryKey: ["demand-gen-diagnostics"],
+    queryFn: getDemandGenDiagnostics
   });
 
-  if (diagnostics.isLoading || actions.isLoading || connectors.isLoading) return <LoadingBand />;
+  if (diagnostics.isLoading || actions.isLoading) {
+    return <LoadingBand />;
+  }
+
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -44,6 +68,7 @@ export function AdsDoctorSurface() {
       </main>
     );
   }
+
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -51,230 +76,472 @@ export function AdsDoctorSurface() {
       </main>
     );
   }
-  if (connectors.error || !connectors.data) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się pobrać statusu źródeł danych. Odśwież widok albo sprawdź status WILQ." />
-      </main>
-    );
-  }
 
   const data = diagnostics.data;
-  const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
+  const summary = data.operator_summary;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
-  const latestRefresh = data.latest_refresh;
+  const ga4Data = ga4.isLoading || ga4.error ? null : ga4.data ?? null;
+  const demandGenData = demandGen.isLoading || demandGen.error ? null : demandGen.data ?? null;
+  const primaryDecision = pickPrimaryDecision(data);
   const blockedDecisionCount = data.decision_queue.filter(
     (decision) => decision.status === "blocked"
   ).length;
+  const measurementBlockers =
+    (ga4Data?.operator_summary.measurement_issue_count ?? 0) +
+    (ga4Data?.decision_blocker_count ?? 0);
+  const blockedClaims = uniqueLabels([
+    ...summary.top_blocked_claim_labels,
+    ...summary.blocked_claim_labels,
+    ...(ga4Data?.operator_summary.blocked_claim_labels ?? []),
+    ...(demandGenData?.blocked_claims ?? [])
+  ]).slice(0, 6);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Google Ads</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Google Ads z WILQ. Pokazuje, co marketer może
-            uczciwie sprawdzić na podstawie kampanii i zapytań oraz które wnioski
-            pozostają zablokowane bez kolejnych danych.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Decyzje" value={data.decision_queue.length} />
-          <MetricTile label="Blokady" value={blockedDecisionCount} />
-          <MetricTile label="Dowody" value={data.evidence_summary_label} />
-          <MetricTile label="Waluta" value={currencyCode ?? "waluta do potwierdzenia"} />
-        </div>
-      </div>
+      <DashboardToolbar
+        title="Reklamy i pomiar"
+        description="Tu sprawdzasz Ads, GA4 i Demand Gen bez skracania bramek pomiaru. WILQ pokazuje tylko to, co wynika z aktualnych dowodów."
+        dateLabel={dateLabel(data.generated_at ?? ga4Data?.generated_at)}
+      />
 
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status Google Ads
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
-          </div>
-          <PlainChipRow
-            values={[
-              `${data.connector.label}: ${data.connector_status_label}`,
-              data.live_data_status_label,
-              data.freshness_assessment.state_label,
-              latestRefresh ? `ostatni odczyt: ${data.latest_refresh_status_label}` : null
-            ]}
-          />
-        </div>
-        <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
-          <p>{data.freshness_assessment.summary}</p>
-          <p className="mt-1 font-medium text-ink">{data.freshness_assessment.next_step}</p>
-        </div>
-        {latestRefresh?.errors.length ? (
-          <div className="mt-3 rounded-md border border-risk/30 bg-risk/10 p-3 text-sm text-risk">
-            {latestRefresh.errors[0]}
-          </div>
-        ) : null}
+      <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <CompactStatTile
+          value={data.decision_queue.length}
+          label="decyzji Ads"
+          actionLabel={summary.action_summary_label}
+          tone="blue"
+          icon={<Megaphone aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={measurementBlockers}
+          label="blokady pomiaru"
+          actionLabel={ga4Data?.conversion_readiness_contract.status_label ?? "GA4 do sprawdzenia"}
+          tone={measurementBlockers > 0 ? "red" : "green"}
+          icon={<Gauge aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={routeActions.length}
+          label="bezpieczne akcje"
+          actionLabel={data.action_summary_label}
+          tone="amber"
+          icon={<CheckCircle2 aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={data.evidence_summary_label}
+          label="dowody źródłowe"
+          actionLabel={data.live_data_status_label}
+          tone="purple"
+          icon={<BarChart3 aria-hidden="true" size={22} />}
+        />
       </section>
 
-      {data.blocked_handoff ? (
-        <AdsBlockedHandoffPanel handoff={data.blocked_handoff} />
-      ) : null}
+      <SourceFreshnessStrip
+        items={[
+          {
+            label: "Google Ads",
+            detail: data.freshness_assessment.state_label || data.connector_status_label,
+            tone: data.freshness_assessment.requires_refresh ? "amber" : "green",
+            icon: <RefreshCw aria-hidden="true" size={16} />
+          },
+          {
+            label: "GA4",
+            detail: ga4Data?.freshness_assessment.state_label ?? "nieodczytane",
+            tone: ga4Data ? (ga4Data.freshness_assessment.requires_refresh ? "amber" : "green") : "red",
+            icon: <LineChart aria-hidden="true" size={16} />
+          },
+          {
+            label: "Demand Gen",
+            detail: demandGenData?.status === "blocked" ? "blokada" : demandGenData?.status ?? "nieodczytane",
+            tone: demandGenData?.status === "blocked" || !demandGenData ? "red" : "green",
+            icon: <Sparkles aria-hidden="true" size={16} />
+          },
+          {
+            label: "ActionObject",
+            detail: data.action_summary_label,
+            tone: routeActions.length > 0 ? "blue" : "neutral",
+            icon: <ShieldAlert aria-hidden="true" size={16} />
+          }
+        ]}
+      />
 
-      <AdsCondensedDecisionPanel data={data} currencyCode={currencyCode} />
-      <AdsMarketSnapshot data={data} currencyCode={currencyCode} />
-      <AdsExpandableReviewPanel data={data} currencyCode={currencyCode} />
+      <MeasurementFirstBanner
+        data={data}
+        ga4Data={ga4Data}
+        demandGenData={demandGenData}
+      />
 
-      {routeActions.length > 0 ? (
-        <div className="mt-6">
-          <AdsExpandableActionsPanel
-            actions={routeActions}
-            actionSummaryLabel={data.action_summary_label}
-          />
-        </div>
-      ) : null}
+      <section className="mb-5 grid gap-5 xl:grid-cols-[1.45fr_1fr]">
+        <DenseQueueTable
+          title="Kolejka diagnostyczna"
+          rows={data.decision_queue.slice(0, 6)}
+          selectedRowKey={primaryDecision?.id}
+          getRowKey={(decision) => decision.id}
+          columns={[
+            {
+              key: "priority",
+              header: "Priorytet",
+              render: (decision) => <PriorityBadge value={priorityFromDecision(decision)} />
+            },
+            {
+              key: "topic",
+              header: "Temat",
+              render: (decision) => (
+                <div className="max-w-md">
+                  <div className="font-semibold text-ink">{decision.title}</div>
+                  <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">
+                    {decision.start_here_summary || decision.summary}
+                  </div>
+                </div>
+              )
+            },
+            {
+              key: "proof",
+              header: "Dowody",
+              render: (decision) => (
+                <div className="grid gap-1 text-xs text-slate-600">
+                  <span>{decision.evidence_summary_label}</span>
+                  <span>{decision.action_summary_label || "bez akcji"}</span>
+                </div>
+              )
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (decision) => (
+                <RiskPill
+                  label={decision.status_label || decision.risk_label || decision.status}
+                  risk={decision.status === "blocked" ? "blocked" : riskFromDecision(decision.risk)}
+                />
+              )
+            },
+            {
+              key: "next",
+              header: "Następny krok",
+              render: (decision) => (
+                <span className="text-sm leading-5 text-slate-700">{decision.next_step}</span>
+              )
+            }
+          ]}
+          action={<StatusPill label={`${blockedDecisionCount} blokady`} tone={blockedDecisionCount > 0 ? "red" : "green"} />}
+        />
 
+        <SafeWorkModes
+          data={data}
+          ga4Data={ga4Data}
+          demandGenData={demandGenData}
+          actions={routeActions}
+        />
+      </section>
+
+      <section className="mb-5 grid gap-4 lg:grid-cols-3">
+        <CompactDiagnosticCard
+          icon={<Megaphone aria-hidden="true" size={18} />}
+          title="Ads"
+          statusLabel={data.connector_status_label}
+          summary={summary.summary}
+          facts={[
+            `${summary.campaign_count} kampanii`,
+            `${summary.search_term_count} zapytań`,
+            formatCost(summary.total_cost_micros, data.account_currency_read_contract.currency_code)
+          ]}
+          nextStep={summary.next_step}
+          tone="blue"
+        />
+        <CompactDiagnosticCard
+          icon={<LineChart aria-hidden="true" size={18} />}
+          title="GA4"
+          statusLabel={ga4Data?.conversion_readiness_contract.status_label ?? "brak odczytu GA4"}
+          summary={
+            ga4Data?.operator_summary.summary ??
+            "WILQ nie może dołożyć warstwy pomiaru GA4 do tego widoku, dopóki endpoint GA4 nie odpowie."
+          }
+          facts={[
+            `${ga4Data?.operator_summary.measurement_issue_count ?? 0} problemy pomiaru`,
+            ga4Data?.evidence_summary_label ?? "brak dowodów GA4",
+            ga4Data?.action_summary_label ?? "brak akcji GA4"
+          ]}
+          nextStep={ga4Data?.operator_summary.next_step ?? "Sprawdź /ga4 albo status WILQ przed wnioskiem o konwersjach."}
+          tone="red"
+        />
+        <CompactDiagnosticCard
+          icon={<Sparkles aria-hidden="true" size={18} />}
+          title="Demand Gen"
+          statusLabel={demandGenData?.title ?? "brak odczytu Demand Gen"}
+          summary={
+            demandGenData?.summary ??
+            "WILQ nie ma odczytu Demand Gen w tym widoku, więc nie pokaże rekomendacji trybu kampanii."
+          }
+          facts={[
+            metricTileValue(demandGenData, "kampanie Demand Gen"),
+            metricTileValue(demandGenData, "reklamy Demand Gen"),
+            demandGenData?.evidence_summary_label ?? "brak dowodów Demand Gen"
+          ]}
+          nextStep={demandGenData?.next_step ?? "Nie rekomenduj Demand Gen bez kontraktu gotowości."}
+          tone="purple"
+        />
+      </section>
+
+      <ForbiddenClaimsStrip
+        claims={
+          blockedClaims.length > 0
+            ? blockedClaims
+            : [
+                "werdykt zwrotu z reklam",
+                "twierdzenie o przychodzie",
+                "werdykt marnowania budżetu",
+                "zmiana kampanii bez ActionObject"
+              ]
+        }
+      />
     </main>
   );
 }
 
-function AdsExpandableActionsPanel({
-  actions,
-  actionSummaryLabel
+function MeasurementFirstBanner({
+  data,
+  ga4Data,
+  demandGenData
 }: {
-  actions: ActionObject[];
-  actionSummaryLabel: string;
+  data: AdsDiagnosticsResponse;
+  ga4Data: Ga4DiagnosticsResponse | null;
+  demandGenData: DemandGenReadinessContract | null;
 }) {
-  const [showActions, setShowActions] = useState(false);
+  const ga4Blockers = ga4Data?.operator_summary.blocked_claim_labels ?? [];
+  const adsMissing = data.operator_summary.missing_read_contract_labels;
+  const demandGenMissing = demandGenData?.missing_read_contract_labels ?? [];
+  const blockers = uniqueLabels([...ga4Blockers, ...adsMissing, ...demandGenMissing]).slice(0, 4);
 
   return (
-    <section className="rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Akcje do sprawdzenia
-          </h2>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ pokazuje dla Google Ads: {actionSummaryLabel}. Otwórz tę sekcję dopiero wtedy, gdy
-            chcesz zapisać przegląd człowieka, wygenerować podgląd zmian albo
-            sprawdzić warunki zapisu akcji.
-          </p>
+    <section className="my-5 overflow-hidden rounded-md border border-red-200 bg-red-50 shadow-sm">
+      <div className="grid gap-0 lg:grid-cols-[1.1fr_1fr]">
+        <div className="border-b border-red-200 p-4 lg:border-b-0 lg:border-r">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-risk">
+              <AlertTriangle aria-hidden="true" size={20} />
+            </span>
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-normal text-risk">
+                Najpierw pomiar
+              </div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">
+                ROAS, przychód, waste i konwersje są zablokowane do czasu potwierdzenia danych.
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                {ga4Data?.conversion_readiness_contract.summary ?? data.strict_instruction}
+              </p>
+            </div>
+          </div>
         </div>
-        <MetricTile label="Akcje" value={actionSummaryLabel} />
+        <div className="p-4">
+          <div className="text-sm font-semibold text-ink">Co blokuje wniosek</div>
+          <div className="mt-3 grid gap-2">
+            {blockers.length > 0 ? (
+              blockers.map((blocker) => (
+                <div key={blocker} className="flex items-center gap-2 text-sm text-slate-700">
+                  <CircleSlash aria-hidden="true" size={16} className="shrink-0 text-risk" />
+                  <span>{blocker}</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-slate-700">
+                <CircleSlash aria-hidden="true" size={16} className="shrink-0 text-risk" />
+                <span>Brak jawnej bramki pomiaru w odczycie. Zatrzymaj wnioski i sprawdź źródła.</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setShowActions((current) => !current)}
-        className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
-      >
-        {showActions ? "Ukryj akcje do sprawdzenia" : "Pokaż akcje do sprawdzenia"}
-      </button>
-
-      {showActions ? (
-        <div className="mt-4">
-          <ActionFocus actions={actions} />
-        </div>
-      ) : null}
     </section>
   );
 }
 
-function AdsExpandableReviewPanel({
+function SafeWorkModes({
   data,
-  currencyCode
+  ga4Data,
+  demandGenData,
+  actions
 }: {
   data: AdsDiagnosticsResponse;
-  currencyCode: string | undefined;
+  ga4Data: Ga4DiagnosticsResponse | null;
+  demandGenData: DemandGenReadinessContract | null;
+  actions: ActionObject[];
 }) {
-  const [showDeepReview, setShowDeepReview] = useState(false);
   const summary = data.operator_summary;
 
   return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Pełny przegląd Ads
-          </h2>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Pierwszy ekran pokazuje decyzję i skrót odczytu. Rozwiń pełny przegląd,
-            gdy chcesz przejrzeć gotowość obszarów, karty decyzji, zapytania,
-            rekomendacje i szczegółowe dowody.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Gotowe" value={summary.ready_area_count} />
-          <MetricTile label="Blokady" value={summary.blocked_area_count} />
-          <MetricTile label="Akcje" value={summary.action_summary_label} />
-        </div>
+    <section className="overflow-hidden rounded-md border border-line bg-white shadow-sm">
+      <div className="border-b border-line px-4 py-3">
+        <h2 className="text-base font-semibold text-ink">Bezpieczne tryby pracy</h2>
+        <p className="mt-1 text-sm leading-5 text-slate-600">
+          WILQ pokazuje review i podglądy. Nie zapisuje zmian w Ads ani nie odblokowuje obietnic bez bramek.
+        </p>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setShowDeepReview((current) => !current)}
-        className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
-      >
-        {showDeepReview ? "Ukryj pełny przegląd Ads" : "Pokaż pełny przegląd Ads"}
-      </button>
-
-      {showDeepReview ? (
-        <div className="mt-4 grid gap-6">
-          <AdsOperatorSummary data={data} />
-          <AdsMetricEvidencePanel data={data} currencyCode={currencyCode} />
-        </div>
-      ) : null}
+      <div className="divide-y divide-line">
+        <ModeRow
+          icon={<MousePointerClick aria-hidden="true" size={16} />}
+          title="Review Ads"
+          detail={`${summary.ready_area_count} gotowe obszary, ${summary.blocked_area_count} blokady`}
+          statusLabel={summary.operator_review_gate_summary_label || "wymaga review"}
+          href="/ads-doctor/search-terms"
+        />
+        <ModeRow
+          icon={<Gauge aria-hidden="true" size={16} />}
+          title="Sprawdź pomiar GA4"
+          detail={ga4Data?.freshness_assessment.next_step ?? "Brak odczytu GA4 w tym widoku"}
+          statusLabel={ga4Data?.action_summary_label ?? "sprawdź GA4"}
+          href="/ga4"
+        />
+        <ModeRow
+          icon={<Sparkles aria-hidden="true" size={16} />}
+          title="Demand Gen tylko do gotowości"
+          detail={demandGenData?.next_step ?? "Brak kontraktu Demand Gen"}
+          statusLabel={demandGenData?.action_summary_label ?? "review-only"}
+          href="/ads-doctor/demand-gen"
+        />
+        <ModeRow
+          icon={<Target aria-hidden="true" size={16} />}
+          title="ActionObject"
+          detail={
+            actions.length > 0
+              ? actions[0].human_diagnosis || actions[0].recommended_reason
+              : "Brak akcji dla tej powierzchni"
+          }
+          statusLabel={data.action_summary_label}
+          href={actions[0] ? `/actions/${actions[0].id}` : "/actions"}
+        />
+      </div>
     </section>
   );
 }
 
-function AdsBlockedHandoffPanel({
-  handoff
+function ModeRow({
+  icon,
+  title,
+  detail,
+  statusLabel,
+  href
 }: {
-  handoff: AdsBlockedHandoff;
+  icon: ReactNode;
+  title: string;
+  detail: string;
+  statusLabel: string;
+  href: string;
 }) {
   return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Przekazanie blokady Ads
-          </div>
-          <h2 className="mt-1 text-base font-semibold tracking-normal">{handoff.title}</h2>
-        </div>
-        <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
-          {handoff.status_label}
+    <a href={href} className="grid gap-2 px-4 py-3 hover:bg-slate-50 sm:grid-cols-[1fr_auto]">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-action">
+          {icon}
+        </span>
+        <span>
+          <span className="block text-sm font-semibold text-ink">{title}</span>
+          <span className="mt-0.5 line-clamp-2 block text-sm leading-5 text-slate-600">{detail}</span>
         </span>
       </div>
-      <p className="text-sm leading-6 text-slate-700">{handoff.summary}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{handoff.marketer_message}</p>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Ścieżka naprawy</h3>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-slate-700">
-            {handoff.repair_steps.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </div>
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Co wolno pokazać w demo</h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">
-            {handoff.allowed_demo_claims.map((claim) => (
-              <li key={claim}>{claim}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Dowody" values={[handoff.evidence_summary_label]} />
-        <TraceLine label="Źródła" values={handoff.source_connector_labels} />
-        <TraceLine
-          label="Akcje do sprawdzenia"
-          values={[handoff.action_summary_label]}
-          empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
-        />
-        <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claim_labels} />
-      </div>
-    </section>
+      <StatusPill label={statusLabel} tone="blue" />
+    </a>
   );
+}
+
+function CompactDiagnosticCard({
+  icon,
+  title,
+  statusLabel,
+  summary,
+  facts,
+  nextStep,
+  tone
+}: {
+  icon: ReactNode;
+  title: string;
+  statusLabel: string;
+  summary: string;
+  facts: string[];
+  nextStep: string;
+  tone: "blue" | "red" | "purple";
+}) {
+  const toneClasses = {
+    blue: "bg-blue-50 text-action",
+    red: "bg-red-50 text-risk",
+    purple: "bg-violet-50 text-violet-700"
+  };
+
+  return (
+    <article className="overflow-hidden rounded-md border border-line bg-white shadow-sm">
+      <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className={`flex size-8 items-center justify-center rounded-md ${toneClasses[tone]}`}>
+            {icon}
+          </span>
+          <h2 className="text-base font-semibold text-ink">{title}</h2>
+        </div>
+        <StatusPill label={statusLabel} tone={tone === "red" ? "red" : tone} />
+      </div>
+      <div className="p-4">
+        <p className="line-clamp-4 text-sm leading-6 text-slate-700">{summary}</p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          {facts.map((fact) => (
+            <div key={fact} className="rounded-md border border-line bg-slate-50 px-3 py-2 text-sm font-medium text-ink">
+              {fact}
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 border-t border-line pt-3 text-sm leading-6 text-slate-700">
+          <span className="font-semibold text-ink">Następny krok: </span>
+          {nextStep}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function pickPrimaryDecision(data: AdsDiagnosticsResponse) {
+  const topIds = data.operator_summary.top_decision_ids;
+  return (
+    topIds.map((id) => data.decision_queue.find((decision) => decision.id === id)).find(Boolean) ??
+    data.decision_queue[0]
+  );
+}
+
+function priorityFromDecision(decision: AdsDecision): "P1" | "P2" | "P3" | "-" {
+  if (decision.status === "blocked" || decision.priority <= 20) return "P1";
+  if (decision.priority <= 40) return "P2";
+  if (decision.priority <= 70) return "P3";
+  return "-";
+}
+
+function riskFromDecision(risk: AdsDecision["risk"]): "low" | "medium" | "high" | "blocked" {
+  if (risk === "critical") return "high";
+  return risk;
+}
+
+function uniqueLabels(values: string[]) {
+  return Array.from(new Set(values.filter((value) => value.trim().length > 0)));
+}
+
+function metricTileValue(data: DemandGenReadinessContract | null, key: string) {
+  const value = data?.metric_tiles[key];
+  if (value === undefined) return `${key}: brak`;
+  return `${key}: ${value}`;
+}
+
+function formatCost(totalCostMicros: number, currencyCode?: string | null) {
+  const value = totalCostMicros / 1_000_000;
+  const formatted = new Intl.NumberFormat("pl-PL", {
+    maximumFractionDigits: 2,
+    style: currencyCode ? "currency" : "decimal",
+    currency: currencyCode ?? undefined
+  }).format(value);
+  return `koszt ${formatted}`;
+}
+
+function dateLabel(value?: string | null) {
+  if (!value) return "Dzisiaj";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Dzisiaj";
+  return new Intl.DateTimeFormat("pl-PL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(date);
 }

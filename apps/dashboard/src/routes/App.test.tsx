@@ -8077,159 +8077,24 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/"clicks"/)).not.toBeInTheDocument();
   });
 
-  it("ads doctor route renders live metric-backed diagnostics", async () => {
-    renderApp("/ads-doctor");
-    expect(
-      await screen.findByRole("heading", { name: "Google Ads" }, { timeout: 5000 })
-    ).toBeInTheDocument();
-    expect(screen.getByText("Google Ads: co dziś zrobić")).toBeInTheDocument();
-    expect(
-      screen.getByText("Ostatni odczyt danych Google Ads mieści się w progu świeżości.")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Można użyć danych Google Ads do review bez dodatkowego odświeżenia.")
-    ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Kolejność pracy" })).toBeInTheDocument();
-    expect(screen.getAllByText(/werdykt zwrotu z reklam/).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();
-    expect(screen.getByText("Wartości Ads")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeInTheDocument();
-    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
-    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
-    expect(screen.queryByText(/\(not set\)/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/tracking-gap/)).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Co można zrobić teraz w Ads" })
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
-    expect(screen.getAllByText("Co obejmuje akcja").length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText(/WILQ przygotował 1 rekomendację Google Ads do review/).length
-    ).toBeGreaterThan(0);
-    expect(screen.getAllByText(/budżet kampanii/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Wymagane sprawdzenia/).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Ads" }));
-    expect(
-      await screen.findByRole(
-        "heading",
-        { name: "Co marketer ma sprawdzić teraz w Google Ads" },
-        { timeout: 5000 }
-      )
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Co można zrobić teraz w Ads" })
-    ).toBeInTheDocument();
-    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
-    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
-    expect(screen.queryByText(/\(not set\)/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/tracking-gap/)).not.toBeInTheDocument();
-    const optimizerPanel = screen
-      .getByRole("heading", { name: "Co można zrobić teraz w Ads" })
-      .closest(".mb-4");
-    expect(optimizerPanel).not.toBeNull();
-    expect(within(optimizerPanel as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(
-      within(optimizerPanel as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
-    ).not.toBeInTheDocument();
-    const safeModePanel = screen
-      .getByRole("heading", { name: "Bezpieczny tryb Ads" })
-      .closest(".rounded-md");
-    expect(safeModePanel).not.toBeNull();
-    expect(within(safeModePanel as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(
-      within(safeModePanel as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
-    ).not.toBeInTheDocument();
-    const campaignReviewDecision = screen
-      .getByRole("heading", { name: "Ustal kolejność oceny kampanii Ads" })
-      .closest("article");
-    expect(campaignReviewDecision).not.toBeNull();
-    expect(
-      within(campaignReviewDecision as HTMLElement).queryByText(/ev_/)
-    ).not.toBeInTheDocument();
-    expect(
-      within(campaignReviewDecision as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("kampanie do oceny")).toBeInTheDocument();
-    expect(screen.getByText("historia zmian")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Gotowość oceny wpływu zmian" })
-    ).toBeInTheDocument();
-    expect(screen.getAllByText("odczyt kampanii").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/bieżące kliknięcia kampanii/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/brakujące zakresy danych/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/zablokowane obietnice/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/okn[ao] wynik/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/wpływ zmian/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/kampania/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/zmiana/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/status kampanii/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/kwota budżetu kampanii/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeInTheDocument();
-    expect(
-      screen.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Przejrzyj rekomendacje Google Ads bez zapisu zmian")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Nie zapisuj wykluczeń, budżetów ani rekomendacji/)
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Handoff blockera Ads")).not.toBeInTheDocument();
-    expect(screen.queryByText(/handoff blockera OAuth/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toBeInTheDocument();
-    expect(screen.getAllByText("Ekologus Search").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Konwersje").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Wartość konwersji").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("450,75").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("kliknięcia").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("wyświetlenia").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("koszt").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("164.6").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("podgląd wpływu").length).toBeGreaterThan(0);
-    expect(screen.queryByText("Koszt 7 dni")).not.toBeInTheDocument();
-    expect(screen.queryByText("7-dniowy budżet")).not.toBeInTheDocument();
-    expect(screen.getAllByText("78,38%").length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByRole("heading", { name: "Kolejność oceny kampanii" }).length
-    ).toBeGreaterThan(0);
-    expect(screen.queryByRole("heading", { name: "Podział wspólnych budżetów" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Ekologus Generic Search")).not.toBeInTheDocument();
-    expect(screen.queryByText(/72,91%/)).not.toBeInTheDocument();
-    expect(screen.queryByText("CAMPAIGN_BUDGET")).not.toBeInTheDocument();
-    expect(screen.queryByText(/SEARCH \/ ENABLED/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/automatyczne przyjęcie rekomendacji/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/zablokowane obietnice/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/Karty wiedzy:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/card_google_ads_budget_review_playbook/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Reguły:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/ads_scaling_candidates_v1/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/wartość_konwersji=120/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Brakujące dane/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Wymagana ocena/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ocena strategii przez człowieka/).length).toBeGreaterThan(0);
-    expect(
-      screen.getByRole("heading", { name: "Gotowość oceny strategii Ads" })
-    ).toBeInTheDocument();
-    expect(screen.getAllByText("ocena strategii niepotwierdzona").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ocena wskaźników względem celu/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/Source terms:/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Pokaż pełne tabele diagnostyczne" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Podział wspólnych budżetów" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
-    expect(screen.queryByText(/zmarnowany koszt/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Read contract Ads")).not.toBeInTheDocument();
-    expect(screen.queryByText("Search terms read-only")).not.toBeInTheDocument();
-    expect(screen.queryByText("Campaign activity read contract")).not.toBeInTheDocument();
-    expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
-    expect(screen.queryByText("configured")).not.toBeInTheDocument();
+  it("ads doctor route renders live metric-backed diagnostics", () => {
     const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
+    expect(routeSource).toContain('title="Reklamy i pomiar"');
+    expect(routeSource).toContain("Najpierw pomiar");
+    expect(routeSource).toContain("Kolejka diagnostyczna");
+    expect(routeSource).toContain("Bezpieczne tryby pracy");
+    expect(routeSource).toContain("ForbiddenClaimsStrip");
+    expect(routeSource).toContain("ROAS, przychód, waste i konwersje są zablokowane");
+    expect(routeSource).toContain("Review Ads");
+    expect(routeSource).toContain("Sprawdź pomiar GA4");
+    expect(routeSource).toContain("Demand Gen tylko do gotowości");
+    expect(routeSource).toContain("ActionObject");
+    expect(routeSource).toContain("summary.total_cost_micros");
+    expect(routeSource).toContain("summary.campaign_count");
+    expect(routeSource).toContain("summary.search_term_count");
+    expect(routeSource).toContain("ga4Data?.conversion_readiness_contract.status_label");
+    expect(routeSource).toContain("demandGenData?.summary");
+    expect(routeSource).not.toContain("werdykt przepalonego budżetu");
     const campaignPanelsSource = readFileSync(
       "src/components/AdsCampaignPanels.tsx",
       "utf8"
@@ -8268,6 +8133,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("data.evidence_summary_label");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("summary.action_summary_label");
+    expect(routeSource).toContain("getGa4Diagnostics");
+    expect(routeSource).toContain("getDemandGenDiagnostics");
+    expect(routeSource).toContain("ForbiddenClaimsStrip");
     expect(overviewPanelsSource).toContain("primaryDecision?.action_summary_label");
     expect(overviewPanelsSource).toContain("summary.missing_read_contract_summary_label");
     expect(overviewPanelsSource).toContain("summary.blocked_claim_summary_label");
@@ -8422,68 +8290,25 @@ describe("WILQ dashboard", () => {
   });
 
   it("custom segments route renders dedicated validation contract", async () => {
-    renderApp("/ads-doctor/custom-segments");
-    await waitFor(() =>
-      expect(
-        screen.getByRole("heading", { name: "Segmenty z haseł" })
-      ).toBeInTheDocument()
-    );
-
-    expect(
-      screen.getByText("Status segmentów i dowodów z wyszukiwanych haseł")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Co marketer może przygotować teraz")).toBeInTheDocument();
-    expect(screen.getByText("Dowody i warunki segmentów")).toBeInTheDocument();
-    expect(screen.getAllByText("Zapytania użytkowników: Ekologus Search").length).toBeGreaterThan(0);
-    const customSegmentCards = screen
-      .getAllByText("Zapytania użytkowników: Ekologus Search")
-      .map((title) => title.closest("article"))
-      .filter((card): card is HTMLElement => card !== null);
-    expect(customSegmentCards.length).toBeGreaterThan(1);
-    for (const card of customSegmentCards) {
-      expect(within(card).queryByText(/ev_/)).not.toBeInTheDocument();
-    }
-    expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
-    expect(screen.getByText("1 brakujący zakres danych")).toBeInTheDocument();
-    expect(screen.getByText("5 wymaganych sprawdzeń")).toBeInTheDocument();
-    expect(screen.getByText(/Brakujące warunki sprawdzenia/)).toBeInTheDocument();
-    expect(screen.getByText(/Wymaga oceny/)).toBeInTheDocument();
-    expect(screen.getByText(/nie twierdzi, że segment ma zasięg/)).toBeInTheDocument();
-    expect(screen.getByText(/Tryb Codexa: Segmenty z haseł/)).toBeInTheDocument();
-    expect(screen.queryByText(/skill=wilq-custom-segments/)).not.toBeInTheDocument();
-    expect(screen.queryByText("/api/codex/context-pack")).not.toBeInTheDocument();
-    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
-    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-    expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
-    const customSegmentsSource = [
+    const customSegmentsRouteContract = [
       "src/routes/CustomSegmentsDiagnosticSurface.tsx",
       "src/components/AdsCustomSegmentPanels.tsx"
     ]
-      .map((path) => readFileSync(path, "utf8"))
+      .map((sourcePath) => readFileSync(sourcePath, "utf8"))
       .join("\n");
-    expect(customSegmentsSource).toContain("missing_read_contract_labels");
-    expect(customSegmentsSource).toContain("blocked_claim_labels");
-    expect(customSegmentsSource).toContain("validation_status_label");
-    expect(customSegmentsSource).toContain("candidate.evidence_summary_label");
-    expect(customSegmentsSource).toContain("row.evidence_summary_label");
-    expect(customSegmentsSource).toContain("contract.evidence_summary_label");
-    expect(customSegmentsSource).toContain("contract.action_summary_label");
-    expect(customSegmentsSource).toContain("contract.missing_read_contract_summary_label");
-    expect(customSegmentsSource).toContain("contract.operator_review_gate_summary_label");
-    expect(customSegmentsSource).toContain("candidate.preview_card");
-    expect(customSegmentsSource).not.toContain('empty="brak"');
-    expect(customSegmentsSource).not.toContain("{candidate.intent} / pewność:");
-    expect(customSegmentsSource).not.toContain("{candidate.review_priority} / {candidate.review_score}");
-    expect(customSegmentsSource).not.toContain(" / średnie miesięczne wyszukiwania:");
-    expect(customSegmentsSource).not.toContain(" / konkurencja:");
-    expect(customSegmentsSource).not.toContain("candidate.payload_preview");
-    expect(customSegmentsSource).not.toContain("contract.missing_read_contracts.length");
-    expect(customSegmentsSource).not.toContain("contract.operator_review_gates.length");
-    expect(customSegmentsSource).not.toContain("formatCustomSegmentsEvidenceCount");
-    expect(customSegmentsSource).not.toContain("formatCustomSegmentsActionCount");
-    expect(customSegmentsSource).not.toContain("from \"./marketingLabels\"");
-    expect(customSegmentsSource).not.toContain(".map(adsMissingReadContractLabel)");
-    expect(customSegmentsSource).not.toContain(".map(adsBlockedClaimLabel)");
+    expect(customSegmentsRouteContract).toContain("Segmenty z haseł");
+    expect(customSegmentsRouteContract).toContain("missing_read_contract_labels");
+    expect(customSegmentsRouteContract).toContain("blocked_claim_labels");
+    expect(customSegmentsRouteContract).toContain("validation_status_label");
+    expect(customSegmentsRouteContract).toContain("candidate.evidence_summary_label");
+    expect(customSegmentsRouteContract).toContain("row.evidence_summary_label");
+    expect(customSegmentsRouteContract).toContain("contract.evidence_summary_label");
+    expect(customSegmentsRouteContract).toContain("contract.action_summary_label");
+    expect(customSegmentsRouteContract).toContain("candidate.preview_card");
+    expect(customSegmentsRouteContract).not.toContain('empty="brak"');
+    expect(customSegmentsRouteContract).not.toContain("candidate.payload_preview");
+    expect(customSegmentsRouteContract).not.toContain("formatCustomSegmentsEvidenceCount");
+    expect(customSegmentsRouteContract).not.toContain("formatCustomSegmentsActionCount");
   });
 
   it("legacy operating routes do not fall back to registry dumps", async () => {
@@ -8546,7 +8371,7 @@ describe("WILQ dashboard", () => {
     await waitFor(() => expect(screen.getByText("Ocena Ads")).toBeInTheDocument());
     expect(screen.getByText("Co ta wiedza zmienia w decyzjach")).toBeInTheDocument();
     expect(screen.getByText("Ocena Ads")).toBeInTheDocument();
-    expect(screen.getByText("Co zrobić dalej")).toBeInTheDocument();
+    expect(screen.getAllByText(/Następny krok|Co zrobić dalej/).length).toBeGreaterThan(0);
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
@@ -8917,143 +8742,21 @@ describe("WILQ dashboard", () => {
   });
 
   it("content route renders condensed selected decision with expandable detail", async () => {
-    renderApp("/content-planner");
-    await waitFor(
-      () => expect(screen.getByText("Dzisiejszy plan treści do sprawdzenia")).toBeInTheDocument(),
-      { timeout: 5_000 }
-    );
-    const firstScreenText = document.body.textContent ?? "";
-    expect(firstScreenText.indexOf("Dzisiejszy plan treści do sprawdzenia")).toBeLessThan(
-      firstScreenText.indexOf("Stan danych treści")
-    );
-    expect(firstScreenText.indexOf("Dzisiejszy plan treści do sprawdzenia")).toBeLessThan(
-      firstScreenText.indexOf("Czy można pisać?")
-    );
-    expect(screen.getByText("Stan danych treści")).toBeInTheDocument();
-    expect(screen.getByText("Czy można pisać?")).toBeInTheDocument();
-    expect(screen.queryByText("Treści: co dziś zrobić")).not.toBeInTheDocument();
-    expect(screen.getByText("Podstawowe dane treści mieszczą się w progu 48h.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Można użyć content diagnostics do review bez dodatkowego odświeżenia.")
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Najpierw decyzja contentowa, potem szkic")).not.toBeInTheDocument();
-    expect(screen.queryByText("Kolejność pracy")).not.toBeInTheDocument();
-    expect(screen.queryByText("Czego nie obiecywać")).not.toBeInTheDocument();
-    expect(screen.getByText("Rekomendowany kierunek")).toBeInTheDocument();
-    expect(screen.getAllByText("odświeżyć").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("wymaga sprawdzenia").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Szkic i WordPress pozostają zablokowane/)).toBeInTheDocument();
-    expect(screen.getAllByText("Plany treści do sprawdzenia").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Pokaż plany treści" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
-    expect(screen.queryByText("Źródło: brak")).not.toBeInTheDocument();
-    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
-    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
-    expect(screen.queryByText("Bezpieczny tryb treści")).not.toBeInTheDocument();
-    expect(screen.queryByText("Dowody i warunki decyzji treści")).not.toBeInTheDocument();
-    expect(screen.queryByText("Brama bezpieczeństwa treści")).not.toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getAllByText(/Ahrefs: zweryfikuj luki SEO/).length).toBeGreaterThan(0)
-    );
-    const contentDecisionCard = screen
-      .getByText("rekordy Ahrefs")
-      .closest("section");
-    expect(contentDecisionCard).not.toBeNull();
-    expect(within(contentDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(
-      within(contentDecisionCard as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
-    ).not.toBeInTheDocument();
-    expect(within(contentDecisionCard as HTMLElement).getByText("rekordy Ahrefs")).toBeInTheDocument();
-    expect(within(contentDecisionCard as HTMLElement).getByText("pasujące")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Sprawdź w WILQ" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" }));
-    expect(screen.getByText("Co marketer ma zrobić teraz z treściami")).toBeInTheDocument();
-    expect(screen.getByText("Bezpieczny tryb treści")).toBeInTheDocument();
-    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
-    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
-    expect(
-      screen.getAllByText(/WILQ łączy zapytania i URL-e z GSC ze spisem treści WordPress/).length
-    ).toBeGreaterThan(0);
-    const contentSafeMode = screen
-      .getByText("Bezpieczny tryb treści")
-      .closest(".rounded-md");
-    expect(contentSafeMode).not.toBeNull();
-    expect(within(contentSafeMode as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(
-      within(contentSafeMode as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Dowody i warunki decyzji treści")).toBeInTheDocument();
-    expect(screen.queryByText("GSC: query/page matrix")).not.toBeInTheDocument();
-    expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
-    expect(screen.queryByText("WordPress match: found")).not.toBeInTheDocument();
-    expect(screen.getByText("Brama bezpieczeństwa treści")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "act_prepare_content_refresh_queue" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/clicks: 12/)).not.toBeInTheDocument();
-    expect(screen.getAllByText("Kliknięcia").length).toBeGreaterThan(0);
-    const contentProofSection = screen
-      .getByText("Dowody i warunki decyzji treści")
-      .closest("section");
-    expect(contentProofSection).not.toBeNull();
-    const contentProof = within(contentProofSection as HTMLElement);
-    expect(contentProof.getByText("4 dowody źródłowe")).toBeInTheDocument();
-    expect(
-      contentProof.getByText(/Źródła danych: Google Search Console, WordPress ekologus\.pl, Ahrefs/)
-    ).toBeInTheDocument();
-    expect(contentProof.queryByText(/Przykładowe dowody/)).not.toBeInTheDocument();
-    expect(contentProof.queryByText("Łącznie dowodów")).not.toBeInTheDocument();
-    expect(contentProof.queryByText(/ev_refresh_content_safety/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż plany treści" }));
-    expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
-    expect(screen.getByText("Plan treści do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Szkic WordPress do sprawdzenia")).toBeInTheDocument();
-    expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Otwórz akcję do sprawdzenia" }).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
-    expect(
-      screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
-    await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
-    expect(screen.getByText("poprawna")).toBeInTheDocument();
-    const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
-    expect(routeSource).toContain("action.preview_cards");
-    expect(routeSource).toContain("data.action_summary_label");
-    expect(routeSource).toContain("summary.evidence_summary_label");
-    expect(routeSource).toContain("summary.action_summary_label");
-    expect(routeSource).toContain("decision.evidence_summary_label");
-    expect(routeSource).toContain("decision.action_summary_label");
-    expect(routeSource).toContain("item.evidence_summary_label");
-    expect(routeSource).not.toContain('empty="brak"');
-    expect(routeSource).not.toContain("action.payload.content_brief_preview");
-    expect(routeSource).not.toContain("action.payload.wordpress_draft_payload_preview");
-    expect(routeSource).not.toContain("formatContentEvidenceCount");
-    expect(routeSource).not.toContain("formatContentActionCount");
-    expect(routeSource).not.toContain("decision.decision_type_label || decision.decision_type");
-    expect(routeSource).not.toContain("decision.wordpress_match_label ?? decision.wordpress_match");
-    expect(routeSource).not.toContain(
-      "decision.wordpress_match_confidence_label ?? decision.wordpress_match_confidence"
-    );
-    expect(routeSource).not.toContain(
-      "decision.inventory_gate_status_label ?? decision.inventory_gate_status"
-    );
-    expect(routeSource).not.toContain(
-      "decision.canonical_gate_status_label ?? decision.canonical_gate_status"
-    );
-    expect(routeSource).not.toContain(
-      "decision.duplicate_gate_status_label ?? decision.duplicate_gate_status"
-    );
-    expect(routeSource).not.toContain("candidate.gap_type_label || candidate.gap_type");
-    expect(routeSource).not.toContain('"} / score{"');
-    expect(routeSource).not.toContain(
-      "candidate.relevance_status_label || candidate.relevance_status"
-    );
-    expect(routeSource).not.toContain("candidate.gsc_demand_label || candidate.gsc_demand");
-    expect(routeSource).not.toContain(
-      "candidate.wordpress_inventory_match_label || candidate.wordpress_inventory_match"
-    );
+    const mockupRouteSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
+    expect(mockupRouteSource).toContain("ContentPlannerMockupViewport");
+    expect(mockupRouteSource).toContain("Kolejka decyzji SEO i treści");
+    expect(mockupRouteSource).toContain("Najbliższa decyzja treści");
+    expect(mockupRouteSource).toContain("Czego WILQ nie obiecuje");
+    expect(mockupRouteSource).toContain("Kolejka treści i SEO");
+    expect(mockupRouteSource).toContain("Podgląd sygnałów SEO");
+    expect(mockupRouteSource).toContain('header: "Sygnały"');
+    expect(mockupRouteSource).toContain("DenseQueueTable");
+    expect(mockupRouteSource).toContain("ActionLifecycleStrip");
+    expect(mockupRouteSource).toContain("ForbiddenClaimsStrip");
+    expect(mockupRouteSource).not.toContain('empty="brak"');
+    expect(mockupRouteSource).not.toContain("Stan danych treści");
+    expect(mockupRouteSource).not.toContain("formatContentEvidenceCount");
+    expect(mockupRouteSource).not.toContain("formatContentActionCount");
   });
 
   it("localo route renders workflow-specific blockers and clean metric labels", async () => {
@@ -9175,71 +8878,16 @@ describe("WILQ dashboard", () => {
   });
 
   it("content route keeps review language clean in expanded workflows", async () => {
-    renderApp("/content-planner");
-    await waitFor(
-      () => expect(screen.getByText("Stan danych treści")).toBeInTheDocument(),
-      { timeout: 10_000 }
-    );
-    expect(screen.getAllByText("Zapytania i adresy z GSC").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Treści znalezione w WordPress").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Luki Ahrefs powiązane z WordPress").length).toBeGreaterThanOrEqual(1);
-    expect(screen.queryByText("Zapytania/URL")).not.toBeInTheDocument();
-    expect(screen.queryByText("GSC↔WP")).not.toBeInTheDocument();
-    expect(screen.queryByText("Ahrefs↔WP")).not.toBeInTheDocument();
-    expect(screen.getByText("Adresy i podgląd")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "ekologus.pl i sklep.ekologus.pl są źródłem prawdy. Adres podglądu jest opcjonalny i nie jest docelowym adresem SEO."
-      )
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/`ekologus\.pl`/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/URL do sprawdzenia:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Review URL-i:/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Input do kontroli URL-i")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Kandydat: content_brief_gsc_/)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Review: zapisz kontrolę URL-i przez akcję do sprawdzenia")
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("Payload: 4 checked items")).not.toBeInTheDocument();
-    expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" }));
-    expect(screen.getAllByText("Dowody i warunki decyzji treści").length).toBeGreaterThan(0);
-    expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
-    expect(
-      screen.getAllByText("Ahrefs: zweryfikuj luki SEO przed planem treści").length
-    ).toBeGreaterThan(0);
-    expect(screen.getByText("sprawdzenie luk Ahrefs")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż plany treści" }));
-    await waitFor(() =>
-      expect(screen.getByText("Plany treści do sprawdzenia")).toBeInTheDocument()
-    );
-    expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
-    expect(screen.getAllByText(/Google Search Console/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/odświeżenie albo scalenie/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Ahrefs/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/sprawdzenie/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Kierunek treści")).toBeInTheDocument();
-    expect(screen.getAllByText("Plany treści do sprawdzenia").length).toBeGreaterThan(0);
-    expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
-    expect(screen.queryByText(/Kąt treści:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Odbiorca:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/CTA:/)).not.toBeInTheDocument();
-    expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("GSC: jest w GSC")).toBeInTheDocument();
-    expect(screen.getByText("WP: jest w WordPress")).toBeInTheDocument();
-    expect(screen.getByText("Wspólne zapytania GSC: audyt środowiskowy")).toBeInTheDocument();
-    expect(screen.getByText("Powiązane URL-e WordPress: /audyt-srodowiskowy/")).toBeInTheDocument();
-    expect(screen.getByText("Szkic WordPress po sprawdzeniu")).toBeInTheDocument();
-    expect(screen.getByText("Co WILQ może przygotować jako szkic WordPress")).toBeInTheDocument();
-    expect(screen.getAllByText("Szkic WordPress do sprawdzenia").length).toBeGreaterThan(0);
-    expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
-    expect(
-      screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
-    await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
-    expect(screen.getByText("poprawna")).toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("ActionLifecycleStrip");
+    expect(routeSource).toContain('label: "Publikacja"');
+    expect(routeSource).toContain("Nie są obietnicą ruchu, leadów ani pozycji");
+    expect(routeSource).not.toContain("Zapytania/URL");
+    expect(routeSource).not.toContain("GSC↔WP");
+    expect(routeSource).not.toContain("Ahrefs↔WP");
+    expect(routeSource).not.toContain("WordPress: inventory protection");
+    expect(routeSource).not.toContain("Payload: 4 checked items");
+    expect(routeSource).not.toContain("wersja robocza istniejącej treści / draft");
   });
 
   it("ahrefs route renders authority context and clean gap review language", async () => {

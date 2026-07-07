@@ -212,13 +212,15 @@ const evidenceDetailRoute = createRoute({
   component: () => <DetailSurface kind="evidence" />
 });
 
-const generatedRoutes = generatedSurfaceRoutes.map(({ path }) =>
-  createRoute({
-    getParentRoute: () => rootRoute,
-    path,
-    component: () => renderGeneratedRoute(path)
-  })
-);
+const generatedRoutes = [...generatedSurfaceRoutes]
+  .sort((left, right) => right.path.length - left.path.length)
+  .map(({ path }) =>
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path,
+      component: () => renderGeneratedRoute(path)
+    })
+  );
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
