@@ -295,6 +295,10 @@ function ContentWorkflowLoaded({
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <ContentWorkflowHeader topic={item.topic} />
       <ContentWorkflowTodayPanel data={data} queue={queue} />
+      <WorkflowOperatorControls
+        data={data}
+        actions={actions}
+      />
       <ContentCandidateQueuePanel
         queue={queue}
         selectedWorkItemId={selectedWorkItemId}
@@ -307,10 +311,6 @@ function ContentWorkflowLoaded({
       <ClaimLedgerGatePanel data={data} />
       <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
       <WorkflowStepsList steps={steps} />
-      <WorkflowOperatorControls
-        data={data}
-        actions={actions}
-      />
       <WorkflowSafetyPanels
         data={data}
         draft={draft}
@@ -1437,7 +1437,7 @@ function WorkflowOperatorControls({
   const item = data.preflight.item;
   const controls = workflowControlItems(data, actions);
   return (
-    <section className="mt-6 rounded-md border border-line bg-white p-4">
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">

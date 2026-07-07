@@ -114,7 +114,18 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Co jeszcze blokuje szkic")).toBeInTheDocument();
     expect(screen.getByText(/Nie przechodź do szkicu ani WordPress/)).toBeInTheDocument();
     expect(screen.getByText("Etapy zablokowane")).toBeInTheDocument();
+    expect(screen.getByText("Decyzje operatora")).toBeInTheDocument();
     expect(await screen.findByText("Kolejka tematów")).toBeInTheDocument();
+    const firstScreenText = document.body.textContent ?? "";
+    expect(firstScreenText.indexOf("Decyzje operatora")).toBeLessThan(
+      firstScreenText.indexOf("Kolejka tematów")
+    );
+    expect(firstScreenText.indexOf("Decyzje operatora")).toBeLessThan(
+      firstScreenText.indexOf("Co WILQ już potwierdził")
+    );
+    expect(firstScreenText.indexOf("Decyzje operatora")).toBeLessThan(
+      firstScreenText.indexOf("WordPress: szkic bez publikacji")
+    );
     expect(screen.getAllByText(/WILQ widzi 3 kandydatów/).length).toBeGreaterThan(0);
     expect(screen.getByText("Zielony Ład dla firm")).toBeInTheDocument();
     expect(screen.getByText("Luka Ahrefs bez finalnego adresu")).toBeInTheDocument();

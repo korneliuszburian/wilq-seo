@@ -36,6 +36,11 @@ Date: 2026-07-04
   checks that the first visible content task is above technical detail. Next
   roast targets: `/content-workflow`, `/knowledge`, `/service-profile` and
   `/actions`.
+- 2026-07-07 `/content-workflow` got the same decision-first treatment:
+  `Decyzje operatora` now appears immediately after the active workflow task,
+  before queue, proof, WordPress readiness, Claim Ledger and other technical
+  detail. The change adds no new cards; it changes the first-screen priority
+  so the marketer sees the safe controls before diagnostics.
 - 2026-07-04 `scripts/marketer_language_guard.py` now also checks the current
   Goal 005 Wilku-facing UAT/handoff materials for repeated technical wording
   regressions such as technical eval labels, English private-source wording,
