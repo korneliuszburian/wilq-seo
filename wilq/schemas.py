@@ -4232,6 +4232,12 @@ class ContentDecisionItem(BaseModel):
     wordpress_section_headings: list[str] = Field(default_factory=list)
     wordpress_section_count: int | None = None
     wordpress_section_inventory_status: Literal["available", "missing"] = "missing"
+    wordpress_content_summary: str | None = None
+    wordpress_content_word_count: int | None = None
+    wordpress_content_inventory_status: Literal["available", "missing"] = "missing"
+    wordpress_content_inventory_note: str | None = None
+    wordpress_block_names: list[str] = Field(default_factory=list)
+    wordpress_block_count: int | None = None
     wordpress_acf_section_inventory_status: Literal["available", "missing"] = "missing"
     wordpress_acf_section_inventory_note: str | None = None
     source_public_url: str | None = None

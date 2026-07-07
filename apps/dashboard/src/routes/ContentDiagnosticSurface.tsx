@@ -33,7 +33,6 @@ import {
   CompactStatTile,
   DashboardToolbar,
   DenseQueueTable,
-  ForbiddenClaimsStrip,
   RiskPill,
   SourceFreshnessStrip,
   StatusPill
@@ -107,7 +106,6 @@ function ContentPlannerMockupViewport({
 }) {
   const selectedDecision = contentSelectedPrimaryDecision(data);
   const primaryPreflight = preflight?.primary_item ?? undefined;
-  const blockedClaims = contentForbiddenClaims(data, primaryPreflight);
   const rows = contentQueueRows(data);
 
   return (
@@ -142,8 +140,6 @@ function ContentPlannerMockupViewport({
           items={contentBlockerPanelItems(data, primaryPreflight)}
         />
       </div>
-
-      <ForbiddenClaimsStrip claims={blockedClaims} />
 
       <DenseQueueTable
         title="Kolejka treści i SEO"
@@ -283,6 +279,25 @@ function ContentNearestDecisionCard({
             label="Aktualne sekcje"
             values={decision.wordpress_section_headings.slice(0, 6)}
             empty="brak odczytu H2/sekcji dla tego URL"
+          />
+          <TraceLine
+            label="Aktualna treść"
+            values={[
+              decision.wordpress_content_summary ?? undefined,
+              decision.wordpress_content_word_count ? `${decision.wordpress_content_word_count} słów w odczycie REST` : undefined
+            ].filter(isPresentLabel)}
+            empty="brak bezpiecznego skrótu aktualnej treści"
+          />
+          {decision.wordpress_content_inventory_status === "missing" ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+              {decision.wordpress_content_inventory_note ??
+                "WordPress nie wystawia bezpiecznego skrótu aktualnej treści dla tego URL."}
+            </div>
+          ) : null}
+          <TraceLine
+            label="Bloki WordPress"
+            values={decision.wordpress_block_names.slice(0, 6)}
+            empty="brak nazw bloków w odczycie REST"
           />
           <TraceLine
             label="Adres"

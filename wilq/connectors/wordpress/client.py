@@ -40,7 +40,9 @@ WORDPRESS_CONNECTORS = {
 
 WORDPRESS_CONTENT_TYPES = ("posts", "pages")
 WORDPRESS_CONTENT_PER_PAGE = 100
-WORDPRESS_READ_FIELDS = "id,status,modified_gmt,date_gmt,link,slug,title"
+WORDPRESS_READ_FIELDS = (
+    "id,status,modified_gmt,date_gmt,link,slug,title,content,acf,template"
+)
 WORDPRESS_SITEMAP_PATHS = ("wp-sitemap.xml", "sitemap_index.xml", "sitemap.xml")
 WORDPRESS_SITEMAP_CHILD_LIMIT = 20
 WORDPRESS_SITEMAP_URL_LIMIT = 500
@@ -48,6 +50,8 @@ WORDPRESS_METADATA_FETCH_LIMIT = 50
 WORDPRESS_METADATA_MAX_BYTES = 200_000
 WORDPRESS_METADATA_TIMEOUT_SECONDS = 3.0
 WORDPRESS_SECTION_HEADING_LIMIT = 12
+WORDPRESS_CONTENT_SUMMARY_MAX_CHARS = 240
+WORDPRESS_BLOCK_NAME_LIMIT = 16
 
 
 @dataclass(frozen=True)
@@ -302,6 +306,11 @@ def _fetch_content_inventory(
                         "canonical_url": item.get("canonical_url", ""),
                         "section_headings_json": item.get("section_headings_json", ""),
                         "section_heading_count": item.get("section_heading_count", ""),
+                        "content_summary": item.get("content_summary", ""),
+                        "content_word_count": item.get("content_word_count", ""),
+                        "block_names_json": item.get("block_names_json", ""),
+                        "block_name_count": item.get("block_name_count", ""),
+                        "acf_field_count": item.get("acf_field_count", ""),
                         "inventory_source": "wordpress_rest",
                     },
                 )
@@ -623,6 +632,8 @@ def _content_objects(payload: Any) -> list[dict[str, str]]:
         object_id = item.get("id")
         modified = item.get("modified_gmt") or item.get("date_gmt")
         status = item.get("status")
+        content_inventory = _content_inventory(item.get("content"))
+        acf_inventory = _acf_inventory(item.get("acf"))
         objects.append(
             {
                 "object_id": str(object_id) if object_id is not None else "",
@@ -631,9 +642,78 @@ def _content_objects(payload: Any) -> list[dict[str, str]]:
                 "modified_gmt": modified if isinstance(modified, str) else "",
                 "title_or_h1": _wordpress_title(item.get("title")),
                 "canonical_url": "",
+                **content_inventory,
+                **acf_inventory,
             }
         )
     return objects
+
+
+def _content_inventory(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    raw = value.get("raw")
+    rendered = value.get("rendered")
+    source = raw if isinstance(raw, str) and raw.strip() else rendered
+    if not isinstance(source, str) or not source.strip():
+        return {}
+    block_names = _block_names(source)
+    text = _html_text(source)
+    summary = _summary_text(text)
+    dimensions: dict[str, str] = {}
+    if summary:
+        dimensions["content_summary"] = summary
+        dimensions["content_word_count"] = str(len(text.split()))
+    if block_names:
+        dimensions["block_names_json"] = json.dumps(block_names, ensure_ascii=False)
+        dimensions["block_name_count"] = str(len(block_names))
+    return dimensions
+
+
+def _acf_inventory(value: Any) -> dict[str, str]:
+    if isinstance(value, dict):
+        field_names = [str(key) for key, val in value.items() if key and val not in (None, "", [], {})]
+        return {
+            "acf_field_count": str(len(field_names)),
+            "acf_field_names_json": json.dumps(field_names[:WORDPRESS_BLOCK_NAME_LIMIT], ensure_ascii=False),
+        }
+    if isinstance(value, list):
+        return {"acf_field_count": str(len(value))}
+    return {}
+
+
+def _block_names(value: str) -> list[str]:
+    names: list[str] = []
+    marker = "<!-- wp:"
+    start = 0
+    while len(names) < WORDPRESS_BLOCK_NAME_LIMIT:
+        index = value.find(marker, start)
+        if index < 0:
+            break
+        name_start = index + len(marker)
+        name_end = value.find(" ", name_start)
+        close_end = value.find("-->", name_start)
+        candidates = [pos for pos in (name_end, close_end) if pos >= 0]
+        if not candidates:
+            break
+        name = value[name_start : min(candidates)].strip().strip("/")
+        if name and name not in names:
+            names.append(name)
+        start = min(candidates) + 1
+    return names
+
+
+def _html_text(value: str) -> str:
+    parser = _HtmlTextParser()
+    parser.feed(value[:WORDPRESS_METADATA_MAX_BYTES])
+    return _clean_metadata_text(" ".join(parser.chunks))
+
+
+def _summary_text(value: str) -> str:
+    if len(value) <= WORDPRESS_CONTENT_SUMMARY_MAX_CHARS:
+        return value
+    shortened = value[:WORDPRESS_CONTENT_SUMMARY_MAX_CHARS].rsplit(" ", 1)[0].strip()
+    return shortened + "..."
 
 
 def _wordpress_title(value: Any) -> str:
@@ -700,3 +780,22 @@ class _HtmlMetadataParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self._capture:
             self._chunks.append(data)
+
+
+class _HtmlTextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.chunks: list[str] = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() in {"script", "style", "noscript", "svg"}:
+            self._skip_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in {"script", "style", "noscript", "svg"} and self._skip_depth:
+            self._skip_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if not self._skip_depth and data.strip():
+            self.chunks.append(data)

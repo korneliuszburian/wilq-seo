@@ -8786,10 +8786,12 @@ describe("WILQ dashboard", () => {
     expect(mockupRouteSource).toContain("Czego WILQ nie obiecuje");
     expect(mockupRouteSource).toContain("Kolejka treści i SEO");
     expect(mockupRouteSource).toContain("Podgląd sygnałów SEO");
+    expect(mockupRouteSource).toContain("Aktualna treść");
+    expect(mockupRouteSource).toContain("wordpress_content_inventory_status");
     expect(mockupRouteSource).toContain('header: "Sygnały"');
     expect(mockupRouteSource).toContain("DenseQueueTable");
     expect(mockupRouteSource).toContain("ActionLifecycleStrip");
-    expect(mockupRouteSource).toContain("ForbiddenClaimsStrip");
+    expect(mockupRouteSource).not.toContain("ForbiddenClaimsStrip");
     expect(mockupRouteSource).not.toContain('empty="brak"');
     expect(mockupRouteSource).not.toContain("Stan danych treści");
     expect(mockupRouteSource).not.toContain("formatContentEvidenceCount");

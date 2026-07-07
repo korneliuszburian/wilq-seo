@@ -65,6 +65,29 @@ def gsc_content_decisions(
         wordpress_section_count = optional_int_text(
             first.dimensions.get("wordpress_section_heading_count")
         )
+        wordpress_content_summary = first.dimensions.get("wordpress_content_summary") or None
+        wordpress_content_word_count = optional_int_text(
+            first.dimensions.get("wordpress_content_word_count")
+        )
+        wordpress_content_inventory_status: Literal["available", "missing"] = (
+            "available" if wordpress_content_summary else "missing"
+        )
+        wordpress_content_inventory_note = (
+            None
+            if wordpress_content_summary
+            else (
+                "WordPress REST nie wystawia bezpiecznego skrótu aktualnej treści "
+                "dla tej strony. WILQ widzi publiczne H2/H3, ale pełny body/ACF "
+                "wymaga osobnego read-only kontraktu albo exportu."
+            )
+        )
+        wordpress_block_names = json_string_list_from_dimensions(
+            first.dimensions.get("wordpress_block_names_json"),
+            limit=16,
+        )
+        wordpress_block_count = optional_int_text(
+            first.dimensions.get("wordpress_block_name_count")
+        )
         wordpress_section_inventory_status: Literal["available", "missing"] = (
             "available" if wordpress_section_headings else "missing"
         )
@@ -189,6 +212,12 @@ def gsc_content_decisions(
                 wordpress_section_headings=wordpress_section_headings,
                 wordpress_section_count=wordpress_section_count,
                 wordpress_section_inventory_status=wordpress_section_inventory_status,
+                wordpress_content_summary=wordpress_content_summary,
+                wordpress_content_word_count=wordpress_content_word_count,
+                wordpress_content_inventory_status=wordpress_content_inventory_status,
+                wordpress_content_inventory_note=wordpress_content_inventory_note,
+                wordpress_block_names=wordpress_block_names,
+                wordpress_block_count=wordpress_block_count,
                 wordpress_acf_section_inventory_status="missing",
                 wordpress_acf_section_inventory_note=wordpress_acf_section_inventory_note,
                 source_public_url=url_semantics["source_public_url"],
@@ -478,6 +507,10 @@ def content_metric_sentence(metrics: ContentDecisionMetrics) -> str:
 
 
 def wordpress_section_headings_from_dimensions(value: str | None) -> list[str]:
+    return json_string_list_from_dimensions(value, limit=12)
+
+
+def json_string_list_from_dimensions(value: str | None, *, limit: int) -> list[str]:
     if not value:
         return []
     try:
@@ -492,7 +525,7 @@ def wordpress_section_headings_from_dimensions(value: str | None) -> list[str]:
             heading = item.strip()
             if heading:
                 headings.append(heading)
-    return headings[:12]
+    return headings[:limit]
 
 
 def optional_int_text(value: str | None) -> int | None:

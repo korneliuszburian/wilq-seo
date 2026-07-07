@@ -16198,6 +16198,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     ]
     assert first_decision["wordpress_section_count"] == 2
     assert first_decision["wordpress_section_inventory_status"] == "available"
+    assert first_decision["wordpress_content_inventory_status"] == "missing"
+    assert "WordPress REST" in first_decision["wordpress_content_inventory_note"]
     assert first_decision["wordpress_acf_section_inventory_status"] == "missing"
     assert "ACF/flexible content" in first_decision["wordpress_acf_section_inventory_note"]
     assert first_decision["primary_query"] == "zielony ład"
