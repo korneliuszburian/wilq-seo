@@ -7959,11 +7959,22 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Źródła" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Braki dostępu")).toBeInTheDocument();
+    expect(
+      screen.getByText("Zdrowie źródeł, aktualność danych i dostęp wpływają na jakość decyzji.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("źródeł")).toBeInTheDocument();
+    expect(screen.getByText("aktywne dziennie")).toBeInTheDocument();
+    expect(screen.getByText("brak dostępu")).toBeInTheDocument();
+    expect(screen.getByText("poza zakresem dziennym")).toBeInTheDocument();
+    expect(screen.getByText("Co blokuje pracę")).toBeInTheDocument();
     expect(screen.getByText(/Brakuje dostępu do Google Ads/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Dostęp do źródeł" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Wpływ braków na decyzje" })).toBeInTheDocument();
+    expect(screen.getByText("Blokada pełnej oceny Ads i zmian kampanii")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Eksport i pakiety" })).toBeInTheDocument();
     expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż stan dostępu" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż szczegóły techniczne źródeł" })).toBeInTheDocument();
     expect(screen.queryByText("Missing credentials")).not.toBeInTheDocument();
     expect(screen.queryByText("Configured")).not.toBeInTheDocument();
     expect(screen.queryByText(/Source:/)).not.toBeInTheDocument();
@@ -7971,9 +7982,9 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż stan dostępu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne źródeł" }));
     expect(screen.getAllByText("Google Ads").length).toBeGreaterThan(0);
-    expect(screen.getByText("Źródło danych sprawdzane przez WILQ.")).toBeInTheDocument();
+    expect(screen.getAllByText("Źródło danych sprawdzane przez WILQ.").length).toBeGreaterThan(0);
     expect(screen.getByText("Brakujące ustawienia dostępu")).toBeInTheDocument();
     expect(screen.getByText("1 pole")).toBeInTheDocument();
     expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();

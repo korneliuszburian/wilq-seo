@@ -17,7 +17,6 @@ import {
   type WorkflowRun
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
-import { StatusBadge } from "../components/StatusBadge";
 import {
   KnowledgeCardList,
   KnowledgeOperatingMapPanel,
@@ -134,7 +133,7 @@ function genericSurfaceHeader(
     return {
       title: "Źródła",
       description:
-        "Zdrowie źródeł WILQ: dostęp, świeżość i braki, które blokują decyzje. Wartości sekretów pozostają ukryte."
+        "Zdrowie źródeł, aktualność danych i dostęp wpływają na jakość decyzji."
     };
   }
   return {
@@ -618,15 +617,110 @@ function KnowledgePlaybooksDetails({
 
 function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[] }) {
   const [showConnectorDetails, setShowConnectorDetails] = useState(false);
+  const missing = connectors.filter((connector) => hasMissingSourceAccess(connector));
+  const active = connectors.filter(
+    (connector) => connector.active_for_daily_work && connector.configured && !hasMissingSourceAccess(connector)
+  );
+  const outsideDailyScope = connectors.filter((connector) => !connector.active_for_daily_work);
+  const sourceImpactRows = buildSourceImpactRows(missing, outsideDailyScope);
+
+  if (connectors.length === 0) {
+    return (
+      <section>
+        <BlockerNotice message="WILQ nie ma statusu źródeł danych; odśwież integracje przed oceną gotowości." />
+      </section>
+    );
+  }
 
   return (
-    <section>
-      <SectionHeading title="Dostęp do źródeł danych" />
-      <ConnectorAccessSummary connectors={connectors} />
-      <div className="mt-4">
+    <>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <SourceStatTile value={connectors.length} label="źródeł" tone="default" />
+        <SourceStatTile value={active.length} label="aktywne dziennie" tone="success" />
+        <SourceStatTile value={missing.length} label="brak dostępu" tone="risk" />
+        <SourceStatTile value={outsideDailyScope.length} label="poza zakresem dziennym" tone="wait" />
+      </section>
+
+      <section className="rounded-md border border-wait/40 bg-wait/10 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-ink">Co blokuje pracę</h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+              {missing.length > 0
+                ? `Brakuje dostępu do ${formatConnectorList(missing)}. WILQ może dalej używać skonfigurowanych źródeł, ale nie powinien opierać decyzji na danych z brakujących kanałów.`
+                : "Braki dostępu nie blokują teraz głównej pracy. Nadal sprawdzaj świeżość źródeł przed oceną wyników."}
+            </p>
+          </div>
+          <a
+            href="#source-impact"
+            className="rounded-md border border-wait/40 bg-white px-4 py-2 text-sm font-semibold text-wait"
+          >
+            Zobacz szczegóły
+          </a>
+        </div>
+      </section>
+
+      <section className="rounded-md border border-line bg-white">
+        <div className="border-b border-line px-4 py-3">
+          <h2 className="text-base font-semibold text-ink">Dostęp do źródeł</h2>
+        </div>
+        <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+          {connectors.map((connector) => (
+            <SourceAccessCard key={connector.id} connector={connector} />
+          ))}
+        </div>
+      </section>
+
+      <section id="source-impact" className="rounded-md border border-line bg-white">
+        <div className="border-b border-line px-4 py-3">
+          <h2 className="text-base font-semibold text-ink">Wpływ braków na decyzje</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Źródło z brakiem dostępu</th>
+                <th className="px-4 py-3 font-semibold">Co jest zablokowane</th>
+                <th className="px-4 py-3 font-semibold">Wpływ na decyzje</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {sourceImpactRows.map((row) => (
+                <tr key={row.id}>
+                  <td className="px-4 py-3 font-medium text-ink">{row.source}</td>
+                  <td className="px-4 py-3 text-slate-700">{row.blocked}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    <span className={`mr-2 inline-block h-2 w-2 rounded-full ${row.dotClass}`} />
+                    {row.impact}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-md border border-line bg-white p-4">
+        <h2 className="text-base font-semibold text-ink">Eksport i pakiety</h2>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-4 rounded-md border border-action/30 bg-action/5 p-3">
+          <p className="max-w-4xl text-sm leading-6 text-slate-700">
+            Eksporty do Google Sheets są ograniczone do pakietów i zakresów bezpiecznych.
+            Pełny eksport raportów i rejestru WILQ będzie dostępny po wdrożeniu zasad
+            bezpiecznego eksportu.
+          </p>
+          <a
+            href="/google-sheets"
+            className="rounded-md border border-action/30 bg-white px-4 py-2 text-sm font-semibold text-action"
+          >
+            Otwórz Google Sheets
+          </a>
+        </div>
+      </section>
+
+      <section>
         <DetailToggle
           expanded={showConnectorDetails}
-          label="Pokaż stan dostępu"
+          label="Pokaż szczegóły techniczne źródeł"
           onClick={() => setShowConnectorDetails((value) => !value)}
         />
         {showConnectorDetails ? (
@@ -634,9 +728,169 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
             <ConnectorGrid connectors={connectors} />
           </div>
         ) : null}
-      </div>
-    </section>
+      </section>
+    </>
   );
+}
+
+function SourceStatTile({
+  value,
+  label,
+  tone
+}: {
+  value: number;
+  label: string;
+  tone: "default" | "success" | "risk" | "wait";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "bg-success/10 text-success"
+      : tone === "risk"
+        ? "bg-risk/10 text-risk"
+        : tone === "wait"
+          ? "bg-wait/10 text-wait"
+          : "bg-action/10 text-action";
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex items-center gap-4">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${toneClass}`}>
+          <ShieldCheck size={20} aria-hidden="true" />
+        </div>
+        <div>
+          <div className="text-2xl font-semibold text-ink">{value}</div>
+          <div className="text-sm text-slate-700">{label}</div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SourceAccessCard({ connector }: { connector: ConnectorStatus }) {
+  const status = sourceAccessStatus(connector);
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">{connector.label}</h3>
+          <p className="mt-2 text-xs leading-5 text-slate-600">
+            {connector.product_scope_label || "Źródło danych sprawdzane przez WILQ."}
+          </p>
+        </div>
+        <span className={`rounded px-2 py-1 text-xs font-semibold ${status.className}`}>
+          {status.label}
+        </span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">
+        {status.description}
+      </p>
+    </article>
+  );
+}
+
+function sourceAccessStatus(connector: ConnectorStatus) {
+  if (hasMissingSourceAccess(connector)) {
+    return {
+      label: "Brak dostępu",
+      className: "bg-risk/10 text-risk",
+      description: "Dostęp wymaga uzupełnienia przed decyzjami z tego kanału."
+    };
+  }
+  if (!connector.active_for_daily_work) {
+    return {
+      label: "Poza zakresem",
+      className: "bg-wait/10 text-wait",
+      description: "Dane nie są liczone do głównego dziennego zakresu pracy."
+    };
+  }
+  if (connector.configured) {
+    return {
+      label: "Aktywny",
+      className: "bg-success/10 text-success",
+      description: "Dane dostępne i aktualizowane przez WILQ."
+    };
+  }
+  return {
+    label: connector.status_label || "Do sprawdzenia",
+    className: "bg-wait/10 text-wait",
+    description: "Status wymaga sprawdzenia przed użyciem w decyzjach."
+  };
+}
+
+function hasMissingSourceAccess(connector: ConnectorStatus) {
+  return connector.missing_credentials.length > 0 || connector.status === "missing_credentials";
+}
+
+type SourceImpactRow = {
+  id: string;
+  source: string;
+  blocked: string;
+  impact: string;
+  dotClass: string;
+};
+
+function buildSourceImpactRows(
+  missing: ConnectorStatus[],
+  outsideDailyScope: ConnectorStatus[]
+): SourceImpactRow[] {
+  const missingRows = missing.map((connector) => ({
+    id: `missing-${connector.id}`,
+    source: connector.label,
+    blocked: sourceBlockedDecisionLabel(connector),
+    impact: sourceDecisionImpactLabel(connector),
+    dotClass: "bg-risk"
+  }));
+  const outsideRow =
+    outsideDailyScope.length > 0
+      ? [
+          {
+            id: "outside-daily-scope",
+            source: "Inne poza zakresem",
+            blocked: `Dane z ${outsideDailyScope.length} ${pluralize(
+              outsideDailyScope.length,
+              "źródła",
+              "źródeł",
+              "źródeł"
+            )} pomijane w dziennym zakresie`,
+            impact: "Ograniczony wgląd w nieujęte kanały",
+            dotClass: "bg-wait"
+          }
+        ]
+      : [];
+  if (missingRows.length === 0 && outsideRow.length === 0) {
+    return [
+      {
+        id: "sources-ready",
+        source: "Brak krytycznych braków",
+        blocked: "Główne źródła mogą zasilać decyzje po sprawdzeniu świeżości danych",
+        impact: "Decyzje nie są blokowane przez dostęp",
+        dotClass: "bg-success"
+      }
+    ];
+  }
+  return [...missingRows, ...outsideRow];
+}
+
+function sourceBlockedDecisionLabel(connector: ConnectorStatus) {
+  const id = connector.id.toLowerCase();
+  const label = connector.label;
+  if (id.includes("linkedin")) return "Reklamy LinkedIn, zasięgi, zaangażowanie, leady";
+  if (id.includes("facebook")) return "Posty, zasięgi, zaangażowanie, wyniki kampanii";
+  if (id.includes("google_ads")) return "Kampanie, rekomendacje, search terms i bezpieczne akcje Ads";
+  if (id.includes("analytics") || id.includes("ga4")) return "Ocena jakości ruchu, konwersji i zdarzeń";
+  if (id.includes("merchant")) return "Feed produktowy, status produktów i widoczność Shopping/PMax";
+  if (id.includes("wordpress")) return "Treści, publikacje i sprawdzenie istniejących stron";
+  return `${label}: decyzje zależne od tego źródła`;
+}
+
+function sourceDecisionImpactLabel(connector: ConnectorStatus) {
+  const id = connector.id.toLowerCase();
+  if (id.includes("linkedin")) return "Brak pełnego obrazu działań w kanałach B2B";
+  if (id.includes("facebook")) return "Niepełna ocena skuteczności komunikacji";
+  if (id.includes("google_ads")) return "Blokada pełnej oceny Ads i zmian kampanii";
+  if (id.includes("analytics") || id.includes("ga4")) return "Nie wolno oceniać efektu kampanii bez pomiaru";
+  if (id.includes("merchant")) return "Nie wolno oceniać gotowości produktów bez danych feedu";
+  if (id.includes("wordpress")) return "Ryzyko duplikacji i pracy na nieaktualnym spisie treści";
+  return "Decyzje z tego kanału pozostają zablokowane albo zdegradowane";
 }
 
 type CompactRouteConfig = {
@@ -702,72 +956,6 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
 
 function compactRouteConfig(routeName: string) {
   return COMPACT_ROUTE_CONFIGS[routeName];
-}
-
-function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] }) {
-  const missing = connectors.filter((connector) => connector.missing_credentials.length > 0);
-  const active = connectors.filter((connector) => connector.active_for_daily_work);
-  const outsideDailyScope = connectors.filter((connector) => !connector.active_for_daily_work);
-
-  if (connectors.length === 0) {
-    return (
-      <BlockerNotice message="WILQ nie ma statusu źródeł danych; odśwież integracje przed oceną gotowości." />
-    );
-  }
-
-  return (
-    <div className="grid gap-4">
-      <div className="grid gap-2 text-center text-xs sm:grid-cols-4">
-        <MetricTile label="Źródła" value={connectors.length} />
-        <MetricTile label="Aktywne dziennie" value={active.length} />
-        <MetricTile label="Braki dostępu" value={missing.length} />
-        <MetricTile label="Poza dziennym zakresem" value={outsideDailyScope.length} />
-      </div>
-      {missing.length > 0 ? (
-        <article className="rounded-md border border-wait/30 bg-wait/10 p-4">
-          <h3 className="text-sm font-semibold text-ink">Co blokuje pracę</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            Brakuje dostępu do {formatConnectorList(missing)}. WILQ może dalej używać
-            skonfigurowanych źródeł, ale nie powinien obiecywać wyników z brakujących kanałów.
-          </p>
-        </article>
-      ) : (
-        <article className="rounded-md border border-signal/30 bg-signal/10 p-4">
-          <h3 className="text-sm font-semibold text-ink">Dostęp wygląda kompletnie</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            Wszystkie znane źródła danych mają skonfigurowany dostęp. Nadal obowiązuje
-            zasada: brak świeżych dowodów oznacza blokadę, nie domysł marketingowy.
-          </p>
-        </article>
-      )}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {connectors.map((connector) => (
-          <article key={connector.id} className="rounded-md border border-line bg-white p-4">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="text-sm font-semibold">{connector.label}</h3>
-              <StatusBadge value={connector.status} label={connector.status_label} />
-            </div>
-            <div className="mt-2 text-xs font-medium text-slate-500">
-              {connector.product_scope_label}
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              {connector.missing_credentials.length > 0
-                ? `Wymaga uzupełnienia dostępu: ${connector.missing_credentials.length} ${pluralize(connector.missing_credentials.length, "pole", "pola", "pól")}.`
-                : connector.configured
-                  ? "Dostęp skonfigurowany. Szczegóły techniczne są dostępne po rozwinięciu."
-                  : "Brak aktywnego dostępu. Szczegóły techniczne są dostępne po rozwinięciu."}
-            </p>
-            {!connector.active_for_daily_work ? (
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                To źródło nie powinno sterować główną dzienną kolejką pracy bez osobnego
-                workflow review.
-              </p>
-            ) : null}
-          </article>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function formatConnectorList(connectors: ConnectorStatus[]) {
