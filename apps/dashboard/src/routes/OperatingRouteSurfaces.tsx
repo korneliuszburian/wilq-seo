@@ -1,22 +1,42 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardList,
+  Grid2X2,
+  ListChecks,
+  MapPin,
+  Pencil,
+  ShoppingBag,
+  Target
+} from "lucide-react";
 
 import {
   type ActionObject,
-  type Evidence,
+  type CommandCenterResponse,
   type Opportunity,
+  type WorkOrder,
   type WorkflowRun,
   getActions,
   getActionsMutationReadiness,
-  getEvidence,
+  getCommandCenter,
   getOpportunities,
   getWorkflowRuns,
   getWorkflows
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { ActionList, EvidenceList, OpportunityList } from "./RegistryPanels";
+import {
+  CompactStatTile,
+  DashboardToolbar,
+  DenseQueueTable,
+  PriorityBadge,
+  RiskPill,
+  StatusPill
+} from "../components/DashboardMockupPrimitives";
+import { ActionList } from "./RegistryPanels";
 import { WorkflowRegistryList, WorkflowRunList } from "./WorkflowPanels";
 
 const PRIORITY_ACTION_IDS = [
@@ -27,158 +47,448 @@ const PRIORITY_ACTION_IDS = [
   "act_prepare_negative_keyword_review_queue"
 ];
 
+
+type QueueFilter = "all" | "p1" | "blocked" | "ready" | "content" | "ads" | "product" | "local";
+
+type QueueRow = {
+  id: string;
+  priority: "P1" | "P2" | "P3" | "-";
+  type: "decision" | "opportunity" | "action";
+  area: "Treści" | "Reklamy" | "Produkty" | "Lokalnie" | "Akcje" | "WILQ";
+  title: string;
+  detail: string;
+  evidence: string;
+  risk: "low" | "medium" | "high" | "blocked" | "unknown";
+  riskLabel: string;
+  status: "ready" | "review" | "blocked" | "done";
+  statusLabel: string;
+  nextStep: string;
+  route: string;
+  source: "work_order" | "opportunity" | "action";
+};
+
 export function OpportunitiesSurface() {
+  const commandCenter = useQuery({ queryKey: ["command-center"], queryFn: getCommandCenter });
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
-  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
-  const [showRelatedActions, setShowRelatedActions] = useState(false);
-  const [showEvidenceDetails, setShowEvidenceDetails] = useState(false);
+  const [filter, setFilter] = useState<QueueFilter>("all");
 
-  if (opportunities.error) return <ErrorState />;
+  if (commandCenter.error && opportunities.error) return <ErrorState />;
 
-  const items = opportunities.data ?? [];
-  const evidenceIds = new Set(items.flatMap((item) => item.evidence_ids));
-  const relatedActions = getRelatedOpportunityActions(actions.data ?? [], evidenceIds);
-  const liveItems = items.filter((item) => !item.is_fixture);
+  const commandData = commandCenter.data;
+  const opportunityItems = opportunities.data ?? [];
+  const actionItems = actions.data ?? [];
+  const rows = buildQueueRows(commandData, opportunityItems, actionItems);
+  const filteredRows = filterQueueRows(rows, filter);
+  const selectedRow = filteredRows[0] ?? rows[0];
+  const completedRows = buildCompletedRows(commandData, actionItems).slice(0, 3);
+  const blockedCount = rows.filter((row) => row.status === "blocked").length;
+  const readyCount = rows.filter((row) => row.status === "ready").length;
+  const reviewCount = rows.filter((row) => row.status === "review").length;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <SurfaceIntro
-        title="Szanse i decyzje"
-        description="Kolejka szans z danych WILQ oparta o te same decyzje, które widzi Centrum pracy. Każda karta musi mieć dowody, źródła, liczby i bezpieczny następny krok. Sam dostęp do źródła danych albo dane testowe nie są rekomendacją marketingową."
-        metrics={[
-          { label: "Decyzje", value: opportunities.isLoading ? "..." : items.length },
-          { label: "Aktywne", value: opportunities.isLoading ? "..." : liveItems.length },
-          { label: "Dowody", value: opportunities.isLoading ? "..." : evidenceIds.size }
+      <DashboardToolbar
+        title="Kolejka"
+        description="Jedna wspólna kolejka decyzji, blokad i bezpiecznych następnych kroków. Tu nie ma drugiego raportu: to lista pracy do przejścia."
+        dateLabel={dateLabel(commandData?.generated_at)}
+      />
+
+      <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <CompactStatTile
+          value={rows.length}
+          label="wszystkie pozycje"
+          actionLabel="Zobacz wszystkie"
+          tone="blue"
+          icon={<ListChecks aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={readyCount}
+          label="gotowe do sprawdzenia"
+          actionLabel="Zobacz gotowe"
+          tone="green"
+          icon={<CheckCircle2 aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={reviewCount}
+          label="wymaga review"
+          actionLabel="Zobacz do review"
+          tone="amber"
+          icon={<ClipboardList aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={blockedCount}
+          label="zablokowane"
+          actionLabel="Zobacz blokady"
+          tone="red"
+          icon={<AlertTriangle aria-hidden="true" size={22} />}
+        />
+      </section>
+
+      <QueueFilters active={filter} onChange={setFilter} />
+
+      <DenseQueueTable
+        title="Kolejka decyzji i akcji"
+        rows={filteredRows}
+        selectedRowKey={selectedRow?.id}
+        getRowKey={(row) => row.id}
+        action={
+          <select
+            className="h-9 rounded-md border border-line bg-white px-3 text-sm font-medium text-slate-700"
+            aria-label="Widok kolejki"
+            defaultValue="default"
+          >
+            <option value="default">Domyślny widok</option>
+            <option value="risk">Ryzyko najpierw</option>
+            <option value="source">Według źródła</option>
+          </select>
+        }
+        columns={[
+          {
+            key: "priority",
+            header: "Priorytet",
+            render: (row) => <PriorityBadge value={row.priority} />,
+            className: "w-28"
+          },
+          {
+            key: "type",
+            header: "Typ",
+            render: (row) => queueTypeIcon(row.type),
+            className: "w-20"
+          },
+          {
+            key: "area",
+            header: "Obszar",
+            render: (row) => <span className="font-medium text-slate-700">{row.area}</span>,
+            className: "w-32"
+          },
+          {
+            key: "title",
+            header: "Tytuł",
+            render: (row) => (
+              <div className="min-w-72">
+                <div className="font-semibold text-ink">{row.title}</div>
+                <div className="mt-1 text-xs leading-5 text-slate-500">{row.detail}</div>
+              </div>
+            )
+          },
+          {
+            key: "evidence",
+            header: "Dowody",
+            render: (row) => <span className="text-sm leading-5 text-slate-600">{row.evidence}</span>
+          },
+          {
+            key: "risk",
+            header: "Ryzyko",
+            render: (row) => <RiskPill label={row.riskLabel} risk={row.risk} />,
+            className: "w-32"
+          },
+          {
+            key: "status",
+            header: "Status",
+            render: (row) => <StatusPill label={row.statusLabel} tone={queueStatusTone(row.status)} />,
+            className: "w-40"
+          },
+          {
+            key: "next",
+            header: "Następny krok",
+            render: (row) => (
+              <Link to={row.route} className="inline-flex items-center gap-2 text-sm font-medium text-action">
+                {row.nextStep}
+                <span aria-hidden="true">›</span>
+              </Link>
+            ),
+            className: "min-w-44"
+          }
         ]}
       />
 
-      <div className="grid gap-8">
-        <OpportunityDecisionSection isLoading={opportunities.isLoading} items={items} />
-        <OpportunityActionsSection
-          actions={relatedActions}
-          isLoading={actions.isLoading}
-          error={actions.error}
-          expanded={showRelatedActions}
-          onToggle={() => setShowRelatedActions((value) => !value)}
-        />
-        <OpportunityEvidenceSection
-          evidenceItems={evidence.data ?? []}
-          evidenceIds={evidenceIds}
-          isLoading={evidence.isLoading}
-          error={evidence.error}
-          expanded={showEvidenceDetails}
-          onToggle={() => setShowEvidenceDetails((value) => !value)}
-        />
-      </div>
+      <section className="mt-5 overflow-hidden rounded-md border border-line bg-white shadow-sm">
+        <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 py-3">
+          <h2 className="text-base font-semibold text-ink">Ostatnio zakończone</h2>
+          <button className="h-9 rounded-md border border-line bg-white px-3 text-sm font-medium text-slate-700" type="button">
+            Zobacz wszystkie zakończone
+          </button>
+        </div>
+        <div className="grid gap-0 divide-y divide-line md:grid-cols-3 md:divide-x md:divide-y-0">
+          {completedRows.length > 0 ? (
+            completedRows.map((row) => (
+              <article key={row.id} className="flex items-start gap-3 px-4 py-4">
+                <CheckCircle2 aria-hidden="true" size={24} className="mt-1 shrink-0 text-signal" />
+                <div>
+                  <h3 className="text-sm font-semibold text-ink">{row.title}</h3>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{row.detail}</p>
+                  <Link to={row.route} className="mt-2 inline-flex text-sm font-medium text-action">
+                    Zobacz dowody
+                  </Link>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="px-4 py-5 text-sm text-slate-600 md:col-span-3">
+              Brak zakończonych pozycji do pokazania w tym widoku.
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
 
-function getRelatedOpportunityActions(actions: ActionObject[], evidenceIds: Set<string>) {
-  const actionEvidenceIds = new Set(actions.flatMap((action) => action.evidence_ids));
-  return actions.filter(
-    (action) =>
-      actionEvidenceIds.size === 0 ||
-      action.evidence_ids.some((id) => evidenceIds.has(id))
-  );
-}
+function QueueFilters({ active, onChange }: { active: QueueFilter; onChange: (value: QueueFilter) => void }) {
+  const filters: Array<{ value: QueueFilter; label: string; icon: ReactNode }> = [
+    { value: "all", label: "Wszystkie", icon: <Grid2X2 aria-hidden="true" size={16} /> },
+    { value: "p1", label: "Priorytet P1", icon: <PriorityBadge value="P1" /> },
+    { value: "blocked", label: "Tylko blokady", icon: <AlertTriangle aria-hidden="true" size={16} /> },
+    { value: "ready", label: "Tylko gotowe", icon: <CheckCircle2 aria-hidden="true" size={16} /> },
+    { value: "content", label: "Treści", icon: <Pencil aria-hidden="true" size={16} /> },
+    { value: "ads", label: "Reklamy", icon: <Target aria-hidden="true" size={16} /> },
+    { value: "product", label: "Produkty", icon: <ShoppingBag aria-hidden="true" size={16} /> },
+    { value: "local", label: "Lokalnie", icon: <MapPin aria-hidden="true" size={16} /> }
+  ];
 
-function OpportunityDecisionSection({
-  isLoading,
-  items
-}: {
-  isLoading: boolean;
-  items: Opportunity[];
-}) {
   return (
-    <section>
-      <SectionHeading title="Kolejka decyzji z WILQ" />
-      {isLoading ? <LoadingBand /> : <OpportunityList opportunities={items} />}
+    <section className="mb-5 flex flex-wrap gap-2">
+      {filters.map((item) => (
+        <button
+          key={item.value}
+          type="button"
+          onClick={() => onChange(item.value)}
+          className={[
+            "inline-flex h-11 items-center gap-2 rounded-md border px-4 text-sm font-medium shadow-sm",
+            active === item.value
+              ? "border-action bg-blue-50 text-action ring-1 ring-action"
+              : "border-line bg-white text-slate-700 hover:bg-slate-50"
+          ].join(" ")}
+        >
+          {item.icon}
+          {item.label}
+        </button>
+      ))}
     </section>
   );
 }
 
-function OpportunityActionsSection({
-  actions,
-  isLoading,
-  error,
-  expanded,
-  onToggle
-}: {
-  actions: ActionObject[];
-  isLoading: boolean;
-  error: unknown;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionHeading title="Powiązane akcje" />
-        {!isLoading && !error ? (
-          <ToggleButton onClick={onToggle}>
-            {expanded ? "Ukryj powiązane akcje" : `Pokaż powiązane akcje (${actions.length})`}
-          </ToggleButton>
-        ) : null}
-      </div>
-      {isLoading ? (
-        <LoadingBand />
-      ) : error ? (
-        <InlineErrorState message="Nie udało się pobrać powiązanych akcji." />
-      ) : expanded ? (
-        <ActionList actions={actions} />
-      ) : (
-        <MutedExpandableText>
-          Powiązane akcje są dostępne po rozwinięciu. Domyślny widok skupia się
-          na decyzjach i dowodach, nie na pełnym rejestrze akcji.
-        </MutedExpandableText>
-      )}
-    </section>
-  );
+function buildQueueRows(
+  commandCenter: CommandCenterResponse | undefined,
+  opportunities: Opportunity[],
+  actions: ActionObject[]
+): QueueRow[] {
+  const workOrderRows = (commandCenter?.work_orders ?? []).map(workOrderToQueueRow);
+  const existingIds = new Set(workOrderRows.map((row) => row.id));
+  const opportunityRows = opportunities
+    .filter((item) => !existingIds.has(item.id))
+    .map(opportunityToQueueRow);
+  const actionRows = actions
+    .filter((action) => shouldShowActionInUnifiedQueue(action, commandCenter, opportunities))
+    .slice(0, 8)
+    .map(actionToQueueRow);
+
+  return [...workOrderRows, ...opportunityRows, ...actionRows]
+    .sort((left, right) => queuePriorityRank(left.priority) - queuePriorityRank(right.priority));
 }
 
-function OpportunityEvidenceSection({
-  evidenceItems,
-  evidenceIds,
-  isLoading,
-  error,
-  expanded,
-  onToggle
-}: {
-  evidenceItems: Evidence[];
-  evidenceIds: Set<string>;
-  isLoading: boolean;
-  error: unknown;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const visibleEvidence = evidenceItems.filter((item) => evidenceIds.has(item.id)).slice(0, 12);
+function workOrderToQueueRow(item: WorkOrder): QueueRow {
+  return {
+    id: item.id,
+    priority: priorityFromNumber(item.priority, item.status === "blocked" ? "P1" : undefined),
+    type: "decision",
+    area: areaFromDomain(item.domain),
+    title: item.title,
+    detail: item.why_it_matters || item.summary,
+    evidence: item.evidence_summary || evidenceCountLabel(item.evidence_ids.length),
+    risk: queueRisk(item.risk),
+    riskLabel: riskLabel(item.risk),
+    status: item.status === "blocked" ? "blocked" : item.status === "done" ? "done" : "review",
+    statusLabel: item.status_label || statusLabelFromQueueStatus(item.status === "blocked" ? "blocked" : "review"),
+    nextStep: shortNextStep(item.next_safe_step, item.route_label),
+    route: item.route,
+    source: "work_order"
+  };
+}
 
-  return (
-    <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionHeading title="Dowody użyte przez karty" />
-        {!isLoading && !error ? (
-          <ToggleButton onClick={onToggle}>
-            {expanded ? "Ukryj szczegóły dowodów" : "Pokaż szczegóły dowodów"}
-          </ToggleButton>
-        ) : null}
-      </div>
-      {isLoading ? (
-        <LoadingBand />
-      ) : error ? (
-        <InlineErrorState message="Nie udało się pobrać dowodów dla kart." />
-      ) : expanded ? (
-        <EvidenceList evidenceItems={visibleEvidence} />
-      ) : (
-        <MutedExpandableText>
-          Szczegóły dowodów są dostępne po rozwinięciu. Domyślny widok pokazuje
-          liczbę dowodów i źródła w kartach decyzji bez surowych identyfikatorów.
-        </MutedExpandableText>
-      )}
-    </section>
-  );
+function opportunityToQueueRow(item: Opportunity): QueueRow {
+  const status: QueueRow["status"] = item.risk === "high" ? "blocked" : "review";
+  return {
+    id: item.id,
+    priority: item.risk === "high" ? "P1" : item.risk === "medium" ? "P2" : "P3",
+    type: "opportunity",
+    area: areaFromDomain(item.domain),
+    title: item.title,
+    detail: item.human_diagnosis,
+    evidence: item.evidence_summary_label || evidenceCountLabel(item.evidence_ids.length),
+    risk: queueRisk(item.risk),
+    riskLabel: item.risk_label || riskLabel(item.risk),
+    status,
+    statusLabel: status === "blocked" ? "Zablokowane" : "Wymaga review",
+    nextStep: shortNextStep(item.recommended_action, areaRouteLabel(item.domain)),
+    route: routeFromDomain(item.domain),
+    source: "opportunity"
+  };
+}
+
+function actionToQueueRow(action: ActionObject): QueueRow {
+  const status: QueueRow["status"] = action.validation_status === "valid" ? "ready" : "review";
+  return {
+    id: action.id,
+    priority: action.risk === "high" ? "P1" : action.risk === "medium" ? "P2" : "P3",
+    type: "action",
+    area: areaFromDomain(action.domain),
+    title: action.title,
+    detail: action.recommended_reason || action.human_diagnosis,
+    evidence: evidenceCountLabel(action.evidence_ids.length),
+    risk: queueRisk(action.risk),
+    riskLabel: riskLabel(action.risk),
+    status,
+    statusLabel: status === "ready" ? "Gotowe do sprawdzenia" : "Wymaga review",
+    nextStep: "Otwórz akcję",
+    route: `/actions/${action.id}`,
+    source: "action"
+  };
+}
+
+function shouldShowActionInUnifiedQueue(
+  action: ActionObject,
+  commandCenter: CommandCenterResponse | undefined,
+  opportunities: Opportunity[]
+) {
+  const referencedActionIds = new Set([
+    ...(commandCenter?.work_orders.flatMap((item) => item.action_ids) ?? []),
+    ...opportunities.flatMap((item) => item.action_ids)
+  ]);
+  return !referencedActionIds.has(action.id) || PRIORITY_ACTION_IDS.includes(action.id);
+}
+
+function buildCompletedRows(
+  commandCenter: CommandCenterResponse | undefined,
+  actions: ActionObject[]
+): QueueRow[] {
+  const doneWorkOrders = (commandCenter?.work_orders ?? [])
+    .filter((item) => item.status === "done")
+    .map(workOrderToQueueRow);
+  const validActions = actions
+    .filter((action) => action.validation_status === "valid")
+    .slice(0, 3)
+    .map(actionToQueueRow)
+    .map((row) => ({ ...row, status: "done" as const, statusLabel: "Zakończone" }));
+  return [...doneWorkOrders, ...validActions];
+}
+
+function filterQueueRows(rows: QueueRow[], filter: QueueFilter) {
+  if (filter === "all") return rows;
+  if (filter === "p1") return rows.filter((row) => row.priority === "P1");
+  if (filter === "blocked") return rows.filter((row) => row.status === "blocked");
+  if (filter === "ready") return rows.filter((row) => row.status === "ready");
+  if (filter === "content") return rows.filter((row) => row.area === "Treści");
+  if (filter === "ads") return rows.filter((row) => row.area === "Reklamy");
+  if (filter === "product") return rows.filter((row) => row.area === "Produkty");
+  if (filter === "local") return rows.filter((row) => row.area === "Lokalnie");
+  return rows;
+}
+
+function queueTypeIcon(type: QueueRow["type"]) {
+  if (type === "decision") return <ClipboardList aria-label="decyzja" size={18} className="text-slate-600" />;
+  if (type === "opportunity") return <Target aria-label="szansa" size={18} className="text-slate-600" />;
+  return <CheckCircle2 aria-label="akcja" size={18} className="text-slate-600" />;
+}
+
+function queueStatusTone(status: QueueRow["status"]) {
+  if (status === "ready" || status === "done") return "green" as const;
+  if (status === "blocked") return "red" as const;
+  return "amber" as const;
+}
+
+function queuePriorityRank(priority: QueueRow["priority"]) {
+  if (priority === "P1") return 1;
+  if (priority === "P2") return 2;
+  if (priority === "P3") return 3;
+  return 4;
+}
+
+function priorityFromNumber(priority: number, fallback?: QueueRow["priority"]): QueueRow["priority"] {
+  if (priority <= 1) return "P1";
+  if (priority === 2) return "P2";
+  if (priority >= 3) return "P3";
+  return fallback ?? "-";
+}
+
+function areaFromDomain(domain: string): QueueRow["area"] {
+  if (domain.includes("content") || domain.includes("seo") || domain.includes("knowledge")) return "Treści";
+  if (domain.includes("ads") || domain.includes("ga4") || domain.includes("demand")) return "Reklamy";
+  if (domain.includes("merchant") || domain.includes("product")) return "Produkty";
+  if (domain.includes("local") || domain.includes("localo")) return "Lokalnie";
+  if (domain.includes("action")) return "Akcje";
+  return "WILQ";
+}
+
+function routeFromDomain(domain: string) {
+  const area = areaFromDomain(domain);
+  if (area === "Treści") return "/content-planner";
+  if (area === "Reklamy") return "/ads-doctor";
+  if (area === "Produkty") return "/merchant";
+  if (area === "Lokalnie") return "/localo";
+  if (area === "Akcje") return "/actions";
+  return "/command-center";
+}
+
+function areaRouteLabel(domain: string) {
+  const area = areaFromDomain(domain);
+  if (area === "Treści") return "Otwórz treści";
+  if (area === "Reklamy") return "Otwórz reklamy";
+  if (area === "Produkty") return "Otwórz Merchant";
+  if (area === "Lokalnie") return "Otwórz Localo";
+  if (area === "Akcje") return "Otwórz akcje";
+  return "Otwórz WILQ";
+}
+
+function queueRisk(risk: string): QueueRow["risk"] {
+  if (risk === "critical" || risk === "high") return "high";
+  if (risk === "medium") return "medium";
+  if (risk === "low") return "low";
+  return "unknown";
+}
+
+function riskLabel(risk: string) {
+  if (risk === "critical" || risk === "high") return "wysokie";
+  if (risk === "medium") return "średnie";
+  if (risk === "low") return "niskie";
+  return "do oceny";
+}
+
+function statusLabelFromQueueStatus(status: QueueRow["status"]) {
+  if (status === "ready") return "Gotowe do sprawdzenia";
+  if (status === "blocked") return "Zablokowane";
+  if (status === "done") return "Zakończone";
+  return "Wymaga review";
+}
+
+function evidenceCountLabel(count: number) {
+  if (count === 1) return "1 dowód";
+  if (count > 1 && count < 5) return `${count} dowody`;
+  return `${count} dowodów`;
+}
+
+function shortNextStep(text: string, fallback: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return fallback;
+  if (trimmed.length <= 32) return trimmed;
+  if (/merchant/i.test(trimmed)) return "Otwórz Merchant";
+  if (/ga4|pomiar/i.test(trimmed)) return "Otwórz GA4";
+  if (/ads|kampani|google/i.test(trimmed)) return "Otwórz Google Ads";
+  if (/treś|content|seo|brief/i.test(trimmed)) return "Otwórz treści";
+  if (/localo|lokal/i.test(trimmed)) return "Otwórz Localo";
+  return fallback;
+}
+
+function dateLabel(value: string | null | undefined) {
+  if (!value) return "Dzisiaj";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Dzisiaj";
+  return new Intl.DateTimeFormat("pl-PL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(date);
 }
 
 export function ActionsSurface() {

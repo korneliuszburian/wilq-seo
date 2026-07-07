@@ -80,6 +80,68 @@ const actions = [
   }
 ];
 
+
+const commandCenter = {
+  generated_at: "2026-06-22T18:56:00Z",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
+  primary_next_step: "Najpierw sprawdź kolejkę.",
+  blocker_count: 1,
+  tactical_item_count: 2,
+  source_connectors: ["google_ads", "google_search_console"],
+  source_connector_labels: ["Google Ads", "Google Search Console"],
+  evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+  evidence_summary: "1 dowód źródłowy",
+  action_ids: ["act_prepare_ads_campaign_review_queue"],
+  action_summary: "1 akcja do sprawdzenia",
+  daily_decisions: [],
+  work_orders: [
+    {
+      id: "work_order_ads_review",
+      title: "Sprawdź wykluczenia w Google Ads",
+      status: "review_required",
+      status_label: "Wymaga review",
+      owner_role: "ads_analytics",
+      priority: 1,
+      domain: "google_ads",
+      route: "/ads-doctor",
+      route_label: "Reklamy",
+      summary: "Wyszukiwane hasła i wykluczenia wymagają oceny operatora.",
+      why_it_matters: "Wykluczenia mogą zablokować dobry ruch, więc potrzebują review przed zmianą.",
+      next_safe_step: "Otwórz Google Ads i sprawdź wykluczenia.",
+      close_condition: "Zamknięte po review bezpiecznej akcji w WILQ.",
+      source_connectors: ["google_ads"],
+      source_connector_labels: ["Google Ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      evidence_summary: "1 dowód źródłowy",
+      action_ids: ["act_prepare_ads_campaign_review_queue"],
+      action_summary: "1 akcja do sprawdzenia",
+      blocked_claims: ["ROAS"],
+      blocked_claim_labels: ["ROAS"],
+      freshness: { state: "fresh" },
+      freshness_label: "świeże dane",
+      risk: "high",
+      decision_id: "decision_ads_review"
+    }
+  ],
+  operator_brief: [],
+  demo_script: [],
+  action_plan: [],
+  connector_summary: {
+    total: 2,
+    configured: 2,
+    missing_credentials: 0,
+    missing_credential_connectors: [],
+    stale: 0,
+    stale_connectors: [],
+    blocked: 0,
+    blocked_connectors: []
+  },
+  sections: {},
+  active_actions: [],
+  connector_health: [],
+  codex_operator_status: {}
+};
+
 const evidence = [
   {
     id: "ev_refresh_refresh_google_ads_test",
@@ -98,6 +160,7 @@ function mockFetch() {
     "fetch",
     vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
+      if (url.endsWith("/api/dashboard/command-center")) return Promise.resolve(Response.json(commandCenter));
       if (url.endsWith("/api/opportunities")) return Promise.resolve(Response.json(opportunities));
       if (url.endsWith("/api/actions")) return Promise.resolve(Response.json(actions));
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
@@ -136,37 +199,52 @@ describe("Opportunities route", () => {
     );
   }
 
-  it("opportunities route renders", async () => {
+
+  it("opportunities route renders as the unified Kolejka", async () => {
     renderOpportunities();
     await waitFor(() => expect(screen.queryByText("Ładowanie stanu WILQ")).not.toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
-    expect(screen.getByText("Kolejka decyzji z WILQ")).toBeInTheDocument();
-    expect(screen.getByText("Aktywne")).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument()
-    );
-    expect(screen.getByText("Decyzja z dowodami i bezpiecznym następnym krokiem.")).toBeInTheDocument();
-    expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
-    expect(screen.getByText("Akcje do sprawdzenia: 2 akcje do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kolejka" })).toBeInTheDocument();
+    expect(screen.getByText("Jedna wspólna kolejka decyzji, blokad i bezpiecznych następnych kroków. Tu nie ma drugiego raportu: to lista pracy do przejścia.")).toBeInTheDocument();
+    expect(screen.getByText("wszystkie pozycje")).toBeInTheDocument();
+    expect(screen.getByText("gotowe do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("wymaga review")).toBeInTheDocument();
+    expect(screen.getByText("zablokowane")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Wszystkie/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Priorytet P1/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tylko blokady" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tylko gotowe" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kolejka decyzji i akcji" })).toBeInTheDocument();
+    expect(await screen.findByText("Sprawdź wykluczenia w Google Ads")).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument();
+    expect(screen.getAllByText("Reklamy").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1 dowód źródłowy").length).toBeGreaterThan(0);
+    expect(screen.getByText("wysokie")).toBeInTheDocument();
+    expect(screen.getAllByText("Wymaga review").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ostatnio zakończone")).toBeInTheDocument();
+    expect(screen.queryByText("Kolejka decyzji z WILQ")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody użyte przez karty")).not.toBeInTheDocument();
+    expect(screen.queryByText("Powiązane akcje")).not.toBeInTheDocument();
     expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
     expect(screen.queryByText(/google_ads \/ google_ads_review_queue/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Brak opportunities/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Kontrakty wiedzy/)).not.toBeInTheDocument();
-    expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
-    expect(screen.queryByText("Evidence użyte przez opportunities")).not.toBeInTheDocument();
   });
 
-  it("shows the primary decision queue while secondary registries are still loading", async () => {
+
+
+  it("shows the queue table while actions are still loading", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo | URL) => {
         const url = String(input);
+        if (url.endsWith("/api/dashboard/command-center")) {
+          return Promise.resolve(Response.json(commandCenter));
+        }
         if (url.endsWith("/api/opportunities")) {
           return Promise.resolve(Response.json(opportunities));
         }
-        if (url.endsWith("/api/actions") || url.endsWith("/api/evidence")) {
+        if (url.endsWith("/api/actions")) {
           return new Promise<Response>(() => {});
         }
+        if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
         return Promise.resolve(Response.json({}));
       })
     );
@@ -174,14 +252,14 @@ describe("Opportunities route", () => {
     renderOpportunities();
 
     await waitFor(() =>
-      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument()
+      expect(screen.getByText("Sprawdź wykluczenia w Google Ads")).toBeInTheDocument()
     );
-    expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
-    expect(screen.getByText("Kolejka decyzji z WILQ")).toBeInTheDocument();
-    expect(screen.getByText("Powiązane akcje")).toBeInTheDocument();
-    expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
-    expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Kolejka" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kolejka decyzji i akcji" })).toBeInTheDocument();
+    expect(screen.queryByText("Powiązane akcje")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody użyte przez karty")).not.toBeInTheDocument();
   });
+
 
   it("renders opportunity detail metrics as a summary before technical details", async () => {
     render(
