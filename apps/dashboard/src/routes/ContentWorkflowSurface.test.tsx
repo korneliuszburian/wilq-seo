@@ -113,7 +113,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByLabelText("Etapy workflow treści")).toBeInTheDocument();
     expect(screen.getByText("Następna decyzja operatora")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje publikację")).toBeInTheDocument();
-    expect(screen.getByText("Najbezpieczniejszy następny krok")).toBeInTheDocument();
+    expect(screen.getAllByText("Następny krok").length).toBeGreaterThan(0);
     expect(screen.getByText("Claim Ledger - skrót")).toBeInTheDocument();
     expect(screen.getByText("Przejdź do decyzji operatora")).toHaveAttribute(
       "href",
@@ -153,7 +153,7 @@ describe("ContentWorkflowSurface", () => {
       firstScreenText.indexOf("Co WILQ już potwierdził")
     );
     expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
-      firstScreenText.indexOf("WordPress: szkic bez publikacji")
+      firstScreenText.indexOf("Dev draft WordPress")
     );
     expect(screen.getByText(/odśwież istniejącą treść: BDO dla firm/))
       .toBeInTheDocument();
@@ -186,43 +186,35 @@ describe("ContentWorkflowSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText("Ograniczenia wiedzy i dowody")).toBeInTheDocument();
     expect(screen.getByText(/ev_content_service_profile_source_facts/)).toBeInTheDocument();
-    expect(await screen.findByText("WordPress: szkic bez publikacji")).toBeInTheDocument();
-    expect(screen.getByText(/nie wykonuje zapisu i nie publikuje/)).toBeInTheDocument();
-    expect(screen.getByText("21 sekcji ACF rozpoznanych")).toBeInTheDocument();
-    expect(screen.getByText("WP-CLI")).toBeInTheDocument();
-    expect(screen.getAllByText("skonfigurowane").length).toBeGreaterThanOrEqual(2);
+    expect(await screen.findByText("Dev draft WordPress")).toBeInTheDocument();
+    expect(screen.getByText(/Piszemy i układamy szkic na ekologus.dev.proudsite.pl/))
+      .toBeInTheDocument();
+    expect(screen.getByText("draft write wyłączony")).toBeInTheDocument();
+    expect(screen.getAllByText("Paczka szkicu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Review").length).toBeGreaterThan(0);
+    expect(screen.getByText("ACF")).toBeInTheDocument();
+    expect(screen.getByText("21 layoutów")).toBeInTheDocument();
     expect(screen.getAllByText("Publikacja").length).toBeGreaterThan(0);
     expect(screen.getAllByText("zablokowana").length).toBeGreaterThan(0);
-    expect(screen.getByText("Ten odczyt nie wykonał żadnego zapisu zewnętrznego."))
-      .toBeInTheDocument();
-    expect(screen.getByText(/Bezpośredni zapis do WordPress jest zablokowany/))
-      .toBeInTheDocument();
-    expect(screen.getByText("WordPress: gotowość realnego draftu")).toBeInTheDocument();
-    expect(screen.getByText("Aktywacja szkicu WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Co blokuje zapis szkicu")).toBeInTheDocument();
     expect(screen.getByText(/zapisz review człowieka dla paczki szkicu/))
       .toBeInTheDocument();
-    expect(screen.getAllByText("Paczka szkicu").length).toBeGreaterThan(0);
-    expect(screen.getByText("Review człowieka")).toBeInTheDocument();
-    expect(screen.getByText("Co blokuje aktywację")).toBeInTheDocument();
-    expect(screen.getByText(/Najpierw domknij: zapisz review człowieka/))
+    expect(screen.getAllByText(/review człowieka/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/audit przekazania/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/handoff WordPress/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Zapis szkiców WordPress jest wyłączony/))
       .toBeInTheDocument();
-    expect(screen.getByText(/Brakuje etapów: review człowieka, audit przekazania/))
-      .toBeInTheDocument();
-    expect(screen.getByText("brakuje review człowieka")).toBeInTheDocument();
-    expect(screen.getByText("brakuje audytu")).toBeInTheDocument();
-    expect(screen.getByText("brakuje handoffu")).toBeInTheDocument();
-    expect(screen.getByText(/Paczka szkicu istnieje w WILQ/)).toBeInTheDocument();
-    expect(screen.getByText("Review przed handoffem")).toBeInTheDocument();
-    expect(screen.getByText(/brzmi jak Ekologus/)).toBeInTheDocument();
-    expect(screen.getByText(/Dowody: 2 · Źródła: 2/)).toBeInTheDocument();
-    expect(screen.getByText(/Publikacja pozostaje zablokowana/)).toBeInTheDocument();
-    expect(screen.getByText("Następny bezpieczny krok")).toBeInTheDocument();
-    expect(screen.getByText(/Zostaw tryb dry-run/)).toBeInTheDocument();
-    expect(screen.getByText("Ślad wymagany przed write")).toBeInTheDocument();
-    expect(screen.getByText(/Brakuje: Podgląd akcji wygenerowany/)).toBeInTheDocument();
-    expect(screen.getByText("Pozostałe blokady")).toBeInTheDocument();
-    expect(screen.getByText(/Adapter REST WordPress nie jest gotowy/)).toBeInTheDocument();
-    expect(screen.getByText("Podgląd akcji wygenerowany")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz dev" })).toHaveAttribute(
+      "href",
+      "https://ekologus.dev.proudsite.pl/"
+    );
+    expect(screen.getByRole("link", { name: "Otwórz WordPress admin" })).toHaveAttribute(
+      "href",
+      "https://ekologus.dev.proudsite.pl/wp-admin/"
+    );
+    expect(screen.queryByText("WordPress: szkic bez publikacji")).not.toBeInTheDocument();
+    expect(screen.queryByText("WordPress: gotowość realnego draftu")).not.toBeInTheDocument();
+    expect(screen.queryByText("Aktywacja szkicu WordPress")).not.toBeInTheDocument();
     expect(screen.getByText("Claim Ledger: co wolno powiedzieć")).toBeInTheDocument();
     expect(screen.getAllByText("Do szkicu")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Wymaga review")[0]).toBeInTheDocument();

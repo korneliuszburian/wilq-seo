@@ -295,6 +295,11 @@ function ContentWorkflowLoaded({
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <ContentWorkflowHeader topic={item.topic} />
       <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
+      <WordPressDraftWorkPanel
+        authoringProfile={authoringProfile}
+        draftActivationPacket={draftActivationPacket}
+        draftWriteReadiness={draftWriteReadiness}
+      />
       <ContentCandidateQueuePanel
         queue={queue}
         selectedWorkItemId={selectedWorkItemId}
@@ -305,9 +310,6 @@ function ContentWorkflowLoaded({
         actions={actions}
       />
       <WorkflowProofSummary data={data} />
-      <WordPressAuthoringReadinessPanel authoringProfile={authoringProfile} />
-      <WordPressDraftActivationPacketPanel draftActivationPacket={draftActivationPacket} />
-      <WordPressDraftWriteReadinessPanel draftWriteReadiness={draftWriteReadiness} />
       <ClaimLedgerGatePanel data={data} />
       <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
       <WorkflowStepsList steps={steps} />
@@ -398,7 +400,7 @@ function ContentWorkflowDecisionPanel({
             <FactTile label="Claimy zablokowane" value={`${ledgerSummary.blocked}`} />
           </div>
           <div className="mt-4">
-            <div className="text-sm font-semibold text-ink">Najbezpieczniejszy następny krok</div>
+            <div className="text-sm font-semibold text-ink">Następny krok</div>
             <p className="mt-1 text-sm leading-6 text-slate-700">{nextStep}</p>
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
@@ -469,6 +471,125 @@ function ContentWorkflowDecisionPanel({
             </a>
             <a className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-action" href="#content-workflow-wordpress">
               Pokaż szkic WP
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WordPressDraftWorkPanel({
+  authoringProfile,
+  draftActivationPacket,
+  draftWriteReadiness
+}: {
+  authoringProfile: WordPressAuthoringProfileQuery;
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
+}) {
+  const profile = authoringProfile.data;
+  const readiness = draftWriteReadiness.data;
+  const packet = draftActivationPacket.data;
+  const isLoading =
+    authoringProfile.isLoading || draftActivationPacket.isLoading || draftWriteReadiness.isLoading;
+
+  if (isLoading) {
+    return (
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <h2 className="text-sm font-semibold text-ink">Dev draft WordPress</h2>
+        <p className="mt-2 text-sm text-slate-600">Sprawdzam dev, ACF i gotowość szkicu.</p>
+      </section>
+    );
+  }
+
+  if (authoringProfile.error || draftActivationPacket.error || draftWriteReadiness.error) {
+    return (
+      <section className="mb-6 rounded-md border border-wait/30 bg-wait/10 p-4">
+        <h2 className="text-sm font-semibold text-wait">Dev draft WordPress</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          Nie udało się odczytać pełnej gotowości dev WordPress. Nie zaczynaj zapisu bez profilu authoringu,
+          paczki szkicu i readiness z WILQ API.
+        </p>
+      </section>
+    );
+  }
+
+  const draftWriteEnabled = Boolean(
+    readiness?.live_write_enabled_by_env ?? profile?.write_boundary.draft_writes_enabled_by_env
+  );
+  const acfLayoutCount = profile?.acf.layouts.length ?? 0;
+  const missingReadiness = [
+    ...(packet?.activation_missing_readiness_labels ?? []),
+    ...(readiness?.blockers.map((blocker) => blocker.label) ?? [])
+  ].slice(0, 5);
+  const nextStep =
+    packet?.operator_next_step ??
+    readiness?.operator_next_step ??
+    "Najpierw przygotuj review paczki szkicu i zapis audytu w WILQ.";
+
+  return (
+    <section className="mb-6 overflow-hidden rounded-md border border-action/25 bg-white shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-action/15 bg-blue-50 px-4 py-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-normal text-action">Roboczy WordPress</p>
+          <h2 className="mt-1 text-base font-semibold text-ink">Dev draft WordPress</h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
+            Piszemy i układamy szkic na ekologus.dev.proudsite.pl. Publiczna strona pozostaje punktem
+            odniesienia, ale dev nie jest kanonicznym adresem SEO.
+          </p>
+        </div>
+        <span className={`rounded-md px-3 py-2 text-sm font-semibold ${
+          draftWriteEnabled ? "bg-success/10 text-success" : "bg-wait/10 text-wait"
+        }`}>
+          {draftWriteEnabled ? "draft write włączony" : "draft write wyłączony"}
+        </span>
+      </div>
+
+      <div className="grid gap-4 p-4 lg:grid-cols-[1fr_1fr]">
+        <div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <FactTile label="Paczka szkicu" value={packet?.draft_package_ready ? "gotowa" : "brak"} />
+            <FactTile label="Review" value={packet?.human_review_ready ? "gotowe" : "wymagane"} />
+            <FactTile label="ACF" value={acfLayoutCount ? `${acfLayoutCount} layoutów` : "brak odczytu"} />
+            <FactTile label="Publikacja" value="zablokowana" />
+          </div>
+          <div className="mt-4 rounded-md border border-line bg-surface p-3">
+            <h3 className="text-sm font-semibold text-ink">Następny krok</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{nextStep}</p>
+          </div>
+        </div>
+
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Co blokuje zapis szkicu</h3>
+          {missingReadiness.length > 0 ? (
+            <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
+              {missingReadiness.map((label) => (
+                <li key={label}>- {label}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              WILQ nie zgłasza brakujących etapów dla podglądu. Zapis nadal idzie przez akcję, review,
+              potwierdzenie i audyt.
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <a
+              href="https://ekologus.dev.proudsite.pl/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 items-center rounded-md bg-action px-3 text-sm font-semibold text-white"
+            >
+              Otwórz dev
+            </a>
+            <a
+              href="https://ekologus.dev.proudsite.pl/wp-admin/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-semibold text-ink"
+            >
+              Otwórz WordPress admin
             </a>
           </div>
         </div>
@@ -1002,369 +1123,6 @@ function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
       </div>
     </section>
   );
-}
-
-function WordPressAuthoringReadinessPanel({
-  authoringProfile
-}: {
-  authoringProfile: WordPressAuthoringProfileQuery;
-}) {
-  if (authoringProfile.isLoading) {
-    return (
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-          WordPress: sprawdzanie trybu szkicu
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          WILQ odczytuje gotowość REST/ACF/WP-CLI bez wykonywania zapisu.
-        </p>
-      </section>
-    );
-  }
-  if (authoringProfile.error || !authoringProfile.data) {
-    return (
-      <section className="mb-6 rounded-md border border-wait/30 bg-wait/10 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
-          WordPress: brak odczytu gotowości szkicu
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          WILQ nie pokazuje gotowości WordPress bez API. Nie próbuj przekazywać
-          szkicu poza ścieżką review i audytu.
-        </p>
-      </section>
-    );
-  }
-  const profile = authoringProfile.data;
-  const layoutLabel = profile.acf.layouts_discovered
-    ? `${profile.acf.layouts.length} sekcji ACF rozpoznanych`
-    : "brak rozpoznanych sekcji ACF";
-  const blocker = profile.blockers[0] ?? null;
-
-  return (
-    <section id="content-workflow-wordpress" className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            WordPress: szkic bez publikacji
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ rozpoznaje techniczny tor przekazania treści do WordPress, ale
-            nie wykonuje zapisu i nie publikuje. Każdy zapis nadal wymaga
-            sprawdzenia, podglądu, decyzji człowieka i audytu.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <FactTile label="REST" value={authoringReadinessLabel(profile.rest_api.status)} />
-          <FactTile label="ACF" value={layoutLabel} />
-          <FactTile label="WP-CLI" value={authoringReadinessLabel(profile.wp_cli.status)} />
-          <FactTile label="Publikacja" value="zablokowana" />
-        </div>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <SafetyPanel
-          icon={<Stamp aria-hidden="true" size={18} />}
-          title="Zapis zewnętrzny"
-          text="Ten odczyt nie wykonał żadnego zapisu zewnętrznego."
-        />
-        <SafetyPanel
-          icon={<ShieldCheck aria-hidden="true" size={18} />}
-          title="Tryb WordPress"
-          text="Bezpośredni zapis do WordPress jest zablokowany poza ścieżką sprawdzenia w WILQ."
-        />
-        <SafetyPanel
-          icon={<FileText aria-hidden="true" size={18} />}
-          title="Najbliższy blok"
-          text={
-            blocker
-              ? `${blocker.reason} Następny krok: ${blocker.next_step}`
-              : "Brak blokad przygotowania szkicu; nadal obowiązuje review i audyt przed zapisem."
-          }
-        />
-      </div>
-    </section>
-  );
-}
-
-function WordPressDraftWriteReadinessPanel({
-  draftWriteReadiness
-}: {
-  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
-}) {
-  if (draftWriteReadiness.isLoading) {
-    return (
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-          WordPress: sprawdzanie gotowości zapisu draftu
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          WILQ sprawdza env, REST i ślad audytu bez zapisu do WordPress.
-        </p>
-      </section>
-    );
-  }
-  if (draftWriteReadiness.error || !draftWriteReadiness.data) {
-    return (
-      <section className="mb-6 rounded-md border border-wait/30 bg-wait/10 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
-          WordPress: brak readiness zapisu draftu
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          Nie ma potwierdzenia gotowości zapisu szkicu. Zostań przy podglądzie
-          zmian i podglądzie ACF.
-        </p>
-      </section>
-    );
-  }
-
-  const readiness = draftWriteReadiness.data;
-  const firstBlocker = readiness.blockers[0] ?? null;
-  const missingAuditLabels = readiness.required_audit_events
-    .filter((requirement) => !requirement.satisfied)
-    .map((requirement) => requirement.label);
-
-  return (
-    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-action">
-            WordPress: gotowość realnego draftu
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
-            Ten panel pokazuje, czy WILQ może wykonać wyłącznie zapis szkicu
-            WordPress. Publikacja pozostaje zablokowana; brak warunku oznacza stop,
-            nie ręczne obejście.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <FactTile label="Write" value={readiness.ready ? "gotowy" : "zablokowany"} />
-          <FactTile
-            label="Env"
-            value={readiness.live_write_enabled_by_env ? "włączony" : "wyłączony"}
-          />
-          <FactTile
-            label="REST"
-            value={readiness.rest_adapter_configured ? "gotowy" : "brak"}
-          />
-          <FactTile
-            label="Auth"
-            value={wordpressWriteAuthorizationStatusLabel(
-              readiness.write_authorization_status
-            )}
-          />
-          <FactTile
-            label="Braki"
-            value={`${readiness.missing_audit_event_types.length}`}
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Następny bezpieczny krok</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            {readiness.operator_next_step}
-          </p>
-          {firstBlocker ? (
-            <p className="mt-3 text-sm leading-6 text-risk">
-              {firstBlocker.label}: {firstBlocker.reason}
-            </p>
-          ) : null}
-          {readiness.blockers.length > 1 ? (
-            <div className="mt-3">
-              <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                Pozostałe blokady
-              </div>
-              <ul className="mt-1 grid gap-1 text-sm leading-6 text-slate-700">
-                {readiness.blockers.slice(1, 5).map((blocker) => (
-                  <li key={blocker.code}>- {blocker.label}: {blocker.next_step}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Ślad wymagany przed write</h3>
-          {missingAuditLabels.length > 0 ? (
-            <p className="mt-2 text-sm leading-6 text-risk">
-              Brakuje: {missingAuditLabels.join(", ")}.
-            </p>
-          ) : (
-            <p className="mt-2 text-sm leading-6 text-success">
-              Wymagany ślad audytu jest kompletny.
-            </p>
-          )}
-          <div className="mt-2 grid gap-1 text-sm leading-6 text-slate-700">
-            {readiness.required_audit_events.map((requirement) => (
-              <div key={requirement.event_type} className="flex justify-between gap-3">
-                <span>{requirement.label}</span>
-                <span className={requirement.satisfied ? "text-success" : "text-risk"}>
-                  {requirement.satisfied ? "jest" : "brak"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function WordPressDraftActivationPacketPanel({
-  draftActivationPacket
-}: {
-  draftActivationPacket: WordPressDraftActivationPacketQuery;
-}) {
-  if (draftActivationPacket.isLoading) {
-    return (
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-          Aktywacja szkicu WordPress
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          WILQ sprawdza paczkę szkicu, review, audyt, handoff i podgląd zmian
-          bez zapisu do WordPress.
-        </p>
-      </section>
-    );
-  }
-  if (draftActivationPacket.error || !draftActivationPacket.data) {
-    return (
-      <section className="mb-6 rounded-md border border-wait/30 bg-wait/10 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
-          Aktywacja szkicu WordPress niedostępna
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          Nie ma API-owned paczki aktywacji, więc WILQ zostaje przy podglądzie
-          i nie próbuje zapisu.
-        </p>
-      </section>
-    );
-  }
-
-  const packet = draftActivationPacket.data;
-  const blockers = [...packet.handoff_blockers, ...packet.execution_blockers];
-
-  return (
-    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-action">
-            Aktywacja szkicu WordPress
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
-            {packet.operator_next_step}
-          </p>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-ink">
-            Najpierw domknij: {packet.activation_missing_step_label}.
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {packet.topic}
-            {packet.final_canonical_url ? ` · ${packet.final_canonical_url}` : ""}
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <FactTile
-            label="Paczka szkicu"
-            value={readyLabel(packet.draft_package_ready)}
-          />
-          <FactTile
-            label="Review człowieka"
-            value={readyLabel(packet.human_review_ready)}
-          />
-          <FactTile label="Audit" value={readyLabel(packet.audit_ready)} />
-          <FactTile label="Handoff" value={readyLabel(packet.handoff_ready)} />
-          <FactTile label="Podgląd zmian" value={readyLabel(packet.dry_run_ready)} />
-          <FactTile
-            label="Live write"
-            value={packet.live_write_enabled_by_env ? "włączony" : "wyłączony"}
-          />
-          <FactTile label="Publikacja" value="zablokowana" />
-          <FactTile label="Zapis zewnętrzny" value="nie wykonano" />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Co blokuje aktywację</h3>
-          {blockers.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-2 text-sm">
-              {blockers.map((blocker) => (
-                <span
-                  key={blocker}
-                  className="rounded-md border border-risk/30 bg-risk/10 px-2 py-1 text-risk"
-                >
-                  {wordpressActivationBlockerLabel(blocker)}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              Brak blokad w paczce aktywacji, ale publikacja i destrukcyjne
-              aktualizacje nadal są niedozwolone.
-            </p>
-          )}
-          {packet.draft_package_id ? (
-            <p className="mt-3 text-xs text-slate-500">
-              Paczka szkicu istnieje w WILQ i czeka na review.
-            </p>
-          ) : null}
-          {packet.activation_missing_readiness_labels.length > 0 ? (
-            <p className="mt-3 text-xs leading-5 text-slate-600">
-              Brakuje etapów: {packet.activation_missing_readiness_labels.join(", ")}.
-            </p>
-          ) : null}
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Review przed handoffem</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            {packet.review_preview_status_label}
-          </p>
-          {packet.human_review_checklist.length ? (
-            <ul className="mt-2 grid gap-1 text-sm leading-6 text-slate-700">
-              {packet.human_review_checklist.map((item) => (
-                <li key={item}>- {item}</li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Następne kroki</h3>
-          <ul className="mt-2 grid gap-1 text-sm leading-6 text-slate-700">
-            {packet.next_steps.map((step) => (
-              <li key={step}>- {step}</li>
-            ))}
-          </ul>
-          <p className="mt-3 text-xs text-slate-500">
-            Dowody: {packet.evidence_ids.length} · Źródła:{" "}
-            {packet.source_connectors.length}
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function readyLabel(ready: boolean): string {
-  return ready ? "gotowe" : "brakuje";
-}
-
-function wordpressActivationBlockerLabel(blocker: string): string {
-  const labels: Record<string, string> = {
-    missing_human_review: "brakuje review człowieka",
-    missing_audit: "brakuje audytu",
-    missing_handoff: "brakuje handoffu"
-  };
-  return labels[blocker] ?? blocker;
-}
-
-function wordpressWriteAuthorizationStatusLabel(status: string): string {
-  if (status === "available") {
-    return "gotowe";
-  }
-  if (status === "audit_actor_mismatch") {
-    return "aktor";
-  }
-  return "brak audytu";
 }
 
 function ClaimLedgerGatePanel({ data }: { data: ContentWorkflowSnapshot }) {
@@ -2227,15 +1985,6 @@ function measurementSafetyText(
 ) {
   if (!window) return "Brak okna pomiaru blokuje jakiekolwiek wnioski o efekcie treści.";
   return `Pierwsza ocena po ${window.earliest_verdict_date}. Do tego czasu WILQ zbiera dane, ale nie claimuje sukcesu ani porażki.`;
-}
-
-function authoringReadinessLabel(status: string) {
-  if (status === "configured") return "skonfigurowane";
-  if (status === "available") return "dostępne";
-  if (status === "not_configured") return "nieustawione";
-  if (status === "missing") return "brakuje danych";
-  if (status === "blocked") return "zablokowane";
-  return "do sprawdzenia";
 }
 
 function reviewControlDisabledReason(
