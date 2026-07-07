@@ -497,246 +497,385 @@ export function ActionsSurface() {
     queryKey: ["actions", "mutation-readiness"],
     queryFn: getActionsMutationReadiness
   });
-  const [showFullList, setShowFullList] = useState(false);
 
   if (actions.isLoading) return <LoadingBand />;
   if (actions.error) return <ErrorState />;
 
   const items = actions.data ?? [];
   const evidenceIds = new Set(items.flatMap((action) => action.evidence_ids));
-  const needsValidation = items.filter(
-    (action) => action.validation_status !== "valid"
-  );
-  const priorityActions = getPriorityActions(items);
-  const remainingActions = items.filter(
-    (action) => !priorityActions.some((focusAction) => focusAction.id === action.id)
-  );
+  const readyActions = items.filter((action) => action.validation_status === "valid");
+  const blockedActions = items.filter((action) => action.review_gate?.apply_allowed === false);
+  const nearestAction = pickNearestSafeAction(items, mutationReadiness.data);
+  const actionRows = buildActionRows(items).slice(0, 8);
+  const writeBlockers = buildWriteBlockers(items, mutationReadiness.data);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <SurfaceIntro
-        title="Akcje do sprawdzenia"
-        description="Kolejka sprawdzeń przygotowana przez WILQ. Na wejściu pokazuje tylko najważniejsze decyzje, dowody, ryzyko i następny krok. Zapis zmian pozostaje zablokowany bez sprawdzenia w WILQ, jawnej zgody i audytu."
-        metrics={[
-          { label: "Akcje", value: items.length },
-          { label: "Do sprawdzenia", value: needsValidation.length },
-          { label: "Dowody", value: evidenceIds.size }
+      <DashboardToolbar
+        title="Akcje"
+        description="Bezpieczne przygotowanie zmian: podgląd, review, potwierdzenie i audyt przed każdym zapisem, publikacją lub zastosowaniem."
+        dateLabel="Dzisiaj"
+      />
+
+      <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <CompactStatTile
+          value={items.length}
+          label="akcji"
+          actionLabel="Zobacz wszystkie"
+          tone="blue"
+          icon={<ClipboardList aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={readyActions.length}
+          label="gotowe do review"
+          actionLabel="Przejdź do kolejki"
+          tone="green"
+          icon={<CheckCircle2 aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={blockedActions.length}
+          label="zablokowane"
+          actionLabel="Sprawdź blokady"
+          tone="red"
+          icon={<AlertTriangle aria-hidden="true" size={22} />}
+        />
+        <CompactStatTile
+          value={evidenceIds.size}
+          label="dowodów"
+          actionLabel="Przejdź do dowodów"
+          tone="purple"
+          icon={<ListChecks aria-hidden="true" size={22} />}
+        />
+      </section>
+
+      <section className="mb-5 grid gap-5 lg:grid-cols-[1.05fr_1fr]">
+        <NearestSafeActionCard
+          isLoading={mutationReadiness.isLoading}
+          error={mutationReadiness.error}
+          action={nearestAction}
+          summary={mutationReadiness.data}
+        />
+        <WriteBlockersPanel blockers={writeBlockers} />
+      </section>
+
+      <DenseQueueTable
+        title="Kolejka akcji"
+        rows={actionRows}
+        selectedRowKey={actionRows[0]?.id}
+        getRowKey={(row) => row.id}
+        columns={[
+          {
+            key: "type",
+            header: "Typ akcji",
+            render: (row) => (
+              <div className="flex items-center gap-3">
+                {actionAreaIcon(row.area)}
+                <span className="font-medium text-slate-800">{row.title}</span>
+              </div>
+            ),
+            className: "min-w-64"
+          },
+          {
+            key: "area",
+            header: "Obszar",
+            render: (row) => row.area,
+            className: "w-40"
+          },
+          {
+            key: "status",
+            header: "Status",
+            render: (row) => <StatusPill label={row.statusLabel} tone={row.statusTone} />,
+            className: "w-44"
+          },
+          {
+            key: "requires",
+            header: "Wymaga",
+            render: (row) => row.requires,
+            className: "w-44"
+          },
+          {
+            key: "next",
+            header: "Następny krok",
+            render: (row) => (
+              <Link to="/actions/$actionId" params={{ actionId: row.id }} className="font-medium text-action">
+                {row.nextStep}
+              </Link>
+            ),
+            className: "w-44"
+          }
         ]}
       />
 
-      <div className="grid gap-8">
-        <FirstWriteCandidateSection
-          isLoading={mutationReadiness.isLoading}
-          error={mutationReadiness.error}
-          summary={mutationReadiness.data}
-        />
-        <section>
-          <SectionHeading title="Najważniejsze na start" />
-          <p className="mb-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy:
-            Merchant, treści, GA4 i Google Ads. Pełna lista zostaje schowana,
-            dopóki nie jest potrzebna.
-          </p>
-          <ActionPriorityFocus actions={priorityActions} />
-        </section>
-        <section>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <SectionHeading title="Pozostałe akcje" />
-            <ToggleButton onClick={() => setShowFullList((value) => !value)}>
-              {showFullList ? "Ukryj pozostałe akcje" : `Pokaż pozostałe akcje (${remainingActions.length})`}
-            </ToggleButton>
-          </div>
-          {showFullList ? (
-            <ActionList actions={remainingActions} />
-          ) : (
-            <MutedExpandableText>
-              Pozostałe akcje są dostępne po rozwinięciu. Domyślny widok ma pomagać wybrać
-              następne sprawdzenie, nie przeglądać całej kolejki naraz.
-            </MutedExpandableText>
-          )}
-        </section>
-      </div>
+      <ActionLifecycleStrip />
     </main>
   );
 }
 
-function FirstWriteCandidateSection({
+type ActionMutationReadinessSummary = Awaited<ReturnType<typeof getActionsMutationReadiness>>;
+
+type ActionRow = {
+  id: string;
+  title: string;
+  area: string;
+  statusLabel: string;
+  statusTone: "green" | "amber" | "red" | "blue" | "purple" | "neutral";
+  requires: string;
+  nextStep: string;
+};
+
+function NearestSafeActionCard({
   isLoading,
   error,
+  action,
   summary
 }: {
   isLoading: boolean;
   error: unknown;
-  summary: Awaited<ReturnType<typeof getActionsMutationReadiness>> | undefined;
+  action: ActionObject | undefined;
+  summary: ActionMutationReadinessSummary | undefined;
 }) {
   if (isLoading) {
     return (
-      <section>
-        <SectionHeading title="Pierwsza propozycja zapisu" />
+      <section className="rounded-md border border-line bg-white shadow-sm">
+        <div className="border-b border-line px-4 py-3">
+          <h2 className="text-base font-semibold text-ink">Najbliższa bezpieczna akcja</h2>
+        </div>
         <LoadingBand />
       </section>
     );
   }
-  if (error || !summary?.first_write_candidate) {
+  if (error || (!summary?.first_write_candidate && !action)) {
     return (
-      <section>
-        <SectionHeading title="Pierwsza propozycja zapisu" />
+      <section className="rounded-md border border-line bg-white p-4 shadow-sm">
+        <h2 className="text-base font-semibold text-ink">Najbliższa bezpieczna akcja</h2>
         <BlockerNotice message="WILQ nie wskazał jeszcze pierwszej bezpiecznej klasy zapisu. Nie uruchamiaj write adapterów bez osobnego readiness." />
       </section>
     );
   }
 
-  const candidate = summary.first_write_candidate;
-  const blockerLabels = candidate.blockers.slice(0, 5).map((blocker) => blocker.label);
+  const candidate = summary?.first_write_candidate;
+  const title = candidate?.title ?? action?.title ?? "Sprawdź akcję w WILQ";
+  const actionId = candidate?.action_id ?? action?.id ?? "";
+  const area = action ? areaFromDomain(action.domain) : areaFromDomain(candidate?.connector ?? "actions");
+  const operatorNextStep = candidate?.operator_next_step ?? action?.recommended_reason ?? action?.human_diagnosis ?? "";
+  const modeLabel = candidate?.apply_contract?.draft_only ? "draft-only" : candidate?.mode_label ?? action?.mode_label ?? "prepare";
+  const reviewLabel = actionReviewRequirement(action);
+  const writeState = candidate?.vendor_write_possible ? "write możliwy" : "write zablokowany";
 
   return (
-    <section className="rounded-md border border-action/30 bg-action/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <SectionHeading title="Pierwsza propozycja zapisu" />
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
-            {summary.first_write_candidate_reason}
-          </p>
-        </div>
-        <StatusBadge
-          value={candidate.vendor_write_possible ? "ready" : "blocked"}
-          label={candidate.vendor_write_possible ? "write możliwy" : "write zablokowany"}
-        />
+    <section className="overflow-hidden rounded-md border border-action/30 bg-white shadow-sm">
+      <div className="flex min-h-14 items-center justify-between gap-3 border-b border-line px-4 py-3">
+        <h2 className="text-base font-semibold text-ink">Najbliższa bezpieczna akcja</h2>
+        <StatusPill label={modeLabel} tone="blue" />
       </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1.4fr_1fr]">
-        <div>
-          <h3 className="text-sm font-semibold">{candidate.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            {candidate.operator_next_step}
-          </p>
-          {candidate.target_label ? (
-            <p className="mt-2 rounded-md border border-line bg-white p-2 text-xs leading-5 text-slate-600">
-              Propozycja treści: {candidate.target_label}
+      <div className="p-5">
+        <div className="flex items-start gap-4">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-action">
+            {actionAreaIcon(area)}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-ink">{title}</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              {operatorNextStep || summary?.first_write_candidate_reason}
             </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <StatusPill label="preview gotowy" tone="green" />
+          <StatusPill label={reviewLabel} tone="amber" />
+          <StatusPill label={writeState} tone={candidate?.vendor_write_possible ? "green" : "red"} />
+        </div>
+
+        <div className="mt-5 grid gap-3 rounded-md border border-line bg-slate-50 p-3 sm:grid-cols-3">
+          <ActionFact label="Typ akcji" value={candidate?.apply_contract?.allowed_operation ?? String(action?.payload?.action_type ?? action?.mode ?? "prepare")} />
+          <ActionFact label="Obszar" value={area} />
+          <ActionFact label="Wymaga" value={reviewLabel} />
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-4">
+          {actionId ? (
+            <Link
+              to="/actions/$actionId"
+              params={{ actionId }}
+              className="inline-flex min-h-11 items-center rounded-md bg-action px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-action/90"
+            >
+              Otwórz akcję
+            </Link>
           ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <StatusBadge value={candidate.mode} label={candidate.mode_label} />
-            <StatusBadge value={candidate.risk} label={candidate.risk_label} />
-            <StatusBadge value={candidate.validation_status} label={candidate.validation_status} />
-          </div>
-          <Link
-            to="/actions/$actionId"
-            params={{ actionId: candidate.action_id }}
-            className="mt-4 inline-flex min-h-9 items-center rounded-md border border-action bg-white px-3 py-2 text-xs font-medium text-action hover:bg-action/10"
-          >
-            Otwórz propozycję
-          </Link>
-        </div>
-        <div className="rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
-          <div className="font-semibold text-slate-900">Co nadal blokuje zapis</div>
-          {blockerLabels.length > 0 ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {blockerLabels.map((label) => (
-                <li key={label}>{label}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2">WILQ nie zgłosił blokad, ale nadal wymagaj preview, review i confirm.</p>
-          )}
-          <p className="mt-3 text-xs leading-5 text-slate-500">
-            Stan całego systemu: {summary.vendor_write_possible_count} gotowych write adapterów,
-            {summary.would_attempt_vendor_write_count} akcji próbowałoby zapisu.
-          </p>
+          {actionId ? (
+            <Link to="/actions/$actionId" params={{ actionId }} className="text-sm font-medium text-action">
+              Zobacz podgląd
+            </Link>
+          ) : null}
         </div>
       </div>
-      <div className="mt-4 rounded-md border border-line bg-white p-3 text-sm leading-6 text-slate-700">
-        <div className="font-semibold text-slate-900">Plan aktywacji bez ryzyka</div>
-        <p className="mt-2">{summary.activation_next_step}</p>
-        <ol className="mt-2 list-decimal space-y-1 pl-5">
-          {summary.activation_plan_steps.slice(0, 5).map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </ol>
-      </div>
-      {candidate.apply_contract ? (
-        <div className="mt-4 rounded-md border border-line bg-white p-3 text-sm leading-6 text-slate-700">
-          <div className="font-semibold text-slate-900">Kontrakt przyszłego apply</div>
-          <p className="mt-2">{candidate.apply_contract.operator_summary}</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <ReadinessTile
-              label="Operacja"
-              value={candidate.apply_contract.allowed_operation}
-            />
-            <ReadinessTile
-              label="Adapter"
-              value={candidate.apply_contract.adapter_status === "implemented" ? "gotowy" : "brak"}
-            />
-            <ReadinessTile
-              label="Publikacja"
-              value={candidate.apply_contract.publication_allowed ? "dozwolona" : "zablokowana"}
-            />
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }
 
-function getPriorityActions(actions: ActionObject[]) {
-  const byId = new Map(actions.map((action) => [action.id, action]));
-  return PRIORITY_ACTION_IDS.map((id) => byId.get(id)).filter(
-    (action): action is ActionObject => Boolean(action)
-  );
-}
-
-function ReadinessTile({ label, value }: { label: string; value: string }) {
+function WriteBlockersPanel({ blockers }: { blockers: string[] }) {
   return (
-    <div className="rounded-md border border-line bg-slate-50 p-3 text-sm">
-      <div className="text-xs font-medium uppercase tracking-normal text-slate-500">{label}</div>
-      <div className="mt-1 font-semibold text-ink">{value}</div>
-    </div>
-  );
-}
-
-function ActionPriorityFocus({ actions }: { actions: ActionObject[] }) {
-  if (actions.length === 0) {
-    return (
-      <BlockerNotice message="Brak priorytetowych akcji z głównej ścieżki pracy. Pełna lista niżej nadal pokazuje dostępne akcje do sprawdzenia." />
-    );
-  }
-
-  return (
-    <div className="grid gap-3 xl:grid-cols-2">
-      {actions.map((action) => (
-        <article key={action.id} className="rounded-md border border-action/30 bg-action/5 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="overflow-hidden rounded-md border border-red-200 bg-white shadow-sm">
+      <div className="flex min-h-14 items-center gap-3 border-b border-red-100 bg-red-50/60 px-4 py-3">
+        <AlertTriangle aria-hidden="true" size={20} className="text-danger" />
+        <h2 className="text-base font-semibold text-ink">Co nadal blokuje zapis</h2>
+      </div>
+      <div className="divide-y divide-line">
+        {blockers.slice(0, 5).map((blocker) => (
+          <div key={blocker} className="flex items-start gap-3 px-4 py-3">
+            <CheckCircle2 aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-slate-500" />
             <div>
-              <h3 className="text-sm font-semibold">{action.title}</h3>
+              <div className="text-sm font-semibold text-ink">{blocker}</div>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Zanim cokolwiek zapiszesz, otwórz akcję i sprawdź dowody, podgląd zmian
-                oraz decyzję człowieka.
+                Niepotwierdzone zmiany czekają na review.
               </p>
             </div>
-            <StatusBadge value={action.validation_status} label={action.validation_status_label} />
           </div>
-          <p className="mt-3 text-sm leading-6 text-slate-700">
-            {action.recommended_reason}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <StatusBadge value={action.status} label={action.status_label} />
-            <StatusBadge value={action.risk} label={action.risk_label} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ActionLifecycleStrip() {
+  const steps = [
+    ["1", "Walidacja", "Sprawdzenie reguł i uprawnień."],
+    ["2", "Podgląd", "Generacja podglądu zmian."],
+    ["3", "Review", "Ocena i akceptacja operatora."],
+    ["4", "Potwierdzenie", "Zatwierdzenie i zapis."],
+    ["5", "Audyt", "Rejestracja i dowody zmian."]
+  ];
+
+  return (
+    <section className="mt-5 rounded-md border border-line bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-ink">Przebieg akcji</h2>
+      <div className="mt-5 grid gap-4 md:grid-cols-5">
+        {steps.map(([number, label, description], index) => (
+          <div key={label} className="relative text-center">
+            {index > 0 ? (
+              <div className="absolute left-0 right-1/2 top-5 hidden border-t border-dashed border-blue-200 md:block" />
+            ) : null}
+            {index < steps.length - 1 ? (
+              <div className="absolute left-1/2 right-0 top-5 hidden border-t border-dashed border-blue-200 md:block" />
+            ) : null}
+            <div className="relative mx-auto flex size-10 items-center justify-center rounded-full border border-action/40 bg-blue-50 text-sm font-semibold text-action">
+              {number}
+            </div>
+            <div className="mt-3 text-sm font-semibold text-ink">{label}</div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
           </div>
-          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {action.evidence_summary_label}</div>
-            <div>Metryki: {action.metrics.length}</div>
-          </div>
-          <Link
-            to="/actions/$actionId"
-            params={{ actionId: action.id }}
-            className="mt-4 inline-flex min-h-9 items-center rounded-md border border-action bg-white px-3 py-2 text-xs font-medium text-action hover:bg-action/10"
-          >
-            Otwórz akcję
-          </Link>
-        </article>
-      ))}
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ActionFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-r border-line pr-3 last:border-r-0">
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-ink">{value}</div>
     </div>
   );
+}
+
+function pickNearestSafeAction(
+  actions: ActionObject[],
+  summary: ActionMutationReadinessSummary | undefined
+) {
+  const candidateId = summary?.first_write_candidate?.action_id;
+  return actions.find((action) => action.id === candidateId)
+    ?? actions.find((action) => action.id === "act_prepare_content_refresh_queue")
+    ?? actions.find((action) => PRIORITY_ACTION_IDS.includes(action.id))
+    ?? actions[0];
+}
+
+function buildActionRows(actions: ActionObject[]): ActionRow[] {
+  return actions
+    .filter((action) => !action.id.includes("oauth") && !/oauth/i.test(action.title))
+    .sort((left, right) => actionRank(left) - actionRank(right))
+    .map((action) => ({
+      id: action.id,
+      title: conciseActionTitle(action.title),
+      area: areaFromDomain(action.domain),
+      statusLabel: actionStatusLabel(action),
+      statusTone: actionStatusTone(action),
+      requires: actionReviewRequirement(action),
+      nextStep: actionNextStep(action)
+    }));
+}
+
+function buildWriteBlockers(
+  actions: ActionObject[],
+  summary: ActionMutationReadinessSummary | undefined
+) {
+  const candidateBlockers = summary?.first_write_candidate?.blockers.map((blocker) => blocker.label) ?? [];
+  const reviewGateBlockers = actions.flatMap((action) => action.review_gate?.apply_blocker_labels ?? []);
+  const defaults = [
+    "Brak potwierdzenia operatora",
+    "Brak zatwierdzonego przekazania do WordPress",
+    "Brak potwierdzenia przeglądu wykluczeń w Ads",
+    "Target treści nie przeszedł jeszcze gotowości szkicu",
+    "Brak audytu działania integracji"
+  ];
+  const unique = [...candidateBlockers, ...reviewGateBlockers, ...defaults].filter(Boolean);
+  return Array.from(new Set(unique));
+}
+
+function actionRank(action: ActionObject) {
+  if (PRIORITY_ACTION_IDS.includes(action.id)) return PRIORITY_ACTION_IDS.indexOf(action.id);
+  if (action.validation_status === "valid") return 10;
+  if (action.review_gate?.apply_allowed === false) return 20;
+  return 30;
+}
+
+function conciseActionTitle(title: string) {
+  return title
+    .replace("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center", "Merchant review produktów")
+    .replace("Przygotuj kolejkę odświeżenia treści ekologus.pl", "Brief SEO: nowy wpis blogowy")
+    .replace("Sprawdź jakość pomiaru GA4 przed oceną kampanii", "Przegląd ruchu GA4")
+    .replace("Przygotuj kolejkę przeglądu kampanii Ads", "Przegląd wykluczeń w Ads");
+}
+
+function actionStatusLabel(action: ActionObject) {
+  if (action.review_gate?.apply_allowed === false) return "write zablokowany";
+  if (action.validation_status === "valid") return "gotowe do review";
+  if (action.preview_cards?.length || action.payload?.payload_preview) return "preview gotowy";
+  if (action.mode === "prepare") return "draft-only";
+  return action.status_label || "wymaga review";
+}
+
+function actionStatusTone(action: ActionObject): ActionRow["statusTone"] {
+  if (action.review_gate?.apply_allowed === false) return "red";
+  if (action.validation_status === "valid") return "green";
+  if (action.preview_cards?.length || action.payload?.payload_preview) return "green";
+  if (action.mode === "prepare") return "blue";
+  return "amber";
+}
+
+function actionReviewRequirement(action: ActionObject | undefined) {
+  if (!action) return "Human review";
+  if (action.domain.includes("content") || action.connector.includes("wordpress")) return "SEO review";
+  if (action.domain.includes("merchant")) return "Review operatora";
+  if (action.domain.includes("ads") || action.domain.includes("ga4")) return "Review operatora";
+  if (action.domain.includes("local")) return "Review lokalny";
+  return "Human review";
+}
+
+function actionNextStep(action: ActionObject) {
+  if (action.validation_status === "valid") return "Przejdź do review";
+  if (action.preview_cards?.length || action.payload?.payload_preview) return "Sprawdź zmiany";
+  if (action.domain.includes("content")) return "Otwórz brief SEO";
+  return "Przejdź do review";
+}
+
+function actionAreaIcon(area: string) {
+  if (area === "Produkty") return <ShoppingBag aria-hidden="true" size={22} className="text-slate-700" />;
+  if (area === "Treści") return <Pencil aria-hidden="true" size={22} className="text-slate-700" />;
+  if (area === "Reklamy") return <Target aria-hidden="true" size={22} className="text-slate-700" />;
+  if (area === "Lokalnie") return <MapPin aria-hidden="true" size={22} className="text-slate-700" />;
+  return <ClipboardList aria-hidden="true" size={22} className="text-slate-700" />;
 }
 
 export function WorkflowsSurface() {

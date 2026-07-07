@@ -8004,53 +8004,46 @@ describe("WILQ dashboard", () => {
   it("actions route starts from marketer-facing actions instead of registry dumps", async () => {
     renderApp("/actions");
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Akcje do sprawdzenia" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "Akcje" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Najważniejsze na start")).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczne przygotowanie zmian: podgląd, review, potwierdzenie i audyt przed każdym zapisem, publikacją lub zastosowaniem.")).toBeInTheDocument();
+    expect(screen.getByText("akcji")).toBeInTheDocument();
+    expect(screen.getByText("gotowe do review")).toBeInTheDocument();
+    expect(screen.getByText("zablokowane")).toBeInTheDocument();
+    expect(screen.getByText("dowodów")).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByText("Pierwsza propozycja zapisu")).toBeInTheDocument()
+      expect(screen.getByText("Najbliższa bezpieczna akcja")).toBeInTheDocument()
     );
     expect(screen.getByText("Aktywuj zapis szkicu WordPress draft-only")).toBeInTheDocument();
-    expect(screen.getByText("write zablokowany")).toBeInTheDocument();
+    expect(screen.getAllByText("write zablokowany").length).toBeGreaterThan(0);
     expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
-    expect(screen.getByText("Plan aktywacji bez ryzyka")).toBeInTheDocument();
-    expect(screen.getAllByText(/Adapter boundary już istnieje/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Payload nadal blokuje apply")).toBeInTheDocument();
-    expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();
-    expect(screen.getByText(/wyłącznie szkic WordPress/)).toBeInTheDocument();
     expect(screen.getByText("create_wordpress_draft")).toBeInTheDocument();
-    expect(screen.getByText("gotowy")).toBeInTheDocument();
-    expect(screen.getByText("zablokowana")).toBeInTheDocument();
-    expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
-    expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy/i)).toBeInTheDocument();
-    expect(screen.getByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")).toBeInTheDocument();
-    expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument();
-    expect(screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")).toBeInTheDocument();
-    expect(screen.getAllByText(/Zanim cokolwiek zapiszesz, otwórz akcję/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Kolejka akcji" })).toBeInTheDocument();
+    expect(screen.getByText("Merchant review produktów")).toBeInTheDocument();
+    expect(screen.getByText("Brief SEO: nowy wpis blogowy")).toBeInTheDocument();
+    expect(screen.getByText("Przegląd ruchu GA4")).toBeInTheDocument();
+    expect(screen.getByText("Przebieg akcji")).toBeInTheDocument();
+    expect(screen.getByText("Walidacja")).toBeInTheDocument();
+    expect(screen.getByText("Podgląd")).toBeInTheDocument();
+    expect(screen.getByText("Review")).toBeInTheDocument();
+    expect(screen.getByText("Potwierdzenie")).toBeInTheDocument();
+    expect(screen.getByText("Audyt")).toBeInTheDocument();
     expect(screen.queryByText(/Szczegóły techniczne są dostępne/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/rejestru technicznego/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Dowody powiązane z akcjami")).not.toBeInTheDocument();
-    expect(screen.getByText("Do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText("Najważniejsze akcje demo")).not.toBeInTheDocument();
     expect(screen.queryByText("Pełna lista akcji - szczegóły")).not.toBeInTheDocument();
     expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
     expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Pokaż pozostałe akcje/ })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Zobacz podgląd" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Pokaż dane techniczne akcji" })).not.toBeInTheDocument();
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
     expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Pokaż pozostałe akcje/ }));
-    expect(
-      screen.getAllByText("Otwórz akcję, żeby sprawdzić warunki i bezpieczny zapis zmian.").length
-    ).toBeGreaterThan(0);
-    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Pokaż dane techniczne akcji" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
   });
 
   it("connector refresh run cards summarize evidence instead of printing raw IDs", () => {
