@@ -107,25 +107,56 @@ describe("ContentWorkflowSurface", () => {
       await screen.findByText("Workflow treści bez slopu", undefined, { timeout: 5000 })
     ).toBeInTheDocument();
 
-    expect(screen.getByText("Workflow treści: co dziś zrobić")).toBeInTheDocument();
-    expect(screen.getByText("Pracuj tylko na propozycji, która przeszła bramki"))
-      .toBeInTheDocument();
-    expect(screen.getByText("Aktywny temat")).toBeInTheDocument();
-    expect(screen.getByText("Co jeszcze blokuje szkic")).toBeInTheDocument();
-    expect(screen.getByText(/Nie przechodź do szkicu ani WordPress/)).toBeInTheDocument();
-    expect(screen.getByText("Etapy zablokowane")).toBeInTheDocument();
+    expect(screen.getByText("Workflow treści: jeden aktywny krok")).toBeInTheDocument();
+    expect(screen.getByText(/Publikacja i zapis WordPress pozostają/)).toBeInTheDocument();
+    expect(screen.getByText("Publikacja zablokowana")).toBeInTheDocument();
+    expect(screen.getByLabelText("Etapy workflow treści")).toBeInTheDocument();
+    expect(screen.getByText("Następna decyzja operatora")).toBeInTheDocument();
+    expect(screen.getByText("Co blokuje publikację")).toBeInTheDocument();
+    expect(screen.getByText("Najbezpieczniejszy następny krok")).toBeInTheDocument();
+    expect(screen.getByText("Claim Ledger - skrót")).toBeInTheDocument();
+    expect(screen.getByText("Przejdź do decyzji operatora")).toHaveAttribute(
+      "href",
+      "#content-workflow-actions"
+    );
+    expect(screen.getAllByText("Pokaż dowody")[0]).toHaveAttribute(
+      "href",
+      "#content-workflow-proof"
+    );
+    expect(screen.getByText("Otwórz claim ledger")).toHaveAttribute(
+      "href",
+      "#content-workflow-claim-ledger"
+    );
+    expect(screen.getByText("Pokaż szkic WP")).toHaveAttribute(
+      "href",
+      "#content-workflow-wordpress"
+    );
+    expect(screen.getByText(/automatyczna publikacja/)).toBeInTheDocument();
+    expect(screen.getByText(/wzrost ruchu bez okna pomiaru/)).toBeInTheDocument();
+    expect(screen.queryByText("Workflow treści: co dziś zrobić")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pracuj tylko na propozycji, która przeszła bramki"))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText("Aktywny temat")).not.toBeInTheDocument();
+    expect(screen.queryByText("Co jeszcze blokuje szkic")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nie przechodź do szkicu ani WordPress/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Etapy zablokowane")).not.toBeInTheDocument();
     expect(screen.getByText("Decyzje operatora")).toBeInTheDocument();
     expect(await screen.findByText("Kolejka tematów")).toBeInTheDocument();
     const firstScreenText = document.body.textContent ?? "";
-    expect(firstScreenText.indexOf("Decyzje operatora")).toBeLessThan(
+    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
       firstScreenText.indexOf("Kolejka tematów")
     );
-    expect(firstScreenText.indexOf("Decyzje operatora")).toBeLessThan(
+    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
+      firstScreenText.indexOf("Decyzje operatora")
+    );
+    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
       firstScreenText.indexOf("Co WILQ już potwierdził")
     );
-    expect(firstScreenText.indexOf("Decyzje operatora")).toBeLessThan(
+    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
       firstScreenText.indexOf("WordPress: szkic bez publikacji")
     );
+    expect(screen.getByText(/odśwież istniejącą treść: BDO dla firm/))
+      .toBeInTheDocument();
     expect(screen.getAllByText(/WILQ widzi 3 kandydatów/).length).toBeGreaterThan(0);
     expect(screen.getByText("Zielony Ład dla firm")).toBeInTheDocument();
     expect(screen.getByText("Luka Ahrefs bez finalnego adresu")).toBeInTheDocument();
@@ -218,7 +249,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByRole("button", { name: "Pokaż plan poprawki" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Pokaż mapowanie ACF" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" })).toBeDisabled();
-    expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
+    expect(screen.getAllByText("wymaga decyzji").length).toBeGreaterThan(0);
     expect(screen.getAllByText("zablokowany").length).toBeGreaterThan(0);
     expect(screen.getByText("Nie wolno jeszcze oceniać efektu")).toBeInTheDocument();
     expect(screen.getByText(/Pierwsza ocena po 2026-08-01/)).toBeInTheDocument();

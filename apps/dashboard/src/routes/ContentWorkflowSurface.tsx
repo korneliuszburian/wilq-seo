@@ -294,15 +294,15 @@ function ContentWorkflowLoaded({
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <ContentWorkflowHeader topic={item.topic} />
-      <ContentWorkflowTodayPanel data={data} queue={queue} />
-      <WorkflowOperatorControls
-        data={data}
-        actions={actions}
-      />
+      <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
       <ContentCandidateQueuePanel
         queue={queue}
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
+      />
+      <WorkflowOperatorControls
+        data={data}
+        actions={actions}
       />
       <WorkflowProofSummary data={data} />
       <WordPressAuthoringReadinessPanel authoringProfile={authoringProfile} />
@@ -327,80 +327,217 @@ function ContentWorkflowLoaded({
   );
 }
 
-function ContentWorkflowTodayPanel({
+function ContentWorkflowDecisionPanel({
   data,
-  queue
+  queue,
+  steps
 }: {
   data: ContentWorkflowSnapshot;
   queue: ContentWorkItemQueueResponse;
+  steps: WorkflowStep[];
 }) {
   const item = data.preflight.item;
-  const blockedSteps = data.operatorSteps.filter((step) =>
-    step.statusLabel.toLowerCase().includes("zablok")
-  );
-  const readySteps = data.operatorSteps.filter(
-    (step) => !step.statusLabel.toLowerCase().includes("zablok")
-  );
+  const blockedSteps = blockedWorkflowSteps(data.operatorSteps);
   const activeCandidate = queue.candidates.find(
     (candidate) => candidate.work_item_id === item.id
   );
+  const activeStepIndex = activeWorkflowStepIndex(steps);
+  const activeStep = steps[activeStepIndex] ?? steps[0] ?? null;
+  const ledgerSummary = claimLedgerSummary(data);
+  const nextStep =
+    activeCandidate?.safe_next_step ??
+    data.preflight.preflight_verdict.next_step ??
+    activeStep?.summary ??
+    "Najpierw domknij decyzję operatora i bramki publikacji.";
+  const decisionTitle = activeCandidate
+    ? `${activeCandidate.recommended_mode_label}: ${activeCandidate.title}`
+    : `${data.preflight.preflight_verdict.recommended_mode}: ${item.topic}`;
+  const decisionReason =
+    activeCandidate?.reason ??
+    data.preflight.preflight_verdict.next_step ??
+    "WILQ pokazuje ten temat jako aktywną pracę po sprawdzeniu źródeł i bramek treści.";
 
   return (
-    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-action">
-            Workflow treści: co dziś zrobić
+    <section className="mb-6 rounded-md border border-line bg-white">
+      <div className="border-b border-line p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-action">
+              Workflow treści: jeden aktywny krok
+            </div>
+            <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+              {item.topic}
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+              Status: wymaga decyzji operatora. Publikacja i zapis WordPress pozostają
+              zablokowane, dopóki plan, claimy, review człowieka i audyt nie są domknięte.
+            </p>
           </div>
-          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
-            Pracuj tylko na propozycji, która przeszła bramki
-          </h2>
-          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
-            {queue.operator_summary}
-          </p>
+          <div className="rounded-md border border-wait/30 bg-wait/10 px-3 py-2 text-sm font-semibold text-wait">
+            Publikacja zablokowana
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-          <FactTile label="Propozycje" value={`${queue.candidate_count}`} />
-          <FactTile label="Gotowe" value={`${queue.actionable_candidate_count}`} />
-          <FactTile label="Dowody" value={`${unique(item.evidence_ids).length}`} />
-          <FactTile label="Etapy zablokowane" value={`${blockedSteps.length}`} />
+        <WorkflowStepper activeIndex={activeStepIndex} steps={steps} />
+      </div>
+
+      <div className="grid gap-4 p-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-md border border-line bg-surface p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Następna decyzja operatora
+            </h3>
+            <span className="rounded-md bg-action/10 px-2 py-1 text-xs font-semibold text-action">
+              Aktywny krok: {activeStep ? workflowStepShortLabel(activeStepIndex, activeStep) : "Plan"}
+            </span>
+          </div>
+          <p className="mt-3 text-base font-semibold leading-6 text-ink">{decisionTitle}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{decisionReason}</p>
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
+            <FactTile label="Dowody WILQ" value={`${unique(item.evidence_ids).length}`} />
+            <FactTile label="Claimy do review" value={`${ledgerSummary.review}`} />
+            <FactTile label="Claimy zablokowane" value={`${ledgerSummary.blocked}`} />
+          </div>
+          <div className="mt-4">
+            <div className="text-sm font-semibold text-ink">Najbezpieczniejszy następny krok</div>
+            <p className="mt-1 text-sm leading-6 text-slate-700">{nextStep}</p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <a
+              className="inline-flex items-center rounded-md bg-action px-4 py-2 text-sm font-semibold text-white"
+              href="#content-workflow-actions"
+            >
+              Przejdź do decyzji operatora
+            </a>
+            <a
+              className="inline-flex items-center rounded-md border border-action/40 px-4 py-2 text-sm font-semibold text-action"
+              href="#content-workflow-proof"
+            >
+              Pokaż dowody
+            </a>
+          </div>
+        </div>
+
+        <div className="rounded-md border border-line bg-white p-4">
+          <h3 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Co blokuje publikację
+          </h3>
+          <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-700">
+            <li>
+              <span className="font-semibold text-ink">Brak zatwierdzenia człowieka.</span>{" "}
+              Plan, claimy i paczka szkicu muszą przejść review przed użyciem jako production-depth.
+            </li>
+            <li>
+              <span className="font-semibold text-ink">WordPress zostaje draft-only.</span>{" "}
+              WILQ może przygotować podgląd, ale nie publikuje ani nie nadpisuje strony.
+            </li>
+            {blockedSteps.slice(0, 3).map((step) => (
+              <li key={step.id}>
+                <span className="font-semibold text-ink">{step.title}.</span>{" "}
+                {step.statusLabel}: {step.summary}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3">
+            <div className="text-sm font-semibold text-wait">Nie wolno jeszcze twierdzić</div>
+            <ul className="mt-2 grid gap-1 text-sm leading-6 text-slate-700 sm:grid-cols-2">
+              <li>- automatyczna publikacja</li>
+              <li>- wzrost ruchu bez okna pomiaru</li>
+              <li>- poprawa pozycji bez obserwacji</li>
+              <li>- pełna aktualność claimów bez review</li>
+            </ul>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Aktywny temat</h3>
-          <p className="mt-2 text-sm font-medium leading-6 text-ink">{item.topic}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-700">
-            {activeCandidate?.recommended_mode_label ??
-              data.preflight.preflight_verdict.recommended_mode}
-          </p>
-          <div className="mt-3 grid gap-1 text-xs leading-5 text-slate-600">
-            {readySteps.slice(0, 3).map((step) => (
-              <div key={step.id}>
-                {step.title}: {step.statusLabel}
-              </div>
-            ))}
+      <div className="border-t border-line p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Claim Ledger - skrót
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {ledgerSummary.allowed} do szkicu, {ledgerSummary.review} wymaga review,{" "}
+              {ledgerSummary.blocked} zablokowane. Szczegóły claimów i raw dowody są niżej.
+            </p>
           </div>
-        </div>
-
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Co jeszcze blokuje szkic</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            Nie przechodź do szkicu ani WordPress, dopóki WILQ nie odblokuje briefu,
-            paczki szkicu, decyzji człowieka i audytu.
-          </p>
-          <div className="mt-3 grid gap-1 text-xs leading-5 text-slate-600">
-            {blockedSteps.slice(0, 4).map((step) => (
-              <div key={step.id}>
-                {step.title}: {step.statusLabel}
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <a className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-action" href="#content-workflow-claim-ledger">
+              Otwórz claim ledger
+            </a>
+            <a className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-action" href="#content-workflow-proof">
+              Otwórz brief
+            </a>
+            <a className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-action" href="#content-workflow-wordpress">
+              Pokaż szkic WP
+            </a>
           </div>
         </div>
       </div>
     </section>
   );
+}
+
+function WorkflowStepper({ activeIndex, steps }: { activeIndex: number; steps: WorkflowStep[] }) {
+  return (
+    <ol aria-label="Etapy workflow treści" className="mt-4 grid gap-2 md:grid-cols-4 xl:grid-cols-7">
+      {steps.map((step, index) => {
+        const active = index === activeIndex;
+        const complete = index < activeIndex;
+        return (
+          <li
+            key={step.id}
+            className={`rounded-md border px-3 py-2 text-sm ${
+              active
+                ? "border-action bg-action/10 text-action"
+                : complete
+                  ? "border-go/30 bg-go/10 text-go"
+                  : "border-line bg-surface text-slate-600"
+            }`}
+          >
+            <div className="font-semibold">{index + 1}. {workflowStepShortLabel(index, step)}</div>
+            <div className="mt-1 text-xs leading-5">{step.statusLabel}</div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function activeWorkflowStepIndex(steps: WorkflowStep[]) {
+  const blockedIndex = steps.findIndex((step) =>
+    step.statusLabel.toLowerCase().includes("zablok")
+  );
+  if (blockedIndex >= 0) return blockedIndex;
+  const reviewIndex = steps.findIndex((step) =>
+    step.statusLabel.toLowerCase().includes("wymaga")
+  );
+  if (reviewIndex >= 0) return reviewIndex;
+  return Math.min(steps.length - 1, 1);
+}
+
+function workflowStepShortLabel(index: number, step: WorkflowStep) {
+  const labels = ["Preflight", "Plan", "Brief", "Draft", "Review", "WordPress", "Pomiar"];
+  return labels[index] ?? step.title;
+}
+
+function blockedWorkflowSteps(steps: WorkflowStep[]) {
+  return steps.filter((step) => {
+    const status = step.statusLabel.toLowerCase();
+    return status.includes("zablok") || status.includes("brakuje") || status.includes("wymaga");
+  });
+}
+
+function claimLedgerSummary(data: ContentWorkflowSnapshot) {
+  const allowed = data.claimLedger.entries.filter((entry) =>
+    entry.status.startsWith("allowed")
+  ).length;
+  const review = data.claimLedger.entries.filter(
+    (entry) => entry.status === "needs_human_review" || entry.strength === "weak"
+  ).length;
+  const blocked = data.claimLedger.entries.filter(
+    (entry) => entry.status === "blocked" || entry.status === "blocked_until_measurement"
+  ).length;
+  return { allowed, review, blocked };
 }
 
 function useContentWorkflowActions(
@@ -822,7 +959,7 @@ function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
   const signalQuality = salesBrief?.signal_quality ?? null;
   const knowledgeConstraints = salesBrief?.knowledge_constraints.slice(0, 3) ?? [];
   return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
+    <section id="content-workflow-proof" className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
@@ -904,7 +1041,7 @@ function WordPressAuthoringReadinessPanel({
   const blocker = profile.blockers[0] ?? null;
 
   return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
+    <section id="content-workflow-wordpress" className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
@@ -1244,7 +1381,7 @@ function ClaimLedgerGatePanel({ data }: { data: ContentWorkflowSnapshot }) {
   const requiredClaims = ledger.entries.filter((entry) => entry.required);
 
   return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
+    <section id="content-workflow-claim-ledger" className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -1437,7 +1574,7 @@ function WorkflowOperatorControls({
   const item = data.preflight.item;
   const controls = workflowControlItems(data, actions);
   return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
+    <section id="content-workflow-actions" className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
