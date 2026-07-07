@@ -216,7 +216,7 @@ describe("KnowledgePanels", () => {
             source_card_count: 1,
             playbook_count: 1,
             expert_rule_count: 1,
-            binding_count: 1,
+            binding_count: 2,
             blocked_binding_summary_label: "brak zablokowanych decyzji",
             missing_contract_summary_label: "Dane kompletne dla tej decyzji",
             blocked_claim_count_summary_label: "1 zablokowana obietnica",
@@ -259,6 +259,45 @@ describe("KnowledgePanels", () => {
                 source_lineage_summary_label: "1 ślad źródłowy",
                 risk: "low",
                 risk_label: "ryzyko z API"
+              },
+              {
+                id: "knowledge_merchant_feed_review",
+                title: "Plik produktowy Merchant",
+                status: "ready",
+                status_label: "gotowe z API",
+                route: "/merchant",
+                route_label: "Merchant z API",
+                skill_id: "wilq-merchant-feed-operator",
+                summary: "Druga decyzja nie powinna wchodzić na pierwszy widok.",
+                next_step: "Otwórz Merchant i sprawdź plik produktowy.",
+                source_connectors: ["google_merchant_center"],
+                source_connector_labels: ["Merchant Center"],
+                source_connector_summary_label: "Merchant Center",
+                evidence_ids: ["ev_refresh_merchant"],
+                evidence_summary_label: "1 dowód źródłowy",
+                action_ids: ["act_review_merchant"],
+                action_summary_label: "1 akcja do sprawdzenia",
+                metric_tiles: {},
+                knowledge_card_ids: ["card_merchant_feed"],
+                playbook_ids: ["merchant_feed_playbook"],
+                expert_rule_ids: ["merchant_feed_rules_v1"],
+                knowledge_summary_label: "3 elementy wiedzy użyte w decyzji",
+                required_evidence: ["product_file_status"],
+                required_evidence_summary_label: "1 wymagany dowód",
+                missing_contracts: [],
+                missing_contract_labels: [],
+                missing_contract_summary_label: "Dane kompletne dla tej decyzji",
+                missing_contract_detail_label: "Nie ma brakujących zakresów danych dla tej decyzji",
+                has_missing_contracts: false,
+                blocked_claims: [],
+                blocked_claim_labels: [],
+                blocked_claim_summary_label: "brak zakazanych obietnic",
+                blocked_claim_count_summary_label: "brak zablokowanych obietnic",
+                has_blocked_claims: false,
+                source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
+                source_lineage_summary_label: "1 ślad źródłowy",
+                risk: "low",
+                risk_label: "ryzyko z API"
               }
             ]
           } satisfies KnowledgeOperatingMapResponse
@@ -266,9 +305,13 @@ describe("KnowledgePanels", () => {
       />
     );
 
+    expect(screen.getByText("Najważniejsza decyzja z wiedzy")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText("Zakazane obietnice: 1 zablokowana obietnica")).toBeInTheDocument();
+    expect(screen.queryByText("Plik produktowy Merchant")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pozostałe decyzje z wiedzy (1)" }));
+    expect(screen.getByText("Plik produktowy Merchant")).toBeInTheDocument();
     expect(screen.getByText("Blokady")).toBeInTheDocument();
     expect(screen.getByText("1 zablokowana obietnica")).toBeInTheDocument();
     expect(screen.queryByText("Akcje do sprawdzenia: 1 akcja")).not.toBeInTheDocument();

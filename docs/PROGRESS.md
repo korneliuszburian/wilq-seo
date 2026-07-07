@@ -41,6 +41,11 @@ Date: 2026-07-04
   before queue, proof, WordPress readiness, Claim Ledger and other technical
   detail. The change adds no new cards; it changes the first-screen priority
   so the marketer sees the safe controls before diagnostics.
+- 2026-07-07 `/knowledge` now keeps the first screen decision-impact first:
+  the preview shows one primary knowledge-backed decision, while additional
+  decisions, full operating map, source cards and work rules stay behind
+  expand controls. This prevents the knowledge screen from becoming a catalog
+  of records before it answers what the knowledge changes operationally.
 - 2026-07-04 `scripts/marketer_language_guard.py` now also checks the current
   Goal 005 Wilku-facing UAT/handoff materials for repeated technical wording
   regressions such as technical eval labels, English private-source wording,

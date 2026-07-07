@@ -9,52 +9,78 @@ import { BlockerNotice, LabelChipRow, MetricTile } from "../components/OperatorP
 import { StatusBadge } from "../components/StatusBadge";
 
 export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingMapResponse }) {
+  const [showMoreDecisions, setShowMoreDecisions] = useState(false);
+
   if (map.bindings.length === 0) {
     return (
       <BlockerNotice message="Brak powiązań wiedzy z decyzjami. WILQ nie powinien używać wiedzy, której nie da się połączyć z dowodami, źródłami danych i konkretnym krokiem." />
     );
   }
 
-  const topBindings = map.bindings.slice(0, 5);
+  const primaryBinding = map.bindings[0];
+  const secondaryBindings = map.bindings.slice(1, 5);
 
   return (
     <div className="grid gap-4">
+      <article className="rounded-md border border-action/30 bg-action/5 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-action">
+              Najważniejsza decyzja z wiedzy
+            </div>
+            <h3 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+              {primaryBinding.title}
+            </h3>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+              {primaryBinding.summary}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge value={primaryBinding.status} label={primaryBinding.status_label} />
+            <StatusBadge value={primaryBinding.risk} label={primaryBinding.risk_label} />
+          </div>
+        </div>
+        <div className="mt-4 rounded-md border border-line bg-white p-3 text-sm leading-6 text-ink">
+          <div className="font-semibold">Następny krok</div>
+          <p>{primaryBinding.next_step}</p>
+        </div>
+        <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+          <div>Dowody: {primaryBinding.evidence_summary_label}</div>
+          <div>Źródła danych: {primaryBinding.source_connector_summary_label}</div>
+          <div>Akcje do sprawdzenia: {primaryBinding.action_summary_label}</div>
+        </div>
+        {primaryBinding.has_blocked_claims ? (
+          <p className="mt-3 text-xs leading-5 text-slate-600">
+            Zakazane obietnice: {primaryBinding.blocked_claim_count_summary_label}
+          </p>
+        ) : null}
+      </article>
       <div className="grid gap-2 text-center text-xs sm:grid-cols-4">
         <MetricTile label="Decyzje z wiedzą" value={map.binding_count} />
         <MetricTile label="Blokady" value={map.blocked_binding_summary_label} />
         <MetricTile label="Brakujące dane" value={map.missing_contract_summary_label} />
         <MetricTile label="Zakazane obietnice" value={map.blocked_claim_count_summary_label} />
       </div>
-      <div className="grid gap-3 xl:grid-cols-2">
-        {topBindings.map((binding) => (
-          <article key={binding.id} className="rounded-md border border-line bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold">{binding.title}</h3>
-                <p className="mt-1 text-xs text-slate-500">{binding.route_label || "powiązany widok"}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge value={binding.status} label={binding.status_label} />
-                <StatusBadge value={binding.risk} label={binding.risk_label} />
-              </div>
+      {secondaryBindings.length > 0 ? (
+        <div>
+          <button
+            type="button"
+            className="min-h-9 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-action hover:text-action"
+            onClick={() => setShowMoreDecisions((value) => !value)}
+          >
+            {showMoreDecisions
+              ? "Ukryj pozostałe decyzje z wiedzy"
+              : `Pokaż pozostałe decyzje z wiedzy (${secondaryBindings.length})`}
+          </button>
+          {showMoreDecisions ? (
+            <div className="mt-3 grid gap-3 xl:grid-cols-2">
+              {secondaryBindings.map((binding) => (
+                <KnowledgeImpactDecisionCard key={binding.id} binding={binding} />
+              ))}
             </div>
-            <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-wait">
-              <div className="font-semibold">Co zrobić dalej</div>
-              <p>{binding.next_step}</p>
-            </div>
-            <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
-              <div>Dowody: {binding.evidence_summary_label}</div>
-              <div>Źródła danych: {binding.source_connector_summary_label}</div>
-              <div>Akcje do sprawdzenia: {binding.action_summary_label}</div>
-            </div>
-            {binding.has_blocked_claims ? (
-              <p className="mt-3 text-xs leading-5 text-slate-600">
-                Zakazane obietnice: {binding.blocked_claim_count_summary_label}
-              </p>
-            ) : null}
-          </article>
-        ))}
-      </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -160,6 +186,37 @@ export function KnowledgeOperatingMapPanel({ map }: { map: KnowledgeOperatingMap
 }
 
 type KnowledgeDecisionBinding = KnowledgeOperatingMapResponse["bindings"][number];
+
+function KnowledgeImpactDecisionCard({ binding }: { binding: KnowledgeDecisionBinding }) {
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{binding.title}</h3>
+          <p className="mt-1 text-xs text-slate-500">{binding.route_label || "powiązany widok"}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge value={binding.status} label={binding.status_label} />
+          <StatusBadge value={binding.risk} label={binding.risk_label} />
+        </div>
+      </div>
+      <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-wait">
+        <div className="font-semibold">Co zrobić dalej</div>
+        <p>{binding.next_step}</p>
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+        <div>Dowody: {binding.evidence_summary_label}</div>
+        <div>Źródła danych: {binding.source_connector_summary_label}</div>
+        <div>Akcje do sprawdzenia: {binding.action_summary_label}</div>
+      </div>
+      {binding.has_blocked_claims ? (
+        <p className="mt-3 text-xs leading-5 text-slate-600">
+          Zakazane obietnice: {binding.blocked_claim_count_summary_label}
+        </p>
+      ) : null}
+    </article>
+  );
+}
 
 function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionBinding }) {
   const [showDetails, setShowDetails] = useState(false);
