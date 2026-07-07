@@ -3386,6 +3386,45 @@ export const DailyDecisionSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const WorkOrderStatusSchema = z.enum(["review_required", "blocked", "done"]);
+export const WorkOrderOwnerRoleSchema = z.enum([
+  "marketer",
+  "ads_analytics",
+  "content_seo",
+  "product_feed",
+  "local_seo",
+  "owner_review",
+  "developer_audit"
+]);
+
+export const WorkOrderSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: WorkOrderStatusSchema,
+  status_label: z.string().default(""),
+  owner_role: WorkOrderOwnerRoleSchema,
+  priority: z.number(),
+  domain: z.string().default("wilq"),
+  route: z.string(),
+  route_label: z.string().default(""),
+  summary: z.string(),
+  why_it_matters: z.string(),
+  next_safe_step: z.string(),
+  close_condition: z.string(),
+  source_connectors: z.array(z.string()).default([]),
+  source_connector_labels: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  evidence_summary: z.string().default(""),
+  action_ids: z.array(z.string()).default([]),
+  action_summary: z.string().default(""),
+  blocked_claims: z.array(z.string()).default([]),
+  blocked_claim_labels: z.array(z.string()).default([]),
+  freshness: FreshnessStateSchema.default({ state: "unknown" }),
+  freshness_label: z.string().default(""),
+  risk: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+  decision_id: z.string().nullable().optional()
+});
+
 export const DailyCheckConnectorRefSchema = z.object({
   connector_id: z.string(),
   status: z.enum(["checked", "skipped"]),
@@ -3466,6 +3505,7 @@ export const CommandCenterResponseSchema = z.object({
   action_ids: z.array(z.string()).default([]),
   action_summary: z.string().default(""),
   daily_decisions: z.array(DailyDecisionSchema),
+  work_orders: z.array(WorkOrderSchema).default([]),
   operator_brief: z.array(CommandCenterBriefItemSchema),
   demo_script: z.array(CommandCenterDemoStepSchema),
   action_plan: z.array(CommandCenterActionPlanItemSchema),
@@ -3979,6 +4019,7 @@ export type CommandCenterBriefItem = z.infer<typeof CommandCenterBriefItemSchema
 export type CommandCenterDemoStep = z.infer<typeof CommandCenterDemoStepSchema>;
 export type CommandCenterActionPlanItem = z.infer<typeof CommandCenterActionPlanItemSchema>;
 export type DailyDecision = z.infer<typeof DailyDecisionSchema>;
+export type WorkOrder = z.infer<typeof WorkOrderSchema>;
 export type DailyCheckConnectorRef = z.infer<typeof DailyCheckConnectorRefSchema>;
 export type DailyCheckItem = z.infer<typeof DailyCheckItemSchema>;
 export type DailyCheckResult = z.infer<typeof DailyCheckResultSchema>;

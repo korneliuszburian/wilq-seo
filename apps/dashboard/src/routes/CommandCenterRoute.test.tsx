@@ -162,6 +162,68 @@ const commandCenterFixture: CommandCenterResponse = {
       risk: "low"
     }
   ],
+  work_orders: [
+    {
+      id: "work_order_decision_review_merchant_feed_issues",
+      title: "Przejrzyj kolejkę problemów Merchant Center",
+      status: "review_required",
+      status_label: "do sprawdzenia",
+      owner_role: "product_feed",
+      priority: 10,
+      domain: "merchant",
+      route: "/merchant",
+      route_label: "Merchant",
+      summary: "Merchant Center ma potwierdzone dane problemów pliku produktowego.",
+      why_it_matters:
+        "Problemy pliku produktowego mogą blokować widoczność produktów, ale wymagają ręcznego sprawdzenia.",
+      next_safe_step:
+        "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
+      close_condition:
+        "Zamknięte po review wskazanej akcji, zapisaniu decyzji i pozostawieniu audytu w WILQ.",
+      source_connectors: ["google_merchant_center"],
+      source_connector_labels: ["Merchant Center"],
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      evidence_summary: "1 potwierdzony ślad w WILQ",
+      action_ids: ["act_review_merchant_feed_issues"],
+      action_summary: "1 bezpieczna akcja do sprawdzenia",
+      blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana pliku produktowego"],
+      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "automatyczna zmiana pliku produktowego"],
+      freshness: { state: "fresh" },
+      freshness_label: "świeże dane",
+      risk: "medium",
+      decision_id: "decision_review_merchant_feed_issues"
+    },
+    {
+      id: "work_order_decision_prepare_content_refresh_queue",
+      title: "Przejrzyj kolejkę SEO z GSC i WordPress",
+      status: "blocked",
+      status_label: "blokada danych",
+      owner_role: "content_seo",
+      priority: 12,
+      domain: "content",
+      route: "/content-planner",
+      route_label: "Treści",
+      summary:
+        "WILQ ma dane treści: 10 zapytań i adresów z GSC, 15 dopasowań WordPress, 1 ocena Ahrefs, 9 luk linków.",
+      why_it_matters: "120 wyświetleń może uzasadniać sprawdzenie treści.",
+      next_safe_step:
+        "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
+      close_condition:
+        "Zamknięte po odświeżeniu źródeł i ponownej ocenie decyzji w WILQ.",
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      source_connector_labels: ["Google Search Console", "WordPress ekologus.pl"],
+      evidence_ids: ["ev_refresh_gsc"],
+      evidence_summary: "1 potwierdzony ślad w WILQ",
+      action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary: "1 bezpieczna akcja do sprawdzenia",
+      blocked_claims: ["wzrost liczby leadów", "gwarancja wzrostu pozycji"],
+      blocked_claim_labels: ["wzrost liczby leadów", "gwarancja wzrostu pozycji"],
+      freshness: { state: "stale" },
+      freshness_label: "dane wymagają odświeżenia",
+      risk: "low",
+      decision_id: "decision_prepare_content_refresh_queue"
+    }
+  ],
   operator_brief: [],
   demo_script: [],
   action_plan: [],
@@ -209,7 +271,7 @@ describe("CommandCenter route", () => {
       expect(screen.getByRole("heading", { name: "Centrum pracy" })).toBeInTheDocument()
     );
 
-    expect(screen.getByText("Dzisiejsze decyzje marketera")).toBeInTheDocument();
+    expect(screen.getByText("Dzisiejsze zlecenia pracy")).toBeInTheDocument();
     expect(
       screen.getByText("Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego.")
     ).toBeInTheDocument();
@@ -220,7 +282,7 @@ describe("CommandCenter route", () => {
     expect(planSection).not.toBeNull();
     expect(planSection).toHaveTextContent("Przejrzyj kolejkę problemów Merchant Center");
     expect(planSection).toHaveTextContent("Merchant");
-    expect(planSection).toHaveTextContent("gotowe");
+    expect(planSection).toHaveTextContent("do sprawdzenia");
     expect(screen.getAllByText("Przejrzyj kolejkę problemów Merchant Center").length).toBeGreaterThan(0);
     expect(
       screen.getAllByText("Przejrzyj kolejkę SEO z GSC i WordPress").length
@@ -247,17 +309,19 @@ describe("CommandCenter route", () => {
     expect(screen.getByText("Po skopiowaniu: Polski content brief bez obietnic pozycji."))
       .toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Kopiuj polecenie" })).toHaveLength(2);
-    expect(screen.getByRole("link", { name: "Otwórz Merchant" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Otwórz pracę" })[0]).toHaveAttribute(
       "href",
       "/merchant"
     );
-    expect(screen.getByRole("link", { name: "Otwórz Treści" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Otwórz pracę" })[1]).toHaveAttribute(
       "href",
       "/content-planner"
     );
     expect(screen.queryByRole("link", { name: "Otwórz działanie" })).not.toBeInTheDocument();
-    expect(screen.getByText("gotowe")).toBeInTheDocument();
-    expect(screen.getByText("do odświeżenia")).toBeInTheDocument();
+    expect(screen.getByText("do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("blokada danych")).toBeInTheDocument();
+    expect(screen.getByText(/Zamknięte po review wskazanej akcji/)).toBeInTheDocument();
+    expect(screen.getByText(/Zamknięte po odświeżeniu źródeł/)).toBeInTheDocument();
     expect(screen.getByText("3 dowody źródłowe")).toBeInTheDocument();
     expect(screen.getByText("2 akcje do sprawdzenia")).toBeInTheDocument();
     expect(
@@ -304,13 +368,13 @@ describe("CommandCenter route", () => {
     expect(routeSource).not.toContain("function decisionStatusBadgeValue");
     expect(routeSource).not.toContain("item.freshness?.state");
     expect(routeSource).not.toContain("Decyzja / {item.priority_label}");
-    expect(routeSource).toContain("item.co_widzimy");
-    expect(routeSource).toContain("item.decision_state_label");
+    expect(routeSource).toContain("item.summary");
+    expect(routeSource).toContain("item.status_label");
     expect(routeSource).toContain("item.freshness_label");
-    expect(routeSource).toContain("item.skill_label");
-    expect(routeSource).toContain("item.expected_codex_output");
+    expect(routeSource).toContain("decision.skill_label");
+    expect(routeSource).toContain("decision.expected_codex_output");
     expect(routeSource).toContain("item.source_connector_labels");
     expect(routeSource).toContain("item.blocked_claim_labels");
-    expect(routeSource).toContain("item.cta_label");
+    expect(routeSource).toContain("item.close_condition");
   });
 });

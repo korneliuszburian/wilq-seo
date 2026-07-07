@@ -12,8 +12,10 @@ function copyPromptToClipboard(prompt: string) {
 }
 
 function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
-  const blockedDecisions = data.daily_decisions.filter(
-    (item) => item.decision_state === "blocked" || item.status === "blocked"
+  const workOrders = data.work_orders;
+  const decisionById = new Map(data.daily_decisions.map((item) => [item.id, item]));
+  const blockedWorkOrders = workOrders.filter(
+    (item) => item.status === "blocked"
   );
 
   return (
@@ -24,7 +26,7 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dzisiejsze decyzje marketera
+            Dzisiejsze zlecenia pracy
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {data.primary_next_step}
@@ -35,10 +37,10 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
         <div className="rounded-md border border-line bg-white p-4">
           <h3 className="text-sm font-semibold text-ink">Plan dnia w kolejności</h3>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-700">
-            {data.daily_decisions.map((item) => (
+            {workOrders.map((item) => (
               <li key={`order-${item.id}`}>
                 <span className="font-medium text-ink">{item.title}</span>
-                <span className="text-slate-500"> · {item.route_label} · {item.decision_state_label}</span>
+                <span className="text-slate-500"> · {item.route_label} · {item.status_label}</span>
               </li>
             ))}
           </ol>
@@ -53,13 +55,14 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
           </p>
           <TraceLine
             label="Najpierw nie przeskakuj"
-            values={blockedDecisions.map((item) => item.title)}
+            values={blockedWorkOrders.map((item) => item.title)}
             empty="Brak zablokowanych decyzji w planie dnia."
           />
         </div>
       </div>
       <div className="grid gap-3 xl:grid-cols-2">
-        {data.daily_decisions.map((item) => {
+        {workOrders.map((item) => {
+          const decision = item.decision_id ? decisionById.get(item.decision_id) : undefined;
           return (
           <article key={item.id} className="rounded-md border border-line bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -67,48 +70,48 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
                 <LabelChipRow
                   chips={[
                     { label: "Typ", value: "decyzja" },
-                    { label: "Priorytet", value: item.priority_label }
+                    { label: "Priorytet", value: `P${item.priority}` }
                   ]}
                 />
                 <h3 className="mt-1 text-base font-semibold tracking-normal">
                   {item.title}
                 </h3>
               </div>
-              <StatusBadge value={item.decision_state} label={item.decision_state_label} />
+              <StatusBadge value={item.status} label={item.status_label} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">
-              {item.co_widzimy}
+              {item.summary}
             </p>
-            {Object.keys(item.metric_tiles ?? {}).length > 0 ? (
+            {decision && Object.keys(decision.metric_tiles ?? {}).length > 0 ? (
               <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3">
-                {Object.entries(item.metric_tiles).map(([label, value]) => (
+                {Object.entries(decision.metric_tiles).map(([label, value]) => (
                   <MetricTile key={label} label={label} value={value} />
                 ))}
               </div>
             ) : null}
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {item.dlaczego_to_ma_znaczenie}
+              {item.why_it_matters}
             </p>
             <p className="mt-2 text-sm font-medium text-ink">
-              {item.bezpieczny_next_step}
+              {item.next_safe_step}
             </p>
-            {item.skill_id && item.codex_prompt ? (
+            {decision?.skill_id && decision.codex_prompt ? (
               <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
                       <Copy aria-hidden="true" size={15} />
-                      Polecenie: {item.skill_label ?? "workflow WILQ"}
+                      Polecenie: {decision.skill_label ?? "workflow WILQ"}
                     </div>
-                    {item.expected_codex_output ? (
+                    {decision.expected_codex_output ? (
                       <p className="mt-1 text-xs leading-5 text-slate-600">
-                        Po skopiowaniu: {item.expected_codex_output}
+                        Po skopiowaniu: {decision.expected_codex_output}
                       </p>
                     ) : null}
                   </div>
                   <button
                     type="button"
-                    onClick={() => copyPromptToClipboard(item.codex_prompt ?? "")}
+                    onClick={() => copyPromptToClipboard(decision.codex_prompt ?? "")}
                     className="inline-flex h-8 items-center rounded-md border border-action/30 px-3 text-xs font-semibold uppercase tracking-normal text-action hover:bg-action/10"
                   >
                     Kopiuj polecenie
@@ -122,12 +125,13 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               <TraceLine label="Dowody w WILQ" values={[item.evidence_summary]} />
               <TraceLine label="Akcje do sprawdzenia" values={[item.action_summary]} />
               <TraceLine label="Czego nie twierdzimy" values={item.blocked_claim_labels} />
+              <TraceLine label="Warunek zamknięcia" values={[item.close_condition]} />
             </div>
             <a
               href={item.route}
               className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
             >
-              {item.cta_label || "Otwórz widok"}
+              Otwórz pracę
             </a>
           </article>
           );
@@ -203,7 +207,7 @@ export function CommandCenter() {
           />
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Decyzje" value={data.daily_decisions.length} />
+          <MetricTile label="Prace" value={data.work_orders.length} />
           <MetricTile label="Dowody" value={evidenceSummary} />
           <MetricTile label="Akcje" value={actionSummary} />
         </div>

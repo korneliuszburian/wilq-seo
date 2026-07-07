@@ -141,6 +141,7 @@ import {
   type TacticalQueueResponse,
   type Workflow,
   type WorkflowRun,
+  type WorkOrder,
   type WordPressAuthoringProfile
 } from "@wilq/shared-schemas";
 import { z } from "zod";
@@ -676,5 +677,6 @@ export type {
   TacticalQueueResponse,
   Workflow,
   WorkflowRun,
+  WorkOrder,
   WordPressAuthoringProfile
 };

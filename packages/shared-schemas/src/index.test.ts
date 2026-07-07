@@ -41,6 +41,7 @@ import {
   SocialHistoryImportAuditSchema,
   SocialHistoryInventorySchema,
   SocialHistoryInventorySourceSchema,
+  WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
 
@@ -147,6 +148,52 @@ describe("ExpertKnowledgeSourceSchema", () => {
       ExpertKnowledgeSourceSchema.safeParse({
         ...validSource,
         linked_rule_ids: []
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("WorkOrderSchema", () => {
+  const validWorkOrder = {
+    id: "work_order_review_merchant_feed_issues",
+    title: "Przejrzyj kolejkę problemów Merchant Center",
+    status: "review_required",
+    status_label: "do sprawdzenia",
+    owner_role: "product_feed",
+    priority: 1,
+    domain: "merchant",
+    route: "/merchant",
+    route_label: "Produkty",
+    summary: "Merchant ma potwierdzone problemy pliku produktowego.",
+    why_it_matters: "To może blokować widoczność produktów.",
+    next_safe_step: "Otwórz Merchant i sprawdź akcję review.",
+    close_condition: "Zamknięte po review wskazanej akcji i zapisaniu decyzji.",
+    source_connectors: ["google_merchant_center"],
+    source_connector_labels: ["Merchant Center"],
+    evidence_ids: ["ev_refresh_merchant"],
+    evidence_summary: "1 dowód źródłowy",
+    action_ids: ["act_review_merchant_feed_issues"],
+    action_summary: "1 akcja do sprawdzenia",
+    blocked_claims: ["revenue_recovery"],
+    blocked_claim_labels: ["odzyskany przychód"],
+    freshness: { state: "fresh" },
+    freshness_label: "świeże dane",
+    risk: "medium",
+    decision_id: "decision_review_merchant_feed_issues"
+  };
+
+  it("requires owner, next safe step and close condition for dashboard work", () => {
+    expect(WorkOrderSchema.safeParse(validWorkOrder).success).toBe(true);
+    expect(
+      WorkOrderSchema.safeParse({
+        ...validWorkOrder,
+        owner_role: "random_owner"
+      }).success
+    ).toBe(false);
+    expect(
+      WorkOrderSchema.safeParse({
+        ...validWorkOrder,
+        close_condition: undefined
       }).success
     ).toBe(false);
   });

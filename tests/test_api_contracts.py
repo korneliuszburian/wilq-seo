@@ -5041,6 +5041,66 @@ def test_command_center_returns_valid_shape() -> None:
     assert data["source_connector_labels"]
     assert data["evidence_summary"]
     assert data["action_summary"]
+    assert data["work_orders"]
+    assert data["work_orders"][0]["decision_id"]
+    assert data["work_orders"][0]["owner_role"]
+    assert data["work_orders"][0]["next_safe_step"]
+    assert data["work_orders"][0]["close_condition"]
+    assert "ActionObject" not in data["work_orders"][0]["summary"]
+
+
+def test_command_center_work_orders_are_filled_from_daily_decisions() -> None:
+    decision = DailyDecision(
+        id="decision_review_merchant_feed_issues",
+        title="Przejrzyj kolejkę problemów Merchant Center",
+        domain="merchant",
+        freshness=FreshnessState(state="fresh"),
+        freshness_label="świeże dane",
+        decision_state="ready",
+        decision_state_label="gotowe",
+        route="/merchant",
+        route_label="Merchant",
+        cta_label="Otwórz Merchant",
+        status="ready",
+        priority=1,
+        priority_label="najpierw",
+        co_widzimy="Merchant ma potwierdzone problemy pliku produktowego.",
+        dlaczego_to_ma_znaczenie="To może blokować widoczność produktów.",
+        bezpieczny_next_step="Otwórz Merchant i sprawdź akcję review.",
+        why_it_matters="To może blokować widoczność produktów.",
+        operator_action="Otwórz Merchant i sprawdź akcję review.",
+        source_connectors=["google_merchant_center"],
+        source_connector_labels=["Merchant Center"],
+        evidence_ids=["ev_refresh_merchant"],
+        evidence_summary="1 dowód źródłowy",
+        action_ids=["act_review_merchant_feed_issues"],
+        action_summary="1 akcja do sprawdzenia",
+        blocked_claims=["odzyskany przychód"],
+        blocked_claim_labels=["odzyskany przychód"],
+        risk=ActionRisk.medium,
+    )
+    command = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z danych źródłowych.",
+        primary_next_step="Przejrzyj Merchant.",
+        daily_decisions=[decision],
+        connector_summary=ConnectorSummary(total=1, configured=1, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[],
+        codex_operator_status={},
+    )
+
+    assert len(command.work_orders) == 1
+    work_order = command.work_orders[0]
+    assert work_order.id == "work_order_review_merchant_feed_issues"
+    assert work_order.decision_id == decision.id
+    assert work_order.status == "review_required"
+    assert work_order.status_label == "do sprawdzenia"
+    assert work_order.owner_role == "product_feed"
+    assert work_order.next_safe_step == decision.bezpieczny_next_step
+    assert work_order.close_condition.startswith("Zamknięte po review")
+    assert work_order.evidence_ids == ["ev_refresh_merchant"]
+    assert work_order.blocked_claim_labels == ["odzyskany przychód"]
 
 
 def test_command_center_endpoint_uses_daily_runtime_cache(

@@ -5107,6 +5107,114 @@ class DailyDecision(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+WorkOrderStatus = Literal["review_required", "blocked", "done"]
+WorkOrderOwnerRole = Literal[
+    "marketer",
+    "ads_analytics",
+    "content_seo",
+    "product_feed",
+    "local_seo",
+    "owner_review",
+    "developer_audit",
+]
+
+
+class WorkOrder(BaseModel):
+    id: str
+    title: str
+    status: WorkOrderStatus
+    status_label: str = ""
+    owner_role: WorkOrderOwnerRole
+    priority: int = Field(ge=1, le=100)
+    domain: str = "wilq"
+    route: str
+    route_label: str = ""
+    summary: str
+    why_it_matters: str
+    next_safe_step: str
+    close_condition: str
+    source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary: str = ""
+    action_ids: list[str] = Field(default_factory=list)
+    action_summary: str = ""
+    blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
+    freshness: FreshnessState = Field(default_factory=lambda: FreshnessState(state="unknown"))
+    freshness_label: str = ""
+    risk: ActionRisk = ActionRisk.medium
+    decision_id: str | None = None
+
+
+def work_order_from_daily_decision(decision: DailyDecision) -> WorkOrder:
+    return WorkOrder(
+        id=decision.id.replace("decision_", "work_order_", 1),
+        title=decision.title,
+        status=_work_order_status_from_decision(decision),
+        status_label=_work_order_status_label(_work_order_status_from_decision(decision)),
+        owner_role=_work_order_owner_role(decision.domain),
+        priority=decision.priority,
+        domain=decision.domain,
+        route=decision.route,
+        route_label=decision.route_label,
+        summary=decision.co_widzimy,
+        why_it_matters=decision.dlaczego_to_ma_znaczenie,
+        next_safe_step=decision.bezpieczny_next_step,
+        close_condition=_work_order_close_condition(decision),
+        source_connectors=decision.source_connectors,
+        source_connector_labels=decision.source_connector_labels,
+        evidence_ids=decision.evidence_ids,
+        evidence_summary=decision.evidence_summary,
+        action_ids=decision.action_ids,
+        action_summary=decision.action_summary,
+        blocked_claims=decision.blocked_claims,
+        blocked_claim_labels=decision.blocked_claim_labels,
+        freshness=decision.freshness,
+        freshness_label=decision.freshness_label,
+        risk=decision.risk,
+        decision_id=decision.id,
+    )
+
+
+def _work_order_status_from_decision(decision: DailyDecision) -> WorkOrderStatus:
+    if decision.decision_state == "ready" and decision.status == "ready":
+        return "review_required"
+    return "blocked"
+
+
+def _work_order_status_label(status: WorkOrderStatus) -> str:
+    return {
+        "review_required": "do sprawdzenia",
+        "blocked": "zablokowane",
+        "done": "zamknięte",
+    }[status]
+
+
+def _work_order_owner_role(domain: str) -> WorkOrderOwnerRole:
+    if domain in {"google_ads", "ga4", "ads"}:
+        return "ads_analytics"
+    if domain in {"merchant", "products"}:
+        return "product_feed"
+    if domain in {"content", "gsc_seo", "wordpress", "ahrefs", "seo"}:
+        return "content_seo"
+    if domain in {"localo", "local"}:
+        return "local_seo"
+    if domain in {"knowledge", "service_profile"}:
+        return "owner_review"
+    return "marketer"
+
+
+def _work_order_close_condition(decision: DailyDecision) -> str:
+    if decision.decision_state == "blocked":
+        return "Zamknięte dopiero po usunięciu blokady i ponownym potwierdzeniu dowodów w WILQ."
+    if decision.decision_state in {"stale", "missing", "unknown"}:
+        return "Zamknięte po odświeżeniu źródeł i ponownej ocenie decyzji w WILQ."
+    if decision.action_ids:
+        return "Zamknięte po review wskazanej akcji, zapisaniu decyzji i pozostawieniu audytu w WILQ."
+    return "Zamknięte po ręcznym potwierdzeniu decyzji i zapisaniu wyniku pracy."
+
+
 DailyCheckItemCategory = Literal[
     "anomaly",
     "risk",
@@ -5216,6 +5324,7 @@ class CommandCenterResponse(BaseModel):
     action_ids: list[str] = Field(default_factory=list)
     action_summary: str = ""
     daily_decisions: list[DailyDecision] = Field(default_factory=list)
+    work_orders: list[WorkOrder] = Field(default_factory=list)
     operator_brief: list[CommandCenterBriefItem] = Field(default_factory=list)
     demo_script: list[CommandCenterDemoStep] = Field(default_factory=list)
     action_plan: list[CommandCenterActionPlanItem] = Field(default_factory=list)
@@ -5227,6 +5336,10 @@ class CommandCenterResponse(BaseModel):
 
     @model_validator(mode="after")
     def fill_lineage_summaries(self) -> CommandCenterResponse:
+        if not self.work_orders:
+            self.work_orders = [
+                work_order_from_daily_decision(decision) for decision in self.daily_decisions
+            ]
         if not self.source_connectors:
             self.source_connectors = _unique_strings(
                 connector
