@@ -180,6 +180,18 @@ export const surfaceRoutes = [
     icon: Settings
   },
   {
+    path: "/system",
+    label: "System",
+    family: "technical",
+    status: "technical",
+    mode: "technical",
+    navGroup: "secondary",
+    generated: true,
+    ownerPersona: "developer_audit",
+    firstScreenIntent: "Audytować procesy, uruchomienia Codex, reguły bezpieczeństwa i eksperymentalne obszary poza marketer mode.",
+    icon: Settings
+  },
+  {
     path: "/ads-doctor/search-terms",
     label: "Search terms",
     family: "diagnostic",

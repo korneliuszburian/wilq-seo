@@ -47,13 +47,15 @@ describe("surface registry", () => {
       "/workflows",
       "/ga4",
       "/knowledge",
-      "/settings"
+      "/settings",
+      "/system"
     ]);
     expect(secondarySurfaceRoutes.map((route) => route.label)).toEqual([
       "Procesy",
       "GA4",
       "Wiedza",
-      "Źródła"
+      "Źródła",
+      "System"
     ]);
 
     for (const route of [...primarySurfaceRoutes, ...secondarySurfaceRoutes]) {

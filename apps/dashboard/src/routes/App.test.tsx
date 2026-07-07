@@ -8012,6 +8012,31 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/CONNECTOR_REFRESH_RUN/)).not.toBeInTheDocument();
   });
 
+  it("system route renders technical audit mode without leaking raw internals", async () => {
+    renderApp("/system");
+    await waitFor(() => expect(screen.getByRole("heading", { name: "System" })).toBeInTheDocument());
+    expect(
+      screen.getByText("Przegląd audytowy: status procesów, uruchomienia Codex, historia operatora i reguły bezpieczeństwa.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("procesów")).toBeInTheDocument();
+    expect(screen.getByText("ostatnie uruchomienia")).toBeInTheDocument();
+    expect(screen.getByText("obszary techniczne w review")).toBeInTheDocument();
+    expect(screen.getByText("blokady systemowe")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Procesy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Uruchomienia Codex" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Bezpieczeństwo" })).toBeInTheDocument();
+    expect(screen.getByText("Brak zapisu zmian bez audytu")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Eksperymentalne obszary" })).toBeInTheDocument();
+    expect(screen.getByText("Social Publisher")).toBeInTheDocument();
+    expect(screen.getByText("Eksporty Google Sheets")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Szczegóły techniczne" })).toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText("CONNECTOR_REFRESH_RUN")).not.toBeInTheDocument();
+    expect(screen.queryByText(/\"action_type\"/)).not.toBeInTheDocument();
+  });
+
   it("actions route starts from marketer-facing actions instead of registry dumps", async () => {
     renderApp("/actions");
     await waitFor(() =>
