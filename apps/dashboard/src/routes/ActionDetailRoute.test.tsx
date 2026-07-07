@@ -1726,20 +1726,25 @@ describe("Action detail route", () => {
     expect(screen.queryByText(/online~pl~PL~SKU-001/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/zapis zmian zablokowany/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Gotowość zapisu tej akcji")).toBeInTheDocument();
+    expect(screen.getByText("Twoja decyzja")).toBeInTheDocument();
+    expect(screen.getByText("Przygotuj i oceń bez zapisu zmian")).toBeInTheDocument();
+    expect(screen.getByText("Stan zapisu")).toBeInTheDocument();
+    expect(screen.getAllByText("Zapis zablokowany").length).toBeGreaterThan(0);
+    expect(screen.getByText("Podgląd, review i walidacja")).toBeInTheDocument();
+    expect(screen.getByText("Czy można zapisać zmianę")).toBeInTheDocument();
     expect(screen.getByText("write zablokowany")).toBeInTheDocument();
-    expect(screen.getByText("Autoryzacja write")).toBeInTheDocument();
+    expect(screen.getByText("Potwierdzenie operatora")).toBeInTheDocument();
     expect(
-      screen.getByText("Brakuje pełnego śladu audytu ActionObject przed live write.")
+      screen.getByText("Brakuje pełnego śladu review i potwierdzenia przed zapisem.")
     ).toBeInTheDocument();
     expect(
       screen.getByText("Brakuje: action_preview_generated, human_review_*, action_apply_confirmed")
     ).toBeInTheDocument();
     expect(screen.getByText("Co blokuje zapis")).toBeInTheDocument();
-    expect(screen.getByText("Brakuje adaptera zapisu")).toBeInTheDocument();
-    expect(screen.getByText("Kontrakt przyszłego apply")).toBeInTheDocument();
-    expect(screen.getByText(/wyłącznie szkic WordPress/)).toBeInTheDocument();
-    expect(screen.getByText("create_wordpress_draft")).toBeInTheDocument();
+    expect(screen.getAllByText("Brakuje adaptera zapisu").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Kontrakt przyszłego apply")).not.toBeInTheDocument();
+    expect(screen.queryByText("create_wordpress_draft")).not.toBeInTheDocument();
+    expect(screen.getByText("Pokaż szczegóły przyszłego zapisu")).toBeInTheDocument();
   });
 
   it("renders mutation audit details from API labels", async () => {
