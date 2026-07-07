@@ -298,7 +298,13 @@ def test_wordpress_activation_packet_returns_404_for_unavailable_work_item(
     assert response.status_code == 404
 
 
-def test_wordpress_execution_api_returns_draft_only_dry_run() -> None:
+def test_wordpress_execution_api_returns_draft_only_dry_run(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_dry_run.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
+
     data = _post_wordpress_execution(
         {
             "handoff": _wordpress_handoff(),
@@ -333,7 +339,13 @@ def test_wordpress_execution_api_returns_draft_only_dry_run() -> None:
     ]
 
 
-def test_wordpress_execution_api_blocks_live_write() -> None:
+def test_wordpress_execution_api_blocks_live_write(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_live_blocked.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
+
     data = _post_wordpress_execution(
         {
             "handoff": _wordpress_handoff(),
@@ -460,6 +472,72 @@ def test_wordpress_execution_api_live_write_uses_persisted_authorization(
     assert result["boundary"]["publish_allowed"] is False
     assert result["boundary"]["destructive_update_allowed"] is False
     assert created_titles == ["BDO dla firm: co trzeba sprawdzić przed działaniem"]
+
+
+def test_wordpress_activation_packet_remembers_created_dev_draft(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    created_titles: list[str] = []
+
+    def create_draft(payload) -> str:  # type: ignore[no-untyped-def]
+        created_titles.append(payload.title)
+        return "888"
+
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "activation_packet_created_draft.sqlite3"),
+    )
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.create_wordpress_draft_post",
+        create_draft,
+    )
+    _persist_write_authorization_events()
+    client = TestClient(app)
+
+    initial_packet = _get_wordpress_activation_packet()
+    work_item_id = initial_packet["work_item_id"]
+    snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
+    item = snapshot["preflight"]["item"]
+    draft = snapshot["draft_package"]["draft_package_result"]["draft_package"]
+    assert draft is not None
+
+    review = _human_review_from_snapshot(item, draft)
+    review_response = client.post(
+        f"/api/content/work-items/{work_item_id}/human-review",
+        json={"review": review},
+    )
+    assert review_response.status_code == 200
+    audit_response = client.post(
+        f"/api/content/work-items/{work_item_id}/audit",
+        json={"audit": _audit_from_review(item, review)},
+    )
+    assert audit_response.status_code == 200
+
+    ready_snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
+    handoff = ready_snapshot["wordpress_handoff"]["handoff_result"]["handoff"]
+    execution_response = client.post(
+        "/api/content/work-items/wordpress-draft-execution",
+        json={
+            "handoff": handoff,
+            "draft_package": draft,
+            "mode": "live",
+            "write_authorization": _write_authorization(),
+        },
+    )
+    assert execution_response.status_code == 200
+    assert execution_response.json()["execution_result"]["status"] == "created"
+
+    refreshed_packet = _get_wordpress_activation_packet(work_item_id)
+
+    assert refreshed_packet["execution_result"]["status"] == "created"
+    assert refreshed_packet["execution_result"]["mode"] == "live"
+    assert refreshed_packet["execution_result"]["wordpress_post_id"] == "888"
+    assert refreshed_packet["execution_result"]["boundary"]["publish_allowed"] is False
+    assert refreshed_packet["execution_result"]["boundary"]["destructive_update_allowed"] is False
+    assert refreshed_packet["execution_result"]["external_write_attempted"] is True
+    assert created_titles == [draft["title"]]
 
 
 def test_wordpress_execution_api_live_adapter_failure_is_blocked(

@@ -44,6 +44,7 @@ from wilq.content.handoff.wordpress_authoring import (
 )
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftWriteAuthorization,
+    ContentWordPressDraftExecutionResult,
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.inventory.records import (
@@ -385,12 +386,13 @@ def build_content_wordpress_draft_activation_packet_response(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     *,
     action_id: str = "act_apply_wordpress_draft_handoff",
+    latest_execution_result: ContentWordPressDraftExecutionResult | None = None,
 ) -> ContentWordPressDraftActivationPacketResponse:
     item = snapshot.preflight.item
     draft_package = snapshot.draft_package.draft_package_result.draft_package
     handoff_result = snapshot.wordpress_handoff.handoff_result
     handoff = handoff_result.handoff
-    execution = execute_content_wordpress_draft_handoff(
+    execution = latest_execution_result or execute_content_wordpress_draft_handoff(
         handoff=handoff,
         draft_package=draft_package,
         mode="dry_run",

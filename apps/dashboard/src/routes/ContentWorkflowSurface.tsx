@@ -559,7 +559,13 @@ function WordPressDraftWorkPanel({
     readiness?.live_write_enabled_by_env ?? profile?.write_boundary.draft_writes_enabled_by_env
   );
   const writeAuthorization = readiness?.suggested_write_authorization ?? null;
-  const canCreateDevDraft = Boolean(readiness?.ready && writeAuthorization && packet?.handoff_ready);
+  const latestCreatedExecution =
+    actions.executionResult ??
+    (packet?.execution_result.status === "created" ? packet.execution_result : null);
+  const hasCreatedDevDraft = latestCreatedExecution?.status === "created";
+  const canCreateDevDraft = Boolean(
+    readiness?.ready && writeAuthorization && packet?.handoff_ready && !hasCreatedDevDraft
+  );
   const acfLayoutCount = profile?.acf.layouts.length ?? 0;
   const missingReadiness = [
     ...(packet?.activation_missing_readiness_labels ?? []),
@@ -618,7 +624,11 @@ function WordPressDraftWorkPanel({
                 disabled={actions.executionPending || !canCreateDevDraft}
                 className="inline-flex h-9 items-center rounded-md bg-action px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {actions.executionPending ? "Tworzę szkic" : "Utwórz szkic na dev"}
+                {actions.executionPending
+                  ? "Tworzę szkic"
+                  : hasCreatedDevDraft
+                    ? "Szkic utworzony na dev"
+                    : "Utwórz szkic na dev"}
               </button>
             </div>
             {prepareAuthorizationMutation.isSuccess ? (
@@ -631,8 +641,8 @@ function WordPressDraftWorkPanel({
                 Nie udało się przygotować zgody: {prepareAuthorizationMutation.error.message}
               </p>
             ) : null}
-            {actions.executionResult ? (
-              <WordPressDraftExecutionStatus result={actions.executionResult} />
+            {latestCreatedExecution ? (
+              <WordPressDraftExecutionStatus result={latestCreatedExecution} />
             ) : null}
           </div>
         </div>

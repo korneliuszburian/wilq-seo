@@ -7,6 +7,7 @@ from typing import cast
 
 from wilq.content.drafts.structured_generation import StructuredDraftOutput
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
+from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
 from wilq.security.redaction import redact_mapping
@@ -172,6 +173,48 @@ class ContentWorkflowStore:
             return None
         return ContentQualityReview.model_validate(json.loads(cast(str, row["payload_json"])))
 
+    def save_wordpress_draft_execution(
+        self,
+        work_item_id: str,
+        result: ContentWordPressDraftExecutionResult,
+    ) -> ContentWordPressDraftExecutionResult:
+        redacted = ContentWordPressDraftExecutionResult.model_validate(
+            redact_mapping(result.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO content_wordpress_draft_executions (work_item_id, payload_json)
+                VALUES (?, ?)
+                ON CONFLICT(work_item_id) DO UPDATE SET
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    work_item_id,
+                    _model_json(redacted),
+                ),
+            )
+        return redacted
+
+    def latest_wordpress_draft_execution(
+        self,
+        work_item_id: str,
+    ) -> ContentWordPressDraftExecutionResult | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_wordpress_draft_executions
+                WHERE work_item_id = ?
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return ContentWordPressDraftExecutionResult.model_validate(
+            json.loads(cast(str, row["payload_json"]))
+        )
+
     def _connect(self) -> sqlite3.Connection:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.path)
@@ -215,6 +258,14 @@ class ContentWorkflowStore:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_wordpress_draft_executions (
+              work_item_id TEXT PRIMARY KEY,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
 
 
 def _model_json(
@@ -223,6 +274,7 @@ def _model_json(
         | ContentWordPressDraftAuditEnvelope
         | StructuredDraftOutput
         | ContentQualityReview
+        | ContentWordPressDraftExecutionResult
     ),
 ) -> str:
     return json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))

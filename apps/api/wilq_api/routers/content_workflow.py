@@ -138,7 +138,10 @@ def content_wordpress_draft_activation_packet(
 ) -> ContentWordPressDraftActivationPacketResponse:
     if work_item_id is not None:
         return build_content_wordpress_draft_activation_packet_response(
-            _snapshot_for_work_item_or_404(work_item_id)
+            _snapshot_for_work_item_or_404(work_item_id),
+            latest_execution_result=content_workflow_store().latest_wordpress_draft_execution(
+                work_item_id
+            ),
         )
     diagnostics = build_content_diagnostics()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
@@ -150,7 +153,12 @@ def content_wordpress_draft_activation_packet(
             human_review=review,
             audit=audit,
         )
-    return build_content_wordpress_draft_activation_packet_response(snapshot)
+    return build_content_wordpress_draft_activation_packet_response(
+        snapshot,
+        latest_execution_result=content_workflow_store().latest_wordpress_draft_execution(
+            snapshot.preflight.item.id
+        ),
+    )
 
 
 @router.get(
@@ -472,7 +480,17 @@ def content_work_item_wordpress_draft_handoff(
 def content_work_item_wordpress_draft_execution(
     request: ContentWorkItemWordPressDraftExecutionRequest,
 ) -> ContentWorkItemWordPressDraftExecutionResponse:
-    return build_content_work_item_wordpress_draft_execution_response(request)
+    response = build_content_work_item_wordpress_draft_execution_response(request)
+    if (
+        request.handoff is not None
+        and response.execution_result.status == "created"
+        and response.execution_result.wordpress_post_id
+    ):
+        content_workflow_store().save_wordpress_draft_execution(
+            request.handoff.work_item_id,
+            response.execution_result,
+        )
+    return response
 
 
 @router.post(

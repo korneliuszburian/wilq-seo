@@ -675,6 +675,38 @@ describe("ContentWorkflowSurface", () => {
       (await screen.findAllByText(/Szkic utworzony na devie jako WordPress draft, ID 987/)).length
     ).toBeGreaterThan(0);
   });
+
+  it("shows remembered dev WordPress draft from the activation packet", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
+    );
+    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue({
+      ...wordpressDraftActivationPacket(),
+      human_review_ready: true,
+      audit_ready: true,
+      handoff_ready: true,
+      dry_run_ready: true,
+      handoff_blockers: [],
+      execution_blockers: [],
+      activation_missing_readiness_labels: [],
+      execution_result: wordpressDraftCreatedResponse().execution_result
+    });
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const createButton = await screen.findByRole("button", { name: "Szkic utworzony na dev" });
+    expect(createButton).toBeDisabled();
+    expect(screen.getByText(/Szkic utworzony na devie jako WordPress draft, ID 987/))
+      .toBeInTheDocument();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
 });
 
 function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
