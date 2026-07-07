@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import unescape
 from html.parser import HTMLParser
+import json
 from typing import Any
 from urllib.parse import urljoin
 
@@ -46,6 +47,7 @@ WORDPRESS_SITEMAP_URL_LIMIT = 500
 WORDPRESS_METADATA_FETCH_LIMIT = 50
 WORDPRESS_METADATA_MAX_BYTES = 200_000
 WORDPRESS_METADATA_TIMEOUT_SECONDS = 3.0
+WORDPRESS_SECTION_HEADING_LIMIT = 12
 
 
 @dataclass(frozen=True)
@@ -298,6 +300,8 @@ def _fetch_content_inventory(
                         "modified_gmt": item.get("modified_gmt", ""),
                         "title_or_h1": item.get("title_or_h1", ""),
                         "canonical_url": item.get("canonical_url", ""),
+                        "section_headings_json": item.get("section_headings_json", ""),
+                        "section_heading_count": item.get("section_heading_count", ""),
                         "inventory_source": "wordpress_rest",
                     },
                 )
@@ -317,6 +321,8 @@ def _fetch_content_inventory(
                     "modified_gmt": item.get("modified_gmt", ""),
                     "title_or_h1": item.get("title_or_h1", ""),
                     "canonical_url": item.get("canonical_url", ""),
+                    "section_headings_json": item.get("section_headings_json", ""),
+                    "section_heading_count": item.get("section_heading_count", ""),
                     "inventory_source": "sitemap",
                 },
             )
@@ -336,6 +342,8 @@ def _fetch_content_inventory(
                     "modified_gmt": item.get("modified_gmt", ""),
                     "title_or_h1": item.get("title_or_h1", ""),
                     "canonical_url": item.get("canonical_url", ""),
+                    "section_headings_json": item.get("section_headings_json", ""),
+                    "section_heading_count": item.get("section_heading_count", ""),
                     "inventory_source": "public_sitemap",
                 },
             )
@@ -452,11 +460,18 @@ def _fetch_public_page_metadata(client: httpx.Client, url: str) -> dict[str, str
     parser.feed(response.text[:WORDPRESS_METADATA_MAX_BYTES])
     title_or_h1 = _clean_metadata_text(parser.title or parser.h1)
     canonical_url = _clean_metadata_text(parser.canonical_url)
+    section_headings = [
+        heading
+        for heading in (_clean_metadata_text(value) for value in parser.section_headings)
+        if heading
+    ][:WORDPRESS_SECTION_HEADING_LIMIT]
     return {
         key: value
         for key, value in {
             "title_or_h1": title_or_h1,
             "canonical_url": canonical_url,
+            "section_headings_json": json.dumps(section_headings, ensure_ascii=False),
+            "section_heading_count": str(len(section_headings)),
         }.items()
         if value
     }
@@ -642,7 +657,9 @@ class _HtmlMetadataParser(HTMLParser):
         self.title = ""
         self.h1 = ""
         self.canonical_url = ""
+        self.section_headings: list[str] = []
         self._capture: str | None = None
+        self._capture_tag: str | None = None
         self._chunks: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -655,20 +672,29 @@ class _HtmlMetadataParser(HTMLParser):
                 self.canonical_url = href
         if normalized_tag == "title" and not self.title:
             self._capture = "title"
+            self._capture_tag = normalized_tag
             self._chunks = []
         elif normalized_tag == "h1" and not self.h1:
             self._capture = "h1"
+            self._capture_tag = normalized_tag
+            self._chunks = []
+        elif normalized_tag in {"h2", "h3"} and len(self.section_headings) < WORDPRESS_SECTION_HEADING_LIMIT:
+            self._capture = "section_heading"
+            self._capture_tag = normalized_tag
             self._chunks = []
 
     def handle_endtag(self, tag: str) -> None:
-        if self._capture != tag.lower():
+        if self._capture_tag != tag.lower():
             return
         text = _clean_metadata_text("".join(self._chunks))
         if self._capture == "title" and text:
             self.title = text
         elif self._capture == "h1" and text:
             self.h1 = text
+        elif self._capture == "section_heading" and text:
+            self.section_headings.append(text)
         self._capture = None
+        self._capture_tag = None
         self._chunks = []
 
     def handle_data(self, data: str) -> None:

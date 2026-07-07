@@ -15909,6 +15909,10 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                             ),
                             "modified_gmt": "2024-07-11T07:04:02+00:00",
                             "title_or_h1": "Europejski Zielony Ład - co to takiego?",
+                            "section_headings_json": json.dumps(
+                                ["Co to jest Zielony Ład", "Kogo dotyczy"]
+                            ),
+                            "section_heading_count": "2",
                             "inventory_source": "public_sitemap",
                         },
                     ),
@@ -16166,7 +16170,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert first_decision["metric_tiles"] == {
         "zapytania": 1,
         "WP": "znaleziono",
-        "sekcje WP": "sprawdź w inventory/workflow",
+        "sekcje WP": 2,
         "wyświetlenia": 120,
         "kliknięcia": 12,
         "CTR": "10.00%",
@@ -16179,14 +16183,23 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "
         '"zielony ład". WordPress potwierdza istniejącą stronę, więc najpierw '
         "sprawdź aktualny URL, obecne sekcje i CTA. Aktualny tytuł/H1 w "
-        'WordPress: "Europejski Zielony Ład - co to takiego?". To nie jest '
-        "nowy artykuł ani zadanie budowane z samego zapytania."
+        'WordPress: "Europejski Zielony Ład - co to takiego?". Widoczne sekcje: '
+        "Co to jest Zielony Ład, Kogo dotyczy. To nie jest nowy artykuł ani "
+        "zadanie budowane z samego zapytania."
     )
     assert first_decision["wordpress_title_or_h1"] == (
         "Europejski Zielony Ład - co to takiego?"
     )
     assert first_decision["wordpress_inventory_source"] == "public_sitemap"
     assert first_decision["wordpress_modified_gmt"] == "2024-07-11T07:04:02+00:00"
+    assert first_decision["wordpress_section_headings"] == [
+        "Co to jest Zielony Ład",
+        "Kogo dotyczy",
+    ]
+    assert first_decision["wordpress_section_count"] == 2
+    assert first_decision["wordpress_section_inventory_status"] == "available"
+    assert first_decision["wordpress_acf_section_inventory_status"] == "missing"
+    assert "ACF/flexible content" in first_decision["wordpress_acf_section_inventory_note"]
     assert first_decision["primary_query"] == "zielony ład"
     assert first_decision["total_clicks"] == 12
     assert first_decision["total_impressions"] == 120
@@ -18181,7 +18194,9 @@ def test_wordpress_vendor_read_adds_public_production_sitemap_inventory(
                         "<title>BDO - co musi wiedzieć przedsiębiorca?</title>"
                         '<link rel="canonical" href="https://www.ekologus.pl/'
                         'bdo-co-musi-wiedziec-przedsiebiorca/" />'
-                        "</head><body><h1>BDO dla przedsiębiorcy</h1></body></html>"
+                        "</head><body><h1>BDO dla przedsiębiorcy</h1>"
+                        "<h2>Obowiązki przedsiębiorcy</h2><h3>Rejestr BDO</h3>"
+                        "</body></html>"
                     ),
                 )
         return httpx.Response(404)
@@ -18209,6 +18224,11 @@ def test_wordpress_vendor_read_adds_public_production_sitemap_inventory(
     assert public_sitemap_fact.dimensions["canonical_url"] == (
         "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
     )
+    assert public_sitemap_fact.dimensions["section_heading_count"] == "2"
+    assert json.loads(public_sitemap_fact.dimensions["section_headings_json"]) == [
+        "Obowiązki przedsiębiorcy",
+        "Rejestr BDO",
+    ]
     assert any(fact.name == "public_sitemap_url_count" for fact in result.metric_facts)
 
 

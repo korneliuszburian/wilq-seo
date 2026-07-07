@@ -64,16 +64,37 @@ def test_content_decision_refresh_summary_defends_preserve_first_logic() -> None
     assert content_decision_title("refresh_or_merge", "/bdo", 3, metrics) == (
         "URL /bdo: sprawdź istniejącą treść (3 zapytań)"
     )
-    assert content_decision_metric_tiles("refresh_or_merge", metrics, 3, "found") == {
+    assert content_decision_metric_tiles(
+        "refresh_or_merge",
+        metrics,
+        3,
+        "found",
+        wordpress_section_count=4,
+        wordpress_section_inventory_status="available",
+    ) == {
         "zapytania": 3,
         "WP": "znaleziono",
-        "sekcje WP": "sprawdź w inventory/workflow",
+        "sekcje WP": 4,
         "wyświetlenia": 300,
         "kliknięcia": 12,
         "CTR": "4.00%",
         "pozycja": 8.2,
     }
-    assert "aktualny URL" in content_decision_summary("refresh_or_merge", metrics, "found")
+    assert content_decision_metric_tiles("refresh_or_merge", metrics, 3, "found")[
+        "sekcje WP"
+    ] == "brak odczytu sekcji"
+    assert "aktualny URL" in content_decision_summary(
+        "refresh_or_merge",
+        metrics,
+        "found",
+        wordpress_section_headings=["Obowiązki przedsiębiorcy"],
+    )
+    assert "Obowiązki przedsiębiorcy" in content_decision_summary(
+        "refresh_or_merge",
+        metrics,
+        "found",
+        wordpress_section_headings=["Obowiązki przedsiębiorcy"],
+    )
     assert "samego zapytania" in content_decision_summary("refresh_or_merge", metrics, "found")
 
 

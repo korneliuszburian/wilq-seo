@@ -1487,6 +1487,8 @@ def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, st
         "wordpress_status": dimensions.get("status", ""),
         "wordpress_content_url": dimensions.get("content_url", ""),
         "wordpress_title_or_h1": dimensions.get("title_or_h1", ""),
+        "wordpress_section_headings_json": dimensions.get("section_headings_json", ""),
+        "wordpress_section_heading_count": dimensions.get("section_heading_count", ""),
         "wordpress_content_host": _url_host(dimensions.get("content_url", "")),
         "wordpress_matched_url_key": _normalize_url_key(dimensions.get("content_url", "")),
         "wordpress_matched_path": _normalize_path_key(dimensions.get("content_url", "")),

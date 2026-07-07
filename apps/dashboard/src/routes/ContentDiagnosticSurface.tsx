@@ -280,14 +280,21 @@ function ContentNearestDecisionCard({
             empty="brak potwierdzonego wpisu albo strony WordPress"
           />
           <TraceLine
+            label="Aktualne sekcje"
+            values={decision.wordpress_section_headings.slice(0, 6)}
+            empty="brak odczytu H2/sekcji dla tego URL"
+          />
+          <TraceLine
             label="Adres"
             values={url ? [shortPath(url)] : []}
             empty="adres do potwierdzenia przed szkicem"
           />
-          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-            Ten widok nie pokazuje jeszcze aktualnych H1, sekcji ACF ani treści strony.
-            Nie rób rewrite z samego query. Najpierw otwórz workflow lub inventory dla tego URL.
-          </div>
+          {decision.wordpress_acf_section_inventory_status === "missing" ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+              {decision.wordpress_acf_section_inventory_note ??
+                "Brakuje read-only kontraktu aktualnych wierszy ACF/flexible content. Nie rób rewrite z samego query."}
+            </div>
+          ) : null}
           <TraceLine
             label="Zapytania"
             values={decision.queries.slice(0, 4)}
@@ -503,6 +510,7 @@ function contentQueueRows(data: ContentDiagnosticsResponse) {
       detail: [
         url ? shortPath(url) : decision.primary_query ?? decision.decision_type_label,
         decision.wordpress_title_or_h1 ? `Tytuł/H1: ${decision.wordpress_title_or_h1}` : undefined,
+        wordpressSectionSummary(decision),
         decision.wordpress_match_label,
         decision.wordpress_match_confidence_label
       ].filter(isPresentLabel).join(" · "),
@@ -519,11 +527,23 @@ function contentQueueRows(data: ContentDiagnosticsResponse) {
 function contentQueueSignals(decision: ContentDecisionItem) {
   const metricTiles = Object.entries(decision.metric_tiles).slice(0, 3).map(([label, value]) => `${label}: ${value}`);
   const wordpressSignal = decision.wordpress_title_or_h1 ? [`WP: ${decision.wordpress_title_or_h1}`] : [];
+  const sectionSignal = wordpressSectionSummary(decision) ? [wordpressSectionSummary(decision)] : [];
   const querySignal = decision.primary_query ? [`zapytanie: ${decision.primary_query}`] : [];
   const sourceSignal = decision.source_connector_labels.length
     ? [`źródła: ${decision.source_connector_labels.join(", ")}`]
     : [];
-  return [...wordpressSignal, ...metricTiles, ...querySignal, ...sourceSignal].slice(0, 4);
+  return [...wordpressSignal, ...sectionSignal, ...metricTiles, ...querySignal, ...sourceSignal].slice(0, 4);
+}
+
+function wordpressSectionSummary(decision: ContentDecisionItem) {
+  if (decision.wordpress_section_inventory_status === "available") {
+    const count = decision.wordpress_section_count ?? decision.wordpress_section_headings.length;
+    return count > 0 ? `sekcje WP: ${count}` : "sekcje WP: dostępne";
+  }
+  if (decision.wordpress_match === "found") {
+    return "sekcje WP: brak odczytu";
+  }
+  return undefined;
 }
 
 function contentDecisionRisk(decision: ContentDecisionItem) {

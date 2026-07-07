@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
@@ -58,6 +59,20 @@ def gsc_content_decisions(
         wordpress_match = first.dimensions.get("wordpress_match", "missing")
         query_count = int_dimension(first, "gsc_page_query_count", len(page_items))
         wordpress_title_or_h1 = first.dimensions.get("wordpress_title_or_h1") or None
+        wordpress_section_headings = wordpress_section_headings_from_dimensions(
+            first.dimensions.get("wordpress_section_headings_json")
+        )
+        wordpress_section_count = optional_int_text(
+            first.dimensions.get("wordpress_section_heading_count")
+        )
+        wordpress_section_inventory_status: Literal["available", "missing"] = (
+            "available" if wordpress_section_headings else "missing"
+        )
+        wordpress_acf_section_inventory_note = (
+            "Brakuje read-only kontraktu aktualnych wierszy ACF/flexible content "
+            "dla tej strony. WILQ widzi publiczne nagłówki HTML, ale nie udaje "
+            "pełnego układu edytora WordPress."
+        )
         queries = _unique(
             item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
         )
@@ -75,11 +90,18 @@ def gsc_content_decisions(
                 metrics,
                 wordpress_match,
                 wordpress_title_or_h1=wordpress_title_or_h1,
+                wordpress_section_headings=wordpress_section_headings,
+            )
+            section_step = (
+                "Porównaj widoczne sekcje WordPress z zapytaniami GSC, sprawdź CTA "
+                "i dopiero potem zdecyduj: odświeżyć, scalić albo zostawić."
+                if wordpress_section_headings
+                else "Otwórz aktualny adres WordPress i sprawdź istniejące H1, sekcje "
+                "ACF/flexible content oraz CTA."
             )
             next_step = (
-                "Otwórz aktualny adres WordPress i sprawdź istniejące H1, sekcje "
-                "ACF/flexible content oraz CTA. Nie przygotowuj rewrite ani scalenia "
-                "z samego zapytania GSC."
+                f"{section_step} Nie przygotowuj rewrite ani scalenia z samego "
+                "zapytania GSC."
             )
             rationale = (
                 "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje "
@@ -94,6 +116,7 @@ def gsc_content_decisions(
                 metrics,
                 wordpress_match,
                 wordpress_title_or_h1=wordpress_title_or_h1,
+                wordpress_section_headings=wordpress_section_headings,
             )
             next_step = (
                 "Sprawdź publiczny URL, spis strony i duplikaty w WordPress. Dopiero potem "
@@ -111,6 +134,7 @@ def gsc_content_decisions(
                 metrics,
                 wordpress_match,
                 wordpress_title_or_h1=wordpress_title_or_h1,
+                wordpress_section_headings=wordpress_section_headings,
             )
             next_step = (
                 "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
@@ -145,6 +169,8 @@ def gsc_content_decisions(
                     metrics,
                     query_count,
                     wordpress_match,
+                    wordpress_section_count=wordpress_section_count,
+                    wordpress_section_inventory_status=wordpress_section_inventory_status,
                 ),
                 page=page,
                 normalized_page_path=first.dimensions.get("wordpress_requested_path"),
@@ -160,6 +186,11 @@ def gsc_content_decisions(
                 wordpress_title_or_h1=wordpress_title_or_h1,
                 wordpress_inventory_source=first.dimensions.get("wordpress_inventory_source"),
                 wordpress_modified_gmt=first.dimensions.get("wordpress_modified_gmt"),
+                wordpress_section_headings=wordpress_section_headings,
+                wordpress_section_count=wordpress_section_count,
+                wordpress_section_inventory_status=wordpress_section_inventory_status,
+                wordpress_acf_section_inventory_status="missing",
+                wordpress_acf_section_inventory_note=wordpress_acf_section_inventory_note,
                 source_public_url=url_semantics["source_public_url"],
                 preview_url=url_semantics["preview_url"],
                 intended_final_url=url_semantics["intended_final_url"],
@@ -291,13 +322,20 @@ def content_decision_metric_tiles(
     metrics: ContentDecisionMetrics,
     query_count: int,
     wordpress_match: str,
+    *,
+    wordpress_section_count: int | None = None,
+    wordpress_section_inventory_status: Literal["available", "missing"] = "missing",
 ) -> dict[str, int | float | str]:
     tiles: dict[str, int | float | str] = {
         "zapytania": query_count,
         "WP": wordpress_match_tile(wordpress_match),
     }
     if decision_type == "refresh_or_merge" and wordpress_match == "found":
-        tiles["sekcje WP"] = "sprawdź w inventory/workflow"
+        tiles["sekcje WP"] = (
+            wordpress_section_count
+            if wordpress_section_inventory_status == "available" and wordpress_section_count
+            else "brak odczytu sekcji"
+        )
     if metrics.total_impressions is not None:
         tiles["wyświetlenia"] = metrics.total_impressions
     if metrics.total_clicks is not None:
@@ -378,18 +416,25 @@ def content_decision_summary(
     wordpress_match: str,
     *,
     wordpress_title_or_h1: str | None = None,
+    wordpress_section_headings: list[str] | None = None,
 ) -> str:
     metric_sentence = content_metric_sentence(metrics)
     if decision_type == "refresh_or_merge":
+        section_headings = wordpress_section_headings or []
         title_sentence = (
             f' Aktualny tytuł/H1 w WordPress: "{wordpress_title_or_h1}".'
             if wordpress_title_or_h1
             else " Aktualny tytuł/H1 nie jest jeszcze dostępny w tym widoku."
         )
+        section_sentence = (
+            f" Widoczne sekcje: {', '.join(section_headings[:3])}."
+            if section_headings
+            else " Brakuje odczytu aktualnych sekcji, więc trzeba je sprawdzić przed szkicem."
+        )
         return (
             f"{metric_sentence} WordPress potwierdza istniejącą stronę, więc "
             "najpierw sprawdź aktualny URL, obecne sekcje i CTA."
-            f"{title_sentence} To nie jest nowy artykuł ani zadanie budowane "
+            f"{title_sentence}{section_sentence} To nie jest nowy artykuł ani zadanie budowane "
             "z samego zapytania."
         )
     if decision_type == "merge_create_after_inventory_check":
@@ -430,6 +475,33 @@ def content_metric_sentence(metrics: ContentDecisionMetrics) -> str:
     if metrics.primary_query:
         return f'{prefix}; główne zapytanie: "{metrics.primary_query}".'
     return prefix
+
+
+def wordpress_section_headings_from_dimensions(value: str | None) -> list[str]:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    headings: list[str] = []
+    for item in parsed:
+        if isinstance(item, str):
+            heading = item.strip()
+            if heading:
+                headings.append(heading)
+    return headings[:12]
+
+
+def optional_int_text(value: str | None) -> int | None:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 def content_decision_sort_key(decision: ContentDecisionItem) -> tuple[int, int, int, int, str]:

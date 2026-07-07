@@ -4229,6 +4229,11 @@ class ContentDecisionItem(BaseModel):
     wordpress_title_or_h1: str | None = None
     wordpress_inventory_source: str | None = None
     wordpress_modified_gmt: str | None = None
+    wordpress_section_headings: list[str] = Field(default_factory=list)
+    wordpress_section_count: int | None = None
+    wordpress_section_inventory_status: Literal["available", "missing"] = "missing"
+    wordpress_acf_section_inventory_status: Literal["available", "missing"] = "missing"
+    wordpress_acf_section_inventory_note: str | None = None
     source_public_url: str | None = None
     preview_url: str | None = None
     intended_final_url: str | None = None
