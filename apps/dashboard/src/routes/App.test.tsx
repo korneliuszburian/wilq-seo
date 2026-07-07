@@ -7605,6 +7605,25 @@ function mockDashboardApi(url: string) {
 }
 
 function mockDiagnosticApi(url: string) {
+  if (url.endsWith("/api/connectors/google_analytics_4/refresh")) {
+    return Promise.resolve(
+      Response.json({
+        ...connectorRefreshRuns[0],
+        id: "refresh_google_analytics_4_dashboard",
+        connector_id: "google_analytics_4",
+        connector_label: "Google Analytics 4",
+        mode: "vendor_read",
+        status: "completed",
+        status_label: "odczyt zakończony",
+        external_call_attempted: true,
+        vendor_data_collected: true,
+        metrics_persisted: true,
+        evidence_ids: ["ev_refresh_google_analytics_4_dashboard"],
+        evidence_summary_label: "1 dowód źródłowy",
+        summary: "Odczyt Google Analytics 4 zakończony z dashboardu."
+      })
+    );
+  }
   const exactResponses: Array<[string, unknown]> = [
     ["/api/marketing/brief", marketingBrief],
     ["/api/marketing/tactical-queue", tacticalQueue],
@@ -8012,6 +8031,27 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
   });
 
+  it("refreshes stale source data from the sources view", async () => {
+    renderApp("/settings");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Dostęp do źródeł" })).toBeInTheDocument()
+    );
+
+    const ga4Card = screen.getByRole("heading", { name: "Google Analytics 4" }).closest("article");
+    expect(ga4Card).not.toBeNull();
+    fireEvent.click(
+      within(ga4Card as HTMLElement).getByRole("button", { name: "Odśwież dane" })
+    );
+
+    await waitFor(() =>
+      expect(vi.mocked(fetch).mock.calls.some(([url, init]) =>
+        String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+        && init?.method === "POST"
+      )).toBe(true)
+    );
+    expect(await screen.findByText(/Odczyt zakończony/)).toBeInTheDocument();
+  });
+
   it("secondary utility routes render compact blockers instead of generic registries", async () => {
     renderApp("/google-sheets");
     await waitFor(() => expect(screen.getByRole("heading", { name: "Google Sheets" })).toBeInTheDocument());
@@ -8055,7 +8095,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("CONNECTOR_REFRESH_RUN")).not.toBeInTheDocument();
-    expect(screen.queryByText(/\"action_type\"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
   });
 
   it("actions route starts from marketer-facing actions instead of registry dumps", async () => {

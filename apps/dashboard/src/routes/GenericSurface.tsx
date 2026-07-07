@@ -1,5 +1,5 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, FileJson, ShieldCheck } from "lucide-react";
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import { ChevronDown, ChevronRight, FileJson, RefreshCw, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -7,8 +7,10 @@ import {
   getKnowledgeCards,
   getKnowledgeOperatingMap,
   getKnowledgePlaybooks,
+  refreshConnector,
   getWorkflowRuns,
   getWorkflows,
+  type ConnectorRefreshRun,
   type ConnectorStatus,
   type KnowledgeCard,
   type KnowledgeOperatingMapResponse,
@@ -245,7 +247,6 @@ function SystemSurfaceSections({
   workflows: Workflow[];
   workflowRuns: WorkflowRun[];
 }) {
-  const readyWorkflows = workflows.filter((workflow) => workflow.status === "ready");
   const technicalReviewCount = workflows.filter((workflow) =>
     workflow.status !== "ready" || workflow.risk !== "low"
   ).length;
@@ -899,6 +900,18 @@ function KnowledgePlaybooksDetails({
 
 function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[] }) {
   const [showConnectorDetails, setShowConnectorDetails] = useState(false);
+  const queryClient = useQueryClient();
+  const refreshMutation = useMutation({
+    mutationFn: refreshConnector,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["connectors"] });
+      void queryClient.invalidateQueries({ queryKey: ["command-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["ads-diagnostics"] });
+      void queryClient.invalidateQueries({ queryKey: ["ga4-diagnostics"] });
+      void queryClient.invalidateQueries({ queryKey: ["merchant-diagnostics"] });
+      void queryClient.invalidateQueries({ queryKey: ["content-diagnostics"] });
+    }
+  });
   const missing = connectors.filter((connector) => hasMissingSourceAccess(connector));
   const freshDailySources = connectors.filter(
     (connector) =>
@@ -961,7 +974,22 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
         </div>
         <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
           {connectors.map((connector) => (
-            <SourceAccessCard key={connector.id} connector={connector} />
+            <SourceAccessCard
+              key={connector.id}
+              connector={connector}
+              onRefresh={() => refreshMutation.mutate(connector.id)}
+              refreshing={refreshMutation.isPending && refreshMutation.variables === connector.id}
+              refreshError={
+                refreshMutation.error && refreshMutation.variables === connector.id
+                  ? refreshMutation.error
+                  : null
+              }
+              refreshResult={
+                refreshMutation.data?.connector_id === connector.id
+                  ? refreshMutation.data
+                  : null
+              }
+            />
           ))}
         </div>
       </section>
@@ -1062,8 +1090,21 @@ function SourceStatTile({
   );
 }
 
-function SourceAccessCard({ connector }: { connector: ConnectorStatus }) {
+function SourceAccessCard({
+  connector,
+  onRefresh,
+  refreshing,
+  refreshError,
+  refreshResult
+}: {
+  connector: ConnectorStatus;
+  onRefresh: () => void;
+  refreshing: boolean;
+  refreshError: Error | null;
+  refreshResult: ConnectorRefreshRun | null;
+}) {
   const status = sourceAccessStatus(connector);
+  const canRefresh = hasStaleSourceData(connector);
   return (
     <article className="rounded-md border border-line bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -1080,6 +1121,33 @@ function SourceAccessCard({ connector }: { connector: ConnectorStatus }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">
         {status.description}
       </p>
+      {canRefresh ? (
+        <div className="mt-4 space-y-2">
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 rounded-md border border-wait/40 bg-white px-3 py-2 text-sm font-semibold text-wait disabled:cursor-wait disabled:opacity-70"
+          >
+            <RefreshCw
+              size={15}
+              aria-hidden="true"
+              className={refreshing ? "animate-spin" : undefined}
+            />
+            {refreshing ? "Odświeżam dane" : "Odśwież dane"}
+          </button>
+          {refreshResult ? (
+            <p className="text-xs leading-5 text-success">
+              Odczyt zakończony. WILQ odświeży decyzje po aktualizacji źródła.
+            </p>
+          ) : null}
+          {refreshError ? (
+            <p className="text-xs leading-5 text-risk">
+              Nie udało się odświeżyć źródła. Sprawdź dostęp lub spróbuj ponownie.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }

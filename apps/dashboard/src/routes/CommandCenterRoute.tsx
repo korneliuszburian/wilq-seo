@@ -40,7 +40,6 @@ export function CommandCenter() {
   const workOrders = data.work_orders;
   const activeOrders = workOrders.filter((item) => item.status !== "done");
   const blockedOrders = workOrders.filter((item) => item.status === "blocked");
-  const reviewOrders = workOrders.filter((item) => item.status === "review_required");
   const staleOrders = workOrders.filter((item) => item.freshness.state === "stale");
   const topWork = workOrders[0];
   const forbiddenClaims = uniqueLabels(workOrders.flatMap((item) => item.blocked_claim_labels));

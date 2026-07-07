@@ -27,7 +27,6 @@ import {
   getWorkflows
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
-import { StatusBadge } from "../components/StatusBadge";
 import {
   CompactStatTile,
   DashboardToolbar,

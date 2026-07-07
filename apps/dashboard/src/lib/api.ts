@@ -47,6 +47,7 @@ import {
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWordPressDraftActivationPacketResponseSchema,
   ContentWordPressDraftWriteReadinessResponseSchema,
+  ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
   EvidenceSchema,
@@ -525,6 +526,14 @@ export function getDemandGenDiagnostics(): Promise<DemandGenReadinessContract> {
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
   return apiGet("/api/connectors", z.array(ConnectorStatusSchema));
+}
+
+export function refreshConnector(connectorId: string): Promise<ConnectorRefreshRun> {
+  return apiPost(
+    `/api/connectors/${encodeURIComponent(connectorId)}/refresh`,
+    ConnectorRefreshRunSchema,
+    { mode: "vendor_read", reason: "dashboard_source_health" }
+  );
 }
 
 export function getOpportunities(): Promise<Opportunity[]> {
