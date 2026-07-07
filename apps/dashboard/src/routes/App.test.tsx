@@ -4867,16 +4867,16 @@ const merchantDiagnostics = {
   product_count: 10900,
   issue_count: 23,
   freshness_assessment: {
-    state: "fresh",
-    state_label: "dane świeże",
+    state: "stale",
+    state_label: "dane do odświeżenia",
     checked_at: "2026-06-17T10:00:02Z",
     latest_refresh_id: "refresh_google_merchant_center_test",
     latest_refresh_completed_at: "2026-06-17T10:00:01Z",
-    age_hours: 0,
+    age_hours: 73,
     stale_after_hours: 48,
-    requires_refresh: false,
-    summary: "Ostatni odczyt danych Merchant mieści się w progu świeżości.",
-    next_step: "Można użyć danych do kolejki review bez dodatkowego refreshu."
+    requires_refresh: true,
+    summary: "Ostatni odczyt danych Merchant ma około 73h.",
+    next_step: "Uruchom odczyt danych Merchant, jeśli pytanie dotyczy aktualnego stanu produktów."
   },
   unknowns: [
     {
@@ -8505,11 +8505,20 @@ describe("WILQ dashboard", () => {
         screen.getByRole("heading", { name: "Produkty" })
       ).toBeInTheDocument()
     );
-    expect(screen.getByRole("heading", { name: "Następna najlepsza praca" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Blokady, których nie obchodź" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Najważniejsza praca teraz" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Co blokuje decyzję" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kolejka problemów produktów" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Najpierw odśwież dane Merchant" })).toBeInTheDocument();
+    expect(screen.getByText(/Ostatni odczyt ma 73h temu/)).toBeInTheDocument();
+    expect(screen.getByText(/Możesz zobaczyć problemy z tamtego odczytu/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Odśwież w Źródłach" })).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("link", { name: "Pokaż problemy z odczytu" })).toHaveAttribute(
+      "href",
+      "#merchant-queue"
+    );
     expect(screen.getByText("Nie wolno dziś twierdzić")).toBeInTheDocument();
-    expect(screen.getByText("Liczniki to zgłoszenia, nie SKU")).toBeInTheDocument();
+    expect(screen.getByText("Liczby pokazują skalę problemów")).toBeInTheDocument();
+    expect(screen.queryByText("Liczniki to zgłoszenia, nie SKU")).not.toBeInTheDocument();
     expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" })).toBeInTheDocument();
@@ -8556,7 +8565,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.getByText("dostęp skonfigurowany")).toBeInTheDocument();
-    expect(screen.getByText("dane świeże")).toBeInTheDocument();
+    expect(screen.getByText("dane do odświeżenia")).toBeInTheDocument();
     expect(screen.getByText("Czego nie wiemy o pliku produktowym Merchant Center")).toBeInTheDocument();
     expect(
       screen.getByText("Licznik problemów nie jest liczbą unikalnych produktów")
