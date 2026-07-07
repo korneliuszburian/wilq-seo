@@ -8,12 +8,15 @@ import {
   getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
   getWordPressAuthoringProfile,
+  confirmAction,
+  previewAction,
   postContentWorkItemQualityReview,
   postContentWorkItemRevisionPlan,
   postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
+  reviewAction,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   type ContentWorkItemQualityReviewResponse,
@@ -42,12 +45,15 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWordPressDraftActivationPacket: vi.fn(),
     getContentWordPressDraftWriteReadiness: vi.fn(),
     getWordPressAuthoringProfile: vi.fn(),
+    confirmAction: vi.fn(),
+    previewAction: vi.fn(),
     postContentWorkItemQualityReview: vi.fn(),
     postContentWorkItemRevisionPlan: vi.fn(),
     postContentWorkItemStructuredDraftPreview: vi.fn(),
     postContentWorkItemStructuredDraftRuntime: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
+    reviewAction: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
     saveContentWorkItemSnapshotAudit: vi.fn()
   };
@@ -65,6 +71,8 @@ describe("ContentWorkflowSurface", () => {
       wordpressDraftWriteReadiness()
     );
     vi.mocked(getWordPressAuthoringProfile).mockResolvedValue(wordpressAuthoringProfile());
+    vi.mocked(confirmAction).mockResolvedValue({} as Awaited<ReturnType<typeof confirmAction>>);
+    vi.mocked(previewAction).mockResolvedValue({} as Awaited<ReturnType<typeof previewAction>>);
     vi.mocked(postContentWorkItemQualityReview).mockResolvedValue(qualityReviewResponse());
     vi.mocked(postContentWorkItemRevisionPlan).mockResolvedValue(revisionPlanResponse());
     vi.mocked(saveContentWorkItemSnapshotHumanReview).mockResolvedValue(
@@ -85,6 +93,7 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
       wordpressDraftExecutionResponse()
     );
+    vi.mocked(reviewAction).mockResolvedValue({} as Awaited<ReturnType<typeof reviewAction>>);
   });
 
   afterEach(() => {
@@ -212,6 +221,8 @@ describe("ContentWorkflowSurface", () => {
       "href",
       "https://ekologus.dev.proudsite.pl/wp-admin/"
     );
+    expect(screen.getByRole("button", { name: "Przygotuj zgodę zapisu" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Utwórz szkic na dev" })).toBeDisabled();
     expect(screen.queryByText("WordPress: szkic bez publikacji")).not.toBeInTheDocument();
     expect(screen.queryByText("WordPress: gotowość realnego draftu")).not.toBeInTheDocument();
     expect(screen.queryByText("Aktywacja szkicu WordPress")).not.toBeInTheDocument();
@@ -544,12 +555,125 @@ describe("ContentWorkflowSurface", () => {
     expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0]).toEqual({
       handoff: wordpressHandoff(),
       draft_package: draftPackage(),
-      mode: "dry_run"
+      mode: "dry_run",
+      write_authorization: null
     });
     expect(await screen.findByRole("button", { name: "Podgląd szkicu gotowy" })).toBeDisabled();
     expect(screen.getByText(/WordPress dostałby status draft/)).toBeInTheDocument();
     expect(screen.getByText(/Publikacja: zablokowana/)).toBeInTheDocument();
     expect(screen.getByText(/Nadpisywanie treści: zablokowane/)).toBeInTheDocument();
+  });
+
+  it("prepares WordPress write authorization from the workflow panel", async () => {
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj zgodę zapisu" }));
+
+    await waitFor(() => {
+      expect(previewAction).toHaveBeenCalledWith("act_prepare_wordpress_draft_handoff");
+      expect(reviewAction).toHaveBeenCalledWith(
+        "act_prepare_wordpress_draft_handoff",
+        expect.objectContaining({
+          outcome: "approved_for_prepare",
+          reviewed_by: "operator_local_dashboard"
+        })
+      );
+      expect(confirmAction).toHaveBeenCalledWith(
+        "act_prepare_wordpress_draft_handoff",
+        expect.objectContaining({
+          confirmed_by: "operator_local_dashboard",
+          preview_acknowledged: true
+        })
+      );
+    });
+    await waitFor(() => {
+      expect(getContentWordPressDraftWriteReadiness).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("creates a dev WordPress draft only when readiness returns write authorization", async () => {
+    const authorization = wordpressDraftWriteAuthorization();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
+    );
+    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue({
+      ...wordpressDraftActivationPacket(),
+      human_review_ready: true,
+      audit_ready: true,
+      handoff_ready: true,
+      dry_run_ready: true,
+      handoff_blockers: [],
+      execution_blockers: [],
+      activation_missing_readiness_labels: []
+    });
+    vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue({
+      ...wordpressDraftWriteReadiness(),
+      ready: true,
+      live_write_enabled_by_env: true,
+      write_authorization_status: "available",
+      suggested_write_authorization: authorization,
+      blockers: [],
+      missing_audit_event_types: [],
+      required_audit_events: [
+        {
+          event_type: "action_preview_generated",
+          label: "Podgląd akcji wygenerowany",
+          satisfied: true,
+          audit_event_id: authorization.preview_audit_id,
+          actor: "operator_local_dashboard"
+        },
+        {
+          event_type: "human_review_*",
+          label: "Review człowieka zapisane",
+          satisfied: true,
+          audit_event_id: authorization.review_audit_id,
+          actor: "operator_local_dashboard"
+        },
+        {
+          event_type: "action_apply_confirmed",
+          label: "Potwierdzenie operatora zapisane",
+          satisfied: true,
+          audit_event_id: authorization.confirmation_audit_id,
+          actor: "operator_local_dashboard"
+        }
+      ]
+    });
+    vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
+      wordpressDraftCreatedResponse()
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const createButton = await screen.findByRole("button", { name: "Utwórz szkic na dev" });
+    expect(createButton).toBeEnabled();
+    fireEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0]).toEqual({
+        handoff: wordpressHandoff(),
+        draft_package: draftPackage(),
+        mode: "live",
+        write_authorization: authorization
+      });
+    });
+    expect(
+      (await screen.findAllByText(/Szkic utworzony na devie jako WordPress draft, ID 987/)).length
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -1529,6 +1653,38 @@ function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecuti
       external_write_attempted: false,
       blockers: []
     }
+  };
+}
+
+function wordpressDraftCreatedResponse(): ContentWorkItemWordPressDraftExecutionResponse {
+  return {
+    execution_result: {
+      ...wordpressDraftExecutionResponse().execution_result,
+      status: "created",
+      mode: "live",
+      boundary: {
+        allowed_operation: "create_wordpress_draft",
+        dry_run_default: true,
+        live_write_enabled: true,
+        live_adapter_configured: true,
+        publish_allowed: false,
+        destructive_update_allowed: false
+      },
+      wordpress_post_id: "987",
+      external_write_attempted: true
+    }
+  };
+}
+
+function wordpressDraftWriteAuthorization(): NonNullable<
+  ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"]
+> {
+  return {
+    action_id: "act_prepare_wordpress_draft_handoff",
+    preview_audit_id: "audit_preview_wordpress_draft",
+    review_audit_id: "audit_review_wordpress_draft",
+    confirmation_audit_id: "audit_confirm_wordpress_draft",
+    confirmed_by: "operator_local_dashboard"
   };
 }
 

@@ -15,6 +15,9 @@ import {
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
+  previewAction,
+  reviewAction,
+  confirmAction,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   type ContentWorkItemSnapshotAuditRequest,
@@ -296,6 +299,7 @@ function ContentWorkflowLoaded({
       <ContentWorkflowHeader topic={item.topic} />
       <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
       <WordPressDraftWorkPanel
+        actions={actions}
         authoringProfile={authoringProfile}
         draftActivationPacket={draftActivationPacket}
         draftWriteReadiness={draftWriteReadiness}
@@ -480,17 +484,53 @@ function ContentWorkflowDecisionPanel({
 }
 
 function WordPressDraftWorkPanel({
+  actions,
   authoringProfile,
   draftActivationPacket,
   draftWriteReadiness
 }: {
+  actions: ContentWorkflowActions;
   authoringProfile: WordPressAuthoringProfileQuery;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
 }) {
+  const queryClient = useQueryClient();
   const profile = authoringProfile.data;
   const readiness = draftWriteReadiness.data;
   const packet = draftActivationPacket.data;
+  const actionId = readiness?.action_id ?? "act_prepare_wordpress_draft_handoff";
+  const prepareAuthorizationMutation = useMutation({
+    mutationFn: async () => {
+      await previewAction(actionId);
+      await reviewAction(actionId, {
+        outcome: "approved_for_prepare",
+        reviewed_by: "operator_local_dashboard",
+        notes:
+          "Operator zatwierdza przygotowanie ścieżki zapisu wyłącznie dla dev draftu WordPress.",
+        checked_items: [
+          "Podgląd akcji został wygenerowany.",
+          "Zapis dotyczy wyłącznie szkicu WordPress na devie.",
+          "Publikacja i nadpisywanie pozostają zablokowane."
+        ],
+        blockers: []
+      });
+      await confirmAction(actionId, {
+        confirmed_by: "operator_local_dashboard",
+        notes:
+          "Operator potwierdza podgląd i zgadza się wyłącznie na utworzenie szkicu dev draft.",
+        preview_acknowledged: true
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["content-workflow", "wordpress-draft-write-readiness"]
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["content-workflow", "wordpress-draft-activation-packet"]
+      });
+      void queryClient.invalidateQueries({ queryKey: ["actions", actionId] });
+    }
+  });
   const isLoading =
     authoringProfile.isLoading || draftActivationPacket.isLoading || draftWriteReadiness.isLoading;
 
@@ -518,6 +558,8 @@ function WordPressDraftWorkPanel({
   const draftWriteEnabled = Boolean(
     readiness?.live_write_enabled_by_env ?? profile?.write_boundary.draft_writes_enabled_by_env
   );
+  const writeAuthorization = readiness?.suggested_write_authorization ?? null;
+  const canCreateDevDraft = Boolean(readiness?.ready && writeAuthorization && packet?.handoff_ready);
   const acfLayoutCount = profile?.acf.layouts.length ?? 0;
   const missingReadiness = [
     ...(packet?.activation_missing_readiness_labels ?? []),
@@ -557,6 +599,41 @@ function WordPressDraftWorkPanel({
           <div className="mt-4 rounded-md border border-line bg-surface p-3">
             <h3 className="text-sm font-semibold text-ink">Następny krok</h3>
             <p className="mt-2 text-sm leading-6 text-slate-700">{nextStep}</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => prepareAuthorizationMutation.mutate()}
+                disabled={prepareAuthorizationMutation.isPending || readiness?.ready}
+                className="inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {prepareAuthorizationMutation.isPending
+                  ? "Przygotowuję zgodę"
+                  : readiness?.ready
+                    ? "Zgoda zapisu gotowa"
+                    : "Przygotuj zgodę zapisu"}
+              </button>
+              <button
+                type="button"
+                onClick={() => actions.runExecutionLive(writeAuthorization)}
+                disabled={actions.executionPending || !canCreateDevDraft}
+                className="inline-flex h-9 items-center rounded-md bg-action px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {actions.executionPending ? "Tworzę szkic" : "Utwórz szkic na dev"}
+              </button>
+            </div>
+            {prepareAuthorizationMutation.isSuccess ? (
+              <p className="mt-3 text-sm leading-6 text-success">
+                Zgoda ActionObject została zapisana. Odświeżony readiness pokaże, czy można utworzyć szkic.
+              </p>
+            ) : null}
+            {prepareAuthorizationMutation.error instanceof Error ? (
+              <p className="mt-3 text-sm leading-6 text-risk">
+                Nie udało się przygotować zgody: {prepareAuthorizationMutation.error.message}
+              </p>
+            ) : null}
+            {actions.executionResult ? (
+              <WordPressDraftExecutionStatus result={actions.executionResult} />
+            ) : null}
           </div>
         </div>
 
@@ -596,6 +673,41 @@ function WordPressDraftWorkPanel({
       </div>
     </section>
   );
+}
+
+function WordPressDraftExecutionStatus({
+  result
+}: {
+  result: ContentWorkItemWordPressDraftExecutionResponse["execution_result"];
+}) {
+  const tone =
+    result.status === "created"
+      ? "border-success/30 bg-success/10 text-success"
+      : result.status === "blocked"
+        ? "border-risk/30 bg-risk/10 text-risk"
+        : "border-action/30 bg-action/10 text-action";
+  return (
+    <p className={`mt-3 rounded-md border px-3 py-2 text-sm leading-6 ${tone}`}>
+      {wordpressDraftExecutionStatusText(result)}
+    </p>
+  );
+}
+
+function wordpressDraftExecutionStatusText(
+  result: ContentWorkItemWordPressDraftExecutionResponse["execution_result"]
+) {
+  if (result.status === "created") {
+    return `Szkic utworzony na devie jako WordPress draft${
+      result.wordpress_post_id ? `, ID ${result.wordpress_post_id}` : ""
+    }. Publikacja i nadpisywanie pozostają zablokowane.`;
+  }
+  if (result.status === "blocked") {
+    const blocker = result.blockers[0];
+    return blocker
+      ? `Zapis zablokowany: ${blocker.label}. ${blocker.next_step}`
+      : "Zapis szkicu został zablokowany przez WILQ.";
+  }
+  return "Podgląd szkicu jest gotowy. Zewnętrzny zapis nie został wykonany.";
 }
 
 function WorkflowStepper({ activeIndex, steps }: { activeIndex: number; steps: WorkflowStep[] }) {
@@ -781,6 +893,18 @@ function contentWorkflowActions(
         wordpressExecutionRequest(
           data.draftPackage.draft_package_result.draft_package,
           data.wordpressHandoff.handoff_result.handoff
+        ),
+        mutations.executionMutation.mutate
+      ),
+    runExecutionLive: (
+      writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"]
+    ) =>
+      submitIfReady(
+        wordpressExecutionRequest(
+          data.draftPackage.draft_package_result.draft_package,
+          data.wordpressHandoff.handoff_result.handoff,
+          "live",
+          writeAuthorization
         ),
         mutations.executionMutation.mutate
       )
@@ -1033,13 +1157,16 @@ function auditRequest(data: ContentWorkflowSnapshot): ContentWorkItemSnapshotAud
 
 function wordpressExecutionRequest(
   draft: DraftPackage,
-  handoff: WordPressHandoff
+  handoff: WordPressHandoff,
+  mode: ContentWorkItemWordPressDraftExecutionRequest["mode"] = "dry_run",
+  writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"] = null
 ): ContentWorkItemWordPressDraftExecutionRequest | null {
   if (!draft || !handoff) return null;
   return {
     handoff,
     draft_package: draft,
-    mode: "dry_run"
+    mode,
+    write_authorization: writeAuthorization ?? null
   };
 }
 
@@ -1946,8 +2073,11 @@ function wordpressExecutionSafetyText(
   if (!result) {
     return "Po audycie WILQ może pokazać, co trafiłoby do WordPress. Ten krok nie wykonuje zewnętrznego zapisu.";
   }
+  if (result.status === "created") {
+    return wordpressDraftExecutionStatusText(result);
+  }
   if (result.external_write_attempted) {
-    return "Zatrzymaj workflow: podgląd nie powinien wykonywać zewnętrznego zapisu.";
+    return "Zatrzymaj workflow: WordPress zgłosił próbę zapisu bez potwierdzonego utworzenia szkicu.";
   }
   if (result.status === "blocked") {
     return result.blockers[0]?.reason ?? "WILQ zablokował przygotowanie podglądu szkicu.";
