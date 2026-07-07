@@ -121,6 +121,14 @@ class OpportunityDomain(StrEnum):
     google_sheets = "google_sheets"
 
 
+class KnowledgeTaxonomyType(StrEnum):
+    client_truth = "client_truth"
+    expert_operating = "expert_operating"
+    platform_trap = "platform_trap"
+    workspace_memory = "workspace_memory"
+    observed_outcome = "observed_outcome"
+
+
 class FreshnessState(BaseModel):
     state: Literal["fresh", "stale", "unknown", "missing"]
     last_success_at: datetime | None = None
@@ -1027,6 +1035,14 @@ KNOWLEDGE_RISK_LABELS = {
     "critical": "krytyczne ryzyko",
 }
 
+KNOWLEDGE_TAXONOMY_TYPE_LABELS = {
+    KnowledgeTaxonomyType.client_truth: "prawda o kliencie",
+    KnowledgeTaxonomyType.expert_operating: "wiedza operacyjna eksperta",
+    KnowledgeTaxonomyType.platform_trap: "pułapka platformy/API",
+    KnowledgeTaxonomyType.workspace_memory: "pamięć workspace",
+    KnowledgeTaxonomyType.observed_outcome: "zaobserwowany wynik",
+}
+
 
 def _knowledge_card_type_label(value: str) -> str:
     return KNOWLEDGE_CARD_TYPE_LABELS.get(value, "typ wiedzy do sprawdzenia")
@@ -1089,6 +1105,38 @@ class KnowledgeCard(BaseModel):
             self.source_type_label = _knowledge_source_type_label(self.source_type)
         if not self.source_lineage_summary_label:
             self.source_lineage_summary_label = source_lineage_count_label(self.source_lineage)
+        return self
+
+
+class KnowledgeTaxonomyEntry(BaseModel):
+    id: KnowledgeTaxonomyType
+    label: str = ""
+    definition: str
+    owned_by: Literal[
+        "source_fact_compiler",
+        "expert_rule_compiler",
+        "platform_rule_pack",
+        "workspace_dossier",
+        "measurement_loop",
+    ]
+    allowed_usage: list[str] = Field(default_factory=list)
+    forbidden_usage: list[str] = Field(default_factory=list)
+    example_records: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> KnowledgeTaxonomyEntry:
+        expected_owner_by_type = {
+            KnowledgeTaxonomyType.client_truth: "source_fact_compiler",
+            KnowledgeTaxonomyType.expert_operating: "expert_rule_compiler",
+            KnowledgeTaxonomyType.platform_trap: "platform_rule_pack",
+            KnowledgeTaxonomyType.workspace_memory: "workspace_dossier",
+            KnowledgeTaxonomyType.observed_outcome: "measurement_loop",
+        }
+        expected_owner = expected_owner_by_type[self.id]
+        if self.owned_by != expected_owner:
+            raise ValueError(f"{self.id} knowledge must be owned by {expected_owner}.")
+        if not self.label:
+            self.label = KNOWLEDGE_TAXONOMY_TYPE_LABELS[self.id]
         return self
 
 

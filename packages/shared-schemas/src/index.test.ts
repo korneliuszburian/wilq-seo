@@ -34,6 +34,7 @@ import {
   ContentWordPressAuthoringPayloadPreviewResultSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
+  KnowledgeTaxonomyEntrySchema,
   MerchantDiagnosticsResponseSchema,
   SocialHistoryImportAuditSchema,
   SocialHistoryInventorySchema,
@@ -71,6 +72,38 @@ describe("ActionObjectSchema", () => {
       ActionObjectSchema.safeParse({
         ...validAction,
         validation_status: "pending_validation"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("KnowledgeTaxonomyEntrySchema", () => {
+  it("separates client truth from expert operating knowledge", () => {
+    expect(
+      KnowledgeTaxonomyEntrySchema.safeParse({
+        id: "client_truth",
+        definition: "Reviewed facts about Ekologus services and claims.",
+        owned_by: "source_fact_compiler",
+        allowed_usage: ["service fit"],
+        forbidden_usage: ["diagnostic thresholds"],
+        example_records: ["content_source_fact:ekologus_public_bdo_faq"]
+      }).success
+    ).toBe(true);
+    expect(
+      KnowledgeTaxonomyEntrySchema.safeParse({
+        id: "expert_operating",
+        definition: "Reusable diagnostic operating rule.",
+        owned_by: "source_fact_compiler",
+        allowed_usage: ["diagnostic decision ranking"],
+        forbidden_usage: [],
+        example_records: ["expert_rule:ga4_diagnostics_v1"]
+      }).success
+    ).toBe(false);
+    expect(
+      KnowledgeTaxonomyEntrySchema.safeParse({
+        id: "service_fact_but_used_as_rule",
+        definition: "Invalid mixed taxonomy item.",
+        owned_by: "expert_rule_compiler"
       }).success
     ).toBe(false);
   });

@@ -18188,6 +18188,34 @@ def test_expert_rules_are_loaded_from_structured_files() -> None:
     assert search_terms_rule["source_path"].startswith("wilq/expert/")
 
 
+def test_knowledge_taxonomy_separates_client_truth_from_expert_rules() -> None:
+    response = client.get("/api/knowledge/taxonomy")
+    assert response.status_code == 200
+    taxonomy = response.json()
+    entries = {entry["id"]: entry for entry in taxonomy}
+
+    assert set(entries) == {
+        "client_truth",
+        "expert_operating",
+        "platform_trap",
+        "workspace_memory",
+        "observed_outcome",
+    }
+    assert entries["client_truth"]["owned_by"] == "source_fact_compiler"
+    assert entries["expert_operating"]["owned_by"] == "expert_rule_compiler"
+    assert entries["platform_trap"]["owned_by"] == "platform_rule_pack"
+    assert entries["workspace_memory"]["owned_by"] == "workspace_dossier"
+    assert entries["observed_outcome"]["owned_by"] == "measurement_loop"
+    assert any(
+        "diagnostic thresholds" in forbidden
+        for forbidden in entries["client_truth"]["forbidden_usage"]
+    )
+    assert any(
+        record.startswith("expert_rule:")
+        for record in entries["expert_operating"]["example_records"]
+    )
+
+
 def test_expert_capabilities_are_available_through_api() -> None:
     response = client.get("/api/expert/capabilities")
     assert response.status_code == 200

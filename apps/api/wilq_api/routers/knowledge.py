@@ -11,10 +11,12 @@ from wilq.knowledge.compilers.playbook_compiler import (
     list_playbooks,
 )
 from wilq.knowledge.operating_map import build_knowledge_operating_map
+from wilq.knowledge.taxonomy import list_knowledge_taxonomy
 from wilq.schemas import (
     KnowledgeCard,
     KnowledgeCompilerResult,
     KnowledgeOperatingMapResponse,
+    KnowledgeTaxonomyEntry,
     MarketingPlaybook,
 )
 
@@ -35,6 +37,11 @@ def knowledge_search(q: str = "") -> list[dict[str, Any]]:
             card for card in cards if query in card.title.lower() or query in card.summary.lower()
         ]
     return [card.model_dump(mode="json") for card in cards]
+
+
+@router.get("/api/knowledge/taxonomy", response_model=list[KnowledgeTaxonomyEntry])
+def knowledge_taxonomy() -> list[KnowledgeTaxonomyEntry]:
+    return list(list_knowledge_taxonomy())
 
 
 @router.get("/api/knowledge/playbooks", response_model=list[MarketingPlaybook])
