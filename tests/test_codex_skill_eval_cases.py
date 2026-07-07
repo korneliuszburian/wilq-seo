@@ -565,6 +565,14 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     ):
         assert term in content_case["expected_terms_pl"]
     assert content_case["expected_blocked"] is True
+    assert content_case["minimum_operator_usefulness_score"] == 10
+    assert set(content_case["required_decision_terms_pl"]).issuperset(
+        {
+            "Karta decyzji dla Wilka",
+            "co sprawdzić w briefie",
+            "Następny bezpieczny klik",
+        }
+    )
     for term in (
         "adres podglądu jako źródło dowodu",
         "publikacja w WordPress",

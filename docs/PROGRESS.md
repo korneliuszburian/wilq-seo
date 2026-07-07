@@ -67,6 +67,12 @@ Date: 2026-07-04
   score is now `10/10`, with one validated `act_review_localo_visibility_facts`
   candidate, no fake manual action and review-only blocks preserved for
   `local_tasks`, GBP writes and visibility-improvement claims.
+- 2026-07-04 Content Strategist now requires a `Karta decyzji dla Wilka`:
+  BDO/Zielony Ład must be framed as refresh, merge, review or block, with what
+  to check in the brief and one safe preview click. Latest eval:
+  `.local-lab/evals/codex-skill/20260704T073321Z/wilq-content-strategist/result.json`;
+  score is now `10/10`, with validated `act_prepare_content_refresh_queue` and
+  blocked WordPress draft handoff preserved.
 - 2026-07-04 social history inventory can now be loaded from a local
   metadata-only JSON via `WILQ_SOCIAL_HISTORY_INVENTORY_FILE`. A valid file
   changes the social inventory from `missing` to `review_ready` and exposes

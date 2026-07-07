@@ -82,6 +82,11 @@ Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikat
 
 Odpowiedź ma być krótka i użyteczna dla operatora: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
+Traktuj odpowiedź jak kartę decyzji contentowej gotową do pokazania Wilkowi:
+po pierwszych 30 sekundach ma być jasne, czy BDO/Zielony Ład idzie jako
+odświeżenie, scalenie, ręczne review czy blokada, co sprawdzić w briefie i
+który podgląd planu treści można kliknąć bez publikacji albo szkicu WordPress.
+
 Oddziel to, co marketer może zrobić od razu, od tego, co jest zablokowane:
 
 - `Można zrobić teraz`: najważniejsza decyzja contentowa i akcja do sprawdzenia.

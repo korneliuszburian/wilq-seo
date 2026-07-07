@@ -10425,3 +10425,35 @@ Result:
 - The workflow remains review-only: `local_tasks`, GBP writes and visibility
   improvement claims stay blocked until WILQ exposes the missing proof and
   review path.
+
+## 2026-07-04 - Content Strategist Wilku-ready decision card reaches 10/10
+
+Purpose:
+
+- Raise `wilq-content-strategist` from a correct anti-slop blocker to a
+  Wilku-ready content decision card.
+- Keep BDO/Zielony Ład framed as refresh, merge, manual review or block based
+  on GSC, WordPress, Ahrefs, GA4 and inventory evidence.
+- Preserve the hard boundary: final draft, WordPress draft handoff, publication
+  and effect claims remain blocked until review and evidence are complete.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Latest passing proof:
+  `.local-lab/evals/codex-skill/20260704T073321Z/wilq-content-strategist/result.json`.
+- `operator_usefulness_score` is `10/10`, with all decision-quality gates true
+  and empty `failure_tags`.
+- The output has a validated `act_prepare_content_refresh_queue` candidate and
+  a blocked `act_prepare_wordpress_draft_handoff` candidate, keeping publish/
+  draft writes behind review.
+- The eval contract now requires `Karta decyzji dla Wilka`,
+  `co sprawdzić w briefie` and `Następny bezpieczny klik`.

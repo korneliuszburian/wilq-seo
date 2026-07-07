@@ -406,12 +406,15 @@
       "Można zrobić teraz",
       "Mapa decyzji",
       "Brief do pokazania Wilkowi",
+      "Karta decyzji dla Wilka",
+      "co sprawdzić w briefie",
+      "Następny bezpieczny klik",
       "Zablokowane",
       "odświeżenie",
       "scalenie",
       "nie jako nowy artykuł"
     ],
-    "minimum_operator_usefulness_score": 9,
+    "minimum_operator_usefulness_score": 10,
     "expected_action_ids": [
       "act_prepare_content_refresh_queue"
     ],
