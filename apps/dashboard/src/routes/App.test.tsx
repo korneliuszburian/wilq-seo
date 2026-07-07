@@ -7957,7 +7957,7 @@ describe("WILQ dashboard", () => {
   it("connector status renders", async () => {
     renderApp("/settings");
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Ustawienia" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "Źródła" })).toBeInTheDocument()
     );
     expect(screen.getByText("Braki dostępu")).toBeInTheDocument();
     expect(screen.getByText(/Brakuje dostępu do Google Ads/)).toBeInTheDocument();

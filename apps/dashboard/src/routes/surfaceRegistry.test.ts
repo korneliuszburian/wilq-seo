@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { generatedSurfaceRoutes, primarySurfaceRoutes, surfaceRoutes } from "./surfaceRegistry";
+import {
+  generatedSurfaceRoutes,
+  primarySurfaceRoutes,
+  secondarySurfaceRoutes,
+  surfaceRoutes
+} from "./surfaceRegistry";
 
 describe("surface registry", () => {
   it("keeps every surface path unique and explicitly classified", () => {
@@ -11,37 +16,68 @@ describe("surface registry", () => {
     expect(new Set(paths).size).toBe(paths.length);
     expect(surfaceRoutes.every((route) => route.status.length > 0)).toBe(true);
     expect(surfaceRoutes.every((route) => route.family.length > 0)).toBe(true);
+    expect(surfaceRoutes.every((route) => route.mode.length > 0)).toBe(true);
+    expect(surfaceRoutes.every((route) => route.navGroup.length > 0)).toBe(true);
+    expect(surfaceRoutes.every((route) => route.ownerPersona.length > 0)).toBe(true);
+    expect(surfaceRoutes.every((route) => route.firstScreenIntent.length > 0)).toBe(true);
   });
 
-  it("drives generated routes and primary navigation from one registry", () => {
+  it("drives generated routes and marketer navigation from one registry", () => {
     expect(generatedSurfaceRoutes.map((route) => route.path)).toContain("/service-profile");
     expect(generatedSurfaceRoutes.map((route) => route.path)).toContain("/social-publisher");
     expect(primarySurfaceRoutes.map((route) => route.path)).toEqual([
       "/command-center",
-      "/merchant",
+      "/opportunities",
       "/content-planner",
       "/ads-doctor",
-      "/ga4",
+      "/merchant",
+      "/localo",
+      "/actions"
+    ]);
+    expect(primarySurfaceRoutes.map((route) => route.label)).toEqual([
+      "Dzisiaj",
+      "Kolejka",
+      "Treści i SEO",
+      "Reklamy i pomiar",
+      "Produkty",
+      "Lokalnie",
+      "Akcje"
+    ]);
+    expect(secondarySurfaceRoutes.map((route) => route.path)).toEqual([
       "/workflows",
-      "/opportunities",
-      "/actions",
+      "/ga4",
       "/knowledge",
       "/settings"
     ]);
+    expect(secondarySurfaceRoutes.map((route) => route.label)).toEqual([
+      "Procesy",
+      "GA4",
+      "Wiedza",
+      "Źródła"
+    ]);
 
-    for (const route of primarySurfaceRoutes) {
+    for (const route of [...primarySurfaceRoutes, ...secondarySurfaceRoutes]) {
       expect(route.icon).toBeDefined();
     }
   });
 
-  it("keeps placeholder and experimental surfaces out of primary navigation", () => {
+  it("keeps placeholder, experimental and technical surfaces out of primary marketer navigation", () => {
     const primaryPaths = new Set<string>(primarySurfaceRoutes.map((route) => route.path));
+    const primaryLabels = new Set<string>(primarySurfaceRoutes.map((route) => route.label));
 
     for (const route of surfaceRoutes) {
-      if (route.status === "placeholder" || route.status === "experimental") {
+      if (
+        route.status === "placeholder" ||
+        route.status === "experimental" ||
+        route.mode === "technical"
+      ) {
         expect(primaryPaths.has(route.path)).toBe(false);
       }
     }
+    expect(primaryLabels.has("Procesy")).toBe(false);
+    expect(primaryLabels.has("Szanse")).toBe(false);
+    expect(primaryLabels.has("Baza wiedzy")).toBe(false);
+    expect(primaryLabels.has("Ustawienia")).toBe(false);
   });
 
   it("prevents App and Shell from keeping separate route arrays", () => {
@@ -51,6 +87,7 @@ describe("surface registry", () => {
     expect(appSource).toContain("generatedSurfaceRoutes");
     expect(appSource).not.toContain("const operatingRoutes =");
     expect(shellSource).toContain("primarySurfaceRoutes");
+    expect(shellSource).toContain("secondarySurfaceRoutes");
     expect(shellSource).not.toContain("const primaryRoutes =");
   });
 });

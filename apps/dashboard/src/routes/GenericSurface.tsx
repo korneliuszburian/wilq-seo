@@ -133,8 +133,9 @@ function genericSurfaceHeader(
   }
   if (routeKind === "settings") {
     return {
-      title: "Ustawienia",
-      description: "Status dostępu do źródeł WILQ. Braki dostępu pokazujemy bez wartości sekretów."
+      title: "Źródła",
+      description:
+        "Zdrowie źródeł WILQ: dostęp, świeżość i braki, które blokują decyzje. Wartości sekretów pozostają ukryte."
     };
   }
   return {
