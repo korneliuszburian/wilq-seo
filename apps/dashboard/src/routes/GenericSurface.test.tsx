@@ -42,4 +42,17 @@ describe("GenericSurface", () => {
     );
     expect(source).not.toMatch(/BlockerNotice message="Brak statusu/);
   });
+
+  it("explains hidden Ads placeholders with a safe workflow route", () => {
+    renderGenericSurface("/ads-doctor/scaling");
+
+    expect(screen.getByRole("heading", { name: "Skalowanie Ads" })).toBeInTheDocument();
+    expect(screen.getByText("zablokowane do czasu reguł skalowania")).toBeInTheDocument();
+    expect(screen.getByText(/Skalowanie zostaje review-only/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz bezpieczny widok" })).toHaveAttribute(
+      "href",
+      "/ads-doctor"
+    );
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+  });
 });

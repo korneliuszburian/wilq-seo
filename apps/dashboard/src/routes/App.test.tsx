@@ -8342,7 +8342,13 @@ describe("WILQ dashboard", () => {
 
   it("legacy operating routes do not fall back to registry dumps", async () => {
     renderApp("/ads-doctor/search-terms");
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Widok WILQ" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Search terms" })).toBeInTheDocument());
+    expect(screen.getByText("ukryty placeholder")).toBeInTheDocument();
+    expect(screen.getByText(/Otwórz Reklamy i pomiar/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz bezpieczny widok" })).toHaveAttribute(
+      "href",
+      "/ads-doctor"
+    );
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();

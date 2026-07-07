@@ -1185,6 +1185,62 @@ type CompactRouteConfig = {
 };
 
 const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
+  "/ads-doctor/search-terms": {
+    title: "Search terms",
+    description:
+      "Ten drilldown jest ukryty z głównej nawigacji, dopóki nie ma osobnej kolejki wyszukiwanych haseł. Bezpieczny przegląd haseł jest prowadzony w widoku Reklamy i pomiar.",
+    status: "ukryty placeholder",
+    nextStep:
+      "Otwórz Reklamy i pomiar, sprawdź kolejkę diagnostyczną i dopiero stamtąd przejdź do review haseł albo wykluczeń.",
+    blockers: [
+      "brakuje samodzielnej kolejki search terms w marketer-mode",
+      "propozycje wykluczeń wymagają kontekstu 90 dni, intencji i podglądu zmian",
+      "nie wolno twierdzić zmarnowanego budżetu ani CPA/ROAS bez brakujących kontraktów"
+    ],
+    safeRoute: "/ads-doctor"
+  },
+  "/ads-doctor/scaling": {
+    title: "Skalowanie Ads",
+    description:
+      "Skalowanie kampanii nie jest osobnym gotowym widokiem. WILQ nie powinien proponować zwiększania budżetu bez strategii, pomiaru i review.",
+    status: "zablokowane do czasu reguł skalowania",
+    nextStep:
+      "Najpierw sprawdź Reklamy i pomiar: budżety, pomiar GA4, rekomendacje i blokady strategii. Skalowanie zostaje review-only.",
+    blockers: [
+      "brakuje zatwierdzonego celu biznesowego i guardrail budżetu",
+      "brakuje kontraktów przed/po zmianie oraz human strategy review",
+      "nie ma bezpiecznego ActionObject do zmiany budżetu"
+    ],
+    safeRoute: "/ads-doctor"
+  },
+  "/ads-doctor/seasonality": {
+    title: "Sezonowość Ads",
+    description:
+      "Sezonowość wymaga porównań okresów i kontekstu biznesowego. Ten placeholder nie może udawać wniosku o spadkach albo trendach.",
+    status: "ukryty placeholder",
+    nextStep:
+      "Użyj Reklamy i pomiar do bieżącej diagnostyki. Wniosek sezonowy dodaj dopiero po dostępnych porównaniach okresów i źródłach pomiaru.",
+    blockers: [
+      "brakuje porównania rok do roku i okres do okresu",
+      "brakuje kontraktu zmiany sezonowej oraz kontekstu świąt/promocji",
+      "nie wolno tłumaczyć spadków sezonowością bez dowodów"
+    ],
+    safeRoute: "/ads-doctor"
+  },
+  "/ads-doctor/recommendations": {
+    title: "Rekomendacje Ads",
+    description:
+      "Rekomendacje Google Ads są review-only i nie powinny być osobnym pustym ekranem. WILQ może przygotować kolejkę sprawdzenia, ale nie przyjmuje rekomendacji automatycznie.",
+    status: "review-only",
+    nextStep:
+      "Otwórz Reklamy i pomiar, sprawdź rekomendacje w kolejce diagnostycznej i zatwierdzaj tylko po preview oraz review operatora.",
+    blockers: [
+      "brakuje zgody na zapis rekomendacji",
+      "Google preview nie jest obietnicą poprawy wyniku",
+      "zmiany budżetu i strategii stawek wymagają osobnego review"
+    ],
+    safeRoute: "/ads-doctor"
+  },
   "/content-inventory": {
     title: "Spis treści",
     description:
