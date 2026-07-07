@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  CheckCircle2,
+  ClipboardList,
+  RefreshCw,
+  ShieldAlert,
+  ShoppingCart
+} from "lucide-react";
 
 import {
   ActionObject,
@@ -53,52 +61,10 @@ export function MerchantDiagnosticSurface() {
 
   const data = diagnostics.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
-  const latestRefresh = data.latest_refresh;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Merchant Center</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok pliku produktowego i produktów oparty o dane Merchant w WILQ.
-            Pokazuje metryki produktów, kolejkę problemów i bezpieczne akcje
-            bez nieprzetworzonych danych produktów i bez obietnic naprawy pliku produktowego.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Produkty" value={data.product_count ?? 0} />
-          <MetricTile label="Problemy" value={data.issue_count ?? 0} />
-          <MetricTile label="Dowody" value={data.evidence_summary_label} />
-        </div>
-      </div>
-
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status Merchant Center
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              {data.freshness_assessment.summary}
-            </p>
-            <p className="mt-1 text-sm font-medium text-ink">
-              {data.freshness_assessment.next_step}
-            </p>
-          </div>
-          <PlainChipRow
-            values={[
-              data.connector_status_label,
-              data.freshness_assessment.state_label,
-              data.live_data_status_label,
-              latestRefresh ? `ostatni odczyt: ${data.latest_refresh_status_label}` : null
-            ]}
-          />
-        </div>
-      </section>
-
-      <MerchantSelectedDecisionPanel data={data} />
+      <MerchantOperatingViewport data={data} />
 
       <MerchantExpandableReviewPanel data={data} />
 
@@ -112,6 +78,310 @@ export function MerchantDiagnosticSurface() {
       ) : null}
     </main>
   );
+}
+
+function MerchantOperatingViewport({ data }: { data: MerchantDiagnosticsResponse }) {
+  const primaryDecision = primaryMerchantDecision(data);
+  const stale = data.freshness_assessment.requires_refresh;
+  const criticalBlockedClaims = uniqueValues([
+    ...data.operator_summary.blocked_claim_labels,
+    ...(primaryDecision?.blocked_claim_labels ?? [])
+  ]).slice(0, 4);
+
+  return (
+    <>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal text-ink">Produkty</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Merchant Center, plik produktowy i bezpieczna kolejka problemów produktów.
+          </p>
+        </div>
+      </div>
+
+      <section className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MerchantStatCard
+          icon={<ShoppingCart aria-hidden="true" size={22} />}
+          value={data.product_count ?? 0}
+          label="produktów w odczycie"
+          cta="Zobacz kolejkę"
+          tone="blue"
+        />
+        <MerchantStatCard
+          icon={<AlertTriangle aria-hidden="true" size={22} />}
+          value={data.operator_summary.reported_issue_occurrences}
+          label="zgłoszeń problemów"
+          cta="Wymagają przeglądu"
+          tone="red"
+        />
+        <MerchantStatCard
+          icon={<ClipboardList aria-hidden="true" size={22} />}
+          value={data.decision_queue.length}
+          label="decyzji produktowych"
+          cta={data.action_summary_label}
+          tone="amber"
+        />
+        <MerchantStatCard
+          icon={<RefreshCw aria-hidden="true" size={22} />}
+          value={stale ? `${Math.round(data.freshness_assessment.age_hours ?? 0)}h` : "OK"}
+          label="świeżość danych"
+          cta={data.freshness_assessment.state_label}
+          tone={stale ? "purple" : "green"}
+        />
+      </section>
+
+      <section className="mb-6 rounded-md border border-line bg-white px-4 py-3">
+        <div className="grid gap-3 text-sm text-slate-700 md:grid-cols-4">
+          <MerchantSourceStatus label="Merchant" value={data.connector_status_label} tone="green" />
+          <MerchantSourceStatus
+            label="Odczyt"
+            value={data.latest_refresh_status_label ?? "brak ostatniego odczytu"}
+            tone={stale ? "amber" : "green"}
+          />
+          <MerchantSourceStatus label="Dane" value={data.live_data_status_label} tone="green" />
+          <MerchantSourceStatus label="Dowody" value={data.evidence_summary_label} tone="blue" />
+        </div>
+      </section>
+
+      <section className="mb-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <article className="rounded-md border border-line bg-white shadow-sm">
+          <div className="flex min-h-12 items-center justify-between gap-3 border-b border-action/20 bg-blue-50 px-4 py-3">
+            <h2 className="text-base font-semibold text-ink">Następna najlepsza praca</h2>
+            <StatusBadge value={primaryDecision?.priority <= 20 ? "high" : "medium"} label={primaryDecision?.priority_label ?? "priorytet"} />
+          </div>
+          <div className="p-4">
+            {primaryDecision ? (
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-100 p-3 text-action">
+                  <Boxes aria-hidden="true" size={24} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold leading-6 text-ink">{primaryDecision.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">{primaryDecision.summary}</p>
+                  <div className="mt-4 grid gap-3 rounded-md border border-line bg-slate-50 p-3 md:grid-cols-2">
+                    <MetricTile
+                      label="Zakres"
+                      value={primaryDecision.issue_type_label ?? primaryDecision.decision_type_label}
+                    />
+                    <MetricTile label="Dowody" value={primaryDecision.evidence_summary_label} />
+                  </div>
+                  <h4 className="mt-4 text-sm font-semibold text-ink">Najbezpieczniejszy następny krok</h4>
+                  <p className="mt-1 text-sm leading-6 text-slate-700">
+                    {primaryDecision.next_step}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <a
+                      href={primaryDecision.action_ids[0] ? `/actions/${primaryDecision.action_ids[0]}` : "#merchant-queue"}
+                      className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                      Otwórz pracę
+                    </a>
+                    <a
+                      href="#merchant-queue"
+                      className="inline-flex h-10 items-center rounded-md border border-action/30 bg-white px-4 text-sm font-semibold text-action hover:bg-blue-50"
+                    >
+                      Pokaż kolejkę
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <BlockerNotice message="Brak decyzji Merchant w WILQ. Najpierw uruchom odczyt danych Merchant." />
+            )}
+          </div>
+        </article>
+
+        <article className="rounded-md border border-line bg-white shadow-sm">
+          <div className="flex min-h-12 items-center justify-between gap-3 border-b border-risk/20 bg-red-50 px-4 py-3">
+            <h2 className="text-base font-semibold text-ink">Blokady, których nie obchodź</h2>
+            <StatusBadge value={stale ? "high" : "medium"} label={stale ? "dane nieświeże" : "review wymagany"} />
+          </div>
+          <div className="divide-y divide-line">
+            <MerchantBlockerRow
+              title={stale ? "Nieświeże dane Merchant" : "Dane Merchant dostępne"}
+              detail={stale ? data.freshness_assessment.next_step : data.freshness_assessment.summary}
+            />
+            <MerchantBlockerRow
+              title="Brak zapisu zmian bez audytu"
+              detail="Najpierw review, podgląd zmian, potwierdzenie operatora i audyt."
+            />
+            <MerchantBlockerRow
+              title="Liczniki to zgłoszenia, nie SKU"
+              detail={data.operator_summary.count_semantics_label}
+            />
+          </div>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-ink">Nie wolno dziś twierdzić</h3>
+            <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+              {criticalBlockedClaims.map((claim) => (
+                <span key={claim} className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-wait" />
+                  {claim}
+                </span>
+              ))}
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <MerchantQueuePreview data={data} />
+    </>
+  );
+}
+
+function MerchantStatCard({
+  icon,
+  value,
+  label,
+  cta,
+  tone
+}: {
+  icon: React.ReactNode;
+  value: number | string;
+  label: string;
+  cta: string;
+  tone: "blue" | "green" | "amber" | "red" | "purple";
+}) {
+  const toneClass = {
+    blue: "bg-blue-100 text-action",
+    green: "bg-emerald-100 text-emerald-700",
+    amber: "bg-amber-100 text-amber-700",
+    red: "bg-red-100 text-risk",
+    purple: "bg-violet-100 text-violet-700"
+  }[tone];
+  return (
+    <article className="rounded-md border border-line bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className={`rounded-full p-3 ${toneClass}`}>{icon}</div>
+        <div>
+          <div className="text-2xl font-semibold text-ink">{formatMerchantValue(value)}</div>
+          <div className="text-sm text-slate-700">{label}</div>
+        </div>
+      </div>
+      <div className="mt-3 text-sm font-medium text-action">{cta}</div>
+    </article>
+  );
+}
+
+function MerchantSourceStatus({
+  label,
+  value,
+  tone
+}: {
+  label: string;
+  value: string;
+  tone: "blue" | "green" | "amber";
+}) {
+  const dotClass = tone === "green" ? "bg-emerald-500" : tone === "amber" ? "bg-wait" : "bg-action";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-semibold text-ink">{label}</span>
+      <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function MerchantBlockerRow({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="flex items-start gap-3 px-4 py-3">
+      <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0 text-risk" size={16} />
+      <div>
+        <div className="text-sm font-semibold text-ink">{title}</div>
+        <div className="mt-0.5 text-sm leading-5 text-slate-600">{detail}</div>
+      </div>
+    </div>
+  );
+}
+
+function MerchantQueuePreview({ data }: { data: MerchantDiagnosticsResponse }) {
+  const rows = data.decision_queue.slice(0, 6);
+  if (rows.length === 0) {
+    return (
+      <section id="merchant-queue" className="mb-6 rounded-md border border-line bg-white p-4">
+        <BlockerNotice message="Brak kolejki Merchant. Najpierw uruchom odczyt danych Merchant." />
+      </section>
+    );
+  }
+  return (
+    <section id="merchant-queue" className="mb-6 overflow-hidden rounded-md border border-line bg-white shadow-sm">
+      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 py-3">
+        <h2 className="text-base font-semibold text-ink">Kolejka problemów produktów</h2>
+        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+          {data.decision_queue.length} decyzji
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-slate-50 text-xs font-semibold text-slate-600">
+            <tr>
+              <th className="px-4 py-3">Priorytet</th>
+              <th className="px-4 py-3">Problem</th>
+              <th className="px-4 py-3">Dowody</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Następny krok</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map((decision) => (
+              <tr key={decision.id} className="hover:bg-slate-50">
+                <td className="whitespace-nowrap px-4 py-3">
+                  <span className="rounded border border-risk/30 bg-risk/10 px-2 py-1 text-xs font-semibold text-risk">
+                    {decision.priority_label}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="font-medium text-ink">{decision.title}</div>
+                  <div className="mt-1 text-xs leading-5 text-slate-600">
+                    {merchantDecisionShortContext(decision)}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-slate-700">{decision.evidence_summary_label}</td>
+                <td className="px-4 py-3">
+                  <StatusBadge value={decision.status} label={decision.status_label} />
+                </td>
+                <td className="px-4 py-3 text-slate-700">
+                  {decision.action_ids[0] ? (
+                    <a className="font-medium text-action hover:underline" href={`/actions/${decision.action_ids[0]}`}>
+                      Przejdź do review
+                    </a>
+                  ) : (
+                    decision.next_step
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function primaryMerchantDecision(data: MerchantDiagnosticsResponse) {
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  return (
+    data.operator_summary.top_decision_ids
+      .map((decisionId) => decisionsById.get(decisionId))
+      .find((decision): decision is MerchantDecisionItem => Boolean(decision)) ??
+    data.decision_queue[0]
+  );
+}
+
+function merchantDecisionShortContext(decision: MerchantDecisionItem) {
+  return [
+    decision.issue_type_label ?? decision.decision_type_label,
+    decision.affected_attribute_label ? `atrybut: ${decision.affected_attribute_label}` : null,
+    decision.product_count ? `produkty/zgłoszenia: ${decision.product_count}` : null,
+    decision.sample_titles.length ? `próbki: ${decision.sample_titles.slice(0, 2).join(", ")}` : null
+  ].filter((value): value is string => Boolean(value)).join(" · ");
+}
+
+function formatMerchantValue(value: number | string) {
+  if (typeof value === "number") {
+    return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(value);
+  }
+  return value;
 }
 
 function MerchantExpandableReviewPanel({ data }: { data: MerchantDiagnosticsResponse }) {

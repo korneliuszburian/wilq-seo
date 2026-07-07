@@ -8475,16 +8475,14 @@ describe("WILQ dashboard", () => {
     renderApp("/merchant");
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Merchant Center" })
+        screen.getByRole("heading", { name: "Produkty" })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Merchant: co dziś zrobić")).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Co marketer ma zrobić teraz z plikiem produktowym").length
-    ).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: "Kolejność pracy" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Czego nie obiecywać" })).toBeInTheDocument();
-    expect(screen.getByText(/kolejka przeglądu pliku produktowego, nie dowód efektu biznesowego/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Następna najlepsza praca" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Blokady, których nie obchodź" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kolejka problemów produktów" })).toBeInTheDocument();
+    expect(screen.getByText("Nie wolno dziś twierdzić")).toBeInTheDocument();
+    expect(screen.getByText("Liczniki to zgłoszenia, nie SKU")).toBeInTheDocument();
     expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" })).toBeInTheDocument();
@@ -8501,11 +8499,12 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
     expect(screen.getByText(/WILQ grupuje problemy Merchant po typie/)).toBeInTheDocument();
     expect(
-      screen.getByText("Merchant: problem z atrybutem: dostępność - zmiana dostępności")
-    ).toBeInTheDocument();
+      screen.getAllByText("Merchant: problem z atrybutem: dostępność - zmiana dostępności").length
+    ).toBeGreaterThan(0);
     const merchantDecisionCard = screen
-      .getByText("Merchant: problem z atrybutem: dostępność - zmiana dostępności")
-      .closest("article");
+      .getAllByText("Merchant: problem z atrybutem: dostępność - zmiana dostępności")
+      .at(-1)
+      ?.closest("article");
     expect(merchantDecisionCard).not.toBeNull();
     expect(within(merchantDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(within(merchantDecisionCard as HTMLElement).queryByText(/act_/)).not.toBeInTheDocument();
@@ -8514,10 +8513,10 @@ describe("WILQ dashboard", () => {
       screen.queryByText(/przegląd problemu pliku produktowego \/ najpierw/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.getAllByText(
         /23 zgłoszenia problemu\. Status: bez wpływu\. Zalecenie: wymaga działania po stronie Merchant\. Zakres: dla kraju PL; kontekst: reklamy produktowe/
-      )
-    ).toBeInTheDocument();
+      ).length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Zgłoszenia").length).toBeGreaterThan(0);
     expect(screen.queryByText("zgłoszenia: 23")).not.toBeInTheDocument();
     expect(screen.getByText("problem: zmiana dostępności")).toBeInTheDocument();
