@@ -18188,6 +18188,38 @@ def test_expert_rules_are_loaded_from_structured_files() -> None:
     assert search_terms_rule["requires_evidence"] is True
     assert "evidence_ids" in search_terms_rule["required_inputs"]
     assert search_terms_rule["source_path"].startswith("wilq/expert/")
+    assert search_terms_rule["source_ids"] == ["src_google_ads_api_docs"]
+
+
+def test_expert_knowledge_sources_link_to_structured_rules() -> None:
+    response = client.get("/api/expert/sources")
+    assert response.status_code == 200
+    sources = response.json()
+    source_by_id = {source["id"]: source for source in sources}
+
+    assert "src_google_ads_api_docs" in source_by_id
+    assert "src_google_merchant_center_docs" in source_by_id
+    assert "src_ga4_data_api_docs" in source_by_id
+    assert "src_google_search_console_docs" in source_by_id
+
+    ads_source = source_by_id["src_google_ads_api_docs"]
+    assert ads_source["domain"] == "ads"
+    assert ads_source["knowledge_type"] == "platform_trap"
+    assert ads_source["source_type"] == "official_platform_doc"
+    assert ads_source["license_status"] == "commit_safe"
+    assert ads_source["trust_level"] == "high"
+    assert "ads_search_terms_v1" in ads_source["linked_rule_ids"]
+    assert "automatic_vendor_write" in ads_source["forbidden_usage"]
+    assert all("/home/" not in source["source_reference"] for source in sources)
+    assert all(source["linked_rule_ids"] for source in sources)
+
+    summaries_response = client.get("/api/expert/rule-summaries")
+    assert summaries_response.status_code == 200
+    summaries = summaries_response.json()
+    search_terms_summary = next(
+        summary for summary in summaries if summary["id"] == "ads_search_terms_v1"
+    )
+    assert search_terms_summary["source_ids"] == ["src_google_ads_api_docs"]
 
 
 def test_knowledge_taxonomy_separates_client_truth_from_expert_rules() -> None:

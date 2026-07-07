@@ -3113,6 +3113,7 @@ export const ExpertRuleSchema = z.object({
   output_contract: z.string(),
   capabilities: z.array(z.string()),
   required_mapping: z.array(z.string()),
+  source_ids: z.array(z.string()).default([]),
   requires_evidence: z.boolean()
 });
 
@@ -3123,6 +3124,7 @@ export const ExpertRuleSummarySchema = z.object({
   source_anchor: z.string(),
   required_inputs: z.array(z.string()),
   recommended_actions: z.array(z.string()),
+  source_ids: z.array(z.string()).default([]),
   output_contract: z.string(),
   requires_evidence: z.boolean()
 });
@@ -3173,6 +3175,32 @@ export const KnowledgeTaxonomyEntrySchema = z.object({
       message: `Knowledge taxonomy type ${entry.id} must be owned by ${expectedOwnerByType[entry.id]}`
     });
   }
+});
+
+export const ExpertKnowledgeSourceSchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  knowledge_type: KnowledgeTaxonomyTypeSchema,
+  source_type: z.enum([
+    "official_platform_doc",
+    "repo_structured_rule",
+    "reviewed_internal_sop",
+    "public_site",
+    "measurement_evidence",
+    "workspace_memory"
+  ]),
+  license_status: z.enum([
+    "commit_safe",
+    "review_required",
+    "private_reference_only"
+  ]),
+  source_reference: z.string(),
+  freshness_date: z.string(),
+  reviewer: z.string().nullable().optional(),
+  trust_level: z.enum(["low", "medium", "high"]).default("medium"),
+  allowed_usage: z.array(z.string()).min(1),
+  forbidden_usage: z.array(z.string()).min(1),
+  linked_rule_ids: z.array(z.string()).min(1)
 });
 
 export const KnowledgeCardSchema = z.object({
@@ -4030,6 +4058,7 @@ export type ExpertRuleSummary = z.infer<typeof ExpertRuleSummarySchema>;
 export type ExpertCapability = z.infer<typeof ExpertCapabilitySchema>;
 export type KnowledgeTaxonomyType = z.infer<typeof KnowledgeTaxonomyTypeSchema>;
 export type KnowledgeTaxonomyEntry = z.infer<typeof KnowledgeTaxonomyEntrySchema>;
+export type ExpertKnowledgeSource = z.infer<typeof ExpertKnowledgeSourceSchema>;
 export type KnowledgeCard = z.infer<typeof KnowledgeCardSchema>;
 export type KnowledgeDecisionBinding = z.infer<typeof KnowledgeDecisionBindingSchema>;
 export type KnowledgeOperatingMapResponse = z.infer<typeof KnowledgeOperatingMapResponseSchema>;

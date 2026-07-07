@@ -29,6 +29,7 @@ import {
   PrivateProposalSchema,
   StructuredDraftPreviewBlockerSchema,
   DailyCheckResultSchema,
+  ExpertKnowledgeSourceSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
@@ -105,6 +106,47 @@ describe("KnowledgeTaxonomyEntrySchema", () => {
         id: "service_fact_but_used_as_rule",
         definition: "Invalid mixed taxonomy item.",
         owned_by: "expert_rule_compiler"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ExpertKnowledgeSourceSchema", () => {
+  const validSource = {
+    id: "src_google_ads_api_docs",
+    domain: "ads",
+    knowledge_type: "platform_trap",
+    source_type: "official_platform_doc",
+    license_status: "commit_safe",
+    source_reference: "Google Ads API documentation and WILQ structured Ads rules",
+    freshness_date: "2026-07-07",
+    reviewer: "wilq_system",
+    trust_level: "high",
+    allowed_usage: [
+      "expert_rule_source_lineage",
+      "daily_check_blockers",
+      "diagnostic_explanation"
+    ],
+    forbidden_usage: [
+      "raw_private_prompt_stuffing",
+      "automatic_vendor_write",
+      "success_claim_without_measurement_window"
+    ],
+    linked_rule_ids: ["ads_search_terms_v1"]
+  };
+
+  it("keeps expert rule sources traceable and usage-scoped", () => {
+    expect(ExpertKnowledgeSourceSchema.safeParse(validSource).success).toBe(true);
+    expect(
+      ExpertKnowledgeSourceSchema.safeParse({
+        ...validSource,
+        license_status: "copy_into_prompt"
+      }).success
+    ).toBe(false);
+    expect(
+      ExpertKnowledgeSourceSchema.safeParse({
+        ...validSource,
+        linked_rule_ids: []
       }).success
     ).toBe(false);
   });

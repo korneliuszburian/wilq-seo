@@ -1319,6 +1319,7 @@ class ExpertRule(BaseModel):
     output_contract: str
     capabilities: list[str] = Field(default_factory=list)
     required_mapping: list[str] = Field(default_factory=list)
+    source_ids: list[str] = Field(default_factory=list)
     requires_evidence: bool = True
 
 
@@ -1329,8 +1330,31 @@ class ExpertRuleSummary(BaseModel):
     source_anchor: str
     required_inputs: list[str] = Field(default_factory=list)
     recommended_actions: list[str] = Field(default_factory=list)
+    source_ids: list[str] = Field(default_factory=list)
     output_contract: str
     requires_evidence: bool = True
+
+
+class ExpertKnowledgeSource(BaseModel):
+    id: str
+    domain: str
+    knowledge_type: KnowledgeTaxonomyType
+    source_type: Literal[
+        "official_platform_doc",
+        "repo_structured_rule",
+        "reviewed_internal_sop",
+        "public_site",
+        "measurement_evidence",
+        "workspace_memory",
+    ]
+    license_status: Literal["commit_safe", "review_required", "private_reference_only"]
+    source_reference: str
+    freshness_date: date
+    reviewer: str | None = None
+    trust_level: Literal["low", "medium", "high"] = "medium"
+    allowed_usage: list[str] = Field(min_length=1)
+    forbidden_usage: list[str] = Field(min_length=1)
+    linked_rule_ids: list[str] = Field(min_length=1)
 
 
 class ExpertCapability(BaseModel):

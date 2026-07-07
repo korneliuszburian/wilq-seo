@@ -10,6 +10,16 @@ from wilq.schemas import ExpertCapability, ExpertRule, ExpertRuleSummary
 
 EXPERT_ROOT = Path(__file__).resolve().parent
 
+EXPERT_SOURCE_ID_BY_DOMAIN = {
+    "ads": "src_google_ads_api_docs",
+    "analytics": "src_ga4_data_api_docs",
+    "merchant": "src_google_merchant_center_docs",
+    "seo": "src_google_search_console_docs",
+    "content": "src_wilq_content_rules",
+    "local": "src_localo_and_gbp_rules",
+    "social": "src_social_platform_review_rules",
+}
+
 
 def _yaml_safe_load(path: Path) -> dict[str, Any]:
     yaml_module = import_module("yaml")
@@ -75,6 +85,12 @@ def _load_rule(path: Path) -> ExpertRule:
         output_contract=_required_string(data, "output_contract", path),
         capabilities=_string_list(data, "capabilities", path),
         required_mapping=required_mapping,
+        source_ids=[
+            EXPERT_SOURCE_ID_BY_DOMAIN.get(
+                path.parent.name,
+                f"src_wilq_{path.parent.name}_rules",
+            )
+        ],
         requires_evidence=_requires_evidence(required_inputs, required_mapping),
     )
 
@@ -97,6 +113,7 @@ def list_expert_rule_summaries(limit: int | None = None) -> list[ExpertRuleSumma
             source_anchor=rule.source_anchor,
             required_inputs=rule.required_inputs,
             recommended_actions=rule.recommended_actions,
+            source_ids=rule.source_ids,
             output_contract=rule.output_contract,
             requires_evidence=rule.requires_evidence,
         )

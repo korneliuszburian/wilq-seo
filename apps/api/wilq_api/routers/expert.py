@@ -8,7 +8,8 @@ from wilq.expert.rules import (
     list_expert_rule_summaries,
     list_expert_rules,
 )
-from wilq.schemas import ExpertCapability, ExpertRule, ExpertRuleSummary
+from wilq.expert.sources import list_expert_knowledge_sources
+from wilq.schemas import ExpertCapability, ExpertKnowledgeSource, ExpertRule, ExpertRuleSummary
 
 router = APIRouter()
 
@@ -32,6 +33,11 @@ def expert_rule_detail(rule_id: str) -> ExpertRule:
 @router.get("/api/expert/rule-summaries", response_model=list[ExpertRuleSummary])
 def expert_rule_summaries() -> list[ExpertRuleSummary]:
     return list_expert_rule_summaries()
+
+
+@router.get("/api/expert/sources", response_model=list[ExpertKnowledgeSource])
+def expert_knowledge_sources() -> list[ExpertKnowledgeSource]:
+    return list(list_expert_knowledge_sources())
 
 
 @router.get("/api/expert/capabilities", response_model=list[ExpertCapability])

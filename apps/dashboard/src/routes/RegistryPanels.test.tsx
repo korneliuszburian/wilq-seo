@@ -225,6 +225,7 @@ describe("RegistryPanels", () => {
             output_contract: "WILQ używa reguły tylko z dowodami i blokadami claimów.",
             capabilities: [],
             required_mapping: [],
+            source_ids: ["src_google_ads_api_docs"],
             requires_evidence: true
           } satisfies ExpertRule)
         ]}
@@ -263,6 +264,7 @@ describe("RegistryPanels", () => {
             output_contract: "Reguła nie zastępuje dowodów.",
             capabilities: [],
             required_mapping: [],
+            source_ids: ["src_wilq_content_rules"],
             requires_evidence: true
           } satisfies ExpertRule)
         ]}
