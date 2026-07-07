@@ -1236,7 +1236,7 @@ def _set_wordpress_index(
     fact: MetricFact,
 ) -> None:
     current = index.get(key)
-    if current is None or fact.source_connector == "wordpress_ekologus":
+    if current is None or _wordpress_index_fact_score(fact) > _wordpress_index_fact_score(current):
         index[key] = fact
 
 
@@ -1254,14 +1254,23 @@ def _wordpress_path_candidate_allowed_for_request(
     return not (content_host and content_host not in WORDPRESS_PUBLIC_CONTENT_HOSTS)
 
 
-def _wordpress_path_match_score(fact: MetricFact) -> tuple[int, int, int]:
+def _wordpress_path_match_score(fact: MetricFact) -> tuple[int, int, int, int, int, str, str]:
+    return _wordpress_index_fact_score(fact)
+
+
+def _wordpress_index_fact_score(fact: MetricFact) -> tuple[int, int, int, int, int, str, str]:
     dimensions = fact.dimensions
     inventory_source = dimensions.get("inventory_source")
     host = _url_host(dimensions.get("content_url", ""))
+    collected_at = fact.collected_at.isoformat() if fact.collected_at is not None else ""
     return (
         1 if fact.source_connector == "wordpress_ekologus" else 0,
         1 if inventory_source in {"public_sitemap", "sitemap"} else 0,
         1 if host in {"www.ekologus.pl", "ekologus.pl"} else 0,
+        1 if dimensions.get("title_or_h1") else 0,
+        1 if dimensions.get("canonical_url") else 0,
+        collected_at,
+        fact.evidence_id,
     )
 
 
@@ -1477,6 +1486,7 @@ def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, st
         "wordpress_content_type": dimensions.get("content_type", ""),
         "wordpress_status": dimensions.get("status", ""),
         "wordpress_content_url": dimensions.get("content_url", ""),
+        "wordpress_title_or_h1": dimensions.get("title_or_h1", ""),
         "wordpress_content_host": _url_host(dimensions.get("content_url", "")),
         "wordpress_matched_url_key": _normalize_url_key(dimensions.get("content_url", "")),
         "wordpress_matched_path": _normalize_path_key(dimensions.get("content_url", "")),

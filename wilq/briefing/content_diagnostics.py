@@ -7,7 +7,6 @@ from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
-from wilq.content.measurement.decisions import ga4_tracking_gap_decisions
 from wilq.content.planning.ahrefs import ahrefs_gap_record_decisions
 from wilq.content.planning.decisions import (
     content_decision_sort_key,
@@ -94,9 +93,6 @@ AHREFS_CONTENT_EXPERT_RULE_IDS = (
     "content_brief_rules_v1",
     "content_duplication_rules_v1",
 )
-GA4_TRACKING_KNOWLEDGE_CARD_IDS = ("card_ga4_behavior_diagnostics_playbook",)
-GA4_TRACKING_EXPERT_RULE_IDS = ("ga4_diagnostics_v1",)
-
 
 def build_content_diagnostics(
     tactical_items: list[TacticalQueueItem] | None = None,
@@ -624,11 +620,6 @@ def _content_decision_queue(
             items,
             knowledge_card_ids=GSC_CONTENT_KNOWLEDGE_CARD_IDS,
             expert_rule_ids=GSC_CONTENT_EXPERT_RULE_IDS,
-        ),
-        *ga4_tracking_gap_decisions(
-            items,
-            knowledge_card_ids=GA4_TRACKING_KNOWLEDGE_CARD_IDS,
-            expert_rule_ids=GA4_TRACKING_EXPERT_RULE_IDS,
         ),
         *ahrefs_gap_record_decisions(
             metric_facts,

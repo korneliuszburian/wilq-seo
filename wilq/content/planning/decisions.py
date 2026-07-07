@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
+from urllib.parse import urlparse, unquote
 
 from wilq.content.canonical.urls import content_decision_url_semantics
 from wilq.content.inventory.gates import content_inventory_gate_status
@@ -56,6 +57,7 @@ def gsc_content_decisions(
         first = page_items[0]
         wordpress_match = first.dimensions.get("wordpress_match", "missing")
         query_count = int_dimension(first, "gsc_page_query_count", len(page_items))
+        wordpress_title_or_h1 = first.dimensions.get("wordpress_title_or_h1") or None
         queries = _unique(
             item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
         )
@@ -68,19 +70,31 @@ def gsc_content_decisions(
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
             title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(decision_type, metrics, wordpress_match)
+            summary = content_decision_summary(
+                decision_type,
+                metrics,
+                wordpress_match,
+                wordpress_title_or_h1=wordpress_title_or_h1,
+            )
             next_step = (
-                "Przygotuj plan odświeżenia albo scalenia: title, H1/H2, sekcje "
-                "brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji."
+                "Otwórz aktualny adres WordPress i sprawdź istniejące H1, sekcje "
+                "ACF/flexible content oraz CTA. Nie przygotowuj rewrite ani scalenia "
+                "z samego zapytania GSC."
             )
             rationale = (
                 "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje "
-                "to do odświeżenia albo scalenia zamiast tworzenia nowej treści."
+                "to do przeglądu konkretnej strony zamiast tworzenia nowej treści "
+                "albo abstrakcyjnego zadania z samego query."
             )
         elif query_count > 1:
             decision_type = "merge_create_after_inventory_check"
             title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(decision_type, metrics, wordpress_match)
+            summary = content_decision_summary(
+                decision_type,
+                metrics,
+                wordpress_match,
+                wordpress_title_or_h1=wordpress_title_or_h1,
+            )
             next_step = (
                 "Sprawdź publiczny URL, spis strony i duplikaty w WordPress. Dopiero potem "
                 "wybierz scalenie, nową treść albo przywrócenie."
@@ -92,7 +106,12 @@ def gsc_content_decisions(
         else:
             decision_type = "inventory_check_before_create"
             title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(decision_type, metrics, wordpress_match)
+            summary = content_decision_summary(
+                decision_type,
+                metrics,
+                wordpress_match,
+                wordpress_title_or_h1=wordpress_title_or_h1,
+            )
             next_step = (
                 "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
                 "Jeśli nie istnieje, przygotuj plan treści dopiero po kontroli duplikatów."
@@ -138,6 +157,9 @@ def gsc_content_decisions(
                 best_average_position=metrics.best_average_position,
                 wordpress_match=wordpress_match,
                 wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
+                wordpress_title_or_h1=wordpress_title_or_h1,
+                wordpress_inventory_source=first.dimensions.get("wordpress_inventory_source"),
+                wordpress_modified_gmt=first.dimensions.get("wordpress_modified_gmt"),
                 source_public_url=url_semantics["source_public_url"],
                 preview_url=url_semantics["preview_url"],
                 intended_final_url=url_semantics["intended_final_url"],
@@ -274,6 +296,8 @@ def content_decision_metric_tiles(
         "zapytania": query_count,
         "WP": wordpress_match_tile(wordpress_match),
     }
+    if decision_type == "refresh_or_merge" and wordpress_match == "found":
+        tiles["sekcje WP"] = "sprawdź w inventory/workflow"
     if metrics.total_impressions is not None:
         tiles["wyświetlenia"] = metrics.total_impressions
     if metrics.total_clicks is not None:
@@ -317,13 +341,27 @@ def content_decision_title(
     query_count: int,
     metrics: ContentDecisionMetrics,
 ) -> str:
+    page_label = content_page_label(page)
     topic = content_topic_label(page, metrics.primary_query)
     query_label = query_count_label(query_count)
     if decision_type == "refresh_or_merge":
-        return f"SEO: odśwież lub scal {topic} ({query_label})"
+        return f"{page_label}: sprawdź istniejącą treść ({query_label})"
     if decision_type == "merge_create_after_inventory_check":
-        return f"SEO: sprawdź klaster {topic} przed tworzeniem ({query_label})"
-    return f"SEO: sprawdź spis treści dla {topic} ({query_label})"
+        return f"{page_label}: sprawdź klaster {topic} przed tworzeniem ({query_label})"
+    return f"{page_label}: sprawdź spis treści przed nową treścią ({query_label})"
+
+
+def content_page_label(page: str) -> str:
+    parsed = urlparse(page)
+    host = parsed.netloc or ""
+    path = parsed.path.rstrip("/")
+    if host == "www.ekologus.pl" and path in {"", "/"}:
+        return "Strona główna ekologus.pl"
+    if host:
+        display_path = path or "/"
+        return f"Istniejący URL {unquote(display_path)}"
+    cleaned = page.rstrip("/") or page
+    return f"URL {unquote(cleaned)}"
 
 
 def content_topic_label(page: str, primary_query_value: str | None) -> str:
@@ -338,12 +376,21 @@ def content_decision_summary(
     decision_type: ContentDecisionType,
     metrics: ContentDecisionMetrics,
     wordpress_match: str,
+    *,
+    wordpress_title_or_h1: str | None = None,
 ) -> str:
     metric_sentence = content_metric_sentence(metrics)
     if decision_type == "refresh_or_merge":
+        title_sentence = (
+            f' Aktualny tytuł/H1 w WordPress: "{wordpress_title_or_h1}".'
+            if wordpress_title_or_h1
+            else " Aktualny tytuł/H1 nie jest jeszcze dostępny w tym widoku."
+        )
         return (
             f"{metric_sentence} WordPress potwierdza istniejącą stronę, więc "
-            "to jest decyzja odświeżenia albo scalenia, nie nowy artykuł."
+            "najpierw sprawdź aktualny URL, obecne sekcje i CTA."
+            f"{title_sentence} To nie jest nowy artykuł ani zadanie budowane "
+            "z samego zapytania."
         )
     if decision_type == "merge_create_after_inventory_check":
         return (

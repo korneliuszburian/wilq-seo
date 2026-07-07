@@ -4226,6 +4226,9 @@ class ContentDecisionItem(BaseModel):
     wordpress_match_label: str | None = None
     wordpress_match_confidence: str | None = None
     wordpress_match_confidence_label: str | None = None
+    wordpress_title_or_h1: str | None = None
+    wordpress_inventory_source: str | None = None
+    wordpress_modified_gmt: str | None = None
     source_public_url: str | None = None
     preview_url: str | None = None
     intended_final_url: str | None = None

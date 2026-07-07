@@ -62,17 +62,19 @@ def test_content_decision_refresh_summary_defends_preserve_first_logic() -> None
     assert content_decision_status("refresh_or_merge") == "ready"
     assert content_decision_priority("refresh_or_merge", metrics, query_count=3) == 21
     assert content_decision_title("refresh_or_merge", "/bdo", 3, metrics) == (
-        'SEO: odśwież lub scal "bdo odpady" (3 zapytań)'
+        "URL /bdo: sprawdź istniejącą treść (3 zapytań)"
     )
     assert content_decision_metric_tiles("refresh_or_merge", metrics, 3, "found") == {
         "zapytania": 3,
         "WP": "znaleziono",
+        "sekcje WP": "sprawdź w inventory/workflow",
         "wyświetlenia": 300,
         "kliknięcia": 12,
         "CTR": "4.00%",
         "pozycja": 8.2,
     }
-    assert "nie nowy artykuł" in content_decision_summary("refresh_or_merge", metrics, "found")
+    assert "aktualny URL" in content_decision_summary("refresh_or_merge", metrics, "found")
+    assert "samego zapytania" in content_decision_summary("refresh_or_merge", metrics, "found")
 
 
 def test_content_decision_create_candidate_is_blocked_until_inventory_review() -> None:

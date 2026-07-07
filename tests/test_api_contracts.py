@@ -15900,17 +15900,18 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                 VendorMetricFact(
                     "content_object_seen",
                     1,
-                    {
-                        "connector_id": "wordpress_ekologus",
-                        "content_type": "sitemap",
-                        "status": "indexed",
-                        "content_url": (
-                            "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
-                        ),
-                        "modified_gmt": "2024-07-11T07:04:02+00:00",
-                        "inventory_source": "public_sitemap",
-                    },
-                ),
+                        {
+                            "connector_id": "wordpress_ekologus",
+                            "content_type": "sitemap",
+                            "status": "indexed",
+                            "content_url": (
+                                "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+                            ),
+                            "modified_gmt": "2024-07-11T07:04:02+00:00",
+                            "title_or_h1": "Europejski Zielony Ład - co to takiego?",
+                            "inventory_source": "public_sitemap",
+                        },
+                    ),
             ],
         ),
     )
@@ -16165,16 +16166,27 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert first_decision["metric_tiles"] == {
         "zapytania": 1,
         "WP": "znaleziono",
+        "sekcje WP": "sprawdź w inventory/workflow",
         "wyświetlenia": 120,
         "kliknięcia": 12,
         "CTR": "10.00%",
     }
-    assert first_decision["title"] == 'SEO: odśwież lub scal "zielony ład" (1 zapytanie)'
+    assert first_decision["title"] == (
+        "Istniejący URL /europejski-zielony-lad-co-to-takiego: "
+        "sprawdź istniejącą treść (1 zapytanie)"
+    )
     assert first_decision["summary"] == (
         "GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "
-        '"zielony ład". WordPress potwierdza istniejącą stronę, więc to jest '
-        "decyzja odświeżenia albo scalenia, nie nowy artykuł."
+        '"zielony ład". WordPress potwierdza istniejącą stronę, więc najpierw '
+        "sprawdź aktualny URL, obecne sekcje i CTA. Aktualny tytuł/H1 w "
+        'WordPress: "Europejski Zielony Ład - co to takiego?". To nie jest '
+        "nowy artykuł ani zadanie budowane z samego zapytania."
     )
+    assert first_decision["wordpress_title_or_h1"] == (
+        "Europejski Zielony Ład - co to takiego?"
+    )
+    assert first_decision["wordpress_inventory_source"] == "public_sitemap"
+    assert first_decision["wordpress_modified_gmt"] == "2024-07-11T07:04:02+00:00"
     assert first_decision["primary_query"] == "zielony ład"
     assert first_decision["total_clicks"] == 12
     assert first_decision["total_impressions"] == 120

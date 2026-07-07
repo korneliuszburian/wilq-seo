@@ -379,7 +379,10 @@ def _fetch_public_sitemap_objects(
     filtered_objects = [
         item for item in public_objects if _host(item.get("content_url", "")) not in base_hosts
     ]
-    return _enrich_sitemap_objects_with_page_metadata(client, filtered_objects)
+    return _enrich_sitemap_objects_with_page_metadata(
+        client,
+        _prioritize_sitemap_objects(filtered_objects, [public_url]),
+    )
 
 
 def _fetch_sitemap_objects(
@@ -417,6 +420,21 @@ def _enrich_sitemap_objects_with_page_metadata(
         metadata = _fetch_public_page_metadata(client, item.get("content_url", ""))
         enriched.append({**item, **metadata} if metadata else item)
     return enriched
+
+
+def _prioritize_sitemap_objects(
+    objects: list[dict[str, str]],
+    priority_urls: list[str | None],
+) -> list[dict[str, str]]:
+    priority_keys = {_normalize_base_url(url) for url in priority_urls if url}
+    return sorted(
+        objects,
+        key=lambda item: (
+            0
+            if _normalize_base_url(item.get("content_url", "")) in priority_keys
+            else 1
+        ),
+    )
 
 
 def _fetch_public_page_metadata(client: httpx.Client, url: str) -> dict[str, str]:

@@ -269,13 +269,25 @@ function ContentNearestDecisionCard({
 
         <div className="mt-4 grid gap-2 text-sm leading-6 text-slate-700">
           <TraceLine
+            label="WordPress"
+            values={[
+              decision.wordpress_title_or_h1 ? `Tytuł/H1: ${decision.wordpress_title_or_h1}` : undefined,
+              decision.wordpress_match_label,
+              decision.wordpress_match_confidence_label,
+              decision.wordpress_modified_gmt ? `Modyfikacja: ${decision.wordpress_modified_gmt}` : undefined,
+              decision.content_gate_summary
+            ].filter(isPresentLabel)}
+            empty="brak potwierdzonego wpisu albo strony WordPress"
+          />
+          <TraceLine
             label="Adres"
             values={url ? [shortPath(url)] : []}
             empty="adres do potwierdzenia przed szkicem"
           />
-          <p className="text-xs leading-5 text-slate-500">
-            Podgląd techniczny nie jest adresem SEO; nie traktuj dev hosta jako adresu kanonicznego.
-          </p>
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+            Ten widok nie pokazuje jeszcze aktualnych H1, sekcji ACF ani treści strony.
+            Nie rób rewrite z samego query. Najpierw otwórz workflow lub inventory dla tego URL.
+          </div>
           <TraceLine
             label="Zapytania"
             values={decision.queries.slice(0, 4)}
@@ -484,10 +496,16 @@ function contentQueueRows(data: ContentDiagnosticsResponse) {
       decision.canonical_gate_status_label ??
       "review wymagany";
 
+    const url = decision.final_canonical_url ?? decision.intended_final_url ?? decision.page;
     return {
       id: decision.id,
       title: decision.title,
-      detail: decision.page ? shortPath(decision.page) : decision.primary_query ?? decision.decision_type_label,
+      detail: [
+        url ? shortPath(url) : decision.primary_query ?? decision.decision_type_label,
+        decision.wordpress_title_or_h1 ? `Tytuł/H1: ${decision.wordpress_title_or_h1}` : undefined,
+        decision.wordpress_match_label,
+        decision.wordpress_match_confidence_label
+      ].filter(isPresentLabel).join(" · "),
       modeLabel: decision.decision_type_label || "decyzja treści",
       modeTone: decision.source_connectors.includes("ahrefs") ? ("purple" as const) : ("blue" as const),
       signals: contentQueueSignals(decision),
@@ -500,11 +518,12 @@ function contentQueueRows(data: ContentDiagnosticsResponse) {
 
 function contentQueueSignals(decision: ContentDecisionItem) {
   const metricTiles = Object.entries(decision.metric_tiles).slice(0, 3).map(([label, value]) => `${label}: ${value}`);
+  const wordpressSignal = decision.wordpress_title_or_h1 ? [`WP: ${decision.wordpress_title_or_h1}`] : [];
   const querySignal = decision.primary_query ? [`zapytanie: ${decision.primary_query}`] : [];
   const sourceSignal = decision.source_connector_labels.length
     ? [`źródła: ${decision.source_connector_labels.join(", ")}`]
     : [];
-  return [...metricTiles, ...querySignal, ...sourceSignal].slice(0, 4);
+  return [...wordpressSignal, ...metricTiles, ...querySignal, ...sourceSignal].slice(0, 4);
 }
 
 function contentDecisionRisk(decision: ContentDecisionItem) {
