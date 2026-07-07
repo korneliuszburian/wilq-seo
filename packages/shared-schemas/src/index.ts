@@ -3358,6 +3358,73 @@ export const DailyDecisionSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const DailyCheckConnectorRefSchema = z.object({
+  connector_id: z.string(),
+  status: z.enum(["checked", "skipped"]),
+  freshness: FreshnessStateSchema.default({ state: "unknown" }),
+  reason: z.string().default("")
+});
+
+export const DailyCheckItemCategorySchema = z.enum([
+  "anomaly",
+  "risk",
+  "opportunity",
+  "blocked_recommendation",
+  "safe_next_action",
+  "do_not_touch"
+]);
+
+export const DailyCheckItemSchema = z.object({
+  id: z.string(),
+  category: DailyCheckItemCategorySchema,
+  title: z.string(),
+  status: z.enum(["ready", "review_required", "blocked"]),
+  priority: z.number(),
+  summary: z.string(),
+  next_step: z.string(),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  expert_rule_ids: z.array(z.string()).default([]),
+  freshness: FreshnessStateSchema.default({ state: "unknown" }),
+  action_ids: z.array(z.string()).default([]),
+  blocked_claims: z.array(z.string()).default([]),
+  missing_contracts: z.array(z.string()).default([]),
+  risk: z.enum(["low", "medium", "high", "critical"]).default("medium")
+}).superRefine((item, ctx) => {
+  if (item.status === "blocked" || item.category === "blocked_recommendation") return;
+  const missing: string[] = [];
+  if (item.source_connectors.length === 0) missing.push("source_connectors");
+  if (item.evidence_ids.length === 0) missing.push("evidence_ids");
+  if (item.expert_rule_ids.length === 0) missing.push("expert_rule_ids");
+  if (item.freshness.state === "unknown" || item.freshness.state === "missing") {
+    missing.push("freshness");
+  }
+  if (missing.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Daily check item ${item.id} lacks required trace fields: ${missing.join(", ")}`
+    });
+  }
+});
+
+export const DailyCheckResultSchema = z.object({
+  workspace_id: z.string(),
+  date: z.string(),
+  status: z.enum(["ready", "review_ready", "blocked", "degraded"]),
+  checked_connectors: z.array(DailyCheckConnectorRefSchema).default([]),
+  skipped_connectors: z.array(DailyCheckConnectorRefSchema).default([]),
+  anomalies: z.array(DailyCheckItemSchema).default([]),
+  risks: z.array(DailyCheckItemSchema).default([]),
+  opportunities: z.array(DailyCheckItemSchema).default([]),
+  blocked_recommendations: z.array(DailyCheckItemSchema).default([]),
+  safe_next_actions: z.array(DailyCheckItemSchema).default([]),
+  do_not_touch: z.array(DailyCheckItemSchema).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  expert_rules_used: z.array(z.string()).default([]),
+  freshness: FreshnessStateSchema.default({ state: "unknown" })
+});
+
 export const CommandCenterResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   strict_instruction: z.string(),
@@ -3884,6 +3951,9 @@ export type CommandCenterBriefItem = z.infer<typeof CommandCenterBriefItemSchema
 export type CommandCenterDemoStep = z.infer<typeof CommandCenterDemoStepSchema>;
 export type CommandCenterActionPlanItem = z.infer<typeof CommandCenterActionPlanItemSchema>;
 export type DailyDecision = z.infer<typeof DailyDecisionSchema>;
+export type DailyCheckConnectorRef = z.infer<typeof DailyCheckConnectorRefSchema>;
+export type DailyCheckItem = z.infer<typeof DailyCheckItemSchema>;
+export type DailyCheckResult = z.infer<typeof DailyCheckResultSchema>;
 export type AdsDiagnosticSection = z.infer<typeof AdsDiagnosticSectionSchema>;
 export type AdsAccountCurrencyReadContract = z.infer<
   typeof AdsAccountCurrencyReadContractSchema

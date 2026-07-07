@@ -28,6 +28,7 @@ import {
   ContentServiceProfilePrivateSourceProposalSectionSchema,
   PrivateProposalSchema,
   StructuredDraftPreviewBlockerSchema,
+  DailyCheckResultSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
@@ -104,6 +105,74 @@ describe("KnowledgeTaxonomyEntrySchema", () => {
         id: "service_fact_but_used_as_rule",
         definition: "Invalid mixed taxonomy item.",
         owned_by: "expert_rule_compiler"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("DailyCheckResultSchema", () => {
+  const tracedAction = {
+    id: "daily_check_merchant_review",
+    category: "safe_next_action",
+    title: "Przejrzyj kolejkę Merchant",
+    status: "review_required",
+    priority: 1,
+    summary: "Merchant ma zgłoszenia wymagające ręcznego review.",
+    next_step: "Otwórz Merchant i sprawdź akcję review.",
+    source_connectors: ["google_merchant_center"],
+    evidence_ids: ["ev_refresh_merchant"],
+    expert_rule_ids: ["merchant_feed_rules_v1"],
+    freshness: { state: "fresh" },
+    action_ids: ["act_review_merchant_feed_issues"],
+    blocked_claims: ["revenue_recovery"],
+    missing_contracts: [],
+    risk: "medium"
+  };
+
+  it("requires traceable daily recommendations", () => {
+    expect(
+      DailyCheckResultSchema.safeParse({
+        workspace_id: "ekologus",
+        date: "2026-07-07",
+        status: "review_ready",
+        checked_connectors: [
+          {
+            connector_id: "google_merchant_center",
+            status: "checked",
+            freshness: { state: "fresh" },
+            reason: "latest vendor read available"
+          }
+        ],
+        skipped_connectors: [],
+        anomalies: [],
+        risks: [],
+        opportunities: [],
+        blocked_recommendations: [],
+        safe_next_actions: [tracedAction],
+        do_not_touch: [],
+        evidence_ids: ["ev_refresh_merchant"],
+        source_connectors: ["google_merchant_center"],
+        expert_rules_used: ["merchant_feed_rules_v1"],
+        freshness: { state: "fresh" }
+      }).success
+    ).toBe(true);
+
+    expect(
+      DailyCheckResultSchema.safeParse({
+        workspace_id: "ekologus",
+        date: "2026-07-07",
+        status: "review_ready",
+        checked_connectors: [],
+        skipped_connectors: [],
+        safe_next_actions: [
+          {
+            ...tracedAction,
+            source_connectors: [],
+            evidence_ids: [],
+            expert_rule_ids: [],
+            freshness: { state: "unknown" }
+          }
+        ]
       }).success
     ).toBe(false);
   });

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -5081,6 +5081,102 @@ class DailyDecision(BaseModel):
     codex_context_endpoint: str | None = None
     expected_codex_output: str | None = None
     risk: ActionRisk = ActionRisk.low
+
+
+DailyCheckItemCategory = Literal[
+    "anomaly",
+    "risk",
+    "opportunity",
+    "blocked_recommendation",
+    "safe_next_action",
+    "do_not_touch",
+]
+
+
+class DailyCheckConnectorRef(BaseModel):
+    connector_id: str
+    status: Literal["checked", "skipped"]
+    freshness: FreshnessState = Field(default_factory=lambda: FreshnessState(state="unknown"))
+    reason: str = ""
+
+
+class DailyCheckItem(BaseModel):
+    id: str
+    category: DailyCheckItemCategory
+    title: str
+    status: Literal["ready", "review_required", "blocked"]
+    priority: int = Field(ge=1, le=100)
+    summary: str
+    next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
+    freshness: FreshnessState = Field(default_factory=lambda: FreshnessState(state="unknown"))
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    missing_contracts: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.medium
+
+    @model_validator(mode="after")
+    def require_trace_for_operator_items(self) -> DailyCheckItem:
+        if self.status != "blocked" and self.category != "blocked_recommendation":
+            missing: list[str] = []
+            if not self.source_connectors:
+                missing.append("source_connectors")
+            if not self.evidence_ids:
+                missing.append("evidence_ids")
+            if not self.expert_rule_ids:
+                missing.append("expert_rule_ids")
+            if self.freshness.state in {"unknown", "missing"}:
+                missing.append("freshness")
+            if missing:
+                raise ValueError(
+                    f"Daily check item {self.id} lacks required trace fields: "
+                    + ", ".join(missing)
+                )
+        return self
+
+
+class DailyCheckResult(BaseModel):
+    workspace_id: str
+    date: date
+    status: Literal["ready", "review_ready", "blocked", "degraded"]
+    checked_connectors: list[DailyCheckConnectorRef] = Field(default_factory=list)
+    skipped_connectors: list[DailyCheckConnectorRef] = Field(default_factory=list)
+    anomalies: list[DailyCheckItem] = Field(default_factory=list)
+    risks: list[DailyCheckItem] = Field(default_factory=list)
+    opportunities: list[DailyCheckItem] = Field(default_factory=list)
+    blocked_recommendations: list[DailyCheckItem] = Field(default_factory=list)
+    safe_next_actions: list[DailyCheckItem] = Field(default_factory=list)
+    do_not_touch: list[DailyCheckItem] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    expert_rules_used: list[str] = Field(default_factory=list)
+    freshness: FreshnessState = Field(default_factory=lambda: FreshnessState(state="unknown"))
+
+    @model_validator(mode="after")
+    def fill_trace_from_items(self) -> DailyCheckResult:
+        items = [
+            *self.anomalies,
+            *self.risks,
+            *self.opportunities,
+            *self.blocked_recommendations,
+            *self.safe_next_actions,
+            *self.do_not_touch,
+        ]
+        if not self.evidence_ids:
+            self.evidence_ids = _unique_strings(
+                evidence_id for item in items for evidence_id in item.evidence_ids
+            )
+        if not self.source_connectors:
+            self.source_connectors = _unique_strings(
+                connector for item in items for connector in item.source_connectors
+            )
+        if not self.expert_rules_used:
+            self.expert_rules_used = _unique_strings(
+                rule_id for item in items for rule_id in item.expert_rule_ids
+            )
+        return self
 
 
 class CommandCenterResponse(BaseModel):
