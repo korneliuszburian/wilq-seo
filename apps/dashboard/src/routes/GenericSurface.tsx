@@ -900,11 +900,16 @@ function KnowledgePlaybooksDetails({
 function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[] }) {
   const [showConnectorDetails, setShowConnectorDetails] = useState(false);
   const missing = connectors.filter((connector) => hasMissingSourceAccess(connector));
-  const active = connectors.filter(
-    (connector) => connector.active_for_daily_work && connector.configured && !hasMissingSourceAccess(connector)
+  const freshDailySources = connectors.filter(
+    (connector) =>
+      connector.active_for_daily_work
+      && connector.configured
+      && !hasMissingSourceAccess(connector)
+      && !hasStaleSourceData(connector)
   );
+  const staleDailySources = connectors.filter(hasStaleSourceData);
   const outsideDailyScope = connectors.filter((connector) => !connector.active_for_daily_work);
-  const sourceImpactRows = buildSourceImpactRows(missing, outsideDailyScope);
+  const sourceImpactRows = buildSourceImpactRows(missing, staleDailySources, outsideDailyScope);
 
   if (connectors.length === 0) {
     return (
@@ -918,9 +923,9 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
     <>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SourceStatTile value={connectors.length} label="źródeł" tone="default" />
-        <SourceStatTile value={active.length} label="aktywne dziennie" tone="success" />
+        <SourceStatTile value={freshDailySources.length} label="gotowe dziennie" tone="success" />
         <SourceStatTile value={missing.length} label="brak dostępu" tone="risk" />
-        <SourceStatTile value={outsideDailyScope.length} label="poza zakresem dziennym" tone="wait" />
+        <SourceStatTile value={staleDailySources.length} label="wymagają odświeżenia" tone="wait" />
       </section>
 
       <section className="rounded-md border border-wait/40 bg-wait/10 p-4">
@@ -930,7 +935,15 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
               {missing.length > 0
                 ? `Brakuje dostępu do ${formatConnectorList(missing)}. WILQ może dalej używać skonfigurowanych źródeł, ale nie powinien opierać decyzji na danych z brakujących kanałów.`
-                : "Braki dostępu nie blokują teraz głównej pracy. Nadal sprawdzaj świeżość źródeł przed oceną wyników."}
+                : "Braki dostępu nie blokują teraz głównej pracy."}
+              {staleDailySources.length > 0
+                ? ` ${staleDailySources.length} ${pluralize(
+                    staleDailySources.length,
+                    "źródło wymaga",
+                    "źródła wymagają",
+                    "źródeł wymaga"
+                  )} odświeżenia przed oceną wyników.`
+                : " Dane są gotowe do dziennej pracy po sprawdzeniu zakresu decyzji."}
             </p>
           </div>
           <a
@@ -961,9 +974,10 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
               <tr>
-                <th className="px-4 py-3 font-semibold">Źródło z brakiem dostępu</th>
+                <th className="px-4 py-3 font-semibold">Źródło</th>
                 <th className="px-4 py-3 font-semibold">Co jest zablokowane</th>
                 <th className="px-4 py-3 font-semibold">Wpływ na decyzje</th>
+                <th className="px-4 py-3 font-semibold">Następny krok</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -975,6 +989,7 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
                     <span className={`mr-2 inline-block h-2 w-2 rounded-full ${row.dotClass}`} />
                     {row.impact}
                   </td>
+                  <td className="px-4 py-3 font-medium text-action">{row.nextStep}</td>
                 </tr>
               ))}
             </tbody>
@@ -1084,6 +1099,13 @@ function sourceAccessStatus(connector: ConnectorStatus) {
       description: "Dane nie są liczone do głównego dziennego zakresu pracy."
     };
   }
+  if (hasStaleSourceData(connector)) {
+    return {
+      label: "Do odświeżenia",
+      className: "bg-wait/10 text-wait",
+      description: "Dane są dostępne, ale nie powinny domykać decyzji bez świeżego odczytu."
+    };
+  }
   if (connector.configured) {
     return {
       label: "Aktywny",
@@ -1102,16 +1124,27 @@ function hasMissingSourceAccess(connector: ConnectorStatus) {
   return connector.missing_credentials.length > 0 || connector.status === "missing_credentials";
 }
 
+function hasStaleSourceData(connector: ConnectorStatus) {
+  return (
+    connector.active_for_daily_work
+    && connector.configured
+    && !hasMissingSourceAccess(connector)
+    && connector.freshness.state === "stale"
+  );
+}
+
 type SourceImpactRow = {
   id: string;
   source: string;
   blocked: string;
   impact: string;
+  nextStep: string;
   dotClass: string;
 };
 
 function buildSourceImpactRows(
   missing: ConnectorStatus[],
+  stale: ConnectorStatus[],
   outsideDailyScope: ConnectorStatus[]
 ): SourceImpactRow[] {
   const missingRows = missing.map((connector) => ({
@@ -1119,7 +1152,16 @@ function buildSourceImpactRows(
     source: connector.label,
     blocked: sourceBlockedDecisionLabel(connector),
     impact: sourceDecisionImpactLabel(connector),
+    nextStep: sourceRepairStepLabel(connector),
     dotClass: "bg-risk"
+  }));
+  const staleRows = stale.map((connector) => ({
+    id: `stale-${connector.id}`,
+    source: connector.label,
+    blocked: sourceStaleDecisionLabel(connector),
+    impact: "Decyzja wymaga świeżego odczytu przed wnioskiem",
+    nextStep: "Odśwież źródło przed decyzją",
+    dotClass: "bg-wait"
   }));
   const outsideRow =
     outsideDailyScope.length > 0
@@ -1134,22 +1176,24 @@ function buildSourceImpactRows(
               "źródeł"
             )} pomijane w dziennym zakresie`,
             impact: "Ograniczony wgląd w nieujęte kanały",
+            nextStep: "Zostaw poza planem dnia albo włącz zakres",
             dotClass: "bg-wait"
           }
         ]
       : [];
-  if (missingRows.length === 0 && outsideRow.length === 0) {
+  if (missingRows.length === 0 && staleRows.length === 0 && outsideRow.length === 0) {
     return [
       {
         id: "sources-ready",
         source: "Brak krytycznych braków",
         blocked: "Główne źródła mogą zasilać decyzje po sprawdzeniu świeżości danych",
         impact: "Decyzje nie są blokowane przez dostęp",
+        nextStep: "Pracuj dalej i pilnuj świeżości",
         dotClass: "bg-success"
       }
     ];
   }
-  return [...missingRows, ...outsideRow];
+  return [...missingRows, ...staleRows, ...outsideRow];
 }
 
 function sourceBlockedDecisionLabel(connector: ConnectorStatus) {
@@ -1173,6 +1217,29 @@ function sourceDecisionImpactLabel(connector: ConnectorStatus) {
   if (id.includes("merchant")) return "Nie wolno oceniać gotowości produktów bez danych feedu";
   if (id.includes("wordpress")) return "Ryzyko duplikacji i pracy na nieaktualnym spisie treści";
   return "Decyzje z tego kanału pozostają zablokowane albo zdegradowane";
+}
+
+function sourceRepairStepLabel(connector: ConnectorStatus) {
+  const id = connector.id.toLowerCase();
+  if (id.includes("linkedin")) return "Podłącz LinkedIn albo zostaw social jako review-only";
+  if (id.includes("facebook")) return "Podłącz Facebook Pages albo pomiń ten kanał";
+  if (id.includes("google_ads")) return "Uzupełnij dostęp Ads i odśwież źródło";
+  if (id.includes("analytics") || id.includes("ga4")) return "Uzupełnij GA4 i sprawdź pomiar";
+  if (id.includes("merchant")) return "Uzupełnij Merchant i odśwież feed";
+  if (id.includes("wordpress")) return "Uzupełnij WordPress i pobierz spis treści";
+  return "Uzupełnij dostęp i odśwież źródło";
+}
+
+function sourceStaleDecisionLabel(connector: ConnectorStatus) {
+  const id = connector.id.toLowerCase();
+  if (id.includes("google_ads")) return "Aktualna ocena kampanii, kosztów i rekomendacji";
+  if (id.includes("analytics") || id.includes("ga4")) return "Aktualna ocena jakości ruchu i pomiaru";
+  if (id.includes("merchant")) return "Aktualny status feedu, produktów i atrybutów";
+  if (id.includes("search_console")) return "Aktualne decyzje SEO z GSC";
+  if (id.includes("wordpress")) return "Aktualny spis treści i ryzyko duplikacji";
+  if (id.includes("ahrefs")) return "Aktualne luki SEO i konkurencja";
+  if (id.includes("localo")) return "Aktualna widoczność lokalna";
+  return `${connector.label}: decyzje wymagają świeżego odczytu`;
 }
 
 type CompactRouteConfig = {

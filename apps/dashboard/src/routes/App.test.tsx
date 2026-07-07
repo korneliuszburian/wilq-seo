@@ -22,6 +22,22 @@ const connectors = [
     freshness: { state: "missing" },
     freshness_label: "świeżość danych niepotwierdzona",
     supported_actions: []
+  },
+  {
+    id: "google_analytics_4",
+    label: "Google Analytics 4",
+    status: "configured",
+    status_label: "dostęp skonfigurowany",
+    configured: true,
+    missing_credentials: [],
+    missing_credentials_summary_label: "Pola dostępu kompletne w tym sprawdzeniu",
+    available_credential_sources: ["repo_env"],
+    credential_source_summary_label: "1 źródło konfiguracji",
+    freshness: { state: "stale" },
+    freshness_label: "dane wymagają odświeżenia",
+    active_for_daily_work: true,
+    product_scope_label: "Ruch, zaangażowanie i jakość pomiaru.",
+    supported_actions: []
   }
 ];
 
@@ -7963,14 +7979,19 @@ describe("WILQ dashboard", () => {
       screen.getByText("Zdrowie źródeł, aktualność danych i dostęp wpływają na jakość decyzji.")
     ).toBeInTheDocument();
     expect(screen.getByText("źródeł")).toBeInTheDocument();
-    expect(screen.getByText("aktywne dziennie")).toBeInTheDocument();
+    expect(screen.getByText("gotowe dziennie")).toBeInTheDocument();
     expect(screen.getByText("brak dostępu")).toBeInTheDocument();
-    expect(screen.getByText("poza zakresem dziennym")).toBeInTheDocument();
+    expect(screen.getByText("wymagają odświeżenia")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje pracę")).toBeInTheDocument();
     expect(screen.getByText(/Brakuje dostępu do Google Ads/)).toBeInTheDocument();
+    expect(screen.getByText(/1 źródło wymaga odświeżenia przed oceną wyników/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Dostęp do źródeł" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Wpływ braków na decyzje" })).toBeInTheDocument();
     expect(screen.getByText("Blokada pełnej oceny Ads i zmian kampanii")).toBeInTheDocument();
+    expect(screen.getByText("Aktualna ocena jakości ruchu i pomiaru")).toBeInTheDocument();
+    expect(screen.getByText("Odśwież źródło przed decyzją")).toBeInTheDocument();
+    expect(screen.getByText("Uzupełnij dostęp Ads i odśwież źródło")).toBeInTheDocument();
+    expect(screen.getByText("Do odświeżenia")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Eksport i pakiety" })).toBeInTheDocument();
     expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
