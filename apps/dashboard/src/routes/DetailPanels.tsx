@@ -160,10 +160,11 @@ function ActionOperatorDecisionHero({
 }) {
   const writeBlocked = !mutationReadiness?.vendor_write_possible;
   const nextStep =
-    mutationReadiness?.operator_next_step.trim() ||
+    actionOperatorNextStep(action, mutationReadiness?.operator_next_step) ||
     action.recommended_reason.trim() ||
     "Sprawdź podgląd i review, zanim potraktujesz tę akcję jako gotową.";
-  const blockerLabels = mutationReadiness?.blockers.slice(0, 4).map((blocker) => blocker.label) ?? [];
+  const blockerLabels =
+    mutationReadiness?.blockers.slice(0, 4).map((blocker) => actionBlockerLabel(blocker.label)) ?? [];
   const checklistLabels = action.review_gate.operator_checklist_labels.slice(0, 3);
 
   return (
@@ -238,13 +239,15 @@ function ActionOperatorDecisionHero({
             </div>
             <h2 className={`mt-2 text-lg font-semibold ${writeBlocked ? "text-risk" : "text-success"}`}>
               {mutationReadinessLoading
-                ? "Sprawdzam zapis"
+                ? "Zapis zablokowany"
                 : writeBlocked
                   ? "Zapis zablokowany"
                   : "Zapis możliwy po potwierdzeniu"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {mutationReadinessError
+              {mutationReadinessLoading
+                ? "WILQ sprawdza szczegóły blokad. Do czasu potwierdzenia pracuj tylko na podglądzie i review."
+                : mutationReadinessError
                 ? "Nie udało się potwierdzić gotowości zapisu, więc WILQ nie powinien traktować tej akcji jako gotowej do zmian."
                 : writeBlocked
                   ? "Możesz pracować na podglądzie i review, ale nie traktuj tej akcji jako zgody na zapis w zewnętrznym systemie."
@@ -276,6 +279,27 @@ function actionDecisionHeadline(action: ActionObject): string {
   if (action.mode === "apply") return "Sprawdź podgląd i potwierdź dopiero po review";
   if (action.mode === "prepare") return "Przygotuj i oceń bez zapisu zmian";
   return "Przejrzyj rekomendację przed jakąkolwiek decyzją";
+}
+
+function actionOperatorNextStep(action: ActionObject, nextStep: string | undefined): string {
+  const trimmed = nextStep?.trim() ?? "";
+  if (action.mode === "prepare" && trimmed.includes("apply-capable ActionObject")) {
+    return "Użyj tej akcji do przygotowania i review. Jeśli po review trzeba będzie coś zapisać, WILQ powinien przygotować osobną akcję zapisu z podglądem i potwierdzeniem.";
+  }
+  return trimmed.replaceAll("ActionObject", "akcja WILQ");
+}
+
+function actionBlockerLabel(label: string): string {
+  if (label === "Akcja jest tylko prepare/review") {
+    return "To jest akcja do przygotowania i review, bez zapisu";
+  }
+  if (label === "Payload nadal blokuje apply") {
+    return "Ten pakiet nie pozwala jeszcze na zapis";
+  }
+  if (label === "Brakuje adaptera zapisu") {
+    return "Brak bezpiecznej ścieżki zapisu";
+  }
+  return label.replaceAll("ActionObject", "akcja WILQ").replaceAll("apply", "zapis");
 }
 
 function OperatorDecisionTile({ label, value }: { label: string; value: string }) {
@@ -316,7 +340,7 @@ function ActionMutationReadinessPanel({
       </section>
     );
   }
-  const blockerLabels = readiness.blockers.slice(0, 6).map((blocker) => blocker.label);
+  const blockerLabels = readiness.blockers.slice(0, 6).map((blocker) => actionBlockerLabel(blocker.label));
   return (
     <section className="mt-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">

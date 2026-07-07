@@ -1741,7 +1741,7 @@ describe("Action detail route", () => {
       screen.getByText("Brakuje: action_preview_generated, human_review_*, action_apply_confirmed")
     ).toBeInTheDocument();
     expect(screen.getByText("Co blokuje zapis")).toBeInTheDocument();
-    expect(screen.getAllByText("Brakuje adaptera zapisu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Brak bezpiecznej ścieżki zapisu").length).toBeGreaterThan(0);
     expect(screen.queryByText("Kontrakt przyszłego apply")).not.toBeInTheDocument();
     expect(screen.queryByText("create_wordpress_draft")).not.toBeInTheDocument();
     expect(screen.getByText("Pokaż szczegóły przyszłego zapisu")).toBeInTheDocument();
