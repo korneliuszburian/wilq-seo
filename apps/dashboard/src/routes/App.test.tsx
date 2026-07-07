@@ -8591,7 +8591,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("summary.action_summary_label");
     expect(routeSource).toContain("decision.action_summary_label");
-    expect(routeSource).toContain("primaryDecision.action_summary_label");
+    expect(routeSource).toContain("merchantDecisionQueueTitle");
+    expect(routeSource).not.toContain("sample_titles.slice(0, 2).join");
     expect(routeSource).toContain("cluster.reported_issue_summary_label");
     expect(routeSource).toContain("row.ads_clicks_label");
     expect(routeSource).toContain("row.ga4_ecommerce_purchases_label");
@@ -8601,8 +8602,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain('row.ads_clicks ?? "brak"');
     expect(routeSource).not.toContain('row.ga4_ecommerce_purchases ?? "brak"');
     expect(routeSource).not.toContain('row.ga4_purchase_revenue ?? "brak"');
-    expect(routeSource).toContain("nie traktuj tego jako rekomendacji");
-    expect(routeSource).toContain("nie oceniaj pliku bez odczytu");
+    expect(routeSource).toContain("nie oceniaj gotowości połączenia");
+    expect(routeSource).toContain("bez odczytu Merchant");
     expect(routeSource).not.toContain("{decision.decision_type_label} /");
     expect(routeSource).not.toContain(" / ${cluster.reporting_context_label}");
     expect(routeSource).not.toContain("formatMerchantIdCount");

@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   AlertTriangle,
   Boxes,
-  CheckCircle2,
   ClipboardList,
   RefreshCw,
   ShieldAlert,
@@ -21,7 +20,6 @@ import {
   LabelChipRow,
   LoadingBand,
   MetricTile,
-  PlainChipRow
 } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -331,7 +329,7 @@ function MerchantQueuePreview({ data }: { data: MerchantDiagnosticsResponse }) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="font-medium text-ink">{decision.title}</div>
+                  <div className="font-medium text-ink">{merchantDecisionQueueTitle(decision)}</div>
                   <div className="mt-1 text-xs leading-5 text-slate-600">
                     {merchantDecisionShortContext(decision)}
                   </div>
@@ -370,11 +368,17 @@ function primaryMerchantDecision(data: MerchantDiagnosticsResponse) {
 
 function merchantDecisionShortContext(decision: MerchantDecisionItem) {
   return [
-    decision.issue_type_label ?? decision.decision_type_label,
+    decision.issue_type_label && !decision.title.includes(decision.issue_type_label)
+      ? decision.issue_type_label
+      : null,
     decision.affected_attribute_label ? `atrybut: ${decision.affected_attribute_label}` : null,
     decision.product_count ? `produkty/zgłoszenia: ${decision.product_count}` : null,
-    decision.sample_titles.length ? `próbki: ${decision.sample_titles.slice(0, 2).join(", ")}` : null
+    decision.sample_titles.length ? `${decision.sample_titles.length} przykłady w pełnym przeglądzie` : null
   ].filter((value): value is string => Boolean(value)).join(" · ");
+}
+
+function merchantDecisionQueueTitle(decision: MerchantDecisionItem) {
+  return decision.title.replace(/^Merchant:\s*/i, "").replace(/\s+-\s+.+$/, "");
 }
 
 function formatMerchantValue(value: number | string) {
@@ -496,224 +500,6 @@ function MerchantFeedSafetyPanel({ data }: { data: MerchantDiagnosticsResponse }
         />
       </section>
   );
-}
-
-function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResponse }) {
-  const summary = data.operator_summary;
-  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
-  const primaryDecision =
-    summary.top_decision_ids
-      .map((decisionId) => decisionsById.get(decisionId))
-      .find((decision): decision is MerchantDecisionItem => Boolean(decision)) ??
-    data.decision_queue[0];
-  if (!primaryDecision) {
-    return (
-      <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <BlockerNotice message="Brak decyzji Merchant w WILQ. Nie pokazujemy rekomendacji pliku produktowego bez kolejki decyzji." />
-      </section>
-    );
-  }
-
-  const primaryPreviewCard = primaryDecision.preview_cards[0];
-  const requiredValidationSummary = primaryPreviewCard?.rows.find(
-    (row) => row.label === "Warunki sprawdzenia"
-  )?.value;
-  const workSteps = [
-    "Najpierw sprawdź powiązanie produktu albo największy problem atrybutu w kolejce Merchant.",
-    "Potem przygotuj podgląd zmian przez akcję do sprawdzenia, bez zapisu do pliku produktowego.",
-    "Nie obiecuj ponownego zatwierdzenia, odzyskanego przychodu, ROAS produktu ani wpływu ceny bez brakujących kontraktów."
-  ];
-  const blockedClaimLabels = uniqueValues([
-    ...summary.blocked_claim_labels,
-    ...primaryDecision.blocked_claim_labels
-  ]).slice(0, 6);
-  const measurementPlan = merchantMerchantMeasurementPlan(primaryDecision);
-  const reportedIssueCount =
-    primaryDecision.issue_count ??
-    merchantMetricTileValue(primaryDecision, "raporty razem") ??
-    primaryDecision.product_count ??
-    "licznik niepotwierdzony";
-  const maxReportCount =
-    primaryDecision.product_count ??
-    merchantMetricTileValue(primaryDecision, "max zgłoszeń") ??
-    "licznik niepotwierdzony";
-  const contextCount =
-    merchantMetricTileValue(primaryDecision, "konteksty") ??
-    (primaryDecision.issue_cluster_ids.length || null) ??
-    "zakres niepotwierdzony";
-
-  return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Merchant: co dziś zrobić
-          </div>
-          <h2 className="mt-1 text-lg font-semibold tracking-normal">{summary.title}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {primaryDecision.title}. To jest skrót pierwszej decyzji z kolejki Merchant:
-            najpierw ręczny przegląd problemu, potem podgląd zmian i dopiero później
-            ewentualna sprawdzona zmiana. Pełne warunki i dowody zostają niżej.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
-          <MetricTile label="Wszystkie zgłoszenia" value={summary.reported_issue_occurrences} />
-          <MetricTile label="Raporty tej decyzji" value={reportedIssueCount} />
-          <MetricTile label="Najwięcej w raporcie" value={maxReportCount} />
-          <MetricTile label="Konteksty" value={contextCount} />
-        </div>
-      </div>
-
-      <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Kolejność pracy</h3>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-slate-700">
-            {workSteps.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="rounded-md border border-risk/25 bg-risk/10 p-3">
-          <h3 className="text-sm font-semibold text-ink">Czego nie obiecywać</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            To jest kolejka przeglądu pliku produktowego, nie dowód efektu biznesowego ani zapis zmian.
-          </p>
-          <TraceLine label="Nie wolno obiecać" values={blockedClaimLabels} />
-        </div>
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-3">
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            WILQ zgrupował ten problem jako jedną decyzję operatorską, żeby marketer
-            nie przeglądał osobno powtarzalnych raportów Merchant. Najpierw sprawdzamy
-            typ problemu, atrybut, kraj i kontekst raportowania.
-          </p>
-          <TraceLine
-            label="Zakres"
-            values={[
-              primaryDecision.issue_type_label,
-              primaryDecision.affected_attribute_label,
-              primaryDecision.country
-            ].filter((value): value is string => Boolean(value))}
-            empty="WILQ nie podał pełnego zakresu problemu; sprawdź typ, atrybut i kraj przed decyzją."
-          />
-        </div>
-
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            Otwórz akcję do sprawdzenia, sprawdź dowody i przygotuj podgląd zmian.
-            Bez potwierdzenia operatora WILQ nie zmienia pliku produktowego ani danych produktu.
-          </p>
-          <TraceLine
-            label="Akcje"
-            values={[primaryDecision.action_summary_label]}
-            empty="WILQ nie podał akcji; zostaje ręczny przegląd Merchant."
-          />
-          {primaryDecision.action_ids[0] ? (
-            <a
-              href={`/actions/${primaryDecision.action_ids[0]}`}
-              className="mt-3 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
-            >
-              Przejdź do sprawdzenia
-            </a>
-          ) : null}
-        </div>
-
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Co oznaczają liczby</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            Zgłoszenia w raportach nie są liczbą unikalnych produktów ani SKU. Ten panel
-            pokazuje kolejkę sprawdzenia Merchant, a nie gotową listę zmian w pliku produktowym.
-          </p>
-          <TraceLine
-            label="Źródło decyzji"
-            values={[summary.decision_source_label, summary.drilldown_source_label]}
-            empty="WILQ nie podał źródła decyzji; nie traktuj liczników jako rekomendacji."
-          />
-          <TraceLine label="Znaczenie liczników" values={[summary.count_semantics_label]} />
-        </div>
-
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            Decyzja pochodzi z aktualnych danych WILQ i jest oparta o dowody Merchant,
-            nie o ręczny opis ani screenshot.
-          </p>
-          <TraceLine
-            label="Źródła"
-            values={primaryDecision.source_connector_labels}
-            empty="WILQ nie podał źródeł danych; nie oceniaj pliku bez odczytu."
-          />
-          <TraceLine
-            label="Dowody"
-            values={primaryDecision.evidence_summary_label ? [primaryDecision.evidence_summary_label] : []}
-            empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji."
-          />
-          {data.latest_refresh ? (
-            <TraceLine
-              label="Ostatni odczyt"
-              values={data.latest_refresh_status_label ? [data.latest_refresh_status_label] : []}
-            />
-          ) : null}
-        </div>
-
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Czego WILQ nie zrobi teraz</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            Nie ma zapisu do pliku produktowego ani automatycznej naprawy zatwierdzenia produktu.
-            Najpierw ręczny przegląd, podgląd zmian, zgoda operatora i audyt.
-          </p>
-          <TraceLine
-            label="Nie wolno twierdzić"
-            values={uniqueValues([
-              ...summary.blocked_claim_labels,
-              ...primaryDecision.blocked_claim_labels
-            ])}
-          />
-          <TraceLine
-            label="Brakujące wejścia"
-            values={requiredValidationSummary ? [requiredValidationSummary] : []}
-            empty="WILQ nie zgłosił brakujących wejść dla tego przeglądu."
-          />
-        </div>
-
-        <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{measurementPlan}</p>
-          <TraceLine
-            label="Warunki pomiaru"
-            values={[
-              "ponowny odczyt Merchant",
-              "audyt zmiany",
-              "porównanie statusów problemu",
-              "brak obietnic przychodu albo zwrotu z reklam bez danych po zmianie"
-            ]}
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function merchantMetricTileValue(decision: MerchantDecisionItem, key: string) {
-  const value = decision.metric_tiles?.[key];
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim()) return value;
-  return null;
-}
-
-function merchantMerchantMeasurementPlan(decision: MerchantDecisionItem) {
-  if (decision.decision_type === "review_product_state_mapping") {
-    return "Po ręcznym przeglądzie porównamy kolejne odczyty Merchant i stan produktów w Ads dla tych samych produktów. Bez pełnego okna po zmianie WILQ nie będzie obiecywał zwrotu z reklam, przychodu ani wpływu naprawy.";
-  }
-  if (decision.decision_type === "review_feed_status") {
-    return "Po zatwierdzonym działaniu sprawdzimy kolejny odczyt Merchant: status pliku produktowego, liczbę zgłoszeń i czy problem nadal występuje w tych samych kontekstach raportowania.";
-  }
-  return "Po ręcznym przeglądzie i ewentualnie zatwierdzonym podglądzie zmian sprawdzimy kolejny odczyt Merchant: czy ten sam typ problemu, atrybut i kontekst raportowania nadal występują. Nie obiecujemy odzyskanego zatwierdzenia ani wpływu na przychód bez audytu i danych po zmianie.";
 }
 
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
