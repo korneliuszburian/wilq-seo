@@ -164,13 +164,14 @@ claims still remain blocked until human review and ActionObject flow.
 After context loss, read:
 
 1. `docs/CONTEXT.md` - durable index of current runtime, skill eval harness and key docs.
-2. `docs/PROGRESS.md` - latest short progress ledger and current gaps.
-3. `docs/goals/archive/005-goal.md` - active goal and current execution boundaries.
-4. `PLANS.md` - active long-running ExecPlan and latest decision log.
-5. `docs/goals/001-goal.md` - historical cleanup contract and owner-deferred UAT context.
-6. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.
-7. `bd prime` - Beads recovery context, persistent task memories and session rules.
-8. `bd ready --json` - current unblocked development work graph.
+2. `docs/dashboard-state.md` - current per-route dashboard usefulness/API map; read before dashboard work.
+3. `docs/PROGRESS.md` - latest short progress ledger and current gaps.
+4. `docs/goals/archive/005-goal.md` - active goal and current execution boundaries.
+5. `PLANS.md` - active long-running ExecPlan and latest decision log.
+6. `docs/goals/001-goal.md` - historical cleanup contract and owner-deferred UAT context.
+7. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.
+8. `bd prime` - Beads recovery context, persistent task memories and session rules.
+9. `bd ready --json` - current unblocked development work graph.
 
 Keep progress and skill eval findings in those docs instead of bloating AGENTS.md.
 Keep all recovery docs aggressively pruned: remove or archive outdated/done
@@ -267,6 +268,13 @@ Operator-facing content must defend itself: every first-screen summary,
 decision card and empty state should be understandable without developer
 translation and should state the decision, reason, proof, blocker or next safe
 step directly.
+
+Before any dashboard work, read `docs/dashboard-state.md` and the relevant
+surface row. Treat it as the current operating map, not a historical audit. If
+you change a dashboard route, API view-model, marketer-facing behavior or
+screen readiness, update the affected row by replacing the current state instead
+of appending another audit. Do not add new dashboard endpoints or duplicate UI
+patterns until checking the API reuse map in that file.
 
 Dashboard work must be tested as marketer usefulness, not only as rendering.
 For every important screen, keep a current score and next tuning target. Use

@@ -8857,19 +8857,24 @@ describe("WILQ dashboard", () => {
   it("content route renders condensed selected decision with expandable detail", async () => {
     const mockupRouteSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
     expect(mockupRouteSource).toContain("ContentPlannerMockupViewport");
-    expect(mockupRouteSource).toContain("Kolejka decyzji SEO i treści");
-    expect(mockupRouteSource).toContain("Najbliższa decyzja treści");
-    expect(mockupRouteSource).toContain("Czego WILQ nie obiecuje");
-    expect(mockupRouteSource).toContain("Kolejka treści i SEO");
+    expect(mockupRouteSource).toContain("Widok pracy nad treściami");
+    expect(mockupRouteSource).toContain("Aktualna strona do pracy");
+    expect(mockupRouteSource).toContain("Dev i ACF");
+    expect(mockupRouteSource).toContain("Obecne sekcje publicznej strony");
+    expect(mockupRouteSource).toContain("Czego dziś nie obiecujemy");
+    expect(mockupRouteSource).toContain("Pozostałe treści i tropy");
     expect(mockupRouteSource).toContain("Podgląd sygnałów SEO");
     expect(mockupRouteSource).toContain("Aktualna treść");
     expect(mockupRouteSource).toContain("wordpress_content_inventory_status");
+    expect(mockupRouteSource).toContain("confirmedPublicContent");
+    expect(mockupRouteSource).toContain("ekologus.dev.proudsite.pl");
     expect(mockupRouteSource).toContain('header: "Sygnały"');
     expect(mockupRouteSource).toContain("DenseQueueTable");
     expect(mockupRouteSource).toContain("ActionLifecycleStrip");
     expect(mockupRouteSource).not.toContain("ForbiddenClaimsStrip");
     expect(mockupRouteSource).not.toContain('empty="brak"');
     expect(mockupRouteSource).not.toContain("Stan danych treści");
+    expect(mockupRouteSource).not.toContain("WILQ widzi 2 kandydat");
     expect(mockupRouteSource).not.toContain("formatContentEvidenceCount");
     expect(mockupRouteSource).not.toContain("formatContentActionCount");
   });

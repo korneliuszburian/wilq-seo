@@ -13,9 +13,11 @@ import {
   ActionObject,
   ContentDiagnosticsResponse,
   ContentPreflightResponse,
+  WordPressAuthoringProfile,
   getActions,
   getContentDiagnostics,
   getContentPreflight,
+  getWordPressAuthoringProfile,
 } from "../lib/api";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { formatContentMetricValue } from "../lib/contentLabels";
@@ -61,6 +63,11 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
     queryFn: getActions,
     enabled: diagnostics.isSuccess
   });
+  const authoringProfile = useQuery({
+    queryKey: ["content-wordpress-authoring-profile"],
+    queryFn: getWordPressAuthoringProfile,
+    enabled: diagnostics.isSuccess
+  });
 
   if (diagnostics.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
@@ -76,7 +83,12 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <ContentPlannerMockupViewport title={title} data={data} preflight={preflight.data} />
+      <ContentPlannerMockupViewport
+        title={title}
+        data={data}
+        preflight={preflight.data}
+        authoringProfile={authoringProfile.data}
+      />
 
       <ContentPreflightPanel data={preflight.data} isLoading={preflight.isLoading} isError={Boolean(preflight.error)} />
 
@@ -98,11 +110,13 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 function ContentPlannerMockupViewport({
   title,
   data,
-  preflight
+  preflight,
+  authoringProfile
 }: {
   title: string;
   data: ContentDiagnosticsResponse;
   preflight: ContentPreflightResponse | undefined;
+  authoringProfile: WordPressAuthoringProfile | undefined;
 }) {
   const selectedDecision = contentSelectedPrimaryDecision(data);
   const primaryPreflight = preflight?.primary_item ?? undefined;
@@ -112,7 +126,7 @@ function ContentPlannerMockupViewport({
     <div className="mb-6 grid gap-5">
       <DashboardToolbar
         title={title}
-        description="Kolejka decyzji SEO i treści: GSC pokazuje popyt, WordPress chroni przed duplikacją, Ahrefs jest pomocniczym tropem, a szkic lub publikacja wymagają review."
+        description="Widok pracy nad treściami: konkretna strona, obecne sekcje WordPress, query z GSC, pomocnicze tropy Ahrefs i następny krok na devie."
         dateLabel="Dzisiaj"
         refreshLabel="Odśwież dane"
       />
@@ -134,15 +148,20 @@ function ContentPlannerMockupViewport({
 
       <div className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
         <ContentNearestDecisionCard decision={selectedDecision} preflight={primaryPreflight} />
+        <ContentDevWorkspacePanel authoringProfile={authoringProfile} />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
+        <ContentCurrentSectionsPanel decision={selectedDecision} />
         <BlockerPanel
-          title="Czego WILQ nie obiecuje"
+          title="Czego dziś nie obiecujemy"
           badgeLabel="review required"
           items={contentBlockerPanelItems(data, primaryPreflight)}
         />
       </div>
 
       <DenseQueueTable
-        title="Kolejka treści i SEO"
+        title="Pozostałe treści i tropy"
         rows={rows}
         getRowKey={(row) => row.id}
         selectedRowKey={selectedDecision?.id}
@@ -230,11 +249,13 @@ function ContentNearestDecisionCard({
   const statusLabel = preflight?.status_label ?? decision.status_label ?? "do sprawdzenia";
   const modeLabel = preflight?.recommended_mode_label ?? decision.decision_type_label ?? "decyzja treści";
   const reviewRequired = !(preflight?.draft_allowed || preflight?.wordpress_draft_allowed);
+  const metricEntries = contentPriorityMetricEntries(decision);
+  const workflowHref = `/content-workflow?work_item_id=${encodeURIComponent(contentWorkItemId(decision))}`;
 
   return (
     <section className="overflow-hidden rounded-md border border-action/30 bg-white shadow-sm">
       <div className="flex min-h-12 items-center justify-between gap-3 border-b border-action/20 bg-blue-50 px-4 py-3">
-        <h2 className="text-base font-semibold text-ink">Najbliższa decyzja treści</h2>
+        <h2 className="text-base font-semibold text-ink">Aktualna strona do pracy</h2>
         <StatusPill label={statusLabel} tone={reviewRequired ? "amber" : "green"} />
       </div>
       <div className="p-4">
@@ -243,8 +264,15 @@ function ContentNearestDecisionCard({
             <BookOpenCheck aria-hidden="true" size={24} />
           </div>
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold leading-6 text-ink">{decision.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-700">{decision.summary ?? decision.rationale}</p>
+            <p className="text-xs font-semibold uppercase tracking-normal text-action">
+              {url ? shortPath(url) : "adres do ustalenia"}
+            </p>
+            <h3 className="mt-1 text-lg font-semibold leading-6 text-ink">
+              {decision.wordpress_title_or_h1 ?? decision.title}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {contentPlainDecisionReason(decision)}
+            </p>
           </div>
         </div>
 
@@ -257,10 +285,10 @@ function ContentNearestDecisionCard({
           <StatusPill label="publikacja zablokowana" tone="red" />
         </div>
 
-        <div className="mt-4 grid gap-3 rounded-md border border-line bg-slate-50 p-3 md:grid-cols-3">
-          <MetricTile label="Typ" value={decision.decision_type_label || "decyzja treści"} />
-          <MetricTile label="Dowody" value={decision.evidence_summary_label} />
-          <MetricTile label="Akcje" value={decision.action_summary_label} />
+        <div className="mt-4 grid gap-3 rounded-md border border-line bg-slate-50 p-3 md:grid-cols-5">
+          {metricEntries.map(([label, value]) => (
+            <MetricTile key={label} label={label} value={value} />
+          ))}
         </div>
 
         <div className="mt-4 grid gap-2 text-sm leading-6 text-slate-700">
@@ -277,7 +305,7 @@ function ContentNearestDecisionCard({
           />
           <TraceLine
             label="Aktualne sekcje"
-            values={decision.wordpress_section_headings.slice(0, 6)}
+            values={decision.wordpress_section_headings.slice(0, 4)}
             empty="brak odczytu H2/sekcji dla tego URL"
           />
           <TraceLine
@@ -312,15 +340,134 @@ function ContentNearestDecisionCard({
           ) : null}
           <TraceLine
             label="Zapytania"
-            values={decision.queries.slice(0, 4)}
+            values={decision.queries.slice(0, 5)}
             empty="brakuje potwierdzonych zapytań GSC"
           />
           <TraceLine
-            label="Bezpieczny krok"
+            label="Następny krok"
             values={[preflight?.next_step ?? decision.next_step]}
           />
         </div>
+
+        <div className="mt-5 flex flex-wrap gap-3">
+          <a
+            href={workflowHref}
+            className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Otwórz workflow treści
+          </a>
+          {url ? (
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 items-center rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink hover:bg-slate-50"
+            >
+              Otwórz publiczną stronę
+            </a>
+          ) : null}
+        </div>
       </div>
+    </section>
+  );
+}
+
+function ContentDevWorkspacePanel({
+  authoringProfile
+}: {
+  authoringProfile: WordPressAuthoringProfile | undefined;
+}) {
+  const layouts = authoringProfile?.acf.layouts ?? [];
+  const writeEnabled = Boolean(authoringProfile?.write_boundary.draft_writes_enabled_by_env);
+  const acfLayouts = layouts.slice(0, 6).map((layout) => layout.label || layout.name);
+  const acfLayoutCount = layouts.length;
+
+  return (
+    <section className="overflow-hidden rounded-md border border-line bg-white shadow-sm">
+      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line bg-slate-50 px-4 py-3">
+        <h2 className="text-base font-semibold text-ink">Dev i ACF</h2>
+        <StatusPill label={writeEnabled ? "draft write włączony" : "draft write wyłączony"} tone={writeEnabled ? "green" : "amber"} />
+      </div>
+      <div className="grid gap-4 p-4 text-sm leading-6 text-slate-700">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Roboczy WordPress</p>
+          <p className="mt-1 font-semibold text-ink">ekologus.dev.proudsite.pl</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Dev służy do pisania i układania nowych sekcji; nie traktuj dev hosta jako adresu kanonicznego.
+            Publicznym punktem odniesienia SEO pozostaje ekologus.pl.
+          </p>
+        </div>
+        <div className="grid gap-3 rounded-md border border-line bg-slate-50 p-3 sm:grid-cols-2">
+          <MetricTile label="Tryb authoringu" value={authoringProfile?.authoring_target ?? "do sprawdzenia"} />
+          <MetricTile label="Layouty ACF" value={acfLayoutCount} />
+          <MetricTile label="REST WordPress" value={authoringProfile?.rest_api.status ?? "do sprawdzenia"} />
+          <MetricTile label="WP-CLI" value={authoringProfile?.wp_cli.status ?? "do sprawdzenia"} />
+        </div>
+        <TraceLine
+          label="Dostępne typy sekcji"
+          values={acfLayouts}
+          empty="brak odczytu layoutów ACF"
+        />
+        <TraceLine
+          label="Co można zrobić"
+          values={[
+            "analizować obecną stronę publiczną",
+            "przygotować plan nowych sekcji",
+            writeEnabled ? "zapisać szkic na devie po akcji i review" : "przygotować draft package bez zapisu"
+          ]}
+        />
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="https://ekologus.dev.proudsite.pl/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Otwórz dev
+          </a>
+          <a
+            href="https://ekologus.dev.proudsite.pl/wp-admin/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-10 items-center rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink hover:bg-slate-50"
+          >
+            Otwórz WordPress admin
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContentCurrentSectionsPanel({ decision }: { decision: ContentDecisionItem | undefined }) {
+  if (!decision) return null;
+  const sections = decision.wordpress_section_headings.slice(0, 12);
+  return (
+    <section className="rounded-md border border-line bg-white p-4 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-ink">Obecne sekcje publicznej strony</h2>
+          <p className="mt-1 text-sm leading-5 text-slate-600">
+            To jest aktualny układ, od którego marketer zaczyna pracę. Nowe sekcje na devie powinny uzupełniać ten układ, nie ignorować go.
+          </p>
+        </div>
+        <StatusPill
+          label={sections.length > 0 ? `${sections.length} sekcji` : "brak sekcji"}
+          tone={sections.length > 0 ? "green" : "amber"}
+        />
+      </div>
+      {sections.length > 0 ? (
+        <ol className="grid gap-2 md:grid-cols-2">
+          {sections.map((section, index) => (
+            <li key={`${section}-${index}`} className="rounded-md border border-line bg-slate-50 px-3 py-2 text-sm leading-5 text-slate-700">
+              <span className="mr-2 font-semibold text-action">{index + 1}.</span>
+              {section}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <BlockerNotice message="Brakuje odczytu sekcji. Najpierw pobierz aktualną strukturę strony albo pracuj w trybie nowych sekcji na devie bez claimów SEO." />
+      )}
     </section>
   );
 }
@@ -384,6 +531,49 @@ function ContentSeoSignalPreview({
       </div>
     </section>
   );
+}
+
+function contentPriorityMetricEntries(decision: ContentDecisionItem) {
+  const preferredLabels = ["zapytania", "wyświetlenia", "kliknięcia", "CTR", "pozycja", "sekcje WP"];
+  const entries: Array<[string, string | number]> = [];
+  for (const label of preferredLabels) {
+    const value = decision.metric_tiles[label];
+    if (typeof value === "string" || typeof value === "number") {
+      entries.push([label, value]);
+    }
+  }
+
+  if (entries.length >= 4) return entries.slice(0, 5);
+
+  const fallbackEntries = Object.entries(decision.metric_tiles).filter(
+    (entry): entry is [string, string | number] =>
+      !preferredLabels.includes(entry[0]) &&
+      (typeof entry[1] === "string" || typeof entry[1] === "number")
+  );
+  return [...entries, ...fallbackEntries].slice(0, 5);
+}
+
+function contentPlainDecisionReason(decision: ContentDecisionItem) {
+  const url = decision.final_canonical_url ?? decision.intended_final_url ?? decision.page;
+  if (decision.wordpress_match === "found" && url) {
+    const sectionLabel =
+      decision.wordpress_section_count && decision.wordpress_section_count > 0
+        ? `${decision.wordpress_section_count} sekcji`
+        : "potwierdzone sekcje";
+    const queryLabel =
+      decision.query_count && decision.query_count > 0
+        ? `${decision.query_count} zapytań z GSC`
+        : "zapytania z GSC";
+    return `Pracuj na istniejącej stronie ${shortPath(url)}. WordPress potwierdza aktualny URL, ${sectionLabel} i ${queryLabel}. Najpierw porównaj obecne sekcje z query, potem zdecyduj: odświeżyć, scalić albo zostawić.`;
+  }
+  if (decision.source_connectors.includes("ahrefs")) {
+    return "To jest tylko trop z Ahrefs. Bez publicznego URL-a, spisu treści i zamkniętej duplikacji nie zaczynaj pisania.";
+  }
+  return decision.summary ?? decision.rationale;
+}
+
+function contentWorkItemId(decision: ContentDecisionItem) {
+  return `content_work_item_${decision.id}`;
 }
 
 function contentPlannerStatTiles(
@@ -739,13 +929,12 @@ function ContentPreflightPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Czy można pisać?
+            Plan pracy nad treścią
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ najpierw sprawdza, czy bezpieczny kierunek to zachowanie,
-            odświeżenie, scalenie, utworzenie czy blokada. Szkic i WordPress
-            pozostają zablokowane, dopóki nie przejdą plan treści, ryzykowne
-            obietnice i decyzja człowieka.
+            Najpierw wybierz tryb pracy dla konkretnego URL-a: zachować,
+            odświeżyć, scalić, utworzyć albo zablokować. Szkic na devie jest
+            kolejnym krokiem dopiero po planie i sprawdzeniu obietnic.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
@@ -776,7 +965,7 @@ function ContentPreflightPanel({
             />
           </div>
           <div className="rounded-md border border-line bg-slate-50 p-3">
-            <h3 className="text-sm font-semibold text-ink">Następny bezpieczny krok</h3>
+            <h3 className="text-sm font-semibold text-ink">Następny krok</h3>
             <p className="mt-2 text-sm font-medium leading-6 text-ink">{item.next_step}</p>
             <TraceLine label="Wspólne zapytania" values={[item.query_overlap_summary]} />
           </div>
@@ -911,6 +1100,13 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
 
 function contentSelectedPrimaryDecision(data: ContentDiagnosticsResponse) {
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const confirmedPublicContent = data.decision_queue.find((decision) =>
+    Boolean(decision.page || decision.final_canonical_url || decision.intended_final_url) &&
+    decision.wordpress_match === "found" &&
+    decision.wordpress_section_headings.length > 0
+  );
+  if (confirmedPublicContent) return confirmedPublicContent;
+
   const selectedDecisionId = data.marketer_decision?.technical_decision_id;
   if (selectedDecisionId) return decisionsById.get(selectedDecisionId) ?? data.decision_queue[0];
   const topDecisionId = data.operator_summary.top_decision_ids[0];
