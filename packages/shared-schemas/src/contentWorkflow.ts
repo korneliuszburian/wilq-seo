@@ -43,6 +43,7 @@ export const ContentMeasurementWindowStatusSchema = z.enum([
   "ready_for_review",
   "closed"
 ]);
+export const ContentWordPressSectionInventoryStatusSchema = z.enum(["available", "missing"]);
 
 export const ContentWorkItemSchema = z.object({
   id: z.string(),
@@ -51,6 +52,12 @@ export const ContentWorkItemSchema = z.object({
   final_canonical_url: z.string().nullable().optional(),
   intended_final_url: z.string().nullable().optional(),
   preview_url: z.string().nullable().optional(),
+  wordpress_title_or_h1: z.string().nullable().optional(),
+  wordpress_section_headings: z.array(z.string()).default([]),
+  wordpress_section_count: z.number().nullable().optional(),
+  wordpress_section_inventory_status: ContentWordPressSectionInventoryStatusSchema.default(
+    "missing"
+  ),
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
   inventory_status: ContentInventoryStatusSchema,

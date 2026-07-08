@@ -39,6 +39,7 @@ ContentMeasurementWindowStatus = Literal[
     "ready_for_review",
     "closed",
 ]
+ContentWordPressSectionInventoryStatus = Literal["available", "missing"]
 ContentWorkflowAction = Literal[
     "prepare_sales_brief",
     "prepare_draft",
@@ -75,6 +76,10 @@ class ContentWorkItem(BaseModel):
     final_canonical_url: str | None = None
     intended_final_url: str | None = None
     preview_url: str | None = None
+    wordpress_title_or_h1: str | None = None
+    wordpress_section_headings: list[str] = Field(default_factory=list)
+    wordpress_section_count: int | None = None
+    wordpress_section_inventory_status: ContentWordPressSectionInventoryStatus = "missing"
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     inventory_status: ContentInventoryStatus = "missing"

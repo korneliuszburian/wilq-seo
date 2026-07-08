@@ -510,19 +510,20 @@ describe("ContentWorkflowSurface", () => {
       });
     expect(await screen.findByRole("button", { name: "Mapowanie ACF gotowe" })).toBeDisabled();
     expect(screen.getByText(/layoutu Podstrona/)).toBeInTheDocument();
-    expect(screen.getByText("Wybrany layout")).toBeInTheDocument();
-    expect(screen.getByText("Podstrona (podstrona)")).toBeInTheDocument();
+    expect(screen.getAllByText("Wybrany layout").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Podstrona (podstrona)").length).toBeGreaterThan(0);
     expect(screen.getByText("Mapowanie pól ACF")).toBeInTheDocument();
-    expect(screen.getByText("Tytuł (tytul)")).toBeInTheDocument();
-    expect(screen.getByText("Główny opis (glowny_opis)")).toBeInTheDocument();
-    expect(screen.getByText("Lead (lead)")).toBeInTheDocument();
-    expect(screen.getByText("Elementy (elementy)")).toBeInTheDocument();
-    expect(screen.getByText(/Kandydat wiersza ACF/)).toBeInTheDocument();
-    expect(screen.getByText(/Wiersz do ręcznego przeglądu: Kogo dotyczy BDO/))
-      .toBeInTheDocument();
-    expect(screen.getByText(/Dowody: ev_gsc_bdo/)).toBeInTheDocument();
-    expect(screen.getByText(/wybór layoutu\/wierszy wymaga osobnego ręcznego przeglądu/))
-      .toBeInTheDocument();
+    expect(screen.getAllByText("Tytuł (tytul)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Główny opis (glowny_opis)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Lead (lead)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Elementy (elementy)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Kandydat wiersza ACF/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Wiersz do ręcznego przeglądu: Kogo dotyczy BDO/).length)
+      .toBeGreaterThan(0);
+    expect(screen.getAllByText(/Dowody: ev_gsc_bdo/).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/wybór layoutu\/wierszy wymaga osobnego ręcznego przeglądu/).length
+    ).toBeGreaterThan(0);
     expect(screen.getByText(/Publikacja i nadpisywanie pozostają zablokowane/))
       .toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
@@ -720,10 +721,49 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText(/Szkic utworzony na devie jako WordPress draft, ID 987/))
       .toBeInTheDocument();
     expect(screen.getByText("Odczyt z dev WordPress")).toBeInTheDocument();
-    expect(screen.getByText(/BDO dla firm - szkic dev/)).toBeInTheDocument();
+    expect(screen.getAllByText(/BDO dla firm - szkic dev/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Szkic opisuje obowiązki BDO/)).toBeInTheDocument();
     expect(screen.getByText("glowny_opis")).toBeInTheDocument();
+    expect(screen.getByText("Plan sekcji i ACF")).toBeInTheDocument();
+    expect(screen.getByText("Aktualna publiczna treść")).toBeInTheDocument();
+    expect(screen.getByText(/Co to jest BDO/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Kogo dotyczy BDO/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Przygotuj mapowanie sekcji ACF" }))
+      .toBeEnabled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("prepares ACF mapping from the section writing workbench", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const button = await screen.findByRole("button", {
+      name: "Przygotuj mapowanie sekcji ACF"
+    });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(postContentWorkItemWordPressAuthoringPayloadPreview).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postContentWorkItemWordPressAuthoringPayloadPreview).mock.calls[0]?.[0])
+      .toEqual({
+        handoff: wordpressHandoff(),
+        draft_package: draftPackage(),
+        authoring_profile: wordpressAuthoringProfile()
+      });
+    expect(await screen.findAllByText("Wybrany layout")).not.toHaveLength(0);
+    expect(screen.getAllByText("Podstrona (podstrona)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Tytuł (tytul)").length).toBeGreaterThan(0);
   });
 });
 
@@ -735,6 +775,14 @@ function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
     final_canonical_url: "https://ekologus.pl/bdo/",
     intended_final_url: "https://ekologus.pl/bdo/",
     preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+    wordpress_title_or_h1: "BDO dla firm",
+    wordpress_section_headings: [
+      "Co to jest BDO",
+      "Kogo dotyczy BDO",
+      "Jak Ekologus pomaga w dokumentacji"
+    ],
+    wordpress_section_count: 3,
+    wordpress_section_inventory_status: "available",
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
     inventory_status: "resolved",
@@ -1060,8 +1108,24 @@ function draftPackage() {
     claim_ledger_id: "claim_ledger_bdo",
     draft_kind: "outline" as const,
     title: "BDO dla firm",
-    sections: [],
-    section_to_evidence_map: [],
+    sections: [
+      {
+        heading: "Kogo dotyczy BDO",
+        purpose: "Wyjaśnić, kiedy firma powinna sprawdzić obowiązki BDO.",
+        evidence_ids: ["ev_gsc_bdo"],
+        draft_notes: ["Nie obiecuj pełnej zgodności bez sprawdzenia przypadku."]
+      },
+      {
+        heading: "Jak przygotować dokumenty",
+        purpose: "Pokazać, jakie informacje firma powinna zebrać przed rozmową z Ekologus.",
+        evidence_ids: ["ev_wp_bdo"],
+        draft_notes: ["Pisz praktycznie, bez obietnic prawnych."]
+      }
+    ],
+    section_to_evidence_map: [
+      { section_heading: "Kogo dotyczy BDO", evidence_ids: ["ev_gsc_bdo"] },
+      { section_heading: "Jak przygotować dokumenty", evidence_ids: ["ev_wp_bdo"] }
+    ],
     claims_used: [],
     claims_removed_or_blocked: [],
     human_review_questions: ["Czy to brzmi jak Ekologus?"],
