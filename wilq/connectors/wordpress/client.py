@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from html import unescape
 from html.parser import HTMLParser
-import json
 from typing import Any
 from urllib.parse import urljoin
 
@@ -63,7 +63,26 @@ class WordPressCredentials:
     site_kind: str
 
 
+@dataclass(frozen=True)
+class WordPressDraftPostReadback:
+    post_id: str
+    status: str
+    title: str
+    link: str
+    modified_gmt: str
+    content_summary: str
+    content_word_count: int | None
+    acf_field_count: int | None
+    acf_field_names: list[str]
+
+
 class WordPressDraftWriteError(RuntimeError):
+    def __init__(self, public_message: str) -> None:
+        super().__init__(public_message)
+        self.public_message = public_message
+
+
+class WordPressDraftReadError(RuntimeError):
     def __init__(self, public_message: str) -> None:
         super().__init__(public_message)
         self.public_message = public_message
@@ -180,6 +199,53 @@ def create_wordpress_draft_post(
     return _created_draft_post_id(response)
 
 
+def read_wordpress_draft_post(
+    post_id: str,
+    *,
+    connector_id: str = "wordpress_ekologus",
+    http_client: httpx.Client | None = None,
+) -> WordPressDraftPostReadback:
+    credentials = _wordpress_credentials(connector_id)
+    if credentials is None:
+        raise WordPressDraftReadError("WILQ nie zna tego connectora WordPress.")
+    missing = _missing_credentials(connector_id, credentials)
+    if missing:
+        raise WordPressDraftReadError(
+            "Brakuje konfiguracji WordPress wymaganej do odczytu szkicu."
+        )
+    normalized_post_id = str(post_id).strip()
+    if not normalized_post_id:
+        raise WordPressDraftReadError("Brakuje ID szkicu WordPress do odczytu.")
+
+    owns_client = http_client is None
+    client = http_client or httpx.Client(timeout=30)
+    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
+    try:
+        try:
+            response = client.get(
+                urljoin(credentials.base_url or "", f"wp-json/wp/v2/posts/{normalized_post_id}"),
+                auth=auth,
+                params={
+                    "context": "edit",
+                    "_fields": WORDPRESS_READ_FIELDS,
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise WordPressDraftReadError(
+                f"WordPress odrzucił odczyt szkicu HTTP {exc.response.status_code}."
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise WordPressDraftReadError(
+                f"Połączenie WordPress przerwało odczyt szkicu ({type(exc).__name__})."
+            ) from exc
+    finally:
+        if owns_client:
+            client.close()
+
+    return _draft_post_readback(response, normalized_post_id)
+
+
 def _created_draft_post_id(response: httpx.Response) -> str:
     body = response.json()
     if not isinstance(body, dict):
@@ -192,6 +258,55 @@ def _created_draft_post_id(response: httpx.Response) -> str:
             "WordPress nie potwierdził, że utworzony wpis jest szkicem."
         )
     return str(post_id)
+
+
+def _draft_post_readback(
+    response: httpx.Response,
+    requested_post_id: str,
+) -> WordPressDraftPostReadback:
+    body = response.json()
+    if not isinstance(body, dict):
+        raise WordPressDraftReadError("WordPress zwrócił nieprawidłową odpowiedź szkicu.")
+    post_id = body.get("id")
+    content_inventory = _content_inventory(body.get("content"))
+    acf_inventory = _acf_inventory(body.get("acf"))
+    acf_names = _json_string_list(acf_inventory.get("acf_field_names_json"))
+    content_word_count = _optional_int(content_inventory.get("content_word_count"))
+    acf_field_count = _optional_int(acf_inventory.get("acf_field_count"))
+    return WordPressDraftPostReadback(
+        post_id=str(post_id) if post_id is not None else requested_post_id,
+        status=body.get("status") if isinstance(body.get("status"), str) else "",
+        title=_wordpress_title(body.get("title")),
+        link=body.get("link") if isinstance(body.get("link"), str) else "",
+        modified_gmt=(
+            body.get("modified_gmt") if isinstance(body.get("modified_gmt"), str) else ""
+        ),
+        content_summary=content_inventory.get("content_summary", ""),
+        content_word_count=content_word_count,
+        acf_field_count=acf_field_count,
+        acf_field_names=acf_names,
+    )
+
+
+def _json_string_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [str(item) for item in parsed if str(item).strip()]
+
+
+def _optional_int(value: str | None) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 def _wordpress_credentials(connector_id: str) -> WordPressCredentials | None:
@@ -672,10 +787,17 @@ def _content_inventory(value: Any) -> dict[str, str]:
 
 def _acf_inventory(value: Any) -> dict[str, str]:
     if isinstance(value, dict):
-        field_names = [str(key) for key, val in value.items() if key and val not in (None, "", [], {})]
+        field_names = [
+            str(key)
+            for key, val in value.items()
+            if key and val not in (None, "", [], {})
+        ]
         return {
             "acf_field_count": str(len(field_names)),
-            "acf_field_names_json": json.dumps(field_names[:WORDPRESS_BLOCK_NAME_LIMIT], ensure_ascii=False),
+            "acf_field_names_json": json.dumps(
+                field_names[:WORDPRESS_BLOCK_NAME_LIMIT],
+                ensure_ascii=False,
+            ),
         }
     if isinstance(value, list):
         return {"acf_field_count": str(len(value))}
@@ -758,7 +880,10 @@ class _HtmlMetadataParser(HTMLParser):
             self._capture = "h1"
             self._capture_tag = normalized_tag
             self._chunks = []
-        elif normalized_tag in {"h2", "h3"} and len(self.section_headings) < WORDPRESS_SECTION_HEADING_LIMIT:
+        elif (
+            normalized_tag in {"h2", "h3"}
+            and len(self.section_headings) < WORDPRESS_SECTION_HEADING_LIMIT
+        ):
             self._capture = "section_heading"
             self._capture_tag = normalized_tag
             self._chunks = []

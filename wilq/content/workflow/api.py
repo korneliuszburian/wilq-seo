@@ -4,7 +4,11 @@ from datetime import date
 from typing import Literal
 
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
-from wilq.connectors.wordpress.client import create_wordpress_draft_post
+from wilq.connectors.wordpress.client import (
+    WordPressDraftReadError,
+    create_wordpress_draft_post,
+    read_wordpress_draft_post,
+)
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefBuildResult,
@@ -43,8 +47,8 @@ from wilq.content.handoff.wordpress_authoring import (
     build_content_wordpress_authoring_payload_preview,
 )
 from wilq.content.handoff.wordpress_execution import (
-    ContentWordPressDraftWriteAuthorization,
     ContentWordPressDraftExecutionResult,
+    ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.inventory.records import (
@@ -83,6 +87,8 @@ from wilq.content.review.human import (
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
+    ContentWordPressDraftReadback,
+    ContentWordPressDraftReadbackBlocker,
     ContentWordPressDraftWriteReadinessBlocker,
     ContentWordPressDraftWriteReadinessRequirement,
     ContentWordPressDraftWriteReadinessResponse,
@@ -401,6 +407,8 @@ def build_content_wordpress_draft_activation_packet_response(
     )
     handoff_blockers = [blocker.code for blocker in handoff_result.blockers]
     execution_blockers = [blocker.code for blocker in execution.blockers]
+    execution_ready = execution.status in {"dry_run_ready", "created"}
+    draft_readback = _wordpress_draft_readback(execution)
     human_review_ready = "missing_human_review" not in handoff_blockers
     audit_ready = "missing_audit" not in handoff_blockers
     activation_missing_step = _wordpress_draft_activation_missing_step(
@@ -408,7 +416,7 @@ def build_content_wordpress_draft_activation_packet_response(
         human_review_ready=human_review_ready,
         audit_ready=audit_ready,
         handoff_ready=handoff is not None,
-        dry_run_ready=execution.status == "dry_run_ready",
+        dry_run_ready=execution_ready,
     )
     return ContentWordPressDraftActivationPacketResponse(
         action_id=action_id,
@@ -429,8 +437,8 @@ def build_content_wordpress_draft_activation_packet_response(
         audit_ready=audit_ready,
         handoff_ready=handoff is not None,
         handoff_id=handoff.id if handoff is not None else None,
-        dry_run_ready=execution.status == "dry_run_ready",
-        live_write_enabled_by_env=False,
+        dry_run_ready=execution_ready,
+        live_write_enabled_by_env=_wordpress_draft_writes_enabled(),
         handoff_blockers=handoff_blockers,
         execution_blockers=execution_blockers,
         activation_missing_step=activation_missing_step,
@@ -442,20 +450,81 @@ def build_content_wordpress_draft_activation_packet_response(
             human_review_ready=human_review_ready,
             audit_ready=audit_ready,
             handoff_ready=handoff is not None,
-            dry_run_ready=execution.status == "dry_run_ready",
+            dry_run_ready=execution_ready,
         ),
         execution_result=execution,
+        draft_readback=draft_readback,
         operator_next_step=_wordpress_draft_activation_next_step(
             handoff_blockers,
             execution_blockers,
+            execution_status=execution.status,
+            draft_readback=draft_readback,
         ),
         next_steps=_wordpress_draft_activation_steps(
             draft_package_ready=draft_package is not None,
             handoff_blockers=handoff_blockers,
             execution_blockers=execution_blockers,
+            execution_status=execution.status,
         ),
         evidence_ids=item.evidence_ids,
         source_connectors=item.source_connectors,
+    )
+
+
+def _wordpress_draft_readback(
+    execution: ContentWordPressDraftExecutionResult,
+) -> ContentWordPressDraftReadback | None:
+    if execution.status != "created":
+        return None
+    post_id = (execution.wordpress_post_id or "").strip()
+    if not post_id:
+        return ContentWordPressDraftReadback(
+            status="blocked",
+            wordpress_post_id=None,
+            blockers=[
+                ContentWordPressDraftReadbackBlocker(
+                    code="missing_wordpress_post_id",
+                    label="Brak ID szkicu WordPress",
+                    reason=(
+                        "WILQ zapisał wynik utworzenia szkicu, ale nie ma ID wpisu "
+                        "potrzebnego do odczytu z dev WordPressa."
+                    ),
+                    next_step=(
+                        "Utwórz szkic ponownie przez ActionObject albo sprawdź audit "
+                        "wykonania zapisu."
+                    ),
+                )
+            ],
+        )
+    try:
+        readback = read_wordpress_draft_post(post_id)
+    except WordPressDraftReadError as exc:
+        return ContentWordPressDraftReadback(
+            status="blocked",
+            wordpress_post_id=post_id,
+            blockers=[
+                ContentWordPressDraftReadbackBlocker(
+                    code="wordpress_draft_read_failed",
+                    label="Nie udało się odczytać szkicu WordPress",
+                    reason=exc.public_message,
+                    next_step=(
+                        "Sprawdź dostęp REST WordPress i odśwież panel szkicu. "
+                        "Nie traktuj samego ID jako potwierdzenia treści."
+                    ),
+                )
+            ],
+        )
+    return ContentWordPressDraftReadback(
+        status="available",
+        wordpress_post_id=readback.post_id,
+        post_status=readback.status,
+        title=readback.title,
+        link=readback.link,
+        modified_gmt=readback.modified_gmt,
+        content_summary=readback.content_summary,
+        content_word_count=readback.content_word_count,
+        acf_field_count=readback.acf_field_count,
+        acf_field_names=readback.acf_field_names,
     )
 
 
@@ -628,6 +697,9 @@ def _wordpress_draft_writes_enabled() -> bool:
 def _wordpress_draft_activation_next_step(
     handoff_blockers: list[str],
     execution_blockers: list[str],
+    *,
+    execution_status: Literal["dry_run_ready", "created", "blocked"],
+    draft_readback: ContentWordPressDraftReadback | None,
 ) -> str:
     blockers = {*handoff_blockers, *execution_blockers}
     if "missing_human_review" in blockers:
@@ -645,6 +717,16 @@ def _wordpress_draft_activation_next_step(
             "Najbliższy krok: usuń blokery handoffu/dry-run i wróć do packetu "
             "przed jakimkolwiek live write."
         )
+    if execution_status == "created":
+        if draft_readback is not None and draft_readback.status == "available":
+            return (
+                "Szkic istnieje na dev WordPress. Otwórz go, sprawdź realną treść "
+                "i przejdź do edycji sekcji zamiast ponownie tworzyć draft."
+            )
+        return (
+            "Szkic został utworzony, ale WILQ nie potwierdził jeszcze jego treści "
+            "z WordPress REST. Najpierw sprawdź odczyt szkicu."
+        )
     return (
         "Dry-run payload szkicu jest gotowy do review. Live write nadal wymaga "
         "ActionObject preview/review/confirm/audit i jawnie włączonego env."
@@ -656,6 +738,7 @@ def _wordpress_draft_activation_steps(
     draft_package_ready: bool,
     handoff_blockers: list[str],
     execution_blockers: list[str],
+    execution_status: Literal["dry_run_ready", "created", "blocked"],
 ) -> list[str]:
     steps = [
         "Utrzymaj zakres WordPress draft-only: bez publikacji i bez aktualizacji "
@@ -671,6 +754,10 @@ def _wordpress_draft_activation_steps(
         steps.append("Wróć do handoffu i dopiero potem sprawdź dry-run execution.")
     if "missing_draft_package" in execution_blockers and draft_package_ready is False:
         steps.append("Podepnij tę samą paczkę szkicu do execution dry-run.")
+    if not {*handoff_blockers, *execution_blockers} and execution_status == "created":
+        steps.append("Otwórz utworzony szkic na dev WordPress i sprawdź realną treść.")
+        steps.append("Kolejny etap: edytuj treść i sekcje ACF na devie, nadal bez publikacji.")
+        return steps
     if not {*handoff_blockers, *execution_blockers}:
         steps.append("Sprawdź payload dry-run, a live write zostaw wyłączony do osobnej decyzji.")
     return steps

@@ -563,6 +563,7 @@ function WordPressDraftWorkPanel({
     actions.executionResult ??
     (packet?.execution_result.status === "created" ? packet.execution_result : null);
   const hasCreatedDevDraft = latestCreatedExecution?.status === "created";
+  const draftReadback = packet?.draft_readback ?? null;
   const canCreateDevDraft = Boolean(
     readiness?.ready && writeAuthorization && packet?.handoff_ready && !hasCreatedDevDraft
   );
@@ -644,6 +645,9 @@ function WordPressDraftWorkPanel({
             {latestCreatedExecution ? (
               <WordPressDraftExecutionStatus result={latestCreatedExecution} />
             ) : null}
+            {draftReadback ? (
+              <WordPressDraftReadbackStatus readback={draftReadback} />
+            ) : null}
           </div>
         </div>
 
@@ -682,6 +686,69 @@ function WordPressDraftWorkPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function WordPressDraftReadbackStatus({
+  readback
+}: {
+  readback: NonNullable<ContentWordPressDraftActivationPacketResponse["draft_readback"]>;
+}) {
+  if (readback.status === "blocked") {
+    const blocker = readback.blockers[0];
+    return (
+      <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 px-3 py-2 text-sm leading-6 text-slate-700">
+        <p className="font-semibold text-wait">Odczyt szkicu wymaga sprawdzenia</p>
+        <p className="mt-1">
+          {blocker
+            ? `${blocker.label}. ${blocker.next_step}`
+            : "WILQ nie potwierdził jeszcze treści szkicu z dev WordPressa."}
+        </p>
+      </div>
+    );
+  }
+
+  const acfNames = readback.acf_field_names.slice(0, 6);
+  return (
+    <div className="mt-3 rounded-md border border-success/25 bg-success/5 px-3 py-3 text-sm leading-6 text-slate-700">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-success">Odczyt z dev WordPress</p>
+          <p className="mt-1 font-semibold text-ink">
+            {readback.title || "Szkic bez tytułu"}{" "}
+            <span className="font-normal text-slate-500">({readback.post_status || "bez statusu"})</span>
+          </p>
+        </div>
+        {readback.link ? (
+          <a
+            href={readback.link}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-8 items-center rounded-md border border-success/30 bg-white px-3 text-sm font-semibold text-success"
+          >
+            Otwórz szkic
+          </a>
+        ) : null}
+      </div>
+      {readback.content_summary ? (
+        <p className="mt-2">{readback.content_summary}</p>
+      ) : (
+        <p className="mt-2">WordPress zwrócił szkic, ale bez czytelnego streszczenia treści.</p>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+        <span className="rounded-md border border-line bg-white px-2 py-1">
+          {readback.content_word_count ?? 0} słów
+        </span>
+        <span className="rounded-md border border-line bg-white px-2 py-1">
+          {readback.acf_field_count ?? 0} pól ACF
+        </span>
+        {acfNames.map((name) => (
+          <span key={name} className="rounded-md border border-line bg-white px-2 py-1">
+            {name}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 

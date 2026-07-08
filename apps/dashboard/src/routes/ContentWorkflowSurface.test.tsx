@@ -689,7 +689,21 @@ describe("ContentWorkflowSurface", () => {
       handoff_blockers: [],
       execution_blockers: [],
       activation_missing_readiness_labels: [],
-      execution_result: wordpressDraftCreatedResponse().execution_result
+      execution_result: wordpressDraftCreatedResponse().execution_result,
+      draft_readback: {
+        status: "available",
+        connector: "wordpress_ekologus",
+        wordpress_post_id: "987",
+        post_status: "draft",
+        title: "BDO dla firm - szkic dev",
+        link: "https://ekologus.dev.proudsite.pl/?p=987",
+        modified_gmt: "2026-07-07T10:00:00",
+        content_summary: "Szkic opisuje obowiązki BDO i prowadzi do konsultacji.",
+        content_word_count: 92,
+        acf_field_count: 2,
+        acf_field_names: ["glowny_opis", "elementy"],
+        blockers: []
+      }
     });
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
@@ -705,6 +719,10 @@ describe("ContentWorkflowSurface", () => {
     expect(createButton).toBeDisabled();
     expect(screen.getByText(/Szkic utworzony na devie jako WordPress draft, ID 987/))
       .toBeInTheDocument();
+    expect(screen.getByText("Odczyt z dev WordPress")).toBeInTheDocument();
+    expect(screen.getByText(/BDO dla firm - szkic dev/)).toBeInTheDocument();
+    expect(screen.getByText(/Szkic opisuje obowiązki BDO/)).toBeInTheDocument();
+    expect(screen.getByText("glowny_opis")).toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 });
@@ -1778,6 +1796,7 @@ function wordpressDraftActivationPacket(): ContentWordPressDraftActivationPacket
         }
       ]
     },
+    draft_readback: null,
     operator_next_step:
       "Najbliższy krok: zapisz review człowieka dla paczki szkicu. Bez tego WILQ nie przygotuje handoffu ani dry-run payloadu WordPress.",
     next_steps: [

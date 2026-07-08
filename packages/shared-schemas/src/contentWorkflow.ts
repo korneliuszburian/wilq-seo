@@ -1415,6 +1415,28 @@ export const ContentWordPressDraftExecutionResultSchema = z.object({
   blockers: z.array(ContentWordPressDraftExecutionBlockerSchema).default([])
 });
 
+export const ContentWordPressDraftReadbackBlockerSchema = z.object({
+  code: z.enum(["missing_wordpress_post_id", "wordpress_draft_read_failed"]),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string()
+});
+
+export const ContentWordPressDraftReadbackSchema = z.object({
+  status: z.enum(["available", "blocked"]),
+  connector: z.string().default("wordpress_ekologus"),
+  wordpress_post_id: z.string().nullable().optional(),
+  post_status: z.string(),
+  title: z.string(),
+  link: z.string(),
+  modified_gmt: z.string(),
+  content_summary: z.string(),
+  content_word_count: z.number().nullable().optional(),
+  acf_field_count: z.number().nullable().optional(),
+  acf_field_names: z.array(z.string()).default([]),
+  blockers: z.array(ContentWordPressDraftReadbackBlockerSchema).default([])
+});
+
 export const ContentWordPressDraftActivationPacketResponseSchema = z.object({
   response_type: z.literal("wordpress_draft_activation_packet"),
   contract: z.literal("wordpress_draft_activation_packet_v1"),
@@ -1449,6 +1471,7 @@ export const ContentWordPressDraftActivationPacketResponseSchema = z.object({
   activation_missing_step_label: z.string(),
   activation_missing_readiness_labels: z.array(z.string()).default([]),
   execution_result: ContentWordPressDraftExecutionResultSchema,
+  draft_readback: ContentWordPressDraftReadbackSchema.nullable().optional(),
   operator_next_step: z.string(),
   next_steps: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).default([]),

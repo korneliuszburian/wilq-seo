@@ -275,6 +275,31 @@ class ContentWordPressDraftWriteReadinessResponse(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
 
 
+class ContentWordPressDraftReadbackBlocker(BaseModel):
+    code: Literal[
+        "missing_wordpress_post_id",
+        "wordpress_draft_read_failed",
+    ]
+    label: str
+    reason: str
+    next_step: str
+
+
+class ContentWordPressDraftReadback(BaseModel):
+    status: Literal["available", "blocked"]
+    connector: str = "wordpress_ekologus"
+    wordpress_post_id: str | None = None
+    post_status: str = ""
+    title: str = ""
+    link: str = ""
+    modified_gmt: str = ""
+    content_summary: str = ""
+    content_word_count: int | None = None
+    acf_field_count: int | None = None
+    acf_field_names: list[str] = Field(default_factory=list)
+    blockers: list[ContentWordPressDraftReadbackBlocker] = Field(default_factory=list)
+
+
 class ContentWordPressDraftActivationPacketResponse(BaseModel):
     response_type: Literal["wordpress_draft_activation_packet"] = (
         "wordpress_draft_activation_packet"
@@ -313,6 +338,7 @@ class ContentWordPressDraftActivationPacketResponse(BaseModel):
     activation_missing_step_label: str
     activation_missing_readiness_labels: list[str] = Field(default_factory=list)
     execution_result: ContentWordPressDraftExecutionResult
+    draft_readback: ContentWordPressDraftReadback | None = None
     operator_next_step: str
     next_steps: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

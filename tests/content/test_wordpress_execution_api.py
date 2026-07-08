@@ -5,6 +5,10 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from wilq.connectors.wordpress.client import (
+    WordPressDraftPostReadback,
+    WordPressDraftReadError,
+)
 from wilq.schemas import AuditEvent
 from wilq.storage.local_state import local_state_store
 
@@ -148,6 +152,7 @@ def test_wordpress_activation_packet_shows_next_draft_only_blockers(
     tmp_path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "activation_packet.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
 
     data = _get_wordpress_activation_packet()
 
@@ -196,6 +201,7 @@ def test_wordpress_activation_packet_follows_saved_review_and_audit(
         "WILQ_STATE_DB",
         str(tmp_path / "activation_packet_transition.sqlite3"),
     )
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
     client = TestClient(app)
 
     initial_packet = _get_wordpress_activation_packet()
@@ -484,6 +490,20 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
         created_titles.append(payload.title)
         return "888"
 
+    def read_draft(post_id: str) -> WordPressDraftPostReadback:
+        assert post_id == "888"
+        return WordPressDraftPostReadback(
+            post_id=post_id,
+            status="draft",
+            title="BDO dla firm - szkic dev",
+            link="https://ekologus.dev.proudsite.pl/?p=888",
+            modified_gmt="2026-07-07T10:00:00",
+            content_summary="Szkic opisuje obowiązki BDO i CTA do konsultacji.",
+            content_word_count=86,
+            acf_field_count=2,
+            acf_field_names=["glowny_opis", "elementy"],
+        )
+
     monkeypatch.setenv(
         "WILQ_STATE_DB",
         str(tmp_path / "activation_packet_created_draft.sqlite3"),
@@ -492,6 +512,10 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
     monkeypatch.setattr(
         "wilq.content.workflow.api.create_wordpress_draft_post",
         create_draft,
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.read_wordpress_draft_post",
+        read_draft,
     )
     _persist_write_authorization_events()
     client = TestClient(app)
@@ -534,10 +558,92 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
     assert refreshed_packet["execution_result"]["status"] == "created"
     assert refreshed_packet["execution_result"]["mode"] == "live"
     assert refreshed_packet["execution_result"]["wordpress_post_id"] == "888"
+    assert refreshed_packet["dry_run_ready"] is True
+    assert refreshed_packet["live_write_enabled_by_env"] is True
+    assert refreshed_packet["activation_missing_step"] == "ready"
+    assert refreshed_packet["activation_missing_readiness_labels"] == []
     assert refreshed_packet["execution_result"]["boundary"]["publish_allowed"] is False
     assert refreshed_packet["execution_result"]["boundary"]["destructive_update_allowed"] is False
     assert refreshed_packet["execution_result"]["external_write_attempted"] is True
+    assert refreshed_packet["draft_readback"]["status"] == "available"
+    assert refreshed_packet["draft_readback"]["wordpress_post_id"] == "888"
+    assert refreshed_packet["draft_readback"]["post_status"] == "draft"
+    assert refreshed_packet["draft_readback"]["title"] == "BDO dla firm - szkic dev"
+    assert refreshed_packet["draft_readback"]["content_word_count"] == 86
+    assert refreshed_packet["draft_readback"]["acf_field_names"] == [
+        "glowny_opis",
+        "elementy",
+    ]
     assert created_titles == [draft["title"]]
+
+
+def test_wordpress_activation_packet_keeps_created_result_when_readback_fails(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
+        return "889"
+
+    def read_draft(_post_id: str) -> WordPressDraftPostReadback:
+        raise WordPressDraftReadError("WordPress REST nie zwrócił szkicu.")
+
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "activation_packet_readback_failure.sqlite3"),
+    )
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.create_wordpress_draft_post",
+        create_draft,
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.read_wordpress_draft_post",
+        read_draft,
+    )
+    _persist_write_authorization_events()
+    client = TestClient(app)
+
+    initial_packet = _get_wordpress_activation_packet()
+    work_item_id = initial_packet["work_item_id"]
+    snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
+    item = snapshot["preflight"]["item"]
+    draft = snapshot["draft_package"]["draft_package_result"]["draft_package"]
+    assert draft is not None
+
+    review = _human_review_from_snapshot(item, draft)
+    assert client.post(
+        f"/api/content/work-items/{work_item_id}/human-review",
+        json={"review": review},
+    ).status_code == 200
+    assert client.post(
+        f"/api/content/work-items/{work_item_id}/audit",
+        json={"audit": _audit_from_review(item, review)},
+    ).status_code == 200
+
+    ready_snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
+    handoff = ready_snapshot["wordpress_handoff"]["handoff_result"]["handoff"]
+    execution_response = client.post(
+        "/api/content/work-items/wordpress-draft-execution",
+        json={
+            "handoff": handoff,
+            "draft_package": draft,
+            "mode": "live",
+            "write_authorization": _write_authorization(),
+        },
+    )
+    assert execution_response.status_code == 200
+
+    refreshed_packet = _get_wordpress_activation_packet(work_item_id)
+
+    assert refreshed_packet["execution_result"]["status"] == "created"
+    assert refreshed_packet["execution_result"]["wordpress_post_id"] == "889"
+    assert refreshed_packet["dry_run_ready"] is True
+    assert refreshed_packet["activation_missing_step"] == "ready"
+    assert refreshed_packet["draft_readback"]["status"] == "blocked"
+    assert refreshed_packet["draft_readback"]["wordpress_post_id"] == "889"
+    assert refreshed_packet["draft_readback"]["blockers"][0]["code"] == (
+        "wordpress_draft_read_failed"
+    )
 
 
 def test_wordpress_execution_api_live_adapter_failure_is_blocked(
