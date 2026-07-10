@@ -66,6 +66,7 @@ from wilq.briefing.ads_decision_queue import (
     build_change_history_decision,
     build_derived_kpi_decision,
     build_impression_share_decision,
+    build_negative_keyword_safety_decision,
     build_recommendations_decision,
     build_search_term_ngram_decision,
     build_search_terms_decision,
@@ -5116,70 +5117,10 @@ def _ads_decision_queue(
         )
 
     if negative_keywords_read_contract.candidates:
-        metric_facts = [
-            fact
-            for candidate in negative_keywords_read_contract.candidates
-            for fact in candidate.metric_facts
-        ]
-        safety_metric_facts = [
-            fact
-            for candidate in negative_keywords_read_contract.candidates
-            for fact in candidate.safety_metric_facts
-        ]
-        keyword_context_metric_facts = [
-            fact
-            for candidate in negative_keywords_read_contract.candidates
-            for context_row in candidate.keyword_context_rows
-            for fact in context_row.metric_facts
-        ]
-        keyword_match_context_rows = [
-            context_row
-            for candidate in negative_keywords_read_contract.candidates
-            for context_row in candidate.keyword_context_rows
-        ]
         decisions.append(
-            AdsDecisionItem(
-                id="ads_review_negative_keyword_safety",
-                decision_type="review_negative_keyword_safety",
-                status="ready",
-                title="Przejrzyj akcji do sprawdzenia wykluczeń tylko w trybie bezpieczeństwa",
-                summary=negative_keywords_read_contract.summary,
-                rationale=(
-                    "WILQ widzi terminy z kosztem lub kliknięciami i zerową konwersją "
-                    "w bieżących dowodach oraz podgląd zmian do sprawdzenia. To jest "
-                    "sygnał do oceny, nie dowód straty budżetu ani zgoda na automatyczne "
-                    "wykluczenie."
-                ),
-                next_step=negative_keywords_read_contract.next_step,
-                allowed_metrics=[
-                    "search_term",
-                    "search_term_clicks",
-                    "search_term_cost_micros",
-                    "search_term_conversions",
-                    "search_term_conversion_value",
-                    "search_term_90d_clicks",
-                    "search_term_90d_cost_micros",
-                    "search_term_90d_conversions",
-                    "search_term_90d_conversion_value",
-                    "keyword_text",
-                    "keyword_match_type",
-                ],
-                missing_read_contracts=negative_keywords_read_contract.missing_read_contracts,
-                operator_review_gates=["human_intent_review"],
-                source_connectors=negative_keywords_read_contract.source_connectors,
-                evidence_ids=negative_keywords_read_contract.evidence_ids,
-                metric_facts=[
-                    *metric_facts,
-                    *safety_metric_facts,
-                    *keyword_context_metric_facts,
-                ][:12],
-                search_term_safety_rows=search_term_safety_read_contract.safety_rows[:12],
-                keyword_match_context_rows=keyword_match_context_rows[:12],
-                negative_keyword_candidates=negative_keywords_read_contract.candidates,
-                negative_keyword_payload_preview=(negative_keywords_read_contract.payload_preview),
-                action_ids=negative_keywords_read_contract.action_ids,
-                blocked_claims=negative_keywords_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
+            build_negative_keyword_safety_decision(
+                negative_keywords_read_contract,
+                search_term_safety_read_contract,
             )
         )
 

@@ -158,6 +158,9 @@ no-automatic-exclusions safety remain unchanged.
 The twenty-first `kgvy` seam extracted the search-term n-gram decision builder
 into `wilq/briefing/ads_decision_queue.py`; priority, metric tiles, top rows and
 blocked exclusion claims remain unchanged.
+The twenty-second `kgvy` seam extracted the negative-keyword safety decision
+builder into `wilq/briefing/ads_decision_queue.py`; current/safety/context
+evidence and no-write blockers remain unchanged.
 
 Current product priority remains the content workspace; cleanup must not take
 precedence over a user-directed marketer-facing product slice.

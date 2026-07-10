@@ -10,8 +10,10 @@ from wilq.schemas import (
     AdsDecisionItem,
     AdsDerivedKpiReadContract,
     AdsImpressionShareReadContract,
+    AdsNegativeKeywordsReadContract,
     AdsRecommendationsReadContract,
     AdsSearchTermNgramReadContract,
+    AdsSearchTermSafetyReadContract,
     AdsSearchTermsReadContract,
 )
 
@@ -356,5 +358,70 @@ def build_search_term_ngram_decision(
         search_term_ngram_rows=top_rows,
         action_ids=search_term_ngram_read_contract.action_ids,
         blocked_claims=search_term_ngram_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def build_negative_keyword_safety_decision(
+    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+) -> AdsDecisionItem:
+    metric_facts = [
+        fact
+        for candidate in negative_keywords_read_contract.candidates
+        for fact in candidate.metric_facts
+    ]
+    safety_metric_facts = [
+        fact
+        for candidate in negative_keywords_read_contract.candidates
+        for fact in candidate.safety_metric_facts
+    ]
+    keyword_context_metric_facts = [
+        fact
+        for candidate in negative_keywords_read_contract.candidates
+        for context_row in candidate.keyword_context_rows
+        for fact in context_row.metric_facts
+    ]
+    keyword_match_context_rows = [
+        context_row
+        for candidate in negative_keywords_read_contract.candidates
+        for context_row in candidate.keyword_context_rows
+    ]
+    return AdsDecisionItem(
+        id="ads_review_negative_keyword_safety",
+        decision_type="review_negative_keyword_safety",
+        status="ready",
+        title="Przejrzyj akcji do sprawdzenia wykluczeń tylko w trybie bezpieczeństwa",
+        summary=negative_keywords_read_contract.summary,
+        rationale=(
+            "WILQ widzi terminy z kosztem lub kliknięciami i zerową konwersją w bieżących "
+            "dowodach oraz podgląd zmian do sprawdzenia. To jest sygnał do oceny, nie dowód "
+            "straty budżetu ani zgoda na automatyczne wykluczenie."
+        ),
+        next_step=negative_keywords_read_contract.next_step,
+        allowed_metrics=[
+            "search_term",
+            "search_term_clicks",
+            "search_term_cost_micros",
+            "search_term_conversions",
+            "search_term_conversion_value",
+            "search_term_90d_clicks",
+            "search_term_90d_cost_micros",
+            "search_term_90d_conversions",
+            "search_term_90d_conversion_value",
+            "keyword_text",
+            "keyword_match_type",
+        ],
+        missing_read_contracts=negative_keywords_read_contract.missing_read_contracts,
+        operator_review_gates=["human_intent_review"],
+        source_connectors=negative_keywords_read_contract.source_connectors,
+        evidence_ids=negative_keywords_read_contract.evidence_ids,
+        metric_facts=[*metric_facts, *safety_metric_facts, *keyword_context_metric_facts][:12],
+        search_term_safety_rows=search_term_safety_read_contract.safety_rows[:12],
+        keyword_match_context_rows=keyword_match_context_rows[:12],
+        negative_keyword_candidates=negative_keywords_read_contract.candidates,
+        negative_keyword_payload_preview=negative_keywords_read_contract.payload_preview,
+        action_ids=negative_keywords_read_contract.action_ids,
+        blocked_claims=negative_keywords_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
