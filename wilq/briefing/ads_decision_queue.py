@@ -6,6 +6,7 @@ from wilq.schemas import (
     AdsBudgetPacingReadContract,
     AdsCampaignReadContract,
     AdsCampaignTriageReadContract,
+    AdsChangeHistoryReadContract,
     AdsDecisionItem,
     AdsDerivedKpiReadContract,
     AdsImpressionShareReadContract,
@@ -233,5 +234,43 @@ def build_impression_share_decision(
         impression_share_rows=impression_share_read_contract.impression_share_rows,
         action_ids=[],
         blocked_claims=impression_share_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def build_change_history_decision(
+    change_history_read_contract: AdsChangeHistoryReadContract,
+) -> AdsDecisionItem:
+    metric_facts = [
+        fact
+        for row in change_history_read_contract.change_history_rows
+        for fact in row.metric_facts
+    ]
+    has_change_rows = bool(change_history_read_contract.change_history_rows)
+    return AdsDecisionItem(
+        id="ads_review_change_history",
+        decision_type="review_change_history",
+        status="ready",
+        title=(
+            "Sprawdź historię zmian Google Ads"
+            if has_change_rows
+            else "Historia zmian: brak zdarzeń w ostatnich 14 dniach"
+        ),
+        summary=change_history_read_contract.summary,
+        rationale=(
+            "Historia zmian mówi, co ostatnio zmieniano w koncie. Jeśli Google Ads nie zwrócił "
+            "żadnych zdarzeń, sam odczyt jest poprawny, ale nie wolno przypisywać wyników "
+            "kampanii do zmian. Jeśli zdarzenia istnieją, WILQ nadal blokuje obietnice o wpływie "
+            "zmian na wynik bez porównania przed/po i sprawdzenia przez człowieka."
+        ),
+        next_step=change_history_read_contract.next_step,
+        allowed_metrics=change_history_read_contract.allowed_metrics,
+        missing_read_contracts=change_history_read_contract.missing_read_contracts,
+        source_connectors=change_history_read_contract.source_connectors,
+        evidence_ids=change_history_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        change_history_rows=change_history_read_contract.change_history_rows,
+        action_ids=change_history_read_contract.action_ids,
+        blocked_claims=change_history_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
