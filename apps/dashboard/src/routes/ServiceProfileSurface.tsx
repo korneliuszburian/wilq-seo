@@ -118,7 +118,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Profil usług Ekologus</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Read-only przegląd tego, co WILQ wie o usługach, twierdzeniach i wymaganych
+            Podgląd tego, co WILQ wie o usługach, twierdzeniach i wymaganych
             dowodach. Ten widok nie edytuje kart i nie zatwierdza faktów jako wiedzy produkcyjnej.
           </p>
         </div>
