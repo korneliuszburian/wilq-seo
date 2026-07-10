@@ -74,6 +74,11 @@ import {
   blockedWorkflowSteps,
   claimLedgerSummary
 } from "./contentWorkflowDecisionModel";
+import {
+  defaultSectionBody,
+  sectionOverrideKey,
+  shortSectionTabLabel
+} from "./contentWorkflowDraftSectionModel";
 import { WorkflowProofSummary } from "./WorkflowProofSummary";
 
 type WorkflowSafetyPanelsProps = {
@@ -1775,7 +1780,6 @@ function ContentWorkflowBlockedCandidate({
 }
 
 type DraftPackage = ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
-type DraftPackageSection = NonNullable<DraftPackage>["sections"][number];
 type WordPressHandoff =
   ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
 type AcfFieldPreview =
@@ -1783,23 +1787,6 @@ type AcfFieldPreview =
 type WordPressDraftSectionOverride = NonNullable<
   ContentWorkItemWordPressDraftExecutionRequest["section_overrides"]
 >[number];
-
-function sectionOverrideKey(value: string) {
-  return value.trim().toLocaleLowerCase("pl-PL").replace(/\s+/g, " ");
-}
-
-function defaultSectionBody(section: DraftPackageSection) {
-  const notes = section.draft_notes.map((note) => `- ${note}`);
-  return [section.purpose, ...notes].filter(Boolean).join("\n\n");
-}
-
-function shortSectionTabLabel(value: string) {
-  const cleaned = value.trim();
-  if (!cleaned) return "Sekcja";
-  const firstWord = cleaned.split(/\s+/)[0] ?? cleaned;
-  if (cleaned.length <= 14) return cleaned;
-  return firstWord.length >= 4 && firstWord.length <= 12 ? firstWord : `${cleaned.slice(0, 12)}...`;
-}
 
 function defaultSelectedWorkItemId(queue: ContentWorkItemQueueResponse) {
   return (
