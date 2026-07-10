@@ -182,6 +182,9 @@ proof is archived in `docs/progress/archive/` and in git history.
 - Twenty-second `kgvy` seam: the negative-keyword safety decision builder now
   lives in `wilq/briefing/ads_decision_queue.py`; combined current/safety/context
   evidence, 90-day rows, preview and no-write blockers remain unchanged.
+- Twenty-third `kgvy` seam: the custom-segments decision builder now lives in
+  `wilq/briefing/ads_decision_queue.py`; source-term rows, Keyword Planner
+  context, preview and blocked audience-size claims remain unchanged.
 - Added `GET /api/content/wordpress/existing-draft-update-readiness` with typed
   `wordpress_existing_draft_update_readiness_v1` output and a deterministic
   blocker. It exposes work-item, evidence and connector lineage while keeping

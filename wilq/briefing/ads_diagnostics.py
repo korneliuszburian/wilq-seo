@@ -64,6 +64,7 @@ from wilq.briefing.ads_decision_queue import (
     build_campaign_activity_decision,
     build_campaign_triage_decision,
     build_change_history_decision,
+    build_custom_segments_decision,
     build_derived_kpi_decision,
     build_impression_share_decision,
     build_negative_keyword_safety_decision,
@@ -5125,62 +5126,8 @@ def _ads_decision_queue(
         )
 
     if custom_segments_read_contract.candidates:
-        metric_facts = [
-            fact
-            for candidate in custom_segments_read_contract.candidates
-            for fact in candidate.metric_facts
-        ]
-        search_term_rows = [
-            row
-            for candidate in custom_segments_read_contract.candidates
-            for row in candidate.search_term_rows
-        ]
-        keyword_planner_idea_rows = [
-            idea
-            for candidate in custom_segments_read_contract.candidates
-            for idea in candidate.keyword_planner_ideas
-        ]
         decisions.append(
-            AdsDecisionItem(
-                id="ads_prepare_custom_segments_from_search_terms",
-                decision_type="prepare_custom_segments",
-                status="ready",
-                title="Przygotuj segmenty z realnych wyszukiwanych haseł",
-                summary=custom_segments_read_contract.summary,
-                rationale=(
-                    "WILQ ma hasła źródłowe z dowodów Google Ads, więc może przygotować "
-                    "propozycje segmentów. To nie jest zapis zmian ani obietnica "
-                    "skuteczności: podgląd zmian jest do sprawdzenia, a prognoza, "
-                    "rozmiar odbiorców i zgoda człowieka nadal są wymagane."
-                ),
-                next_step=custom_segments_read_contract.next_step,
-                allowed_metrics=[
-                    "search_term",
-                    "search_term_clicks",
-                    "search_term_impressions",
-                    "search_term_cost_micros",
-                    "search_term_conversions",
-                    "search_term_conversion_value",
-                    "keyword_planner_idea_text",
-                    "keyword_planner_avg_monthly_searches",
-                    "keyword_planner_competition_index",
-                ],
-                missing_read_contracts=custom_segments_read_contract.missing_read_contracts,
-                operator_review_gates=(custom_segments_read_contract.operator_review_gates),
-                source_connectors=custom_segments_read_contract.source_connectors,
-                evidence_ids=custom_segments_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
-                search_term_rows=search_term_rows[:12],
-                keyword_planner_idea_rows=keyword_planner_idea_rows[:12],
-                custom_segment_candidates=custom_segments_read_contract.candidates,
-                custom_segment_payload_preview=custom_segments_read_contract.payload_preview,
-                custom_segment_audience_forecast_rows=(
-                    custom_segments_read_contract.audience_forecast_read_contract.forecast_rows
-                ),
-                action_ids=custom_segments_read_contract.action_ids,
-                blocked_claims=custom_segments_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
-            )
+            build_custom_segments_decision(custom_segments_read_contract)
         )
 
     safety_section = next(

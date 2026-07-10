@@ -161,6 +161,9 @@ blocked exclusion claims remain unchanged.
 The twenty-second `kgvy` seam extracted the negative-keyword safety decision
 builder into `wilq/briefing/ads_decision_queue.py`; current/safety/context
 evidence and no-write blockers remain unchanged.
+The twenty-third `kgvy` seam extracted the custom-segments decision builder into
+`wilq/briefing/ads_decision_queue.py`; source-term rows, Keyword Planner context
+and blocked audience-size claims remain unchanged.
 
 Current product priority remains the content workspace; cleanup must not take
 precedence over a user-directed marketer-facing product slice.
