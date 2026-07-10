@@ -30,6 +30,17 @@ signals, blocker and safe dev-draft step. The queue's Ahrefs-only item remains
 a business/content decision without a confirmed target, not a public/dev URL
 configuration failure.
 
+## Content-workflow proof
+
+- Desktop proof captured at
+  `.local-lab/proof/dashboard-content-workflow/2026-07-10T00-47-08-794Z/`
+  shows public page, GSC/Ahrefs signals, dev ACF target, editable draft text and
+  draft-only action before legacy details.
+- The API usefulness audit passes, but its deterministic `10` scores are not
+  neutral usability proof. The screenshot still exposes marketer-copy debt:
+  `Źródła i claimy` and `Claimy do sprawdzenia` should be handled by the
+  existing `wilq-seo-3bst.11`, not a duplicate task.
+
 ## Next audit actions
 
 1. Capture a current desktop and mobile `/content-workflow` proof packet and
