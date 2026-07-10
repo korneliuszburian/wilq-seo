@@ -118,7 +118,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Profil usług Ekologus</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Read-only przegląd tego, co WILQ wie o usługach, claimach i wymaganych
+            Read-only przegląd tego, co WILQ wie o usługach, twierdzeniach i wymaganych
             dowodach. Ten widok nie edytuje kart i nie zatwierdza faktów jako wiedzy produkcyjnej.
           </p>
         </div>
@@ -143,7 +143,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               Pierwszy ekran pokazuje najbliższy review item. Rozwiń pełny
               przegląd, gdy chcesz zobaczyć gotowość zatwierdzenia, źródła,
-              luki, usługi, claim policy i prywatne propozycje ekologus-ai.
+              luki, usługi, politykę twierdzeń i prywatne propozycje ekologus-ai.
             </p>
           </div>
           <button
