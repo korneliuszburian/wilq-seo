@@ -15,12 +15,20 @@
 | Bead | Status now | Remaining proof/gap |
 | --- | --- | --- |
 | `b4kg` schemas | complete | Compatibility facade and domain leaves are in code; do not reopen. |
+| `77b1` zombie routes | complete | Legacy content planner surface is quarantined; preserve negative route tests. |
+| `c2lf` frozen growth gate | complete | Complexity policy exists; continue running it on changed Python files. |
+| `co30` docs truth | complete | Active ledger is concise; keep new evidence in current docs, not archives. |
+| `i2qb` first legacy cleanup | complete | Legacy planner removal is in the pushed product history. |
+| `yrpf` file coverage proof | complete | Audit manifest exists; rebaseline only current findings, not the historical scan. |
 | `50wa` API mega-test | continue | Extracted leaves exist; finish only from current complexity/test-theatre evidence. |
 | `ho41` content workflow | continue | First view is lighter and typed; route remains oversized and existing-draft update is intentionally prepare-only. |
+| `d380` React standards | continue | Standards are documented; current route still needs to meet the route-shell budget. |
 | `jnra` action service | continue | Domain constructors moved, but service remains 5,989 LOC. |
 | `kgvy` Ads diagnostics | continue | Several builders moved, but diagnostics remains 6,430 LOC. |
+| `ksiq` shared TS schemas | continue | Shared schemas are present, but domain ownership and import graph still need a current audit. |
 | `pidl` dashboard mega-test | continue | Needs current, route-focused test boundary audit. |
 | `0q74` skill smoke harness | continue | Eval evidence is fresh, but scripts remain hotspot-sized. |
+| `y0o5` Python standards | complete | Runtime/test standards are recorded and used by later slices. |
 
 ## Product priority
 
