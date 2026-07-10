@@ -152,6 +152,9 @@ and no-write claims remain unchanged.
 The nineteenth `kgvy` seam extracted the change-history decision builder into
 `wilq/briefing/ads_decision_queue.py`; event rows, evidence and no-impact claims
 remain unchanged.
+The twentieth `kgvy` seam extracted the search-terms decision builder into
+`wilq/briefing/ads_decision_queue.py`; source rows, action filtering and
+no-automatic-exclusions safety remain unchanged.
 
 Current product priority remains the content workspace; cleanup must not take
 precedence over a user-directed marketer-facing product slice.

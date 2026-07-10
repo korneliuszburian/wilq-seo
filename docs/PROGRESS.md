@@ -173,6 +173,9 @@ proof is archived in `docs/progress/archive/` and in git history.
 - Nineteenth `kgvy` seam: the change-history decision builder now lives in
   `wilq/briefing/ads_decision_queue.py`; event rows, evidence, no-impact claims
   and action IDs remain unchanged.
+- Twentieth `kgvy` seam: the search-terms decision builder now lives in
+  `wilq/briefing/ads_decision_queue.py`; source rows, filtered action IDs,
+  evidence and no-automatic-exclusions safety remain unchanged.
 - Added `GET /api/content/wordpress/existing-draft-update-readiness` with typed
   `wordpress_existing_draft_update_readiness_v1` output and a deterministic
   blocker. It exposes work-item, evidence and connector lineage while keeping

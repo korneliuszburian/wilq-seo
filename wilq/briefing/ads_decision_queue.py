@@ -11,6 +11,7 @@ from wilq.schemas import (
     AdsDerivedKpiReadContract,
     AdsImpressionShareReadContract,
     AdsRecommendationsReadContract,
+    AdsSearchTermsReadContract,
 )
 
 
@@ -272,5 +273,49 @@ def build_change_history_decision(
         change_history_rows=change_history_read_contract.change_history_rows,
         action_ids=change_history_read_contract.action_ids,
         blocked_claims=change_history_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def build_search_terms_decision(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    *,
+    action_ids: list[str],
+) -> AdsDecisionItem:
+    metric_facts = [
+        fact for row in search_terms_read_contract.search_term_rows for fact in row.metric_facts
+    ]
+    allowed_action_ids = {
+        "act_prepare_custom_segments_from_search_terms",
+        "act_prepare_negative_keyword_review_queue",
+    }
+    filtered_action_ids = [
+        action_id for action_id in action_ids if action_id in allowed_action_ids
+    ]
+    return AdsDecisionItem(
+        id="ads_review_search_terms",
+        decision_type="review_search_terms",
+        status="ready",
+        title="Przejrzyj zapytania z reklam bez automatycznych wykluczeń",
+        summary=search_terms_read_contract.summary,
+        rationale=(
+            "WILQ widzi zapytania, kampanie, grupy reklam, koszt, kliknięcia i konwersje. "
+            "To pozwala zrobić kontrolę jakości zapytań, ale nie wystarcza do obietnic o "
+            "marnowaniu budżetu ani do zapisu wykluczeń."
+        ),
+        next_step=(
+            "Przejrzyj zapytania z najwyższym kosztem. Jeśli chcesz wykluczenia, najpierw dodaj "
+            "kontekst dopasowania, 90-dniową kontrolę bezpieczeństwa i akcję tylko do "
+            "przygotowania."
+        ),
+        allowed_metrics=search_terms_read_contract.allowed_metrics,
+        missing_read_contracts=search_terms_read_contract.missing_read_contracts,
+        operator_review_gates=search_terms_read_contract.operator_review_gates,
+        source_connectors=search_terms_read_contract.source_connectors,
+        evidence_ids=search_terms_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        search_term_rows=search_terms_read_contract.search_term_rows,
+        action_ids=filtered_action_ids,
+        blocked_claims=search_terms_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
