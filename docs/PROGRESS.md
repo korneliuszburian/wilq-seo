@@ -176,6 +176,9 @@ proof is archived in `docs/progress/archive/` and in git history.
 - Twentieth `kgvy` seam: the search-terms decision builder now lives in
   `wilq/briefing/ads_decision_queue.py`; source rows, filtered action IDs,
   evidence and no-automatic-exclusions safety remain unchanged.
+- Twenty-first `kgvy` seam: the search-term n-gram decision builder now lives
+  in `wilq/briefing/ads_decision_queue.py`; priority, metric tiles, top rows and
+  blocked exclusion claims remain unchanged.
 - Added `GET /api/content/wordpress/existing-draft-update-readiness` with typed
   `wordpress_existing_draft_update_readiness_v1` output and a deterministic
   blocker. It exposes work-item, evidence and connector lineage while keeping

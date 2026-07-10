@@ -155,6 +155,9 @@ remain unchanged.
 The twentieth `kgvy` seam extracted the search-terms decision builder into
 `wilq/briefing/ads_decision_queue.py`; source rows, action filtering and
 no-automatic-exclusions safety remain unchanged.
+The twenty-first `kgvy` seam extracted the search-term n-gram decision builder
+into `wilq/briefing/ads_decision_queue.py`; priority, metric tiles, top rows and
+blocked exclusion claims remain unchanged.
 
 Current product priority remains the content workspace; cleanup must not take
 precedence over a user-directed marketer-facing product slice.

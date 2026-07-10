@@ -67,6 +67,7 @@ from wilq.briefing.ads_decision_queue import (
     build_derived_kpi_decision,
     build_impression_share_decision,
     build_recommendations_decision,
+    build_search_term_ngram_decision,
     build_search_terms_decision,
 )
 from wilq.briefing.ads_impression_share import (
@@ -5078,41 +5079,8 @@ def _ads_decision_queue(
         )
 
     if search_term_ngram_read_contract.ngram_rows:
-        metric_facts = [
-            fact for row in search_term_ngram_read_contract.ngram_rows for fact in row.metric_facts
-        ]
-        top_rows = search_term_ngram_read_contract.ngram_rows[:8]
         decisions.append(
-            AdsDecisionItem(
-                id="ads_review_search_term_ngrams",
-                decision_type="review_search_term_ngrams",
-                status="ready",
-                title="Sprawdź powtarzające się tematy w zapytaniach",
-                summary=search_term_ngram_read_contract.summary,
-                rationale=(
-                    "N-gramy pokazują, które słowa i frazy powtarzają się w wyszukiwanych "
-                    "hasłach oraz jaki mają koszt, kliknięcia i konwersje w dowodach. "
-                    "To skraca ocenę, ale nadal wymaga ręcznego sprawdzenia intencji "
-                    "i nie odblokowuje wykluczeń."
-                ),
-                next_step=search_term_ngram_read_contract.next_step,
-                priority=42,
-                metric_tiles={
-                    "n-gramy": len(search_term_ngram_read_contract.ngram_rows),
-                    "top koszt": sum(row.cost_micros or 0 for row in top_rows),
-                    "top kliknięcia": sum(row.clicks or 0 for row in top_rows),
-                },
-                allowed_metrics=search_term_ngram_read_contract.allowed_metrics,
-                missing_read_contracts=(search_term_ngram_read_contract.missing_read_contracts),
-                operator_review_gates=(search_term_ngram_read_contract.operator_review_gates),
-                source_connectors=search_term_ngram_read_contract.source_connectors,
-                evidence_ids=search_term_ngram_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
-                search_term_ngram_rows=top_rows,
-                action_ids=search_term_ngram_read_contract.action_ids,
-                blocked_claims=search_term_ngram_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
-            )
+            build_search_term_ngram_decision(search_term_ngram_read_contract)
         )
 
     if search_term_safety_read_contract.status == "ready":
