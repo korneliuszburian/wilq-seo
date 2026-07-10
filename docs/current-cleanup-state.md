@@ -149,6 +149,9 @@ scaling blockers remain unchanged.
 The eighteenth `kgvy` seam extracted the recommendations decision builder into
 `wilq/briefing/ads_decision_queue.py`; recommendation rows, preview, review gates
 and no-write claims remain unchanged.
+The nineteenth `kgvy` seam extracted the change-history decision builder into
+`wilq/briefing/ads_decision_queue.py`; event rows, evidence and no-impact claims
+remain unchanged.
 
 Current product priority remains the content workspace; cleanup must not take
 precedence over a user-directed marketer-facing product slice.
