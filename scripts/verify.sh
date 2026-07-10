@@ -109,9 +109,6 @@ for name in sorted(expected):
     assert (skill_dir / "scripts").is_dir(), f"{name}: missing scripts/"
     assert "invent metrics" in content.lower(), f"{name}: missing no-invented-metrics guardrail"
     assert "Polish language contract" in content, f"{name}: missing Polish response contract"
-    output_contract = (skill_dir / "references" / "output-contract.md").read_text(encoding="utf-8")
-    for required_label in ["Dowody", "Diagnoza", "Akcje do sprawdzenia", "Sprawdzenie w WILQ", "Następny krok"]:
-        assert required_label in output_contract, f"{name}: missing Polish output label {required_label!r}"
 print("Skill structure smoke passed")
 PY
 

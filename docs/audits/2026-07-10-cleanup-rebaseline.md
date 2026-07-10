@@ -1,58 +1,114 @@
-# Cleanup rebaseline — 2026-07-10
+# Independent repository rebaseline — 2026-07-10
 
-## Fresh evidence
+Audyt zbudowano z aktualnego repo, managed runtime, API, testów, renderów i
+grafu Beads. Historyczne rozmowy, screenshoty i opisy Beads były wyłącznie
+wskazówkami.
 
-- Worktree clean at `106c567` before this audit slice.
-- WILQ metrics API: DuckDB, 95,644 metric facts, 4,469 refresh runs.
-- Content queue: blocked; 1 actionable candidate of the required 3.
-- Public `ekologus.pl` and dev `ekologus.dev.proudsite.pl` are distinct roles.
-  Existing tests block dev URLs as SEO canonicals.
-- Complexity still concentrates in Ads diagnostics (6,430 LOC), action service
-  (5,989), Ads contract tests (4,971) and content-workflow API (1,425).
+## Aktualne dowody
 
-## Reconciled c9h9 work
+- Baseline: `main`, początkowo clean i zgodny z `origin/main` na `f450383c`.
+- Managed API/dashboard: ready; health `ok`.
+- DuckDB: 95 740 metric facts, 4 507 refresh runs.
+- Konektory: 12 ogółem, 9 configured, 2 missing credentials, 1 disabled.
+- Content diagnostics: `state=stale`, `requires_refresh=true`; ostatnie
+  sukcesy głównych źródeł contentu pochodzą z 2026-07-07.
+- Queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3; 4 evidence IDs z
+  Ahrefs, GSC i publicznego WordPressa.
+- Complexity changed report: 35 plików, 1 frozen (`actions/service.py`), 15
+  violations. Hotspoty: Ads diagnostics 6 430 LOC, action service 5 989,
+  ContentWorkflowSurface ok. 3 000, content API 1 440, Ads contract test 4 971.
+- Browser proof: desktop 1440×900, mobile 390×844 i action detail pod
+  `.local-lab/proof/independent-review-2026-07-10/`.
 
-| Bead | Status now | Remaining proof/gap |
+## Mapa systemu
+
+Status używa wyłącznie wymaganego słownika.
+
+| Obszar | Status | Aktualny stan | Dowód | Problem | Istniejący Bead | Brakujące zadanie |
+| --- | --- | --- | --- | --- | --- | --- |
+| API | `partially_complete` | Typed health, diagnostics, queue, snapshots i action readiness działają; direct WordPress live jest fail-closed. | Live HTTP, 765 backend tests, API smoke. | Queue gubi freshness; cold builders są powtarzane na kilku granicach. | `c9h9.5`, `.6`, `.9`–`.13` | Wszystkie potwierdzone cold gaps mają zadania. |
+| `/content-workflow` | `partially_complete` | Konkretna homepage, public/dev sections, GSC, editor, typed preview i preview-only CTA. | Fresh desktop/mobile render, 31 focused UI tests. | Stale wygląda jak ready; selected snapshot >30 s; mobile chowa decyzję/CTA. | `c9h9.5`, `.6`, `r564.3`, `ho41` | Brak — potwierdzone scope istnieją. |
+| Dashboard IA | `partially_complete` | Legacy planner usunięty; główne nav prowadzi do `/content-workflow`. | Route registry, negative route tests, render. | Część E2E utrwalała stare stringi; drugorzędne trasy mają cold latency. | `c9h9.8`–`.13`, `r564`, `ho41` | Utworzone na podstawie failure proof. |
+| ActionObject safety | `partially_complete` | Preview/review/confirm/audit istnieją; direct content live i UI create są zablokowane. Typed existing-draft preview działa. | Live direct POST blocked/no write; mutation summary 0/0; action screenshot. | Canonical dev-only create apply nie istnieje; niższy boundary nadal ma raw authorization booleans nieosiągalne z produkcyjnego HTTP. | zamknięte `c9h9.3`, `r564.4`; otwarte `c9h9.4` | Brak duplikatu; exact apply jest wyspecyfikowany. |
+| Connectors/freshness | `contradicted` | Diagnostics wie, że pięć content sources jest stale. | Connector timestamps i `freshness_assessment`. | Queue/source strip pokazuje historyczne evidence bez current freshness. | `c9h9.5` | Utworzone. |
+| Tests/evals | `partially_complete` | Backend 765/2, shared 31/10, dashboard 137/137; 13/13 fresh skill evals score 9–10. | Full suites, strict coverage, smokes. | Full cold Playwright ujawnia realne content/Ads/custom/actions/knowledge/Merchant latency; stare assertions były test theater. | `c9h9.6`, `.8`–`.13` | Wszystkie obserwowane failures mają zadanie. |
+| Monolity | `partially_complete` | Domenowe seamy istnieją, ale główne runtime/test hotspots pozostają. | Complexity report i file/function counts. | Jeden frozen service zmieniony bez LOC growth; 15 existing changed-code violations. | `ho41`, `jnra`, `kgvy`, `50wa`, `0q74` | Nie utworzono duplikatów splitu. |
+| Skills | `proved_complete` | 13 skills ma deterministic i non-interactive proof; GSC/Custom kontrakty poprawiono semantycznie. | Strict 13/13, 0 gaps/warnings; scores 9–10; wszystkie smokes pass. | To nie zastępuje realnego Wilku UAT ani usefulness każdej trasy. | `6rw.5` i istniejące eval Beads | Brak. |
+| Docs/Beads | `partially_complete` | Recovery docs są przycięte; nowe realne gaps są w grafie; kierunki zależności poprawione. | `bd dep cycles`: none; `bd ready` wskazuje `.5` jako pierwszy P0. | Starsze broad parents nadal wymagają rebaseline; Goal 005 czeka na owner input. | `c9h9.2`, cleanup epics | Brak kolejnego epica. |
+
+## Audyt wymagań
+
+| Wymaganie | Status | Dowód / luka |
 | --- | --- | --- |
-| `b4kg` schemas | complete | Compatibility facade and domain leaves are in code; do not reopen. |
-| `77b1` zombie routes | complete | Legacy content planner surface is quarantined; preserve negative route tests. |
-| `c2lf` frozen growth gate | complete | Complexity policy exists; continue running it on changed Python files. |
-| `co30` docs truth | complete | Active ledger is concise; keep new evidence in current docs, not archives. |
-| `i2qb` first legacy cleanup | complete | Legacy planner removal is in the pushed product history. |
-| `yrpf` file coverage proof | complete | Audit manifest exists; rebaseline only current findings, not the historical scan. |
-| `50wa` API mega-test | continue | Extracted leaves exist; finish only from current complexity/test-theatre evidence. |
-| `ho41` content workflow | continue | First view is lighter and typed; route remains oversized and existing-draft update is intentionally prepare-only. |
-| `d380` React standards | continue | Standards are documented; current route still needs to meet the route-shell budget. |
-| `jnra` action service | continue | Domain constructors moved, but service remains 5,989 LOC. |
-| `kgvy` Ads diagnostics | continue | Several builders moved, but diagnostics remains 6,430 LOC. |
-| `ksiq` shared TS schemas | continue | Shared schemas are present, but domain ownership and import graph still need a current audit. |
-| `pidl` dashboard mega-test | continue | Needs current, route-focused test boundary audit. |
-| `0q74` skill smoke harness | continue | Eval evidence is fresh, but scripts remain hotspot-sized. |
-| `y0o5` Python standards | complete | Runtime/test standards are recorded and used by later slices. |
+| Public/dev WordPress roles są rozdzielone | `proved_complete` | API/testy blokują dev canonical; UI opisuje public i dev osobno. |
+| Konkretna strona/temat i aktualne public sections | `proved_complete` | Homepage URL/title i 12 publicznych sekcji są widoczne. |
+| GSC/Ahrefs/WordPress signals z evidence IDs | `partially_complete` | Real IDs/connectors istnieją; Ahrefs candidate nie ma targetu, a current freshness znika. |
+| Decyzja, powód, blocker i safe step w 30 s | `partially_complete` | Desktop je ma, ale cold load i mobile first viewport zawodzą. |
+| Current vs proposed i dev workspace | `proved_complete` | Typed section diff i existing-draft action preview są renderowane; update/write pozostają blocked. |
+| Brak automatic publish/destructive update | `proved_complete` | Typed literals, live HTTP i UI utrzymują oba `false`. |
+| Każda rekomendacja ma current freshness | `contradicted` | Diagnostics stale kontra queue/source strip bez freshness. |
+| Writes tylko validate → preview → review → confirm → audit → adapter | `partially_complete` | Bypass jest zamknięty; canonical apply jest bezpiecznie wyłączony do `c9h9.4`. |
+| Unsupported CPA/ROAS/waste/revenue są blokowane | `proved_complete` | Ads/GA4/Merchant contracts i 13 skill evals zachowują blockers. |
+| Marketer-first desktop i mobile | `partially_complete` | Desktop jest konkretny; mobile nie pokazuje decyzji/blockera/CTA w 844 px. |
+| Legacy surfaces nie są active truth | `proved_complete` | Planner route/component/E2E nie ma w aktywnej aplikacji. |
+| Beads graph odpowiada kodowi | `partially_complete` | Bieżący graf ma poprawne zależności i zero cykli; starsze parents są w `c9h9.2`. |
+| Realny Wilku UAT Goal 005 | `blocked_by_external_state` | Check zwraca `blocked_missing_goal_005_uat_proof`; potrzeba UAT JSON lub explicit owner defer. |
+| Canonical WordPress create apply | `not_started` | Direct path jest bezpiecznie wyłączony; implementacja należy do `c9h9.4`. |
 
-## Product priority
+## Największe blokery
 
-The next product proof is not canonical configuration: it is whether a marketer
-can act on the single public-page content workbench in 30 seconds with current
-signals, blocker and safe dev-draft step. The queue's Ahrefs-only item remains
-a business/content decision without a confirmed target, not a public/dev URL
-configuration failure.
+1. Current content evidence jest stale, ale decyzja nie mówi refresh-first
+   (`c9h9.5`).
+2. Cold `/content-workflow` przekracza 30 s przez queue/snapshot/enrichment/
+   activation waterfall (`c9h9.6`).
+3. Safe live draft creation jest wyłączone do exact ActionObject apply, audit i
+   dev-host guard (`c9h9.4`).
 
-## Content-workflow proof
+## Największe ryzyka
 
-- Desktop proof captured at
-  `.local-lab/proof/dashboard-content-workflow/2026-07-10T00-47-08-794Z/`
-  shows public page, GSC/Ahrefs signals, dev ACF target, editable draft text and
-  draft-only action before legacy details.
-- The API usefulness audit passes, but its deterministic `10` scores are not
-  neutral usability proof. The screenshot still exposes marketer-copy debt:
-  `Źródła i claimy` and `Claimy do sprawdzenia` should be handled by the
-  existing `wilq-seo-3bst.11`, not a duplicate task.
+1. Przywrócenie adaptera/CTA poza `apply_action` odtworzyłoby bypass albo
+   dopuściło zły host.
+2. Historyczny successful refresh może wyglądać jak current proof i prowadzić
+   do pewnej rekomendacji ze starych danych.
+3. Cold monolity i stare E2E strings pozwalają mylić zielone testy z
+   użytecznością albo jedną wolną trasę z wieloma regresjami.
 
-## Next audit actions
+## Ukończone z dowodami
 
-1. Capture a current desktop and mobile `/content-workflow` proof packet and
-   record a usefulness score with the live queue state.
-2. Reconcile each remaining open c9h9 child in Beads against this ledger;
-   close or rewrite stale descriptions before implementation.
-3. Select the next implementation slice only after those two checks.
+- Public/dev canonical separation i draft-only posture.
+- Concrete homepage workbench z public/dev sections.
+- Direct live bypass i wszystkie UI live branches usunięte (`c9h9.3`).
+- Duplicate-create CTA usunięty; existing draft pozostaje open/preview-only
+  (`r564.2`).
+- Typed existing-draft preview card (`r564.4`).
+- Stabilny pełny dashboard Vitest 137/137 (`c9h9.7`).
+- Legacy planner usunięty.
+- 13/13 skill eval coverage i fresh passing outputs.
+
+## Zadania utworzone w audycie
+
+- `c9h9.3` P0 180 min — direct WordPress fail-closed — **closed**.
+- `c9h9.4` P0 360 min — canonical dev-only create apply — depends on `.3`.
+- `c9h9.5` P0 360 min — freshness w decisions/evidence.
+- `c9h9.6` P0 300 min — content cold waterfall — depends on `.5`.
+- `r564.2` P0 180 min — duplicate draft prevention — **closed**.
+- `r564.3` P1 240 min — mobile first viewport — depends on `.5`, `.6`,
+  `r564.2`.
+- `r564.4` P1 60 min — typed existing-draft preview — **closed**.
+- `c9h9.7` P2 30 min — deterministic Service Profile test — **closed**.
+- `c9h9.8` P1 90 min — current behavior E2E assertions — open.
+- `c9h9.9` P1 240 min — Ads summary cold render — open.
+- `c9h9.10` P2 180 min — narrow Custom Segments view — open.
+- `c9h9.11` P1 240 min — lightweight action list — open.
+- `c9h9.12` P2 180 min — knowledge cold contention — open.
+- `c9h9.13` P1 240 min — Merchant first decision latency — open.
+
+Produktowa kolejność pozostaje `.5` → `.6` → `.4` → `r564.3`. Secondary
+route latency nie wyprzedza głównej ścieżki content.
+
+## Następny slice i warunek przejścia
+
+Następny slice: `c9h9.5`. Jest ukończony, gdy stale/missing primary proof daje
+API-owned refresh-first blocker, queue i selected snapshot mają spójną
+freshness/decision/safe step, evidence lineage zostaje, a first view pokazuje
+stan źródeł bez raw payload. Dopiero wtedy zaczyna się `c9h9.6`.

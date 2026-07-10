@@ -9,15 +9,12 @@ import {
   getContentWordPressDraftWriteReadiness,
   getContentWordPressExistingDraftUpdateReadiness,
   getWordPressAuthoringProfile,
-  confirmAction,
-  previewAction,
   postContentWorkItemQualityReview,
   postContentWorkItemRevisionPlan,
   postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
-  reviewAction,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   type ContentWorkItemQualityReviewResponse,
@@ -48,15 +45,12 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWordPressDraftWriteReadiness: vi.fn(),
     getContentWordPressExistingDraftUpdateReadiness: vi.fn(),
     getWordPressAuthoringProfile: vi.fn(),
-    confirmAction: vi.fn(),
-    previewAction: vi.fn(),
     postContentWorkItemQualityReview: vi.fn(),
     postContentWorkItemRevisionPlan: vi.fn(),
     postContentWorkItemStructuredDraftPreview: vi.fn(),
     postContentWorkItemStructuredDraftRuntime: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
-    reviewAction: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
     saveContentWorkItemSnapshotAudit: vi.fn()
   };
@@ -77,8 +71,6 @@ describe("ContentWorkflowSurface", () => {
       existingDraftUpdateReadiness()
     );
     vi.mocked(getWordPressAuthoringProfile).mockResolvedValue(wordpressAuthoringProfile());
-    vi.mocked(confirmAction).mockResolvedValue({} as Awaited<ReturnType<typeof confirmAction>>);
-    vi.mocked(previewAction).mockResolvedValue({} as Awaited<ReturnType<typeof previewAction>>);
     vi.mocked(postContentWorkItemQualityReview).mockResolvedValue(qualityReviewResponse());
     vi.mocked(postContentWorkItemRevisionPlan).mockResolvedValue(revisionPlanResponse());
     vi.mocked(saveContentWorkItemSnapshotHumanReview).mockResolvedValue(
@@ -99,7 +91,6 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
       wordpressDraftExecutionResponse()
     );
-    vi.mocked(reviewAction).mockResolvedValue({} as Awaited<ReturnType<typeof reviewAction>>);
   });
 
   afterEach(() => {
@@ -220,7 +211,7 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByText("Dev draft WordPress")).toBeInTheDocument();
     expect(screen.getByText(/Piszemy i układamy szkic na ekologus.dev.proudsite.pl/))
       .toBeInTheDocument();
-    expect(screen.getByText("draft write wyłączony")).toBeInTheDocument();
+    expect(screen.getByText("zapis przez akcję zablokowany")).toBeInTheDocument();
     expect(screen.getAllByText("Paczka szkicu").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Review").length).toBeGreaterThan(0);
     expect(screen.getByText("ACF")).toBeInTheDocument();
@@ -243,8 +234,12 @@ describe("ContentWorkflowSurface", () => {
       "href",
       "https://ekologus.dev.proudsite.pl/wp-admin/"
     );
-    expect(screen.getByRole("button", { name: "Przygotuj zgodę zapisu" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Utwórz szkic na dev" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sprawdź podgląd draftu" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", {
+        name: /Utwórz (?:(?:szkic|draft).*dev|.*dev.*(?:szkic|draft))/i
+      })
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("WordPress: szkic bez publikacji")).not.toBeInTheDocument();
     expect(screen.queryByText("WordPress: gotowość realnego draftu")).not.toBeInTheDocument();
     expect(screen.queryByText("Aktywacja szkicu WordPress")).not.toBeInTheDocument();
@@ -596,44 +591,14 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText(/Nadpisywanie treści: zablokowane/)).toBeInTheDocument();
   });
 
-  it("prepares WordPress write authorization from the workflow panel", async () => {
-    const client = createWilqQueryClient({
-      defaultOptions: { queries: { retry: false } }
-    });
-    render(
-      <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
-        client={client}
-      />
-    );
-
-    await openWorkflowDetails();
-    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj zgodę zapisu" }));
-
-    await waitFor(() => {
-      expect(previewAction).toHaveBeenCalledWith("act_prepare_wordpress_draft_handoff");
-      expect(reviewAction).toHaveBeenCalledWith(
-        "act_prepare_wordpress_draft_handoff",
-        expect.objectContaining({
-          outcome: "approved_for_prepare",
-          reviewed_by: "operator_local_dashboard"
-        })
-      );
-      expect(confirmAction).toHaveBeenCalledWith(
-        "act_prepare_wordpress_draft_handoff",
-        expect.objectContaining({
-          confirmed_by: "operator_local_dashboard",
-          preview_acknowledged: true
-        })
-      );
-    });
-    await waitFor(() => {
-      expect(getContentWordPressDraftWriteReadiness).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  it("creates a dev WordPress draft only when readiness returns write authorization", async () => {
-    const authorization = wordpressDraftWriteAuthorization();
+  it("keeps the direct WordPress endpoint dry-run when readiness claims a write is available", async () => {
+    const authorization = {
+      action_id: "act_prepare_wordpress_draft_handoff",
+      preview_audit_id: "audit_preview_wordpress_draft",
+      review_audit_id: "audit_review_wordpress_draft",
+      confirmation_audit_id: "audit_confirm_wordpress_draft",
+      confirmed_by: "operator_local_dashboard"
+    };
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
     );
@@ -679,9 +644,6 @@ describe("ContentWorkflowSurface", () => {
         }
       ]
     });
-    vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
-      wordpressDraftCreatedResponse()
-    );
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
     });
@@ -692,26 +654,62 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    await openWorkflowDetails();
-    const createButton = await screen.findByRole("button", { name: "Utwórz szkic na dev" });
-    expect(createButton).toBeEnabled();
-    fireEvent.click(createButton);
+    const previewButton = await screen.findByRole("button", {
+      name: "Przygotuj podgląd draftu"
+    });
+    expect(previewButton).toBeEnabled();
+    expect(
+      screen.queryByRole("button", {
+        name: /Utwórz (?:(?:szkic|draft).*dev|.*dev.*(?:szkic|draft))/i
+      })
+    ).not.toBeInTheDocument();
+    fireEvent.click(previewButton);
 
     await waitFor(() => {
       expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0]).toEqual({
         handoff: wordpressHandoff(),
         draft_package: draftPackage(),
-        mode: "live",
-        write_authorization: authorization
+        mode: "dry_run",
+        write_authorization: null,
+        section_overrides: expect.any(Array)
       });
     });
-    expect(
-      (await screen.findAllByText(/Szkic utworzony na devie jako WordPress draft, ID 987/)).length
-    ).toBeGreaterThan(0);
+    expect(screen.getByText(/Zapis na dev wymaga centralnej akcji ActionObject/)).toBeInTheDocument();
   });
 
-  it("creates a new dev draft from edited section text", async () => {
-    const authorization = wordpressDraftWriteAuthorization();
+  it("disables the primary draft preview when API dry-run readiness is blocked", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
+    );
+    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue({
+      ...wordpressDraftActivationPacket(),
+      draft_package_ready: true,
+      handoff_ready: true,
+      dry_run_ready: false,
+      execution_blockers: ["action_apply_required"]
+    });
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Przygotuj podgląd draftu" })
+    ).toBeDisabled();
+    await openWorkflowDetails();
+    expect(screen.getByRole("button", { name: "Sprawdź podgląd draftu" })).toBeDisabled();
+    for (const button of screen.getAllByRole("button", { name: "Sprawdź tekst szkicu" })) {
+      expect(button).toBeDisabled();
+    }
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("previews edited section text without requesting a direct WordPress write", async () => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
     );
@@ -725,18 +723,6 @@ describe("ContentWorkflowSurface", () => {
       execution_blockers: [],
       activation_missing_readiness_labels: []
     });
-    vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue({
-      ...wordpressDraftWriteReadiness(),
-      ready: true,
-      live_write_enabled_by_env: true,
-      write_authorization_status: "available",
-      suggested_write_authorization: authorization,
-      blockers: [],
-      missing_audit_event_types: []
-    });
-    vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
-      wordpressDraftCreatedResponse()
-    );
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
     });
@@ -754,7 +740,7 @@ describe("ContentWorkflowSurface", () => {
     fireEvent.change(sectionInput, { target: { value: editedBody } });
     fireEvent.click(
       screen.getAllByRole("button", {
-        name: "Utwórz draft na dev"
+        name: "Sprawdź tekst szkicu"
       })[0]
     );
 
@@ -763,8 +749,8 @@ describe("ContentWorkflowSurface", () => {
         .toEqual(expect.objectContaining({
           handoff: wordpressHandoff(),
           draft_package: draftPackage(),
-          mode: "live",
-          write_authorization: authorization,
+          mode: "dry_run",
+          write_authorization: null,
           section_overrides: expect.arrayContaining([
             expect.objectContaining({
               heading: "Kogo dotyczy BDO",
@@ -1892,18 +1878,6 @@ function wordpressDraftCreatedResponse(): ContentWorkItemWordPressDraftExecution
       wordpress_post_id: "987",
       external_write_attempted: true
     }
-  };
-}
-
-function wordpressDraftWriteAuthorization(): NonNullable<
-  ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"]
-> {
-  return {
-    action_id: "act_prepare_wordpress_draft_handoff",
-    preview_audit_id: "audit_preview_wordpress_draft",
-    review_audit_id: "audit_review_wordpress_draft",
-    confirmation_audit_id: "audit_confirm_wordpress_draft",
-    confirmed_by: "operator_local_dashboard"
   };
 }
 

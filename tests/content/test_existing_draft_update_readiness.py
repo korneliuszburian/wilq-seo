@@ -58,6 +58,27 @@ def test_existing_draft_update_action_validates_and_previews_without_mutation() 
     assert result["audit_event"]["event_type"] == "action_preview_generated"
 
 
+def test_existing_draft_update_action_exposes_marketer_preview_card() -> None:
+    actions = TestClient(app).get("/api/actions").json()
+    action = next(
+        item
+        for item in actions
+        if item["id"] == "act_prepare_wordpress_existing_draft_update"
+    )
+
+    assert len(action["preview_cards"]) == 1
+    card = action["preview_cards"][0]
+    assert card["kind"] == "wordpress_existing_draft_update_review"
+    assert card["title_label"] == "Aktualizacja istniejącego szkicu do sprawdzenia"
+    assert card["status_label"] == "zapis zmian zablokowany"
+    assert card["apply_state_label"] == "zapis zmian zablokowany"
+    assert {row["label"] for row in card["rows"]} == {
+        "Stan bieżący",
+        "Proponowana zmiana",
+        "Dozwolony zakres",
+    }
+
+
 def test_existing_draft_update_review_and_confirm_remain_audited_and_blocked() -> None:
     client = TestClient(app)
     client.post("/api/actions/act_prepare_wordpress_existing_draft_update/validate")

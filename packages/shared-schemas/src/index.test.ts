@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ActionMutationReadinessResponseSchema,
   ActionObjectSchema,
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
@@ -77,6 +78,27 @@ describe("ActionObjectSchema", () => {
         validation_status: "pending_validation"
       }).success
     ).toBe(false);
+  });
+});
+
+describe("ActionMutationReadinessResponseSchema", () => {
+  it("accepts the fail-closed WordPress authorization status", () => {
+    const parsed = ActionMutationReadinessResponseSchema.parse({
+      response_type: "action_mutation_readiness",
+      contract: "action_mutation_readiness_v1",
+      action_id: "act_apply_wordpress_draft_handoff",
+      title: "Aktywuj zapis szkicu WordPress draft-only",
+      connector: "wordpress_ekologus",
+      mode: "apply",
+      risk: "medium",
+      validation_status: "valid",
+      write_authorization_status: "blocked_outside_action_apply",
+      operator_next_step: "Użyj kanonicznej akcji apply."
+    });
+
+    expect(parsed.write_authorization_status).toBe("blocked_outside_action_apply");
+    expect(parsed.vendor_write_possible).toBe(false);
+    expect(parsed.would_attempt_vendor_write).toBe(false);
   });
 });
 

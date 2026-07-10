@@ -280,16 +280,23 @@ def test_wordpress_draft_execution_blocks_live_write_without_enabled_adapter() -
     )
     assert handoff_result.handoff is not None
 
+    outside_action_apply = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+        mode="live",
+    )
     disabled = execute_content_wordpress_draft_handoff(
         handoff=handoff_result.handoff,
         draft_package=_draft_package(),
         mode="live",
+        action_apply_authorized=True,
     )
     missing_adapter = execute_content_wordpress_draft_handoff(
         handoff=handoff_result.handoff,
         draft_package=_draft_package(),
         mode="live",
         live_write_enabled=True,
+        action_apply_authorized=True,
     )
     missing_authorization = execute_content_wordpress_draft_handoff(
         handoff=handoff_result.handoff,
@@ -297,8 +304,12 @@ def test_wordpress_draft_execution_blocks_live_write_without_enabled_adapter() -
         mode="live",
         live_write_enabled=True,
         create_draft=lambda _payload: "123",
+        action_apply_authorized=True,
     )
 
+    assert outside_action_apply.status == "blocked"
+    assert [blocker.code for blocker in outside_action_apply.blockers] == ["action_apply_required"]
+    assert outside_action_apply.external_write_attempted is False
     assert disabled.status == "blocked"
     assert [blocker.code for blocker in disabled.blockers] == ["live_write_not_enabled"]
     assert disabled.external_write_attempted is False
@@ -335,6 +346,7 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
         mode="live",
         live_write_enabled=True,
         create_draft=create_draft,
+        action_apply_authorized=True,
         write_authorization=ContentWordPressDraftWriteAuthorization(
             action_id="act_prepare_wordpress_draft_handoff",
             preview_audit_id="audit_preview_123",

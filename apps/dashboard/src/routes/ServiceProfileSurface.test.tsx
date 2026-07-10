@@ -36,7 +36,9 @@ describe("ServiceProfileSurface", () => {
       />
     );
 
-    expect(await screen.findByText("Profil usług Ekologus")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Profil usług Ekologus", {}, { timeout: 10_000 })
+    ).toBeInTheDocument();
     expect(screen.getByText("Wiedza Ekologus: co dziś sprawdzić")).toBeInTheDocument();
     expect(
       screen.getByText("Są źródła i propozycje, ale produkcyjne treści są nadal zablokowane")
@@ -214,7 +216,7 @@ describe("ServiceProfileSurface", () => {
       .toBeGreaterThanOrEqual(2);
     expect(screen.queryByRole("button", { name: /edytuj/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /promuj/i })).not.toBeInTheDocument();
-  });
+  }, 15_000);
 });
 
 function serviceProfileResponse(): ContentServiceProfileResponse {

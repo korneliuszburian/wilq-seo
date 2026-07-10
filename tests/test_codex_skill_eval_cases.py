@@ -273,7 +273,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "gsc_content_doctor_context",
             },
             "decision_terms": {
-                "gotowe do pokazania Wilkowi",
+                "gotowa do pokazania Wilkowi",
             },
             "action_ids": {"act_prepare_content_refresh_queue"},
             "validated_action_ids": {"act_prepare_content_refresh_queue"},

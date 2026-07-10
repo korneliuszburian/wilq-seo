@@ -397,7 +397,12 @@ export const ActionMutationReadinessResponseSchema = z.object({
   target_label: z.string().nullable().optional(),
   target_url: z.string().nullable().optional(),
   write_authorization_status: z
-    .enum(["missing_audit_trace", "audit_actor_mismatch", "available"])
+    .enum([
+      "missing_audit_trace",
+      "audit_actor_mismatch",
+      "available",
+      "blocked_outside_action_apply"
+    ])
     .nullable()
     .optional(),
   missing_audit_event_types: z.array(z.string()).default([]),

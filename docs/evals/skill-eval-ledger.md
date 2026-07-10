@@ -55,6 +55,37 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-07-10 - Semantic contracts and fresh 13/13 proof
+
+Purpose:
+
+- Replace one global heading template in the skill hygiene gate with semantic,
+  workflow-specific markers, so contracts prove operator behavior instead of
+  matching ceremonial copy.
+- Keep GSC content decisions tied to the correct public WordPress inventory
+  and make the Custom Segments review decision explicit.
+
+Proof:
+
+```bash
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+rtk scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Strict coverage reports 13 skills, 13 cases, zero gaps and zero warnings.
+- All 13 latest skill evals are fresh and passing; usefulness scores are 9-10.
+- The touched GSC and Custom Segments contracts pass deterministic smoke and
+  non-interactive quick validation against the managed WILQ API.
+- Goal 005 is not declared complete from skill proof alone: its completion
+  check remains `blocked_missing_goal_005_uat_proof` until real Wilku UAT JSON
+  or an explicit owner defer exists.
+
 ## 2026-07-02 - Strict skill eval coverage audit
 
 Purpose:

@@ -13,8 +13,8 @@ Najpierw pobierz `GET /api/content/diagnostics`. Następnie pobierz `POST /api/c
 Wymagane źródła danych:
 
 - `google_search_console`
-- `wordpress_ekologus`
-- `wordpress_sklep`
+- `wordpress_ekologus`, gdy decyzja dotyczy `ekologus.pl`
+- `wordpress_sklep`, tylko gdy decyzja dotyczy `sklep.ekologus.pl`
 
 ## Kształt odpowiedzi
 

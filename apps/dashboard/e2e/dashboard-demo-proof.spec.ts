@@ -24,27 +24,19 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await fs.mkdir(runDir, { recursive: true });
 
     await gotoAndWaitForApi(page, "/command-center", "/api/dashboard/command-center");
-    await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Przejrzyj kolejkę problemów Merchant Center" })
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Przejrzyj kolejkę SEO z GSC i WordPress" })
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "GA4: pomiar i jakość ruchu do kontroli" })
-    ).toBeVisible();
-    await expect(page.getByText("Czego nie twierdzimy").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dzisiaj" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Następna najlepsza praca" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Blokady, których nie obchodź" })).toBeVisible();
+    await expect(page.getByText("Kolejka dziś")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Nie wolno dziś twierdzić" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Localo: MCP access działa, brak jeszcze ranking/GBP facts" })
     ).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Plan działań marketera" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
-    await expect(page.getByText("Akcje do sprawdzenia").first()).toBeVisible();
-    await expect(page.getByText("1 bezpieczna akcja do sprawdzenia").first()).toBeVisible();
+    await expect(page.getByText("akcji do sprawdzenia").first()).toBeVisible();
     await expect(page.getByText("act_review_merchant_feed_issues")).toHaveCount(0);
-    await expect(page.getByText("Czego nie twierdzimy").first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "01-command-center-action-plan.png"),
       fullPage: true,

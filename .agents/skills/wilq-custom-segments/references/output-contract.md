@@ -33,6 +33,11 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 9. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 10. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
+W ustrukturyzowanym JSON eval albo handoffie etykieta `Decyzja po review`
+musi pojawić się w widocznym polu decyzyjnym, np. w `operator_next_step`,
+`recommendations[].label_pl` albo `action_candidates[].label_pl`. Nie wystarczy
+opisać tej decyzji bez jej nazwania ani umieścić etykiety w `notes`.
+
 ## Segment do sprawdzenia
 
 Dla każdej propozycji z `custom_segments_read_contract.candidates` pokaż:

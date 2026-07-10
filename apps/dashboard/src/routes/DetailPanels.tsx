@@ -428,6 +428,9 @@ function ActionMutationReadinessPanel({
 }
 
 function actionWriteAuthorizationStatusLabel(status: string): string {
+  if (status === "blocked_outside_action_apply") {
+    return "Ślad review istnieje, ale zapis poza kanoniczną akcją apply pozostaje zablokowany.";
+  }
   if (status === "available") {
     return "WILQ ma zapisane wymagane potwierdzenia operatora.";
   }

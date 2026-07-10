@@ -26,9 +26,6 @@ import {
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
-  previewAction,
-  reviewAction,
-  confirmAction,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   type ContentWorkItemSnapshotAuditRequest,
@@ -323,7 +320,6 @@ function ContentWorkflowLoaded({
         authoringProfile={authoringProfile}
         data={data}
         draftActivationPacket={draftActivationPacket}
-        draftWriteReadiness={draftWriteReadiness}
         enrichment={enrichment}
         queue={queue}
       />
@@ -349,7 +345,6 @@ function ContentWorkflowLoaded({
               authoringProfile={authoringProfile}
               data={data}
               draftActivationPacket={draftActivationPacket}
-              draftWriteReadiness={draftWriteReadiness}
             />
             <ContentCandidateQueuePanel
               queue={queue}
@@ -385,7 +380,6 @@ function ContentPageWorkbench({
   authoringProfile,
   data,
   draftActivationPacket,
-  draftWriteReadiness,
   enrichment,
   queue
 }: {
@@ -393,18 +387,19 @@ function ContentPageWorkbench({
   authoringProfile: WordPressAuthoringProfileQuery;
   data: ContentWorkflowSnapshot;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
-  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
-  const handoff = data.wordpressHandoff.handoff_result.handoff;
   const profile = authoringProfile.data ?? null;
   const [selectedDevPageLink, setSelectedDevPageLink] = useState<string | null>(null);
   const devPage = selectDevPage(profile, item, selectedDevPageLink);
   const draftReadback = draftActivationPacket.data?.draft_readback ?? null;
-  const writeAuthorization = draftWriteReadiness.data?.suggested_write_authorization ?? null;
+  const dryRunReady = Boolean(
+    draftActivationPacket.data?.dry_run_ready &&
+      draftActivationPacket.data.execution_blockers.length === 0
+  );
   const existingDraftUpdateReadiness = useQuery({
     queryKey: ["content-workflow", "existing-draft-update-readiness", item.id],
     queryFn: () => getContentWordPressExistingDraftUpdateReadiness(item.id),
@@ -456,14 +451,6 @@ function ContentPageWorkbench({
       evidence_ids: unique(section.evidence_ids)
     }))
     .filter((section) => section.body_markdown.trim().length > 0);
-  const canCreateEditedDevDraft = Boolean(
-    draft &&
-      handoff &&
-      writeAuthorization &&
-      draftWriteReadiness.data?.ready &&
-      sectionOverrides.length &&
-      !actions.executionPending
-  );
   const signalRows = contentSignalRows(data, enrichment, activeCandidate);
   const blockedClaims = blockedClaimsForWorkbench(data);
   const evidenceRows = evidenceRowsForWorkbench(data, enrichment);
@@ -750,23 +737,10 @@ function ContentPageWorkbench({
                     <button
                       type="button"
                       onClick={() => actions.runExecutionDryRunWithSections(sectionOverrides)}
-                      disabled={!sectionOverrides.length || actions.executionPending}
+                      disabled={!sectionOverrides.length || !dryRunReady || actions.executionPending}
                       className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Sprawdź tekst szkicu
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (writeAuthorization) {
-                          actions.runExecutionLive(writeAuthorization, sectionOverrides);
-                        }
-                      }}
-                      disabled={!canCreateEditedDevDraft}
-                      className="inline-flex h-10 items-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {actions.executionPending ? "Tworzę draft" : "Utwórz draft na dev"}
-                      <ArrowRight aria-hidden="true" size={16} />
                     </button>
                     <button
                       type="button"
@@ -853,21 +827,15 @@ function ContentPageWorkbench({
           <div className="rounded-md border border-line bg-white p-4 shadow-sm">
             <h2 className="text-base font-semibold text-ink">Praca na devie</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Edytuj sekcję, sprawdź podgląd i utwórz szkic na devie bez publikacji produkcji.
+              Edytuj sekcję i sprawdź podgląd szkicu. Zapis na dev odbywa się dopiero przez centralną akcję.
             </p>
             <button
               type="button"
-              onClick={() => {
-                if (writeAuthorization) {
-                  actions.runExecutionLive(writeAuthorization, sectionOverrides);
-                } else {
-                  actions.runExecutionDryRunWithSections(sectionOverrides);
-                }
-              }}
-              disabled={!sectionOverrides.length || actions.executionPending}
+              onClick={() => actions.runExecutionDryRunWithSections(sectionOverrides)}
+              disabled={!sectionOverrides.length || !dryRunReady || actions.executionPending}
               className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {writeAuthorization ? "Utwórz draft na dev" : "Przygotuj podgląd draftu"}
+              Przygotuj podgląd draftu
               <ArrowRight aria-hidden="true" size={16} />
             </button>
             <a
@@ -877,7 +845,7 @@ function ContentPageWorkbench({
               Pokaż kontekst
             </a>
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              Następny krok: otwórz lub utwórz draft WordPress na devie.
+              Zapis na dev wymaga centralnej akcji ActionObject; ten ekran przygotowuje tylko podgląd.
             </p>
             {existingDraftUpdateReadiness.data ? (
               <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-slate-700">
@@ -1112,43 +1080,9 @@ function WordPressDraftWorkPanel({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
 }) {
-  const queryClient = useQueryClient();
   const profile = authoringProfile.data;
   const readiness = draftWriteReadiness.data;
   const packet = draftActivationPacket.data;
-  const actionId = readiness?.action_id ?? "act_prepare_wordpress_draft_handoff";
-  const prepareAuthorizationMutation = useMutation({
-    mutationFn: async () => {
-      await previewAction(actionId);
-      await reviewAction(actionId, {
-        outcome: "approved_for_prepare",
-        reviewed_by: "operator_local_dashboard",
-        notes:
-          "Operator zatwierdza przygotowanie ścieżki zapisu wyłącznie dla dev draftu WordPress.",
-        checked_items: [
-          "Podgląd akcji został wygenerowany.",
-          "Zapis dotyczy wyłącznie szkicu WordPress na devie.",
-          "Publikacja i nadpisywanie pozostają zablokowane."
-        ],
-        blockers: []
-      });
-      await confirmAction(actionId, {
-        confirmed_by: "operator_local_dashboard",
-        notes:
-          "Operator potwierdza podgląd i zgadza się wyłącznie na utworzenie szkicu dev draft.",
-        preview_acknowledged: true
-      });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ["content-workflow", "wordpress-draft-write-readiness"]
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ["content-workflow", "wordpress-draft-activation-packet"]
-      });
-      void queryClient.invalidateQueries({ queryKey: ["actions", actionId] });
-    }
-  });
   const isLoading =
     authoringProfile.isLoading || draftActivationPacket.isLoading || draftWriteReadiness.isLoading;
 
@@ -1173,17 +1107,16 @@ function WordPressDraftWorkPanel({
     );
   }
 
-  const draftWriteEnabled = Boolean(
-    readiness?.live_write_enabled_by_env ?? profile?.write_boundary.draft_writes_enabled_by_env
-  );
-  const writeAuthorization = readiness?.suggested_write_authorization ?? null;
   const latestCreatedExecution =
     actions.executionResult ??
     (packet?.execution_result.status === "created" ? packet.execution_result : null);
-  const hasCreatedDevDraft = latestCreatedExecution?.status === "created";
   const draftReadback = packet?.draft_readback ?? null;
-  const canCreateDevDraft = Boolean(
-    readiness?.ready && writeAuthorization && packet?.handoff_ready && !hasCreatedDevDraft
+  const canPreviewDraft = Boolean(
+    packet?.draft_package_ready &&
+      packet.handoff_ready &&
+      packet.dry_run_ready &&
+      packet.execution_blockers.length === 0 &&
+      !actions.executionPending
   );
   const acfLayoutCount = profile?.acf.layouts.length ?? 0;
   const missingReadiness = [
@@ -1206,10 +1139,8 @@ function WordPressDraftWorkPanel({
             odniesienia, ale dev nie jest kanonicznym adresem SEO.
           </p>
         </div>
-        <span className={`rounded-md px-3 py-2 text-sm font-semibold ${
-          draftWriteEnabled ? "bg-success/10 text-success" : "bg-wait/10 text-wait"
-        }`}>
-          {draftWriteEnabled ? "draft write włączony" : "draft write wyłączony"}
+        <span className="rounded-md bg-wait/10 px-3 py-2 text-sm font-semibold text-wait">
+          zapis przez akcję zablokowany
         </span>
       </div>
 
@@ -1227,39 +1158,13 @@ function WordPressDraftWorkPanel({
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => prepareAuthorizationMutation.mutate()}
-                disabled={prepareAuthorizationMutation.isPending || readiness?.ready}
-                className="inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {prepareAuthorizationMutation.isPending
-                  ? "Przygotowuję zgodę"
-                  : readiness?.ready
-                    ? "Zgoda zapisu gotowa"
-                    : "Przygotuj zgodę zapisu"}
-              </button>
-              <button
-                type="button"
-                onClick={() => actions.runExecutionLive(writeAuthorization)}
-                disabled={actions.executionPending || !canCreateDevDraft}
+                onClick={() => actions.runExecutionDryRun()}
+                disabled={!canPreviewDraft}
                 className="inline-flex h-9 items-center rounded-md bg-action px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {actions.executionPending
-                  ? "Tworzę szkic"
-                  : hasCreatedDevDraft
-                    ? "Szkic utworzony na dev"
-                    : "Utwórz szkic na dev"}
+                {actions.executionPending ? "Sprawdzam podgląd" : "Sprawdź podgląd draftu"}
               </button>
             </div>
-            {prepareAuthorizationMutation.isSuccess ? (
-              <p className="mt-3 text-sm leading-6 text-success">
-                Zgoda ActionObject została zapisana. Odświeżony readiness pokaże, czy można utworzyć szkic.
-              </p>
-            ) : null}
-            {prepareAuthorizationMutation.error instanceof Error ? (
-              <p className="mt-3 text-sm leading-6 text-risk">
-                Nie udało się przygotować zgody: {prepareAuthorizationMutation.error.message}
-              </p>
-            ) : null}
             {latestCreatedExecution ? (
               <WordPressDraftExecutionStatus result={latestCreatedExecution} />
             ) : null}
@@ -1311,14 +1216,12 @@ function ContentSectionWritingWorkbench({
   actions,
   authoringProfile,
   data,
-  draftActivationPacket,
-  draftWriteReadiness
+  draftActivationPacket
 }: {
   actions: ContentWorkflowActions;
   authoringProfile: WordPressAuthoringProfileQuery;
   data: ContentWorkflowSnapshot;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
-  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
@@ -1350,7 +1253,10 @@ function ContentSectionWritingWorkbench({
     item.wordpress_section_inventory_status === "available" && publicSections.length > 0;
   const profile = authoringProfile.data;
   const draftReadback = draftActivationPacket.data?.draft_readback ?? null;
-  const writeAuthorization = draftWriteReadiness.data?.suggested_write_authorization ?? null;
+  const dryRunReady = Boolean(
+    draftActivationPacket.data?.dry_run_ready &&
+      draftActivationPacket.data.execution_blockers.length === 0
+  );
   const firstAcfSection = actions.acfPreviewResult?.sections[0] ?? null;
   const firstAcfFields = firstAcfSection?.field_previews ?? [];
   const sourceHref = item.source_public_url ?? item.final_canonical_url ?? item.intended_final_url ?? undefined;
@@ -1365,14 +1271,6 @@ function ContentSectionWritingWorkbench({
       evidence_ids: unique(section.evidence_ids)
     }))
     .filter((section) => section.body_markdown.trim().length > 0);
-  const canCreateEditedDevDraft = Boolean(
-    draft &&
-      handoff &&
-      writeAuthorization &&
-      draftWriteReadiness.data?.ready &&
-      sectionOverrides.length &&
-      !actions.executionPending
-  );
 
   return (
     <section className="mb-6 overflow-hidden rounded-md border border-line bg-white shadow-sm">
@@ -1436,7 +1334,7 @@ function ContentSectionWritingWorkbench({
               <h3 className="text-sm font-semibold text-ink">Tekst sekcji do szkicu</h3>
               <p className="mt-2 text-sm leading-6 text-slate-700">
                 {draftSections.length
-                  ? "Przepisz konkretne sekcje tutaj i zapisz je jako nowy szkic na devie."
+                  ? "Przepisz konkretne sekcje tutaj i sprawdź podgląd przed centralną akcją zapisu."
                   : "Szkic nie ma jeszcze sekcji. Najpierw przygotuj paczkę szkicu."}
               </p>
             </div>
@@ -1474,31 +1372,17 @@ function ContentSectionWritingWorkbench({
               })}
               <div className="rounded-md border border-action/20 bg-action/5 p-3">
                 <p className="text-sm leading-6 text-slate-700">
-                  Zapis tworzy nowy szkic na dev WordPress. Nie publikuje i nie nadpisuje publicznej
-                  strony.
+                  Podgląd sprawdza tekst i payload szkicu. Zapis na dev wymaga centralnej akcji
+                  ActionObject; publikacja i nadpisywanie publicznej strony pozostają zablokowane.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={() => actions.runExecutionDryRunWithSections(sectionOverrides)}
-                    disabled={!sectionOverrides.length || actions.executionPending}
+                    disabled={!sectionOverrides.length || !dryRunReady || actions.executionPending}
                     className="inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actions.executionPending ? "Sprawdzam..." : "Sprawdź tekst szkicu"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (writeAuthorization) {
-                        actions.runExecutionLive(writeAuthorization, sectionOverrides);
-                      }
-                    }}
-                    disabled={!canCreateEditedDevDraft}
-                    className="inline-flex h-9 items-center rounded-md bg-action px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {actions.executionPending
-                      ? "Tworzę szkic..."
-                      : "Utwórz nowy dev draft z edytowanych sekcji"}
                   </button>
                   <button
                     type="button"
@@ -1513,11 +1397,9 @@ function ContentSectionWritingWorkbench({
                     Przywróć tekst z briefu
                   </button>
                 </div>
-                {!draftWriteReadiness.data?.ready ? (
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Żeby zapisać na dev, najpierw przygotuj zgodę zapisu w panelu WordPress powyżej.
-                  </p>
-                ) : null}
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Ten ekran nie wykonuje bezpośredniego zapisu do WordPressa.
+                </p>
               </div>
             </div>
           ) : null}
@@ -1717,22 +1599,6 @@ function contentWorkflowActions(
         wordpressExecutionRequest(
           data.draftPackage.draft_package_result.draft_package,
           data.wordpressHandoff.handoff_result.handoff,
-          "dry_run",
-          null,
-          sectionOverrides
-        ),
-        mutations.executionMutation.mutate
-      ),
-    runExecutionLive: (
-      writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"],
-      sectionOverrides: WordPressDraftSectionOverride[] = []
-    ) =>
-      submitIfReady(
-        wordpressExecutionRequest(
-          data.draftPackage.draft_package_result.draft_package,
-          data.wordpressHandoff.handoff_result.handoff,
-          "live",
-          writeAuthorization,
           sectionOverrides
         ),
         mutations.executionMutation.mutate
@@ -2078,16 +1944,14 @@ function auditRequest(data: ContentWorkflowSnapshot): ContentWorkItemSnapshotAud
 function wordpressExecutionRequest(
   draft: DraftPackage,
   handoff: WordPressHandoff,
-  mode: ContentWorkItemWordPressDraftExecutionRequest["mode"] = "dry_run",
-  writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"] = null,
   sectionOverrides: WordPressDraftSectionOverride[] = []
 ): ContentWorkItemWordPressDraftExecutionRequest | null {
   if (!draft || !handoff) return null;
   const request: ContentWorkItemWordPressDraftExecutionRequest = {
     handoff,
     draft_package: draft,
-    mode,
-    write_authorization: writeAuthorization ?? null
+    mode: "dry_run",
+    write_authorization: null
   };
   if (sectionOverrides.length) {
     request.section_overrides = sectionOverrides;

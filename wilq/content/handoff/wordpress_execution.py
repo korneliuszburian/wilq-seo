@@ -16,6 +16,7 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
     "draft_package_mismatch",
     "draft_package_marked_publish_ready",
     "handoff_not_draft_only",
+    "action_apply_required",
     "live_write_not_enabled",
     "missing_live_adapter",
     "missing_write_authorization",
@@ -96,6 +97,7 @@ def execute_content_wordpress_draft_handoff(
     mode: ContentWordPressDraftExecutionMode = "dry_run",
     live_write_enabled: bool = False,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None = None,
+    action_apply_authorized: bool = False,
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
     write_authorization_verified: bool = False,
     section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
@@ -106,6 +108,7 @@ def execute_content_wordpress_draft_handoff(
         mode=mode,
         live_write_enabled=live_write_enabled,
         create_draft=create_draft,
+        action_apply_authorized=action_apply_authorized,
         write_authorization=write_authorization,
         write_authorization_verified=write_authorization_verified,
     )
@@ -187,6 +190,7 @@ def content_wordpress_draft_execution_blockers(
     mode: ContentWordPressDraftExecutionMode = "dry_run",
     live_write_enabled: bool = False,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None = None,
+    action_apply_authorized: bool = False,
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
     write_authorization_verified: bool = False,
 ) -> list[ContentWordPressDraftExecutionBlocker]:
@@ -216,6 +220,7 @@ def content_wordpress_draft_execution_blockers(
             _live_write_blockers(
                 live_write_enabled,
                 create_draft,
+                action_apply_authorized,
                 write_authorization,
                 write_authorization_verified,
             )
@@ -282,9 +287,25 @@ def _handoff_payload_blockers(
 def _live_write_blockers(
     live_write_enabled: bool,
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None,
+    action_apply_authorized: bool,
     write_authorization: ContentWordPressDraftWriteAuthorization | None,
     write_authorization_verified: bool,
 ) -> list[ContentWordPressDraftExecutionBlocker]:
+    if not action_apply_authorized:
+        return [
+            _blocker(
+                "action_apply_required",
+                "Zapis wymaga kanonicznej akcji apply",
+                (
+                    "Ten endpoint może przygotować podgląd szkicu, ale nie może "
+                    "samodzielnie uruchamiać adaptera WordPress."
+                ),
+                (
+                    "Użyj trybu dry-run. Realny zapis może wrócić dopiero przez "
+                    "apply-capable ActionObject z preview, review, confirm i audytem."
+                ),
+            )
+        ]
     if not live_write_enabled:
         return [
             _blocker(

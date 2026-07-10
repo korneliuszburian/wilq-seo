@@ -69,6 +69,13 @@ FORBIDDEN_SKILL_PROSE = {
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 MAX_BODY_LINE_LENGTH = 900
+REQUIRED_OUTPUT_CONTRACT_MARKERS = {
+    "shape": "## kształt odpowiedzi",
+    "evidence": "identyfikator",
+    "source": "źród",
+    "blocker": "blok",
+    "next_step": "następn",
+}
 DEDICATED_DIAGNOSTICS_ENDPOINTS = {
     "wilq-ads-doctor": "/api/ads/diagnostics",
     "wilq-ahrefs-gap-finder": "/api/ahrefs/diagnostics",
@@ -103,6 +110,9 @@ def main() -> None:
 
 def _skill_errors(skill_name: str, skill_dir: Path) -> list[str]:
     errors: list[str] = []
+    output_contract_path = skill_dir / "references" / "output-contract.md"
+    if not output_contract_path.exists():
+        errors.append(f"{output_contract_path.as_posix()}: missing output contract")
     markdown_files = sorted([skill_dir / "SKILL.md", *skill_dir.glob("references/*.md")])
     for path in markdown_files:
         text = path.read_text(encoding="utf-8")
@@ -133,7 +143,14 @@ def _skill_md_errors(skill_name: str, path: Path, text: str) -> list[str]:
 
 
 def _output_contract_errors(skill_name: str, path: Path, text: str) -> list[str]:
-    return _diagnostics_first_errors(skill_name, path, text)
+    errors = _diagnostics_first_errors(skill_name, path, text)
+    normalized = text.lower()
+    for marker_name, marker in REQUIRED_OUTPUT_CONTRACT_MARKERS.items():
+        if marker not in normalized:
+            errors.append(
+                f"{path.as_posix()}: missing operator-contract marker {marker_name!r}"
+            )
+    return errors
 
 
 def _diagnostics_first_errors(skill_name: str, path: Path, text: str) -> list[str]:

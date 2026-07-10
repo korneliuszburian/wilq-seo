@@ -153,8 +153,7 @@
     "task_pl": "Na podstawie dostępnych dowodów z GSC wskaż jedną bezpieczną diagnozę treści i co marketer ma zrobić dalej. Wynik ma być kartą review gotową do pokazania Wilkowi bez dopisku od developera: jedna strona, dlaczego teraz, pytanie do Wilka i jeden bezpieczny klik bez zapisu.",
     "expected_connectors": [
       "google_search_console",
-      "wordpress_ekologus",
-      "wordpress_sklep"
+      "wordpress_ekologus"
     ],
     "expected_terms_pl": [
       "Treści",
@@ -191,7 +190,7 @@
       "gsc_content_doctor_context"
     ],
     "required_decision_terms_pl": [
-      "gotowe do pokazania Wilkowi",
+      "gotowa do pokazania Wilkowi",
       "najnowszy dostępny dzień",
       "częściowe dane zapytań i adresów",
       "sygnał do ręcznej oceny",

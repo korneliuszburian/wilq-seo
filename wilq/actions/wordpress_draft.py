@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 from wilq.evidence.registry import connector_evidence_id
-from wilq.schemas import ActionMode, ActionObject, ActionRisk, ActionStatus, OpportunityDomain
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
+    ActionRisk,
+    ActionStatus,
+    OpportunityDomain,
+)
 
 
 def existing_draft_update_action() -> ActionObject:
@@ -56,5 +64,32 @@ def existing_draft_update_action() -> ActionObject:
             "destructive": False,
         },
         validation_status="not_validated",
+        preview_cards=[_existing_draft_update_preview_card()],
         created_by="system_core_seed",
+    )
+
+
+def _existing_draft_update_preview_card() -> ActionPreviewCardViewModel:
+    return ActionPreviewCardViewModel(
+        id="wordpress_existing_draft_update_preview",
+        kind="wordpress_existing_draft_update_review",
+        title_label="Aktualizacja istniejącego szkicu do sprawdzenia",
+        subtitle_label="podgląd dev bez zapisu i bez publikacji",
+        status_label="zapis zmian zablokowany",
+        rows=[
+            ActionPreviewRowViewModel(
+                label="Stan bieżący",
+                value="Najpierw odczytaj istniejący szkic i sekcje ACF na devie.",
+            ),
+            ActionPreviewRowViewModel(
+                label="Proponowana zmiana",
+                value="Nadpisania sekcji wymagają podglądu i review człowieka.",
+            ),
+            ActionPreviewRowViewModel(
+                label="Dozwolony zakres",
+                value="Wyłącznie istniejący szkic na devie; publikacja jest zablokowana.",
+            ),
+        ],
+        apply_state_label="zapis zmian zablokowany",
+        system_readiness_label="adapter aktualizacji nie jest gotowy",
     )

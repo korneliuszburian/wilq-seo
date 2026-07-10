@@ -9,6 +9,13 @@ from wilq.connectors.wordpress.client import (
     WordPressDraftPostReadback,
     WordPressDraftReadError,
 )
+from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
+from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftWriteAuthorization,
+    execute_content_wordpress_draft_handoff,
+)
+from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import AuditEvent
 from wilq.storage.local_state import local_state_store
 
@@ -74,9 +81,10 @@ def _post_wordpress_execution(payload: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-def _get_wordpress_write_readiness() -> dict[str, Any]:
+def _get_wordpress_write_readiness(action_id: str | None = None) -> dict[str, Any]:
     response = TestClient(app).get(
         "/api/content/wordpress/draft-write-readiness",
+        params={"action_id": action_id} if action_id is not None else None,
     )
     assert response.status_code == 200
     data = cast(dict[str, Any], response.json())
@@ -403,22 +411,13 @@ def test_wordpress_execution_api_blocks_live_write(
     assert result["boundary"]["live_adapter_configured"] is False
     assert result["boundary"]["publish_allowed"] is False
     assert result["boundary"]["destructive_update_allowed"] is False
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "live_write_not_enabled"
-    ]
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
 
 
 def test_wordpress_execution_api_live_write_requires_write_authorization(
     monkeypatch,
 ) -> None:
-    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
-        raise AssertionError("adapter must not run without write authorization")
-
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
-    monkeypatch.setattr(
-        "wilq.content.workflow.api.create_wordpress_draft_post",
-        create_draft,
-    )
 
     data = _post_wordpress_execution(
         {
@@ -432,25 +431,16 @@ def test_wordpress_execution_api_live_write_requires_write_authorization(
     assert result["status"] == "blocked"
     assert result["external_write_attempted"] is False
     assert result["boundary"]["live_write_enabled"] is True
-    assert result["boundary"]["live_adapter_configured"] is True
+    assert result["boundary"]["live_adapter_configured"] is False
     assert result["boundary"]["publish_allowed"] is False
     assert result["boundary"]["destructive_update_allowed"] is False
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "missing_write_authorization"
-    ]
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
 
 
 def test_wordpress_execution_api_live_write_rejects_unpersisted_authorization(
     monkeypatch,
 ) -> None:
-    def create_draft(_payload) -> str:  # type: ignore[no-untyped-def]
-        raise AssertionError("adapter must not run without persisted audit proof")
-
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
-    monkeypatch.setattr(
-        "wilq.content.workflow.api.create_wordpress_draft_post",
-        create_draft,
-    )
 
     data = _post_wordpress_execution(
         {
@@ -465,32 +455,28 @@ def test_wordpress_execution_api_live_write_rejects_unpersisted_authorization(
     assert result["status"] == "blocked"
     assert result["external_write_attempted"] is False
     assert result["boundary"]["live_write_enabled"] is True
-    assert result["boundary"]["live_adapter_configured"] is True
+    assert result["boundary"]["live_adapter_configured"] is False
     assert result["boundary"]["publish_allowed"] is False
     assert result["boundary"]["destructive_update_allowed"] is False
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "invalid_write_authorization"
-    ]
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
 
 
-def test_wordpress_execution_api_live_write_uses_persisted_authorization(
+def test_wordpress_execution_api_rejects_persisted_prepare_authorization(
     monkeypatch,
     tmp_path,
 ) -> None:
-    created_titles: list[str] = []
+    execution_arguments: dict[str, object] = {}
+    real_execute = execute_content_wordpress_draft_handoff
 
-    def create_draft(payload) -> str:  # type: ignore[no-untyped-def]
-        assert payload.post_status == "draft"
-        assert payload.publish_allowed is False
-        assert payload.destructive_update_allowed is False
-        created_titles.append(payload.title)
-        return "777"
+    def capture_execution(**kwargs: object):  # type: ignore[no-untyped-def]
+        execution_arguments.update(kwargs)
+        return real_execute(**kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_write.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
-        "wilq.content.workflow.api.create_wordpress_draft_post",
-        create_draft,
+        "wilq.content.workflow.api.execute_content_wordpress_draft_handoff",
+        capture_execution,
     )
     _persist_write_authorization_events()
 
@@ -504,15 +490,17 @@ def test_wordpress_execution_api_live_write_uses_persisted_authorization(
     )
 
     result = data["execution_result"]
-    assert result["status"] == "created"
+    assert result["status"] == "blocked"
     assert result["mode"] == "live"
-    assert result["wordpress_post_id"] == "777"
-    assert result["external_write_attempted"] is True
+    assert result["wordpress_post_id"] is None
+    assert result["external_write_attempted"] is False
     assert result["boundary"]["live_write_enabled"] is True
-    assert result["boundary"]["live_adapter_configured"] is True
+    assert result["boundary"]["live_adapter_configured"] is False
     assert result["boundary"]["publish_allowed"] is False
     assert result["boundary"]["destructive_update_allowed"] is False
-    assert created_titles == ["BDO dla firm: co trzeba sprawdzić przed działaniem"]
+    assert [blocker["code"] for blocker in result["blockers"]] == ["action_apply_required"]
+    assert execution_arguments["create_draft"] is None
+    assert execution_arguments["action_apply_authorized"] is False
 
 
 def test_wordpress_activation_packet_remembers_created_dev_draft(
@@ -545,10 +533,6 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
     )
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
-        "wilq.content.workflow.api.create_wordpress_draft_post",
-        create_draft,
-    )
-    monkeypatch.setattr(
         "wilq.content.workflow.api.read_wordpress_draft_post",
         read_draft,
     )
@@ -576,17 +560,23 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
 
     ready_snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
     handoff = ready_snapshot["wordpress_handoff"]["handoff_result"]["handoff"]
-    execution_response = client.post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": handoff,
-            "draft_package": draft,
-            "mode": "live",
-            "write_authorization": _write_authorization(),
-        },
+    execution_result = execute_content_wordpress_draft_handoff(
+        handoff=ContentWordPressDraftHandoff.model_validate(handoff),
+        draft_package=ContentDraftPackage.model_validate(draft),
+        mode="live",
+        live_write_enabled=True,
+        create_draft=create_draft,
+        action_apply_authorized=True,
+        write_authorization=ContentWordPressDraftWriteAuthorization.model_validate(
+            _write_authorization()
+        ),
+        write_authorization_verified=True,
     )
-    assert execution_response.status_code == 200
-    assert execution_response.json()["execution_result"]["status"] == "created"
+    assert execution_result.status == "created"
+    content_workflow_store().save_wordpress_draft_execution(
+        work_item_id,
+        execution_result,
+    )
 
     refreshed_packet = _get_wordpress_activation_packet(work_item_id)
 
@@ -628,10 +618,6 @@ def test_wordpress_activation_packet_keeps_created_result_when_readback_fails(
     )
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
-        "wilq.content.workflow.api.create_wordpress_draft_post",
-        create_draft,
-    )
-    monkeypatch.setattr(
         "wilq.content.workflow.api.read_wordpress_draft_post",
         read_draft,
     )
@@ -657,16 +643,23 @@ def test_wordpress_activation_packet_keeps_created_result_when_readback_fails(
 
     ready_snapshot = client.get(f"/api/content/work-items/{work_item_id}/snapshot").json()
     handoff = ready_snapshot["wordpress_handoff"]["handoff_result"]["handoff"]
-    execution_response = client.post(
-        "/api/content/work-items/wordpress-draft-execution",
-        json={
-            "handoff": handoff,
-            "draft_package": draft,
-            "mode": "live",
-            "write_authorization": _write_authorization(),
-        },
+    execution_result = execute_content_wordpress_draft_handoff(
+        handoff=ContentWordPressDraftHandoff.model_validate(handoff),
+        draft_package=ContentDraftPackage.model_validate(draft),
+        mode="live",
+        live_write_enabled=True,
+        create_draft=create_draft,
+        action_apply_authorized=True,
+        write_authorization=ContentWordPressDraftWriteAuthorization.model_validate(
+            _write_authorization()
+        ),
+        write_authorization_verified=True,
     )
-    assert execution_response.status_code == 200
+    assert execution_result.status == "created"
+    content_workflow_store().save_wordpress_draft_execution(
+        work_item_id,
+        execution_result,
+    )
 
     refreshed_packet = _get_wordpress_activation_packet(work_item_id)
 
@@ -681,7 +674,7 @@ def test_wordpress_activation_packet_keeps_created_result_when_readback_fails(
     )
 
 
-def test_wordpress_execution_api_live_adapter_failure_is_blocked(
+def test_wordpress_execution_adapter_failure_is_sanitized_after_action_apply(
     monkeypatch,
     tmp_path,
 ) -> None:
@@ -693,31 +686,27 @@ def test_wordpress_execution_api_live_adapter_failure_is_blocked(
 
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_failure.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
-    monkeypatch.setattr(
-        "wilq.content.workflow.api.create_wordpress_draft_post",
-        create_draft,
-    )
     _persist_write_authorization_events()
-
-    data = _post_wordpress_execution(
-        {
-            "handoff": _wordpress_handoff(),
-            "draft_package": _draft_package(),
-            "mode": "live",
-            "write_authorization": _write_authorization(),
-        }
+    result = execute_content_wordpress_draft_handoff(
+        handoff=ContentWordPressDraftHandoff.model_validate(_wordpress_handoff()),
+        draft_package=ContentDraftPackage.model_validate(_draft_package()),
+        mode="live",
+        live_write_enabled=True,
+        create_draft=create_draft,
+        action_apply_authorized=True,
+        write_authorization=ContentWordPressDraftWriteAuthorization.model_validate(
+            _write_authorization()
+        ),
+        write_authorization_verified=True,
     )
 
-    result = data["execution_result"]
-    assert result["status"] == "blocked"
-    assert result["external_write_attempted"] is True
-    assert result["boundary"]["live_write_enabled"] is True
-    assert result["boundary"]["live_adapter_configured"] is True
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "live_adapter_failed"
-    ]
-    assert result["blockers"][0]["reason"] == "WordPress odrzucił szkic testowy."
-    assert "secret technical details" not in str(result)
+    assert result.status == "blocked"
+    assert result.external_write_attempted is True
+    assert result.boundary.live_write_enabled is True
+    assert result.boundary.live_adapter_configured is True
+    assert [blocker.code for blocker in result.blockers] == ["live_adapter_failed"]
+    assert result.blockers[0].reason == "WordPress odrzucił szkic testowy."
+    assert "secret technical details" not in str(result.model_dump(mode="json"))
 
 
 def test_wordpress_write_readiness_blocks_when_live_env_is_disabled(
@@ -753,7 +742,7 @@ def test_wordpress_write_readiness_blocks_when_live_env_is_disabled(
     ]
 
 
-def test_wordpress_write_readiness_builds_authorization_from_audit_trail(
+def test_wordpress_write_readiness_blocks_independent_authorization_from_audit_trail(
     monkeypatch,
     tmp_path,
 ) -> None:
@@ -767,19 +756,41 @@ def test_wordpress_write_readiness_builds_authorization_from_audit_trail(
 
     data = _get_wordpress_write_readiness()
 
-    assert data["ready"] is True
+    assert data["ready"] is False
     assert data["live_write_enabled_by_env"] is True
     assert data["rest_adapter_configured"] is True
-    assert data["blockers"] == []
-    assert data["write_authorization_status"] == "available"
+    assert [blocker["code"] for blocker in data["blockers"]] == ["actionobject_apply_path_required"]
+    assert data["write_authorization_status"] == "blocked_outside_action_apply"
     assert data["missing_audit_event_types"] == []
-    assert data["suggested_write_authorization"] == _write_authorization()
+    assert data["suggested_write_authorization"] is None
     assert [requirement["satisfied"] for requirement in data["required_audit_events"]] == [
         True,
         True,
         True,
     ]
-    assert "gotowa" in data["operator_next_step"]
+    assert "apply-capable ActionObject" in data["operator_next_step"]
+
+
+def test_wordpress_write_readiness_rejects_existing_update_prepare_audits(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    action_id = "act_prepare_wordpress_existing_draft_update"
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wrong_action.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://example.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "wilq")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+    _persist_write_authorization_events(action_id=action_id)
+
+    data = _get_wordpress_write_readiness(action_id)
+
+    assert data["action_id"] == action_id
+    assert data["ready"] is False
+    assert data["write_authorization_status"] == "blocked_outside_action_apply"
+    assert data["suggested_write_authorization"] is None
+    assert "actionobject_apply_path_required" in [blocker["code"] for blocker in data["blockers"]]
 
 
 def test_wordpress_write_readiness_reports_actor_mismatch(
@@ -818,11 +829,15 @@ def test_wordpress_write_readiness_reports_actor_mismatch(
     assert data["missing_audit_event_types"] == []
     assert data["suggested_write_authorization"] is None
     assert [blocker["code"] for blocker in data["blockers"]] == [
-        "audit_actor_mismatch"
+        "actionobject_apply_path_required",
+        "audit_actor_mismatch",
     ]
 
 
-def _persist_write_authorization_events() -> None:
+def _persist_write_authorization_events(
+    *,
+    action_id: str = "act_prepare_wordpress_draft_handoff",
+) -> None:
     for event_id, event_type, actor in [
         ("audit_preview_123", "action_preview_generated", "wilq_api"),
         ("audit_review_123", "human_review_approved_for_prepare", "wilku"),
@@ -831,7 +846,7 @@ def _persist_write_authorization_events() -> None:
         local_state_store().save_audit_event(
             AuditEvent(
                 id=event_id,
-                action_id="act_prepare_wordpress_draft_handoff",
+                action_id=action_id,
                 event_type=event_type,
                 actor=actor,
                 summary="Testowy ślad audytu dla zapisu szkicu.",

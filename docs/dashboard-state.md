@@ -36,25 +36,27 @@ work across the whole dashboard.
 
 Target: `/content-workflow`.
 
-`/content-workflow` is now the primary "Treści i SEO" marketer workspace. It
-has a concrete page authoring workbench above the old detailed mechanics:
-public WordPress title/H1/sections, generic dev WordPress REST/ACF section
-readback, editable draft section text, dev/admin links, compact proof/claim
-context and dev draft preview. Edited section text is sent through the existing
-`POST /api/content/work-items/wordpress-draft-execution` contract as
-`section_overrides`, so it can become a new dev WordPress draft without
-publishing or overwriting production. The dev ACF reader must stay generic: it
-detects flexible rows by `acf_fc_layout` and nested text candidates, not by a
-fixed field key such as `flexible-home`, `sekcje_strony`, `hero` or any other
-client-specific name. The deleted legacy planner route must not be reintroduced
-as a marketer screen. Keep the next slice focused on target
-selection, updating an existing dev draft/ACF values and collapsing lower legacy
-panels, not on adding more top-level cards. The dev column now has an explicit
-  target selector for preview context and a current-vs-proposed section
-  comparison; both remain read/preview only and do not claim that WordPress
-  update/ACF-write semantics exist. Lower workflow, queue and audit panels
-  mount only when the marketer opens the details disclosure, so they do not
-  burden the first workbench view.
+`/content-workflow` is the primary "Treści i SEO" marketer workspace. The
+current desktop render shows a concrete public page, public WordPress sections,
+GSC signals, generic dev WordPress REST/ACF readback, editable draft text and a
+typed current-vs-proposed preview. Direct create/live CTA is removed: the route
+can only prepare a dry-run preview until canonical ActionObject apply exists.
+The dev reader stays generic: it detects
+flexible rows by `acf_fc_layout` and nested text candidates, never by a fixed
+client-specific ACF key.
+
+The current manual usefulness score is 5/10. Method: one reviewer checked the
+ten first-screen questions in this file against live API data, a 1440×900
+render, a 390×844 render and the content Playwright proof. Desktop answers page,
+public/dev context, decision direction and dry-run next step. It fails current
+freshness, cold-load speed and mobile first-viewport CTA. Existing-draft
+duplication is now closed by removing the direct live/create path; the action
+detail also renders a typed current/proposed/blocked preview. A real dev draft
+write may return only through canonical ActionObject apply. Do not restore a
+direct adapter or describe prior draft creation as current write readiness.
+Next work is freshness (`c9h9.5`), then cold-load latency (`c9h9.6`), canonical
+dev-only apply (`c9h9.4`) and mobile UX (`r564.3`). The deleted legacy planner
+must not return.
 
 The target content workbench must show:
 
@@ -77,20 +79,20 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 | --- | ---: | --- | --- | --- | --- | --- |
 | `/command-center` | 70% | Good IA direction: daily priority, blockers and source freshness. Still too easy to become summary-of-everything. | `GET /api/dashboard/command-center`, `getCommandCenter()` | Daily queue, blocked claims, source freshness. | Needs stronger routing into one concrete work item. | Keep as cockpit; do not add more cards. Route into content workbench once content view is ready. |
 | `/opportunities` | 50% | Useful as registry but overlaps with Command Center and Actions. | `GET /api/opportunities`, `getOpportunities()` | Opportunity list with evidence/action links. | Duplicates "Kolejka" mental model. | Eventually merge into one decision/action queue; avoid new UI work here now. |
-| `/content-workflow` | 88% | Primary "Treści i SEO" workspace. Top shows one selected content item as a page authoring workbench: source status bar, public URL/title/H1/sections, GSC/Ahrefs/knowledge signals, generic dev WordPress REST/ACF section readback, editable draft section text, explicit dev preview target selection, current-vs-proposed section comparison and compact proof/claim context. Live queue proof on 2026-07-10: 1 of 2 candidates actionable, with GSC/WordPress/Ahrefs evidence; latest E2E proof passed on 2026-07-10 and saved under `.local-lab/proof/dashboard-content-workflow/2026-07-10T00-47-08-794Z/`. Previous write proof still holds: draft execution with `section_overrides` can produce edited Markdown/dev draft without publish/destructive update. | `GET /api/content/work-items/queue`, `GET /api/content/work-items/{id}/snapshot`, `GET /api/content/wordpress/authoring-profile` with dev `dev_content.pages[].sections[]`, `GET /api/content/wordpress/existing-draft-update-readiness`, draft readiness/activation endpoints in `api.ts`, action preview/review/confirm endpoints, `POST /api/content/work-items/wordpress-draft-execution` with optional `section_overrides`, WordPress REST readback for created drafts, ACF payload preview endpoint | Public-vs-dev split, generic ACF section inventory, marketer-readable section map, explicit dev preview target, current-vs-proposed section comparison, GSC/Ahrefs/knowledge signal panel, editable draft section text, dev page/draft links, draft-only posture, ActionObject authorization, gated dev draft creation. | Lower details panel is still too long and exists mainly to preserve old mechanics during migration. Selector and comparison are read/preview only; the new API-owned update readiness contract is explicit but blocked until the reviewed ActionObject update adapter exists. | Next: implement the reviewed, dev-only ActionObject update preview/review/confirm path, then collapse lower legacy panels into one active writing step. |
+| `/content-workflow` | 5/10 | Primary "Treści i SEO" workspace. Live queue is blocked at 1 of 2 actionable candidates (minimum 3). The selected public homepage has typed public/dev sections, GSC evidence, editable draft text and current/proposed preview. Fresh 1440×900 and 390×844 renders were reviewed on 2026-07-10 after the safety fix. | Existing queue, snapshot, enrichment, authoring-profile, activation/readiness and action endpoints in `api.ts`; no new endpoint is needed. Direct execution is dry-run only; React forces `mode=dry_run` and null authorization. | Concrete public page; public/dev role split; generic ACF inventory; typed diff; preview-only CTA; existing draft links; no duplicate-create/direct-live CTA; publish/destructive false; mechanics in disclosure. | Diagnostics says GSC/WP/GA4/Ahrefs are stale, but queue/source strip hides it. Cold selected snapshot exceeds 30 s in Playwright. Existing-draft detail remains visually heavy; mobile hides decision/blocker/CTA below first viewport. | Implement `c9h9.5`, then `c9h9.6`, `c9h9.4` and `r564.3`. `r564.2` is closed; do not restore its removed live path. |
 | `/content-inventory` | 20% | Hidden technical placeholder. Inventory remains an input to `/content-workflow`, not a separate writing cockpit. | currently generic/compact route; check `surfaceRegistry.ts` before adding code | Concept is needed inside content workbench. | Not a real marketer view yet. | Do not build separate cockpit; expose inventory inside content workbench. |
 | `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. | `GET /api/content/service-profile`, `getContentServiceProfile()` | Services, claim policy, source status, review-required data. | Not enough approved-current production depth; can overwhelm writer. | Feed allowed/blocked claims into content workbench, not as primary task screen. |
-| `/knowledge` | 45% | Admin/review support surface. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map` | Source lineage and claim review. | Lineage is not production-ready content by itself. | Keep as admin mode. Do not use as writing cockpit. |
-| `/actions` | 55% | Safe action queue concept is good. | `GET /api/actions`, action validate/preview/review/confirm/impact endpoints | Review/preview/confirm/audit flow. | First-level language still partially technical. | Keep queue; improve individual action detail before expanding actions. |
-| `/actions/:id` | 70% | Decision-first action detail now answers what to do, why it matters, whether write is blocked, what evidence exists and which safe step comes next. Merchant-feed blocked-write behavior is covered by `ActionDetailRoute.test.tsx`. | `GET /api/actions/{id}`, `GET /api/actions/{id}/mutation-readiness`, preview/validate/review/confirm endpoints | Polish decision hero, explicit write status and blockers, evidence summary, review/preview links; technical payload and audit mechanics remain below the fold. | The action queue itself still has partially technical first-level language; the detail surface does not yet have a fresh screenshot packet for every action family. | Keep the pattern and extend only where a real action family exposes a distinct marketer decision; do not bypass ActionObject safety. |
-| `/ads-doctor` | 35% | API has real data but route was observed stuck on loading in dev and is too heavy for first screen. | `GET /api/ads/diagnostics?view=summary`, `GET /api/actions` currently too heavy | Fresh Ads data, campaign rows, decisions, action IDs. | Loads/parses too much before first paint; not current priority after user switched to content. | Park. Later create lightweight Ads dashboard summary or trim route query. |
+| `/knowledge` | 45% | Admin/review support surface with current "Wiedza" IA. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map` | Source lineage and claim review. | Cold concurrent map/cards/playbooks makes operating-map take 51.6 s; `c9h9.12`. Lineage is not production-ready content by itself. | Keep admin; fix shared cold build/progressive loading before more UI. |
+| `/actions` | 55% | Safe action queue concept is good, but its list boundary is not operationally fast. | `GET /api/actions`, action validate/preview/review/confirm/impact endpoints | Review/preview/confirm/audit flow. | Cold API list took 23.4 s and route exceeded 30 s; `c9h9.11`. First-level language remains partially technical. | Deepen existing lightweight list view; do not add an endpoint or weaken safety. |
+| `/actions/:id` | 70% | Decision-first detail answers what to do, why, write status, evidence and next safe step. Existing-draft action now has typed current/proposed/blocked preview. Fresh full-page and first-viewport screenshots exist locally. | `GET /api/actions/{id}`, `GET /api/actions/{id}/mutation-readiness`, preview/validate/review/confirm endpoints | Polish decision hero, explicit blocked write, typed preview card, evidence summary; raw payload/audit stay in disclosure. Focused Vitest and Playwright pass. | One below-fold readiness sentence still uses technical `apply-capable ActionObject`; queue performance is separate. | Keep pattern; copy-tune below-fold term later, never bypass safety. |
+| `/ads-doctor` | 35% | API has real data but route does not render within 30 s on cold managed runtime. | Existing `GET /api/ads/diagnostics?view=summary`; no new endpoint needed. | Fresh Ads data, campaign rows, decisions, action IDs. | Cold first paint blocker `c9h9.9`; a long request also stalls following E2E. | Park behind content P0; later deepen/buforować existing summary seam. |
 | `/ads-doctor/search-terms` | 10% | Hidden technical placeholder parked behind `/ads-doctor`; the real Ads screen no longer links its primary "Review Ads" row into this route. | Ads diagnostics contracts exist; no standalone marketer queue yet. | Needed later for BDOS-like Ads value. | Not real queue yet. | Keep hidden. Build only after API-owned search-term queue exists. |
-| `/ads-doctor/custom-segments` | 25% | Experimental drilldown. | `GET /api/ads/diagnostics`, custom segment contracts | Safety model exists. | Not daily marketer workflow. | Keep hidden until Ads work resumes. |
+| `/ads-doctor/custom-segments` | 25% | Experimental review-only drilldown. | It currently calls full `GET /api/ads/diagnostics`; existing view boundary can be extended. | Safety model and source-term contract exist. | Focused cold E2E exceeds 30 s; `c9h9.10`. | Keep hidden; later use a narrow existing diagnostics view, not full Ads payload. |
 | `/ads-doctor/demand-gen` | 35% | Experimental readiness surface. | `GET /api/demand-gen/diagnostics` | Good blocker posture. | No campaign/creative depth yet. | Keep hidden/technical. |
 | `/ads-doctor/scaling` | 5% | Hidden technical placeholder with safe route back to `/ads-doctor`. | none beyond Ads diagnostics. | None for marketer now. | Empty promise. | Keep parked until strategy, budget and measurement contracts exist. |
 | `/ads-doctor/seasonality` | 5% | Hidden technical placeholder with safe route back to `/ads-doctor`. | none beyond Ads diagnostics. | None for marketer now. | Empty promise. | Keep parked until period-comparison contracts exist. |
 | `/ads-doctor/recommendations` | 5% | Hidden technical placeholder with safe route back to `/ads-doctor`. | none beyond Ads diagnostics. | None for marketer now. | Empty promise. | Keep parked until API-owned recommendations review queue exists. |
-| `/merchant` | 60% | Improved copy and stale-source refresh path. Better but still not enough product mapping. | `GET /api/merchant/diagnostics`, `getMerchantDiagnostics()` | Feed/product issue queue, product blockers, source freshness. | Some labels still abstract; needs product examples and Ads/GA4 product joins before revenue claims. | Park after copy improvements. Do not rework again until content target lands. |
+| `/merchant` | 60% | Current first heading is "Produkty" with stale-source and product-decision posture. | Existing `GET /api/merchant/diagnostics`, `getMerchantDiagnostics()` | Feed/product issue queue, product blockers, source freshness. | Cold API took 33.27 s and blocks first decision; `c9h9.13`. Revenue/product-performance claims remain blocked correctly. | Park behind content P0; later stage/cache details inside the existing boundary. |
 | `/ga4` | 55% | Useful for separating measurement problems from traffic quality. | `GET /api/ga4/diagnostics`, `getGa4Diagnostics()` | Measurement blocker language. | Can still read technical; should feed Ads/content decisions. | Use as supporting signal, not target right now. |
 | `/localo` | 50% | Useful drilldown for local visibility readiness. | `GET /api/localo/diagnostics`, `getLocaloDiagnostics()` | Local blockers and evidence. | Not enough ranking/GBP depth for bold claims. | Park. |
 | `/ahrefs` | 45% | Useful as SEO signal drilldown, not standalone decision center. | `GET /api/ahrefs/diagnostics`, `getAhrefsDiagnostics()` | Gap/authority signals. | Ahrefs cannot drive publication alone. | Feed into content workbench with GSC/WP cross-check. |

@@ -58,18 +58,18 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/command-center");
     await commandCenterResponse;
 
-    await expect(page.getByRole("heading", { name: "Centrum pracy" })).toBeVisible();
-    await expect(
-      page.getByText("WILQ pokazuje tylko metryki i dowody z danych źródłowych.").first()
-    ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
-    await expect(page.getByText("Decyzje").first()).toBeVisible();
-    await expect(page.getByText("Blokady").first()).toBeVisible();
-    await expect(page.getByText("Źródła danych:").first()).toBeVisible();
-    await expect(page.getByText("Dowody w WILQ:").first()).toBeVisible();
-    await expect(page.getByText(/potwierdzonych śladów w WILQ/).first()).toBeVisible();
-    await expect(page.getByText("Akcje do sprawdzenia").first()).toBeVisible();
-    await expect(page.getByText(/bezpieczna akcja do sprawdzenia/).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dzisiaj" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Następna najlepsza praca" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Blokady, których nie obchodź" })).toBeVisible();
+    await expect(page.getByText("Kolejka dziś")).toBeVisible();
+    await expect(page.getByText("decyzje").first()).toBeVisible();
+    await expect(page.getByText("blokady krytyczne").first()).toBeVisible();
+    await expect(page.getByText("akcji do sprawdzenia").first()).toBeVisible();
+    await expect(page.getByText("źródła wymagają odświeżenia").first()).toBeVisible();
+    await expect(page.getByText("Najbezpieczniejszy następny krok")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Otwórz pracę" })).toBeVisible();
+    await expect(page.getByText("Pokaż dowody")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Nie wolno dziś twierdzić" })).toBeVisible();
     await expect(page.getByText("Przykładowe dowody")).toHaveCount(0);
     await expect(page.getByText(/ev_refresh_/)).toHaveCount(0);
     await expect(page.getByText(/act_review_merchant_feed_issues/)).toHaveCount(0);
@@ -91,12 +91,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Content: GSC query/page + WordPress inventory")).toHaveCount(0);
     await expect(page.getByText("GA4: landing/source/campaign quality review")).toHaveCount(0);
     await expect(page.getByText("Ads: live campaign metrics dostępne")).toHaveCount(0);
-    await expect(page.getByText("Czego nie twierdzimy").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Źródła i ograniczenia" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toHaveCount(0);
-    await expect(page.getByText("Kopiuj polecenie").first()).toBeVisible();
     await expect(page.getByText("Context-pack: /api/codex/context-pack")).toHaveCount(0);
     await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
     await expect(page.getByText("Skill: wilq-content-strategist")).toHaveCount(0);
@@ -232,7 +229,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/actions/act_review_merchant_feed_issues");
 
     await expectApiBackedRouteHeading(page, "Przygotuj kolejkę przeglądu pliku produktowego Merchant Center");
-    await expect(page.getByRole("heading", { name: "Dowody i diagnoza" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i audyt" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd zmian" })).toBeVisible();
     await expect(page.getByText("Dowody: 1 dowód źródłowy")).toBeVisible();
     await expect(page.getByText(/ev_refresh_refresh_google_merchant_center/)).toHaveCount(0);
@@ -242,10 +239,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Jawne potwierdzenie podglądu")).toBeVisible();
     await page.getByRole("button", { name: "Potwierdź podgląd" }).click();
     await expect(page.getByText("Podgląd potwierdzony").first()).toBeVisible();
-    await expect(page.getByText(/Nie zapisano zmian w zewnętrznych systemach/).first()).toBeVisible();
+    await expect(
+      page.getByText(/Ten krok nie zmienia danych w zewnętrznych systemach/).first()
+    ).toBeVisible();
     await expect(page.getByText("Sprawdź efekt", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Sprawdź efekt" }).click();
-    await expect(page.getByText("Sprawdzenie efektu zapisane").first()).toBeVisible();
+    await expect(page.getByText(/Ostatnie sprawdzenie efektu: zapisane/).first()).toBeVisible();
     await expectNoForbiddenVisibleCopy(page);
   });
 
@@ -317,7 +316,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/merchant");
     const merchantDiagnostics = await (await merchantDiagnosticsResponse).json();
 
-    await expectApiBackedRouteHeading(page, "Merchant Center", { exact: true });
+    await expectApiBackedRouteHeading(page, "Produkty", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Merchant Center" })).toBeVisible();
     await expect(page.getByText("Merchant: co dziś zrobić")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kolejność pracy" })).toBeVisible();

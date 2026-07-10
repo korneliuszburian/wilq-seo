@@ -1409,7 +1409,12 @@ export const ContentWordPressDraftWriteReadinessResponseSchema = z.object({
   required_audit_events: z.array(ContentWordPressDraftWriteReadinessRequirementSchema).default([]),
   missing_audit_event_types: z.array(z.string()).default([]),
   write_authorization_status: z
-    .enum(["missing_audit_trace", "audit_actor_mismatch", "available"])
+    .enum([
+      "missing_audit_trace",
+      "audit_actor_mismatch",
+      "available",
+      "blocked_outside_action_apply"
+    ])
     .default("missing_audit_trace"),
   suggested_write_authorization: ContentWordPressDraftWriteAuthorizationSchema.nullable().optional(),
   blockers: z.array(ContentWordPressDraftWriteReadinessBlockerSchema).default([]),

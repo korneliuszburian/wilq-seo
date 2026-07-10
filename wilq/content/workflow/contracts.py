@@ -271,6 +271,7 @@ class ContentWordPressDraftWriteReadinessResponse(BaseModel):
         "missing_audit_trace",
         "audit_actor_mismatch",
         "available",
+        "blocked_outside_action_apply",
     ] = "missing_audit_trace"
     suggested_write_authorization: ContentWordPressDraftWriteAuthorization | None = None
     blockers: list[ContentWordPressDraftWriteReadinessBlocker] = Field(default_factory=list)

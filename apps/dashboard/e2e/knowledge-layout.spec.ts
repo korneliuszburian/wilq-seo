@@ -19,19 +19,21 @@ test.describe("WILQ knowledge layout proof", () => {
     await page.goto("/knowledge");
     await operatingMapResponse;
 
-    await expect(page.getByRole("heading", { name: "Baza wiedzy WILQ" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Co ta wiedza zmienia w decyzjach" })).toBeVisible();
-    await expect(page.getByText("Najważniejsza decyzja z wiedzy")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Pokaż pozostałe decyzje z wiedzy/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Wiedza" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co blokuje produkcję treści" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejka sprawdzania wiedzy" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sprawdź kartę" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pokaż kartę" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeVisible();
     await expect(page.getByText("Knowledge Cards")).toHaveCount(0);
     await expect(page.getByText("Machine-Readable Playbooks")).toHaveCount(0);
 
     const primaryDecisionBox = await page
-      .getByText("Najważniejsza decyzja z wiedzy")
+      .getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })
       .boundingBox();
     const fullMapBox = await page
-      .getByRole("button", { name: "Pokaż pełną mapę wiedzy" })
+      .getByRole("button", { name: "Zobacz pełną kolejkę" })
       .boundingBox();
 
     expect(primaryDecisionBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(

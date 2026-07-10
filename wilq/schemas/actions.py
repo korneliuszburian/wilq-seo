@@ -101,6 +101,7 @@ class ActionMutationReadinessResponse(BaseModel):
             "missing_audit_trace",
             "audit_actor_mismatch",
             "available",
+            "blocked_outside_action_apply",
         ]
         | None
     ) = None

@@ -1597,6 +1597,7 @@ function actionMutationReadinessFixture(url: string) {
   const actionId = decodeURIComponent(
     url.split("/api/actions/")[1]?.replace("/mutation-readiness", "") ?? "act_1"
   );
+  const blockedOutsideApply = actionId === "act_content";
   return {
     response_type: "action_mutation_readiness",
     contract: "action_mutation_readiness_v1",
@@ -1614,12 +1615,12 @@ function actionMutationReadinessFixture(url: string) {
     vendor_write_possible: false,
     would_attempt_vendor_write: false,
     mutation_adapter: null,
-    write_authorization_status: "missing_audit_trace",
-    missing_audit_event_types: [
-      "action_preview_generated",
-      "human_review_*",
-      "action_apply_confirmed"
-    ],
+    write_authorization_status: blockedOutsideApply
+      ? "blocked_outside_action_apply"
+      : "missing_audit_trace",
+    missing_audit_event_types: blockedOutsideApply
+      ? []
+      : ["action_preview_generated", "human_review_*", "action_apply_confirmed"],
     apply_contract: {
       contract: "action_apply_contract_v1",
       action_id: actionId,
@@ -2088,6 +2089,11 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Tytuł szkicu: Odświeżenie: zielony ład/)).toBeInTheDocument();
     expect(screen.getByText(/Kontrole treści: spis treści: spis potwierdzony/)).toBeInTheDocument();
     expect(screen.getByText(/Szkic WordPress: status: zablokowany/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Ślad review istnieje, ale zapis poza kanoniczną akcją apply pozostaje zablokowany."
+      )
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

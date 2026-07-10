@@ -10,6 +10,7 @@ from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
 from wilq.content.workflow.api import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
+    ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewResponse,
@@ -43,6 +44,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/wordpress/draft-write-readiness",
     ): ContentWordPressDraftWriteReadinessResponse,
+    (
+        "GET",
+        "/api/content/wordpress/existing-draft-update-readiness",
+    ): ContentWordPressExistingDraftUpdateReadinessResponse,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
     ("GET", "/api/content/work-items/snapshot"): ContentWorkItemWorkflowSnapshotResponse,
     (

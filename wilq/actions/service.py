@@ -3744,7 +3744,7 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         "facebook_post_candidate",
     }:
         return _social_draft_input_preview_cards(action.payload)
-    return []
+    return action.preview_cards
 
 
 def _action_preview_item_view_models(

@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.connectors.wordpress.client import (
     WordPressDraftReadError,
-    create_wordpress_draft_post,
     read_wordpress_draft_post,
 )
 from wilq.content.briefs.sales import (
@@ -382,7 +381,8 @@ def build_content_work_item_wordpress_draft_execution_response(
             draft_package=request.draft_package,
             mode=request.mode,
             live_write_enabled=live_write_enabled,
-            create_draft=create_wordpress_draft_post if live_write_enabled else None,
+            create_draft=None,
+            action_apply_authorized=False,
             write_authorization=request.write_authorization,
             write_authorization_verified=_wordpress_draft_write_authorization_verified(
                 request.write_authorization
@@ -627,7 +627,20 @@ def build_content_wordpress_draft_write_readiness_response(
     profile = build_wordpress_authoring_profile(connector_id)
     rest_adapter_configured = profile.rest_api.status == "configured"
     requirements, authorization = _wordpress_draft_write_audit_readiness(action_id)
-    blockers: list[ContentWordPressDraftWriteReadinessBlocker] = []
+    blockers: list[ContentWordPressDraftWriteReadinessBlocker] = [
+        ContentWordPressDraftWriteReadinessBlocker(
+            code="actionobject_apply_path_required",
+            label="Zapis jest dostępny tylko przez kanoniczną akcję apply",
+            reason=(
+                "Ślad preview/review/confirm nie upoważnia content endpointu do "
+                "samodzielnego wywołania adaptera WordPress."
+            ),
+            next_step=(
+                "Użyj dry-run. Przywrócenie live write wymaga apply-capable "
+                "ActionObject, spójnego mutation readiness i ActionMutationAudit."
+            ),
+        )
+    ]
     if not live_write_enabled:
         blockers.append(
             ContentWordPressDraftWriteReadinessBlocker(
@@ -662,16 +675,18 @@ def build_content_wordpress_draft_write_readiness_response(
     missing_audit_event_types = [
         requirement.event_type for requirement in requirements if not requirement.satisfied
     ]
-    write_authorization_status = _wordpress_draft_write_authorization_status(
+    ready = False
+    authorization_status: Literal[
+        "missing_audit_trace",
+        "audit_actor_mismatch",
+        "available",
+        "blocked_outside_action_apply",
+    ] = _wordpress_draft_write_authorization_status(
         requirements,
         authorization,
     )
-    ready = (
-        live_write_enabled
-        and rest_adapter_configured
-        and authorization is not None
-        and not blockers
-    )
+    if authorization is not None:
+        authorization_status = "blocked_outside_action_apply"
     return ContentWordPressDraftWriteReadinessResponse(
         connector=connector_id,
         action_id=action_id,
@@ -680,8 +695,8 @@ def build_content_wordpress_draft_write_readiness_response(
         rest_adapter_configured=rest_adapter_configured,
         required_audit_events=requirements,
         missing_audit_event_types=missing_audit_event_types,
-        write_authorization_status=write_authorization_status,
-        suggested_write_authorization=authorization if ready else None,
+        write_authorization_status=authorization_status,
+        suggested_write_authorization=None,
         blockers=blockers,
         operator_next_step=_wordpress_draft_write_next_step(ready, blockers),
         evidence_ids=profile.evidence_ids,
