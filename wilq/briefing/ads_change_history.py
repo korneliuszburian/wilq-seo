@@ -3,12 +3,41 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from wilq.schemas import (
+    ActionRisk,
     AdsChangeHistoryReadContract,
     AdsChangeHistoryRow,
+    AdsDiagnosticSection,
     MetricFact,
 )
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
+
+
+def build_change_history_section(
+    change_history_read_contract: AdsChangeHistoryReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in change_history_read_contract.change_history_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_change_history",
+        title="Historia zmian Google Ads",
+        status=change_history_read_contract.status,
+        summary=change_history_read_contract.summary,
+        diagnosis=(
+            "WILQ pokazuje ostatnie zmiany jako kontekst audytu kampanii. To nie "
+            "jest jeszcze dowód wpływu zmiany na wynik ani zgoda na kolejną mutację."
+        ),
+        next_step=change_history_read_contract.next_step,
+        source_connectors=change_history_read_contract.source_connectors,
+        evidence_ids=change_history_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=change_history_read_contract.action_ids,
+        blocked_claims=change_history_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
 
 
 def build_change_history_read_contract(

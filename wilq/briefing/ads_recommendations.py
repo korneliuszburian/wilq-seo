@@ -9,6 +9,8 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_REQUIRED_VALIDATION,
 )
 from wilq.schemas import (
+    ActionRisk,
+    AdsDiagnosticSection,
     AdsRecommendationApplyPreview,
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
@@ -17,6 +19,34 @@ from wilq.schemas import (
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
 ADS_RECOMMENDATION_HUMAN_REVIEW_GATE = "human_strategy_review"
+
+
+def build_recommendations_section(
+    recommendations_read_contract: AdsRecommendationsReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in recommendations_read_contract.recommendation_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_recommendations",
+        title="Rekomendacje Google Ads do sprawdzenia",
+        status=recommendations_read_contract.status,
+        summary=recommendations_read_contract.summary,
+        diagnosis=(
+            "WILQ może pokazać typy aktywnych rekomendacji Google Ads jako input "
+            "do sprawdzenia. To nie jest zgoda na zapis zmian ani dowód, że rekomendacja jest "
+            "biznesowo dobra dla Ekologus."
+        ),
+        next_step=recommendations_read_contract.next_step,
+        source_connectors=recommendations_read_contract.source_connectors,
+        evidence_ids=recommendations_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=recommendations_read_contract.action_ids,
+        blocked_claims=recommendations_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
 
 
 def build_recommendations_read_contract(

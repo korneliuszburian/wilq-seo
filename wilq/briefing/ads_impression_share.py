@@ -3,12 +3,42 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from wilq.schemas import (
+    ActionRisk,
+    AdsDiagnosticSection,
     AdsImpressionShareReadContract,
     AdsImpressionShareRow,
     MetricFact,
 )
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
+
+
+def build_impression_share_section(
+    impression_share_read_contract: AdsImpressionShareReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in impression_share_read_contract.impression_share_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_impression_share",
+        title="Udział w wyświetleniach Google Ads",
+        status=impression_share_read_contract.status,
+        summary=impression_share_read_contract.summary,
+        diagnosis=(
+            "WILQ może pokazać search impression share oraz utracony udział przez "
+            "budżet albo ranking. To jest kontekst ograniczeń, nie automatyczna "
+            "rekomendacja budżetowa."
+        ),
+        next_step=impression_share_read_contract.next_step,
+        source_connectors=impression_share_read_contract.source_connectors,
+        evidence_ids=impression_share_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=[],
+        blocked_claims=impression_share_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
 
 
 def build_impression_share_read_contract(

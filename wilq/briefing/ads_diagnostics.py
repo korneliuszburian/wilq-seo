@@ -45,10 +45,44 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_ACTION_ID,
 )
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
-from wilq.briefing.ads_budget_pacing import build_budget_pacing_read_contract
-from wilq.briefing.ads_change_history import build_change_history_read_contract
-from wilq.briefing.ads_impression_share import build_impression_share_read_contract
-from wilq.briefing.ads_recommendations import build_recommendations_read_contract
+from wilq.briefing.ads_budget_pacing import (
+    build_budget_pacing_read_contract,
+    build_budget_pacing_section,
+)
+from wilq.briefing.ads_campaigns import (
+    build_business_context_section,
+    build_campaign_overview_section,
+    build_derived_kpi_section,
+)
+from wilq.briefing.ads_change_history import (
+    build_change_history_read_contract,
+    build_change_history_section,
+)
+from wilq.briefing.ads_custom_segments import build_custom_segments_section
+from wilq.briefing.ads_decision_queue import (
+    build_budget_context_decision,
+    build_campaign_activity_decision,
+    build_campaign_triage_decision,
+    build_derived_kpi_decision,
+    build_impression_share_decision,
+    build_recommendations_decision,
+)
+from wilq.briefing.ads_impression_share import (
+    build_impression_share_read_contract,
+    build_impression_share_section,
+)
+from wilq.briefing.ads_keyword_planner import build_keyword_planner_section
+from wilq.briefing.ads_negative_keywords import build_negative_keywords_section
+from wilq.briefing.ads_recommendations import (
+    build_recommendations_read_contract,
+    build_recommendations_section,
+)
+from wilq.briefing.ads_search_terms import (
+    build_keyword_match_context_section,
+    build_search_term_ngram_section,
+    build_search_term_safety_section,
+    build_search_terms_section,
+)
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -677,25 +711,24 @@ def build_ads_diagnostics(
     )
     sections = [
         _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
-        _campaign_overview_section(
-            trusted_metric_facts,
-            latest_refresh,
+        build_campaign_overview_section(
             action_ids,
             campaign_read_contract,
+            fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         ),
-        _business_context_section(business_context_read_contract),
-        _derived_kpi_section(derived_kpi_read_contract),
-        _budget_pacing_section(budget_pacing_read_contract),
-        _recommendations_section(recommendations_read_contract),
-        _impression_share_section(impression_share_read_contract),
-        _change_history_section(change_history_read_contract),
-        _search_terms_section(search_terms_read_contract, action_ids),
-        _search_term_ngram_section(search_term_ngram_read_contract),
-        _search_term_safety_section(search_term_safety_read_contract),
-        _keyword_match_context_section(keyword_match_context_read_contract),
-        _keyword_planner_section(keyword_planner_read_contract, action_ids),
-        _custom_segments_section(custom_segments_read_contract),
-        _negative_keywords_section(negative_keywords_read_contract),
+        build_business_context_section(business_context_read_contract),
+        build_derived_kpi_section(derived_kpi_read_contract),
+        build_budget_pacing_section(budget_pacing_read_contract),
+        build_recommendations_section(recommendations_read_contract),
+        build_impression_share_section(impression_share_read_contract),
+        build_change_history_section(change_history_read_contract),
+        build_search_terms_section(search_terms_read_contract, action_ids),
+        build_search_term_ngram_section(search_term_ngram_read_contract),
+        build_search_term_safety_section(search_term_safety_read_contract),
+        build_keyword_match_context_section(keyword_match_context_read_contract),
+        build_keyword_planner_section(keyword_planner_read_contract, action_ids),
+        build_custom_segments_section(custom_segments_read_contract),
+        build_negative_keywords_section(negative_keywords_read_contract),
         _safe_action_section(
             action_ids,
             latest_refresh,
@@ -1257,100 +1290,6 @@ def _oauth_or_live_section(
             "propozycje wykluczeń",
             "skalowanie kampanii",
         ],
-        risk=ActionRisk.medium,
-    )
-
-
-def _campaign_overview_section(
-    metric_facts: list[MetricFact],
-    latest_refresh: ConnectorRefreshRun | None,
-    action_ids: list[str],
-    campaign_read_contract: AdsCampaignReadContract,
-) -> AdsDiagnosticSection:
-    campaign_facts = [
-        fact for row in campaign_read_contract.campaign_rows for fact in row.metric_facts
-    ]
-    if campaign_facts:
-        return AdsDiagnosticSection(
-            id="ads_campaign_overview",
-            title="Aktywność kampanii Google Ads",
-            status="ready",
-            summary=campaign_read_contract.summary,
-        diagnosis=(
-            "WILQ ma wymiarowe wiersze aktywności kampanii z Google Ads. To wystarcza "
-            "do pierwszego przeglądu aktywności kampanii, ale nadal nie wystarcza "
-            "do diagnozy kosztu pozyskania celu, zwrotu z reklam, "
-            "strat budżetu na zapytaniach ani wykluczeń."
-        ),
-            next_step=campaign_read_contract.next_step,
-            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=campaign_read_contract.evidence_ids,
-            metric_facts=campaign_facts[:12],
-            action_ids=_campaign_review_action_ids(action_ids),
-            blocked_claims=campaign_read_contract.blocked_claims,
-            risk=ActionRisk.low,
-        )
-
-    evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
-    return AdsDiagnosticSection(
-        id="ads_campaign_overview",
-        title="Aktywność kampanii Google Ads",
-        status="blocked",
-        summary="Brak metryk kampanii z Google Ads.",
-        diagnosis=(
-            "Nie ma aktualnych wierszy kampanii, więc dashboard nie pokazuje kosztu ani trendów "
-            "kampanii. To jest blokada, nie puste miejsce na estymację."
-        ),
-        next_step="Napraw OAuth i wykonaj odczyt danych Google Ads.",
-        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=evidence_ids,
-        action_ids=[],
-        blocked_claims=["wydatki reklamowe", "kliknięcia", "wyświetlenia", "trend kampanii"],
-        risk=ActionRisk.medium,
-    )
-
-
-def _derived_kpi_section(
-    derived_kpi_read_contract: AdsDerivedKpiReadContract,
-) -> AdsDiagnosticSection:
-    return AdsDiagnosticSection(
-        id="ads_derived_kpi",
-        title="Wyliczone wskaźniki kampanii Google Ads",
-        status=derived_kpi_read_contract.status,
-        summary=derived_kpi_read_contract.summary,
-        diagnosis=(
-            "WILQ może pokazać współczynnik kliknięć, koszt kliknięcia, współczynnik konwersji, "
-            "koszt pozyskania celu i zwrot z reklam jako obliczenia z bieżących danych kampanii. "
-            "To nie jest jeszcze diagnoza rentowności, ocena zmarnowanego budżetu "
-            "ani zgoda na zmianę budżetu."
-        ),
-        next_step=derived_kpi_read_contract.next_step,
-        source_connectors=derived_kpi_read_contract.source_connectors,
-        evidence_ids=derived_kpi_read_contract.evidence_ids,
-        action_ids=[],
-        blocked_claims=derived_kpi_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
-def _business_context_section(
-    business_context_read_contract: AdsBusinessContextReadContract,
-) -> AdsDiagnosticSection:
-    return AdsDiagnosticSection(
-        id="ads_business_context",
-        title="Kontekst biznesowy Google Ads",
-        status=business_context_read_contract.status,
-        summary=business_context_read_contract.summary,
-        diagnosis=(
-            "WILQ oddziela wyliczone wskaźniki od decyzji biznesowej. Marża, cel biznesowy, "
-            "cel budżetu, docelowy zwrot z reklam i docelowy koszt pozyskania celu "
-            "są kontraktem operatora, nie danymi z Google Ads."
-        ),
-        next_step=business_context_read_contract.next_step,
-        source_connectors=business_context_read_contract.source_connectors,
-        evidence_ids=business_context_read_contract.evidence_ids,
-        action_ids=business_context_read_contract.target_interpretation.action_ids,
-        blocked_claims=business_context_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
 
@@ -2332,32 +2271,6 @@ def _target_triage(
     return "no_target", "brak celu", 90
 
 
-def _budget_pacing_section(
-    budget_pacing_read_contract: AdsBudgetPacingReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact for row in budget_pacing_read_contract.budget_rows for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_budget_pacing",
-        title="Kontekst budżetu Google Ads",
-        status=budget_pacing_read_contract.status,
-        summary=budget_pacing_read_contract.summary,
-        diagnosis=(
-            "WILQ może pokazać koszt z 7 dni względem budżetu dziennego, jeśli "
-            "campaign_budget facts istnieją. To nadal nie jest rekomendacja "
-            "skalowania ani zmiany budżetu."
-        ),
-        next_step=budget_pacing_read_contract.next_step,
-        source_connectors=budget_pacing_read_contract.source_connectors,
-        evidence_ids=budget_pacing_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=budget_pacing_read_contract.action_ids,
-        blocked_claims=budget_pacing_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
 def _latest_refresh_has_summary_metric(
     latest_refresh: ConnectorRefreshRun | None,
     metric_name: str,
@@ -2373,62 +2286,6 @@ def _remove_missing_contract_names(
 ) -> list[str]:
     removals = set(contract_names)
     return [contract for contract in missing_read_contracts if contract not in removals]
-
-
-def _recommendations_section(
-    recommendations_read_contract: AdsRecommendationsReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact
-        for row in recommendations_read_contract.recommendation_rows
-        for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_recommendations",
-        title="Rekomendacje Google Ads do sprawdzenia",
-        status=recommendations_read_contract.status,
-        summary=recommendations_read_contract.summary,
-        diagnosis=(
-            "WILQ może pokazać typy aktywnych rekomendacji Google Ads jako input "
-            "do sprawdzenia. To nie jest zgoda na zapis zmian ani dowód, że rekomendacja jest "
-            "biznesowo dobra dla Ekologus."
-        ),
-        next_step=recommendations_read_contract.next_step,
-        source_connectors=recommendations_read_contract.source_connectors,
-        evidence_ids=recommendations_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=recommendations_read_contract.action_ids,
-        blocked_claims=recommendations_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
-def _impression_share_section(
-    impression_share_read_contract: AdsImpressionShareReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact
-        for row in impression_share_read_contract.impression_share_rows
-        for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_impression_share",
-        title="Udział w wyświetleniach Google Ads",
-        status=impression_share_read_contract.status,
-        summary=impression_share_read_contract.summary,
-        diagnosis=(
-            "WILQ może pokazać search impression share oraz utracony udział przez "
-            "budżet albo ranking. To jest kontekst ograniczeń, nie automatyczna "
-            "rekomendacja budżetowa."
-        ),
-        next_step=impression_share_read_contract.next_step,
-        source_connectors=impression_share_read_contract.source_connectors,
-        evidence_ids=impression_share_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=[],
-        blocked_claims=impression_share_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
 
 
 def _campaign_triage_read_contract(
@@ -3149,33 +3006,6 @@ def _change_impact_readiness_row(
             "zmiana budżetu",
             "zapis zmian kampanii",
         ],
-    )
-
-
-def _change_history_section(
-    change_history_read_contract: AdsChangeHistoryReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact
-        for row in change_history_read_contract.change_history_rows
-        for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_change_history",
-        title="Historia zmian Google Ads",
-        status=change_history_read_contract.status,
-        summary=change_history_read_contract.summary,
-        diagnosis=(
-            "WILQ pokazuje ostatnie zmiany jako kontekst audytu kampanii. To nie "
-            "jest jeszcze dowód wpływu zmiany na wynik ani zgoda na kolejną mutację."
-        ),
-        next_step=change_history_read_contract.next_step,
-        source_connectors=change_history_read_contract.source_connectors,
-        evidence_ids=change_history_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=change_history_read_contract.action_ids,
-        blocked_claims=change_history_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
     )
 
 
@@ -4089,132 +3919,6 @@ def _slug(value: str) -> str:
     return "_".join(part for part in normalized.split("_") if part)[:80] or "unknown"
 
 
-def _search_terms_section(
-    search_terms_read_contract: AdsSearchTermsReadContract,
-    action_ids: list[str],
-) -> AdsDiagnosticSection:
-    if search_terms_read_contract.search_term_rows:
-        metric_facts = [
-            fact for row in search_terms_read_contract.search_term_rows for fact in row.metric_facts
-        ]
-        return AdsDiagnosticSection(
-            id="ads_search_terms",
-            title="Zapytania użytkowników Google Ads",
-            status="ready",
-            summary=search_terms_read_contract.summary,
-            diagnosis=(
-                "WILQ ma wiersze zapytań z Google Ads. To jeszcze nie "
-                "odblokowuje wykluczeń: brakuje kontekstu dopasowania, 90-dniowego "
-                "kontroli bezpieczeństwa i akcji do sprawdzenia."
-            ),
-            next_step=search_terms_read_contract.next_step,
-            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=search_terms_read_contract.evidence_ids,
-            metric_facts=metric_facts[:12],
-            action_ids=_search_term_action_ids(action_ids),
-            blocked_claims=search_terms_read_contract.blocked_claims,
-            risk=ActionRisk.medium,
-        )
-
-    return AdsDiagnosticSection(
-        id="ads_search_terms",
-        title="Zapytania użytkowników Google Ads",
-        status="blocked",
-        summary=search_terms_read_contract.summary,
-        diagnosis=(
-            "Twarda ocena wymaga wyszukiwanych haseł, kosztu, konwersji i 90-dniowej kontroli "
-            "ochronnej przed wykluczeniami. WILQ nie może z tego tworzyć propozycji "
-            "wykluczających słów kluczowych bez kompletnych dowodów."
-        ),
-        next_step=search_terms_read_contract.next_step,
-        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=search_terms_read_contract.evidence_ids,
-        action_ids=_search_term_action_ids(action_ids),
-        blocked_claims=search_terms_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
-def _search_term_ngram_section(
-    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact for row in search_term_ngram_read_contract.ngram_rows for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_search_term_ngrams",
-        title="N-gramy zapytań Google Ads",
-        status=search_term_ngram_read_contract.status,
-        summary=search_term_ngram_read_contract.summary,
-        diagnosis=(
-            "N-gramy kondensują powtarzające się tematy w wyszukiwanych hasłach. "
-            "To pomaga szybciej znaleźć obszary do ręcznej oceny, ale nie jest "
-            "oceną straty budżetu ani gotową zmianą wykluczeń."
-        ),
-        next_step=search_term_ngram_read_contract.next_step,
-        source_connectors=search_term_ngram_read_contract.source_connectors,
-        evidence_ids=search_term_ngram_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=search_term_ngram_read_contract.action_ids,
-        blocked_claims=search_term_ngram_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
-def _search_term_safety_section(
-    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact for row in search_term_safety_read_contract.safety_rows for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_search_term_safety",
-        title="90-dniowy odczyt bezpieczeństwa zapytań",
-        status=search_term_safety_read_contract.status,
-        summary=search_term_safety_read_contract.summary,
-        diagnosis=(
-            "Ten kontrakt chroni przed pochopnym wykluczeniem zapytań. "
-            "WILQ sprawdza dłuższe okno, ale nadal blokuje zapis zmian bez intencji, "
-            "kontekstu dopasowania i podglądu zmian."
-        ),
-        next_step=search_term_safety_read_contract.next_step,
-        source_connectors=search_term_safety_read_contract.source_connectors,
-        evidence_ids=search_term_safety_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=[],
-        blocked_claims=search_term_safety_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
-def _keyword_match_context_section(
-    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact
-        for row in keyword_match_context_read_contract.context_rows
-        for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_keyword_match_context",
-        title="Kontekst dopasowań słów kluczowych",
-        status=keyword_match_context_read_contract.status,
-        summary=keyword_match_context_read_contract.summary,
-        diagnosis=(
-            "Ten kontrakt pokazuje istniejące słowa kluczowe i typy dopasowań w Google Ads. "
-            "Pomaga zrozumieć, skąd mogło przyjść wyszukiwane hasło, ale nie jest zgodą "
-            "na dodanie wykluczenia."
-        ),
-        next_step=keyword_match_context_read_contract.next_step,
-        source_connectors=keyword_match_context_read_contract.source_connectors,
-        evidence_ids=keyword_match_context_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=[],
-        blocked_claims=keyword_match_context_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
 def _keyword_planner_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
@@ -4372,37 +4076,6 @@ def _keyword_planner_idea_row(
             "zapis kierowania reklam",
         ],
     )
-
-
-def _keyword_planner_section(
-    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
-    action_ids: list[str],
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact for row in keyword_planner_read_contract.idea_rows for fact in row.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_keyword_planner",
-        title="Wzbogacenie Keyword Planner",
-        status=keyword_planner_read_contract.status,
-        summary=keyword_planner_read_contract.summary,
-        diagnosis=(
-            "Ten kontrakt wzbogaca hasła źródłowe o pomysły i historyczne metryki "
-            "Keyword Planner. Nie jest prognozą, rozmiarem odbiorców ani zgodą na "
-            "zapis kierowania reklam."
-        ),
-        next_step=keyword_planner_read_contract.next_step,
-        source_connectors=keyword_planner_read_contract.source_connectors,
-        evidence_ids=keyword_planner_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=_keyword_planner_access_action_ids(action_ids),
-        blocked_claims=keyword_planner_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
-def _keyword_planner_access_action_ids(action_ids: list[str]) -> list[str]:
-    return [action_id for action_id in action_ids if action_id == KEYWORD_PLANNER_ACCESS_ACTION_ID]
 
 
 def _custom_segments_read_contract(
@@ -4864,35 +4537,6 @@ def _custom_segment_change_preview(
     )
 
 
-def _custom_segments_section(
-    custom_segments_read_contract: AdsCustomSegmentsReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact
-        for candidate in custom_segments_read_contract.candidates
-        for fact in candidate.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_custom_segments",
-        title="Segmenty z wyszukiwanych haseł",
-        status=custom_segments_read_contract.status,
-        summary=custom_segments_read_contract.summary,
-        diagnosis=(
-            "WILQ może przygotować akcji do sprawdzenia segmentów tylko z realnych "
-            "haseł źródłowych. Wzbogacenie Keyword Planner jest dodatkowym kontekstem, "
-            "ale rozmiar odbiorców i skuteczność pozostają zablokowane bez osobnych "
-            "danych."
-        ),
-        next_step=custom_segments_read_contract.next_step,
-        source_connectors=custom_segments_read_contract.source_connectors,
-        evidence_ids=custom_segments_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=custom_segments_read_contract.action_ids,
-        blocked_claims=custom_segments_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
 def _negative_keywords_read_contract(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -5234,33 +4878,6 @@ def _eligible_negative_keyword_term(term: str) -> bool:
     return any(character.isalpha() for character in normalized)
 
 
-def _negative_keywords_section(
-    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
-) -> AdsDiagnosticSection:
-    metric_facts = [
-        fact
-        for candidate in negative_keywords_read_contract.candidates
-        for fact in candidate.metric_facts
-    ]
-    return AdsDiagnosticSection(
-        id="ads_negative_keyword_safety",
-        title="Ocena wykluczeń z wyszukiwanych haseł",
-        status=negative_keywords_read_contract.status,
-        summary=negative_keywords_read_contract.summary,
-        diagnosis=(
-            "WILQ może przygotować tylko kolejkę oceny. Zero konwersji w bieżących "
-            "dowodach nie jest jeszcze dowodem przepalonego budżetu ani zgodą na wykluczenie."
-        ),
-        next_step=negative_keywords_read_contract.next_step,
-        source_connectors=negative_keywords_read_contract.source_connectors,
-        evidence_ids=negative_keywords_read_contract.evidence_ids,
-        metric_facts=metric_facts[:12],
-        action_ids=negative_keywords_read_contract.action_ids,
-        blocked_claims=negative_keywords_read_contract.blocked_claims,
-        risk=ActionRisk.medium,
-    )
-
-
 def _safe_action_section(
     action_ids: list[str],
     latest_refresh: ConnectorRefreshRun | None,
@@ -5356,28 +4973,10 @@ def _ads_decision_queue(
 
     decisions: list[AdsDecisionItem] = []
     if campaign_read_contract.campaign_rows:
-        campaign_review_action_ids = _campaign_review_action_ids(action_ids)
-        metric_facts = [
-            fact for row in campaign_read_contract.campaign_rows for fact in row.metric_facts
-        ]
         decisions.append(
-            AdsDecisionItem(
-                id="ads_review_campaign_activity",
-                decision_type="review_campaign_activity",
-                status="ready",
-                title="Przejrzyj aktywność kampanii Google Ads",
-                summary=campaign_read_contract.summary,
-                rationale=(
-                    "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, "
-                    "wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach. "
-                    "Nie ma jeszcze pełnego kontraktu rekomendacji, impression share "
-                    "ani historii zmian."
-                ),
-                next_step=(
-                    "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów. "
-                    "Nie podejmuj decyzji budżetowych bez brakujących danych."
-                ),
-                allowed_metrics=campaign_read_contract.allowed_metrics,
+            build_campaign_activity_decision(
+                campaign_read_contract,
+                action_ids=action_ids,
                 missing_read_contracts=_remove_available_contracts(
                     campaign_read_contract.missing_read_contracts,
                     budget_pacing_read_contract,
@@ -5385,51 +4984,11 @@ def _ads_decision_queue(
                     impression_share_read_contract,
                     change_history_read_contract,
                 ),
-                source_connectors=campaign_read_contract.source_connectors,
-                evidence_ids=campaign_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
-                campaign_rows=campaign_read_contract.campaign_rows,
-                operator_review_gates=_unique(
-                    gate
-                    for row in campaign_read_contract.campaign_rows
-                    for gate in row.human_review_gates
-                ),
-                action_ids=campaign_review_action_ids,
-                blocked_claims=campaign_read_contract.blocked_claims,
-                risk=ActionRisk.low,
             )
         )
 
     if campaign_triage_read_contract.triage_rows:
-        decisions.append(
-            AdsDecisionItem(
-                id="ads_review_campaign_triage",
-                decision_type="review_campaign_triage",
-                status="ready",
-                title="Ustal kolejność oceny kampanii Ads",
-                summary=campaign_triage_read_contract.summary,
-                rationale=(
-                    "Ta kolejka łączy kampanie, wskaźniki, tempo wydawania budżetu, rekomendacje "
-                    "i udział w wyświetleniach w jeden widok decyzyjny. WILQ pokazuje, "
-                    "co sprawdzić najpierw, ale nadal blokuje ocenę strat budżetu, "
-                    "opłacalności, zapis zmian budżetu i zapis rekomendacji."
-                ),
-                next_step=campaign_triage_read_contract.next_step,
-                allowed_metrics=campaign_triage_read_contract.allowed_metrics,
-                missing_read_contracts=campaign_triage_read_contract.missing_read_contracts,
-                source_connectors=campaign_triage_read_contract.source_connectors,
-                evidence_ids=campaign_triage_read_contract.evidence_ids,
-                campaign_triage_rows=campaign_triage_read_contract.triage_rows,
-                operator_review_gates=_unique(
-                    gate
-                    for row in campaign_triage_read_contract.triage_rows
-                    for gate in row.human_review_gates
-                ),
-                action_ids=campaign_triage_read_contract.action_ids,
-                blocked_claims=campaign_triage_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
-            )
-        )
+        decisions.append(build_campaign_triage_decision(campaign_triage_read_contract))
 
     decisions.append(
         AdsDecisionItem(
@@ -5471,23 +5030,10 @@ def _ads_decision_queue(
     )
 
     if derived_kpi_read_contract.kpi_rows:
-        campaign_review_action_ids = _campaign_review_action_ids(action_ids)
         decisions.append(
-            AdsDecisionItem(
-                id="ads_review_derived_kpis",
-                decision_type="review_derived_kpi",
-                status="ready",
-                title="Sprawdź wyliczone wskaźniki kampanii bez decyzji budżetowych",
-                summary=derived_kpi_read_contract.summary,
-                rationale=(
-                    "Koszt pozyskania celu i zwrot z reklam są tu wartościami "
-                    "obliczonymi z kosztu, konwersji "
-                    "i wartości konwersji w bieżących dowodach Google Ads. WILQ nadal "
-                    "blokuje wniosek o rentowności, stracie budżetu, "
-                    "skalowaniu budżetu i zapisie zmian."
-                ),
-                next_step=derived_kpi_read_contract.next_step,
-                allowed_metrics=derived_kpi_read_contract.allowed_metrics,
+            build_derived_kpi_decision(
+                derived_kpi_read_contract,
+                action_ids=action_ids,
                 missing_read_contracts=_remove_available_contracts(
                     derived_kpi_read_contract.missing_read_contracts,
                     budget_pacing_read_contract,
@@ -5495,115 +5041,28 @@ def _ads_decision_queue(
                     impression_share_read_contract,
                     change_history_read_contract,
                 ),
-                source_connectors=derived_kpi_read_contract.source_connectors,
-                evidence_ids=derived_kpi_read_contract.evidence_ids,
-                derived_kpi_rows=derived_kpi_read_contract.kpi_rows,
-                action_ids=campaign_review_action_ids,
-                blocked_claims=derived_kpi_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
             )
         )
 
     if budget_pacing_read_contract.budget_rows:
-        campaign_review_action_ids = _campaign_review_action_ids(action_ids)
-        metric_facts = [
-            fact for row in budget_pacing_read_contract.budget_rows for fact in row.metric_facts
-        ]
         decisions.append(
-            AdsDecisionItem(
-                id="ads_review_budget_context",
-                decision_type="review_budget_context",
-                status="ready",
-                title="Sprawdź koszt kampanii względem budżetu dziennego",
-                summary=budget_pacing_read_contract.summary,
-                rationale=(
-                    "WILQ widzi campaign_budget amount i koszt z ostatnich 7 dni, więc "
-                    "może pokazać kontekst tempa wydawania. To nadal nie jest decyzja "
-                    "o skalowaniu: brakuje historii zmian, impression share, celu "
-                    "budżetowego i walidowanego podglądu zmian."
-                ),
-                next_step=budget_pacing_read_contract.next_step,
-                allowed_metrics=budget_pacing_read_contract.allowed_metrics,
-                missing_read_contracts=budget_pacing_read_contract.missing_read_contracts,
-                source_connectors=budget_pacing_read_contract.source_connectors,
-                evidence_ids=budget_pacing_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
-                budget_rows=budget_pacing_read_contract.budget_rows,
-                shared_budget_distribution_rows=(
-                    budget_pacing_read_contract.shared_budget_distribution_rows
-                ),
-                budget_apply_preview=budget_pacing_read_contract.payload_preview,
-                action_ids=campaign_review_action_ids,
-                blocked_claims=budget_pacing_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
+            build_budget_context_decision(
+                budget_pacing_read_contract,
+                action_ids=action_ids,
             )
         )
 
     if recommendations_read_contract.status == "ready":
-        recommendation_action_ids = _recommendation_action_ids(action_ids)
-        metric_facts = [
-            fact
-            for row in recommendations_read_contract.recommendation_rows
-            for fact in row.metric_facts
-        ]
         decisions.append(
-            AdsDecisionItem(
-                id="ads_review_recommendations",
-                decision_type="review_recommendations",
-                status="ready",
-                title="Przejrzyj rekomendacje Google Ads bez zapisu zmian",
-                summary=recommendations_read_contract.summary,
-                rationale=(
-                    "Rekomendacje Google Ads są sygnałem do kontroli, nie "
-                    "automatyczną strategią. WILQ pokazuje typ rekomendacji i "
-                    "powiązanie z kampanią/budżetem, ale blokuje akceptację i zapis zmian bez "
-                    "strategii, oceny zgodności Google Ads, potwierdzenia i audytu."
-                ),
-                next_step=recommendations_read_contract.next_step,
-                allowed_metrics=recommendations_read_contract.allowed_metrics,
-                missing_read_contracts=recommendations_read_contract.missing_read_contracts,
-                operator_review_gates=recommendations_read_contract.operator_review_gates,
-                source_connectors=recommendations_read_contract.source_connectors,
-                evidence_ids=recommendations_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
-                recommendation_rows=recommendations_read_contract.recommendation_rows,
-                recommendation_apply_preview=recommendations_read_contract.payload_preview,
-                action_ids=recommendation_action_ids,
-                blocked_claims=recommendations_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
+            build_recommendations_decision(
+                recommendations_read_contract,
+                action_ids=action_ids,
             )
         )
 
     if impression_share_read_contract.status == "ready":
-        metric_facts = [
-            fact
-            for row in impression_share_read_contract.impression_share_rows
-            for fact in row.metric_facts
-        ]
         decisions.append(
-            AdsDecisionItem(
-                id="ads_review_impression_share",
-                decision_type="review_impression_share",
-                status="ready",
-                title="Sprawdź utracony udział w wyświetleniach",
-                summary=impression_share_read_contract.summary,
-                rationale=(
-                    "Impression share pokazuje, czy kampania traci ekspozycję przez "
-                    "budżet albo ranking. WILQ może to pokazać jako kontekst review, "
-                    "ale blokuje skalowanie budżetu i obietnice o marnowaniu budżetu bez "
-                    "historii zmian, celu biznesowego i podglądu zmian."
-                ),
-                next_step=impression_share_read_contract.next_step,
-                allowed_metrics=impression_share_read_contract.allowed_metrics,
-                missing_read_contracts=impression_share_read_contract.missing_read_contracts,
-                source_connectors=impression_share_read_contract.source_connectors,
-                evidence_ids=impression_share_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
-                impression_share_rows=impression_share_read_contract.impression_share_rows,
-                action_ids=[],
-                blocked_claims=impression_share_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
-            )
+            build_impression_share_decision(impression_share_read_contract)
         )
 
     if change_history_read_contract.status == "ready" or change_history_read_contract.evidence_ids:

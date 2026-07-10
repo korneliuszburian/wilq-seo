@@ -1,0 +1,237 @@
+from __future__ import annotations
+
+from wilq.actions.google_ads.campaign_review import CAMPAIGN_REVIEW_ACTION_ID
+from wilq.schemas import (
+    ActionRisk,
+    AdsBudgetPacingReadContract,
+    AdsCampaignReadContract,
+    AdsCampaignTriageReadContract,
+    AdsDecisionItem,
+    AdsDerivedKpiReadContract,
+    AdsImpressionShareReadContract,
+    AdsRecommendationsReadContract,
+)
+
+
+def build_campaign_activity_decision(
+    campaign_read_contract: AdsCampaignReadContract,
+    *,
+    action_ids: list[str],
+    missing_read_contracts: list[str],
+) -> AdsDecisionItem:
+    metric_facts = [
+        fact for row in campaign_read_contract.campaign_rows for fact in row.metric_facts
+    ]
+    campaign_review_action_ids = [
+        action_id for action_id in action_ids if action_id == CAMPAIGN_REVIEW_ACTION_ID
+    ]
+    return AdsDecisionItem(
+        id="ads_review_campaign_activity",
+        decision_type="review_campaign_activity",
+        status="ready",
+        title="Przejrzyj aktywność kampanii Google Ads",
+        summary=campaign_read_contract.summary,
+        rationale=(
+            "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, "
+            "wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach. "
+            "Nie ma jeszcze pełnego kontraktu rekomendacji, impression share "
+            "ani historii zmian."
+        ),
+        next_step=(
+            "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów. "
+            "Nie podejmuj decyzji budżetowych bez brakujących danych."
+        ),
+        allowed_metrics=campaign_read_contract.allowed_metrics,
+        missing_read_contracts=missing_read_contracts,
+        source_connectors=campaign_read_contract.source_connectors,
+        evidence_ids=campaign_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        campaign_rows=campaign_read_contract.campaign_rows,
+        operator_review_gates=list(
+            dict.fromkeys(
+                gate
+                for row in campaign_read_contract.campaign_rows
+                for gate in row.human_review_gates
+            )
+        ),
+        action_ids=campaign_review_action_ids,
+        blocked_claims=campaign_read_contract.blocked_claims,
+        risk=ActionRisk.low,
+    )
+
+
+def build_campaign_triage_decision(
+    campaign_triage_read_contract: AdsCampaignTriageReadContract,
+) -> AdsDecisionItem:
+    return AdsDecisionItem(
+        id="ads_review_campaign_triage",
+        decision_type="review_campaign_triage",
+        status="ready",
+        title="Ustal kolejność oceny kampanii Ads",
+        summary=campaign_triage_read_contract.summary,
+        rationale=(
+            "Ta kolejka łączy kampanie, wskaźniki, tempo wydawania budżetu, rekomendacje "
+            "i udział w wyświetleniach w jeden widok decyzyjny. WILQ pokazuje, "
+            "co sprawdzić najpierw, ale nadal blokuje ocenę strat budżetu, "
+            "opłacalności, zapis zmian budżetu i zapis rekomendacji."
+        ),
+        next_step=campaign_triage_read_contract.next_step,
+        allowed_metrics=campaign_triage_read_contract.allowed_metrics,
+        missing_read_contracts=campaign_triage_read_contract.missing_read_contracts,
+        source_connectors=campaign_triage_read_contract.source_connectors,
+        evidence_ids=campaign_triage_read_contract.evidence_ids,
+        campaign_triage_rows=campaign_triage_read_contract.triage_rows,
+        operator_review_gates=list(
+            dict.fromkeys(
+                gate
+                for row in campaign_triage_read_contract.triage_rows
+                for gate in row.human_review_gates
+            )
+        ),
+        action_ids=campaign_triage_read_contract.action_ids,
+        blocked_claims=campaign_triage_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def build_derived_kpi_decision(
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    *,
+    action_ids: list[str],
+    missing_read_contracts: list[str],
+) -> AdsDecisionItem:
+    campaign_action_ids = [
+        action_id for action_id in action_ids if action_id == CAMPAIGN_REVIEW_ACTION_ID
+    ]
+    return AdsDecisionItem(
+        id="ads_review_derived_kpis",
+        decision_type="review_derived_kpi",
+        status="ready",
+        title="Sprawdź wyliczone wskaźniki kampanii bez decyzji budżetowych",
+        summary=derived_kpi_read_contract.summary,
+        rationale=(
+            "Koszt pozyskania celu i zwrot z reklam są tu wartościami obliczonymi z kosztu, "
+            "konwersji i wartości konwersji w bieżących dowodach Google Ads. WILQ nadal "
+            "blokuje wniosek o rentowności, stracie budżetu, skalowaniu budżetu i zapisie zmian."
+        ),
+        next_step=derived_kpi_read_contract.next_step,
+        allowed_metrics=derived_kpi_read_contract.allowed_metrics,
+        missing_read_contracts=missing_read_contracts,
+        source_connectors=derived_kpi_read_contract.source_connectors,
+        evidence_ids=derived_kpi_read_contract.evidence_ids,
+        derived_kpi_rows=derived_kpi_read_contract.kpi_rows,
+        action_ids=campaign_action_ids,
+        blocked_claims=derived_kpi_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def build_budget_context_decision(
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    *,
+    action_ids: list[str],
+) -> AdsDecisionItem:
+    metric_facts = [
+        fact for row in budget_pacing_read_contract.budget_rows for fact in row.metric_facts
+    ]
+    campaign_action_ids = [
+        action_id for action_id in action_ids if action_id == CAMPAIGN_REVIEW_ACTION_ID
+    ]
+    return AdsDecisionItem(
+        id="ads_review_budget_context",
+        decision_type="review_budget_context",
+        status="ready",
+        title="Sprawdź koszt kampanii względem budżetu dziennego",
+        summary=budget_pacing_read_contract.summary,
+        rationale=(
+            "WILQ widzi campaign_budget amount i koszt z ostatnich 7 dni, więc może pokazać "
+            "kontekst tempa wydawania. To nadal nie jest decyzja o skalowaniu: brakuje "
+            "historii zmian, impression share, celu budżetowego i walidowanego podglądu zmian."
+        ),
+        next_step=budget_pacing_read_contract.next_step,
+        allowed_metrics=budget_pacing_read_contract.allowed_metrics,
+        missing_read_contracts=budget_pacing_read_contract.missing_read_contracts,
+        source_connectors=budget_pacing_read_contract.source_connectors,
+        evidence_ids=budget_pacing_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        budget_rows=budget_pacing_read_contract.budget_rows,
+        shared_budget_distribution_rows=budget_pacing_read_contract.shared_budget_distribution_rows,
+        budget_apply_preview=budget_pacing_read_contract.payload_preview,
+        action_ids=campaign_action_ids,
+        blocked_claims=budget_pacing_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def build_recommendations_decision(
+    recommendations_read_contract: AdsRecommendationsReadContract,
+    *,
+    action_ids: list[str],
+) -> AdsDecisionItem:
+    metric_facts = [
+        fact
+        for row in recommendations_read_contract.recommendation_rows
+        for fact in row.metric_facts
+    ]
+    recommendation_action_ids = [
+        action_id
+        for action_id in action_ids
+        if action_id.startswith("act_prepare_google_ads_recommendation")
+    ]
+    return AdsDecisionItem(
+        id="ads_review_recommendations",
+        decision_type="review_recommendations",
+        status="ready",
+        title="Przejrzyj rekomendacje Google Ads bez zapisu zmian",
+        summary=recommendations_read_contract.summary,
+        rationale=(
+            "Rekomendacje Google Ads są sygnałem do kontroli, nie automatyczną strategią. "
+            "WILQ pokazuje typ rekomendacji i powiązanie z kampanią/budżetem, ale blokuje "
+            "akceptację i zapis zmian bez strategii, oceny zgodności Google Ads, "
+            "potwierdzenia i audytu."
+        ),
+        next_step=recommendations_read_contract.next_step,
+        allowed_metrics=recommendations_read_contract.allowed_metrics,
+        missing_read_contracts=recommendations_read_contract.missing_read_contracts,
+        operator_review_gates=recommendations_read_contract.operator_review_gates,
+        source_connectors=recommendations_read_contract.source_connectors,
+        evidence_ids=recommendations_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        recommendation_rows=recommendations_read_contract.recommendation_rows,
+        recommendation_apply_preview=recommendations_read_contract.payload_preview,
+        action_ids=recommendation_action_ids,
+        blocked_claims=recommendations_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def build_impression_share_decision(
+    impression_share_read_contract: AdsImpressionShareReadContract,
+) -> AdsDecisionItem:
+    metric_facts = [
+        fact
+        for row in impression_share_read_contract.impression_share_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDecisionItem(
+        id="ads_review_impression_share",
+        decision_type="review_impression_share",
+        status="ready",
+        title="Sprawdź utracony udział w wyświetleniach",
+        summary=impression_share_read_contract.summary,
+        rationale=(
+            "Impression share pokazuje, czy kampania traci ekspozycję przez budżet albo ranking. "
+            "WILQ może to pokazać jako kontekst review, ale blokuje skalowanie budżetu i obietnice "
+            "o marnowaniu budżetu bez historii zmian, celu biznesowego i podglądu zmian."
+        ),
+        next_step=impression_share_read_contract.next_step,
+        allowed_metrics=impression_share_read_contract.allowed_metrics,
+        missing_read_contracts=impression_share_read_contract.missing_read_contracts,
+        source_connectors=impression_share_read_contract.source_connectors,
+        evidence_ids=impression_share_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        impression_share_rows=impression_share_read_contract.impression_share_rows,
+        action_ids=[],
+        blocked_claims=impression_share_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )

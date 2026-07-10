@@ -9,17 +9,45 @@ from wilq.actions.google_ads.campaign_review import (
     CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
 )
 from wilq.schemas import (
+    ActionRisk,
     AdsBudgetApplyPreview,
     AdsBudgetApplySafetyReview,
     AdsBudgetPacingReadContract,
     AdsBudgetPacingRow,
     AdsCampaignReadContract,
+    AdsDiagnosticSection,
     AdsSharedBudgetCampaignShare,
     AdsSharedBudgetDistributionRow,
     MetricFact,
 )
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
+
+
+def build_budget_pacing_section(
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact for row in budget_pacing_read_contract.budget_rows for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_budget_pacing",
+        title="Kontekst budżetu Google Ads",
+        status=budget_pacing_read_contract.status,
+        summary=budget_pacing_read_contract.summary,
+        diagnosis=(
+            "WILQ może pokazać koszt z 7 dni względem budżetu dziennego, jeśli "
+            "campaign_budget facts istnieją. To nadal nie jest rekomendacja "
+            "skalowania ani zmiany budżetu."
+        ),
+        next_step=budget_pacing_read_contract.next_step,
+        source_connectors=budget_pacing_read_contract.source_connectors,
+        evidence_ids=budget_pacing_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=budget_pacing_read_contract.action_ids,
+        blocked_claims=budget_pacing_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
 
 
 def build_budget_pacing_read_contract(
