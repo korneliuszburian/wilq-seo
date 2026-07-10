@@ -20,11 +20,16 @@ from wilq.content.workflow.models import (
     ContentWorkflowBlocker,
     content_workflow_blockers,
 )
-from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
+from wilq.schemas import (
+    ContentDecisionItem,
+    ContentDiagnosticsResponse,
+    ContentFreshnessAssessment,
+)
 
 ContentQueueRecommendedMode = Literal["preserve", "refresh", "merge", "create", "block"]
 ContentQueueStatus = Literal["ready", "blocked"]
 ContentQueueMeasurementStatus = Literal["ready_to_plan", "blocked"]
+PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 
 _MINIMUM_ACTIONABLE_CANDIDATES = 3
 _HARD_WORKFLOW_BLOCKERS = {
@@ -85,6 +90,7 @@ class ContentWorkItemQueueCandidate(BaseModel):
     duplicate_canonical_risk_summary: str
     measurement_readiness: ContentWorkItemQueueMeasurementReadiness
     safe_next_step: str
+    freshness_assessment: ContentFreshnessAssessment
     blockers: list[ContentWorkItemQueueBlocker] = Field(default_factory=list)
 
 
@@ -96,6 +102,7 @@ class ContentWorkItemQueueResponse(BaseModel):
     actionable_candidate_count: int
     minimum_actionable_candidate_count: int = _MINIMUM_ACTIONABLE_CANDIDATES
     operator_summary: str
+    freshness_assessment: ContentFreshnessAssessment
     candidates: list[ContentWorkItemQueueCandidate] = Field(default_factory=list)
     blockers: list[ContentWorkItemQueueBlocker] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -108,11 +115,14 @@ def build_content_work_item_queue_response(
     minimum_actionable_candidates: int = _MINIMUM_ACTIONABLE_CANDIDATES,
 ) -> ContentWorkItemQueueResponse:
     candidates = [
-        _candidate_from_decision(decision)
+        _candidate_from_decision(decision, diagnostics.freshness_assessment)
         for decision in sorted(diagnostics.decision_queue, key=lambda item: item.priority)
     ]
     actionable_count = sum(1 for candidate in candidates if candidate.recommended_mode != "block")
     blockers: list[ContentWorkItemQueueBlocker] = []
+    freshness_blocker = _primary_freshness_blocker(diagnostics.freshness_assessment)
+    if freshness_blocker is not None:
+        blockers.append(freshness_blocker)
     if actionable_count < minimum_actionable_candidates:
         blockers.append(
             ContentWorkItemQueueBlocker(
@@ -144,7 +154,14 @@ def build_content_work_item_queue_response(
         candidate_count=len(candidates),
         actionable_candidate_count=actionable_count,
         minimum_actionable_candidate_count=minimum_actionable_candidates,
-        operator_summary=_operator_summary(actionable_count, len(candidates), blockers),
+        operator_summary=_operator_summary(
+            actionable_count,
+            len(candidates),
+            blockers,
+            freshness_blocker=freshness_blocker is not None,
+            freshness_assessment=diagnostics.freshness_assessment,
+        ),
+        freshness_assessment=diagnostics.freshness_assessment,
         candidates=candidates,
         blockers=blockers,
         evidence_ids=_unique(
@@ -156,7 +173,18 @@ def build_content_work_item_queue_response(
     )
 
 
-def _candidate_from_decision(decision: ContentDecisionItem) -> ContentWorkItemQueueCandidate:
+def build_content_work_item_queue_candidate(
+    decision: ContentDecisionItem,
+    freshness_assessment: ContentFreshnessAssessment,
+) -> ContentWorkItemQueueCandidate:
+    """Build one queue candidate without rebuilding the whole diagnostics queue."""
+    return _candidate_from_decision(decision, freshness_assessment)
+
+
+def _candidate_from_decision(
+    decision: ContentDecisionItem,
+    freshness_assessment: ContentFreshnessAssessment,
+) -> ContentWorkItemQueueCandidate:
     item = content_work_item_from_decision(decision)
     inventory_record = content_inventory_record_from_decision(decision)
     inventory_resolution = resolve_content_inventory(
@@ -164,7 +192,7 @@ def _candidate_from_decision(decision: ContentDecisionItem) -> ContentWorkItemQu
         duplicate_risk="clear" if inventory_record is not None else "unknown",
     )
     preflight = build_content_preflight_verdict(item, inventory_resolution)
-    blockers = _candidate_blockers(decision, preflight)
+    blockers = _candidate_blockers(decision, preflight, freshness_assessment)
     mode = _recommended_mode(decision, preflight, blockers)
     return ContentWorkItemQueueCandidate(
         work_item_id=item.id,
@@ -190,6 +218,7 @@ def _candidate_from_decision(decision: ContentDecisionItem) -> ContentWorkItemQu
         duplicate_canonical_risk_summary=_duplicate_canonical_summary(decision, blockers),
         measurement_readiness=_measurement_readiness(decision),
         safe_next_step=_safe_next_step(decision, preflight, blockers),
+        freshness_assessment=freshness_assessment,
         blockers=blockers,
     )
 
@@ -197,6 +226,7 @@ def _candidate_from_decision(decision: ContentDecisionItem) -> ContentWorkItemQu
 def _candidate_blockers(
     decision: ContentDecisionItem,
     preflight: ContentPreflightVerdict,
+    freshness_assessment: ContentFreshnessAssessment,
 ) -> list[ContentWorkItemQueueBlocker]:
     item = content_work_item_from_decision(decision).model_copy(
         update={"preflight_status": preflight.status}
@@ -219,7 +249,19 @@ def _candidate_blockers(
         for blocker in preflight.blockers
         if blocker.blocks_current_stage
     ]
-    return _deduplicate_blockers([*preflight_blockers, *workflow_blockers])
+    freshness_blocker = _primary_freshness_blocker(
+        freshness_assessment,
+        decision_id=decision.id,
+        evidence_ids=decision.evidence_ids,
+        source_connectors=decision.source_connectors,
+    )
+    return _deduplicate_blockers(
+        [
+            *([freshness_blocker] if freshness_blocker is not None else []),
+            *preflight_blockers,
+            *workflow_blockers,
+        ]
+    )
 
 
 def _recommended_mode(
@@ -350,7 +392,20 @@ def _operator_summary(
     actionable_count: int,
     candidate_count: int,
     blockers: list[ContentWorkItemQueueBlocker],
+    *,
+    freshness_blocker: bool,
+    freshness_assessment: ContentFreshnessAssessment,
 ) -> str:
+    if freshness_blocker:
+        freshness_label = (
+            f"{freshness_assessment.state_label[:1].upper()}"
+            f"{freshness_assessment.state_label[1:]}"
+        )
+        return (
+            f"Gotowe do pracy: {actionable_count} z {candidate_count} tematów. "
+            f"{freshness_label}. "
+            f"{freshness_assessment.next_step}"
+        )
     if blockers:
         return (
             f"Gotowe do pracy: {actionable_count} z {candidate_count} tematów. "
@@ -361,6 +416,31 @@ def _operator_summary(
         f"Gotowe do pracy: {actionable_count} z {candidate_count} tematów. "
         "Wybierz stronę z adresem, źródłami i następnym krokiem, a blokady "
         "traktuj jako stop przed pisaniem."
+    )
+
+
+def _primary_freshness_blocker(
+    freshness_assessment: ContentFreshnessAssessment,
+    *,
+    decision_id: str | None = None,
+    evidence_ids: list[str] | None = None,
+    source_connectors: list[str] | None = None,
+) -> ContentWorkItemQueueBlocker | None:
+    relevant_connectors = set(source_connectors or PRIMARY_CONTENT_CONNECTORS)
+    primary_ids = relevant_connectors.intersection(PRIMARY_CONTENT_CONNECTORS)
+    stale_primary = primary_ids.intersection(freshness_assessment.stale_connector_ids)
+    missing_primary = primary_ids.intersection(freshness_assessment.missing_connector_ids)
+    blocked_primary = primary_ids.intersection(freshness_assessment.blocked_connector_ids)
+    if not stale_primary and not missing_primary and not blocked_primary:
+        return None
+    return ContentWorkItemQueueBlocker(
+        code="content_sources_require_refresh",
+        label="Źródła tej decyzji wymagają odświeżenia",
+        reason=freshness_assessment.summary,
+        next_step=freshness_assessment.next_step,
+        decision_id=decision_id,
+        evidence_ids=list(evidence_ids or []),
+        source_connectors=list(source_connectors or PRIMARY_CONTENT_CONNECTORS),
     )
 
 

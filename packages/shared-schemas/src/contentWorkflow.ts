@@ -86,6 +86,20 @@ const ContentEvidenceTraceFields = {
   source_connectors: z.array(z.string()).default([])
 };
 
+export const ContentFreshnessAssessmentSchema = z.object({
+  state: z.enum(["fresh", "stale", "missing", "blocked"]),
+  state_label: z.string().default(""),
+  checked_at: z.string().nullable().optional(),
+  stale_after_hours: z.number(),
+  requires_refresh: z.boolean(),
+  missing_connector_ids: z.array(z.string()).default([]),
+  blocked_connector_ids: z.array(z.string()).default([]),
+  stale_connector_ids: z.array(z.string()).default([]),
+  connector_labels_requiring_refresh: z.array(z.string()).default([]),
+  summary: z.string(),
+  next_step: z.string()
+});
+
 const ContentSafeNextStepField = {
   safe_next_step: z.string()
 };
@@ -144,6 +158,7 @@ export const ContentWorkItemQueueCandidateSchema = z.object({
   duplicate_canonical_risk_summary: z.string(),
   measurement_readiness: ContentWorkItemQueueMeasurementReadinessSchema,
   safe_next_step: z.string(),
+  freshness_assessment: ContentFreshnessAssessmentSchema,
   blockers: z.array(ContentWorkItemQueueBlockerSchema).default([])
 });
 
@@ -153,6 +168,7 @@ export const ContentWorkItemQueueResponseSchema = z.object({
   actionable_candidate_count: z.number(),
   minimum_actionable_candidate_count: z.number(),
   operator_summary: z.string(),
+  freshness_assessment: ContentFreshnessAssessmentSchema,
   candidates: z.array(ContentWorkItemQueueCandidateSchema).default([]),
   blockers: z.array(ContentWorkItemQueueBlockerSchema).default([]),
   ...ContentEvidenceTraceFields
@@ -1633,6 +1649,8 @@ export const ContentWorkflowOperatorStepSchema = z.object({
 
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   response_type: z.literal("workflow_snapshot").default("workflow_snapshot"),
+  freshness_assessment: ContentFreshnessAssessmentSchema,
+  candidate: ContentWorkItemQueueCandidateSchema,
   claim_ledger: ContentClaimLedgerSchema,
   preflight: ContentWorkItemPreflightResponseSchema,
   sales_brief: ContentWorkItemSalesBriefResponseSchema,
@@ -1648,6 +1666,7 @@ export const ContentWorkItemBlockedSnapshotResponseSchema = z.object({
   response_type: z.literal("blocked_snapshot"),
   work_item_id: z.string(),
   decision_id: z.string(),
+  freshness_assessment: ContentFreshnessAssessmentSchema,
   title: z.string(),
   topic: z.string(),
   status_label: z.string(),
@@ -1859,6 +1878,7 @@ export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperator
 export type ContentWorkItemWorkflowSnapshotResponse = z.infer<
   typeof ContentWorkItemWorkflowSnapshotResponseSchema
 >;
+export type ContentFreshnessAssessment = z.infer<typeof ContentFreshnessAssessmentSchema>;
 export type ContentWorkItemBlockedSnapshotResponse = z.infer<
   typeof ContentWorkItemBlockedSnapshotResponseSchema
 >;

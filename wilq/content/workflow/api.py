@@ -138,9 +138,18 @@ from wilq.content.workflow.decision_mapping import (
     content_work_item_from_decision,
 )
 from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.queue import build_content_work_item_queue_response
+from wilq.content.workflow.queue import (
+    ContentWorkItemQueueCandidate,
+    build_content_work_item_queue_candidate,
+    build_content_work_item_queue_response,
+)
 from wilq.credentials.runtime import variable_value
-from wilq.schemas import AuditEvent, ContentDecisionItem, ContentDiagnosticsResponse
+from wilq.schemas import (
+    AuditEvent,
+    ContentDecisionItem,
+    ContentDiagnosticsResponse,
+    ContentFreshnessAssessment,
+)
 from wilq.storage.local_state import local_state_store
 
 
@@ -1112,8 +1121,11 @@ def build_content_work_item_diagnostics_snapshot_response(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     decision = _select_content_work_item_decision(diagnostics.decision_queue)
+    candidate = _queue_candidate_for_decision(diagnostics, decision.id)
     return _build_content_work_item_diagnostics_snapshot_response_from_decision(
         decision,
+        freshness_assessment=diagnostics.freshness_assessment,
+        candidate=candidate,
         human_review=human_review,
         audit=audit,
     )
@@ -1131,8 +1143,11 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
     )
     if decision is None:
         return None
+    candidate = _queue_candidate_for_decision(diagnostics, decision.id)
     return _build_content_work_item_diagnostics_snapshot_response_from_decision(
         decision,
+        freshness_assessment=diagnostics.freshness_assessment,
+        candidate=candidate,
         human_review=human_review,
         audit=audit,
     )
@@ -1141,6 +1156,8 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
 def _build_content_work_item_diagnostics_snapshot_response_from_decision(
     decision: ContentDecisionItem,
     *,
+    freshness_assessment: ContentFreshnessAssessment,
+    candidate: ContentWorkItemQueueCandidate,
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
@@ -1154,6 +1171,8 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
         claim_ledger=content_claim_ledger_from_work_item(item),
         seed=content_sales_brief_seed_from_decision(decision),
         enrichment=build_content_opportunity_enrichment(decision),
+        freshness_assessment=freshness_assessment,
+        candidate=candidate,
         human_review_record=human_review,
         audit=audit,
     )
@@ -1176,6 +1195,7 @@ def build_content_work_item_blocked_snapshot_response_for_work_item(
         return None
     return ContentWorkItemBlockedSnapshotResponse(
         work_item_id=candidate.work_item_id,
+        freshness_assessment=diagnostics.freshness_assessment,
         decision_id=candidate.decision_id,
         title=candidate.title,
         topic=candidate.topic,
@@ -1221,6 +1241,8 @@ def _build_content_work_item_snapshot_response(
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
     enrichment: ContentOpportunityEnrichment,
+    freshness_assessment: ContentFreshnessAssessment,
+    candidate: ContentWorkItemQueueCandidate,
     human_review_record: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
@@ -1280,6 +1302,8 @@ def _build_content_work_item_snapshot_response(
         human_review,
     )
     snapshot = ContentWorkItemWorkflowSnapshotResponse(
+        freshness_assessment=freshness_assessment,
+        candidate=candidate,
         claim_ledger=claim_ledger,
         preflight=preflight,
         sales_brief=sales_brief,
@@ -1531,6 +1555,22 @@ def _select_content_work_item_decision_for_work_item(
             return decision
         return None
     return None
+
+
+def _queue_candidate_for_decision(
+    diagnostics: ContentDiagnosticsResponse,
+    decision_id: str,
+) -> ContentWorkItemQueueCandidate:
+    decision = next(
+        (item for item in diagnostics.decision_queue if item.id == decision_id),
+        None,
+    )
+    if decision is None:
+        raise RuntimeError(f"Content decision {decision_id} has no queue candidate.")
+    return build_content_work_item_queue_candidate(
+        decision,
+        diagnostics.freshness_assessment,
+    )
 
 
 def _inventory_and_preflight(

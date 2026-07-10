@@ -1,5 +1,7 @@
 import {
   getContentWorkItemSnapshot,
+  type ContentFreshnessAssessment,
+  type ContentWorkItemQueueCandidate,
   type ContentClaimLedger,
   type ContentWorkItemDraftPackageResponse,
   type ContentWorkItemHumanReviewResponse,
@@ -12,6 +14,8 @@ import {
 } from "../lib/api";
 
 export type ContentWorkflowSnapshot = {
+  freshnessAssessment: ContentFreshnessAssessment;
+  candidate: ContentWorkItemQueueCandidate;
   claimLedger: ContentClaimLedger;
   preflight: ContentWorkItemPreflightResponse;
   salesBrief: ContentWorkItemSalesBriefResponse;
@@ -38,6 +42,8 @@ function workflowSnapshotFromApi(
     throw new Error(snapshot.safe_next_step);
   }
   return {
+    freshnessAssessment: snapshot.freshness_assessment,
+    candidate: snapshot.candidate,
     claimLedger: snapshot.claim_ledger,
     preflight: snapshot.preflight,
     salesBrief: snapshot.sales_brief,

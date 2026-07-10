@@ -555,6 +555,8 @@ function contentKnowledgeCardsResponse() {
 function workflowSnapshot() {
   return {
     response_type: "workflow_snapshot",
+    freshness_assessment: contentFreshnessAssessment(),
+    candidate: contentQueueResponse().candidates[0],
     claim_ledger: claimLedger(),
     preflight: responseByPath["/api/content/work-items/preflight"],
     sales_brief: responseByPath["/api/content/work-items/sales-brief"],
@@ -572,6 +574,7 @@ function contentQueueResponse() {
     candidate_count: 1,
     actionable_candidate_count: 1,
     minimum_actionable_candidate_count: 1,
+    freshness_assessment: contentFreshnessAssessment(),
     operator_summary: "WILQ ma jednego kandydata do pracy nad treścią.",
     candidates: [
       {
@@ -601,12 +604,29 @@ function contentQueueResponse() {
           source_connectors: ["google_search_console", "google_analytics_4"]
         },
         safe_next_step: "Otwórz workflow i przygotuj szkic do review.",
+        freshness_assessment: contentFreshnessAssessment(),
         blockers: []
       }
     ],
     blockers: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"]
+  };
+}
+
+function contentFreshnessAssessment() {
+  return {
+    state: "fresh",
+    state_label: "dane treści świeże",
+    checked_at: "2026-07-11T08:00:00Z",
+    stale_after_hours: 48,
+    requires_refresh: false,
+    missing_connector_ids: [],
+    blocked_connector_ids: [],
+    stale_connector_ids: [],
+    connector_labels_requiring_refresh: [],
+    summary: "Podstawowe dane treści są świeże.",
+    next_step: "Można przejść do decyzji contentowej."
   };
 }
 

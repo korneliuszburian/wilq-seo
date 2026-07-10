@@ -10,9 +10,7 @@ from wilq.schemas import ContentDecisionItem
 def test_content_work_item_enrichment_exposes_evidence_bound_operating_context() -> None:
     client = TestClient(app)
     queue = client.get("/api/content/work-items/queue").json()
-    candidate = next(
-        item for item in queue["candidates"] if item["recommended_mode"] != "block"
-    )
+    candidate = next(item for item in queue["candidates"] if item["source_public_url"])
 
     response = client.get(f"/api/content/work-items/{candidate['work_item_id']}/enrichment")
 
@@ -21,7 +19,8 @@ def test_content_work_item_enrichment_exposes_evidence_bound_operating_context()
     enrichment = data["enrichment"]
     assert enrichment["work_item_id"] == candidate["work_item_id"]
     assert enrichment["decision_id"] == candidate["decision_id"]
-    assert enrichment["status"] == "ready"
+    expected_status = "blocked" if candidate["recommended_mode"] == "block" else "ready"
+    assert enrichment["status"] == expected_status
     assert enrichment["recommended_mode"] == candidate["recommended_mode"]
     assert enrichment["intent_label"]
     assert enrichment["buyer_problem"]
@@ -33,6 +32,10 @@ def test_content_work_item_enrichment_exposes_evidence_bound_operating_context()
     assert enrichment["source_connectors"]
     assert enrichment["measurement_baseline"]["metrics_to_watch"]
     assert enrichment["measurement_baseline"]["source_connectors"]
+    if candidate["recommended_mode"] == "block":
+        assert "content_sources_require_refresh" in {
+            blocker["code"] for blocker in enrichment["blockers"]
+        }
     assert "score" not in enrichment
     assert "ekologus.dev.proudsite.pl" not in str(enrichment.get("final_canonical_url"))
 

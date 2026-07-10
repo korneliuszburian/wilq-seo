@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   ContentDraftPackageSchema,
+  ContentFreshnessAssessmentSchema,
   ContentWordPressDraftHandoffSchema
 } from "./contentWorkflow";
 
@@ -2559,19 +2560,7 @@ export const ContentDiagnosticsResponseSchema = z.object({
   latest_refreshes: z.array(ConnectorRefreshRunSchema),
   live_data_available: z.boolean(),
   live_data_status_label: z.string().default(""),
-  freshness_assessment: z.object({
-    state: z.enum(["fresh", "stale", "missing", "blocked"]),
-    state_label: z.string().default(""),
-    checked_at: z.string().nullable().optional(),
-    stale_after_hours: z.number(),
-    requires_refresh: z.boolean(),
-    missing_connector_ids: z.array(z.string()).default([]),
-    blocked_connector_ids: z.array(z.string()).default([]),
-    stale_connector_ids: z.array(z.string()).default([]),
-    connector_labels_requiring_refresh: z.array(z.string()).default([]),
-    summary: z.string(),
-    next_step: z.string()
-  }),
+  freshness_assessment: ContentFreshnessAssessmentSchema,
   gsc_search_analytics_contract: ContentGscSearchAnalyticsContractSchema.nullable().optional(),
   query_page_count: z.number(),
   matched_inventory_count: z.number(),

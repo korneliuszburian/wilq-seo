@@ -64,6 +64,7 @@ from wilq.content.review.human import ContentHumanReview, ContentHumanReviewBloc
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.queue import ContentWorkItemQueueBlocker, ContentWorkItemQueueCandidate
+from wilq.schemas import ContentFreshnessAssessment
 
 
 class ContentWorkItemPreflightRequest(BaseModel):
@@ -424,6 +425,8 @@ class ContentWorkItemMeasurementOutcomeResponse(BaseModel):
 
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     response_type: Literal["workflow_snapshot"] = "workflow_snapshot"
+    freshness_assessment: ContentFreshnessAssessment
+    candidate: ContentWorkItemQueueCandidate
     claim_ledger: ContentClaimLedger
     preflight: ContentWorkItemPreflightResponse
     sales_brief: ContentWorkItemSalesBriefResponse
@@ -439,6 +442,7 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
 
 class ContentWorkItemBlockedSnapshotResponse(BaseModel):
     response_type: Literal["blocked_snapshot"] = "blocked_snapshot"
+    freshness_assessment: ContentFreshnessAssessment
     work_item_id: str
     decision_id: str
     title: str

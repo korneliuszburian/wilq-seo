@@ -2358,6 +2358,63 @@ describe("Content work item workflow schemas", () => {
 
     expect(
       ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+        freshness_assessment: {
+          state: "fresh",
+          state_label: "dane treści świeże",
+          checked_at: "2026-07-11T08:00:00Z",
+          stale_after_hours: 48,
+          requires_refresh: false,
+          missing_connector_ids: [],
+          blocked_connector_ids: [],
+          stale_connector_ids: [],
+          connector_labels_requiring_refresh: [],
+          summary: "Podstawowe dane treści są świeże.",
+          next_step: "Można przejść do decyzji contentowej."
+        },
+        candidate: {
+          work_item_id: "content_work_item_bdo",
+          decision_id: "content_decision_bdo",
+          title: "BDO dla firm",
+          topic: "BDO dla firm",
+          priority: 1,
+          recommended_mode: "refresh",
+          recommended_mode_label: "odśwież istniejącą treść",
+          status_label: "gotowe do planu",
+          reason: "Istniejąca treść ma dowody.",
+          evidence_ids: ["ev_wp_bdo"],
+          source_connectors: ["wordpress_ekologus"],
+          source_connector_labels: ["WordPress Ekologus"],
+          action_ids: ["act_prepare_content_refresh_queue"],
+          action_summary_label: "1 akcja do sprawdzenia",
+          source_public_url: "https://ekologus.pl/bdo/",
+          final_canonical_url: "https://ekologus.pl/bdo/",
+          intended_final_url: "https://ekologus.pl/bdo/",
+          preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+          preflight_status: "plan_allowed",
+          preflight_status_label: "można planować",
+          duplicate_canonical_risk_summary: "Canonical publiczny.",
+          measurement_readiness: {
+            status: "ready_to_plan",
+            label: "pomiar do zaplanowania",
+            reason: "Baza pomiaru istnieje.",
+            source_connectors: ["wordpress_ekologus"]
+          },
+          safe_next_step: "Przejdź do workflow.",
+          freshness_assessment: {
+            state: "fresh",
+            state_label: "dane treści świeże",
+            checked_at: "2026-07-11T08:00:00Z",
+            stale_after_hours: 48,
+            requires_refresh: false,
+            missing_connector_ids: [],
+            blocked_connector_ids: [],
+            stale_connector_ids: [],
+            connector_labels_requiring_refresh: [],
+            summary: "Dane świeże.",
+            next_step: "Przejdź do decyzji."
+          },
+          blockers: []
+        },
         claim_ledger: claimLedger,
         preflight: {
           item,
@@ -2453,6 +2510,19 @@ describe("Content work item workflow schemas", () => {
         source_connectors: []
       },
       safe_next_step: "Sprawdź podobne treści i finalny adres.",
+      freshness_assessment: {
+        state: "stale",
+        state_label: "dane treści wymagają odświeżenia",
+        checked_at: "2026-07-11T08:00:00Z",
+        stale_after_hours: 48,
+        requires_refresh: true,
+        missing_connector_ids: [],
+        blocked_connector_ids: [],
+        stale_connector_ids: ["google_search_console"],
+        connector_labels_requiring_refresh: ["Google Search Console"],
+        summary: "Dane treści są do odświeżenia.",
+        next_step: "Odśwież źródła przed decyzją contentową."
+      },
       blockers: [blocker]
     };
 
@@ -2468,6 +2538,7 @@ describe("Content work item workflow schemas", () => {
         safe_next_step: candidate.safe_next_step,
         recommended_mode: candidate.recommended_mode,
         preflight_status: candidate.preflight_status,
+        freshness_assessment: candidate.freshness_assessment,
         blockers: [blocker],
         evidence_ids: ["ev_ahrefs_gap"],
         source_connectors: ["ahrefs"],

@@ -61,7 +61,11 @@ import { AcfCurrentVsProposedPanel } from "./AcfCurrentVsProposedPanel";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
 import { WorkflowStepper, workflowStepShortLabel } from "./WorkflowStepper";
 import { WorkflowStepsList } from "./WorkflowStepsList";
-import { ContentWorkflowError, ContentWorkflowEmptyQueue } from "./ContentWorkflowBoundaryStates";
+import {
+  ContentFreshnessBanner,
+  ContentWorkflowError,
+  ContentWorkflowEmptyQueue
+} from "./ContentWorkflowBoundaryStates";
 import { WordPressDraftReadbackStatus, WordPressDraftExecutionStatus, wordpressDraftExecutionStatusText } from "./WordPressDraftStatus";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
 import { ContentMapColumn, ContentMapConnectors, ContentSectionRow } from "./ContentMapPrimitives";
@@ -494,6 +498,7 @@ function ContentPageWorkbench({
         </div>
       </div>
 
+      <ContentFreshnessBanner assessment={queue.freshness_assessment} />
       <ContentSourceStatusBar data={data} devPage={devPage} profile={profile} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]">
@@ -1621,6 +1626,7 @@ function ContentWorkflowBlockedCandidate({
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <ContentWorkflowHeader topic={selectedCandidate.topic} />
+      <ContentFreshnessBanner assessment={queue.freshness_assessment} />
       <ContentCandidateQueuePanel
         queue={queue}
         selectedWorkItemId={selectedWorkItemId}
@@ -1657,6 +1663,9 @@ type WordPressDraftSectionOverride = NonNullable<
 function defaultSelectedWorkItemId(queue: ContentWorkItemQueueResponse) {
   return (
     queue.candidates.find((candidate) => candidate.recommended_mode !== "block")?.work_item_id ??
+    queue.candidates.find(
+      (candidate) => candidate.source_public_url || candidate.final_canonical_url
+    )?.work_item_id ??
     queue.candidates[0]?.work_item_id ??
     null
   );

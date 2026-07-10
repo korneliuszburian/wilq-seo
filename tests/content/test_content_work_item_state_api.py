@@ -87,6 +87,7 @@ def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow
     assert payload["response_type"] == "blocked_snapshot"
     assert payload["work_item_id"] == blocked["work_item_id"]
     assert payload["recommended_mode"] == "block"
+    assert payload["freshness_assessment"]["next_step"]
     assert payload["blockers"]
     assert payload["candidate"]["work_item_id"] == blocked["work_item_id"]
     assert "preflight" not in payload
@@ -104,6 +105,8 @@ def test_homepage_work_item_builds_review_required_public_brief_without_publish(
         client,
         "content_work_item_content_decision_https___www_ekologus_pl",
     )
+    assert snapshot["candidate"]["work_item_id"] == snapshot["preflight"]["item"]["id"]
+    assert snapshot["candidate"]["freshness_assessment"]["next_step"]
     brief_result = snapshot["sales_brief"]["sales_brief_result"]
     blocker_codes = [blocker["code"] for blocker in brief_result["blockers"]]
 

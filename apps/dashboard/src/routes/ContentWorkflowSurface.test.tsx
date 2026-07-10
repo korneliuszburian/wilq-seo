@@ -905,6 +905,7 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
     candidate_count: 3,
     actionable_candidate_count: 2,
     minimum_actionable_candidate_count: 3,
+    freshness_assessment: contentFreshnessAssessment(),
     operator_summary:
       "Gotowe do pracy: 2 z 3 tematów. Wybierz stronę z adresem, źródłami i następnym krokiem.",
     candidates: [
@@ -937,6 +938,7 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
           source_connectors: ["google_search_console"]
         },
         safe_next_step: "Przejdź do workflow wybranego tematu.",
+        freshness_assessment: contentFreshnessAssessment(),
         blockers: []
       },
       {
@@ -968,6 +970,7 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
           source_connectors: ["google_search_console"]
         },
         safe_next_step: "Przejdź do workflow wybranego tematu.",
+        freshness_assessment: contentFreshnessAssessment(),
         blockers: []
       },
       {
@@ -1000,6 +1003,7 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
           source_connectors: []
         },
         safe_next_step: "Uzupełnij publiczny adres docelowy albo zostaw temat w review.",
+        freshness_assessment: contentFreshnessAssessment(),
         blockers: [
           {
             code: "missing_final_canonical",
@@ -1016,6 +1020,22 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
     blockers: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo", "ev_gsc_green_deal", "ev_wp_green_deal"],
     source_connectors: ["google_search_console", "wordpress_ekologus", "ahrefs"]
+  };
+}
+
+function contentFreshnessAssessment() {
+  return {
+    state: "fresh" as const,
+    state_label: "dane treści świeże",
+    checked_at: "2026-07-11T08:00:00Z",
+    stale_after_hours: 48,
+    requires_refresh: false,
+    missing_connector_ids: [],
+    blocked_connector_ids: [],
+    stale_connector_ids: [],
+    connector_labels_requiring_refresh: [],
+    summary: "Podstawowe dane treści są świeże.",
+    next_step: "Można przejść do decyzji contentowej."
   };
 }
 
@@ -1236,6 +1256,8 @@ function workflowSnapshot({
     : workItem({ human_review_status: "missing", human_review_id: null });
   return {
     response_type: "workflow_snapshot",
+    freshness_assessment: contentFreshnessAssessment(),
+    candidate: contentQueueResponse().candidates[0],
     claim_ledger: claimLedger(),
     preflight: {
       item: workItem(),
