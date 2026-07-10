@@ -43,7 +43,7 @@ test.describe("WILQ content workflow layout proof", () => {
     await expect(page.getByText("Porównaj sekcje dev z propozycją szkicu")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd sekcji na devie" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Źródła i claimy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
     await expect(
       page.getByText("Szczegóły workflow, kolejka i audyt techniczny")
     ).toBeVisible();
