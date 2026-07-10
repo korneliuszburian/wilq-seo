@@ -100,7 +100,7 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
     assert packet["kolejność_widoków"] == [
         "/command-center",
         "/merchant",
-        "/content-planner",
+        "/content-workflow",
         "/ads-doctor",
         "/ga4",
     ]

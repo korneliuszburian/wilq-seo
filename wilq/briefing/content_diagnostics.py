@@ -331,7 +331,7 @@ def _content_freshness_assessment(
                 f"{_join_labels(blocked_labels)}."
             ),
             next_step=(
-                "Napraw blocker odczytu i uruchom ponownie GSC/WordPress, zanim WILQ "
+                "Napraw blocker odczytu i uruchom ponownie GSC i WordPress, zanim WILQ "
                 "zarekomenduje aktualną decyzję contentową."
             ),
         )

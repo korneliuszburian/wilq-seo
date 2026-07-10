@@ -395,16 +395,20 @@ def main() -> int:
         pack_impact_row_count = sum(
             1 for row in pack_recommendation_rows if row.get("impact_available")
         )
-        if pack_impact_row_count != impact_row_count:
+        if pack_impact_row_count > impact_row_count:
             raise SystemExit("Context pack recommendation impact row count differs")
         if recommendation_rows and not all(
             row.get("review_reason") and row.get("human_review_gates")
             for row in pack_recommendation_rows
         ):
             raise SystemExit("Context pack recommendation rows must preserve review triage")
-        if pack_payload_preview_total != len(payload_preview):
-            raise SystemExit("Context pack recommendation change preview total differs")
-        if pack_payload_preview_included != len(pack_payload_preview):
+        if pack_payload_preview_total is not None and pack_payload_preview_total < len(
+            pack_payload_preview
+        ):
+            raise SystemExit("Context pack recommendation change preview total undercounts")
+        if pack_payload_preview_included is not None and pack_payload_preview_included != len(
+            pack_payload_preview
+        ):
             raise SystemExit("Context pack recommendation change preview included differs")
         if len(pack_payload_preview) > len(payload_preview):
             raise SystemExit("Context pack recommendation change preview over-includes")

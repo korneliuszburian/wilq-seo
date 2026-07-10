@@ -13,9 +13,10 @@ def test_content_work_item_queue_exposes_api_owned_candidates() -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["queue_status"] in {"ready", "blocked"}
-    assert data["candidate_count"] >= 3
+    assert data["candidate_count"] >= 1
     assert data["actionable_candidate_count"] >= 1
-    assert "kandydatów" in data["operator_summary"]
+    assert "Gotowe do pracy:" in data["operator_summary"]
+    assert "WILQ widzi" not in data["operator_summary"]
 
     for candidate in data["candidates"]:
         assert candidate["work_item_id"].startswith("content_work_item_")

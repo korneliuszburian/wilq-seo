@@ -2,23 +2,30 @@ from __future__ import annotations
 
 from scripts.marketer_language_guard import (
     ACTIVE_PLAN_FILES,
+    ACTIVE_SOURCE_ROOTS,
     FORBIDDEN_PHRASES,
     FORBIDDEN_PLAN_RULE_PHRASES,
     GOAL_005_WILKU_FORBIDDEN_PHRASES,
     GOAL_005_WILKU_MATERIAL_FILES,
     _active_plan_rule_errors,
     _goal_005_wilku_material_errors,
+    _iter_active_files,
 )
 
 
 def test_marketer_language_guard_tracks_active_plan_rule_language() -> None:
     assert "PLAN.md" in {path.as_posix() for path in ACTIVE_PLAN_FILES}
     assert "PLANS.md" in {path.as_posix() for path in ACTIVE_PLAN_FILES}
-    assert "docs/goals/001-goal.md" in {
-        path.as_posix() for path in ACTIVE_PLAN_FILES
-    }
+    assert "docs/goals/001-goal.md" in {path.as_posix() for path in ACTIVE_PLAN_FILES}
     assert "No evidence ID" in FORBIDDEN_PLAN_RULE_PHRASES
     assert "must not invent metrics" in FORBIDDEN_PLAN_RULE_PHRASES
+
+
+def test_marketer_language_guard_scans_the_schema_package() -> None:
+    assert "wilq/schemas" in {path.as_posix() for path in ACTIVE_SOURCE_ROOTS}
+    active_files = {path.as_posix() for path in _iter_active_files()}
+    assert "wilq/schemas/__init__.py" in active_files
+    assert "wilq/schemas/core.py" in active_files
 
 
 def test_active_plan_docs_do_not_use_old_english_rule_wording() -> None:

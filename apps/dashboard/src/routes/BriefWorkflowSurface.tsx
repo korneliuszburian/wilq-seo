@@ -80,26 +80,6 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
     connectorIds: ["linkedin", "facebook"],
     textNeedles: []
   },
-  "/content-planner": {
-    title: "Treści",
-    description:
-      "Widok planowania treści łączy dowody GSC, GA4, Ahrefs, WordPress i Merchant w jedną kolejkę działań dla polskiego marketera.",
-    focusTitle: "Priorytety treści do sprawdzenia",
-    emptyMessage:
-      "Brak dowodów treściowych w WILQ. WILQ potrzebuje danych z GSC, GA4, Ahrefs i WordPress przed planem treści.",
-    safetyTitle: "Brama bezpieczeństwa treści",
-    safetyText:
-      "Plany treści, przepisywanie treści i szkice wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje obietnic bez pokrycia w danych.",
-    connectorIds: [
-      "google_search_console",
-      "google_analytics_4",
-      "ahrefs",
-      "wordpress_ekologus",
-      "wordpress_sklep",
-      "google_merchant_center"
-    ],
-    textNeedles: ["content", "treści", "wordpress", "gsc", "ahrefs", "merchant"]
-  },
   "/merchant": {
     title: "Merchant Center",
     description:

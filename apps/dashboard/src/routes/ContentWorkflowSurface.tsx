@@ -1,11 +1,22 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
-import { CheckCircle2, Clock3, FileText, ShieldCheck, Stamp } from "lucide-react";
+import {
+  ArrowRight,
+  Clock3,
+  Code2,
+  ExternalLink,
+  FileText,
+  Globe2,
+  Search,
+  ShieldCheck,
+  Stamp
+} from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
   getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
+  getContentWordPressExistingDraftUpdateReadiness,
   getWordPressAuthoringProfile,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
@@ -48,6 +59,17 @@ import {
   type ContentWorkflowSnapshot,
   type WorkflowStep
 } from "./contentWorkflowRuntime";
+import { normalizedPath, selectDevPage, type WordPressAuthoringDevPage } from "./contentWorkflowTarget";
+import { AcfCurrentVsProposedPanel } from "./AcfCurrentVsProposedPanel";
+import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
+import { WorkflowStepper, workflowStepShortLabel } from "./WorkflowStepper";
+import { WorkflowStepsList } from "./WorkflowStepsList";
+import { ContentWorkflowError, ContentWorkflowEmptyQueue } from "./ContentWorkflowBoundaryStates";
+import { WordPressDraftReadbackStatus, WordPressDraftExecutionStatus, wordpressDraftExecutionStatusText } from "./WordPressDraftStatus";
+import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
+import { ContentMapColumn, ContentMapConnectors, ContentSectionRow } from "./ContentMapPrimitives";
+import { ContentWorkflowHeader } from "./ContentWorkflowHeader";
+import { WorkflowProofSummary } from "./WorkflowProofSummary";
 
 type WorkflowSafetyPanelsProps = {
   data: ContentWorkflowSnapshot;
@@ -254,16 +276,6 @@ function ContentWorkflowSelectedReady({
   );
 }
 
-function ContentWorkflowError() {
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="rounded-md border border-wait/30 bg-wait/10 p-4 text-sm text-wait">
-        Nie udało się odczytać workflow treści z WILQ. Nie pokazujemy decyzji bez kontraktów API.
-      </div>
-    </main>
-  );
-}
-
 function ContentWorkflowLoaded({
   data,
   authoringProfile,
@@ -288,54 +300,644 @@ function ContentWorkflowLoaded({
     selectedWorkItemId,
     authoringProfile.data ?? null
   );
-  const item = data.preflight.item;
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const draft = data.draftPackage.draft_package_result.draft_package;
   const handoff = data.wordpressHandoff.handoff_result.handoff;
   const window = data.measurementWindow.measurement_window_result.window;
   const steps = buildWorkflowSteps(data);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <ContentWorkflowHeader topic={item.topic} />
-      <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
-      <WordPressDraftWorkPanel
+    <main className="w-full px-4 py-5 lg:px-7 2xl:px-8">
+      <ContentPageWorkbench
         actions={actions}
         authoringProfile={authoringProfile}
+        data={data}
         draftActivationPacket={draftActivationPacket}
         draftWriteReadiness={draftWriteReadiness}
-      />
-      <ContentSectionWritingWorkbench
-        actions={actions}
-        authoringProfile={authoringProfile}
-        data={data}
-        draftActivationPacket={draftActivationPacket}
-      />
-      <ContentCandidateQueuePanel
+        enrichment={enrichment}
         queue={queue}
-        selectedWorkItemId={selectedWorkItemId}
-        onSelectWorkItem={onSelectWorkItem}
       />
-      <WorkflowOperatorControls
-        data={data}
-        actions={actions}
-      />
-      <WorkflowProofSummary data={data} />
-      <ClaimLedgerGatePanel data={data} />
-      <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
-      <WorkflowStepsList steps={steps} />
-      <WorkflowSafetyPanels
-        data={data}
-        draft={draft}
-        handoff={handoff}
-        window={window}
-        structuredRuntimeResult={actions.structuredRuntimeResult}
-        structuredPreviewResult={actions.structuredPreviewResult}
-        qualityReview={actions.qualityReview}
-        revisionPlan={actions.revisionPlan}
-        acfPreviewResult={actions.acfPreviewResult}
-        executionResult={actions.executionResult}
-      />
+      <details
+        id="content-workflow-details"
+        className="mb-6 rounded-md border border-line bg-white"
+        onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+      >
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-ink">
+          Szczegóły workflow, kolejka i audyt techniczny
+        </summary>
+        {detailsOpen ? (
+          <div className="border-t border-line p-4">
+            <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
+            <WordPressDraftWorkPanel
+              actions={actions}
+              authoringProfile={authoringProfile}
+              draftActivationPacket={draftActivationPacket}
+              draftWriteReadiness={draftWriteReadiness}
+            />
+            <ContentSectionWritingWorkbench
+              actions={actions}
+              authoringProfile={authoringProfile}
+              data={data}
+              draftActivationPacket={draftActivationPacket}
+              draftWriteReadiness={draftWriteReadiness}
+            />
+            <ContentCandidateQueuePanel
+              queue={queue}
+              selectedWorkItemId={selectedWorkItemId}
+              onSelectWorkItem={onSelectWorkItem}
+            />
+            <WorkflowOperatorControls data={data} actions={actions} />
+            <WorkflowProofSummary data={data} />
+            <ClaimLedgerGatePanel data={data} />
+            <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
+            <WorkflowStepsList steps={steps} />
+            <WorkflowSafetyPanels
+              data={data}
+              draft={draft}
+              handoff={handoff}
+              window={window}
+              structuredRuntimeResult={actions.structuredRuntimeResult}
+              structuredPreviewResult={actions.structuredPreviewResult}
+              qualityReview={actions.qualityReview}
+              revisionPlan={actions.revisionPlan}
+              acfPreviewResult={actions.acfPreviewResult}
+              executionResult={actions.executionResult}
+            />
+          </div>
+        ) : null}
+      </details>
     </main>
+  );
+}
+
+function ContentPageWorkbench({
+  actions,
+  authoringProfile,
+  data,
+  draftActivationPacket,
+  draftWriteReadiness,
+  enrichment,
+  queue
+}: {
+  actions: ContentWorkflowActions;
+  authoringProfile: WordPressAuthoringProfileQuery;
+  data: ContentWorkflowSnapshot;
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
+  enrichment: ContentOpportunityEnrichment | null;
+  queue: ContentWorkItemQueueResponse;
+}) {
+  const item = data.preflight.item;
+  const draft = data.draftPackage.draft_package_result.draft_package;
+  const handoff = data.wordpressHandoff.handoff_result.handoff;
+  const profile = authoringProfile.data ?? null;
+  const [selectedDevPageLink, setSelectedDevPageLink] = useState<string | null>(null);
+  const devPage = selectDevPage(profile, item, selectedDevPageLink);
+  const draftReadback = draftActivationPacket.data?.draft_readback ?? null;
+  const writeAuthorization = draftWriteReadiness.data?.suggested_write_authorization ?? null;
+  const existingDraftUpdateReadiness = useQuery({
+    queryKey: ["content-workflow", "existing-draft-update-readiness", item.id],
+    queryFn: () => getContentWordPressExistingDraftUpdateReadiness(item.id),
+  });
+  const activeCandidate = queue.candidates.find(
+    (candidate) => candidate.work_item_id === item.id
+  );
+  const publicUrl =
+    item.source_public_url ?? item.final_canonical_url ?? item.intended_final_url ?? "";
+  const sourceTitle = item.wordpress_title_or_h1 ?? draft?.title ?? item.topic;
+  const publicSections = item.wordpress_section_headings ?? [];
+  const devSections = devPage?.sections ?? [];
+  const draftSections = useMemo(() => draft?.sections.slice(0, 5) ?? [], [draft]);
+  const sectionDraftDefaults = useMemo(
+    () =>
+      Object.fromEntries(
+        draftSections.map((section) => [
+          sectionOverrideKey(section.heading),
+          defaultSectionBody(section)
+        ])
+      ),
+    [draftSections]
+  );
+  const [sectionEditorState, setSectionEditorState] = useState<{
+    draftId: string | null;
+    texts: Record<string, string>;
+  }>({ draftId: null, texts: {} });
+  const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
+  const draftEditorId = draft?.id ?? null;
+  const sectionTexts =
+    sectionEditorState.draftId === draftEditorId
+      ? sectionEditorState.texts
+      : sectionDraftDefaults;
+  const selectedSection =
+    draftSections.find((section) => sectionOverrideKey(section.heading) === selectedSectionKey) ??
+    draftSections[0] ??
+    null;
+  const selectedSectionEditorKey = selectedSection
+    ? sectionOverrideKey(selectedSection.heading)
+    : "";
+  const selectedSectionText = selectedSection
+    ? sectionTexts[selectedSectionEditorKey] ?? defaultSectionBody(selectedSection)
+    : "";
+  const sectionOverrides = draftSections
+    .map((section) => ({
+      heading: section.heading,
+      body_markdown:
+        sectionTexts[sectionOverrideKey(section.heading)] ?? defaultSectionBody(section),
+      evidence_ids: unique(section.evidence_ids)
+    }))
+    .filter((section) => section.body_markdown.trim().length > 0);
+  const canCreateEditedDevDraft = Boolean(
+    draft &&
+      handoff &&
+      writeAuthorization &&
+      draftWriteReadiness.data?.ready &&
+      sectionOverrides.length &&
+      !actions.executionPending
+  );
+  const signalRows = contentSignalRows(data, enrichment, activeCandidate);
+  const blockedClaims = blockedClaimsForWorkbench(data);
+  const evidenceRows = evidenceRowsForWorkbench(data, enrichment);
+  const pageTitle = publicUrl && normalizedPath(publicUrl) === "/"
+    ? `Strona główna ${environmentLabel(publicUrl)}`
+    : sourceTitle || item.topic;
+  const queryChips = queryChipsForWorkbench(data, enrichment, activeCandidate);
+  const metricTiles = contentMetricTilesForWorkbench(item, devPage);
+  const sourceSummary = [
+    publicSections.length ? `${publicSections.length} sekcji publicznych` : null,
+    devSections.length ? `${devSections.length} sekcji na devie` : null,
+    item.source_connectors.includes("google_search_console") ? "GSC" : null,
+    item.source_connectors.includes("ahrefs") ? "Ahrefs" : null
+  ].filter(Boolean).join(" · ");
+
+  return (
+    <section className="mb-5">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-normal text-ink">
+            Treści: praca nad stroną
+          </h1>
+          <p className="mt-1 max-w-4xl text-sm leading-6 text-slate-600">
+            Publiczna strona, sygnały SEO, sekcje ACF i edytor szkicu w jednym miejscu.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="inline-flex h-11 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink"
+          >
+            Dzisiaj
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-11 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink"
+            onClick={() => window.location.reload()}
+          >
+            Odśwież
+          </button>
+        </div>
+      </div>
+
+      <ContentSourceStatusBar data={data} devPage={devPage} profile={profile} />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-3">
+          <div className="rounded-md border border-line bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex min-w-0 gap-4">
+                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-full bg-action/10 text-action sm:flex">
+                  <FileText aria-hidden="true" size={22} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-semibold tracking-normal text-ink">
+                    {pageTitle}
+                  </h2>
+                  {publicUrl ? (
+                    <a
+                      href={publicUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex max-w-full items-center gap-2 truncate rounded-md bg-action/10 px-2 py-1 text-sm font-semibold text-action"
+                    >
+                      {publicUrl}
+                      <ExternalLink aria-hidden="true" size={14} />
+                    </a>
+                  ) : null}
+                  <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+                    {sourceSummary ||
+                      activeCandidate?.reason ||
+                      "Porównaj publiczną stronę, sygnały i aktualny dev draft."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-action/35 bg-white px-3 text-sm font-semibold text-action"
+              >
+                {activeCandidate?.recommended_mode_label ??
+                  data.preflight.preflight_verdict.recommended_mode}
+                <ArrowRight aria-hidden="true" size={15} />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative grid gap-3 lg:grid-cols-3">
+            <ContentMapConnectors />
+            <ContentMapColumn
+              icon={<Globe2 aria-hidden="true" size={18} />}
+              title="Aktualna strona"
+              subtitle={publicUrl ? environmentLabel(publicUrl) : "publiczna treść"}
+            >
+              {publicSections.length ? (
+                <ol className="space-y-2">
+                  {publicSections.slice(0, 4).map((section, index) => (
+                    <ContentSectionRow
+                      key={`${section}-${index}`}
+                      icon={<FileText aria-hidden="true" size={15} />}
+                      title={section}
+                      subtitle={`Sekcja ${index + 1}`}
+                    />
+                  ))}
+                  {publicSections.length > 4 ? (
+                    <li className="rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-slate-600">
+                      + {publicSections.length - 4} sekcji niżej w kontekście
+                    </li>
+                  ) : null}
+                </ol>
+              ) : (
+                <p className="rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
+                  Brakuje listy publicznych sekcji dla tej strony.
+                </p>
+              )}
+            </ContentMapColumn>
+
+            <ContentMapColumn
+              icon={<Search aria-hidden="true" size={18} />}
+              title="Sygnały i braki"
+              subtitle="GSC, Ahrefs i brief"
+            >
+              <div className="space-y-3">
+                <div className="rounded-md border border-line bg-white p-3">
+                  <div className="text-xs font-semibold text-slate-600">Kluczowe zapytania</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {queryChips.map((query) => (
+                      <span key={query} className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                        {query}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {metricTiles.map((tile) => (
+                    <div key={tile.label} className="rounded-md border border-line bg-surface px-3 py-2">
+                      <div className="text-[11px] font-semibold uppercase tracking-normal text-slate-500">
+                        {tile.label}
+                      </div>
+                      <div className="mt-1 text-sm font-semibold text-ink">{tile.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {signalRows.slice(0, 2).map((row) => (
+                  <div key={row.label} className={`rounded-md border p-3 ${row.tone}`}>
+                    <div className="text-xs font-semibold uppercase tracking-normal">{row.label}</div>
+                    <p className="mt-1 line-clamp-3 text-sm leading-6 text-slate-700">
+                      {row.summary}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </ContentMapColumn>
+
+            <ContentMapColumn
+              icon={<Code2 aria-hidden="true" size={18} />}
+              title="Dev draft / ACF"
+              subtitle={devPage ? `${devPage.section_count} sekcji na devie` : "czeka na odczyt"}
+            >
+              {profile?.dev_content.pages.length ? (
+                <label className="mb-3 block">
+                  <span className="mb-1 block text-xs font-semibold uppercase tracking-normal text-slate-500">
+                    Cel dev do podglądu
+                  </span>
+                  <select
+                    className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink"
+                    value={devPage?.link ?? ""}
+                    onChange={(event) => setSelectedDevPageLink(event.target.value || null)}
+                    aria-label="Cel dev do podglądu"
+                  >
+                    {profile.dev_content.pages.map((page) => (
+                      <option key={page.link} value={page.link}>
+                        {page.title || page.link} · {page.section_count} sekcji
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-xs leading-5 text-slate-500">
+                    Zmienia tylko kontekst podglądu. Zapis do WordPress nadal wymaga osobnej, bezpiecznej ścieżki.
+                  </span>
+                </label>
+              ) : null}
+              {devSections.length ? (
+                <ol className="space-y-2">
+                  {devSections.slice(0, 5).map((section) => (
+                    <ContentSectionRow
+                      key={`${section.section_index}-${section.layout_name}`}
+                      icon={<Code2 aria-hidden="true" size={15} />}
+                      title={section.title || section.layout_label}
+                      subtitle={section.layout_name}
+                      meta={section.acf_field_name}
+                      badge="dev"
+                      tone="dev"
+                    />
+                  ))}
+                  {devSections.length > 5 ? (
+                    <li className="rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-slate-600">
+                      + {devSections.length - 5} sekcji ACF w kontekście
+                    </li>
+                  ) : null}
+                </ol>
+              ) : (
+                <p className="rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
+                  {profile?.dev_content.status === "blocked"
+                    ? profile.dev_content.blockers[0]?.reason
+                    : "Nie mamy jeszcze czytelnych sekcji ACF z dev REST dla tej strony."}
+                </p>
+              )}
+            </ContentMapColumn>
+          </div>
+
+          <AcfCurrentVsProposedPanel devSections={devSections} draftSections={draftSections} />
+
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="rounded-md border border-line bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-ink">Tekst sekcji do szkicu</h2>
+                </div>
+                <span className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-600">
+                  Wersja 1
+                </span>
+              </div>
+
+              {draftSections.length ? (
+                <div className="mt-4">
+                  <div className="flex gap-5 border-b border-line">
+                    {draftSections.map((section) => {
+                      const key = sectionOverrideKey(section.heading);
+                      const active = key === selectedSectionEditorKey;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setSelectedSectionKey(key)}
+                          className={`border-b-2 px-1 pb-3 text-sm font-semibold ${
+                            active
+                              ? "border-action text-action"
+                              : "border-transparent text-slate-600"
+                          }`}
+                        >
+                          {shortSectionTabLabel(section.heading)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-b border-line pb-3 text-sm">
+                    <span className="rounded-md border border-line bg-white px-3 py-2 text-slate-700">
+                      Akapit
+                    </span>
+                    <span className="font-bold text-ink">B</span>
+                    <span className="italic text-ink">I</span>
+                    <span className="text-slate-500">link</span>
+                    <span className="text-slate-500">lista</span>
+                    <span className="ml-auto rounded-md border border-line bg-white px-3 py-2 text-slate-700">
+                      Wstaw dowód
+                    </span>
+                  </div>
+                  {selectedSection ? (
+                    <label className="mt-4 block">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-lg font-semibold text-ink">
+                          {selectedSection.heading}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Dowody: {selectedSection.evidence_ids.length || "brak"}
+                        </span>
+                      </div>
+                      <textarea
+                        className="min-h-40 w-full resize-y rounded-md border border-line bg-white p-4 text-sm leading-6 text-ink outline-none focus:border-action focus:ring-2 focus:ring-action/20"
+                        value={selectedSectionText}
+                        onChange={(event) =>
+                          setSectionEditorState({
+                            draftId: draftEditorId,
+                            texts: {
+                              ...sectionTexts,
+                              [selectedSectionEditorKey]: event.target.value
+                            }
+                          })
+                        }
+                        aria-label={`Tekst sekcji ${selectedSection.heading}`}
+                      />
+                    </label>
+                  ) : null}
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => actions.runExecutionDryRunWithSections(sectionOverrides)}
+                      disabled={!sectionOverrides.length || actions.executionPending}
+                      className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Sprawdź tekst szkicu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (writeAuthorization) {
+                          actions.runExecutionLive(writeAuthorization, sectionOverrides);
+                        }
+                      }}
+                      disabled={!canCreateEditedDevDraft}
+                      className="inline-flex h-10 items-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actions.executionPending ? "Tworzę draft" : "Utwórz draft na dev"}
+                      <ArrowRight aria-hidden="true" size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSectionEditorState({
+                          draftId: draftEditorId,
+                          texts: sectionDraftDefaults
+                        })
+                      }
+                      className="inline-flex h-10 items-center rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink"
+                    >
+                      Przywróć brief
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
+                  Brakuje paczki szkicu z sekcjami. Najpierw przygotuj brief i draft package dla tej
+                  strony.
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-md border border-line bg-white p-4 shadow-sm">
+              <h2 className="text-base font-semibold text-ink">Podgląd sekcji na devie</h2>
+              {draftReadback?.status === "available" ? (
+                <div className="mt-3 rounded-md border border-success/25 bg-success/5 p-3">
+                  <p className="text-sm font-semibold text-success">Dev draft odczytany</p>
+                  <p className="mt-2 text-sm font-semibold text-ink">
+                    {draftReadback.title || "Szkic bez tytułu"}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {draftReadback.content_summary || "WordPress zwrócił szkic bez streszczenia."}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+                    <span className="rounded-md border border-line bg-white px-2 py-1">
+                      {draftReadback.content_word_count ?? 0} słów
+                    </span>
+                    <span className="rounded-md border border-line bg-white px-2 py-1">
+                      {draftReadback.acf_field_count ?? 0} pól ACF
+                    </span>
+                  </div>
+                  {draftReadback.link ? (
+                    <a
+                      href={draftReadback.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-action/40 text-sm font-semibold text-action"
+                    >
+                      Otwórz podgląd na dev
+                      <ExternalLink aria-hidden="true" size={14} />
+                    </a>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="mt-3 rounded-md border border-action/20 bg-white p-4">
+                  <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                    {selectedSection ? shortSectionTabLabel(selectedSection.heading) : "Sekcja"}
+                  </div>
+                  <div className="mt-3 text-xl font-semibold leading-7 text-ink">
+                    {selectedSection?.heading ?? pageTitle}
+                  </div>
+                  <p className="mt-3 line-clamp-6 text-sm leading-6 text-slate-700">
+                    {selectedSectionText || "Wybierz sekcję szkicu po lewej."}
+                  </p>
+                </div>
+              )}
+              {devPage?.link ? (
+                <a
+                  href={devPage.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-action text-sm font-semibold text-white"
+                >
+                  Otwórz stronę dev
+                  <ExternalLink aria-hidden="true" size={14} />
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
+          <div className="rounded-md border border-line bg-white p-4 shadow-sm">
+            <h2 className="text-base font-semibold text-ink">Praca na devie</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Edytuj sekcję, sprawdź podgląd i utwórz szkic na devie bez publikacji produkcji.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (writeAuthorization) {
+                  actions.runExecutionLive(writeAuthorization, sectionOverrides);
+                } else {
+                  actions.runExecutionDryRunWithSections(sectionOverrides);
+                }
+              }}
+              disabled={!sectionOverrides.length || actions.executionPending}
+              className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {writeAuthorization ? "Utwórz draft na dev" : "Przygotuj podgląd draftu"}
+              <ArrowRight aria-hidden="true" size={16} />
+            </button>
+            <a
+              href="#content-workflow-details"
+              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-md border border-action/40 bg-white px-4 text-sm font-semibold text-action"
+            >
+              Pokaż kontekst
+            </a>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Następny krok: otwórz lub utwórz draft WordPress na devie.
+            </p>
+            {existingDraftUpdateReadiness.data ? (
+              <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-slate-700">
+                <div className="font-semibold text-wait">Aktualizacja istniejącego draftu</div>
+                <p className="mt-1">
+                  {existingDraftUpdateReadiness.data.blockers[0]?.label ??
+                    "Przygotowanie aktualizacji wymaga osobnego review."}
+                </p>
+                {existingDraftUpdateReadiness.data.section_diff_preview.length ? (
+                  <div className="mt-2 space-y-2">
+                    {existingDraftUpdateReadiness.data.section_diff_preview.map((row) => (
+                      <div key={row.heading} className="rounded border border-wait/20 bg-white p-2">
+                        <div className="font-semibold text-ink">{row.heading}</div>
+                        <div className="mt-1 text-slate-500">
+                          Aktualne: {row.current_summary || "brak sekcji na devie"}
+                        </div>
+                        <div className="text-slate-700">
+                          Proponowane: {row.proposed_summary || "brak propozycji"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-md border border-line bg-white p-4 shadow-sm">
+            <h2 className="text-base font-semibold text-ink">Źródła i twierdzenia</h2>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="rounded-md border border-line bg-surface p-3">
+                <div className="text-xs text-slate-500">Dowody</div>
+                <div className="mt-1 text-xl font-semibold text-ink">{evidenceRows.length}</div>
+              </div>
+              <div className="rounded-md border border-line bg-surface p-3">
+                <div className="text-xs text-slate-500">Twierdzenia do sprawdzenia</div>
+                <div className="mt-1 text-xl font-semibold text-ink">{blockedClaims.length}</div>
+              </div>
+            </div>
+            <details className="mt-3 rounded-md border border-line bg-white">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-action">
+                Pokaż ograniczenia i źródła
+              </summary>
+              <div className="border-t border-line p-3">
+                <ul className="space-y-3">
+                  {blockedClaims.slice(0, 3).map((claim) => (
+                    <li key={claim.id}>
+                      <div className="text-sm font-semibold text-ink">{claim.claim_text}</div>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">{claim.reason}</p>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 border-t border-line pt-3">
+                  {evidenceRows.slice(0, 3).map((row) => (
+                    <div key={`${row.label}-${row.summary}`} className="mt-2 first:mt-0">
+                      <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                        {row.label}
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">
+                        {row.summary}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </details>
+          </div>
+        </aside>
+      </div>
+    </section>
   );
 }
 
@@ -382,7 +984,7 @@ function ContentWorkflowDecisionPanel({
             </h2>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
               Status: wymaga decyzji operatora. Publikacja i zapis WordPress pozostają
-              zablokowane, dopóki plan, claimy, review człowieka i audyt nie są domknięte.
+              zablokowane, dopóki plan, twierdzenia, review człowieka i audyt nie są domknięte.
             </p>
           </div>
           <div className="rounded-md border border-wait/30 bg-wait/10 px-3 py-2 text-sm font-semibold text-wait">
@@ -406,8 +1008,8 @@ function ContentWorkflowDecisionPanel({
           <p className="mt-2 text-sm leading-6 text-slate-700">{decisionReason}</p>
           <div className="mt-4 grid gap-2 md:grid-cols-3">
             <FactTile label="Dowody WILQ" value={`${unique(item.evidence_ids).length}`} />
-            <FactTile label="Claimy do review" value={`${ledgerSummary.review}`} />
-            <FactTile label="Claimy zablokowane" value={`${ledgerSummary.blocked}`} />
+              <FactTile label="Twierdzenia do review" value={`${ledgerSummary.review}`} />
+              <FactTile label="Twierdzenia zablokowane" value={`${ledgerSummary.blocked}`} />
           </div>
           <div className="mt-4">
             <div className="text-sm font-semibold text-ink">Następny krok</div>
@@ -436,7 +1038,7 @@ function ContentWorkflowDecisionPanel({
           <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-700">
             <li>
               <span className="font-semibold text-ink">Brak zatwierdzenia człowieka.</span>{" "}
-              Plan, claimy i paczka szkicu muszą przejść review przed użyciem jako wiedza produkcyjna.
+              Plan, twierdzenia i paczka szkicu muszą przejść review przed użyciem jako wiedza produkcyjna.
             </li>
             <li>
               <span className="font-semibold text-ink">WordPress zostaje tylko szkicem.</span>{" "}
@@ -455,7 +1057,7 @@ function ContentWorkflowDecisionPanel({
               <li>- automatyczna publikacja</li>
               <li>- wzrost ruchu bez okna pomiaru</li>
               <li>- poprawa pozycji bez obserwacji</li>
-              <li>- pełna aktualność claimów bez review</li>
+              <li>- pełna aktualność twierdzeń bez review</li>
             </ul>
           </div>
         </div>
@@ -465,16 +1067,16 @@ function ContentWorkflowDecisionPanel({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Claim Ledger - skrót
+              Rejestr twierdzeń - skrót
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {ledgerSummary.allowed} do szkicu, {ledgerSummary.review} wymaga review,{" "}
-              {ledgerSummary.blocked} zablokowane. Szczegóły claimów i raw dowody są niżej.
+              {ledgerSummary.blocked} zablokowane. Szczegóły twierdzeń i surowe dowody są niżej.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <a className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-action" href="#content-workflow-claim-ledger">
-              Otwórz claim ledger
+              Otwórz rejestr twierdzeń
             </a>
             <a className="rounded-md border border-line px-3 py-2 text-sm font-semibold text-action" href="#content-workflow-proof">
               Otwórz brief
@@ -695,129 +1297,71 @@ function WordPressDraftWorkPanel({
   );
 }
 
-function WordPressDraftReadbackStatus({
-  readback
-}: {
-  readback: NonNullable<ContentWordPressDraftActivationPacketResponse["draft_readback"]>;
-}) {
-  if (readback.status === "blocked") {
-    const blocker = readback.blockers[0];
-    return (
-      <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 px-3 py-2 text-sm leading-6 text-slate-700">
-        <p className="font-semibold text-wait">Odczyt szkicu wymaga sprawdzenia</p>
-        <p className="mt-1">
-          {blocker
-            ? `${blocker.label}. ${blocker.next_step}`
-            : "WILQ nie potwierdził jeszcze treści szkicu z dev WordPressa."}
-        </p>
-      </div>
-    );
-  }
-
-  const acfNames = readback.acf_field_names.slice(0, 6);
-  return (
-    <div className="mt-3 rounded-md border border-success/25 bg-success/5 px-3 py-3 text-sm leading-6 text-slate-700">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-success">Odczyt z dev WordPress</p>
-          <p className="mt-1 font-semibold text-ink">
-            {readback.title || "Szkic bez tytułu"}{" "}
-            <span className="font-normal text-slate-500">({readback.post_status || "bez statusu"})</span>
-          </p>
-        </div>
-        {readback.link ? (
-          <a
-            href={readback.link}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-8 items-center rounded-md border border-success/30 bg-white px-3 text-sm font-semibold text-success"
-          >
-            Otwórz szkic
-          </a>
-        ) : null}
-      </div>
-      {readback.content_summary ? (
-        <p className="mt-2">{readback.content_summary}</p>
-      ) : (
-        <p className="mt-2">WordPress zwrócił szkic, ale bez czytelnego streszczenia treści.</p>
-      )}
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-        <span className="rounded-md border border-line bg-white px-2 py-1">
-          {readback.content_word_count ?? 0} słów
-        </span>
-        <span className="rounded-md border border-line bg-white px-2 py-1">
-          {readback.acf_field_count ?? 0} pól ACF
-        </span>
-        {acfNames.map((name) => (
-          <span key={name} className="rounded-md border border-line bg-white px-2 py-1">
-            {name}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function WordPressDraftExecutionStatus({
-  result
-}: {
-  result: ContentWorkItemWordPressDraftExecutionResponse["execution_result"];
-}) {
-  const tone =
-    result.status === "created"
-      ? "border-success/30 bg-success/10 text-success"
-      : result.status === "blocked"
-        ? "border-risk/30 bg-risk/10 text-risk"
-        : "border-action/30 bg-action/10 text-action";
-  return (
-    <p className={`mt-3 rounded-md border px-3 py-2 text-sm leading-6 ${tone}`}>
-      {wordpressDraftExecutionStatusText(result)}
-    </p>
-  );
-}
-
-function wordpressDraftExecutionStatusText(
-  result: ContentWorkItemWordPressDraftExecutionResponse["execution_result"]
-) {
-  if (result.status === "created") {
-    return `Szkic utworzony na devie jako WordPress draft${
-      result.wordpress_post_id ? `, ID ${result.wordpress_post_id}` : ""
-    }. Publikacja i nadpisywanie pozostają zablokowane.`;
-  }
-  if (result.status === "blocked") {
-    const blocker = result.blockers[0];
-    return blocker
-      ? `Zapis zablokowany: ${blocker.label}. ${blocker.next_step}`
-      : "Zapis szkicu został zablokowany przez WILQ.";
-  }
-  return "Podgląd szkicu jest gotowy. Zewnętrzny zapis nie został wykonany.";
-}
-
 function ContentSectionWritingWorkbench({
   actions,
   authoringProfile,
   data,
-  draftActivationPacket
+  draftActivationPacket,
+  draftWriteReadiness
 }: {
   actions: ContentWorkflowActions;
   authoringProfile: WordPressAuthoringProfileQuery;
   data: ContentWorkflowSnapshot;
   draftActivationPacket: WordPressDraftActivationPacketQuery;
+  draftWriteReadiness: WordPressDraftWriteReadinessQuery;
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
+  const handoff = data.wordpressHandoff.handoff_result.handoff;
   const publicSections = item.wordpress_section_headings ?? [];
-  const draftSections = draft?.sections ?? [];
+  const draftSections = useMemo(() => draft?.sections ?? [], [draft]);
+  const editableSections = useMemo(() => draftSections.slice(0, 4), [draftSections]);
+  const sectionDraftDefaults = useMemo(
+    () =>
+      Object.fromEntries(
+        editableSections.map((section) => [
+          sectionOverrideKey(section.heading),
+          defaultSectionBody(section)
+        ])
+      ),
+    [editableSections]
+  );
+  const [sectionEditorState, setSectionEditorState] = useState<{
+    draftId: string | null;
+    texts: Record<string, string>;
+  }>({ draftId: null, texts: {} });
+  const draftEditorId = draft?.id ?? null;
+  const sectionTexts =
+    sectionEditorState.draftId === draftEditorId
+      ? sectionEditorState.texts
+      : sectionDraftDefaults;
   const sourceTitle = item.wordpress_title_or_h1 ?? draft?.title ?? item.topic;
   const sectionInventoryAvailable =
     item.wordpress_section_inventory_status === "available" && publicSections.length > 0;
   const profile = authoringProfile.data;
   const draftReadback = draftActivationPacket.data?.draft_readback ?? null;
+  const writeAuthorization = draftWriteReadiness.data?.suggested_write_authorization ?? null;
   const firstAcfSection = actions.acfPreviewResult?.sections[0] ?? null;
   const firstAcfFields = firstAcfSection?.field_previews ?? [];
   const sourceHref = item.source_public_url ?? item.final_canonical_url ?? item.intended_final_url ?? undefined;
   const canPrepareAcf = Boolean(
-    profile && draft && data.wordpressHandoff.handoff_result.handoff && !actions.acfPreviewResult
+    profile && draft && handoff && !actions.acfPreviewResult
+  );
+  const sectionOverrides = editableSections
+    .map((section) => ({
+      heading: section.heading,
+      body_markdown:
+        sectionTexts[sectionOverrideKey(section.heading)] ?? defaultSectionBody(section),
+      evidence_ids: unique(section.evidence_ids)
+    }))
+    .filter((section) => section.body_markdown.trim().length > 0);
+  const canCreateEditedDevDraft = Boolean(
+    draft &&
+      handoff &&
+      writeAuthorization &&
+      draftWriteReadiness.data?.ready &&
+      sectionOverrides.length &&
+      !actions.executionPending
   );
 
   return (
@@ -879,30 +1423,93 @@ function ContentSectionWritingWorkbench({
               <ShieldCheck aria-hidden="true" size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-ink">Sekcje szkicu do napisania</h3>
+              <h3 className="text-sm font-semibold text-ink">Tekst sekcji do szkicu</h3>
               <p className="mt-2 text-sm leading-6 text-slate-700">
                 {draftSections.length
-                  ? "To są sekcje, które można przepisać albo rozwinąć na devie."
+                  ? "Przepisz konkretne sekcje tutaj i zapisz je jako nowy szkic na devie."
                   : "Szkic nie ma jeszcze sekcji. Najpierw przygotuj paczkę szkicu."}
               </p>
             </div>
           </div>
-          {draftSections.length ? (
-            <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
-              {draftSections.slice(0, 4).map((section, index) => (
-                <li key={`${section.heading}-${index}`} className="rounded-md border border-line bg-surface p-3">
-                  <p className="font-semibold text-ink">
-                    {index + 1}. {section.heading}
-                  </p>
-                  <p className="mt-1">{section.purpose}</p>
-                  {section.draft_notes.length ? (
-                    <p className="mt-2 text-xs leading-5 text-slate-500">
-                      {section.draft_notes[0]}
+          {editableSections.length ? (
+            <div className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
+              {editableSections.map((section, index) => {
+                const key = sectionOverrideKey(section.heading);
+                return (
+                  <label key={`${section.heading}-${index}`} className="block rounded-md border border-line bg-surface p-3">
+                    <p className="font-semibold text-ink">
+                      {index + 1}. {section.heading}
                     </p>
-                  ) : null}
-                </li>
-              ))}
-            </ol>
+                    <textarea
+                      className="mt-3 min-h-32 w-full resize-y rounded-md border border-line bg-white p-3 text-sm leading-6 text-ink outline-none focus:border-action focus:ring-2 focus:ring-action/20"
+                      value={sectionTexts[key] ?? defaultSectionBody(section)}
+                      onChange={(event) =>
+                        setSectionEditorState({
+                          draftId: draftEditorId,
+                          texts: {
+                            ...sectionTexts,
+                            [key]: event.target.value
+                          }
+                        })
+                      }
+                      aria-label={`Tekst sekcji ${section.heading}`}
+                    />
+                    {section.draft_notes.length ? (
+                      <p className="mt-2 text-xs leading-5 text-slate-500">
+                        Wskazówka: {section.draft_notes[0]}
+                      </p>
+                    ) : null}
+                  </label>
+                );
+              })}
+              <div className="rounded-md border border-action/20 bg-action/5 p-3">
+                <p className="text-sm leading-6 text-slate-700">
+                  Zapis tworzy nowy szkic na dev WordPress. Nie publikuje i nie nadpisuje publicznej
+                  strony.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => actions.runExecutionDryRunWithSections(sectionOverrides)}
+                    disabled={!sectionOverrides.length || actions.executionPending}
+                    className="inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actions.executionPending ? "Sprawdzam..." : "Sprawdź tekst szkicu"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (writeAuthorization) {
+                        actions.runExecutionLive(writeAuthorization, sectionOverrides);
+                      }
+                    }}
+                    disabled={!canCreateEditedDevDraft}
+                    className="inline-flex h-9 items-center rounded-md bg-action px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actions.executionPending
+                      ? "Tworzę szkic..."
+                      : "Utwórz nowy dev draft z edytowanych sekcji"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSectionEditorState({
+                        draftId: draftEditorId,
+                        texts: sectionDraftDefaults
+                      })
+                    }
+                    className="inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink"
+                  >
+                    Przywróć tekst z briefu
+                  </button>
+                </div>
+                {!draftWriteReadiness.data?.ready ? (
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Żeby zapisać na dev, najpierw przygotuj zgodę zapisu w panelu WordPress powyżej.
+                  </p>
+                ) : null}
+              </div>
+            </div>
           ) : null}
         </div>
 
@@ -972,32 +1579,6 @@ function ContentSectionWritingWorkbench({
   );
 }
 
-function WorkflowStepper({ activeIndex, steps }: { activeIndex: number; steps: WorkflowStep[] }) {
-  return (
-    <ol aria-label="Etapy workflow treści" className="mt-4 grid gap-2 md:grid-cols-4 xl:grid-cols-7">
-      {steps.map((step, index) => {
-        const active = index === activeIndex;
-        const complete = index < activeIndex;
-        return (
-          <li
-            key={step.id}
-            className={`rounded-md border px-3 py-2 text-sm ${
-              active
-                ? "border-action bg-action/10 text-action"
-                : complete
-                  ? "border-go/30 bg-go/10 text-go"
-                  : "border-line bg-surface text-slate-600"
-            }`}
-          >
-            <div className="font-semibold">{index + 1}. {workflowStepShortLabel(index, step)}</div>
-            <div className="mt-1 text-xs leading-5">{step.statusLabel}</div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
 function activeWorkflowStepIndex(steps: WorkflowStep[]) {
   const blockedIndex = steps.findIndex((step) =>
     step.statusLabel.toLowerCase().includes("zablok")
@@ -1008,11 +1589,6 @@ function activeWorkflowStepIndex(steps: WorkflowStep[]) {
   );
   if (reviewIndex >= 0) return reviewIndex;
   return Math.min(steps.length - 1, 1);
-}
-
-function workflowStepShortLabel(index: number, step: WorkflowStep) {
-  const labels = ["Preflight", "Plan", "Brief", "Draft", "Review", "WordPress", "Pomiar"];
-  return labels[index] ?? step.title;
 }
 
 function blockedWorkflowSteps(steps: WorkflowStep[]) {
@@ -1158,15 +1734,28 @@ function contentWorkflowActions(
         ),
         mutations.executionMutation.mutate
       ),
+    runExecutionDryRunWithSections: (sectionOverrides: WordPressDraftSectionOverride[]) =>
+      submitIfReady(
+        wordpressExecutionRequest(
+          data.draftPackage.draft_package_result.draft_package,
+          data.wordpressHandoff.handoff_result.handoff,
+          "dry_run",
+          null,
+          sectionOverrides
+        ),
+        mutations.executionMutation.mutate
+      ),
     runExecutionLive: (
-      writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"]
+      writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"],
+      sectionOverrides: WordPressDraftSectionOverride[] = []
     ) =>
       submitIfReady(
         wordpressExecutionRequest(
           data.draftPackage.draft_package_result.draft_package,
           data.wordpressHandoff.handoff_result.handoff,
           "live",
-          writeAuthorization
+          writeAuthorization,
+          sectionOverrides
         ),
         mutations.executionMutation.mutate
       )
@@ -1212,77 +1801,32 @@ function ContentWorkflowBlockedCandidate({
   );
 }
 
-function ContentWorkflowEmptyQueue({ queue }: { queue: ContentWorkItemQueueResponse }) {
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <ContentWorkflowHeader topic="Kolejka treści" />
-      <section className="rounded-md border border-wait/30 bg-wait/10 p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
-          Brak propozycji do pracy nad treścią
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{queue.operator_summary}</p>
-      </section>
-    </main>
-  );
-}
-
-function ContentCandidateQueuePanel({
-  queue,
-  selectedWorkItemId,
-  onSelectWorkItem
-}: {
-  queue: ContentWorkItemQueueResponse;
-  selectedWorkItemId: string;
-  onSelectWorkItem: (workItemId: string) => void;
-}) {
-  return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Kolejka tematów
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {queue.operator_summary}
-          </p>
-        </div>
-        <div className="grid gap-2 text-sm sm:grid-cols-2">
-          <FactTile label="Propozycje" value={`${queue.candidate_count}`} />
-          <FactTile label="Gotowe do pracy" value={`${queue.actionable_candidate_count}`} />
-        </div>
-      </div>
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
-        {queue.candidates.map((candidate) => (
-          <button
-            key={candidate.work_item_id}
-            type="button"
-            className={`rounded-md border p-3 text-left text-sm ${
-              candidate.work_item_id === selectedWorkItemId
-                ? "border-action bg-action/10"
-                : "border-line bg-surface"
-            }`}
-            onClick={() => onSelectWorkItem(candidate.work_item_id)}
-          >
-            <div className="font-semibold text-ink">{candidate.title}</div>
-            <div className="mt-1 text-xs font-medium uppercase tracking-normal text-slate-500">
-              {candidate.recommended_mode_label} · {candidate.status_label}
-            </div>
-            <p className="mt-2 leading-6 text-slate-600">{candidate.reason}</p>
-            <div className="mt-2 text-xs text-slate-500">
-              {candidate.evidence_ids.length} dowody · {candidate.measurement_readiness.label}
-            </div>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 type DraftPackage = ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
+type DraftPackageSection = NonNullable<DraftPackage>["sections"][number];
 type WordPressHandoff =
   ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
 type AcfFieldPreview =
   ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"]["sections"][number]["field_previews"][number];
+type WordPressDraftSectionOverride = NonNullable<
+  ContentWorkItemWordPressDraftExecutionRequest["section_overrides"]
+>[number];
+
+function sectionOverrideKey(value: string) {
+  return value.trim().toLocaleLowerCase("pl-PL").replace(/\s+/g, " ");
+}
+
+function defaultSectionBody(section: DraftPackageSection) {
+  const notes = section.draft_notes.map((note) => `- ${note}`);
+  return [section.purpose, ...notes].filter(Boolean).join("\n\n");
+}
+
+function shortSectionTabLabel(value: string) {
+  const cleaned = value.trim();
+  if (!cleaned) return "Sekcja";
+  const firstWord = cleaned.split(/\s+/)[0] ?? cleaned;
+  if (cleaned.length <= 14) return cleaned;
+  return firstWord.length >= 4 && firstWord.length <= 12 ? firstWord : `${cleaned.slice(0, 12)}...`;
+}
 
 function defaultSelectedWorkItemId(queue: ContentWorkItemQueueResponse) {
   return (
@@ -1290,6 +1834,160 @@ function defaultSelectedWorkItemId(queue: ContentWorkItemQueueResponse) {
     queue.candidates[0]?.work_item_id ??
     null
   );
+}
+
+function environmentLabel(value: string) {
+  try {
+    const url = new URL(value);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return value.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  }
+}
+
+function contentMetricTilesForWorkbench(
+  item: ContentWorkflowSnapshot["preflight"]["item"],
+  devPage: WordPressAuthoringDevPage | null
+) {
+  const wordpressSectionCount = item.wordpress_section_count ?? item.wordpress_section_headings.length;
+  return [
+    {
+      label: "Dowody",
+      value: `${unique(item.evidence_ids).length}`
+    },
+    {
+      label: "Źródła",
+      value: `${unique(item.source_connectors).length}`
+    },
+    {
+      label: "Sekcje WP",
+      value: wordpressSectionCount ? `${wordpressSectionCount}` : "brak"
+    },
+    {
+      label: "Sekcje dev",
+      value: devPage ? `${devPage.section_count}` : "brak"
+    }
+  ];
+}
+
+function contentSignalRows(
+  data: ContentWorkflowSnapshot,
+  enrichment: ContentOpportunityEnrichment | null,
+  candidate: ContentWorkItemQueueCandidate | undefined
+) {
+  const brief = data.salesBrief.sales_brief_result.brief;
+  const rows: { label: string; summary: string; tone: string }[] = [];
+  if (candidate?.reason) {
+    rows.push({
+      label: "Decyzja",
+      summary: candidate.reason,
+      tone: "border-action/20 bg-action/5"
+    });
+  }
+  if (brief?.source_facts[0]) {
+    rows.push({
+      label: sourceConnectorLabel(brief.source_facts[0].source_connector),
+      summary: brief.source_facts[0].summary,
+      tone: "border-success/20 bg-success/5"
+    });
+  }
+  if (enrichment?.source_facts[0]) {
+    rows.push({
+      label: enrichment.source_facts[0].label,
+      summary: enrichment.source_facts[0].summary,
+      tone: "border-wait/25 bg-wait/10"
+    });
+  }
+  if (brief?.signal_quality.reason) {
+    rows.push({
+      label: "Jakość briefu",
+      summary: brief.signal_quality.reason,
+      tone: "border-line bg-surface"
+    });
+  }
+  if (!rows.length) {
+    rows.push({
+      label: "Następny krok",
+      summary: data.preflight.preflight_verdict.next_step,
+      tone: "border-line bg-surface"
+    });
+  }
+  return rows.slice(0, 4);
+}
+
+function queryChipsForWorkbench(
+  data: ContentWorkflowSnapshot,
+  enrichment: ContentOpportunityEnrichment | null,
+  candidate: ContentWorkItemQueueCandidate | undefined
+) {
+  const item = data.preflight.item;
+  const brief = data.salesBrief.sales_brief_result.brief;
+  const candidates = [
+    item.topic,
+    candidate?.topic,
+    brief?.search_intent,
+    brief?.buyer_problem,
+    ...(brief?.source_facts.map((fact) => fact.summary) ?? []),
+    ...(enrichment?.source_facts.map((fact) => fact.summary) ?? [])
+  ];
+  const chips = candidates
+    .flatMap((value) => extractReadablePhrases(value ?? ""))
+    .filter((value) => value.length >= 4 && value.length <= 34);
+  return unique(chips).slice(0, 5);
+}
+
+function extractReadablePhrases(value: string) {
+  const quoted = [...value.matchAll(/"([^"]+)"/g)].map((match) => match[1] ?? "");
+  if (quoted.length) return quoted;
+  return value
+    .split(/[;,.|/]/)
+    .map((part) => part.trim().replace(/\s+/g, " "))
+    .filter(Boolean)
+    .slice(0, 2);
+}
+
+function blockedClaimsForWorkbench(data: ContentWorkflowSnapshot) {
+  const blocked = data.claimLedger.entries.filter(
+    (entry) => entry.status === "blocked" || entry.status === "blocked_until_measurement"
+  );
+  return blocked.length
+    ? blocked.slice(0, 4)
+    : data.claimLedger.entries
+        .filter((entry) => entry.status === "needs_human_review")
+        .slice(0, 4);
+}
+
+function evidenceRowsForWorkbench(
+  data: ContentWorkflowSnapshot,
+  enrichment: ContentOpportunityEnrichment | null
+) {
+  const brief = data.salesBrief.sales_brief_result.brief;
+  const rows = [
+    ...(brief?.source_facts.map((fact) => ({
+      label: sourceConnectorLabel(fact.source_connector),
+      summary: fact.summary
+    })) ?? []),
+    ...(enrichment?.source_facts.map((fact) => ({
+      label: fact.label,
+      summary: fact.summary
+    })) ?? [])
+  ];
+  if (rows.length) return rows.slice(0, 5);
+  return unique(data.preflight.item.evidence_ids).slice(0, 5).map((evidenceId) => ({
+    label: "Dowód WILQ",
+    summary: evidenceId
+  }));
+}
+
+function sourceConnectorLabel(connector: string) {
+  const labels: Record<string, string> = {
+    google_search_console: "GSC",
+    wordpress_ekologus: "WordPress",
+    ahrefs: "Ahrefs",
+    google_analytics_4: "GA4",
+    google_ads: "Google Ads"
+  };
+  return labels[connector] ?? connector;
 }
 
 function runtimeResultFrom(response: ContentWorkItemStructuredDraftRuntimeResponse | undefined) {
@@ -1421,15 +2119,20 @@ function wordpressExecutionRequest(
   draft: DraftPackage,
   handoff: WordPressHandoff,
   mode: ContentWorkItemWordPressDraftExecutionRequest["mode"] = "dry_run",
-  writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"] = null
+  writeAuthorization: ContentWordPressDraftWriteReadinessResponse["suggested_write_authorization"] = null,
+  sectionOverrides: WordPressDraftSectionOverride[] = []
 ): ContentWorkItemWordPressDraftExecutionRequest | null {
   if (!draft || !handoff) return null;
-  return {
+  const request: ContentWorkItemWordPressDraftExecutionRequest = {
     handoff,
     draft_package: draft,
     mode,
     write_authorization: writeAuthorization ?? null
   };
+  if (sectionOverrides.length) {
+    request.section_overrides = sectionOverrides;
+  }
+  return request;
 }
 
 function acfPreviewRequest(
@@ -1443,75 +2146,6 @@ function acfPreviewRequest(
     draft_package: draft,
     authoring_profile: authoringProfile
   };
-}
-
-function ContentWorkflowHeader({ topic }: { topic: string }) {
-  return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-normal">Workflow treści bez slopu</h1>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-          Pierwszy kontrolny tor pokazuje, czy WILQ potrafi przeprowadzić temat od sprawdzenia pisania
-          do szkicu WordPress i okna pomiaru bez pomijania bramek.
-        </p>
-      </div>
-      <div className="rounded-md border border-line bg-white px-4 py-3 text-sm">
-        <div className="text-xs uppercase tracking-normal text-slate-500">Temat</div>
-        <div className="mt-1 font-semibold text-ink">{topic}</div>
-      </div>
-    </div>
-  );
-}
-
-function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
-  const item = data.preflight.item;
-  const salesBrief = data.salesBrief.sales_brief_result.brief;
-  const signalQuality = salesBrief?.signal_quality ?? null;
-  const knowledgeConstraints = salesBrief?.knowledge_constraints.slice(0, 3) ?? [];
-  return (
-    <section id="content-workflow-proof" className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Co WILQ już potwierdził
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Finalny adres pozostaje publicznym adresem Ekologus, podgląd dev jest tylko kontekstem
-            projektu, a WordPress nie dostaje publikacji automatycznej.
-          </p>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {signalQuality
-              ? signalQuality.reason
-              : "Sales Brief jest zablokowany, więc WILQ nie pokazuje jakości sygnału jako rekomendacji."}
-          </p>
-          {knowledgeConstraints.length ? (
-            <div className="mt-3 rounded-md border border-line bg-surface p-3 text-sm">
-              <div className="font-semibold text-ink">Ograniczenia wiedzy i dowody</div>
-              <ul className="mt-2 space-y-2">
-                {knowledgeConstraints.map((constraint) => (
-                  <li key={`${constraint.card_id}-${constraint.constraint_type}-${constraint.reason}`}>
-                    <span className="font-medium text-slate-700">{constraint.label}</span>
-                    <span className="text-slate-600">: {constraint.reason}</span>
-                    <div className="mt-1 text-xs text-slate-500">
-                      Dowody WILQ:{" "}
-                      {constraint.evidence_ids.length
-                        ? constraint.evidence_ids.join(", ")
-                        : "brak dowodu przy tym ograniczeniu"}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-        <div className="grid gap-2 text-sm sm:grid-cols-3">
-          <FactTile label="Dowody" value={`Dowody: ${unique(item.evidence_ids).length}`} />
-          <FactTile label="Tryb" value={data.preflight.preflight_verdict.recommended_mode} />
-          <FactTile label="Jakość briefu" value={signalQuality?.status_label ?? "brief zablokowany"} />
-        </div>
-      </div>
-    </section>
-  );
 }
 
 function ClaimLedgerGatePanel({ data }: { data: ContentWorkflowSnapshot }) {
@@ -1685,29 +2319,6 @@ function ContentOpportunityEnrichmentPanel({
         </div>
       ) : null}
     </section>
-  );
-}
-
-function WorkflowStepsList({ steps }: { steps: WorkflowStep[] }) {
-  return (
-    <ol aria-label="Kroki workflow treści" className="grid gap-3 lg:grid-cols-3">
-      {steps.map((step) => (
-        <li key={step.title} className="rounded-md border border-line bg-white p-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-md border border-line bg-surface p-2 text-action">
-              <CheckCircle2 aria-hidden="true" size={18} />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-ink">{step.title}</h2>
-              <div className="mt-1 text-xs font-medium uppercase tracking-normal text-slate-500">
-                {step.statusLabel}
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{step.summary}</p>
-            </div>
-          </div>
-        </li>
-      ))}
-    </ol>
   );
 }
 

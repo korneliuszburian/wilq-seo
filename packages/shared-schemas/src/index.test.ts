@@ -525,6 +525,40 @@ describe("WordPressAuthoringProfileSchema", () => {
         source_method: "acf_export",
         layouts_discovered: true
       },
+      dev_content: {
+        status: "available",
+        source_method: "acf_rest",
+        source_ref: "WORDPRESS_EKOLOGUS_URL wp-json/wp/v2/pages?context=edit",
+        page_count: 1,
+        pages: [
+          {
+            post_id: "2",
+            slug: "bdo",
+            title: "BDO dla firm",
+            link: "https://ekologus.dev.proudsite.pl/bdo/",
+            status: "publish",
+            modified: "2026-07-08T10:00:00",
+            modified_gmt: "2026-07-08T08:00:00",
+            template: "",
+            parent: "",
+            acf_field_name: "sekcje_strony",
+            section_count: 1,
+            sections: [
+              {
+                section_index: 1,
+                acf_field_name: "sekcje_strony",
+                layout_name: "baner_startowy",
+                layout_label: "Baner startowy",
+                title: "BDO dla firm",
+                text_summary: "Skrót sekcji z dev WordPress.",
+                field_names: ["modul_naglowka"],
+                text_field_paths: ["modul_naglowka.naglowek_modulu"]
+              }
+            ]
+          }
+        ],
+        blockers: []
+      },
       wp_cli: {
         method: "wp_cli",
         status: "configured",
@@ -2084,7 +2118,14 @@ describe("Content work item workflow schemas", () => {
           destructive_update_allowed: false
         },
         draft_package: draftPackage,
-        mode: "dry_run"
+        mode: "dry_run",
+        section_overrides: [
+          {
+            heading: "Kogo dotyczy BDO",
+            body_markdown: "BDO dotyczy firm wymagających sprawdzenia obowiązków.",
+            evidence_ids: ["ev_gsc_bdo"]
+          }
+        ]
       }).success
     ).toBe(true);
 

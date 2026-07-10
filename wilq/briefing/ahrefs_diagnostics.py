@@ -127,7 +127,7 @@ AHREFS_READ_CONTRACT_LABELS = {
 }
 AHREFS_REVIEW_GATE_LABELS = {
     "ahrefs_gap_records_required": "wymagane konkretne rekordy luk Ahrefs",
-    "content_planner_review_required": "sprawdzenie w planowaniu treści",
+    "content_workflow_review_required": "sprawdzenie w workflow treści",
     "human_strategy_review": "sprawdzenie strategii przez człowieka",
 }
 AHREFS_REVIEWABLE_GAP_RECORD_LIMIT = 8
@@ -415,12 +415,12 @@ def _ahrefs_review_decision_after_review(
             return (
                 "Po review wybierz, czy temat z Ahrefs idzie do odświeżenia albo "
                 "scalenia istniejącej treści, osobnego briefu contentowego, link-review "
-                "czy zostaje w obserwacji. Cross-check GSC/WordPress jest dostępny, "
+                "czy zostaje w obserwacji. Sprawdzenie GSC i WordPress jest dostępne, "
                 "ale nadal nie odblokowuje obietnic wzrostu ruchu ani autorytetu."
             )
         return (
             "Po review zdecyduj, czy luka z Ahrefs ma przejść do dalszego "
-            "cross-checku GSC/WordPress, briefu contentowego, link-review czy "
+            "sprawdzenia GSC i WordPress, briefu contentowego, link-review czy "
             "obserwacji. Bez cross-checku nie traktuj jej jako gotowego tematu."
         )
     return (
@@ -551,13 +551,13 @@ def _ahrefs_gap_read_contract(
         blocked_claims=blocked_claims,
         operator_review_gates=[
             "ahrefs_gap_records_required",
-            "content_planner_review_required",
+            "content_workflow_review_required",
             "human_strategy_review",
         ],
         operator_review_gate_labels=_labels_for_values(
             [
                 "ahrefs_gap_records_required",
-                "content_planner_review_required",
+                "content_workflow_review_required",
                 "human_strategy_review",
             ],
             _ahrefs_review_gate_label,
@@ -664,8 +664,8 @@ def _ahrefs_cross_check_status(
 
 def _ahrefs_cross_check_status_label(status: str) -> str:
     labels = {
-        "api_backed": "sprawdzenie GSC/WordPress ma dopasowania z API",
-        "manual_required": "sprawdzenie GSC/WordPress wymaga ręcznej oceny",
+        "api_backed": "sprawdzenie GSC i WordPress ma dopasowania z API",
+        "manual_required": "sprawdzenie GSC i WordPress wymaga ręcznej oceny",
         "missing": "brak rekordów Ahrefs do cross-checku",
     }
     return labels.get(status, "cross-check do sprawdzenia")
@@ -682,12 +682,12 @@ def _ahrefs_cross_check_summary(
         return "Brak rekordów Ahrefs, więc WILQ nie ma czego łączyć z GSC ani WordPress."
     if status == "api_backed":
         return (
-            f"WILQ znalazł {candidate_count} kandydatów Ahrefs do walidacji: "
+            f"WILQ znalazł {candidate_count} propozycji Ahrefs do walidacji: "
             f"{gsc_match_count} ma dopasowanie w GSC, a {wordpress_match_count} "
             "ma dopasowanie w spisie WordPress."
         )
     return (
-        f"WILQ ma {candidate_count} kandydatów Ahrefs, ale nie znalazł jeszcze "
+        f"WILQ ma {candidate_count} propozycji Ahrefs, ale nie znalazł jeszcze "
         "dopasowania w GSC ani WordPress. To zostaje ręcznym cross-checkiem, "
         "nie brief-ready decyzją."
     )
@@ -696,7 +696,7 @@ def _ahrefs_cross_check_summary(
 def _ahrefs_cross_check_next_step(status: str) -> str:
     if status == "api_backed":
         return (
-            "Otwórz kandydatów z dopasowaniem GSC/WordPress i zdecyduj: brief, "
+            "Otwórz propozycje z dopasowaniem GSC i WordPress i zdecyduj: brief, "
             "scalenie, obserwacja albo blokada tematu."
         )
     if status == "manual_required":
@@ -704,7 +704,7 @@ def _ahrefs_cross_check_next_step(status: str) -> str:
             "Sprawdź ręcznie GSC i spis WordPress dla tematów Ahrefs przed "
             "tworzeniem briefu."
         )
-    return "Najpierw odczytaj rekordy luk Ahrefs, potem wykonaj cross-check GSC/WordPress."
+    return "Najpierw odczytaj rekordy luk Ahrefs, potem sprawdź GSC i WordPress."
 
 
 def _latest_relevant_ahrefs_refresh(

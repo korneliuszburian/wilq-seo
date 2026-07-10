@@ -3771,6 +3771,40 @@ const WordPressAuthoringDiscoveryMethodSchema = z.enum([
   "env_config"
 ]);
 
+const WordPressAuthoringBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string(),
+  source_ref: z.string().nullable().optional()
+});
+
+const WordPressAuthoringDevSectionSchema = z.object({
+  section_index: z.number(),
+  acf_field_name: z.string(),
+  layout_name: z.string(),
+  layout_label: z.string(),
+  title: z.string().default(""),
+  text_summary: z.string().default(""),
+  field_names: z.array(z.string()).default([]),
+  text_field_paths: z.array(z.string()).default([])
+});
+
+const WordPressAuthoringDevPageSchema = z.object({
+  post_id: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  link: z.string(),
+  status: z.string(),
+  modified: z.string(),
+  modified_gmt: z.string(),
+  template: z.string().default(""),
+  parent: z.string().default(""),
+  acf_field_name: z.string().nullable().optional(),
+  section_count: z.number().default(0),
+  sections: z.array(WordPressAuthoringDevSectionSchema).default([])
+});
+
 export const WordPressAuthoringProfileSchema = z.object({
   profile_version: z.literal("wordpress_authoring_profile_v1"),
   connector: z.string(),
@@ -3804,6 +3838,14 @@ export const WordPressAuthoringProfileSchema = z.object({
     source_method: WordPressAuthoringDiscoveryMethodSchema.nullable().optional(),
     layouts_discovered: z.boolean()
   }),
+  dev_content: z.object({
+    status: WordPressAuthoringReadinessSchema,
+    source_method: WordPressAuthoringDiscoveryMethodSchema.nullable().optional(),
+    source_ref: z.string(),
+    page_count: z.number(),
+    pages: z.array(WordPressAuthoringDevPageSchema).default([]),
+    blockers: z.array(WordPressAuthoringBlockerSchema).default([])
+  }),
   wp_cli: z.object({
     method: z.literal("wp_cli"),
     status: WordPressAuthoringReadinessSchema,
@@ -3829,14 +3871,7 @@ export const WordPressAuthoringProfileSchema = z.object({
     required_action_contract: z.literal("actionobject_validate_preview_review_confirm_audit")
   }),
   discovery_facts: z.array(z.record(z.string(), z.unknown())),
-  blockers: z.array(
-    z.object({
-      code: z.string(),
-      label: z.string(),
-      reason: z.string(),
-      next_step: z.string()
-    })
-  ),
+  blockers: z.array(WordPressAuthoringBlockerSchema),
   evidence_ids: z.array(z.string()),
   source_connectors: z.array(z.string())
 });

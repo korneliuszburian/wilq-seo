@@ -356,7 +356,7 @@ function ApprovalReadinessPanel({ readiness }: { readiness: ApprovalReadiness })
             </p>
             {item.related_action_id ? (
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                Powiązana akcja WILQ: {item.related_action_id}
+                Powiązana akcja do sprawdzenia: {item.related_action_id}
               </p>
             ) : null}
           </article>
@@ -565,7 +565,7 @@ function reviewRequiredFieldLabels(fields: string[]) {
     target_card_id: "której karty wiedzy dotyczy review",
     decision: "czy właściciel zatwierdza, odrzuca albo zostawia do poprawy",
     source_trace_clear: "czy źródła są jasne i wystarczające",
-    blocked_claims_reviewed: "czy ryzykowne claimy zostały sprawdzone",
+    blocked_claims_reviewed: "czy ryzykowne twierdzenia zostały sprawdzone",
     notes: "krótka notatka z decyzji"
   };
   return fields.map((field) => labels[field] ?? field.replaceAll("_", " "));

@@ -4,7 +4,14 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 from urllib.parse import urlparse
 
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 CONTENT_REFRESH_ACTION_TYPE = "wordpress_content_refresh"
 CONTENT_BRIEF_PREVIEW_CONTRACT = "content_brief_preview_v1"
@@ -24,6 +31,64 @@ CONTENT_SOURCE_CONNECTORS = {
     "google_analytics_4",
     "ahrefs",
 }
+
+
+def content_refresh_queue_action(
+    *,
+    content_facts: list[MetricFact],
+    content_action_metrics: list[MetricFact],
+    content_payload: dict[str, Any] | None,
+    unique_evidence_ids: list[str],
+    metric_sentence: str,
+) -> ActionObject:
+    payload = content_payload if content_payload is not None else {
+        "action_type": "wordpress_content_refresh",
+        "connector": "wordpress_ekologus",
+        "mode": "prepare_only",
+        "source_connectors": list(dict.fromkeys(fact.source_connector for fact in content_facts)),
+        "source_metric_names": list(dict.fromkeys(fact.name for fact in content_facts)),
+        "content_url_review_contract": content_url_review_contract(),
+        "queue_steps": [
+            "join_wordpress_inventory_with_gsc",
+            "classify_refresh_create_merge_block",
+            "review_public_final_url",
+            "prepare_brief_preview",
+            "require_human_confirm_before_wordpress_write",
+        ],
+        "required_validation": [
+            "gsc_query_page_check",
+            "wordpress_inventory_check",
+            "content_url_preflight_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ],
+        "destructive": False,
+    }
+    return ActionObject(
+        id="act_prepare_content_refresh_queue",
+        title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=unique_evidence_ids,
+        metrics=content_action_metrics,
+        human_diagnosis=(
+            "Spis treści WordPress istnieje w WILQ i można go zestawić z GSC/Ahrefs, "
+            "żeby planować odświeżenie zamiast duplikować treści. "
+            f"{metric_sentence}."
+        ),
+        recommended_reason=(
+            "W widoku Treści przygotuj kolejkę zachowania, odświeżenia, scalenia, "
+            "nowej treści albo blokady. Traktuj plan treści jako materiał do sprawdzenia: "
+            "GSC i WordPress mogą dać odświeżenie albo scalenie, a Ahrefs tylko tematy do "
+            "oceny po dodatkowym sprawdzeniu popytu z GSC i spisu treści."
+        ),
+        payload=payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 GSC_METRIC_NAMES = {"clicks", "impressions", "ctr", "average_position"}
 AHREFS_GAP_FACT_NAMES = {
     "ahrefs_content_gap_count",

@@ -98,7 +98,7 @@ Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Id
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie promuj `act_prepare_linkedin_social_drafts` ani `act_prepare_facebook_social_drafts` w briefie dnia; to należy do `wilq-social-publisher`.

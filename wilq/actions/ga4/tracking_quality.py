@@ -11,7 +11,15 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
-from wilq.schemas import Ga4TrackingQualityPayloadPreview, MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    Ga4TrackingQualityPayloadPreview,
+    MetricFact,
+    OpportunityDomain,
+)
 
 GA4_TRACKING_QUALITY_ACTION_TYPE = "ga4_tracking_gap"
 GA4_TRACKING_QUALITY_PREVIEW_CONTRACT: Literal["ga4_tracking_quality_review_v1"] = (
@@ -48,6 +56,38 @@ GA4_TRACKING_REQUIRED_VALIDATION = [
     "review_conversion_or_key_event_mapping",
     "human_confirm_before_tracking_change",
 ]
+
+
+def ga4_tracking_quality_action(
+    *,
+    ga4_action_metrics: list[MetricFact],
+    metric_sentence: str,
+) -> ActionObject:
+    return ActionObject(
+        id="act_review_ga4_tracking_quality",
+        title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
+        domain=OpportunityDomain.ga4,
+        connector="google_analytics_4",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=list(dict.fromkeys(fact.evidence_id for fact in ga4_action_metrics)),
+        metrics=ga4_action_metrics,
+        human_diagnosis=(
+            "GA4 zwraca wymiarowe fakty strony wejścia, źródła ruchu i kampanii, ale WILQ "
+            "nadal nie ma kontraktu na zwrot z reklam, przychód ani werdykt konwersji. "
+            f"{metric_sentence}."
+        ),
+        recommended_reason=(
+            "W widoku GA4 przygotuj przegląd pomiaru i jakości ruchu: pokaż "
+            "zestawienie strony wejścia, źródła ruchu i kampanii, "
+            "sprawdź propozycję w WILQ i nie "
+            "oceniaj kampanii bez kontraktu konwersji."
+        ),
+        payload=ga4_tracking_quality_payload_from_metric_facts(ga4_action_metrics),
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 GA4_TRACKING_REQUIRED_BREAKDOWNS = ["landing_page", "source_medium", "campaign_name"]
 
 

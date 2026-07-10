@@ -213,7 +213,7 @@ function MerchantOperatingViewport({ data }: { data: MerchantDiagnosticsResponse
               detail={stale ? data.freshness_assessment.next_step : data.freshness_assessment.summary}
             />
             <MerchantBlockerRow
-              title="WILQ nie zmienia feedu automatycznie"
+              title="WILQ nie zmienia pliku produktowego automatycznie"
               detail="Najpierw pokazuje problem i proponowany kierunek. Zapis wymaga osobnego przeglądu człowieka."
             />
             <MerchantBlockerRow
@@ -254,7 +254,7 @@ function MerchantStaleDataBanner({ data }: { data: MerchantDiagnosticsResponse }
             <h2 className="text-lg font-semibold text-ink">Najpierw odśwież dane Merchant</h2>
             <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
               Ostatni odczyt ma {ageLabel}. Możesz zobaczyć problemy z tamtego odczytu,
-              ale aktualną decyzję o feedzie podejmuj dopiero po odświeżeniu danych.
+              ale aktualną decyzję o pliku produktowym podejmuj dopiero po odświeżeniu danych.
             </p>
             <p className="mt-1 text-sm font-medium text-slate-700">
               {data.freshness_assessment.next_step}
@@ -448,7 +448,7 @@ function merchantDecisionMarketerSummary(decision: MerchantDecisionItem) {
 
 function merchantDecisionMarketerNextStep(decision: MerchantDecisionItem) {
   if (decision.id.includes("review_ads_product_state_mapping")) {
-    return "Otwórz sprawdzenie i porównaj status, dostępność oraz cenę. Nie zmieniaj feedu, dopóki świeży odczyt i review nie potwierdzą problemu.";
+    return "Otwórz sprawdzenie i porównaj status, dostępność oraz cenę. Nie zmieniaj pliku produktowego, dopóki świeży odczyt i review nie potwierdzą problemu.";
   }
   return decision.next_step;
 }

@@ -630,7 +630,11 @@ def test_content_work_item_measurement_window_api_blocks_dev_canonical() -> None
     ]
 
 
-def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> None:
+def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
     client = TestClient(app)
     diagnostics = client.get("/api/content/diagnostics").json()
     source_decision = next(

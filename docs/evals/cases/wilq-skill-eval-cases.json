@@ -9,7 +9,7 @@
       "daily_decisions",
       "primary_next_step",
       "/merchant",
-      "/content-planner",
+      "/content-workflow",
       "/ga4",
       "/ads-doctor",
       "Merchant",
@@ -149,7 +149,7 @@
   },
   {
     "skill": "wilq-gsc-content-doctor",
-    "surface_path": "/content-planner",
+    "surface_path": "/content-workflow",
     "task_pl": "Na podstawie dostępnych dowodów z GSC wskaż jedną bezpieczną diagnozę treści i co marketer ma zrobić dalej. Wynik ma być kartą review gotową do pokazania Wilkowi bez dopisku od developera: jedna strona, dlaczego teraz, pytanie do Wilka i jeden bezpieczny klik bez zapisu.",
     "expected_connectors": [
       "google_search_console",
@@ -256,7 +256,7 @@
       "Decyzja po review",
       "Brief dla marketera",
       "Zablokowane obietnice",
-      "Karta cross-checku GSC/WordPress",
+      "Karta sprawdzenia GSC i WordPress",
       "Sprawdź w GSC",
       "Sprawdź w WordPress",
       "Decyzja po cross-checku"
@@ -351,7 +351,7 @@
   },
   {
     "skill": "wilq-content-strategist",
-    "surface_path": "/content-planner",
+    "surface_path": "/content-workflow",
     "messy_task_pl": "Co mamy pisać na treści Ekologus, żeby nie robić SEO slopu? Weź BDO/Zielony Ład, sprawdź czy to odświeżenie, scalenie czy nową treść, i powiedz czego brakuje do draftu.",
     "expected_connectors": [
       "google_search_console",
@@ -675,10 +675,9 @@
     "surface_path": "/ads-doctor",
     "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować segmenty niestandardowe z realnych source_terms i dowodów. Uwzględnij review_priority, review_score i review_reason, ale nie wymyślaj terminów odbiorców, rozmiaru odbiorców, zwrotu z reklam ani efektu kampanii.",
     "minimum_operator_usefulness_score": 9,
-    "expected_connectors": [
-      "google_ads",
-      "google_search_console"
-    ],
+      "expected_connectors": [
+        "google_ads"
+      ],
     "expected_terms_pl": [
       "Google Ads",
       "segment",

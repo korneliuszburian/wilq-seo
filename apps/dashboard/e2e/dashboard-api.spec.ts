@@ -208,8 +208,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expectNoForbiddenVisibleCopy(page);
   });
 
-  test("seo and content routes expose dedicated Content Diagnostics", async ({ page }) => {
-    await page.goto("/content-planner");
+  test("seo and content routes expose dedicated Content Workflow", async ({ page }) => {
+    await page.goto("/content-workflow");
 
     await expectApiBackedRouteHeading(page, "Treści", { exact: true });
     await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();

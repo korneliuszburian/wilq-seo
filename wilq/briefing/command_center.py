@@ -499,11 +499,11 @@ def _daily_decision_operator_action(
         if plan_item.id == "plan_review_merchant_feed_issues":
             return (
                 "Najpierw odśwież dane Merchant Center, potem wróć do kolejki problemów "
-                "pliku produktowego i sprawdź akcję w WILQ."
+                "pliku produktowego i sprawdź akcję do sprawdzenia."
             )
         return (
             "Najpierw odśwież dane źródłowe dla tej decyzji, potem wróć do review i "
-            "sprawdź akcję w WILQ."
+            "sprawdź akcję do sprawdzenia."
         )
     if decision_state in {"missing", "unknown"}:
         return (
@@ -1527,7 +1527,7 @@ def _content_item_from_tactical(
             if live_data_available
             else "Treści: brak kolejki SEO"
         ),
-        route="/content-planner",
+        route="/content-workflow",
         status="ready" if live_data_available else "blocked",
         priority=12 if live_data_available else 40,
         summary=summary,

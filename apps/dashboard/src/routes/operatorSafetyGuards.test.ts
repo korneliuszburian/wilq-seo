@@ -35,8 +35,8 @@ describe("operator safety copy guards", () => {
     expect(source).not.toContain('"brak próbek"');
     expect(source).not.toContain('"brak tytułów"');
     expect(source).not.toContain("brak wymaganej ścieżki rozwiązania");
-    expect(source).toContain("licznik niepotwierdzony");
-    expect(source).toContain("zakres niepotwierdzony");
+    expect(source).toContain("ścieżka rozwiązania niepotwierdzona w Merchant");
+    expect(source).toContain("status nieznany");
     expect(source).toContain("WILQ nie podał próbek produktów; sprawdź Merchant przed edycją");
     expect(source).toContain(
       "WILQ nie podał tytułów próbek; identyfikuj produkt w Merchant przed oceną"

@@ -4,9 +4,16 @@ import json
 from pathlib import Path
 from typing import Any, Literal
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
-from wilq.connectors.wordpress.client import WORDPRESS_CONNECTORS
+from wilq.connectors.wordpress.client import (
+    WORDPRESS_CONNECTORS,
+    WordPressAuthoringPageReadback,
+    WordPressAuthoringReadError,
+    WordPressAuthoringSectionReadback,
+    read_wordpress_authoring_pages,
+)
 from wilq.credentials.runtime import variable_value
 from wilq.evidence.registry import connector_evidence_id
 
@@ -104,6 +111,47 @@ class WordPressAcfAuthoringProfile(BaseModel):
     layouts_discovered: bool = False
 
 
+class WordPressAuthoringDevSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    section_index: int
+    acf_field_name: str
+    layout_name: str
+    layout_label: str
+    title: str = ""
+    text_summary: str = ""
+    field_names: list[str] = Field(default_factory=list)
+    text_field_paths: list[str] = Field(default_factory=list)
+
+
+class WordPressAuthoringDevPage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    post_id: str
+    slug: str
+    title: str
+    link: str
+    status: str
+    modified: str
+    modified_gmt: str
+    template: str = ""
+    parent: str = ""
+    acf_field_name: str | None = None
+    section_count: int = 0
+    sections: list[WordPressAuthoringDevSection] = Field(default_factory=list)
+
+
+class WordPressAuthoringDevContentProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: WordPressAuthoringReadiness = "unknown"
+    source_method: WordPressAuthoringDiscoveryMethod | None = None
+    source_ref: str = ""
+    page_count: int = 0
+    pages: list[WordPressAuthoringDevPage] = Field(default_factory=list)
+    blockers: list[WordPressAuthoringBlocker] = Field(default_factory=list)
+
+
 class WordPressAuthoringWriteBoundary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -132,6 +180,7 @@ class WordPressAuthoringProfile(BaseModel):
     discovery_order: list[WordPressAuthoringDiscoveryMethod]
     rest_api: WordPressAuthoringRestProfile
     acf: WordPressAcfAuthoringProfile
+    dev_content: WordPressAuthoringDevContentProfile
     wp_cli: WordPressAuthoringFallbackProfile
     helper_plugin: WordPressAuthoringFallbackProfile
     write_boundary: WordPressAuthoringWriteBoundary
@@ -143,6 +192,9 @@ class WordPressAuthoringProfile(BaseModel):
 
 def build_wordpress_authoring_profile(
     connector_id: str = "wordpress_ekologus",
+    *,
+    include_dev_content: bool = False,
+    http_client: httpx.Client | None = None,
 ) -> WordPressAuthoringProfile:
     names = WORDPRESS_CONNECTORS.get(connector_id)
     if names is None:
@@ -165,10 +217,19 @@ def build_wordpress_authoring_profile(
         source_method="acf_export" if layouts else None,
         layouts_discovered=bool(layouts),
     )
+    dev_content = _dev_content_profile(
+        connector_id,
+        prefix,
+        rest_profile,
+        acf,
+        include_dev_content=include_dev_content,
+        http_client=http_client,
+    )
 
     blockers = [
         *_rest_blockers(prefix, rest_profile),
         *layout_blockers,
+        *dev_content.blockers,
         *_acf_layout_blockers(prefix, acf, wp_cli, helper),
     ]
     return WordPressAuthoringProfile(
@@ -179,6 +240,7 @@ def build_wordpress_authoring_profile(
         discovery_order=["rest", "acf_rest", "wp_cli", "helper"],
         rest_api=rest_profile,
         acf=acf,
+        dev_content=dev_content,
         wp_cli=wp_cli,
         helper_plugin=helper,
         write_boundary=WordPressAuthoringWriteBoundary(
@@ -207,6 +269,17 @@ def _unknown_connector_profile(connector_id: str) -> WordPressAuthoringProfile:
         discovery_order=["rest", "acf_rest", "wp_cli", "helper"],
         rest_api=WordPressAuthoringRestProfile(status="blocked"),
         acf=WordPressAcfAuthoringProfile(),
+        dev_content=WordPressAuthoringDevContentProfile(
+            status="blocked",
+            blockers=[
+                WordPressAuthoringBlocker(
+                    code="unknown_wordpress_connector",
+                    label="Nieznany connector WordPress",
+                    reason="WILQ nie zna konfiguracji tego connectora WordPress.",
+                    next_step="Użyj skonfigurowanego connectora albo dodaj definicję connectora.",
+                )
+            ],
+        ),
         wp_cli=fallback,
         helper_plugin=WordPressAuthoringFallbackProfile(
             method="helper",
@@ -268,6 +341,115 @@ def _rest_blockers(
             source_ref=", ".join(missing),
         )
     ]
+
+
+def _dev_content_profile(
+    connector_id: str,
+    prefix: str,
+    rest_profile: WordPressAuthoringRestProfile,
+    acf: WordPressAcfAuthoringProfile,
+    *,
+    include_dev_content: bool,
+    http_client: httpx.Client | None,
+) -> WordPressAuthoringDevContentProfile:
+    source_ref = f"{prefix}_URL wp-json/wp/v2/pages?context=edit"
+    if not include_dev_content:
+        return WordPressAuthoringDevContentProfile(status="unknown", source_ref=source_ref)
+    if rest_profile.status != "configured":
+        return WordPressAuthoringDevContentProfile(
+            status="missing",
+            source_method="rest",
+            source_ref=source_ref,
+            blockers=[
+                WordPressAuthoringBlocker(
+                    code="wordpress_dev_content_rest_missing",
+                    label="Brakuje REST do odczytu stron dev",
+                    reason=(
+                        "WILQ nie może odczytać stron i sekcji dev WordPress bez "
+                        "kompletnego REST."
+                    ),
+                    next_step=(
+                        "Uzupełnij URL, użytkownika i application password dla WordPress dev."
+                    ),
+                    source_ref=source_ref,
+                )
+            ],
+        )
+    try:
+        pages = read_wordpress_authoring_pages(
+            connector_id,
+            preferred_flexible_field_name=acf.flexible_content_field_name,
+            http_client=http_client,
+        )
+    except WordPressAuthoringReadError as exc:
+        return WordPressAuthoringDevContentProfile(
+            status="blocked",
+            source_method="acf_rest",
+            source_ref=source_ref,
+            blockers=[
+                WordPressAuthoringBlocker(
+                    code="wordpress_dev_content_rest_failed",
+                    label="Nie udało się odczytać stron dev WordPress",
+                    reason=exc.public_message,
+                    next_step="Sprawdź WP REST, application password i uprawnienia użytkownika.",
+                    source_ref=source_ref,
+                )
+            ],
+        )
+
+    dev_pages = [_dev_page_from_readback(page) for page in pages]
+    status: WordPressAuthoringReadiness = "available" if dev_pages else "missing"
+    blockers: list[WordPressAuthoringBlocker] = []
+    if not dev_pages:
+        blockers.append(
+            WordPressAuthoringBlocker(
+                code="wordpress_dev_pages_empty",
+                label="Brak stron dev do odczytu",
+                reason="WP REST działa, ale nie zwrócił stron authoringu z ACF.",
+                next_step="Sprawdź, czy strony dev są typu page i czy ACF jest widoczny w REST.",
+                source_ref=source_ref,
+            )
+        )
+    return WordPressAuthoringDevContentProfile(
+        status=status,
+        source_method="acf_rest",
+        source_ref=source_ref,
+        page_count=len(dev_pages),
+        pages=dev_pages,
+        blockers=blockers,
+    )
+
+
+def _dev_page_from_readback(page: WordPressAuthoringPageReadback) -> WordPressAuthoringDevPage:
+    return WordPressAuthoringDevPage(
+        post_id=page.post_id,
+        slug=page.slug,
+        title=page.title,
+        link=page.link,
+        status=page.status,
+        modified=page.modified,
+        modified_gmt=page.modified_gmt,
+        template=page.template,
+        parent=page.parent,
+        acf_field_name=page.acf_field_name,
+        section_count=page.section_count,
+        sections=[_dev_section_from_readback(section) for section in page.sections],
+    )
+
+
+def _dev_section_from_readback(
+    section: WordPressAuthoringSectionReadback,
+) -> WordPressAuthoringDevSection:
+    return WordPressAuthoringDevSection(
+        section_index=section.section_index,
+        acf_field_name=section.acf_field_name,
+        layout_name=section.layout_name,
+        layout_label=section.layout_label,
+        title=section.title,
+        text_summary=section.text_summary,
+        field_names=section.field_names,
+        text_field_paths=section.text_field_paths,
+    )
 
 
 def _wp_cli_profile(prefix: str) -> WordPressAuthoringFallbackProfile:

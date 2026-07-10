@@ -1587,7 +1587,7 @@ Result:
 
 Purpose:
 
-- Test whether `/content-planner` is useful as a marketer decision queue, not
+- Test whether `/content-workflow` is useful as a marketer decision queue, not
   only as a technical content diagnostics surface.
 - Verify that WILQ uses GSC, WordPress, Ahrefs and GA4 evidence to separate
   refresh/merge/create/block decisions from unsupported content or measurement
@@ -1599,13 +1599,13 @@ Proof:
 rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
 rtk curl -sS -m 30 http://127.0.0.1:8000/api/content/diagnostics
 rtk pnpm typecheck
-rtk pnpm --filter @wilq/dashboard test -- ContentDiagnosticSurface.test.ts App.test.tsx --runInBand
+rtk pnpm --filter @wilq/dashboard test -- ContentWorkflowSurface.test.ts App.test.tsx --runInBand
 ```
 
 Result:
 
-- Start card for Wilku:
-  `docs/handoffs/2026-07-02-wilku-content-planner-start-card.md`.
+- Start card for Wilku existed in the historical content-decision handoff
+  archive.
 - Live content diagnostics exposed 3 decisions: Ahrefs gap records to review,
   a ready refresh-or-merge content decision and a blocked GA4 tracking gap that
   must not become a rewrite task.
@@ -1893,7 +1893,7 @@ Result:
   four recommendations, four action candidates, empty `failure_tags`, all hard
   gates true.
 - The final JSON keeps the daily work to Merchant `/merchant`, Treści
-  `/content-planner`, GA4 `/ga4` and Google Ads `/ads-doctor`; it explicitly
+  `/content-workflow`, GA4 `/ga4` and Google Ads `/ads-doctor`; it explicitly
   notes `Localo poza daily_decisions` and does not promote LinkedIn/Facebook
   draft actions.
 
@@ -2306,7 +2306,7 @@ Proof:
 
 ```bash
 rtk uv run pytest tests/test_api_contracts.py -q -k "content" --maxfail=1
-rtk pnpm --dir apps/dashboard test -- --runInBand ContentDiagnosticSurface.test.ts
+rtk pnpm --dir apps/dashboard test -- --runInBand ContentWorkflowSurface.test.ts
 rtk pnpm --dir apps/dashboard typecheck
 rtk uv run python scripts/marketer_language_guard.py
 rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
@@ -2323,7 +2323,7 @@ Result:
 
 - Focused API, dashboard, typecheck, language guard, live contract and content
   skill checks passed.
-- `/content-planner` renders labels such as `odświeżyć`, `wymaga sprawdzenia`,
+- `/content-workflow` renders labels such as `odświeżyć`, `wymaga sprawdzenia`,
   `spis potwierdzony na obecnej stronie` and `odśwież albo scal zamiast pisać
   od nowa` from API-owned fields.
 - The expanded browser scan found no active hits for raw dev-preview/migration
@@ -3106,7 +3106,7 @@ Purpose:
   dashboard: `/api/dashboard/command-center`, `/api/marketing/brief` and the
   skill-scoped context-pack.
 - Require the response to use canonical `daily_decisions`, `primary_next_step`
-  and the four core daily routes: `/merchant`, `/content-planner`, `/ga4` and
+  and the four core daily routes: `/merchant`, `/content-workflow`, `/ga4` and
   `/ads-doctor`.
 - Prevent social draft ActionObjects and Localo review ActionObjects from being
   promoted as main daily action candidates.
@@ -3141,7 +3141,7 @@ Result:
   `act_review_ga4_tracking_quality`, plus review-only
   `act_prepare_ads_campaign_review_queue`.
 - The final JSON includes `/command-center`, `daily_decisions`,
-  `primary_next_step`, `/merchant`, `/content-planner`, `/ga4` and
+  `primary_next_step`, `/merchant`, `/content-workflow`, `/ga4` and
   `/ads-doctor`.
 - `Localo poza daily_decisions`: `act_review_localo_visibility_facts` and
   social draft ActionObjects are not present in action candidates.
@@ -3687,9 +3687,9 @@ Result:
 Product finding:
 
 - The GSC-specific skill now has the same safe content review ActionObject proof
-  as the broader content strategist, scoped to `/seo-gsc` and query/page
-  evidence. Unsupported ranking, lead and revenue claims remain blocked by the
-  eval and skill contract.
+  as the broader content strategist, scoped to the GSC/query-page evidence that
+  now feeds the primary `/content-workflow` workspace. Unsupported ranking, lead
+  and revenue claims remain blocked by the eval and skill contract.
 
 ## 2026-06-23 - wilq-custom-segments validated ActionObject eval hardening
 
@@ -5749,8 +5749,10 @@ Useful output:
 
 - The skill correctly turns GSC evidence into a prepare-only content queue
   direction.
-- It names the route `/seo-gsc`, `content_diagnostics`, query/page matrix and
-  `act_prepare_content_refresh_queue`.
+- It names `content_diagnostics`, query/page matrix and
+  `act_prepare_content_refresh_queue`. Historical runs used the old `/seo-gsc`
+  route name; current dashboard work should route content operators through
+  `/content-workflow`.
 - It blocks ranking uplift, WordPress write/apply and publication claims without
   validation and audit.
 
@@ -8496,7 +8498,7 @@ uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contrac
 Browser proof:
 
 ```txt
-.local-lab/proof/20260627-content-plan-language/content-planner-final.txt
+.local-lab/proof/20260627-content-plan-language/content-workflow-final.txt
 ```
 
 Result:
@@ -8505,7 +8507,7 @@ Result:
 - Content skill smoke output has no old visible terms:
   `Przygotuj brief`, `powstanie brief`, `briefem contentowym`,
   `Szkic briefu`, `Brief treści` or `content brief without`.
-- `/content-planner` browser scan has no rendered hits for `Brief`,
+- `/content-workflow` browser scan has no rendered hits for `Brief`,
   `Przygotuj brief`, `Podgląd briefów`, `Pokaż briefy` or
   `Zapisz sprawdzenie briefu`.
 
@@ -9357,7 +9359,7 @@ Result:
   all hard gates true, 10 evidence IDs, 1 recommendation and 1 validated action
   candidate.
 - Validated action candidate: `act_prepare_content_refresh_queue`.
-- The output used `/content-planner`, `content_diagnostics`, `decision_queue`,
+- The output used `/content-workflow`, `content_diagnostics`, `decision_queue`,
   `gsc_content_doctor_context`, `single_day_latest_available`,
   `data_availability_checked=true`, `date_availability_status=available`,
   `detail_data_completeness=partial_possible`, `rowLimit`, `startRow`,
@@ -9604,7 +9606,7 @@ Result:
   `act_prepare_ads_campaign_review_queue`.
 - The output tells the marketer to start at `/command-center`, execute
   `primary_next_step`, open `/merchant`, then continue through
-  `/content-planner`, `/ga4` and `/ads-doctor` without write/apply claims.
+  `/content-workflow`, `/ga4` and `/ads-doctor` without write/apply claims.
 
 ## 2026-07-02 - GSC Content Doctor usefulness eval
 

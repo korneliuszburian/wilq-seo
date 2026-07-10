@@ -14,14 +14,52 @@ from wilq.actions.validation_copy import (
     wrong,
 )
 from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
     DemandGenAdGroupAdRow,
     DemandGenCampaignModeReviewRow,
     DemandGenCreativeAssetRow,
     DemandGenLandingQualityRow,
     MetricFact,
+    OpportunityDomain,
 )
 
 DEMAND_GEN_READINESS_REVIEW_ACTION_ID = "act_review_demand_gen_readiness"
+
+
+def demand_gen_readiness_action(
+    *,
+    payload: dict[str, Any],
+    evidence_ids: list[str],
+    action_metrics: list[MetricFact],
+) -> ActionObject:
+    return ActionObject(
+        id=DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+        title="Przygotuj przegląd gotowości Demand Gen",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=evidence_ids[:12],
+        metrics=action_metrics,
+        human_diagnosis=(
+            "WILQ ma kontekst Google Ads i GA4 do wstępnego przeglądu Demand Gen, "
+            "ale nadal blokuje uruchomienie, zmianę trybu kampanii, werdykty kreatywne "
+            "i zapis zmian bez osobnych odczytów assetów, kreacji, jakości "
+            "stron wejścia i kontroli trybu kampanii."
+        ),
+        recommended_reason=(
+            "W widoku Demand Gen sprawdź w WILQ materiał do sprawdzenia, sprawdź "
+            "kanały kampanii i listę brakujących kontraktów. Nie przygotowuj "
+            "kampanii ani zmiany trybu kampanii bez kolejnych kontraktów odczytu."
+        ),
+        payload=payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE = "google_ads_demand_gen_readiness_review"
 DEMAND_GEN_READINESS_REVIEW_PREVIEW_CONTRACT = "demand_gen_readiness_review_preview_v1"
 DEMAND_GEN_READINESS_REVIEW_OPERATION_TYPE = "DemandGenReadinessReview"

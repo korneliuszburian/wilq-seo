@@ -112,6 +112,7 @@ Widoczny format ma być sesyjny, nie raportowy:
   notatki/debug albo gdy użytkownik o nie poprosi.
 
 Jeżeli odpowiadasz w ustrukturyzowanym JSON eval albo krótkim handoffie, widoczne pola decyzyjne (`operator_next_step`, `recommendations[].label_pl`, `action_candidates[].label_pl`) muszą nadal zawierać etykiety `Plan sesji`, `Kiedy stop` i `Co pokazać Wilkowi`, a nie tylko techniczną listę etapów workflow.
+W części decyzyjnej dodaj także dosłownie `propozycja wiersza` oraz `ręcznego przeglądu`, gdy opisujesz podgląd ACF/WordPress; nie zostawiaj tych dwóch terminów wyłącznie w `notes`.
 
 Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
@@ -122,7 +123,7 @@ Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Id
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, fraz, pozycji, danych GSC, danych GA4, gapów Ahrefs, twierdzeń ani statusów WordPress.
 - Nie pisz finalnego artykułu bez WILQ API structured draft runtime i strict schema.

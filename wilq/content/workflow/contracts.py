@@ -36,6 +36,7 @@ from wilq.content.handoff.wordpress_authoring import (
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionMode,
     ContentWordPressDraftExecutionResult,
+    ContentWordPressDraftSectionOverride,
     ContentWordPressDraftWriteAuthorization,
 )
 from wilq.content.inventory.records import (
@@ -224,6 +225,9 @@ class ContentWorkItemWordPressDraftExecutionRequest(BaseModel):
     draft_package: ContentDraftPackage | None = None
     mode: ContentWordPressDraftExecutionMode = "dry_run"
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None
+    section_overrides: list[ContentWordPressDraftSectionOverride] = Field(
+        default_factory=list
+    )
 
 
 class ContentWorkItemWordPressDraftExecutionResponse(BaseModel):
@@ -269,6 +273,41 @@ class ContentWordPressDraftWriteReadinessResponse(BaseModel):
         "available",
     ] = "missing_audit_trace"
     suggested_write_authorization: ContentWordPressDraftWriteAuthorization | None = None
+    blockers: list[ContentWordPressDraftWriteReadinessBlocker] = Field(default_factory=list)
+    operator_next_step: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+
+
+class ContentWordPressExistingDraftSectionDiff(BaseModel):
+    heading: str
+    current_summary: str = ""
+    proposed_summary: str = ""
+    status: Literal["unchanged", "changed", "proposed", "missing_current"]
+
+
+class ContentWordPressExistingDraftUpdateReadinessResponse(BaseModel):
+    response_type: Literal["wordpress_existing_draft_update_readiness"] = (
+        "wordpress_existing_draft_update_readiness"
+    )
+    contract: Literal["wordpress_existing_draft_update_readiness_v1"] = (
+        "wordpress_existing_draft_update_readiness_v1"
+    )
+    connector: str = "wordpress_ekologus"
+    action_id: str = "act_prepare_wordpress_existing_draft_update"
+    work_item_id: str
+    target_post_id: str | None = None
+    target_url: str | None = None
+    current_state_available: bool = False
+    current_section_count: int = 0
+    proposed_section_count: int = 0
+    section_diff_preview: list[ContentWordPressExistingDraftSectionDiff] = Field(
+        default_factory=list
+    )
+    ready: bool = False
+    update_supported: bool = False
+    publish_allowed: Literal[False] = False
+    destructive_update_allowed: Literal[False] = False
     blockers: list[ContentWordPressDraftWriteReadinessBlocker] = Field(default_factory=list)
     operator_next_step: str
     evidence_ids: list[str] = Field(default_factory=list)

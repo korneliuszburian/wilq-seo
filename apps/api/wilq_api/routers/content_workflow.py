@@ -24,6 +24,7 @@ from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
     build_content_wordpress_draft_activation_packet_response,
     build_content_wordpress_draft_write_readiness_response,
+    build_content_wordpress_existing_draft_update_readiness_response,
     build_content_work_item_blocked_snapshot_response_for_work_item,
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_diagnostics_snapshot_response_for_work_item,
@@ -49,6 +50,7 @@ from wilq.content.workflow.api import (
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
+    ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsRequest,
@@ -116,7 +118,10 @@ def content_service_profile() -> ContentServiceProfileResponse:
     response_model=WordPressAuthoringProfile,
 )
 def content_wordpress_authoring_profile() -> WordPressAuthoringProfile:
-    return build_wordpress_authoring_profile("wordpress_ekologus")
+    return build_wordpress_authoring_profile(
+        "wordpress_ekologus",
+        include_dev_content=True,
+    )
 
 
 @router.get(
@@ -127,6 +132,21 @@ def content_wordpress_draft_write_readiness(
     action_id: str = "act_prepare_wordpress_draft_handoff",
 ) -> ContentWordPressDraftWriteReadinessResponse:
     return build_content_wordpress_draft_write_readiness_response(action_id=action_id)
+
+
+@router.get(
+    "/api/content/wordpress/existing-draft-update-readiness",
+    response_model=ContentWordPressExistingDraftUpdateReadinessResponse,
+)
+def content_wordpress_existing_draft_update_readiness(
+    work_item_id: str | None = None,
+) -> ContentWordPressExistingDraftUpdateReadinessResponse:
+    snapshot = (
+        _snapshot_for_work_item_or_404(work_item_id)
+        if work_item_id is not None
+        else build_content_work_item_diagnostics_snapshot_response(build_content_diagnostics())
+    )
+    return build_content_wordpress_existing_draft_update_readiness_response(snapshot)
 
 
 @router.get(

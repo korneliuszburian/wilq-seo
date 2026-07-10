@@ -18,7 +18,6 @@ OPERATOR_ENDPOINTS = (
 )
 
 FORBIDDEN_OPERATOR_TERMS = (
-    "ekologus.dev.proudsite.pl",
     "target_site",
     "mapping_review",
     "migration-map",

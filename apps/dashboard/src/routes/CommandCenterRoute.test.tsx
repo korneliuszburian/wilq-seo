@@ -110,7 +110,7 @@ const commandCenterFixture: CommandCenterResponse = {
       freshness_label: "dane wymagają odświeżenia",
       decision_state: "stale",
       decision_state_label: "do odświeżenia",
-      route: "/content-planner",
+      route: "/content-workflow",
       route_label: "Treści",
       cta_label: "Otwórz Treści",
       status: "ready",
@@ -201,7 +201,7 @@ const commandCenterFixture: CommandCenterResponse = {
       owner_role: "content_seo",
       priority: 12,
       domain: "content",
-      route: "/content-planner",
+      route: "/content-workflow",
       route_label: "Treści",
       summary:
         "WILQ ma dane treści: 10 zapytań i adresów z GSC, 15 dopasowań WordPress, 1 ocena Ahrefs, 9 luk linków.",
@@ -297,7 +297,7 @@ describe("CommandCenter route", () => {
     );
     expect(screen.getByRole("link", { name: "Otwórz Treści" })).toHaveAttribute(
       "href",
-      "/content-planner"
+      "/content-workflow"
     );
     expect(screen.queryByRole("link", { name: "Otwórz działanie" })).not.toBeInTheDocument();
     expect(screen.getByText("do sprawdzenia")).toBeInTheDocument();

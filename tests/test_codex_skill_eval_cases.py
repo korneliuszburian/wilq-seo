@@ -259,7 +259,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "validated_action_ids": {"act_review_ga4_tracking_quality"},
         },
         "wilq-gsc-content-doctor": {
-            "surface_path": "/content-planner",
+            "surface_path": "/content-workflow",
             "terms": {
                 "Treści",
                 "GSC",
@@ -343,7 +343,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "validated_action_ids": {"act_review_merchant_feed_issues"},
         },
         "wilq-content-strategist": {
-            "surface_path": "/content-planner",
+            "surface_path": "/content-workflow",
             "terms": {
                 "Treści",
                 "WordPress",
@@ -481,7 +481,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "daily_decisions",
                 "primary_next_step",
                 "/merchant",
-                "/content-planner",
+                "/content-workflow",
                 "/ga4",
                 "/ads-doctor",
                 "Merchant",
@@ -953,7 +953,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         ".agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/ahrefs/diagnostics" in ahrefs_skill_doc
-    assert "Karta cross-checku GSC/WordPress" in ahrefs_skill_doc
+    assert "Karta sprawdzenia GSC i WordPress" in ahrefs_skill_doc
     assert "cross_check_status" in ahrefs_skill_doc
     assert "cross_check_summary" in ahrefs_skill_doc
     assert "cross_check_source_connectors" in ahrefs_skill_doc

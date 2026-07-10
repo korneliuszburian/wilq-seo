@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -150,6 +151,36 @@ def test_wordpress_authoring_profile_loads_acf_flexible_layouts_from_export(
     assert "acf_flexible_layouts_missing" not in {
         blocker.code for blocker in profile.blockers
     }
+
+
+def test_wordpress_authoring_profile_reads_generic_dev_acf_rest_sections(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_rest(monkeypatch)
+    transport = httpx.MockTransport(_dev_pages_acf_rest_handler)
+    with httpx.Client(transport=transport) as client:
+        profile = build_wordpress_authoring_profile(
+            "wordpress_ekologus",
+            include_dev_content=True,
+            http_client=client,
+        )
+
+    assert profile.dev_content.status == "available"
+    assert profile.dev_content.source_method == "acf_rest"
+    assert profile.dev_content.page_count == 1
+    page = profile.dev_content.pages[0]
+    assert page.title == "Strona główna"
+    assert page.acf_field_name == "sekcje_strony"
+    assert page.section_count == 2
+    first_section = page.sections[0]
+    assert first_section.layout_name == "baner_startowy"
+    assert first_section.layout_label == "Baner startowy"
+    assert first_section.title == "Gospodarka odpadami dla firm"
+    assert "Zbieramy i porządkujemy odpady" in first_section.text_summary
+    assert "modul_naglowka" in first_section.field_names
+    assert "obrazek" in first_section.field_names
+    assert any("naglowek_modulu" in path for path in first_section.text_field_paths)
+    assert "hero" not in {section.layout_name for section in page.sections}
 
 
 def test_wordpress_authoring_profile_derives_layouts_from_acf_groups(
@@ -367,6 +398,16 @@ def test_wordpress_authoring_profile_api_exposes_read_only_profile(
     export_path = _write_acf_export(tmp_path)
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FIELD_GROUPS_EXPORT_PATH", str(export_path))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FLEX_FIELD_NAME", "sections")
+    from apps.api.wilq_api.routers import content_workflow
+
+    monkeypatch.setattr(
+        content_workflow,
+        "build_wordpress_authoring_profile",
+        lambda connector_id, include_dev_content=False: build_wordpress_authoring_profile(
+            connector_id,
+            include_dev_content=False,
+        ),
+    )
 
     response = TestClient(app).get("/api/content/wordpress/authoring-profile")
 
@@ -374,6 +415,7 @@ def test_wordpress_authoring_profile_api_exposes_read_only_profile(
     data = response.json()
     assert data["profile_version"] == "wordpress_authoring_profile_v1"
     assert data["acf"]["layouts"][0]["name"] == "content_section"
+    assert data["dev_content"]["status"] == "unknown"
     assert data["write_boundary"]["direct_vendor_write_allowed"] is False
     assert data["write_boundary"]["external_write_attempted"] is False
 
@@ -410,6 +452,49 @@ def _configure_rest(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.example.test/")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+
+def _dev_pages_acf_rest_handler(request: httpx.Request) -> httpx.Response:
+    assert request.url.path == "/wp-json/wp/v2/pages"
+    return httpx.Response(
+        200,
+        json=[
+            {
+                "id": 2,
+                "slug": "strona-glowna",
+                "link": "https://wp.example.test/",
+                "title": {"rendered": "Strona główna"},
+                "status": "publish",
+                "modified": "2026-07-08T10:00:00",
+                "modified_gmt": "2026-07-08T08:00:00",
+                "template": "",
+                "parent": 0,
+                "acf": {
+                    "sekcje_strony": [
+                        {
+                            "acf_fc_layout": "baner_startowy",
+                            "modul_naglowka": {
+                                "naglowek_modulu": "Gospodarka odpadami dla firm",
+                                "tekst_wprowadzajacy": (
+                                    "Zbieramy i porządkujemy odpady zgodnie z procesem klienta."
+                                ),
+                            },
+                            "obrazek": "https://wp.example.test/media/hero.jpg",
+                        },
+                        {
+                            "acf_fc_layout": "lista_korzysci",
+                            "wiersze": [
+                                {
+                                    "tytul_wiersza": "Stały odbiór",
+                                    "opis_wiersza": "Harmonogram i dokumentacja w jednym miejscu.",
+                                }
+                            ],
+                        },
+                    ]
+                },
+            }
+        ],
+    )
 
 
 def _write_acf_export(tmp_path: Path) -> Path:

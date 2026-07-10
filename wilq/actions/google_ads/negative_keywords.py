@@ -12,7 +12,14 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 NEGATIVE_KEYWORD_ACTION_ID = "act_prepare_negative_keyword_review_queue"
 NEGATIVE_KEYWORD_BLOCKED_CLAIMS = [
@@ -22,6 +29,44 @@ NEGATIVE_KEYWORD_BLOCKED_CLAIMS = [
     "koszt pozyskania celu",
     "zwrot z reklam",
 ]
+
+
+def negative_keyword_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    negative_keyword_payload: dict[str, Any],
+) -> ActionObject:
+    metrics = [
+        fact
+        for fact in google_ads_facts
+        if fact.name.startswith("search_term_")
+        and fact.dimensions.get("search_term") in negative_keyword_payload["terms"]
+    ][:12]
+    return ActionObject(
+        id=NEGATIVE_KEYWORD_ACTION_ID,
+        title="Przygotuj kolejkę oceny wykluczeń z wyszukiwanych haseł",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=list(dict.fromkeys(fact.evidence_id for fact in metrics)),
+        metrics=metrics,
+        human_diagnosis=(
+            "Google Ads ma fakty z wyszukiwanych haseł, które mogą zasilić ocenę "
+            "potencjalnych wykluczeń. WILQ nie może jednak twierdzić nic o "
+            "przepalonym budżecie ani wdrażać wykluczających słów bez "
+            "90-dniowej kontroli bezpieczeństwa i ręcznej sprawdzenia."
+        ),
+        recommended_reason=(
+            "W widoku Google Ads przejrzyj terminy z kosztem/kliknięciami i zerową "
+            "konwersją w bieżących dowodach, ale potraktuj je wyłącznie jako "
+            "kolejkę oceny przed 90-dniową kontrolą bezpieczeństwa."
+        ),
+        payload=negative_keyword_payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 
 
 def validate_negative_keyword_payload(payload: dict[str, Any]) -> list[str]:

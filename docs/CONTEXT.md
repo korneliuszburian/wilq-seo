@@ -42,6 +42,26 @@ surowe payloady trafiają tylko do technicznego szczegółu albo audytu.
 - Nie dopisuj tu długich logów. Jeżeli ten plik zacznie puchnąć, usuń albo
   zastąp outdated/done rzeczy zamiast dopisywać nowe sekcje.
 
+## Current Cleanup Gate
+
+Senior cleanup work is tracked under Beads epic `wilq-seo-c9h9`.
+Python/runtime cleanup standards live in
+`docs/architecture/python-runtime-and-test-standards.md`.
+
+Before adding new product behavior, run:
+
+```bash
+rtk uv run python scripts/audit_complexity.py --changed --summary --limit 12
+```
+
+If the gate flags a frozen file, do not continue as a broad exception. Create
+or use a focused child bead that names the exact extraction or compatibility
+slice. `--allow-frozen` is acceptable only for a documented temporary extraction
+or route-compatibility slice; it must not hide new behavior in
+`tests/test_api_contracts.py`, the `wilq/schemas/__init__.py` compatibility
+façade, `wilq/actions/service.py` or
+other frozen growth files.
+
 ## Runtime
 
 Canonical local stack:

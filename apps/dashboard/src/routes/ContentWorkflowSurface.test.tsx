@@ -7,6 +7,7 @@ import {
   getContentWorkItemSnapshot,
   getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
+  getContentWordPressExistingDraftUpdateReadiness,
   getWordPressAuthoringProfile,
   confirmAction,
   previewAction,
@@ -30,6 +31,7 @@ import {
   type ContentWorkItemWorkflowSnapshotResponse,
   type ContentWordPressDraftActivationPacketResponse,
   type ContentWordPressDraftWriteReadinessResponse,
+  type ContentWordPressExistingDraftUpdateReadinessResponse,
   type WordPressAuthoringProfile
 } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
@@ -44,6 +46,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemSnapshot: vi.fn(),
     getContentWordPressDraftActivationPacket: vi.fn(),
     getContentWordPressDraftWriteReadiness: vi.fn(),
+    getContentWordPressExistingDraftUpdateReadiness: vi.fn(),
     getWordPressAuthoringProfile: vi.fn(),
     confirmAction: vi.fn(),
     previewAction: vi.fn(),
@@ -69,6 +72,9 @@ describe("ContentWorkflowSurface", () => {
     );
     vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue(
       wordpressDraftWriteReadiness()
+    );
+    vi.mocked(getContentWordPressExistingDraftUpdateReadiness).mockResolvedValue(
+      existingDraftUpdateReadiness()
     );
     vi.mocked(getWordPressAuthoringProfile).mockResolvedValue(wordpressAuthoringProfile());
     vi.mocked(confirmAction).mockResolvedValue({} as Awaited<ReturnType<typeof confirmAction>>);
@@ -113,9 +119,24 @@ describe("ContentWorkflowSurface", () => {
     );
 
     expect(
-      await screen.findByText("Workflow treści bez slopu", undefined, { timeout: 5000 })
+      await screen.findByText("Treści: praca nad stroną", undefined, { timeout: 5000 })
     ).toBeInTheDocument();
 
+    await openWorkflowDetails();
+
+    expect(screen.getByText("Aktualna strona")).toBeInTheDocument();
+    expect(screen.getByText("Sygnały i braki")).toBeInTheDocument();
+    expect(screen.getByText("Dev draft / ACF")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Aktualizacja istniejącego draftu")).toBeInTheDocument();
+      expect(screen.getByText("Aktualne: Aktualny tekst dev")).toBeInTheDocument();
+      expect(screen.getByText("Proponowane: Proponowany tekst szkicu")).toBeInTheDocument();
+    });
+    expect(screen.getAllByText("Tekst sekcji do szkicu").length).toBeGreaterThan(0);
+    expect(screen.getByText("Źródła i twierdzenia")).toBeInTheDocument();
+    expect(screen.getAllByText("Dowody").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/baner_startowy/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sekcje_strony/).length).toBeGreaterThan(0);
     expect(screen.getByText("Workflow treści: jeden aktywny krok")).toBeInTheDocument();
     expect(screen.getByText(/Publikacja i zapis WordPress pozostają/)).toBeInTheDocument();
     expect(screen.getByText("Publikacja zablokowana")).toBeInTheDocument();
@@ -123,7 +144,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Następna decyzja operatora")).toBeInTheDocument();
     expect(screen.getByText("Co blokuje publikację")).toBeInTheDocument();
     expect(screen.getAllByText("Następny krok").length).toBeGreaterThan(0);
-    expect(screen.getByText("Claim Ledger - skrót")).toBeInTheDocument();
+    expect(screen.getByText("Rejestr twierdzeń - skrót")).toBeInTheDocument();
     expect(screen.getByText("Przejdź do decyzji operatora")).toHaveAttribute(
       "href",
       "#content-workflow-actions"
@@ -132,7 +153,7 @@ describe("ContentWorkflowSurface", () => {
       "href",
       "#content-workflow-proof"
     );
-    expect(screen.getByText("Otwórz claim ledger")).toHaveAttribute(
+    expect(screen.getByText("Otwórz rejestr twierdzeń")).toHaveAttribute(
       "href",
       "#content-workflow-claim-ledger"
     );
@@ -152,21 +173,22 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Decyzje operatora")).toBeInTheDocument();
     expect(await screen.findByText("Kolejka tematów")).toBeInTheDocument();
     const firstScreenText = document.body.textContent ?? "";
-    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
+    expect(firstScreenText.indexOf("Treści: praca nad stroną")).toBeLessThan(
       firstScreenText.indexOf("Kolejka tematów")
     );
-    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
+    expect(firstScreenText.indexOf("Treści: praca nad stroną")).toBeLessThan(
       firstScreenText.indexOf("Decyzje operatora")
     );
-    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
+    expect(firstScreenText.indexOf("Treści: praca nad stroną")).toBeLessThan(
       firstScreenText.indexOf("Co WILQ już potwierdził")
     );
-    expect(firstScreenText.indexOf("Następna decyzja operatora")).toBeLessThan(
+    expect(firstScreenText.indexOf("Treści: praca nad stroną")).toBeLessThan(
       firstScreenText.indexOf("Dev draft WordPress")
     );
     expect(screen.getByText(/odśwież istniejącą treść: BDO dla firm/))
       .toBeInTheDocument();
-    expect(screen.getAllByText(/WILQ widzi 3 kandydatów/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Gotowe do pracy: 2 z 3 tematów/)).toBeInTheDocument();
+    expect(screen.queryByText(/WILQ widzi 3 kandydatów/)).not.toBeInTheDocument();
     expect(screen.getByText("Zielony Ład dla firm")).toBeInTheDocument();
     expect(screen.getByText("Luka Ahrefs bez finalnego adresu")).toBeInTheDocument();
     expect(screen.getByText("odśwież istniejącą treść · gotowe do planu")).toBeInTheDocument();
@@ -188,11 +210,11 @@ describe("ContentWorkflowSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText("informacyjno-usługowa")).toBeInTheDocument();
     expect(screen.getByText("obsługa środowiskowa Ekologus")).toBeInTheDocument();
-    expect(screen.getByText("GSC pokazuje popyt na temat BDO.")).toBeInTheDocument();
-    expect(screen.getByText("Jakość briefu")).toBeInTheDocument();
-    expect(screen.getByText("sygnał użyteczny, ale wymaga review")).toBeInTheDocument();
-    expect(screen.getByText(/Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji/))
-      .toBeInTheDocument();
+    expect(screen.getAllByText("GSC pokazuje popyt na temat BDO.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Jakość briefu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("sygnał użyteczny, ale wymaga review").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji/).length)
+      .toBeGreaterThan(0);
     expect(screen.getByText("Ograniczenia wiedzy i dowody")).toBeInTheDocument();
     expect(screen.getByText(/ev_content_service_profile_source_facts/)).toBeInTheDocument();
     expect(await screen.findByText("Dev draft WordPress")).toBeInTheDocument();
@@ -232,15 +254,16 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText("Zablokowane")[0]).toBeInTheDocument();
     expect(screen.getByText(/Ekologus pomaga firmom uporządkować obowiązki BDO/))
       .toBeInTheDocument();
-    expect(screen.getByText(/Twierdzenie o skuteczności wymaga zakończonego okna pomiaru/))
-      .toBeInTheDocument();
+    expect(
+      screen.getAllByText(/Twierdzenie o skuteczności wymaga zakończonego okna pomiaru/).length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
-    expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
-    expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
-    expect(screen.getByText("Mapowanie ACF")).toBeInTheDocument();
-    expect(screen.getByText("Podgląd treści")).toBeInTheDocument();
-    expect(screen.getByText("Ocena jakości szkicu")).toBeInTheDocument();
-    expect(screen.getByText("Plan poprawki")).toBeInTheDocument();
+    expect(screen.getAllByText("WordPress zostaje w trybie szkicu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Podgląd szkicu WordPress").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Mapowanie ACF").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Podgląd treści").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ocena jakości szkicu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Plan poprawki").length).toBeGreaterThan(0);
     expect(screen.getByText(/Ten krok nie wywołuje modelu/)).toBeInTheDocument();
     expect(screen.getByText(/Po wygenerowaniu szkicu WILQ pokaże treść/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
@@ -262,7 +285,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
     expect(screen.queryByText("json_schema")).not.toBeInTheDocument();
     expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("submits a snapshot human review from the current API snapshot", async () => {
     const client = createWilqQueryClient({
@@ -275,6 +298,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     await screen.findByRole("button", { name: "Zatwierdź sprawdzenie" });
     fireEvent.click(screen.getByRole("button", { name: "Zatwierdź sprawdzenie" }));
 
@@ -314,6 +338,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     await screen.findByRole("button", { name: "Zapisz audyt przekazania" });
     fireEvent.click(screen.getByRole("button", { name: "Zapisz audyt przekazania" }));
 
@@ -351,6 +376,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
 
@@ -387,6 +413,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
 
@@ -403,7 +430,7 @@ describe("ContentWorkflowSurface", () => {
     });
     expect(await screen.findByRole("button", { name: "Podgląd treści gotowy" })).toBeDisabled();
     expect(screen.getByText("BDO dla firm - szkic do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Kogo dotyczy BDO")).toBeInTheDocument();
+    expect(screen.getAllByText("Kogo dotyczy BDO").length).toBeGreaterThan(0);
     expect(screen.getByText(/Sprawdź z ekspertem, czy opis obowiązku BDO jest aktualny/))
       .toBeInTheDocument();
     expect(screen.getByText(/WordPress i publikacja nadal są zablokowane/)).toBeInTheDocument();
@@ -423,6 +450,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     await screen.findByText("Luka Ahrefs bez finalnego adresu");
     fireEvent.click(screen.getByRole("button", { name: /Luka Ahrefs bez finalnego adresu/ }));
 
@@ -448,6 +476,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
     expect(await screen.findByRole("button", { name: "Sprawdź jakość szkicu" })).toBeEnabled();
@@ -496,6 +525,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     await screen.findByRole("button", { name: "Pokaż mapowanie ACF" });
     fireEvent.click(screen.getByRole("button", { name: "Pokaż mapowanie ACF" }));
 
@@ -543,6 +573,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     expect(await screen.findByRole("button", { name: "Sprawdzenie zapisane" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Audyt zapisany" })).toBeDisabled();
     expect(screen.getByText(/przekazanie do WordPress pozostaje przygotowane tylko jako szkic/))
@@ -576,6 +607,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     fireEvent.click(await screen.findByRole("button", { name: "Przygotuj zgodę zapisu" }));
 
     await waitFor(() => {
@@ -660,6 +692,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     const createButton = await screen.findByRole("button", { name: "Utwórz szkic na dev" });
     expect(createButton).toBeEnabled();
     fireEvent.click(createButton);
@@ -675,6 +708,72 @@ describe("ContentWorkflowSurface", () => {
     expect(
       (await screen.findAllByText(/Szkic utworzony na devie jako WordPress draft, ID 987/)).length
     ).toBeGreaterThan(0);
+  });
+
+  it("creates a new dev draft from edited section text", async () => {
+    const authorization = wordpressDraftWriteAuthorization();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
+    );
+    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue({
+      ...wordpressDraftActivationPacket(),
+      human_review_ready: true,
+      audit_ready: true,
+      handoff_ready: true,
+      dry_run_ready: true,
+      handoff_blockers: [],
+      execution_blockers: [],
+      activation_missing_readiness_labels: []
+    });
+    vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue({
+      ...wordpressDraftWriteReadiness(),
+      ready: true,
+      live_write_enabled_by_env: true,
+      write_authorization_status: "available",
+      suggested_write_authorization: authorization,
+      blockers: [],
+      missing_audit_event_types: []
+    });
+    vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
+      wordpressDraftCreatedResponse()
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await openWorkflowDetails();
+    const editedBody =
+      "BDO dotyczy firm, które wprowadzają produkty, opakowania albo odpady do ewidencji.";
+    const [sectionInput] = await screen.findAllByLabelText("Tekst sekcji Kogo dotyczy BDO");
+    fireEvent.change(sectionInput, { target: { value: editedBody } });
+    fireEvent.click(
+      screen.getAllByRole("button", {
+        name: "Utwórz draft na dev"
+      })[0]
+    );
+
+    await waitFor(() => {
+      expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0])
+        .toEqual(expect.objectContaining({
+          handoff: wordpressHandoff(),
+          draft_package: draftPackage(),
+          mode: "live",
+          write_authorization: authorization,
+          section_overrides: expect.arrayContaining([
+            expect.objectContaining({
+              heading: "Kogo dotyczy BDO",
+              body_markdown: editedBody,
+              evidence_ids: ["ev_gsc_bdo"]
+            })
+          ])
+        }));
+    });
   });
 
   it("shows remembered dev WordPress draft from the activation packet", async () => {
@@ -716,17 +815,17 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const createButton = await screen.findByRole("button", { name: "Szkic utworzony na dev" });
-    expect(createButton).toBeDisabled();
+    await openWorkflowDetails();
+    expect(await screen.findByText("Dev draft odczytany")).toBeInTheDocument();
     expect(screen.getByText(/Szkic utworzony na devie jako WordPress draft, ID 987/))
       .toBeInTheDocument();
     expect(screen.getByText("Odczyt z dev WordPress")).toBeInTheDocument();
     expect(screen.getAllByText(/BDO dla firm - szkic dev/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Szkic opisuje obowiązki BDO/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Szkic opisuje obowiązki BDO/).length).toBeGreaterThan(0);
     expect(screen.getByText("glowny_opis")).toBeInTheDocument();
     expect(screen.getByText("Plan sekcji i ACF")).toBeInTheDocument();
-    expect(screen.getByText("Aktualna publiczna treść")).toBeInTheDocument();
-    expect(screen.getByText(/Co to jest BDO/)).toBeInTheDocument();
+    expect(screen.getByText("Aktualna strona")).toBeInTheDocument();
+    expect(screen.getAllByText(/Co to jest BDO/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Kogo dotyczy BDO/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Przygotuj mapowanie sekcji ACF" }))
       .toBeEnabled();
@@ -747,6 +846,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
+    await openWorkflowDetails();
     const button = await screen.findByRole("button", {
       name: "Przygotuj mapowanie sekcji ACF"
     });
@@ -766,6 +866,11 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText("Tytuł (tytul)").length).toBeGreaterThan(0);
   });
 });
+
+async function openWorkflowDetails() {
+  fireEvent.click(await screen.findByText("Szczegóły workflow, kolejka i audyt techniczny"));
+  await screen.findByText("Decyzje operatora");
+}
 
 function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
   return {
@@ -815,7 +920,7 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
     actionable_candidate_count: 2,
     minimum_actionable_candidate_count: 3,
     operator_summary:
-      "WILQ widzi 3 kandydatów i 2 mogą przejść do planu bez omijania dowodów.",
+      "Gotowe do pracy: 2 z 3 tematów. Wybierz stronę z adresem, źródłami i następnym krokiem.",
     candidates: [
       {
         work_item_id: "content_work_item_bdo",
@@ -1938,6 +2043,44 @@ function wordpressDraftWriteReadiness(): ContentWordPressDraftWriteReadinessResp
   };
 }
 
+function existingDraftUpdateReadiness(): ContentWordPressExistingDraftUpdateReadinessResponse {
+  return {
+    response_type: "wordpress_existing_draft_update_readiness",
+    contract: "wordpress_existing_draft_update_readiness_v1",
+    connector: "wordpress_ekologus",
+    action_id: "act_prepare_wordpress_existing_draft_update",
+    work_item_id: "content_work_item_bdo",
+    target_post_id: "2",
+    target_url: "https://ekologus.dev.proudsite.pl/",
+    current_state_available: true,
+    current_section_count: 9,
+    proposed_section_count: 3,
+    ready: false,
+    update_supported: false,
+    publish_allowed: false,
+    destructive_update_allowed: false,
+    blockers: [
+      {
+        code: "existing_draft_update_contract_not_implemented",
+        label: "Aktualizacja istniejącego draftu wymaga osobnego kontraktu",
+        reason: "Preview only",
+        next_step: "Review first"
+      }
+    ],
+    operator_next_step: "Review first",
+    evidence_ids: ["ev_wp_bdo"],
+    source_connectors: ["wordpress_ekologus"],
+    section_diff_preview: [
+      {
+        heading: "Wprowadzenie",
+        current_summary: "Aktualny tekst dev",
+        proposed_summary: "Proponowany tekst szkicu",
+        status: "changed"
+      }
+    ]
+  };
+}
+
 function wordpressAuthoringProfile(): WordPressAuthoringProfile {
   return {
     profile_version: "wordpress_authoring_profile_v1",
@@ -1969,6 +2112,50 @@ function wordpressAuthoringProfile(): WordPressAuthoringProfile {
       })),
       source_method: "acf_export",
       layouts_discovered: true
+    },
+    dev_content: {
+      status: "available",
+      source_method: "acf_rest",
+      source_ref: "WORDPRESS_EKOLOGUS_URL wp-json/wp/v2/pages?context=edit",
+      page_count: 1,
+      pages: [
+        {
+          post_id: "2",
+          slug: "bdo",
+          title: "BDO dla firm",
+          link: "https://ekologus.dev.proudsite.pl/bdo/",
+          status: "publish",
+          modified: "2026-07-08T10:00:00",
+          modified_gmt: "2026-07-08T08:00:00",
+          template: "",
+          parent: "",
+          acf_field_name: "sekcje_strony",
+          section_count: 4,
+          sections: [
+            {
+              section_index: 1,
+              acf_field_name: "sekcje_strony",
+              layout_name: "baner_startowy",
+              layout_label: "Baner startowy",
+              title: "BDO dla firm",
+              text_summary: "Strona dev ma hero opisujące obowiązki BDO dla firm.",
+              field_names: ["modul_naglowka", "przyciski"],
+              text_field_paths: ["modul_naglowka.naglowek_modulu"]
+            },
+            {
+              section_index: 2,
+              acf_field_name: "sekcje_strony",
+              layout_name: "lista_korzysci",
+              layout_label: "Lista korzyści",
+              title: "Kogo dotyczy BDO",
+              text_summary: "Sekcja do dopracowania pod zapytania z GSC.",
+              field_names: ["wiersze", "opis_glowny"],
+              text_field_paths: ["wiersze.row_1.tytul_wiersza"]
+            }
+          ]
+        }
+      ],
+      blockers: []
     },
     wp_cli: {
       method: "wp_cli",

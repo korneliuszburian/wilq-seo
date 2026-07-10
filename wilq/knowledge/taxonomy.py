@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from wilq.schemas import KnowledgeTaxonomyEntry, KnowledgeTaxonomyType
 
-
 _TAXONOMY: tuple[KnowledgeTaxonomyEntry, ...] = (
     KnowledgeTaxonomyEntry(
         id=KnowledgeTaxonomyType.client_truth,

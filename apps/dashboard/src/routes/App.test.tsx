@@ -6249,12 +6249,12 @@ const ahrefsDiagnostics = {
     blocked_claim_summary_label: "2 zablokowane obietnice",
     operator_review_gates: [
       "ahrefs_gap_records_required",
-      "content_planner_review_required",
+      "content_workflow_review_required",
       "human_strategy_review"
     ],
     operator_review_gate_labels: [
       "wymagane konkretne rekordy luk Ahrefs",
-      "sprawdzenie w planowaniu treści",
+      "sprawdzenie w workflow treści",
       "sprawdzenie strategii przez człowieka"
     ],
     source_connectors: ["ahrefs"],
@@ -7363,20 +7363,20 @@ function mockDashboardApi(url: string) {
               {
                 id: "decision_prepare_content_refresh_queue",
                 title: "Przejrzyj kolejkę SEO z GSC i WordPress",
-                route: "/content-planner",
+                route: "/content-workflow",
                 status: "ready",
                 priority: 12,
                 metric_tiles: { "zapytania i adresy z GSC": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 co_widzimy:
                   "GSC i WordPress tworzą kolejkę treści: 1 para zapytania i adresu, 1 dopasowanie WordPress, 1 decyzja, 120 wyświetleń i 12 kliknięć. To jest decyzja odświeżenia, scalenia, nowej treści albo blokady oparta o zapytania, adresy i spis treści, nie obietnica leadów ani wzrostów pozycji.",
                 dlaczego_to_ma_znaczenie:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-workflow.',
                 bezpieczny_next_step:
-                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
+                  'Otwórz /content-workflow i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 why_it_matters:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-workflow.',
                 operator_action:
-                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
+                  'Otwórz /content-workflow i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
                 codex_prompt:
                   "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
@@ -7457,13 +7457,13 @@ function mockDashboardApi(url: string) {
               {
                 id: "daily_content_queue",
                 title: "Treści: kolejka SEO z GSC i WordPress",
-                route: "/content-planner",
+                route: "/content-workflow",
                 status: "ready",
                 priority: 12,
                 summary:
                   'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł.',
                 next_step:
-                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
+                  'Otwórz /content-workflow i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
@@ -7550,14 +7550,14 @@ function mockDashboardApi(url: string) {
               {
                 id: "plan_prepare_content_refresh_queue",
                 title: "Przejrzyj kolejkę SEO z GSC i WordPress",
-                route: "/content-planner",
+                route: "/content-workflow",
                 status: "ready",
                 priority: 12,
                 category: "Content + SEO",
                 why_it_matters:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-workflow.',
                 operator_action:
-                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
+                  'Otwórz /content-workflow i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
                 codex_prompt:
                   "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
@@ -8012,6 +8012,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Uzupełnij dostęp Ads i odśwież źródło")).toBeInTheDocument();
     expect(screen.getByText("Do odświeżenia")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Eksport i pakiety" })).toBeInTheDocument();
+    expect(screen.getByText("Eksport zablokowany")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Otwórz Google Sheets" })).not.toBeInTheDocument();
     expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż szczegóły techniczne źródeł" })).toBeInTheDocument();
@@ -8088,7 +8090,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByRole("heading", { name: "Bezpieczeństwo" })).toBeInTheDocument();
     expect(screen.getByText("Brak zapisu zmian bez audytu")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Eksperymentalne obszary" })).toBeInTheDocument();
-    expect(screen.getByText("Social Publisher")).toBeInTheDocument();
+    expect(screen.getByText("Posty społecznościowe")).toBeInTheDocument();
     expect(screen.getByText("Eksporty Google Sheets")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Szczegóły techniczne" })).toBeInTheDocument();
     expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
@@ -8179,6 +8181,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("Sprawdź pomiar GA4");
     expect(routeSource).toContain("Demand Gen tylko do gotowości");
     expect(routeSource).toContain("ActionObject");
+    expect(routeSource).toContain('href="/actions"');
+    expect(routeSource).not.toContain('href="/ads-doctor/search-terms"');
     expect(routeSource).toContain("summary.total_cost_micros");
     expect(routeSource).toContain("summary.campaign_count");
     expect(routeSource).toContain("summary.search_term_count");
@@ -8467,14 +8471,14 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Wiedza" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Wiedza oparta na źródłach, claimy usług, status review i stan zatwierdzenia.")).toBeInTheDocument();
+    expect(screen.getByText("Wiedza oparta na źródłach, twierdzenia usług, status review i stan zatwierdzenia.")).toBeInTheDocument();
     expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Karta ma źródła, ale wymaga decyzji człowieka/)).toBeInTheDocument();
     expect(screen.getByText("Co blokuje produkcję treści")).toBeInTheDocument();
     expect(screen.getByText("Brak zatwierdzenia człowieka")).toBeInTheDocument();
-    expect(screen.getByText("Zablokowane claimy")).toBeInTheDocument();
+    expect(screen.getByText("Zablokowane twierdzenia")).toBeInTheDocument();
     expect(screen.getByText("Kolejka sprawdzania wiedzy")).toBeInTheDocument();
-    expect(screen.getByText("Status claimów")).toBeInTheDocument();
+    expect(screen.getByText("Status twierdzeń")).toBeInTheDocument();
     expect(screen.getByText("zatwierdzonych")).toBeInTheDocument();
     expect(screen.getByText("Brak osobnego etapu przygotowania.")).toBeInTheDocument();
     await waitFor(() =>
@@ -8532,7 +8536,7 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText("Kolejka sprawdzania wiedzy")).toBeInTheDocument();
-    expect(screen.getByText("Status claimów")).toBeInTheDocument();
+    expect(screen.getByText("Status twierdzeń")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż kartę" })).toBeInTheDocument();
     expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBe(1);
@@ -8855,28 +8859,26 @@ describe("WILQ dashboard", () => {
   });
 
   it("content route renders condensed selected decision with expandable detail", async () => {
-    const mockupRouteSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
-    expect(mockupRouteSource).toContain("ContentPlannerMockupViewport");
-    expect(mockupRouteSource).toContain("Widok pracy nad treściami");
-    expect(mockupRouteSource).toContain("Aktualna strona do pracy");
-    expect(mockupRouteSource).toContain("Dev i ACF");
-    expect(mockupRouteSource).toContain("Obecne sekcje publicznej strony");
-    expect(mockupRouteSource).toContain("Czego dziś nie obiecujemy");
-    expect(mockupRouteSource).toContain("Pozostałe treści i tropy");
-    expect(mockupRouteSource).toContain("Podgląd sygnałów SEO");
-    expect(mockupRouteSource).toContain("Aktualna treść");
-    expect(mockupRouteSource).toContain("wordpress_content_inventory_status");
-    expect(mockupRouteSource).toContain("confirmedPublicContent");
-    expect(mockupRouteSource).toContain("ekologus.dev.proudsite.pl");
-    expect(mockupRouteSource).toContain('header: "Sygnały"');
-    expect(mockupRouteSource).toContain("DenseQueueTable");
-    expect(mockupRouteSource).toContain("ActionLifecycleStrip");
-    expect(mockupRouteSource).not.toContain("ForbiddenClaimsStrip");
-    expect(mockupRouteSource).not.toContain('empty="brak"');
-    expect(mockupRouteSource).not.toContain("Stan danych treści");
-    expect(mockupRouteSource).not.toContain("WILQ widzi 2 kandydat");
-    expect(mockupRouteSource).not.toContain("formatContentEvidenceCount");
-    expect(mockupRouteSource).not.toContain("formatContentActionCount");
+    const routeSource = readFileSync("src/routes/ContentWorkflowSurface.tsx", "utf8");
+    expect(routeSource).toContain("ContentPageWorkbench");
+    expect(routeSource).toContain("Treści: praca nad stroną");
+    expect(routeSource).toContain("Aktualna strona");
+    expect(routeSource).toContain("Sygnały i braki");
+    expect(routeSource).toContain("Dev draft / ACF");
+    expect(routeSource).toContain("Tekst sekcji do szkicu");
+    expect(routeSource).toContain("Podgląd sekcji na devie");
+    expect(routeSource).toContain("section_overrides");
+    expect(routeSource).toContain("source_public_url");
+    expect(routeSource).toContain("wordpress_section_headings");
+    expect(routeSource).toContain("selectDevPage");
+    expect(routeSource).toContain("ekologus.dev.proudsite.pl");
+    expect(routeSource).not.toContain("ContentPlannerMockupViewport");
+    expect(routeSource).not.toContain("ForbiddenClaimsStrip");
+    expect(routeSource).not.toContain('empty="brak"');
+    expect(routeSource).not.toContain("Stan danych treści");
+    expect(routeSource).not.toContain("WILQ widzi 2 kandydat");
+    expect(routeSource).not.toContain("formatContentEvidenceCount");
+    expect(routeSource).not.toContain("formatContentActionCount");
   });
 
   it("localo route renders workflow-specific blockers and clean metric labels", async () => {
@@ -8998,10 +9000,12 @@ describe("WILQ dashboard", () => {
   });
 
   it("content route keeps review language clean in expanded workflows", async () => {
-    const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
-    expect(routeSource).toContain("ActionLifecycleStrip");
-    expect(routeSource).toContain('label: "Publikacja"');
-    expect(routeSource).toContain("Nie są obietnicą ruchu, leadów ani pozycji");
+    const routeSource = readFileSync("src/routes/ContentWorkflowSurface.tsx", "utf8");
+    expect(routeSource).toContain("Szczegóły workflow, kolejka i audyt techniczny");
+    expect(routeSource).toContain("WorkflowStepsList");
+    expect(routeSource).toContain('<FactTile label="Publikacja" value="zablokowana" />');
+    expect(routeSource).toContain("Piszemy i układamy szkic na ekologus.dev.proudsite.pl");
+    expect(routeSource).toContain("Publiczna strona pozostaje punktem");
     expect(routeSource).not.toContain("Zapytania/URL");
     expect(routeSource).not.toContain("GSC↔WP");
     expect(routeSource).not.toContain("Ahrefs↔WP");
@@ -9042,7 +9046,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Dozwolone dowody/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Brakujące dane: brak/)).not.toBeInTheDocument();
     expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Cross-check GSC/WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Sprawdzenie GSC i WordPress")).toBeInTheDocument();
     expect(
       screen.getByText(/WILQ znalazł 1 kandydata Ahrefs do walidacji/)
     ).toBeInTheDocument();

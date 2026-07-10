@@ -52,6 +52,13 @@ WORDPRESS_METADATA_TIMEOUT_SECONDS = 3.0
 WORDPRESS_SECTION_HEADING_LIMIT = 12
 WORDPRESS_CONTENT_SUMMARY_MAX_CHARS = 240
 WORDPRESS_BLOCK_NAME_LIMIT = 16
+WORDPRESS_AUTHORING_PAGE_FIELDS = (
+    "id,slug,link,title,status,modified,modified_gmt,template,parent,acf"
+)
+WORDPRESS_AUTHORING_SECTION_LIMIT = 40
+WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT = 40
+WORDPRESS_AUTHORING_FIELD_NAME_LIMIT = 20
+WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS = 280
 
 
 @dataclass(frozen=True)
@@ -76,6 +83,41 @@ class WordPressDraftPostReadback:
     acf_field_names: list[str]
 
 
+@dataclass(frozen=True)
+class WordPressAuthoringSectionReadback:
+    section_index: int
+    acf_field_name: str
+    layout_name: str
+    layout_label: str
+    title: str
+    text_summary: str
+    field_names: list[str]
+    text_field_paths: list[str]
+
+
+@dataclass(frozen=True)
+class WordPressAuthoringPageReadback:
+    post_id: str
+    slug: str
+    title: str
+    link: str
+    status: str
+    modified: str
+    modified_gmt: str
+    template: str
+    parent: str
+    acf_field_name: str | None
+    section_count: int
+    sections: list[WordPressAuthoringSectionReadback]
+
+
+@dataclass(frozen=True)
+class _AcfTextCandidate:
+    path: tuple[str, ...]
+    value: str
+    score: int
+
+
 class WordPressDraftWriteError(RuntimeError):
     def __init__(self, public_message: str) -> None:
         super().__init__(public_message)
@@ -83,6 +125,12 @@ class WordPressDraftWriteError(RuntimeError):
 
 
 class WordPressDraftReadError(RuntimeError):
+    def __init__(self, public_message: str) -> None:
+        super().__init__(public_message)
+        self.public_message = public_message
+
+
+class WordPressAuthoringReadError(RuntimeError):
     def __init__(self, public_message: str) -> None:
         super().__init__(public_message)
         self.public_message = public_message
@@ -246,6 +294,61 @@ def read_wordpress_draft_post(
     return _draft_post_readback(response, normalized_post_id)
 
 
+def read_wordpress_authoring_pages(
+    connector_id: str = "wordpress_ekologus",
+    *,
+    preferred_flexible_field_name: str | None = None,
+    content_type: str = "pages",
+    limit: int = WORDPRESS_CONTENT_PER_PAGE,
+    http_client: httpx.Client | None = None,
+) -> list[WordPressAuthoringPageReadback]:
+    credentials = _wordpress_credentials(connector_id)
+    if credentials is None:
+        raise WordPressAuthoringReadError("WILQ nie zna tego connectora WordPress.")
+    missing = _missing_credentials(connector_id, credentials)
+    if missing:
+        raise WordPressAuthoringReadError(
+            "Brakuje konfiguracji WordPress wymaganej do odczytu stron authoringu."
+        )
+    normalized_type = content_type.strip().strip("/")
+    if normalized_type not in WORDPRESS_CONTENT_TYPES:
+        raise WordPressAuthoringReadError("Nieobsługiwany typ treści WordPress.")
+
+    owns_client = http_client is None
+    client = http_client or httpx.Client(timeout=30)
+    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
+    try:
+        try:
+            response = client.get(
+                urljoin(credentials.base_url or "", f"wp-json/wp/v2/{normalized_type}"),
+                auth=auth,
+                params={
+                    "context": "edit",
+                    "per_page": max(1, min(limit, WORDPRESS_CONTENT_PER_PAGE)),
+                    "orderby": "modified",
+                    "order": "desc",
+                    "_fields": WORDPRESS_AUTHORING_PAGE_FIELDS,
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise WordPressAuthoringReadError(
+                f"WordPress odrzucił odczyt stron authoringu HTTP {exc.response.status_code}."
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise WordPressAuthoringReadError(
+                f"Połączenie WordPress przerwało odczyt stron authoringu ({type(exc).__name__})."
+            ) from exc
+    finally:
+        if owns_client:
+            client.close()
+
+    return _authoring_pages_from_response(
+        response.json(),
+        preferred_flexible_field_name=preferred_flexible_field_name,
+    )
+
+
 def _created_draft_post_id(response: httpx.Response) -> str:
     body = response.json()
     if not isinstance(body, dict):
@@ -275,12 +378,10 @@ def _draft_post_readback(
     acf_field_count = _optional_int(acf_inventory.get("acf_field_count"))
     return WordPressDraftPostReadback(
         post_id=str(post_id) if post_id is not None else requested_post_id,
-        status=body.get("status") if isinstance(body.get("status"), str) else "",
+        status=str(body.get("status") or ""),
         title=_wordpress_title(body.get("title")),
-        link=body.get("link") if isinstance(body.get("link"), str) else "",
-        modified_gmt=(
-            body.get("modified_gmt") if isinstance(body.get("modified_gmt"), str) else ""
-        ),
+        link=str(body.get("link") or ""),
+        modified_gmt=str(body.get("modified_gmt") or ""),
         content_summary=content_inventory.get("content_summary", ""),
         content_word_count=content_word_count,
         acf_field_count=acf_field_count,
@@ -762,6 +863,312 @@ def _content_objects(payload: Any) -> list[dict[str, str]]:
             }
         )
     return objects
+
+
+def _authoring_pages_from_response(
+    payload: Any,
+    *,
+    preferred_flexible_field_name: str | None,
+) -> list[WordPressAuthoringPageReadback]:
+    if not isinstance(payload, list):
+        return []
+    pages: list[WordPressAuthoringPageReadback] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        sections = _authoring_sections_from_acf(
+            item.get("acf"),
+            preferred_flexible_field_name=preferred_flexible_field_name,
+        )
+        acf_field_name = sections[0].acf_field_name if sections else None
+        post_id = item.get("id")
+        parent = item.get("parent")
+        slug_value = item.get("slug")
+        pages.append(
+            WordPressAuthoringPageReadback(
+                post_id=str(post_id) if post_id is not None else "",
+                slug=_clean_metadata_text(slug_value if isinstance(slug_value, str) else ""),
+                title=_wordpress_title(item.get("title")),
+                link=str(item.get("link") or ""),
+                status=str(item.get("status") or ""),
+                modified=str(item.get("modified") or ""),
+                modified_gmt=str(item.get("modified_gmt") or ""),
+                template=str(item.get("template") or ""),
+                parent=str(parent) if parent not in (None, 0, "0") else "",
+                acf_field_name=acf_field_name,
+                section_count=len(sections),
+                sections=sections,
+            )
+        )
+    return pages
+
+
+def _authoring_sections_from_acf(
+    value: Any,
+    *,
+    preferred_flexible_field_name: str | None,
+) -> list[WordPressAuthoringSectionReadback]:
+    rows = _acf_flexible_rows(value, preferred_flexible_field_name=preferred_flexible_field_name)
+    sections: list[WordPressAuthoringSectionReadback] = []
+    for index, (field_name, row) in enumerate(rows[:WORDPRESS_AUTHORING_SECTION_LIMIT], start=1):
+        layout_name = _clean_metadata_text(str(row.get("acf_fc_layout") or f"section_{index}"))
+        field_names = _acf_top_level_field_names(row)
+        candidates = sorted(_acf_text_candidates(row), key=lambda item: item.score, reverse=True)
+        title = _best_acf_title(candidates)
+        text_summary = _best_acf_summary(candidates, title)
+        text_paths = [".".join(candidate.path) for candidate in candidates[:6]]
+        sections.append(
+            WordPressAuthoringSectionReadback(
+                section_index=index,
+                acf_field_name=field_name,
+                layout_name=layout_name,
+                layout_label=_humanize_layout_name(layout_name),
+                title=title,
+                text_summary=text_summary,
+                field_names=field_names,
+                text_field_paths=text_paths,
+            )
+        )
+    return sections
+
+
+def _acf_flexible_rows(
+    value: Any,
+    *,
+    preferred_flexible_field_name: str | None,
+) -> list[tuple[str, dict[str, Any]]]:
+    if not isinstance(value, dict):
+        return []
+    preferred = (preferred_flexible_field_name or "").strip()
+    ordered_keys = list(value)
+    if preferred in value:
+        ordered_keys = [preferred, *[key for key in ordered_keys if key != preferred]]
+    rows: list[tuple[str, dict[str, Any]]] = []
+    for key in ordered_keys:
+        raw_rows = value.get(key)
+        if not isinstance(raw_rows, list):
+            continue
+        for row in raw_rows:
+            if not isinstance(row, dict):
+                continue
+            if not _clean_metadata_text(str(row.get("acf_fc_layout") or "")):
+                continue
+            rows.append((str(key), row))
+    return rows
+
+
+def _acf_top_level_field_names(row: dict[str, Any]) -> list[str]:
+    names: list[str] = []
+    for key, value in row.items():
+        if key == "acf_fc_layout" or value in (None, "", [], {}):
+            continue
+        names.append(str(key))
+        if len(names) >= WORDPRESS_AUTHORING_FIELD_NAME_LIMIT:
+            break
+    return names
+
+
+def _acf_text_candidates(value: Any, path: tuple[str, ...] = ()) -> list[_AcfTextCandidate]:
+    if len(path) > 8:
+        return []
+    if isinstance(value, str):
+        clean_value = _clean_acf_text_value(value)
+        if not clean_value:
+            return []
+        score = _acf_text_score(path, clean_value)
+        if score <= 0:
+            return []
+        return [_AcfTextCandidate(path=path, value=clean_value, score=score)]
+    if isinstance(value, dict):
+        candidates: list[_AcfTextCandidate] = []
+        for key, child in value.items():
+            if key == "acf_fc_layout":
+                continue
+            candidates.extend(_acf_text_candidates(child, (*path, str(key))))
+            if len(candidates) >= WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT:
+                break
+        return candidates
+    if isinstance(value, list):
+        candidates = []
+        for index, child in enumerate(value[:8]):
+            candidates.extend(_acf_text_candidates(child, (*path, f"row_{index + 1}")))
+            if len(candidates) >= WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT:
+                break
+        return candidates
+    return []
+
+
+def _clean_acf_text_value(value: str) -> str:
+    source = _html_text(value) if "<" in value and ">" in value else value
+    cleaned = _clean_metadata_text(source)
+    if len(cleaned) < 3:
+        return ""
+    lowered = cleaned.lower()
+    if lowered.startswith(("http://", "https://", "mailto:", "tel:")):
+        return ""
+    if "@" in cleaned and " " not in cleaned:
+        return ""
+    if cleaned.replace(".", "").replace(",", "").isdigit():
+        return ""
+    if cleaned.lower() in _acf_non_content_values():
+        return ""
+    return _summary_text_limited(cleaned, WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
+
+
+def _acf_text_score(path: tuple[str, ...], value: str) -> int:
+    path_text = " ".join(part.lower() for part in path)
+    if any(token in path_text for token in _acf_skip_path_tokens()):
+        return 0
+    score = min(len(value), 120) // 4
+    if any(token in path_text for token in _acf_title_path_tokens()):
+        score += 80
+    if any(token in path_text for token in _acf_body_path_tokens()):
+        score += 45
+    word_count = len(value.split())
+    if 2 <= word_count <= 14:
+        score += 12
+    elif word_count > 35:
+        score -= 8
+    return score
+
+
+def _best_acf_title(candidates: list[_AcfTextCandidate]) -> str:
+    title_candidates = [
+        candidate
+        for candidate in candidates
+        if len(candidate.value.split()) <= 18
+        and _acf_path_has_any(candidate.path, _acf_title_path_tokens())
+        and not _acf_path_has_any(candidate.path, _acf_body_path_tokens())
+    ]
+    if title_candidates:
+        title_selected = sorted(
+            title_candidates,
+            key=lambda candidate: (-candidate.score, len(candidate.value)),
+        )[0]
+        return title_selected.value
+    short_candidates = [candidate for candidate in candidates if len(candidate.value.split()) <= 18]
+    selected: _AcfTextCandidate | None = (
+        short_candidates[0] if short_candidates else (candidates[0] if candidates else None)
+    )
+    return selected.value if selected else ""
+
+
+def _best_acf_summary(candidates: list[_AcfTextCandidate], title: str) -> str:
+    chunks: list[str] = []
+    for candidate in candidates:
+        if candidate.value == title and chunks:
+            continue
+        if candidate.value not in chunks:
+            chunks.append(candidate.value)
+        summary = " ".join(chunks)
+        if len(summary) >= WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS:
+            return _summary_text_limited(summary, WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
+    return _summary_text_limited(" ".join(chunks), WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
+
+
+def _summary_text_limited(value: str, max_chars: int) -> str:
+    if len(value) <= max_chars:
+        return value
+    shortened = value[:max_chars].rsplit(" ", 1)[0].strip()
+    return shortened + "..."
+
+
+def _humanize_layout_name(value: str) -> str:
+    cleaned = value.replace("_", " ").replace("-", " ").strip()
+    return cleaned.capitalize() if cleaned else value
+
+
+def _acf_path_has_any(path: tuple[str, ...], tokens: set[str]) -> bool:
+    path_text = " ".join(part.lower() for part in path)
+    return any(token in path_text for token in tokens)
+
+
+def _acf_skip_path_tokens() -> set[str]:
+    return {
+        "url",
+        "link",
+        "href",
+        "image",
+        "img",
+        "icon",
+        "ikona",
+        "obraz",
+        "zdjecie",
+        "zdjęcie",
+        "file",
+        "plik",
+        "key",
+        "id",
+        "color",
+        "colour",
+        "kolor",
+        "type",
+        "typ",
+        "align",
+        "alignment",
+        "position",
+        "pozycja",
+        "style",
+        "variant",
+        "theme",
+        "background",
+        "bg",
+        "size",
+    }
+
+
+def _acf_title_path_tokens() -> set[str]:
+    return {
+        "heading",
+        "title",
+        "tytul",
+        "tytuł",
+        "naglowek",
+        "nagłówek",
+        "nazwa",
+        "label",
+        "name",
+    }
+
+
+def _acf_body_path_tokens() -> set[str]:
+    return {
+        "desc",
+        "opis",
+        "description",
+        "tekst",
+        "text",
+        "content",
+        "body",
+        "lead",
+        "copy",
+        "akapit",
+        "paragraph",
+        "glowny",
+        "główny",
+    }
+
+
+def _acf_non_content_values() -> set[str]:
+    return {
+        "primary",
+        "secondary",
+        "tertiary",
+        "primary-light",
+        "secondary-light",
+        "left",
+        "right",
+        "center",
+        "centre",
+        "top",
+        "bottom",
+        "background-img",
+        "background-image",
+        "default",
+        "none",
+        "true",
+        "false",
+    }
 
 
 def _content_inventory(value: Any) -> dict[str, str]:

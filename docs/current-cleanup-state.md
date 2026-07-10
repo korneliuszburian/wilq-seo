@@ -224,6 +224,11 @@ The content workbench now reads this readiness contract and surfaces its blocker
 next to the dev draft action, so the missing update capability is visible in the
 marketer workflow rather than hidden in technical API details.
 
+The workbench now lazy-mounts its lower workflow queue and technical-audit
+disclosure. The first marketer view renders the selected page, signals and dev
+draft context without mounting the legacy detail tree; the disclosure remains
+available on demand and is covered by the route test.
+
 The new WordPress update ActionObject seed was also extracted from the core
 action registry into a named `_wordpress_existing_draft_update_action()` helper;
 its payload and safety behavior are unchanged.

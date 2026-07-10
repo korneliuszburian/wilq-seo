@@ -1,0 +1,12 @@
+import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
+
+export function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
+  const item = data.preflight.item;
+  const salesBrief = data.salesBrief.sales_brief_result.brief;
+  const signalQuality = salesBrief?.signal_quality ?? null;
+  const knowledgeConstraints = salesBrief?.knowledge_constraints.slice(0, 3) ?? [];
+  return <section id="content-workflow-proof" className="mb-6 rounded-md border border-line bg-white p-4"><div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">Co WILQ już potwierdził</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Finalny adres pozostaje publicznym adresem Ekologus, podgląd dev jest tylko kontekstem projektu, a WordPress nie dostaje publikacji automatycznej.</p><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{signalQuality ? signalQuality.reason : "Sales Brief jest zablokowany, więc WILQ nie pokazuje jakości sygnału jako rekomendacji."}</p>{knowledgeConstraints.length ? <div className="mt-3 rounded-md border border-line bg-surface p-3 text-sm"><div className="font-semibold text-ink">Ograniczenia wiedzy i dowody</div><ul className="mt-2 space-y-2">{knowledgeConstraints.map((constraint) => <li key={`${constraint.card_id}-${constraint.constraint_type}-${constraint.reason}`}><span className="font-medium text-slate-700">{constraint.label}</span><span className="text-slate-600">: {constraint.reason}</span><div className="mt-1 text-xs text-slate-500">Dowody WILQ: {constraint.evidence_ids.length ? constraint.evidence_ids.join(", ") : "brak dowodu przy tym ograniczeniu"}</div></li>)}</ul></div> : null}</div><div className="grid gap-2 text-sm sm:grid-cols-3"><FactTile label="Dowody" value={`Dowody: ${unique(item.evidence_ids).length}`} /><FactTile label="Tryb" value={data.preflight.preflight_verdict.recommended_mode} /><FactTile label="Jakość briefu" value={signalQuality?.status_label ?? "brief zablokowany"} /></div></div></section>;
+}
+
+function FactTile({ label, value }: { label: string; value: string }) { return <div className="rounded-md border border-line bg-surface px-3 py-2"><div className="text-[11px] font-semibold uppercase tracking-normal text-slate-500">{label}</div><div className="mt-1 text-sm font-semibold text-ink">{value}</div></div>; }
+function unique(values: string[]) { return Array.from(new Set(values)); }

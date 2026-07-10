@@ -7,6 +7,7 @@ from scripts.audit_complexity import (
     CHANGED_FILE_LOC_LIMIT,
     CHANGED_FUNCTION_BRANCH_LIMIT,
     CHANGED_FUNCTION_LINE_LIMIT,
+    FROZEN_GROWTH_FILES,
     CodeBlockMetric,
     FileMetric,
     changed_budget_violations,
@@ -51,6 +52,11 @@ def test_changed_budget_violations_detect_changed_file_growth() -> None:
         ("function", "branches"),
         ("class", "lines"),
     }
+
+
+def test_frozen_growth_gate_tracks_schema_compatibility_facade() -> None:
+    assert Path("wilq/schemas/__init__.py") in FROZEN_GROWTH_FILES
+    assert Path("wilq/schemas.py") not in FROZEN_GROWTH_FILES
 
 
 def test_changed_budget_violations_ignore_unchanged_hotspots() -> None:

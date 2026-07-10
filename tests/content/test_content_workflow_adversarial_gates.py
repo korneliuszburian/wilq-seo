@@ -139,7 +139,7 @@ def test_adversarial_wordpress_publish_request_is_rejected_and_live_write_is_blo
     result = live_response.json()["execution_result"]
     assert result["status"] == "blocked"
     assert result["external_write_attempted"] is False
-    assert "live_write_not_enabled" in _blocker_codes(result)
+    assert "missing_write_authorization" in _blocker_codes(result)
 
 
 def test_adversarial_measurement_outcome_is_blocked_before_window_is_ready() -> None:

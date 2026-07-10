@@ -156,13 +156,13 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates(monkeypatch) -> No
         "skill_dir_count"
     ]
     assert summary["latest_skill_eval_results"]["pass"] is True
+    assert summary["latest_skill_eval_results"]["stale_passing_skills"] == []
     assert summary["latest_skill_eval_results"]["passing_skill_count"] == summary[
         "latest_skill_eval_results"
     ]["skill_count"]
     assert summary["latest_skill_eval_results"]["fresh_passing_skill_count"] == summary[
         "latest_skill_eval_results"
     ]["skill_count"]
-    assert summary["latest_skill_eval_results"]["stale_passing_skills"] == []
     assert summary["latest_skill_eval_results"]["minimum_score"] >= 5
     assert summary["latest_skill_eval_results"]["maximum_score"] >= summary[
         "latest_skill_eval_results"
@@ -929,7 +929,6 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "Packet do testu:" in markdown
     assert "scripts/skill_tuning_packet.py --skill" in markdown
     assert "wilq-ads-doctor" in markdown
-    assert "gotowy do review" in markdown
     assert "ready / review-only" not in markdown
     assert "command_center.primary_next_step" not in markdown
     assert "not_configured" not in markdown

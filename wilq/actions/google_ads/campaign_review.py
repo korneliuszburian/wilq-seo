@@ -27,9 +27,63 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 CAMPAIGN_REVIEW_ACTION_ID = "act_prepare_ads_campaign_review_queue"
+
+
+def campaign_review_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    campaign_review_payload: dict[str, Any],
+) -> ActionObject:
+    metric_names = set(campaign_review_payload["source_metric_names"])
+    evidence_ids = set(campaign_review_payload["evidence_ids"])
+    campaign_keys = {
+        (candidate.get("campaign_id"), candidate.get("campaign_name"))
+        for candidate in campaign_review_payload["campaign_candidates"][:4]
+        if isinstance(candidate, dict)
+    }
+    metrics = [
+        fact
+        for fact in google_ads_facts
+        if fact.name in metric_names
+        and fact.evidence_id in evidence_ids
+        and (fact.dimensions.get("campaign_id"), fact.dimensions.get("campaign_name"))
+        in campaign_keys
+    ][:12]
+    return ActionObject(
+        id=CAMPAIGN_REVIEW_ACTION_ID,
+        title="Przygotuj kolejkę przeglądu kampanii Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=campaign_review_payload["evidence_ids"],
+        metrics=metrics,
+        human_diagnosis=(
+            "Google Ads ma aktualne metryki kampanii. WILQ może przygotować "
+            "kolejkę przeglądu kampanii ze wskaźnikami policzonymi z dowodów, ale nadal "
+            "blokuje decyzje budżetowe bez pacingu, historii zmian, rekomendacji "
+            "i modelu wartości."
+        ),
+        recommended_reason=(
+            "W widoku Google Ads przejrzyj kampanie z największym kosztem i ruchem. "
+            "Traktuj podgląd jako materiał do sprawdzenia: bez pauzowania, "
+            "skalowania budżetu ani obietnic rentowności."
+        ),
+        payload=campaign_review_payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "skalowanie budżetu",
     "zmiana budżetu",

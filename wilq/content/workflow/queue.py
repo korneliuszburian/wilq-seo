@@ -353,12 +353,14 @@ def _operator_summary(
 ) -> str:
     if blockers:
         return (
-            f"WILQ widzi {candidate_count} kandydatów, ale tylko {actionable_count} "
-            "ma komplet bramek do pracy. Nie tworzymy sztucznej kolejki bez dowodów."
+            f"Gotowe do pracy: {actionable_count} z {candidate_count} tematów. "
+            "Wybierz gotowy temat albo odśwież źródła; zablokowanych tematów "
+            "nie pisz bez adresu, sekcji i dowodów."
         )
     return (
-        f"WILQ widzi {candidate_count} kandydatów i {actionable_count} może przejść "
-        "do planu bez omijania dowodów, finalnego adresu i sprawdzenia wstępnego."
+        f"Gotowe do pracy: {actionable_count} z {candidate_count} tematów. "
+        "Wybierz stronę z adresem, źródłami i następnym krokiem, a blokady "
+        "traktuj jako stop przed pisaniem."
     )
 
 

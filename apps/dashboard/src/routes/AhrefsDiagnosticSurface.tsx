@@ -186,7 +186,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
       {contract.cross_check_summary ? (
         <div className="mt-3 rounded-md border border-line bg-slate-50 p-3">
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Cross-check GSC/WordPress
+              Sprawdzenie GSC i WordPress
           </p>
           <p className="mt-1 text-sm leading-6 text-slate-700">
             {contract.cross_check_summary}
@@ -199,7 +199,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
               {contract.cross_check_candidates.slice(0, 4).map((candidate) => (
                 <article key={candidate.id} className="rounded-md border border-line bg-white p-3">
                   <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                    {candidate.gap_type_label || "kandydat Ahrefs"}
+                {candidate.gap_type_label || "propozycja Ahrefs"}
                   </p>
                   <h3 className="mt-1 text-sm font-semibold">{candidate.topic}</h3>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">

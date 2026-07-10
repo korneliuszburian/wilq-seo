@@ -4,7 +4,7 @@ import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse
 
 from wilq.content.canonical.urls import content_decision_url_semantics
 from wilq.content.inventory.gates import content_inventory_gate_status

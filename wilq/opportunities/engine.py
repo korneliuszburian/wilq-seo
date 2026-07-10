@@ -256,7 +256,7 @@ def _route_opportunity_type(route: str) -> str:
         return "google_ads_review_queue"
     if route.startswith("/merchant"):
         return "merchant_feed_issue"
-    if route.startswith("/content-planner"):
+    if route.startswith("/content-workflow"):
         return "content_brief_candidate"
     if route.startswith("/ga4"):
         return "ga4_tracking_gap"
@@ -274,7 +274,7 @@ def _route_opportunity_domain(route: str) -> OpportunityDomain:
         return OpportunityDomain.google_ads
     if route.startswith("/merchant"):
         return OpportunityDomain.merchant
-    if route.startswith("/content-planner"):
+    if route.startswith("/content-workflow"):
         return OpportunityDomain.gsc_seo
     if route.startswith("/ga4"):
         return OpportunityDomain.ga4

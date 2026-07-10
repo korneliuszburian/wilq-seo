@@ -205,7 +205,7 @@ expected_actions_instruction = (
 )
 action_candidates_only_instruction = (
     "\n<action_candidates_contract>\nDla tego case'a `action_candidates` służy wyłącznie "
-    "do prawdziwych WILQ ActionObject IDs. Ręczne checklisty, kroki review, decyzje "
+    "do prawdziwych WILQ action IDs. Ręczne checklisty, kroki review, decyzje "
     "po review i bramki bez `action_id` umieszczaj w `recommendations`, `blocked_reason` "
     "albo `operator_next_step`, nie jako osobne `action_candidates` z pustym `action_id`.\n"
     "</action_candidates_contract>\n"

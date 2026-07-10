@@ -42,11 +42,6 @@ const AhrefsDiagnosticSurface = lazy(() =>
     default: module.AhrefsDiagnosticSurface
   }))
 );
-const ContentDiagnosticSurface = lazy(() =>
-  import("./ContentDiagnosticSurface").then((module) => ({
-    default: module.ContentDiagnosticSurface
-  }))
-);
 const ContentWorkflowSurface = lazy(() =>
   import("./ContentWorkflowSurface").then((module) => ({
     default: module.ContentWorkflowSurface
@@ -120,11 +115,6 @@ const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
   "/merchant": () => (
     <LazyRoute>
       <MerchantDiagnosticSurface />
-    </LazyRoute>
-  ),
-  "/content-planner": () => (
-    <LazyRoute>
-      <ContentDiagnosticSurface title={briefSurfaceConfigs["/content-planner"].title} />
     </LazyRoute>
   ),
   "/content-workflow": () => (

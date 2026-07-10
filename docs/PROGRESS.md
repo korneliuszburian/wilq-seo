@@ -15,6 +15,9 @@ proof is archived in `docs/progress/archive/` and in git history.
   blocker and next safe step.
 - The primary dashboard route is `/content-workflow`. The legacy content
   planner route and `ContentDiagnosticSurface` are removed from active truth.
+- The content workbench keeps the first view focused on the selected page,
+  source signals and dev draft context; lower workflow/audit panels mount only
+  after opening their details disclosure.
 - Current WILQ queue state is API-owned: 1 of 2 candidates is actionable and
   the queue is blocked on reaching the minimum actionable candidate count.
   The actionable candidate is the existing public homepage and is supported by

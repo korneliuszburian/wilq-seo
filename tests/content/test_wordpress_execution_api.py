@@ -345,6 +345,41 @@ def test_wordpress_execution_api_returns_draft_only_dry_run(
     ]
 
 
+def test_wordpress_execution_api_uses_section_overrides_in_draft_payload(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_section_overrides.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
+
+    data = _post_wordpress_execution(
+        {
+            "handoff": _wordpress_handoff(),
+            "draft_package": _draft_package(),
+            "mode": "dry_run",
+            "section_overrides": [
+                {
+                    "heading": "Kogo dotyczy BDO",
+                    "body_markdown": (
+                        "BDO dotyczy firm, które wprowadzają produkty, "
+                        "opakowania albo odpady do ewidencji."
+                    ),
+                    "evidence_ids": ["ev_gsc_bdo"],
+                }
+            ],
+        }
+    )
+
+    result = data["execution_result"]
+    assert result["status"] == "dry_run_ready"
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
+    markdown = result["payload"]["content_markdown"]
+    assert "## Kogo dotyczy BDO" in markdown
+    assert "BDO dotyczy firm, które wprowadzają produkty" in markdown
+    assert "Wyjaśnij, kiedy firma powinna sprawdzić obowiązki BDO." not in markdown
+
+
 def test_wordpress_execution_api_blocks_live_write(
     monkeypatch,
     tmp_path,

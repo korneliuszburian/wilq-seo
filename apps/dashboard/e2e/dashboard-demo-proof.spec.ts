@@ -72,7 +72,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       fullPage: true,
     });
 
-    await gotoAndWaitForApi(page, "/content-planner", "/api/content/diagnostics");
+    await gotoAndWaitForApi(page, "/content-workflow", "/api/content/diagnostics");
     await expect(page.getByRole("heading", { name: "Treści", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();
@@ -89,7 +89,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
     await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
     await page.screenshot({
-      path: path.join(runDir, "03-content-planner-queue.png"),
+      path: path.join(runDir, "03-content-workflow-workbench.png"),
       fullPage: true,
     });
 
@@ -151,7 +151,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
         "",
         "- 01-command-center-action-plan.png",
         "- 02-merchant-feed-issues.png",
-        "- 03-content-planner-queue.png",
+        "- 03-content-workflow-workbench.png",
         "- 04-ga4-landing-quality.png",
         "- 05-ads-live-campaign-metrics.png",
         "- 06-localo-access-status.png",

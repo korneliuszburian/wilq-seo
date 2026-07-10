@@ -11,11 +11,14 @@ from wilq.actions.content_refresh import (
     content_contract_labels,
     content_payload_with_reviewed_wordpress_draft_previews,
     content_refresh_payload_from_metric_facts,
+    content_refresh_queue_action,
     content_url_review_contract,
     post_publication_measurement_plan,
     post_publication_measurement_summary,
 )
-from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_payload_from_metric_facts
+from wilq.actions.ga4.tracking_quality import (
+    ga4_tracking_quality_action,
+)
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -28,15 +31,15 @@ from wilq.actions.google_ads.business_context import (
     ads_target_confirmation_payload,
 )
 from wilq.actions.google_ads.campaign_review import (
-    CAMPAIGN_REVIEW_ACTION_ID,
+    campaign_review_action,
     campaign_review_payload_from_metric_facts,
 )
 from wilq.actions.google_ads.change_history import (
-    CHANGE_HISTORY_IMPACT_ACTION_ID,
+    change_history_impact_action,
     change_history_impact_payload_from_metric_facts,
 )
 from wilq.actions.google_ads.custom_segments import (
-    CUSTOM_SEGMENT_ACTION_ID,
+    custom_segment_action,
     custom_segment_payload_from_metric_facts,
 )
 from wilq.actions.google_ads.demand_gen import (
@@ -50,13 +53,13 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
     DEMAND_GEN_LANDING_QUALITY_CONTRACT,
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
-    DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_campaign_mode_review_rows_from_campaigns,
     demand_gen_channel_label,
     demand_gen_contract_has_ready_fact,
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
+    demand_gen_readiness_action,
     demand_gen_readiness_review_payload,
 )
 from wilq.actions.google_ads.keyword_planner import (
@@ -65,27 +68,30 @@ from wilq.actions.google_ads.keyword_planner import (
     keyword_planner_access_payload,
 )
 from wilq.actions.google_ads.negative_keywords import (
-    NEGATIVE_KEYWORD_ACTION_ID,
+    negative_keyword_action,
     negative_keyword_payload_from_metric_facts,
 )
 from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_ACTION_ID,
+    recommendation_review_action,
     recommendation_review_payload_from_metric_facts,
 )
 from wilq.actions.google_ads.search_term_ngrams import (
-    SEARCH_TERM_NGRAM_ACTION_ID,
     SEARCH_TERM_NGRAM_PREVIEW_CONTRACT,
+    search_term_ngram_action,
     search_term_ngram_payload_from_metric_facts,
 )
 from wilq.actions.localo.visibility import (
-    LOCALO_VISIBILITY_REVIEW_ACTION_ID,
+    localo_visibility_review_action,
     localo_visibility_review_payload_from_metric_facts,
 )
+from wilq.actions.merchant import merchant_feed_issue_action
 from wilq.actions.payloads import (
     SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE,
     SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE,
     validate_action_payload,
 )
+from wilq.actions.wordpress_draft import existing_draft_update_action
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.merchant_labels import (
     merchant_display_label,
@@ -586,7 +592,12 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
     private_proposal_action = _service_profile_private_proposal_promotion_action()
     if private_proposal_action is not None:
         actions.append(private_proposal_action)
+    actions.append(_wordpress_existing_draft_update_action())
     return {action.id: action for action in actions}
+
+
+def _wordpress_existing_draft_update_action() -> ActionObject:
+    return existing_draft_update_action()
 
 
 def _service_profile_knowledge_promotion_action() -> ActionObject | None:
@@ -1114,55 +1125,10 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         merchant_action_metrics = merchant_issue_facts[:8]
         merchant_issue_clusters = _merchant_issue_clusters_payload(merchant_facts)
         merchant_payload_preview = _merchant_issue_payload_preview(merchant_issue_clusters)
-        action = ActionObject(
-            id="act_review_merchant_feed_issues",
-            title="Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
-            domain=OpportunityDomain.merchant,
-            connector="google_merchant_center",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=_unique(fact.evidence_id for fact in merchant_action_metrics),
-            metrics=merchant_action_metrics,
-            human_diagnosis=(
-                "Merchant Center ma dane o problemach pliku produktowego w WILQ. "
-                f"{_metric_sentence(merchant_action_metrics)}. To uzasadnia "
-                "kolejkę przeglądu problemów pliku produktowego, ale nie automatyczną zmianę "
-                "danych produktu."
-            ),
-            recommended_reason=(
-                "W widoku Merchant pokaż grupy problemów jako kolejkę przygotowawczą: "
-                "sprawdź typ problemu, atrybut, kraj, podgląd zmian i sprawdzenie "
-                "przed jakąkolwiek zmianą pliku produktowego."
-            ),
-            payload={
-                "action_type": "merchant_feed_issue",
-                "connector": "google_merchant_center",
-                "mode": "prepare_only",
-                "source_metric_names": _unique(fact.name for fact in merchant_action_metrics),
-                "issue_clusters": merchant_issue_clusters,
-                "preview_contract": MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
-                "payload_preview": merchant_payload_preview,
-                "review_steps": [
-                    "identify_disapproved_products",
-                    "group_issue_reasons",
-                    "prepare_feed_fix_preview",
-                    "require_human_confirm_before_apply",
-                ],
-                "blocked_claims": [
-                    "ponowne zatwierdzenie produktu",
-                    "odzyskany przychód",
-                    "automatyczna zmiana pliku produktowego",
-                    "nadpisanie głównego pliku produktowego",
-                    "zapis do pliku produktowego",
-                    "zmiana danych produktu",
-                    "automatyczna naprawa zatwierdzenia",
-                ],
-                "apply_allowed": False,
-                "destructive": False,
-            },
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _merchant_feed_issue_action(
+            merchant_action_metrics=merchant_action_metrics,
+            merchant_issue_clusters=merchant_issue_clusters,
+            merchant_payload_preview=merchant_payload_preview,
         )
         actions[action.id] = action
 
@@ -1170,30 +1136,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
     ga4_dimensioned_facts = _ga4_dimensioned_metric_facts(ga4_facts)
     if ga4_dimensioned_facts:
         ga4_action_metrics = ga4_dimensioned_facts[:8]
-        action = ActionObject(
-            id="act_review_ga4_tracking_quality",
-            title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
-            domain=OpportunityDomain.ga4,
-            connector="google_analytics_4",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.low,
-            status=ActionStatus.needs_validation,
-            evidence_ids=_unique(fact.evidence_id for fact in ga4_action_metrics),
-            metrics=ga4_action_metrics,
-            human_diagnosis=(
-                "GA4 zwraca wymiarowe fakty strony wejścia, źródła ruchu i kampanii, ale WILQ "
-                "nadal nie ma kontraktu na zwrot z reklam, przychód ani werdykt konwersji. "
-                f"{_metric_sentence(ga4_action_metrics)}."
-            ),
-            recommended_reason=(
-                "W widoku GA4 przygotuj przegląd pomiaru i jakości ruchu: pokaż "
-                "zestawienie strony wejścia, źródła ruchu i kampanii, "
-                "sprawdź propozycję w WILQ i nie "
-                "oceniaj kampanii bez kontraktu konwersji."
-            ),
-            payload=ga4_tracking_quality_payload_from_metric_facts(ga4_action_metrics),
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _ga4_tracking_quality_action(
+            ga4_action_metrics=ga4_action_metrics,
         )
         actions[action.id] = action
 
@@ -1208,55 +1152,10 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             required_names={"content_object_count", "clicks", "domain_rating"},
         )[:10]
         content_payload = content_refresh_payload_from_metric_facts(content_facts)
-        action = ActionObject(
-            id="act_prepare_content_refresh_queue",
-            title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
-            domain=OpportunityDomain.content,
-            connector="wordpress_ekologus",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
-            metrics=content_action_metrics,
-            human_diagnosis=(
-                "Spis treści WordPress istnieje w WILQ i można go zestawić z GSC/Ahrefs, "
-                "żeby planować odświeżenie zamiast duplikować treści. "
-                f"{_metric_sentence(content_facts)}."
-            ),
-            recommended_reason=(
-                "W widoku Treści przygotuj kolejkę zachowania, odświeżenia, scalenia, "
-                "nowej treści albo blokady. "
-                "Traktuj plan treści jako materiał do sprawdzenia: GSC i WordPress mogą dać "
-                "odświeżenie albo scalenie, a Ahrefs tylko tematy do oceny po "
-                "dodatkowym sprawdzeniu popytu z GSC i spisu treści."
-            ),
-            payload=content_payload
-            if content_payload is not None
-            else {
-                "action_type": "wordpress_content_refresh",
-                "connector": "wordpress_ekologus",
-                "mode": "prepare_only",
-                "source_connectors": _unique(fact.source_connector for fact in content_facts),
-                "source_metric_names": _unique(fact.name for fact in content_facts),
-                "content_url_review_contract": content_url_review_contract(),
-                "queue_steps": [
-                    "join_wordpress_inventory_with_gsc",
-                    "classify_refresh_create_merge_block",
-                    "review_public_final_url",
-                    "prepare_brief_preview",
-                    "require_human_confirm_before_wordpress_write",
-                ],
-                "required_validation": [
-                    "gsc_query_page_check",
-                    "wordpress_inventory_check",
-                    "content_url_preflight_review",
-                    "duplicate_or_cannibalization_check",
-                    "human_confirm_before_wordpress_write",
-                ],
-                "destructive": False,
-            },
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _content_refresh_queue_action(
+            content_facts=content_facts,
+            content_action_metrics=content_action_metrics,
+            content_payload=content_payload,
         )
         actions[action.id] = action
         wordpress_draft_action = _wordpress_draft_handoff_action(
@@ -1280,48 +1179,9 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
 
     campaign_review_payload = campaign_review_payload_from_metric_facts(google_ads_facts)
     if campaign_review_payload is not None:
-        campaign_review_metric_names = set(campaign_review_payload["source_metric_names"])
-        campaign_review_evidence_ids = set(campaign_review_payload["evidence_ids"])
-        campaign_review_keys = {
-            (candidate.get("campaign_id"), candidate.get("campaign_name"))
-            for candidate in campaign_review_payload["campaign_candidates"][:4]
-            if isinstance(candidate, dict)
-        }
-        campaign_review_metrics = [
-            fact
-            for fact in google_ads_facts
-            if fact.name in campaign_review_metric_names
-            and fact.evidence_id in campaign_review_evidence_ids
-            and (
-                fact.dimensions.get("campaign_id"),
-                fact.dimensions.get("campaign_name"),
-            )
-            in campaign_review_keys
-        ][:12]
-        action = ActionObject(
-            id=CAMPAIGN_REVIEW_ACTION_ID,
-            title="Przygotuj kolejkę przeglądu kampanii Google Ads",
-            domain=OpportunityDomain.google_ads,
-            connector="google_ads",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=campaign_review_payload["evidence_ids"],
-            metrics=campaign_review_metrics,
-            human_diagnosis=(
-                "Google Ads ma aktualne metryki kampanii. WILQ może przygotować "
-                "kolejkę przeglądu kampanii ze wskaźnikami policzonymi z dowodów, ale nadal "
-                "blokuje decyzje budżetowe bez pacingu, historii zmian, rekomendacji "
-                "i modelu wartości."
-            ),
-            recommended_reason=(
-                "W widoku Google Ads przejrzyj kampanie z największym kosztem i ruchem. "
-                "Traktuj podgląd jako materiał do sprawdzenia: bez pauzowania, "
-                "skalowania budżetu ani obietnic rentowności."
-            ),
-            payload=campaign_review_payload,
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _campaign_review_action(
+            google_ads_facts=google_ads_facts,
+            campaign_review_payload=campaign_review_payload,
         )
         actions[action.id] = action
 
@@ -1329,234 +1189,50 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         google_ads_facts
     )
     if recommendation_review_payload is not None:
-        recommendation_metric_names = set(recommendation_review_payload["source_metric_names"])
-        recommendation_evidence_ids = set(recommendation_review_payload["evidence_ids"])
-        recommendation_ids = {
-            recommendation.get("recommendation_id")
-            for recommendation in recommendation_review_payload["recommendations"][:6]
-            if isinstance(recommendation, dict)
-        }
-        recommendation_metrics = [
-            fact
-            for fact in google_ads_facts
-            if fact.name in recommendation_metric_names
-            and fact.evidence_id in recommendation_evidence_ids
-            and fact.dimensions.get("recommendation_id") in recommendation_ids
-        ][:12]
-        action = ActionObject(
-            id=RECOMMENDATION_REVIEW_ACTION_ID,
-            title="Przygotuj ocenę rekomendacji Google Ads",
-            domain=OpportunityDomain.google_ads,
-            connector="google_ads",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=recommendation_review_payload["evidence_ids"],
-            metrics=recommendation_metrics,
-            human_diagnosis=(
-                "Google Ads ma aktywne fakty rekomendacji. WILQ może pokazać "
-                "podgląd zmian do sprawdzenia, ale nie może akceptować "
-                "rekomendacji bez strategii, oceny RMF/compliance, potwierdzenia "
-                "i audytu."
-            ),
-            recommended_reason=(
-                "W widoku Google Ads przejrzyj typ rekomendacji, podgląd wpływu i "
-                "powiązane kampanie. Traktuj podgląd jako materiał do decyzji, "
-                "nie zgodę na zapis zmian."
-            ),
-            payload=recommendation_review_payload,
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _recommendation_review_action(
+            google_ads_facts=google_ads_facts,
+            recommendation_review_payload=recommendation_review_payload,
         )
         actions[action.id] = action
 
     change_history_payload = change_history_impact_payload_from_metric_facts(google_ads_facts)
     if change_history_payload is not None:
-        change_event_ids = {
-            preview.get("change_event_id")
-            for preview in change_history_payload["change_history_preview"][:6]
-            if isinstance(preview, dict)
-        }
-        change_history_metrics = [
-            fact
-            for fact in google_ads_facts
-            if fact.name in change_history_payload["source_metric_names"]
-            and fact.evidence_id in change_history_payload["evidence_ids"]
-            and fact.dimensions.get("change_event_id") in change_event_ids
-        ][:12]
-        action = ActionObject(
-            id=CHANGE_HISTORY_IMPACT_ACTION_ID,
-            title="Przygotuj ocenę wpływu zmian Google Ads",
-            domain=OpportunityDomain.google_ads,
-            connector="google_ads",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=change_history_payload["evidence_ids"],
-            metrics=change_history_metrics,
-            human_diagnosis=(
-                "Google Ads ma fakty change_event. WILQ może przygotować kolejkę "
-                "oceny wpływu zmian, ale nie może twierdzić nic o wpływie na wynik bez "
-                "okna przed/po i ręcznej oceny."
-            ),
-            recommended_reason=(
-                "W widoku Google Ads sprawdź co zmieniono, na jakim zasobie i które "
-                "pola ruszono. Traktuj podgląd jako materiał do sprawdzenia: bez "
-                "zapisu zmian, bez skalowania i bez obietnic poprawy wyniku."
-            ),
-            payload=change_history_payload,
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _change_history_impact_action(
+            google_ads_facts=google_ads_facts,
+            change_history_payload=change_history_payload,
         )
         actions[action.id] = action
 
     search_term_ngram_payload = search_term_ngram_payload_from_metric_facts(google_ads_facts)
     if search_term_ngram_payload is not None:
-        ngram_source_terms = {
-            term
-            for preview in search_term_ngram_payload["ngram_preview"][:8]
-            if isinstance(preview, dict)
-            for term in preview.get("sample_search_terms", [])
-            if isinstance(term, str)
-        }
-        ngram_metrics = [
-            fact
-            for fact in google_ads_facts
-            if fact.name in search_term_ngram_payload["source_metric_names"]
-            and fact.evidence_id in search_term_ngram_payload["evidence_ids"]
-            and fact.dimensions.get("search_term") in ngram_source_terms
-        ][:12]
-        action = ActionObject(
-            id=SEARCH_TERM_NGRAM_ACTION_ID,
-            title="Przygotuj ocenę tematów z n-gramów wyszukiwanych haseł",
-            domain=OpportunityDomain.google_ads,
-            connector="google_ads",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=search_term_ngram_payload["evidence_ids"],
-            metrics=ngram_metrics,
-            human_diagnosis=(
-                "Google Ads ma fakty wyszukiwanych haseł, które tworzą powtarzające się "
-                "tematy n-gram. WILQ może przygotować kolejkę oceny intencji, ale "
-                "nie może traktować n-gramów jako gotowych wykluczeń ani obiecywać "
-                "zmarnowanego budżetu bez sprawdzenia."
-            ),
-            recommended_reason=(
-                "W widoku Google Ads przejrzyj n-gramy z kosztem, kliknięciami i "
-                "przykładowymi wyszukiwanymi hasłami. Dopiero po ręcznej ocenie intencji wróć "
-                "do kolejki sprawdzenia wykluczeń."
-            ),
-            payload=search_term_ngram_payload,
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _search_term_ngram_action(
+            google_ads_facts=google_ads_facts,
+            search_term_ngram_payload=search_term_ngram_payload,
         )
         actions[action.id] = action
 
     custom_segment_payload = custom_segment_payload_from_metric_facts(google_ads_facts)
     if custom_segment_payload is not None:
-        custom_segment_metrics = [
-            fact
-            for fact in google_ads_facts
-            if fact.name.startswith("search_term_")
-            and fact.dimensions.get("search_term") in custom_segment_payload["terms"]
-        ][:12]
-        action = ActionObject(
-            id=CUSTOM_SEGMENT_ACTION_ID,
-            title="Przygotuj propozycje segmentów z wyszukiwanych haseł",
-            domain=OpportunityDomain.google_ads,
-            connector="google_ads",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=custom_segment_payload["evidence_ids"],
-            metrics=custom_segment_metrics,
-            human_diagnosis=(
-                "Google Ads ma realne fakty z wyszukiwanych haseł. WILQ może przygotować "
-                "propozycje segmentów wyłącznie z tych terminów, ale nie może "
-                "twierdzić nic o rozmiarze odbiorców, zwrocie z reklam ani skuteczności bez "
-                "dodatkowych kontraktów."
-            ),
-            recommended_reason=(
-                "W widoku Google Ads przejrzyj hasła źródłowe, odrzuć brandowe i "
-                "niskointencyjne frazy, dodaj wzbogacenie Keyword Planner i sprawdź w WILQ "
-                "podgląd zmian przed zapisem zmian."
-            ),
-            payload=custom_segment_payload,
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _custom_segment_action(
+            google_ads_facts=google_ads_facts,
+            custom_segment_payload=custom_segment_payload,
         )
         actions[action.id] = action
 
     negative_keyword_payload = negative_keyword_payload_from_metric_facts(google_ads_facts)
     if negative_keyword_payload is not None:
-        negative_keyword_metrics = [
-            fact
-            for fact in google_ads_facts
-            if fact.name.startswith("search_term_")
-            and fact.dimensions.get("search_term") in negative_keyword_payload["terms"]
-        ][:12]
-        action = ActionObject(
-            id=NEGATIVE_KEYWORD_ACTION_ID,
-            title="Przygotuj kolejkę oceny wykluczeń z wyszukiwanych haseł",
-            domain=OpportunityDomain.google_ads,
-            connector="google_ads",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=negative_keyword_payload["evidence_ids"],
-            metrics=negative_keyword_metrics,
-            human_diagnosis=(
-                "Google Ads ma fakty z wyszukiwanych haseł, które mogą zasilić ocenę "
-                "potencjalnych wykluczeń. WILQ nie może jednak twierdzić nic o "
-                "przepalonym budżecie ani wdrażać wykluczających słów bez "
-                "90-dniowej kontroli bezpieczeństwa i ręcznej sprawdzenia."
-            ),
-            recommended_reason=(
-                "W widoku Google Ads przejrzyj terminy z kosztem/kliknięciami i zerową "
-                "konwersją w bieżących dowodach, ale potraktuj je wyłącznie jako "
-                "kolejkę oceny przed 90-dniową kontrolą bezpieczeństwa."
-            ),
-            payload=negative_keyword_payload,
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _negative_keyword_action(
+            google_ads_facts=google_ads_facts,
+            negative_keyword_payload=negative_keyword_payload,
         )
         actions[action.id] = action
 
     localo_facts = _localo_action_metric_facts(by_connector.get("localo", []))
     localo_visibility_payload = localo_visibility_review_payload_from_metric_facts(localo_facts)
     if localo_visibility_payload is not None:
-        localo_metrics = _prioritize_action_metrics(
-            localo_facts,
-            required_names={
-                "localo_active_place_count",
-                "localo_tracked_keyword_count",
-                "localo_avg_visibility_current",
-                "localo_reviews_count",
-            },
-        )[:10]
-        action = ActionObject(
-            id=LOCALO_VISIBILITY_REVIEW_ACTION_ID,
-            title="Przygotuj przegląd widoczności lokalnej Localo",
-            domain=OpportunityDomain.localo,
-            connector="localo",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.low,
-            status=ActionStatus.needs_validation,
-            evidence_ids=_unique(fact.evidence_id for fact in localo_metrics),
-            metrics=localo_metrics,
-            human_diagnosis=(
-                "Localo ma agregaty miejsc, fraz, widoczności i recenzji z odczytu danych. "
-                f"{_metric_sentence(localo_metrics)}. To wystarcza do sprawdzenia lokalnej "
-                "widoczności, ale nie do twierdzeń o GBP, konkurencji ani poprawie wyniku."
-            ),
-            recommended_reason=(
-                "W widoku Localo przygotuj przegląd agregatów i zostaw wyniki profilu firmy, "
-                "zapis zmian i poprawę widoczności zablokowane do czasu osobnych kontraktów Localo."
-            ),
-            payload=localo_visibility_payload,
-            validation_status="not_validated",
-            created_by="system_metric_seed",
+        action = _localo_visibility_review_action(
+            localo_facts=localo_facts,
+            localo_visibility_payload=localo_visibility_payload,
         )
         actions[action.id] = action
 
@@ -1570,6 +1246,133 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         actions.update(_social_draft_actions(social_facts))
 
     return actions
+
+
+def _merchant_feed_issue_action(
+    *,
+    merchant_action_metrics: list[MetricFact],
+    merchant_issue_clusters: list[dict[str, Any]],
+    merchant_payload_preview: list[dict[str, Any]],
+) -> ActionObject:
+    return merchant_feed_issue_action(
+        merchant_action_metrics=merchant_action_metrics,
+        merchant_issue_clusters=merchant_issue_clusters,
+        merchant_payload_preview=merchant_payload_preview,
+        metric_sentence=_metric_sentence(merchant_action_metrics),
+        preview_contract=MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
+    )
+
+
+def _ga4_tracking_quality_action(
+    *,
+    ga4_action_metrics: list[MetricFact],
+) -> ActionObject:
+    return ga4_tracking_quality_action(
+        ga4_action_metrics=ga4_action_metrics,
+        metric_sentence=_metric_sentence(ga4_action_metrics),
+    )
+
+
+def _localo_visibility_review_action(
+    *,
+    localo_facts: list[MetricFact],
+    localo_visibility_payload: dict[str, Any],
+) -> ActionObject:
+    metrics = _prioritize_action_metrics(
+        localo_facts,
+        required_names={
+            "localo_active_place_count",
+            "localo_tracked_keyword_count",
+            "localo_avg_visibility_current",
+            "localo_reviews_count",
+        },
+    )[:10]
+    return localo_visibility_review_action(
+        localo_metrics=metrics,
+        localo_visibility_payload=localo_visibility_payload,
+        metric_sentence=_metric_sentence(metrics),
+    )
+
+
+def _negative_keyword_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    negative_keyword_payload: dict[str, Any],
+) -> ActionObject:
+    return negative_keyword_action(
+        google_ads_facts=google_ads_facts,
+        negative_keyword_payload=negative_keyword_payload,
+    )
+
+
+def _custom_segment_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    custom_segment_payload: dict[str, Any],
+) -> ActionObject:
+    return custom_segment_action(
+        google_ads_facts=google_ads_facts,
+        custom_segment_payload=custom_segment_payload,
+    )
+
+
+def _search_term_ngram_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    search_term_ngram_payload: dict[str, Any],
+) -> ActionObject:
+    return search_term_ngram_action(
+        google_ads_facts=google_ads_facts,
+        search_term_ngram_payload=search_term_ngram_payload,
+    )
+
+
+def _recommendation_review_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    recommendation_review_payload: dict[str, Any],
+) -> ActionObject:
+    return recommendation_review_action(
+        google_ads_facts=google_ads_facts,
+        recommendation_review_payload=recommendation_review_payload,
+    )
+
+
+def _change_history_impact_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    change_history_payload: dict[str, Any],
+) -> ActionObject:
+    return change_history_impact_action(
+        google_ads_facts=google_ads_facts,
+        change_history_payload=change_history_payload,
+    )
+
+
+def _campaign_review_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    campaign_review_payload: dict[str, Any],
+) -> ActionObject:
+    return campaign_review_action(
+        google_ads_facts=google_ads_facts,
+        campaign_review_payload=campaign_review_payload,
+    )
+
+
+def _content_refresh_queue_action(
+    *,
+    content_facts: list[MetricFact],
+    content_action_metrics: list[MetricFact],
+    content_payload: dict[str, Any] | None,
+) -> ActionObject:
+    return content_refresh_queue_action(
+        content_facts=content_facts,
+        content_action_metrics=content_action_metrics,
+        content_payload=content_payload,
+        unique_evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
+        metric_sentence=_metric_sentence(content_facts),
+    )
 
 
 def _demand_gen_readiness_review_action(
@@ -1685,30 +1488,10 @@ def _demand_gen_readiness_review_action(
         [*google_ads_facts, *ga4_facts],
         required_names={"clicks", "impressions", "cost_micros", "active_users", "sessions"},
     )[:10]
-    return ActionObject(
-        id=DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
-        title="Przygotuj przegląd gotowości Demand Gen",
-        domain=OpportunityDomain.google_ads,
-        connector="google_ads",
-        mode=ActionMode.prepare,
-        risk=ActionRisk.medium,
-        status=ActionStatus.needs_validation,
-        evidence_ids=evidence_ids[:12],
-        metrics=action_metrics,
-        human_diagnosis=(
-            "WILQ ma kontekst Google Ads i GA4 do wstępnego przeglądu Demand Gen, "
-            "ale nadal blokuje uruchomienie, zmianę trybu kampanii, werdykty kreatywne "
-            "i zapis zmian bez osobnych odczytów assetów, kreacji, jakości "
-            "stron wejścia i kontroli trybu kampanii."
-        ),
-        recommended_reason=(
-            "W widoku Demand Gen sprawdź w WILQ materiał do sprawdzenia, sprawdź "
-            "kanały kampanii i listę brakujących kontraktów. Nie przygotowuj "
-            "kampanii ani zmiany trybu kampanii bez kolejnych kontraktów odczytu."
-        ),
+    return demand_gen_readiness_action(
         payload=payload,
-        validation_status="not_validated",
-        created_by="system_metric_seed",
+        evidence_ids=evidence_ids,
+        action_metrics=action_metrics,
     )
 
 
@@ -3389,19 +3172,21 @@ def _wordpress_draft_execution_readiness_requirements(
         create_draft=None,
     )
     blocker_codes = {blocker.code for blocker in execution.blockers}
-    blocker_evidence = ", ".join(blocker.code for blocker in execution.blockers) or None
+    execution_blocker_evidence: str | None = (
+        ", ".join(blocker.code for blocker in execution.blockers) or None
+    )
     return [
         _mutation_requirement(
             code="wordpress_draft_handoff_ready",
             label="Zatwierdzone przekazanie do WordPress istnieje",
             satisfied="missing_handoff" not in blocker_codes,
-            evidence=blocker_evidence or "ready",
+            evidence=execution_blocker_evidence or "ready",
         ),
         _mutation_requirement(
             code="wordpress_draft_package_ready",
             label="Paczka szkicu WordPress istnieje",
             satisfied="missing_draft_package" not in blocker_codes,
-            evidence=blocker_evidence or "ready",
+            evidence=execution_blocker_evidence or "ready",
         ),
     ]
 

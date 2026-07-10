@@ -650,7 +650,7 @@ def route_operator_label(route: str | None) -> str:
         "/codex-runs": "Uruchomienia Codexa",
         "/command-center": "Centrum pracy",
         "/content-inventory": "Spis treści",
-        "/content-planner": "Treści",
+        "/content-workflow": "Treści",
         "/ga4": "GA4",
         "/google-sheets": "Google Sheets",
         "/knowledge": "Baza wiedzy",

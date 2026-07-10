@@ -13,7 +13,14 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 CHANGE_HISTORY_IMPACT_ACTION_ID = "act_review_ads_change_history_impact"
 CHANGE_HISTORY_IMPACT_ACTION_TYPE = "google_ads_change_history_impact_review"
@@ -27,6 +34,49 @@ CHANGE_HISTORY_IMPACT_REQUIRED_VALIDATION = [
     "business_goal_review",
     "block_apply_until_mutation_audit",
 ]
+
+
+def change_history_impact_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    change_history_payload: dict[str, Any],
+) -> ActionObject:
+    change_event_ids = {
+        preview.get("change_event_id")
+        for preview in change_history_payload["change_history_preview"][:6]
+        if isinstance(preview, dict)
+    }
+    metrics = [
+        fact
+        for fact in google_ads_facts
+        if fact.name in change_history_payload["source_metric_names"]
+        and fact.evidence_id in change_history_payload["evidence_ids"]
+        and fact.dimensions.get("change_event_id") in change_event_ids
+    ][:12]
+    return ActionObject(
+        id=CHANGE_HISTORY_IMPACT_ACTION_ID,
+        title="Przygotuj ocenę wpływu zmian Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=change_history_payload["evidence_ids"],
+        metrics=metrics,
+        human_diagnosis=(
+            "Google Ads ma fakty change_event. WILQ może przygotować kolejkę "
+            "oceny wpływu zmian, ale nie może twierdzić nic o wpływie na wynik bez "
+            "okna przed/po i ręcznej oceny."
+        ),
+        recommended_reason=(
+            "W widoku Google Ads sprawdź co zmieniono, na jakim zasobie i które "
+            "pola ruszono. Traktuj podgląd jako materiał do sprawdzenia: bez "
+            "zapisu zmian, bez skalowania i bez obietnic poprawy wyniku."
+        ),
+        payload=change_history_payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 CHANGE_HISTORY_IMPACT_BLOCKED_CLAIMS = [
     "wpływ zmian",
     "obietnica poprawy wyniku",

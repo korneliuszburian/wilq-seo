@@ -118,7 +118,7 @@ Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Id
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.

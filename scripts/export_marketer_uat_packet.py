@@ -44,7 +44,7 @@ UAT_ROUTE_ORDER = [
     {
         "key": "content",
         "label": "Treści",
-        "route": "/content-planner",
+        "route": "/content-workflow",
         "operator_task": "Wybierz jeden istniejący temat do zachowania, odświeżenia albo scalenia.",
         "pass_condition": (
             "Marketer widzi publiczny URL na ekologus.pl, dowody z GSC, WordPress i Ahrefs, "

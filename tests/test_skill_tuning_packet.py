@@ -114,7 +114,9 @@ def test_skill_tuning_packet_supports_explicit_skill(tmp_path, monkeypatch) -> N
         json.dumps(
             {
                 "skill": "wilq-gsc-content-doctor",
-                "operator_next_step": "Otwórz /content-planner i zacznij od mapy decyzji.",
+                "operator_next_step": (
+                    "Otwórz /content-workflow i zacznij od mapy pracy nad stroną."
+                ),
                 "decision_quality": {"notes_pl": ""},
                 "evidence_ids": [],
                 "source_connectors": [],
@@ -152,7 +154,9 @@ def test_skill_tuning_packet_supports_explicit_skill(tmp_path, monkeypatch) -> N
     packet = packet_module.build_packet(skill="wilq-gsc-content-doctor")
 
     assert packet["skill"] == "wilq-gsc-content-doctor"
-    assert packet["operator_next_step"] == "Otwórz /content-planner i zacznij od mapy decyzji."
+    assert packet["operator_next_step"] == (
+        "Otwórz /content-workflow i zacznij od mapy pracy nad stroną."
+    )
 
 
 def test_skill_tuning_packet_renders_filled_reviewer_scorecard(

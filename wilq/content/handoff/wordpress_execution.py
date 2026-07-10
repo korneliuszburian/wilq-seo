@@ -38,6 +38,14 @@ class ContentWordPressDraftPayload(BaseModel):
     destructive_update_allowed: bool = False
 
 
+class ContentWordPressDraftSectionOverride(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    heading: str
+    body_markdown: str
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class ContentWordPressDraftExecutionBlocker(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -90,6 +98,7 @@ def execute_content_wordpress_draft_handoff(
     create_draft: Callable[[ContentWordPressDraftPayload], str] | None = None,
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
     write_authorization_verified: bool = False,
+    section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
 ) -> ContentWordPressDraftExecutionResult:
     blockers = content_wordpress_draft_execution_blockers(
         handoff=handoff,
@@ -115,7 +124,11 @@ def execute_content_wordpress_draft_handoff(
         raise RuntimeError("WordPress handoff passed execution blockers as None.")
     if draft_package is None:
         raise RuntimeError("Draft package passed WordPress execution blockers as None.")
-    payload = content_wordpress_draft_payload(handoff, draft_package)
+    payload = content_wordpress_draft_payload(
+        handoff,
+        draft_package,
+        section_overrides=section_overrides,
+    )
     if mode == "dry_run":
         return ContentWordPressDraftExecutionResult(
             status="dry_run_ready",
@@ -213,10 +226,15 @@ def content_wordpress_draft_execution_blockers(
 def content_wordpress_draft_payload(
     handoff: ContentWordPressDraftHandoff,
     draft_package: ContentDraftPackage,
+    *,
+    section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
 ) -> ContentWordPressDraftPayload:
     return ContentWordPressDraftPayload(
         title=handoff.title,
-        content_markdown=_content_markdown_from_draft_package(draft_package),
+        content_markdown=_content_markdown_from_draft_package(
+            draft_package,
+            section_overrides=section_overrides,
+        ),
         final_canonical_url=handoff.final_canonical_url,
         evidence_ids=handoff.evidence_ids,
     )
@@ -356,14 +374,44 @@ def _adapter_error_reason(exc: Exception) -> str:
     )
 
 
-def _content_markdown_from_draft_package(draft_package: ContentDraftPackage) -> str:
+def _content_markdown_from_draft_package(
+    draft_package: ContentDraftPackage,
+    *,
+    section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
+) -> str:
+    overrides = _section_override_map(section_overrides or [])
     chunks = [f"# {draft_package.title}"]
     for section in draft_package.sections:
         chunks.append(f"## {section.heading}")
-        chunks.append(section.purpose)
-        if section.draft_notes:
+        override = overrides.get(_section_key(section.heading))
+        if override is not None:
+            chunks.append(override.body_markdown.strip())
+        else:
+            chunks.append(section.purpose)
+        if override is None and section.draft_notes:
             chunks.extend(f"- {note}" for note in section.draft_notes)
     return "\n\n".join(chunks)
+
+
+def _section_override_map(
+    section_overrides: list[ContentWordPressDraftSectionOverride],
+) -> dict[str, ContentWordPressDraftSectionOverride]:
+    result: dict[str, ContentWordPressDraftSectionOverride] = {}
+    for override in section_overrides:
+        key = _section_key(override.heading)
+        body = override.body_markdown.strip()
+        if not key or not body:
+            continue
+        result[key] = ContentWordPressDraftSectionOverride(
+            heading=override.heading.strip(),
+            body_markdown=body,
+            evidence_ids=override.evidence_ids,
+        )
+    return result
+
+
+def _section_key(value: str) -> str:
+    return " ".join(value.strip().casefold().split())
 
 
 def _blocker(

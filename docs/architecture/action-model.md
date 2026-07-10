@@ -2,7 +2,10 @@
 
 ActionObject is the execution primitive for recommendations and API writes.
 
-Required fields live in `wilq/schemas.py` and include ID, title, domain, connector, mode, risk, status, evidence IDs, metrics, diagnosis, reason, payload, validation status, creator, timestamps, and audit events.
+Required fields live behind the `wilq/schemas/__init__.py` compatibility façade
+and include ID, title, domain, connector, mode, risk, status, evidence IDs,
+metrics, diagnosis, reason, payload, validation status, creator, timestamps,
+and audit events.
 
 Validation rules:
 
@@ -18,4 +21,3 @@ Current implementation:
 - `wilq/actions/service.py` validates and applies seeded actions.
 - `/api/actions/{id}/validate` records validation state.
 - `/api/actions/{id}/apply` blocks unvalidated or unsafe actions with an audit event.
-

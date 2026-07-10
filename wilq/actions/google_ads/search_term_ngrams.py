@@ -14,12 +14,65 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 SEARCH_TERM_NGRAM_ACTION_ID = "act_review_ads_search_term_ngrams"
 SEARCH_TERM_NGRAM_ACTION_TYPE = "google_ads_search_term_ngram_review"
 SEARCH_TERM_NGRAM_PREVIEW_CONTRACT = "search_term_ngram_review_v1"
 SEARCH_TERM_NGRAM_OPERATION_TYPE = "SearchTermNgramReview"
+
+
+def search_term_ngram_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    search_term_ngram_payload: dict[str, Any],
+) -> ActionObject:
+    source_terms = {
+        term
+        for preview in search_term_ngram_payload["ngram_preview"][:8]
+        if isinstance(preview, dict)
+        for term in preview.get("sample_search_terms", [])
+        if isinstance(term, str)
+    }
+    metrics = [
+        fact
+        for fact in google_ads_facts
+        if fact.name in search_term_ngram_payload["source_metric_names"]
+        and fact.evidence_id in search_term_ngram_payload["evidence_ids"]
+        and fact.dimensions.get("search_term") in source_terms
+    ][:12]
+    return ActionObject(
+        id=SEARCH_TERM_NGRAM_ACTION_ID,
+        title="Przygotuj ocenę tematów z n-gramów wyszukiwanych haseł",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=search_term_ngram_payload["evidence_ids"],
+        metrics=metrics,
+        human_diagnosis=(
+            "Google Ads ma fakty wyszukiwanych haseł, które tworzą powtarzające się "
+            "tematy n-gram. WILQ może przygotować kolejkę oceny intencji, ale "
+            "nie może traktować n-gramów jako gotowych wykluczeń ani obiecywać "
+            "zmarnowanego budżetu bez sprawdzenia."
+        ),
+        recommended_reason=(
+            "W widoku Google Ads przejrzyj n-gramy z kosztem, kliknięciami i "
+            "przykładowymi wyszukiwanymi hasłami. Dopiero po ręcznej ocenie intencji wróć "
+            "do kolejki sprawdzenia wykluczeń."
+        ),
+        payload=search_term_ngram_payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 SEARCH_TERM_NGRAM_REQUIRED_VALIDATION = [
     "review_ngram_intent",
     "review_source_search_terms",

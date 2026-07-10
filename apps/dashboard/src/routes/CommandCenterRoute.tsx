@@ -227,7 +227,7 @@ function ForbiddenClaimsInline({ claims }: { claims: string[] }) {
   if (claims.length === 0) {
     return (
       <p className="text-sm leading-6 text-slate-700">
-        Brak dodatkowych blokowanych claimów w kolejce dnia. Nadal trzymaj się dowodów.
+            Brak dodatkowych zablokowanych twierdzeń w kolejce dnia. Nadal trzymaj się dowodów.
       </p>
     );
   }

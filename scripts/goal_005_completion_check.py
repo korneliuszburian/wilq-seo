@@ -1575,6 +1575,13 @@ def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:
             )
             if row.get("packet_command"):
                 lines.append(f"    Packet do testu: `{row.get('packet_command')}`")
+    stale_skills = latest_eval.get("stale_passing_skills") or []
+    if stale_skills:
+        lines.append(
+            "- Skille wymagające świeżej bramki: "
+            + ", ".join(str(skill) for skill in stale_skills)
+            + "."
+        )
     lines.extend(
         [
             "- Historia social do dedupe: "

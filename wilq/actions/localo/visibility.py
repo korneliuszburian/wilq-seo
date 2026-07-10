@@ -11,7 +11,14 @@ from wilq.actions.validation_copy import (
     wrong,
 )
 from wilq.briefing.localo_labels import localo_metric_fact_label
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 LOCALO_VISIBILITY_REVIEW_ACTION_ID = "act_review_localo_visibility_facts"
 LOCALO_VISIBILITY_REVIEW_ACTION_TYPE = "local_visibility_task"
@@ -30,6 +37,37 @@ LOCALO_VISIBILITY_REVIEW_STEPS = [
     "review_reviews_aggregate",
     "require_human_confirm_before_any_write",
 ]
+
+
+def localo_visibility_review_action(
+    *,
+    localo_metrics: list[MetricFact],
+    localo_visibility_payload: dict[str, Any],
+    metric_sentence: str,
+) -> ActionObject:
+    return ActionObject(
+        id=LOCALO_VISIBILITY_REVIEW_ACTION_ID,
+        title="Przygotuj przegląd widoczności lokalnej Localo",
+        domain=OpportunityDomain.localo,
+        connector="localo",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=list(dict.fromkeys(fact.evidence_id for fact in localo_metrics)),
+        metrics=localo_metrics,
+        human_diagnosis=(
+            "Localo ma agregaty miejsc, fraz, widoczności i recenzji z odczytu danych. "
+            f"{metric_sentence}. To wystarcza do sprawdzenia lokalnej "
+            "widoczności, ale nie do twierdzeń o GBP, konkurencji ani poprawie wyniku."
+        ),
+        recommended_reason=(
+            "W widoku Localo przygotuj przegląd agregatów i zostaw wyniki profilu firmy, "
+            "zapis zmian i poprawę widoczności zablokowane do czasu osobnych kontraktów Localo."
+        ),
+        payload=localo_visibility_payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 LOCALO_CLAIMS_BY_MISSING_CONTRACT = {
     "local_rankings": "lokalne pozycje",
     "gbp_visibility": "wyniki profilu firmy w Google",

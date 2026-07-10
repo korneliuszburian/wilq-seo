@@ -49,6 +49,13 @@ def localo_context_pack() -> dict[str, Any]:
             }
         ],
         "localo_diagnostics": {
+            "operator_summary": {
+                "review_card_label": "Karta review Localo",
+                "review_decision_after_review": "Po review zdecyduj o bezpiecznym następnym kroku.",
+                "review_question_for_operator": "Który lokalny sygnał wymaga sprawdzenia?",
+                "review_next_safe_click": "Otwórz podgląd akcji do sprawdzenia.",
+                "review_action_ids": ["act_review_localo_visibility_facts"],
+            },
             "evidence_ids": ["ev_refresh_refresh_localo_completed"],
             "access_probe": {"status": "access_ready"},
             "latest_refresh": {

@@ -286,7 +286,7 @@ function actionOperatorNextStep(action: ActionObject, nextStep: string | undefin
   if (action.mode === "prepare" && trimmed.includes("apply-capable ActionObject")) {
     return "Użyj tej akcji do przygotowania i review. Jeśli po review trzeba będzie coś zapisać, WILQ powinien przygotować osobną akcję zapisu z podglądem i potwierdzeniem.";
   }
-  return trimmed.replaceAll("ActionObject", "akcja WILQ");
+  return trimmed.replaceAll("ActionObject", "akcja do sprawdzenia");
 }
 
 function actionBlockerLabel(label: string): string {
@@ -299,7 +299,7 @@ function actionBlockerLabel(label: string): string {
   if (label === "Brakuje adaptera zapisu") {
     return "Brak bezpiecznej ścieżki zapisu";
   }
-  return label.replaceAll("ActionObject", "akcja WILQ").replaceAll("apply", "zapis");
+  return label.replaceAll("ActionObject", "akcja do sprawdzenia").replaceAll("apply", "zapis");
 }
 
 function readinessModeLabel(label: string): string {

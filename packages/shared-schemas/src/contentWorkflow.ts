@@ -1375,6 +1375,12 @@ export const ContentWordPressDraftWriteAuthorizationSchema = z.object({
   confirmed_by: z.string()
 });
 
+export const ContentWordPressDraftSectionOverrideSchema = z.object({
+  heading: z.string(),
+  body_markdown: z.string(),
+  evidence_ids: z.array(z.string()).default([])
+});
+
 export const ContentWordPressDraftWriteReadinessRequirementSchema = z.object({
   event_type: z.string(),
   label: z.string(),
@@ -1406,6 +1412,33 @@ export const ContentWordPressDraftWriteReadinessResponseSchema = z.object({
     .enum(["missing_audit_trace", "audit_actor_mismatch", "available"])
     .default("missing_audit_trace"),
   suggested_write_authorization: ContentWordPressDraftWriteAuthorizationSchema.nullable().optional(),
+  blockers: z.array(ContentWordPressDraftWriteReadinessBlockerSchema).default([]),
+  operator_next_step: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([])
+});
+
+export const ContentWordPressExistingDraftUpdateReadinessResponseSchema = z.object({
+  response_type: z.literal("wordpress_existing_draft_update_readiness"),
+  contract: z.literal("wordpress_existing_draft_update_readiness_v1"),
+  connector: z.string(),
+  action_id: z.string(),
+  work_item_id: z.string(),
+  target_post_id: z.string().nullable().optional(),
+  target_url: z.string().nullable().optional(),
+  current_state_available: z.boolean(),
+  current_section_count: z.number().int().nonnegative(),
+  proposed_section_count: z.number().int().nonnegative(),
+  section_diff_preview: z.array(z.object({
+    heading: z.string(),
+    current_summary: z.string().default(""),
+    proposed_summary: z.string().default(""),
+    status: z.enum(["unchanged", "changed", "proposed", "missing_current"])
+  })).default([]),
+  ready: z.boolean(),
+  update_supported: z.boolean(),
+  publish_allowed: z.literal(false),
+  destructive_update_allowed: z.literal(false),
   blockers: z.array(ContentWordPressDraftWriteReadinessBlockerSchema).default([]),
   operator_next_step: z.string(),
   evidence_ids: z.array(z.string()).default([]),
@@ -1489,7 +1522,8 @@ export const ContentWorkItemWordPressDraftExecutionRequestSchema = z.object({
   handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
   draft_package: ContentDraftPackageSchema.nullable().optional(),
   mode: z.enum(["dry_run", "live"]).default("dry_run"),
-  write_authorization: ContentWordPressDraftWriteAuthorizationSchema.nullable().optional()
+  write_authorization: ContentWordPressDraftWriteAuthorizationSchema.nullable().optional(),
+  section_overrides: z.array(ContentWordPressDraftSectionOverrideSchema).default([])
 });
 
 export const ContentWorkItemWordPressDraftExecutionResponseSchema = z.object({
@@ -1789,8 +1823,14 @@ export type ContentWorkItemWordPressDraftExecutionRequest = z.input<
 export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
   typeof ContentWorkItemWordPressDraftExecutionResponseSchema
 >;
+export type ContentWordPressDraftSectionOverride = z.input<
+  typeof ContentWordPressDraftSectionOverrideSchema
+>;
 export type ContentWordPressDraftWriteReadinessResponse = z.infer<
   typeof ContentWordPressDraftWriteReadinessResponseSchema
+>;
+export type ContentWordPressExistingDraftUpdateReadinessResponse = z.infer<
+  typeof ContentWordPressExistingDraftUpdateReadinessResponseSchema
 >;
 export type ContentWordPressDraftActivationPacketResponse = z.infer<
   typeof ContentWordPressDraftActivationPacketResponseSchema

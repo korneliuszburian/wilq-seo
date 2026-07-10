@@ -13,7 +13,14 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 RECOMMENDATION_REVIEW_ACTION_ID = "act_prepare_google_ads_recommendation_review_queue"
 RECOMMENDATION_REVIEW_BLOCKED_CLAIMS = [
@@ -23,6 +30,52 @@ RECOMMENDATION_REVIEW_BLOCKED_CLAIMS = [
     "zapis zmian kampanii",
     "obietnica poprawy wyniku",
 ]
+
+
+def recommendation_review_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    recommendation_review_payload: dict[str, Any],
+) -> ActionObject:
+    metric_names = set(recommendation_review_payload["source_metric_names"])
+    evidence_ids = set(recommendation_review_payload["evidence_ids"])
+    recommendation_ids = {
+        recommendation.get("recommendation_id")
+        for recommendation in recommendation_review_payload["recommendations"][:6]
+        if isinstance(recommendation, dict)
+    }
+    metrics = [
+        fact
+        for fact in google_ads_facts
+        if fact.name in metric_names
+        and fact.evidence_id in evidence_ids
+        and fact.dimensions.get("recommendation_id") in recommendation_ids
+    ][:12]
+    return ActionObject(
+        id=RECOMMENDATION_REVIEW_ACTION_ID,
+        title="Przygotuj ocenę rekomendacji Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=recommendation_review_payload["evidence_ids"],
+        metrics=metrics,
+        human_diagnosis=(
+            "Google Ads ma aktywne fakty rekomendacji. WILQ może pokazać "
+            "podgląd zmian do sprawdzenia, ale nie może akceptować "
+            "rekomendacji bez strategii, oceny RMF/compliance, potwierdzenia "
+            "i audytu."
+        ),
+        recommended_reason=(
+            "W widoku Google Ads przejrzyj typ rekomendacji, podgląd wpływu i "
+            "powiązane kampanie. Traktuj podgląd jako materiał do decyzji, "
+            "nie zgodę na zapis zmian."
+        ),
+        payload=recommendation_review_payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 RECOMMENDATION_REVIEW_REQUIRED_VALIDATION = [
     "review_recommendation_type",
     "review_impact_metrics",

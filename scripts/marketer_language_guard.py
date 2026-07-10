@@ -18,7 +18,7 @@ ACTIVE_SOURCE_ROOTS = (
     Path("wilq/briefing"),
     Path("wilq/knowledge"),
     Path("wilq/opportunities"),
-    Path("wilq/schemas.py"),
+    Path("wilq/schemas"),
     Path("wilq/workflows"),
     Path(".agents/skills"),
 )

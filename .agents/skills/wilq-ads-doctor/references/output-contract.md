@@ -29,6 +29,7 @@ Wymagane źródła danych:
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zacznij od kolejności pracy operatora, nie od eksportu diagnostyki. Widoczna odpowiedź musi zawierać polskie etykiety: `Można zrobić teraz`, `Jak sprawdzić`, `Dlaczego teraz`, `Decyzja po review`, `Zablokowane` i `Ślad WILQ`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
+W technicznym rozwinięciu zachowaj również etykiety `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`.
 
 
 1. `Można zrobić teraz`: 3-5 priorytetów review w kolejności działania. Dla pełnej kolejki Ads zwykle prowadź: kampanie/budżety -> rekomendacje -> wyszukiwane hasła i n-gramy -> wykluczenia -> segmenty niestandardowe. Nie dumpuj wszystkich pól.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
+from copy import deepcopy
+from typing import Any, cast
 
 from apps.api.wilq_api import context_compaction
 from apps.api.wilq_api.context_scopes import SKILL_ACTION_ID_SCOPES
@@ -13,7 +14,7 @@ ADS_LITE_DECISION_LIMIT = 5
 ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT = 3
 
 def compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict[str, Any]:
-    compact = dict(context_compaction.without_metric_facts(ads_diagnostics))
+    compact = deepcopy(context_compaction.without_metric_facts(ads_diagnostics))
     _compact_latest_refresh_for_context(compact)
     campaign_rows = context_compaction.list_at(compact, "campaign_read_contract", "campaign_rows")
     campaign_triage_rows = context_compaction.list_at(
@@ -47,6 +48,13 @@ def compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict
         compact,
         "recommendations_read_contract",
         "payload_preview",
+    )
+    recommendation_rows = list(
+        context_compaction.list_at(
+            compact,
+            "recommendations_read_contract",
+            "recommendation_rows",
+        )
     )
     custom_payload_preview = context_compaction.list_at(
         compact,
@@ -215,6 +223,16 @@ def compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict
         "recommendation_apply_preview_included": len(
             context_compaction.list_at(compact, "recommendations_read_contract", "payload_preview")
         ),
+        "recommendation_impact_rows_total": sum(
+            1 for row in recommendation_rows if row.get("impact_available")
+        ),
+        "recommendation_impact_rows_included": sum(
+            1
+            for row in context_compaction.list_at(
+                compact, "recommendations_read_contract", "recommendation_rows"
+            )
+            if row.get("impact_available")
+        ),
         "recommendation_row_payload_previews_omitted": True,
         "custom_segment_payload_preview_total": len(custom_payload_preview),
         "custom_segment_payload_preview_included": len(
@@ -241,7 +259,7 @@ def compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict
             dict,
         ),
     }
-    return compact
+    return cast(dict[str, Any], compact)
 
 
 def _compact_ads_strategy_review_readiness_for_context(data: dict[str, Any]) -> None:

@@ -10,7 +10,14 @@ from wilq.actions.validation_copy import (
     no_write,
     wrong,
 )
-from wilq.schemas import MetricFact
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    MetricFact,
+    OpportunityDomain,
+)
 
 CUSTOM_SEGMENT_ACTION_ID = "act_prepare_custom_segments_from_search_terms"
 CUSTOM_SEGMENT_BLOCKED_CLAIMS = [
@@ -30,6 +37,44 @@ CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION = [
     "google_ads_mutation_audit",
     "human_confirm_before_apply",
 ]
+
+
+def custom_segment_action(
+    *,
+    google_ads_facts: list[MetricFact],
+    custom_segment_payload: dict[str, Any],
+) -> ActionObject:
+    metrics = [
+        fact
+        for fact in google_ads_facts
+        if fact.name.startswith("search_term_")
+        and fact.dimensions.get("search_term") in custom_segment_payload["terms"]
+    ][:12]
+    return ActionObject(
+        id=CUSTOM_SEGMENT_ACTION_ID,
+        title="Przygotuj propozycje segmentów z wyszukiwanych haseł",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=list(dict.fromkeys(fact.evidence_id for fact in metrics)),
+        metrics=metrics,
+        human_diagnosis=(
+            "Google Ads ma realne fakty z wyszukiwanych haseł. WILQ może przygotować "
+            "propozycje segmentów wyłącznie z tych terminów, ale nie może "
+            "twierdzić nic o rozmiarze odbiorców, zwrocie z reklam ani skuteczności bez "
+            "dodatkowych kontraktów."
+        ),
+        recommended_reason=(
+            "W widoku Google Ads przejrzyj hasła źródłowe, odrzuć brandowe i "
+            "niskointencyjne frazy, dodaj wzbogacenie Keyword Planner i sprawdź w WILQ "
+            "podgląd zmian przed zapisem zmian."
+        ),
+        payload=custom_segment_payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 
 
 def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:

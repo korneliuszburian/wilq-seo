@@ -28,7 +28,7 @@ class WorkflowBlueprint:
 
 DECISION_WORKFLOW_BY_ROUTE = {
     "/merchant": "merchant_feed_review",
-    "/content-planner": "gsc_content_doctor",
+    "/content-workflow": "gsc_content_doctor",
     "/ga4": "ga4_data_analyst",
     "/ads-doctor": "ads_daily_check",
 }
@@ -162,7 +162,7 @@ WORKFLOW_BLUEPRINTS: tuple[WorkflowBlueprint, ...] = (
     WorkflowBlueprint(
         id="content_calendar_builder",
         label="Kalendarz treści",
-        route="/content-planner",
+        route="/content-workflow",
         skill_id="wilq-content-strategist",
         description=(
             "Planowany proces kalendarza treści. Bieżąca kolejka treści daje "

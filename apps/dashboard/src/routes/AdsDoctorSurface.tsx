@@ -382,7 +382,7 @@ function SafeWorkModes({
           title="Review Ads"
           detail={`${summary.ready_area_count} gotowe obszary, ${summary.blocked_area_count} blokady`}
           statusLabel={summary.operator_review_gate_summary_label || "wymaga review"}
-          href="/ads-doctor/search-terms"
+          href="/actions"
         />
         <ModeRow
           icon={<Gauge aria-hidden="true" size={16} />}

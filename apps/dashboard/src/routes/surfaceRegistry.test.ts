@@ -28,7 +28,7 @@ describe("surface registry", () => {
     expect(primarySurfaceRoutes.map((route) => route.path)).toEqual([
       "/command-center",
       "/opportunities",
-      "/content-planner",
+      "/content-workflow",
       "/ads-doctor",
       "/merchant",
       "/localo",
@@ -80,6 +80,58 @@ describe("surface registry", () => {
     expect(primaryLabels.has("Szanse")).toBe(false);
     expect(primaryLabels.has("Baza wiedzy")).toBe(false);
     expect(primaryLabels.has("Ustawienia")).toBe(false);
+  });
+
+  it("keeps Ads placeholder drilldowns hidden and technical", () => {
+    const placeholderPaths = [
+      "/ads-doctor/search-terms",
+      "/ads-doctor/scaling",
+      "/ads-doctor/seasonality",
+      "/ads-doctor/recommendations"
+    ];
+
+    for (const path of placeholderPaths) {
+      const route = surfaceRoutes.find((surface) => surface.path === path);
+
+      expect(route).toBeDefined();
+      expect(route?.status).toBe("placeholder");
+      expect(route?.mode).toBe("technical");
+      expect(route?.navGroup).toBe("hidden");
+      expect(route?.firstScreenIntent.toLowerCase()).toContain("placeholder");
+    }
+  });
+
+  it("keeps content inventory, social and export routes out of primary marketer navigation", () => {
+    const contentInventory = surfaceRoutes.find((surface) => surface.path === "/content-inventory");
+    const socialPublisher = surfaceRoutes.find((surface) => surface.path === "/social-publisher");
+    const googleSheets = surfaceRoutes.find((surface) => surface.path === "/google-sheets");
+
+    expect(contentInventory?.status).toBe("placeholder");
+    expect(contentInventory?.mode).toBe("technical");
+    expect(contentInventory?.navGroup).toBe("hidden");
+    expect(socialPublisher?.status).toBe("experimental");
+    expect(socialPublisher?.mode).toBe("technical");
+    expect(socialPublisher?.navGroup).toBe("hidden");
+    expect(googleSheets?.status).toBe("placeholder");
+    expect(googleSheets?.mode).toBe("technical");
+    expect(googleSheets?.navGroup).toBe("hidden");
+    const primaryPaths = new Set<string>(primarySurfaceRoutes.map((route) => route.path));
+    expect(primaryPaths.has("/content-inventory")).toBe(false);
+    expect(primaryPaths.has("/social-publisher")).toBe(false);
+    expect(primaryPaths.has("/google-sheets")).toBe(false);
+  });
+
+  it("keeps hidden placeholder metadata short instead of product-spec prose", () => {
+    const parkedRoutes = surfaceRoutes.filter(
+      (route) =>
+        route.navGroup === "hidden"
+        && route.mode === "technical"
+        && (route.status === "placeholder" || route.status === "experimental")
+    );
+
+    for (const route of parkedRoutes) {
+      expect(route.firstScreenIntent.length).toBeLessThanOrEqual(70);
+    }
   });
 
   it("prevents App and Shell from keeping separate route arrays", () => {

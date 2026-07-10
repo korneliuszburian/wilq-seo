@@ -22,11 +22,10 @@ EXCLUDED_DIRS = {
 
 FROZEN_GROWTH_FILES = {
     Path("apps/api/wilq_api/main.py"),
-    Path("wilq/schemas.py"),
+    Path("wilq/schemas/__init__.py"),
     Path("wilq/actions/service.py"),
     Path("wilq/briefing/content_diagnostics.py"),
     Path("tests/test_api_contracts.py"),
-    Path("apps/dashboard/src/routes/ContentDiagnosticSurface.tsx"),
 }
 
 CHANGED_FILE_LOC_LIMIT = 800

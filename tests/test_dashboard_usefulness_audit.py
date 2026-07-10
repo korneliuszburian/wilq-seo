@@ -60,7 +60,7 @@ def test_production_surface_blocks_when_proof_or_next_step_is_missing() -> None:
     audit = load_module()
     spec = audit.SurfaceSpec(
         "content",
-        "/content-planner",
+        "/content-workflow",
         "Treści",
         "diagnostic",
         "production",
@@ -576,6 +576,18 @@ def safe_authoring_profile() -> dict[str, object]:
         "acf": {
             "layouts_discovered": True,
             "layouts": [{"name": "podstrona"}],
+        },
+        "dev_content": {
+            "status": "available",
+            "page_count": 1,
+            "pages": [
+                {
+                    "title": "BDO dla firm",
+                    "section_count": 1,
+                    "sections": [{"layout_name": "baner_startowy"}],
+                }
+            ],
+            "blockers": [],
         },
         "blockers": [],
         "write_boundary": {

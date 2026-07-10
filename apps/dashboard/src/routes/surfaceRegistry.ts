@@ -72,15 +72,15 @@ export const surfaceRoutes = [
     icon: AlertTriangle
   },
   {
-    path: "/content-planner",
+    path: "/content-workflow",
     label: "Treści i SEO",
-    family: "diagnostic",
+    family: "workflow",
     status: "production",
     mode: "marketer",
     navGroup: "primary",
     generated: true,
     ownerPersona: "content_seo",
-    firstScreenIntent: "Wybrać pracę contentową z GSC, WordPress, Ahrefs i claim-gates bez SEO-slopu.",
+    firstScreenIntent: "Pracować nad jedną stroną: publiczne sekcje, sygnały GSC/Ahrefs, dev ACF i szkic w jednym miejscu.",
     icon: FileText
   },
   {
@@ -104,7 +104,7 @@ export const surfaceRoutes = [
     navGroup: "primary",
     generated: true,
     ownerPersona: "product_feed",
-    firstScreenIntent: "Pokazać problemy feedu/produktów, ich ryzyko i czego nie wolno obiecywać.",
+    firstScreenIntent: "Pokazać problemy pliku produktowego i produktów, ich ryzyko i czego nie wolno obiecywać.",
     icon: ShoppingBag
   },
   {
@@ -164,7 +164,7 @@ export const surfaceRoutes = [
     navGroup: "secondary",
     generated: true,
     ownerPersona: "owner_review",
-    firstScreenIntent: "Review wiedzy, claimów i service profile; nie codzienny cockpit marketera.",
+    firstScreenIntent: "Review wiedzy, twierdzeń i profilu usług; nie codzienny cockpit marketera.",
     icon: Database
   },
   {
@@ -200,7 +200,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "ads_analytics",
-    firstScreenIntent: "Placeholder do czasu realnej kolejki search terms."
+    firstScreenIntent: "Placeholder; użyj /ads-doctor."
   },
   {
     path: "/ads-doctor/custom-segments",
@@ -211,7 +211,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "ads_analytics",
-    firstScreenIntent: "Eksperymentalny drilldown segmentów; nie primary workflow."
+    firstScreenIntent: "Eksperymentalny; poza primary workflow."
   },
   {
     path: "/ads-doctor/demand-gen",
@@ -222,7 +222,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "ads_analytics",
-    firstScreenIntent: "Eksperymentalna gotowość Demand Gen i blokady kreacji/ruchu."
+    firstScreenIntent: "Eksperymentalny; wymaga danych kreacji i ruchu."
   },
   {
     path: "/ads-doctor/scaling",
@@ -233,7 +233,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "ads_analytics",
-    firstScreenIntent: "Placeholder skalowania Ads do czasu reguł i bezpiecznej kolejki."
+    firstScreenIntent: "Placeholder; użyj /ads-doctor."
   },
   {
     path: "/ads-doctor/seasonality",
@@ -244,7 +244,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "ads_analytics",
-    firstScreenIntent: "Placeholder sezonowości do czasu kontraktów porównawczych."
+    firstScreenIntent: "Placeholder; użyj /ads-doctor."
   },
   {
     path: "/ads-doctor/recommendations",
@@ -255,7 +255,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "ads_analytics",
-    firstScreenIntent: "Placeholder rekomendacji Ads do czasu realnej kolejki review."
+    firstScreenIntent: "Placeholder; użyj /ads-doctor."
   },
   {
     path: "/ahrefs",
@@ -269,17 +269,6 @@ export const surfaceRoutes = [
     firstScreenIntent: "SEO drilldown; Ahrefs zasila Treści i SEO, ale nie prowadzi osobnego dnia pracy."
   },
   {
-    path: "/content-workflow",
-    label: "Workflow treści",
-    family: "workflow",
-    status: "production",
-    mode: "marketer",
-    navGroup: "hidden",
-    generated: true,
-    ownerPersona: "content_seo",
-    firstScreenIntent: "Prowadzić jedną pracę contentową przez preflight, brief, claim ledger, draft i review."
-  },
-  {
     path: "/service-profile",
     label: "Service Profile",
     family: "knowledge",
@@ -288,7 +277,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "owner_review",
-    firstScreenIntent: "Owner review usług, claimów i statusów wiedzy."
+    firstScreenIntent: "Owner review usług, twierdzeń i statusów wiedzy."
   },
   {
     path: "/content-inventory",
@@ -299,7 +288,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "content_seo",
-    firstScreenIntent: "Inventory jako źródło dla Treści i SEO, nie osobny cockpit."
+    firstScreenIntent: "Placeholder; użyj /content-workflow."
   },
   {
     path: "/social-publisher",
@@ -310,7 +299,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "marketer",
-    firstScreenIntent: "Review-only social draft directions; duplicate-free and publish claims remain blocked."
+    firstScreenIntent: "Review-only; ukryte do czasu historii social."
   },
   {
     path: "/google-sheets",
@@ -321,7 +310,7 @@ export const surfaceRoutes = [
     navGroup: "hidden",
     generated: true,
     ownerPersona: "developer_audit",
-    firstScreenIntent: "Export placeholder under audit/source tooling."
+    firstScreenIntent: "Placeholder; eksport techniczny."
   },
   {
     path: "/codex-runs",

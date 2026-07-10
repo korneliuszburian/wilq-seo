@@ -1,0 +1,3 @@
+export function ContentWorkflowHeader({ topic }: { topic: string }) {
+  return <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-semibold tracking-normal">Workflow treści bez slopu</h1><p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Pierwszy kontrolny tor pokazuje, czy WILQ potrafi przeprowadzić temat od sprawdzenia pisania do szkicu WordPress i okna pomiaru bez pomijania bramek.</p></div><div className="rounded-md border border-line bg-white px-4 py-3 text-sm"><div className="text-xs uppercase tracking-normal text-slate-500">Temat</div><div className="mt-1 font-semibold text-ink">{topic}</div></div></div>;
+}

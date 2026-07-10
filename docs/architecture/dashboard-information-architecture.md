@@ -19,14 +19,13 @@ Routes:
 - `/ads-doctor/seasonality`
 - `/ads-doctor/recommendations`
 - `/ga4`
-- `/seo-gsc`
 - `/ahrefs`
 - `/localo`
 - `/merchant`
-- `/content-planner`
-- `/content-inventory`
-- `/social-publisher`
-- `/google-sheets`
+- `/content-workflow`
+- `/content-inventory` (hidden technical inventory input; not a primary marketer route)
+- `/social-publisher` (hidden review-only experiment)
+- `/google-sheets` (hidden technical export placeholder)
 - `/knowledge`
 - `/codex-runs`
 - `/security`

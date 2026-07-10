@@ -85,7 +85,7 @@ Widocznie używaj tych sekcji:
 - `Mapa luk`: rozdziel luki treści, luki linków, strony konkurencji, organic keywords i kontekst autorytetu.
 - `Kolejność review`: wskaż pierwszy typ luki do ręcznego sprawdzenia i dlaczego teraz.
 - `Co porównać ręcznie`: podaj checklistę: temat konkurenta, istniejący URL Ekologus, intencja, pokrycie treści, możliwość linkowania/źródeł.
-- `Karta cross-checku GSC/WordPress`: zawsze dopisz krótką kartę z trzema
+- `Karta sprawdzenia GSC i WordPress`: zawsze dopisz krótką kartę z trzema
   polami: `Sprawdź w GSC`, `Sprawdź w WordPress` i `Decyzja po cross-checku`.
   Najpierw użyj pól `gap_read_contract.cross_check_status`,
   `cross_check_summary`, `cross_check_next_step` i
@@ -94,7 +94,7 @@ Widocznie używaj tych sekcji:
   `cross_check_source_connectors` i `cross_check_evidence_ids` jako dowody
   cross-checku. Karta ma mówić, czy temat z Ahrefs idzie dalej do content
   briefu, wymaga scalenia z istniejącą treścią, zostaje tylko w obserwacji
-  albo jest zablokowany. Nie traktuj GSC/WordPress jako dowodów Ahrefs, jeśli
+albo jest zablokowany. Nie traktuj GSC i WordPress jako dowodów Ahrefs, jeśli
   WILQ nie zwraca API-backed cross-checku; nazwij je kolejnym krokiem
   walidacji przed briefem, nie źródłem bieżącej rekomendacji Ahrefs.
 - `Decyzja po review`: użyj dokładnie tej etykiety i powiedz, czy po
@@ -124,7 +124,7 @@ Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Id
 <safety_rules>
 
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
-<!-- Polish language rule: operator-facing responses must be in Polish with Polish diacritics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.

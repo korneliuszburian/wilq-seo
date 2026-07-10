@@ -422,7 +422,7 @@ function areaFromDomain(domain: string): QueueRow["area"] {
 
 function routeFromDomain(domain: string) {
   const area = areaFromDomain(domain);
-  if (area === "Treści") return "/content-planner";
+  if (area === "Treści") return "/content-workflow";
   if (area === "Reklamy") return "/ads-doctor";
   if (area === "Produkty") return "/merchant";
   if (area === "Lokalnie") return "/localo";
@@ -653,7 +653,7 @@ function NearestSafeActionCard({
   }
 
   const candidate = summary?.first_write_candidate;
-  const title = candidate?.title ?? action?.title ?? "Sprawdź akcję w WILQ";
+  const title = candidate?.title ?? action?.title ?? "Sprawdź akcję do sprawdzenia";
   const actionId = candidate?.action_id ?? action?.id ?? "";
   const area = action ? areaFromDomain(action.domain) : areaFromDomain(candidate?.connector ?? "actions");
   const operatorNextStep = candidate?.operator_next_step ?? action?.recommended_reason ?? action?.human_diagnosis ?? "";
@@ -898,7 +898,7 @@ function marketerActionBlockerLabel(label: string) {
     return "To jest akcja do przygotowania i review, bez zapisu";
   }
   if (label === "Brakuje adaptera zapisu") return "Brak bezpiecznej ścieżki zapisu";
-  return label.replaceAll("ActionObject", "akcja WILQ").replaceAll("apply", "zapis");
+  return label.replaceAll("ActionObject", "akcja do sprawdzenia").replaceAll("apply", "zapis");
 }
 
 function actionAreaIcon(area: string) {

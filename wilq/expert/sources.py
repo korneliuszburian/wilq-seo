@@ -5,7 +5,6 @@ from datetime import date
 from wilq.expert.rules import list_expert_rules
 from wilq.schemas import ExpertKnowledgeSource, KnowledgeTaxonomyType
 
-
 _PLATFORM_SOURCE_BY_DOMAIN: dict[str, tuple[str, str, str]] = {
     "ads": (
         "src_google_ads_api_docs",
