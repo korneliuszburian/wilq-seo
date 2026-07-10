@@ -229,6 +229,10 @@ disclosure. The first marketer view renders the selected page, signals and dev
 draft context without mounting the legacy detail tree; the disclosure remains
 available on demand and is covered by the route test.
 
+The next `ho41` seam moved active-step selection, blocked-step classification
+and claim-ledger totals into `contentWorkflowDecisionModel.ts`; the route keeps
+presentation orchestration and the pure decision model has focused coverage.
+
 The new WordPress update ActionObject seed was also extracted from the core
 action registry into a named `_wordpress_existing_draft_update_action()` helper;
 its payload and safety behavior are unchanged.
