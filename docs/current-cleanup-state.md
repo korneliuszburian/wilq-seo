@@ -19,7 +19,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 98 875 metric facts, 4 552 refresh runs; konektory
+- Managed runtime: 98 877 metric facts, 4 553 refresh runs; konektory
   12/9 configured/2 missing credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
@@ -257,6 +257,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   builderów, evidence/source connectors, freshness i missing contracts pozostają
   bez zmian. Focused/full Ads contracts, Ruff, mypy, complexity i diff check są
   zielone.
+- Search-term review assembly (`review_summary`, `ngram`) jest teraz w
+  `_build_ads_search_term_review_contracts`; późniejsze action-ID hydration
+  pozostaje osobno. Nie zmieniono kolejności, evidence/source/freshness ani
+  blokad twierdzeń.
 - Search-term review assembly (`review_summary`, `ngram`) jest teraz w
   `_build_ads_search_term_review_contracts`; późniejsze action-ID hydration
   pozostaje osobno. Nie zmieniono kolejności, evidence/source/freshness ani
