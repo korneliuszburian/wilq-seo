@@ -72,8 +72,7 @@ from wilq.actions.google_ads.negative_keywords import (
 )
 from wilq.actions.google_ads.oauth import oauth_repair_action
 from wilq.actions.google_ads.recommendations import (
-    recommendation_review_action,
-    recommendation_review_payload_from_metric_facts,
+    recommendation_review_action_from_metric_facts,
     seed_recommendation_review_action,
 )
 from wilq.actions.google_ads.search_term_ngrams import (
@@ -675,14 +674,9 @@ def _seed_google_ads_metric_actions(
         action = campaign_review_action_result
         actions[action.id] = action
 
-    recommendation_review_payload = recommendation_review_payload_from_metric_facts(
-        google_ads_facts
-    )
-    if recommendation_review_payload is not None:
-        action = _recommendation_review_action(
-            google_ads_facts=google_ads_facts,
-            recommendation_review_payload=recommendation_review_payload,
-        )
+    recommendation_action = recommendation_review_action_from_metric_facts(google_ads_facts)
+    if recommendation_action is not None:
+        action = recommendation_action
         actions[action.id] = action
 
     change_history_payload = change_history_impact_payload_from_metric_facts(google_ads_facts)
@@ -775,17 +769,6 @@ def _search_term_ngram_action(
     return search_term_ngram_action(
         google_ads_facts=google_ads_facts,
         search_term_ngram_payload=search_term_ngram_payload,
-    )
-
-
-def _recommendation_review_action(
-    *,
-    google_ads_facts: list[MetricFact],
-    recommendation_review_payload: dict[str, Any],
-) -> ActionObject:
-    return recommendation_review_action(
-        google_ads_facts=google_ads_facts,
-        recommendation_review_payload=recommendation_review_payload,
     )
 
 
