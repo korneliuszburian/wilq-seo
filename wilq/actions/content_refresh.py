@@ -4,6 +4,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 from urllib.parse import urlparse
 
+from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -31,6 +32,151 @@ CONTENT_SOURCE_CONNECTORS = {
     "google_analytics_4",
     "ahrefs",
 }
+
+
+def seed_content_refresh_action() -> ActionObject:
+    wordpress_evidence_id = connector_evidence_id("wordpress_ekologus")
+    gsc_evidence_id = connector_evidence_id("google_search_console")
+    return ActionObject(
+        id="act_prepare_content_refresh_queue",
+        title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=[wordpress_evidence_id, gsc_evidence_id],
+        human_diagnosis=(
+            "Treści są jednym z głównych obszarów pracy WILQ. WILQ może "
+            "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki "
+            "GSC, WordPress i GA4 nie dostarczą danych o publicznych URL, "
+            "zapytaniach, stronach i zachowaniu użytkowników."
+        ),
+        recommended_reason=(
+            "Zbierz dane GSC dla zapytań i stron oraz spis treści WordPress, "
+            "potem klasyfikuj: zachować, odświeżyć, scalić, utworzyć albo "
+            "zablokować bez obietnic leadów ani rankingów."
+        ),
+        payload={
+            "action_type": CONTENT_REFRESH_ACTION_TYPE,
+            "connector": "wordpress_ekologus",
+            "mode": "prepare_only",
+            "source_connectors": ["google_search_console", "wordpress_ekologus"],
+            "source_metric_names": [],
+            "queue_steps": [
+                "collect_gsc_query_page_facts",
+                "join_wordpress_inventory_with_gsc",
+                "classify_refresh_create_merge_block",
+                "review_public_final_url",
+                "require_human_confirm_before_wordpress_write",
+            ],
+            "content_url_review_contract": content_url_review_contract(),
+            "content_brief_preview": [
+                _empty_content_brief_preview(
+                    wordpress_evidence_id=wordpress_evidence_id,
+                    gsc_evidence_id=gsc_evidence_id,
+                )
+            ],
+            "blocked_claims": ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_core_seed",
+    )
+
+
+def _empty_content_brief_preview(
+    *, wordpress_evidence_id: str, gsc_evidence_id: str
+) -> dict[str, Any]:
+    return {
+        "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
+        "candidate_id": "content_brief_empty_state",
+        "source_type": "empty_state",
+        "mode": "block",
+        "topic": "brak potwierdzonego tematu",
+        "source_public_url": None,
+        "preview_url": None,
+        "intended_final_url": None,
+        "final_canonical_url": None,
+        "inventory_gate_status": "blocked_until_inventory_review",
+        "canonical_gate_status": "blocked_until_inventory_review",
+        "duplicate_gate_status": "create_blocked_until_duplicate_check",
+        "content_gate_summary": (
+            "Brak danych GSC dla zapytań i stron oraz spisu treści WordPress "
+            "w świeżym odczycie. Najpierw zbierz dane źródłowe, potem oceniaj "
+            "zachowanie, odświeżenie, scalenie albo utworzenie treści."
+        ),
+        "wordpress_inventory_match": "missing",
+        "decision_options": ["block"],
+        "metric_snapshot": {},
+        "brief_goal": (
+            "Zablokuj pisanie treści do czasu zebrania danych GSC "
+            "i spisu treści WordPress."
+        ),
+        "intent": "brak intencji do pisania bez danych źródłowych",
+        "content_angle": (
+            "Nie przygotowuj tekstu bez potwierdzonego publicznego URL i dowodów."
+        ),
+        "audience": (
+            "Marketer Ekologus sprawdzający gotowość danych przed pracą nad treścią."
+        ),
+        "key_objections": [
+            "brak potwierdzonego tematu",
+            "brak publicznego URL",
+            "brak kontroli duplikacji",
+        ],
+        "h1_direction": "Nie ustalaj H1 bez potwierdzonego tematu i URL.",
+        "seo_title_direction": "Nie ustalaj title bez potwierdzonego tematu i URL.",
+        "meta_description_direction": (
+            "Nie ustalaj meta description bez potwierdzonego tematu i URL."
+        ),
+        "h2_direction": ["najpierw zbierz dane GSC i WordPress"],
+        "faq_direction": ["najpierw zbierz dane GSC i WordPress"],
+        "schema_direction": "Nie planuj schema bez zatwierdzonego briefu.",
+        "cta_direction": "Nie ustalaj CTA bez dopasowania usługi i intencji.",
+        "internal_link_direction": ["najpierw potwierdź istniejące URL-e"],
+        "legal_review_notes": ["brak treści do oceny prawnej przed zebraniem danych"],
+        "brand_voice_notes": ["brak szkicu do oceny tonu przed zebraniem danych"],
+        "publication_readiness_status": "blocked_until_review",
+        "publication_blockers": [
+            "content_url_preflight_review",
+            "canonical_review",
+            "duplicate_or_cannibalization_check",
+            "legal_factual_review",
+            "human_confirm_before_wordpress_write",
+        ],
+        "source_facts": [
+            "brak danych GSC dla zapytań i stron",
+            "brak spisu treści WordPress",
+        ],
+        "missing_evidence": [
+            "brak publicznego URL",
+            "brak danych GSC",
+            "brak spisu treści WordPress",
+        ],
+        "forbidden_claims": [
+            "wzrost liczby leadów",
+            "wpływ na przychód",
+            "gwarancja pozycji",
+        ],
+        "required_validation": [
+            "gsc_query_page_check",
+            "wordpress_inventory_check",
+            "content_url_preflight_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ],
+        "blocked_claims": [
+            "wzrost liczby leadów",
+            "wpływ na przychód",
+            "gwarancja pozycji",
+        ],
+        "source_connectors": ["google_search_console", "wordpress_ekologus"],
+        "evidence_ids": [wordpress_evidence_id, gsc_evidence_id],
+        "apply_allowed": False,
+        "api_mutation_ready": False,
+        "destructive": False,
+    }
 
 
 def content_refresh_queue_action(

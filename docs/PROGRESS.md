@@ -178,7 +178,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Static Google Ads recommendation-review seed jest teraz w istniejącym
   `wilq/actions/google_ads/recommendations.py`; fallback read-required evidence,
   required validation i blokada apply pozostały identyczne. Merchant, GA4 i
-  content static seeds są osobnymi przyszłymi seamami.
+  content static seeds są osobnymi domenowymi seamami.
 - Static Merchant feed-issue seed jest teraz w `wilq/actions/merchant.py`;
   `seed_core_prepare_actions` zachowuje connector evidence, review steps,
   prepare-only i zablokowane twierdzenia. Focused Merchant action/API tests
@@ -186,8 +186,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Static GA4 tracking-quality seed jest teraz w
   `wilq/actions/ga4/tracking_quality.py`; fallback breakdowns, preview, evidence
   i blokady conversion/revenue/ROAS są zachowane. Focused GA4 source/context/action
-  contracts przechodzą. Content static seed pozostaje ostatnim kandydatem tego
-  bounded `seed_core_prepare_actions` slice.
+  contracts przechodzą.
+- Static content refresh seed jest teraz w `wilq/actions/content_refresh.py`;
+  `seed_core_prepare_actions` deleguje bez zmiany evidence, preview URL/canonical
+  gates, blokad claimów i `apply_allowed=false`. Inventory, ActionObject i API
+  contracts oraz Ruff, mypy i diff check przechodzą; runtime `/api/actions`
+  pokazuje prepare-only content action z evidence i bez vendor write.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

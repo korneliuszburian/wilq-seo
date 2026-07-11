@@ -82,9 +82,11 @@ Action Service; nie przywracaj direct WordPress write.
   pozostaje w service jako granica bezpieczeństwa. Static Google Ads
   recommendation-review seed deleguje teraz do `google_ads/recommendations.py`;
   read-required payload i blokada apply pozostają bez zmian. Static Merchant
-  feed-issue seed deleguje teraz do `wilq/actions/merchant.py`; GA4 i content
-  static seeds: GA4 deleguje teraz do `wilq/actions/ga4/tracking_quality.py`,
-  a content pozostaje ostatnim osobnym kandydatem w `seed_core_prepare_actions`.
+  feed-issue seed deleguje teraz do `wilq/actions/merchant.py`; GA4 deleguje do
+  `wilq/actions/ga4/tracking_quality.py`, a content refresh seed deleguje do
+  `wilq/actions/content_refresh.py`. Static seed slice w
+  `seed_core_prepare_actions` jest zamknięty; większa logika content workflow
+  pozostaje poza tym seamem.
 
 ## Granica bezpieczeństwa
 
@@ -132,17 +134,20 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 5 589 non-empty LOC;
+- `wilq/actions/service.py`: 5 445 non-empty LOC;
+- `wilq/actions/content_refresh.py`: 1 985 non-empty LOC;
 - `apps/dashboard/src/routes/ContentWorkflowSurface.tsx`: ok. 3 000 LOC;
 - `wilq/content/workflow/api.py`: 1 478 LOC;
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
 Latest complexity report (2026-07-11): 382 plików Python,
-131637 non-empty LOC, 0 changed files versus HEAD, 0 frozen growth files i 0
-changed-code budget violations. Historyczne duże testy pozostają osobnym
-otwartym cleanup scope; bieżące seamy są ograniczone i nie zwiększają ich
-rozmiaru.
+131625 non-empty LOC. Bounded content seed extraction was audited with
+`--allow-frozen --allow-budget-violations`: service.py remains a frozen-growth
+file because the seam removes inline code, while pre-existing content/service
+budget findings remain tracked for the broader `jnra` cleanup. Historyczne duże
+testy pozostają osobnym otwartym cleanup scope; bieżący seed seam nie zwiększa
+ich rozmiaru.
 
 ## Proof checkpoint
 
