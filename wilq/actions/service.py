@@ -86,7 +86,7 @@ from wilq.actions.localo.visibility import (
     localo_visibility_review_action,
     localo_visibility_review_payload_from_metric_facts,
 )
-from wilq.actions.merchant import merchant_feed_issue_action
+from wilq.actions.merchant import merchant_feed_issue_action, seed_merchant_feed_issue_action
 from wilq.actions.payloads import (
     validate_action_payload,
 )
@@ -210,45 +210,7 @@ def seed_static_actions() -> dict[str, ActionObject]:
 def seed_core_prepare_actions() -> dict[str, ActionObject]:
     actions = [
         seed_recommendation_review_action(),
-        ActionObject(
-            id="act_review_merchant_feed_issues",
-            title="Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
-            domain=OpportunityDomain.merchant,
-            connector="google_merchant_center",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=[connector_evidence_id("google_merchant_center")],
-            human_diagnosis=(
-                "Merchant Center jest core workflow WILQ. W clean runtime WILQ może "
-                "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki odczyt nie "
-                "dostarczy metryk problemów pliku produktowego."
-            ),
-            recommended_reason=(
-                "Uruchom odczyt danych Merchant albo użyj istniejących evidence, "
-                "potem sprawdź w WILQ podgląd zmian przed jakąkolwiek zmianą pliku produktowego."
-            ),
-            payload={
-                "action_type": "merchant_feed_issue",
-                "connector": "google_merchant_center",
-                "mode": "prepare_only",
-                "source_metric_names": [],
-                "review_steps": [
-                    "collect_merchant_issue_facts",
-                    "group_issue_reasons",
-                    "prepare_feed_fix_preview",
-                    "require_human_confirm_before_apply",
-                ],
-                "blocked_claims": [
-                    "ponowne zatwierdzenie produktu",
-                    "odzyskany przychód",
-                    "automatyczna zmiana pliku produktowego",
-                ],
-                "destructive": False,
-            },
-            validation_status="not_validated",
-            created_by="system_core_seed",
-        ),
+        seed_merchant_feed_issue_action(),
         ActionObject(
             id="act_review_ga4_tracking_quality",
             title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",

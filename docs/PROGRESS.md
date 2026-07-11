@@ -179,6 +179,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/google_ads/recommendations.py`; fallback read-required evidence,
   required validation i blokada apply pozostały identyczne. Merchant, GA4 i
   content static seeds są osobnymi przyszłymi seamami.
+- Static Merchant feed-issue seed jest teraz w `wilq/actions/merchant.py`;
+  `seed_core_prepare_actions` zachowuje connector evidence, review steps,
+  prepare-only i zablokowane twierdzenia. Focused Merchant action/API tests
+  przechodzą. GA4 i content static seeds pozostają kolejnymi seamami.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

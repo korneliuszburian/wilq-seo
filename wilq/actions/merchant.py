@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -10,6 +11,48 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
 )
+
+
+def seed_merchant_feed_issue_action() -> ActionObject:
+    return ActionObject(
+        id="act_review_merchant_feed_issues",
+        title="Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
+        domain=OpportunityDomain.merchant,
+        connector="google_merchant_center",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=[connector_evidence_id("google_merchant_center")],
+        human_diagnosis=(
+            "Merchant Center jest core workflow WILQ. W clean runtime WILQ może "
+            "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki odczyt nie "
+            "dostarczy metryk problemów pliku produktowego."
+        ),
+        recommended_reason=(
+            "Uruchom odczyt danych Merchant albo użyj istniejących evidence, "
+            "potem sprawdź w WILQ podgląd zmian przed jakąkolwiek zmianą pliku produktowego."
+        ),
+        payload={
+            "action_type": "merchant_feed_issue",
+            "connector": "google_merchant_center",
+            "mode": "prepare_only",
+            "source_metric_names": [],
+            "review_steps": [
+                "collect_merchant_issue_facts",
+                "group_issue_reasons",
+                "prepare_feed_fix_preview",
+                "require_human_confirm_before_apply",
+            ],
+            "blocked_claims": [
+                "ponowne zatwierdzenie produktu",
+                "odzyskany przychód",
+                "automatyczna zmiana pliku produktowego",
+            ],
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_core_seed",
+    )
 
 
 def merchant_feed_issue_action(

@@ -81,7 +81,9 @@ Action Service; nie przywracaj direct WordPress write.
   constructor jest teraz również domenowym delegatem; sam builder kontraktu
   pozostaje w service jako granica bezpieczeństwa. Static Google Ads
   recommendation-review seed deleguje teraz do `google_ads/recommendations.py`;
-  read-required payload i blokada apply pozostają bez zmian.
+  read-required payload i blokada apply pozostają bez zmian. Static Merchant
+  feed-issue seed deleguje teraz do `wilq/actions/merchant.py`; GA4 i content
+  static seeds są jeszcze osobnymi kandydatami.
 
 ## Granica bezpieczeństwa
 
