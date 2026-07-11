@@ -126,8 +126,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 
 ## Complexity checkpoint
 
-- `wilq/briefing/ads_diagnostics.py`: 6 430 LOC;
-- `wilq/actions/service.py`: 5 989 LOC;
+- `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
+- `wilq/actions/service.py`: 5 796 non-empty LOC;
 - `apps/dashboard/src/routes/ContentWorkflowSurface.tsx`: ok. 3 000 LOC;
 - `wilq/content/workflow/api.py`: 1 478 LOC;
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
