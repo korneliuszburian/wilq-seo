@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `7bb94b3` (`docs: finalize Ads reconciliation handoff`)  
-`origin/main` = `7bb94b3`
+Ostatni commit: `7a9d686` (`refactor: extract Ads change history reconciliation`)  
+`origin/main` = `7a9d686`
 
 ## Wykonane
 
