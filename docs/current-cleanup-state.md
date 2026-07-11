@@ -18,6 +18,9 @@ splitu monolitu ani od przywracania direct WordPress write.
   12/9 configured/2 missing credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
+- Read-only refresh 2026-07-11 nie odblokował kolejki: GSC zwrócił niepełny
+  odczyt (2 evidence), WordPress ekologus przekroczył 60 s timeout; kolejka ma
+  nadal 2 kandydatów, 0 actionable i `not_enough_actionable_candidates`.
 - Queue-owned first decision renderuje przed snapshotem; cold queue po API
   prewarm ma budżet `<5 s`, a selected snapshot/enrichment mają lokalne stany
   (`c9h9.6` zamknięty).
@@ -126,3 +129,5 @@ ograniczony seam typed apply/adapter, nie mechaniczny split.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
 3. Kontynuuj `r564.3`: browser proof 390×844 ma pokazać URL/temat,
    decyzję, blocker i bezpieczny CTA bez scrolla, jeśli refresh da świeżego kandydata.
+4. Podczas zewnętrznej blokady świeżego content proof wykonuj `c9h9.9` Ads
+   summary cold render; nie oznaczaj `r564.3` jako complete bez świeżego kandydata.

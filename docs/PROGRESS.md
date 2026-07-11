@@ -90,6 +90,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   ContentWorkflow Vitest 15/15, dashboard lint/typecheck green; live mobile
   screenshot `.local-lab/proof/r564-3-mobile-stale-blocker.png` pokazuje uczciwy
   refresh-first blocker przy aktualnym stale runtime.
+- Próba read-only odświeżenia dla `r564.3` 2026-07-11: GSC zwrócił HTTP 200,
+  ale kontrakt oznaczył odczyt jako niepełny (`evidence_count=2`); WordPress
+  ekologus nie odpowiedział w 60 s. Kolejka po próbie nadal ma 2 kandydatów,
+  0 actionable i blokery `content_sources_require_refresh` oraz
+  `not_enough_actionable_candidates`. Świeży kandydat pozostaje zablokowany
+  przez stan zewnętrzny, nie przez brak implementacji karty.
 - Mobile freshness banner jest teraz skondensowany (summary poniżej desktop
   breakpointu), a pięć statusów źródeł tworzy poziomy scroll zamiast pięciu
   pionowych kart. Dzięki temu decision card ma realną szansę wejść w 390×844;
@@ -160,7 +166,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 ## Kolejność wykonania
 
 1. `r564.3` — decision/blocker/CTA w mobile first viewport; świeży kandydat nadal zależy od zewnętrznego refresh.
-2. `c9h9.9` — Ads summary cold render.
+2. `c9h9.9` — Ads summary cold render (następny aktywny slice podczas zewnętrznej blokady content).
 3. `c9h9.12` — knowledge cold contention.
 4. Secondary route latency: `c9h9.9`, `c9h9.10`, `c9h9.12`; nie wyprzedza głównego content
    P0.
