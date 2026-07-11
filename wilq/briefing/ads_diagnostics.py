@@ -561,6 +561,27 @@ def _build_ads_search_term_review_contracts(
     return search_term_review_summary_contract, search_term_ngram_read_contract
 
 
+def _build_ads_candidate_read_contracts(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+    action_ids: list[str],
+) -> tuple[AdsCustomSegmentsReadContract, AdsNegativeKeywordsReadContract]:
+    custom_segments_read_contract = _custom_segments_read_contract(
+        search_terms_read_contract,
+        keyword_planner_read_contract,
+        action_ids,
+    )
+    negative_keywords_read_contract = _negative_keywords_read_contract(
+        search_terms_read_contract,
+        search_term_safety_read_contract,
+        keyword_match_context_read_contract,
+        action_ids,
+    )
+    return custom_segments_read_contract, negative_keywords_read_contract
+
+
 def _reconcile_search_term_read_contracts(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -933,15 +954,14 @@ def build_ads_diagnostics(
         search_term_ngram_read_contract,
         action_ids,
     )
-    custom_segments_read_contract = _custom_segments_read_contract(
-        search_terms_read_contract,
-        keyword_planner_read_contract,
-        action_ids,
-    )
-    negative_keywords_read_contract = _negative_keywords_read_contract(
+    (
+        custom_segments_read_contract,
+        negative_keywords_read_contract,
+    ) = _build_ads_candidate_read_contracts(
         search_terms_read_contract,
         search_term_safety_read_contract,
         keyword_match_context_read_contract,
+        keyword_planner_read_contract,
         action_ids,
     )
     campaign_triage_read_contract = _campaign_triage_read_contract(

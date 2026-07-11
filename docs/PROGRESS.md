@@ -9,15 +9,16 @@ w git, Beads i `docs/progress/archive/`.
   oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline
   aktualizacje missing contracts. Nie zmieniają evidence/source/freshness ani
   blokad ActionObject; focused Ads contracts, Ruff, mypy, complexity i diff check
-  przechodzą. Core i review assembly search-term contracts są domknięte; następny
-  seam to custom-segments/negative-keywords read contracts.
+  przechodzą. Core i review assembly search-term contracts są domknięte; candidate
+  assembly custom-segments/negative-keywords jest domknięty. Następny seam to
+  campaign-triage/optimizer readiness assembly.
 - Reconciliation boundary jest domknięty przez
   `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
   nie zawiera już inline aktualizacji missing contracts dla tych zależności.
-  Complexity: 398 plików Python / 132908 LOC, 2 jawne violations (plik i główny
+  Complexity: 398 plików Python / 132969 LOC, 2 jawne violations (plik i główny
   orchestrator). Następny kandydat po aktualnym complexity/review to mały helper
-  assembly custom-segments/negative-keywords read contracts, bez ponownego
-  dotykania gotowych reconciliation ani search-term seamów.
+  campaign-triage/optimizer readiness assembly, bez ponownego dotykania gotowych
+  reconciliation, search-term ani candidate seamów.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
