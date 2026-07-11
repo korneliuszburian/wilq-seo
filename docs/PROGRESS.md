@@ -225,6 +225,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   blokada kierowania i evidence pozostają bez zmian. Runtime pokazuje action w
   `prepare` z jednym evidence i centralne `write_capable=0`; `service.py` spadł
   do 4 983 LOC.
+- Google Ads negative-keyword ma teraz candidate factory w
+  `wilq/actions/google_ads/negative_keywords.py`; 90-day safety, exact-match
+  preview, evidence i blokada zapisu pozostają bez zmian. Runtime pokazuje action
+  w `prepare` z jednym evidence i `90_day_safety_check`; `service.py` spadł do
+  4 970 LOC.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

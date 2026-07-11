@@ -69,6 +69,18 @@ def negative_keyword_action(
     )
 
 
+def negative_keyword_action_from_metric_facts(
+    google_ads_facts: list[MetricFact],
+) -> ActionObject | None:
+    payload = negative_keyword_payload_from_metric_facts(google_ads_facts)
+    if payload is None:
+        return None
+    return negative_keyword_action(
+        google_ads_facts=google_ads_facts,
+        negative_keyword_payload=payload,
+    )
+
+
 def validate_negative_keyword_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     subject = "Przegląd wykluczających słów kluczowych"

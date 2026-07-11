@@ -65,8 +65,7 @@ from wilq.actions.google_ads.keyword_planner import (
     keyword_planner_access_action,
 )
 from wilq.actions.google_ads.negative_keywords import (
-    negative_keyword_action,
-    negative_keyword_payload_from_metric_facts,
+    negative_keyword_action_from_metric_facts,
 )
 from wilq.actions.google_ads.oauth import oauth_repair_action
 from wilq.actions.google_ads.recommendations import (
@@ -693,12 +692,9 @@ def _seed_google_ads_metric_actions(
         action = custom_segment_action_result
         actions[action.id] = action
 
-    negative_keyword_payload = negative_keyword_payload_from_metric_facts(google_ads_facts)
-    if negative_keyword_payload is not None:
-        action = _negative_keyword_action(
-            google_ads_facts=google_ads_facts,
-            negative_keyword_payload=negative_keyword_payload,
-        )
+    negative_keyword_action_result = negative_keyword_action_from_metric_facts(google_ads_facts)
+    if negative_keyword_action_result is not None:
+        action = negative_keyword_action_result
         actions[action.id] = action
 
 
@@ -727,17 +723,6 @@ def _seed_social_metric_actions(
     ]
     if social_facts:
         actions.update(social_draft_actions(social_facts))
-
-
-def _negative_keyword_action(
-    *,
-    google_ads_facts: list[MetricFact],
-    negative_keyword_payload: dict[str, Any],
-) -> ActionObject:
-    return negative_keyword_action(
-        google_ads_facts=google_ads_facts,
-        negative_keyword_payload=negative_keyword_payload,
-    )
 
 
 def _demand_gen_readiness_review_action(
