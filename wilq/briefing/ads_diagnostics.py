@@ -1322,9 +1322,9 @@ def _ads_summary_cache_seconds() -> float:
         return DEFAULT_ADS_SUMMARY_CACHE_SECONDS
 
 
-def _compact_ads_diagnostics_summary(
+def _prepare_ads_summary_compaction(
     response: AdsDiagnosticsResponse,
-) -> AdsDiagnosticsResponse:
+) -> tuple[list[AdsDecisionItem], AdsCustomSegmentsReadContract, AdsNegativeKeywordsReadContract]:
     top_decision_ids = set(response.operator_summary.top_decision_ids)
     compact_decisions = [
         _compact_ads_decision(decision)
@@ -1339,6 +1339,17 @@ def _compact_ads_diagnostics_summary(
     compact_custom_segments, compact_negative_keywords = _compact_ads_candidate_contracts(
         response
     )
+    return compact_decisions, compact_custom_segments, compact_negative_keywords
+
+
+def _compact_ads_diagnostics_summary(
+    response: AdsDiagnosticsResponse,
+) -> AdsDiagnosticsResponse:
+    (
+        compact_decisions,
+        compact_custom_segments,
+        compact_negative_keywords,
+    ) = _prepare_ads_summary_compaction(response)
     return response.model_copy(
         update={
             "campaign_read_contract": _copy_limited_model(

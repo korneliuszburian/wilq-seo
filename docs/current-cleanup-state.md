@@ -10,8 +10,8 @@ readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ad
 wewnątrz `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
-label hydration groups są wydzielone. Następny potwierdzony kandydat to summary
-compaction assembly, po świeżym complexity/review.
+label hydration groups są wydzielone. Summary decision/candidate compaction jest
+wydzielone; następny potwierdzony kandydat to summary response field compaction.
 Polityka
 automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
@@ -253,7 +253,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_reconcile_ads_budget_and_business_context_contracts`; `budget_apply_preview`,
   `profit_margin` i `human_budget_goal` pozostają kontraktowo zależne od gotowych
   odczytów. Reconciliation inline w `build_ads_diagnostics` jest domknięty;
-  complexity po seamu to 398 plików / 133164 LOC i dwa jawne frozen/file-orchestrator
+  complexity po seamu to 398 plików / 133173 LOC i dwa jawne frozen/file-orchestrator
   violations do dalszego, niezależnego wyboru.
 - Core search-term read-contract assembly (`terms`, `safety`, `keyword match`,
   `planner`) jest teraz w `_build_ads_search_term_read_contracts`; kolejność
@@ -293,6 +293,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Core campaign/business/custom/derived contract-label hydration jest teraz w
   `_hydrate_ads_core_contract_labels`; status/channel/missing-contract i blocked-
   claim labels pozostają bez zmian.
+- Summary decision/candidate compaction jest teraz w
+  `_prepare_ads_summary_compaction`; top-decision selection, fallback order,
+  candidate limits i summary response shape pozostają bez zmian.
 - Search-term review assembly (`review_summary`, `ngram`) jest teraz w
   `_build_ads_search_term_review_contracts`; późniejsze action-ID hydration
   pozostaje osobno. Nie zmieniono kolejności, evidence/source/freshness ani
