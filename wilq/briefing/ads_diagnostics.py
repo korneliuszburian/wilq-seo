@@ -74,6 +74,7 @@ from wilq.briefing.ads_decision_queue import (
     build_recommendations_decision,
     build_search_term_ngram_decision,
     build_search_terms_decision,
+    decision_priority,
 )
 from wilq.briefing.ads_impression_share import (
     build_impression_share_read_contract,
@@ -5001,33 +5002,12 @@ def _with_ads_decision_lineage(
     knowledge_card_ids, expert_rule_ids = ADS_DECISION_LINEAGE.get(decision.id, ([], []))
     return decision.model_copy(
         update={
-            "priority": _ads_decision_priority(decision),
+            "priority": decision_priority(decision),
             "metric_tiles": _ads_decision_metric_tiles(decision, currency_code),
             "knowledge_card_ids": _unique([*decision.knowledge_card_ids, *knowledge_card_ids]),
             "expert_rule_ids": _unique([*decision.expert_rule_ids, *expert_rule_ids]),
         }
     )
-
-
-def _ads_decision_priority(decision: AdsDecisionItem) -> int:
-    type_priority: dict[str, int] = {
-        "fix_ads_access": 5,
-        "block_write_actions": 10,
-        "review_campaign_triage": 18,
-        "review_campaign_activity": 20,
-        "review_business_context": 22,
-        "review_derived_kpi": 25,
-        "review_budget_context": 30,
-        "review_recommendations": 35,
-        "review_search_terms": 40,
-        "review_search_term_ngrams": 42,
-        "review_negative_keyword_safety": 45,
-        "review_search_term_safety": 50,
-        "prepare_custom_segments": 55,
-        "review_impression_share": 60,
-        "review_change_history": 65,
-    }
-    return type_priority.get(decision.decision_type, 90)
 
 
 def _ads_decision_metric_tiles(

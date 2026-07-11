@@ -7,7 +7,7 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica Ads decision
-queue (metric tiles albo marketer labels). Polityka automatycznego stale-triggera (cooldown,
+queue po priority mapie (metric tiles albo marketer labels). Polityka automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
 pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 
@@ -135,6 +135,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   bezpieczne next steps i blokady CPA/ROAS/waste/mutacji są zachowane. Plik
   diagnostyki zmniejszył się o 358 linii; pełny Ads contract suite, runtime
   `/api/ads/diagnostics` po restarcie i complexity audit przechodzą.
+- Priority map decyzji Ads jest teraz w istniejącym `ads_decision_queue.py` jako
+  `decision_priority`; kolejność blokad bezpieczeństwa i kolejki review ma focused
+  contract test. Metric tiles pozostają osobnym seamem, bo wymagają rozbicia
+  formatter-heavy gałęzi.
 
 ## Granica bezpieczeństwa
 

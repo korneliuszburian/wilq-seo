@@ -12,6 +12,8 @@ Ostatni commit: `327176f` (`docs: hand off next Ads decision seam`)
   sam. Zachowane są evidence IDs, source connectors, missing contracts,
   operator review gates, safe next steps oraz blokady CPA/ROAS/waste i mutacji.
 - Nie przenoszono ponownie section/decision builderów już opisanych w Beadzie.
+- Priority map decyzji została dodatkowo przeniesiona do istniejącego
+  `ads_decision_queue.py`; metric tiles pozostały poza zakresem tego małego seamu.
 
 ## Dowody
 
@@ -29,8 +31,8 @@ Ostatni commit: `327176f` (`docs: hand off next Ads decision seam`)
 ## Następny slice
 
 Ponownie sprawdzić `bd ready` i wybrać kolejną nieprzeniesioną granicę `kgvy`:
-metric tiles albo marketer-label hydration. Preferowana granica to testowalny
-builder decision queue, nie mechaniczny split bez testu zachowania.
+metric tiles albo marketer-label hydration. Metric tiles wymagają rozbicia
+formatter-heavy gałęzi na małe helpery; nie przenosić ich jako nowego monolitu.
 
 ## Kontrola repo
 

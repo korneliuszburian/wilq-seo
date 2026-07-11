@@ -49,6 +49,9 @@ w git, Beads i `docs/progress/archive/`.
 - `kgvy` pozostaje otwarty dla następnej granicy decision queue; nieprzeniesione
   kandydaty to metric tiles i marketer-label hydration. Wybór ma poprzedzić
   aktualny complexity report, żeby nie powtarzać optimizer/section/decision seams.
+- Priority map decision queue jest już wydzielona do `ads_decision_queue.py`;
+  focused contract potwierdza kolejność safety/review. Metric tiles nadal są
+  otwartym seamem i nie zostały przeniesione mechanicznie.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
