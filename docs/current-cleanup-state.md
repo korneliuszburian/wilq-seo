@@ -5,8 +5,8 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Aktualny slice to `wilq-seo-c9h9.4`: domknij canonical dev-only ActionObject
-apply po zamknięciu cold waterfall. Nie zaczynaj od splitu monolitu ani od
+Aktualny slice to `wilq-seo-r564.3`: mobile first viewport po zamknięciu
+canonical dev-only ActionObject apply. Nie zaczynaj od splitu monolitu ani od
 przywracania direct WordPress write.
 
 ## Prawda produktu
@@ -27,6 +27,10 @@ przywracania direct WordPress write.
   handoffu, prowadzi wyłącznie do `/actions/act_apply_wordpress_draft_handoff`
   i nie wywołuje `/apply`; stale live queue pozostaje bez CTA. Browser proof:
   `.local-lab/proof/content-workflow-c9h9-4-review-only.png`.
+- `r564.3` ma mobile-only decision card przed ciężkim kontekstem: temat/URL,
+  rekomendacja, blocker i przycisk „Otwórz decyzję i dowody”. Przy stale live
+  queue karta nie udaje gotowości; screenshot
+  `.local-lab/proof/r564-3-mobile-stale-blocker.png` jest aktualnym proof.
 
 ## Granica bezpieczeństwa
 
@@ -39,10 +43,10 @@ przywracania direct WordPress write.
 - React ma wyłącznie builder `mode=dry_run`, `write_authorization=null`; UI nie
   utrwala już niemożliwego direct live contractu.
 - Existing draft jest otwierany/podglądany; brak create/duplicate CTA.
-- Future create należy wyłącznie do `c9h9.4`. Canonical apply ma zbudować typed
-  capability wewnątrz `apply_action` i powiązać exact action, work item,
-  handoff, draft package, dev host, operatora i mutation audit. Publish, update
-  i delete pozostają poza zakresem.
+- Create należy do zamkniętego `c9h9.4`: canonical apply buduje typed capability
+  wewnątrz `apply_action` i wiąże exact action, work item, handoff, draft package,
+  dev host, operatora i mutation audit. Publish, update i delete pozostają poza
+  zakresem.
 
 ## Bieżący graf
 
@@ -63,7 +67,6 @@ Zamknięte w tym slice:
 
 Otwarte product blockers:
 
-- `c9h9.4` — canonical dev-only apply; direct path pozostaje wyłączony;
 - `r564.3` — mobile first viewport; zależy od `.5`, `.6` i zamkniętego
   `r564.2`;
 - `c9h9.8` — stale dashboard E2E behavior assertions;
@@ -110,7 +113,7 @@ ograniczony seam typed apply/adapter, nie mechaniczny split.
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Kontynuuj `c9h9.4`: route-level readiness proof i minimalny review-only apply
-   CTA; nie włączaj live write CTA bez prawdziwego readiness.
-4. Warunek przejścia do `r564.3`: canonical apply ma pełny audit i zero HTTP dla
-   nieautoryzowanych ścieżek.
+3. Kontynuuj `r564.3`: browser proof 390×844 ma pokazać URL/temat, decyzję,
+   blocker i bezpieczny CTA bez scrolla.
+4. Warunek przejścia dalej: CTA otwiera decyzję/dowody, nie wykonuje apply, a
+   stale queue nadal blokuje rekomendację.

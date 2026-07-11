@@ -36,7 +36,8 @@ w git, Beads i `docs/progress/archive/`.
 - React nie ma `runExecutionLive`, prepare-write CTA ani create-new-draft CTA;
   nawet sfabrykowane `ready=true` kończy się `dry_run` z autoryzacją `null`;
 - istniejący draft jest tylko otwierany/podglądany, więc `r564.2` zamknięto;
-- przyszły create wraca wyłącznie przez exact canonical apply w `c9h9.4`.
+- create przechodzi wyłącznie przez exact canonical apply z zamkniętego `c9h9.4`;
+  direct content write pozostaje wyłączony.
 
 `r564.4` również jest zamknięty. Existing-draft update action ma domenową typed
 preview card z current/proposed/blocked state; raw payload pozostaje w technical
@@ -80,9 +81,15 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   wyborem zamiast Ahrefs-only braku canonical.
 - Decision/CTA dla świeżego workflow mają teraz queue-owned first card; pełna
   mobile triage nadal wymaga `r564.3`.
-- `c9h9.4` jest w toku: centralny apply ma typed `wordpress_draft` input,
-  capability binding i dev-host guard; dashboard nadal nie pokazuje live CTA,
-  dopóki realny readiness proof nie przejdzie.
+- `c9h9.4` jest zamknięty: centralny apply ma typed `wordpress_draft` input,
+  capability binding, route audit i dev-host guard; live CTA pozostaje
+  zablokowane bez realnej gotowości.
+- `r564.3` w toku: dodano mobile-only `Decyzja mobilna` po bannerze źródeł i
+  statusach, z URL/tematem, rekomendacją, najważniejszym blockerem i bezpiecznym
+  CTA otwierającym decyzję/dowody. CTA nie wykonuje zapisu. Focused
+  ContentWorkflow Vitest 15/15, dashboard lint/typecheck green; live mobile
+  screenshot `.local-lab/proof/r564-3-mobile-stale-blocker.png` pokazuje uczciwy
+  refresh-first blocker przy aktualnym stale runtime.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
@@ -128,7 +135,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
-- Latest `c9h9.4` complexity run: 378 Python files / 131133 non-empty LOC,
+- Latest `c9h9.4` complexity run: 378 Python files / 131261 non-empty LOC,
   8 changed Python files, 0 frozen growth files, 3 focused test-function
   budget violations (121, 105 and 130 lines). The extra route proof is a
   deliberate integration test; no production monolith grew.
