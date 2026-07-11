@@ -51,8 +51,11 @@ Zamknięte w tym slice:
 - `c9h9.5` — freshness w queue/snapshot i refresh-first blocker.
 - `c9h9.6` — queue/snapshot cold waterfall usunięty przez prewarm, reuse builda
   i progressive first card.
-- `c9h9.4` — pod-slice typed apply input, capability binding i dev-host guard;
-  Bead pozostaje otwarty do realnego route proof/readiness/UI CTA.
+- `c9h9.4` — backend i shared frontend mają ten sam typed apply input,
+  `applyAction` używa istniejącej granicy `/apply`, a realny capability builder
+  wiąże bieżący snapshot, review/audit, canonical URL i aktora. Dev-host guard
+  blokuje public/arbitrary host przed HTTP. Bead pozostaje otwarty do route-level
+  readiness proof i review-only CTA.
 
 Otwarte product blockers:
 
@@ -75,11 +78,11 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest `c9h9.4` pod-slice changed report: 8 plików, 1 frozen growth file
-(`wilq/actions/service.py`) i 14 raportowanych budget violations, z czego nowy
-test capability ma 121 linii, a pozostałe dotyczą istniejącego monolitu. To jest
-celowy, ograniczony seam typed apply/adapter; nie mieszaj go z mechanicznym
-splitem.
+Latest `c9h9.4` complexity report (2026-07-11): 378 plików Python,
+131133 non-empty LOC, 8 zmienionych plików Python, 0 frozen growth files i 2
+budget violations w focused tests (121 i 105 linii). Łącznie slice zmienił
+backend, connector, schemas, shared schema i dashboard API/testy; to celowy,
+ograniczony seam typed apply/adapter, nie mechaniczny split.
 
 ## Proof checkpoint
 
@@ -102,7 +105,7 @@ splitem.
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Kontynuuj `c9h9.4`: route proof capability buildera, readiness i minimalny
-   review-only apply CTA.
+3. Kontynuuj `c9h9.4`: route-level readiness proof i minimalny review-only apply
+   CTA; nie włączaj live write CTA bez prawdziwego readiness.
 4. Warunek przejścia do `r564.3`: canonical apply ma pełny audit i zero HTTP dla
    nieautoryzowanych ścieżek.

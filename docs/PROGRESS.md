@@ -107,11 +107,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Goal 005 pozostaje `blocked_missing_goal_005_uat_proof`: potrzebny jest realny
   wynik Wilku UAT albo jawny owner defer z residual risk. To stan zewnętrzny, nie
   brak eval coverage.
-- Najnowszy pod-slice `c9h9.4`: typed ActionApplyRequest, exact binding do
-  work item/handoff/draft package/canonical URL/confirm actor oraz connector
-  guard public/arbitrary host przed HTTP. Focused action mutation, WordPress
+- Najnowszy pod-slice `c9h9.4`: typed ActionApplyRequest w backendzie i
+  `@wilq/shared-schemas`, dashboardowy `applyAction` korzysta z tej samej
+  granicy `/apply`; realny builder capability wiąże work item/handoff/draft
+  package/canonical URL/confirm actor, a connector blokuje public/arbitrary host
+  przed HTTP. Focused action mutation, shared-schema, dashboard API, WordPress
   adapter i content execution tests przechodzą; Bead pozostaje otwarty do
-  route-level capability proof i readiness/UI handoff.
+  route-level readiness proof i review-only CTA.
 - Pełny cold Playwright nie jest zielony. Potwierdzone osobne blokery mają
   Beads: Ads `c9h9.9`, Custom Segments `c9h9.10`, actions
   `c9h9.11`, knowledge `c9h9.12`, Merchant `c9h9.13`. Stare E2E strings są
@@ -120,6 +122,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
+- Latest `c9h9.4` complexity run: 378 Python files / 131133 non-empty LOC,
+  8 changed Python files, 0 frozen growth files, 2 focused test-function
+  budget violations (121 and 105 lines). The typed apply seam remains bounded.
 
 ## Kolejność wykonania
 

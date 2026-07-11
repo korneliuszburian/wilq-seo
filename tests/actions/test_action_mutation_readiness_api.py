@@ -367,6 +367,113 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
     assert result.mutation_audit.adapter_reached is True
 
 
+def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) -> None:
+    action = ActionObject(
+        id="act_apply_wordpress_draft_handoff",
+        title="Aktywuj zapis szkicu WordPress draft-only",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.medium,
+        status=ActionStatus.ready,
+        evidence_ids=["ev_wordpress_draft_apply_boundary"],
+        human_diagnosis="Test wiązania bieżącego snapshotu.",
+        recommended_reason="Nie pozwala rozjechać identyfikatorów apply.",
+        payload={"allowed_operation": "create_wordpress_draft"},
+        validation_status="valid",
+        created_by="test",
+        audit_events=[
+            AuditEvent(
+                id="audit_preview_builder",
+                action_id=action_id,
+                event_type="action_preview_generated",
+                actor="operator_test",
+                summary="Podgląd zapisany.",
+            )
+            for action_id in ["act_apply_wordpress_draft_handoff"]
+        ]
+        + [
+            AuditEvent(
+                id="audit_confirm_builder",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_apply_confirmed",
+                actor="operator_test",
+                summary="Potwierdzenie zapisane.",
+            )
+        ],
+    )
+    handoff = SimpleNamespace(
+        id="wordpress_draft_handoff_content_work_item_bdo",
+        work_item_id="content_work_item_bdo",
+        final_canonical_url="https://ekologus.pl/bdo/",
+        publish_allowed=False,
+        destructive_update_allowed=False,
+    )
+    draft_package = SimpleNamespace(id="draft_package_content_work_item_bdo")
+    snapshot = SimpleNamespace(
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(draft_package=draft_package)
+        ),
+        wordpress_handoff=SimpleNamespace(
+            handoff_result=SimpleNamespace(handoff=handoff)
+        ),
+    )
+    review = SimpleNamespace(id="human_review_content_work_item_bdo")
+    audit = SimpleNamespace(id="audit_content_work_item_bdo")
+    monkeypatch.setattr(
+        "wilq.briefing.content_diagnostics.build_content_diagnostics_cached",
+        lambda: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        action_service,
+        "content_workflow_store",
+        lambda: SimpleNamespace(
+            latest_human_review=lambda _work_item_id: review,
+            latest_audit_for_review=lambda _review_id: audit,
+        ),
+    )
+    monkeypatch.setattr(
+        action_service,
+        "build_content_work_item_diagnostics_snapshot_response_for_work_item",
+        lambda _diagnostics, _work_item_id, *, human_review, audit: snapshot,
+    )
+
+    capability, errors = action_service._wordpress_draft_apply_capability(
+        action,
+        ActionApplyRequest(
+            confirm=True,
+            confirmed_by="operator_test",
+            wordpress_draft=ActionWordPressDraftApplyInput(
+                work_item_id="content_work_item_bdo",
+                handoff_id=handoff.id,
+                draft_package_id=draft_package.id,
+                target_url=handoff.final_canonical_url,
+            ),
+        ),
+    )
+
+    assert errors == []
+    assert capability is not None
+    assert capability.write_authorization.review_audit_id == review.id
+    assert capability.write_authorization.confirmation_audit_id == "audit_confirm_builder"
+
+    mismatch, mismatch_errors = action_service._wordpress_draft_apply_capability(
+        action,
+        ActionApplyRequest(
+            confirm=True,
+            confirmed_by="operator_test",
+            wordpress_draft=ActionWordPressDraftApplyInput(
+                work_item_id="content_work_item_bdo",
+                handoff_id=handoff.id,
+                draft_package_id=draft_package.id,
+                target_url="https://ekologus.pl/inny-adres/",
+            ),
+        ),
+    )
+    assert mismatch is None
+    assert mismatch_errors == ["Canonical URL nie pasuje do zatwierdzonego handoffu."]
+
+
 def test_action_mutation_readiness_summary_reports_no_vendor_writes(
     monkeypatch,
     tmp_path,

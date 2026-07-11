@@ -446,6 +446,13 @@ export const ActionApplyResultSchema = z.object({
   adapter_result: z.record(z.string(), z.unknown()).nullable().optional()
 });
 
+export const ActionWordPressDraftApplyInputSchema = z.object({
+  work_item_id: z.string().min(1),
+  handoff_id: z.string().min(1),
+  draft_package_id: z.string().min(1),
+  target_url: z.string().min(1)
+});
+
 export const ActionPreviewRequestSchema = z.object({
   requested_by: z.string().min(1).nullable().optional(),
   max_items: z.number().int().min(1).max(50).optional()
@@ -521,7 +528,8 @@ export const ActionImpactCheckResultSchema = z.object({
 
 export const ActionApplyRequestSchema = z.object({
   confirm: z.boolean(),
-  confirmed_by: z.string().min(1)
+  confirmed_by: z.string().min(1),
+  wordpress_draft: ActionWordPressDraftApplyInputSchema.optional()
 });
 
 export const ConnectorSummarySchema = z.object({
@@ -4048,6 +4056,9 @@ export type ActionMutationReadinessSummaryResponse = z.infer<
   typeof ActionMutationReadinessSummaryResponseSchema
 >;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
+export type ActionWordPressDraftApplyInput = z.infer<
+  typeof ActionWordPressDraftApplyInputSchema
+>;
 export type ActionPreviewRequest = z.infer<typeof ActionPreviewRequestSchema>;
 export type ActionPreviewResult = z.infer<typeof ActionPreviewResultSchema>;
 export type ActionReviewRequest = z.infer<typeof ActionReviewRequestSchema>;

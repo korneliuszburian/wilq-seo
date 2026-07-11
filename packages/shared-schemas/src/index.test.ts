@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ActionMutationReadinessResponseSchema,
+  ActionApplyRequestSchema,
   ActionObjectSchema,
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
@@ -76,6 +77,35 @@ describe("ActionObjectSchema", () => {
       ActionObjectSchema.safeParse({
         ...validAction,
         validation_status: "pending_validation"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ActionApplyRequestSchema", () => {
+  it("keeps WordPress apply inputs typed and rejects incomplete bindings", () => {
+    const parsed = ActionApplyRequestSchema.parse({
+      confirm: true,
+      confirmed_by: "operator_local_dashboard",
+      wordpress_draft: {
+        work_item_id: "content_work_item_bdo",
+        handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+        draft_package_id: "draft_package_content_work_item_bdo",
+        target_url: "https://ekologus.pl/bdo/"
+      }
+    });
+
+    expect(parsed.wordpress_draft?.target_url).toBe("https://ekologus.pl/bdo/");
+    expect(
+      ActionApplyRequestSchema.safeParse({
+        confirm: true,
+        confirmed_by: "operator_local_dashboard",
+        wordpress_draft: {
+          work_item_id: "content_work_item_bdo",
+          handoff_id: "",
+          draft_package_id: "draft_package_content_work_item_bdo",
+          target_url: "https://ekologus.pl/bdo/"
+        }
       }).success
     ).toBe(false);
   });

@@ -3,6 +3,7 @@ import type { ContentWorkItem } from "@wilq/shared-schemas";
 
 import {
   actionApiPath,
+  applyAction,
   getActionMutationReadiness,
   getActionsMutationReadiness,
   getContentKnowledgeCards,
@@ -300,6 +301,76 @@ describe("content workflow API helpers", () => {
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/actions/act%2Funsafe%3Fx%3D1/mutation-readiness"
     ]);
+  });
+
+  it("posts typed WordPress apply bindings through the canonical action route", async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/actions/act_apply_wordpress_draft_handoff/apply"
+      );
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        confirm: true,
+        confirmed_by: "operator_local_dashboard",
+        wordpress_draft: {
+          work_item_id: "content_work_item_bdo",
+          handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+          draft_package_id: "draft_package_content_work_item_bdo",
+          target_url: "https://ekologus.pl/bdo/"
+        }
+      });
+      return {
+        ok: true,
+        json: async () => ({
+          action_id: "act_apply_wordpress_draft_handoff",
+          applied: false,
+          status: "blocked",
+          audit_event: {
+            id: "audit_apply_blocked",
+            action_id: "act_apply_wordpress_draft_handoff",
+            event_type: "action_apply_blocked",
+            actor: "operator_local_dashboard",
+            summary: "Apply zablokowany przed zapisem.",
+            created_at: "2026-07-11T00:00:00Z",
+            evidence_ids: [],
+            redacted: true
+          },
+          mutation_audit: {
+            id: "mutation_audit_blocked",
+            action_id: "act_apply_wordpress_draft_handoff",
+            connector: "wordpress_ekologus",
+            mutation_adapter: "wordpress_draft_execution_boundary",
+            status: "blocked",
+            summary: "Blokada przed adapterem.",
+            mutation_attempted: false,
+            adapter_reached: false,
+            external_write_attempted: false,
+            actor: "operator_local_dashboard",
+            created_at: "2026-07-11T00:00:00Z",
+            audit_event_id: "audit_apply_blocked",
+            evidence_ids: [],
+            blockers: [],
+            redacted: true
+          },
+          errors: ["Brakuje potwierdzenia ActionObject."]
+        })
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await applyAction("act_apply_wordpress_draft_handoff", {
+      confirm: true,
+      confirmed_by: "operator_local_dashboard",
+      wordpress_draft: {
+        work_item_id: "content_work_item_bdo",
+        handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+        draft_package_id: "draft_package_content_work_item_bdo",
+        target_url: "https://ekologus.pl/bdo/"
+      }
+    });
+
+    expect(result.status).toBe("blocked");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("gets the action mutation readiness summary through a typed helper", async () => {

@@ -2,6 +2,8 @@ import {
   ActionObjectSchema,
   ActionConfirmResultSchema,
   ActionImpactCheckResultSchema,
+  ActionApplyResultSchema,
+  ActionApplyRequestSchema,
   ActionMutationReadinessResponseSchema,
   ActionMutationReadinessSummaryResponseSchema,
   ActionPreviewResultSchema,
@@ -71,6 +73,8 @@ import {
   type ActionConfirmResult,
   type ActionImpactCheckRequest,
   type ActionImpactCheckResult,
+  type ActionApplyRequest,
+  type ActionApplyResult,
   type ActionMutationReadinessResponse,
   type ActionMutationReadinessSummaryResponse,
   type ActionPreviewCardViewModel,
@@ -597,6 +601,17 @@ export function impactCheckAction(
   return apiPost(actionApiPath(actionId, "/impact-check"), ActionImpactCheckResultSchema, request);
 }
 
+export function applyAction(
+  actionId: string,
+  request: ActionApplyRequest
+): Promise<ActionApplyResult> {
+  return apiPost(
+    actionApiPath(actionId, "/apply"),
+    ActionApplyResultSchema,
+    ActionApplyRequestSchema.parse(request)
+  );
+}
+
 export function getEvidence(): Promise<Evidence[]> {
   return apiGet("/api/evidence", z.array(EvidenceSchema));
 }
@@ -628,6 +643,8 @@ export function getKnowledgeOperatingMap(): Promise<KnowledgeOperatingMapRespons
 export type {
   ActionObject,
   ActionConfirmResult,
+  ActionApplyRequest,
+  ActionApplyResult,
   ActionImpactCheckResult,
   ActionPreviewCardViewModel,
   ActionPreviewResult,
