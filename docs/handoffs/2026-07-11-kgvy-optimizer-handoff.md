@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `0b7567d` (`refactor: extract Ads campaign metric tiles`)  
-`origin/main` = `0b7567d`
+Ostatni commit: `d4c9e52` (`refactor: extract Ads context metric tiles`)  
+`origin/main` = `d4c9e52`
 
 ## Wykonane
 
@@ -42,6 +42,6 @@ monolitu.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 0b7567d`, worktree czysty.
+- Po commicie: `HEAD == origin/main == d4c9e52`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
