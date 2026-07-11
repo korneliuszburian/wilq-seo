@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `7cf0833` (`refactor: split custom segment orchestration`)  
-`origin/main` = `7cf0833`
+Ostatni commit: `fa049a7` (`docs: update custom segment handoff pointer`)  
+`origin/main` = `fa049a7`
 
 ## Wykonane
 
@@ -95,6 +95,6 @@ fragmentu; nie przenosić całego monolitu naraz.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 7cf0833`, worktree czysty.
+- Po commicie: `HEAD == origin/main == fa049a7`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
