@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.metric_utils import metric_sentence, prioritize_action_metrics
 from wilq.actions.validation_copy import (
     missing,
     no_api_write,
@@ -67,6 +68,25 @@ def localo_visibility_review_action(
         payload=localo_visibility_payload,
         validation_status="not_validated",
         created_by="system_metric_seed",
+    )
+
+
+def localo_visibility_review_action_from_metric_facts(
+    *, localo_facts: list[MetricFact], localo_visibility_payload: dict[str, Any]
+) -> ActionObject:
+    metrics = prioritize_action_metrics(
+        localo_facts,
+        required_names={
+            "localo_active_place_count",
+            "localo_tracked_keyword_count",
+            "localo_avg_visibility_current",
+            "localo_reviews_count",
+        },
+    )[:10]
+    return localo_visibility_review_action(
+        localo_metrics=metrics,
+        localo_visibility_payload=localo_visibility_payload,
+        metric_sentence=metric_sentence(metrics),
     )
 LOCALO_CLAIMS_BY_MISSING_CONTRACT = {
     "local_rankings": "lokalne pozycje",

@@ -84,11 +84,16 @@ from wilq.actions.google_ads.search_term_ngrams import (
     search_term_ngram_payload_from_metric_facts,
 )
 from wilq.actions.localo.visibility import (
-    localo_visibility_review_action,
+    localo_visibility_review_action_from_metric_facts,
     localo_visibility_review_payload_from_metric_facts,
 )
 from wilq.actions.merchant import merchant_feed_issue_action, seed_merchant_feed_issue_action
-from wilq.actions.metric_utils import prioritize_action_metrics, unique_values
+from wilq.actions.metric_utils import (
+    metric_fact_label,
+    metric_sentence,
+    prioritize_action_metrics,
+    unique_values,
+)
 from wilq.actions.payloads import (
     validate_action_payload,
 )
@@ -748,7 +753,7 @@ def _seed_localo_metric_actions(
     localo_visibility_payload = localo_visibility_review_payload_from_metric_facts(localo_facts)
     if localo_visibility_payload is None:
         return
-    action = _localo_visibility_review_action(
+    action = localo_visibility_review_action_from_metric_facts(
         localo_facts=localo_facts,
         localo_visibility_payload=localo_visibility_payload,
     )
@@ -778,7 +783,7 @@ def _merchant_feed_issue_action(
         merchant_action_metrics=merchant_action_metrics,
         merchant_issue_clusters=merchant_issue_clusters,
         merchant_payload_preview=merchant_payload_preview,
-        metric_sentence=_metric_sentence(merchant_action_metrics),
+        metric_sentence=metric_sentence(merchant_action_metrics),
         preview_contract=MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
     )
 
@@ -789,28 +794,7 @@ def _ga4_tracking_quality_action(
 ) -> ActionObject:
     return ga4_tracking_quality_action(
         ga4_action_metrics=ga4_action_metrics,
-        metric_sentence=_metric_sentence(ga4_action_metrics),
-    )
-
-
-def _localo_visibility_review_action(
-    *,
-    localo_facts: list[MetricFact],
-    localo_visibility_payload: dict[str, Any],
-) -> ActionObject:
-    metrics = prioritize_action_metrics(
-        localo_facts,
-        required_names={
-            "localo_active_place_count",
-            "localo_tracked_keyword_count",
-            "localo_avg_visibility_current",
-            "localo_reviews_count",
-        },
-    )[:10]
-    return localo_visibility_review_action(
-        localo_metrics=metrics,
-        localo_visibility_payload=localo_visibility_payload,
-        metric_sentence=_metric_sentence(metrics),
+        metric_sentence=metric_sentence(ga4_action_metrics),
     )
 
 
@@ -891,7 +875,7 @@ def _content_refresh_queue_action(
         content_action_metrics=content_action_metrics,
         content_payload=content_payload,
         unique_evidence_ids=unique_values(fact.evidence_id for fact in content_action_metrics),
-        metric_sentence=_metric_sentence(content_facts),
+        metric_sentence=metric_sentence(content_facts),
     )
 
 
@@ -1503,34 +1487,6 @@ def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
     for fact in facts:
         grouped.setdefault(fact.source_connector, []).append(fact)
     return grouped
-
-
-def _metric_sentence(facts: list[MetricFact]) -> str:
-    if not facts:
-        return "Najważniejsze fakty: nie ma potwierdzonych metryk do pokazania"
-    samples = ", ".join(f"{_metric_fact_label(fact.name)}: {fact.value}" for fact in facts[:4])
-    if len(facts) > 4:
-        return f"Najważniejsze fakty: {samples} i kolejne sygnały w dowodach"
-    return f"Najważniejsze fakty: {samples}"
-
-
-def _metric_fact_label(name: str) -> str:
-    labels = {
-        "issue_product_count": "zgłoszenia problemów",
-        "sample_product_id": "przykładowe produkty",
-        "active_users": "aktywni użytkownicy",
-        "engagement_rate": "zaangażowanie",
-        "ecommerce_purchases": "zakupy e-commerce",
-        "key_events": "zdarzenia kluczowe",
-        "clicks": "kliknięcia",
-        "impressions": "wyświetlenia",
-        "ctr": "CTR",
-        "position": "średnia pozycja",
-        "content_gap_count": "luki treści",
-        "keyword_count": "liczba fraz",
-        "visibility_score": "widoczność",
-    }
-    return labels.get(name, "metryka źródłowa")
 
 
 def _plain_metric_value_label(
@@ -3571,7 +3527,7 @@ def _social_draft_input_preview_cards(
             ),
             _preview_row(
                 "Sygnał",
-                _metric_fact_label(str(item.get("metric_name") or "")),
+                metric_fact_label(str(item.get("metric_name") or "")),
             ),
             _preview_row("Wartość", _plain_metric_value_label(item.get("value"))),
             _preview_row(

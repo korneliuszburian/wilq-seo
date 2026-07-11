@@ -198,7 +198,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   deduplikacja do `wilq/actions/metric_utils.py`. Focused ActionObject/content/
   Social API tests, Ruff, mypy i diff check przechodzą; runtime zachowuje 21
   akcji, oba social draft actions w `prepare` z sześcioma evidence i centralne
-  `write_capable=0`. `service.py` spadł do 5 332 LOC.
+  `write_capable=0`. Localo również działa w `prepare` z jednym evidence;
+  `service.py` spadł do 5 294 LOC.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

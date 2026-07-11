@@ -89,9 +89,10 @@ Action Service; nie przywracaj direct WordPress write.
   pozostaje poza tym seamem.
   `seed_metric_action_candidates` jest teraz cienkim orkiestratorem domenowych
   grup Merchant, GA4, Content, Google Ads, Localo i Social; Social działa w
-  `wilq/actions/social.py`, a wspólne priorytety i deduplikacja w
-  `wilq/actions/metric_utils.py`. Payloady i kolejność rejestracji pozostają bez
-  zmian; `jnra` pozostaje otwarty dla kolejnych grup.
+  `wilq/actions/social.py`, Localo ma konstruktor oparty na faktach w
+  `wilq/actions/localo/visibility.py`, a wspólne priorytety, etykiety i
+  deduplikacja w `wilq/actions/metric_utils.py`. Payloady i kolejność rejestracji
+  pozostają bez zmian; `jnra` pozostaje otwarty dla kolejnych grup.
 
 ## Granica bezpieczeństwa
 
@@ -139,7 +140,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 5 332 non-empty LOC;
+- `wilq/actions/service.py`: 5 294 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
 - `wilq/actions/content_refresh.py`: 1 985 non-empty LOC;
@@ -149,8 +150,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 382 plików Python,
-131669 non-empty LOC. Bounded content seed extraction, metric-candidate
-orchestration and Social module extraction were audited with
+131673 non-empty LOC. Bounded content seed extraction, metric-candidate
+orchestration, Social and Localo module extraction were audited with
 `--allow-frozen --allow-budget-violations`: service.py remains a frozen-growth
 file because the seam removes inline code, while pre-existing content/service
 budget findings remain tracked for the broader `jnra` cleanup. Historyczne duże
