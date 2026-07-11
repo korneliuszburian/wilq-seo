@@ -75,7 +75,9 @@ Action Service; nie przywracaj direct WordPress write.
   nie wolno upraszczać ActionObject safety loop. Publiczny Service Profile
   knowledge-promotion constructor jest teraz w `wilq/actions/service_profile.py`;
   private proposal constructor jest w tym samym module, więc oba Service Profile
-  review seams są zakończone.
+  review seams są zakończone. WordPress draft-handoff constructor jest teraz w
+  `wilq/actions/wordpress_draft.py`; apply-mode constructor pozostaje osobnym
+  seamem, bo korzysta z service-owned apply contract buildera.
 
 ## Granica bezpieczeństwa
 

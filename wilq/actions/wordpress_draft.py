@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
@@ -8,8 +10,78 @@ from wilq.schemas import (
     ActionPreviewRowViewModel,
     ActionRisk,
     ActionStatus,
+    MetricFact,
     OpportunityDomain,
 )
+
+
+def draft_handoff_action(
+    *,
+    source_connectors: list[str],
+    source_metric_names: list[str],
+    preview_items: list[dict[str, Any]],
+    content_action_metrics: list[MetricFact],
+    evidence_ids: list[str],
+) -> ActionObject:
+    return ActionObject(
+        id="act_prepare_wordpress_draft_handoff",
+        title="Przygotuj zablokowany podgląd szkicu WordPress",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=evidence_ids,
+        metrics=content_action_metrics,
+        human_diagnosis=(
+            "WILQ ma kolejkę treści z GSC, WordPress i Ahrefs i może przygotować "
+            "wyłącznie zablokowany podgląd szkicu WordPress. To nie jest zapis "
+            "ani publikacja."
+        ),
+        recommended_reason=(
+            "Użyj tej akcji jako checklisty przed przyszłym szkicem WordPress: "
+            "najpierw finalny URL, canonical, duplicate/cannibalization, legal/factual "
+            "i przegląd człowieka. Bez tych bramek szkic pozostaje zablokowany."
+        ),
+        payload={
+            "action_type": "wordpress_draft_handoff",
+            "connector": "wordpress_ekologus",
+            "mode": "prepare_only",
+            "preview_contract": "wordpress_draft_handoff_preview_v1",
+            "depends_on_action_id": "act_prepare_content_refresh_queue",
+            "source_connectors": source_connectors,
+            "source_metric_names": source_metric_names,
+            "required_input_contracts": [
+                "content_brief_preview_v1",
+                "content_draft_generation_v1",
+                "content_draft_readiness_review_v1",
+                "wordpress_draft_handoff_v1",
+                "post_publication_measurement_plan_v1",
+            ],
+            "payload_preview": preview_items,
+            "required_validation": [
+                "content_url_preflight_review",
+                "final_canonical_review",
+                "duplicate_or_cannibalization_check",
+                "legal_factual_review",
+                "content_draft_readiness_review",
+                "wordpress_draft_preview_review",
+                "human_confirm_before_wordpress_write",
+            ],
+            "blocked_claims": [
+                "wordpress_draft_write",
+                "wordpress_publish",
+                "production_wordpress_write",
+                "publish_ready_claim",
+                "obietnica wzrostu pozycji albo leadów",
+            ],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
 
 
 def existing_draft_update_action() -> ActionObject:

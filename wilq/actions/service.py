@@ -94,7 +94,7 @@ from wilq.actions.service_profile import (
     knowledge_promotion_action,
     private_proposal_promotion_action,
 )
-from wilq.actions.wordpress_draft import existing_draft_update_action
+from wilq.actions.wordpress_draft import draft_handoff_action, existing_draft_update_action
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.merchant_labels import (
     merchant_display_label,
@@ -1689,64 +1689,12 @@ def _wordpress_draft_handoff_action(
     if not brief_previews:
         return None
     preview_items = [_wordpress_draft_handoff_preview_item(item) for item in brief_previews[:4]]
-    return ActionObject(
-        id="act_prepare_wordpress_draft_handoff",
-        title="Przygotuj zablokowany podgląd szkicu WordPress",
-        domain=OpportunityDomain.content,
-        connector="wordpress_ekologus",
-        mode=ActionMode.prepare,
-        risk=ActionRisk.medium,
-        status=ActionStatus.needs_validation,
+    return draft_handoff_action(
+        source_connectors=content_payload.get("source_connectors", []),
+        source_metric_names=content_payload.get("source_metric_names", []),
+        preview_items=preview_items,
+        content_action_metrics=content_action_metrics,
         evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
-        metrics=content_action_metrics,
-        human_diagnosis=(
-            "WILQ ma kolejkę treści z GSC, WordPress i Ahrefs i może przygotować "
-            "wyłącznie zablokowany podgląd szkicu WordPress. To nie jest zapis "
-            "ani publikacja."
-        ),
-        recommended_reason=(
-            "Użyj tej akcji jako checklisty przed przyszłym szkicem WordPress: "
-            "najpierw finalny URL, canonical, duplicate/cannibalization, legal/factual "
-            "i przegląd człowieka. Bez tych bramek szkic pozostaje zablokowany."
-        ),
-        payload={
-            "action_type": "wordpress_draft_handoff",
-            "connector": "wordpress_ekologus",
-            "mode": "prepare_only",
-            "preview_contract": "wordpress_draft_handoff_preview_v1",
-            "depends_on_action_id": "act_prepare_content_refresh_queue",
-            "source_connectors": content_payload.get("source_connectors", []),
-            "source_metric_names": content_payload.get("source_metric_names", []),
-            "required_input_contracts": [
-                "content_brief_preview_v1",
-                "content_draft_generation_v1",
-                "content_draft_readiness_review_v1",
-                "wordpress_draft_handoff_v1",
-                "post_publication_measurement_plan_v1",
-            ],
-            "payload_preview": preview_items,
-            "required_validation": [
-                "content_url_preflight_review",
-                "final_canonical_review",
-                "duplicate_or_cannibalization_check",
-                "legal_factual_review",
-                "content_draft_readiness_review",
-                "wordpress_draft_preview_review",
-                "human_confirm_before_wordpress_write",
-            ],
-            "blocked_claims": [
-                "wordpress_draft_write",
-                "wordpress_publish",
-                "production_wordpress_write",
-                "publish_ready_claim",
-                "obietnica wzrostu pozycji albo leadów",
-            ],
-            "apply_allowed": False,
-            "api_mutation_ready": False,
-            "destructive": False,
-        },
-        validation_status="not_validated",
-        created_by="system_metric_seed",
     )
 
 
