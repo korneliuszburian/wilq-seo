@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `7278093` (`refactor: split Ads negative keyword indexes`)  
-`origin/main` = `7278093`
+Ostatni commit: `9bd2983` (`docs: update negative keyword handoff pointer`)  
+`origin/main` = `9bd2983`
 
 ## Wykonane
 
@@ -89,6 +89,6 @@ blocked claims i `apply_allowed=false`.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 7278093`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 9bd2983`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
