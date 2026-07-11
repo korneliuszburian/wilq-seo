@@ -19,6 +19,8 @@ Ostatni commit: `d4c9e52` (`refactor: extract Ads context metric tiles`)
   `campaign_triage`; pozostałe gałęzie dispatchera nie zostały przeniesione.
 - Drugi fragment obejmuje `business_context` i `derived_kpi`; nie wracaj do tych
   dwóch branchy w dispatcherze.
+- Trzeci fragment obejmuje `budget_context` i `recommendations`; nie wracaj do
+  tych branchy ani do ich formatterów w dispatcherze.
 
 ## Dowody
 

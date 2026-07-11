@@ -116,3 +116,37 @@ def derived_kpi_metric_tiles(
     if rows_with_spend_without_conversions:
         tiles["koszt bez konw."] = rows_with_spend_without_conversions
     return clean_metric_tiles(tiles)
+
+
+def budget_context_metric_tiles(
+    decision: AdsDecisionItem,
+    currency_code: str | None,
+) -> dict[str, int | float | str]:
+    budget_tiles: dict[str, int | float | str | None] = {
+        "budżety": len(decision.budget_rows),
+        "podgląd budżetu": len(decision.budget_apply_preview),
+        "koszt 7 dni": format_money_micros(
+            sum_attr(decision.budget_rows, "cost_micros_7d"),
+            currency_code,
+        ),
+    }
+    if decision.shared_budget_distribution_rows:
+        budget_tiles["wspólne budżety"] = len(decision.shared_budget_distribution_rows)
+    return clean_metric_tiles(budget_tiles)
+
+
+def recommendations_metric_tiles(
+    decision: AdsDecisionItem,
+) -> dict[str, int | float | str]:
+    rows_with_impact = sum(1 for row in decision.recommendation_rows if row.impact_available)
+    urgent_rows = sum(1 for row in decision.recommendation_rows if row.review_priority == "pilne")
+    high_rows = sum(1 for row in decision.recommendation_rows if row.review_priority == "wysokie")
+    return clean_metric_tiles(
+        {
+            "rekomendacje": len(decision.recommendation_rows),
+            "pilne": urgent_rows,
+            "wysokie": high_rows,
+            "podgląd wpływu": rows_with_impact,
+            "podgląd akcji": len(decision.recommendation_apply_preview),
+        }
+    )

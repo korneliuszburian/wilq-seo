@@ -60,6 +60,10 @@ w git, Beads i `docs/progress/archive/`.
   zachowane są target buckets, formatowanie i blokady CPA/ROAS. Complexity po
   seamu: 398 plików Python / 132419 LOC; pozostałe tile branches nie są jeszcze
   aktywną prawdą nowego modułu.
+- Następny tile fragment wydzielił `budget_context` i `recommendations`;
+  shared-budget, currency, impact i safety semantics pozostały bez zmian.
+  Complexity dispatcher ma 122 linii; pozostałe branches czekają na kolejne
+  bounded seamy.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

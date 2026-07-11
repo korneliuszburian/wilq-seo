@@ -82,10 +82,12 @@ from wilq.briefing.ads_impression_share import (
 )
 from wilq.briefing.ads_keyword_planner import build_keyword_planner_section
 from wilq.briefing.ads_metric_tiles import (
+    budget_context_metric_tiles,
     business_context_metric_tiles,
     campaign_activity_metric_tiles,
     campaign_triage_metric_tiles,
     derived_kpi_metric_tiles,
+    recommendations_metric_tiles,
 )
 from wilq.briefing.ads_metric_utils import (
     clean_metric_tiles as _clean_metric_tiles,
@@ -5041,34 +5043,9 @@ def _ads_decision_metric_tiles(
     if decision.decision_type == "review_derived_kpi":
         return derived_kpi_metric_tiles(decision)
     if decision.decision_type == "review_budget_context":
-        budget_tiles: dict[str, int | float | str | None] = {
-            "budżety": len(decision.budget_rows),
-            "podgląd budżetu": len(decision.budget_apply_preview),
-            "koszt 7 dni": _format_money_micros(
-                _sum_attr(decision.budget_rows, "cost_micros_7d"),
-                currency_code,
-            ),
-        }
-        if decision.shared_budget_distribution_rows:
-            budget_tiles["wspólne budżety"] = len(decision.shared_budget_distribution_rows)
-        return _clean_metric_tiles(budget_tiles)
+        return budget_context_metric_tiles(decision, currency_code)
     if decision.decision_type == "review_recommendations":
-        rows_with_impact = sum(1 for row in decision.recommendation_rows if row.impact_available)
-        urgent_rows = sum(
-            1 for row in decision.recommendation_rows if row.review_priority == "pilne"
-        )
-        high_rows = sum(
-            1 for row in decision.recommendation_rows if row.review_priority == "wysokie"
-        )
-        return _clean_metric_tiles(
-            {
-                "rekomendacje": len(decision.recommendation_rows),
-                "pilne": urgent_rows,
-                "wysokie": high_rows,
-                "podgląd wpływu": rows_with_impact,
-                "podgląd akcji": len(decision.recommendation_apply_preview),
-            }
-        )
+        return recommendations_metric_tiles(decision)
     if decision.decision_type == "review_search_term_ngrams":
         rows = decision.search_term_ngram_rows
         rows_with_clicks = sum(1 for row in rows if (row.clicks or 0) > 0)
