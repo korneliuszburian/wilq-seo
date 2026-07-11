@@ -1161,7 +1161,7 @@ function SourceAccessCard({
   refreshResult: ConnectorRefreshRun | null;
 }) {
   const status = sourceAccessStatus(connector);
-  const canRefresh = hasStaleSourceData(connector);
+  const canRefresh = hasStaleSourceData(connector) && connector.refresh_state.refresh_allowed;
   return (
     <article className="rounded-md border border-line bg-white p-4">
       <div className="flex items-start justify-between gap-3">

@@ -31,6 +31,11 @@ w git, Beads i `docs/progress/archive/`.
 - `refresh_state.refresh_allowed` jest fail-closed podczas aktywnego `queued` lub
   `running` runu. Test API potwierdza stan `queued`, `refresh_allowed=false` i
   bezpieczny krok „poczekaj”; runtime po restarcie health/metrics jest zdrowy.
+- `/settings` nie omija już tego kontraktu w React: CTA odświeżenia renderuje się
+  tylko dla stale źródła z `refresh_allowed=true`. Active-run test dashboardu
+  ukrywa przycisk i pokazuje komunikat oczekiwania; focused Vitest 2/2,
+  typecheck/lint green. Desktop render po zmianie zachowuje decyzję i CTA dla
+  dozwolonych źródeł; proof `.local-lab/proof/4wwo-sources-refresh-state.png`.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

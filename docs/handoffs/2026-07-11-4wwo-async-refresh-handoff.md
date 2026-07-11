@@ -18,12 +18,14 @@ Ostatni commit: `4e6e925` (`fix: block refresh while connector run is active`)
 - `refresh_state.refresh_allowed` przechodzi na `false` dla aktywnego
   `queued`/`running` runu, więc status po przeładowaniu nie zachęca do drugiego
   odczytu.
+- `/settings` używa `refresh_allowed` do warunkowego renderowania CTA; active-run
+  test nie pozwala Reactowi pokazać drugiego odczytu.
 
 ## Dowody
 
 - Backend: Ruff, mypy i `tests/api_contracts/test_connector_refresh_redaction_contracts.py` — 5 passed.
 - Shared schemas: typecheck i 33 passed.
-- Dashboard: typecheck, lint, build i focused refresh test — green.
+- Dashboard: typecheck, lint, build i focused refresh/active-run tests (2 passed) — green.
 - Live API: `refresh_google_sheets_1204e9337620` zwrócił `queued`, następnie
   `completed`; `external_call_attempted=false`, bez vendor write.
 - Browser proof typed state: `.local-lab/proof/4wwo-sources-refresh-state.png`
