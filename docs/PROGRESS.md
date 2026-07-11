@@ -9,7 +9,7 @@ w git, Beads i `docs/progress/archive/`.
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 98 793 metric facts i 4 511
+- Managed API i dashboard są zdrowe. DuckDB ma 98 795 metric facts i 4 512
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
 - Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.
@@ -240,6 +240,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `api_mutation_ready`) mają teraz mały typed seam w
   `wilq/actions/payload_readiness.py`; service zachowuje istniejącą granicę
   preview i zachowanie centralnego apply gate.
+- Action status/risk/mode/evidence/mutation labels mają teraz typed seam w
+  `wilq/actions/operator_labels.py`; service zachowuje te same polskie etykiety,
+  źródła connectorów i safety semantics.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

@@ -5,17 +5,17 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Aktualny następny slice to `wilq-seo-r564.3`: mobile first viewport po zamknięciu
-canonical dev-only ActionObject apply oraz szybkiej listy akcji. Jeśli zewnętrzny
-refresh nadal blokuje świeży kandydat, wykonaj mały, testowalny seam `wilq-seo-jnra`
-Action Service; nie przywracaj direct WordPress write.
+Aktualny następny slice to mały seam `wilq-seo-jnra` w Action Service: wydzielenie
+mapowania `_action_gate_label` do modułu domenowego po zakończeniu operator-label
+seamu. `r564.3` pozostaje zależny od zewnętrznego świeżego kandydata; nie oznaczaj
+go jako complete i nie przywracaj direct WordPress write.
 
 ## Prawda produktu
 
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 98 793 metric facts, 4 511 refresh runs; konektory
+- Managed runtime: 98 795 metric facts, 4 512 refresh runs; konektory
   12/9 configured/2 missing credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
@@ -148,7 +148,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 4 777 non-empty LOC;
+- `wilq/actions/service.py`: 4 717 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -158,8 +158,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 385 plików Python,
-131654 non-empty LOC. Bounded content seed extraction, metric-candidate
+Latest complexity report (2026-07-11): 386 plików Python,
+131693 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with
@@ -190,6 +190,9 @@ ich rozmiaru.
   `api_mutation_ready`) mają teraz mały typed seam w
   `wilq/actions/payload_readiness.py`; service zachowuje istniejącą granicę
   preview i zachowanie centralnego apply gate.
+- Action status/risk/mode/evidence/mutation labels mają teraz typed seam w
+  `wilq/actions/operator_labels.py`; service zachowuje te same polskie etykiety,
+  źródła connectorów i safety semantics.
 - Aktualne screenshoty desktop/mobile/action są w lokalnym, ignorowanym
   `.local-lab/proof/independent-review-2026-07-10/`.
 - Full cold E2E ma jawne otwarte blockers; nie nazywaj całego `verify.sh`
@@ -200,7 +203,7 @@ ich rozmiaru.
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Kontynuuj `r564.3`: browser proof 390×844 ma pokazać URL/temat,
-   decyzję, blocker i bezpieczny CTA bez scrolla, jeśli refresh da świeżego kandydata.
-4. Podczas zewnętrznej blokady świeżego content proof wykonuj `jnra` tylko przez
-   mały seam z testem zachowania; nie oznaczaj `r564.3` jako complete bez świeżego kandydata.
+3. Kontynuuj `jnra`: wydziel `_action_gate_label` z zachowaniem pełnego mapowania
+   i testu etykiet blokad.
+4. `r564.3` może zostać zamknięty dopiero po browser proof 390×844 ze świeżym,
+   nieblokowanym kandydatem; obecny stan zewnętrzny tego nie dowodzi.
