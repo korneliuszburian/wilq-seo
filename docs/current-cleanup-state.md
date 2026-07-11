@@ -192,6 +192,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Operator-facing summary i safe next step business context są teraz w
   `_business_context_summary_and_next_step`; blocked/ready copy pozostaje bez
   zmian, a `_business_context_read_contract` ma 149 linii po tym seamie.
+- Missing contracts, allowed metrics i status business context są teraz składane
+  przez `_business_context_contract_state`; read contract pozostaje typed,
+  a aktualny helper ma 131 linii.
 
 ## Granica bezpieczeństwa
 
