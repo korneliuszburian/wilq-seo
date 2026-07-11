@@ -193,6 +193,7 @@ from wilq.schemas import (
     AdsStrategyReviewReadinessContract,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
+    ConnectorStatus,
     MetricFact,
     connector_refresh_has_live_data,
     connector_refresh_run_status_label,
@@ -717,6 +718,81 @@ def _build_ads_decision_queue_response(
     )
 
 
+def _build_ads_diagnostics_response(
+    *,
+    connector: ConnectorStatus,
+    latest_refresh: ConnectorRefreshRun | None,
+    live_data_available: bool,
+    account_currency_read_contract: AdsAccountCurrencyReadContract,
+    campaign_read_contract: AdsCampaignReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract,
+    impression_share_read_contract: AdsImpressionShareReadContract,
+    campaign_triage_read_contract: AdsCampaignTriageReadContract,
+    optimizer_readiness_contract: AdsOptimizerReadinessContract,
+    change_history_read_contract: AdsChangeHistoryReadContract,
+    change_impact_readiness_contract: AdsChangeImpactReadinessContract,
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_review_summary_contract: AdsSearchTermReviewSummaryContract,
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+    custom_segments_read_contract: AdsCustomSegmentsReadContract,
+    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
+    decision_queue: list[AdsDecisionItem],
+    sections: list[AdsDiagnosticSection],
+    blocked_handoff: AdsBlockedHandoff | None,
+) -> AdsDiagnosticsResponse:
+    return AdsDiagnosticsResponse(
+        strict_instruction=STRICT_BRIEF_INSTRUCTION,
+        connector=connector,
+        connector_status_label=_ads_connector_status_label(str(connector.status)),
+        latest_refresh=latest_refresh,
+        latest_refresh_status_label=_ads_refresh_status_label(latest_refresh)
+        if latest_refresh
+        else None,
+        live_data_status_label=_ads_live_data_status_label(live_data_available),
+        live_data_available=live_data_available,
+        freshness_assessment=_ads_freshness_assessment(latest_refresh),
+        campaign_read_contract=campaign_read_contract,
+        account_currency_read_contract=account_currency_read_contract,
+        business_context_read_contract=business_context_read_contract,
+        derived_kpi_read_contract=derived_kpi_read_contract,
+        budget_pacing_read_contract=budget_pacing_read_contract,
+        recommendations_read_contract=recommendations_read_contract,
+        impression_share_read_contract=impression_share_read_contract,
+        campaign_triage_read_contract=campaign_triage_read_contract,
+        optimizer_readiness_contract=optimizer_readiness_contract,
+        change_history_read_contract=change_history_read_contract,
+        change_impact_readiness_contract=change_impact_readiness_contract,
+        search_terms_read_contract=search_terms_read_contract,
+        search_term_review_summary_contract=search_term_review_summary_contract,
+        search_term_ngram_read_contract=search_term_ngram_read_contract,
+        search_term_safety_read_contract=search_term_safety_read_contract,
+        keyword_match_context_read_contract=keyword_match_context_read_contract,
+        keyword_planner_read_contract=keyword_planner_read_contract,
+        custom_segments_read_contract=custom_segments_read_contract,
+        negative_keywords_read_contract=negative_keywords_read_contract,
+        operator_summary=_operator_summary(
+            decision_queue,
+            campaign_read_contract,
+            search_terms_read_contract,
+            optimizer_readiness_contract,
+        ),
+        decision_queue=decision_queue,
+        sections=sections,
+        blocked_handoff=blocked_handoff,
+        evidence_ids=_unique(
+            evidence_id for section in sections for evidence_id in section.evidence_ids
+        ),
+        action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
+        blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
+    )
+
+
 def _reconcile_search_term_read_contracts(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -1161,19 +1237,12 @@ def build_ads_diagnostics(
         action_ids=action_ids,
         currency_code=account_currency_read_contract.currency_code,
     )
-    response = AdsDiagnosticsResponse(
-        strict_instruction=STRICT_BRIEF_INSTRUCTION,
+    response = _build_ads_diagnostics_response(
         connector=connector,
-        connector_status_label=_ads_connector_status_label(str(connector.status)),
         latest_refresh=latest_refresh,
-        latest_refresh_status_label=_ads_refresh_status_label(latest_refresh)
-        if latest_refresh
-        else None,
-        live_data_status_label=_ads_live_data_status_label(live_data_available),
         live_data_available=live_data_available,
-        freshness_assessment=_ads_freshness_assessment(latest_refresh),
-        campaign_read_contract=campaign_read_contract,
         account_currency_read_contract=account_currency_read_contract,
+        campaign_read_contract=campaign_read_contract,
         business_context_read_contract=business_context_read_contract,
         derived_kpi_read_contract=derived_kpi_read_contract,
         budget_pacing_read_contract=budget_pacing_read_contract,
@@ -1191,20 +1260,9 @@ def build_ads_diagnostics(
         keyword_planner_read_contract=keyword_planner_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
-        operator_summary=_operator_summary(
-            decision_queue,
-            campaign_read_contract,
-            search_terms_read_contract,
-            optimizer_readiness_contract,
-        ),
         decision_queue=decision_queue,
         sections=sections,
         blocked_handoff=blocked_handoff,
-        evidence_ids=_unique(
-            evidence_id for section in sections for evidence_id in section.evidence_ids
-        ),
-        action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
-        blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
     _hydrate_ads_review_gate_labels(response)
     _hydrate_ads_marketer_labels(response)

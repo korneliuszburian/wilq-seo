@@ -84,7 +84,7 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   `_reconcile_ads_budget_and_business_context_contracts`; nie wracaj do inline
   `budget_apply_preview`, `profit_margin` ani `human_budget_goal` updates.
 - Reconciliation boundary jest domknięty przez dwa ostatnie extraction slices;
-  aktualny complexity report ma 398 plików / 133094 LOC i dwa jawne violations
+  aktualny complexity report ma 398 plików / 133150 LOC i dwa jawne violations
   (monolityczny plik oraz orchestrator), więc kolejny seam wymaga świeżego review.
 - Core search-term read-contract assembly jest w `_build_ads_search_term_read_contracts`;
   nie wracaj do inline builderów `terms`, `safety`, `keyword match` ani `planner`.
@@ -101,6 +101,9 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   ani fail-closed handoffu.
 - Decision queue response assembly jest w `_build_ads_decision_queue_response`;
   nie wracaj do inline wywołania `_ads_decision_queue` z `build_ads_diagnostics`.
+- Typed response construction jest w `_build_ads_diagnostics_response`; nie wracaj
+  do inline `AdsDiagnosticsResponse` constructor. Label hydration pozostaje osobnym
+  seamem.
 
 ## Dowody
 
@@ -121,11 +124,11 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 
 ## Następny slice
 
-Reconciliation, search-term, candidate, optimizer, sections, blocked-handoff i
-decision_queue assembly są domknięte. Najbliższy potwierdzony kandydat to mały
-helper response model assembly/hydration w `build_ads_diagnostics`; przed
-implementacją odśwież complexity/review i zachowaj missing-contract lineage,
-freshness oraz ActionObject safety.
+Reconciliation, search-term, candidate, optimizer, sections, blocked-handoff,
+decision_queue i response model assembly są domknięte. Najbliższy potwierdzony
+kandydat to mały helper label hydration w `build_ads_diagnostics`; przed
+implementacją odśwież complexity/review i zachowaj marketer-facing labels,
+evidence/source/freshness oraz ActionObject safety.
 
 ## Kontrola repo
 
