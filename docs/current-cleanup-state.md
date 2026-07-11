@@ -6,7 +6,7 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 ## Najbliższa instrukcja
 
 Aktualny następny slice to mały seam `wilq-seo-jnra` w Action Service: wydzielenie
-review-gate assembly po zakończeniu operator-label i gate-label seamów.
+mutation-readiness summary assembly po zakończeniu requirement/response seamów.
 `r564.3` pozostaje zależny od zewnętrznego świeżego kandydata; nie oznaczaj go jako
 complete i nie przywracaj direct WordPress write.
 
@@ -148,7 +148,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 4 341 non-empty LOC;
+- `wilq/actions/service.py`: 4 261 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -158,8 +158,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 389 plików Python,
-131754 non-empty LOC. Bounded content seed extraction, metric-candidate
+Latest complexity report (2026-07-11): 391 plików Python,
+131845 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with
@@ -204,6 +204,10 @@ ich rozmiaru.
   `wilq/actions/mutation_readiness.py`; wymagania i kolejność blokad pozostają
   service-owned, a każdy niespełniony warunek nadal daje polski blocker i safe
   next step. Complexity po seamu: service.py 4 341 LOC.
+- Bazowa lista requirements mutation readiness jest w
+  `wilq/actions/mutation_requirements.py`, a typed response assembly w
+  `wilq/actions/mutation_response.py`. Service zachowuje WordPress-specific
+  readiness i adapter gates; obecny runtime nadal ma 0 write-capable actions.
 - Aktualne screenshoty desktop/mobile/action są w lokalnym, ignorowanym
   `.local-lab/proof/independent-review-2026-07-10/`.
 - Full cold E2E ma jawne otwarte blockers; nie nazywaj całego `verify.sh`

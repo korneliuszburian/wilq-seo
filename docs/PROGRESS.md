@@ -254,6 +254,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/mutation_readiness.py`; wymagania i kolejność blokad pozostają
   service-owned, a każdy niespełniony warunek nadal daje polski blocker i safe
   next step. Complexity po seamu: service.py 4 341 LOC.
+- Bazowa lista requirements mutation readiness jest w
+  `wilq/actions/mutation_requirements.py`, a typed response assembly w
+  `wilq/actions/mutation_response.py`. Service zachowuje WordPress-specific
+  readiness i adapter gates; obecny runtime nadal ma 0 write-capable actions.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
