@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass
+from threading import Lock
 from time import monotonic
 
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
@@ -156,6 +157,7 @@ class KnowledgeOperatingMapCacheEntry:
 
 
 _cached_knowledge_operating_map: KnowledgeOperatingMapCacheEntry | None = None
+_knowledge_operating_map_cache_lock = Lock()
 
 
 def build_knowledge_operating_map() -> KnowledgeOperatingMapResponse:
@@ -180,17 +182,19 @@ def build_knowledge_operating_map() -> KnowledgeOperatingMapResponse:
 
 def build_knowledge_operating_map_cached() -> KnowledgeOperatingMapResponse:
     """Reuse one operating-map build across dashboard reads."""
-    cached = _read_knowledge_operating_map_cache()
-    if cached is not None:
-        return cached
-    operating_map = build_knowledge_operating_map()
-    _write_knowledge_operating_map_cache(operating_map)
-    return operating_map
+    with _knowledge_operating_map_cache_lock:
+        cached = _read_knowledge_operating_map_cache()
+        if cached is not None:
+            return cached
+        operating_map = build_knowledge_operating_map()
+        _write_knowledge_operating_map_cache(operating_map)
+        return operating_map
 
 
 def clear_knowledge_operating_map_cache() -> None:
     global _cached_knowledge_operating_map
-    _cached_knowledge_operating_map = None
+    with _knowledge_operating_map_cache_lock:
+        _cached_knowledge_operating_map = None
 
 
 def _read_knowledge_operating_map_cache() -> KnowledgeOperatingMapResponse | None:

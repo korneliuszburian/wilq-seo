@@ -126,13 +126,15 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - `c9h9.12` jest w toku: `/knowledge` ładuje operating-map jako jedyny pierwszy
   odczyt, a karty/playbooki dopiero po disclosure. `list_workflows()` używa już
   tylko `build_daily_command_center()`, a standalone cold map core spadł do
-  `4.878 s` (11 bindings, 15 kart, 14 playbooków). Cache mapy ma 15 s; cold/warm
-  HTTP po restarcie to około `8.53 s` / `0.05 s`, więc prewarm pozostaje
-  wyłączony, aby nie blokować startup health. Browser proof przy 3 s pokazuje
+  `4.878 s` (11 bindings, 15 kart, 14 playbooków). Cache mapy ma 15 s; po
+  restarcie managed runtime uruchamia nieblokujący prewarm w tle: health pozostaje
+  gotowy, a pierwszy HTTP odczyt mapy po rozgrzaniu wyniósł `0.003550 s`, drugi
+  `0.003175 s`. Browser proof przy 3 s pokazuje
   decyzję i blokery bez pustego globalnego loadera:
   `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`; focused current
-  Playwright `1/1` przechodzi w `2.9 s`. Pozostaje pomiar/ewentualna redukcja
-  narzutu HTTP procesu API, bez blokowania startupu.
+  Playwright `1/1` przechodzi w `2.7 s` (29.2 s z uruchomieniem harnessu).
+  Pozostaje sprawdzić stabilność prewarmu na kolejnych restartach; nie wolno
+  przywracać współbieżnych katalogów ani traktować starego payloadu jako świeżego.
 - `c9h9.10` jest zamknięty: Custom Segments korzysta z istniejącego Ads summary
   projection zamiast pełnego payloadu; focused Playwright `1/1` w `4.4 s`
   potwierdza kandydatów, forecast, evidence i blokady claims bez audience-size

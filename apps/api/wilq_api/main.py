@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
@@ -53,6 +54,7 @@ from wilq.briefing.merchant_diagnostics import (
 from wilq.briefing.tactical_queue import clear_tactical_queue_cache
 from wilq.connectors.registry import list_connector_statuses
 from wilq.knowledge.operating_map import (
+    build_knowledge_operating_map_cached,
     clear_knowledge_operating_map_cache,
 )
 from wilq.opportunities.engine import list_opportunities
@@ -77,6 +79,7 @@ def cors_origins() -> list[str]:
 
 @asynccontextmanager
 async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
+    knowledge_prewarm_task: asyncio.Task[None] | None = None
     if not os.getenv("PYTEST_CURRENT_TEST"):
         with suppress(Exception):
             build_content_diagnostics_cached()
@@ -84,7 +87,19 @@ async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
             build_merchant_diagnostics_cached()
         with suppress(Exception):
             list_actions_cached()
-    yield
+        knowledge_prewarm_task = asyncio.create_task(_prewarm_knowledge_map())
+    try:
+        yield
+    finally:
+        if knowledge_prewarm_task is not None:
+            with suppress(Exception):
+                await knowledge_prewarm_task
+
+
+async def _prewarm_knowledge_map() -> None:
+    """Warm the expensive map after readiness without delaying API startup."""
+    with suppress(Exception):
+        await asyncio.to_thread(build_knowledge_operating_map_cached)
 
 
 app = FastAPI(title="WILQ Marketing API", version="0.1.0", lifespan=wilq_lifespan)
