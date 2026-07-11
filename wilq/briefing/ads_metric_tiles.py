@@ -186,3 +186,35 @@ def impression_share_metric_tiles(
             ),
         }
     )
+
+
+def search_terms_metric_tiles(
+    decision: AdsDecisionItem,
+    currency_code: str | None,
+) -> dict[str, int | float | str]:
+    return clean_metric_tiles(
+        {
+            "zapytania": len(decision.search_term_rows),
+            "kliknięcia": sum_attr(decision.search_term_rows, "clicks"),
+            "koszt": format_money_micros(
+                sum_attr(decision.search_term_rows, "cost_micros"),
+                currency_code,
+            ),
+        }
+    )
+
+
+def search_term_safety_metric_tiles(
+    decision: AdsDecisionItem,
+    currency_code: str | None,
+) -> dict[str, int | float | str]:
+    return clean_metric_tiles(
+        {
+            "90 dni": len(decision.search_term_safety_rows),
+            "kliknięcia": sum_attr(decision.search_term_safety_rows, "clicks_90d"),
+            "koszt": format_money_micros(
+                sum_attr(decision.search_term_safety_rows, "cost_micros_90d"),
+                currency_code,
+            ),
+        }
+    )

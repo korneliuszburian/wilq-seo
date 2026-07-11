@@ -153,6 +153,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Czwarty fragment obejmuje `search_term_ngrams` i `impression_share`; zachowuje
   n-gramowy koszt/kliknięcia oraz licznik utraty udziału przez budżet. Dispatcher
   ma teraz 12 pozostałych, jawnie znanych budget violations w audycie.
+- Piąty fragment obejmuje `search_terms` i `search_term_safety`; zachowuje query/
+  click/cost summary oraz 90-dniowy safety context. Pozostałe gałęzie nadal są
+  osobnymi, nieprzeniesionymi seamami.
 
 ## Granica bezpieczeństwa
 
@@ -211,7 +214,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132426 non-empty LOC. Bounded content seed extraction, metric-candidate
+132443 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

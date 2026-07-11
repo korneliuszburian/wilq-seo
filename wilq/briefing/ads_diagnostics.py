@@ -90,6 +90,8 @@ from wilq.briefing.ads_metric_tiles import (
     impression_share_metric_tiles,
     recommendations_metric_tiles,
     search_term_ngram_metric_tiles,
+    search_term_safety_metric_tiles,
+    search_terms_metric_tiles,
 )
 from wilq.briefing.ads_metric_utils import (
     clean_metric_tiles as _clean_metric_tiles,
@@ -99,9 +101,6 @@ from wilq.briefing.ads_metric_utils import (
 )
 from wilq.briefing.ads_metric_utils import (
     round_metric as _round_metric,
-)
-from wilq.briefing.ads_metric_utils import (
-    sum_attr as _sum_attr,
 )
 from wilq.briefing.ads_negative_keywords import build_negative_keywords_section
 from wilq.briefing.ads_optimizer import build_optimizer_readiness_contract
@@ -5062,27 +5061,9 @@ def _ads_decision_metric_tiles(
             }
         )
     if decision.decision_type == "review_search_terms":
-        return _clean_metric_tiles(
-            {
-                "zapytania": len(decision.search_term_rows),
-                "kliknięcia": _sum_attr(decision.search_term_rows, "clicks"),
-                "koszt": _format_money_micros(
-                    _sum_attr(decision.search_term_rows, "cost_micros"),
-                    currency_code,
-                ),
-            }
-        )
+        return search_terms_metric_tiles(decision, currency_code)
     if decision.decision_type == "review_search_term_safety":
-        return _clean_metric_tiles(
-            {
-                "90 dni": len(decision.search_term_safety_rows),
-                "kliknięcia": _sum_attr(decision.search_term_safety_rows, "clicks_90d"),
-                "koszt": _format_money_micros(
-                    _sum_attr(decision.search_term_safety_rows, "cost_micros_90d"),
-                    currency_code,
-                ),
-            }
-        )
+        return search_term_safety_metric_tiles(decision, currency_code)
     if decision.decision_type == "review_negative_keyword_safety":
         return _clean_metric_tiles(
             {

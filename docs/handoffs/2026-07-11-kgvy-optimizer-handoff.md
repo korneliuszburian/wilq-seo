@@ -23,6 +23,8 @@ Ostatni commit: `cf421d3` (`refactor: extract Ads search metric tiles`)
   tych branchy ani do ich formatterów w dispatcherze.
 - Czwarty fragment obejmuje `search_term_ngrams` i `impression_share`; nie wracaj
   do tych branchy w dispatcherze.
+- Piąty fragment obejmuje `search_terms` i `search_term_safety`; nie wracaj do
+  tych branchy ani ich formatterów w dispatcherze.
 
 ## Dowody
 

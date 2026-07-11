@@ -67,6 +67,9 @@ w git, Beads i `docs/progress/archive/`.
 - Kolejny fragment wydzielił `search_term_ngrams` i `impression_share`; zachowane
   są źródłowe koszty/kliknięcia i budget-loss count. Complexity dispatcher ma 12
   pozostałych, znanych violations; nie tworzymy nowego monolitu.
+- Piąty tile fragment wydzielił `search_terms` i `search_term_safety`; query/
+  click/cost oraz 90-dniowy safety context pozostają bez zmian. Complexity:
+  398 plików Python / 132443 LOC; dispatcher branches nadal są jawnie śledzone.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
