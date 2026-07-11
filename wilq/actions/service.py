@@ -88,6 +88,7 @@ from wilq.actions.localo.visibility import (
     localo_visibility_review_payload_from_metric_facts,
 )
 from wilq.actions.merchant import merchant_feed_issue_action, seed_merchant_feed_issue_action
+from wilq.actions.metric_utils import prioritize_action_metrics, unique_values
 from wilq.actions.payloads import (
     validate_action_payload,
 )
@@ -95,6 +96,7 @@ from wilq.actions.service_profile import (
     knowledge_promotion_action,
     private_proposal_promotion_action,
 )
+from wilq.actions.social import social_draft_actions
 from wilq.actions.wordpress_draft import (
     draft_apply_action,
     draft_handoff_action,
@@ -170,7 +172,6 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
-    OpportunityDomain,
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
@@ -518,7 +519,7 @@ def _google_ads_business_context_action() -> ActionObject | None:
     missing_read_contracts = ads_business_context_missing_read_contracts()
     return business_context_action(
         missing_read_contracts=missing_read_contracts,
-        evidence_ids=_unique(
+        evidence_ids=unique_values(
             [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
         ),
     )
@@ -537,7 +538,7 @@ def _google_ads_target_confirmation_action() -> ActionObject | None:
         return None
     return target_confirmation_action(
         missing_read_contracts=missing_read_contracts,
-        evidence_ids=_unique(
+        evidence_ids=unique_values(
             [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
         ),
     )
@@ -555,7 +556,7 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
     ):
         return None
     return strategy_review_action(
-        evidence_ids=_unique(
+        evidence_ids=unique_values(
             [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
         ),
     )
@@ -574,7 +575,7 @@ def _google_ads_keyword_planner_access_action() -> ActionObject | None:
         return None
     return keyword_planner_access_action(
         blocker=blocker,
-        evidence_ids=_unique(
+        evidence_ids=unique_values(
             [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
         ),
     )
@@ -654,7 +655,7 @@ def _seed_content_metric_actions(
     ]
     if not content_facts or not by_connector.get("wordpress_ekologus"):
         return
-    content_action_metrics = _prioritize_action_metrics(
+    content_action_metrics = prioritize_action_metrics(
         content_facts,
         required_names={"content_object_count", "clicks", "domain_rating"},
     )[:10]
@@ -764,7 +765,7 @@ def _seed_social_metric_actions(
         *by_connector.get("google_analytics_4", []),
     ]
     if social_facts:
-        actions.update(_social_draft_actions(social_facts))
+        actions.update(social_draft_actions(social_facts))
 
 
 def _merchant_feed_issue_action(
@@ -797,7 +798,7 @@ def _localo_visibility_review_action(
     localo_facts: list[MetricFact],
     localo_visibility_payload: dict[str, Any],
 ) -> ActionObject:
-    metrics = _prioritize_action_metrics(
+    metrics = prioritize_action_metrics(
         localo_facts,
         required_names={
             "localo_active_place_count",
@@ -889,7 +890,7 @@ def _content_refresh_queue_action(
         content_facts=content_facts,
         content_action_metrics=content_action_metrics,
         content_payload=content_payload,
-        unique_evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
+        unique_evidence_ids=unique_values(fact.evidence_id for fact in content_action_metrics),
         metric_sentence=_metric_sentence(content_facts),
     )
 
@@ -898,7 +899,7 @@ def _demand_gen_readiness_review_action(
     google_ads_facts: list[MetricFact],
     ga4_facts: list[MetricFact],
 ) -> ActionObject | None:
-    evidence_ids = _unique(
+    evidence_ids = unique_values(
         [
             connector_evidence_id("google_ads"),
             connector_evidence_id("google_analytics_4"),
@@ -1003,7 +1004,7 @@ def _demand_gen_readiness_review_action(
     )
     if payload is None:
         return None
-    action_metrics = _prioritize_action_metrics(
+    action_metrics = prioritize_action_metrics(
         [*google_ads_facts, *ga4_facts],
         required_names={"clicks", "impressions", "cost_micros", "active_users", "sessions"},
     )[:10]
@@ -1045,7 +1046,7 @@ def _campaign_context_rows_from_metric_facts(facts: list[MetricFact]) -> list[di
                 "cost_micros": _numeric_metric(group_facts, "cost_micros"),
                 "conversions": _numeric_metric(group_facts, "conversions"),
                 "conversion_value": _numeric_metric(group_facts, "conversion_value"),
-                "evidence_ids": _unique(fact.evidence_id for fact in group_facts),
+                "evidence_ids": unique_values(fact.evidence_id for fact in group_facts),
             }
         )
     return sorted(
@@ -1171,7 +1172,7 @@ def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, 
                 "product_count": sum(
                     int(fact.value) for fact in group_facts if isinstance(fact.value, int | float)
                 ),
-                "evidence_ids": _unique(fact.evidence_id for fact in group_facts),
+                "evidence_ids": unique_values(fact.evidence_id for fact in group_facts),
                 "sample_products_available": bool(sample_product_ids),
                 "sample_product_ids": sample_product_ids,
                 "sample_titles": sample_titles,
@@ -1286,7 +1287,7 @@ def _merchant_sample_values_for_cluster(
         and (fact.dimensions.get("resolution") or "") == resolution
         and isinstance(fact.value, str)
     ]
-    return _unique(values)[:10]
+    return unique_values(values)[:10]
 
 
 def _merchant_attribute_matches(left: str | None, right: str | None) -> bool:
@@ -1381,7 +1382,7 @@ def _wordpress_draft_handoff_action(
         source_metric_names=content_payload.get("source_metric_names", []),
         preview_items=preview_items,
         content_action_metrics=content_action_metrics,
-        evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
+        evidence_ids=unique_values(fact.evidence_id for fact in content_action_metrics),
     )
 
 
@@ -1497,137 +1498,6 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
     }
 
 
-def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObject]:
-    actions: dict[str, ActionObject] = {}
-    social_source_facts = [fact for fact in social_facts if _is_social_source_metric(fact)]
-    social_metrics = _prioritize_action_metrics(
-        social_source_facts,
-        required_names={
-            "clicks",
-            "impressions",
-            "issue_product_count",
-            "active_users",
-            "content_object_seen",
-        },
-    )[:10]
-    evidence_ids = _unique(
-        [
-            *[fact.evidence_id for fact in social_metrics],
-            connector_evidence_id("linkedin"),
-            connector_evidence_id("facebook"),
-        ]
-    )
-    common_payload = {
-        "mode": "prepare_only",
-        "source_connectors": _unique(fact.source_connector for fact in social_source_facts),
-        "source_metric_names": _unique(fact.name for fact in social_source_facts),
-        "draft_constraints": [
-            "use_only_wilq_evidence",
-            "write_in_polish",
-            "no_performance_claims_without_source_metric",
-            "no_publishing_without_connector_credentials",
-            "require_social_history_duplicate_review",
-            "require_human_review_before_apply",
-        ],
-        "source_inputs": _social_source_inputs(social_metrics),
-        "blocked_claims": [
-            "zwrot z reklam",
-            "przychód",
-            "wzrost konwersji",
-            "wdrożona poprawka produktu",
-            "brak powtórzeń historycznych postów",
-        ],
-        "destructive": False,
-    }
-    for connector_id, action_type, title in (
-        (
-            "linkedin",
-            "linkedin_post_candidate",
-            "Przygotuj propozycje postów LinkedIn z dowodów WILQ",
-        ),
-        (
-            "facebook",
-            "facebook_post_candidate",
-            "Przygotuj propozycje postów Facebook z dowodów WILQ",
-        ),
-    ):
-        action = ActionObject(
-            id=f"act_prepare_{connector_id}_social_drafts",
-            title=title,
-            domain=OpportunityDomain.social,
-            connector=connector_id,
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=evidence_ids,
-            metrics=social_metrics,
-            human_diagnosis=(
-                "WILQ ma realne dane GSC/GA4/Merchant/WordPress, które można "
-                "przełożyć na bezpieczne do sprawdzenia kierunki postów. Brak uprawnień social "
-                "blokuje publikację, ale nie blokuje przygotowania materiału do oceny."
-            ),
-            recommended_reason=(
-                "W procesie social pokaż tylko propozycje szkiców z dowodami. "
-                "Nie publikuj, nie planuj wysyłki i nie dopisuj obietnic bez metryk."
-            ),
-            payload={
-                **common_payload,
-                "action_type": action_type,
-                "connector": connector_id,
-            },
-            validation_status="not_validated",
-            created_by="system_metric_seed",
-        )
-        actions[action.id] = action
-    return actions
-
-
-def _is_social_source_metric(fact: MetricFact) -> bool:
-    if fact.name == "content_object_seen":
-        return any(
-            isinstance(fact.dimensions.get(key), str) and fact.dimensions.get(key)
-            for key in ("final_canonical_url", "source_public_url", "canonical_url")
-        )
-    return bool(fact.name)
-
-
-def _social_source_inputs(facts: list[MetricFact]) -> list[dict[str, object]]:
-    inputs: list[dict[str, object]] = []
-    for fact in facts[:8]:
-        inputs.append(
-            {
-                "source_connector": fact.source_connector,
-                "metric_name": fact.name,
-                "value": fact.value,
-                "context_summary": _social_source_context_summary(fact),
-                "evidence_id": fact.evidence_id,
-            }
-        )
-    return inputs
-
-
-def _social_source_context_summary(fact: MetricFact) -> str:
-    dimensions = fact.dimensions
-    if fact.source_connector == "google_merchant_center":
-        return "zgłoszenie problemu danych produktowych Merchant Center"
-    if fact.source_connector == "wordpress_ekologus":
-        title = dimensions.get("title_or_h1")
-        url = dimensions.get("canonical_url") or dimensions.get("content_url")
-        parts = [str(value) for value in (title, url) if isinstance(value, str) and value]
-        return " | ".join(parts[:2]) or "wpis lub strona z publicznego spisu treści"
-    if fact.source_connector == "google_search_console":
-        query = dimensions.get("query")
-        page = dimensions.get("page")
-        parts = [str(value) for value in (query, page) if isinstance(value, str) and value]
-        return " | ".join(parts[:2]) or "sygnał z Google Search Console"
-    if fact.source_connector == "google_analytics_4":
-        page = dimensions.get("landing_page") or dimensions.get("page_path")
-        source = dimensions.get("session_source_medium") or dimensions.get("source_medium")
-        parts = [str(value) for value in (page, source) if isinstance(value, str) and value]
-        return " | ".join(parts[:2]) or "sygnał z GA4"
-    return "sygnał źródłowy WILQ"
-
-
 def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
     grouped: dict[str, list[MetricFact]] = {}
     for fact in facts:
@@ -1730,23 +1600,6 @@ def _metric_snapshot_value_label(key: str, value: Any) -> str:
     return _plain_metric_value_label(value)
 
 
-def _prioritize_action_metrics(
-    facts: list[MetricFact],
-    *,
-    required_names: set[str],
-) -> list[MetricFact]:
-    required: list[MetricFact] = []
-    remaining: list[MetricFact] = []
-    seen_required: set[str] = set()
-    for fact in facts:
-        if fact.name in required_names and fact.name not in seen_required:
-            required.append(fact)
-            seen_required.add(fact.name)
-        else:
-            remaining.append(fact)
-    return [*required, *remaining]
-
-
 def _is_probe_only_fact(fact: MetricFact) -> bool:
     if (
         fact.source_connector == "localo"
@@ -1760,14 +1613,6 @@ def _is_probe_only_fact(fact: MetricFact) -> bool:
         "pkce_s256_supported",
         "mcp_initialize_status",
     }
-
-
-def _unique(items: Iterable[str]) -> list[str]:
-    unique_items: list[str] = []
-    for item in items:
-        if item and item not in unique_items:
-            unique_items.append(item)
-    return unique_items
 
 
 def validate_action(action: ActionObject) -> ActionValidationResult:
@@ -1922,8 +1767,10 @@ def impact_check_action(
     latest_confirmation = _latest_action_confirmation_event(action.audit_events)
     blockers = _action_impact_check_blockers(action, latest_confirmation)
     status: Literal["checked", "blocked"] = "blocked" if blockers else "checked"
-    evidence_ids = _unique([*action.evidence_ids, *(fact.evidence_id for fact in action.metrics)])
-    source_connectors = _unique(
+    evidence_ids = unique_values(
+        [*action.evidence_ids, *(fact.evidence_id for fact in action.metrics)]
+    )
+    source_connectors = unique_values(
         [fact.source_connector for fact in action.metrics if fact.source_connector]
     )
     if not source_connectors:
@@ -5067,7 +4914,7 @@ def _action_preview_blockers(
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
     blockers.extend(action.review_gate.apply_blockers)
-    return _unique(blockers)
+    return unique_values(blockers)
 
 
 def _action_confirmation_blockers(
@@ -5085,7 +4932,7 @@ def _action_confirmation_blockers(
         blockers.append("dry_run_preview_required")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
-    return _unique(blockers)
+    return unique_values(blockers)
 
 
 def _action_confirmation_event_type(action: ActionObject, confirmed: bool) -> str:
@@ -5169,7 +5016,7 @@ def _action_impact_check_blockers(
         blockers.append("evidence_ids_required")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
-    return _unique(blockers)
+    return unique_values(blockers)
 
 
 def _action_impact_check_summary(
@@ -5217,7 +5064,7 @@ def _action_required_checks(payload: dict[str, Any]) -> list[str]:
     for preview in _payload_preview_items(payload):
         preview_checks.extend(_string_list(preview.get("required_validation")))
     if preview_checks:
-        return _unique(preview_checks)
+        return unique_values(preview_checks)
     for key in ("review_steps", "queue_steps", "draft_constraints"):
         values = _string_list(payload.get(key))
         if values:
@@ -5261,7 +5108,7 @@ def _action_apply_blockers(
         blockers.append("vendor_mutation_adapter_required")
     blocked_claims = _string_list(action.payload.get("blocked_claims"))
     blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
-    return _unique(blockers)
+    return unique_values(blockers)
 
 
 def _action_gate_labels(values: Iterable[str]) -> list[str]:

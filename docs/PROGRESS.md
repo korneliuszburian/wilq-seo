@@ -194,10 +194,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   pokazuje prepare-only content action z evidence i bez vendor write.
 - `seed_metric_action_candidates` ma teraz cienką granicę orkiestratora, a grupy
   Merchant, GA4, Content, Google Ads, Localo i Social są osobnymi helperami.
-  Focused ActionObject/content API tests, Ruff, mypy i diff check przechodzą;
-  runtime zachowuje 21 akcji, content refresh w `prepare` z trzema evidence i
-  centralne `write_capable=0`. Następny krok `jnra` to przeniesienie grup do
-  modułów domenowych, żeby zmniejszyć LOC service.py, nie tylko dzielić funkcję.
+  Social został przeniesiony do `wilq/actions/social.py`, a priorytety i
+  deduplikacja do `wilq/actions/metric_utils.py`. Focused ActionObject/content/
+  Social API tests, Ruff, mypy i diff check przechodzą; runtime zachowuje 21
+  akcji, oba social draft actions w `prepare` z sześcioma evidence i centralne
+  `write_capable=0`. `service.py` spadł do 5 332 LOC.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
