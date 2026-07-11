@@ -8,6 +8,17 @@ diagnostic_logic: [require_read_contract, separate_readiness_from_performance, r
 recommended_actions: [refresh_google_ads_read, review_query_contract, keep_mutation_blocked]
 risk_notes: Do not infer CPA, ROAS, waste or mutation readiness from incomplete Ads reads.
 output_contract: Ads diagnosis with explicit platform trap and safe next step.
+condition: Google Ads read or mutation readiness is incomplete.
+required_connectors: [google_ads]
+required_metrics: [campaign_metrics, search_term_metrics]
+minimum_window: latest completed Google Ads refresh
+segmentation: [campaign, search_term, account]
+false_positive_checks: [verify_oauth_and_customer, verify_live_refresh, verify_gaql_contract]
+blocked_states: [missing_credentials, oauth_error, stale_source, action_review_required]
+recommendation_template: Najpierw potwierdź odczyt i kontrakty Google Ads, potem przygotuj review-only krok.
+forbidden_conclusions: [cpa, roas, budget_waste, mutation_ready]
+safety_level: high
+eval_case_ids: [ads_platform_trap_blocks_unsupported_claims]
 platform_trap:
   platform: google_ads
   constraints:

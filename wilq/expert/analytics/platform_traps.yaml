@@ -8,6 +8,17 @@ diagnostic_logic: [require_report_compatibility, separate_not_set_from_quality, 
 recommended_actions: [review_ga4_measurement, verify_landing_mapping, keep_revenue_claim_blocked]
 risk_notes: Missing attribution or conversion setup is a measurement blocker, not proof of poor traffic.
 output_contract: GA4 diagnosis with measurement caveat and safe next step.
+condition: GA4 report or attribution evidence is incomplete.
+required_connectors: [google_analytics_4]
+required_metrics: [sessions, engagement_rate, key_events]
+minimum_window: latest completed GA4 refresh
+segmentation: [landing_page, source_medium, campaign]
+false_positive_checks: [separate_not_set, verify_key_event_mapping, match_ads_window]
+blocked_states: [missing_credentials, stale_source, attribution_gap, missing_key_event]
+recommendation_template: Najpierw rozdziel problem pomiaru od jakości ruchu, potem wybierz review-only krok.
+forbidden_conclusions: [campaign_revenue, conversion_drop, roas]
+safety_level: high
+eval_case_ids: [ga4_platform_trap_separates_measurement]
 platform_trap:
   platform: ga4
   constraints:

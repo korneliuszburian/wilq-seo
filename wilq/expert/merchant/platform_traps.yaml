@@ -8,6 +8,17 @@ diagnostic_logic: [separate_issue_status_from_performance, require_product_join_
 recommended_actions: [review_feed_issue, verify_product_attributes, keep_feed_write_blocked]
 risk_notes: Product status and issue aggregates do not prove revenue recovery or reapproval.
 output_contract: Merchant issue queue with source-backed blocker and safe next step.
+condition: Merchant issue or product status is available without a complete performance join.
+required_connectors: [google_merchant_center]
+required_metrics: [product_status, issue_count]
+minimum_window: latest completed Merchant refresh
+segmentation: [product, issue_type, affected_attribute]
+false_positive_checks: [verify_product_id, verify_source_freshness, verify_ads_ga4_join]
+blocked_states: [missing_credentials, stale_source, product_join_missing, review_required]
+recommendation_template: Sprawdź konkretny problem produktu i pozostaw zmianę feedu w review-only.
+forbidden_conclusions: [product_reapproval, recovered_revenue, feed_write_ready]
+safety_level: high
+eval_case_ids: [merchant_platform_trap_blocks_reapproval_claim]
 platform_trap:
   platform: merchant_center
   constraints:

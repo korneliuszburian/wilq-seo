@@ -8,6 +8,17 @@ diagnostic_logic: [separate_public_from_dev, require_canonical_match, check_dupl
 recommended_actions: [verify_public_canonical, prepare_dev_draft_only, block_publish_without_apply]
 risk_notes: The dev workspace is not a public canonical URL and cannot prove published state.
 output_contract: WordPress inventory gate with public/dev role and safe draft next step.
+condition: A content decision touches a public canonical URL or dev draft workspace.
+required_connectors: [wordpress_ekologus, wordpress_sklep]
+required_metrics: [inventory_count, canonical_url, modified_at]
+minimum_window: latest completed WordPress inventory refresh
+segmentation: [public_site, dev_workspace, post_type]
+false_positive_checks: [verify_public_host, verify_canonical_url, verify_duplicate_inventory]
+blocked_states: [missing_credentials, stale_source, canonical_mismatch, duplicate_risk, publish_blocked]
+recommendation_template: Najpierw potwierdź publiczny canonical i inventory, potem przygotuj dev draft przez ActionObject.
+forbidden_conclusions: [published_on_dev, new_topic, automatic_publish]
+safety_level: high
+eval_case_ids: [wordpress_platform_trap_separates_dev_public]
 platform_trap:
   platform: wordpress
   constraints:

@@ -106,6 +106,17 @@ def _load_rule(path: Path) -> ExpertRule:
             )
         ],
         requires_evidence=_requires_evidence(required_inputs, required_mapping),
+        condition=_optional_string(data, "condition"),
+        required_connectors=_string_list(data, "required_connectors", path),
+        required_metrics=_string_list(data, "required_metrics", path),
+        minimum_window=_optional_string(data, "minimum_window"),
+        segmentation=_string_list(data, "segmentation", path),
+        false_positive_checks=_string_list(data, "false_positive_checks", path),
+        blocked_states=_string_list(data, "blocked_states", path),
+        recommendation_template=_optional_string(data, "recommendation_template"),
+        forbidden_conclusions=_string_list(data, "forbidden_conclusions", path),
+        safety_level=data.get("safety_level", "medium"),
+        eval_case_ids=_string_list(data, "eval_case_ids", path),
         platform_trap=platform_trap,
     )
 
@@ -131,6 +142,17 @@ def list_expert_rule_summaries(limit: int | None = None) -> list[ExpertRuleSumma
             source_ids=rule.source_ids,
             output_contract=rule.output_contract,
             requires_evidence=rule.requires_evidence,
+            condition=rule.condition,
+            required_connectors=rule.required_connectors,
+            required_metrics=rule.required_metrics,
+            minimum_window=rule.minimum_window,
+            segmentation=rule.segmentation,
+            false_positive_checks=rule.false_positive_checks,
+            blocked_states=rule.blocked_states,
+            recommendation_template=rule.recommendation_template,
+            forbidden_conclusions=rule.forbidden_conclusions,
+            safety_level=rule.safety_level,
+            eval_case_ids=rule.eval_case_ids,
             platform_trap=rule.platform_trap,
         )
         for rule in list_expert_rules()

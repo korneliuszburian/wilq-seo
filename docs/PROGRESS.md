@@ -14,6 +14,12 @@ w git, Beads i `docs/progress/archive/`.
 - Live proof po managed restart: API `ok`, 98 915 metric facts, 4 572 refresh
   runs; `/api/expert/rules` zwraca pięć trap contracts z source IDs i safe next
   steps, a Merchant decision queue zawiera `merchant_platform_traps_v1`.
+- `wilq-seo-v9ab.5` ma teraz pełny typed ExpertRule contract: condition,
+  required connectors/metrics/window, segmentation, false-positive checks,
+  blocked states, recommendation template, forbidden conclusions, safety level
+  i eval case IDs. Pięć realnych rule packs wypełnia te pola; API summaries
+  zachowują ten sam kontrakt. Focused expert/diagnostic tests, Ruff, mypy,
+  complexity (0 changed-code violations) i diff check przechodzą.
 
 - `kgvy` reconciliation boundary jest domknięty: `_reconcile_ads_change_history_contracts`
   oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline

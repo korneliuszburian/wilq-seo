@@ -388,6 +388,17 @@ class ExpertRule(BaseModel):
     required_mapping: list[str] = Field(default_factory=list)
     source_ids: list[str] = Field(default_factory=list)
     requires_evidence: bool = True
+    condition: str | None = None
+    required_connectors: list[str] = Field(default_factory=list)
+    required_metrics: list[str] = Field(default_factory=list)
+    minimum_window: str | None = None
+    segmentation: list[str] = Field(default_factory=list)
+    false_positive_checks: list[str] = Field(default_factory=list)
+    blocked_states: list[str] = Field(default_factory=list)
+    recommendation_template: str | None = None
+    forbidden_conclusions: list[str] = Field(default_factory=list)
+    safety_level: Literal["low", "medium", "high"] = "medium"
+    eval_case_ids: list[str] = Field(default_factory=list)
     platform_trap: PlatformTrapContract | None = None
 
 
@@ -401,6 +412,17 @@ class ExpertRuleSummary(BaseModel):
     source_ids: list[str] = Field(default_factory=list)
     output_contract: str
     requires_evidence: bool = True
+    condition: str | None = None
+    required_connectors: list[str] = Field(default_factory=list)
+    required_metrics: list[str] = Field(default_factory=list)
+    minimum_window: str | None = None
+    segmentation: list[str] = Field(default_factory=list)
+    false_positive_checks: list[str] = Field(default_factory=list)
+    blocked_states: list[str] = Field(default_factory=list)
+    recommendation_template: str | None = None
+    forbidden_conclusions: list[str] = Field(default_factory=list)
+    safety_level: Literal["low", "medium", "high"] = "medium"
+    eval_case_ids: list[str] = Field(default_factory=list)
     platform_trap: PlatformTrapContract | None = None
 
 

@@ -8,6 +8,17 @@ diagnostic_logic: [respect_search_analytics_limits, cross_check_canonical_invent
 recommended_actions: [refresh_gsc_read, verify_canonical_inventory, keep_outcome_claim_blocked]
 risk_notes: Search Analytics visibility is not a conversion or revenue proof.
 output_contract: GSC content decision with query/page evidence and inventory gate.
+condition: GSC query/page evidence exists for a bounded date window.
+required_connectors: [google_search_console]
+required_metrics: [clicks, impressions, ctr, position]
+minimum_window: latest completed GSC refresh window
+segmentation: [query, page, device, country]
+false_positive_checks: [verify_date_window, verify_canonical_inventory, separate_visibility_from_outcome]
+blocked_states: [missing_credentials, stale_source, canonical_unknown, duplicate_risk]
+recommendation_template: Sprawdź konkretny query/page slice i canonical inventory przed decyzją contentową.
+forbidden_conclusions: [revenue_from_visibility, guaranteed_click_growth, new_topic]
+safety_level: medium
+eval_case_ids: [gsc_platform_trap_requires_inventory]
 platform_trap:
   platform: search_console
   constraints:
