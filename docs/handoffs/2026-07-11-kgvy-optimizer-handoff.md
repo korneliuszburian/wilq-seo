@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `8191a5d` (`docs: update Ads reconciliation handoff pointer`)  
-`origin/main` = `8191a5d`
+Ostatni commit: `7bb94b3` (`docs: finalize Ads reconciliation handoff`)  
+`origin/main` = `7bb94b3`
 
 ## Wykonane
 
@@ -78,6 +78,8 @@ Ostatni commit: `8191a5d` (`docs: update Ads reconciliation handoff pointer`)
 - Recommendations/impression-share reconciliation jest w
   `_reconcile_ads_recommendation_and_impression_contracts`; nie wracaj do inline
   missing-contract updates.
+- Change-history reconciliation jest w `_reconcile_ads_change_history_contracts`;
+  nie wracaj do inline aktualizacji missing contracts po gotowym odczycie historii.
 
 ## Dowody
 
@@ -97,12 +99,14 @@ Ostatni commit: `8191a5d` (`docs: update Ads reconciliation handoff pointer`)
 
 ## Następny slice
 
-Następny potwierdzony seam to kolejny typed reconciliation fragment w
-`build_ads_diagnostics` (331 linii po dwóch extractionach). Zachować
-missing-contract lineage, freshness i ActionObject safety.
+Następny potwierdzony seam to `budget_apply_preview` oraz business-context
+`profit_margin`/`budget_goal` reconciliation w `build_ads_diagnostics` (304 linii
+po trzech extractionach). Zachować missing-contract lineage, freshness i
+ActionObject safety.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 8191a5d`, worktree czysty.
+- Po commicie: zaktualizuj pointer do finalnego `HEAD == origin/main`, worktree
+  czysty; nie zostawiaj handoffu ze starym commitem.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.

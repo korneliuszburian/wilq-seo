@@ -5,6 +5,11 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-11
 
+- `kgvy` reconciliation continuation: `_reconcile_ads_change_history_contracts`
+  wydziela inline aktualizacje missing contracts po gotowym odczycie historii
+  zmian. Nie zmienia evidence/source/freshness ani blokad ActionObject; focused
+  Ads contracts, Ruff, mypy, complexity i diff check przechodzą. Następny seam
+  to budget apply preview oraz profit-margin/budget-goal reconciliation.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
