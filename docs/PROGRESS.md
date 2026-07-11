@@ -124,13 +124,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Goal 005 pozostaje `blocked_missing_goal_005_uat_proof`: potrzebny jest realny
   wynik Wilku UAT albo jawny owner defer z residual risk. To stan zewnętrzny, nie
   brak eval coverage.
-- Najnowszy pod-slice `c9h9.4`: typed ActionApplyRequest w backendzie i
+- Najnowszy zamknięty slice `c9h9.4`: typed ActionApplyRequest w backendzie i
   `@wilq/shared-schemas`, dashboardowy `applyAction` korzysta z tej samej
   granicy `/apply`; realny builder capability wiąże work item/handoff/draft
   package/canonical URL/confirm actor, a connector blokuje public/arbitrary host
   przed HTTP. Focused action mutation, shared-schema, dashboard API, WordPress
-  adapter i content execution tests przechodzą; Bead pozostaje otwarty do
-  route-level readiness proof i review-only CTA.
+  adapter i content execution tests przechodzą; route-level proof i review-only
+  CTA są zamknięte w Beadzie.
 - Pełny cold Playwright nie jest zielony. Potwierdzone osobne blokery mają
   Beads: Ads `c9h9.9`, Custom Segments `c9h9.10`, actions
   `c9h9.11`, knowledge `c9h9.12`, Merchant `c9h9.13`. Stare E2E strings są
@@ -146,9 +146,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 
 ## Kolejność wykonania
 
-1. `c9h9.4` — exact dev-only ActionObject apply; raw booleany zastępuje typed
-   capability powiązana z action/work item/payload/target/audit.
-2. `r564.3` — decision/blocker/CTA w mobile first viewport.
+1. `r564.3` — decision/blocker/CTA w mobile first viewport.
+2. Następnie potwierdzone cold-route Beads `c9h9.13`, `c9h9.11`, `c9h9.9`.
 5. Secondary route latency: `c9h9.9`–`c9h9.13`; nie wyprzedza głównego content
    P0.
 

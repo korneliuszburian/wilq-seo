@@ -22,7 +22,8 @@ przywracania direct WordPress write.
   prewarm ma budżet `<5 s`, a selected snapshot/enrichment mają lokalne stany
   (`c9h9.6` zamknięty).
 - Desktop pokazuje konkretną homepage, public/dev sections, GSC, typed preview
-  i preview-only CTA. Mobile nadal chowa decyzję/blocker/CTA poniżej first fold.
+  i preview-only CTA. Mobile ma teraz kompaktową decyzję/blocker/CTA przed
+  ciężkim kontekstem; realny świeży kandydat nadal czeka na zewnętrzny proof.
 - Review-only CTA dla kanonicznego apply jest warunkowy: wymaga gotowej paczki i
   handoffu, prowadzi wyłącznie do `/actions/act_apply_wordpress_draft_handoff`
   i nie wywołuje `/apply`; stale live queue pozostaje bez CTA. Browser proof:
@@ -64,7 +65,7 @@ Zamknięte w tym slice:
 - `c9h9.4` — backend i shared frontend mają ten sam typed apply input,
   `applyAction` używa istniejącej granicy `/apply`, a realny capability builder
   wiąże bieżący snapshot, review/audit, canonical URL i aktora. Dev-host guard
-  blokuje public/arbitrary host przed HTTP. Bead pozostaje otwarty do route-level
+  blokuje public/arbitrary host przed HTTP. Bead jest zamknięty po route-level
   readiness proof i review-only CTA.
 
 Otwarte product blockers:
