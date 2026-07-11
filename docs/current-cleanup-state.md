@@ -72,7 +72,9 @@ Action Service; nie przywracaj direct WordPress write.
   check przechodzą. Static OAuth repair ma teraz konstruktor w
   `wilq/actions/google_ads/oauth.py`, bez zmiany helper commands, evidence ani
   no-write posture. Bead pozostaje otwarty dla kolejnych niezależnych seamów;
-  nie wolno upraszczać ActionObject safety loop.
+  nie wolno upraszczać ActionObject safety loop. Publiczny Service Profile
+  knowledge-promotion constructor jest teraz w `wilq/actions/service_profile.py`;
+  private proposal constructor celowo pozostaje osobnym przyszłym seamem.
 
 ## Granica bezpieczeństwa
 

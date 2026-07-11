@@ -159,6 +159,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Static Google Ads OAuth repair ma teraz konstruktor w
   `wilq/actions/google_ads/oauth.py`; `seed_static_actions` zachowuje ten sam
   ID, helper commands, evidence i brak zapisu. Nie wydrukowano credentialów.
+- Publiczny Service Profile knowledge-promotion constructor jest teraz w
+  `wilq/actions/service_profile.py`; `service.py` nadal buduje profile/review
+  rows, a domenowy seam zachowuje evidence, `apply_allowed=false` i blokadę
+  production-depth. Focused content/API contract, Ruff, mypy i diff check
+  przechodzą. Prywatna propozycja pozostaje osobnym seamem.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

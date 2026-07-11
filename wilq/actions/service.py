@@ -88,10 +88,10 @@ from wilq.actions.localo.visibility import (
 )
 from wilq.actions.merchant import merchant_feed_issue_action
 from wilq.actions.payloads import (
-    SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE,
     SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE,
     validate_action_payload,
 )
+from wilq.actions.service_profile import knowledge_promotion_action
 from wilq.actions.wordpress_draft import existing_draft_update_action
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.merchant_labels import (
@@ -636,56 +636,9 @@ def _service_profile_knowledge_promotion_action() -> ActionObject | None:
         )
     if not rows:
         return None
-    return ActionObject(
-        id="act_prepare_service_profile_knowledge_promotion",
-        title="Przygotuj request awansu wiedzy Service Profile",
-        domain=OpportunityDomain.content,
-        connector="wordpress_ekologus",
-        mode=ActionMode.prepare,
-        risk=ActionRisk.medium,
-        status=ActionStatus.needs_validation,
-        evidence_ids=[SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
-        human_diagnosis=(
-            "Service Profile ma publiczne karty usługowe ze źródłami, ale nadal "
-            "są review-required. WILQ może przygotować audytowalny request awansu "
-            "po decyzji Wilka/ownera, bez zmiany wiedzy i bez odblokowania "
-            "production-depth."
-        ),
-        recommended_reason=(
-            "Po zebraniu decyzji z review kart usługowych sprawdź, które source "
-            "facts mają pełny ślad źródła, review twierdzeń i właściciela decyzji. "
-            "Dopiero późniejsza osobna ścieżka audytu może zmienić lifecycle."
-        ),
-        payload={
-            "action_type": SERVICE_PROFILE_KNOWLEDGE_PROMOTION_ACTION_TYPE,
-            "connector": "wordpress_ekologus",
-            "mode": "prepare_only",
-            "preview_contract": "service_profile_knowledge_promotion_preview_v1",
-            "source_connectors": ["public_site"],
-            "source_fact_count": profile.technical_trace.source_fact_count,
-            "target_lifecycle": "approved_current",
-            "payload_preview": rows,
-            "payload_preview_total": len(rows),
-            "payload_preview_included": len(rows),
-            "required_validation": [
-                "public_source_trace_review",
-                "blocked_claims_review",
-                "owner_human_review_record",
-                "separate_audited_promotion_request",
-            ],
-            "blocked_claims": [
-                "automatyczny awans wiedzy",
-                "production-depth bez owner review",
-                "edycja source_facts.json z tej akcji",
-                "publikacja lub szkic finalny na podstawie review-required",
-            ],
-            "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
-            "apply_allowed": False,
-            "api_mutation_ready": False,
-            "destructive": False,
-        },
-        validation_status="not_validated",
-        created_by="system_core_seed",
+    return knowledge_promotion_action(
+        source_fact_count=profile.technical_trace.source_fact_count,
+        rows=rows,
     )
 
 
