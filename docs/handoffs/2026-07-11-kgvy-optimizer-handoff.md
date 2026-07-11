@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `e528200` (`refactor: extract Ads write safety decision`)  
-`origin/main` = `e528200`
+Ostatni commit: `f3064ac` (`refactor: split Ads decision assembler`)  
+`origin/main` = `f3064ac`
 
 ## Wykonane
 
