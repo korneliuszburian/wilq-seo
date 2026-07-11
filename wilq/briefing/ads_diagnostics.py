@@ -86,8 +86,10 @@ from wilq.briefing.ads_metric_tiles import (
     business_context_metric_tiles,
     campaign_activity_metric_tiles,
     campaign_triage_metric_tiles,
+    custom_segments_metric_tiles,
     derived_kpi_metric_tiles,
     impression_share_metric_tiles,
+    negative_keyword_safety_metric_tiles,
     recommendations_metric_tiles,
     search_term_ngram_metric_tiles,
     search_term_safety_metric_tiles,
@@ -5065,42 +5067,9 @@ def _ads_decision_metric_tiles(
     if decision.decision_type == "review_search_term_safety":
         return search_term_safety_metric_tiles(decision, currency_code)
     if decision.decision_type == "review_negative_keyword_safety":
-        return _clean_metric_tiles(
-            {
-                "propozycje": len(decision.negative_keyword_candidates),
-                "pilne": sum(
-                    1
-                    for candidate in decision.negative_keyword_candidates
-                    if candidate.review_priority == "pilne"
-                ),
-                "wysokie": sum(
-                    1
-                    for candidate in decision.negative_keyword_candidates
-                    if candidate.review_priority == "wysokie"
-                ),
-                "podgląd akcji": len(decision.negative_keyword_payload_preview),
-                "kontekst słów": len(decision.keyword_match_context_rows),
-            }
-        )
+        return negative_keyword_safety_metric_tiles(decision)
     if decision.decision_type == "prepare_custom_segments":
-        return _clean_metric_tiles(
-            {
-                "segmenty": len(decision.custom_segment_candidates),
-                "pilne": sum(
-                    1
-                    for candidate in decision.custom_segment_candidates
-                    if candidate.review_priority == "pilne"
-                ),
-                "wysokie": sum(
-                    1
-                    for candidate in decision.custom_segment_candidates
-                    if candidate.review_priority == "wysokie"
-                ),
-                "podgląd akcji": len(decision.custom_segment_payload_preview),
-                "źródłowe zapytania": len(decision.search_term_rows),
-                "KP ideas": len(decision.keyword_planner_idea_rows),
-            }
-        )
+        return custom_segments_metric_tiles(decision)
     if decision.decision_type in {"block_write_actions", "fix_ads_access"}:
         return _clean_metric_tiles(
             {

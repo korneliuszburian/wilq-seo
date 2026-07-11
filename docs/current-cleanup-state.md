@@ -156,6 +156,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Piąty fragment obejmuje `search_terms` i `search_term_safety`; zachowuje query/
   click/cost summary oraz 90-dniowy safety context. Pozostałe gałęzie nadal są
   osobnymi, nieprzeniesionymi seamami.
+- Szósty fragment obejmuje `negative_keyword_safety` i `custom_segments`; zachowuje
+  urgent/high counts, action previews, keyword context, source queries i KP ideas.
+  Dispatcher pozostał bezpiecznie mały, a pozostałe gałęzie są jawnie śledzone.
 
 ## Granica bezpieczeństwa
 
@@ -214,7 +217,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132443 non-empty LOC. Bounded content seed extraction, metric-candidate
+132453 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

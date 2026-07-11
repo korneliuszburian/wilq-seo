@@ -25,6 +25,8 @@ Ostatni commit: `81b9518` (`refactor: extract Ads search safety tiles`)
   do tych branchy w dispatcherze.
 - Piąty fragment obejmuje `search_terms` i `search_term_safety`; nie wracaj do
   tych branchy ani ich formatterów w dispatcherze.
+- Szósty fragment obejmuje `negative_keyword_safety` i `custom_segments`; nie
+  wracaj do tych branchy ani ich formatterów w dispatcherze.
 
 ## Dowody
 

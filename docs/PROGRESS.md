@@ -70,6 +70,9 @@ w git, Beads i `docs/progress/archive/`.
 - Piąty tile fragment wydzielił `search_terms` i `search_term_safety`; query/
   click/cost oraz 90-dniowy safety context pozostają bez zmian. Complexity:
   398 plików Python / 132443 LOC; dispatcher branches nadal są jawnie śledzone.
+- Szósty tile fragment wydzielił `negative_keyword_safety` i `custom_segments`;
+  zachowane są urgent/high, preview, keyword context, source queries i KP ideas.
+  Complexity: 398 plików Python / 132453 LOC; pozostałe branches czekają na osobny seam.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

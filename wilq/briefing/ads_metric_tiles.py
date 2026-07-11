@@ -218,3 +218,48 @@ def search_term_safety_metric_tiles(
             ),
         }
     )
+
+
+def negative_keyword_safety_metric_tiles(
+    decision: AdsDecisionItem,
+) -> dict[str, int | float | str]:
+    return clean_metric_tiles(
+        {
+            "propozycje": len(decision.negative_keyword_candidates),
+            "pilne": sum(
+                1
+                for candidate in decision.negative_keyword_candidates
+                if candidate.review_priority == "pilne"
+            ),
+            "wysokie": sum(
+                1
+                for candidate in decision.negative_keyword_candidates
+                if candidate.review_priority == "wysokie"
+            ),
+            "podgląd akcji": len(decision.negative_keyword_payload_preview),
+            "kontekst słów": len(decision.keyword_match_context_rows),
+        }
+    )
+
+
+def custom_segments_metric_tiles(
+    decision: AdsDecisionItem,
+) -> dict[str, int | float | str]:
+    return clean_metric_tiles(
+        {
+            "segmenty": len(decision.custom_segment_candidates),
+            "pilne": sum(
+                1
+                for candidate in decision.custom_segment_candidates
+                if candidate.review_priority == "pilne"
+            ),
+            "wysokie": sum(
+                1
+                for candidate in decision.custom_segment_candidates
+                if candidate.review_priority == "wysokie"
+            ),
+            "podgląd akcji": len(decision.custom_segment_payload_preview),
+            "źródłowe zapytania": len(decision.search_term_rows),
+            "KP ideas": len(decision.keyword_planner_idea_rows),
+        }
+    )
