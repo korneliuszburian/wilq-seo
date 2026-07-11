@@ -195,6 +195,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Missing contracts, allowed metrics i status business context są teraz składane
   przez `_business_context_contract_state`; read contract pozostaje typed,
   a aktualny helper ma 131 linii. Complexity: 398 / 132597 LOC.
+- Business-context metric tiles są teraz w `_business_context_metric_tiles`,
+  bez zmiany nazw pól, formatowania waluty/procentów ani statusu strategii.
+  Complexity: 398 / 132616 LOC; helper read contract ma 127 linii.
 
 ## Granica bezpieczeństwa
 

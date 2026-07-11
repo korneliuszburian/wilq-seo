@@ -51,6 +51,8 @@ Ostatni commit: `f696bf8` (`docs: record Ads context state complexity`)
   `_business_context_summary_and_next_step`; nie wracaj do inline status copy.
 - Missing contracts/status/allowed metrics są w `_business_context_contract_state`;
   nie wracaj do inline readiness-state assembly.
+- Business-context tiles są w `_business_context_metric_tiles`; nie wracaj do
+  inline metric-tile dictionary.
 
 ## Dowody
 

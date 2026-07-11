@@ -111,6 +111,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_business_context_contract_state` przejął missing contracts, allowed metrics,
   target-missing i status; `AdsBusinessContextReadContract` pozostaje bez zmian.
   Complexity: 398 / 132597 LOC; 9 znanych violations.
+- `_business_context_metric_tiles` przejął tile assembly kontekstu biznesowego;
+  nazwy i wartości operator-facing pozostają bez zmian. Complexity: 398 /
+  132616 LOC; 9 znanych violations.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

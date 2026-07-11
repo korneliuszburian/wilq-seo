@@ -1612,6 +1612,31 @@ def _business_context_contract_state(
     return missing_read_contracts, allowed_metrics, target_missing, status
 
 
+def _business_context_metric_tiles(
+    *,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_roas: float | None,
+    target_cpa_micros: int | None,
+    target_confirmation: object | None,
+    strategy_review_status: str,
+) -> dict[str, int | float | str]:
+    return _clean_metric_tiles(
+        {
+            "marża": _format_ratio_percent(profit_margin)
+            if profit_margin is not None
+            else "marża niepodana",
+            "cel biznesowy": business_goal or "cel niepotwierdzony",
+            "cel budżetu": budget_goal or "cel budżetu niepotwierdzony",
+            "docelowy zwrot z reklam": target_roas,
+            "docelowy koszt pozyskania celu": _format_micros(target_cpa_micros),
+            "źródło celu": "potwierdzone" if target_confirmation is not None else None,
+            "ocena strategii": _strategy_review_label(strategy_review_status),
+        }
+    )
+
+
 def _business_context_read_contract(
     latest_refresh: ConnectorRefreshRun | None,
 ) -> AdsBusinessContextReadContract:
@@ -1669,18 +1694,14 @@ def _business_context_read_contract(
         target_missing=target_missing,
         strategy_review_approved=strategy_review_approved,
     )
-    metric_tiles = _clean_metric_tiles(
-        {
-            "marża": _format_ratio_percent(profit_margin)
-            if profit_margin is not None
-            else "marża niepodana",
-            "cel biznesowy": business_goal or "cel niepotwierdzony",
-            "cel budżetu": budget_goal or "cel budżetu niepotwierdzony",
-            "docelowy zwrot z reklam": target_roas,
-            "docelowy koszt pozyskania celu": _format_micros(target_cpa_micros),
-            "źródło celu": "potwierdzone" if target_confirmation is not None else None,
-            "ocena strategii": _strategy_review_label(strategy_review_status),
-        }
+    metric_tiles = _business_context_metric_tiles(
+        profit_margin=profit_margin,
+        business_goal=business_goal,
+        budget_goal=budget_goal,
+        target_roas=target_roas,
+        target_cpa_micros=target_cpa_micros,
+        target_confirmation=target_confirmation,
+        strategy_review_status=strategy_review_status,
     )
     blocked_claims = [
         "opłacalność",
