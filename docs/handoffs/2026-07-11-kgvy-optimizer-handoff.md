@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `4f4cb6e` (`refactor: split negative keyword blocked states`)  
-`origin/main` = `4f4cb6e`
+Ostatni commit: `5789520` (`docs: update negative keyword contract pointer`)  
+`origin/main` = `5789520`
 
 ## Wykonane
 
@@ -92,6 +92,6 @@ planner blockers i `apply_allowed=false`.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 4f4cb6e`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 5789520`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
