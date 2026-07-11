@@ -432,6 +432,10 @@ def _connector_refresh_state(
             if freshness_state == "stale"
             else ConnectorRefreshJobState.unknown
         )
+    elif latest_run.status == ConnectorRefreshStatus.queued:
+        state = ConnectorRefreshJobState.queued
+    elif latest_run.status == ConnectorRefreshStatus.running:
+        state = ConnectorRefreshJobState.running
     elif latest_run.status == ConnectorRefreshStatus.failed:
         state = ConnectorRefreshJobState.failed
     elif latest_run.status == ConnectorRefreshStatus.blocked:
@@ -443,6 +447,8 @@ def _connector_refresh_state(
     else:
         state = ConnectorRefreshJobState.ready
     labels = {
+        ConnectorRefreshJobState.queued: "odczyt w kolejce",
+        ConnectorRefreshJobState.running: "odczyt trwa",
         ConnectorRefreshJobState.ready: "odświeżone",
         ConnectorRefreshJobState.stale: "wymaga odświeżenia",
         ConnectorRefreshJobState.partial: "odczyt częściowy",
@@ -451,6 +457,8 @@ def _connector_refresh_state(
         ConnectorRefreshJobState.unknown: "stan odświeżenia nieznany",
     }
     next_steps = {
+        ConnectorRefreshJobState.queued: "Odczyt jest w kolejce; poczekaj na wynik przed decyzją.",
+        ConnectorRefreshJobState.running: "Odczyt trwa; poczekaj na wynik przed decyzją.",
         ConnectorRefreshJobState.ready: (
             "Źródło ma ostatni udany odczyt; użyj go zgodnie ze świeżością."
         ),

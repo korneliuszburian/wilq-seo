@@ -89,6 +89,102 @@ def run_connector_refresh(
     return saved_run
 
 
+def queue_connector_refresh(
+    connector_id: str,
+    request: ConnectorRefreshRequest,
+) -> ConnectorRefreshRun | None:
+    connector = get_connector_status(connector_id)
+    if connector is None:
+        return None
+    started_at = utc_now()
+    run_id = f"refresh_{connector_id}_{uuid4().hex[:12]}"
+    return local_state_store().save_connector_refresh_run(
+        ConnectorRefreshRun(
+            id=run_id,
+            connector_id=connector_id,
+            mode=request.mode,
+            status=ConnectorRefreshStatus.queued,
+            started_at=started_at,
+            completed_at=None,
+            evidence_ids=[
+                connector_evidence_id(connector_id),
+                refresh_run_evidence_id(run_id),
+            ],
+            missing_credentials=connector.missing_credentials,
+            checked_credentials=connector.required_env,
+            metrics_persisted=False,
+            summary="Odczyt źródła dodany do kolejki read-only.",
+        )
+    )
+
+
+def complete_queued_connector_refresh(
+    run_id: str,
+    connector_id: str,
+    request: ConnectorRefreshRequest,
+) -> ConnectorRefreshRun | None:
+    queued_run = get_connector_refresh_run(run_id)
+    connector = get_connector_status(connector_id)
+    if queued_run is None or connector is None:
+        return None
+    running_run = queued_run.model_copy(
+        update={
+            "status": ConnectorRefreshStatus.running,
+            "summary": "Odczyt źródła trwa w trybie read-only.",
+        }
+    )
+    local_state_store().save_connector_refresh_run(running_run)
+    result = _refresh_result(
+        connector_id=connector_id,
+        request=request,
+        connector_status=connector.status,
+        configured=connector.configured,
+        missing_credentials=connector.missing_credentials,
+    )
+    return _persist_refresh_result(running_run, result)
+
+
+def _persist_refresh_result(
+    run: ConnectorRefreshRun,
+    result: VendorReadResult,
+) -> ConnectorRefreshRun:
+    saved_run = local_state_store().save_connector_refresh_run(
+        run.model_copy(
+            update={
+                "status": result.status,
+                "completed_at": utc_now(),
+                "external_call_attempted": result.external_call_attempted,
+                "vendor_data_collected": result.vendor_data_collected,
+                "metrics_persisted": False,
+                "metric_summary": result.metric_summary,
+                "summary": result.summary,
+                "errors": result.errors,
+            }
+        )
+    )
+    try:
+        metric_store().save_connector_refresh_metrics(saved_run, detailed_facts=result.metric_facts)
+    except Exception as error:
+        failed_run = saved_run.model_copy(
+            update={
+                "status": ConnectorRefreshStatus.failed,
+                "completed_at": utc_now(),
+                "metrics_persisted": False,
+                "summary": (
+                    f"{saved_run.summary} Metric persistence failed; refresh run marked failed."
+                ),
+                "errors": [
+                    *saved_run.errors,
+                    f"metric_persistence_failed:{type(error).__name__}",
+                ],
+            }
+        )
+        return local_state_store().save_connector_refresh_run(failed_run)
+    return local_state_store().save_connector_refresh_run(
+        saved_run.model_copy(update={"metrics_persisted": True})
+    )
+
+
 def list_connector_refresh_runs(connector_id: str | None = None) -> list[ConnectorRefreshRun]:
     return local_state_store().list_connector_refresh_runs(connector_id=connector_id)
 

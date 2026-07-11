@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import {
   getConnectors,
+  getConnectorRefreshRun,
   getKnowledgeCards,
   getKnowledgeOperatingMap,
   getKnowledgePlaybooks,
@@ -941,16 +942,27 @@ function KnowledgePlaybooksDetails({
 
 function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[] }) {
   const [showConnectorDetails, setShowConnectorDetails] = useState(false);
+  const [refreshRunId, setRefreshRunId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const refreshMutation = useMutation({
     mutationFn: refreshConnector,
-    onSuccess: () => {
+    onSuccess: (run) => {
+      setRefreshRunId(run.id);
       void queryClient.invalidateQueries({ queryKey: ["connectors"] });
       void queryClient.invalidateQueries({ queryKey: ["command-center"] });
       void queryClient.invalidateQueries({ queryKey: ["ads-diagnostics"] });
       void queryClient.invalidateQueries({ queryKey: ["ga4-diagnostics"] });
       void queryClient.invalidateQueries({ queryKey: ["merchant-diagnostics"] });
       void queryClient.invalidateQueries({ queryKey: ["content-diagnostics"] });
+    }
+  });
+  const refreshRunQuery = useQuery({
+    queryKey: ["connector-refresh-run", refreshRunId],
+    queryFn: () => getConnectorRefreshRun(refreshRunId as string),
+    enabled: refreshRunId !== null,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "queued" || status === "running" ? 500 : false;
     }
   });
   const missing = connectors.filter((connector) => hasMissingSourceAccess(connector));
@@ -1019,15 +1031,22 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
               key={connector.id}
               connector={connector}
               onRefresh={() => refreshMutation.mutate(connector.id)}
-              refreshing={refreshMutation.isPending && refreshMutation.variables === connector.id}
+              refreshing={
+                (refreshMutation.isPending && refreshMutation.variables === connector.id)
+                || (refreshRunQuery.data?.connector_id === connector.id
+                  && (refreshRunQuery.data.status === "queued"
+                    || refreshRunQuery.data.status === "running"))
+              }
               refreshError={
                 refreshMutation.error && refreshMutation.variables === connector.id
                   ? refreshMutation.error
                   : null
               }
               refreshResult={
-                refreshMutation.data?.connector_id === connector.id
-                  ? refreshMutation.data
+                refreshRunQuery.data?.connector_id === connector.id
+                  ? refreshRunQuery.data
+                  : refreshMutation.data?.connector_id === connector.id
+                    ? refreshMutation.data
                   : null
               }
             />
@@ -1179,8 +1198,12 @@ function SourceAccessCard({
             {refreshing ? "Odświeżam dane" : "Odśwież dane"}
           </button>
           {refreshResult ? (
-            <p className="text-xs leading-5 text-success">
-              Odczyt zakończony. WILQ odświeży decyzje po aktualizacji źródła.
+            <p className={`text-xs leading-5 ${refreshing ? "text-wait" : "text-success"}`}>
+              {refreshing
+                ? refreshResult.status_label || "Odczyt trwa; poczekaj na wynik."
+                : refreshResult.status === "failed" || refreshResult.status === "blocked"
+                  ? refreshResult.status_label || "Odczyt zablokowany; sprawdź dostęp."
+                  : "Odczyt zakończony. WILQ odświeży decyzje po aktualizacji źródła."}
             </p>
           ) : null}
           {refreshError ? (

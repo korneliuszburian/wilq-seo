@@ -55,12 +55,16 @@ class ConnectorRefreshMode(StrEnum):
 
 
 class ConnectorRefreshStatus(StrEnum):
+    queued = "queued"
+    running = "running"
     completed = "completed"
     blocked = "blocked"
     failed = "failed"
 
 
 class ConnectorRefreshJobState(StrEnum):
+    queued = "queued"
+    running = "running"
     ready = "ready"
     stale = "stale"
     partial = "partial"
@@ -231,6 +235,7 @@ class Evidence(BaseModel):
 class ConnectorRefreshRequest(BaseModel):
     mode: ConnectorRefreshMode = ConnectorRefreshMode.status_probe
     reason: str | None = None
+    run_async: bool = False
 
 
 class ConnectorRefreshRun(BaseModel):

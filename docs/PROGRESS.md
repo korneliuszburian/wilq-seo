@@ -18,6 +18,13 @@ w git, Beads i `docs/progress/archive/`.
 - Queue i selected snapshot przenoszą teraz typed freshness; stale primary
   sources dają `content_sources_require_refresh`, `recommended_mode=block` i
   refresh-first `safe_next_step`. To zamyka P0 `c9h9.5`.
+- `wilq-seo-4wwo` ma pierwszy async slice: istniejący read-only connector refresh
+  przyjmuje `run_async`, zapisuje status `queued`, wykonuje bezpieczne przejście
+  `running` → terminalny wynik, a dashboard `/settings` odpytuje istniejący
+  refresh-run i invaliduje view-modele po zakończeniu. Domyślna ścieżka synchroniczna
+  pozostaje kompatybilna; automatyczny stale-trigger jest świadomie poza zakresem.
+  Live proof 2026-07-11: Google Sheets `refresh_google_sheets_1204e9337620`
+  queued → completed, `external_call_attempted=false`, bez sekretów.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

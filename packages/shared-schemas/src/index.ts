@@ -9,11 +9,11 @@ import {
 export * from "./contentWorkflow";
 
 export const ConnectorRefreshStateSchema = z.object({
-  state: z.enum(["ready", "stale", "partial", "failed", "blocked", "unknown"]),
+  state: z.enum(["queued", "running", "ready", "stale", "partial", "failed", "blocked", "unknown"]),
   state_label: z.string(),
   refresh_allowed: z.boolean(),
   last_run_id: z.string().nullable().optional(),
-  last_run_status: z.enum(["completed", "blocked", "failed"]).nullable().optional(),
+  last_run_status: z.enum(["queued", "running", "completed", "blocked", "failed"]).nullable().optional(),
   last_run_started_at: z.string().nullable().optional(),
   last_run_completed_at: z.string().nullable().optional(),
   safe_next_step: z.string(),
@@ -116,7 +116,7 @@ export const ConnectorRefreshRunSchema = z.object({
   connector_id: z.string(),
   connector_label: z.string().default(""),
   mode: z.enum(["status_probe", "vendor_read"]),
-  status: z.enum(["completed", "blocked", "failed"]),
+  status: z.enum(["queued", "running", "completed", "blocked", "failed"]),
   status_label: z.string().default(""),
   started_at: z.string(),
   completed_at: z.string().nullable().optional(),

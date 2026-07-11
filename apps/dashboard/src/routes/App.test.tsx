@@ -8051,6 +8051,13 @@ describe("WILQ dashboard", () => {
         && init?.method === "POST"
       )).toBe(true)
     );
+    const refreshCall = vi.mocked(fetch).mock.calls.find(([url]) =>
+      String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+    );
+    expect(JSON.parse(String(refreshCall?.[1]?.body))).toMatchObject({
+      mode: "vendor_read",
+      run_async: true
+    });
     expect(await screen.findByText(/Odczyt zakończony/)).toBeInTheDocument();
   });
 

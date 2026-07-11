@@ -73,3 +73,29 @@ def test_connector_status_exposes_typed_refresh_state_without_credentials(
     serialized = json.dumps(refresh_state)
     assert "GOOGLE_ADS_CLIENT_SECRET" not in serialized
     assert "refresh_token" not in serialized.lower()
+
+
+def test_async_connector_refresh_returns_queued_run_and_finishes_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "async_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+
+    response = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "run_async": True, "reason": "async contract test"},
+    )
+
+    assert response.status_code == 200
+    queued = response.json()
+    assert queued["status"] == "queued"
+    assert queued["completed_at"] is None
+    assert queued["external_call_attempted"] is False
+    detail = client.get(f"/api/connectors/refresh-runs/{queued['id']}")
+    assert detail.status_code == 200
+    finished = detail.json()
+    assert finished["status"] in {"blocked", "failed", "completed"}
+    assert finished["external_call_attempted"] is False
+    assert "async contract test" not in json.dumps(finished)

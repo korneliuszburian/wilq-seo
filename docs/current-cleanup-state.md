@@ -5,10 +5,12 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Aktualny następny slice to kontynuacja `wilq-seo-4wwo`: queued/running polling lub
-bezpieczny auto-refresh dla stale Merchant/GA4, ale tylko przez read-only connector
- flow. `r564.3` pozostaje zależny od zewnętrznego świeżego kandydata; nie oznaczaj go
- jako complete i nie przywracaj direct WordPress write.
+Ostatni slice `wilq-seo-4wwo` dodał opcjonalny read-only async refresh: `queued`/`running`
+jest utrwalane w istniejącym refresh-run, a dashboard odpytuje istniejący endpoint i
+odświeża view-modele po wyniku. Następny krok to jawna polityka automatycznego
+odświeżania stale źródeł (trigger, rate limit, backoff, audit) albo przejście do
+zewnętrznie blokowanego `r564.3`; nie włączaj auto-refresh bez kontraktu i nie
+przywracaj direct WordPress write.
 
 ## Prawda produktu
 
@@ -38,6 +40,17 @@ bezpieczny auto-refresh dla stale Merchant/GA4, ale tylko przez read-only connec
   `.local-lab/proof/r564-3-mobile-stale-blocker.png` jest aktualnym proof.
 - Mobile freshness został skondensowany, a source status bar jest poziomym
   scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
+- `4wwo` ma teraz opcjonalny async read-only refresh przez istniejący endpoint:
+  POST zwraca utrwalony `queued` run, background completion przechodzi przez
+  `running` do terminalnego statusu, a `/settings` polluje `GET
+  /api/connectors/refresh-runs/{run_id}` i invaliduje źródła/diagnostyki/command
+  center po zakończeniu. Live proof 2026-07-11 dla wyłączonego Google Sheets:
+  `refresh_google_sheets_1204e9337620`, queued → completed, bez external call.
+  Automatyczny trigger stale pozostaje wyłączony do czasu osobnego kontraktu
+  rate-limit/backoff/audit.
+- Async slice utrzymuje 392 pliki Pythona i 132 145 niepustych linii; raport
+  complexity wskazuje tylko istniejące przekroczenie `_metric_dimension_value_label`
+  w dotkniętym `schemas/core.py`, bez zamrożonego wzrostu.
 - `c9h9.13` Merchant ma cache 15 s i prewarm w managed lifespan; HTTP proof po
   restarcie to `0.004860 s` / `0.007203 s`, a desktop/mobile screenshoty pokazują
   decyzję przed kolejką szczegółów. Bead jest zamknięty.
