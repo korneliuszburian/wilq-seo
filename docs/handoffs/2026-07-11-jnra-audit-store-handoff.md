@@ -1,8 +1,8 @@
 # Handoff — `jnra` audit history seam
 
 Data: 2026-07-11 19:45 Europe/Warsaw  
-Ostatni commit: `d60593b` (`docs: point handoff to latest cleanup commit`)  
-`origin/main` = `d60593b`
+Ostatni commit: `6a32a4a` (`docs: hand off next Ads diagnostics seam`)  
+`origin/main` = `6a32a4a`
 
 ## Wykonane
 
@@ -39,6 +39,6 @@ decision builders.
 
 ## Kontrola repo
 
-- `HEAD == origin/main == d60593b`.
+- `HEAD == origin/main == 6a32a4a`.
 - Worktree po commicie jest czysty; przed kolejnym slice’em sprawdź `rtk git
   status --short`, `rtk bd ready --json` i health API.
