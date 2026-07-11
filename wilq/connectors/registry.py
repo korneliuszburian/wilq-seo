@@ -446,6 +446,8 @@ def _connector_refresh_state(
         state = ConnectorRefreshJobState.stale
     else:
         state = ConnectorRefreshJobState.ready
+    if state in {ConnectorRefreshJobState.queued, ConnectorRefreshJobState.running}:
+        refresh_allowed = False
     labels = {
         ConnectorRefreshJobState.queued: "odczyt w kolejce",
         ConnectorRefreshJobState.running: "odczyt trwa",

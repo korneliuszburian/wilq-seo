@@ -15,10 +15,13 @@ Ostatni commit: `3b92397` (`fix: deduplicate async connector refreshes`)
   zakończeniu unieważnia źródła, diagnostyki oraz command center.
 - Drugi async request dla tego samego connectora zwraca istniejący aktywny
   run zamiast uruchamiać równoległy odczyt.
+- `refresh_state.refresh_allowed` przechodzi na `false` dla aktywnego
+  `queued`/`running` runu, więc status po przeładowaniu nie zachęca do drugiego
+  odczytu.
 
 ## Dowody
 
-- Backend: Ruff, mypy i `tests/api_contracts/test_connector_refresh_redaction_contracts.py` — 4 passed.
+- Backend: Ruff, mypy i `tests/api_contracts/test_connector_refresh_redaction_contracts.py` — 5 passed.
 - Shared schemas: typecheck i 33 passed.
 - Dashboard: typecheck, lint, build i focused refresh test — green.
 - Live API: `refresh_google_sheets_1204e9337620` zwrócił `queued`, następnie

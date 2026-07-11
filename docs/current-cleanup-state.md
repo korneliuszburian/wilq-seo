@@ -56,6 +56,10 @@ przywracaj direct WordPress write.
   odczyt. To jest minimalna ochrona przed podwójnym kliknięciem i przyszłym
   auto-refresh storm; pełne trigger/rate-limit/backoff/audit nadal pozostają poza
   zakresem.
+- `refresh_state.refresh_allowed` jest teraz także `false` dla aktywnego
+  `queued`/`running` runu, więc odświeżenie po przeładowaniu strony nie wygląda na
+  dostępne, gdy źródło już jest w trakcie odczytu. Focused API contract suite ma
+  5 passed; runtime po restarcie pozostaje zdrowy.
 - `c9h9.13` Merchant ma cache 15 s i prewarm w managed lifespan; HTTP proof po
   restarcie to `0.004860 s` / `0.007203 s`, a desktop/mobile screenshoty pokazują
   decyzję przed kolejką szczegółów. Bead jest zamknięty.

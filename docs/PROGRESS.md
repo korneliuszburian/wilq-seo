@@ -28,6 +28,9 @@ w git, Beads i `docs/progress/archive/`.
 - Async refresh deduplikuje teraz aktywny run per connector: drugi queued/running
   request zwraca ten sam `run_id` i nie tworzy równoległego odczytu. Focused
   redaction/async contract suite: 4 passed; Ruff, mypy i diff check green.
+- `refresh_state.refresh_allowed` jest fail-closed podczas aktywnego `queued` lub
+  `running` runu. Test API potwierdza stan `queued`, `refresh_allowed=false` i
+  bezpieczny krok „poczekaj”; runtime po restarcie health/metrics jest zdrowy.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

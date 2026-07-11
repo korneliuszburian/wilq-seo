@@ -123,3 +123,36 @@ def test_async_connector_refresh_reuses_active_run(
     assert first.status_code == second.status_code == 200
     assert first.json()["id"] == second.json()["id"]
     assert second.json()["status"] == "queued"
+
+
+def test_connector_status_blocks_duplicate_refresh_while_run_is_active(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "active_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    for name in (
+        "GOOGLE_ADS_DEVELOPER_TOKEN",
+        "GOOGLE_ADS_CLIENT_ID",
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "GOOGLE_ADS_REFRESH_TOKEN",
+        "GOOGLE_ADS_CUSTOMER_ID",
+        "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
+    ):
+        monkeypatch.setenv(name, "configured-test-value")
+    monkeypatch.setattr(connectors_router, "complete_queued_connector_refresh", lambda *args: None)
+
+    queued = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "run_async": True, "reason": "active state contract test"},
+    )
+    assert queued.status_code == 200
+
+    status = client.get("/api/connectors/google_ads/status")
+
+    assert status.status_code == 200
+    refresh_state = status.json()["refresh_state"]
+    assert refresh_state["state"] == "queued"
+    assert refresh_state["refresh_allowed"] is False
+    assert "poczekaj" in refresh_state["safe_next_step"]
