@@ -26,7 +26,7 @@ from wilq.actions.google_ads.business_context import (
     ADS_TARGET_CONFIRMATION_ACTION_ID,
 )
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
-from wilq.actions.service import _merchant_attribute_key as _action_merchant_attribute_key
+from wilq.actions.merchant import _merchant_attribute_key as _action_merchant_attribute_key
 from wilq.briefing.command_center import build_daily_decisions
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.merchant_diagnostics import (

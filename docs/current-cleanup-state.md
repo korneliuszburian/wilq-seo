@@ -82,8 +82,9 @@ Action Service; nie przywracaj direct WordPress write.
   pozostaje w service jako granica bezpieczeństwa. Static Google Ads
   recommendation-review seed deleguje teraz do `google_ads/recommendations.py`;
   read-required payload i blokada apply pozostają bez zmian. Static Merchant
-  feed-issue seed deleguje teraz do `wilq/actions/merchant.py`; GA4 deleguje do
-  `wilq/actions/ga4/tracking_quality.py`, a content refresh seed deleguje do
+  feed-issue seed deleguje teraz do `wilq/actions/merchant.py`; GA4 pełny
+  konstruktor faktów deleguje do `wilq/actions/ga4/tracking_quality.py`, a
+  content refresh seed deleguje do
   `wilq/actions/content_refresh.py`. Static seed slice w
   `seed_core_prepare_actions` jest zamknięty; większa logika content workflow
   pozostaje poza tym seamem.
@@ -152,8 +153,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 382 plików Python,
-131667 non-empty LOC. Bounded content seed extraction, metric-candidate
-orchestration, Social, Localo and Merchant module extraction were audited with
+131665 non-empty LOC. Bounded content seed extraction, metric-candidate
+orchestration, Social, Localo, Merchant and GA4 module extraction were audited with
 `--allow-frozen --allow-budget-violations`: service.py remains a frozen-growth
 file because the seam removes inline code, while pre-existing content/service
 budget findings remain tracked for the broader `jnra` cleanup. Historyczne duże

@@ -21,7 +21,7 @@ from wilq.actions.content_refresh import (
     seed_content_refresh_action,
 )
 from wilq.actions.ga4.tracking_quality import (
-    ga4_tracking_quality_action,
+    ga4_tracking_quality_action_from_metric_facts,
     seed_ga4_tracking_quality_action,
 )
 from wilq.actions.google_ads.business_context import (
@@ -630,13 +630,9 @@ def _seed_ga4_metric_actions(
     by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
 ) -> None:
     ga4_facts = by_connector.get("google_analytics_4", [])
-    ga4_dimensioned_facts = _ga4_dimensioned_metric_facts(ga4_facts)
-    if not ga4_dimensioned_facts:
-        return
-    action = _ga4_tracking_quality_action(
-        ga4_action_metrics=ga4_dimensioned_facts[:8],
-    )
-    actions[action.id] = action
+    action = ga4_tracking_quality_action_from_metric_facts(ga4_facts)
+    if action is not None:
+        actions[action.id] = action
 
 
 def _seed_content_metric_actions(
@@ -760,16 +756,6 @@ def _seed_social_metric_actions(
     ]
     if social_facts:
         actions.update(social_draft_actions(social_facts))
-
-
-def _ga4_tracking_quality_action(
-    *,
-    ga4_action_metrics: list[MetricFact],
-) -> ActionObject:
-    return ga4_tracking_quality_action(
-        ga4_action_metrics=ga4_action_metrics,
-        metric_sentence=metric_sentence(ga4_action_metrics),
-    )
 
 
 def _negative_keyword_action(
@@ -1085,16 +1071,6 @@ def _latest_google_ads_metric_facts() -> list[MetricFact]:
         fact
         for fact in metric_store().list_metric_facts_by_evidence_ids(latest_run.evidence_ids)
         if fact.source_connector == "google_ads"
-    ]
-
-
-def _ga4_dimensioned_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
-    return [
-        fact
-        for fact in facts
-        if fact.dimensions.get("landing_page")
-        or fact.dimensions.get("source_medium")
-        or fact.dimensions.get("campaign_name")
     ]
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from typing import Any, Literal
 
+from wilq.actions.metric_utils import metric_sentence
 from wilq.actions.validation_copy import (
     missing,
     no_api_write,
@@ -168,6 +169,25 @@ def ga4_tracking_quality_action(
         payload=ga4_tracking_quality_payload_from_metric_facts(ga4_action_metrics),
         validation_status="not_validated",
         created_by="system_metric_seed",
+    )
+
+
+def ga4_tracking_quality_action_from_metric_facts(
+    facts: list[MetricFact],
+) -> ActionObject | None:
+    dimensioned_facts = [
+        fact
+        for fact in facts
+        if fact.dimensions.get("landing_page")
+        or fact.dimensions.get("source_medium")
+        or fact.dimensions.get("campaign_name")
+    ]
+    if not dimensioned_facts:
+        return None
+    action_metrics = dimensioned_facts[:8]
+    return ga4_tracking_quality_action(
+        ga4_action_metrics=action_metrics,
+        metric_sentence=metric_sentence(action_metrics),
     )
 GA4_TRACKING_REQUIRED_BREAKDOWNS = ["landing_page", "source_medium", "campaign_name"]
 
