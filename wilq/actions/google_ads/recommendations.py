@@ -13,6 +13,7 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
+from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -30,6 +31,73 @@ RECOMMENDATION_REVIEW_BLOCKED_CLAIMS = [
     "zapis zmian kampanii",
     "obietnica poprawy wyniku",
 ]
+
+
+def seed_recommendation_review_action() -> ActionObject:
+    evidence_id = connector_evidence_id("google_ads")
+    return ActionObject(
+        id=RECOMMENDATION_REVIEW_ACTION_ID,
+        title="Przygotuj sprawdzenie rekomendacji Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=[evidence_id],
+        human_diagnosis=(
+            "Rekomendacje Google Ads są core workflow WILQ. WILQ utrzymuje "
+            "kontrakt sprawdzenia, ale nie może akceptować ani odrzucać "
+            "rekomendacji bez danych rekomendacji w WILQ."
+        ),
+        recommended_reason=(
+            "Zbierz odczyt rekomendacji Google Ads, potem sprawdź typ "
+            "rekomendacji, wpływ, powiązane kampanie i strategię przed "
+            "jakimkolwiek zapisem zmian."
+        ),
+        payload={
+            "action_type": "google_ads_recommendation_review",
+            "connector": "google_ads",
+            "mode": "prepare_only",
+            "preview_contract": "recommendation_apply_preview_v1",
+            "source_metric_names": ["connector_status"],
+            "recommendations": [
+                {
+                    "recommendation_id": "google_ads_recommendations_read_required",
+                    "recommendation_type": "read_required",
+                    "campaign_id": None,
+                    "review_reason": (
+                        "Najpierw odśwież dane rekomendacji Google Ads; bez nich "
+                        "WILQ nie ocenia wpływu ani nie przygotowuje zapisu zmian."
+                    ),
+                    "evidence_ids": [evidence_id],
+                    "source_metric_names": ["connector_status"],
+                }
+            ],
+            "recommendations_total": 1,
+            "recommendations_included": 1,
+            "payload_preview": [
+                {
+                    "operation_type": "ApplyRecommendationOperation",
+                    "recommendation_id": "google_ads_recommendations_read_required",
+                    "recommendation_type": "read_required",
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                    "destructive": False,
+                    "evidence_ids": [evidence_id],
+                }
+            ],
+            "payload_preview_total": 1,
+            "payload_preview_included": 1,
+            "evidence_ids": [evidence_id],
+            "required_validation": RECOMMENDATION_REVIEW_REQUIRED_VALIDATION,
+            "blocked_claims": RECOMMENDATION_REVIEW_BLOCKED_CLAIMS,
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_core_seed",
+    )
 
 
 def recommendation_review_action(

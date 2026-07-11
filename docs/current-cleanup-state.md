@@ -79,7 +79,9 @@ Action Service; nie przywracaj direct WordPress write.
   `wilq/actions/wordpress_draft.py`; apply-mode constructor pozostaje osobnym
   seamem, bo korzysta z service-owned apply contract buildera. Apply-mode
   constructor jest teraz również domenowym delegatem; sam builder kontraktu
-  pozostaje w service jako granica bezpieczeństwa.
+  pozostaje w service jako granica bezpieczeństwa. Static Google Ads
+  recommendation-review seed deleguje teraz do `google_ads/recommendations.py`;
+  read-required payload i blokada apply pozostają bez zmian.
 
 ## Granica bezpieczeństwa
 

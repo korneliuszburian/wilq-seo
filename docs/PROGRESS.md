@@ -175,6 +175,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `apply_allowed=false` pozostają bez zmian. Apply-mode constructor również jest
   domenowym delegatem; service zachowuje builder typed apply contract jako
   granicę bezpieczeństwa.
+- Static Google Ads recommendation-review seed jest teraz w istniejącym
+  `wilq/actions/google_ads/recommendations.py`; fallback read-required evidence,
+  required validation i blokada apply pozostały identyczne. Merchant, GA4 i
+  content static seeds są osobnymi przyszłymi seamami.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

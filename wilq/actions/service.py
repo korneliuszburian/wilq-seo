@@ -73,9 +73,9 @@ from wilq.actions.google_ads.negative_keywords import (
 )
 from wilq.actions.google_ads.oauth import oauth_repair_action
 from wilq.actions.google_ads.recommendations import (
-    RECOMMENDATION_REVIEW_ACTION_ID,
     recommendation_review_action,
     recommendation_review_payload_from_metric_facts,
+    seed_recommendation_review_action,
 )
 from wilq.actions.google_ads.search_term_ngrams import (
     SEARCH_TERM_NGRAM_PREVIEW_CONTRACT,
@@ -209,84 +209,7 @@ def seed_static_actions() -> dict[str, ActionObject]:
 
 def seed_core_prepare_actions() -> dict[str, ActionObject]:
     actions = [
-        ActionObject(
-            id=RECOMMENDATION_REVIEW_ACTION_ID,
-            title="Przygotuj sprawdzenie rekomendacji Google Ads",
-            domain=OpportunityDomain.google_ads,
-            connector="google_ads",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.medium,
-            status=ActionStatus.needs_validation,
-            evidence_ids=[connector_evidence_id("google_ads")],
-            human_diagnosis=(
-                "Rekomendacje Google Ads są core workflow WILQ. WILQ utrzymuje "
-                "kontrakt sprawdzenia, ale nie może akceptować ani odrzucać "
-                "rekomendacji bez danych rekomendacji w WILQ."
-            ),
-            recommended_reason=(
-                "Zbierz odczyt rekomendacji Google Ads, potem sprawdź typ "
-                "rekomendacji, wpływ, powiązane kampanie i strategię przed "
-                "jakimkolwiek zapisem zmian."
-            ),
-            payload={
-                "action_type": "google_ads_recommendation_review",
-                "connector": "google_ads",
-                "mode": "prepare_only",
-                "preview_contract": "recommendation_apply_preview_v1",
-                "source_metric_names": ["connector_status"],
-                "recommendations": [
-                    {
-                        "recommendation_id": "google_ads_recommendations_read_required",
-                        "recommendation_type": "read_required",
-                        "campaign_id": None,
-                        "review_reason": (
-                            "Najpierw odśwież dane rekomendacji Google Ads; bez "
-                            "nich WILQ nie ocenia wpływu ani nie przygotowuje "
-                            "zapisu zmian."
-                        ),
-                        "evidence_ids": [connector_evidence_id("google_ads")],
-                        "source_metric_names": ["connector_status"],
-                    }
-                ],
-                "recommendations_total": 1,
-                "recommendations_included": 1,
-                "payload_preview": [
-                    {
-                        "operation_type": "ApplyRecommendationOperation",
-                        "recommendation_id": "google_ads_recommendations_read_required",
-                        "recommendation_type": "read_required",
-                        "apply_allowed": False,
-                        "api_mutation_ready": False,
-                        "destructive": False,
-                        "evidence_ids": [connector_evidence_id("google_ads")],
-                    }
-                ],
-                "payload_preview_total": 1,
-                "payload_preview_included": 1,
-                "evidence_ids": [connector_evidence_id("google_ads")],
-                "required_validation": [
-                    "review_recommendation_type",
-                    "review_impact_metrics",
-                    "review_change_history",
-                    "review_business_goal",
-                    "recommendation_apply_preview",
-                    "google_ads_rmf_compliance_review",
-                    "human_confirm_before_apply",
-                ],
-                "blocked_claims": [
-                    "zapis rekomendacji",
-                    "automatyczne przyjęcie rekomendacji",
-                    "zmiana budżetu",
-                    "zapis zmian kampanii",
-                    "obietnica poprawy wyniku",
-                ],
-                "apply_allowed": False,
-                "api_mutation_ready": False,
-                "destructive": False,
-            },
-            validation_status="not_validated",
-            created_by="system_core_seed",
-        ),
+        seed_recommendation_review_action(),
         ActionObject(
             id="act_review_merchant_feed_issues",
             title="Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
