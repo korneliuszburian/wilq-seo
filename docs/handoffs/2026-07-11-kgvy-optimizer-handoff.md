@@ -120,6 +120,8 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   nie wracaj do inline top-decision selection ani fallback row limits.
 - Summary response field compaction jest w `_compact_ads_summary_response_fields`;
   nie wracaj do inline ograniczania pól response ani `sections=[]`.
+- Summary/full parity jest potwierdzone: oba endpointy mają `live_data_available=true`
+  i blocker count 1; summary ma `sections=[]`, full zachowuje sekcje.
 
 ## Dowody
 
@@ -143,9 +145,9 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 
 Reconciliation, search-term, candidate, optimizer, sections, blocked-handoff,
 decision_queue, response model, wszystkie label hydration groups oraz summary
-decision/candidate/response-field compaction są domknięte. Następny kandydat to
-summary/full response parity review po świeżym complexity/review; zachowaj
-marketer-facing labels, evidence/source/freshness oraz ActionObject safety.
+decision/candidate/response-field compaction są domknięte, a parity potwierdzone.
+Następny kandydat to operator_summary assembly po świeżym complexity/review;
+zachowaj marketer-facing labels, evidence/source/freshness oraz ActionObject safety.
 
 ## Kontrola repo
 

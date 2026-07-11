@@ -11,8 +11,8 @@ wewnątrz `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
 label hydration groups są wydzielone. Summary decision/candidate i response field
-compaction są wydzielone; następny potwierdzony kandydat to summary/full response
-parity review.
+compaction są wydzielone, parity jest potwierdzone. Następny kandydat to
+operator_summary assembly.
 Polityka
 automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
@@ -300,6 +300,8 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Summary response field compaction jest teraz w
   `_compact_ads_summary_response_fields`; row limits, `sections=[]` oraz
   evidence/action lineage pozostają bez zmian.
+- Summary/full parity proof: oba endpointy mają `live_data_available=true` i
+  blocker count 1; summary ma `sections=[]`, full zachowuje sekcje.
 - Search-term review assembly (`review_summary`, `ngram`) jest teraz w
   `_build_ads_search_term_review_contracts`; późniejsze action-ID hydration
   pozostaje osobno. Nie zmieniono kolejności, evidence/source/freshness ani
