@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `fd1fa52` (`refactor: split Ads marketer label hydration`)  
-`origin/main` = `fd1fa52`
+Ostatni commit: `eead305` (`refactor: extract Ads blocked decision branch`)  
+`origin/main` = `eead305`
 
 ## Wykonane
 
@@ -56,6 +56,6 @@ monolitu.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == fd1fa52`, worktree czysty.
+- Po commicie: `HEAD == origin/main == eead305`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
