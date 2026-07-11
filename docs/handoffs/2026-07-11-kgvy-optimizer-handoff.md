@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `7672bb5` (`docs: record Ads reconciliation runtime proof`)  
-`origin/main` = `7672bb5`
+Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer commitu)  
+`HEAD == origin/main` po weryfikacji pushu
 
 ## Wykonane
 
@@ -107,7 +107,8 @@ ActionObject safety.
 
 ## Kontrola repo
 
-- Po commicie: zaktualizuj pointer do finalnego `HEAD == origin/main`, worktree
-  czysty; nie zostawiaj handoffu ze starym commitem.
+- Po commicie: sprawdź `git rev-parse --short HEAD`, `git rev-parse
+  --short origin/main` i `git status --short`; handoff używa symbolicznego HEAD,
+  więc nie zostawia fałszywego hasha po swoim własnym pointer commicie.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
