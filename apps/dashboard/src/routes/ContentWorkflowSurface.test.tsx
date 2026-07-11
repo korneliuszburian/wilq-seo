@@ -209,6 +209,8 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Ograniczenia wiedzy i dowody")).toBeInTheDocument();
     expect(screen.getByText(/ev_content_service_profile_source_facts/)).toBeInTheDocument();
     expect(await screen.findByText("Dev draft WordPress")).toBeInTheDocument();
+    expect(screen.getByLabelText("Decyzja mobilna")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Otwórz decyzję i dowody" })).toBeInTheDocument();
     expect(screen.getByText(/Piszemy i układamy szkic na ekologus.dev.proudsite.pl/))
       .toBeInTheDocument();
     expect(screen.getByText("zapis przez akcję zablokowany")).toBeInTheDocument();
