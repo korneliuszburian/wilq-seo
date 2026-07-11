@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `ce5a60b` (`refactor: extract Ads context metric tiles`)  
-`origin/main` = `ce5a60b`
+Ostatni commit: `b84e506` (`docs: define next Ads contract seam`)  
+`origin/main` = `b84e506`
 
 ## Wykonane
 
