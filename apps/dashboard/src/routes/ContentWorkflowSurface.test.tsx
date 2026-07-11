@@ -688,6 +688,12 @@ describe("ContentWorkflowSurface", () => {
       name: "Przygotuj podgląd draftu"
     });
     await waitFor(() => expect(previewButton).toBeEnabled());
+    await openWorkflowDetails();
+    expect(screen.getByRole("link", { name: "Otwórz kanoniczną akcję do review" })).toHaveAttribute(
+      "href",
+      "/actions/act_apply_wordpress_draft_handoff"
+    );
+    expect(screen.getByText(/Nie wykonuje zapisu ani publikacji/)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", {
         name: /Utwórz (?:(?:szkic|draft).*dev|.*dev.*(?:szkic|draft))/i
@@ -704,7 +710,8 @@ describe("ContentWorkflowSurface", () => {
         section_overrides: expect.any(Array)
       });
     });
-    expect(screen.getByText(/Zapis na dev wymaga centralnej akcji ActionObject/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis na dev wymaga centralnej akcji ActionObject/).length)
+      .toBeGreaterThan(0);
   });
 
   it("disables the primary draft preview when API dry-run readiness is blocked", async () => {

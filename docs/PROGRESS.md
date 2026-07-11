@@ -83,6 +83,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - `c9h9.4` jest w toku: centralny apply ma typed `wordpress_draft` input,
   capability binding i dev-host guard; dashboard nadal nie pokazuje live CTA,
   dopóki realny readiness proof nie przejdzie.
+- W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
+  tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
+  akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
+  zapisu/publikacji. Live stale queue nadal nie pokazuje CTA; browser proof
+  `.local-lab/proof/content-workflow-c9h9-4-review-only.png` pokazuje refresh-first
+  blocker i brak nieautoryzowanego CTA above fold.
 - `/actions/act_prepare_wordpress_existing_draft_update`: first viewport mówi
   „Przygotuj i oceń bez zapisu zmian” oraz „Zapis zablokowany”; pełny render ma
   typed preview i technical disclosure.

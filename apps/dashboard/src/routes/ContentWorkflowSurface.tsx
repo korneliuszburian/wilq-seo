@@ -1145,6 +1145,9 @@ function WordPressDraftWorkPanel({
       packet.execution_blockers.length === 0 &&
       !actions.executionPending
   );
+  const canOpenCanonicalApplyReview = Boolean(
+    packet?.draft_package_ready && packet.handoff_ready
+  );
   const acfLayoutCount = profile?.acf.layouts.length ?? 0;
   const missingReadiness = [
     ...(packet?.activation_missing_readiness_labels ?? []),
@@ -1191,7 +1194,20 @@ function WordPressDraftWorkPanel({
               >
                 {actions.executionPending ? "Sprawdzam podgląd" : "Sprawdź podgląd draftu"}
               </button>
+              {canOpenCanonicalApplyReview ? (
+                <a
+                  href="/actions/act_apply_wordpress_draft_handoff"
+                  className="inline-flex h-9 items-center rounded-md border border-action/40 px-3 text-sm font-semibold text-action"
+                >
+                  Otwórz kanoniczną akcję do review
+                </a>
+              ) : null}
             </div>
+            {canOpenCanonicalApplyReview ? (
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Ten link otwiera podgląd i review ActionObject. Nie wykonuje zapisu ani publikacji.
+              </p>
+            ) : null}
             {latestCreatedExecution ? (
               <WordPressDraftExecutionStatus result={latestCreatedExecution} />
             ) : null}

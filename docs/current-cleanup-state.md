@@ -23,6 +23,10 @@ przywracania direct WordPress write.
   (`c9h9.6` zamknięty).
 - Desktop pokazuje konkretną homepage, public/dev sections, GSC, typed preview
   i preview-only CTA. Mobile nadal chowa decyzję/blocker/CTA poniżej first fold.
+- Review-only CTA dla kanonicznego apply jest warunkowy: wymaga gotowej paczki i
+  handoffu, prowadzi wyłącznie do `/actions/act_apply_wordpress_draft_handoff`
+  i nie wywołuje `/apply`; stale live queue pozostaje bez CTA. Browser proof:
+  `.local-lab/proof/content-workflow-c9h9-4-review-only.png`.
 
 ## Granica bezpieczeństwa
 
@@ -89,7 +93,8 @@ ograniczony seam typed apply/adapter, nie mechaniczny split.
 - 765 backend passed / 2 skipped baseline; c9h9.5 i c9h9.6 focused content tests
   green;
 - c9h9.4 pod-slice: action mutation + WordPress adapter + content execution tests
-  green; public/arbitrary host ma zero HTTP;
+  green; public/arbitrary host ma zero HTTP; dashboard ContentWorkflow
+  review-only CTA ma focused Vitest 15/15, lint i typecheck green;
   Ruff i mypy green.
 - Shared 31 passed / 10 skipped; dashboard 138/138; lint/typecheck/build green.
 - Security, API/CLI smoke i wszystkie deterministic skill smokes green.
