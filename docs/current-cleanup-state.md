@@ -68,9 +68,9 @@ Action Service; nie przywracaj direct WordPress write.
   `wilq/actions/google_ads/business_context.py`; `service.py` zachowuje gating
   odczytu, evidence i delegację. Keyword Planner ma analogiczny konstruktor w
   `wilq/actions/google_ads/keyword_planner.py`. Focused action contract
-  `business_context` / `keyword_planner`, Ruff, mypy i diff check przechodzą.
-  Bead pozostaje otwarty dla kolejnych niezależnych seamów; nie wolno upraszczać
-  ActionObject safety loop.
+  `business_context` / `keyword_planner` / `strategy_review`, Ruff, mypy i diff
+  check przechodzą. Bead pozostaje otwarty dla kolejnych niezależnych seamów;
+  nie wolno upraszczać ActionObject safety loop.
 
 ## Granica bezpieczeństwa
 

@@ -106,6 +106,32 @@ def target_confirmation_action(
     )
 
 
+def strategy_review_action(*, evidence_ids: list[str]) -> ActionObject:
+    return ActionObject(
+        id=ADS_STRATEGY_REVIEW_ACTION_ID,
+        title="Zapisz ocenę strategii Ads przez człowieka",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=evidence_ids,
+        human_diagnosis=(
+            "Google Ads ma live metryki i lokalny kontekst biznesowy, ale brakuje "
+            "zapisanego wyniku ludzkiej oceny strategii. WILQ nie powinien "
+            "traktować celu ani KPI jako decyzji operacyjnej bez tego zapisu."
+        ),
+        recommended_reason=(
+            "Zapisz wynik oceny: zatwierdzone do dalszego przygotowania, wymaga "
+            "poprawek, odrzucone albo odłożone. To nadal nie wykonuje zapisu zmian ani "
+            "mutacji Google Ads."
+        ),
+        payload=ads_strategy_review_payload(),
+        validation_status="not_validated",
+        created_by="system_ads_strategy_review_seed",
+    )
+
+
 def ads_business_context_payload(
     missing_read_contracts: Iterable[str],
 ) -> dict[str, Any]:

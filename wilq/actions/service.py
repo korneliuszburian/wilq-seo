@@ -24,12 +24,11 @@ from wilq.actions.ga4.tracking_quality import (
     ga4_tracking_quality_action,
 )
 from wilq.actions.google_ads.business_context import (
-    ADS_STRATEGY_REVIEW_ACTION_ID,
     ads_business_context_configured,
     ads_business_context_missing_read_contracts,
-    ads_strategy_review_payload,
     ads_strategy_review_state,
     business_context_action,
+    strategy_review_action,
     target_confirmation_action,
 )
 from wilq.actions.google_ads.campaign_review import (
@@ -1048,33 +1047,10 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
         or (latest_review is not None and latest_review.outcome == "approved_for_prepare")
     ):
         return None
-    return ActionObject(
-        id=ADS_STRATEGY_REVIEW_ACTION_ID,
-        title="Zapisz ocenę strategii Ads przez człowieka",
-        domain=OpportunityDomain.google_ads,
-        connector="google_ads",
-        mode=ActionMode.prepare,
-        risk=ActionRisk.medium,
-        status=ActionStatus.needs_validation,
+    return strategy_review_action(
         evidence_ids=_unique(
-            [
-                connector_evidence_id("google_ads"),
-                *latest_run.evidence_ids,
-            ]
+            [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
         ),
-        human_diagnosis=(
-            "Google Ads ma live metryki i lokalny kontekst biznesowy, ale brakuje "
-            "zapisanego wyniku ludzkiej oceny strategii. WILQ nie powinien "
-            "traktować celu ani KPI jako decyzji operacyjnej bez tego zapisu."
-        ),
-        recommended_reason=(
-            "Zapisz wynik oceny: zatwierdzone do dalszego przygotowania, wymaga "
-            "poprawek, odrzucone albo odłożone. To nadal nie wykonuje zapisu zmian ani "
-            "mutacji Google Ads."
-        ),
-        payload=ads_strategy_review_payload(),
-        validation_status="not_validated",
-        created_by="system_ads_strategy_review_seed",
     )
 
 
