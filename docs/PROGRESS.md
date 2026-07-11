@@ -118,7 +118,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `0.016956 s` warm. Shared schema przestał odrzucać API summary przez trzy
   nieadsowe pola review (defaults zamiast wymagań); 5 decyzji Ads i wszystkie
   mają evidence. Ads route nie blokuje już first paint na kolejce akcji i ma
-  bezpieczny shell „Odczyt Ads w toku”. Proof: `.local-lab/proof/c9h9-9-ads-contract-full-6s.png`.
+  bezpieczny shell „Odczyt Ads w toku”. Proof: `.local-lab/proof/c9h9-9-ads-first-decision-fixed-loaded.png`;
+  focused current Playwright `apps/dashboard/e2e/ads-summary-current.spec.ts`
+  passes 1/1 in 7.8 s. Route-level cold first paint is still above the 5 s
+  budget in this run, so Bead remains open despite API cold being below 5 s.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
