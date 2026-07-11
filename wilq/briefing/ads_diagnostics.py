@@ -627,6 +627,51 @@ def _build_ads_campaign_optimizer_contracts(
     return campaign_triage_read_contract, optimizer_readiness_contract
 
 
+def _build_ads_sections_and_blocked_handoff(
+    *,
+    action_ids: list[str],
+    latest_refresh: ConnectorRefreshRun | None,
+    trusted_metric_facts: list[MetricFact],
+    live_data_available: bool,
+    campaign_read_contract: AdsCampaignReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract,
+    impression_share_read_contract: AdsImpressionShareReadContract,
+    change_history_read_contract: AdsChangeHistoryReadContract,
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+    custom_segments_read_contract: AdsCustomSegmentsReadContract,
+    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
+) -> tuple[list[AdsDiagnosticSection], AdsBlockedHandoff | None]:
+    sections = _build_ads_diagnostic_sections(
+        action_ids=action_ids,
+        latest_refresh=latest_refresh,
+        trusted_metric_facts=trusted_metric_facts,
+        live_data_available=live_data_available,
+        campaign_read_contract=campaign_read_contract,
+        business_context_read_contract=business_context_read_contract,
+        derived_kpi_read_contract=derived_kpi_read_contract,
+        budget_pacing_read_contract=budget_pacing_read_contract,
+        recommendations_read_contract=recommendations_read_contract,
+        impression_share_read_contract=impression_share_read_contract,
+        change_history_read_contract=change_history_read_contract,
+        search_terms_read_contract=search_terms_read_contract,
+        search_term_ngram_read_contract=search_term_ngram_read_contract,
+        search_term_safety_read_contract=search_term_safety_read_contract,
+        keyword_match_context_read_contract=keyword_match_context_read_contract,
+        keyword_planner_read_contract=keyword_planner_read_contract,
+        custom_segments_read_contract=custom_segments_read_contract,
+        negative_keywords_read_contract=negative_keywords_read_contract,
+    )
+    blocked_handoff = _blocked_handoff(live_data_available, latest_refresh, sections, action_ids)
+    return sections, blocked_handoff
+
+
 def _reconcile_search_term_read_contracts(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -1030,7 +1075,7 @@ def build_ads_diagnostics(
         custom_segments_read_contract,
         negative_keywords_read_contract,
     )
-    sections = _build_ads_diagnostic_sections(
+    sections, blocked_handoff = _build_ads_sections_and_blocked_handoff(
         action_ids=action_ids,
         latest_refresh=latest_refresh,
         trusted_metric_facts=trusted_metric_facts,
@@ -1050,7 +1095,6 @@ def build_ads_diagnostics(
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
     )
-    blocked_handoff = _blocked_handoff(live_data_available, latest_refresh, sections, action_ids)
     decision_queue = _ads_decision_queue(
         campaign_read_contract,
         business_context_read_contract,
