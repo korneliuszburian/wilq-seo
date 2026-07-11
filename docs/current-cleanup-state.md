@@ -206,6 +206,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   są teraz w `_strategy_review_operator_state`; readiness contract zachowuje
   `apply_allowed=false` i `destructive=false`. Complexity: 398 / 132668 LOC;
   7 znanych violations; następny target to `_compact_ads_diagnostics_summary`.
+- Compact summary candidate payloads są teraz w `_compact_ads_candidate_contracts`;
+  custom segments, forecast rows i negative-keyword previews nadal mają ten sam
+  limit 5, a complexity spadł do 6 znanych violations.
 
 ## Granica bezpieczeństwa
 

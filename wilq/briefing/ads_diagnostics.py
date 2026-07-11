@@ -917,42 +917,8 @@ def _compact_ads_diagnostics_summary(
             _compact_ads_decision(decision)
             for decision in response.decision_queue[:ADS_SUMMARY_VIEW_ROW_LIMIT]
         ]
-    compact_custom_segments = response.custom_segments_read_contract.model_copy(
-        update={
-            "candidates": [
-                _compact_custom_segment_candidate(candidate)
-                for candidate in response.custom_segments_read_contract.candidates[
-                    :ADS_SUMMARY_VIEW_ROW_LIMIT
-                ]
-            ],
-            "payload_preview": response.custom_segments_read_contract.payload_preview[
-                :ADS_SUMMARY_VIEW_ROW_LIMIT
-            ],
-            "audience_forecast_read_contract": (
-                response.custom_segments_read_contract.audience_forecast_read_contract.model_copy(
-                    update={
-                        "forecast_rows": (
-                            response.custom_segments_read_contract.audience_forecast_read_contract.forecast_rows[
-                                :ADS_SUMMARY_VIEW_ROW_LIMIT
-                            ]
-                        )
-                    }
-                )
-            ),
-        }
-    )
-    compact_negative_keywords = response.negative_keywords_read_contract.model_copy(
-        update={
-            "candidates": [
-                _compact_negative_keyword_candidate(candidate)
-                for candidate in response.negative_keywords_read_contract.candidates[
-                    :ADS_SUMMARY_VIEW_ROW_LIMIT
-                ]
-            ],
-            "payload_preview": response.negative_keywords_read_contract.payload_preview[
-                :ADS_SUMMARY_VIEW_ROW_LIMIT
-            ],
-        }
+    compact_custom_segments, compact_negative_keywords = _compact_ads_candidate_contracts(
+        response
     )
     return response.model_copy(
         update={
@@ -1017,6 +983,49 @@ def _compact_ads_diagnostics_summary(
             "sections": [],
         }
     )
+
+
+def _compact_ads_candidate_contracts(
+    response: AdsDiagnosticsResponse,
+) -> tuple[AdsCustomSegmentsReadContract, AdsNegativeKeywordsReadContract]:
+    compact_custom_segments = response.custom_segments_read_contract.model_copy(
+        update={
+            "candidates": [
+                _compact_custom_segment_candidate(candidate)
+                for candidate in response.custom_segments_read_contract.candidates[
+                    :ADS_SUMMARY_VIEW_ROW_LIMIT
+                ]
+            ],
+            "payload_preview": response.custom_segments_read_contract.payload_preview[
+                :ADS_SUMMARY_VIEW_ROW_LIMIT
+            ],
+            "audience_forecast_read_contract": (
+                response.custom_segments_read_contract.audience_forecast_read_contract.model_copy(
+                    update={
+                        "forecast_rows": (
+                            response.custom_segments_read_contract.audience_forecast_read_contract.forecast_rows[
+                                :ADS_SUMMARY_VIEW_ROW_LIMIT
+                            ]
+                        )
+                    }
+                )
+            ),
+        }
+    )
+    compact_negative_keywords = response.negative_keywords_read_contract.model_copy(
+        update={
+            "candidates": [
+                _compact_negative_keyword_candidate(candidate)
+                for candidate in response.negative_keywords_read_contract.candidates[
+                    :ADS_SUMMARY_VIEW_ROW_LIMIT
+                ]
+            ],
+            "payload_preview": response.negative_keywords_read_contract.payload_preview[
+                :ADS_SUMMARY_VIEW_ROW_LIMIT
+            ],
+        }
+    )
+    return compact_custom_segments, compact_negative_keywords
 
 
 def _compact_ads_decision(decision: AdsDecisionItem) -> AdsDecisionItem:

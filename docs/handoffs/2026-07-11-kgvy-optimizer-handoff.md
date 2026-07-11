@@ -58,6 +58,8 @@ Ostatni commit: `37ed328` (`docs: select Ads summary compaction seam`)
   ani target/strategy contract construction.
 - Strategy-review ready/blocked branch jest w `_strategy_review_operator_state`;
   nie wracaj do inline status/action/missing-contract branch.
+- Compact candidate payloads są w `_compact_ads_candidate_contracts`; nie wracaj
+  do inline custom-segment/negative-keyword compaction.
 
 ## Dowody
 
@@ -77,9 +79,8 @@ Ostatni commit: `37ed328` (`docs: select Ads summary compaction seam`)
 
 ## Następny slice
 
-Następny potwierdzony seam to `_compact_ads_diagnostics_summary` (114 linii),
-wybrany po aktualnym complexity audit. Nie wracaj do business-context ani
-strategy-review operator-state helpers.
+Następny potwierdzony seam wybierz po aktualnym complexity audit i `bd ready`;
+nie wracaj do business-context, strategy-review ani candidate-compaction helpers.
 
 ## Kontrola repo
 
