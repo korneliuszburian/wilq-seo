@@ -64,6 +64,9 @@ Ostatni commit: `9bd2983` (`docs: update negative keyword handoff pointer`)
   wracaj do inline evidence/metric aggregation.
 - Negative-keyword context indexes są w `_negative_keyword_context_indexes`; nie
   wracaj do inline 90-day safety/keyword-context indexing.
+- Blocked negative-keyword states są w `_negative_keywords_missing_search_terms_contract`
+  i `_negative_keywords_no_candidates_contract`; nie wracaj do inline blocked
+  contract branches.
 
 ## Dowody
 
@@ -83,9 +86,9 @@ Ostatni commit: `9bd2983` (`docs: update negative keyword handoff pointer`)
 
 ## Następny slice
 
-Następny potwierdzony seam to `_negative_keywords_read_contract` (110 linii),
-wybrany po aktualnym complexity audit. Zachować 90-day safety, evidence IDs,
-blocked claims i `apply_allowed=false`.
+Następny potwierdzony seam to `_custom_segment_candidates` (111 linii), wybrany
+po aktualnym complexity audit. Zachować source-term filtering, evidence lineage,
+planner blockers i `apply_allowed=false`.
 
 ## Kontrola repo
 

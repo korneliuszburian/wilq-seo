@@ -129,6 +129,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_negative_keyword_context_indexes` przejął indeksowanie 90-day safety i keyword
   context; candidate safety, evidence IDs i preview semantics pozostają bez zmian.
   Complexity: 398 / 132710 LOC; violations spadły do 4.
+- Blocked negative-keyword read contracts są w dwóch helperach dla braku search
+  terms i braku candidates; status, blocked claims, evidence i no-write semantics
+  bez zmian. Complexity: 398 / 132728 LOC; violations spadły do 3.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

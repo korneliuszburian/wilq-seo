@@ -4481,28 +4481,9 @@ def _negative_keywords_read_contract(
     action_ids: list[str],
 ) -> AdsNegativeKeywordsReadContract:
     if not search_terms_read_contract.search_term_rows:
-        return AdsNegativeKeywordsReadContract(
-            status="blocked",
-            title="Ocena wykluczeń z wyszukiwanych haseł",
-            summary="Brak wierszy wyszukiwanych haseł do kolejki oceny wykluczeń.",
-            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=search_terms_read_contract.evidence_ids,
-            missing_read_contracts=[
-                "search_term_view",
-                *(
-                    []
-                    if keyword_match_context_read_contract.status == "ready"
-                    else ["keyword match context"]
-                ),
-                "90_day_safety_check",
-            ],
-            blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
-            action_ids=[],
-            next_step=(
-                "Najpierw zbierz fakty Google Ads z `search_term_view`. Nie twórz "
-                "wykluczeń bez wyszukiwanych haseł, kontekstu dopasowania i kontroli "
-                "bezpieczeństwa."
-            ),
+        return _negative_keywords_missing_search_terms_contract(
+            search_terms_read_contract,
+            keyword_match_context_read_contract,
         )
 
     candidates = _negative_keyword_candidates(
@@ -4514,35 +4495,10 @@ def _negative_keywords_read_contract(
         action_id for action_id in action_ids if action_id == NEGATIVE_KEYWORD_ACTION_ID
     ]
     if not candidates:
-        return AdsNegativeKeywordsReadContract(
-            status="blocked",
-            title="Ocena wykluczeń z wyszukiwanych haseł",
-            summary=(
-                "Wiersze wyszukiwanych haseł istnieją, ale WILQ nie znalazł terminów z kosztem lub "
-                "kliknięciami i zerową konwersją w bieżących dowodach."
-            ),
-            source_connectors=search_terms_read_contract.source_connectors,
-            evidence_ids=search_terms_read_contract.evidence_ids,
-            missing_read_contracts=[
-                "zero_conversion_search_terms",
-                *(
-                    []
-                    if keyword_match_context_read_contract.status == "ready"
-                    else ["keyword match context"]
-                ),
-                *(
-                    []
-                    if search_term_safety_read_contract.status == "ready"
-                    else ["90_day_safety_check"]
-                ),
-            ],
-            blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
-            action_ids=[],
-            next_step=(
-                "Kontynuuj ocenę wyszukiwanych haseł bez zapisu zmian. Nie twórz "
-                "propozycji wykluczeń, jeśli bieżące dowody nie pokazują zerowej "
-                "konwersji."
-            ),
+        return _negative_keywords_no_candidates_contract(
+            search_terms_read_contract,
+            search_term_safety_read_contract,
+            keyword_match_context_read_contract,
         )
 
     missing_read_contracts = (
@@ -4582,6 +4538,72 @@ def _negative_keywords_read_contract(
             "Przejrzyj propozycje do sprawdzenia. Przed jakimkolwiek zapisem "
             "zmian wymagaj kontekstu dopasowania, podglądu zmian i sprawdzenia "
             "w WILQ."
+        ),
+    )
+
+
+def _negative_keywords_missing_search_terms_contract(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+) -> AdsNegativeKeywordsReadContract:
+    return AdsNegativeKeywordsReadContract(
+        status="blocked",
+        title="Ocena wykluczeń z wyszukiwanych haseł",
+        summary="Brak wierszy wyszukiwanych haseł do kolejki oceny wykluczeń.",
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=search_terms_read_contract.evidence_ids,
+        missing_read_contracts=[
+            "search_term_view",
+            *(
+                []
+                if keyword_match_context_read_contract.status == "ready"
+                else ["keyword match context"]
+            ),
+            "90_day_safety_check",
+        ],
+        blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+        action_ids=[],
+        next_step=(
+            "Najpierw zbierz fakty Google Ads z `search_term_view`. Nie twórz "
+            "wykluczeń bez wyszukiwanych haseł, kontekstu dopasowania i kontroli "
+            "bezpieczeństwa."
+        ),
+    )
+
+
+def _negative_keywords_no_candidates_contract(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+) -> AdsNegativeKeywordsReadContract:
+    return AdsNegativeKeywordsReadContract(
+        status="blocked",
+        title="Ocena wykluczeń z wyszukiwanych haseł",
+        summary=(
+            "Wiersze wyszukiwanych haseł istnieją, ale WILQ nie znalazł terminów z kosztem lub "
+            "kliknięciami i zerową konwersją w bieżących dowodach."
+        ),
+        source_connectors=search_terms_read_contract.source_connectors,
+        evidence_ids=search_terms_read_contract.evidence_ids,
+        missing_read_contracts=[
+            "zero_conversion_search_terms",
+            *(
+                []
+                if keyword_match_context_read_contract.status == "ready"
+                else ["keyword match context"]
+            ),
+            *(
+                []
+                if search_term_safety_read_contract.status == "ready"
+                else ["90_day_safety_check"]
+            ),
+        ],
+        blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+        action_ids=[],
+        next_step=(
+            "Kontynuuj ocenę wyszukiwanych haseł bez zapisu zmian. Nie twórz "
+            "propozycji wykluczeń, jeśli bieżące dowody nie pokazują zerowej "
+            "konwersji."
         ),
     )
 

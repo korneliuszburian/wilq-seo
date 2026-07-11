@@ -217,6 +217,11 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   90-day safety joins, keyword-context rows i evidence IDs pozostają bez zmian.
   Complexity: 398 / 132710 LOC; 4 znane violations, następny target to
   `_negative_keywords_read_contract`.
+- Blocked negative-keyword read states są teraz w
+  `_negative_keywords_missing_search_terms_contract` i
+  `_negative_keywords_no_candidates_contract`; 90-day safety, blocked claims i
+  `apply_allowed=false` pozostają bez zmian. Complexity: 398 / 132728 LOC;
+  3 znane violations, następny target to `_custom_segment_candidates`.
 
 ## Granica bezpieczeństwa
 
