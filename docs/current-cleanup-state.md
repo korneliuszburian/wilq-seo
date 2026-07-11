@@ -53,9 +53,11 @@ splitu monolitu ani od przywracania direct WordPress write.
   measured heading first paint `1.853 s` (<5 s), a Bead jest zamknięty. Lazy-route
   shell proof przy 2 s: `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
 - `c9h9.12` Knowledge ma progressive disclosure: operating-map ładuje się jako
-  pierwszy odczyt, cards/playbooks dopiero po kliknięciu. Cache 15 s daje
-  `18.940732 s` cold / `0.053012 s` warm; prewarm jest celowo wyłączony, bo
-  blokowałby startup health. Proof: `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`.
+  pierwszy odczyt, cards/playbooks dopiero po kliknięciu. `list_workflows()` nie
+  buduje już marketing briefu; standalone map core to `4.878 s`, HTTP po restarcie
+  około `8.53 s` / `0.05 s` warm. Prewarm jest celowo wyłączony, bo blokowałby
+  startup health. Proof: `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`;
+  focused current Playwright `1/1` w `2.9 s`.
 - `c9h9.10` Custom Segments jest zamknięty po przejściu na istniejący Ads
   summary projection i focused Playwright `1/1` w `4.4 s`; pełny Ads payload
   nie wraca do tej trasy.

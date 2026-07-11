@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
-from wilq.briefing.daily_runtime import build_daily_runtime
+from wilq.briefing.daily_runtime import build_daily_command_center
 from wilq.operator_labels import route_operator_label
 from wilq.schemas import ActionRisk, DailyDecision
 from wilq.workflows.models import Workflow, WorkflowStep
@@ -199,9 +199,9 @@ WORKFLOW_BLUEPRINTS: tuple[WorkflowBlueprint, ...] = (
 
 
 def list_workflows() -> list[Workflow]:
-    runtime = build_daily_runtime()
-    decisions_by_route = _best_decisions_by_route(runtime.command_center.daily_decisions)
-    workflows = [_daily_command_workflow(runtime.command_center.daily_decisions)]
+    command_center = build_daily_command_center()
+    decisions_by_route = _best_decisions_by_route(command_center.daily_decisions)
+    workflows = [_daily_command_workflow(command_center.daily_decisions)]
 
     for route, workflow_id in DECISION_WORKFLOW_BY_ROUTE.items():
         decision = decisions_by_route.get(route)
