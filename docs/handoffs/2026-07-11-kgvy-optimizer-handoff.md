@@ -84,7 +84,7 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   `_reconcile_ads_budget_and_business_context_contracts`; nie wracaj do inline
   `budget_apply_preview`, `profit_margin` ani `human_budget_goal` updates.
 - Reconciliation boundary jest domknięty przez dwa ostatnie extraction slices;
-  aktualny complexity report ma 398 plików / 133160 LOC i dwa jawne violations
+  aktualny complexity report ma 398 plików / 133162 LOC i dwa jawne violations
   (monolityczny plik oraz orchestrator), więc kolejny seam wymaga świeżego review.
 - Core search-term read-contract assembly jest w `_build_ads_search_term_read_contracts`;
   nie wracaj do inline builderów `terms`, `safety`, `keyword match` ani `planner`.
@@ -111,6 +111,9 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 - Budget/performance contract-label hydration jest w
   `_hydrate_ads_budget_performance_contract_labels`; nie wracaj do inline budget,
   recommendation, impression-share ani change-history label updates.
+- Optimizer/change-impact contract-label hydration jest w
+  `_hydrate_ads_optimization_contract_labels`; nie wracaj do inline readiness ani
+  change-impact label updates.
 
 ## Dowody
 
@@ -132,10 +135,10 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 ## Następny slice
 
 Reconciliation, search-term, candidate, optimizer, sections, blocked-handoff,
-decision_queue, response model, search contract-label i budget/performance
-contract-label hydration są domknięte. Następny kandydat to change-impact/optimizer
-contract labels po świeżym complexity/review; zachowaj marketer-facing labels,
-evidence/source/freshness oraz ActionObject safety.
+decision_queue, response model, search contract-label, budget/performance i
+optimizer/change-impact label hydration są domknięte. Następny kandydat to core
+campaign/business/custom/derived contract labels po świeżym complexity/review;
+zachowaj marketer-facing labels, evidence/source/freshness oraz ActionObject safety.
 
 ## Kontrola repo
 

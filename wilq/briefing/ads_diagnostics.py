@@ -5899,7 +5899,7 @@ def _hydrate_ads_contract_labels(
     response: AdsDiagnosticsResponse,
     currency_code: str | None,
 ) -> None:
-    _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
+    _hydrate_ads_optimization_contract_labels(response)
     _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
     _hydrate_business_context_marketer_labels(response.business_context_read_contract)
     _hydrate_campaign_triage_marketer_labels(response.campaign_triage_read_contract)
@@ -5909,8 +5909,12 @@ def _hydrate_ads_contract_labels(
             row.blocked_claim_labels or row.blocked_claims
         )
     _hydrate_ads_budget_performance_contract_labels(response, currency_code)
-    _hydrate_change_impact_marketer_labels(response.change_impact_readiness_contract)
     _hydrate_ads_search_contract_labels(response)
+
+
+def _hydrate_ads_optimization_contract_labels(response: AdsDiagnosticsResponse) -> None:
+    _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
+    _hydrate_change_impact_marketer_labels(response.change_impact_readiness_contract)
 
 
 def _hydrate_ads_budget_performance_contract_labels(
