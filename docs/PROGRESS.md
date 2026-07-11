@@ -155,6 +155,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/google_ads/keyword_planner.py`, zachowując zewnętrzną blokadę
   dostępu, evidence i `apply_allowed=false`; konstruktor strategy-review trafił
   do tego samego modułu biznesowego, zachowując human review gate.
+- Static Google Ads OAuth repair ma teraz konstruktor w
+  `wilq/actions/google_ads/oauth.py`; `seed_static_actions` zachowuje ten sam
+  ID, helper commands, evidence i brak zapisu. Nie wydrukowano credentialów.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

@@ -69,7 +69,9 @@ Action Service; nie przywracaj direct WordPress write.
   odczytu, evidence i delegację. Keyword Planner ma analogiczny konstruktor w
   `wilq/actions/google_ads/keyword_planner.py`. Focused action contract
   `business_context` / `keyword_planner` / `strategy_review`, Ruff, mypy i diff
-  check przechodzą. Bead pozostaje otwarty dla kolejnych niezależnych seamów;
+  check przechodzą. Static OAuth repair ma teraz konstruktor w
+  `wilq/actions/google_ads/oauth.py`, bez zmiany helper commands, evidence ani
+  no-write posture. Bead pozostaje otwarty dla kolejnych niezależnych seamów;
   nie wolno upraszczać ActionObject safety loop.
 
 ## Granica bezpieczeństwa
