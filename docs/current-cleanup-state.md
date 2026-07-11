@@ -7,8 +7,9 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ads
-wewnątrz `ads_diagnostics.py`: `budget_apply_preview` oraz reconciliacja
-`profit_margin`/`budget_goal`. Polityka automatycznego stale-triggera (cooldown,
+wewnątrz `ads_diagnostics.py`. Reconciliation blok jest teraz domknięty;
+następny wybór ma wynikać z ponownego complexity/review raportu. Polityka
+automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
 pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 
@@ -244,6 +245,12 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   jedynie usuwa odpowiednie missing contracts, bez zmiany evidence/source/freshness
   ani ActionObject safety. Focused Ads contracts, Ruff, mypy, complexity i diff
   check przechodzą.
+- Budget/business-context reconciliation jest teraz w
+  `_reconcile_ads_budget_and_business_context_contracts`; `budget_apply_preview`,
+  `profit_margin` i `human_budget_goal` pozostają kontraktowo zależne od gotowych
+  odczytów. Reconciliation inline w `build_ads_diagnostics` jest domknięty;
+  complexity po seamu to 398 plików / 132908 LOC i dwa jawne frozen/file-orchestrator
+  violations do dalszego, niezależnego wyboru.
 
 ## Granica bezpieczeństwa
 

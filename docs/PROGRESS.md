@@ -10,6 +10,12 @@ w git, Beads i `docs/progress/archive/`.
   zmian. Nie zmienia evidence/source/freshness ani blokad ActionObject; focused
   Ads contracts, Ruff, mypy, complexity i diff check przechodzą. Następny seam
   to budget apply preview oraz profit-margin/budget-goal reconciliation.
+- Reconciliation boundary jest domknięty przez
+  `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
+  nie zawiera już inline aktualizacji missing contracts dla tych zależności.
+  Complexity: 398 plików Python / 132908 LOC, 2 jawne violations (plik i główny
+  orchestrator). Następny slice wybierz dopiero po aktualnym complexity/review,
+  żeby nie powtarzać gotowych reconciliation seamów.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest

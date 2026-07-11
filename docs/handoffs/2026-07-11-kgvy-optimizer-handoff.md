@@ -80,6 +80,9 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   missing-contract updates.
 - Change-history reconciliation jest w `_reconcile_ads_change_history_contracts`;
   nie wracaj do inline aktualizacji missing contracts po gotowym odczycie historii.
+- Budget/business-context reconciliation jest w
+  `_reconcile_ads_budget_and_business_context_contracts`; nie wracaj do inline
+  `budget_apply_preview`, `profit_margin` ani `human_budget_goal` updates.
 
 ## Dowody
 
@@ -100,10 +103,10 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 
 ## Następny slice
 
-Następny potwierdzony seam to `budget_apply_preview` oraz business-context
-`profit_margin`/`budget_goal` reconciliation w `build_ads_diagnostics` (304 linii
-po trzech extractionach). Zachować missing-contract lineage, freshness i
-ActionObject safety.
+Reconciliation boundary jest domknięty. Następny slice wybierz po ponownym
+complexity/review raportu spośród nieprzeniesionych, niezależnych fragmentów
+`build_ads_diagnostics`; nie twórz kolejnego helpera bez potwierdzonego seamu.
+Zachować missing-contract lineage, freshness i ActionObject safety.
 
 ## Kontrola repo
 

@@ -682,6 +682,59 @@ def _reconcile_ads_change_history_contracts(
     )
 
 
+def _reconcile_ads_budget_and_business_context_contracts(
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    impression_share_read_contract: AdsImpressionShareReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
+) -> tuple[
+    AdsDerivedKpiReadContract,
+    AdsBudgetPacingReadContract,
+    AdsImpressionShareReadContract,
+]:
+    if budget_pacing_read_contract.payload_preview:
+        impression_share_read_contract = impression_share_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    impression_share_read_contract.missing_read_contracts,
+                    "budget_apply_preview",
+                )
+            }
+        )
+    if business_context_read_contract.profit_margin is not None:
+        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    derived_kpi_read_contract.missing_read_contracts,
+                    "profit_margin",
+                )
+            }
+        )
+    if business_context_read_contract.budget_goal:
+        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    budget_pacing_read_contract.missing_read_contracts,
+                    "human_budget_goal",
+                    "budget_target_or_seasonality",
+                )
+            }
+        )
+        impression_share_read_contract = impression_share_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    impression_share_read_contract.missing_read_contracts,
+                    "human_budget_goal",
+                )
+            }
+        )
+    return (
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        impression_share_read_contract,
+    )
+
+
 def build_ads_diagnostics(
     actions: list[ActionObject] | None = None,
     *,
@@ -770,42 +823,16 @@ def build_ads_diagnostics(
         impression_share_read_contract,
         change_history_read_contract,
     )
-    if budget_pacing_read_contract.payload_preview:
-        impression_share_read_contract = impression_share_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    impression_share_read_contract.missing_read_contracts,
-                    "budget_apply_preview",
-                )
-            }
-        )
-    if business_context_read_contract.profit_margin is not None:
-        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    derived_kpi_read_contract.missing_read_contracts,
-                    "profit_margin",
-                )
-            }
-        )
-    if business_context_read_contract.budget_goal:
-        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    budget_pacing_read_contract.missing_read_contracts,
-                    "human_budget_goal",
-                    "budget_target_or_seasonality",
-                )
-            }
-        )
-        impression_share_read_contract = impression_share_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    impression_share_read_contract.missing_read_contracts,
-                    "human_budget_goal",
-                )
-            }
-        )
+    (
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        impression_share_read_contract,
+    ) = _reconcile_ads_budget_and_business_context_contracts(
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        impression_share_read_contract,
+        business_context_read_contract,
+    )
     search_terms_read_contract = _search_terms_read_contract(
         trusted_metric_facts,
         latest_refresh,
