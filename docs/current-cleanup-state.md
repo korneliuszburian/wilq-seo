@@ -185,6 +185,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Fail-closed business-target interpretation jest w
   `_blocked_business_target_interpretation`; brak marży/celu nadal blokuje te
   same użycia biznesowe, a główny helper ma teraz krótszą ścieżkę statusu.
+- Ready/preliminary business-target interpretation jest teraz w
+  `_preliminary_business_target_interpretation`; target ROAS/CPA context,
+  strategy-review gate, blocked uses i evidence lineage pozostały bez zmian.
+  Complexity: 398 / 132571 LOC; 9 znanych violations.
 
 ## Granica bezpieczeństwa
 

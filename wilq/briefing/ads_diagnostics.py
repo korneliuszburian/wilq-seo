@@ -1861,6 +1861,62 @@ def _blocked_business_target_interpretation(
     )
 
 
+def _preliminary_business_target_interpretation(
+    *,
+    allowed_uses: list[str],
+    target_roas: float | None,
+    target_cpa_micros: int | None,
+    target_missing: bool,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    strategy_review_status: str,
+    strategy_review_approved: bool,
+    business_policy_ids: list[str],
+    evidence_ids: list[str],
+    required_validation: list[str],
+) -> AdsBusinessTargetInterpretation:
+    if target_missing:
+        summary = (
+            "WILQ może używać marży, celu biznesowego i celu budżetu jako kontekstu "
+            "oceny, ale blokuje ocenę wskaźników względem celu, ocenę rentowności i zapis zmian "
+            "do czasu potwierdzenia docelowego zwrotu z reklam albo kosztu pozyskania celu."
+        )
+    else:
+        summary = (
+            "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu, "
+            "ale blokuje ocenę wskaźników względem celu i zapis zmian, dopóki ocena strategii "
+            "przez człowieka nie będzie zatwierdzona."
+        )
+        if target_roas is not None:
+            allowed_uses.append("target_roas_review_context")
+        if target_cpa_micros is not None:
+            allowed_uses.append("target_cpa_review_context")
+    return AdsBusinessTargetInterpretation(
+        status="preliminary",
+        summary=summary,
+        allowed_uses=allowed_uses,
+        blocked_uses=[
+            "target_kpi_verdict",
+            "profitability_verdict",
+            "budget_scaling",
+            "budget_apply",
+            "recommendation_apply",
+        ],
+        missing_requirements=_business_target_missing_requirements(
+            profit_margin=profit_margin,
+            business_goal=business_goal,
+            budget_goal=budget_goal,
+            target_missing=target_missing,
+            strategy_review_status=strategy_review_status,
+            strategy_review_approved=strategy_review_approved,
+        ),
+        required_validation=required_validation,
+        policy_ids=business_policy_ids,
+        evidence_ids=evidence_ids,
+    )
+
+
 def _business_target_interpretation(
     *,
     status: Literal["ready", "blocked"],
@@ -1905,56 +1961,38 @@ def _business_target_interpretation(
         allowed_uses.append("business_goal_alignment")
     if budget_goal:
         allowed_uses.append("budget_goal_guardrail")
-    if target_missing:
-        summary = (
-            "WILQ może używać marży, celu biznesowego i celu budżetu jako kontekstu "
-            "oceny, ale blokuje ocenę wskaźników względem celu, ocenę rentowności i zapis zmian "
-            "do czasu potwierdzenia docelowego zwrotu z reklam albo kosztu pozyskania celu."
+    if target_missing or not strategy_review_approved:
+        return _preliminary_business_target_interpretation(
+            allowed_uses=allowed_uses,
+            target_roas=target_roas,
+            target_cpa_micros=target_cpa_micros,
+            target_missing=target_missing,
+            profit_margin=profit_margin,
+            business_goal=business_goal,
+            budget_goal=budget_goal,
+            strategy_review_status=strategy_review_status,
+            strategy_review_approved=strategy_review_approved,
+            business_policy_ids=business_policy_ids,
+            evidence_ids=evidence_ids,
+            required_validation=required_validation,
         )
-        blocked_uses = [
-            "target_kpi_verdict",
-            "profitability_verdict",
-            "budget_scaling",
-            "budget_apply",
-            "recommendation_apply",
-        ]
-        interpretation_status: Literal["ready", "preliminary", "blocked"] = "preliminary"
-    elif not strategy_review_approved:
-        summary = (
-            "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu, "
-            "ale blokuje ocenę wskaźników względem celu i zapis zmian, dopóki ocena strategii "
-            "przez człowieka nie będzie zatwierdzona."
-        )
-        blocked_uses = [
-            "target_kpi_verdict",
-            "profitability_verdict",
-            "budget_scaling",
-            "budget_apply",
-            "recommendation_apply",
-        ]
-        interpretation_status = "preliminary"
-        if target_roas is not None:
-            allowed_uses.append("target_roas_review_context")
-        if target_cpa_micros is not None:
-            allowed_uses.append("target_cpa_review_context")
-    else:
-        summary = (
-            "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu "
-            "i może porównywać wskaźniki do celu po zatwierdzeniu przez człowieka. "
-            "Zapis zmian nadal wymaga "
-            "akcji do sprawdzenia w WILQ, podglądu, potwierdzenia i audytu."
-        )
-        blocked_uses = [
-            "budget_apply",
-            "recommendation_apply",
-            "automatic_scaling",
-            "profitability_verdict_without_value_model_review",
-        ]
-        interpretation_status = "ready"
-        if target_roas is not None:
-            allowed_uses.append("target_roas_review")
-        if target_cpa_micros is not None:
-            allowed_uses.append("target_cpa_review")
+    summary = (
+        "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu "
+        "i może porównywać wskaźniki do celu po zatwierdzeniu przez człowieka. "
+        "Zapis zmian nadal wymaga "
+        "akcji do sprawdzenia w WILQ, podglądu, potwierdzenia i audytu."
+    )
+    blocked_uses = [
+        "budget_apply",
+        "recommendation_apply",
+        "automatic_scaling",
+        "profitability_verdict_without_value_model_review",
+    ]
+    interpretation_status: Literal["ready", "preliminary", "blocked"] = "ready"
+    if target_roas is not None:
+        allowed_uses.append("target_roas_review")
+    if target_cpa_micros is not None:
+        allowed_uses.append("target_cpa_review")
     return AdsBusinessTargetInterpretation(
         status=interpretation_status,
         summary=summary,

@@ -102,6 +102,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_business_target_interpretation` deleguje blocked branch do
   `_blocked_business_target_interpretation`; brakujące kontrakty, blocked uses i
   evidence pozostają bez zmian. Complexity: 398 / 132535 LOC; 10 znanych violations.
+- Ready/preliminary branch jest w `_preliminary_business_target_interpretation`;
+  target ROAS/CPA context oraz strategy-review gate pozostają typed i fail-closed.
+  Complexity: 398 / 132571 LOC; violations spadły do 9.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

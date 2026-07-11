@@ -44,6 +44,9 @@ Ostatni commit: `3d8410e` (`docs: refresh Ads next-slice handoff`)
   `_ads_decision_queue` assemblera dla tych grup.
 - Blocked business-target path jest w `_blocked_business_target_interpretation`;
   nie wracaj do inline branch dla brakującej marży/celu.
+- Ready/preliminary business-target path jest w
+  `_preliminary_business_target_interpretation`; nie wracaj do inline target
+  ROAS/CPA albo strategy-review branches.
 
 ## Dowody
 
@@ -60,10 +63,9 @@ Ostatni commit: `3d8410e` (`docs: refresh Ads next-slice handoff`)
 
 ## Następny slice
 
-Następny potwierdzony seam to rozdzielenie pozostałej ready/preliminary gałęzi
-`_business_target_interpretation` (obecnie 111 linii) po wcześniejszym wydzieleniu
-`_blocked_business_target_interpretation`. Zachować identyczne `allowed_uses`,
-`blocked_uses`, missing requirements, evidence IDs i claim safety.
+Następny potwierdzony seam to kolejna funkcja ponad budżetem w
+`ads_diagnostics.py`, wybrana po ponownym audycie complexity i aktualnym `bd ready`.
+Nie wracać do żadnego z trzech wydzielonych business-target branches.
 
 ## Kontrola repo
 
