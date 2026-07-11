@@ -64,7 +64,8 @@ import { WorkflowStepsList } from "./WorkflowStepsList";
 import {
   ContentFreshnessBanner,
   ContentWorkflowError,
-  ContentWorkflowEmptyQueue
+  ContentWorkflowEmptyQueue,
+  ContentWorkflowSelectedLoading
 } from "./ContentWorkflowBoundaryStates";
 import { WordPressDraftReadbackStatus, WordPressDraftExecutionStatus, wordpressDraftExecutionStatusText } from "./WordPressDraftStatus";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
@@ -137,20 +138,22 @@ export function ContentWorkflowSurface() {
   const enrichment = useQuery({
     queryKey: ["content-workflow", "work-item", activeWorkItemId, "enrichment"],
     queryFn: () => getContentWorkItemEnrichment(activeWorkItemId ?? ""),
-    enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked)
+    enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked && workflow.data)
   });
   const authoringProfile = useQuery({
     queryKey: ["content-workflow", "wordpress-authoring-profile"],
-    queryFn: getWordPressAuthoringProfile
+    queryFn: getWordPressAuthoringProfile,
+    enabled: Boolean(workflow.data)
   });
   const draftWriteReadiness = useQuery({
     queryKey: ["content-workflow", "wordpress-draft-write-readiness"],
-    queryFn: getContentWordPressDraftWriteReadiness
+    queryFn: getContentWordPressDraftWriteReadiness,
+    enabled: Boolean(workflow.data)
   });
   const draftActivationPacket = useQuery({
     queryKey: ["content-workflow", "wordpress-draft-activation-packet", activeWorkItemId],
     queryFn: () => getContentWordPressDraftActivationPacket(activeWorkItemId),
-    enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked)
+    enabled: Boolean(activeWorkItemId && !selectedCandidateBlocked && workflow.data)
   });
 
   return (
@@ -246,6 +249,7 @@ function ContentWorkflowQueueReady({
       draftWriteReadiness={draftWriteReadiness}
       enrichment={enrichment}
       queue={queue}
+      selectedCandidate={selectedCandidate}
       workflow={workflow}
       onSelectWorkItem={onSelectWorkItem}
     />
@@ -259,6 +263,7 @@ function ContentWorkflowSelectedReady({
   draftWriteReadiness,
   enrichment,
   queue,
+  selectedCandidate,
   workflow,
   onSelectWorkItem
 }: {
@@ -268,11 +273,28 @@ function ContentWorkflowSelectedReady({
   draftWriteReadiness: WordPressDraftWriteReadinessQuery;
   enrichment: ContentOpportunityEnrichmentQuery;
   queue: ContentWorkItemQueueResponse;
+  selectedCandidate: ContentWorkItemQueueCandidate | null;
   workflow: ContentWorkflowSnapshotQuery;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
-  if (workflow.isLoading) return <LoadingBand />;
-  if (workflow.error || !workflow.data) return <ContentWorkflowError />;
+  if (selectedCandidate === null) return <ContentWorkflowError />;
+  if (workflow.isLoading) {
+    return (
+      <ContentWorkflowSelectedLoading
+        assessment={queue.freshness_assessment}
+        candidate={selectedCandidate}
+      />
+    );
+  }
+  if (workflow.error || !workflow.data) {
+    return (
+      <ContentWorkflowSelectedLoading
+        assessment={queue.freshness_assessment}
+        candidate={selectedCandidate}
+        error
+      />
+    );
+  }
   return (
     <ContentWorkflowLoaded
       data={workflow.data}

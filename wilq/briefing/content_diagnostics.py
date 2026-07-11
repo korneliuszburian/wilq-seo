@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from time import monotonic
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
@@ -94,6 +97,18 @@ AHREFS_CONTENT_EXPERT_RULE_IDS = (
     "content_duplication_rules_v1",
 )
 
+DEFAULT_CONTENT_DIAGNOSTICS_CACHE_SECONDS = 15.0
+
+
+@dataclass(frozen=True)
+class ContentDiagnosticsCacheEntry:
+    created_at: float
+    diagnostics: ContentDiagnosticsResponse
+
+
+_cached_content_diagnostics: ContentDiagnosticsCacheEntry | None = None
+
+
 def build_content_diagnostics(
     tactical_items: list[TacticalQueueItem] | None = None,
     actions: list[ActionObject] | None = None,
@@ -106,15 +121,22 @@ def build_content_diagnostics(
     ]
     connector_freshness = {connector.id: connector.freshness.state for connector in connectors}
     latest_refreshes = _latest_refreshes(CONTENT_CONNECTOR_IDS)
-    metric_facts = (
-        metric_facts if metric_facts is not None else _content_metric_facts(CONTENT_CONNECTOR_IDS)
-    )
+    content_facts_by_connector = None
+    if metric_facts is None:
+        content_facts_by_connector = _content_metric_facts_by_connector(CONTENT_CONNECTOR_IDS)
+        metric_facts = [
+            fact
+            for connector_facts in content_facts_by_connector.values()
+            for fact in connector_facts
+        ]
     metric_facts = [content_metric_fact_with_api_label(fact) for fact in metric_facts]
     metric_facts = latest_metric_facts_by_identity(metric_facts)
     live_data_available = _primary_content_data_available(metric_facts, latest_refreshes)
     trusted_facts = metric_facts if live_data_available else []
     all_tactical_items = (
-        tactical_items if tactical_items is not None else build_tactical_queue().items
+        tactical_items
+        if tactical_items is not None
+        else build_tactical_queue(facts_by_connector=content_facts_by_connector).items
     )
     content_tactical_items = [
         item
@@ -209,6 +231,52 @@ def build_content_diagnostics(
     )
 
 
+def build_content_diagnostics_cached() -> ContentDiagnosticsResponse:
+    """Reuse one diagnostics build across the initial content workflow reads."""
+    cached = _read_content_diagnostics_cache()
+    if cached is not None:
+        return cached
+    diagnostics = build_content_diagnostics()
+    _write_content_diagnostics_cache(diagnostics)
+    return diagnostics
+
+
+def clear_content_diagnostics_cache() -> None:
+    global _cached_content_diagnostics
+    _cached_content_diagnostics = None
+
+
+def _read_content_diagnostics_cache() -> ContentDiagnosticsResponse | None:
+    cache_seconds = _content_diagnostics_cache_seconds()
+    if cache_seconds <= 0 or _cached_content_diagnostics is None:
+        return None
+    if monotonic() - _cached_content_diagnostics.created_at > cache_seconds:
+        return None
+    return _cached_content_diagnostics.diagnostics
+
+
+def _write_content_diagnostics_cache(diagnostics: ContentDiagnosticsResponse) -> None:
+    global _cached_content_diagnostics
+    if _content_diagnostics_cache_seconds() <= 0:
+        return
+    _cached_content_diagnostics = ContentDiagnosticsCacheEntry(
+        created_at=monotonic(),
+        diagnostics=diagnostics,
+    )
+
+
+def _content_diagnostics_cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_CONTENT_DIAGNOSTICS_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_CONTENT_DIAGNOSTICS_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_CONTENT_DIAGNOSTICS_CACHE_SECONDS
+
+
 def build_content_preflight(
     diagnostics: ContentDiagnosticsResponse | None = None,
 ) -> ContentPreflightResponse:
@@ -232,15 +300,27 @@ def build_content_preflight(
 
 
 def _content_metric_facts(connector_ids: Iterable[str]) -> list[MetricFact]:
-    facts_by_connector = metric_store().list_metric_facts_by_connector(
-        list(connector_ids),
-        limit_per_connector=CONTENT_WORDPRESS_METRIC_FACT_LIMIT,
-    )
+    facts_by_connector = _content_metric_facts_by_connector(connector_ids)
     facts: list[MetricFact] = []
     for connector_id in connector_ids:
         connector_limit = _content_connector_metric_fact_limit(connector_id)
         facts.extend(facts_by_connector.get(connector_id, [])[:connector_limit])
     return facts
+
+
+def _content_metric_facts_by_connector(
+    connector_ids: Iterable[str],
+) -> dict[str, list[MetricFact]]:
+    facts_by_connector = metric_store().list_metric_facts_by_connector(
+        list(connector_ids),
+        limit_per_connector=CONTENT_WORDPRESS_METRIC_FACT_LIMIT,
+    )
+    return {
+        connector_id: facts_by_connector.get(connector_id, [])[
+            : _content_connector_metric_fact_limit(connector_id)
+        ]
+        for connector_id in connector_ids
+    }
 
 
 def _content_connector_metric_fact_limit(connector_id: str) -> int:

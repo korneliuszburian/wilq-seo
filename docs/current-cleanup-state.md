@@ -5,9 +5,9 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Następny slice to `wilq-seo-c9h9.6`: usuń cold waterfall po ustabilizowaniu
-freshness w queue/snapshot. Nie zaczynaj od splitu monolitu ani od przywracania
-WordPress write.
+Następny slice to `wilq-seo-c9h9.4`: przywróć wyłącznie canonical dev-only
+ActionObject apply po zamknięciu cold waterfall. Nie zaczynaj od splitu
+monolitu ani od przywracania direct WordPress write.
 
 ## Prawda produktu
 
@@ -18,7 +18,9 @@ WordPress write.
   12/9 configured/2 missing credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
-- Cold selected snapshot przekracza 30 s w Playwright (`c9h9.6`).
+- Queue-owned first decision renderuje przed snapshotem; cold queue po API
+  prewarm ma budżet `<5 s`, a selected snapshot/enrichment mają lokalne stany
+  (`c9h9.6` zamknięty).
 - Desktop pokazuje konkretną homepage, public/dev sections, GSC, typed preview
   i preview-only CTA. Mobile nadal chowa decyzję/blocker/CTA poniżej first fold.
 
@@ -47,10 +49,11 @@ Zamknięte w tym slice:
 - `r564.4` — typed existing-draft preview card;
 - `c9h9.7` — stabilny full-suite Service Profile test.
 - `c9h9.5` — freshness w queue/snapshot i refresh-first blocker.
+- `c9h9.6` — queue/snapshot cold waterfall usunięty przez prewarm, reuse builda
+  i progressive first card.
 
 Otwarte product blockers:
 
-- `c9h9.6` — content cold waterfall; zależy od `.5`;
 - `c9h9.4` — canonical dev-only apply; direct path pozostaje wyłączony;
 - `r564.3` — mobile first viewport; zależy od `.5`, `.6` i zamkniętego
   `r564.2`;
@@ -70,16 +73,16 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest `c9h9.5` changed report: 22 pliki, 0 frozen, 1 existing violation w
-`wilq/content/workflow/api.py` (1 478 LOC). Poprzedni baseline miał 35 plików / 1
-frozen / 15 violations; ten slice nie zmienił frozen service. Nie mieszaj
-mechanicznego splitu z P0 freshness.
+Latest `c9h9.6` changed report: 10 plików, 2 frozen growth files i 2 lokalne
+budget violations w `wilq/briefing/content_diagnostics.py`. To jest celowy,
+ograniczony seam cache/prewarm; nie mieszaj go z mechanicznym splitem.
 
 ## Proof checkpoint
 
-- 765 backend passed / 2 skipped baseline; c9h9.5 focused content tests green;
+- 765 backend passed / 2 skipped baseline; c9h9.5 i c9h9.6 focused content tests
+  green;
   Ruff i mypy green.
-- Shared 31 passed / 10 skipped; dashboard 137/137; lint/typecheck/build green.
+- Shared 31 passed / 10 skipped; dashboard 138/138; lint/typecheck/build green.
 - Security, API/CLI smoke i wszystkie deterministic skill smokes green.
 - 13/13 skill evals fresh/passing, scores 9–10; strict coverage bez gaps.
 - Live direct POST i readiness są fail-closed.
@@ -93,7 +96,6 @@ mechanicznego splitu z P0 freshness.
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Claim `c9h9.6` i zmierz cold waterfall przez istniejące queue/snapshot/
-   enrichment seam, bez nowego endpointu i bez business logic w React.
-4. Warunek przejścia do `c9h9.4`: pierwszy content decision renderuje się w
-   lokalnym budżecie, a lokalne loading states nie ukrywają blockerów.
+3. Claim `c9h9.4` i utrzymaj direct WordPress write fail-closed.
+4. Warunek przejścia do `r564.3`: canonical apply ma typed capability, pełny audit
+   i zero HTTP dla nieautoryzowanych ścieżek.

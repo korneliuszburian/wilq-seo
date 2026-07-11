@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
 from wilq.briefing.content_diagnostics import (
-    build_content_diagnostics,
+    build_content_diagnostics_cached,
     build_content_preflight,
 )
 from wilq.briefing.daily_runtime import (
@@ -59,7 +59,7 @@ def merchant_diagnostics() -> MerchantDiagnosticsResponse:
 
 @router.get("/api/content/diagnostics", response_model=ContentDiagnosticsResponse)
 def content_diagnostics() -> ContentDiagnosticsResponse:
-    return build_content_diagnostics()
+    return build_content_diagnostics_cached()
 
 
 @router.get("/api/content/preflight", response_model=ContentPreflightResponse)

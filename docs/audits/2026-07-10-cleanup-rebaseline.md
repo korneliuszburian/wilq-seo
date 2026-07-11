@@ -28,12 +28,12 @@ Status używa wyłącznie wymaganego słownika.
 
 | Obszar | Status | Aktualny stan | Dowód | Problem | Istniejący Bead | Brakujące zadanie |
 | --- | --- | --- | --- | --- | --- | --- |
-| API | `partially_complete` | Typed health, diagnostics, queue, snapshots i action readiness działają; direct WordPress live jest fail-closed. Queue/snapshot carry typed freshness. | Live HTTP, focused content tests, API smoke. | Cold builders są powtarzane na kilku granicach; raw diagnostics rows remain broader than the gated queue. | `c9h9.6`, `.9`–`.13` | Wszystkie potwierdzone cold gaps mają zadania. |
-| `/content-workflow` | `partially_complete` | Konkretna homepage, public/dev sections, GSC, typed freshness blocker, typed preview i preview-only CTA. | Fresh desktop/mobile render 2026-07-11, live queue/snapshot, focused UI tests. | Selected snapshot >30 s; mobile decyzja/CTA remains below triage; raw diagnostics rows are not the active queue truth. | `c9h9.6`, `r564.3`, `ho41` | Brak — potwierdzone scope istnieją. |
+| API | `partially_complete` | Typed health, diagnostics, queue, snapshots i action readiness działają; direct WordPress live jest fail-closed. Queue/snapshot carry typed freshness and reuse one short-lived diagnostics build. | Live HTTP, focused content tests, API smoke. | Raw diagnostics rows remain broader than the gated queue; secondary routes still have cold gaps. | `.9`–`.13` | Wszystkie potwierdzone cold gaps mają zadania. |
+| `/content-workflow` | `partially_complete` | Konkretna homepage, public/dev sections, GSC, typed freshness blocker, queue-owned first card, typed preview i preview-only CTA. | Fresh desktop/mobile render 2026-07-11, live queue/snapshot, queue budget `<5 s`, focused UI/E2E tests. | Mobile decyzja/CTA remains below triage; raw diagnostics rows are not the active queue truth. | `c9h9.4`, `r564.3`, `ho41` | Brak — potwierdzone scope istnieją. |
 | Dashboard IA | `partially_complete` | Legacy planner usunięty; główne nav prowadzi do `/content-workflow`. | Route registry, negative route tests, render. | Część E2E utrwalała stare stringi; drugorzędne trasy mają cold latency. | `c9h9.8`–`.13`, `r564`, `ho41` | Utworzone na podstawie failure proof. |
 | ActionObject safety | `partially_complete` | Preview/review/confirm/audit istnieją; direct content live i UI create są zablokowane. Typed existing-draft preview działa. | Live direct POST blocked/no write; mutation summary 0/0; action screenshot. | Canonical dev-only create apply nie istnieje; niższy boundary nadal ma raw authorization booleans nieosiągalne z produkcyjnego HTTP. | zamknięte `c9h9.3`, `r564.4`; otwarte `c9h9.4` | Brak duplikatu; exact apply jest wyspecyfikowany. |
-| Connectors/freshness | `partially_complete` | Diagnostics, queue and selected snapshot expose current freshness; primary stale sources block actionability. | Live HTTP, `ContentFreshnessAssessment`, 4 focused backend tests, desktop/mobile render. | Raw diagnostics decision rows remain historical review context; refresh job itself is external/read-only. | `c9h9.6` | Brak nowego zadania freshness. |
-| Tests/evals | `partially_complete` | Backend 765/2, shared 31/10, dashboard 137/137; 13/13 fresh skill evals score 9–10. | Full suites, strict coverage, smokes. | Full cold Playwright ujawnia realne content/Ads/custom/actions/knowledge/Merchant latency; stare assertions były test theater. | `c9h9.6`, `.8`–`.13` | Wszystkie obserwowane failures mają zadanie. |
+| Connectors/freshness | `partially_complete` | Diagnostics, queue and selected snapshot expose current freshness; primary stale sources block actionability. | Live HTTP, `ContentFreshnessAssessment`, focused backend tests, desktop/mobile render. | Raw diagnostics decision rows remain historical review context; refresh job itself is external/read-only. | brak nowego freshness Bead | Brak nowego zadania freshness. |
+| Tests/evals | `partially_complete` | Backend 765/2, shared 31/10, dashboard 138/138; 13/13 fresh skill evals score 9–10. | Full suites, strict coverage, smokes, queue budget E2E. | Full cold Playwright ujawnia realne Ads/custom/actions/knowledge/Merchant latency; stare assertions były test theater. | `.8`–`.13` | Wszystkie obserwowane failures mają zadanie. |
 | Monolity | `partially_complete` | Domenowe seamy istnieją, ale główne runtime/test hotspots pozostają. | Complexity report i file/function counts. | Jeden frozen service zmieniony bez LOC growth; 15 existing changed-code violations. | `ho41`, `jnra`, `kgvy`, `50wa`, `0q74` | Nie utworzono duplikatów splitu. |
 | Skills | `proved_complete` | 13 skills ma deterministic i non-interactive proof; GSC/Custom kontrakty poprawiono semantycznie. | Strict 13/13, 0 gaps/warnings; scores 9–10; wszystkie smokes pass. | To nie zastępuje realnego Wilku UAT ani usefulness każdej trasy. | `6rw.5` i istniejące eval Beads | Brak. |
 | Docs/Beads | `partially_complete` | Recovery docs są przycięte; nowe realne gaps są w grafie; kierunki zależności poprawione. | `bd dep cycles`: none; `bd ready` wskazuje `.5` jako pierwszy P0. | Starsze broad parents nadal wymagają rebaseline; Goal 005 czeka na owner input. | `c9h9.2`, cleanup epics | Brak kolejnego epica. |
@@ -59,8 +59,8 @@ Status używa wyłącznie wymaganego słownika.
 
 ## Największe blokery
 
-1. Cold `/content-workflow` przekracza 30 s przez queue/snapshot/enrichment/
-   activation waterfall (`c9h9.6`).
+1. Canonical dev-only WordPress apply pozostaje wyłączony do czasu typed
+   ActionObject capability/audit (`c9h9.4`).
 2. Safe live draft creation jest wyłączone do exact ActionObject apply, audit i
    dev-host guard (`c9h9.4`).
 3. Mobile decision/blocker/CTA remains below the first triage viewport (`r564.3`).
@@ -84,6 +84,8 @@ Status używa wyłącznie wymaganego słownika.
 - Typed existing-draft preview card (`r564.4`).
 - Stabilny pełny dashboard Vitest 137/137 (`c9h9.7`).
 - Current freshness w queue/snapshot i refresh-first blocker (`c9h9.5`).
+- Queue/snapshot cold waterfall usunięty przez reuse builda, API prewarm i
+  progressive first card (`c9h9.6`).
 - Legacy planner usunięty.
 - 13/13 skill eval coverage i fresh passing outputs.
 
@@ -92,7 +94,7 @@ Status używa wyłącznie wymaganego słownika.
 - `c9h9.3` P0 180 min — direct WordPress fail-closed — **closed**.
 - `c9h9.4` P0 360 min — canonical dev-only create apply — depends on `.3`.
 - `c9h9.5` P0 360 min — freshness w decisions/evidence — **closed**.
-- `c9h9.6` P0 300 min — content cold waterfall — depends on `.5`.
+- `c9h9.6` P0 300 min — content cold waterfall — **closed 2026-07-11**.
 - `r564.2` P0 180 min — duplicate draft prevention — **closed**.
 - `r564.3` P1 240 min — mobile first viewport — depends on `.5`, `.6`,
   `r564.2`.
@@ -105,11 +107,12 @@ Status używa wyłącznie wymaganego słownika.
 - `c9h9.12` P2 180 min — knowledge cold contention — open.
 - `c9h9.13` P1 240 min — Merchant first decision latency — open.
 
-Produktowa kolejność pozostaje `.5` → `.6` → `.4` → `r564.3`. Secondary
+Produktowa kolejność pozostaje `.5` → `.6` → `.4` → `r564.3`; `.5` i `.6` są
+zamknięte. Secondary
 route latency nie wyprzedza głównej ścieżki content.
 
 ## Następny slice i warunek przejścia
 
-Następny slice: `c9h9.6`. Jest ukończony, gdy pierwszy content decision renderuje
-się w lokalnym budżecie bez wielokrotnego cold buildera, a lokalne loading/error
-states nie ukrywają typed freshness/blocker.
+Następny slice: `c9h9.4`. `c9h9.6` zamknięto po queue budget `<5 s`, cache reuse,
+prewarm i browser proof bez globalnego loadera; dalej trzeba domknąć canonical
+dev-only apply.

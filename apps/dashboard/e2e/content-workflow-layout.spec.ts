@@ -13,12 +13,14 @@ test.describe("WILQ content workflow layout proof", () => {
     await fs.mkdir(runDir, { recursive: true });
     await page.setViewportSize({ width: 1536, height: 1024 });
 
+    const queueStartedAt = Date.now();
     const queueResponse = page.waitForResponse((response) => {
       const url = new URL(response.url());
       return url.pathname === "/api/content/work-items/queue" && response.status() === 200;
     });
     await page.goto("/content-workflow");
     await queueResponse;
+    expect(Date.now() - queueStartedAt).toBeLessThan(5_000);
 
     await expect(
       page.getByRole("heading", { name: "Źródła treści: dane treści wymagają odświeżenia" })
@@ -28,6 +30,7 @@ test.describe("WILQ content workflow layout proof", () => {
     await expect(
       page.getByText("Uruchom odczyt danych dla wskazanych źródeł", { exact: false }).first()
     ).toBeVisible();
+    await expect(page.getByText("Ładowanie stanu WILQ")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Treści: praca nad stroną" })).toHaveCount(0);
 
     await page.screenshot({

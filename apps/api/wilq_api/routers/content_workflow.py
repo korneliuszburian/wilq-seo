@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from wilq.briefing.content_diagnostics import build_content_diagnostics
+from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
@@ -144,7 +144,9 @@ def content_wordpress_existing_draft_update_readiness(
     snapshot = (
         _snapshot_for_work_item_or_404(work_item_id)
         if work_item_id is not None
-        else build_content_work_item_diagnostics_snapshot_response(build_content_diagnostics())
+        else build_content_work_item_diagnostics_snapshot_response(
+            build_content_diagnostics_cached()
+        )
     )
     return build_content_wordpress_existing_draft_update_readiness_response(snapshot)
 
@@ -163,7 +165,7 @@ def content_wordpress_draft_activation_packet(
                 work_item_id
             ),
         )
-    diagnostics = build_content_diagnostics()
+    diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
     review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
     if review is not None:
@@ -186,7 +188,7 @@ def content_wordpress_draft_activation_packet(
     response_model=ContentWorkItemQueueResponse,
 )
 def content_work_item_queue() -> ContentWorkItemQueueResponse:
-    return build_content_work_item_queue_response(build_content_diagnostics())
+    return build_content_work_item_queue_response(build_content_diagnostics_cached())
 
 
 @router.get(
@@ -194,7 +196,7 @@ def content_work_item_queue() -> ContentWorkItemQueueResponse:
     response_model=ContentWorkItemWorkflowSnapshotResponse,
 )
 def content_work_item_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
-    diagnostics = build_content_diagnostics()
+    diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
     review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
     if review is None:
@@ -224,7 +226,7 @@ def content_work_item_snapshot_for_selected_item(
 def content_work_item_enrichment(
     work_item_id: str,
 ) -> ContentOpportunityEnrichmentResponse:
-    diagnostics = build_content_diagnostics()
+    diagnostics = build_content_diagnostics_cached()
     return build_content_opportunity_enrichment_response(
         diagnostics,
         work_item_id,
@@ -240,7 +242,7 @@ def content_work_item_snapshot_human_review(
     request: ContentWorkItemSnapshotHumanReviewRequest,
 ) -> ContentWorkItemHumanReviewResponse:
     response = build_content_work_item_snapshot_human_review_response(
-        build_content_diagnostics(),
+        build_content_diagnostics_cached(),
         request,
     )
     if response.wordpress_handoff_allowed and response.review is not None:
@@ -272,7 +274,7 @@ def content_work_item_human_review_for_selected_item(
 def content_work_item_snapshot_audit(
     request: ContentWorkItemSnapshotAuditRequest,
 ) -> ContentWorkItemWordPressDraftHandoffResponse:
-    diagnostics = build_content_diagnostics()
+    diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
     review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
     response = build_content_work_item_snapshot_audit_response(
@@ -549,7 +551,7 @@ def _snapshot_for_work_item_or_404(
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
-    diagnostics = build_content_diagnostics()
+    diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
@@ -581,7 +583,7 @@ def _snapshot_for_work_item_or_404(
 def _snapshot_for_work_item_or_blocked_or_404(
     work_item_id: str,
 ) -> ContentWorkItemSnapshotResponse:
-    diagnostics = build_content_diagnostics()
+    diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,

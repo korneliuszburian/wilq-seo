@@ -18,9 +18,10 @@ w git, Beads i `docs/progress/archive/`.
 - Queue i selected snapshot przenoszą teraz typed freshness; stale primary
   sources dają `content_sources_require_refresh`, `recommended_mode=block` i
   refresh-first `safe_next_step`. To zamyka P0 `c9h9.5`.
-- Cold `/content-workflow` nadal przekracza 30 s w Playwright, czekając na
-  selected snapshot. To potwierdzony P0 `c9h9.6`, nie testowy timeout do
-  podniesienia.
+- Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
+  content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
+  renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
+  globalnego loadera; `c9h9.6` jest zamknięty.
 
 ## Zamknięty slice bezpieczeństwa
 
@@ -54,29 +55,45 @@ details. Screenshoty są lokalnie w
   mobile, bez raw payloadu;
 - current freshness pochodzi z connector age/status, nie z regexu ani opisu.
 
-Proof: live queue/snapshot HTTP, 4 focused backend test files, 31 shared schema
+Proof: live queue/snapshot HTTP, 5 focused backend test files, 31 shared schema
 tests, dashboard typecheck/Vitest oraz screenshots w
 `.local-lab/proof/independent-review-2026-07-11/`.
+
+## Zamknięty slice cold-load
+
+`c9h9.6` jest zamknięty:
+
+- content diagnostics mają krótki, czyszczony po mutacji cache request-flow;
+- pierwszy build reuse’uje content metric facts w tactical queue zamiast robić
+  drugą lekturę metric store;
+- API prewarmuje ten cache przed health w managed runtime, fail-open przy
+  niedostępnym źródle;
+- dashboard pokazuje queue-owned decyzję, dowody, źródła i safe next step, gdy
+  snapshot/enrichment są jeszcze w toku; błędy są lokalne, nie globalne;
+- browser proof: queue po prewarm `0.023 s`, focused Playwright `1 passed` z
+  asercją `<5 s`, dashboard Vitest `138/138`.
 
 ## Aktualny browser/usefulness proof
 
 - Desktop 1440×900 i mobile 390×844: stale-source blocker, źródła, powód i
   refresh-first next step są widoczne przed kolejką; homepage jest domyślnym
   wyborem zamiast Ahrefs-only braku canonical.
-- Decision/CTA dla świeżego workflow nadal wymagają `c9h9.6` i `r564.3`.
+- Decision/CTA dla świeżego workflow mają teraz queue-owned first card; pełna
+  mobile triage nadal wymaga `r564.3`.
 - `/actions/act_prepare_wordpress_existing_draft_update`: first viewport mówi
   „Przygotuj i oceń bez zapisu zmian” oraz „Zapis zablokowany”; pełny render ma
   typed preview i technical disclosure.
-- Manual usefulness `/content-workflow` pozostaje 5/10: freshness jest jawna,
-  ale cold load i pełna mobile triage nadal blokują wynik.
+- Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
+  decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
+  wymagają dopracowania.
 
 ## Weryfikacja
 
-- Backend baseline: 765 passed, 2 skipped; ten slice: 4 content test files
+- Backend baseline: 765 passed, 2 skipped; ten slice: 5 content test files
   passed, 1 deprecation warning; Ruff i mypy dla zmienionych modułów
   modułów przechodzą.
 - Shared schemas: 31 passed, 10 skipped.
-- Dashboard: 24 files, 137/137 Vitest; lint, typecheck i production build
+- Dashboard: 24 files, 138/138 Vitest; lint, typecheck i production build
   przechodzą. Potwierdzony full-suite flake Service Profile naprawiono lokalnym
   async budgetem bez usuwania asercji (`c9h9.7`, zamknięty).
 - Focused content/action UI: 31/31; action-detail Playwright przechodzi.
@@ -88,20 +105,19 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   wynik Wilku UAT albo jawny owner defer z residual risk. To stan zewnętrzny, nie
   brak eval coverage.
 - Pełny cold Playwright nie jest zielony. Potwierdzone osobne blokery mają
-  Beads: content `c9h9.6`, Ads `c9h9.9`, Custom Segments `c9h9.10`, actions
+  Beads: Ads `c9h9.9`, Custom Segments `c9h9.10`, actions
   `c9h9.11`, knowledge `c9h9.12`, Merchant `c9h9.13`. Stare E2E strings są
   porządkowane w `c9h9.8`; timeoutów nie podnoszono.
-- Latest `c9h9.5` complexity run: 22 changed files, 0 frozen files, 1 existing
-  budget violation (`wilq/content/workflow/api.py`, 1 478 LOC). Baseline before
-  this slice was 35 files / 1 frozen / 15 violations; no frozen service changed
-  in the freshness slice.
+- Latest `c9h9.6` complexity run: 10 changed files, 2 frozen growth files and 2
+  focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
+  diagnostics changed only for the documented cache/prewarm seam; no broad
+  split was introduced.
 
 ## Kolejność wykonania
 
-1. `c9h9.6` — usunięcie cold waterfall po ustabilizowaniu semantyki freshness.
-2. `c9h9.4` — exact dev-only ActionObject apply; raw booleany zastępuje typed
+1. `c9h9.4` — exact dev-only ActionObject apply; raw booleany zastępuje typed
    capability powiązana z action/work item/payload/target/audit.
-3. `r564.3` — decision/blocker/CTA w mobile first viewport.
+2. `r564.3` — decision/blocker/CTA w mobile first viewport.
 5. Secondary route latency: `c9h9.9`–`c9h9.13`; nie wyprzedza głównego content
    P0.
 

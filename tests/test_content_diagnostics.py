@@ -2,11 +2,35 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import wilq.briefing.content_diagnostics as content_diagnostics_module
 from wilq.briefing.content_diagnostics import (
     _rank_content_decisions_for_diagnostics,
     build_content_diagnostics,
 )
-from wilq.schemas import ContentDecisionItem, MetricFact
+from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse, MetricFact
+
+
+def test_content_diagnostics_cache_reuses_one_build_for_initial_request_flow(monkeypatch) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("WILQ_CONTENT_DIAGNOSTICS_CACHE_SECONDS", "15")
+    content_diagnostics_module.clear_content_diagnostics_cache()
+    calls = 0
+    sentinel = ContentDiagnosticsResponse.model_construct()
+
+    def fake_build() -> ContentDiagnosticsResponse:
+        nonlocal calls
+        calls += 1
+        return sentinel
+
+    monkeypatch.setattr(content_diagnostics_module, "build_content_diagnostics", fake_build)
+
+    first = content_diagnostics_module.build_content_diagnostics_cached()
+    second = content_diagnostics_module.build_content_diagnostics_cached()
+
+    assert first is sentinel
+    assert second is sentinel
+    assert calls == 1
+    content_diagnostics_module.clear_content_diagnostics_cache()
 
 
 def test_content_diagnostics_uses_latest_metric_evidence_by_identity() -> None:

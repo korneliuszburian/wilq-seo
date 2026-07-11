@@ -282,6 +282,36 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
   }, 10_000);
 
+  it("keeps the queue decision visible while the selected workflow snapshot loads", async () => {
+    let resolveSnapshot: ((value: ContentWorkItemWorkflowSnapshotResponse) => void) | undefined;
+    vi.mocked(getContentWorkItemSnapshot).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSnapshot = resolve;
+        })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await waitFor(() => {
+      expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_bdo");
+    });
+    expect(screen.getByText("Workflow treści bez slopu")).toBeInTheDocument();
+    expect(screen.getAllByText("BDO dla firm").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ładowanie szczegółów workflow")).toBeInTheDocument();
+    expect(screen.queryByText("Ładowanie stanu WILQ")).not.toBeInTheDocument();
+
+    resolveSnapshot?.(workflowSnapshot());
+    expect(await screen.findByText("Aktualna strona")).toBeInTheDocument();
+  });
+
   it("submits a snapshot human review from the current API snapshot", async () => {
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
@@ -657,7 +687,7 @@ describe("ContentWorkflowSurface", () => {
     const previewButton = await screen.findByRole("button", {
       name: "Przygotuj podgląd draftu"
     });
-    expect(previewButton).toBeEnabled();
+    await waitFor(() => expect(previewButton).toBeEnabled());
     expect(
       screen.queryByRole("button", {
         name: /Utwórz (?:(?:szkic|draft).*dev|.*dev.*(?:szkic|draft))/i

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -33,6 +35,10 @@ from apps.api.wilq_api.routers.opportunities import router as opportunities_rout
 from apps.api.wilq_api.routers.social import router as social_router
 from apps.api.wilq_api.routers.system import router as system_router
 from apps.api.wilq_api.routers.workflows import router as workflows_router
+from wilq.briefing.content_diagnostics import (
+    build_content_diagnostics_cached,
+    clear_content_diagnostics_cache,
+)
 from wilq.briefing.daily_runtime import (
     clear_daily_runtime_cache,
 )
@@ -56,7 +62,17 @@ def cors_origins() -> list[str]:
     return [origin.strip() for origin in configured.split(",") if origin.strip()]
 
 
-app = FastAPI(title="WILQ Marketing API", version="0.1.0")
+
+
+@asynccontextmanager
+async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
+    if not os.getenv("PYTEST_CURRENT_TEST"):
+        with suppress(Exception):
+            build_content_diagnostics_cached()
+    yield
+
+
+app = FastAPI(title="WILQ Marketing API", version="0.1.0", lifespan=wilq_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins(),
@@ -135,6 +151,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
 
 def clear_api_view_model_caches() -> None:
     clear_tactical_queue_cache()
+    clear_content_diagnostics_cache()
     clear_daily_runtime_cache()
     clear_skill_context_cache()
 
