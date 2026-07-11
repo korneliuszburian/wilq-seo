@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `0497808` (`docs: refresh live Ads handoff state`)  
-`origin/main` = `0497808`
+Ostatni commit: `e2d681e` (`refactor: split Ads strategy review state`)  
+`origin/main` = `e2d681e`
 
 ## Wykonane
 
