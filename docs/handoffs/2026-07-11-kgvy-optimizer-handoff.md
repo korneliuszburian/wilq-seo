@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `387d37c` (`refactor: extract Ads decision priority map`)  
-`origin/main` = `387d37c`
+Ostatni commit: `0b7567d` (`refactor: extract Ads campaign metric tiles`)  
+`origin/main` = `0b7567d`
 
 ## Wykonane
 
@@ -40,6 +40,6 @@ monolitu.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 387d37c`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 0b7567d`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
