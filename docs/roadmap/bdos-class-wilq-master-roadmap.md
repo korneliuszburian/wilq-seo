@@ -26,13 +26,18 @@ The BDOS-class bar is not "copy BDOS". The bar is:
 
 ## Current State
 
-Approximate product completion against the long-term BDOS-class ambition:
-`35-45%`.
+The maturity lanes must not be collapsed into one product-readiness claim:
 
-That number is intentionally conservative. The repo has a serious API-first
-core, many typed surfaces and tests, but it is not yet a finished marketing OS
-because real UAT, production-depth knowledge review, stronger optimizer logic,
-post-publication measurement proof and write execution are not done.
+- Platform/substrate maturity against the long-term BDOS-class ambition:
+  `35-45%`.
+- BDOS workflow parity: `15-25%`.
+- Real operator usefulness proof: `10-20%`.
+
+These ranges are intentionally conservative and describe different evidence.
+The repo has a serious API-first core, many typed surfaces and tests, but it is
+not yet a finished or "better BDOS" marketing OS because real UAT,
+production-depth knowledge review, stronger optimizer logic, post-publication
+measurement proof and write execution are not done.
 
 ### Already Real
 
@@ -205,7 +210,8 @@ the existing WILQ content workflow.
 - Ads/Merchant/GA4/GSC/Ahrefs/Localo BDOS-grade optimizer depth: `25-35%`.
 - Safe write execution and mutation audit maturity: `20-30%`.
 - Reporting/learning loop: `20-30%`.
-- Overall BDOS-class WILQ: `35-45%`.
+- Long-term BDOS-class substrate planning shorthand: `35-45%` (not overall
+  product readiness; use the three maturity lanes above).
 
 The biggest gap is not "more UI". The biggest gap is reviewed source knowledge,
 claim-level generation safety, real Wilku UAT and measurement/provenance proof.

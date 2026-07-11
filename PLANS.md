@@ -241,9 +241,11 @@ review. Keep `ekologus-ai` facts redacted and review-required until explicit
 review promotes them.
 
 The broader product roadmap is now summarized in
-`docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current maturity against the
-long-term BDOS-class bar is estimated at `35-45%`: the API-first safety/content
-foundation is substantial, while reviewed knowledge depth, UAT, claim-level
+`docs/roadmap/bdos-class-wilq-master-roadmap.md`. The defensible maturity lanes
+are deliberately separate: platform/substrate maturity is `35-45%` against the
+long-term BDOS-class bar, BDOS workflow parity is `15-25%`, and real operator
+usefulness proof is `10-20%`. These are not a claim that WILQ is already a
+finished or "better BDOS" product: reviewed knowledge depth, UAT, claim-level
 generation gating, measurement provenance, optimizer depth and write execution
 remain unfinished.
 

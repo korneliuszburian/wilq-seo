@@ -93,6 +93,9 @@ w git, Beads i `docs/progress/archive/`.
   `ads_decision_queue.py`; fail-closed status, safety section evidence i blocked
   write claims pozostają bez zmian. Complexity: 398 / 132489 LOC; dispatcher ma
   11 znanych violations.
+- `wilq-seo-v9ab.1` zamknięty po aktualizacji `PLANS.md` i master roadmapy:
+  substrate `35-45%`, workflow parity `15-25%`, a real operator usefulness
+  `10-20%` są rozdzielone; 35-45 nie jest już opisywane jako gotowość produktu.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
