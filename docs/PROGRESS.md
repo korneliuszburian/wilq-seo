@@ -339,8 +339,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   blokuje stale/missing source, brak evidence albo brak expert rule przed
   rekomendacją. `DailyCheckItem` zachowuje `false_positive_guards`; live daily
   check pokazuje `stale_connector` przy obecnym stale stanie. Focused guard/API
-  tests, Ruff, mypy i diff check przechodzą. Pozostałe guards (low volume,
-  baseline, conversion, date window, conflict, multi-source) pozostają otwarte.
+  tests, Ruff, mypy i diff check przechodzą. `missing_conversion` korzysta z
+  istniejącego `Ga4ConversionReadinessContract`; gotowy kontrakt daje
+  `conversion_readiness_ready`. Pozostałe guards (low volume, baseline, date
+  window, conflict, multi-source) pozostają otwarte.
 - Prywatna Service Profile proposal-promotion ma teraz analogiczny konstruktor
   w `wilq/actions/service_profile.py`; service buduje tylko redacted review rows,
   a domenowy moduł zachowuje `redacted`, evidence, `apply_allowed=false` i

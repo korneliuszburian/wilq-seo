@@ -12,7 +12,8 @@ i safety. Istniejące diagnostyki nie wymyślają tych ograniczeń w React ani
 skillach. Daily-check korzysta z istniejącego runtime i zwraca typed projection
 z traceability; live stan `blocked` przy stale źródłach nie jest maskowany.
 `wilq-seo-v9ab.8` jest rozpoczęty: source-trace guard blokuje stale/missing
-source i brak dowodu/reguły przed rekomendacją. Pozostałe false-positive guards
+source i brak dowodu/reguły przed rekomendacją, a `missing_conversion` korzysta
+z istniejącego `Ga4ConversionReadinessContract`. Pozostałe false-positive guards
 pozostają otwarte; nie zaczynaj od kolejnego wrappera Ads ani drugiego expert
 endpointu.
 

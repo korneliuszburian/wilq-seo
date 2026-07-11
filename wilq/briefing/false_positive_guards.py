@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from wilq.schemas import FreshnessState
+from wilq.schemas import FreshnessState, Ga4ConversionReadinessContract
 
 
 class FalsePositiveGuardResult(BaseModel):
@@ -38,6 +38,28 @@ def evaluate_source_trace_guard(
         status="pass",
         reason="Źródło, dowód, reguła i świeżość są potwierdzone.",
         next_step="Można przejść do ręcznego review wskazanej decyzji.",
+    )
+
+
+def evaluate_conversion_readiness_guard(
+    contract: Ga4ConversionReadinessContract,
+) -> FalsePositiveGuardResult:
+    """Use the existing GA4 read contract instead of inferring conversion proof."""
+    if contract.status == "ready" and contract.conversion_like_metric_count > 0:
+        return FalsePositiveGuardResult(
+            guard_id="conversion_readiness_ready",
+            status="pass",
+            reason="GA4 ma potwierdzone metryki konwersji albo zdarzeń kluczowych.",
+            next_step="Można rozdzielić jakość ruchu od problemu pomiaru.",
+        )
+    return FalsePositiveGuardResult(
+        guard_id="missing_conversion",
+        status="blocked",
+        reason="Brakuje potwierdzonych metryk konwersji albo zdarzeń kluczowych w GA4.",
+        next_step=(
+            contract.next_step
+            or "Najpierw potwierdź mapowanie konwersji i zdarzeń kluczowych w GA4."
+        ),
     )
 
 
