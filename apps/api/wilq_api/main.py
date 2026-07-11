@@ -35,6 +35,7 @@ from apps.api.wilq_api.routers.opportunities import router as opportunities_rout
 from apps.api.wilq_api.routers.social import router as social_router
 from apps.api.wilq_api.routers.system import router as system_router
 from apps.api.wilq_api.routers.workflows import router as workflows_router
+from wilq.actions.service import clear_action_list_cache, list_actions_cached
 from wilq.briefing.content_diagnostics import (
     build_content_diagnostics_cached,
     clear_content_diagnostics_cache,
@@ -75,6 +76,8 @@ async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
             build_content_diagnostics_cached()
         with suppress(Exception):
             build_merchant_diagnostics_cached()
+        with suppress(Exception):
+            list_actions_cached()
     yield
 
 
@@ -159,6 +162,7 @@ def clear_api_view_model_caches() -> None:
     clear_tactical_queue_cache()
     clear_content_diagnostics_cache()
     clear_merchant_diagnostics_cache()
+    clear_action_list_cache()
     clear_daily_runtime_cache()
     clear_skill_context_cache()
 

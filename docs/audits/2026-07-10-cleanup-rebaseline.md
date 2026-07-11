@@ -106,9 +106,9 @@ Status używa wyłącznie wymaganego słownika.
 - `c9h9.8` P1 90 min — current behavior E2E assertions — open.
 - `c9h9.9` P1 240 min — Ads summary cold render — open.
 - `c9h9.10` P2 180 min — narrow Custom Segments view — open.
-- `c9h9.11` P1 240 min — lightweight action list — open.
+- `c9h9.11` P1 240 min — lightweight action list — **closed 2026-07-11**; cache/prewarm, progressive card, list/detail proof i focused action Playwright pass.
 - `c9h9.12` P2 180 min — knowledge cold contention — open.
-- `c9h9.13` P1 240 min — Merchant first decision latency — **ready to close**;
+- `c9h9.13` P1 240 min — Merchant first decision latency — **closed 2026-07-11**;
   cache/prewarm, focused contract and desktop/mobile proof pass.
 
 Produktowa kolejność po zamknięciu `.5` → `.6` → `.4` przechodzi do `r564.3`
@@ -117,7 +117,8 @@ route latency nie wyprzedza głównej ścieżki content.
 
 ## Następny slice i warunek przejścia
 
-Następny slice: `r564.3`. `c9h9.4` zamknięto po typed route proof,
+Następny slice: `r564.3`, o ile zewnętrzny content refresh udostępni świeżego
+kandydata do browser proof. `c9h9.4` zamknięto po typed route proof,
 ActionMutationAudit, dev-host guard i review-only CTA. Warunek przejścia: mobile
 screenshot ma w first viewport jedną decyzję, dwa konkretne blokery i jeden
 bezpieczny CTA; live stale queue nadal nie może udawać gotowości.

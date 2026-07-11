@@ -633,7 +633,7 @@ function NearestSafeActionCard({
   action: ActionObject | undefined;
   summary: ActionMutationReadinessSummary | undefined;
 }) {
-  if (isLoading) {
+  if (isLoading && !action) {
     return (
       <section className="rounded-md border border-line bg-white shadow-sm">
         <div className="border-b border-line px-4 py-3">
@@ -665,6 +665,11 @@ function NearestSafeActionCard({
   const operationLabel = marketerOperationLabel(
     candidate?.apply_contract?.allowed_operation ?? String(action?.payload?.action_type ?? action?.mode ?? "prepare")
   );
+  const readinessPending = isLoading && !candidate;
+  const previewLabel = readinessPending ? "sprawdzam gotowość" : "podgląd gotowy";
+  const readinessLabel = readinessPending
+    ? "zapis zablokowany do czasu sprawdzenia"
+    : writeState;
 
   return (
     <section className="overflow-hidden rounded-md border border-action/30 bg-white shadow-sm">
@@ -686,9 +691,12 @@ function NearestSafeActionCard({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <StatusPill label="podgląd gotowy" tone="green" />
+          <StatusPill label={previewLabel} tone={readinessPending ? "amber" : "green"} />
           <StatusPill label={reviewLabel} tone="amber" />
-          <StatusPill label={writeState} tone={candidate?.vendor_write_possible ? "green" : "red"} />
+          <StatusPill
+            label={readinessLabel}
+            tone={readinessPending ? "amber" : candidate?.vendor_write_possible ? "green" : "red"}
+          />
         </div>
 
         <div className="mt-5 grid gap-3 rounded-md border border-line bg-slate-50 p-3 sm:grid-cols-3">
@@ -777,9 +785,9 @@ function ActionLifecycleStrip() {
 
 function ActionFact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-r border-line pr-3 last:border-r-0">
+    <div className="min-w-0 border-r border-line pr-3 last:border-r-0">
       <div className="text-xs text-slate-500">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-ink">{value}</div>
+      <div className="mt-1 break-words text-sm font-semibold text-ink">{value}</div>
     </div>
   );
 }

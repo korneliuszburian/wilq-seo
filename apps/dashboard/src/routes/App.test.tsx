@@ -8145,6 +8145,30 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });
 
+  it("keeps the first action useful while mutation readiness is still loading", async () => {
+    let resolveReadiness!: (response: Response) => void;
+    const pendingReadiness = new Promise<Response>((resolve) => {
+      resolveReadiness = resolve;
+    });
+    vi.mocked(fetch).mockImplementation((url) => {
+      if (String(url).endsWith("/api/actions/mutation-readiness")) return pendingReadiness;
+      return mockWilqApiFetch(String(url));
+    });
+
+    renderApp("/actions");
+
+    await waitFor(() =>
+      expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument()
+    );
+    expect(screen.getByText("sprawdzam gotowość")).toBeInTheDocument();
+    expect(screen.getByText("zapis zablokowany do czasu sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz akcję" })).toBeInTheDocument();
+    expect(screen.queryByText("podgląd gotowy")).not.toBeInTheDocument();
+
+    resolveReadiness(Response.json(actionMutationReadinessSummary));
+    await waitFor(() => expect(screen.getByText("podgląd gotowy")).toBeInTheDocument());
+  });
+
   it("connector refresh run cards summarize evidence instead of printing raw IDs", () => {
     render(
       <ConnectorRefreshRunList

@@ -5,9 +5,9 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Aktualny slice to `wilq-seo-r564.3`: mobile first viewport po zamknięciu
-canonical dev-only ActionObject apply. Nie zaczynaj od splitu monolitu ani od
-przywracania direct WordPress write.
+Aktualny następny slice to `wilq-seo-r564.3`: mobile first viewport po zamknięciu
+canonical dev-only ActionObject apply oraz szybkiej listy akcji. Nie zaczynaj od
+splitu monolitu ani od przywracania direct WordPress write.
 
 ## Prawda produktu
 
@@ -36,7 +36,12 @@ przywracania direct WordPress write.
   scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
 - `c9h9.13` Merchant ma cache 15 s i prewarm w managed lifespan; HTTP proof po
   restarcie to `0.004860 s` / `0.007203 s`, a desktop/mobile screenshoty pokazują
-  decyzję przed kolejką szczegółów.
+  decyzję przed kolejką szczegółów. Bead jest zamknięty.
+- `c9h9.11` `/api/actions` ma istniejący list seam z cache/prewarm; po restarcie
+  pomiar HTTP po restarcie to `0.082513 s` / `0.021151 s`. Dashboard pokazuje akcję i bezpieczny
+  CTA podczas oczekiwania na readiness, bez udawania gotowego zapisu. Proof:
+  `.local-lab/proof/c9h9-11-actions-cold-browser-final.png` i
+  `.local-lab/proof/c9h9-11-actions-detail-cold-browser-loaded.png`. Bead jest zamknięty.
 
 ## Granica bezpieczeństwa
 
@@ -76,8 +81,8 @@ Otwarte product blockers:
 - `r564.3` — mobile first viewport; zależy od `.5`, `.6` i zamkniętego
   `r564.2`;
 - `c9h9.8` — stale dashboard E2E behavior assertions;
-- `c9h9.9`–`c9h9.13` — potwierdzone latency blokery Ads, Custom Segments,
-  Actions, Knowledge i Merchant.
+- `c9h9.9`, `c9h9.10`, `c9h9.12` — potwierdzone latency blokery Ads,
+  Custom Segments i Knowledge. `c9h9.11` jest zamknięty po list/detail proof.
 
 `ho41` jest wyłącznie route/component boundary. `jnra` jest splitem action
 service. Żaden z nich nie może przejąć product semantics freshness/write.
@@ -119,7 +124,5 @@ ograniczony seam typed apply/adapter, nie mechaniczny split.
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Kontynuuj `r564.3`: browser proof 390×844 ma pokazać URL/temat, decyzję,
-   blocker i bezpieczny CTA bez scrolla.
-4. Warunek przejścia dalej: CTA otwiera decyzję/dowody, nie wykonuje apply, a
-   stale queue nadal blokuje rekomendację.
+3. Kontynuuj `r564.3`: browser proof 390×844 ma pokazać URL/temat,
+   decyzję, blocker i bezpieczny CTA bez scrolla, jeśli refresh da świeżego kandydata.

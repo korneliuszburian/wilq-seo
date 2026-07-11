@@ -15,7 +15,7 @@ from wilq.actions.service import (
     confirm_action,
     get_action,
     impact_check_action,
-    list_actions,
+    list_actions_cached,
     mutation_readiness_action,
     mutation_readiness_actions,
     preview_action,
@@ -43,7 +43,7 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
 
     @router.get("/api/actions")
     def actions() -> list[dict[str, Any]]:
-        return [action.model_dump(mode="json") for action in list_actions()]
+        return [action.model_dump(mode="json") for action in list_actions_cached()]
 
     @router.get(
         "/api/actions/mutation-readiness",

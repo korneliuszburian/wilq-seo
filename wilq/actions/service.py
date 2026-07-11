@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Iterable
 from contextlib import suppress
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any, Literal, cast
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -176,6 +178,7 @@ SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES = {
     "private_claim_policy_proposal",
     "private_evidence_policy_proposal",
 }
+DEFAULT_ACTION_LIST_CACHE_SECONDS = 15.0
 
 
 @dataclass(frozen=True)
@@ -183,6 +186,15 @@ class WordPressDraftApplyCapability:
     handoff: ContentWordPressDraftHandoff
     draft_package: ContentDraftPackage
     write_authorization: ContentWordPressDraftWriteAuthorization
+
+
+@dataclass(frozen=True)
+class ActionListCacheEntry:
+    created_at: float
+    actions: list[ActionObject]
+
+
+_cached_action_list: ActionListCacheEntry | None = None
 
 
 def seed_static_actions() -> dict[str, ActionObject]:
@@ -895,6 +907,49 @@ def list_actions() -> list[ActionObject]:
         if keyword_planner_action is not None:
             actions[keyword_planner_action.id] = keyword_planner_action
     return _with_persisted_review_gates(actions.values())
+
+
+def list_actions_cached() -> list[ActionObject]:
+    """Reuse one action registry build across the dashboard list reads."""
+    cached = _read_action_list_cache()
+    if cached is not None:
+        return cached
+    actions = list_actions()
+    _write_action_list_cache(actions)
+    return actions
+
+
+def clear_action_list_cache() -> None:
+    global _cached_action_list
+    _cached_action_list = None
+
+
+def _read_action_list_cache() -> list[ActionObject] | None:
+    cache_seconds = _action_list_cache_seconds()
+    if cache_seconds <= 0 or _cached_action_list is None:
+        return None
+    if monotonic() - _cached_action_list.created_at > cache_seconds:
+        return None
+    return _cached_action_list.actions
+
+
+def _write_action_list_cache(actions: list[ActionObject]) -> None:
+    global _cached_action_list
+    if _action_list_cache_seconds() <= 0:
+        return
+    _cached_action_list = ActionListCacheEntry(created_at=monotonic(), actions=actions)
+
+
+def _action_list_cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_ACTION_LIST_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_ACTION_LIST_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_ACTION_LIST_CACHE_SECONDS
 
 
 def get_action(action_id: str) -> ActionObject | None:

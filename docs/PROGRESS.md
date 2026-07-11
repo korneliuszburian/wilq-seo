@@ -94,11 +94,19 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   breakpointu), a pięć statusów źródeł tworzy poziomy scroll zamiast pięciu
   pionowych kart. Dzięki temu decision card ma realną szansę wejść w 390×844;
   Vitest 15/15, lint/typecheck i nowy screenshot stale proof przechodzą.
-- `c9h9.13` Merchant jest w toku: istniejący `/api/merchant/diagnostics` ma
+- `c9h9.13` Merchant jest zamknięty: istniejący `/api/merchant/diagnostics` ma
   15-sekundowy cache i managed-runtime prewarm, bez nowego endpointu. HTTP po
   restarcie: `0.004860 s` pierwszy odczyt, `0.007203 s` drugi; desktop/mobile
   proof pokazuje Produkty, freshness, blocker i safe next step. Focused Merchant
   contracts 13/13, dashboard App 22/22, lint/typecheck, Ruff i mypy przechodzą.
+- `c9h9.11` jest zamknięty: `/api/actions` używa istniejącej listy z 15-sekundowym
+  cache/prewarm i po restarcie dał `0.061183 s` / `0.024930 s`; lista zachowuje
+  evidence IDs bez ciężkiego detail buildera. Karta „Najbliższa bezpieczna akcja”
+  pokazuje akcję także podczas oczekiwania na mutation readiness, ale oznacza
+  readiness jako sprawdzane i zapis jako zablokowany. Focused action Vitest 2/2,
+  dashboard lint/typecheck i backend cache test przechodzą; browser proof:
+  `.local-lab/proof/c9h9-11-actions-cold-browser-final.png` oraz
+  `.local-lab/proof/c9h9-11-actions-detail-cold-browser-loaded.png`.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
@@ -138,7 +146,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   CTA są zamknięte w Beadzie.
 - Pełny cold Playwright nie jest zielony. Potwierdzone osobne blokery mają
   Beads: Ads `c9h9.9`, Custom Segments `c9h9.10`, actions
-  `c9h9.11`, knowledge `c9h9.12`, Merchant `c9h9.13`. Stare E2E strings są
+  `c9h9.11` jest zamknięty, knowledge `c9h9.12`; Merchant `c9h9.13` jest zamknięty. Stare E2E strings są
   porządkowane w `c9h9.8`; timeoutów nie podnoszono.
 - Latest `c9h9.6` complexity run: 10 changed files, 2 frozen growth files and 2
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
@@ -151,10 +159,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 
 ## Kolejność wykonania
 
-1. `r564.3` — decision/blocker/CTA w mobile first viewport.
-2. `c9h9.13` — Merchant first decision latency; domknąć Bead po handoffie.
-3. Następnie `c9h9.11` i `c9h9.9`.
-5. Secondary route latency: `c9h9.9`–`c9h9.13`; nie wyprzedza głównego content
+1. `r564.3` — decision/blocker/CTA w mobile first viewport; świeży kandydat nadal zależy od zewnętrznego refresh.
+2. `c9h9.9` — Ads summary cold render.
+3. `c9h9.12` — knowledge cold contention.
+4. Secondary route latency: `c9h9.9`, `c9h9.10`, `c9h9.12`; nie wyprzedza głównego content
    P0.
 
 `docs/audits/2026-07-10-cleanup-rebaseline.md` zawiera bieżącą mapę statusów i
