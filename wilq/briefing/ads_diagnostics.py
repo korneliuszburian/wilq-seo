@@ -793,6 +793,12 @@ def _build_ads_diagnostics_response(
     )
 
 
+def _hydrate_ads_response_labels(response: AdsDiagnosticsResponse) -> None:
+    """Apply review-gate and marketer labels after response construction."""
+    _hydrate_ads_review_gate_labels(response)
+    _hydrate_ads_marketer_labels(response)
+
+
 def _reconcile_search_term_read_contracts(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -1264,8 +1270,7 @@ def build_ads_diagnostics(
         sections=sections,
         blocked_handoff=blocked_handoff,
     )
-    _hydrate_ads_review_gate_labels(response)
-    _hydrate_ads_marketer_labels(response)
+    _hydrate_ads_response_labels(response)
     if view == "summary":
         return _compact_ads_diagnostics_summary(response)
     return response

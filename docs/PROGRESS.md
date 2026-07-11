@@ -12,14 +12,14 @@ w git, Beads i `docs/progress/archive/`.
   przechodzą. Core i review assembly search-term contracts są domknięte; candidate
   assembly custom-segments/negative-keywords jest domknięty. Następny seam to
   campaign-triage/optimizer readiness assembly jest domknięty. Sections,
-  blocked-handoff, decision_queue i response model assembly są domknięte; następny
-  seam to label hydration.
+  blocked-handoff, decision_queue, response model i label hydration boundaries są
+  domknięte; następny seam wymaga review deeper contract-label hydration.
 - Reconciliation boundary jest domknięty przez
   `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
   nie zawiera już inline aktualizacji missing contracts dla tych zależności.
-  Complexity: 398 plików Python / 133150 LOC, 2 jawne violations (plik i główny
+  Complexity: 398 plików Python / 133153 LOC, 2 jawne violations (plik i główny
   orchestrator). Następny kandydat po aktualnym complexity/review to mały helper
-  label hydration, bez ponownego
+  deeper contract-label hydration, bez ponownego
   dotykania gotowych reconciliation, search-term, candidate ani optimizer seamów.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.
