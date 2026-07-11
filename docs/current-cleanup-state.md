@@ -96,8 +96,8 @@ Action Service; nie przywracaj direct WordPress write.
   `wilq/actions/content_refresh.py`. Wspólne priorytety, etykiety i deduplikacja
   są w `wilq/actions/metric_utils.py`; pierwszy Ads campaign candidate factory
   jest w `wilq/actions/google_ads/campaign_review.py`. Payloady i kolejność
-  rejestracji pozostają bez zmian; campaign, recommendation i change-history
-  candidate factories są w modułach Google Ads, a `jnra` pozostaje otwarty dla
+  rejestracji pozostają bez zmian; campaign, recommendation, change-history i
+  search-term candidate factories są w modułach Google Ads, a `jnra` pozostaje otwarty dla
   kolejnych grup.
 
 ## Granica bezpieczeństwa
@@ -146,7 +146,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 5 007 non-empty LOC;
+- `wilq/actions/service.py`: 4 996 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -157,9 +157,9 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 382 plików Python,
-131661 non-empty LOC. Bounded content seed extraction, metric-candidate
+131660 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
-recommendation/change-history module extraction were audited with
+recommendation/change-history/search-term module extraction were audited with
 `--allow-frozen --allow-budget-violations`: service.py remains a frozen-growth
 file because the seam removes inline code, while pre-existing content/service
 budget findings remain tracked for the broader `jnra` cleanup. Historyczne duże

@@ -73,6 +73,18 @@ def search_term_ngram_action(
         validation_status="not_validated",
         created_by="system_metric_seed",
     )
+
+
+def search_term_ngram_action_from_metric_facts(
+    google_ads_facts: list[MetricFact],
+) -> ActionObject | None:
+    payload = search_term_ngram_payload_from_metric_facts(google_ads_facts)
+    if payload is None:
+        return None
+    return search_term_ngram_action(
+        google_ads_facts=google_ads_facts,
+        search_term_ngram_payload=payload,
+    )
 SEARCH_TERM_NGRAM_REQUIRED_VALIDATION = [
     "review_ngram_intent",
     "review_source_search_terms",

@@ -76,8 +76,7 @@ from wilq.actions.google_ads.recommendations import (
 )
 from wilq.actions.google_ads.search_term_ngrams import (
     SEARCH_TERM_NGRAM_PREVIEW_CONTRACT,
-    search_term_ngram_action,
-    search_term_ngram_payload_from_metric_facts,
+    search_term_ngram_action_from_metric_facts,
 )
 from wilq.actions.localo.visibility import (
     localo_visibility_review_action_from_metric_facts,
@@ -683,12 +682,11 @@ def _seed_google_ads_metric_actions(
         action = change_history_action
         actions[action.id] = action
 
-    search_term_ngram_payload = search_term_ngram_payload_from_metric_facts(google_ads_facts)
-    if search_term_ngram_payload is not None:
-        action = _search_term_ngram_action(
-            google_ads_facts=google_ads_facts,
-            search_term_ngram_payload=search_term_ngram_payload,
-        )
+    search_term_ngram_action_result = search_term_ngram_action_from_metric_facts(
+        google_ads_facts
+    )
+    if search_term_ngram_action_result is not None:
+        action = search_term_ngram_action_result
         actions[action.id] = action
 
     custom_segment_payload = custom_segment_payload_from_metric_facts(google_ads_facts)
@@ -754,17 +752,6 @@ def _custom_segment_action(
     return custom_segment_action(
         google_ads_facts=google_ads_facts,
         custom_segment_payload=custom_segment_payload,
-    )
-
-
-def _search_term_ngram_action(
-    *,
-    google_ads_facts: list[MetricFact],
-    search_term_ngram_payload: dict[str, Any],
-) -> ActionObject:
-    return search_term_ngram_action(
-        google_ads_facts=google_ads_facts,
-        search_term_ngram_payload=search_term_ngram_payload,
     )
 
 
