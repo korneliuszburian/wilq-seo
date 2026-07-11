@@ -227,6 +227,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   filtering, Keyword Planner evidence i `apply_allowed=false` pozostają bez zmian.
   Complexity: 398 / 132760 LOC; 2 znane violations, następny target to
   `build_ads_diagnostics` orchestration.
+- Typed section assembly `build_ads_diagnostics` jest teraz w
+  `_build_ads_diagnostic_sections`; kolejność sekcji, lineage, blocked claims i
+  safe action section pozostają bez zmian. Complexity: 398 / 132801 LOC;
+  2 znane violations (plik + główny orchestrator).
 
 ## Granica bezpieczeństwa
 

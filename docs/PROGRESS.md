@@ -135,6 +135,10 @@ w git, Beads i `docs/progress/archive/`.
 - `_custom_segment_group_rows` i `_custom_segment_payload_and_score` przejęły
   grouping oraz preview/score orchestration; source terms, planner blockers i
   safety pozostają bez zmian. Complexity: 398 / 132760 LOC; violations spadły do 2.
+- `_build_ads_diagnostic_sections` przejął typed section assembly z
+  `build_ads_diagnostics`; kolejność, evidence lineage i safety section pozostają
+  bez zmian. Complexity: 398 / 132801 LOC; główny orchestrator nadal jest kolejnym
+  bounded targetem.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

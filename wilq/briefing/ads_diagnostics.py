@@ -454,6 +454,56 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
 }
 
 
+def _build_ads_diagnostic_sections(
+    *,
+    action_ids: list[str],
+    latest_refresh: ConnectorRefreshRun | None,
+    trusted_metric_facts: list[MetricFact],
+    live_data_available: bool,
+    campaign_read_contract: AdsCampaignReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract,
+    impression_share_read_contract: AdsImpressionShareReadContract,
+    change_history_read_contract: AdsChangeHistoryReadContract,
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+    custom_segments_read_contract: AdsCustomSegmentsReadContract,
+    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
+) -> list[AdsDiagnosticSection]:
+    sections = [
+        _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
+        build_campaign_overview_section(
+            action_ids,
+            campaign_read_contract,
+            fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        ),
+        build_business_context_section(business_context_read_contract),
+        build_derived_kpi_section(derived_kpi_read_contract),
+        build_budget_pacing_section(budget_pacing_read_contract),
+        build_recommendations_section(recommendations_read_contract),
+        build_impression_share_section(impression_share_read_contract),
+        build_change_history_section(change_history_read_contract),
+        build_search_terms_section(search_terms_read_contract, action_ids),
+        build_search_term_ngram_section(search_term_ngram_read_contract),
+        build_search_term_safety_section(search_term_safety_read_contract),
+        build_keyword_match_context_section(keyword_match_context_read_contract),
+        build_keyword_planner_section(keyword_planner_read_contract, action_ids),
+        build_custom_segments_section(custom_segments_read_contract),
+        build_negative_keywords_section(negative_keywords_read_contract),
+        _safe_action_section(
+            action_ids,
+            latest_refresh,
+            live_data_available=live_data_available,
+        ),
+    ]
+    return [_with_ads_section_lineage(section) for section in sections]
+
+
 def build_ads_diagnostics(
     actions: list[ActionObject] | None = None,
     *,
@@ -756,33 +806,26 @@ def build_ads_diagnostics(
         custom_segments_read_contract,
         negative_keywords_read_contract,
     )
-    sections = [
-        _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
-        build_campaign_overview_section(
-            action_ids,
-            campaign_read_contract,
-            fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
-        ),
-        build_business_context_section(business_context_read_contract),
-        build_derived_kpi_section(derived_kpi_read_contract),
-        build_budget_pacing_section(budget_pacing_read_contract),
-        build_recommendations_section(recommendations_read_contract),
-        build_impression_share_section(impression_share_read_contract),
-        build_change_history_section(change_history_read_contract),
-        build_search_terms_section(search_terms_read_contract, action_ids),
-        build_search_term_ngram_section(search_term_ngram_read_contract),
-        build_search_term_safety_section(search_term_safety_read_contract),
-        build_keyword_match_context_section(keyword_match_context_read_contract),
-        build_keyword_planner_section(keyword_planner_read_contract, action_ids),
-        build_custom_segments_section(custom_segments_read_contract),
-        build_negative_keywords_section(negative_keywords_read_contract),
-        _safe_action_section(
-            action_ids,
-            latest_refresh,
-            live_data_available=live_data_available,
-        ),
-    ]
-    sections = [_with_ads_section_lineage(section) for section in sections]
+    sections = _build_ads_diagnostic_sections(
+        action_ids=action_ids,
+        latest_refresh=latest_refresh,
+        trusted_metric_facts=trusted_metric_facts,
+        live_data_available=live_data_available,
+        campaign_read_contract=campaign_read_contract,
+        business_context_read_contract=business_context_read_contract,
+        derived_kpi_read_contract=derived_kpi_read_contract,
+        budget_pacing_read_contract=budget_pacing_read_contract,
+        recommendations_read_contract=recommendations_read_contract,
+        impression_share_read_contract=impression_share_read_contract,
+        change_history_read_contract=change_history_read_contract,
+        search_terms_read_contract=search_terms_read_contract,
+        search_term_ngram_read_contract=search_term_ngram_read_contract,
+        search_term_safety_read_contract=search_term_safety_read_contract,
+        keyword_match_context_read_contract=keyword_match_context_read_contract,
+        keyword_planner_read_contract=keyword_planner_read_contract,
+        custom_segments_read_contract=custom_segments_read_contract,
+        negative_keywords_read_contract=negative_keywords_read_contract,
+    )
     blocked_handoff = _blocked_handoff(live_data_available, latest_refresh, sections, action_ids)
     decision_queue = _ads_decision_queue(
         campaign_read_contract,

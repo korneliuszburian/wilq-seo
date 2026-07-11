@@ -70,6 +70,8 @@ Ostatni commit: `fa049a7` (`docs: update custom segment handoff pointer`)
 - Custom-segment grouping i payload/score assembly są w `_custom_segment_group_rows`
   i `_custom_segment_payload_and_score`; nie wracaj do inline grouping ani preview
   orchestration.
+- Typed Ads section assembly jest w `_build_ads_diagnostic_sections`; nie wracaj
+  do inline listy sekcji w `build_ads_diagnostics`.
 
 ## Dowody
 
@@ -89,9 +91,9 @@ Ostatni commit: `fa049a7` (`docs: update custom segment handoff pointer`)
 
 ## Następny slice
 
-Następny potwierdzony seam to `build_ads_diagnostics` orchestration, wybrany po
-aktualnym complexity audit. Zacząć od jednego typed section/contract assembly
-fragmentu; nie przenosić całego monolitu naraz.
+Następny potwierdzony seam to kolejny typed contract/reconciliation fragment w
+`build_ads_diagnostics` (394 linii po section extraction). Nie przenosić całego
+monolitu naraz; zachować response order, freshness i ActionObject safety.
 
 ## Kontrola repo
 
