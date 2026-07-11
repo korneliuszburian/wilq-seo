@@ -209,6 +209,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Compact summary candidate payloads są teraz w `_compact_ads_candidate_contracts`;
   custom segments, forecast rows i negative-keyword previews nadal mają ten sam
   limit 5, a complexity spadł do 6 znanych violations.
+- Campaign triage source metric/evidence context jest teraz w
+  `_campaign_triage_source_context`; preview flags i lineage pozostają bez zmian.
+  Complexity: 398 / 132695 LOC; 5 znanych violations, następny target to
+  `_negative_keyword_candidates`.
 
 ## Granica bezpieczeństwa
 

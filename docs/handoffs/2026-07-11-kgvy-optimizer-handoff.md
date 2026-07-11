@@ -60,6 +60,8 @@ Ostatni commit: `00c454a` (`refactor: split Ads summary candidate compaction`)
   nie wracaj do inline status/action/missing-contract branch.
 - Compact candidate payloads są w `_compact_ads_candidate_contracts`; nie wracaj
   do inline custom-segment/negative-keyword compaction.
+- Campaign triage source context jest w `_campaign_triage_source_context`; nie
+  wracaj do inline evidence/metric aggregation.
 
 ## Dowody
 
@@ -79,8 +81,9 @@ Ostatni commit: `00c454a` (`refactor: split Ads summary candidate compaction`)
 
 ## Następny slice
 
-Następny potwierdzony seam wybierz po aktualnym complexity audit i `bd ready`;
-nie wracaj do business-context, strategy-review ani candidate-compaction helpers.
+Następny potwierdzony seam to `_negative_keyword_candidates` (103 linie), wybrany
+po aktualnym complexity audit. Zachować 90-day safety, evidence IDs, preview
+flags i `apply_allowed=false`.
 
 ## Kontrola repo
 

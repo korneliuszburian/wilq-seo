@@ -123,6 +123,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_compact_ads_candidate_contracts` przejął kompaktowanie custom segments,
   forecast rows i negative-keyword previews; summary limit i payload shape bez zmian.
   Complexity: 398 / 132675 LOC; violations spadły do 6.
+- `_campaign_triage_source_context` przejął source metric/evidence aggregation i
+  preview flags; triage row, action IDs i blocked claims pozostają bez zmian.
+  Complexity: 398 / 132695 LOC; violations spadły do 5.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

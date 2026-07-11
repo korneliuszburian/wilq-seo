@@ -2678,34 +2678,17 @@ def _campaign_triage_row(
     impression_share_row: AdsImpressionShareRow | None,
     action_ids: list[str],
 ) -> AdsCampaignTriageRow:
-    source_metric_values: list[str] = [fact.name for fact in campaign_row.metric_facts]
-    if kpi_row is not None:
-        source_metric_values.extend(kpi_row.source_metric_names)
-    if budget_row is not None:
-        source_metric_values.extend(fact.name for fact in budget_row.metric_facts)
-    for recommendation_row in recommendation_rows:
-        source_metric_values.extend(fact.name for fact in recommendation_row.metric_facts)
-    if impression_share_row is not None:
-        source_metric_values.extend(fact.name for fact in impression_share_row.metric_facts)
-    source_metric_names = _unique(source_metric_values)
-    evidence_ids = _unique(
-        [
-            *campaign_row.evidence_ids,
-            *(kpi_row.evidence_ids if kpi_row is not None else []),
-            *(budget_row.evidence_ids if budget_row is not None else []),
-            *(
-                evidence_id
-                for recommendation_row in recommendation_rows
-                for evidence_id in recommendation_row.evidence_ids
-            ),
-            *(impression_share_row.evidence_ids if impression_share_row is not None else []),
-        ]
-    )
-    has_budget_apply_preview = bool(
-        budget_row is not None and budget_row.payload_preview is not None
-    )
-    has_recommendation_apply_preview = any(
-        row.payload_preview is not None for row in recommendation_rows
+    (
+        source_metric_names,
+        evidence_ids,
+        has_budget_apply_preview,
+        has_recommendation_apply_preview,
+    ) = _campaign_triage_source_context(
+        campaign_row=campaign_row,
+        kpi_row=kpi_row,
+        budget_row=budget_row,
+        recommendation_rows=recommendation_rows,
+        impression_share_row=impression_share_row,
     )
     return AdsCampaignTriageRow(
         campaign_id=campaign_row.campaign_id,
@@ -2781,6 +2764,45 @@ def _campaign_triage_row(
                 *(["campaign_budget_apply_safety"] if has_budget_apply_preview else []),
             ]
         ),
+    )
+
+
+def _campaign_triage_source_context(
+    *,
+    campaign_row: AdsCampaignMetricRow,
+    kpi_row: AdsDerivedKpiRow | None,
+    budget_row: AdsBudgetPacingRow | None,
+    recommendation_rows: list[AdsRecommendationRow],
+    impression_share_row: AdsImpressionShareRow | None,
+) -> tuple[list[str], list[str], bool, bool]:
+    source_metric_values: list[str] = [fact.name for fact in campaign_row.metric_facts]
+    if kpi_row is not None:
+        source_metric_values.extend(kpi_row.source_metric_names)
+    if budget_row is not None:
+        source_metric_values.extend(fact.name for fact in budget_row.metric_facts)
+    for recommendation_row in recommendation_rows:
+        source_metric_values.extend(fact.name for fact in recommendation_row.metric_facts)
+    if impression_share_row is not None:
+        source_metric_values.extend(fact.name for fact in impression_share_row.metric_facts)
+    source_metric_names = _unique(source_metric_values)
+    evidence_ids = _unique(
+        [
+            *campaign_row.evidence_ids,
+            *(kpi_row.evidence_ids if kpi_row is not None else []),
+            *(budget_row.evidence_ids if budget_row is not None else []),
+            *(
+                evidence_id
+                for recommendation_row in recommendation_rows
+                for evidence_id in recommendation_row.evidence_ids
+            ),
+            *(impression_share_row.evidence_ids if impression_share_row is not None else []),
+        ]
+    )
+    return (
+        source_metric_names,
+        evidence_ids,
+        bool(budget_row is not None and budget_row.payload_preview is not None),
+        any(row.payload_preview is not None for row in recommendation_rows),
     )
 
 
