@@ -159,13 +159,16 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 392 plików Python,
-131880 non-empty LOC. Bounded content seed extraction, metric-candidate
+132005 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with
 `--allow-frozen --allow-budget-violations`: service.py remains a frozen-growth
 file because the seam removes inline code, while pre-existing content/service
-budget findings remain tracked for the broader `jnra` cleanup. Historyczne duże
+budget findings remain tracked for the broader `jnra` cleanup. This 4wwo schema
+slice also surfaces the pre-existing `_metric_dimension_value_label` budget
+finding in `schemas/core.py`; it is unrelated to refresh-state behavior and is
+tracked separately. Historyczne duże
 testy pozostają osobnym otwartym cleanup scope; bieżący seed seam nie zwiększa
 ich rozmiaru.
 
@@ -212,6 +215,10 @@ ich rozmiaru.
   `wilq/actions/mutation_summary.py`; service zachowuje wybór kandydatów,
   blocker counts i operator next-step callbacks, a typed summary nadal raportuje
   21 akcji i 0 write-capable.
+- `4wwo` ma teraz istniejący `/api/connectors` rozszerzony o typed
+  `refresh_state`: stan odczytu, `refresh_allowed`, ostatni run, safe next step i
+  affected decisions. `/settings` pokazuje tę informację ponad ręcznym CTA;
+  browser proof jest w `.local-lab/proof/4wwo-sources-refresh-state.png`.
 - Aktualne screenshoty desktop/mobile/action są w lokalnym, ignorowanym
   `.local-lab/proof/independent-review-2026-07-10/`.
 - Full cold E2E ma jawne otwarte blockers; nie nazywaj całego `verify.sh`

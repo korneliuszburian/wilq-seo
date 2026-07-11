@@ -17,8 +17,10 @@ from wilq.credentials.runtime import (
 from wilq.schemas import (
     ConnectorCapability,
     ConnectorProductScope,
+    ConnectorRefreshJobState,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
+    ConnectorRefreshState,
     ConnectorRefreshStatus,
     ConnectorStatus,
     ConnectorStatusValue,
@@ -319,6 +321,13 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
                 state="missing",
                 notes="Optional connector disabled by current Ekologus operator scope.",
             ),
+            refresh_state=_connector_refresh_state(
+                connector_id=definition.id,
+                configured=False,
+                read=definition.read,
+                freshness_state="missing",
+                missing_credentials=[],
+            ),
             capabilities=ConnectorCapability(
                 read=definition.read,
                 write=definition.write,
@@ -356,6 +365,13 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
         error=_connector_error(missing),
         last_success_at=latest_success.completed_at if latest_success else None,
         freshness=freshness,
+        refresh_state=_connector_refresh_state(
+            connector_id=definition.id,
+            configured=configured,
+            read=definition.read,
+            freshness_state=freshness.state,
+            missing_credentials=missing,
+        ),
         capabilities=ConnectorCapability(
             read=definition.read,
             write=definition.write,
@@ -386,6 +402,83 @@ def _latest_successful_vendor_read(connector_id: str) -> ConnectorRefreshRun | N
         if run.mode == ConnectorRefreshMode.vendor_read and connector_refresh_has_live_data(run):
             return run
     return None
+
+
+def _latest_vendor_read(connector_id: str) -> ConnectorRefreshRun | None:
+    for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id):
+        if run.mode == ConnectorRefreshMode.vendor_read:
+            return run
+    return None
+
+
+def _connector_refresh_state(
+    *,
+    connector_id: str,
+    configured: bool,
+    read: bool,
+    freshness_state: str,
+    missing_credentials: list[str],
+) -> ConnectorRefreshState:
+    latest_run = _latest_vendor_read(connector_id) if configured else None
+    refresh_allowed = configured and read and not missing_credentials
+    affected_decisions = {
+        "google_analytics_4": ["ga4_diagnostics", "command_center"],
+        "google_merchant_center": ["merchant_diagnostics", "command_center"],
+        "google_ads": ["ads_diagnostics", "command_center"],
+    }.get(connector_id, ["command_center"])
+    if latest_run is None:
+        state = (
+            ConnectorRefreshJobState.stale
+            if freshness_state == "stale"
+            else ConnectorRefreshJobState.unknown
+        )
+    elif latest_run.status == ConnectorRefreshStatus.failed:
+        state = ConnectorRefreshJobState.failed
+    elif latest_run.status == ConnectorRefreshStatus.blocked:
+        state = ConnectorRefreshJobState.blocked
+    elif not latest_run.metrics_persisted or not latest_run.vendor_data_collected:
+        state = ConnectorRefreshJobState.partial
+    elif freshness_state == "stale":
+        state = ConnectorRefreshJobState.stale
+    else:
+        state = ConnectorRefreshJobState.ready
+    labels = {
+        ConnectorRefreshJobState.ready: "odświeżone",
+        ConnectorRefreshJobState.stale: "wymaga odświeżenia",
+        ConnectorRefreshJobState.partial: "odczyt częściowy",
+        ConnectorRefreshJobState.failed: "odświeżenie nieudane",
+        ConnectorRefreshJobState.blocked: "odczyt zablokowany",
+        ConnectorRefreshJobState.unknown: "stan odświeżenia nieznany",
+    }
+    next_steps = {
+        ConnectorRefreshJobState.ready: (
+            "Źródło ma ostatni udany odczyt; użyj go zgodnie ze świeżością."
+        ),
+        ConnectorRefreshJobState.stale: (
+            "Uruchom bezpieczny odczyt źródła przed wnioskiem z danych."
+        ),
+        ConnectorRefreshJobState.partial: (
+            "Odczyt nie utrwalił pełnych metryk; odśwież ponownie przed decyzją."
+        ),
+        ConnectorRefreshJobState.failed: (
+            "Sprawdź ostatni odczyt i uruchom go ponownie po usunięciu błędu."
+        ),
+        ConnectorRefreshJobState.blocked: (
+            "Usuń blocker dostępu lub konfiguracji, potem uruchom odczyt ponownie."
+        ),
+        ConnectorRefreshJobState.unknown: "Uruchom bezpieczny odczyt, aby potwierdzić stan źródła.",
+    }
+    return ConnectorRefreshState(
+        state=state,
+        state_label=labels[state],
+        refresh_allowed=refresh_allowed,
+        last_run_id=latest_run.id if latest_run is not None else None,
+        last_run_status=latest_run.status if latest_run is not None else None,
+        last_run_started_at=latest_run.started_at if latest_run is not None else None,
+        last_run_completed_at=latest_run.completed_at if latest_run is not None else None,
+        safe_next_step=next_steps[state],
+        affected_decisions=affected_decisions,
+    )
 
 
 def _latest_incomplete_vendor_read(connector_id: str) -> ConnectorRefreshRun | None:

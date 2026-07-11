@@ -1159,6 +1159,10 @@ function SourceAccessCard({
       <p className="mt-3 text-sm leading-6 text-slate-700">
         {status.description}
       </p>
+      <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+        <span className="font-semibold text-ink">Stan odczytu: </span>
+        {connector.refresh_state.state_label}. {connector.refresh_state.safe_next_step}
+      </div>
       {canRefresh ? (
         <div className="mt-4 space-y-2">
           <button

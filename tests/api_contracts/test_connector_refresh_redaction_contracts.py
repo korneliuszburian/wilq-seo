@@ -51,3 +51,25 @@ def test_connector_refresh_run_persists_redacted_evidence(
     assert context_response.status_code == 200
     context_runs = {item["id"] for item in context_response.json()["connector_refresh_runs"]}
     assert run["id"] in context_runs
+
+
+def test_connector_status_exposes_typed_refresh_state_without_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "refresh_status.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+
+    response = client.get("/api/connectors/google_ads/status")
+
+    assert response.status_code == 200
+    refresh_state = response.json()["refresh_state"]
+    assert refresh_state["state"] in {"unknown", "stale", "blocked"}
+    assert refresh_state["refresh_allowed"] is False
+    assert refresh_state["state_label"]
+    assert refresh_state["safe_next_step"]
+    assert refresh_state["affected_decisions"] == ["ads_diagnostics", "command_center"]
+    serialized = json.dumps(refresh_state)
+    assert "GOOGLE_ADS_CLIENT_SECRET" not in serialized
+    assert "refresh_token" not in serialized.lower()

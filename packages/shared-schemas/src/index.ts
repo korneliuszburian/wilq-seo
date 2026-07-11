@@ -8,6 +8,18 @@ import {
 
 export * from "./contentWorkflow";
 
+export const ConnectorRefreshStateSchema = z.object({
+  state: z.enum(["ready", "stale", "partial", "failed", "blocked", "unknown"]),
+  state_label: z.string(),
+  refresh_allowed: z.boolean(),
+  last_run_id: z.string().nullable().optional(),
+  last_run_status: z.enum(["completed", "blocked", "failed"]).nullable().optional(),
+  last_run_started_at: z.string().nullable().optional(),
+  last_run_completed_at: z.string().nullable().optional(),
+  safe_next_step: z.string(),
+  affected_decisions: z.array(z.string())
+});
+
 export const ConnectorStatusSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -26,6 +38,13 @@ export const ConnectorStatusSchema = z.object({
   freshness: z.object({
     state: z.string(),
     notes: z.string().nullable().optional()
+  }),
+  refresh_state: ConnectorRefreshStateSchema.default({
+    state: "unknown",
+    state_label: "stan odświeżenia do sprawdzenia",
+    refresh_allowed: false,
+    safe_next_step: "Sprawdź stan źródła przed użyciem danych w decyzji.",
+    affected_decisions: []
   }),
   error: z.string().nullable().optional(),
   rate_limit_notes: z.string().nullable().optional(),

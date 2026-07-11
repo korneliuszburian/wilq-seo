@@ -262,6 +262,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/mutation_summary.py`; service zachowuje wybór kandydatów,
   blocker counts i operator next-step callbacks, a typed summary nadal raportuje
   21 akcji i 0 write-capable.
+- `4wwo` ma teraz istniejący `/api/connectors` rozszerzony o typed
+  `refresh_state`: stan odczytu, `refresh_allowed`, ostatni run, safe next step i
+  affected decisions. `/settings` pokazuje tę informację ponad ręcznym CTA;
+  browser proof jest w `.local-lab/proof/4wwo-sources-refresh-state.png`.
+- Complexity po rozszerzeniu connector schema: 392 pliki / 132005 non-empty LOC;
+  jedyny changed-file budget finding to wcześniejszy `_metric_dimension_value_label`
+  w `wilq/schemas/core.py`, niezwiązany z refresh-state slice.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

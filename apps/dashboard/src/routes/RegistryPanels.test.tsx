@@ -71,6 +71,17 @@ describe("RegistryPanels", () => {
             available_credential_sources: ["repo_env"],
             credential_source_summary_label: "1 źródło",
             freshness: { state: "missing" },
+            refresh_state: {
+              state: "blocked",
+              state_label: "odczyt zablokowany",
+              refresh_allowed: false,
+              last_run_id: null,
+              last_run_status: "blocked",
+              last_run_started_at: null,
+              last_run_completed_at: null,
+              safe_next_step: "Uzupełnij dostęp przed odczytem.",
+              affected_decisions: ["ads_diagnostics", "command_center"]
+            },
             risk_notes: "Zapis Ads wymaga ActionObject, review człowieka i audit eventu.",
             health_check: "credential_presence",
             supported_actions: []

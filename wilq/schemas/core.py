@@ -60,6 +60,27 @@ class ConnectorRefreshStatus(StrEnum):
     failed = "failed"
 
 
+class ConnectorRefreshJobState(StrEnum):
+    ready = "ready"
+    stale = "stale"
+    partial = "partial"
+    failed = "failed"
+    blocked = "blocked"
+    unknown = "unknown"
+
+
+class ConnectorRefreshState(BaseModel):
+    state: ConnectorRefreshJobState = ConnectorRefreshJobState.unknown
+    state_label: str = "stan odświeżenia do sprawdzenia"
+    refresh_allowed: bool = False
+    last_run_id: str | None = None
+    last_run_status: ConnectorRefreshStatus | None = None
+    last_run_started_at: datetime | None = None
+    last_run_completed_at: datetime | None = None
+    safe_next_step: str = "Sprawdź stan źródła przed użyciem danych w decyzji."
+    affected_decisions: list[str] = Field(default_factory=list)
+
+
 class ActionMode(StrEnum):
     suggest = "suggest"
     prepare = "prepare"
@@ -141,6 +162,7 @@ class ConnectorStatus(BaseModel):
     error: str | None = None
     last_success_at: datetime | None = None
     freshness: FreshnessState
+    refresh_state: ConnectorRefreshState = Field(default_factory=ConnectorRefreshState)
     capabilities: ConnectorCapability
     required_env: list[str] = Field(default_factory=list)
     supported_actions: list[str] = Field(default_factory=list)
