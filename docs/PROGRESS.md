@@ -64,6 +64,9 @@ w git, Beads i `docs/progress/archive/`.
   shared-budget, currency, impact i safety semantics pozostały bez zmian.
   Complexity dispatcher ma 122 linii; pozostałe branches czekają na kolejne
   bounded seamy.
+- Kolejny fragment wydzielił `search_term_ngrams` i `impression_share`; zachowane
+  są źródłowe koszty/kliknięcia i budget-loss count. Complexity dispatcher ma 12
+  pozostałych, znanych violations; nie tworzymy nowego monolitu.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

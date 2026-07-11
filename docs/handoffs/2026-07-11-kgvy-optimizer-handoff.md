@@ -21,6 +21,8 @@ Ostatni commit: `c7f9d4f` (`refactor: extract Ads budget and recommendation tile
   dwóch branchy w dispatcherze.
 - Trzeci fragment obejmuje `budget_context` i `recommendations`; nie wracaj do
   tych branchy ani do ich formatterów w dispatcherze.
+- Czwarty fragment obejmuje `search_term_ngrams` i `impression_share`; nie wracaj
+  do tych branchy w dispatcherze.
 
 ## Dowody
 

@@ -150,3 +150,39 @@ def recommendations_metric_tiles(
             "podgląd akcji": len(decision.recommendation_apply_preview),
         }
     )
+
+
+def search_term_ngram_metric_tiles(
+    decision: AdsDecisionItem,
+    currency_code: str | None,
+) -> dict[str, int | float | str]:
+    rows = decision.search_term_ngram_rows
+    rows_with_clicks = sum(1 for row in rows if (row.clicks or 0) > 0)
+    max_source_terms = max((row.source_search_term_count for row in rows), default=0)
+    max_clicks = max((row.clicks or 0 for row in rows), default=0)
+    max_cost_micros = max((row.cost_micros or 0 for row in rows), default=0)
+    ngram_tiles: dict[str, int | float | str | None] = {
+        "n-gramy": decision.metric_tiles.get("n-gramy", len(rows)),
+        "pokazane": len(rows),
+        "z kliknięciami": rows_with_clicks,
+        "max query/temat": max_source_terms,
+        "top kliknięcia": max_clicks,
+    }
+    if max_cost_micros:
+        ngram_tiles["top koszt"] = format_money_micros(max_cost_micros, currency_code)
+    return clean_metric_tiles(ngram_tiles)
+
+
+def impression_share_metric_tiles(
+    decision: AdsDecisionItem,
+) -> dict[str, int | float | str]:
+    return clean_metric_tiles(
+        {
+            "kampanie": len(decision.impression_share_rows),
+            "utrata przez budżet": sum(
+                1
+                for row in decision.impression_share_rows
+                if row.search_budget_lost_impression_share is not None
+            ),
+        }
+    )

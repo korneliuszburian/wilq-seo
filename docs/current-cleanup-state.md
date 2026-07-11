@@ -150,6 +150,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   currency formatting, shared-budget tile, impact/priority/action counts oraz
   blokady zapisu. Complexity dispatcher obniżył się do 122 linii; reszta gałęzi
   nadal jest osobnym zakresem.
+- Czwarty fragment obejmuje `search_term_ngrams` i `impression_share`; zachowuje
+  n-gramowy koszt/kliknięcia oraz licznik utraty udziału przez budżet. Dispatcher
+  ma teraz 12 pozostałych, jawnie znanych budget violations w audycie.
 
 ## Granica bezpieczeństwa
 

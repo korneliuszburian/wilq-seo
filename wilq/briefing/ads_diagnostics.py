@@ -87,7 +87,9 @@ from wilq.briefing.ads_metric_tiles import (
     campaign_activity_metric_tiles,
     campaign_triage_metric_tiles,
     derived_kpi_metric_tiles,
+    impression_share_metric_tiles,
     recommendations_metric_tiles,
+    search_term_ngram_metric_tiles,
 )
 from wilq.briefing.ads_metric_utils import (
     clean_metric_tiles as _clean_metric_tiles,
@@ -5047,35 +5049,9 @@ def _ads_decision_metric_tiles(
     if decision.decision_type == "review_recommendations":
         return recommendations_metric_tiles(decision)
     if decision.decision_type == "review_search_term_ngrams":
-        rows = decision.search_term_ngram_rows
-        rows_with_clicks = sum(1 for row in rows if (row.clicks or 0) > 0)
-        max_source_terms = max((row.source_search_term_count for row in rows), default=0)
-        max_clicks = max((row.clicks or 0 for row in rows), default=0)
-        max_cost_micros = max((row.cost_micros or 0 for row in rows), default=0)
-        ngram_tiles: dict[str, int | float | str | None] = {
-            "n-gramy": decision.metric_tiles.get("n-gramy", len(rows)),
-            "pokazane": len(rows),
-            "z kliknięciami": rows_with_clicks,
-            "max query/temat": max_source_terms,
-            "top kliknięcia": max_clicks,
-        }
-        if max_cost_micros:
-            ngram_tiles["top koszt"] = _format_money_micros(
-                max_cost_micros,
-                currency_code,
-            )
-        return _clean_metric_tiles(ngram_tiles)
+        return search_term_ngram_metric_tiles(decision, currency_code)
     if decision.decision_type == "review_impression_share":
-        return _clean_metric_tiles(
-            {
-                "kampanie": len(decision.impression_share_rows),
-                "utrata przez budżet": sum(
-                    1
-                    for row in decision.impression_share_rows
-                    if row.search_budget_lost_impression_share is not None
-                ),
-            }
-        )
+        return impression_share_metric_tiles(decision)
     if decision.decision_type == "review_change_history":
         return _clean_metric_tiles(
             {
