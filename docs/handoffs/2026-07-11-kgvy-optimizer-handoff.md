@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `9cbad69` (`refactor: split Ads preliminary target interpretation`)  
-`origin/main` = `9cbad69`
+Ostatni commit: `f60489d` (`refactor: extract Ads business context copy`)  
+`origin/main` = `f60489d`
 
 ## Wykonane
 
