@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `6c705d7` (`docs: reconcile Ads handoff state`)  
-`origin/main` = `6c705d7`
+Ostatni commit: `7278093` (`refactor: split Ads negative keyword indexes`)  
+`origin/main` = `7278093`
 
 ## Wykonane
 
@@ -89,6 +89,6 @@ blocked claims i `apply_allowed=false`.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 6c705d7`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 7278093`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
