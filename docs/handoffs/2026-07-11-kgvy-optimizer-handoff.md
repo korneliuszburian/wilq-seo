@@ -72,9 +72,10 @@ Ostatni commit: `ce5a60b` (`refactor: extract Ads context metric tiles`)
 
 ## Następny slice
 
-Następny potwierdzony seam to kolejna funkcja ponad budżetem w
-`ads_diagnostics.py`, wybrana po ponownym audycie complexity i aktualnym `bd ready`.
-Nie wracać do żadnego z trzech wydzielonych business-target branches.
+Następny potwierdzony seam to końcowa konstrukcja
+`_business_context_read_contract` (blocked-claims i typed response assembly),
+wybrana po ponownym audycie complexity i aktualnym `bd ready`. Nie wracać do
+wydzielonych summary, contract-state, preliminary ani metric-tile helpers.
 
 ## Kontrola repo
 
