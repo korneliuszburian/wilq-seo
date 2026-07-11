@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `f696bf8` (`docs: record Ads context state complexity`)  
-`origin/main` = `f696bf8`
+Ostatni commit: `ce5a60b` (`refactor: extract Ads context metric tiles`)  
+`origin/main` = `ce5a60b`
 
 ## Wykonane
 
