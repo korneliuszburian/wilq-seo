@@ -130,6 +130,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   decyzję i blokery bez pustego globalnego loadera:
   `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`. Cold map nadal jest
   potwierdzoną luką do zejścia poniżej 5 s.
+- `c9h9.10` jest zamknięty: Custom Segments korzysta z istniejącego Ads summary
+  projection zamiast pełnego payloadu; focused Playwright `1/1` w `4.4 s`
+  potwierdza kandydatów, forecast, evidence i blokady claims bez audience-size
+  ani write. Nie dodano endpointu.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
@@ -184,8 +188,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 
 1. `r564.3` — decision/blocker/CTA w mobile first viewport; świeży kandydat nadal zależy od zewnętrznego refresh.
 2. `c9h9.12` — knowledge cold contention (aktywny slice podczas zewnętrznej blokady content).
-3. Secondary route latency: `c9h9.10`; nie wyprzedza głównego content
-   P0.
+3. Secondary route latency: brak nowego potwierdzonego Beada; `c9h9.12`
+   pozostaje aktywnym cold-map seamem.
 
 `docs/audits/2026-07-10-cleanup-rebaseline.md` zawiera bieżącą mapę statusów i
 ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.

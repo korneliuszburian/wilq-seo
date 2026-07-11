@@ -56,6 +56,9 @@ splitu monolitu ani od przywracania direct WordPress write.
   pierwszy odczyt, cards/playbooks dopiero po kliknięciu. Cache 15 s daje
   `18.940732 s` cold / `0.053012 s` warm; prewarm jest celowo wyłączony, bo
   blokowałby startup health. Proof: `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`.
+- `c9h9.10` Custom Segments jest zamknięty po przejściu na istniejący Ads
+  summary projection i focused Playwright `1/1` w `4.4 s`; pełny Ads payload
+  nie wraca do tej trasy.
 
 ## Granica bezpieczeństwa
 
@@ -95,8 +98,8 @@ Otwarte product blockers:
 - `r564.3` — mobile first viewport; zależy od `.5`, `.6` i zamkniętego
   `r564.2`;
 - `c9h9.8` — stale dashboard E2E behavior assertions;
-- `c9h9.10`, `c9h9.12` — potwierdzone latency blokery Custom Segments i
-  Knowledge. `c9h9.9` i `c9h9.11` są zamknięte po API/browser proof.
+- `c9h9.12` — potwierdzony latency blocker Knowledge. `c9h9.9`, `c9h9.10`
+  i `c9h9.11` są zamknięte po API/browser proof.
 
 `ho41` jest wyłącznie route/component boundary. `jnra` jest splitem action
 service. Żaden z nich nie może przejąć product semantics freshness/write.

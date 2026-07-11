@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
 
-import { getAdsDiagnostics } from "../lib/api";
+import { getAdsDiagnosticsSummary } from "../lib/api";
 import {
   AdsCustomSegmentAudienceForecastPanel,
   AdsCustomSegmentCandidatesPanel
@@ -12,8 +12,8 @@ import { TraceLine } from "../components/TraceLine";
 
 export function CustomSegmentsDiagnosticSurface() {
   const diagnostics = useQuery({
-    queryKey: ["ads-diagnostics", "custom-segments"],
-    queryFn: getAdsDiagnostics
+    queryKey: ["ads-diagnostics", "summary", "custom-segments"],
+    queryFn: getAdsDiagnosticsSummary
   });
 
   if (diagnostics.isLoading) return <LoadingBand />;
