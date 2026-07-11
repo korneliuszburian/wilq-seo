@@ -77,6 +77,18 @@ def custom_segment_action(
     )
 
 
+def custom_segment_action_from_metric_facts(
+    google_ads_facts: list[MetricFact],
+) -> ActionObject | None:
+    payload = custom_segment_payload_from_metric_facts(google_ads_facts)
+    if payload is None:
+        return None
+    return custom_segment_action(
+        google_ads_facts=google_ads_facts,
+        custom_segment_payload=payload,
+    )
+
+
 def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     subject = "Segment niestandardowy Google Ads"

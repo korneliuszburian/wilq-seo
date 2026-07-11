@@ -220,6 +220,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/google_ads/search_term_ngrams.py`; n-gram preview, blokada
   wykluczeń i evidence pozostają bez zmian. Runtime pokazuje action w `prepare`
   z jednym evidence i `apply_allowed=false`; `service.py` spadł do 4 996 LOC.
+- Google Ads custom segment ma teraz candidate factory w
+  `wilq/actions/google_ads/custom_segments.py`; terminy źródłowe, safety preview,
+  blokada kierowania i evidence pozostają bez zmian. Runtime pokazuje action w
+  `prepare` z jednym evidence i centralne `write_capable=0`; `service.py` spadł
+  do 4 983 LOC.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

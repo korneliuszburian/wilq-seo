@@ -38,8 +38,7 @@ from wilq.actions.google_ads.change_history import (
     change_history_impact_action_from_metric_facts,
 )
 from wilq.actions.google_ads.custom_segments import (
-    custom_segment_action,
-    custom_segment_payload_from_metric_facts,
+    custom_segment_action_from_metric_facts,
 )
 from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
@@ -689,12 +688,9 @@ def _seed_google_ads_metric_actions(
         action = search_term_ngram_action_result
         actions[action.id] = action
 
-    custom_segment_payload = custom_segment_payload_from_metric_facts(google_ads_facts)
-    if custom_segment_payload is not None:
-        action = _custom_segment_action(
-            google_ads_facts=google_ads_facts,
-            custom_segment_payload=custom_segment_payload,
-        )
+    custom_segment_action_result = custom_segment_action_from_metric_facts(google_ads_facts)
+    if custom_segment_action_result is not None:
+        action = custom_segment_action_result
         actions[action.id] = action
 
     negative_keyword_payload = negative_keyword_payload_from_metric_facts(google_ads_facts)
@@ -741,17 +737,6 @@ def _negative_keyword_action(
     return negative_keyword_action(
         google_ads_facts=google_ads_facts,
         negative_keyword_payload=negative_keyword_payload,
-    )
-
-
-def _custom_segment_action(
-    *,
-    google_ads_facts: list[MetricFact],
-    custom_segment_payload: dict[str, Any],
-) -> ActionObject:
-    return custom_segment_action(
-        google_ads_facts=google_ads_facts,
-        custom_segment_payload=custom_segment_payload,
     )
 
 
