@@ -31,6 +31,8 @@ przywracania direct WordPress write.
   rekomendacja, blocker i przycisk „Otwórz decyzję i dowody”. Przy stale live
   queue karta nie udaje gotowości; screenshot
   `.local-lab/proof/r564-3-mobile-stale-blocker.png` jest aktualnym proof.
+- Mobile freshness został skondensowany, a source status bar jest poziomym
+  scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
 
 ## Granica bezpieczeństwa
 

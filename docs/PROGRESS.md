@@ -90,6 +90,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   ContentWorkflow Vitest 15/15, dashboard lint/typecheck green; live mobile
   screenshot `.local-lab/proof/r564-3-mobile-stale-blocker.png` pokazuje uczciwy
   refresh-first blocker przy aktualnym stale runtime.
+- Mobile freshness banner jest teraz skondensowany (summary poniżej desktop
+  breakpointu), a pięć statusów źródeł tworzy poziomy scroll zamiast pięciu
+  pionowych kart. Dzięki temu decision card ma realną szansę wejść w 390×844;
+  Vitest 15/15, lint/typecheck i nowy screenshot stale proof przechodzą.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

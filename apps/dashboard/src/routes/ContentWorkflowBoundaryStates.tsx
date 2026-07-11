@@ -15,8 +15,8 @@ export function ContentFreshnessBanner({
       <h2 className="text-sm font-semibold text-wait">
         Źródła treści: {assessment.state_label}
       </h2>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{assessment.summary}</p>
-      <p className="mt-2 text-sm font-semibold leading-6 text-ink">
+      <p className="mt-2 hidden text-sm leading-6 text-slate-700 sm:block">{assessment.summary}</p>
+      <p className="mt-2 line-clamp-3 text-xs font-semibold leading-5 text-ink sm:text-sm sm:leading-6">
         Następny bezpieczny krok: {assessment.next_step}
       </p>
     </section>
