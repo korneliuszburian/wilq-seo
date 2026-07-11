@@ -82,6 +82,7 @@ from wilq.actions.metric_utils import (
 from wilq.actions.mutation_readiness import mutation_readiness_blockers
 from wilq.actions.mutation_requirements import base_mutation_readiness_requirements
 from wilq.actions.mutation_response import build_mutation_readiness_response
+from wilq.actions.mutation_summary import build_mutation_readiness_summary
 from wilq.actions.operator_labels import (
     action_evidence_summary_label as _action_evidence_summary_label,
 )
@@ -1539,32 +1540,14 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
         for blocker in item.blockers:
             blocker_counts[blocker.code] = blocker_counts.get(blocker.code, 0) + 1
     first_write_candidate = _first_write_candidate(items)
-    top_blockers = [
-        code
-        for code, _count in sorted(
-            blocker_counts.items(),
-            key=lambda pair: (-pair[1], pair[0]),
-        )[:8]
-    ]
-    return ActionMutationReadinessSummaryResponse(
-        action_count=len(items),
-        ready_to_request_apply_count=sum(item.ready_to_request_apply for item in items),
-        vendor_write_possible_count=sum(item.vendor_write_possible for item in items),
-        would_attempt_vendor_write_count=sum(item.would_attempt_vendor_write for item in items),
-        prepare_only_count=sum(item.mode == ActionMode.prepare for item in items),
-        missing_adapter_count=blocker_counts.get("missing_mutation_adapter", 0),
-        high_risk_blocked_count=blocker_counts.get("missing_risk_allowed", 0),
-        top_blockers=top_blockers,
+    return build_mutation_readiness_summary(
+        items=items,
+        blocker_counts=blocker_counts,
         first_write_candidate=first_write_candidate,
         first_write_candidate_reason=_first_write_candidate_reason(first_write_candidate),
         activation_plan_steps=_activation_plan_steps(first_write_candidate),
         activation_next_step=_activation_next_step(first_write_candidate),
-        operator_next_step=_mutation_readiness_summary_next_step(
-            items,
-            blocker_counts,
-            first_write_candidate,
-        ),
-        items=items,
+        operator_next_step=_mutation_readiness_summary_next_step,
     )
 
 

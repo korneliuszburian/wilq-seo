@@ -258,6 +258,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/mutation_requirements.py`, a typed response assembly w
   `wilq/actions/mutation_response.py`. Service zachowuje WordPress-specific
   readiness i adapter gates; obecny runtime nadal ma 0 write-capable actions.
+- Mutation readiness summary assembly jest teraz w
+  `wilq/actions/mutation_summary.py`; service zachowuje wybór kandydatów,
+  blocker counts i operator next-step callbacks, a typed summary nadal raportuje
+  21 akcji i 0 write-capable.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
