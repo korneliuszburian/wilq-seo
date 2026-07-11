@@ -28,9 +28,9 @@ Ostatni commit: `58c34e2` (`refactor: extract Ads optimizer readiness`)
 
 ## Następny slice
 
-Ponownie sprawdzić `bd ready` i wybrać kolejny nieprzeniesiony builder `kgvy`;
-preferowana granica to następny duży subdomain contract, nie mechaniczny split
-bez testu zachowania.
+Ponownie sprawdzić `bd ready` i wybrać kolejną nieprzeniesioną granicę `kgvy`:
+metric tiles albo marketer-label hydration. Preferowana granica to testowalny
+builder decision queue, nie mechaniczny split bez testu zachowania.
 
 ## Kontrola repo
 

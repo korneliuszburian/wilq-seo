@@ -5,9 +5,9 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Po domknięciu boundary `wilq-seo-4wwo` i bounded seamie `jnra/audit_store.py`
-najbliższy wykonawczy slice to `wilq-seo-kgvy`: kolejny niezależny builder Ads
-diagnostics poza `service.py`. Polityka automatycznego stale-triggera (cooldown,
+Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
+readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica Ads decision
+queue (metric tiles albo marketer labels). Polityka automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
 pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 
