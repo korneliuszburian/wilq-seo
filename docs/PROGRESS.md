@@ -144,6 +144,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   aktualne zachowanie Ads, Content, Actions, Knowledge i Merchant. Nie podnoszono
   timeoutów, nie przywracano legacy IA, a pełny smoke nadal sprawdza brak raw IDs
   i technicznego copy above the fold.
+- `jnra` dostał mały, zachowawczy seam: konstruktory ActionObjectów Google Ads
+  dla kontekstu biznesowego i potwierdzenia celu przeniesiono do istniejącego
+  `wilq/actions/google_ads/business_context.py`; service zachowuje readiness,
+  evidence i delegację. Focused action contract `business_context` /
+  `keyword_planner`, Ruff, mypy i diff check przechodzą. Większy split pozostaje
+  otwarty i nie może omijać validate → preview → review → confirm → audit.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

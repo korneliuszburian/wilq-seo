@@ -63,6 +63,12 @@ Action Service; nie przywracaj direct WordPress write.
 - `c9h9.10` Custom Segments jest zamknięty po przejściu na istniejący Ads
   summary projection i focused Playwright `1/1` w `4.4 s`; pełny Ads payload
   nie wraca do tej trasy.
+- `jnra` ma kolejny mały seam: konstruktory ActionObjectów Google Ads dla
+  kontekstu biznesowego i potwierdzenia celu są teraz w istniejącym module
+  `wilq/actions/google_ads/business_context.py`; `service.py` zachowuje gating
+  odczytu, evidence i delegację. Focused action contract `business_context` /
+  `keyword_planner`, Ruff, mypy i diff check przechodzą. Bead pozostaje otwarty
+  dla kolejnych niezależnych seamów; nie wolno upraszczać ActionObject safety loop.
 
 ## Granica bezpieczeństwa
 

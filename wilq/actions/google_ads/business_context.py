@@ -5,7 +5,15 @@ from collections.abc import Iterable
 from typing import Any
 
 from wilq.actions.validation_copy import missing, no_destructive_change, no_write, wrong
-from wilq.schemas import AdsStrategyReviewRecord, AdsTargetGuardrailConfirmation
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    AdsStrategyReviewRecord,
+    AdsTargetGuardrailConfirmation,
+    OpportunityDomain,
+)
 from wilq.storage.local_state import local_state_store
 
 ADS_BUSINESS_CONTEXT_ACTION_ID = "act_configure_ads_business_context"
@@ -35,6 +43,67 @@ ADS_BUSINESS_CONTEXT_BLOCKING_CONTRACTS = {
     "business_goal",
     "human_budget_goal",
 }
+
+
+def business_context_action(
+    *,
+    missing_read_contracts: Iterable[str],
+    evidence_ids: list[str],
+) -> ActionObject:
+    return ActionObject(
+        id=ADS_BUSINESS_CONTEXT_ACTION_ID,
+        title="Uzupełnij kontekst biznesowy Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=evidence_ids,
+        human_diagnosis=(
+            "Google Ads ma live metryki, ale WILQ nie ma nie-sekretnych celów "
+            "biznesowych Ekologus: marży, celu biznesowego, celu budżetu oraz "
+            "docelowego zwrotu z reklam albo kosztu pozyskania celu."
+        ),
+        recommended_reason=(
+            "Uzupełnij repo-local .env wartościami biznesowymi Ads, potem sprawdź "
+            "kontekst biznesowy Ads. Do tego czasu WILQ blokuje obietnice "
+            "o rentowności, zmarnowanym budżecie i skalowaniu."
+        ),
+        payload=ads_business_context_payload(missing_read_contracts),
+        validation_status="not_validated",
+        created_by="system_business_context_seed",
+    )
+
+
+def target_confirmation_action(
+    *,
+    missing_read_contracts: Iterable[str],
+    evidence_ids: list[str],
+) -> ActionObject:
+    return ActionObject(
+        id=ADS_TARGET_CONFIRMATION_ACTION_ID,
+        title="Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=evidence_ids,
+        human_diagnosis=(
+            "Google Ads ma live metryki oraz lokalny kontekst biznesowy, ale brakuje "
+            "potwierdzonego zwrotu z reklam albo kosztu pozyskania celu. "
+            "WILQ może robić ocenę kampanii, ale nie może wydać werdyktu KPI ani "
+            "uruchamiać zapisu zmian budżetu lub rekomendacji."
+        ),
+        recommended_reason=(
+            "Potwierdź jedną zasadę bezpieczeństwa celu w repo-local .env. To nadal jest "
+            "krok bez zapisu zmian: bez mutacji Google Ads, bez automatycznego "
+            "skalowania i bez werdyktu rentowności."
+        ),
+        payload=ads_target_confirmation_payload(missing_read_contracts),
+        validation_status="not_validated",
+        created_by="system_ads_target_confirmation_seed",
+    )
 
 
 def ads_business_context_payload(
