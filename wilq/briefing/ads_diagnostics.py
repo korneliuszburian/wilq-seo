@@ -582,6 +582,51 @@ def _build_ads_candidate_read_contracts(
     return custom_segments_read_contract, negative_keywords_read_contract
 
 
+def _build_ads_campaign_optimizer_contracts(
+    campaign_read_contract: AdsCampaignReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract,
+    impression_share_read_contract: AdsImpressionShareReadContract,
+    action_ids: list[str],
+    change_history_read_contract: AdsChangeHistoryReadContract,
+    change_impact_readiness_contract: AdsChangeImpactReadinessContract,
+    search_term_review_summary_contract: AdsSearchTermReviewSummaryContract,
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+    custom_segments_read_contract: AdsCustomSegmentsReadContract,
+    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
+) -> tuple[AdsCampaignTriageReadContract, AdsOptimizerReadinessContract]:
+    campaign_triage_read_contract = _campaign_triage_read_contract(
+        campaign_read_contract,
+        business_context_read_contract,
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+        action_ids,
+    )
+    optimizer_readiness_contract = build_optimizer_readiness_contract(
+        campaign_triage_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+        change_history_read_contract,
+        change_impact_readiness_contract,
+        search_term_review_summary_contract,
+        search_term_ngram_read_contract,
+        search_term_safety_read_contract,
+        keyword_match_context_read_contract,
+        keyword_planner_read_contract,
+        custom_segments_read_contract,
+        negative_keywords_read_contract,
+    )
+    return campaign_triage_read_contract, optimizer_readiness_contract
+
+
 def _reconcile_search_term_read_contracts(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -964,7 +1009,10 @@ def build_ads_diagnostics(
         keyword_planner_read_contract,
         action_ids,
     )
-    campaign_triage_read_contract = _campaign_triage_read_contract(
+    (
+        campaign_triage_read_contract,
+        optimizer_readiness_contract,
+    ) = _build_ads_campaign_optimizer_contracts(
         campaign_read_contract,
         business_context_read_contract,
         derived_kpi_read_contract,
@@ -972,12 +1020,6 @@ def build_ads_diagnostics(
         recommendations_read_contract,
         impression_share_read_contract,
         action_ids,
-    )
-    optimizer_readiness_contract = build_optimizer_readiness_contract(
-        campaign_triage_read_contract,
-        budget_pacing_read_contract,
-        recommendations_read_contract,
-        impression_share_read_contract,
         change_history_read_contract,
         change_impact_readiness_contract,
         search_term_review_summary_contract,
