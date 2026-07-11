@@ -203,6 +203,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   GA4 działa w `prepare` z jednym evidence i zachowuje blokadę konwersji/ROAS;
   Content ma typed candidate factory w `wilq/actions/content_refresh.py`, a
   WordPress handoff nadal ma `apply_blocked`; `service.py` spadł do 5 046 LOC.
+- Google Ads campaign review ma teraz candidate factory w
+  `wilq/actions/google_ads/campaign_review.py`; prepare-only, evidence i blokada
+  budżetu/zapisu pozostają bez zmian. Runtime pokazuje kampanię w `prepare` z
+  jednym evidence i centralne `write_capable=0`; `service.py` spadł do 5 035 LOC.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

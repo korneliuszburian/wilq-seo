@@ -32,8 +32,7 @@ from wilq.actions.google_ads.business_context import (
     target_confirmation_action,
 )
 from wilq.actions.google_ads.campaign_review import (
-    campaign_review_action,
-    campaign_review_payload_from_metric_facts,
+    campaign_review_action_from_metric_facts,
 )
 from wilq.actions.google_ads.change_history import (
     change_history_impact_action,
@@ -669,12 +668,11 @@ def _seed_google_ads_metric_actions(
     if demand_gen_action is not None:
         actions[demand_gen_action.id] = demand_gen_action
 
-    campaign_review_payload = campaign_review_payload_from_metric_facts(google_ads_facts)
-    if campaign_review_payload is not None:
-        action = _campaign_review_action(
-            google_ads_facts=google_ads_facts,
-            campaign_review_payload=campaign_review_payload,
-        )
+    campaign_review_action_result = campaign_review_action_from_metric_facts(
+        google_ads_facts
+    )
+    if campaign_review_action_result is not None:
+        action = campaign_review_action_result
         actions[action.id] = action
 
     recommendation_review_payload = recommendation_review_payload_from_metric_facts(
@@ -799,17 +797,6 @@ def _change_history_impact_action(
     return change_history_impact_action(
         google_ads_facts=google_ads_facts,
         change_history_payload=change_history_payload,
-    )
-
-
-def _campaign_review_action(
-    *,
-    google_ads_facts: list[MetricFact],
-    campaign_review_payload: dict[str, Any],
-) -> ActionObject:
-    return campaign_review_action(
-        google_ads_facts=google_ads_facts,
-        campaign_review_payload=campaign_review_payload,
     )
 
 

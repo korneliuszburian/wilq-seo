@@ -84,6 +84,18 @@ def campaign_review_action(
         validation_status="not_validated",
         created_by="system_metric_seed",
     )
+
+
+def campaign_review_action_from_metric_facts(
+    google_ads_facts: list[MetricFact],
+) -> ActionObject | None:
+    payload = campaign_review_payload_from_metric_facts(google_ads_facts)
+    if payload is None:
+        return None
+    return campaign_review_action(
+        google_ads_facts=google_ads_facts,
+        campaign_review_payload=payload,
+    )
 CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "skalowanie budżetu",
     "zmiana budżetu",
