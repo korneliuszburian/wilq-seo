@@ -117,9 +117,9 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 - `tests/api_contracts/test_ads_contracts.py` przechodzi w całości.
 - Ruff, mypy, complexity audit i `git diff --check` przechodzą.
 - Runtime po restarcie: `/api/health` `ok`; `/api/ads/diagnostics` zwraca
-  `live_data_available=true`; `/api/metrics/status` raportuje 98 891 metric facts
-  i 4 560 refresh runs.
-- Browser proof po restarcie: `.local-lab/proof/ads-search-label-hydration.png`;
+  `live_data_available=true`; `/api/metrics/status` raportuje 98 893 metric facts
+  i 4 561 refresh runs.
+- Browser proof po restarcie: `.local-lab/proof/ads-performance-label-hydration.png`;
   `/ads-doctor` pokazuje kolejkę decyzji, dowody, świeżość Ads/GA4 i blokady
   ROAS/przychód/waste bez technicznego payloadu above the fold.
 - Zmniejszenie `ads_diagnostics.py`: 358 linii.
