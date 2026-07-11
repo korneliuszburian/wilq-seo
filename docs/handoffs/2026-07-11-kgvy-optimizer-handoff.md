@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `58c34e2` (`refactor: extract Ads optimizer readiness`)  
-`origin/main` = `58c34e2`
+Ostatni commit: `327176f` (`docs: hand off next Ads decision seam`)  
+`origin/main` = `327176f`
 
 ## Wykonane
 
@@ -34,6 +34,6 @@ builder decision queue, nie mechaniczny split bez testu zachowania.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 58c34e2`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 327176f`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
