@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `8fbe8b4` (`refactor: extract Ads recommendations reconciliation`)  
-`origin/main` = `8fbe8b4`
+Ostatni commit: `8191a5d` (`docs: update Ads reconciliation handoff pointer`)  
+`origin/main` = `8191a5d`
 
 ## Wykonane
 
@@ -103,6 +103,6 @@ missing-contract lineage, freshness i ActionObject safety.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 8fbe8b4`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 8191a5d`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
