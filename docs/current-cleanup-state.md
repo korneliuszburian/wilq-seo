@@ -213,6 +213,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_campaign_triage_source_context`; preview flags i lineage pozostają bez zmian.
   Complexity: 398 / 132695 LOC; 5 znanych violations, następny target to
   `_negative_keyword_candidates`.
+- Negative-keyword candidate indexing jest teraz w `_negative_keyword_context_indexes`;
+  90-day safety joins, keyword-context rows i evidence IDs pozostają bez zmian.
+  Complexity: 398 / 132710 LOC; 4 znane violations, następny target to
+  `_negative_keywords_read_contract`.
 
 ## Granica bezpieczeństwa
 

@@ -126,6 +126,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_campaign_triage_source_context` przejął source metric/evidence aggregation i
   preview flags; triage row, action IDs i blocked claims pozostają bez zmian.
   Complexity: 398 / 132695 LOC; violations spadły do 5.
+- `_negative_keyword_context_indexes` przejął indeksowanie 90-day safety i keyword
+  context; candidate safety, evidence IDs i preview semantics pozostają bez zmian.
+  Complexity: 398 / 132710 LOC; violations spadły do 4.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

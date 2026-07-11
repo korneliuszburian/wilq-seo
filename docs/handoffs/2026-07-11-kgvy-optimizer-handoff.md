@@ -62,6 +62,8 @@ Ostatni commit: `6c705d7` (`docs: reconcile Ads handoff state`)
   do inline custom-segment/negative-keyword compaction.
 - Campaign triage source context jest w `_campaign_triage_source_context`; nie
   wracaj do inline evidence/metric aggregation.
+- Negative-keyword context indexes są w `_negative_keyword_context_indexes`; nie
+  wracaj do inline 90-day safety/keyword-context indexing.
 
 ## Dowody
 
@@ -81,9 +83,9 @@ Ostatni commit: `6c705d7` (`docs: reconcile Ads handoff state`)
 
 ## Następny slice
 
-Następny potwierdzony seam to `_negative_keyword_candidates` (103 linie), wybrany
-po aktualnym complexity audit. Zachować 90-day safety, evidence IDs, preview
-flags i `apply_allowed=false`.
+Następny potwierdzony seam to `_negative_keywords_read_contract` (110 linii),
+wybrany po aktualnym complexity audit. Zachować 90-day safety, evidence IDs,
+blocked claims i `apply_allowed=false`.
 
 ## Kontrola repo
 

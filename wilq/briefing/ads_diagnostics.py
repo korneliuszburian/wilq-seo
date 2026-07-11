@@ -4592,16 +4592,10 @@ def _negative_keyword_candidates(
     keyword_context_rows: list[AdsKeywordMatchContextRow],
 ) -> list[AdsNegativeKeywordCandidate]:
     candidates: list[AdsNegativeKeywordCandidate] = []
-    safety_by_key = {_search_term_safety_key(row): row for row in safety_rows}
-    keyword_context_by_key: dict[
-        tuple[str | None, str | None],
-        list[AdsKeywordMatchContextRow],
-    ] = {}
-    for context_row in keyword_context_rows:
-        keyword_context_by_key.setdefault(
-            _keyword_match_context_key(context_row),
-            [],
-        ).append(context_row)
+    safety_by_key, keyword_context_by_key = _negative_keyword_context_indexes(
+        safety_rows,
+        keyword_context_rows,
+    )
     for row in sorted(rows, key=_search_term_row_sort_key):
         if not _is_negative_keyword_review_candidate(row):
             continue
@@ -4689,6 +4683,29 @@ def _negative_keyword_candidates(
             )
         )
     return candidates[:12]
+
+
+def _negative_keyword_context_indexes(
+    safety_rows: list[AdsSearchTermSafetyRow],
+    keyword_context_rows: list[AdsKeywordMatchContextRow],
+) -> tuple[
+    dict[tuple[str, str | None, str | None], AdsSearchTermSafetyRow],
+    dict[tuple[str | None, str | None], list[AdsKeywordMatchContextRow]],
+]:
+    safety_by_key: dict[
+        tuple[str, str | None, str | None],
+        AdsSearchTermSafetyRow,
+    ] = {_search_term_safety_key(row): row for row in safety_rows}
+    keyword_context_by_key: dict[
+        tuple[str | None, str | None],
+        list[AdsKeywordMatchContextRow],
+    ] = {}
+    for context_row in keyword_context_rows:
+        keyword_context_by_key.setdefault(
+            _keyword_match_context_key(context_row),
+            [],
+        ).append(context_row)
+    return safety_by_key, keyword_context_by_key
 
 
 def _negative_keyword_review_score(
