@@ -20,6 +20,12 @@ w git, Beads i `docs/progress/archive/`.
   i eval case IDs. Pięć realnych rule packs wypełnia te pola; API summaries
   zachowują ten sam kontrakt. Focused expert/diagnostic tests, Ruff, mypy,
   complexity (0 changed-code violations) i diff check przechodzą.
+- `wilq-seo-v9ab.7` ma pierwszy API-owned daily-check workflow przez istniejący
+  runtime i nowy typed projection `/api/marketing/daily-check`. Wynik zwraca
+  checked/skipped connectors, freshness, evidence IDs, source connectors,
+  expert rule IDs, blocked recommendations, safe next actions i do-not-touch;
+  live stan jest uczciwie `blocked` przy stale źródłach. Focused API/schema
+  tests, Ruff, mypy, complexity i browser proof Command Center przechodzą.
 
 - `kgvy` reconciliation boundary jest domknięty: `_reconcile_ads_change_history_contracts`
   oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline

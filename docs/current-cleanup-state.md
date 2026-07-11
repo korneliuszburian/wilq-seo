@@ -5,13 +5,15 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-`wilq-seo-v9ab.4` i pierwszy zakres `wilq-seo-v9ab.5` są domknięte jako osobne
+`wilq-seo-v9ab.4`, `v9ab.5` i pierwszy zakres `v9ab.7` są domknięte jako osobne
 produktowe slice'y: platform traps mają typed kontrakt, source lineage i safe
 next steps, a ExpertRule ma teraz pełne warunki, kontrakty, false-positive gates
 i safety. Istniejące diagnostyki nie wymyślają tych ograniczeń w React ani
-skillach. Następny potwierdzony Bead to `wilq-seo-v9ab.7` — API-owned
-daily-check workflow; nie zaczynaj od kolejnego wrappera Ads ani drugiego expert
-endpointu.
+skillach. Daily-check korzysta z istniejącego runtime i zwraca typed projection
+z traceability; live stan `blocked` przy stale źródłach nie jest maskowany.
+Następny potwierdzony Bead to `wilq-seo-v9ab.8` — false-positive guards dla
+daily recommendations; nie zaczynaj od kolejnego wrappera Ads ani drugiego
+expert endpointu.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najnowszy wykonany slice to

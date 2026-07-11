@@ -11,6 +11,7 @@ from wilq.briefing.content_diagnostics import (
     build_content_diagnostics_cached,
     build_content_preflight,
 )
+from wilq.briefing.daily_check import build_daily_check
 from wilq.briefing.daily_runtime import (
     build_daily_command_center,
     build_daily_marketing_brief,
@@ -25,6 +26,7 @@ from wilq.schemas import (
     CommandCenterResponse,
     ContentDiagnosticsResponse,
     ContentPreflightResponse,
+    DailyCheckResult,
     Ga4DiagnosticsResponse,
     LocaloDiagnosticsResponse,
     MarketingBrief,
@@ -43,6 +45,11 @@ def command_center() -> CommandCenterResponse:
 @router.get("/api/marketing/brief", response_model=MarketingBrief)
 def marketing_brief() -> MarketingBrief:
     return build_daily_marketing_brief()
+
+
+@router.get("/api/marketing/daily-check", response_model=DailyCheckResult)
+def marketing_daily_check() -> DailyCheckResult:
+    return build_daily_check()
 
 
 @router.get("/api/marketing/tactical-queue", response_model=TacticalQueueResponse)
