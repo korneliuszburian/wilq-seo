@@ -148,7 +148,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 4 555 non-empty LOC;
+- `wilq/actions/service.py`: 4 468 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -158,8 +158,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 387 plików Python,
-131685 non-empty LOC. Bounded content seed extraction, metric-candidate
+Latest complexity report (2026-07-11): 388 plików Python,
+131750 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with
@@ -196,6 +196,10 @@ ich rozmiaru.
 - Pełne mapowanie `_action_gate_label` jest teraz w
   `wilq/actions/gate_labels.py`; service zachowuje kompatybilny delegat i te same
   blokady claims, evidence, review i apply.
+- Review-gate assembly jest teraz w `wilq/actions/review_gate.py`; service
+  zachowuje odczyt eventów, blocker calculation i callbacki audit/labels, a
+  moduł składa ten sam typed `ActionReviewGate`. Complexity po seamu: service.py
+  4 468 LOC, bez zmiany `write_capable=0`.
 - Aktualne screenshoty desktop/mobile/action są w lokalnym, ignorowanym
   `.local-lab/proof/independent-review-2026-07-10/`.
 - Full cold E2E ma jawne otwarte blockers; nie nazywaj całego `verify.sh`

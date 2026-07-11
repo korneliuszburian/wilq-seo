@@ -246,6 +246,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Pełne mapowanie `_action_gate_label` jest teraz w
   `wilq/actions/gate_labels.py`; service zachowuje kompatybilny delegat i te same
   blokady claims, evidence, review i apply.
+- Review-gate assembly jest teraz w `wilq/actions/review_gate.py`; service
+  zachowuje odczyt eventów, blocker calculation i callbacki audit/labels, a
+  moduł składa ten sam typed `ActionReviewGate`. Complexity po seamu: service.py
+  4 468 LOC, bez zmiany `write_capable=0`.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

@@ -122,6 +122,7 @@ from wilq.actions.payload_readiness import (
 from wilq.actions.payloads import (
     validate_action_payload,
 )
+from wilq.actions.review_gate import build_action_review_gate
 from wilq.actions.service_profile import (
     knowledge_promotion_action,
     private_proposal_promotion_action,
@@ -4037,12 +4038,6 @@ def _action_review_gate(
     action: ActionObject,
     mutation_audits: list[ActionMutationAuditRecord] | None = None,
 ) -> ActionReviewGate:
-    status: Literal[
-        "pending_validation",
-        "validated_prepare_only",
-        "ready_to_apply",
-        "blocked_apply",
-    ]
     required_checks = _action_required_checks(action.payload)
     operator_checklist = _action_operator_checklist(action.payload)
     apply_allowed = _action_payload_apply_allowed(action.payload)
@@ -4057,104 +4052,22 @@ def _action_review_gate(
         confirmation_satisfied=last_confirmation is not None,
         impact_sanity_satisfied=_impact_status_from_event(last_impact_check) == "checked",
     )
-    contract_apply_allowed = (
-        apply_allowed and action.mode == ActionMode.apply and not apply_blockers
-    )
-    if action.validation_status == "invalid":
-        status = "blocked_apply"
-        summary = "Akcja ma błędne sprawdzenie; zapis zmian pozostaje zablokowany."
-    elif (
-        action.mode == ActionMode.apply
-        and action.validation_status == "valid"
-        and apply_allowed
-        and apply_blockers
-    ):
-        status = "blocked_apply"
-        summary = (
-            "Akcja ma przygotowany zakres zapisu zmian, ale blokery bezpieczeństwa nadal "
-            "zatrzymują zapis."
-        )
-    elif action.mode == ActionMode.apply and action.validation_status == "valid" and apply_allowed:
-        status = "ready_to_apply"
-        summary = (
-            "Kontrola WILQ potwierdza warunki zapisu; operator nadal musi jawnie "
-            "potwierdzić zapis zmian."
-        )
-    elif action.validation_status == "valid":
-        status = "validated_prepare_only"
-        summary = (
-            "Kontrola WILQ potwierdza warunki przygotowania; zapis zmian nadal "
-            "wymaga osobnego kontraktu i zgody operatora."
-        )
-    else:
-        status = "pending_validation"
-        summary = "Wymaga sprawdzenia w WILQ; zapis zmian pozostaje zablokowany osobnymi warunkami."
-    return ActionReviewGate(
-        status=status,
-        summary=summary,
+    return build_action_review_gate(
+        action=action,
         required_checks=required_checks,
-        required_check_labels=_action_gate_labels(required_checks),
         operator_checklist=operator_checklist,
-        operator_checklist_labels=_action_gate_labels(operator_checklist),
+        apply_allowed=apply_allowed,
+        last_review=last_review,
+        last_confirmation=last_confirmation,
+        last_impact_check=last_impact_check,
+        last_mutation_audit=last_mutation_audit,
         apply_blockers=apply_blockers,
-        apply_blocker_labels=_action_gate_labels(apply_blockers),
-        confirmation_required=_action_confirmation_required(required_checks, action.mode),
-        apply_allowed=contract_apply_allowed,
-        last_review_outcome=_review_outcome_from_event(last_review),
-        last_reviewed_by=last_review.actor if last_review is not None else None,
-        last_reviewed_at=last_review.created_at if last_review is not None else None,
-        last_review_summary=_operator_audit_summary_text(last_review.summary)
-        if last_review is not None
-        else None,
-        last_confirmation_by=last_confirmation.actor if last_confirmation is not None else None,
-        last_confirmation_at=last_confirmation.created_at
-        if last_confirmation is not None
-        else None,
-        last_confirmation_summary=_action_audit_summary_for_operator(last_confirmation)
-        if last_confirmation is not None
-        else None,
-        last_impact_check_status=_impact_status_from_event(last_impact_check),
-        last_impact_checked_by=last_impact_check.actor if last_impact_check is not None else None,
-        last_impact_checked_at=last_impact_check.created_at
-        if last_impact_check is not None
-        else None,
-        last_impact_check_summary=last_impact_check.summary
-        if last_impact_check is not None
-        else None,
-        last_mutation_audit_id=last_mutation_audit.id if last_mutation_audit is not None else None,
-        last_mutation_audit_status=last_mutation_audit.status
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_audit_actor=last_mutation_audit.actor
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_audit_at=last_mutation_audit.created_at
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_audit_summary=last_mutation_audit.summary
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_adapter_reached=last_mutation_audit.adapter_reached
-        if last_mutation_audit is not None
-        else None,
-        last_external_write_attempted=last_mutation_audit.external_write_attempted
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_attempted=last_mutation_audit.mutation_attempted
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_adapter=last_mutation_audit.mutation_adapter
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_audit_event_id=last_mutation_audit.audit_event_id
-        if last_mutation_audit is not None
-        else None,
-        last_mutation_blockers=last_mutation_audit.blockers
-        if last_mutation_audit is not None
-        else [],
-        last_mutation_blocker_labels=_action_gate_labels(last_mutation_audit.blockers)
-        if last_mutation_audit is not None
-        else [],
+        gate_labels=_action_gate_labels,
+        confirmation_required=_action_confirmation_required,
+        review_outcome=_review_outcome_from_event,
+        review_summary=lambda event: _operator_audit_summary_text(event.summary),
+        confirmation_summary=_action_audit_summary_for_operator,
+        impact_status=_impact_status_from_event,
     )
 
 
