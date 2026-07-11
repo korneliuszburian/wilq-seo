@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `6b00415` (`refactor: split blocked Ads target interpretation`)  
-`origin/main` = `6b00415`
+Ostatni commit: `3d8410e` (`docs: refresh Ads next-slice handoff`)  
+`origin/main` = `3d8410e`
 
 ## Wykonane
 
