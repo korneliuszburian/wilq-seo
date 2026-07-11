@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `1131bab` (`docs: record Ads browser proof`)  
-`origin/main` = `1131bab`
+Ostatni commit: `c6bfd4d` (`refactor: extract Ads context state assembly`)  
+`origin/main` = `c6bfd4d`
 
 ## Wykonane
 
