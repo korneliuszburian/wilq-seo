@@ -39,6 +39,9 @@ Ostatni commit: `e528200` (`refactor: extract Ads write safety decision`)
   do inline policy/rationale assembly w diagnostics.
 - Safety decision jest w `build_block_write_actions_decision`; nie wracaj do
   inline `ads_block_write_actions_without_actionobject` assembly.
+- Campaign/context/derived-KPI decisions są w `_build_campaign_context_decisions`,
+  a safety section w `_build_ads_safety_decisions`; nie wracaj do jednego
+  `_ads_decision_queue` assemblera dla tych grup.
 
 ## Dowody
 

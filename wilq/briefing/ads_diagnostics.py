@@ -4691,6 +4691,51 @@ def _blocked_ads_decision_queue(
     ]
 
 
+def _build_campaign_context_decisions(
+    campaign_read_contract: AdsCampaignReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    campaign_triage_read_contract: AdsCampaignTriageReadContract,
+    *,
+    action_ids: list[str],
+    campaign_missing_read_contracts: list[str],
+    derived_missing_read_contracts: list[str],
+) -> list[AdsDecisionItem]:
+    decisions: list[AdsDecisionItem] = []
+    if campaign_read_contract.campaign_rows:
+        decisions.append(
+            build_campaign_activity_decision(
+                campaign_read_contract,
+                action_ids=action_ids,
+                missing_read_contracts=campaign_missing_read_contracts,
+            )
+        )
+    if campaign_triage_read_contract.triage_rows:
+        decisions.append(build_campaign_triage_decision(campaign_triage_read_contract))
+    decisions.append(build_business_context_decision(business_context_read_contract))
+    if derived_kpi_read_contract.kpi_rows:
+        decisions.append(
+            build_derived_kpi_decision(
+                derived_kpi_read_contract,
+                action_ids=action_ids,
+                missing_read_contracts=derived_missing_read_contracts,
+            )
+        )
+    return decisions
+
+
+def _build_ads_safety_decisions(
+    sections: list[AdsDiagnosticSection],
+) -> list[AdsDecisionItem]:
+    safety_section = next(
+        (section for section in sections if section.id == "ads_action_safety"),
+        None,
+    )
+    if safety_section is None:
+        return []
+    return [build_block_write_actions_decision(safety_section)]
+
+
 def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
     business_context_read_contract: AdsBusinessContextReadContract,
@@ -4715,41 +4760,27 @@ def _ads_decision_queue(
     if blocked_handoff is not None:
         return _blocked_ads_decision_queue(blocked_handoff, currency_code)
 
-    decisions: list[AdsDecisionItem] = []
-    if campaign_read_contract.campaign_rows:
-        decisions.append(
-            build_campaign_activity_decision(
-                campaign_read_contract,
-                action_ids=action_ids,
-                missing_read_contracts=_remove_available_contracts(
-                    campaign_read_contract.missing_read_contracts,
-                    budget_pacing_read_contract,
-                    recommendations_read_contract,
-                    impression_share_read_contract,
-                    change_history_read_contract,
-                ),
-            )
-        )
-
-    if campaign_triage_read_contract.triage_rows:
-        decisions.append(build_campaign_triage_decision(campaign_triage_read_contract))
-
-    decisions.append(build_business_context_decision(business_context_read_contract))
-
-    if derived_kpi_read_contract.kpi_rows:
-        decisions.append(
-            build_derived_kpi_decision(
-                derived_kpi_read_contract,
-                action_ids=action_ids,
-                missing_read_contracts=_remove_available_contracts(
-                    derived_kpi_read_contract.missing_read_contracts,
-                    budget_pacing_read_contract,
-                    recommendations_read_contract,
-                    impression_share_read_contract,
-                    change_history_read_contract,
-                ),
-            )
-        )
+    decisions = _build_campaign_context_decisions(
+        campaign_read_contract,
+        business_context_read_contract,
+        derived_kpi_read_contract,
+        campaign_triage_read_contract,
+        action_ids=action_ids,
+        campaign_missing_read_contracts=_remove_available_contracts(
+            campaign_read_contract.missing_read_contracts,
+            budget_pacing_read_contract,
+            recommendations_read_contract,
+            impression_share_read_contract,
+            change_history_read_contract,
+        ),
+        derived_missing_read_contracts=_remove_available_contracts(
+            derived_kpi_read_contract.missing_read_contracts,
+            budget_pacing_read_contract,
+            recommendations_read_contract,
+            impression_share_read_contract,
+            change_history_read_contract,
+        ),
+    )
 
     if budget_pacing_read_contract.budget_rows:
         decisions.append(
@@ -4773,9 +4804,7 @@ def _ads_decision_queue(
         )
 
     if change_history_read_contract.status == "ready" or change_history_read_contract.evidence_ids:
-        decisions.append(
-            build_change_history_decision(change_history_read_contract)
-        )
+        decisions.append(build_change_history_decision(change_history_read_contract))
 
     if search_terms_read_contract.search_term_rows:
         decisions.append(
@@ -4803,12 +4832,7 @@ def _ads_decision_queue(
             build_custom_segments_decision(custom_segments_read_contract)
         )
 
-    safety_section = next(
-        (section for section in sections if section.id == "ads_action_safety"),
-        None,
-    )
-    if safety_section is not None:
-        decisions.append(build_block_write_actions_decision(safety_section))
+    decisions.extend(_build_ads_safety_decisions(sections))
 
     return [_with_ads_decision_lineage(decision, currency_code) for decision in decisions]
 

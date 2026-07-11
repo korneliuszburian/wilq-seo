@@ -96,6 +96,9 @@ w git, Beads i `docs/progress/archive/`.
 - `wilq-seo-v9ab.1` zamknięty po aktualizacji `PLANS.md` i master roadmapy:
   substrate `35-45%`, workflow parity `15-25%`, a real operator usefulness
   `10-20%` są rozdzielone; 35-45 nie jest już opisywane jako gotowość produktu.
+- Ads decision assembler ma teraz osobny `_build_campaign_context_decisions` dla
+  czterech pierwszych decyzji i `_build_ads_safety_decisions` dla fail-closed
+  safety section. Complexity: 398 / 132512 LOC; violations spadły do 10.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

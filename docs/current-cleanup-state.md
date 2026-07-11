@@ -178,6 +178,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Safety decision `ads_block_write_actions_without_actionobject` jest teraz w
   `build_block_write_actions_decision`; status blocked, blokady zapisów i
   lineage sekcji bezpieczeństwa nie są już inline w dispatcherze.
+- Campaign/triage/business-context/derived-KPI ready decisions są teraz składane
+  przez `_build_campaign_context_decisions`, a safety section przez
+  `_build_ads_safety_decisions`; `_ads_decision_queue` ma 10 znanych violations
+  poza budżetem, bez zmiany kolejności ani lineage.
 
 ## Granica bezpieczeństwa
 
