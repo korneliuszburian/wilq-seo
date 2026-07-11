@@ -41,6 +41,9 @@ w git, Beads i `docs/progress/archive/`.
   `wilq/actions/audit_store.py`, z limitem 10 wpisów na akcję i bez zmiany
   ActionObject safety loop. Focused action suite 9 passed, Ruff/mypy/diff check
   green; complexity: 394 plików Python / 132243 LOC, `service.py` 4224 LOC.
+- Następny wykonawczy wybór po ponownym `bd ready` to `wilq-seo-kgvy`: kolejny
+  niezależny builder Ads diagnostics. Auto-refresh policy i `r564.3` pozostają
+  opisanymi, nieaktywnymi blockerami; nie powtarzamy zakończonych seamów.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

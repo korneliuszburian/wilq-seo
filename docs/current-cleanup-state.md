@@ -5,12 +5,11 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Ostatni slice `wilq-seo-4wwo` dodał opcjonalny read-only async refresh: `queued`/`running`
-jest utrwalane w istniejącym refresh-run, a dashboard odpytuje istniejący endpoint i
-odświeża view-modele po wyniku. Następny krok to jawna polityka automatycznego
-odświeżania stale źródeł (trigger, rate limit, backoff, audit) albo przejście do
-zewnętrznie blokowanego `r564.3`; nie włączaj auto-refresh bez kontraktu i nie
-przywracaj direct WordPress write.
+Po domknięciu boundary `wilq-seo-4wwo` i bounded seamie `jnra/audit_store.py`
+najbliższy wykonawczy slice to `wilq-seo-kgvy`: kolejny niezależny builder Ads
+diagnostics poza `service.py`. Polityka automatycznego stale-triggera (cooldown,
+backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
+pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 
 ## Prawda produktu
 
