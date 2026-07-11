@@ -148,7 +148,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 4 788 non-empty LOC;
+- `wilq/actions/service.py`: 4 777 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -158,8 +158,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 384 plików Python,
-131640 non-empty LOC. Bounded content seed extraction, metric-candidate
+Latest complexity report (2026-07-11): 385 plików Python,
+131654 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with
@@ -184,8 +184,12 @@ ich rozmiaru.
 - Google Ads Demand Gen readiness działa przez factory w
   `wilq/actions/google_ads/demand_gen.py`; runtime ma `prepare`, pięć evidence,
   dwa brakujące kontrakty, `apply_allowed=false` i centralne `write_capable=0`.
-  `service.py` spadł do 4 788 LOC; focused Demand Gen/action tests, Ruff,
+  `service.py` spadł do 4 777 LOC; focused Demand Gen/action tests, Ruff,
   mypy i `git diff --check` przechodzą.
+- Predykaty bezpieczeństwa payloadu (`apply_allowed` i
+  `api_mutation_ready`) mają teraz mały typed seam w
+  `wilq/actions/payload_readiness.py`; service zachowuje istniejącą granicę
+  preview i zachowanie centralnego apply gate.
 - Aktualne screenshoty desktop/mobile/action są w lokalnym, ignorowanym
   `.local-lab/proof/independent-review-2026-07-10/`.
 - Full cold E2E ma jawne otwarte blockers; nie nazywaj całego `verify.sh`

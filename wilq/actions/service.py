@@ -73,6 +73,10 @@ from wilq.actions.metric_utils import (
     metric_fact_label,
     unique_values,
 )
+from wilq.actions.payload_readiness import (
+    payload_api_mutation_ready,
+    payload_apply_allowed,
+)
 from wilq.actions.payloads import (
     validate_action_payload,
 )
@@ -5126,26 +5130,11 @@ def _action_gate_label(value: str) -> str | None:
 
 
 def _action_payload_apply_allowed(payload: dict[str, Any]) -> bool:
-    if payload.get("apply_allowed") is True:
-        return True
-    preview_items = _payload_preview_items(payload)
-    if not preview_items:
-        return False
-    return all(item.get("apply_allowed") is True for item in preview_items)
+    return payload_apply_allowed(payload, _payload_preview_items(payload))
 
 
 def _action_payload_api_mutation_ready(payload: dict[str, Any]) -> bool:
-    if payload.get("api_mutation_ready") is True:
-        return True
-    if payload.get("api_mutation_ready") is False:
-        return False
-    preview_items = _payload_preview_items(payload)
-    if not preview_items:
-        return False
-    return all(
-        item.get("apply_allowed") is True and item.get("api_mutation_ready") is not False
-        for item in preview_items
-    )
+    return payload_api_mutation_ready(payload, _payload_preview_items(payload))
 
 
 def _action_confirmation_required(required_checks: list[str], mode: ActionMode) -> bool:

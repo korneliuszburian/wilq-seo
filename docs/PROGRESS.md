@@ -236,6 +236,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `apply_allowed=false`. Runtime pokazuje akcję z pięcioma evidence i dwoma
   brakującymi kontraktami; `service.py` spadł do 4 788 LOC, a centralny
   `write_capable=0` pozostał bez zmian.
+- Predykaty bezpieczeństwa payloadu (`apply_allowed` i
+  `api_mutation_ready`) mają teraz mały typed seam w
+  `wilq/actions/payload_readiness.py`; service zachowuje istniejącą granicę
+  preview i zachowanie centralnego apply gate.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
