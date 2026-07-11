@@ -1,7 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Commit będzie wskazany po pushu tego slice’a.
+Ostatni commit: `58c34e2` (`refactor: extract Ads optimizer readiness`)  
+`origin/main` = `58c34e2`
 
 ## Wykonane
 
@@ -33,6 +34,6 @@ bez testu zachowania.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 58c34e2`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
