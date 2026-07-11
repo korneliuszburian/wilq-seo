@@ -1,0 +1,24 @@
+id: ads_platform_traps_v1
+name: Google Ads API platform traps
+version: 1
+source_anchor: Google Ads API query and mutation documentation
+when_to_use: Block Ads conclusions when API read or mutation prerequisites are not proven.
+required_inputs: [google_ads_metrics, query_contract, evidence_ids]
+diagnostic_logic: [require_read_contract, separate_readiness_from_performance, require_actionobject_before_mutation]
+recommended_actions: [refresh_google_ads_read, review_query_contract, keep_mutation_blocked]
+risk_notes: Do not infer CPA, ROAS, waste or mutation readiness from incomplete Ads reads.
+output_contract: Ads diagnosis with explicit platform trap and safe next step.
+platform_trap:
+  platform: google_ads
+  constraints:
+    - GAQL/resource and metric compatibility must be validated before interpreting a read.
+    - Mutation requires a typed ActionObject preview, human review, confirmation and audit.
+    - OAuth/customer/developer-token blockers invalidate performance conclusions.
+  blocked_claims:
+    - koszt pozyskania celu
+    - zwrot z reklam
+    - marnowanie budżetu
+    - gotowość zapisu w Google Ads
+  safe_next_steps:
+    - odśwież odczyt Google Ads i sprawdź status kontraktów
+    - pozostaw zapis zablokowany do czasu pełnego audytu akcji

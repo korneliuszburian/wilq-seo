@@ -93,7 +93,7 @@ GA4_WORDPRESS_MATCH_CONFIDENCE_LABELS = {
     "missing": "dopasowanie niepotwierdzone",
 }
 GA4_KNOWLEDGE_CARD_IDS = ["card_ga4_behavior_diagnostics_playbook"]
-GA4_EXPERT_RULE_IDS = ["ga4_diagnostics_v1"]
+GA4_EXPERT_RULE_IDS = ["ga4_diagnostics_v1", "ga4_platform_traps_v1"]
 Ga4DecisionType = Literal[
     "fix_measurement",
     "review_traffic_quality",

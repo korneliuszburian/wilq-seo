@@ -76,6 +76,7 @@ MERCHANT_KNOWLEDGE_CARD_IDS = [
 MERCHANT_EXPERT_RULE_IDS = [
     "merchant_feed_rules_v1",
     "merchant_product_diagnostics_v1",
+    "merchant_platform_traps_v1",
 ]
 MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT = "merchant_product_state_review_preview_v1"
 MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT = "merchant_supplemental_feed_review_preview_v1"

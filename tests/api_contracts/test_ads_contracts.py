@@ -2596,6 +2596,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert live_section["status"] == "ready"
     assert "wskazać dowód w WILQ" in live_section["diagnosis"]
     assert "ID dowodu" not in live_section["diagnosis"]
+    assert live_section["expert_rule_ids"] == [
+        "ads_diagnostics_v1",
+        "ads_principles_v1",
+        "ads_platform_traps_v1",
+    ]
     campaign_section = next(
         section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
     )

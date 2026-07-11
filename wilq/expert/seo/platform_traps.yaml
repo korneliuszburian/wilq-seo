@@ -1,0 +1,23 @@
+id: gsc_platform_traps_v1
+name: Google Search Console platform traps
+version: 1
+source_anchor: Google Search Console Search Analytics documentation
+when_to_use: Bound SEO decisions to query/page data limits and canonical inventory checks.
+required_inputs: [query_page_metrics, date_range, canonical_inventory, evidence_ids]
+diagnostic_logic: [respect_search_analytics_limits, cross_check_canonical_inventory, separate_visibility_from_business_outcome]
+recommended_actions: [refresh_gsc_read, verify_canonical_inventory, keep_outcome_claim_blocked]
+risk_notes: Search Analytics visibility is not a conversion or revenue proof.
+output_contract: GSC content decision with query/page evidence and inventory gate.
+platform_trap:
+  platform: search_console
+  constraints:
+    - Query/page rows must be interpreted within the requested date and aggregation window.
+    - A new page decision requires canonical and duplicate checks against WordPress inventory.
+    - Clicks, impressions and position do not prove leads, revenue or content success.
+  blocked_claims:
+    - przychód z widoczności GSC
+    - gwarantowany wzrost kliknięć
+    - nowy temat bez sprawdzenia istniejącego kanonicznego adresu
+  safe_next_steps:
+    - odśwież GSC i sprawdź konkretny query/page slice
+    - porównaj propozycję z publicznym WordPress inventory

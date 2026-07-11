@@ -52,6 +52,7 @@ def test_expert_knowledge_sources_link_to_structured_rules() -> None:
     assert "src_google_merchant_center_docs" in source_by_id
     assert "src_ga4_data_api_docs" in source_by_id
     assert "src_google_search_console_docs" in source_by_id
+    assert "src_wordpress_rest_docs" in source_by_id
 
     ads_source = source_by_id["src_google_ads_api_docs"]
     assert ads_source["domain"] == "ads"
@@ -60,6 +61,7 @@ def test_expert_knowledge_sources_link_to_structured_rules() -> None:
     assert ads_source["license_status"] == "commit_safe"
     assert ads_source["trust_level"] == "high"
     assert "ads_search_terms_v1" in ads_source["linked_rule_ids"]
+    assert "ads_platform_traps_v1" in ads_source["linked_rule_ids"]
     assert "automatic_vendor_write" in ads_source["forbidden_usage"]
     assert all("/home/" not in source["source_reference"] for source in sources)
     assert all(source["linked_rule_ids"] for source in sources)
@@ -71,6 +73,23 @@ def test_expert_knowledge_sources_link_to_structured_rules() -> None:
         summary for summary in summaries if summary["id"] == "ads_search_terms_v1"
     )
     assert search_terms_summary["source_ids"] == ["src_google_ads_api_docs"]
+
+    rules_response = client.get("/api/expert/rules")
+    assert rules_response.status_code == 200
+    rules_by_id = {rule["id"]: rule for rule in rules_response.json()}
+    trap_ids = {
+        "ads_platform_traps_v1",
+        "ga4_platform_traps_v1",
+        "merchant_platform_traps_v1",
+        "gsc_platform_traps_v1",
+        "wordpress_platform_traps_v1",
+    }
+    assert trap_ids.issubset(rules_by_id)
+    assert all(rules_by_id[rule_id]["platform_trap"]["constraints"] for rule_id in trap_ids)
+    assert all(rules_by_id[rule_id]["platform_trap"]["safe_next_steps"] for rule_id in trap_ids)
+    assert rules_by_id["wordpress_platform_traps_v1"]["source_ids"] == [
+        "src_wordpress_rest_docs"
+    ]
 
 
 def test_knowledge_taxonomy_separates_client_truth_from_expert_rules() -> None:

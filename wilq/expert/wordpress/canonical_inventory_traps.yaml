@@ -1,0 +1,23 @@
+id: wordpress_platform_traps_v1
+name: WordPress canonical and inventory traps
+version: 1
+source_anchor: WordPress REST API and WILQ public/dev inventory policy
+when_to_use: Prevent public/dev role confusion and duplicate content decisions.
+required_inputs: [public_inventory, canonical_url, dev_workspace, evidence_ids]
+diagnostic_logic: [separate_public_from_dev, require_canonical_match, check_duplicate_inventory]
+recommended_actions: [verify_public_canonical, prepare_dev_draft_only, block_publish_without_apply]
+risk_notes: The dev workspace is not a public canonical URL and cannot prove published state.
+output_contract: WordPress inventory gate with public/dev role and safe draft next step.
+platform_trap:
+  platform: wordpress
+  constraints:
+    - ekologus.pl is public SEO truth; ekologus.dev.proudsite.pl is draft workspace only.
+    - Existing canonical and duplicate checks must pass before creating a new draft.
+    - Draft creation remains behind the typed ActionObject apply and audit path.
+  blocked_claims:
+    - publikacja na dev jako publiczna publikacja
+    - nowy temat bez inventory/canonical proof
+    - automatyczny WordPress publish
+  safe_next_steps:
+    - sprawdź publiczny canonical URL i istniejące wpisy
+    - przygotuj tylko dev draft preview przez istniejący ActionObject

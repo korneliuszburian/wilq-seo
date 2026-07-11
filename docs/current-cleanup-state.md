@@ -1,9 +1,15 @@
-# Current Cleanup State — 2026-07-11
+# Current Cleanup State — 2026-07-12
 
 Przeczytaj przed cleanupem, refaktorem dashboardu albo zmianą kontraktu API.
 Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
+
+`wilq-seo-v9ab.4` jest domknięty jako osobny produktowy slice: platform traps
+mają typed kontrakt, source lineage i safe next steps, a istniejące diagnostyki
+nie wymyślają tych ograniczeń w React ani skillach. Następny potwierdzony Bead
+to `wilq-seo-v9ab.5` — rozszerzenie ExpertRule o warunki, wymagane kontrakty i
+blocked states; nie zaczynaj od kolejnego wrappera Ads.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najnowszy wykonany slice to
@@ -23,8 +29,8 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: wartości metryk są odświeżane po restarcie i muszą być
-  potwierdzone przez `/api/metrics/status`; konektory 12/9 configured/2 missing
+- Managed runtime: 98 915 metric facts i 4 572 refresh runs; konektory
+  12/9 configured/2 missing
   credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.

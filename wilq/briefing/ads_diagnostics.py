@@ -323,7 +323,7 @@ ADS_NGRAM_STOPWORDS = {
 ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_live_data_status": (
         [CARD_ADS_SEARCH, CARD_GOAL_001_RULES],
-        ["ads_diagnostics_v1", "ads_principles_v1"],
+        ["ads_diagnostics_v1", "ads_principles_v1", "ads_platform_traps_v1"],
     ),
     "ads_oauth_blocker": (
         [CARD_GOAL_001_RULES],

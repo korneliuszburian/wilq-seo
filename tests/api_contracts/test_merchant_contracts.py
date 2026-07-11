@@ -368,6 +368,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["expert_rule_ids"] == [
         "merchant_feed_rules_v1",
         "merchant_product_diagnostics_v1",
+        "merchant_platform_traps_v1",
     ]
     feed_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_feed_health"

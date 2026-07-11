@@ -1,0 +1,23 @@
+id: merchant_platform_traps_v1
+name: Merchant Center platform traps
+version: 1
+source_anchor: Google Merchant Center product status and issue documentation
+when_to_use: Explain product/feed blockers without treating status counts as performance or approval proof.
+required_inputs: [merchant_account, product_status, issue_status, evidence_ids]
+diagnostic_logic: [separate_issue_status_from_performance, require_product_join_keys, block_reapproval_claims]
+recommended_actions: [review_feed_issue, verify_product_attributes, keep_feed_write_blocked]
+risk_notes: Product status and issue aggregates do not prove revenue recovery or reapproval.
+output_contract: Merchant issue queue with source-backed blocker and safe next step.
+platform_trap:
+  platform: merchant_center
+  constraints:
+    - Issue status must be tied to the affected product and source refresh.
+    - Product performance requires an explicit Ads/GA4 join contract.
+    - Feed changes and reapproval require review and an ActionObject audit path.
+  blocked_claims:
+    - ponowne zatwierdzenie produktu
+    - odzyskany przychód produktu
+    - poprawa sprzedaży po naprawie feedu
+  safe_next_steps:
+    - sprawdź problem na konkretnym produkcie i świeżość odczytu
+    - pozostaw zmianę feedu w trybie review-only

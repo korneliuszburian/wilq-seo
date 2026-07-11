@@ -1,0 +1,23 @@
+id: ga4_platform_traps_v1
+name: GA4 Data API platform traps
+version: 1
+source_anchor: GA4 Data API dimensions, metrics and attribution documentation
+when_to_use: Separate measurement gaps from traffic-quality conclusions.
+required_inputs: [ga4_property, report_contract, landing_pages, evidence_ids]
+diagnostic_logic: [require_report_compatibility, separate_not_set_from_quality, require_conversion_provenance]
+recommended_actions: [review_ga4_measurement, verify_landing_mapping, keep_revenue_claim_blocked]
+risk_notes: Missing attribution or conversion setup is a measurement blocker, not proof of poor traffic.
+output_contract: GA4 diagnosis with measurement caveat and safe next step.
+platform_trap:
+  platform: ga4
+  constraints:
+    - Dimensions and metrics must be compatible with the requested GA4 report.
+    - (not set), attribution gaps and missing key events block traffic-quality conclusions.
+    - Revenue and conversion claims require matching provenance and an observation window.
+  blocked_claims:
+    - jakość ruchu bez rozdzielenia luki pomiaru
+    - przychód z kampanii bez potwierdzonego eventu
+    - ROAS bez zgodnego okna Ads i GA4
+  safe_next_steps:
+    - sprawdź kontrakt raportu i mapowanie stron wejścia
+    - uzupełnij dowód eventów kluczowych przed oceną wyniku

@@ -6,7 +6,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, cast
 
-from wilq.schemas import ExpertCapability, ExpertRule, ExpertRuleSummary
+from wilq.schemas import ExpertCapability, ExpertRule, ExpertRuleSummary, PlatformTrapContract
 
 EXPERT_ROOT = Path(__file__).resolve().parent
 
@@ -15,6 +15,7 @@ EXPERT_SOURCE_ID_BY_DOMAIN = {
     "analytics": "src_ga4_data_api_docs",
     "merchant": "src_google_merchant_center_docs",
     "seo": "src_google_search_console_docs",
+    "wordpress": "src_wordpress_rest_docs",
     "content": "src_wilq_content_rules",
     "local": "src_localo_and_gbp_rules",
     "social": "src_social_platform_review_rules",
@@ -62,6 +63,18 @@ def _requires_evidence(required_inputs: list[str], required_mapping: list[str]) 
     return any("evidence" in item for item in joined)
 
 
+def _platform_trap(data: dict[str, Any], path: Path) -> PlatformTrapContract | None:
+    value = data.get("platform_trap")
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError(f"Expert rule {path} field platform_trap must be a mapping.")
+    try:
+        return PlatformTrapContract.model_validate(value)
+    except ValueError as exc:
+        raise ValueError(f"Expert rule {path} has an invalid platform_trap contract.") from exc
+
+
 def _load_rule(path: Path) -> ExpertRule:
     data = _yaml_safe_load(path)
     version = data.get("version")
@@ -70,6 +83,7 @@ def _load_rule(path: Path) -> ExpertRule:
 
     required_inputs = _string_list(data, "required_inputs", path)
     required_mapping = _string_list(data, "required_mapping", path)
+    platform_trap = _platform_trap(data, path)
     return ExpertRule(
         id=_required_string(data, "id", path),
         name=_required_string(data, "name", path),
@@ -92,6 +106,7 @@ def _load_rule(path: Path) -> ExpertRule:
             )
         ],
         requires_evidence=_requires_evidence(required_inputs, required_mapping),
+        platform_trap=platform_trap,
     )
 
 
@@ -116,6 +131,7 @@ def list_expert_rule_summaries(limit: int | None = None) -> list[ExpertRuleSumma
             source_ids=rule.source_ids,
             output_contract=rule.output_contract,
             requires_evidence=rule.requires_evidence,
+            platform_trap=rule.platform_trap,
         )
         for rule in list_expert_rules()
     ]

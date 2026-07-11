@@ -26,6 +26,11 @@ _PLATFORM_SOURCE_BY_DOMAIN: dict[str, tuple[str, str, str]] = {
         "Google Search Console documentation and WILQ SEO diagnostics rules",
         "search_console",
     ),
+    "wordpress": (
+        "src_wordpress_rest_docs",
+        "WordPress REST API documentation and WILQ canonical/inventory rules",
+        "wordpress_inventory",
+    ),
     "content": (
         "src_wilq_content_rules",
         "WILQ content workflow, claim ledger and WordPress inventory rules",
@@ -55,7 +60,7 @@ def _source_for_domain(domain: str, rule_ids: list[str]) -> ExpertKnowledgeSourc
     )
     knowledge_type = (
         KnowledgeTaxonomyType.platform_trap
-        if domain in {"ads", "analytics", "merchant", "seo"}
+        if domain in {"ads", "analytics", "merchant", "seo", "wordpress"}
         else KnowledgeTaxonomyType.expert_operating
     )
     return ExpertKnowledgeSource(

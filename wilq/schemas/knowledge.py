@@ -362,6 +362,15 @@ class KnowledgeOperatingMapResponse(BaseModel):
         return self
 
 
+class PlatformTrapContract(BaseModel):
+    """Typed platform constraint pack used to block unsafe conclusions."""
+
+    platform: Literal["google_ads", "ga4", "merchant_center", "search_console", "wordpress"]
+    constraints: list[str] = Field(min_length=1)
+    blocked_claims: list[str] = Field(default_factory=list)
+    safe_next_steps: list[str] = Field(min_length=1)
+
+
 class ExpertRule(BaseModel):
     id: str
     name: str
@@ -379,6 +388,7 @@ class ExpertRule(BaseModel):
     required_mapping: list[str] = Field(default_factory=list)
     source_ids: list[str] = Field(default_factory=list)
     requires_evidence: bool = True
+    platform_trap: PlatformTrapContract | None = None
 
 
 class ExpertRuleSummary(BaseModel):
@@ -391,6 +401,7 @@ class ExpertRuleSummary(BaseModel):
     source_ids: list[str] = Field(default_factory=list)
     output_contract: str
     requires_evidence: bool = True
+    platform_trap: PlatformTrapContract | None = None
 
 
 class ExpertKnowledgeSource(BaseModel):

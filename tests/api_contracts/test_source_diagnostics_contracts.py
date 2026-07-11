@@ -156,7 +156,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         for decision in decision_by_id.values()
     )
     assert all(
-        decision["expert_rule_ids"] == ["ga4_diagnostics_v1"]
+        decision["expert_rule_ids"] == ["ga4_diagnostics_v1", "ga4_platform_traps_v1"]
         for decision in decision_by_id.values()
     )
     readiness_contract = payload["conversion_readiness_contract"]

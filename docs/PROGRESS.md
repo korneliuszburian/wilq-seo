@@ -3,7 +3,17 @@
 Krótki recovery ledger, nie append-only changelog. Historyczne proof pozostaje
 w git, Beads i `docs/progress/archive/`.
 
-## Stan bieżący — 2026-07-11
+## Stan bieżący — 2026-07-12
+
+- `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
+  `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
+  GA4, Merchant Center, GSC i WordPress. Istniejące diagnostyki Ads/GA4/Merchant
+  odwołują się do nowych rule IDs; WordPress pack pozostaje dostępny przez ten
+  sam `/api/expert/rules` i source registry. Nie dodano endpointu ani nowej
+  ścieżki write.
+- Live proof po managed restart: API `ok`, 98 915 metric facts, 4 572 refresh
+  runs; `/api/expert/rules` zwraca pięć trap contracts z source IDs i safe next
+  steps, a Merchant decision queue zawiera `merchant_platform_traps_v1`.
 
 - `kgvy` reconciliation boundary jest domknięty: `_reconcile_ads_change_history_contracts`
   oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline
@@ -31,7 +41,7 @@ w git, Beads i `docs/progress/archive/`.
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 98 907 metric facts i 4 568
+- Managed API i dashboard są zdrowe. DuckDB ma 98 915 metric facts i 4 572
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
 - Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.
