@@ -129,17 +129,17 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 5 796 non-empty LOC;
+- `wilq/actions/service.py`: 5 719 non-empty LOC;
 - `apps/dashboard/src/routes/ContentWorkflowSurface.tsx`: ok. 3 000 LOC;
 - `wilq/content/workflow/api.py`: 1 478 LOC;
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest `c9h9.4` complexity report (2026-07-11): 378 plików Python,
-131261 non-empty LOC, 8 zmienionych plików Python, 0 frozen growth files i 3
-budget violations w focused tests (121, 105 i 130 linii). Łącznie slice zmienił
-backend, connector, schemas, shared schema i dashboard API/testy; to celowy,
-ograniczony seam typed apply/adapter, nie mechaniczny split.
+Latest complexity report (2026-07-11): 382 plików Python,
+131637 non-empty LOC, 0 changed files versus HEAD, 0 frozen growth files i 0
+changed-code budget violations. Historyczne duże testy pozostają osobnym
+otwartym cleanup scope; bieżące seamy są ograniczone i nie zwiększają ich
+rozmiaru.
 
 ## Proof checkpoint
 
