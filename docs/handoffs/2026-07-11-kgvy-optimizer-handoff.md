@@ -84,7 +84,7 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   `_reconcile_ads_budget_and_business_context_contracts`; nie wracaj do inline
   `budget_apply_preview`, `profit_margin` ani `human_budget_goal` updates.
 - Reconciliation boundary jest domknięty przez dwa ostatnie extraction slices;
-  aktualny complexity report ma 398 plików / 133219 LOC i dwa jawne violations
+  aktualny complexity report ma 398 plików / 133264 LOC i dwa jawne violations
   (monolityczny plik oraz orchestrator), więc kolejny seam wymaga świeżego review.
 - Core search-term read-contract assembly jest w `_build_ads_search_term_read_contracts`;
   nie wracaj do inline builderów `terms`, `safety`, `keyword match` ani `planner`.
@@ -135,10 +135,10 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 - `tests/api_contracts/test_ads_contracts.py` przechodzi w całości.
 - Ruff, mypy, complexity audit i `git diff --check` przechodzą.
 - Runtime po restarcie: `/api/health` `ok`; `/api/ads/diagnostics` zwraca
-  `live_data_available=true`; `/api/metrics/status` raportuje 98 905 metric facts
-  i 4 567 refresh runs. Summary endpoint ma `sections=[]`, full endpoint zachowuje
+  `live_data_available=true`; `/api/metrics/status` raportuje 98 907 metric facts
+  i 4 568 refresh runs. Summary endpoint ma `sections=[]`, full endpoint zachowuje
   sekcje i oba mają `live_data_available=true` oraz blocker count 1.
-- Browser proof po restarcie: `.local-lab/proof/ads-primary-read-contracts.png`;
+- Browser proof po restarcie: `.local-lab/proof/ads-action-enriched-contracts.png`;
   `/ads-doctor` pokazuje kolejkę decyzji, dowody, świeżość Ads/GA4 i blokady
   ROAS/przychód/waste bez technicznego payloadu above the fold.
 - Zmniejszenie `ads_diagnostics.py`: 358 linii względem optimizer slice; bieżący

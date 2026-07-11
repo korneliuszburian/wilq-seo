@@ -255,7 +255,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_reconcile_ads_budget_and_business_context_contracts`; `budget_apply_preview`,
   `profit_margin` i `human_budget_goal` pozostają kontraktowo zależne od gotowych
   odczytów. Reconciliation inline w `build_ads_diagnostics` jest domknięty;
-  complexity po seamu to 398 plików / 133219 LOC i dwa jawne frozen/file-orchestrator
+  complexity po seamu to 398 plików / 133264 LOC i dwa jawne frozen/file-orchestrator
   violations do dalszego, niezależnego wyboru.
 - Core search-term read-contract assembly (`terms`, `safety`, `keyword match`,
   `planner`) jest teraz w `_build_ads_search_term_read_contracts`; kolejność
