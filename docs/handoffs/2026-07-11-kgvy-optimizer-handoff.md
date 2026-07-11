@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `15e0c70` (`docs: update Ads sections handoff pointer`)  
-`origin/main` = `15e0c70`
+Ostatni commit: `69e8415` (`refactor: extract Ads search term reconciliation`)  
+`origin/main` = `69e8415`
 
 ## Wykonane
 
@@ -94,12 +94,12 @@ Ostatni commit: `15e0c70` (`docs: update Ads sections handoff pointer`)
 
 ## Następny slice
 
-Następny potwierdzony seam to kolejny typed contract/reconciliation fragment w
-`build_ads_diagnostics` (394 linii po section extraction). Nie przenosić całego
-monolitu naraz; zachować response order, freshness i ActionObject safety.
+Następny potwierdzony seam to reconciliation `recommendations` i
+`impression_share` w `build_ads_diagnostics`. Zachować missing-contract lineage,
+freshness i ActionObject safety; nie przenosić całego monolitu naraz.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 15e0c70`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 69e8415`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
