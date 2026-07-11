@@ -540,6 +540,27 @@ def _build_ads_search_term_read_contracts(
     )
 
 
+def _build_ads_search_term_review_contracts(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    latest_refresh: ConnectorRefreshRun | None,
+    currency_code: str | None,
+) -> tuple[
+    AdsSearchTermReviewSummaryContract,
+    AdsSearchTermNgramReadContract,
+]:
+    search_term_review_summary_contract = _search_term_review_summary_contract(
+        search_terms_read_contract,
+        latest_refresh,
+        currency_code,
+    )
+    search_term_ngram_read_contract = _search_term_ngram_read_contract(
+        search_terms_read_contract,
+        latest_refresh,
+        currency_code,
+    )
+    return search_term_review_summary_contract, search_term_ngram_read_contract
+
+
 def _reconcile_search_term_read_contracts(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -887,12 +908,10 @@ def build_ads_diagnostics(
         search_term_safety_read_contract,
         keyword_match_context_read_contract,
     )
-    search_term_review_summary_contract = _search_term_review_summary_contract(
-        search_terms_read_contract,
-        latest_refresh,
-        account_currency_read_contract.currency_code,
-    )
-    search_term_ngram_read_contract = _search_term_ngram_read_contract(
+    (
+        search_term_review_summary_contract,
+        search_term_ngram_read_contract,
+    ) = _build_ads_search_term_review_contracts(
         search_terms_read_contract,
         latest_refresh,
         account_currency_read_contract.currency_code,
