@@ -8,7 +8,8 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ads
 wewnątrz `ads_diagnostics.py`. Reconciliation blok jest teraz domknięty;
-następny wybór ma wynikać z ponownego complexity/review raportu. Polityka
+następny potwierdzony kandydat to assembly search-term read contracts (core
+terms/safety/match/planner), wybrany po świeżym complexity/review. Polityka
 automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
 pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.

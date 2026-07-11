@@ -14,8 +14,9 @@ w git, Beads i `docs/progress/archive/`.
   `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
   nie zawiera już inline aktualizacji missing contracts dla tych zależności.
   Complexity: 398 plików Python / 132908 LOC, 2 jawne violations (plik i główny
-  orchestrator). Następny slice wybierz dopiero po aktualnym complexity/review,
-  żeby nie powtarzać gotowych reconciliation seamów.
+  orchestrator). Następny kandydat po aktualnym complexity/review to mały helper
+  assembly search-term read contracts (terms/safety/match/planner), bez ponownego
+  dotykania gotowych reconciliation seamów.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest

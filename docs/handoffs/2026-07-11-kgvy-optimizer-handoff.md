@@ -106,10 +106,10 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 
 ## Następny slice
 
-Reconciliation boundary jest domknięty. Następny slice wybierz po ponownym
-complexity/review raportu spośród nieprzeniesionych, niezależnych fragmentów
-`build_ads_diagnostics`; nie twórz kolejnego helpera bez potwierdzonego seamu.
-Zachować missing-contract lineage, freshness i ActionObject safety.
+Reconciliation boundary jest domknięty. Najbliższy potwierdzony kandydat to mały
+helper assembly search-term read contracts (`terms`, `safety`, `keyword match`,
+`planner`) w `build_ads_diagnostics`; przed implementacją odśwież complexity/review
+i zachowaj missing-contract lineage, freshness oraz ActionObject safety.
 
 ## Kontrola repo
 
