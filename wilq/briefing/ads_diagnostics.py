@@ -5142,8 +5142,7 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
             )
 
 
-def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
-    currency_code = response.account_currency_read_contract.currency_code
+def _hydrate_ads_summary_labels(response: AdsDiagnosticsResponse) -> None:
     response.evidence_summary_label = evidence_count_label(response.evidence_ids)
     response.source_connector_labels = source_connector_labels(
         response.operator_summary.source_connectors
@@ -5180,6 +5179,12 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     response.operator_summary.top_blocked_claim_summary_label = blocked_claim_count_label(
         response.operator_summary.top_blocked_claim_labels
     )
+
+
+def _hydrate_ads_decision_labels(
+    response: AdsDiagnosticsResponse,
+    currency_code: str | None,
+) -> None:
     response.decision_queue = [
         decision.model_copy(
             update={
@@ -5212,6 +5217,9 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
         )
         for decision in response.decision_queue
     ]
+
+
+def _hydrate_ads_surface_labels(response: AdsDiagnosticsResponse) -> None:
     response.sections = [
         section.model_copy(
             update={
@@ -5238,6 +5246,12 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                 "blocked_claim_labels": _unique(response.blocked_handoff.blocked_claims),
             }
         )
+
+
+def _hydrate_ads_contract_labels(
+    response: AdsDiagnosticsResponse,
+    currency_code: str | None,
+) -> None:
     _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
     _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
     _hydrate_business_context_marketer_labels(response.business_context_read_contract)
@@ -5278,6 +5292,14 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_negative_keywords_marketer_labels(response.negative_keywords_read_contract)
     _hydrate_keyword_match_context_marketer_labels(response.keyword_match_context_read_contract)
 
+
+
+def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
+    currency_code = response.account_currency_read_contract.currency_code
+    _hydrate_ads_summary_labels(response)
+    _hydrate_ads_decision_labels(response, currency_code)
+    _hydrate_ads_surface_labels(response)
+    _hydrate_ads_contract_labels(response, currency_code)
 
 def _hydrate_campaign_triage_marketer_labels(
     contract: AdsCampaignTriageReadContract,

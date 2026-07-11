@@ -77,6 +77,10 @@ w git, Beads i `docs/progress/archive/`.
   `block_write_actions`/`fix_ads_access`; change/campaign counts i safety counts
   pozostały bez zmian. Proste branches są zakończone, label hydration pozostaje
   osobnym zakresem.
+- Label hydration został rozbity na cztery helpery orchestration w istniejącym
+  `ads_diagnostics.py`; summary/decision/sections/nested contract labels i claim
+  blockers zachowane. Complexity: 398 plików Python / 132477 LOC, 11 znanych
+  pozostałych violations.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

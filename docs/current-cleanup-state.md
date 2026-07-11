@@ -162,6 +162,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Siódmy fragment obejmuje `change_history` oraz wspólne `block_write_actions`/
   `fix_ads_access`; zachowuje change/campaign counts i safety blocker counts.
   Proste metric tiles są już poza dispatcherem; osobny pozostaje label hydration.
+- Label hydration ma teraz cztery focused orchestration helpers: summary,
+  decision queue, sections/handoff i nested contracts. Response labels, evidence
+  summaries i blocked-claim labels pozostają bez zmian; complexity ma 11 znanych
+  pozostałych monolith violations.
 
 ## Granica bezpieczeństwa
 
@@ -220,7 +224,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132463 non-empty LOC. Bounded content seed extraction, metric-candidate
+132477 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

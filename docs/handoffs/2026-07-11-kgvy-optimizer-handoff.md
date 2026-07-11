@@ -29,6 +29,8 @@ Ostatni commit: `57cf5c2` (`refactor: extract Ads history and safety tiles`)
   wracaj do tych branchy ani ich formatterów w dispatcherze.
 - Siódmy fragment obejmuje `change_history` i safety blocker tiles; nie wracaj
   do tych branchy w dispatcherze. Proste tile branches są zakończone.
+- Label hydration jest rozbita na summary/decision/surface/contract helpers;
+  nie wracaj do jednego monolitycznego `_hydrate_ads_marketer_labels`.
 
 ## Dowody
 
