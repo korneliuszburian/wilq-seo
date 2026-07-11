@@ -27,6 +27,8 @@ Ostatni commit: `af05f84` (`refactor: extract Ads safety segment tiles`)
   tych branchy ani ich formatterów w dispatcherze.
 - Szósty fragment obejmuje `negative_keyword_safety` i `custom_segments`; nie
   wracaj do tych branchy ani ich formatterów w dispatcherze.
+- Siódmy fragment obejmuje `change_history` i safety blocker tiles; nie wracaj
+  do tych branchy w dispatcherze. Proste tile branches są zakończone.
 
 ## Dowody
 

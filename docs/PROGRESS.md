@@ -73,6 +73,10 @@ w git, Beads i `docs/progress/archive/`.
 - Szósty tile fragment wydzielił `negative_keyword_safety` i `custom_segments`;
   zachowane są urgent/high, preview, keyword context, source queries i KP ideas.
   Complexity: 398 plików Python / 132453 LOC; pozostałe branches czekają na osobny seam.
+- Siódmy tile fragment wydzielił `change_history` oraz safety blocker tiles dla
+  `block_write_actions`/`fix_ads_access`; change/campaign counts i safety counts
+  pozostały bez zmian. Proste branches są zakończone, label hydration pozostaje
+  osobnym zakresem.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

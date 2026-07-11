@@ -159,6 +159,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Szósty fragment obejmuje `negative_keyword_safety` i `custom_segments`; zachowuje
   urgent/high counts, action previews, keyword context, source queries i KP ideas.
   Dispatcher pozostał bezpiecznie mały, a pozostałe gałęzie są jawnie śledzone.
+- Siódmy fragment obejmuje `change_history` oraz wspólne `block_write_actions`/
+  `fix_ads_access`; zachowuje change/campaign counts i safety blocker counts.
+  Proste metric tiles są już poza dispatcherem; osobny pozostaje label hydration.
 
 ## Granica bezpieczeństwa
 
@@ -217,7 +220,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132453 non-empty LOC. Bounded content seed extraction, metric-candidate
+132463 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

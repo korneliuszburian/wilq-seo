@@ -263,3 +263,27 @@ def custom_segments_metric_tiles(
             "KP ideas": len(decision.keyword_planner_idea_rows),
         }
     )
+
+
+def change_history_metric_tiles(
+    decision: AdsDecisionItem,
+) -> dict[str, int | float | str]:
+    return clean_metric_tiles(
+        {
+            "zmiany": len(decision.change_history_rows),
+            "kampanie": sum(
+                1 for row in decision.change_history_rows if row.campaign_id is not None
+            ),
+        }
+    )
+
+
+def safety_blocker_metric_tiles(
+    decision: AdsDecisionItem,
+) -> dict[str, int | float | str]:
+    return clean_metric_tiles(
+        {
+            "akcje do sprawdzenia": len(decision.action_ids),
+            "blokady": len(decision.blocked_claims),
+        }
+    )

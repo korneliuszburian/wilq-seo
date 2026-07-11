@@ -86,11 +86,13 @@ from wilq.briefing.ads_metric_tiles import (
     business_context_metric_tiles,
     campaign_activity_metric_tiles,
     campaign_triage_metric_tiles,
+    change_history_metric_tiles,
     custom_segments_metric_tiles,
     derived_kpi_metric_tiles,
     impression_share_metric_tiles,
     negative_keyword_safety_metric_tiles,
     recommendations_metric_tiles,
+    safety_blocker_metric_tiles,
     search_term_ngram_metric_tiles,
     search_term_safety_metric_tiles,
     search_terms_metric_tiles,
@@ -5054,14 +5056,7 @@ def _ads_decision_metric_tiles(
     if decision.decision_type == "review_impression_share":
         return impression_share_metric_tiles(decision)
     if decision.decision_type == "review_change_history":
-        return _clean_metric_tiles(
-            {
-                "zmiany": len(decision.change_history_rows),
-                "kampanie": sum(
-                    1 for row in decision.change_history_rows if row.campaign_id is not None
-                ),
-            }
-        )
+        return change_history_metric_tiles(decision)
     if decision.decision_type == "review_search_terms":
         return search_terms_metric_tiles(decision, currency_code)
     if decision.decision_type == "review_search_term_safety":
@@ -5071,12 +5066,7 @@ def _ads_decision_metric_tiles(
     if decision.decision_type == "prepare_custom_segments":
         return custom_segments_metric_tiles(decision)
     if decision.decision_type in {"block_write_actions", "fix_ads_access"}:
-        return _clean_metric_tiles(
-            {
-                "akcje do sprawdzenia": len(decision.action_ids),
-                "blokady": len(decision.blocked_claims),
-            }
-        )
+        return safety_blocker_metric_tiles(decision)
     return {}
 
 
