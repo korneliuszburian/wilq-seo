@@ -11,9 +11,10 @@ next steps, a ExpertRule ma teraz pełne warunki, kontrakty, false-positive gate
 i safety. Istniejące diagnostyki nie wymyślają tych ograniczeń w React ani
 skillach. Daily-check korzysta z istniejącego runtime i zwraca typed projection
 z traceability; live stan `blocked` przy stale źródłach nie jest maskowany.
-Następny potwierdzony Bead to `wilq-seo-v9ab.8` — false-positive guards dla
-daily recommendations; nie zaczynaj od kolejnego wrappera Ads ani drugiego
-expert endpointu.
+`wilq-seo-v9ab.8` jest rozpoczęty: source-trace guard blokuje stale/missing
+source i brak dowodu/reguły przed rekomendacją. Pozostałe false-positive guards
+pozostają otwarte; nie zaczynaj od kolejnego wrappera Ads ani drugiego expert
+endpointu.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najnowszy wykonany slice to

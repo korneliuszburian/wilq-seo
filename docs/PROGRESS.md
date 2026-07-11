@@ -335,6 +335,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   rows, a domenowy seam zachowuje evidence, `apply_allowed=false` i blokadę
   production-depth. Focused content/API contract, Ruff, mypy i diff check
   przechodzą.
+- `wilq-seo-v9ab.8` rozpoczęty bounded slice: `evaluate_source_trace_guard`
+  blokuje stale/missing source, brak evidence albo brak expert rule przed
+  rekomendacją. `DailyCheckItem` zachowuje `false_positive_guards`; live daily
+  check pokazuje `stale_connector` przy obecnym stale stanie. Focused guard/API
+  tests, Ruff, mypy i diff check przechodzą. Pozostałe guards (low volume,
+  baseline, conversion, date window, conflict, multi-source) pozostają otwarte.
 - Prywatna Service Profile proposal-promotion ma teraz analogiczny konstruktor
   w `wilq/actions/service_profile.py`; service buduje tylko redacted review rows,
   a domenowy moduł zachowuje `redacted`, evidence, `apply_allowed=false` i

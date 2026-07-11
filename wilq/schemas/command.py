@@ -255,6 +255,7 @@ class DailyCheckItem(BaseModel):
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     missing_contracts: list[str] = Field(default_factory=list)
+    false_positive_guards: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.medium
 
     @model_validator(mode="after")

@@ -24,6 +24,7 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
         assert item["source_connectors"]
         assert item["evidence_ids"]
         assert item["expert_rule_ids"]
+        assert item["false_positive_guards"]
         assert item["freshness"]["state"] != "unknown"
         assert item["next_step"]
     if payload["do_not_touch"]:

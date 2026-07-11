@@ -4,6 +4,7 @@ from datetime import date
 from typing import Literal
 
 from wilq.briefing.daily_runtime import build_daily_runtime
+from wilq.briefing.false_positive_guards import evaluate_source_trace_guard
 from wilq.schemas import (
     ActionRisk,
     ConnectorStatus,
@@ -75,24 +76,22 @@ def _connector_refs(connectors: list[ConnectorStatus]) -> list[DailyCheckConnect
 
 def _daily_item(decision: DailyDecision) -> DailyCheckItem:
     rule_ids = list(_RULE_IDS_BY_DOMAIN.get(decision.domain, ()))
-    has_trace = bool(decision.source_connectors and decision.evidence_ids and rule_ids)
-    is_blocked = (
-        decision.status == "blocked"
-        or decision.freshness.state != "fresh"
-        or not has_trace
+    guard = evaluate_source_trace_guard(
+        source_connectors=decision.source_connectors,
+        evidence_ids=decision.evidence_ids,
+        expert_rule_ids=rule_ids,
+        freshness=decision.freshness,
     )
+    is_blocked = decision.status == "blocked" or guard.status == "blocked"
     category: Literal["blocked_recommendation", "safe_next_action"] = (
         "blocked_recommendation" if is_blocked else "safe_next_action"
     )
     status: Literal["blocked", "review_required"] = "blocked" if is_blocked else "review_required"
     summary = decision.co_widzimy
     next_step = decision.bezpieczny_next_step
-    if not has_trace:
-        summary = (
-            "Brak pełnego śladu źródłowego; WILQ blokuje rekomendację do czasu "
-            "potwierdzenia danych."
-        )
-        next_step = "Najpierw sprawdź dostęp, dowody i świeżość źródeł w WILQ."
+    if guard.status == "blocked":
+        summary = guard.reason
+        next_step = guard.next_step
     return DailyCheckItem(
         id=f"daily_check_{decision.id}",
         category=category,
@@ -107,6 +106,7 @@ def _daily_item(decision: DailyDecision) -> DailyCheckItem:
         freshness=decision.freshness,
         action_ids=decision.action_ids,
         blocked_claims=decision.blocked_claims,
+        false_positive_guards=[guard.guard_id],
         risk=decision.risk,
     )
 
