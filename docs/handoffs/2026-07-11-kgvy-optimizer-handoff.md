@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `b84e506` (`docs: define next Ads contract seam`)  
-`origin/main` = `b84e506`
+Ostatni commit: `f841ede` (`refactor: extract Ads business context contract`)  
+`origin/main` = `f841ede`
 
 ## Wykonane
 
