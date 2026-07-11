@@ -341,17 +341,19 @@ function ContentWorkflowLoaded({
 
   return (
     <main className="w-full px-4 py-5 lg:px-7 2xl:px-8">
-      <ContentPageWorkbench
-        actions={actions}
-        authoringProfile={authoringProfile}
-        data={data}
-        draftActivationPacket={draftActivationPacket}
-        enrichment={enrichment}
-        queue={queue}
-      />
+          <ContentPageWorkbench
+            actions={actions}
+            authoringProfile={authoringProfile}
+            data={data}
+            draftActivationPacket={draftActivationPacket}
+            enrichment={enrichment}
+            queue={queue}
+            onOpenDetails={() => setDetailsOpen(true)}
+          />
       <details
         id="content-workflow-details"
         className="mb-6 rounded-md border border-line bg-white"
+        open={detailsOpen}
         onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
       >
         <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-ink">
@@ -407,7 +409,8 @@ function ContentPageWorkbench({
   data,
   draftActivationPacket,
   enrichment,
-  queue
+  queue,
+  onOpenDetails
 }: {
   actions: ContentWorkflowActions;
   authoringProfile: WordPressAuthoringProfileQuery;
@@ -415,6 +418,7 @@ function ContentPageWorkbench({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
+  onOpenDetails: () => void;
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
@@ -522,6 +526,13 @@ function ContentPageWorkbench({
 
       <ContentFreshnessBanner assessment={queue.freshness_assessment} />
       <ContentSourceStatusBar data={data} devPage={devPage} profile={profile} />
+      <MobileDecisionCard
+        candidate={activeCandidate ?? null}
+        publicUrl={publicUrl}
+        topic={pageTitle}
+        queue={queue}
+        onOpenDetails={onOpenDetails}
+      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-3">
@@ -942,6 +953,54 @@ function ContentPageWorkbench({
           </div>
         </aside>
       </div>
+    </section>
+  );
+}
+
+function MobileDecisionCard({
+  candidate,
+  publicUrl,
+  topic,
+  queue,
+  onOpenDetails
+}: {
+  candidate: ContentWorkItemQueueCandidate | null;
+  publicUrl: string;
+  topic: string;
+  queue: ContentWorkItemQueueResponse;
+  onOpenDetails: () => void;
+}) {
+  const blocker = queue.blockers[0] ?? candidate?.blockers[0] ?? null;
+  const blockerLabel = blocker?.label ?? queue.freshness_assessment.state_label;
+  const blockerReason = blocker?.reason ?? queue.freshness_assessment.summary;
+  const decision = candidate?.recommended_mode_label ?? "Wymaga sprawdzenia";
+
+  return (
+    <section
+      className="mb-4 rounded-md border border-action/25 bg-white p-4 shadow-sm sm:hidden"
+      aria-label="Decyzja mobilna"
+    >
+      <div className="text-xs font-semibold uppercase tracking-normal text-action">
+        Decyzja teraz
+      </div>
+      <h2 className="mt-1 text-lg font-semibold leading-6 text-ink">{topic}</h2>
+      {publicUrl ? (
+        <p className="mt-1 truncate text-xs font-medium text-action">{publicUrl}</p>
+      ) : null}
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold text-ink">{decision}</span>
+        <span className="rounded-md bg-wait/10 px-2 py-1 text-xs font-semibold text-wait">
+          {blockerLabel}
+        </span>
+      </div>
+      <p className="mt-2 line-clamp-3 text-sm leading-5 text-slate-700">{blockerReason}</p>
+      <button
+        type="button"
+        onClick={onOpenDetails}
+        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-md bg-action px-3 text-sm font-semibold text-white"
+      >
+        Otwórz decyzję i dowody
+      </button>
     </section>
   );
 }
