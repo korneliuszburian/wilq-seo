@@ -86,8 +86,9 @@ Ostatni commit: `7a9d686` (`refactor: extract Ads change history reconciliation`
 - `tests/api_contracts/test_ads_contracts.py` przechodzi w całości.
 - Ruff, mypy, complexity audit i `git diff --check` przechodzą.
 - Runtime po restarcie: `/api/health` `ok`; `/api/ads/diagnostics` zwraca
-  `live_data_available=true` i blokady niedozwolonych twierdzeń.
-- Browser proof po restarcie: `.local-lab/proof/ads-business-context-seam.png`;
+  `live_data_available=true`; `/api/metrics/status` raportuje 98 871 metric facts
+  i 4 550 refresh runs.
+- Browser proof po restarcie: `.local-lab/proof/ads-change-history-reconciliation.png`;
   `/ads-doctor` pokazuje kolejkę decyzji, dowody, świeżość Ads/GA4 i blokady
   ROAS/przychód/waste bez technicznego payloadu above the fold.
 - Zmniejszenie `ads_diagnostics.py`: 358 linii.

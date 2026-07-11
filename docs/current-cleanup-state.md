@@ -17,7 +17,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 98 851 metric facts, 4 540 refresh runs; konektory
+- Managed runtime: 98 871 metric facts, 4 550 refresh runs; konektory
   12/9 configured/2 missing credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
