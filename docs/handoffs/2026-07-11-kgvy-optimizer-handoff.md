@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `af05f84` (`refactor: extract Ads safety segment tiles`)  
-`origin/main` = `af05f84`
+Ostatni commit: `57cf5c2` (`refactor: extract Ads history and safety tiles`)  
+`origin/main` = `57cf5c2`
 
 ## Wykonane
 
@@ -52,6 +52,6 @@ monolitu.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == af05f84`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 57cf5c2`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
