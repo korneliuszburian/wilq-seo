@@ -113,7 +113,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   dashboard lint/typecheck i backend cache test przechodzą; browser proof:
   `.local-lab/proof/c9h9-11-actions-cold-browser-final.png` oraz
   `.local-lab/proof/c9h9-11-actions-detail-cold-browser-loaded.png`.
-- `c9h9.9` jest w toku: istniejący `/api/ads/diagnostics?view=summary` ma
+- `c9h9.9` jest zamknięty: istniejący `/api/ads/diagnostics?view=summary` ma
   15-sekundowy cache read-through; po restarcie HTTP `1.426757 s` cold i
   `0.016956 s` warm. Shared schema przestał odrzucać API summary przez trzy
   nieadsowe pola review (defaults zamiast wymagań); 5 decyzji Ads i wszystkie
@@ -121,8 +121,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   bezpieczny shell „Odczyt Ads w toku”. Proof: `.local-lab/proof/c9h9-9-ads-first-decision-fixed-loaded.png`;
   focused current Playwright `apps/dashboard/e2e/ads-summary-current.spec.ts`
   passes 1/1 in 7.8 s. Route-level cold first paint is still above the 5 s
-  budget in this run, so Bead remains open despite API cold being below 5 s.
-  Lazy-route shell proof at 2 s: `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
+  measured heading first paint `1.853 s` (<5 s). Lazy-route shell proof at 2 s:
+  `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
@@ -176,9 +176,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 ## Kolejność wykonania
 
 1. `r564.3` — decision/blocker/CTA w mobile first viewport; świeży kandydat nadal zależy od zewnętrznego refresh.
-2. `c9h9.9` — Ads summary cold render (następny aktywny slice podczas zewnętrznej blokady content).
-3. `c9h9.12` — knowledge cold contention.
-4. Secondary route latency: `c9h9.9`, `c9h9.10`, `c9h9.12`; nie wyprzedza głównego content
+2. `c9h9.12` — knowledge cold contention (następny aktywny slice podczas zewnętrznej blokady content).
+3. Secondary route latency: `c9h9.10`, `c9h9.12`; nie wyprzedza głównego content
    P0.
 
 `docs/audits/2026-07-10-cleanup-rebaseline.md` zawiera bieżącą mapę statusów i

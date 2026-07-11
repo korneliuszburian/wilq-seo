@@ -50,8 +50,8 @@ splitu monolitu ani od przywracania direct WordPress write.
   naprawiają zgodność API/frontend, a Ads route pokazuje bezpieczny shell podczas
   oczekiwania na dane. Pełny desktop proof: `.local-lab/proof/c9h9-9-ads-first-decision-fixed-loaded.png`;
   focused current Playwright 1/1 (7.8 s) przechodzi, ale route-level cold first
-  paint nadal przekracza budżet 5 s — Bead pozostaje otwarty. Lazy-route shell
-  proof przy 2 s: `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
+  measured heading first paint `1.853 s` (<5 s), a Bead jest zamknięty. Lazy-route
+  shell proof przy 2 s: `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
 
 ## Granica bezpieczeństwa
 
@@ -91,8 +91,8 @@ Otwarte product blockers:
 - `r564.3` — mobile first viewport; zależy od `.5`, `.6` i zamkniętego
   `r564.2`;
 - `c9h9.8` — stale dashboard E2E behavior assertions;
-- `c9h9.9`, `c9h9.10`, `c9h9.12` — potwierdzone latency blokery Ads,
-  Custom Segments i Knowledge. `c9h9.11` jest zamknięty po list/detail proof.
+- `c9h9.10`, `c9h9.12` — potwierdzone latency blokery Custom Segments i
+  Knowledge. `c9h9.9` i `c9h9.11` są zamknięte po API/browser proof.
 
 `ho41` jest wyłącznie route/component boundary. `jnra` jest splitem action
 service. Żaden z nich nie może przejąć product semantics freshness/write.
@@ -136,5 +136,5 @@ ograniczony seam typed apply/adapter, nie mechaniczny split.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
 3. Kontynuuj `r564.3`: browser proof 390×844 ma pokazać URL/temat,
    decyzję, blocker i bezpieczny CTA bez scrolla, jeśli refresh da świeżego kandydata.
-4. Podczas zewnętrznej blokady świeżego content proof wykonuj `c9h9.9` Ads
-   summary cold render; nie oznaczaj `r564.3` jako complete bez świeżego kandydata.
+4. Podczas zewnętrznej blokady świeżego content proof wykonuj `c9h9.12` Knowledge
+   cold contention; nie oznaczaj `r564.3` jako complete bez świeżego kandydata.

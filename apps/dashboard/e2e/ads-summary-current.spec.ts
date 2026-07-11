@@ -3,11 +3,15 @@ import { expect, test } from "@playwright/test";
 test.describe("WILQ Ads summary current behavior", () => {
   test("renders a current evidence-first decision without raw internals", async ({ page }) => {
     test.setTimeout(60_000);
+    const startedAt = Date.now();
     await page.goto("/ads-doctor");
 
     await expect(page.getByRole("heading", { name: "Reklamy i pomiar", exact: true })).toBeVisible({
       timeout: 30_000
     });
+    const headingMs = Date.now() - startedAt;
+    console.log(`ads_heading_ms=${headingMs}`);
+    expect(headingMs).toBeLessThan(5_000);
     await expect(page.getByText("Najpierw pomiar", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kolejka diagnostyczna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Bezpieczne tryby pracy" })).toBeVisible();
