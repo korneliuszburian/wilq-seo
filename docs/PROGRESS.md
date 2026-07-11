@@ -172,8 +172,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - WordPress draft-handoff constructor jest teraz w istniejącym
   `wilq/actions/wordpress_draft.py`; service zachowuje wybór brief previews,
   content gating i evidence. Prepare-only, canonical/duplicate/legal review oraz
-  `apply_allowed=false` pozostają bez zmian. Apply-mode constructor jest osobnym
-  przyszłym seamem, bo używa service-owned apply contract buildera.
+  `apply_allowed=false` pozostają bez zmian. Apply-mode constructor również jest
+  domenowym delegatem; service zachowuje builder typed apply contract jako
+  granicę bezpieczeństwa.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

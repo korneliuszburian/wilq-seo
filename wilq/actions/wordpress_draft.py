@@ -84,6 +84,73 @@ def draft_handoff_action(
     )
 
 
+def draft_apply_action(
+    *,
+    handoff_action: ActionObject,
+    apply_contract_payload: dict[str, Any],
+) -> ActionObject:
+    return ActionObject(
+        id="act_apply_wordpress_draft_handoff",
+        title="Aktywuj zapis szkicu WordPress draft-only",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=handoff_action.evidence_ids,
+        metrics=handoff_action.metrics,
+        human_diagnosis=(
+            "To jest jawna propozycja apply-mode dla pierwszej bezpiecznej klasy "
+            "zapisu: utworzenia szkicu WordPress. Nie publikuje i nie aktualizuje "
+            "istniejących wpisów."
+        ),
+        recommended_reason=(
+            "Użyj tej akcji do sprawdzania gotowości przyszłego zapisu szkicu. "
+            "Dopóki podgląd zmian, review człowieka, potwierdzenie operatora, "
+            "audyt wpływu, zgoda środowiska i warstwa wykonania nie są gotowe, "
+            "WILQ nie może zapisać szkicu w WordPress."
+        ),
+        payload={
+            "action_type": "wordpress_draft_handoff",
+            "connector": "wordpress_ekologus",
+            "mode": "apply_blocked",
+            "preview_contract": "wordpress_draft_apply_preview_v1",
+            "depends_on_action_id": handoff_action.id,
+            "allowed_operation": "create_wordpress_draft",
+            "apply_contract": apply_contract_payload,
+            "source_connectors": handoff_action.payload.get("source_connectors", []),
+            "source_metric_names": handoff_action.payload.get("source_metric_names", []),
+            "required_input_contracts": handoff_action.payload.get(
+                "required_input_contracts", []
+            ),
+            "payload_preview": handoff_action.payload.get("payload_preview", []),
+            "required_validation": [
+                "content_url_preflight_review",
+                "final_canonical_review",
+                "duplicate_or_cannibalization_check",
+                "legal_factual_review",
+                "content_draft_readiness_review",
+                "wordpress_draft_preview_review",
+                "human_confirm_before_wordpress_write",
+                "wordpress_draft_write_readiness",
+            ],
+            "blocked_claims": [
+                "wordpress_publish",
+                "wordpress_update_existing_post",
+                "wordpress_delete_post",
+                "production_wordpress_write",
+                "publish_ready_claim",
+                "obietnica wzrostu pozycji albo leadów",
+            ],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
+
+
 def existing_draft_update_action() -> ActionObject:
     """Seed the prepare-only existing dev draft update action."""
     return ActionObject(
