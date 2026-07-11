@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `fa049a7` (`docs: update custom segment handoff pointer`)  
-`origin/main` = `fa049a7`
+Ostatni commit: `29901eb` (`refactor: extract Ads diagnostic sections`)  
+`origin/main` = `29901eb`
 
 ## Wykonane
 
@@ -97,6 +97,6 @@ monolitu naraz; zachować response order, freshness i ActionObject safety.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == fa049a7`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 29901eb`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
