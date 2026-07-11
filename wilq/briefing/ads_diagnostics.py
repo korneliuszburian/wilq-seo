@@ -1342,14 +1342,12 @@ def _prepare_ads_summary_compaction(
     return compact_decisions, compact_custom_segments, compact_negative_keywords
 
 
-def _compact_ads_diagnostics_summary(
+def _compact_ads_summary_response_fields(
     response: AdsDiagnosticsResponse,
+    compact_decisions: list[AdsDecisionItem],
+    compact_custom_segments: AdsCustomSegmentsReadContract,
+    compact_negative_keywords: AdsNegativeKeywordsReadContract,
 ) -> AdsDiagnosticsResponse:
-    (
-        compact_decisions,
-        compact_custom_segments,
-        compact_negative_keywords,
-    ) = _prepare_ads_summary_compaction(response)
     return response.model_copy(
         update={
             "campaign_read_contract": _copy_limited_model(
@@ -1412,6 +1410,22 @@ def _compact_ads_diagnostics_summary(
             "decision_queue": compact_decisions,
             "sections": [],
         }
+    )
+
+
+def _compact_ads_diagnostics_summary(
+    response: AdsDiagnosticsResponse,
+) -> AdsDiagnosticsResponse:
+    (
+        compact_decisions,
+        compact_custom_segments,
+        compact_negative_keywords,
+    ) = _prepare_ads_summary_compaction(response)
+    return _compact_ads_summary_response_fields(
+        response,
+        compact_decisions,
+        compact_custom_segments,
+        compact_negative_keywords,
     )
 
 
