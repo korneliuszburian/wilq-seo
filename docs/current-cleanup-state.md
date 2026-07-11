@@ -189,6 +189,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_preliminary_business_target_interpretation`; target ROAS/CPA context,
   strategy-review gate, blocked uses i evidence lineage pozostały bez zmian.
   Complexity: 398 / 132571 LOC; 9 znanych violations.
+- Operator-facing summary i safe next step business context są teraz w
+  `_business_context_summary_and_next_step`; blocked/ready copy pozostaje bez
+  zmian, a `_business_context_read_contract` ma 149 linii po tym seamie.
 
 ## Granica bezpieczeństwa
 

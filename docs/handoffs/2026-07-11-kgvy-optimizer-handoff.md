@@ -47,6 +47,8 @@ Ostatni commit: `9cbad69` (`refactor: split Ads preliminary target interpretatio
 - Ready/preliminary business-target path jest w
   `_preliminary_business_target_interpretation`; nie wracaj do inline target
   ROAS/CPA albo strategy-review branches.
+- Business-context summary/next-step copy jest w
+  `_business_context_summary_and_next_step`; nie wracaj do inline status copy.
 
 ## Dowody
 

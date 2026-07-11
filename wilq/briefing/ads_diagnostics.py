@@ -1528,6 +1528,46 @@ def _account_currency_read_contract(
     )
 
 
+def _business_context_summary_and_next_step(
+    *,
+    status: Literal["ready", "blocked"],
+    target_missing: bool,
+) -> tuple[str, str]:
+    if status == "ready" and target_missing:
+        return (
+            "WILQ ma wstępny lokalny kontekst biznesowy Ads: marżę, cel "
+            "biznesowy i cel budżetu. Docelowy zwrot z reklam albo koszt pozyskania "
+            "celu jest celowo pusty, więc "
+            "wskaźniki względem celu pozostają bez oceny i nie odblokowują skalowania "
+            "ani zapisu zmian.",
+            "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Jeśli "
+            "operator potwierdzi docelowy zwrot z reklam albo koszt pozyskania celu "
+            "przez sprawdzoną akcję, WILQ zapisze go w lokalnym stanie; do tego czasu "
+            "ocena celu pozostaje zablokowana.",
+        )
+    if status == "ready":
+        return (
+            "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel "
+            "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu. "
+            "To pozwala "
+            "interpretować wskaźniki ostrożniej, "
+            "ale nadal nie odblokowuje automatycznych zmian.",
+            "Użyj potwierdzonego celu jako kontekstu oceny kampanii i "
+            "budżetu. Zapis zmian nadal wymaga akcji do sprawdzenia w WILQ, podglądu zmian, "
+            "potwierdzenia i audytu.",
+        )
+    return (
+        "WILQ ma aktualne metryki Google Ads, ale nie ma kompletnego lokalnego "
+        "kontekstu biznesowego: marży, celu biznesowego, celu budżetu albo "
+        "docelowego zwrotu z reklam lub kosztu pozyskania celu. Bez tego wskaźniki są "
+        "tylko wstępnym przeglądem, nie oceną.",
+        "Uzupełnij nie-sekretne wartości w repo-local .env: "
+        "WILQ_ADS_PROFIT_MARGIN, WILQ_ADS_BUSINESS_GOAL, "
+        "WILQ_ADS_BUDGET_GOAL oraz WILQ_ADS_TARGET_ROAS albo "
+        "WILQ_ADS_TARGET_CPA_MICROS.",
+    )
+
+
 def _business_context_read_contract(
     latest_refresh: ConnectorRefreshRun | None,
 ) -> AdsBusinessContextReadContract:
@@ -1624,47 +1664,10 @@ def _business_context_read_contract(
         "zapis rekomendacji",
         "zmarnowany budżet",
     ]
-    if status == "ready":
-        if target_missing:
-            summary = (
-                "WILQ ma wstępny lokalny kontekst biznesowy Ads: marżę, cel "
-                "biznesowy i cel budżetu. Docelowy zwrot z reklam albo koszt pozyskania "
-                "celu jest celowo pusty, więc "
-                "wskaźniki względem celu pozostają bez oceny i nie odblokowują skalowania "
-                "ani zapisu zmian."
-            )
-            next_step = (
-                "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Jeśli "
-                "operator potwierdzi docelowy zwrot z reklam albo koszt pozyskania celu "
-                "przez sprawdzoną akcję, WILQ zapisze go w lokalnym stanie; do tego czasu "
-                "ocena celu pozostaje zablokowana."
-            )
-        else:
-            summary = (
-                "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel "
-                "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu. "
-                "To pozwala "
-                "interpretować wskaźniki ostrożniej, "
-                "ale nadal nie odblokowuje automatycznych zmian."
-            )
-            next_step = (
-                "Użyj potwierdzonego celu jako kontekstu oceny kampanii i "
-                "budżetu. Zapis zmian nadal wymaga akcji do sprawdzenia w WILQ, podglądu zmian, "
-                "potwierdzenia i audytu."
-            )
-    else:
-        summary = (
-            "WILQ ma aktualne metryki Google Ads, ale nie ma kompletnego lokalnego "
-            "kontekstu biznesowego: marży, celu biznesowego, celu budżetu albo "
-            "docelowego zwrotu z reklam lub kosztu pozyskania celu. Bez tego wskaźniki są "
-            "tylko wstępnym przeglądem, nie oceną."
-        )
-        next_step = (
-            "Uzupełnij nie-sekretne wartości w repo-local .env: "
-            "WILQ_ADS_PROFIT_MARGIN, WILQ_ADS_BUSINESS_GOAL, "
-            "WILQ_ADS_BUDGET_GOAL oraz WILQ_ADS_TARGET_ROAS albo "
-            "WILQ_ADS_TARGET_CPA_MICROS."
-        )
+    summary, next_step = _business_context_summary_and_next_step(
+        status=status,
+        target_missing=target_missing,
+    )
     return AdsBusinessContextReadContract(
         status=status,
         title="Google Ads: kontekst biznesowy decyzji",
