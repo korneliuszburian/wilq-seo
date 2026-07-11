@@ -10,7 +10,7 @@ import pytest
 
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
-from wilq.actions.service import _social_draft_actions
+from wilq.actions.social import social_draft_actions
 from wilq.connectors.vendor import VendorMetricFact
 from wilq.schemas import (
     AdsCampaignMetricRow,
@@ -361,7 +361,7 @@ def test_social_context_pack_uses_review_ready_history_inventory_file(
 
 
 def test_social_draft_actions_exclude_dev_site_inventory_inputs() -> None:
-    actions = _social_draft_actions(
+    actions = social_draft_actions(
         [
             MetricFact(
                 name="clicks",

@@ -230,6 +230,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   preview, evidence i blokada zapisu pozostają bez zmian. Runtime pokazuje action
   w `prepare` z jednym evidence i `90_day_safety_check`; `service.py` spadł do
   4 970 LOC.
+- Google Ads Demand Gen readiness ma teraz pełny candidate factory w
+  `wilq/actions/google_ads/demand_gen.py`; zachowuje kampanijny kontekst, GA4
+  cross-check, evidence IDs, brakujące kontrakty, `prepare` i
+  `apply_allowed=false`. Runtime pokazuje akcję z pięcioma evidence i dwoma
+  brakującymi kontraktami; `service.py` spadł do 4 788 LOC, a centralny
+  `write_capable=0` pozostał bez zmian.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

@@ -41,24 +41,9 @@ from wilq.actions.google_ads.custom_segments import (
     custom_segment_action_from_metric_facts,
 )
 from wilq.actions.google_ads.demand_gen import (
-    DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
-    DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
-    DEMAND_GEN_AD_READ_STATUS_FACT,
-    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
-    DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT,
-    DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
-    DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
-    DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
-    DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-    DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
-    demand_gen_ad_group_ad_rows_from_facts,
-    demand_gen_campaign_mode_review_rows_from_campaigns,
     demand_gen_channel_label,
-    demand_gen_contract_has_ready_fact,
-    demand_gen_creative_asset_rows_from_facts,
-    demand_gen_landing_quality_rows_from_facts,
-    demand_gen_readiness_action,
-    demand_gen_readiness_review_payload,
+    demand_gen_readiness_action_from_metric_facts,
+    latest_vendor_read_evidence_ids,
 )
 from wilq.actions.google_ads.keyword_planner import (
     KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
@@ -86,7 +71,6 @@ from wilq.actions.merchant import (
 )
 from wilq.actions.metric_utils import (
     metric_fact_label,
-    prioritize_action_metrics,
     unique_values,
 )
 from wilq.actions.payloads import (
@@ -656,9 +640,11 @@ def _seed_google_ads_metric_actions(
     by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
 ) -> None:
     google_ads_facts = by_connector.get("google_ads", [])
-    demand_gen_action = _demand_gen_readiness_review_action(
+    demand_gen_action = demand_gen_readiness_action_from_metric_facts(
         google_ads_facts,
         by_connector.get("google_analytics_4", []),
+        latest_google_ads_evidence_ids=latest_vendor_read_evidence_ids("google_ads"),
+        latest_ga4_evidence_ids=latest_vendor_read_evidence_ids("google_analytics_4"),
     )
     if demand_gen_action is not None:
         actions[demand_gen_action.id] = demand_gen_action
@@ -723,184 +709,6 @@ def _seed_social_metric_actions(
     ]
     if social_facts:
         actions.update(social_draft_actions(social_facts))
-
-
-def _demand_gen_readiness_review_action(
-    google_ads_facts: list[MetricFact],
-    ga4_facts: list[MetricFact],
-) -> ActionObject | None:
-    evidence_ids = unique_values(
-        [
-            connector_evidence_id("google_ads"),
-            connector_evidence_id("google_analytics_4"),
-            *_latest_vendor_read_evidence_ids("google_ads"),
-            *_latest_vendor_read_evidence_ids("google_analytics_4"),
-            *[fact.evidence_id for fact in google_ads_facts[:12]],
-            *[fact.evidence_id for fact in ga4_facts[:8]],
-        ]
-    )
-    available_read_contracts = [
-        "google_ads_campaign_activity",
-        "google_ads_budget_context",
-        "google_ads_impression_share_context",
-        "ga4_landing_source_campaign_quality",
-        DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
-    ]
-    campaign_rows = _campaign_context_rows_from_metric_facts(google_ads_facts)
-    channel_counts = _campaign_channel_counts_from_context_rows(campaign_rows)
-    if campaign_rows:
-        available_read_contracts.append(DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
-    missing_read_contracts = [
-        DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
-        DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
-        DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-        DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
-    ]
-    if not campaign_rows:
-        missing_read_contracts.insert(0, DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
-    demand_gen_rows = [
-        row
-        for row in campaign_rows
-        if str(row.get("advertising_channel_type") or "").strip().upper()
-        in {"DEMAND_GEN", "DISCOVERY"}
-    ][:8]
-    demand_gen_ad_group_ad_rows = demand_gen_ad_group_ad_rows_from_facts(
-        google_ads_facts,
-    )
-    demand_gen_creative_asset_rows = demand_gen_creative_asset_rows_from_facts(
-        google_ads_facts,
-    )
-    demand_gen_landing_quality_rows = demand_gen_landing_quality_rows_from_facts(
-        ga4_facts,
-        demand_gen_rows,
-    )
-    demand_gen_campaign_mode_review_rows = demand_gen_campaign_mode_review_rows_from_campaigns(
-        demand_gen_rows
-    )
-    if (
-        demand_gen_contract_has_ready_fact(
-            google_ads_facts,
-            status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
-            row_count_fact_name=DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
-        )
-        or demand_gen_ad_group_ad_rows
-    ):
-        available_read_contracts.append(DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT)
-        missing_read_contracts = [
-            contract
-            for contract in missing_read_contracts
-            if contract != DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT
-        ]
-    if (
-        demand_gen_contract_has_ready_fact(
-            google_ads_facts,
-            status_fact_name=DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
-            row_count_fact_name=DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
-        )
-        or demand_gen_creative_asset_rows
-    ):
-        available_read_contracts.append(DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT)
-        missing_read_contracts = [
-            contract
-            for contract in missing_read_contracts
-            if contract != DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT
-        ]
-    available_read_contracts.extend(
-        [
-            DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-            DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
-        ]
-    )
-    payload = demand_gen_readiness_review_payload(
-        campaign_rows_evaluated=len(campaign_rows),
-        campaign_channel_counts=channel_counts,
-        demand_gen_campaign_rows=demand_gen_rows,
-        demand_gen_ad_group_ad_rows=[
-            row.model_dump(mode="json") for row in demand_gen_ad_group_ad_rows
-        ],
-        demand_gen_creative_asset_rows=[
-            row.model_dump(mode="json") for row in demand_gen_creative_asset_rows
-        ],
-        demand_gen_landing_quality_rows=[
-            row.model_dump(mode="json") for row in demand_gen_landing_quality_rows
-        ],
-        demand_gen_campaign_mode_review_rows=[
-            row.model_dump(mode="json") for row in demand_gen_campaign_mode_review_rows
-        ],
-        available_read_contracts=available_read_contracts,
-        missing_read_contracts=missing_read_contracts,
-        source_connectors=["google_ads", "google_analytics_4"],
-        evidence_ids=evidence_ids,
-    )
-    if payload is None:
-        return None
-    action_metrics = prioritize_action_metrics(
-        [*google_ads_facts, *ga4_facts],
-        required_names={"clicks", "impressions", "cost_micros", "active_users", "sessions"},
-    )[:10]
-    return demand_gen_readiness_action(
-        payload=payload,
-        evidence_ids=evidence_ids,
-        action_metrics=action_metrics,
-    )
-
-
-def _latest_vendor_read_evidence_ids(connector_id: str) -> list[str]:
-    for run in list_connector_refresh_runs(connector_id=connector_id):
-        if run.mode == ConnectorRefreshMode.vendor_read:
-            return run.evidence_ids
-    return []
-
-
-def _campaign_context_rows_from_metric_facts(facts: list[MetricFact]) -> list[dict[str, Any]]:
-    grouped: dict[tuple[str | None, str], list[MetricFact]] = {}
-    for fact in facts:
-        campaign_id = fact.dimensions.get("campaign_id")
-        campaign_name = fact.dimensions.get("campaign_name")
-        if not campaign_id and not campaign_name:
-            continue
-        grouped.setdefault((campaign_id, campaign_name or f"campaign {campaign_id}"), []).append(
-            fact
-        )
-    rows: list[dict[str, Any]] = []
-    for (campaign_id, campaign_name), group_facts in grouped.items():
-        first_dimensions = group_facts[0].dimensions
-        rows.append(
-            {
-                "campaign_id": campaign_id,
-                "campaign_name": campaign_name,
-                "campaign_status": first_dimensions.get("campaign_status"),
-                "advertising_channel_type": first_dimensions.get("advertising_channel_type"),
-                "clicks": _numeric_metric(group_facts, "clicks"),
-                "impressions": _numeric_metric(group_facts, "impressions"),
-                "cost_micros": _numeric_metric(group_facts, "cost_micros"),
-                "conversions": _numeric_metric(group_facts, "conversions"),
-                "conversion_value": _numeric_metric(group_facts, "conversion_value"),
-                "evidence_ids": unique_values(fact.evidence_id for fact in group_facts),
-            }
-        )
-    return sorted(
-        rows,
-        key=lambda row: (
-            str(row.get("advertising_channel_type") or ""),
-            str(row.get("campaign_name") or ""),
-        ),
-    )
-
-
-def _campaign_channel_counts_from_context_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for row in rows:
-        channel = str(row.get("advertising_channel_type") or "UNKNOWN").strip() or "UNKNOWN"
-        counts[channel] = counts.get(channel, 0) + 1
-    return dict(sorted(counts.items()))
-
-
-def _numeric_metric(facts: list[MetricFact], name: str) -> float | int | None:
-    value = next((fact.value for fact in facts if fact.name == name), None)
-    if isinstance(value, int | float):
-        return value
-    return None
 
 
 def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:

@@ -97,8 +97,10 @@ Action Service; nie przywracaj direct WordPress write.
   są w `wilq/actions/metric_utils.py`; pierwszy Ads campaign candidate factory
   jest w `wilq/actions/google_ads/campaign_review.py`. Payloady i kolejność
   rejestracji pozostają bez zmian; campaign, recommendation, change-history i
-  search-term, custom-segment i negative-keyword candidate factories są w modułach Google Ads, a `jnra` pozostaje otwarty dla
-  kolejnych grup.
+  search-term, custom-segment i negative-keyword candidate factories są w
+  modułach Google Ads. Demand Gen ma teraz pełny typed candidate factory wraz z
+  evidence/freshness i blokadą brakujących kontraktów; `jnra` pozostaje otwarty
+  dla kolejnych grup.
 
 ## Granica bezpieczeństwa
 
@@ -146,7 +148,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 4 970 non-empty LOC;
+- `wilq/actions/service.py`: 4 788 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -156,10 +158,11 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 382 plików Python,
-131654 non-empty LOC. Bounded content seed extraction, metric-candidate
+Latest complexity report (2026-07-11): 384 plików Python,
+131640 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
-recommendation/change-history/search-term/custom-segment/negative-keyword module extraction were audited with
+recommendation/change-history/search-term/custom-segment/negative-keyword/
+Demand Gen module extraction were audited with
 `--allow-frozen --allow-budget-violations`: service.py remains a frozen-growth
 file because the seam removes inline code, while pre-existing content/service
 budget findings remain tracked for the broader `jnra` cleanup. Historyczne duże
@@ -178,6 +181,11 @@ ich rozmiaru.
 - Security, API/CLI smoke i wszystkie deterministic skill smokes green.
 - 13/13 skill evals fresh/passing, scores 9–10; strict coverage bez gaps.
 - Live direct POST i readiness są fail-closed.
+- Google Ads Demand Gen readiness działa przez factory w
+  `wilq/actions/google_ads/demand_gen.py`; runtime ma `prepare`, pięć evidence,
+  dwa brakujące kontrakty, `apply_allowed=false` i centralne `write_capable=0`.
+  `service.py` spadł do 4 788 LOC; focused Demand Gen/action tests, Ruff,
+  mypy i `git diff --check` przechodzą.
 - Aktualne screenshoty desktop/mobile/action są w lokalnym, ignorowanym
   `.local-lab/proof/independent-review-2026-07-10/`.
 - Full cold E2E ma jawne otwarte blockers; nie nazywaj całego `verify.sh`
