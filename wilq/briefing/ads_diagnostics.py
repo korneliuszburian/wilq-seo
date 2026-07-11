@@ -73,6 +73,7 @@ from wilq.briefing.ads_decision_queue import (
     build_negative_keyword_safety_decision,
     build_recommendations_decision,
     build_search_term_ngram_decision,
+    build_search_term_safety_decision,
     build_search_terms_decision,
     decision_priority,
 )
@@ -4822,36 +4823,7 @@ def _ads_decision_queue(
         )
 
     if search_term_safety_read_contract.status == "ready":
-        metric_facts = [
-            fact
-            for row in search_term_safety_read_contract.safety_rows
-            for fact in row.metric_facts
-        ]
-        decisions.append(
-            AdsDecisionItem(
-                id="ads_review_search_term_safety",
-                decision_type="review_search_term_safety",
-                status="ready",
-                title="Sprawdź 90-dniową historię zapytań przed wykluczeniami",
-                summary=search_term_safety_read_contract.summary,
-                rationale=(
-                    "WILQ ma oddzielny 90-dniowy odczyt wyszukiwanych haseł jako hamulec "
-                    "bezpieczeństwa. To nadal nie jest rekomendacja wykluczeń: "
-                    "brakuje kontekstu dopasowania, intencji i podglądu zmian."
-                ),
-                next_step=search_term_safety_read_contract.next_step,
-                allowed_metrics=search_term_safety_read_contract.allowed_metrics,
-                missing_read_contracts=(search_term_safety_read_contract.missing_read_contracts),
-                operator_review_gates=search_term_safety_read_contract.operator_review_gates,
-                source_connectors=search_term_safety_read_contract.source_connectors,
-                evidence_ids=search_term_safety_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
-                search_term_safety_rows=search_term_safety_read_contract.safety_rows,
-                action_ids=[],
-                blocked_claims=search_term_safety_read_contract.blocked_claims,
-                risk=ActionRisk.medium,
-            )
-        )
+        decisions.append(build_search_term_safety_decision(search_term_safety_read_contract))
 
     if negative_keywords_read_contract.candidates:
         decisions.append(

@@ -169,6 +169,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Decision queue ma wydzieloną fail-closed gałąź `blocked_handoff`; OAuth/access
   blocker jest składany osobno, a główny assembler nie zmienia lineage ani claim
   safety. Pozostały większe grupy ready-decision assembly.
+- Ready-decision assembly ma teraz domenowy builder `build_search_term_safety_decision`
+  w `ads_decision_queue.py`; 90-dniowy safety rationale, evidence/source i blocked
+  claims nie są już inline w `ads_diagnostics.py`.
 
 ## Granica bezpieczeństwa
 
@@ -227,7 +230,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132482 non-empty LOC. Bounded content seed extraction, metric-candidate
+132481 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

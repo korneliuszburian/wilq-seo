@@ -19,6 +19,35 @@ from wilq.schemas import (
 )
 
 
+def build_search_term_safety_decision(
+    contract: AdsSearchTermSafetyReadContract,
+) -> AdsDecisionItem:
+    metric_facts = [fact for row in contract.safety_rows for fact in row.metric_facts]
+    return AdsDecisionItem(
+        id="ads_review_search_term_safety",
+        decision_type="review_search_term_safety",
+        status="ready",
+        title="Sprawdź 90-dniową historię zapytań przed wykluczeniami",
+        summary=contract.summary,
+        rationale=(
+            "WILQ ma oddzielny 90-dniowy odczyt wyszukiwanych haseł jako hamulec "
+            "bezpieczeństwa. To nadal nie jest rekomendacja wykluczeń: "
+            "brakuje kontekstu dopasowania, intencji i podglądu zmian."
+        ),
+        next_step=contract.next_step,
+        allowed_metrics=contract.allowed_metrics,
+        missing_read_contracts=contract.missing_read_contracts,
+        operator_review_gates=contract.operator_review_gates,
+        source_connectors=contract.source_connectors,
+        evidence_ids=contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        search_term_safety_rows=contract.safety_rows,
+        action_ids=[],
+        blocked_claims=contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
 def decision_priority(decision: AdsDecisionItem) -> int:
     type_priority: dict[str, int] = {
         "fix_ads_access": 5,

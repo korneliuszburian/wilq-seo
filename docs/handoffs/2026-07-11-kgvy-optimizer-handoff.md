@@ -33,6 +33,8 @@ Ostatni commit: `eead305` (`refactor: extract Ads blocked decision branch`)
   nie wracaj do jednego monolitycznego `_hydrate_ads_marketer_labels`.
 - Fail-closed `blocked_handoff` decision branch jest w `_blocked_ads_decision_queue`;
   nie wracaj do inline OAuth blocker assembly.
+- Search-term safety decision jest w `build_search_term_safety_decision`;
+  nie wracaj do inline 90-dniowej decyzji w diagnostics.
 
 ## Dowody
 
