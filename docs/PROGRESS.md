@@ -52,6 +52,10 @@ w git, Beads i `docs/progress/archive/`.
 - Priority map decision queue jest już wydzielona do `ads_decision_queue.py`;
   focused contract potwierdza kolejność safety/review. Metric tiles nadal są
   otwartym seamem i nie zostały przeniesione mechanicznie.
+- `kgvy` metric-tile continuation: formatowanie liczb i dwa pierwsze builders
+  (`campaign_activity`, `campaign_triage`) są w nowych modułach; response i
+  claim blockers pozostają bez zmian. Full Ads contracts, Ruff, mypy, complexity
+  i diff check green. Pozostały dispatcher branches czekają na osobny bounded seam.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

@@ -14,6 +14,9 @@ Ostatni commit: `387d37c` (`refactor: extract Ads decision priority map`)
 - Nie przenoszono ponownie section/decision builderów już opisanych w Beadzie.
 - Priority map decyzji została dodatkowo przeniesiona do istniejącego
   `ads_decision_queue.py`; metric tiles pozostały poza zakresem tego małego seamu.
+- Pierwszy formatter-safe metric-tile fragment jest teraz w
+  `ads_metric_utils.py`/`ads_metric_tiles.py` dla `campaign_activity` i
+  `campaign_triage`; pozostałe gałęzie dispatchera nie zostały przeniesione.
 
 ## Dowody
 
@@ -31,8 +34,9 @@ Ostatni commit: `387d37c` (`refactor: extract Ads decision priority map`)
 ## Następny slice
 
 Ponownie sprawdzić `bd ready` i wybrać kolejną nieprzeniesioną granicę `kgvy`:
-metric tiles albo marketer-label hydration. Metric tiles wymagają rozbicia
-formatter-heavy gałęzi na małe helpery; nie przenosić ich jako nowego monolitu.
+następny mały fragment metric tiles albo marketer-label hydration. Każdy tile
+fragment rozbijać na małe helpery; nie przenosić całego dispatchera jako nowego
+monolitu.
 
 ## Kontrola repo
 

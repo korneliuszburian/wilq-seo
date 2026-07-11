@@ -81,6 +81,22 @@ from wilq.briefing.ads_impression_share import (
     build_impression_share_section,
 )
 from wilq.briefing.ads_keyword_planner import build_keyword_planner_section
+from wilq.briefing.ads_metric_tiles import (
+    campaign_activity_metric_tiles,
+    campaign_triage_metric_tiles,
+)
+from wilq.briefing.ads_metric_utils import (
+    clean_metric_tiles as _clean_metric_tiles,
+)
+from wilq.briefing.ads_metric_utils import (
+    format_money_micros as _format_money_micros,
+)
+from wilq.briefing.ads_metric_utils import (
+    round_metric as _round_metric,
+)
+from wilq.briefing.ads_metric_utils import (
+    sum_attr as _sum_attr,
+)
 from wilq.briefing.ads_negative_keywords import build_negative_keywords_section
 from wilq.briefing.ads_optimizer import build_optimizer_readiness_contract
 from wilq.briefing.ads_recommendations import (
@@ -5015,48 +5031,9 @@ def _ads_decision_metric_tiles(
     currency_code: str | None,
 ) -> dict[str, int | float | str]:
     if decision.decision_type == "review_campaign_activity":
-        urgent_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "pilne")
-        high_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "wysokie")
-        target_context_rows = sum(
-            1 for row in decision.campaign_rows if row.target_status != "no_target"
-        )
-        campaign_tiles: dict[str, int | float | str | None] = {
-            "kampanie": len(decision.campaign_rows),
-            "pilne": urgent_rows,
-            "wysokie": high_rows,
-            "kliknięcia": _sum_attr(decision.campaign_rows, "clicks"),
-            "wyświetlenia": _sum_attr(decision.campaign_rows, "impressions"),
-            "koszt": _format_money_micros(
-                _sum_attr(decision.campaign_rows, "cost_micros"),
-                currency_code,
-            ),
-            "konwersje": _round_metric(_sum_attr(decision.campaign_rows, "conversions")),
-        }
-        if target_context_rows:
-            campaign_tiles["targety"] = target_context_rows
-        return _clean_metric_tiles(campaign_tiles)
+        return campaign_activity_metric_tiles(decision, currency_code)
     if decision.decision_type == "review_campaign_triage":
-        urgent_rows = sum(
-            1 for row in decision.campaign_triage_rows if row.review_priority == "pilne"
-        )
-        high_rows = sum(
-            1 for row in decision.campaign_triage_rows if row.review_priority == "wysokie"
-        )
-        recommendation_count = sum(
-            row.recommendation_count for row in decision.campaign_triage_rows
-        )
-        preview_count = sum(
-            1 for row in decision.campaign_triage_rows if row.has_budget_apply_preview
-        ) + sum(1 for row in decision.campaign_triage_rows if row.has_recommendation_apply_preview)
-        return _clean_metric_tiles(
-            {
-                "kampanie": len(decision.campaign_triage_rows),
-                "pilne": urgent_rows,
-                "wysokie": high_rows,
-                "rekomendacje": recommendation_count,
-                "podglądy": preview_count,
-            }
-        )
+        return campaign_triage_metric_tiles(decision)
     if decision.decision_type == "review_business_context":
         return _clean_metric_tiles(
             {
@@ -5239,23 +5216,6 @@ def _ads_decision_metric_tiles(
     return {}
 
 
-def _sum_attr(rows: Iterable[object], attr: str) -> float | None:
-    total: float | None = None
-    for row in rows:
-        value = getattr(row, attr, None)
-        if isinstance(value, int | float):
-            total = (total or 0.0) + float(value)
-    return total
-
-
-def _round_metric(value: float | None) -> int | float | None:
-    if value is None:
-        return None
-    if value.is_integer():
-        return int(value)
-    return round(value, 3)
-
-
 def _format_micros(value: float | None) -> str | None:
     if value is None:
         return None
@@ -5265,17 +5225,6 @@ def _format_micros(value: float | None) -> str | None:
     if account_units >= 10:
         return f"{account_units:.1f}"
     return f"{account_units:.2f}"
-
-
-def _format_money_micros(value: float | None, currency_code: str | None) -> str | None:
-    formatted_value = _format_micros(value)
-    if formatted_value is None:
-        return None
-    if formatted_value.endswith(".0"):
-        formatted_value = formatted_value[:-2]
-    if not currency_code:
-        return formatted_value
-    return f"{formatted_value} {currency_code}"
 
 
 def _format_ratio_percent(value: float | None) -> str | None:
@@ -5293,22 +5242,6 @@ def _strategy_review_label(status: str) -> str:
         "deferred": "odłożone",
     }
     return labels.get(status, "status oceny strategii do sprawdzenia")
-
-
-def _clean_metric_tiles(
-    tiles: dict[str, int | float | str | None],
-) -> dict[str, int | float | str]:
-    clean_tiles: dict[str, int | float | str] = {}
-    for label, value in tiles.items():
-        if value is None:
-            continue
-        if isinstance(value, float):
-            rounded_value = _round_metric(value)
-            if rounded_value is not None:
-                clean_tiles[label] = rounded_value
-        else:
-            clean_tiles[label] = value
-    return clean_tiles
 
 
 def _metric_sentence(facts: list[MetricFact]) -> str:

@@ -139,6 +139,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `decision_priority`; kolejność blokad bezpieczeństwa i kolejki review ma focused
   contract test. Metric tiles pozostają osobnym seamem, bo wymagają rozbicia
   formatter-heavy gałęzi.
+- Pierwszy metric-tile seam jest wykonany: wspólne formatowanie liczb oraz tile
+  builders `campaign_activity`/`campaign_triage` są w `ads_metric_utils.py` i
+  `ads_metric_tiles.py`; dispatcher w `ads_diagnostics.py` deleguje tylko te
+  dwa typy. Pozostałe gałęzie pozostają świadomie nietknięte.
 
 ## Granica bezpieczeństwa
 
@@ -196,8 +200,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 395 plików Python,
-132341 non-empty LOC. Bounded content seed extraction, metric-candidate
+Latest complexity report (2026-07-11): 398 plików Python,
+132409 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with
