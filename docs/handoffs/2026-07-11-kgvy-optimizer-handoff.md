@@ -77,8 +77,9 @@ Ostatni commit: `e2d681e` (`refactor: split Ads strategy review state`)
 
 ## Następny slice
 
-Następny potwierdzony seam wybierz po aktualnym complexity audit i `bd ready`;
-nie wracaj do business-context ani strategy-review operator-state helpers.
+Następny potwierdzony seam to `_compact_ads_diagnostics_summary` (114 linii),
+wybrany po aktualnym complexity audit. Nie wracaj do business-context ani
+strategy-review operator-state helpers.
 
 ## Kontrola repo
 

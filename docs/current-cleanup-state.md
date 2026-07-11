@@ -16,7 +16,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 98 849 metric facts, 4 539 refresh runs; konektory
+- Managed runtime: 98 851 metric facts, 4 540 refresh runs; konektory
   12/9 configured/2 missing credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
@@ -201,11 +201,11 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Końcowa konstrukcja `AdsBusinessContextReadContract` jest teraz w
   `_build_business_context_read_contract`; blocked claims, target interpretation,
   strategy-review contract i evidence lineage pozostają typed. Complexity:
-  398 / 132665 LOC; 8 znanych violations, następny target to strategy review.
+  398 / 132665 LOC; 8 znanych violations, strategy review jest już wydzielony.
 - Strategy-review status, summary, safe next step, missing contracts i action IDs
   są teraz w `_strategy_review_operator_state`; readiness contract zachowuje
   `apply_allowed=false` i `destructive=false`. Complexity: 398 / 132668 LOC;
-  7 znanych violations.
+  7 znanych violations; następny target to `_compact_ads_diagnostics_summary`.
 
 ## Granica bezpieczeństwa
 
