@@ -47,8 +47,12 @@ następna praca nie powinna jej powtarzać. Jeśli kontrakt wymaga danych, najpi
 zostawić auto-trigger wyłączony i opisać blocker; `r564.3` nadal jest blokowany
 przez brak świeżego, actionable kandydata contentowego.
 
+Niezależny następny seam roadmapy został wykonany w `jnra`: projekcje historii
+audytu przeniesiono do `wilq/actions/audit_store.py`. Nie wracaj do tego seamu;
+następny refaktor `service.py` musi wybierać inną potwierdzoną granicę.
+
 ## Kontrola repo
 
-- Ostatni push: `origin/main` wskazuje `ee53436`.
+- Ostatni push: `origin/main` wskazuje `3771c02` przed bieżącym commitem docs.
 - Worktree po commicie powinien być czysty; przed następnym slice’em sprawdź
   `rtk git status --short`, `rtk bd ready --json` i health API.

@@ -126,7 +126,10 @@ przywracaj direct WordPress write.
   search-term, custom-segment i negative-keyword candidate factories są w
   modułach Google Ads. Demand Gen ma teraz pełny typed candidate factory wraz z
   evidence/freshness i blokadą brakujących kontraktów; `jnra` pozostaje otwarty
-  dla kolejnych grup.
+  dla kolejnych grup. Ostatni seam `audit_store.py` wyciągnął read-only projekcje
+  historii audytu i mutation auditów z `service.py`, zachowując limit 10 wpisów
+  na akcję oraz istniejące aliasy/funkcje wywołujące. Focused action suite ma
+  9 passed; ActionObject safety loop pozostaje service-owned.
 
 ## Granica bezpieczeństwa
 
@@ -184,8 +187,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 392 plików Python,
-132005 non-empty LOC. Bounded content seed extraction, metric-candidate
+Latest complexity report (2026-07-11): 394 plików Python,
+132243 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

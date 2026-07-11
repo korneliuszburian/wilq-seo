@@ -36,6 +36,11 @@ w git, Beads i `docs/progress/archive/`.
   ukrywa przycisk i pokazuje komunikat oczekiwania; focused Vitest 2/2,
   typecheck/lint green. Desktop render po zmianie zachowuje decyzję i CTA dla
   dozwolonych źródeł; proof `.local-lab/proof/4wwo-sources-refresh-state.png`.
+- Po domknięciu refresh boundary przeszedłem do potwierdzonego `jnra`: read-only
+  projekcje historii audytu i mutation auditów są teraz w
+  `wilq/actions/audit_store.py`, z limitem 10 wpisów na akcję i bez zmiany
+  ActionObject safety loop. Focused action suite 9 passed, Ruff/mypy/diff check
+  green; complexity: 394 plików Python / 132243 LOC, `service.py` 4224 LOC.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

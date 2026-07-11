@@ -10,6 +10,18 @@ from typing import Any, Literal, cast
 from urllib.parse import urlparse
 from uuid import uuid4
 
+from wilq.actions.audit_store import (
+    persisted_audit_events_by_action_id as _persisted_audit_events_by_action_id,
+)
+from wilq.actions.audit_store import (
+    persisted_audit_events_for_action as _persisted_audit_events_for_action,
+)
+from wilq.actions.audit_store import (
+    persisted_mutation_audits_by_action_id as _persisted_mutation_audits_by_action_id,
+)
+from wilq.actions.audit_store import (
+    persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
+)
 from wilq.actions.content_refresh import (
     content_contract_label,
     content_contract_labels,
@@ -3845,46 +3857,6 @@ def _action_review_gate(
         confirmation_summary=_action_audit_summary_for_operator,
         impact_status=_impact_status_from_event,
     )
-
-
-def _persisted_audit_events_by_action_id(action_ids: set[str]) -> dict[str, list[AuditEvent]]:
-    if not action_ids:
-        return {}
-    events_by_action_id: dict[str, list[AuditEvent]] = {action_id: [] for action_id in action_ids}
-    for event in local_state_store().list_audit_events():
-        if event.action_id not in action_ids:
-            continue
-        action_events = events_by_action_id.setdefault(event.action_id, [])
-        if len(action_events) < 10:
-            action_events.append(event)
-    return events_by_action_id
-
-
-def _persisted_audit_events_for_action(action_id: str) -> list[AuditEvent]:
-    return local_state_store().list_audit_events(action_id=action_id)[:10]
-
-
-def _persisted_mutation_audits_by_action_id(
-    action_ids: set[str],
-) -> dict[str, list[ActionMutationAuditRecord]]:
-    if not action_ids:
-        return {}
-    audits_by_action_id: dict[str, list[ActionMutationAuditRecord]] = {
-        action_id: [] for action_id in action_ids
-    }
-    for audit in local_state_store().list_action_mutation_audits():
-        if audit.action_id not in action_ids:
-            continue
-        action_audits = audits_by_action_id.setdefault(audit.action_id, [])
-        if len(action_audits) < 10:
-            action_audits.append(audit)
-    return audits_by_action_id
-
-
-def _persisted_mutation_audits_for_action(
-    action_id: str,
-) -> list[ActionMutationAuditRecord]:
-    return local_state_store().list_action_mutation_audits(action_id=action_id)[:10]
 
 
 def _action_review_summary(request: ActionReviewRequest) -> str:
