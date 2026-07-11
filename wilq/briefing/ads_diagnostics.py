@@ -538,6 +538,86 @@ def _reconcile_search_term_read_contracts(
     return search_terms_read_contract, search_term_safety_read_contract
 
 
+def _reconcile_ads_recommendation_and_impression_contracts(
+    campaign_read_contract: AdsCampaignReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract,
+    impression_share_read_contract: AdsImpressionShareReadContract,
+) -> tuple[
+    AdsCampaignReadContract,
+    AdsDerivedKpiReadContract,
+    AdsBudgetPacingReadContract,
+    AdsRecommendationsReadContract,
+    AdsImpressionShareReadContract,
+]:
+    if recommendations_read_contract.status == "ready":
+        campaign_read_contract = campaign_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    campaign_read_contract.missing_read_contracts,
+                    "recommendations",
+                )
+            }
+        )
+        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    derived_kpi_read_contract.missing_read_contracts,
+                    "recommendations",
+                )
+            }
+        )
+        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    budget_pacing_read_contract.missing_read_contracts,
+                    "recommendations",
+                )
+            }
+        )
+    if impression_share_read_contract.status == "ready":
+        campaign_read_contract = campaign_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    campaign_read_contract.missing_read_contracts,
+                    "impression_share",
+                )
+            }
+        )
+        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    derived_kpi_read_contract.missing_read_contracts,
+                    "impression_share",
+                )
+            }
+        )
+        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    budget_pacing_read_contract.missing_read_contracts,
+                    "impression_share",
+                )
+            }
+        )
+        recommendations_read_contract = recommendations_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    recommendations_read_contract.missing_read_contracts,
+                    "impression_share",
+                )
+            }
+        )
+    return (
+        campaign_read_contract,
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+    )
+
+
 def build_ads_diagnostics(
     actions: list[ActionObject] | None = None,
     *,
@@ -599,64 +679,19 @@ def build_ads_diagnostics(
         ),
         fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
     )
-    if recommendations_read_contract.status == "ready":
-        campaign_read_contract = campaign_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    campaign_read_contract.missing_read_contracts,
-                    "recommendations",
-                )
-            }
-        )
-        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    derived_kpi_read_contract.missing_read_contracts,
-                    "recommendations",
-                )
-            }
-        )
-        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    budget_pacing_read_contract.missing_read_contracts,
-                    "recommendations",
-                )
-            }
-        )
-    if impression_share_read_contract.status == "ready":
-        campaign_read_contract = campaign_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    campaign_read_contract.missing_read_contracts,
-                    "impression_share",
-                )
-            }
-        )
-        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    derived_kpi_read_contract.missing_read_contracts,
-                    "impression_share",
-                )
-            }
-        )
-        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    budget_pacing_read_contract.missing_read_contracts,
-                    "impression_share",
-                )
-            }
-        )
-        recommendations_read_contract = recommendations_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    recommendations_read_contract.missing_read_contracts,
-                    "impression_share",
-                )
-            }
-        )
+    (
+        campaign_read_contract,
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+    ) = _reconcile_ads_recommendation_and_impression_contracts(
+        campaign_read_contract,
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+    )
     if "change_history" not in change_history_read_contract.missing_read_contracts:
         campaign_read_contract = campaign_read_contract.model_copy(
             update={

@@ -75,6 +75,9 @@ Ostatni commit: `69e8415` (`refactor: extract Ads search term reconciliation`)
 - Search-term read-contract reconciliation jest w
   `_reconcile_search_term_read_contracts`; nie wracaj do inline freshness
   reconciliation.
+- Recommendations/impression-share reconciliation jest w
+  `_reconcile_ads_recommendation_and_impression_contracts`; nie wracaj do inline
+  missing-contract updates.
 
 ## Dowody
 
@@ -94,9 +97,9 @@ Ostatni commit: `69e8415` (`refactor: extract Ads search term reconciliation`)
 
 ## Następny slice
 
-Następny potwierdzony seam to reconciliation `recommendations` i
-`impression_share` w `build_ads_diagnostics`. Zachować missing-contract lineage,
-freshness i ActionObject safety; nie przenosić całego monolitu naraz.
+Następny potwierdzony seam to kolejny typed reconciliation fragment w
+`build_ads_diagnostics` (331 linii po dwóch extractionach). Zachować
+missing-contract lineage, freshness i ActionObject safety.
 
 ## Kontrola repo
 

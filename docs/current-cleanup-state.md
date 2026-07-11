@@ -234,6 +234,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Search-term reconciliation (`90_day_safety_check` i `keyword match context`)
   jest teraz w `_reconcile_search_term_read_contracts`; freshness/read-contract
   semantics pozostają bez zmian. Complexity: 398 / 132815 LOC; 2 znane violations.
+- Recommendations/impression-share reconciliation jest teraz w
+  `_reconcile_ads_recommendation_and_impression_contracts`; missing-contract
+  lineage i readiness semantics pozostają bez zmian. Complexity: 398 / 132848 LOC;
+  2 znane violations.
 
 ## Granica bezpieczeństwa
 

@@ -142,6 +142,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_reconcile_search_term_read_contracts` przejął reconciliation `90_day_safety_check`
   i `keyword match context`; search-term freshness i missing-contract semantics
   bez zmian. Complexity: 398 / 132815 LOC; 2 znane violations.
+- `_reconcile_ads_recommendation_and_impression_contracts` przejął readiness
+  reconciliation recommendations/impression share; evidence i missing contracts
+  pozostają bez zmian. Complexity: 398 / 132848 LOC; 2 znane violations.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
