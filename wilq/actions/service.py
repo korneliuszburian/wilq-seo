@@ -65,9 +65,8 @@ from wilq.actions.google_ads.demand_gen import (
     demand_gen_readiness_review_payload,
 )
 from wilq.actions.google_ads.keyword_planner import (
-    KEYWORD_PLANNER_ACCESS_ACTION_ID,
     KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
-    keyword_planner_access_payload,
+    keyword_planner_access_action,
 )
 from wilq.actions.google_ads.negative_keywords import (
     negative_keyword_action,
@@ -1090,34 +1089,11 @@ def _google_ads_keyword_planner_access_action() -> ActionObject | None:
     blocker = _keyword_planner_access_blocker(latest_run)
     if blocker is None:
         return None
-    return ActionObject(
-        id=KEYWORD_PLANNER_ACCESS_ACTION_ID,
-        title="Odblokuj Keyword Planner dla Google Ads",
-        domain=OpportunityDomain.google_ads,
-        connector="google_ads",
-        mode=ActionMode.prepare,
-        risk=ActionRisk.low,
-        status=ActionStatus.needs_validation,
+    return keyword_planner_access_action(
+        blocker=blocker,
         evidence_ids=_unique(
-            [
-                connector_evidence_id("google_ads"),
-                *latest_run.evidence_ids,
-            ]
+            [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
         ),
-        human_diagnosis=(
-            "Google Ads live read działa, ale wzbogacenie Keyword Planner jest "
-            f"zablokowane przez Google Ads API: {blocker}. WILQ może używać "
-            "oceny haseł źródłowych, ale nie może twierdzić nic o prognozie ani "
-            "rozmiarze odbiorców."
-        ),
-        recommended_reason=(
-            "Dopóki token deweloperski nie ma zatwierdzonego dostępu Keyword Planner, "
-            "segmenty zostają bez prognozy i wzbogacenia. To jest zewnętrzny "
-            "blokada dostępu, nie brak promptu."
-        ),
-        payload=keyword_planner_access_payload(blocker),
-        validation_status="not_validated",
-        created_by="system_keyword_planner_access_seed",
     )
 
 

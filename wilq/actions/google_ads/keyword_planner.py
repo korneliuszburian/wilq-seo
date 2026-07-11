@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from wilq.actions.validation_copy import missing, no_destructive_change, no_write, wrong
+from wilq.schemas import ActionMode, ActionObject, ActionRisk, ActionStatus, OpportunityDomain
 
 KEYWORD_PLANNER_ACCESS_ACTION_ID = "act_configure_google_ads_keyword_planner_access"
 KEYWORD_PLANNER_ACCESS_ACTION_TYPE = "configure_google_ads_keyword_planner_access"
@@ -14,6 +15,33 @@ KEYWORD_PLANNER_ACCESS_BLOCKED_CLAIMS = [
     "zapis kierowania reklam",
     "skuteczność kampanii",
 ]
+
+
+def keyword_planner_access_action(*, blocker: str, evidence_ids: list[str]) -> ActionObject:
+    return ActionObject(
+        id=KEYWORD_PLANNER_ACCESS_ACTION_ID,
+        title="Odblokuj Keyword Planner dla Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=evidence_ids,
+        human_diagnosis=(
+            "Google Ads live read działa, ale wzbogacenie Keyword Planner jest "
+            f"zablokowane przez Google Ads API: {blocker}. WILQ może używać "
+            "oceny haseł źródłowych, ale nie może twierdzić nic o prognozie ani "
+            "rozmiarze odbiorców."
+        ),
+        recommended_reason=(
+            "Dopóki token deweloperski nie ma zatwierdzonego dostępu Keyword Planner, "
+            "segmenty zostają bez prognozy i wzbogacenia. To jest zewnętrzna "
+            "blokada dostępu, nie brak promptu."
+        ),
+        payload=keyword_planner_access_payload(blocker),
+        validation_status="not_validated",
+        created_by="system_keyword_planner_access_seed",
+    )
 
 
 def keyword_planner_access_payload(blocker: str) -> dict[str, Any]:

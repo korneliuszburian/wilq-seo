@@ -150,6 +150,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   evidence i delegację. Focused action contract `business_context` /
   `keyword_planner`, Ruff, mypy i diff check przechodzą. Większy split pozostaje
   otwarty i nie może omijać validate → preview → review → confirm → audit.
+  Następny krok tego samego zakresu przeniósł konstruktor Keyword Planner do
+  `wilq/actions/google_ads/keyword_planner.py`, zachowując zewnętrzną blokadę
+  dostępu, evidence i `apply_allowed=false`.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
