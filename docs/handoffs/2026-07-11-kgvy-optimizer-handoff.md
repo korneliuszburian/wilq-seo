@@ -35,6 +35,8 @@ Ostatni commit: `93d6d4d` (`refactor: extract Ads search safety decision`)
   nie wracaj do inline OAuth blocker assembly.
 - Search-term safety decision jest w `build_search_term_safety_decision`;
   nie wracaj do inline 90-dniowej decyzji w diagnostics.
+- Business-context decision jest w `build_business_context_decision`; nie wracaj
+  do inline policy/rationale assembly w diagnostics.
 
 ## Dowody
 

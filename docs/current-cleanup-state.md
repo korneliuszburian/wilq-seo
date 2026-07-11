@@ -172,6 +172,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Ready-decision assembly ma teraz domenowy builder `build_search_term_safety_decision`
   w `ads_decision_queue.py`; 90-dniowy safety rationale, evidence/source i blocked
   claims nie są już inline w `ads_diagnostics.py`.
+- Ready-decision assembly ma także `build_business_context_decision` w
+  `ads_decision_queue.py`; policy metric, rationale, evidence/action lineage i
+  blokady rentowności/scalingu pozostają typed.
 
 ## Granica bezpieczeństwa
 
@@ -230,7 +233,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132481 non-empty LOC. Bounded content seed extraction, metric-candidate
+132485 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

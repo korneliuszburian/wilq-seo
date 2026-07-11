@@ -4,6 +4,7 @@ from wilq.actions.google_ads.campaign_review import CAMPAIGN_REVIEW_ACTION_ID
 from wilq.schemas import (
     ActionRisk,
     AdsBudgetPacingReadContract,
+    AdsBusinessContextReadContract,
     AdsCampaignReadContract,
     AdsCampaignTriageReadContract,
     AdsChangeHistoryReadContract,
@@ -17,6 +18,47 @@ from wilq.schemas import (
     AdsSearchTermSafetyReadContract,
     AdsSearchTermsReadContract,
 )
+
+
+def build_business_context_decision(
+    contract: AdsBusinessContextReadContract,
+) -> AdsDecisionItem:
+    return AdsDecisionItem(
+        id="ads_review_business_context",
+        decision_type="review_business_context",
+        status=contract.status,
+        title=(
+            "Użyj kontekstu biznesowego w ocenie Ads"
+            if contract.status == "ready"
+            else "Uzupełnij kontekst biznesowy przed decyzjami Ads"
+        ),
+        summary=contract.summary,
+        rationale=(
+            "Google Ads pokazuje koszt, kliknięcia, konwersje i część wskaźników. "
+            "WILQ używa lokalnego kontraktu z marżą, celem biznesowym, "
+            "celem budżetu oraz docelowym zwrotem z reklam albo kosztem "
+            "pozyskania celu jako kontekstu oceny, ale "
+            "nadal blokuje zapis zmian i twarde oceny bez pełnych danych "
+            "tempa wydawania budżetu, historii zmian, rekomendacji i audytu."
+            if contract.status == "ready"
+            else (
+                "Google Ads pokazuje koszt, kliknięcia, konwersje i część wskaźników, ale "
+                "nie zna marży, celu sprzedażowego ani intencji budżetu Ekologus. "
+                "WILQ musi mieć ten kontekst jako zatwierdzony kontrakt, zanim nazwie coś "
+                "rentowne, nierentowne albo gotowe do skalowania."
+            )
+        ),
+        next_step=contract.next_step,
+        metric_tiles={"polityki": len(contract.business_policy_ids)},
+        allowed_metrics=contract.allowed_metrics,
+        missing_read_contracts=contract.missing_read_contracts,
+        operator_review_gates=contract.operator_review_gates,
+        source_connectors=contract.source_connectors,
+        evidence_ids=contract.evidence_ids,
+        action_ids=contract.target_interpretation.action_ids,
+        blocked_claims=contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
 
 
 def build_search_term_safety_decision(

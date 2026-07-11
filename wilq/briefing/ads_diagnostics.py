@@ -64,6 +64,7 @@ from wilq.briefing.ads_change_history import (
 from wilq.briefing.ads_custom_segments import build_custom_segments_section
 from wilq.briefing.ads_decision_queue import (
     build_budget_context_decision,
+    build_business_context_decision,
     build_campaign_activity_decision,
     build_campaign_triage_decision,
     build_change_history_decision,
@@ -4732,44 +4733,7 @@ def _ads_decision_queue(
     if campaign_triage_read_contract.triage_rows:
         decisions.append(build_campaign_triage_decision(campaign_triage_read_contract))
 
-    decisions.append(
-        AdsDecisionItem(
-            id="ads_review_business_context",
-            decision_type="review_business_context",
-            status=business_context_read_contract.status,
-            title=(
-                "Użyj kontekstu biznesowego w ocenie Ads"
-                if business_context_read_contract.status == "ready"
-                else "Uzupełnij kontekst biznesowy przed decyzjami Ads"
-            ),
-            summary=business_context_read_contract.summary,
-            rationale=(
-                "Google Ads pokazuje koszt, kliknięcia, konwersje i część wskaźników. "
-                "WILQ używa lokalnego kontraktu z marżą, celem biznesowym, "
-                "celem budżetu oraz docelowym zwrotem z reklam albo kosztem "
-                "pozyskania celu jako kontekstu oceny, ale "
-                "nadal blokuje zapis zmian i twarde oceny bez pełnych danych "
-                "tempa wydawania budżetu, historii zmian, rekomendacji i audytu."
-                if business_context_read_contract.status == "ready"
-                else (
-                    "Google Ads pokazuje koszt, kliknięcia, konwersje i część wskaźników, ale "
-                    "nie zna marży, celu sprzedażowego ani intencji budżetu Ekologus. "
-                    "WILQ musi mieć ten kontekst jako zatwierdzony kontrakt, zanim nazwie coś "
-                    "rentowne, nierentowne albo gotowe do skalowania."
-                )
-            ),
-            next_step=business_context_read_contract.next_step,
-            metric_tiles={"polityki": len(business_context_read_contract.business_policy_ids)},
-            allowed_metrics=business_context_read_contract.allowed_metrics,
-            missing_read_contracts=business_context_read_contract.missing_read_contracts,
-            operator_review_gates=business_context_read_contract.operator_review_gates,
-            source_connectors=business_context_read_contract.source_connectors,
-            evidence_ids=business_context_read_contract.evidence_ids,
-            action_ids=business_context_read_contract.target_interpretation.action_ids,
-            blocked_claims=business_context_read_contract.blocked_claims,
-            risk=ActionRisk.medium,
-        )
-    )
+    decisions.append(build_business_context_decision(business_context_read_contract))
 
     if derived_kpi_read_contract.kpi_rows:
         decisions.append(

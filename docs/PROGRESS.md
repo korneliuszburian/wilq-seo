@@ -86,6 +86,9 @@ w git, Beads i `docs/progress/archive/`.
 - 90-dniowy search-term safety decision jest teraz w `ads_decision_queue.py` jako
   typed builder; rationale, evidence, source connector i blocked claims pozostają
   bez zmian. Complexity: 398 plików Python / 132481 LOC.
+- `review_business_context` ma teraz osobny typed builder w
+  `ads_decision_queue.py`; status, policy tile, evidence/action lineage i blocked
+  profitability/scaling claims pozostają bez zmian. Complexity: 398 / 132485 LOC.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
