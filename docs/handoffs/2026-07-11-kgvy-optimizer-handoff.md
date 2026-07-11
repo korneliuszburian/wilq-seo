@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `e2d681e` (`refactor: split Ads strategy review state`)  
-`origin/main` = `e2d681e`
+Ostatni commit: `37ed328` (`docs: select Ads summary compaction seam`)  
+`origin/main` = `37ed328`
 
 ## Wykonane
 
