@@ -50,7 +50,8 @@ splitu monolitu ani od przywracania direct WordPress write.
   naprawiają zgodność API/frontend, a Ads route pokazuje bezpieczny shell podczas
   oczekiwania na dane. Pełny desktop proof: `.local-lab/proof/c9h9-9-ads-first-decision-fixed-loaded.png`;
   focused current Playwright 1/1 (7.8 s) przechodzi, ale route-level cold first
-  paint nadal przekracza budżet 5 s — Bead pozostaje otwarty.
+  paint nadal przekracza budżet 5 s — Bead pozostaje otwarty. Lazy-route shell
+  proof przy 2 s: `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
 
 ## Granica bezpieczeństwa
 

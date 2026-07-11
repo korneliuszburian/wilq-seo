@@ -122,6 +122,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused current Playwright `apps/dashboard/e2e/ads-summary-current.spec.ts`
   passes 1/1 in 7.8 s. Route-level cold first paint is still above the 5 s
   budget in this run, so Bead remains open despite API cold being below 5 s.
+  Lazy-route shell proof at 2 s: `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

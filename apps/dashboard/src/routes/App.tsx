@@ -83,7 +83,7 @@ const MerchantDiagnosticSurface = lazy(() =>
 
 const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
   "/ads-doctor": () => (
-    <LazyRoute>
+    <LazyRoute fallback={<AdsRouteLoadingShell />}>
       <AdsDoctorSurface />
     </LazyRoute>
   ),
@@ -143,8 +143,26 @@ function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflow
   return <GenericSurface routeName={`/${kind}/${id}`} />;
 }
 
-function LazyRoute({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<LoadingBand />}>{children}</Suspense>;
+function LazyRoute({ children, fallback = <LoadingBand /> }: { children: ReactNode; fallback?: ReactNode }) {
+  return <Suspense fallback={fallback}>{children}</Suspense>;
+}
+
+function AdsRouteLoadingShell() {
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <h1 className="text-3xl font-semibold tracking-normal text-ink">Reklamy i pomiar</h1>
+      <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+        WILQ pobiera źródłowe dane Ads. Nie pokazuję rekomendacji, dopóki odczyt nie wróci.
+      </p>
+      <section className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <div className="text-sm font-semibold text-amber-900">Odczyt Ads w toku</div>
+        <p className="mt-2 text-sm leading-6 text-amber-800">
+          Zapis zmian i wnioski o ROAS, przychodzie, waste oraz konwersjach pozostają zablokowane
+          do czasu potwierdzenia danych.
+        </p>
+      </section>
+    </main>
+  );
 }
 
 function renderGeneratedRoute(path: string) {
