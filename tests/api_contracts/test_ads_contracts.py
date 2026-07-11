@@ -22,6 +22,8 @@ from wilq.briefing.ads_diagnostics import (
     _custom_segment_review_reason,
     _custom_segment_source_quality,
     build_ads_diagnostics,
+    build_ads_diagnostics_summary_cached,
+    clear_ads_summary_cache,
 )
 from wilq.connectors.google_ads.client import (
     GOOGLE_ADS_API_VERSION,
@@ -54,6 +56,30 @@ def large_ads_metric_fact_fillers(count: int = 2050) -> list[VendorMetricFact]:
         )
         for index in range(count)
     ]
+
+
+def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("WILQ_ADS_SUMMARY_CACHE_SECONDS", "60")
+    clear_ads_summary_cache()
+    calls = 0
+    sentinel = object()
+
+    def fake_build(*, view: str = "full"):
+        nonlocal calls
+        calls += 1
+        assert view == "summary"
+        return sentinel
+
+    monkeypatch.setattr("wilq.briefing.ads_diagnostics.build_ads_diagnostics", fake_build)
+    assert build_ads_diagnostics_summary_cached() is sentinel
+    assert build_ads_diagnostics_summary_cached() is sentinel
+    assert calls == 1
+    clear_ads_summary_cache()
+    assert build_ads_diagnostics_summary_cached() is sentinel
+    assert calls == 2
 
 
 def test_google_ads_connector_uses_major_endpoint_for_minor_releases() -> None:

@@ -45,6 +45,10 @@ splitu monolitu ani od przywracania direct WordPress write.
   CTA podczas oczekiwania na readiness, bez udawania gotowego zapisu. Proof:
   `.local-lab/proof/c9h9-11-actions-cold-browser-final.png` i
   `.local-lab/proof/c9h9-11-actions-detail-cold-browser-loaded.png`. Bead jest zamknięty.
+- `c9h9.9` Ads ma summary cache read-through (15 s) bez blokowania API startupu;
+  HTTP proof po restarcie `1.426757 s` / `0.016956 s`. Shared schema defaults
+  naprawiają zgodność API/frontend, a Ads route pokazuje bezpieczny shell podczas
+  oczekiwania na dane. Pełny desktop proof: `.local-lab/proof/c9h9-9-ads-contract-full-6s.png`.
 
 ## Granica bezpieczeństwa
 

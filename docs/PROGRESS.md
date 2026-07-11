@@ -113,6 +113,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   dashboard lint/typecheck i backend cache test przechodzą; browser proof:
   `.local-lab/proof/c9h9-11-actions-cold-browser-final.png` oraz
   `.local-lab/proof/c9h9-11-actions-detail-cold-browser-loaded.png`.
+- `c9h9.9` jest w toku: istniejący `/api/ads/diagnostics?view=summary` ma
+  15-sekundowy cache read-through; po restarcie HTTP `1.426757 s` cold i
+  `0.016956 s` warm. Shared schema przestał odrzucać API summary przez trzy
+  nieadsowe pola review (defaults zamiast wymagań); 5 decyzji Ads i wszystkie
+  mają evidence. Ads route nie blokuje już first paint na kolejce akcji i ma
+  bezpieczny shell „Odczyt Ads w toku”. Proof: `.local-lab/proof/c9h9-9-ads-contract-full-6s.png`.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

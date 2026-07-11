@@ -36,6 +36,9 @@ from apps.api.wilq_api.routers.social import router as social_router
 from apps.api.wilq_api.routers.system import router as system_router
 from apps.api.wilq_api.routers.workflows import router as workflows_router
 from wilq.actions.service import clear_action_list_cache, list_actions_cached
+from wilq.briefing.ads_diagnostics import (
+    clear_ads_summary_cache,
+)
 from wilq.briefing.content_diagnostics import (
     build_content_diagnostics_cached,
     clear_content_diagnostics_cache,
@@ -163,6 +166,7 @@ def clear_api_view_model_caches() -> None:
     clear_content_diagnostics_cache()
     clear_merchant_diagnostics_cache()
     clear_action_list_cache()
+    clear_ads_summary_cache()
     clear_daily_runtime_cache()
     clear_skill_context_cache()
 

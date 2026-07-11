@@ -39,6 +39,7 @@ import {
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
   KnowledgeTaxonomyEntrySchema,
+  AdsOperatorSummarySchema,
   MerchantDiagnosticsResponseSchema,
   SocialHistoryImportAuditSchema,
   SocialHistoryInventorySchema,
@@ -46,6 +47,38 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("AdsOperatorSummarySchema", () => {
+  it("defaults review-only fields that are not part of the Ads API payload", () => {
+    const summary = AdsOperatorSummarySchema.parse({
+      id: "ads_operator_summary",
+      title: "Ads",
+      summary: "Do sprawdzenia.",
+      next_step: "Otwórz kolejkę.",
+      top_decision_ids: [],
+      campaign_count: 0,
+      search_term_count: 0,
+      total_clicks: 0,
+      total_impressions: 0,
+      total_cost_micros: 0,
+      total_conversions: 0,
+      total_conversion_value: 0,
+      ready_area_count: 0,
+      blocked_area_count: 0,
+      allowed_metrics: [],
+      missing_read_contracts: [],
+      operator_review_gates: [],
+      source_connectors: [],
+      evidence_ids: [],
+      action_ids: [],
+      blocked_claims: []
+    });
+
+    expect(summary.review_decision_after_review).toBe("");
+    expect(summary.review_question_for_operator).toBe("");
+    expect(summary.review_next_safe_click).toBe("");
+  });
+});
 
 describe("ActionObjectSchema", () => {
   const validAction = {

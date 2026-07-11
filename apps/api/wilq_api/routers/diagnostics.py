@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from wilq.briefing.ads_diagnostics import build_ads_diagnostics
+from wilq.briefing.ads_diagnostics import (
+    build_ads_diagnostics,
+    build_ads_diagnostics_summary_cached,
+)
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
 from wilq.briefing.content_diagnostics import (
     build_content_diagnostics_cached,
@@ -49,7 +52,9 @@ def marketing_tactical_queue() -> TacticalQueueResponse:
 
 @router.get("/api/ads/diagnostics", response_model=AdsDiagnosticsResponse)
 def ads_diagnostics(view: str | None = None) -> AdsDiagnosticsResponse:
-    return build_ads_diagnostics(view="summary" if view == "summary" else "full")
+    if view == "summary":
+        return build_ads_diagnostics_summary_cached()
+    return build_ads_diagnostics(view="full")
 
 
 @router.get("/api/merchant/diagnostics", response_model=MerchantDiagnosticsResponse)

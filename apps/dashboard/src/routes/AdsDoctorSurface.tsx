@@ -25,7 +25,7 @@ import {
   getDemandGenDiagnostics,
   getGa4Diagnostics
 } from "../lib/api";
-import { BlockerNotice, LoadingBand } from "../components/OperatorPrimitives";
+import { BlockerNotice } from "../components/OperatorPrimitives";
 import {
   CompactStatTile,
   DashboardToolbar,
@@ -57,8 +57,8 @@ export function AdsDoctorSurface() {
     queryFn: getDemandGenDiagnostics
   });
 
-  if (diagnostics.isLoading || actions.isLoading) {
-    return <LoadingBand />;
+  if (diagnostics.isLoading) {
+    return <AdsDiagnosticsLoadingState />;
   }
 
   if (diagnostics.error || !diagnostics.data) {
@@ -69,17 +69,10 @@ export function AdsDoctorSurface() {
     );
   }
 
-  if (actions.error || !actions.data) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się pobrać akcji do sprawdzenia. Odśwież widok albo sprawdź status WILQ." />
-      </main>
-    );
-  }
-
   const data = diagnostics.data;
   const summary = data.operator_summary;
-  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const actionsPending = actions.isLoading;
+  const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
   const ga4Data = ga4.isLoading || ga4.error ? null : ga4.data ?? null;
   const demandGenData = demandGen.isLoading || demandGen.error ? null : demandGen.data ?? null;
   const primaryDecision = pickPrimaryDecision(data);
@@ -120,9 +113,9 @@ export function AdsDoctorSurface() {
           icon={<Gauge aria-hidden="true" size={22} />}
         />
         <CompactStatTile
-          value={routeActions.length}
+          value={actionsPending ? "…" : routeActions.length}
           label="bezpieczne akcje"
-          actionLabel={data.action_summary_label}
+          actionLabel={actionsPending ? "wczytuję kolejkę akcji" : data.action_summary_label}
           tone="amber"
           icon={<CheckCircle2 aria-hidden="true" size={22} />}
         />
@@ -157,8 +150,8 @@ export function AdsDoctorSurface() {
           },
           {
             label: "ActionObject",
-            detail: data.action_summary_label,
-            tone: routeActions.length > 0 ? "blue" : "neutral",
+            detail: actionsPending ? "wczytuję kolejkę akcji" : data.action_summary_label,
+            tone: actionsPending ? "amber" : routeActions.length > 0 ? "blue" : "neutral",
             icon: <ShieldAlert aria-hidden="true" size={16} />
           }
         ]}
@@ -230,6 +223,7 @@ export function AdsDoctorSurface() {
           ga4Data={ga4Data}
           demandGenData={demandGenData}
           actions={routeActions}
+          actionsPending={actionsPending}
         />
       </section>
 
@@ -297,6 +291,25 @@ export function AdsDoctorSurface() {
   );
 }
 
+function AdsDiagnosticsLoadingState() {
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <DashboardToolbar
+        title="Reklamy i pomiar"
+        description="WILQ pobiera źródłowe dane Ads. Nie pokazuję rekomendacji, dopóki odczyt nie wróci."
+        dateLabel="Dzisiaj"
+      />
+      <section className="rounded-md border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <div className="text-sm font-semibold text-amber-900">Odczyt Ads w toku</div>
+        <p className="mt-2 text-sm leading-6 text-amber-800">
+          Zapis zmian i wnioski o ROAS, przychodzie, waste oraz konwersjach pozostają zablokowane
+          do czasu potwierdzenia danych.
+        </p>
+      </section>
+    </main>
+  );
+}
+
 function MeasurementFirstBanner({
   data,
   ga4Data,
@@ -359,12 +372,14 @@ function SafeWorkModes({
   data,
   ga4Data,
   demandGenData,
-  actions
+  actions,
+  actionsPending
 }: {
   data: AdsDiagnosticsResponse;
   ga4Data: Ga4DiagnosticsResponse | null;
   demandGenData: DemandGenReadinessContract | null;
   actions: ActionObject[];
+  actionsPending: boolean;
 }) {
   const summary = data.operator_summary;
 
@@ -402,11 +417,13 @@ function SafeWorkModes({
           icon={<Target aria-hidden="true" size={16} />}
           title="ActionObject"
           detail={
-            actions.length > 0
+            actionsPending
+              ? "WILQ wczytuje kolejkę bezpiecznych akcji. Zapis pozostaje zablokowany."
+              : actions.length > 0
               ? actions[0].human_diagnosis || actions[0].recommended_reason
               : "Brak akcji dla tej powierzchni"
           }
-          statusLabel={data.action_summary_label}
+          statusLabel={actionsPending ? "wczytywanie" : data.action_summary_label}
           href={actions[0] ? `/actions/${actions[0].id}` : "/actions"}
         />
       </div>
