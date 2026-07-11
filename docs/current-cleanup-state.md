@@ -222,6 +222,11 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_negative_keywords_no_candidates_contract`; 90-day safety, blocked claims i
   `apply_allowed=false` pozostają bez zmian. Complexity: 398 / 132728 LOC;
   3 znane violations, następny target to `_custom_segment_candidates`.
+- Custom-segment grouping oraz payload/score assembly są teraz w
+  `_custom_segment_group_rows` i `_custom_segment_payload_and_score`; source-term
+  filtering, Keyword Planner evidence i `apply_allowed=false` pozostają bez zmian.
+  Complexity: 398 / 132760 LOC; 2 znane violations, następny target to
+  `build_ads_diagnostics` orchestration.
 
 ## Granica bezpieczeństwa
 

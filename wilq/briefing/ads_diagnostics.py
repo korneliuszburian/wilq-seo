@@ -4192,15 +4192,7 @@ def _custom_segment_candidates(
     rows: list[AdsSearchTermMetricRow],
     keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow],
 ) -> list[AdsCustomSegmentCandidate]:
-    grouped: dict[tuple[str | None, str | None], list[AdsSearchTermMetricRow]] = {}
-    rejected_by_group: dict[tuple[str | None, str | None], list[tuple[str, str]]] = {}
-    for row in rows:
-        group_key = (row.campaign_id, row.campaign_name)
-        rejection_reason = _custom_segment_rejection_reason(row)
-        if rejection_reason is not None:
-            rejected_by_group.setdefault(group_key, []).append((row.search_term, rejection_reason))
-            continue
-        grouped.setdefault(group_key, []).append(row)
+    grouped, rejected_by_group = _custom_segment_group_rows(rows)
 
     candidates: list[AdsCustomSegmentCandidate] = []
     for index, ((campaign_id, campaign_name), group_rows) in enumerate(
@@ -4233,21 +4225,14 @@ def _custom_segment_candidates(
             *(fact for row in sorted_rows for fact in row.metric_facts),
             *(fact for idea in matched_keyword_planner_ideas for fact in idea.metric_facts),
         ][:28]
-        payload_preview = _custom_segment_change_preview(
-            candidate_id=f"ads_custom_segment_{_slug(campaign_id or campaign_name or str(index))}",
-            name=name,
+        payload_preview, review_score = _custom_segment_payload_and_score(
+            index=index,
+            campaign_id=campaign_id,
+            campaign_name=campaign_name,
             source_terms=source_terms,
             rows=sorted_rows,
             evidence_ids=evidence_ids,
             metric_facts=metric_facts,
-            campaign_id=campaign_id,
-            campaign_name=campaign_name,
-            keyword_planner_enriched=bool(matched_keyword_planner_ideas),
-        )
-        review_score = _custom_segment_review_score(
-            source_terms=source_terms,
-            rows=sorted_rows,
-            payload_preview=payload_preview,
             keyword_planner_ideas=matched_keyword_planner_ideas,
         )
         has_keyword_planner = bool(matched_keyword_planner_ideas)
@@ -4299,6 +4284,57 @@ def _custom_segment_candidates(
             )
         )
     return candidates[:4]
+
+
+def _custom_segment_payload_and_score(
+    *,
+    index: int,
+    campaign_id: str | None,
+    campaign_name: str | None,
+    source_terms: list[str],
+    rows: list[AdsSearchTermMetricRow],
+    evidence_ids: list[str],
+    metric_facts: list[MetricFact],
+    keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow],
+) -> tuple[AdsCustomSegmentPayloadPreview, int]:
+    payload_preview = _custom_segment_change_preview(
+        candidate_id=f"ads_custom_segment_{_slug(campaign_id or campaign_name or str(index))}",
+        name=_custom_segment_name(campaign_name, index),
+        source_terms=source_terms,
+        rows=rows,
+        evidence_ids=evidence_ids,
+        metric_facts=metric_facts,
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        keyword_planner_enriched=bool(keyword_planner_ideas),
+    )
+    return (
+        payload_preview,
+        _custom_segment_review_score(
+            source_terms=source_terms,
+            rows=rows,
+            payload_preview=payload_preview,
+            keyword_planner_ideas=keyword_planner_ideas,
+        ),
+    )
+
+
+def _custom_segment_group_rows(
+    rows: list[AdsSearchTermMetricRow],
+) -> tuple[
+    dict[tuple[str | None, str | None], list[AdsSearchTermMetricRow]],
+    dict[tuple[str | None, str | None], list[tuple[str, str]]],
+]:
+    grouped: dict[tuple[str | None, str | None], list[AdsSearchTermMetricRow]] = {}
+    rejected_by_group: dict[tuple[str | None, str | None], list[tuple[str, str]]] = {}
+    for row in rows:
+        group_key = (row.campaign_id, row.campaign_name)
+        rejection_reason = _custom_segment_rejection_reason(row)
+        if rejection_reason is not None:
+            rejected_by_group.setdefault(group_key, []).append((row.search_term, rejection_reason))
+            continue
+        grouped.setdefault(group_key, []).append(row)
+    return grouped, rejected_by_group
 
 
 def _matching_keyword_planner_ideas(

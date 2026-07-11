@@ -67,6 +67,9 @@ Ostatni commit: `5789520` (`docs: update negative keyword contract pointer`)
 - Blocked negative-keyword states są w `_negative_keywords_missing_search_terms_contract`
   i `_negative_keywords_no_candidates_contract`; nie wracaj do inline blocked
   contract branches.
+- Custom-segment grouping i payload/score assembly są w `_custom_segment_group_rows`
+  i `_custom_segment_payload_and_score`; nie wracaj do inline grouping ani preview
+  orchestration.
 
 ## Dowody
 
@@ -86,9 +89,9 @@ Ostatni commit: `5789520` (`docs: update negative keyword contract pointer`)
 
 ## Następny slice
 
-Następny potwierdzony seam to `_custom_segment_candidates` (111 linii), wybrany
-po aktualnym complexity audit. Zachować source-term filtering, evidence lineage,
-planner blockers i `apply_allowed=false`.
+Następny potwierdzony seam to `build_ads_diagnostics` orchestration, wybrany po
+aktualnym complexity audit. Zacząć od jednego typed section/contract assembly
+fragmentu; nie przenosić całego monolitu naraz.
 
 ## Kontrola repo
 

@@ -132,6 +132,9 @@ w git, Beads i `docs/progress/archive/`.
 - Blocked negative-keyword read contracts są w dwóch helperach dla braku search
   terms i braku candidates; status, blocked claims, evidence i no-write semantics
   bez zmian. Complexity: 398 / 132728 LOC; violations spadły do 3.
+- `_custom_segment_group_rows` i `_custom_segment_payload_and_score` przejęły
+  grouping oraz preview/score orchestration; source terms, planner blockers i
+  safety pozostają bez zmian. Complexity: 398 / 132760 LOC; violations spadły do 2.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
