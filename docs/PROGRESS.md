@@ -29,7 +29,7 @@ w git, Beads i `docs/progress/archive/`.
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 98 903 metric facts i 4 566
+- Managed API i dashboard są zdrowe. DuckDB ma 98 905 metric facts i 4 567
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
 - Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.
