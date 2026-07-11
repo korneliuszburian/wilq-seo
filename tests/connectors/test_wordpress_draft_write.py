@@ -23,7 +23,7 @@ def _payload(**overrides: object) -> ContentWordPressDraftPayload:
 
 
 def _wordpress_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://wp.example.test/")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.dev.proudsite.pl/")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
 
@@ -39,7 +39,7 @@ def test_create_wordpress_draft_post_posts_draft_only_payload(
         body = request.read().decode()
         assert request.method == "POST"
         assert str(request.url) == (
-            "https://wp.example.test/wp-json/wp/v2/posts?_fields=id%2Cstatus%2Clink"
+            "https://ekologus.dev.proudsite.pl/wp-json/wp/v2/posts?_fields=id%2Cstatus%2Clink"
         )
         assert '"status":"draft"' in body
         assert '"title":"Testowy szkic"' in body
@@ -90,3 +90,22 @@ def test_create_wordpress_draft_post_blocks_publish_or_destructive_payload(
     assert exc_info.value.public_message == (
         "Adapter blokuje publikację i destrukcyjne aktualizacje."
     )
+
+
+def test_create_wordpress_draft_post_blocks_public_or_arbitrary_host_before_http(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://www.ekologus.pl/")
+    requests: list[httpx.Request] = []
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: requests.append(request) or httpx.Response(201)
+        )
+    )
+
+    with pytest.raises(WordPressDraftWriteError) as exc_info:
+        create_wordpress_draft_post(_payload(), http_client=client)
+
+    assert "zatwierdzonym hoście dev" in exc_info.value.public_message
+    assert requests == []

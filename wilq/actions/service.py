@@ -3,7 +3,9 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from contextlib import suppress
+from dataclasses import dataclass
 from typing import Any, Literal, cast
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from wilq.actions.content_refresh import (
@@ -103,17 +105,26 @@ from wilq.briefing.merchant_labels import (
 )
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
-from wilq.content.handoff.wordpress_execution import execute_content_wordpress_draft_handoff
+from wilq.connectors.wordpress.client import create_wordpress_draft_post
+from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
+from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftWriteAuthorization,
+    execute_content_wordpress_draft_handoff,
+)
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.workflow.api import (
     build_content_wordpress_draft_activation_packet_response,
     build_content_wordpress_draft_write_readiness_response,
     build_content_work_item_diagnostics_snapshot_response,
+    build_content_work_item_diagnostics_snapshot_response_for_work_item,
 )
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
 )
+from wilq.content.workflow.store import content_workflow_store
+from wilq.credentials.runtime import variable_value
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
@@ -165,6 +176,13 @@ SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES = {
     "private_claim_policy_proposal",
     "private_evidence_policy_proposal",
 }
+
+
+@dataclass(frozen=True)
+class WordPressDraftApplyCapability:
+    handoff: ContentWordPressDraftHandoff
+    draft_package: ContentDraftPackage
+    write_authorization: ContentWordPressDraftWriteAuthorization
 
 
 def seed_static_actions() -> dict[str, ActionObject]:
@@ -2564,6 +2582,8 @@ def apply_action(
     request: ActionApplyRequest | None = None,
 ) -> ActionApplyResult:
     errors: list[str] = []
+    wordpress_capability, capability_errors = _wordpress_draft_apply_capability(action, request)
+    errors.extend(capability_errors)
     connector = get_connector_status(action.connector)
     latest_preview = _latest_preview_event(action.audit_events)
     latest_confirmation = _latest_action_confirmation_event(action.audit_events)
@@ -2591,9 +2611,9 @@ def apply_action(
         errors.append("Zapisy zmian o wysokim i krytycznym ryzyku są zablokowane w Goal 001.")
     if action.payload.get("destructive") is True:
         errors.append("Destrukcyjne zmiany nie są zaimplementowane w Goal 001.")
-    if not _action_payload_apply_allowed(action.payload):
+    if wordpress_capability is None and not _action_payload_apply_allowed(action.payload):
         errors.append("Payload akcji nie pozwala jeszcze na zapis zmian.")
-    if not _action_payload_api_mutation_ready(action.payload):
+    if wordpress_capability is None and not _action_payload_api_mutation_ready(action.payload):
         errors.append("Payload akcji nie jest gotowy do mutacji API.")
     if mutation_adapter is None:
         errors.append("Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji.")
@@ -2603,6 +2623,7 @@ def apply_action(
             action,
             mutation_adapter,
             request,
+            wordpress_capability,
         )
         errors.extend(adapter_errors)
 
@@ -2648,6 +2669,75 @@ def apply_action(
         audit_event=_audit_event_with_operator_label(audit),
         mutation_audit=mutation_audit,
         adapter_result=adapter_result,
+    )
+
+
+def _wordpress_draft_apply_capability(
+    action: ActionObject,
+    request: ActionApplyRequest | None,
+) -> tuple[WordPressDraftApplyCapability | None, list[str]]:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return None, []
+    input_contract = request.wordpress_draft if request is not None else None
+    if input_contract is None:
+        return None, [
+            "Apply szkicu WordPress wymaga typed work item, handoff, draft package i target URL."
+        ]
+    if request is None or not request.confirmed_by:
+        return None, ["Apply szkicu WordPress wymaga potwierdzonego aktora operatora."]
+
+    from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+
+    diagnostics = build_content_diagnostics_cached()
+    review = content_workflow_store().latest_human_review(input_contract.work_item_id)
+    if review is None:
+        return None, ["Brakuje zapisanego review człowieka dla wskazanego work itemu."]
+    audit = content_workflow_store().latest_audit_for_review(review.id)
+    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+        diagnostics,
+        input_contract.work_item_id,
+        human_review=review,
+        audit=audit,
+    )
+    if snapshot is None:
+        return None, ["Wskazany work item nie istnieje w aktualnej kolejce WILQ."]
+    draft_package = snapshot.draft_package.draft_package_result.draft_package
+    handoff = snapshot.wordpress_handoff.handoff_result.handoff
+    if draft_package is None or handoff is None:
+        return None, ["Brakuje kompletnej paczki szkicu albo handoffu WordPress."]
+    if handoff.id != input_contract.handoff_id:
+        return None, ["Handoff WordPress nie pasuje do wskazanego ActionObject apply."]
+    if draft_package.id != input_contract.draft_package_id:
+        return None, ["Paczka szkicu nie pasuje do wskazanego ActionObject apply."]
+    if handoff.work_item_id != input_contract.work_item_id:
+        return None, ["Handoff nie pasuje do wskazanego work itemu."]
+    if handoff.final_canonical_url != input_contract.target_url:
+        return None, ["Canonical URL nie pasuje do zatwierdzonego handoffu."]
+    target_host = (urlparse(input_contract.target_url).hostname or "").lower()
+    if target_host not in {"ekologus.pl", "www.ekologus.pl"}:
+        return None, ["Apply szkicu wymaga publicznego canonical URL Ekologus."]
+    if handoff.publish_allowed or handoff.destructive_update_allowed:
+        return None, ["Handoff WordPress nie jest draft-only."]
+
+    confirmation = _latest_action_confirmation_event(action.audit_events)
+    if confirmation is None or confirmation.actor != request.confirmed_by:
+        return None, ["Aktor confirm nie pasuje do zapisanego audytu ActionObject."]
+    preview = _latest_preview_event(action.audit_events)
+    if preview is None:
+        return None, ["Brakuje audytu preview ActionObject."]
+    return (
+        WordPressDraftApplyCapability(
+            handoff=handoff,
+            draft_package=draft_package,
+            write_authorization=ContentWordPressDraftWriteAuthorization(
+                action_id=action.id,
+                preview_audit_id=preview.id,
+                review_audit_id=review.id,
+                confirmation_audit_id=confirmation.id,
+                confirmed_by=request.confirmed_by,
+            ),
+        ),
+        [],
     )
 
 
@@ -3343,9 +3433,31 @@ def _execute_supported_mutation_adapter(
     action: ActionObject,
     mutation_adapter: str,
     request: ActionApplyRequest | None,
+    wordpress_capability: WordPressDraftApplyCapability | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     _ = request
     if mutation_adapter == "wordpress_draft_execution_boundary":
+        if wordpress_capability is not None:
+            execution = execute_content_wordpress_draft_handoff(
+                handoff=wordpress_capability.handoff,
+                draft_package=wordpress_capability.draft_package,
+                mode="live",
+                live_write_enabled=_wordpress_draft_writes_enabled(),
+                create_draft=create_wordpress_draft_post,
+                action_apply_authorized=True,
+                write_authorization=wordpress_capability.write_authorization,
+                write_authorization_verified=True,
+            )
+            return {
+                "adapter": mutation_adapter,
+                "connector": action.connector,
+                "allowed_operation": "create_wordpress_draft",
+                "execution_status": execution.status,
+                "execution_mode": execution.mode,
+                "external_write_attempted": execution.external_write_attempted,
+                "execution_result": execution.model_dump(mode="json"),
+                "redacted": True,
+            }, _wordpress_draft_execution_errors(execution)
         execution = execute_content_wordpress_draft_handoff(
             handoff=None,
             draft_package=None,
@@ -3366,8 +3478,17 @@ def _execute_supported_mutation_adapter(
     return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
 
 
+def _wordpress_draft_writes_enabled() -> bool:
+    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def _wordpress_draft_execution_errors(execution: Any) -> list[str]:
-    if execution.status == "dry_run_ready":
+    if execution.status in {"dry_run_ready", "created"}:
         return []
     blockers = [
         f"{blocker.label}: {blocker.reason}"

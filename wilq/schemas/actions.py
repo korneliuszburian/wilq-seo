@@ -418,9 +418,17 @@ class ActionImpactCheckResult(BaseModel):
     review_gate: ActionReviewGate
 
 
+class ActionWordPressDraftApplyInput(BaseModel):
+    work_item_id: str = Field(min_length=1)
+    handoff_id: str = Field(min_length=1)
+    draft_package_id: str = Field(min_length=1)
+    target_url: str = Field(min_length=1)
+
+
 class ActionApplyRequest(BaseModel):
     confirm: bool = False
     confirmed_by: str | None = None
+    wordpress_draft: ActionWordPressDraftApplyInput | None = None
 
 
 class CodexRun(BaseModel):

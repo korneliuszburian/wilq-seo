@@ -5,9 +5,9 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Następny slice to `wilq-seo-c9h9.4`: przywróć wyłącznie canonical dev-only
-ActionObject apply po zamknięciu cold waterfall. Nie zaczynaj od splitu
-monolitu ani od przywracania direct WordPress write.
+Aktualny slice to `wilq-seo-c9h9.4`: domknij canonical dev-only ActionObject
+apply po zamknięciu cold waterfall. Nie zaczynaj od splitu monolitu ani od
+przywracania direct WordPress write.
 
 ## Prawda produktu
 
@@ -51,6 +51,8 @@ Zamknięte w tym slice:
 - `c9h9.5` — freshness w queue/snapshot i refresh-first blocker.
 - `c9h9.6` — queue/snapshot cold waterfall usunięty przez prewarm, reuse builda
   i progressive first card.
+- `c9h9.4` — pod-slice typed apply input, capability binding i dev-host guard;
+  Bead pozostaje otwarty do realnego route proof/readiness/UI CTA.
 
 Otwarte product blockers:
 
@@ -73,14 +75,18 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest `c9h9.6` changed report: 10 plików, 2 frozen growth files i 2 lokalne
-budget violations w `wilq/briefing/content_diagnostics.py`. To jest celowy,
-ograniczony seam cache/prewarm; nie mieszaj go z mechanicznym splitem.
+Latest `c9h9.4` pod-slice changed report: 8 plików, 1 frozen growth file
+(`wilq/actions/service.py`) i 14 raportowanych budget violations, z czego nowy
+test capability ma 121 linii, a pozostałe dotyczą istniejącego monolitu. To jest
+celowy, ograniczony seam typed apply/adapter; nie mieszaj go z mechanicznym
+splitem.
 
 ## Proof checkpoint
 
 - 765 backend passed / 2 skipped baseline; c9h9.5 i c9h9.6 focused content tests
   green;
+- c9h9.4 pod-slice: action mutation + WordPress adapter + content execution tests
+  green; public/arbitrary host ma zero HTTP;
   Ruff i mypy green.
 - Shared 31 passed / 10 skipped; dashboard 138/138; lint/typecheck/build green.
 - Security, API/CLI smoke i wszystkie deterministic skill smokes green.
@@ -96,6 +102,7 @@ ograniczony seam cache/prewarm; nie mieszaj go z mechanicznym splitem.
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Claim `c9h9.4` i utrzymaj direct WordPress write fail-closed.
-4. Warunek przejścia do `r564.3`: canonical apply ma typed capability, pełny audit
-   i zero HTTP dla nieautoryzowanych ścieżek.
+3. Kontynuuj `c9h9.4`: route proof capability buildera, readiness i minimalny
+   review-only apply CTA.
+4. Warunek przejścia do `r564.3`: canonical apply ma pełny audit i zero HTTP dla
+   nieautoryzowanych ścieżek.

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from html import unescape
 from html.parser import HTMLParser
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from defusedxml import ElementTree
@@ -37,6 +37,7 @@ WORDPRESS_CONNECTORS = {
         "site_kind": "shop",
     },
 }
+WORDPRESS_DEV_HOSTS = {"ekologus.dev.proudsite.pl"}
 
 WORDPRESS_CONTENT_TYPES = ("posts", "pages")
 WORDPRESS_CONTENT_PER_PAGE = 100
@@ -200,6 +201,10 @@ def create_wordpress_draft_post(
     credentials = _wordpress_credentials(connector_id)
     if credentials is None:
         raise WordPressDraftWriteError("WILQ nie zna tego connectora WordPress.")
+    if (urlparse(credentials.base_url or "").hostname or "").lower() not in WORDPRESS_DEV_HOSTS:
+        raise WordPressDraftWriteError(
+            "Adapter szkicu WordPress działa wyłącznie na zatwierdzonym hoście dev."
+        )
     missing = _missing_credentials(connector_id, credentials)
     if missing:
         raise WordPressDraftWriteError(

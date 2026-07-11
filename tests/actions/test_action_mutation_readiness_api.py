@@ -5,14 +5,19 @@ from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
+import wilq.actions.service as action_service
 from apps.api.wilq_api.main import app
 from wilq.actions.service import apply_action
+from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
+from wilq.content.handoff.wordpress_execution import ContentWordPressDraftWriteAuthorization
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMode,
     ActionObject,
     ActionRisk,
     ActionStatus,
+    ActionWordPressDraftApplyInput,
     AuditEvent,
     OpportunityDomain,
 )
@@ -229,23 +234,137 @@ def test_wordpress_apply_audit_separates_adapter_boundary_from_vendor_write(
 
     assert result.applied is False
     assert result.status == "blocked"
-    assert result.adapter_result is not None
-    assert result.adapter_result["execution_status"] == "blocked"
-    assert result.adapter_result["execution_mode"] == "dry_run"
-    assert result.adapter_result["external_write_attempted"] is False
-    execution_result = result.adapter_result["execution_result"]
-    assert execution_result["status"] == "blocked"
-    assert execution_result["mode"] == "dry_run"
-    assert execution_result["external_write_attempted"] is False
-    assert [blocker["code"] for blocker in execution_result["blockers"]] == [
-        "missing_handoff",
-        "missing_draft_package",
+    assert result.adapter_result is None
+    assert result.errors == [
+        "Apply szkicu WordPress wymaga typed work item, handoff, draft package i target URL."
     ]
-    assert result.mutation_audit.adapter_reached is True
+    assert result.mutation_audit.adapter_reached is False
     assert result.mutation_audit.external_write_attempted is False
     assert result.mutation_audit.mutation_attempted is False
-    assert "Mutation adapter reached" in result.mutation_audit.summary
-    assert "No external vendor write was attempted" in result.mutation_audit.summary
+    assert "Mutation blocked before any vendor API call" in result.mutation_audit.summary
+
+
+def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> None:
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    monkeypatch.setattr(
+        "wilq.actions.service.get_connector_status",
+        lambda _connector_id: SimpleNamespace(configured=True),
+    )
+    action = ActionObject(
+        id="act_apply_wordpress_draft_handoff",
+        title="Aktywuj zapis szkicu WordPress draft-only",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.medium,
+        status=ActionStatus.ready,
+        evidence_ids=["ev_wordpress_draft_apply_boundary"],
+        human_diagnosis="Testowy apply capability.",
+        recommended_reason="Testuje centralny adapter dev-only.",
+        payload={
+            "action_type": "wordpress_draft_handoff",
+            "connector": "wordpress_ekologus",
+            "allowed_operation": "create_wordpress_draft",
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="valid",
+        created_by="test",
+        audit_events=[
+            AuditEvent(
+                id="audit_preview_test",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_preview_generated",
+                actor="operator_test",
+                summary="Podgląd zapisany.",
+            ),
+            AuditEvent(
+                id="audit_confirm_test",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_apply_confirmed",
+                actor="operator_test",
+                summary="Potwierdzenie zapisane.",
+            ),
+            AuditEvent(
+                id="audit_impact_test",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_impact_check_completed",
+                actor="operator_test",
+                summary="Impact check zapisany.",
+            ),
+        ],
+    )
+    handoff = ContentWordPressDraftHandoff.model_validate(
+        {
+            "id": "wordpress_draft_handoff_content_work_item_bdo",
+            "work_item_id": "content_work_item_bdo",
+            "draft_package_id": "draft_package_content_work_item_bdo",
+            "human_review_id": "human_review_bdo",
+            "audit_id": "audit_bdo",
+            "title": "BDO dla firm",
+            "final_canonical_url": "https://ekologus.pl/bdo/",
+            "intended_final_url": "https://ekologus.pl/bdo/",
+            "preview_url": "https://ekologus.dev.proudsite.pl/bdo/",
+            "evidence_ids": ["ev_wordpress_draft_apply_boundary"],
+        }
+    )
+    draft_package = ContentDraftPackage.model_validate(
+        {
+            "id": "draft_package_content_work_item_bdo",
+            "work_item_id": "content_work_item_bdo",
+            "brief_id": "brief_bdo",
+            "claim_ledger_id": "ledger_bdo",
+            "draft_kind": "outline",
+            "title": "BDO dla firm",
+            "sections": [],
+            "section_to_evidence_map": [],
+            "claims_used": [],
+            "claims_removed_or_blocked": [],
+            "human_review_questions": [],
+            "publish_ready": False,
+        }
+    )
+    capability = action_service.WordPressDraftApplyCapability(
+        handoff=handoff,
+        draft_package=draft_package,
+        write_authorization=ContentWordPressDraftWriteAuthorization(
+            action_id=action.id,
+            preview_audit_id="audit_preview_test",
+            review_audit_id="audit_review_test",
+            confirmation_audit_id="audit_confirm_test",
+            confirmed_by="operator_test",
+        ),
+    )
+    monkeypatch.setattr(
+        action_service,
+        "_wordpress_draft_apply_capability",
+        lambda *_: (capability, []),
+    )
+    monkeypatch.setattr(action_service, "create_wordpress_draft_post", lambda _payload: "321")
+
+    result = apply_action(
+        action,
+        ActionApplyRequest(
+            confirm=True,
+            confirmed_by="operator_test",
+            wordpress_draft=ActionWordPressDraftApplyInput(
+                work_item_id="content_work_item_bdo",
+                handoff_id=handoff.id,
+                draft_package_id=draft_package.id,
+                target_url=handoff.final_canonical_url,
+            ),
+        ),
+    )
+
+    assert result.adapter_result is not None
+    assert result.adapter_result["execution_result"]["blockers"] == []
+    assert result.errors == []
+    assert result.applied is True
+    assert result.adapter_result is not None
+    assert result.adapter_result["execution_status"] == "created"
+    assert result.adapter_result["external_write_attempted"] is True
+    assert result.mutation_audit.adapter_reached is True
 
 
 def test_action_mutation_readiness_summary_reports_no_vendor_writes(

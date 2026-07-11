@@ -80,6 +80,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   wyborem zamiast Ahrefs-only braku canonical.
 - Decision/CTA dla świeżego workflow mają teraz queue-owned first card; pełna
   mobile triage nadal wymaga `r564.3`.
+- `c9h9.4` jest w toku: centralny apply ma typed `wordpress_draft` input,
+  capability binding i dev-host guard; dashboard nadal nie pokazuje live CTA,
+  dopóki realny readiness proof nie przejdzie.
 - `/actions/act_prepare_wordpress_existing_draft_update`: first viewport mówi
   „Przygotuj i oceń bez zapisu zmian” oraz „Zapis zablokowany”; pełny render ma
   typed preview i technical disclosure.
@@ -104,6 +107,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Goal 005 pozostaje `blocked_missing_goal_005_uat_proof`: potrzebny jest realny
   wynik Wilku UAT albo jawny owner defer z residual risk. To stan zewnętrzny, nie
   brak eval coverage.
+- Najnowszy pod-slice `c9h9.4`: typed ActionApplyRequest, exact binding do
+  work item/handoff/draft package/canonical URL/confirm actor oraz connector
+  guard public/arbitrary host przed HTTP. Focused action mutation, WordPress
+  adapter i content execution tests przechodzą; Bead pozostaje otwarty do
+  route-level capability proof i readiness/UI handoff.
 - Pełny cold Playwright nie jest zielony. Potwierdzone osobne blokery mają
   Beads: Ads `c9h9.9`, Custom Segments `c9h9.10`, actions
   `c9h9.11`, knowledge `c9h9.12`, Merchant `c9h9.13`. Stare E2E strings są
