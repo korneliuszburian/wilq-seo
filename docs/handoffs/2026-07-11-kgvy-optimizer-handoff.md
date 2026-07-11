@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `5789520` (`docs: update negative keyword contract pointer`)  
-`origin/main` = `5789520`
+Ostatni commit: `7cf0833` (`refactor: split custom segment orchestration`)  
+`origin/main` = `7cf0833`
 
 ## Wykonane
 
@@ -95,6 +95,6 @@ fragmentu; nie przenosić całego monolitu naraz.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 5789520`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 7cf0833`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
