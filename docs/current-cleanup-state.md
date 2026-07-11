@@ -194,7 +194,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   zmian, a `_business_context_read_contract` ma 149 linii po tym seamie.
 - Missing contracts, allowed metrics i status business context są teraz składane
   przez `_business_context_contract_state`; read contract pozostaje typed,
-  a aktualny helper ma 131 linii.
+  a aktualny helper ma 131 linii. Complexity: 398 / 132597 LOC.
 
 ## Granica bezpieczeństwa
 
