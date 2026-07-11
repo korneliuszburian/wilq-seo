@@ -16,15 +16,17 @@ w git, Beads i `docs/progress/archive/`.
   boundaries są domknięte; budget/recommendation/impression/change-history,
   change-impact/optimizer i core campaign/business/custom/derived labels są
   domknięte. Summary decision/candidate, response field compaction i primary
-  read-contract bootstrap są domknięte, a parity jest potwierdzone; następny seam
-  to dalszy response orchestration review.
+  read-contract bootstrap są domknięte, a parity jest potwierdzone. Najnowszy
+  bounded seam to `_build_ads_action_enriched_contracts`, który skupia action-ID
+  enrichment dla business context/change history/search-term n-gram,
+  change-impact, custom segments i negative keywords bez zmiany kontraktu.
 - Reconciliation boundary jest domknięty przez
   `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
   nie zawiera już inline aktualizacji missing contracts dla tych zależności.
-  Complexity: 398 plików Python / 133219 LOC, 2 jawne violations (plik i główny
-  orchestrator). Następny kandydat po aktualnym complexity/review to mały helper
-  dalszy response orchestration review, bez ponownego
-  dotykania gotowych reconciliation, search-term, candidate ani optimizer seamów.
+  Complexity: 398 plików Python / 133264 LOC, 2 jawne violations (plik i główny
+  orchestrator). Po tym seamu nie ma potwierdzonego kolejnego zachowania do
+  mechanicznego wydzielenia; następny krok to świeży review pozostałego
+  orchestratora i runtime proof, bez ponownego dotykania gotowych boundary.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest

@@ -6,13 +6,13 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 ## Najbliższa instrukcja
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
-readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ads
-wewnątrz `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
+readiness w `kgvy`, najnowszy wykonany slice to
+`_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
 label hydration groups są wydzielone. Summary compaction i primary read-contract
-bootstrap są wydzielone, parity jest potwierdzone. Następny kandydat to dalszy
-response orchestration review.
+bootstrap są wydzielone, parity jest potwierdzone. Następny krok to świeży review
+pozostałego orchestratora, nie kolejny sztuczny wrapper.
 Polityka
 automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
@@ -23,8 +23,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 98 905 metric facts, 4 567 refresh runs; konektory
-  12/9 configured/2 missing credentials/1 disabled.
+- Managed runtime: wartości metryk są odświeżane po restarcie i muszą być
+  potwierdzone przez `/api/metrics/status`; konektory 12/9 configured/2 missing
+  credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
 - Read-only refresh 2026-07-11 nie odblokował kolejki: GSC zwrócił niepełny

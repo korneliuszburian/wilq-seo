@@ -864,6 +864,61 @@ def _build_ads_primary_read_contracts(
     )
 
 
+def _build_ads_action_enriched_contracts(
+    *,
+    action_ids: list[str],
+    business_context_read_contract: AdsBusinessContextReadContract,
+    change_history_read_contract: AdsChangeHistoryReadContract,
+    campaign_read_contract: AdsCampaignReadContract,
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+) -> tuple[
+    AdsBusinessContextReadContract,
+    AdsChangeHistoryReadContract,
+    AdsChangeImpactReadinessContract,
+    AdsSearchTermNgramReadContract,
+    AdsCustomSegmentsReadContract,
+    AdsNegativeKeywordsReadContract,
+]:
+    business_context_read_contract = _business_context_with_action_ids(
+        business_context_read_contract,
+        action_ids,
+    )
+    change_history_read_contract = _change_history_with_action_ids(
+        change_history_read_contract,
+        action_ids,
+    )
+    change_impact_readiness_contract = _change_impact_readiness_contract(
+        change_history_read_contract,
+        campaign_read_contract,
+    )
+    search_term_ngram_read_contract = _search_term_ngram_with_action_ids(
+        search_term_ngram_read_contract,
+        action_ids,
+    )
+    (
+        custom_segments_read_contract,
+        negative_keywords_read_contract,
+    ) = _build_ads_candidate_read_contracts(
+        search_terms_read_contract,
+        search_term_safety_read_contract,
+        keyword_match_context_read_contract,
+        keyword_planner_read_contract,
+        action_ids,
+    )
+    return (
+        business_context_read_contract,
+        change_history_read_contract,
+        change_impact_readiness_contract,
+        search_term_ngram_read_contract,
+        custom_segments_read_contract,
+        negative_keywords_read_contract,
+    )
+
+
 def _hydrate_ads_response_labels(response: AdsDiagnosticsResponse) -> None:
     """Apply review-gate and marketer labels after response construction."""
     _hydrate_ads_review_gate_labels(response)
@@ -1191,31 +1246,23 @@ def build_ads_diagnostics(
         account_currency_read_contract.currency_code,
     )
     action_ids = _google_ads_action_ids(actions, live_data_available=live_data_available)
-    business_context_read_contract = _business_context_with_action_ids(
-        business_context_read_contract,
-        action_ids,
-    )
-    change_history_read_contract = _change_history_with_action_ids(
-        change_history_read_contract,
-        action_ids,
-    )
-    change_impact_readiness_contract = _change_impact_readiness_contract(
-        change_history_read_contract,
-        campaign_read_contract,
-    )
-    search_term_ngram_read_contract = _search_term_ngram_with_action_ids(
-        search_term_ngram_read_contract,
-        action_ids,
-    )
     (
+        business_context_read_contract,
+        change_history_read_contract,
+        change_impact_readiness_contract,
+        search_term_ngram_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
-    ) = _build_ads_candidate_read_contracts(
-        search_terms_read_contract,
-        search_term_safety_read_contract,
-        keyword_match_context_read_contract,
-        keyword_planner_read_contract,
-        action_ids,
+    ) = _build_ads_action_enriched_contracts(
+        action_ids=action_ids,
+        business_context_read_contract=business_context_read_contract,
+        change_history_read_contract=change_history_read_contract,
+        campaign_read_contract=campaign_read_contract,
+        search_term_ngram_read_contract=search_term_ngram_read_contract,
+        search_terms_read_contract=search_terms_read_contract,
+        search_term_safety_read_contract=search_term_safety_read_contract,
+        keyword_match_context_read_contract=keyword_match_context_read_contract,
+        keyword_planner_read_contract=keyword_planner_read_contract,
     )
     (
         campaign_triage_read_contract,

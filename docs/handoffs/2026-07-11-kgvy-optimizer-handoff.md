@@ -1,6 +1,6 @@
 # Handoff — `kgvy` optimizer readiness seam
 
-Data: 2026-07-11 20:05 Europe/Warsaw  
+Data: 2026-07-12 00:00 Europe/Warsaw  
 Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer commitu)  
 `HEAD == origin/main` po weryfikacji pushu
 
@@ -122,6 +122,11 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   nie wracaj do inline ograniczania pól response ani `sections=[]`.
 - Primary Ads read-contract bootstrap jest w `_build_ads_primary_read_contracts`;
   nie wracaj do inline account/campaign/budget/recommendation read assembly.
+- Action-enriched Ads contracts są teraz w `_build_ads_action_enriched_contracts`;
+  helper skupia action-ID enrichment dla business context, change history,
+  change-impact, search-term n-gram, custom segments i negative keywords.
+  Nie wracaj do inline tego bloku; zachowaj evidence/source/freshness,
+  blocked claims i ActionObject safety.
 - Summary/full parity jest potwierdzone: oba endpointy mają `live_data_available=true`
   i blocker count 1; summary ma `sections=[]`, full zachowuje sekcje.
 
@@ -136,7 +141,8 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 - Browser proof po restarcie: `.local-lab/proof/ads-primary-read-contracts.png`;
   `/ads-doctor` pokazuje kolejkę decyzji, dowody, świeżość Ads/GA4 i blokady
   ROAS/przychód/waste bez technicznego payloadu above the fold.
-- Zmniejszenie `ads_diagnostics.py`: 358 linii.
+- Zmniejszenie `ads_diagnostics.py`: 358 linii względem optimizer slice; bieżący
+  bounded extraction dotyczy action-enriched orchestration.
 
 ## Nie robić ponownie
 
@@ -148,9 +154,11 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 Reconciliation, search-term, candidate, optimizer, sections, blocked-handoff,
 decision_queue, response model, wszystkie label hydration groups, summary
 decision/candidate/response-field compaction i primary read-contract bootstrap
-są domknięte, a parity potwierdzone. Następny kandydat to dalszy response
-orchestration review po świeżym complexity/review; zachowaj marketer-facing
-labels, evidence/source/freshness oraz ActionObject safety.
+są domknięte, a parity potwierdzone. Action-enriched enrichment jest już
+wydzielone. Następny kandydat to świeży review pozostałego orchestratora; jeśli
+nie znajdzie się zachowanie o własnej granicy, nie twórz kolejnego wrappera.
+Zachowaj marketer-facing labels, evidence/source/freshness oraz ActionObject
+safety.
 
 ## Kontrola repo
 
