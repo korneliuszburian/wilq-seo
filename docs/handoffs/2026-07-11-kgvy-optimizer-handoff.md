@@ -60,13 +60,13 @@ Ostatni commit: `6b00415` (`refactor: split blocked Ads target interpretation`)
 
 ## Następny slice
 
-Ponownie sprawdzić `bd ready` i wybrać kolejną nieprzeniesioną granicę `kgvy`:
-następny mały fragment metric tiles albo marketer-label hydration. Każdy tile
-fragment rozbijać na małe helpery; nie przenosić całego dispatchera jako nowego
-monolitu.
+Następny potwierdzony seam to rozdzielenie pozostałej ready/preliminary gałęzi
+`_business_target_interpretation` (obecnie 111 linii) po wcześniejszym wydzieleniu
+`_blocked_business_target_interpretation`. Zachować identyczne `allowed_uses`,
+`blocked_uses`, missing requirements, evidence IDs i claim safety.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 93d6d4d`, worktree czysty.
+- Po commicie: `HEAD == origin/main == c2fb385`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
