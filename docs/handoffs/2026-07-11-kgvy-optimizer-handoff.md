@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `eead305` (`refactor: extract Ads blocked decision branch`)  
-`origin/main` = `eead305`
+Ostatni commit: `93d6d4d` (`refactor: extract Ads search safety decision`)  
+`origin/main` = `93d6d4d`
 
 ## Wykonane
 
@@ -58,6 +58,6 @@ monolitu.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == eead305`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 93d6d4d`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
