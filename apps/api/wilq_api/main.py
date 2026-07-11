@@ -42,6 +42,10 @@ from wilq.briefing.content_diagnostics import (
 from wilq.briefing.daily_runtime import (
     clear_daily_runtime_cache,
 )
+from wilq.briefing.merchant_diagnostics import (
+    build_merchant_diagnostics_cached,
+    clear_merchant_diagnostics_cache,
+)
 from wilq.briefing.tactical_queue import clear_tactical_queue_cache
 from wilq.connectors.registry import list_connector_statuses
 from wilq.opportunities.engine import list_opportunities
@@ -69,6 +73,8 @@ async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
     if not os.getenv("PYTEST_CURRENT_TEST"):
         with suppress(Exception):
             build_content_diagnostics_cached()
+        with suppress(Exception):
+            build_merchant_diagnostics_cached()
     yield
 
 
@@ -152,6 +158,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
 def clear_api_view_model_caches() -> None:
     clear_tactical_queue_cache()
     clear_content_diagnostics_cache()
+    clear_merchant_diagnostics_cache()
     clear_daily_runtime_cache()
     clear_skill_context_cache()
 

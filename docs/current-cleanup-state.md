@@ -34,6 +34,9 @@ przywracania direct WordPress write.
   `.local-lab/proof/r564-3-mobile-stale-blocker.png` jest aktualnym proof.
 - Mobile freshness został skondensowany, a source status bar jest poziomym
   scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
+- `c9h9.13` Merchant ma cache 15 s i prewarm w managed lifespan; HTTP proof po
+  restarcie to `0.004860 s` / `0.007203 s`, a desktop/mobile screenshoty pokazują
+  decyzję przed kolejką szczegółów.
 
 ## Granica bezpieczeństwa
 

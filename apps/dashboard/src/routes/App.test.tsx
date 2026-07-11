@@ -8549,13 +8549,21 @@ describe("WILQ dashboard", () => {
         screen.getByRole("heading", { name: "Produkty" })
       ).toBeInTheDocument()
     );
+    const mobileDecision = screen.getByLabelText("Mobilna decyzja Merchant");
+    expect(mobileDecision).toBeInTheDocument();
+    expect(within(mobileDecision).getByRole("link", { name: "Odśwież w Źródłach" })).toHaveAttribute(
+      "href",
+      "/settings"
+    );
     expect(screen.getByRole("heading", { name: "Najważniejsza praca teraz" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Co blokuje decyzję" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kolejka problemów produktów" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Najpierw odśwież dane Merchant" })).toBeInTheDocument();
     expect(screen.getByText(/Ostatni odczyt ma 73h temu/)).toBeInTheDocument();
     expect(screen.getByText(/Możesz zobaczyć problemy z tamtego odczytu/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Odśwież w Źródłach" })).toHaveAttribute("href", "/settings");
+    expect(
+      screen.getAllByRole("link", { name: "Odśwież w Źródłach" }).map((link) => link.getAttribute("href"))
+    ).toEqual(["/settings", "/settings"]);
     expect(screen.getByRole("link", { name: "Pokaż problemy z odczytu" })).toHaveAttribute(
       "href",
       "#merchant-queue"
@@ -8609,7 +8617,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.getByText("dostęp skonfigurowany")).toBeInTheDocument();
-    expect(screen.getByText("dane do odświeżenia")).toBeInTheDocument();
+    expect(screen.getAllByText("dane do odświeżenia").length).toBeGreaterThan(0);
     expect(screen.getByText("Czego nie wiemy o pliku produktowym Merchant Center")).toBeInTheDocument();
     expect(
       screen.getByText("Licznik problemów nie jest liczbą unikalnych produktów")

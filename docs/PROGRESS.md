@@ -94,6 +94,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   breakpointu), a pięć statusów źródeł tworzy poziomy scroll zamiast pięciu
   pionowych kart. Dzięki temu decision card ma realną szansę wejść w 390×844;
   Vitest 15/15, lint/typecheck i nowy screenshot stale proof przechodzą.
+- `c9h9.13` Merchant jest w toku: istniejący `/api/merchant/diagnostics` ma
+  15-sekundowy cache i managed-runtime prewarm, bez nowego endpointu. HTTP po
+  restarcie: `0.004860 s` pierwszy odczyt, `0.007203 s` drugi; desktop/mobile
+  proof pokazuje Produkty, freshness, blocker i safe next step. Focused Merchant
+  contracts 13/13, dashboard App 22/22, lint/typecheck, Ruff i mypy przechodzą.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
@@ -147,7 +152,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 ## Kolejność wykonania
 
 1. `r564.3` — decision/blocker/CTA w mobile first viewport.
-2. Następnie potwierdzone cold-route Beads `c9h9.13`, `c9h9.11`, `c9h9.9`.
+2. `c9h9.13` — Merchant first decision latency; domknąć Bead po handoffie.
+3. Następnie `c9h9.11` i `c9h9.9`.
 5. Secondary route latency: `c9h9.9`–`c9h9.13`; nie wyprzedza głównego content
    P0.
 

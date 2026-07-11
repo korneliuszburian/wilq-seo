@@ -97,7 +97,9 @@ function MerchantOperatingViewport({ data }: { data: MerchantDiagnosticsResponse
         </div>
       </div>
 
-      <section className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <MerchantMobileDecisionCard data={data} primaryDecision={primaryDecision} />
+
+      <section className="mb-4 hidden gap-4 sm:grid md:grid-cols-2 xl:grid-cols-4">
         <MerchantStatCard
           icon={<ShoppingCart aria-hidden="true" size={22} />}
           value={data.product_count ?? 0}
@@ -128,7 +130,11 @@ function MerchantOperatingViewport({ data }: { data: MerchantDiagnosticsResponse
         />
       </section>
 
-      {stale ? <MerchantStaleDataBanner data={data} /> : null}
+      {stale ? (
+        <div className="hidden sm:block">
+          <MerchantStaleDataBanner data={data} />
+        </div>
+      ) : null}
 
       <section className="mb-6 rounded-md border border-line bg-white px-4 py-3">
         <div className="grid gap-3 text-sm text-slate-700 md:grid-cols-4">
@@ -237,6 +243,52 @@ function MerchantOperatingViewport({ data }: { data: MerchantDiagnosticsResponse
 
       <MerchantQueuePreview data={data} />
     </>
+  );
+}
+
+function MerchantMobileDecisionCard({
+  data,
+  primaryDecision
+}: {
+  data: MerchantDiagnosticsResponse;
+  primaryDecision: MerchantDecisionItem | undefined;
+}) {
+  const stale = data.freshness_assessment.requires_refresh;
+  return (
+    <section
+      aria-label="Mobilna decyzja Merchant"
+      className="mb-4 rounded-md border border-wait/40 bg-white p-4 shadow-sm sm:hidden"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs font-semibold uppercase tracking-normal text-action">Produkty</div>
+        <span className="rounded-md bg-wait/10 px-2 py-1 text-xs font-semibold text-wait">
+          {stale ? data.freshness_assessment.state_label : "do sprawdzenia"}
+        </span>
+      </div>
+      <h2 className="mt-2 text-lg font-semibold leading-6 text-ink">
+        {primaryDecision ? merchantDecisionMarketerTitle(primaryDecision) : "Najpierw sprawdź dane Merchant"}
+      </h2>
+      <p className="mt-2 line-clamp-3 text-sm leading-5 text-slate-700">
+        {stale
+          ? data.freshness_assessment.summary
+          : primaryDecision
+            ? merchantDecisionMarketerSummary(primaryDecision)
+            : "WILQ nie ma potwierdzonej decyzji produktowej."}
+      </p>
+      <p className="mt-2 text-sm font-semibold leading-5 text-ink">
+        {stale
+          ? data.freshness_assessment.next_step
+          : primaryDecision
+            ? merchantDecisionMarketerNextStep(primaryDecision)
+            : "Uruchom odczyt danych Merchant."}
+      </p>
+      <a
+        href={stale ? "/settings" : primaryDecision?.action_ids[0] ? `/actions/${primaryDecision.action_ids[0]}` : "#merchant-queue"}
+        className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-md bg-action px-3 text-sm font-semibold text-white"
+      >
+        {stale ? "Odśwież w Źródłach" : "Otwórz sprawdzenie"}
+      </a>
+    </section>
   );
 }
 

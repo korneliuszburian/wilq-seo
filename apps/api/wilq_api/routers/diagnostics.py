@@ -14,7 +14,7 @@ from wilq.briefing.daily_runtime import (
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.localo_diagnostics import build_localo_diagnostics
-from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
+from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics_cached
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.schemas import (
     AdsDiagnosticsResponse,
@@ -54,7 +54,7 @@ def ads_diagnostics(view: str | None = None) -> AdsDiagnosticsResponse:
 
 @router.get("/api/merchant/diagnostics", response_model=MerchantDiagnosticsResponse)
 def merchant_diagnostics() -> MerchantDiagnosticsResponse:
-    return build_merchant_diagnostics()
+    return build_merchant_diagnostics_cached()
 
 
 @router.get("/api/content/diagnostics", response_model=ContentDiagnosticsResponse)

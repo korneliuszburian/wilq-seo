@@ -20,6 +20,8 @@ from wilq.briefing.merchant_diagnostics import (
     _merchant_price_impact_readiness,
     _merchant_product_performance_readiness,
     _merchant_product_performance_readiness_with_operator_labels,
+    build_merchant_diagnostics_cached,
+    clear_merchant_diagnostics_cache,
 )
 from wilq.connectors.google_merchant_center.client import refresh_merchant_product_status_summary
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
@@ -35,6 +37,29 @@ from wilq.schemas import (
     MerchantProductSampleReadiness,
     MetricFact,
 )
+
+
+def test_merchant_diagnostics_cache_reuses_one_build_outside_test_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("WILQ_MERCHANT_DIAGNOSTICS_CACHE_SECONDS", "60")
+    clear_merchant_diagnostics_cache()
+    calls = 0
+    sentinel = object()
+
+    def fake_build():
+        nonlocal calls
+        calls += 1
+        return sentinel
+
+    monkeypatch.setattr("wilq.briefing.merchant_diagnostics.build_merchant_diagnostics", fake_build)
+    assert build_merchant_diagnostics_cached() is sentinel
+    assert build_merchant_diagnostics_cached() is sentinel
+    assert calls == 1
+    clear_merchant_diagnostics_cache()
+    assert build_merchant_diagnostics_cached() is sentinel
+    assert calls == 2
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(

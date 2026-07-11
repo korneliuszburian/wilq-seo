@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from datetime import datetime
+from time import monotonic
 from typing import Literal
 
 from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
@@ -142,6 +145,16 @@ MERCHANT_HEALTH_METRIC_NAMES = {
     "merchant_action_issue_count",
 }
 MERCHANT_STALE_AFTER_HOURS = 48
+DEFAULT_MERCHANT_DIAGNOSTICS_CACHE_SECONDS = 15.0
+
+
+@dataclass(frozen=True)
+class MerchantDiagnosticsCacheEntry:
+    created_at: float
+    diagnostics: MerchantDiagnosticsResponse
+
+
+_cached_merchant_diagnostics: MerchantDiagnosticsCacheEntry | None = None
 
 
 def build_merchant_diagnostics(
@@ -288,6 +301,52 @@ def build_merchant_diagnostics(
         blocker_count=sum(1 for section in sections if section.status == "blocked"),
     )
     return _merchant_response_with_operator_labels(response)
+
+
+def build_merchant_diagnostics_cached() -> MerchantDiagnosticsResponse:
+    """Reuse one Merchant diagnostics build across the initial dashboard reads."""
+    cached = _read_merchant_diagnostics_cache()
+    if cached is not None:
+        return cached
+    diagnostics = build_merchant_diagnostics()
+    _write_merchant_diagnostics_cache(diagnostics)
+    return diagnostics
+
+
+def clear_merchant_diagnostics_cache() -> None:
+    global _cached_merchant_diagnostics
+    _cached_merchant_diagnostics = None
+
+
+def _read_merchant_diagnostics_cache() -> MerchantDiagnosticsResponse | None:
+    cache_seconds = _merchant_diagnostics_cache_seconds()
+    if cache_seconds <= 0 or _cached_merchant_diagnostics is None:
+        return None
+    if monotonic() - _cached_merchant_diagnostics.created_at > cache_seconds:
+        return None
+    return _cached_merchant_diagnostics.diagnostics
+
+
+def _write_merchant_diagnostics_cache(diagnostics: MerchantDiagnosticsResponse) -> None:
+    global _cached_merchant_diagnostics
+    if _merchant_diagnostics_cache_seconds() <= 0:
+        return
+    _cached_merchant_diagnostics = MerchantDiagnosticsCacheEntry(
+        created_at=monotonic(),
+        diagnostics=diagnostics,
+    )
+
+
+def _merchant_diagnostics_cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_MERCHANT_DIAGNOSTICS_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_MERCHANT_DIAGNOSTICS_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_MERCHANT_DIAGNOSTICS_CACHE_SECONDS
 
 
 def _latest_merchant_refresh() -> ConnectorRefreshRun | None:

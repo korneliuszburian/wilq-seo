@@ -108,7 +108,8 @@ Status używa wyłącznie wymaganego słownika.
 - `c9h9.10` P2 180 min — narrow Custom Segments view — open.
 - `c9h9.11` P1 240 min — lightweight action list — open.
 - `c9h9.12` P2 180 min — knowledge cold contention — open.
-- `c9h9.13` P1 240 min — Merchant first decision latency — open.
+- `c9h9.13` P1 240 min — Merchant first decision latency — **ready to close**;
+  cache/prewarm, focused contract and desktop/mobile proof pass.
 
 Produktowa kolejność po zamknięciu `.5` → `.6` → `.4` przechodzi do `r564.3`
 (mobile triage), o ile nie pojawi się świeży blocker z bieżącego API. Secondary
