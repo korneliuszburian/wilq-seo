@@ -11,6 +11,7 @@ from wilq.schemas import (
     AdsCustomSegmentsReadContract,
     AdsDecisionItem,
     AdsDerivedKpiReadContract,
+    AdsDiagnosticSection,
     AdsImpressionShareReadContract,
     AdsNegativeKeywordsReadContract,
     AdsRecommendationsReadContract,
@@ -18,6 +19,25 @@ from wilq.schemas import (
     AdsSearchTermSafetyReadContract,
     AdsSearchTermsReadContract,
 )
+
+
+def build_block_write_actions_decision(
+    section: AdsDiagnosticSection,
+) -> AdsDecisionItem:
+    return AdsDecisionItem(
+        id="ads_block_write_actions_without_actionobject",
+        decision_type="block_write_actions",
+        status="blocked",
+        title="Zapis zmian Ads wymaga osobnego sprawdzenia akcji",
+        summary=section.summary,
+        rationale=section.diagnosis,
+        next_step=section.next_step,
+        source_connectors=section.source_connectors,
+        evidence_ids=section.evidence_ids,
+        action_ids=section.action_ids,
+        blocked_claims=section.blocked_claims,
+        risk=section.risk,
+    )
 
 
 def build_business_context_decision(

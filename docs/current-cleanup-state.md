@@ -175,6 +175,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Ready-decision assembly ma także `build_business_context_decision` w
   `ads_decision_queue.py`; policy metric, rationale, evidence/action lineage i
   blokady rentowności/scalingu pozostają typed.
+- Safety decision `ads_block_write_actions_without_actionobject` jest teraz w
+  `build_block_write_actions_decision`; status blocked, blokady zapisów i
+  lineage sekcji bezpieczeństwa nie są już inline w dispatcherze.
 
 ## Granica bezpieczeństwa
 

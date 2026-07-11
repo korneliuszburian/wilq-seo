@@ -37,6 +37,8 @@ Ostatni commit: `f2b9837` (`refactor: extract Ads business context decision`)
   nie wracaj do inline 90-dniowej decyzji w diagnostics.
 - Business-context decision jest w `build_business_context_decision`; nie wracaj
   do inline policy/rationale assembly w diagnostics.
+- Safety decision jest w `build_block_write_actions_decision`; nie wracaj do
+  inline `ads_block_write_actions_without_actionobject` assembly.
 
 ## Dowody
 

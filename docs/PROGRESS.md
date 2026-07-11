@@ -89,6 +89,10 @@ w git, Beads i `docs/progress/archive/`.
 - `review_business_context` ma teraz osobny typed builder w
   `ads_decision_queue.py`; status, policy tile, evidence/action lineage i blocked
   profitability/scaling claims pozostają bez zmian. Complexity: 398 / 132485 LOC.
+- `ads_block_write_actions_without_actionobject` ma teraz osobny typed builder w
+  `ads_decision_queue.py`; fail-closed status, safety section evidence i blocked
+  write claims pozostają bez zmian. Complexity: 398 / 132489 LOC; dispatcher ma
+  11 znanych violations.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

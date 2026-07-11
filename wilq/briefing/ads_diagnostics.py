@@ -63,6 +63,7 @@ from wilq.briefing.ads_change_history import (
 )
 from wilq.briefing.ads_custom_segments import build_custom_segments_section
 from wilq.briefing.ads_decision_queue import (
+    build_block_write_actions_decision,
     build_budget_context_decision,
     build_business_context_decision,
     build_campaign_activity_decision,
@@ -4807,22 +4808,7 @@ def _ads_decision_queue(
         None,
     )
     if safety_section is not None:
-        decisions.append(
-            AdsDecisionItem(
-                id="ads_block_write_actions_without_actionobject",
-                decision_type="block_write_actions",
-                status="blocked",
-                title="Zapis zmian Ads wymaga osobnego sprawdzenia akcji",
-                summary=safety_section.summary,
-                rationale=safety_section.diagnosis,
-                next_step=safety_section.next_step,
-                source_connectors=safety_section.source_connectors,
-                evidence_ids=safety_section.evidence_ids,
-                action_ids=safety_section.action_ids,
-                blocked_claims=safety_section.blocked_claims,
-                risk=safety_section.risk,
-            )
-        )
+        decisions.append(build_block_write_actions_decision(safety_section))
 
     return [_with_ads_decision_lineage(decision, currency_code) for decision in decisions]
 
