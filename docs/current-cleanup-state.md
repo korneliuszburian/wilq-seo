@@ -6,8 +6,9 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 ## Najbliższa instrukcja
 
 Aktualny następny slice to `wilq-seo-r564.3`: mobile first viewport po zamknięciu
-canonical dev-only ActionObject apply oraz szybkiej listy akcji. Nie zaczynaj od
-splitu monolitu ani od przywracania direct WordPress write.
+canonical dev-only ActionObject apply oraz szybkiej listy akcji. Jeśli zewnętrzny
+refresh nadal blokuje świeży kandydat, wykonaj mały, testowalny seam `wilq-seo-jnra`
+Action Service; nie przywracaj direct WordPress write.
 
 ## Prawda produktu
 
@@ -98,11 +99,10 @@ Zamknięte w tym slice:
 
 Otwarte product blockers:
 
-- `r564.3` — mobile first viewport; zależy od `.5`, `.6` i zamkniętego
-  `r564.2`;
-- `c9h9.8` — stale dashboard E2E behavior assertions;
-- `c9h9.12` — potwierdzony latency blocker Knowledge. `c9h9.9`, `c9h9.10`
-  i `c9h9.11` są zamknięte po API/browser proof.
+- `r564.3` — mobile first viewport; świeży, nieblokowany content candidate nadal
+  zależy od zewnętrznego refreshu.
+- `c9h9.9`, `c9h9.10`, `c9h9.11`, `c9h9.12` i `c9h9.8` są zamknięte po
+  API/browser proof; obecny pełny `dashboard-api.spec.ts` przechodzi 13/13.
 
 `ho41` jest wyłącznie route/component boundary. `jnra` jest splitem action
 service. Żaden z nich nie może przejąć product semantics freshness/write.
@@ -146,5 +146,5 @@ ograniczony seam typed apply/adapter, nie mechaniczny split.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
 3. Kontynuuj `r564.3`: browser proof 390×844 ma pokazać URL/temat,
    decyzję, blocker i bezpieczny CTA bez scrolla, jeśli refresh da świeżego kandydata.
-4. Podczas zewnętrznej blokady świeżego content proof wykonuj `c9h9.12` Knowledge
-   cold contention; nie oznaczaj `r564.3` jako complete bez świeżego kandydata.
+4. Podczas zewnętrznej blokady świeżego content proof wykonuj `jnra` tylko przez
+   mały seam z testem zachowania; nie oznaczaj `r564.3` jako complete bez świeżego kandydata.

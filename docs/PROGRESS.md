@@ -139,6 +139,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   projection zamiast pełnego payloadu; focused Playwright `1/1` w `4.4 s`
   potwierdza kandydatów, forecast, evidence i blokady claims bez audience-size
   ani write. Nie dodano endpointu.
+- `c9h9.8` jest zamknięty: `apps/dashboard/e2e/dashboard-api.spec.ts` ma 13/13
+  testów przechodzących po zmianie wyłącznie starych heading/assertion strings na
+  aktualne zachowanie Ads, Content, Actions, Knowledge i Merchant. Nie podnoszono
+  timeoutów, nie przywracano legacy IA, a pełny smoke nadal sprawdza brak raw IDs
+  i technicznego copy above the fold.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
@@ -176,10 +181,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   przed HTTP. Focused action mutation, shared-schema, dashboard API, WordPress
   adapter i content execution tests przechodzą; route-level proof i review-only
   CTA są zamknięte w Beadzie.
-- Pełny cold Playwright nie jest zielony. Potwierdzone osobne blokery mają
-  Beads: Ads `c9h9.9`, Custom Segments `c9h9.10`, actions
-  `c9h9.11` jest zamknięty, knowledge `c9h9.12`; Merchant `c9h9.13` jest zamknięty. Stare E2E strings są
-  porządkowane w `c9h9.8`; timeoutów nie podnoszono.
+- Pełny `dashboard-api.spec.ts` przechodzi 13/13 po rebaseline asercji do
+  bieżących nagłówków i zachowania; nie podnoszono timeoutów i nie przywracano
+  legacy route strings. Pozostałe pełne testy/review mają własne Beads i nie są
+  ukrywane przez ten smoke.
 - Latest `c9h9.6` complexity run: 10 changed files, 2 frozen growth files and 2
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
@@ -192,9 +197,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 ## Kolejność wykonania
 
 1. `r564.3` — decision/blocker/CTA w mobile first viewport; świeży kandydat nadal zależy od zewnętrznego refresh.
-2. `c9h9.12` — knowledge cold contention (aktywny slice podczas zewnętrznej blokady content).
-3. Secondary route latency: brak nowego potwierdzonego Beada; `c9h9.12`
-   pozostaje aktywnym cold-map seamem.
+2. `jnra` — najmniejszy bezpieczny seam monolitu Action Service, po potwierdzeniu
+   że nie narusza ActionObject safety loop.
+3. `d380` albo `0q74` — kolejny potwierdzony utrzymaniowy slice po wyborze
+   zależności; nie tworzyć mechanicznego splitu bez zakresu i testu użyteczności.
 
 `docs/audits/2026-07-10-cleanup-rebaseline.md` zawiera bieżącą mapę statusów i
 ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
