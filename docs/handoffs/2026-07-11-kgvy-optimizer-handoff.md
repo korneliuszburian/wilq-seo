@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `93d6d4d` (`refactor: extract Ads search safety decision`)  
-`origin/main` = `93d6d4d`
+Ostatni commit: `f2b9837` (`refactor: extract Ads business context decision`)  
+`origin/main` = `f2b9837`
 
 ## Wykonane
 
