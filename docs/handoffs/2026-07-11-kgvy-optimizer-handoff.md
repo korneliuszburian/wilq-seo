@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `084689b` (`docs: update campaign triage handoff pointer`)  
-`origin/main` = `084689b`
+Ostatni commit: `6c705d7` (`docs: reconcile Ads handoff state`)  
+`origin/main` = `6c705d7`
 
 ## Wykonane
 
@@ -87,6 +87,6 @@ flags i `apply_allowed=false`.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 084689b`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 6c705d7`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
