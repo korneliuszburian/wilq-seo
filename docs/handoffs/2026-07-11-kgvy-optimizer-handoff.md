@@ -84,7 +84,7 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   `_reconcile_ads_budget_and_business_context_contracts`; nie wracaj do inline
   `budget_apply_preview`, `profit_margin` ani `human_budget_goal` updates.
 - Reconciliation boundary jest domknięty przez dwa ostatnie extraction slices;
-  aktualny complexity report ma 398 plików / 133153 LOC i dwa jawne violations
+  aktualny complexity report ma 398 plików / 133155 LOC i dwa jawne violations
   (monolityczny plik oraz orchestrator), więc kolejny seam wymaga świeżego review.
 - Core search-term read-contract assembly jest w `_build_ads_search_term_read_contracts`;
   nie wracaj do inline builderów `terms`, `safety`, `keyword match` ani `planner`.
@@ -106,6 +106,8 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   seamem.
 - Lifecycle label hydration jest w `_hydrate_ads_response_labels`; nie zmieniaj
   kolejności review-gate labels → marketer labels ani polskiego copy.
+- Search contract-label hydration jest w `_hydrate_ads_search_contract_labels`;
+  nie wracaj do inline summary/negative-keyword/keyword-match label updates.
 
 ## Dowody
 
@@ -127,9 +129,10 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 ## Następny slice
 
 Reconciliation, search-term, candidate, optimizer, sections, blocked-handoff,
-decision_queue, response model i lifecycle label hydration są domknięte.
-Następny kandydat to deeper contract-label hydration po świeżym complexity/review;
-zachowaj marketer-facing labels, evidence/source/freshness oraz ActionObject safety.
+decision_queue, response model i search contract-label hydration są domknięte.
+Następny kandydat to budget/recommendation/impression/change-history contract
+labels po świeżym complexity/review; zachowaj marketer-facing labels,
+evidence/source/freshness oraz ActionObject safety.
 
 ## Kontrola repo
 

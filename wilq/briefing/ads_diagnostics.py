@@ -5916,6 +5916,10 @@ def _hydrate_ads_contract_labels(
     _hydrate_impression_share_marketer_labels(response.impression_share_read_contract)
     _hydrate_change_history_marketer_labels(response.change_history_read_contract)
     _hydrate_change_impact_marketer_labels(response.change_impact_readiness_contract)
+    _hydrate_ads_search_contract_labels(response)
+
+
+def _hydrate_ads_search_contract_labels(response: AdsDiagnosticsResponse) -> None:
     response.search_term_review_summary_contract.blocked_claim_labels = _unique(
         response.search_term_review_summary_contract.blocked_claims
     )
