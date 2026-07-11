@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `749b709` (`docs: update Ads contract handoff pointer`)  
-`origin/main` = `749b709`
+Ostatni commit: `0497808` (`docs: refresh live Ads handoff state`)  
+`origin/main` = `0497808`
 
 ## Wykonane
 
@@ -81,6 +81,6 @@ validation, blocked claims, evidence IDs i brak możliwości apply.
 
 ## Kontrola repo
 
-- Po commicie: `HEAD == origin/main == 749b709`, worktree czysty.
+- Po commicie: `HEAD == origin/main == 0497808`, worktree czysty.
 - Przed kolejnym slice’em sprawdź health API, Ads diagnostics i aktualny complexity
   report.
