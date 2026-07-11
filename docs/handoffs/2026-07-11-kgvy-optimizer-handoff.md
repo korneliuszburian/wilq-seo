@@ -72,6 +72,9 @@ Ostatni commit: `15e0c70` (`docs: update Ads sections handoff pointer`)
   orchestration.
 - Typed Ads section assembly jest w `_build_ads_diagnostic_sections`; nie wracaj
   do inline listy sekcji w `build_ads_diagnostics`.
+- Search-term read-contract reconciliation jest w
+  `_reconcile_search_term_read_contracts`; nie wracaj do inline freshness
+  reconciliation.
 
 ## Dowody
 

@@ -504,6 +504,40 @@ def _build_ads_diagnostic_sections(
     return [_with_ads_section_lineage(section) for section in sections]
 
 
+def _reconcile_search_term_read_contracts(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+) -> tuple[AdsSearchTermsReadContract, AdsSearchTermSafetyReadContract]:
+    if search_term_safety_read_contract.status == "ready":
+        search_terms_read_contract = search_terms_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    search_terms_read_contract.missing_read_contracts,
+                    "90_day_safety_check",
+                )
+            }
+        )
+    if keyword_match_context_read_contract.status == "ready":
+        search_terms_read_contract = search_terms_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    search_terms_read_contract.missing_read_contracts,
+                    "keyword match context",
+                )
+            }
+        )
+        search_term_safety_read_contract = search_term_safety_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    search_term_safety_read_contract.missing_read_contracts,
+                    "keyword match context",
+                )
+            }
+        )
+    return search_terms_read_contract, search_term_safety_read_contract
+
+
 def build_ads_diagnostics(
     actions: list[ActionObject] | None = None,
     *,
@@ -718,32 +752,14 @@ def build_ads_diagnostics(
         trusted_metric_facts,
         latest_refresh,
     )
-    if search_term_safety_read_contract.status == "ready":
-        search_terms_read_contract = search_terms_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    search_terms_read_contract.missing_read_contracts,
-                    "90_day_safety_check",
-                )
-            }
-        )
-    if keyword_match_context_read_contract.status == "ready":
-        search_terms_read_contract = search_terms_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    search_terms_read_contract.missing_read_contracts,
-                    "keyword match context",
-                )
-            }
-        )
-        search_term_safety_read_contract = search_term_safety_read_contract.model_copy(
-            update={
-                "missing_read_contracts": _remove_missing_contract_names(
-                    search_term_safety_read_contract.missing_read_contracts,
-                    "keyword match context",
-                )
-            }
-        )
+    (
+        search_terms_read_contract,
+        search_term_safety_read_contract,
+    ) = _reconcile_search_term_read_contracts(
+        search_terms_read_contract,
+        search_term_safety_read_contract,
+        keyword_match_context_read_contract,
+    )
     search_term_review_summary_contract = _search_term_review_summary_contract(
         search_terms_read_contract,
         latest_refresh,

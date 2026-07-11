@@ -231,6 +231,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_build_ads_diagnostic_sections`; kolejność sekcji, lineage, blocked claims i
   safe action section pozostają bez zmian. Complexity: 398 / 132801 LOC;
   2 znane violations (plik + główny orchestrator).
+- Search-term reconciliation (`90_day_safety_check` i `keyword match context`)
+  jest teraz w `_reconcile_search_term_read_contracts`; freshness/read-contract
+  semantics pozostają bez zmian. Complexity: 398 / 132815 LOC; 2 znane violations.
 
 ## Granica bezpieczeństwa
 

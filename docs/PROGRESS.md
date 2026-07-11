@@ -139,6 +139,9 @@ w git, Beads i `docs/progress/archive/`.
   `build_ads_diagnostics`; kolejność, evidence lineage i safety section pozostają
   bez zmian. Complexity: 398 / 132801 LOC; główny orchestrator nadal jest kolejnym
   bounded targetem.
+- `_reconcile_search_term_read_contracts` przejął reconciliation `90_day_safety_check`
+  i `keyword match context`; search-term freshness i missing-contract semantics
+  bez zmian. Complexity: 398 / 132815 LOC; 2 znane violations.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
