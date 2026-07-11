@@ -53,6 +53,9 @@ Ostatni commit: `b84e506` (`docs: define next Ads contract seam`)
   nie wracaj do inline readiness-state assembly.
 - Business-context tiles są w `_business_context_metric_tiles`; nie wracaj do
   inline metric-tile dictionary.
+- Typed business-context response assembly jest w
+  `_build_business_context_read_contract`; nie wracaj do inline blocked-claims
+  ani target/strategy contract construction.
 
 ## Dowody
 
@@ -72,10 +75,9 @@ Ostatni commit: `b84e506` (`docs: define next Ads contract seam`)
 
 ## Następny slice
 
-Następny potwierdzony seam to końcowa konstrukcja
-`_business_context_read_contract` (blocked-claims i typed response assembly),
-wybrana po ponownym audycie complexity i aktualnym `bd ready`. Nie wracać do
-wydzielonych summary, contract-state, preliminary ani metric-tile helpers.
+Następny potwierdzony seam to `_strategy_review_readiness_contract` (103 linie),
+wybrany po aktualnym complexity audit. Zachować status review, required
+validation, blocked claims, evidence IDs i brak możliwości apply.
 
 ## Kontrola repo
 

@@ -198,6 +198,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Business-context metric tiles są teraz w `_business_context_metric_tiles`,
   bez zmiany nazw pól, formatowania waluty/procentów ani statusu strategii.
   Complexity: 398 / 132616 LOC; helper read contract ma 127 linii.
+- Końcowa konstrukcja `AdsBusinessContextReadContract` jest teraz w
+  `_build_business_context_read_contract`; blocked claims, target interpretation,
+  strategy-review contract i evidence lineage pozostają typed. Complexity:
+  398 / 132665 LOC; 8 znanych violations, następny target to strategy review.
 
 ## Granica bezpieczeństwa
 

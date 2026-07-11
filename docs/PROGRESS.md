@@ -114,6 +114,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_business_context_metric_tiles` przejął tile assembly kontekstu biznesowego;
   nazwy i wartości operator-facing pozostają bez zmian. Complexity: 398 /
   132616 LOC; 9 znanych violations.
+- `_build_business_context_read_contract` przejął blocked claims i typed response
+  assembly; target interpretation, strategy review, evidence i safe next step
+  pozostają bez zmian. Complexity: 398 / 132665 LOC; violations spadły do 8.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
