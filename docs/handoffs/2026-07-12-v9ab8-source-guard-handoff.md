@@ -23,7 +23,8 @@ odczytu.
   tests przechodzą.
 - Ruff, mypy i `git diff --check` przechodzą; complexity nie pokazuje nowych
   violations.
-- Live po restarcie: `/api/health` `ok`; daily-check `status=blocked`,
+- Live po restarcie: `/api/health` `ok`; `/api/metrics/status` raportuje 98 919
+  facts i 4 574 refresh runs; daily-check `status=blocked`,
   `freshness=stale`, guard `stale_connector`, 21 evidence IDs i 8 rule IDs.
 
 ## Pozostały zakres Beada

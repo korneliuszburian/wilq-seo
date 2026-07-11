@@ -11,7 +11,7 @@ w git, Beads i `docs/progress/archive/`.
   odwołują się do nowych rule IDs; WordPress pack pozostaje dostępny przez ten
   sam `/api/expert/rules` i source registry. Nie dodano endpointu ani nowej
   ścieżki write.
-- Live proof po managed restart: API `ok`, 98 915 metric facts, 4 572 refresh
+- Live proof po managed restart: API `ok`, 98 919 metric facts, 4 574 refresh
   runs; `/api/expert/rules` zwraca pięć trap contracts z source IDs i safe next
   steps, a Merchant decision queue zawiera `merchant_platform_traps_v1`.
 - `wilq-seo-v9ab.5` ma teraz pełny typed ExpertRule contract: condition,
@@ -53,7 +53,7 @@ w git, Beads i `docs/progress/archive/`.
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 98 915 metric facts i 4 572
+- Managed API i dashboard są zdrowe. DuckDB ma 98 919 metric facts i 4 574
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
 - Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.
