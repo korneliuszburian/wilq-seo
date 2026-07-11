@@ -1821,6 +1821,46 @@ def _strategy_review_readiness_contract(
     )
 
 
+def _blocked_business_target_interpretation(
+    *,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_missing: bool,
+    strategy_review_status: str,
+    strategy_review_approved: bool,
+    business_policy_ids: list[str],
+    evidence_ids: list[str],
+    required_validation: list[str],
+) -> AdsBusinessTargetInterpretation:
+    return AdsBusinessTargetInterpretation(
+        status="blocked",
+        summary=(
+            "WILQ nie interpretuje wskaźników biznesowo, dopóki brakuje marży, celu "
+            "biznesowego albo celu budżetu."
+        ),
+        allowed_uses=[],
+        blocked_uses=[
+            "profitability_verdict",
+            "target_kpi_verdict",
+            "budget_scaling",
+            "budget_apply",
+            "wasted_budget_claim",
+        ],
+        missing_requirements=_business_target_missing_requirements(
+            profit_margin=profit_margin,
+            business_goal=business_goal,
+            budget_goal=budget_goal,
+            target_missing=target_missing,
+            strategy_review_status=strategy_review_status,
+            strategy_review_approved=strategy_review_approved,
+        ),
+        required_validation=required_validation,
+        policy_ids=business_policy_ids,
+        evidence_ids=evidence_ids,
+    )
+
+
 def _business_target_interpretation(
     *,
     status: Literal["ready", "blocked"],
@@ -1843,31 +1883,16 @@ def _business_target_interpretation(
         "human_strategy_review",
     ]
     if status == "blocked":
-        return AdsBusinessTargetInterpretation(
-            status="blocked",
-            summary=(
-                "WILQ nie interpretuje wskaźników biznesowo, dopóki brakuje marży, celu "
-                "biznesowego albo celu budżetu."
-            ),
-            allowed_uses=[],
-            blocked_uses=[
-                "profitability_verdict",
-                "target_kpi_verdict",
-                "budget_scaling",
-                "budget_apply",
-                "wasted_budget_claim",
-            ],
-            missing_requirements=_business_target_missing_requirements(
-                profit_margin=profit_margin,
-                business_goal=business_goal,
-                budget_goal=budget_goal,
-                target_missing=target_missing,
-                strategy_review_status=strategy_review_status,
-                strategy_review_approved=strategy_review_approved,
-            ),
-            required_validation=required_validation,
-            policy_ids=business_policy_ids,
+        return _blocked_business_target_interpretation(
+            profit_margin=profit_margin,
+            business_goal=business_goal,
+            budget_goal=budget_goal,
+            target_missing=target_missing,
+            strategy_review_status=strategy_review_status,
+            strategy_review_approved=strategy_review_approved,
+            business_policy_ids=business_policy_ids,
             evidence_ids=evidence_ids,
+            required_validation=required_validation,
         )
     allowed_uses = [
         "campaign_review_context",

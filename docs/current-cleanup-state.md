@@ -182,6 +182,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   przez `_build_campaign_context_decisions`, a safety section przez
   `_build_ads_safety_decisions`; `_ads_decision_queue` ma 10 znanych violations
   poza budżetem, bez zmiany kolejności ani lineage.
+- Fail-closed business-target interpretation jest w
+  `_blocked_business_target_interpretation`; brak marży/celu nadal blokuje te
+  same użycia biznesowe, a główny helper ma teraz krótszą ścieżkę statusu.
 
 ## Granica bezpieczeństwa
 

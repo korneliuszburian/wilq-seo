@@ -99,6 +99,9 @@ w git, Beads i `docs/progress/archive/`.
 - Ads decision assembler ma teraz osobny `_build_campaign_context_decisions` dla
   czterech pierwszych decyzji i `_build_ads_safety_decisions` dla fail-closed
   safety section. Complexity: 398 / 132512 LOC; violations spadły do 10.
+- `_business_target_interpretation` deleguje blocked branch do
+  `_blocked_business_target_interpretation`; brakujące kontrakty, blocked uses i
+  evidence pozostają bez zmian. Complexity: 398 / 132535 LOC; 10 znanych violations.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

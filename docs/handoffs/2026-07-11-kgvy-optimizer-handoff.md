@@ -42,6 +42,8 @@ Ostatni commit: `f3064ac` (`refactor: split Ads decision assembler`)
 - Campaign/context/derived-KPI decisions są w `_build_campaign_context_decisions`,
   a safety section w `_build_ads_safety_decisions`; nie wracaj do jednego
   `_ads_decision_queue` assemblera dla tych grup.
+- Blocked business-target path jest w `_blocked_business_target_interpretation`;
+  nie wracaj do inline branch dla brakującej marży/celu.
 
 ## Dowody
 
