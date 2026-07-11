@@ -77,6 +77,18 @@ def change_history_impact_action(
         validation_status="not_validated",
         created_by="system_metric_seed",
     )
+
+
+def change_history_impact_action_from_metric_facts(
+    google_ads_facts: list[MetricFact],
+) -> ActionObject | None:
+    payload = change_history_impact_payload_from_metric_facts(google_ads_facts)
+    if payload is None:
+        return None
+    return change_history_impact_action(
+        google_ads_facts=google_ads_facts,
+        change_history_payload=payload,
+    )
 CHANGE_HISTORY_IMPACT_BLOCKED_CLAIMS = [
     "wpływ zmian",
     "obietnica poprawy wyniku",

@@ -35,8 +35,7 @@ from wilq.actions.google_ads.campaign_review import (
     campaign_review_action_from_metric_facts,
 )
 from wilq.actions.google_ads.change_history import (
-    change_history_impact_action,
-    change_history_impact_payload_from_metric_facts,
+    change_history_impact_action_from_metric_facts,
 )
 from wilq.actions.google_ads.custom_segments import (
     custom_segment_action,
@@ -679,12 +678,9 @@ def _seed_google_ads_metric_actions(
         action = recommendation_action
         actions[action.id] = action
 
-    change_history_payload = change_history_impact_payload_from_metric_facts(google_ads_facts)
-    if change_history_payload is not None:
-        action = _change_history_impact_action(
-            google_ads_facts=google_ads_facts,
-            change_history_payload=change_history_payload,
-        )
+    change_history_action = change_history_impact_action_from_metric_facts(google_ads_facts)
+    if change_history_action is not None:
+        action = change_history_action
         actions[action.id] = action
 
     search_term_ngram_payload = search_term_ngram_payload_from_metric_facts(google_ads_facts)
@@ -769,17 +765,6 @@ def _search_term_ngram_action(
     return search_term_ngram_action(
         google_ads_facts=google_ads_facts,
         search_term_ngram_payload=search_term_ngram_payload,
-    )
-
-
-def _change_history_impact_action(
-    *,
-    google_ads_facts: list[MetricFact],
-    change_history_payload: dict[str, Any],
-) -> ActionObject:
-    return change_history_impact_action(
-        google_ads_facts=google_ads_facts,
-        change_history_payload=change_history_payload,
     )
 
 
