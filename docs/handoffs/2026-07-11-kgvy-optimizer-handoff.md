@@ -84,7 +84,7 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   `_reconcile_ads_budget_and_business_context_contracts`; nie wracaj do inline
   `budget_apply_preview`, `profit_margin` ani `human_budget_goal` updates.
 - Reconciliation boundary jest domknięty przez dwa ostatnie extraction slices;
-  aktualny complexity report ma 398 plików / 133185 LOC i dwa jawne violations
+  aktualny complexity report ma 398 plików / 133219 LOC i dwa jawne violations
   (monolityczny plik oraz orchestrator), więc kolejny seam wymaga świeżego review.
 - Core search-term read-contract assembly jest w `_build_ads_search_term_read_contracts`;
   nie wracaj do inline builderów `terms`, `safety`, `keyword match` ani `planner`.
@@ -120,6 +120,8 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
   nie wracaj do inline top-decision selection ani fallback row limits.
 - Summary response field compaction jest w `_compact_ads_summary_response_fields`;
   nie wracaj do inline ograniczania pól response ani `sections=[]`.
+- Primary Ads read-contract bootstrap jest w `_build_ads_primary_read_contracts`;
+  nie wracaj do inline account/campaign/budget/recommendation read assembly.
 - Summary/full parity jest potwierdzone: oba endpointy mają `live_data_available=true`
   i blocker count 1; summary ma `sections=[]`, full zachowuje sekcje.
 
@@ -144,10 +146,11 @@ Ostatni commit: bieżący `HEAD` (handoff jest częścią końcowego pointer com
 ## Następny slice
 
 Reconciliation, search-term, candidate, optimizer, sections, blocked-handoff,
-decision_queue, response model, wszystkie label hydration groups oraz summary
-decision/candidate/response-field compaction są domknięte, a parity potwierdzone.
-Następny kandydat to operator_summary assembly po świeżym complexity/review;
-zachowaj marketer-facing labels, evidence/source/freshness oraz ActionObject safety.
+decision_queue, response model, wszystkie label hydration groups, summary
+decision/candidate/response-field compaction i primary read-contract bootstrap
+są domknięte, a parity potwierdzone. Następny kandydat to dalszy response
+orchestration review po świeżym complexity/review; zachowaj marketer-facing
+labels, evidence/source/freshness oraz ActionObject safety.
 
 ## Kontrola repo
 

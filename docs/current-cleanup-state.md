@@ -10,9 +10,9 @@ readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ad
 wewnątrz `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
-label hydration groups są wydzielone. Summary decision/candidate i response field
-compaction są wydzielone, parity jest potwierdzone. Następny kandydat to
-operator_summary assembly.
+label hydration groups są wydzielone. Summary compaction i primary read-contract
+bootstrap są wydzielone, parity jest potwierdzone. Następny kandydat to dalszy
+response orchestration review.
 Polityka
 automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
@@ -254,7 +254,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_reconcile_ads_budget_and_business_context_contracts`; `budget_apply_preview`,
   `profit_margin` i `human_budget_goal` pozostają kontraktowo zależne od gotowych
   odczytów. Reconciliation inline w `build_ads_diagnostics` jest domknięty;
-  complexity po seamu to 398 plików / 133185 LOC i dwa jawne frozen/file-orchestrator
+  complexity po seamu to 398 plików / 133219 LOC i dwa jawne frozen/file-orchestrator
   violations do dalszego, niezależnego wyboru.
 - Core search-term read-contract assembly (`terms`, `safety`, `keyword match`,
   `planner`) jest teraz w `_build_ads_search_term_read_contracts`; kolejność
@@ -300,6 +300,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Summary response field compaction jest teraz w
   `_compact_ads_summary_response_fields`; row limits, `sections=[]` oraz
   evidence/action lineage pozostają bez zmian.
+- Primary Ads read-contract bootstrap jest teraz w
+  `_build_ads_primary_read_contracts`; fallback evidence, read-attempt flags,
+  currency i missing-contract semantics pozostają bez zmian.
 - Summary/full parity proof: oba endpointy mają `live_data_available=true` i
   blocker count 1; summary ma `sections=[]`, full zachowuje sekcje.
 - Search-term review assembly (`review_summary`, `ngram`) jest teraz w

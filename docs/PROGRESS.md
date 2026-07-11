@@ -15,14 +15,15 @@ w git, Beads i `docs/progress/archive/`.
   blocked-handoff, decision_queue, response model i search contract-label hydration
   boundaries są domknięte; budget/recommendation/impression/change-history,
   change-impact/optimizer i core campaign/business/custom/derived labels są
-  domknięte. Summary decision/candidate i response field compaction są domknięte,
-  a parity jest potwierdzone; następny seam to operator_summary assembly.
+  domknięte. Summary decision/candidate, response field compaction i primary
+  read-contract bootstrap są domknięte, a parity jest potwierdzone; następny seam
+  to dalszy response orchestration review.
 - Reconciliation boundary jest domknięty przez
   `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
   nie zawiera już inline aktualizacji missing contracts dla tych zależności.
-  Complexity: 398 plików Python / 133185 LOC, 2 jawne violations (plik i główny
+  Complexity: 398 plików Python / 133219 LOC, 2 jawne violations (plik i główny
   orchestrator). Następny kandydat po aktualnym complexity/review to mały helper
-  operator_summary assembly, bez ponownego
+  dalszy response orchestration review, bez ponownego
   dotykania gotowych reconciliation, search-term, candidate ani optimizer seamów.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.

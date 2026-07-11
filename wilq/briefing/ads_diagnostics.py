@@ -793,6 +793,77 @@ def _build_ads_diagnostics_response(
     )
 
 
+def _build_ads_primary_read_contracts(
+    trusted_metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> tuple[
+    AdsAccountCurrencyReadContract,
+    AdsBusinessContextReadContract,
+    AdsCampaignReadContract,
+    AdsDerivedKpiReadContract,
+    AdsBudgetPacingReadContract,
+    AdsRecommendationsReadContract,
+    AdsImpressionShareReadContract,
+    AdsChangeHistoryReadContract,
+]:
+    account_currency_read_contract = _account_currency_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
+    business_context_read_contract = _business_context_read_contract(latest_refresh)
+    campaign_read_contract = _campaign_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+        business_context_read_contract,
+        account_currency_read_contract.currency_code,
+    )
+    derived_kpi_read_contract = _derived_kpi_read_contract(
+        campaign_read_contract,
+        account_currency_read_contract,
+        business_context_read_contract,
+    )
+    fallback_evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
+    budget_pacing_read_contract = build_budget_pacing_read_contract(
+        trusted_metric_facts,
+        campaign_read_contract,
+        fallback_evidence_ids=fallback_evidence_ids,
+    )
+    recommendations_read_contract = build_recommendations_read_contract(
+        trusted_metric_facts,
+        read_attempted=_latest_refresh_has_summary_metric(
+            latest_refresh,
+            "recommendation_row_count",
+        ),
+        fallback_evidence_ids=fallback_evidence_ids,
+    )
+    impression_share_read_contract = build_impression_share_read_contract(
+        trusted_metric_facts,
+        read_attempted=_latest_refresh_has_summary_metric(
+            latest_refresh,
+            "impression_share_row_count",
+        ),
+        fallback_evidence_ids=fallback_evidence_ids,
+    )
+    change_history_read_contract = build_change_history_read_contract(
+        trusted_metric_facts,
+        read_attempted=_latest_refresh_has_summary_metric(
+            latest_refresh,
+            "change_event_row_count",
+        ),
+        fallback_evidence_ids=fallback_evidence_ids,
+    )
+    return (
+        account_currency_read_contract,
+        business_context_read_contract,
+        campaign_read_contract,
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+        change_history_read_contract,
+    )
+
+
 def _hydrate_ads_response_labels(response: AdsDiagnosticsResponse) -> None:
     """Apply review-gate and marketer labels after response construction."""
     _hydrate_ads_review_gate_labels(response)
@@ -1046,51 +1117,16 @@ def build_ads_diagnostics(
     )
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
-    account_currency_read_contract = _account_currency_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-    )
-    business_context_read_contract = _business_context_read_contract(latest_refresh)
-    campaign_read_contract = _campaign_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-        business_context_read_contract,
-        account_currency_read_contract.currency_code,
-    )
-    derived_kpi_read_contract = _derived_kpi_read_contract(
-        campaign_read_contract,
+    (
         account_currency_read_contract,
         business_context_read_contract,
-    )
-    budget_pacing_read_contract = build_budget_pacing_read_contract(
-        trusted_metric_facts,
         campaign_read_contract,
-        fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
-    )
-    recommendations_read_contract = build_recommendations_read_contract(
-        trusted_metric_facts,
-        read_attempted=_latest_refresh_has_summary_metric(
-            latest_refresh,
-            "recommendation_row_count",
-        ),
-        fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
-    )
-    impression_share_read_contract = build_impression_share_read_contract(
-        trusted_metric_facts,
-        read_attempted=_latest_refresh_has_summary_metric(
-            latest_refresh,
-            "impression_share_row_count",
-        ),
-        fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
-    )
-    change_history_read_contract = build_change_history_read_contract(
-        trusted_metric_facts,
-        read_attempted=_latest_refresh_has_summary_metric(
-            latest_refresh,
-            "change_event_row_count",
-        ),
-        fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
-    )
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+        change_history_read_contract,
+    ) = _build_ads_primary_read_contracts(trusted_metric_facts, latest_refresh)
     (
         campaign_read_contract,
         derived_kpi_read_contract,
