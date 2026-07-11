@@ -192,6 +192,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   gates, blokad claimów i `apply_allowed=false`. Inventory, ActionObject i API
   contracts oraz Ruff, mypy i diff check przechodzą; runtime `/api/actions`
   pokazuje prepare-only content action z evidence i bez vendor write.
+- `seed_metric_action_candidates` ma teraz cienką granicę orkiestratora, a grupy
+  Merchant, GA4, Content, Google Ads, Localo i Social są osobnymi helperami.
+  Focused ActionObject/content API tests, Ruff, mypy i diff check przechodzą;
+  runtime zachowuje 21 akcji, content refresh w `prepare` z trzema evidence i
+  centralne `write_capable=0`. Następny krok `jnra` to przeniesienie grup do
+  modułów domenowych, żeby zmniejszyć LOC service.py, nie tylko dzielić funkcję.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
