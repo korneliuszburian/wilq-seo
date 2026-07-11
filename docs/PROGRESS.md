@@ -129,8 +129,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
 - Latest `c9h9.4` complexity run: 378 Python files / 131133 non-empty LOC,
-  8 changed Python files, 0 frozen growth files, 2 focused test-function
-  budget violations (121 and 105 lines). The typed apply seam remains bounded.
+  8 changed Python files, 0 frozen growth files, 3 focused test-function
+  budget violations (121, 105 and 130 lines). The extra route proof is a
+  deliberate integration test; no production monolith grew.
 
 ## Kolejność wykonania
 

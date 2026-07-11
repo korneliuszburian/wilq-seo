@@ -35,7 +35,7 @@ def _get_mutation_readiness(action_id: str) -> dict[str, Any]:
 
 def _get_mutation_readiness_summary() -> dict[str, Any]:
     response = TestClient(app).get("/api/actions/mutation-readiness")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = cast(dict[str, Any], response.json())
     assert data["response_type"] == "action_mutation_readiness_summary"
     return data
@@ -472,6 +472,138 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
     )
     assert mismatch is None
     assert mismatch_errors == ["Canonical URL nie pasuje do zatwierdzonego handoffu."]
+
+
+def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_binding(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "route_apply.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    action = ActionObject(
+        id="act_apply_wordpress_draft_handoff",
+        title="Aktywuj zapis szkicu WordPress draft-only",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.medium,
+        status=ActionStatus.ready,
+        evidence_ids=["ev_wordpress_draft_apply_boundary"],
+        human_diagnosis="Test route apply.",
+        recommended_reason="Testuje centralną granicę.",
+        payload={"allowed_operation": "create_wordpress_draft"},
+        validation_status="valid",
+        created_by="test",
+        audit_events=[
+            AuditEvent(
+                id="audit_preview_route",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_preview_generated",
+                actor="operator_route",
+                summary="Podgląd.",
+            ),
+            AuditEvent(
+                id="audit_confirm_route",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_apply_confirmed",
+                actor="operator_route",
+                summary="Potwierdzenie.",
+            ),
+            AuditEvent(
+                id="audit_impact_route",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_impact_check_completed",
+                actor="operator_route",
+                summary="Impact check.",
+            ),
+        ],
+    )
+    handoff = SimpleNamespace(
+        id="handoff_route",
+        work_item_id="work_item_route",
+        final_canonical_url="https://ekologus.pl/route/",
+        publish_allowed=False,
+        destructive_update_allowed=False,
+    )
+    draft_package = SimpleNamespace(id="draft_package_route")
+    snapshot = SimpleNamespace(
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(draft_package=draft_package)
+        ),
+        wordpress_handoff=SimpleNamespace(
+            handoff_result=SimpleNamespace(handoff=handoff)
+        ),
+    )
+    review = SimpleNamespace(id="review_route")
+    monkeypatch.setattr("apps.api.wilq_api.routers.actions.get_action", lambda _id: action)
+    monkeypatch.setattr(
+        "wilq.actions.service.get_connector_status",
+        lambda _id: SimpleNamespace(configured=True),
+    )
+    monkeypatch.setattr(
+        "wilq.briefing.content_diagnostics.build_content_diagnostics_cached",
+        lambda: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        action_service,
+        "content_workflow_store",
+        lambda: SimpleNamespace(
+            latest_human_review=lambda _id: review,
+            latest_audit_for_review=lambda _id: SimpleNamespace(id="audit_content_route"),
+        ),
+    )
+    monkeypatch.setattr(
+        action_service,
+        "build_content_work_item_diagnostics_snapshot_response_for_work_item",
+        lambda *_args, **_kwargs: snapshot,
+    )
+    monkeypatch.setattr(
+        action_service,
+        "execute_content_wordpress_draft_handoff",
+        lambda **_kwargs: SimpleNamespace(
+            status="created",
+            mode="live",
+            external_write_attempted=True,
+            wordpress_post_id="42",
+            blockers=[],
+            boundary=SimpleNamespace(
+                allowed_operation="create_wordpress_draft",
+                dry_run_default=True,
+                live_write_enabled=True,
+                live_adapter_configured=True,
+                publish_allowed=False,
+                destructive_update_allowed=False,
+            ),
+            payload={},
+            model_dump=lambda **_kwargs: {
+                "status": "created",
+                "mode": "live",
+                "external_write_attempted": True,
+                "wordpress_post_id": "42",
+                "blockers": [],
+            },
+        ),
+    )
+
+    response = TestClient(app).post(
+        "/api/actions/act_apply_wordpress_draft_handoff/apply",
+        json={
+            "confirm": True,
+            "confirmed_by": "operator_route",
+            "wordpress_draft": {
+                "work_item_id": handoff.work_item_id,
+                "handoff_id": handoff.id,
+                "draft_package_id": draft_package.id,
+                "target_url": handoff.final_canonical_url,
+            },
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["applied"] is True
+    assert data["adapter_result"]["external_write_attempted"] is True
+    assert data["mutation_audit"]["adapter_reached"] is True
 
 
 def test_action_mutation_readiness_summary_reports_no_vendor_writes(

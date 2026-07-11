@@ -83,8 +83,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest `c9h9.4` complexity report (2026-07-11): 378 plików Python,
-131133 non-empty LOC, 8 zmienionych plików Python, 0 frozen growth files i 2
-budget violations w focused tests (121 i 105 linii). Łącznie slice zmienił
+131261 non-empty LOC, 8 zmienionych plików Python, 0 frozen growth files i 3
+budget violations w focused tests (121, 105 i 130 linii). Łącznie slice zmienił
 backend, connector, schemas, shared schema i dashboard API/testy; to celowy,
 ograniczony seam typed apply/adapter, nie mechaniczny split.
 
