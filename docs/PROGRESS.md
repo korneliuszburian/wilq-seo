@@ -124,7 +124,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   passes 1/1 in 7.8 s. Route-level cold first paint is still above the 5 s
   measured heading first paint `1.853 s` (<5 s). Lazy-route shell proof at 2 s:
   `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
-- `c9h9.12` jest w toku: `/knowledge` ładuje operating-map jako jedyny pierwszy
+- `c9h9.12` jest zamknięty: `/knowledge` ładuje operating-map jako jedyny pierwszy
   odczyt, a karty/playbooki dopiero po disclosure. `list_workflows()` używa już
   tylko `build_daily_command_center()`, a standalone cold map core spadł do
   `4.878 s` (11 bindings, 15 kart, 14 playbooków). Cache mapy ma 15 s; po
@@ -133,9 +133,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `0.003175 s`. Browser proof przy 3 s pokazuje
   decyzję i blokery bez pustego globalnego loadera:
   `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`; focused current
-  Playwright `1/1` przechodzi w `2.7 s` (29.2 s z uruchomieniem harnessu).
-  Pozostaje sprawdzić stabilność prewarmu na kolejnych restartach; nie wolno
-  przywracać współbieżnych katalogów ani traktować starego payloadu jako świeżego.
+  Playwright `1/1` przechodzi w `2.7 s` (29.2 s z uruchomieniem harnessu). Po
+  kolejnym managed restart health i map HTTP pozostały gotowe; świeżość źródeł
+  wiedzy nadal jest niezależna od cache latency. Nie przywracaj współbieżnych
+  katalogów ani nie traktuj starego payloadu jako świeżego.
 - `c9h9.10` jest zamknięty: Custom Segments korzysta z istniejącego Ads summary
   projection zamiast pełnego payloadu; focused Playwright `1/1` w `4.4 s`
   potwierdza kandydatów, forecast, evidence i blokady claims bez audience-size
