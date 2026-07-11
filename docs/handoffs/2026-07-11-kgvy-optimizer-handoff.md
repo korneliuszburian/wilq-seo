@@ -1,8 +1,8 @@
 # Handoff — `kgvy` optimizer readiness seam
 
 Data: 2026-07-11 20:05 Europe/Warsaw  
-Ostatni commit: `f3064ac` (`refactor: split Ads decision assembler`)  
-`origin/main` = `f3064ac`
+Ostatni commit: `6b00415` (`refactor: split blocked Ads target interpretation`)  
+`origin/main` = `6b00415`
 
 ## Wykonane
 
