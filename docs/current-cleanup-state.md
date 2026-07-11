@@ -74,7 +74,8 @@ Action Service; nie przywracaj direct WordPress write.
   no-write posture. Bead pozostaje otwarty dla kolejnych niezależnych seamów;
   nie wolno upraszczać ActionObject safety loop. Publiczny Service Profile
   knowledge-promotion constructor jest teraz w `wilq/actions/service_profile.py`;
-  private proposal constructor celowo pozostaje osobnym przyszłym seamem.
+  private proposal constructor jest w tym samym module, więc oba Service Profile
+  review seams są zakończone.
 
 ## Granica bezpieczeństwa
 

@@ -163,7 +163,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/service_profile.py`; `service.py` nadal buduje profile/review
   rows, a domenowy seam zachowuje evidence, `apply_allowed=false` i blokadę
   production-depth. Focused content/API contract, Ruff, mypy i diff check
-  przechodzą. Prywatna propozycja pozostaje osobnym seamem.
+  przechodzą.
+- Prywatna Service Profile proposal-promotion ma teraz analogiczny konstruktor
+  w `wilq/actions/service_profile.py`; service buduje tylko redacted review rows,
+  a domenowy moduł zachowuje `redacted`, evidence, `apply_allowed=false` i
+  zablokowane prywatne twierdzenia. Oba Service Profile review seams są pokryte
+  focused content/API tests.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
