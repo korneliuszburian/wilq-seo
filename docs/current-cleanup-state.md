@@ -51,6 +51,11 @@ przywracaj direct WordPress write.
 - Async slice utrzymuje 392 pliki Pythona i 132 145 niepustych linii; raport
   complexity wskazuje tylko istniejące przekroczenie `_metric_dimension_value_label`
   w dotkniętym `schemas/core.py`, bez zamrożonego wzrostu.
+- Kolejny `4wwo` seam deduplikuje async refresh: drugi request dla tego samego
+  źródła zwraca istniejący `queued`/`running` refresh-run zamiast uruchamiać drugi
+  odczyt. To jest minimalna ochrona przed podwójnym kliknięciem i przyszłym
+  auto-refresh storm; pełne trigger/rate-limit/backoff/audit nadal pozostają poza
+  zakresem.
 - `c9h9.13` Merchant ma cache 15 s i prewarm w managed lifespan; HTTP proof po
   restarcie to `0.004860 s` / `0.007203 s`, a desktop/mobile screenshoty pokazują
   decyzję przed kolejką szczegółów. Bead jest zamknięty.

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from apps.api.wilq_api.routers import connectors as connectors_router
 from tests._contract_support.api_client import client
 from tests._contract_support.env import clear_google_ads_env
 
@@ -99,3 +100,26 @@ def test_async_connector_refresh_returns_queued_run_and_finishes_read_only(
     assert finished["status"] in {"blocked", "failed", "completed"}
     assert finished["external_call_attempted"] is False
     assert "async contract test" not in json.dumps(finished)
+
+
+def test_async_connector_refresh_reuses_active_run(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "async_dedupe_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    monkeypatch.setattr(connectors_router, "complete_queued_connector_refresh", lambda *args: None)
+
+    first = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "run_async": True, "reason": "dedupe contract test"},
+    )
+    second = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "run_async": True, "reason": "dedupe contract test"},
+    )
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["id"] == second.json()["id"]
+    assert second.json()["status"] == "queued"

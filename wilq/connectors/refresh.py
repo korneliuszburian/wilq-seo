@@ -96,6 +96,13 @@ def queue_connector_refresh(
     connector = get_connector_status(connector_id)
     if connector is None:
         return None
+    active_runs = [
+        run
+        for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id)
+        if run.status in {ConnectorRefreshStatus.queued, ConnectorRefreshStatus.running}
+    ]
+    if active_runs:
+        return active_runs[0]
     started_at = utc_now()
     run_id = f"refresh_{connector_id}_{uuid4().hex[:12]}"
     return local_state_store().save_connector_refresh_run(

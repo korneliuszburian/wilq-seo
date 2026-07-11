@@ -25,6 +25,9 @@ w git, Beads i `docs/progress/archive/`.
   pozostaje kompatybilna; automatyczny stale-trigger jest świadomie poza zakresem.
   Live proof 2026-07-11: Google Sheets `refresh_google_sheets_1204e9337620`
   queued → completed, `external_call_attempted=false`, bez sekretów.
+- Async refresh deduplikuje teraz aktywny run per connector: drugi queued/running
+  request zwraca ten sam `run_id` i nie tworzy równoległego odczytu. Focused
+  redaction/async contract suite: 4 passed; Ruff, mypy i diff check green.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
