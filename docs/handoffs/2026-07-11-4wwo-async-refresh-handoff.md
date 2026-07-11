@@ -53,6 +53,6 @@ następny refaktor `service.py` musi wybierać inną potwierdzoną granicę.
 
 ## Kontrola repo
 
-- Ostatni push: `origin/main` wskazuje `3771c02` przed bieżącym commitem docs.
+- Ostatni push: `origin/main` wskazuje `c45c293`.
 - Worktree po commicie powinien być czysty; przed następnym slice’em sprawdź
   `rtk git status --short`, `rtk bd ready --json` i health API.
