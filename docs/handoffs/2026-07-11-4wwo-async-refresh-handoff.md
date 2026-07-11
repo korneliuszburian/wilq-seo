@@ -1,8 +1,8 @@
 # Handoff — `wilq-seo-4wwo` async refresh
 
-Data: 2026-07-11 19:25 Europe/Warsaw  
-Ostatni commit: `4e6e925` (`fix: block refresh while connector run is active`)  
-`origin/main` = `4e6e925`
+Data: 2026-07-11 19:35 Europe/Warsaw  
+Ostatni commit: `ee53436` (`fix: respect connector refresh eligibility in dashboard`)  
+`origin/main` = `ee53436`
 
 ## Wykonane
 
@@ -49,6 +49,6 @@ przez brak świeżego, actionable kandydata contentowego.
 
 ## Kontrola repo
 
-- Ostatni push: `origin/main` wskazuje `4e6e925`.
+- Ostatni push: `origin/main` wskazuje `ee53436`.
 - Worktree po commicie powinien być czysty; przed następnym slice’em sprawdź
   `rtk git status --short`, `rtk bd ready --json` i health API.
