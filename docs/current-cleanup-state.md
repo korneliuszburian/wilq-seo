@@ -202,6 +202,10 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_build_business_context_read_contract`; blocked claims, target interpretation,
   strategy-review contract i evidence lineage pozostają typed. Complexity:
   398 / 132665 LOC; 8 znanych violations, następny target to strategy review.
+- Strategy-review status, summary, safe next step, missing contracts i action IDs
+  są teraz w `_strategy_review_operator_state`; readiness contract zachowuje
+  `apply_allowed=false` i `destructive=false`. Complexity: 398 / 132668 LOC;
+  7 znanych violations.
 
 ## Granica bezpieczeństwa
 

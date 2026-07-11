@@ -1817,6 +1817,49 @@ def _business_context_read_contract(
     )
 
 
+def _strategy_review_operator_state(
+    *,
+    strategy_review_approved: bool,
+    missing_read_contracts: list[str],
+) -> tuple[Literal["ready", "blocked"], str, str, list[str], list[str]]:
+    if strategy_review_approved:
+        return (
+            "ready",
+            "Ocena strategii Ads przez człowieka jest zatwierdzona do przygotowania. To pozwala "
+            "używać potwierdzonego celu w ocenie, ale nie odblokowuje zapisu zmian "
+            "ani automatycznej optymalizacji.",
+            "Użyj zatwierdzonej oceny jako kontekstu decyzji. Każda ścieżka zapisu "
+            "nadal wymaga osobnego sprawdzenia w WILQ, podglądu, potwierdzenia i audytu.",
+            [],
+            [],
+        )
+    return (
+        "blocked",
+        "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może "
+        "tylko przygotować kolejki do oceny. Ocena celu, ocena "
+        "opłacalności, skalowanie i zapis zmian pozostają zablokowane.",
+        "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel "
+        "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu, "
+        "a potem zapisz wynik oceny.",
+        _unique(
+            [
+                missing
+                for missing in missing_read_contracts
+                if missing
+                in {
+                    "profit_margin",
+                    "business_goal",
+                    "human_budget_goal",
+                    "target_roas_or_cpa",
+                    "human_strategy_review",
+                    "approved_human_strategy_review",
+                }
+            ]
+        ),
+        [ADS_STRATEGY_REVIEW_ACTION_ID],
+    )
+
+
 def _strategy_review_readiness_contract(
     *,
     strategy_review: Any | None,
@@ -1858,48 +1901,10 @@ def _strategy_review_readiness_contract(
         "target_roas": target_roas,
         "target_cpa_micros": target_cpa_micros,
     }
-    if strategy_review_approved:
-        summary = (
-            "Ocena strategii Ads przez człowieka jest zatwierdzona do przygotowania. To pozwala "
-            "używać potwierdzonego celu w ocenie, ale nie odblokowuje zapisu zmian "
-            "ani automatycznej "
-            "optymalizacji."
-        )
-        next_step = (
-            "Użyj zatwierdzonej oceny jako kontekstu decyzji. Każda ścieżka zapisu "
-            "nadal wymaga osobnego sprawdzenia w WILQ, podglądu, potwierdzenia i audytu."
-        )
-        status: Literal["ready", "blocked"] = "ready"
-        contract_missing: list[str] = []
-        action_ids: list[str] = []
-    else:
-        summary = (
-            "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może "
-            "tylko przygotować kolejki do oceny. Ocena celu, ocena "
-            "opłacalności, skalowanie i zapis zmian pozostają zablokowane."
-        )
-        next_step = (
-            "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel "
-            "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu, "
-            "a potem zapisz wynik oceny."
-        )
-        status = "blocked"
-        contract_missing = _unique(
-            [
-                missing
-                for missing in missing_read_contracts
-                if missing
-                in {
-                    "profit_margin",
-                    "business_goal",
-                    "human_budget_goal",
-                    "target_roas_or_cpa",
-                    "human_strategy_review",
-                    "approved_human_strategy_review",
-                }
-            ]
-        )
-        action_ids = [ADS_STRATEGY_REVIEW_ACTION_ID]
+    status, summary, next_step, contract_missing, action_ids = _strategy_review_operator_state(
+        strategy_review_approved=strategy_review_approved,
+        missing_read_contracts=missing_read_contracts,
+    )
     latest_outcome = strategy_review.outcome if strategy_review is not None else None
     return AdsStrategyReviewReadinessContract(
         status=status,

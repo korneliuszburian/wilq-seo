@@ -56,6 +56,8 @@ Ostatni commit: `0497808` (`docs: refresh live Ads handoff state`)
 - Typed business-context response assembly jest w
   `_build_business_context_read_contract`; nie wracaj do inline blocked-claims
   ani target/strategy contract construction.
+- Strategy-review ready/blocked branch jest w `_strategy_review_operator_state`;
+  nie wracaj do inline status/action/missing-contract branch.
 
 ## Dowody
 
@@ -75,9 +77,8 @@ Ostatni commit: `0497808` (`docs: refresh live Ads handoff state`)
 
 ## Następny slice
 
-Następny potwierdzony seam to `_strategy_review_readiness_contract` (103 linie),
-wybrany po aktualnym complexity audit. Zachować status review, required
-validation, blocked claims, evidence IDs i brak możliwości apply.
+Następny potwierdzony seam wybierz po aktualnym complexity audit i `bd ready`;
+nie wracaj do business-context ani strategy-review operator-state helpers.
 
 ## Kontrola repo
 

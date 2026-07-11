@@ -117,6 +117,9 @@ w git, Beads i `docs/progress/archive/`.
 - `_build_business_context_read_contract` przejął blocked claims i typed response
   assembly; target interpretation, strategy review, evidence i safe next step
   pozostają bez zmian. Complexity: 398 / 132665 LOC; violations spadły do 8.
+- `_strategy_review_operator_state` przejął branch ready/blocked strategy review;
+  missing contracts, action ID, safe next step i apply blockers pozostają bez zmian.
+  Complexity: 398 / 132668 LOC; violations spadły do 7.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
