@@ -9,10 +9,10 @@ w git, Beads i `docs/progress/archive/`.
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 95 740 metric facts i 4 507
+- Managed API i dashboard są zdrowe. DuckDB ma 98 793 metric facts i 4 511
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
-- Kolejka contentowa jest `blocked`: 2 kandydatów, 0 actionable, minimum 3.
+- Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.
   Homepage ma dowody z GSC i publicznego WordPressa; Ahrefs-only candidate nie
   ma bezpiecznego targetu/canonical.
 - Queue i selected snapshot przenoszą teraz typed freshness; stale primary
@@ -93,9 +93,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Próba read-only odświeżenia dla `r564.3` 2026-07-11: GSC zwrócił HTTP 200,
   ale kontrakt oznaczył odczyt jako niepełny (`evidence_count=2`); WordPress
   ekologus nie odpowiedział w 60 s. Kolejka po próbie nadal ma 2 kandydatów,
-  0 actionable i blokery `content_sources_require_refresh` oraz
-  `not_enough_actionable_candidates`. Świeży kandydat pozostaje zablokowany
-  przez stan zewnętrzny, nie przez brak implementacji karty.
+  1 actionable i blocker `not_enough_actionable_candidates`; stale pozostają
+  sklep WordPress, GA4 i Ahrefs. Świeży, nieblokowany kandydat nadal nie jest
+  potwierdzony, więc `r564.3` pozostaje otwarty przez stan zewnętrzny, nie brak
+  implementacji karty.
 - Mobile freshness banner jest teraz skondensowany (summary poniżej desktop
   breakpointu), a pięć statusów źródeł tworzy poziomy scroll zamiast pięciu
   pionowych kart. Dzięki temu decision card ma realną szansę wejść w 390×844;
