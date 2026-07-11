@@ -82,8 +82,10 @@ from wilq.briefing.ads_impression_share import (
 )
 from wilq.briefing.ads_keyword_planner import build_keyword_planner_section
 from wilq.briefing.ads_metric_tiles import (
+    business_context_metric_tiles,
     campaign_activity_metric_tiles,
     campaign_triage_metric_tiles,
+    derived_kpi_metric_tiles,
 )
 from wilq.briefing.ads_metric_utils import (
     clean_metric_tiles as _clean_metric_tiles,
@@ -5035,50 +5037,9 @@ def _ads_decision_metric_tiles(
     if decision.decision_type == "review_campaign_triage":
         return campaign_triage_metric_tiles(decision)
     if decision.decision_type == "review_business_context":
-        return _clean_metric_tiles(
-            {
-                "braki": len(decision.missing_read_contracts),
-                "blokady": len(decision.blocked_claims),
-                "ustawione pola": len(decision.allowed_metrics),
-                "warunki sprawdzenia": len(decision.operator_review_gates),
-                "polityki": decision.metric_tiles.get("polityki", 0),
-            }
-        )
+        return business_context_metric_tiles(decision)
     if decision.decision_type == "review_derived_kpi":
-        rows_with_cpa = sum(
-            1 for row in decision.derived_kpi_rows if row.cost_per_conversion_micros is not None
-        )
-        rows_with_roas = sum(1 for row in decision.derived_kpi_rows if row.roas is not None)
-        rows_with_target_context = sum(
-            1
-            for row in decision.derived_kpi_rows
-            if row.roas_vs_target is not None or row.cpa_vs_target_micros is not None
-        )
-        tiles: dict[str, int | float | str | None] = {
-            "kampanie": len(decision.derived_kpi_rows),
-            "wiersze kosztu pozyskania celu": rows_with_cpa,
-            "wiersze zwrotu z reklam": rows_with_roas,
-        }
-        if rows_with_target_context:
-            tiles["targety"] = rows_with_target_context
-        rows_within_target = sum(
-            1 for row in decision.derived_kpi_rows if row.target_status == "within_target"
-        )
-        rows_outside_target = sum(
-            1 for row in decision.derived_kpi_rows if row.target_status == "outside_target"
-        )
-        rows_with_spend_without_conversions = sum(
-            1
-            for row in decision.derived_kpi_rows
-            if row.target_status == "spend_without_conversions"
-        )
-        if rows_within_target:
-            tiles["w celu"] = rows_within_target
-        if rows_outside_target:
-            tiles["poza celem"] = rows_outside_target
-        if rows_with_spend_without_conversions:
-            tiles["koszt bez konw."] = rows_with_spend_without_conversions
-        return _clean_metric_tiles(tiles)
+        return derived_kpi_metric_tiles(decision)
     if decision.decision_type == "review_budget_context":
         budget_tiles: dict[str, int | float | str | None] = {
             "budżety": len(decision.budget_rows),

@@ -56,6 +56,10 @@ w git, Beads i `docs/progress/archive/`.
   (`campaign_activity`, `campaign_triage`) są w nowych modułach; response i
   claim blockers pozostają bez zmian. Full Ads contracts, Ruff, mypy, complexity
   i diff check green. Pozostały dispatcher branches czekają na osobny bounded seam.
+- Kolejny metric-tile continuation wydzielił `business_context` i `derived_kpi`;
+  zachowane są target buckets, formatowanie i blokady CPA/ROAS. Complexity po
+  seamu: 398 plików Python / 132419 LOC; pozostałe tile branches nie są jeszcze
+  aktywną prawdą nowego modułu.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak

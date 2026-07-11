@@ -17,6 +17,8 @@ Ostatni commit: `0b7567d` (`refactor: extract Ads campaign metric tiles`)
 - Pierwszy formatter-safe metric-tile fragment jest teraz w
   `ads_metric_utils.py`/`ads_metric_tiles.py` dla `campaign_activity` i
   `campaign_triage`; pozostałe gałęzie dispatchera nie zostały przeniesione.
+- Drugi fragment obejmuje `business_context` i `derived_kpi`; nie wracaj do tych
+  dwóch branchy w dispatcherze.
 
 ## Dowody
 

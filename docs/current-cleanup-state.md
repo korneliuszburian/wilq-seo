@@ -143,6 +143,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   builders `campaign_activity`/`campaign_triage` są w `ads_metric_utils.py` i
   `ads_metric_tiles.py`; dispatcher w `ads_diagnostics.py` deleguje tylko te
   dwa typy. Pozostałe gałęzie pozostają świadomie nietknięte.
+- Drugi metric-tile fragment obejmuje `business_context` i `derived_kpi`; target
+  buckets, formatowanie oraz blokady CPA/ROAS pozostają w typed builderach.
+  Dispatcher jest krótszy, ale pozostałe typy nadal czekają na osobne seamy.
 
 ## Granica bezpieczeństwa
 
@@ -201,7 +204,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132409 non-empty LOC. Bounded content seed extraction, metric-candidate
+132419 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with
