@@ -504,6 +504,42 @@ def _build_ads_diagnostic_sections(
     return [_with_ads_section_lineage(section) for section in sections]
 
 
+def _build_ads_search_term_read_contracts(
+    trusted_metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+    currency_code: str | None,
+) -> tuple[
+    AdsSearchTermsReadContract,
+    AdsSearchTermSafetyReadContract,
+    AdsKeywordMatchContextReadContract,
+    AdsKeywordPlannerReadContract,
+]:
+    search_terms_read_contract = _search_terms_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+        currency_code,
+    )
+    search_term_safety_read_contract = _search_term_safety_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+        currency_code,
+    )
+    keyword_match_context_read_contract = _keyword_match_context_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
+    keyword_planner_read_contract = _keyword_planner_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
+    return (
+        search_terms_read_contract,
+        search_term_safety_read_contract,
+        keyword_match_context_read_contract,
+        keyword_planner_read_contract,
+    )
+
+
 def _reconcile_search_term_read_contracts(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -833,23 +869,15 @@ def build_ads_diagnostics(
         impression_share_read_contract,
         business_context_read_contract,
     )
-    search_terms_read_contract = _search_terms_read_contract(
+    (
+        search_terms_read_contract,
+        search_term_safety_read_contract,
+        keyword_match_context_read_contract,
+        keyword_planner_read_contract,
+    ) = _build_ads_search_term_read_contracts(
         trusted_metric_facts,
         latest_refresh,
         account_currency_read_contract.currency_code,
-    )
-    search_term_safety_read_contract = _search_term_safety_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-        account_currency_read_contract.currency_code,
-    )
-    keyword_match_context_read_contract = _keyword_match_context_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-    )
-    keyword_planner_read_contract = _keyword_planner_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
     )
     (
         search_terms_read_contract,

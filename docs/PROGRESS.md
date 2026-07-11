@@ -5,11 +5,11 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-11
 
-- `kgvy` reconciliation continuation: `_reconcile_ads_change_history_contracts`
-  wydziela inline aktualizacje missing contracts po gotowym odczycie historii
-  zmian. Nie zmienia evidence/source/freshness ani blokad ActionObject; focused
-  Ads contracts, Ruff, mypy, complexity i diff check przechodzą. Następny seam
-  to budget apply preview oraz profit-margin/budget-goal reconciliation.
+- `kgvy` reconciliation boundary jest domknięty: `_reconcile_ads_change_history_contracts`
+  oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline
+  aktualizacje missing contracts. Nie zmieniają evidence/source/freshness ani
+  blokad ActionObject; focused Ads contracts, Ruff, mypy, complexity i diff check
+  przechodzą. Następny seam to assembly search-term read contracts.
 - Reconciliation boundary jest domknięty przez
   `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
   nie zawiera już inline aktualizacji missing contracts dla tych zależności.
