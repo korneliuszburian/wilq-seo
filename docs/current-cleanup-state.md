@@ -166,6 +166,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   decision queue, sections/handoff i nested contracts. Response labels, evidence
   summaries i blocked-claim labels pozostają bez zmian; complexity ma 11 znanych
   pozostałych monolith violations.
+- Decision queue ma wydzieloną fail-closed gałąź `blocked_handoff`; OAuth/access
+  blocker jest składany osobno, a główny assembler nie zmienia lineage ani claim
+  safety. Pozostały większe grupy ready-decision assembly.
 
 ## Granica bezpieczeństwa
 
@@ -224,7 +227,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
   2 914 linii.
 
 Latest complexity report (2026-07-11): 398 plików Python,
-132477 non-empty LOC. Bounded content seed extraction, metric-candidate
+132482 non-empty LOC. Bounded content seed extraction, metric-candidate
 orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
 recommendation/change-history/search-term/custom-segment/negative-keyword/
 Demand Gen module extraction were audited with

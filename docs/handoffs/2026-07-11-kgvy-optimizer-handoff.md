@@ -31,6 +31,8 @@ Ostatni commit: `fd1fa52` (`refactor: split Ads marketer label hydration`)
   do tych branchy w dispatcherze. Proste tile branches są zakończone.
 - Label hydration jest rozbita na summary/decision/surface/contract helpers;
   nie wracaj do jednego monolitycznego `_hydrate_ads_marketer_labels`.
+- Fail-closed `blocked_handoff` decision branch jest w `_blocked_ads_decision_queue`;
+  nie wracaj do inline OAuth blocker assembly.
 
 ## Dowody
 

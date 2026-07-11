@@ -4663,6 +4663,31 @@ def _safe_action_section(
     )
 
 
+def _blocked_ads_decision_queue(
+    blocked_handoff: AdsBlockedHandoff,
+    currency_code: str | None,
+) -> list[AdsDecisionItem]:
+    return [
+        _with_ads_decision_lineage(
+            AdsDecisionItem(
+                id="ads_fix_access_before_analysis",
+                decision_type="fix_ads_access",
+                status="blocked",
+                title="Napraw dostęp Google Ads przed analizą",
+                summary=blocked_handoff.summary,
+                rationale=blocked_handoff.marketer_message,
+                next_step="Wykonaj ścieżkę naprawy OAuth i dopiero potem odczyt Google Ads.",
+                source_connectors=blocked_handoff.source_connectors,
+                evidence_ids=blocked_handoff.evidence_ids,
+                action_ids=blocked_handoff.action_ids,
+                blocked_claims=blocked_handoff.blocked_claims,
+                risk=ActionRisk.medium,
+            ),
+            currency_code,
+        )
+    ]
+
+
 def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
     business_context_read_contract: AdsBusinessContextReadContract,
@@ -4685,25 +4710,7 @@ def _ads_decision_queue(
     currency_code: str | None,
 ) -> list[AdsDecisionItem]:
     if blocked_handoff is not None:
-        return [
-            _with_ads_decision_lineage(
-                AdsDecisionItem(
-                    id="ads_fix_access_before_analysis",
-                    decision_type="fix_ads_access",
-                    status="blocked",
-                    title="Napraw dostęp Google Ads przed analizą",
-                    summary=blocked_handoff.summary,
-                    rationale=blocked_handoff.marketer_message,
-                    next_step="Wykonaj ścieżkę naprawy OAuth i dopiero potem odczyt Google Ads.",
-                    source_connectors=blocked_handoff.source_connectors,
-                    evidence_ids=blocked_handoff.evidence_ids,
-                    action_ids=blocked_handoff.action_ids,
-                    blocked_claims=blocked_handoff.blocked_claims,
-                    risk=ActionRisk.medium,
-                ),
-                currency_code,
-            )
-        ]
+        return _blocked_ads_decision_queue(blocked_handoff, currency_code)
 
     decisions: list[AdsDecisionItem] = []
     if campaign_read_contract.campaign_rows:

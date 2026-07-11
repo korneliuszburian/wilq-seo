@@ -81,6 +81,8 @@ w git, Beads i `docs/progress/archive/`.
   `ads_diagnostics.py`; summary/decision/sections/nested contract labels i claim
   blockers zachowane. Complexity: 398 plików Python / 132477 LOC, 11 znanych
   pozostałych violations.
+- Decision queue ma osobny `_blocked_ads_decision_queue` dla fail-closed OAuth/access
+  handoff; evidence, blocked claims i priority lineage pozostają bez zmian.
 - Cold `/content-workflow` nie blokuje już pierwszej decyzji: API prewarmuje
   content diagnostics, queue reuse’uje ten sam build, a queue-owned karta
   renderuje się przed snapshotem. Focused E2E ma budżet queue `<5 s` i brak
