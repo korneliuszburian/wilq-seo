@@ -10,8 +10,9 @@ readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ad
 wewnątrz `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i search
-contract-label hydration boundaries są wydzielone. Następny potwierdzony kandydat
-to budget/recommendation/impression/change-history contract labels.
+contract-label hydration boundaries są wydzielone. Budget/recommendation/
+impression/change-history labels są również wydzielone. Następny potwierdzony
+kandydat to change-impact/optimizer contract labels.
 Polityka
 automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
@@ -253,7 +254,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_reconcile_ads_budget_and_business_context_contracts`; `budget_apply_preview`,
   `profit_margin` i `human_budget_goal` pozostają kontraktowo zależne od gotowych
   odczytów. Reconciliation inline w `build_ads_diagnostics` jest domknięty;
-  complexity po seamu to 398 plików / 133155 LOC i dwa jawne frozen/file-orchestrator
+  complexity po seamu to 398 plików / 133160 LOC i dwa jawne frozen/file-orchestrator
   violations do dalszego, niezależnego wyboru.
 - Core search-term read-contract assembly (`terms`, `safety`, `keyword match`,
   `planner`) jest teraz w `_build_ads_search_term_read_contracts`; kolejność
@@ -284,6 +285,9 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Search contract-label hydration jest teraz w `_hydrate_ads_search_contract_labels`;
   review summary, negative keywords i keyword match context zachowują wszystkie
   missing-contract, blocked-claim i review-gate summaries.
+- Budget/performance contract-label hydration jest teraz w
+  `_hydrate_ads_budget_performance_contract_labels`; currency preview labels,
+  blocked-claim summaries i evidence/freshness labels pozostają bez zmian.
 - Search-term review assembly (`review_summary`, `ngram`) jest teraz w
   `_build_ads_search_term_review_contracts`; późniejsze action-ID hydration
   pozostaje osobno. Nie zmieniono kolejności, evidence/source/freshness ani
