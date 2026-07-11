@@ -55,4 +55,12 @@ describe("GenericSurface", () => {
     );
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
   });
+
+  it("defers knowledge catalogs until the operator opens their disclosure", () => {
+    const source = readFileSync("src/routes/GenericSurface.tsx", "utf8");
+
+    expect(source).toContain('enabled: routeKind === "knowledge" && showKnowledgeCards');
+    expect(source).toContain('enabled: routeKind === "knowledge" && showKnowledgePlaybooks');
+    expect(source).toContain("setShowKnowledgeCards");
+  });
 });

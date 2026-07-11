@@ -52,6 +52,9 @@ from wilq.briefing.merchant_diagnostics import (
 )
 from wilq.briefing.tactical_queue import clear_tactical_queue_cache
 from wilq.connectors.registry import list_connector_statuses
+from wilq.knowledge.operating_map import (
+    clear_knowledge_operating_map_cache,
+)
 from wilq.opportunities.engine import list_opportunities
 
 DEFAULT_CORS_ORIGINS = (
@@ -167,6 +170,7 @@ def clear_api_view_model_caches() -> None:
     clear_merchant_diagnostics_cache()
     clear_action_list_cache()
     clear_ads_summary_cache()
+    clear_knowledge_operating_map_cache()
     clear_daily_runtime_cache()
     clear_skill_context_cache()
 

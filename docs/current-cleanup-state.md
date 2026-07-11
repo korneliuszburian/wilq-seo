@@ -52,6 +52,10 @@ splitu monolitu ani od przywracania direct WordPress write.
   focused current Playwright 1/1 (7.8 s) przechodzi, ale route-level cold first
   measured heading first paint `1.853 s` (<5 s), a Bead jest zamknięty. Lazy-route
   shell proof przy 2 s: `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
+- `c9h9.12` Knowledge ma progressive disclosure: operating-map ładuje się jako
+  pierwszy odczyt, cards/playbooks dopiero po kliknięciu. Cache 15 s daje
+  `18.940732 s` cold / `0.053012 s` warm; prewarm jest celowo wyłączony, bo
+  blokowałby startup health. Proof: `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`.
 
 ## Granica bezpieczeństwa
 

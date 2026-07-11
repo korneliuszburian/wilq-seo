@@ -35,6 +35,9 @@ import { WorkflowRunList } from "./WorkflowPanels";
 export function GenericSurface({ routeName }: { routeName: string }) {
   const compactRoute = compactRouteConfig(routeName);
   const routeKind = genericRouteKind(routeName, compactRoute);
+  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
+  const [showKnowledgeCards, setShowKnowledgeCards] = useState(false);
+  const [showKnowledgePlaybooks, setShowKnowledgePlaybooks] = useState(false);
   const connectors = useQuery({
     queryKey: ["connectors"],
     queryFn: getConnectors,
@@ -58,12 +61,12 @@ export function GenericSurface({ routeName }: { routeName: string }) {
   const knowledgeCards = useQuery({
     queryKey: ["knowledge-cards"],
     queryFn: getKnowledgeCards,
-    enabled: routeKind === "knowledge"
+    enabled: routeKind === "knowledge" && showKnowledgeCards
   });
   const playbooks = useQuery({
     queryKey: ["knowledge-playbooks"],
     queryFn: getKnowledgePlaybooks,
-    enabled: routeKind === "knowledge"
+    enabled: routeKind === "knowledge" && showKnowledgePlaybooks
   });
   if (isGenericSurfaceLoading(routeKind, connectors, workflows, workflowRuns)) {
     return <LoadingBand />;
@@ -85,6 +88,12 @@ export function GenericSurface({ routeName }: { routeName: string }) {
         knowledgeMap={knowledgeMap}
         knowledgeCards={knowledgeCards}
         playbooks={playbooks}
+        showKnowledgeMap={showKnowledgeMap}
+        setShowKnowledgeMap={setShowKnowledgeMap}
+        showKnowledgeCards={showKnowledgeCards}
+        setShowKnowledgeCards={setShowKnowledgeCards}
+        showKnowledgePlaybooks={showKnowledgePlaybooks}
+        setShowKnowledgePlaybooks={setShowKnowledgePlaybooks}
       />
     </main>
   );
@@ -167,7 +176,13 @@ function GenericSurfaceSections({
   workflowRuns,
   knowledgeMap,
   knowledgeCards,
-  playbooks
+  playbooks,
+  showKnowledgeMap,
+  setShowKnowledgeMap,
+  showKnowledgeCards,
+  setShowKnowledgeCards,
+  showKnowledgePlaybooks,
+  setShowKnowledgePlaybooks
 }: {
   routeKind: GenericRouteKind;
   compactRoute: CompactRouteConfig | undefined;
@@ -177,6 +192,12 @@ function GenericSurfaceSections({
   knowledgeMap: UseQueryResult<KnowledgeOperatingMapResponse>;
   knowledgeCards: UseQueryResult<KnowledgeCard[]>;
   playbooks: UseQueryResult<MarketingPlaybook[]>;
+  showKnowledgeMap: boolean;
+  setShowKnowledgeMap: (value: boolean | ((current: boolean) => boolean)) => void;
+  showKnowledgeCards: boolean;
+  setShowKnowledgeCards: (value: boolean | ((current: boolean) => boolean)) => void;
+  showKnowledgePlaybooks: boolean;
+  setShowKnowledgePlaybooks: (value: boolean | ((current: boolean) => boolean)) => void;
 }) {
   return (
     <div className="grid gap-6">
@@ -188,6 +209,12 @@ function GenericSurfaceSections({
           knowledgeMap={knowledgeMap}
           knowledgeCards={knowledgeCards}
           playbooks={playbooks}
+          showKnowledgeMap={showKnowledgeMap}
+          setShowKnowledgeMap={setShowKnowledgeMap}
+          showKnowledgeCards={showKnowledgeCards}
+          setShowKnowledgeCards={setShowKnowledgeCards}
+          showKnowledgePlaybooks={showKnowledgePlaybooks}
+          setShowKnowledgePlaybooks={setShowKnowledgePlaybooks}
         />
       ) : null}
       {routeKind === "settings" ? <SettingsSurfaceSections connectors={connectors} /> : null}
@@ -510,15 +537,24 @@ function formatSystemRunDescription(run: WorkflowRun) {
 function KnowledgeSurfaceSections({
   knowledgeMap,
   knowledgeCards,
-  playbooks
+  playbooks,
+  showKnowledgeMap,
+  setShowKnowledgeMap,
+  showKnowledgeCards,
+  setShowKnowledgeCards,
+  showKnowledgePlaybooks,
+  setShowKnowledgePlaybooks
 }: {
   knowledgeMap: UseQueryResult<KnowledgeOperatingMapResponse>;
   knowledgeCards: UseQueryResult<KnowledgeCard[]>;
   playbooks: UseQueryResult<MarketingPlaybook[]>;
+  showKnowledgeMap: boolean;
+  setShowKnowledgeMap: (value: boolean | ((current: boolean) => boolean)) => void;
+  showKnowledgeCards: boolean;
+  setShowKnowledgeCards: (value: boolean | ((current: boolean) => boolean)) => void;
+  showKnowledgePlaybooks: boolean;
+  setShowKnowledgePlaybooks: (value: boolean | ((current: boolean) => boolean)) => void;
 }) {
-  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
-  const [showKnowledgeCards, setShowKnowledgeCards] = useState(false);
-  const [showKnowledgePlaybooks, setShowKnowledgePlaybooks] = useState(false);
   const map = knowledgeMap.data;
   const cards = knowledgeCards.data ?? [];
   const bindings = map?.bindings ?? [];

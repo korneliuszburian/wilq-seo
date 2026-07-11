@@ -123,6 +123,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   passes 1/1 in 7.8 s. Route-level cold first paint is still above the 5 s
   measured heading first paint `1.853 s` (<5 s). Lazy-route shell proof at 2 s:
   `.local-lab/proof/c9h9-9-ads-route-shell-2s.png`.
+- `c9h9.12` jest w toku: `/knowledge` ładuje operating-map jako jedyny pierwszy
+  odczyt, a karty/playbooki dopiero po disclosure. Cache mapy ma 15 s; cold/warm
+  HTTP po restarcie to `18.940732 s` / `0.053012 s`, więc prewarm pozostaje
+  wyłączony, aby nie blokować startup health. Browser proof przy 3 s pokazuje
+  decyzję i blokery bez pustego globalnego loadera:
+  `.local-lab/proof/c9h9-12-knowledge-progressive-3s.png`. Cold map nadal jest
+  potwierdzoną luką do zejścia poniżej 5 s.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
@@ -176,8 +183,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 ## Kolejność wykonania
 
 1. `r564.3` — decision/blocker/CTA w mobile first viewport; świeży kandydat nadal zależy od zewnętrznego refresh.
-2. `c9h9.12` — knowledge cold contention (następny aktywny slice podczas zewnętrznej blokady content).
-3. Secondary route latency: `c9h9.10`, `c9h9.12`; nie wyprzedza głównego content
+2. `c9h9.12` — knowledge cold contention (aktywny slice podczas zewnętrznej blokady content).
+3. Secondary route latency: `c9h9.10`; nie wyprzedza głównego content
    P0.
 
 `docs/audits/2026-07-10-cleanup-rebaseline.md` zawiera bieżącą mapę statusów i

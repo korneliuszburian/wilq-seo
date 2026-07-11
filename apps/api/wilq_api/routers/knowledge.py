@@ -10,7 +10,7 @@ from wilq.knowledge.compilers.playbook_compiler import (
     get_playbook,
     list_playbooks,
 )
-from wilq.knowledge.operating_map import build_knowledge_operating_map
+from wilq.knowledge.operating_map import build_knowledge_operating_map_cached
 from wilq.knowledge.taxonomy import list_knowledge_taxonomy
 from wilq.schemas import (
     KnowledgeCard,
@@ -59,7 +59,7 @@ def knowledge_playbook_detail(playbook_id: str) -> MarketingPlaybook:
 
 @router.get("/api/knowledge/operating-map", response_model=KnowledgeOperatingMapResponse)
 def knowledge_operating_map() -> KnowledgeOperatingMapResponse:
-    return build_knowledge_operating_map()
+    return build_knowledge_operating_map_cached()
 
 
 @router.post("/api/knowledge/condense", response_model=KnowledgeCompilerResult)

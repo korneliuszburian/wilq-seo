@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable
 from dataclasses import dataclass
+from time import monotonic
 
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.expert.rules import list_expert_rule_summaries
@@ -144,6 +146,17 @@ KNOWLEDGE_BINDINGS: tuple[KnowledgeBindingBlueprint, ...] = (
     ),
 )
 
+DEFAULT_KNOWLEDGE_MAP_CACHE_SECONDS = 15.0
+
+
+@dataclass(frozen=True)
+class KnowledgeOperatingMapCacheEntry:
+    created_at: float
+    operating_map: KnowledgeOperatingMapResponse
+
+
+_cached_knowledge_operating_map: KnowledgeOperatingMapCacheEntry | None = None
+
 
 def build_knowledge_operating_map() -> KnowledgeOperatingMapResponse:
     cards = {card.id: card for card in compile_playbook_cards()}
@@ -163,6 +176,52 @@ def build_knowledge_operating_map() -> KnowledgeOperatingMapResponse:
         binding_count=len(bindings),
         bindings=sorted(bindings, key=_binding_sort_key),
     )
+
+
+def build_knowledge_operating_map_cached() -> KnowledgeOperatingMapResponse:
+    """Reuse one operating-map build across dashboard reads."""
+    cached = _read_knowledge_operating_map_cache()
+    if cached is not None:
+        return cached
+    operating_map = build_knowledge_operating_map()
+    _write_knowledge_operating_map_cache(operating_map)
+    return operating_map
+
+
+def clear_knowledge_operating_map_cache() -> None:
+    global _cached_knowledge_operating_map
+    _cached_knowledge_operating_map = None
+
+
+def _read_knowledge_operating_map_cache() -> KnowledgeOperatingMapResponse | None:
+    cache_seconds = _knowledge_map_cache_seconds()
+    if cache_seconds <= 0 or _cached_knowledge_operating_map is None:
+        return None
+    if monotonic() - _cached_knowledge_operating_map.created_at > cache_seconds:
+        return None
+    return _cached_knowledge_operating_map.operating_map
+
+
+def _write_knowledge_operating_map_cache(operating_map: KnowledgeOperatingMapResponse) -> None:
+    global _cached_knowledge_operating_map
+    if _knowledge_map_cache_seconds() <= 0:
+        return
+    _cached_knowledge_operating_map = KnowledgeOperatingMapCacheEntry(
+        created_at=monotonic(),
+        operating_map=operating_map,
+    )
+
+
+def _knowledge_map_cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_KNOWLEDGE_MAP_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_KNOWLEDGE_MAP_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_KNOWLEDGE_MAP_CACHE_SECONDS
 
 
 def _binding_from_blueprint(
