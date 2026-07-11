@@ -9,19 +9,20 @@ w git, Beads i `docs/progress/archive/`.
   oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline
   aktualizacje missing contracts. Nie zmieniają evidence/source/freshness ani
   blokad ActionObject; focused Ads contracts, Ruff, mypy, complexity i diff check
-  przechodzą. Następny seam to assembly search-term read contracts.
+  przechodzą. Core assembly search-term contracts jest domknięty; następny seam
+  to review summary/ngram.
 - Reconciliation boundary jest domknięty przez
   `_reconcile_ads_budget_and_business_context_contracts`; `build_ads_diagnostics`
   nie zawiera już inline aktualizacji missing contracts dla tych zależności.
   Complexity: 398 plików Python / 132908 LOC, 2 jawne violations (plik i główny
   orchestrator). Następny kandydat po aktualnym complexity/review to mały helper
-  assembly search-term read contracts (terms/safety/match/planner), bez ponownego
-  dotykania gotowych reconciliation seamów.
+  assembly search-term review summary/ngram, bez ponownego dotykania gotowych
+  reconciliation ani core read-contract seamów.
 - Główną trasą marketera jest `/content-workflow`; usunięty planner nie jest
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 98 873 metric facts i 4 551
+- Managed API i dashboard są zdrowe. DuckDB ma 98 875 metric facts i 4 552
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
 - Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.

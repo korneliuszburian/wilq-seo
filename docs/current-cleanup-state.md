@@ -7,9 +7,9 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ads
-wewnątrz `ads_diagnostics.py`. Reconciliation blok jest teraz domknięty;
-następny potwierdzony kandydat to assembly search-term read contracts (core
-terms/safety/match/planner), wybrany po świeżym complexity/review. Polityka
+wewnątrz `ads_diagnostics.py`. Reconciliation i core search-term read-contract
+assembly są teraz domknięte; następny potwierdzony kandydat to assembly
+search-term review summary/ngram. Polityka
 automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
 pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
@@ -19,7 +19,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 98 873 metric facts, 4 551 refresh runs; konektory
+- Managed runtime: 98 875 metric facts, 4 552 refresh runs; konektory
   12/9 configured/2 missing credentials/1 disabled.
 - Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
   a primary stale proof daje `content_sources_require_refresh`.
@@ -250,8 +250,13 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
   `_reconcile_ads_budget_and_business_context_contracts`; `budget_apply_preview`,
   `profit_margin` i `human_budget_goal` pozostają kontraktowo zależne od gotowych
   odczytów. Reconciliation inline w `build_ads_diagnostics` jest domknięty;
-  complexity po seamu to 398 plików / 132908 LOC i dwa jawne frozen/file-orchestrator
+  complexity po seamu to 398 plików / 132934 LOC i dwa jawne frozen/file-orchestrator
   violations do dalszego, niezależnego wyboru.
+- Core search-term read-contract assembly (`terms`, `safety`, `keyword match`,
+  `planner`) jest teraz w `_build_ads_search_term_read_contracts`; kolejność
+  builderów, evidence/source connectors, freshness i missing contracts pozostają
+  bez zmian. Focused/full Ads contracts, Ruff, mypy, complexity i diff check są
+  zielone.
 
 ## Granica bezpieczeństwa
 
