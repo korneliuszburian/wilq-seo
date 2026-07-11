@@ -183,6 +183,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `seed_core_prepare_actions` zachowuje connector evidence, review steps,
   prepare-only i zablokowane twierdzenia. Focused Merchant action/API tests
   przechodzą. GA4 i content static seeds pozostają kolejnymi seamami.
+- Static GA4 tracking-quality seed jest teraz w
+  `wilq/actions/ga4/tracking_quality.py`; fallback breakdowns, preview, evidence
+  i blokady conversion/revenue/ROAS są zachowane. Focused GA4 source/context/action
+  contracts przechodzą. Content static seed pozostaje ostatnim kandydatem tego
+  bounded `seed_core_prepare_actions` slice.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje

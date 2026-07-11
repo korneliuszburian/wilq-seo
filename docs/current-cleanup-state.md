@@ -83,7 +83,8 @@ Action Service; nie przywracaj direct WordPress write.
   recommendation-review seed deleguje teraz do `google_ads/recommendations.py`;
   read-required payload i blokada apply pozostają bez zmian. Static Merchant
   feed-issue seed deleguje teraz do `wilq/actions/merchant.py`; GA4 i content
-  static seeds są jeszcze osobnymi kandydatami.
+  static seeds: GA4 deleguje teraz do `wilq/actions/ga4/tracking_quality.py`,
+  a content pozostaje ostatnim osobnym kandydatem w `seed_core_prepare_actions`.
 
 ## Granica bezpieczeństwa
 

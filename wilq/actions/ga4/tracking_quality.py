@@ -11,6 +11,7 @@ from wilq.actions.validation_copy import (
     row,
     wrong,
 )
+from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -56,6 +57,86 @@ GA4_TRACKING_REQUIRED_VALIDATION = [
     "review_conversion_or_key_event_mapping",
     "human_confirm_before_tracking_change",
 ]
+
+
+def seed_ga4_tracking_quality_action() -> ActionObject:
+    evidence_id = connector_evidence_id("google_analytics_4")
+    required_breakdowns = ["landing_page", "source_medium", "campaign"]
+    required_labels = ["strona wejścia", "źródło i medium ruchu", "kampania"]
+    return ActionObject(
+        id="act_review_ga4_tracking_quality",
+        title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
+        domain=OpportunityDomain.ga4,
+        connector="google_analytics_4",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=[evidence_id],
+        human_diagnosis=(
+            "GA4 jest głównym procesem pracy WILQ. W czystym runtime WILQ może tylko "
+            "przygotować przegląd pomiaru i zablokować twierdzenia o zwrocie z reklam "
+            "oraz przychodzie, dopóki nie ma faktów metrycznych ze stroną wejścia, "
+            "źródłem ruchu i kampanią."
+        ),
+        recommended_reason=(
+            "Zbierz zestawienie GA4 ze stroną wejścia, źródłem ruchu i kampanią, "
+            "potem sprawdź pomiar i dopasowanie komunikatu bez oceniania kampanii "
+            "po niepełnych danych."
+        ),
+        payload={
+            "action_type": GA4_TRACKING_QUALITY_ACTION_TYPE,
+            "connector": "google_analytics_4",
+            "mode": "prepare_only",
+            "preview_contract": GA4_TRACKING_QUALITY_PREVIEW_CONTRACT,
+            "source_metric_names": [],
+            "required_breakdowns": required_breakdowns,
+            "required_breakdown_labels": required_labels,
+            "required_validation": GA4_TRACKING_REQUIRED_VALIDATION,
+            "blocked_claims": ["conversion_rate", "przychód", "roas"],
+            "payload_preview": [
+                {
+                    "id": "ga4_tracking_review_connector_status",
+                    "preview_contract": GA4_TRACKING_QUALITY_PREVIEW_CONTRACT,
+                    "operation_type": "tracking_quality_review",
+                    "landing_page": None,
+                    "landing_page_label": "brak strony wejścia w raporcie",
+                    "source_medium": None,
+                    "source_medium_label": "brak źródła i medium w raporcie",
+                    "campaign_name": None,
+                    "campaign_name_label": "brak kampanii w raporcie",
+                    "tracking_dimension_gaps": required_breakdowns,
+                    "metric_snapshot": {},
+                    "metric_snapshot_labels": {},
+                    "reason": (
+                        "Brak wymiarowych GA4 facts. Najpierw zbierz zestawienie "
+                        "strony wejścia, źródła ruchu i kampanii z GA4."
+                    ),
+                    "required_validation": GA4_TRACKING_REQUIRED_VALIDATION,
+                    "required_validation_labels": [
+                        "sprawdź stronę wejścia",
+                        "sprawdź źródło i medium ruchu",
+                        "sprawdź kampanię",
+                        "sprawdź konwersje i zdarzenia kluczowe",
+                        "potwierdź sprawdzenie przez człowieka",
+                    ],
+                    "blocked_claims": ["conversion_rate", "przychód", "roas"],
+                    "blocked_claim_labels": [
+                        "współczynnik konwersji",
+                        "przychód",
+                        "zwrot z reklam",
+                    ],
+                    "evidence_ids": [evidence_id],
+                    "evidence_summary_label": "1 dowód źródłowy",
+                    "api_mutation_ready": False,
+                    "apply_allowed": False,
+                    "destructive": False,
+                }
+            ],
+            "destructive": False,
+        },
+        validation_status="not_validated",
+        created_by="system_core_seed",
+    )
 
 
 def ga4_tracking_quality_action(

@@ -22,6 +22,7 @@ from wilq.actions.content_refresh import (
 )
 from wilq.actions.ga4.tracking_quality import (
     ga4_tracking_quality_action,
+    seed_ga4_tracking_quality_action,
 )
 from wilq.actions.google_ads.business_context import (
     ads_business_context_configured,
@@ -211,100 +212,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
     actions = [
         seed_recommendation_review_action(),
         seed_merchant_feed_issue_action(),
-        ActionObject(
-            id="act_review_ga4_tracking_quality",
-            title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
-            domain=OpportunityDomain.ga4,
-            connector="google_analytics_4",
-            mode=ActionMode.prepare,
-            risk=ActionRisk.low,
-            status=ActionStatus.needs_validation,
-            evidence_ids=[connector_evidence_id("google_analytics_4")],
-            human_diagnosis=(
-                "GA4 jest głównym procesem pracy WILQ. W czystym runtime WILQ może tylko "
-                "przygotować przegląd pomiaru i zablokować twierdzenia o zwrocie z reklam "
-                "oraz przychodzie, dopóki nie ma faktów metrycznych ze stroną wejścia, "
-                "źródłem ruchu i kampanią."
-            ),
-            recommended_reason=(
-                "Zbierz zestawienie GA4 ze stroną wejścia, źródłem ruchu i kampanią, "
-                "potem sprawdź pomiar i dopasowanie komunikatu bez oceniania kampanii "
-                "po niepełnych danych."
-            ),
-            payload={
-                "action_type": "ga4_tracking_gap",
-                "connector": "google_analytics_4",
-                "mode": "prepare_only",
-                "preview_contract": "ga4_tracking_quality_review_v1",
-                "source_metric_names": [],
-                "required_breakdowns": ["landing_page", "source_medium", "campaign"],
-                "required_breakdown_labels": [
-                    "strona wejścia",
-                    "źródło i medium ruchu",
-                    "kampania",
-                ],
-                "required_validation": [
-                    "review_landing_page_dimension",
-                    "review_source_medium_dimension",
-                    "review_campaign_name_dimension",
-                    "review_conversion_or_key_event_mapping",
-                    "human_confirm_before_tracking_change",
-                ],
-                "blocked_claims": ["conversion_rate", "przychód", "roas"],
-                "payload_preview": [
-                    {
-                        "id": "ga4_tracking_review_connector_status",
-                        "preview_contract": "ga4_tracking_quality_review_v1",
-                        "operation_type": "tracking_quality_review",
-                        "landing_page": None,
-                        "landing_page_label": "brak strony wejścia w raporcie",
-                        "source_medium": None,
-                        "source_medium_label": "brak źródła i medium w raporcie",
-                        "campaign_name": None,
-                        "campaign_name_label": "brak kampanii w raporcie",
-                        "tracking_dimension_gaps": [
-                            "landing_page",
-                            "source_medium",
-                            "campaign_name",
-                        ],
-                        "metric_snapshot": {},
-                        "metric_snapshot_labels": {},
-                        "reason": (
-                            "Brak wymiarowych GA4 facts. Najpierw zbierz "
-                            "zestawienie strony wejścia, źródła ruchu i kampanii z GA4."
-                        ),
-                        "required_validation": [
-                            "review_landing_page_dimension",
-                            "review_source_medium_dimension",
-                            "review_campaign_name_dimension",
-                            "review_conversion_or_key_event_mapping",
-                            "human_confirm_before_tracking_change",
-                        ],
-                        "required_validation_labels": [
-                            "sprawdź stronę wejścia",
-                            "sprawdź źródło i medium ruchu",
-                            "sprawdź kampanię",
-                            "sprawdź konwersje i zdarzenia kluczowe",
-                            "potwierdź sprawdzenie przez człowieka",
-                        ],
-                        "blocked_claims": ["conversion_rate", "przychód", "roas"],
-                        "blocked_claim_labels": [
-                            "współczynnik konwersji",
-                            "przychód",
-                            "zwrot z reklam",
-                        ],
-                        "evidence_ids": [connector_evidence_id("google_analytics_4")],
-                        "evidence_summary_label": "1 dowód źródłowy",
-                        "api_mutation_ready": False,
-                        "apply_allowed": False,
-                        "destructive": False,
-                    }
-                ],
-                "destructive": False,
-            },
-            validation_status="not_validated",
-            created_by="system_core_seed",
-        ),
+        seed_ga4_tracking_quality_action(),
         ActionObject(
             id="act_prepare_content_refresh_queue",
             title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
