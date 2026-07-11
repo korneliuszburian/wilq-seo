@@ -14,8 +14,7 @@ from wilq.actions.content_refresh import (
     content_contract_label,
     content_contract_labels,
     content_payload_with_reviewed_wordpress_draft_previews,
-    content_refresh_payload_from_metric_facts,
-    content_refresh_queue_action,
+    content_refresh_metric_candidate,
     post_publication_measurement_plan,
     post_publication_measurement_summary,
     seed_content_refresh_action,
@@ -93,7 +92,6 @@ from wilq.actions.merchant import (
 )
 from wilq.actions.metric_utils import (
     metric_fact_label,
-    metric_sentence,
     prioritize_action_metrics,
     unique_values,
 )
@@ -643,22 +641,13 @@ def _seed_content_metric_actions(
         *by_connector.get("google_search_console", []),
         *by_connector.get("ahrefs", []),
     ]
-    if not content_facts or not by_connector.get("wordpress_ekologus"):
+    candidate = content_refresh_metric_candidate(content_facts)
+    if candidate is None:
         return
-    content_action_metrics = prioritize_action_metrics(
-        content_facts,
-        required_names={"content_object_count", "clicks", "domain_rating"},
-    )[:10]
-    content_payload = content_refresh_payload_from_metric_facts(content_facts)
-    action = _content_refresh_queue_action(
-        content_facts=content_facts,
-        content_action_metrics=content_action_metrics,
-        content_payload=content_payload,
-    )
-    actions[action.id] = action
+    actions[candidate.action.id] = candidate.action
     wordpress_draft_action = _wordpress_draft_handoff_action(
-        content_payload=content_payload,
-        content_action_metrics=content_action_metrics,
+        content_payload=candidate.payload,
+        content_action_metrics=candidate.action_metrics,
     )
     if wordpress_draft_action is None:
         return
@@ -821,21 +810,6 @@ def _campaign_review_action(
     return campaign_review_action(
         google_ads_facts=google_ads_facts,
         campaign_review_payload=campaign_review_payload,
-    )
-
-
-def _content_refresh_queue_action(
-    *,
-    content_facts: list[MetricFact],
-    content_action_metrics: list[MetricFact],
-    content_payload: dict[str, Any] | None,
-) -> ActionObject:
-    return content_refresh_queue_action(
-        content_facts=content_facts,
-        content_action_metrics=content_action_metrics,
-        content_payload=content_payload,
-        unique_evidence_ids=unique_values(fact.evidence_id for fact in content_action_metrics),
-        metric_sentence=metric_sentence(content_facts),
     )
 
 

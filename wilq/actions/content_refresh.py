@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+from wilq.actions.metric_utils import metric_sentence, prioritize_action_metrics, unique_values
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
@@ -234,6 +236,37 @@ def content_refresh_queue_action(
         payload=payload,
         validation_status="not_validated",
         created_by="system_metric_seed",
+    )
+
+
+@dataclass(frozen=True)
+class ContentRefreshMetricCandidate:
+    action: ActionObject
+    action_metrics: list[MetricFact]
+    payload: dict[str, Any] | None
+
+
+def content_refresh_metric_candidate(
+    facts: list[MetricFact],
+) -> ContentRefreshMetricCandidate | None:
+    if not facts or not any(fact.source_connector == "wordpress_ekologus" for fact in facts):
+        return None
+    action_metrics = prioritize_action_metrics(
+        facts,
+        required_names={"content_object_count", "clicks", "domain_rating"},
+    )[:10]
+    payload = content_refresh_payload_from_metric_facts(facts)
+    action = content_refresh_queue_action(
+        content_facts=facts,
+        content_action_metrics=action_metrics,
+        content_payload=payload,
+        unique_evidence_ids=unique_values(fact.evidence_id for fact in action_metrics),
+        metric_sentence=metric_sentence(facts),
+    )
+    return ContentRefreshMetricCandidate(
+        action=action,
+        action_metrics=action_metrics,
+        payload=payload,
     )
 GSC_METRIC_NAMES = {"clicks", "impressions", "ctr", "average_position"}
 AHREFS_GAP_FACT_NAMES = {

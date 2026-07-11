@@ -201,7 +201,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `write_capable=0`. Localo również działa w `prepare` z jednym evidence;
   Merchant działa w `prepare` z jednym evidence i `apply_allowed=false`;
   GA4 działa w `prepare` z jednym evidence i zachowuje blokadę konwersji/ROAS;
-  `service.py` spadł do 5 070 LOC.
+  Content ma typed candidate factory w `wilq/actions/content_refresh.py`, a
+  WordPress handoff nadal ma `apply_blocked`; `service.py` spadł do 5 046 LOC.
 - W `c9h9.4` dodano warunkowy review-only CTA w panelu dev draft: pojawia się
   tylko po `draft_package_ready && handoff_ready`, prowadzi do istniejącej
   akcji `act_apply_wordpress_draft_handoff` i jawnie mówi, że nie wykonuje
