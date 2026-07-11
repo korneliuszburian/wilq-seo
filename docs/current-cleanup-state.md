@@ -5,10 +5,10 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Aktualny następny slice to mały seam `wilq-seo-jnra` w Action Service: dalsze
-wydzielenie summary/read-model assembly po zakończeniu mutation-readiness seamów.
-`r564.3` pozostaje zależny od zewnętrznego świeżego kandydata; nie oznaczaj go jako
-complete i nie przywracaj direct WordPress write.
+Aktualny następny slice to kontynuacja `wilq-seo-4wwo`: queued/running polling lub
+bezpieczny auto-refresh dla stale Merchant/GA4, ale tylko przez read-only connector
+ flow. `r564.3` pozostaje zależny od zewnętrznego świeżego kandydata; nie oznaczaj go
+ jako complete i nie przywracaj direct WordPress write.
 
 ## Prawda produktu
 
