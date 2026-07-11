@@ -6,8 +6,8 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 ## Najbliższa instrukcja
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
-readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica Ads decision
-queue po priority mapie (metric tiles albo marketer labels). Polityka automatycznego stale-triggera (cooldown,
+readiness w `kgvy`, najbliższy wykonawczy slice to kolejna granica kontraktu Ads
+wewnątrz `ads_diagnostics.py` po rozdzieleniu business-context copy. Polityka automatycznego stale-triggera (cooldown,
 backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
 pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 
@@ -188,7 +188,7 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Ready/preliminary business-target interpretation jest teraz w
   `_preliminary_business_target_interpretation`; target ROAS/CPA context,
   strategy-review gate, blocked uses i evidence lineage pozostały bez zmian.
-  Complexity: 398 / 132571 LOC; 9 znanych violations.
+  Complexity: 398 / 132572 LOC; 9 znanych violations.
 - Operator-facing summary i safe next step business context są teraz w
   `_business_context_summary_and_next_step`; blocked/ready copy pozostaje bez
   zmian, a `_business_context_read_contract` ma 149 linii po tym seamie.

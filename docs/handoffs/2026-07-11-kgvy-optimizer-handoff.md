@@ -56,6 +56,9 @@ Ostatni commit: `f60489d` (`refactor: extract Ads business context copy`)
 - Ruff, mypy, complexity audit i `git diff --check` przechodzą.
 - Runtime po restarcie: `/api/health` `ok`; `/api/ads/diagnostics` zwraca
   `live_data_available=true` i blokady niedozwolonych twierdzeń.
+- Browser proof po restarcie: `.local-lab/proof/ads-business-context-seam.png`;
+  `/ads-doctor` pokazuje kolejkę decyzji, dowody, świeżość Ads/GA4 i blokady
+  ROAS/przychód/waste bez technicznego payloadu above the fold.
 - Zmniejszenie `ads_diagnostics.py`: 358 linii.
 
 ## Nie robić ponownie
