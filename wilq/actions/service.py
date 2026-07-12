@@ -619,20 +619,28 @@ def _action_list_cache_seconds() -> float:
 
 
 def get_action(action_id: str) -> ActionObject | None:
-    actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
-    business_context_action = _google_ads_business_context_action()
-    if business_context_action is not None:
-        actions[business_context_action.id] = business_context_action
-    target_confirmation_action = _google_ads_target_confirmation_action()
-    if target_confirmation_action is not None:
-        actions[target_confirmation_action.id] = target_confirmation_action
-    strategy_review_action = _google_ads_strategy_review_action()
-    if strategy_review_action is not None:
-        actions[strategy_review_action.id] = strategy_review_action
-    keyword_planner_action = _google_ads_keyword_planner_access_action()
-    if keyword_planner_action is not None:
-        actions[keyword_planner_action.id] = keyword_planner_action
-    action = actions.get(action_id)
+    cached_actions = _read_action_list_cache()
+    action = next(
+        (cached_action for cached_action in cached_actions or [] if cached_action.id == action_id),
+        None,
+    )
+    if action is not None:
+        action = action.model_copy(deep=True)
+    else:
+        actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
+        business_context_action = _google_ads_business_context_action()
+        if business_context_action is not None:
+            actions[business_context_action.id] = business_context_action
+        target_confirmation_action = _google_ads_target_confirmation_action()
+        if target_confirmation_action is not None:
+            actions[target_confirmation_action.id] = target_confirmation_action
+        strategy_review_action = _google_ads_strategy_review_action()
+        if strategy_review_action is not None:
+            actions[strategy_review_action.id] = strategy_review_action
+        keyword_planner_action = _google_ads_keyword_planner_access_action()
+        if keyword_planner_action is not None:
+            actions[keyword_planner_action.id] = keyword_planner_action
+        action = actions.get(action_id)
     if action is None:
         return None
     action = _with_persisted_validation_state(action)

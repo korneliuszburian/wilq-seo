@@ -691,9 +691,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Ruff, mypy, complexity, managed runtime i browser proof przechodzą; ciepły
   detail HTTP 200 ma 10 metryk, evidence ID i `apply_allowed=false`;
   proof: `.local-lab/proof/continuation-2026-07-12/localo-metric-fallback-live.png`.
-- Re-audit utworzył `wilq-seo-zbre`: pierwszy Localo action-detail po managed
-  restart przekroczył 60 s, retry po rozgrzaniu wyniósł 13.241167 s. To osobny
-  detail SLA, nie duplikat zamkniętego `c9h9.11` dla listy `/api/actions`.
+- Re-audit utworzył i domknął `wilq-seo-zbre`: `get_action()` korzysta z kopii
+  istniejącego prewarmed registry cache, po czym nadal nakłada świeży
+  validation/audit/review gate. Pierwszy Localo action-detail po pełnym
+  restarcie spadł z wcześniejszego timeoutu >60 s do HTTP 200 w `0.013299 s`;
+  10 metryk, evidence ID i `apply_allowed=false` pozostały bez zmian. Browser
+  proof: `.local-lab/proof/continuation-2026-07-12/localo-cold-fixed-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

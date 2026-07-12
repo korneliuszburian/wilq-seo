@@ -605,10 +605,11 @@ ich rozmiaru.
   `wilq/actions/localo/visibility.py`, z callbackami na storage i refresh runs;
   runtime po rozgrzaniu zachowuje 10 metryk, evidence i `apply_allowed=false`.
   Browser proof: `.local-lab/proof/continuation-2026-07-12/localo-metric-fallback-live.png`.
-- Nowy potwierdzony blocker utrzymaniowy: `wilq-seo-zbre` śledzi pierwszy
-  detail Localo po restarcie (>60 s), podczas gdy retry wyniósł 13.241167 s.
-  Nie zamykaj tego przez zmianę listowego `c9h9.11`; zakres dotyczy detail
-  view-model/cache/prewarm i musi zachować evidence/freshness/apply=false.
+- `wilq-seo-zbre` jest domknięty: detail akcji korzysta z kopii istniejącego
+  prewarmed registry cache, a świeży audit/review gate pozostaje nakładany przy
+  każdym odczycie. Cold Localo detail po restarcie: HTTP 200 w `0.013299 s`,
+  10 metryk, evidence i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/localo-cold-fixed-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
