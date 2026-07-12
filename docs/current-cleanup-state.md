@@ -36,7 +36,7 @@ WordPress write.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 98 919 metric facts i 4 574 refresh runs; konektory
+- Managed runtime: 99 906 metric facts i 4 577 refresh runs; konektory
   12/9 configured/2 missing
   credentials/1 disabled.
 - Źródła contentowe są teraz świeże po read-only refreshu 2026-07-12. Queue i
@@ -448,6 +448,10 @@ ich rozmiaru.
   `wilq/actions/mutation_contract.py`; nieobsługiwane akcje nadal dostają `None`,
   a apply contract zachowuje blokadę publikacji/destrukcji i wymagane audyty.
   `service.py` ma 4003 LOC; następny seam wymaga nowego complexity/runtime review.
+- Najnowszy `jnra` seam przeniósł WordPress-specific execution/target readiness
+  do `wilq/actions/wordpress_mutation_requirements.py`; `service.py` ma 3897 LOC.
+  Live readiness nadal raportuje 21 akcji, 0 vendor-write possible i 0 attempted;
+  publikacja i destructive writes pozostają false.
 - `4wwo` ma teraz istniejący `/api/connectors` rozszerzony o typed
   `refresh_state`: stan odczytu, `refresh_allowed`, ostatni run, safe next step i
   affected decisions. `/settings` pokazuje tę informację ponad ręcznym CTA;

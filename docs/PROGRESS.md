@@ -11,7 +11,7 @@ w git, Beads i `docs/progress/archive/`.
   odwołują się do nowych rule IDs; WordPress pack pozostaje dostępny przez ten
   sam `/api/expert/rules` i source registry. Nie dodano endpointu ani nowej
   ścieżki write.
-- Live proof po managed restart: API `ok`, 98 919 metric facts, 4 574 refresh
+- Live proof po managed restart: API `ok`, 99 906 metric facts, 4 577 refresh
   runs; `/api/expert/rules` zwraca pięć trap contracts z source IDs i safe next
   steps, a Merchant decision queue zawiera `merchant_platform_traps_v1`.
 - `wilq-seo-v9ab.5` ma teraz pełny typed ExpertRule contract: condition,
@@ -107,6 +107,12 @@ w git, Beads i `docs/progress/archive/`.
   `publication_allowed=false`, `destructive_allowed=false`, wymagane audyty,
   env gate i `None` dla nieobsługiwanych akcji; readiness/Goal 005 tests, Ruff,
   mypy, complexity i diff check pozostają zielone, a `service.py` ma 4003 LOC.
+- Najnowszy seam `jnra` przeniósł WordPress-specific readiness requirements do
+  `wilq/actions/wordpress_mutation_requirements.py`; `service.py` ma 3897 LOC,
+  a dry-run/Claim Ledger blockers i ActionObject safety pozostają bez zmian.
+  Focused readiness/review/Goal 005 tests, Ruff, mypy, complexity i diff check
+  są zielone. Live po refreshu: 99906 metric facts, 4577 refresh runs,
+  21 actions, 0 vendor-write possible i 0 attempted.
 - `kgvy` slice wykonany: optimizer-readiness assembly przeniesiono do
   `wilq/briefing/ads_optimizer.py`, a `ads_diagnostics.py` zmniejszył się o 358
   linii. Osiem obszarów zachowuje evidence IDs, source connectors, blocked claims

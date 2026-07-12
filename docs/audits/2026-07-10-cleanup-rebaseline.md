@@ -9,7 +9,7 @@ wskazówkami.
 - Baseline: `main`, clean i zgodny z `origin/main` na `ba033433` podczas tego
   continuation; żadnych lokalnych zmian przed aktualizacją tego ledgeru.
 - Managed API/dashboard: ready; health `ok`.
-- DuckDB: 98 919 metric facts, 4 574 refresh runs; connector summary z API:
+- DuckDB: 99 906 metric facts, 4 577 refresh runs; connector summary z API:
   12 ogółem, 9 skonfigurowanych, 2 bez credentials. Nie drukowano ścieżek
   prywatnych ani payloadów vendorów.
 - Live content connectors po read-only refreshu są świeże: GSC, WordPress sklep,
