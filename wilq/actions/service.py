@@ -89,6 +89,7 @@ from wilq.actions.google_ads.business_context import (
     ads_strategy_review_state,
     ads_strategy_review_summary,
     business_context_action,
+    latest_google_ads_metric_facts,
     latest_google_ads_vendor_read,
     strategy_review_action,
     target_confirmation_action,
@@ -947,19 +948,10 @@ def _action_metric_facts() -> list[MetricFact]:
 
 
 def _latest_google_ads_metric_facts() -> list[MetricFact]:
-    latest_run = _latest_google_ads_vendor_read()
-    if (
-        latest_run is None
-        or latest_run.status != ConnectorRefreshStatus.completed
-        or not latest_run.vendor_data_collected
-        or not latest_run.evidence_ids
-    ):
-        return []
-    return [
-        fact
-        for fact in metric_store().list_metric_facts_by_evidence_ids(latest_run.evidence_ids)
-        if fact.source_connector == "google_ads"
-    ]
+    return latest_google_ads_metric_facts(
+        _latest_google_ads_vendor_read(),
+        metric_facts_by_evidence_ids=metric_store().list_metric_facts_by_evidence_ids,
+    )
 
 
 def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:

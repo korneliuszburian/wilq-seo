@@ -16,6 +16,8 @@ from wilq.schemas import (
     AdsTargetGuardrailConfirmation,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
+    ConnectorRefreshStatus,
+    MetricFact,
     OpportunityDomain,
 )
 from wilq.storage.local_state import local_state_store
@@ -81,6 +83,25 @@ def latest_google_ads_vendor_read(
 def connector_refresh_recency_key(run: ConnectorRefreshRun) -> tuple[str, str]:
     timestamp = run.completed_at or run.started_at
     return (timestamp.isoformat(), run.id)
+
+
+def latest_google_ads_metric_facts(
+    run: ConnectorRefreshRun | None,
+    *,
+    metric_facts_by_evidence_ids: Callable[[list[str]], list[MetricFact]],
+) -> list[MetricFact]:
+    if (
+        run is None
+        or run.status != ConnectorRefreshStatus.completed
+        or not run.vendor_data_collected
+        or not run.evidence_ids
+    ):
+        return []
+    return [
+        fact
+        for fact in metric_facts_by_evidence_ids(run.evidence_ids)
+        if fact.source_connector == "google_ads"
+    ]
 
 
 def business_context_action(

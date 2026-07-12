@@ -719,6 +719,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Focused Ads/review tests (9 passed), Ruff, mypy, complexity, managed runtime
   i browser proof przechodzą; proof:
   `.local-lab/proof/continuation-2026-07-12/ads-vendor-read-selection-live.png`.
+- Filtrowanie najnowszych Google Ads metric facts po completed vendor-read i
+  `source_connector=google_ads` jest teraz w tym samym module
+  `google_ads/business_context.py`; service przekazuje tylko metric-store
+  callback. Focused Ads/review tests (10 passed), Ruff, mypy, complexity,
+  managed runtime i browser proof przechodzą; Ads strategy zachowuje 2
+  evidence IDs, świeży gate i `apply_allowed=false`; proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-latest-facts-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

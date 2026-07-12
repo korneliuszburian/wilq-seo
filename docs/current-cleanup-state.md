@@ -627,6 +627,12 @@ ich rozmiaru.
   Live Ads detail ma 2 evidence IDs, 5 checks, `kontrola WILQ poprawna` i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-vendor-read-selection-live.png`.
+- Latest Google Ads metric facts są filtrowane w
+  `google_ads/business_context.py` tylko dla completed vendor-read i właściwego
+  connectora; service zachowuje I/O callback. Ads strategy detail po restarcie
+  nadal ma 2 evidence IDs, `kontrola WILQ poprawna` i `apply_allowed=false`;
+  browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-latest-facts-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

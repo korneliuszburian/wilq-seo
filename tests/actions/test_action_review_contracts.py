@@ -169,6 +169,43 @@ def test_latest_google_ads_vendor_read_ignores_non_vendor_runs_and_tiebreaks_id(
     assert latest is not None and latest.id == "vendor_b"
 
 
+def test_latest_google_ads_metric_facts_require_completed_vendor_read_and_source() -> None:
+    from wilq.actions.google_ads.business_context import latest_google_ads_metric_facts
+    from wilq.schemas import (
+        ConnectorRefreshMode,
+        ConnectorRefreshRun,
+        ConnectorRefreshStatus,
+        MetricFact,
+    )
+
+    run = ConnectorRefreshRun(
+        id="vendor_facts",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        vendor_data_collected=True,
+        evidence_ids=["ev_ads"],
+        summary="read",
+    )
+    ads_fact = MetricFact(
+        name="clicks",
+        value=3,
+        period="30d",
+        source_connector="google_ads",
+        evidence_id="ev_ads",
+    )
+    ga4_fact = ads_fact.model_copy(update={"source_connector": "google_analytics_4"})
+
+    facts = latest_google_ads_metric_facts(
+        run,
+        metric_facts_by_evidence_ids=lambda evidence_ids: [ads_fact, ga4_fact]
+        if evidence_ids == ["ev_ads"]
+        else [],
+    )
+
+    assert facts == [ads_fact]
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
