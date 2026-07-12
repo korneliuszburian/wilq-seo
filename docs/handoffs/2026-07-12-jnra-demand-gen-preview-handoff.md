@@ -42,4 +42,5 @@ action dispatch i przekazuje jawne callbacks do rows oraz polskich labels.
 
 ## Commit
 
-Commit hash zostanie dopisany w follow-up docs-only commit po pushu implementacji.
+Implementacja: `ae161a50` (`refactor: extract demand gen preview cards`), wypchnięta
+na `origin/main`. Ten handoff jest aktualizowany w osobnym docs-only commicie.
