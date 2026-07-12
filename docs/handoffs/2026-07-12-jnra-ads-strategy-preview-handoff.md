@@ -47,5 +47,6 @@ API-owned.
 ## Commit
 
 Implementacja: `a1615880` (`refactor: extract ads strategy preview`),
-wypchnięta na `origin/main`. Bounded helper extraction zostanie zapisany w
-osobnym commicie tego samego handoffu.
+wypchnięta na `origin/main`. Bounded helper extraction: `1bf39c1a`
+(`refactor: share ads business context preview`), również wypchnięty na
+`origin/main`.
