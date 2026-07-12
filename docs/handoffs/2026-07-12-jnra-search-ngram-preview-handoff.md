@@ -41,4 +41,6 @@ bezpiecznego stanu zapisu.
 
 ## Commit
 
-Hash implementacji zostanie dopisany po pushu w osobnym docs-only commicie.
+Implementacja: `9b7e9cb4` (`refactor: extract search term ngram preview cards`),
+wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
+commitem.
