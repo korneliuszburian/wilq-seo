@@ -1611,7 +1611,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         )
     )
     blockers = _mutation_readiness_blockers(requirements)
-    vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
+    vendor_write_possible = _vendor_write_possible_impl(action, mutation_adapter)
     apply_contract = _mutation_apply_contract(action, mutation_adapter)
     target = mutation_readiness_target(
         action,
@@ -1648,10 +1648,6 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
         activation_next_step=_activation_next_step(first_write_candidate),
         operator_next_step=_mutation_readiness_summary_next_step,
     )
-
-
-def _vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -> bool:
-    return _vendor_write_possible_impl(action, mutation_adapter)
 
 
 def _wordpress_draft_write_readiness_requirements(

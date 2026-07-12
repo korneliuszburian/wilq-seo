@@ -763,6 +763,9 @@ ich rozmiaru.
 - Usunięto nieużywany `_mutation_audit_summary` i import z `service.py`; aktywna
   implementacja nadal znajduje się w `wilq/actions/audit_store.py`. 21 focused
   audit/mutation tests przechodzi bez zmiany eventów audytu.
+- `service.py` korzysta bezpośrednio z `mutation_readiness.vendor_write_possible`
+  zamiast lokalnej fasady; live WordPress readiness nadal pokazuje
+  `vendor_write_possible=false`, a apply pozostaje fail-closed.
 
 ## Resume
 

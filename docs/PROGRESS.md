@@ -871,6 +871,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   import z `service.py`; formatter pozostaje własnością `audit_store.py`.
   21 focused audit/mutation tests, Ruff, mypy, complexity i diff check
   przechodzą; brak zmiany eventów audytu lub safety loop.
+- Kolejny slice `jnra` usunął jedno-wywołaniową fasadę `_vendor_write_possible`
+  z `service.py`; readiness korzysta bezpośrednio z istniejącego predicate w
+  `mutation_readiness.py`. 22 focused audit/mutation tests, Ruff, mypy,
+  complexity, diff check i live WordPress readiness smoke przechodzą; API nadal
+  raportuje `vendor_write_possible=false`.
 
 ## Weryfikacja
 
