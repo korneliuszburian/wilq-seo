@@ -669,6 +669,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   managed runtime i świeży browser proof przechodzą; live Ads strategy action
   ma 2 evidence IDs, `apply_allowed=false` i stan `Zapis zablokowany`;
   proof: `.local-lab/proof/continuation-2026-07-12/event-label-live.png`.
+- Hydracja etykiet payloadów akcji jest teraz w istniejącym
+  `wilq/actions/operator_labels.py`; statusy, bramki, typy Ads i statusy
+  WordPress zachowują dotychczasowy polski kontrakt, a `service.py` ma tylko
+  kompatybilną fasadę. Focused operator/action tests, Ruff, mypy, complexity,
+  managed restart i browser proof przechodzą; live Ads strategy action nadal
+  ma 2 evidence IDs, `Zapis zablokowany` i `apply_allowed=false`;
+  proof: `.local-lab/proof/continuation-2026-07-12/operator-labels-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

@@ -588,6 +588,12 @@ ich rozmiaru.
   polski kontrakt. Live Ads strategy action: HTTP 200, 2 evidence IDs,
   `apply_allowed=false`, `Zapis zablokowany`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/event-label-live.png`.
+- Hydracja operatorowych etykiet payloadów akcji została przeniesiona do
+  istniejącego `wilq/actions/operator_labels.py`; statusy, wymagane bramki,
+  typy rekomendacji/match/level Ads i status WordPress nie są już kodowane w
+  service. Live strategy action po restarcie zachowuje 2 evidence IDs,
+  `apply_allowed=false`, `Zapis zablokowany`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/operator-labels-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

@@ -214,6 +214,10 @@ from wilq.actions.operator_labels import (
 from wilq.actions.operator_labels import (
     action_validation_status_label as _action_validation_status_label,
 )
+from wilq.actions.operator_labels import (
+    ads_recommendation_type_label,
+    payload_with_operator_labels,
+)
 from wilq.actions.payload_readiness import (
     payload_api_mutation_ready,
     payload_apply_allowed,
@@ -2749,122 +2753,12 @@ def _operator_audit_summary_text(summary: str) -> str:
 
 
 def _payload_with_operator_labels(payload: dict[str, Any]) -> dict[str, Any]:
-    enriched = dict(payload)
-    _hydrate_operator_labels_recursive(enriched)
-    return enriched
-
-
-def _hydrate_operator_labels_recursive(value: Any) -> None:
-    if isinstance(value, dict):
-        _hydrate_operator_label_fields(value)
-        for item in value.values():
-            _hydrate_operator_labels_recursive(item)
-    elif isinstance(value, list):
-        for item in value:
-            _hydrate_operator_labels_recursive(item)
-
-
-def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
-    if item.get("status_label") in (None, "") and isinstance(item.get("status"), str):
-        item["status_label"] = _operator_state_label(item["status"])
-    if item.get("post_status_label") in (None, "") and isinstance(item.get("post_status"), str):
-        item["post_status_label"] = _wordpress_post_status_label(item["post_status"])
-    label_fields = {
-        "required_validation": "required_validation_labels",
-        "operator_review_gates": "operator_review_gate_labels",
-        "human_review_gates": "human_review_gate_labels",
-        "draft_constraints": "draft_constraint_labels",
-        "missing_read_contracts": "missing_read_contract_labels",
-        "missing_requirements": "missing_requirement_labels",
-        "required_google_ads_state": "required_google_ads_state_labels",
-        "allowed_uses_after_confirmation": "allowed_uses_after_confirmation_labels",
-        "allowed_contracts": "allowed_contract_labels",
-        "target_roas_or_cpa": "target_roas_or_cpa_labels",
-        "blocked_claims": "blocked_claim_labels",
-    }
-    for source_key, label_key in label_fields.items():
-        existing_labels = _string_list(item.get(label_key))
-        if existing_labels:
-            continue
-        source_values = _string_list(item.get(source_key))
-        if source_values:
-            item[label_key] = _action_gate_labels(source_values)
-    if item.get("recommendation_type_label") in (None, "") and isinstance(
-        item.get("recommendation_type"),
-        str,
-    ):
-        item["recommendation_type_label"] = _ads_recommendation_type_label(
-            item["recommendation_type"]
-        )
-    if item.get("match_type_label") in (None, "") and isinstance(
-        item.get("match_type"),
-        str,
-    ):
-        item["match_type_label"] = _ads_keyword_match_type_label(item["match_type"])
-    if item.get("level_label") in (None, "") and isinstance(item.get("level"), str):
-        item["level_label"] = _ads_negative_keyword_level_label(item["level"])
-
-
-def _operator_state_label(value: str) -> str:
-    labels = {
-        "blocked": "zablokowane",
-        "ready": "gotowe",
-        "allowed": "dopuszczone",
-        "missing": "status niepotwierdzony",
-        "pending_validation": "czeka na sprawdzenie",
-        "validated_prepare_only": "kontrola WILQ poprawna",
-        "ready_to_apply": "gotowe do potwierdzenia",
-        "blocked_apply": "zapis zmian zablokowany",
-    }
-    return labels.get(value, "do sprawdzenia")
+    return payload_with_operator_labels(payload)
 
 
 def _ads_recommendation_type_label(value: str) -> str:
-    labels = {
-        "CAMPAIGN_BUDGET": "budżet kampanii",
-        "KEYWORD": "słowa kluczowe",
-        "RESPONSIVE_SEARCH_AD": "elastyczna reklama w wyszukiwarce",
-        "TARGET_CPA_OPT_IN": "strategia kosztu pozyskania celu",
-        "TARGET_ROAS_OPT_IN": "strategia zwrotu z reklam",
-        "MAXIMIZE_CONVERSIONS_OPT_IN": "maksymalizacja konwersji",
-        "MAXIMIZE_CONVERSION_VALUE_OPT_IN": "maksymalizacja wartości konwersji",
-        "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "jakość zasobów Performance Max",
-        "DISPLAY_EXPANSION_OPT_IN": "rozszerzenie kampanii na sieć reklamową",
-        "DYNAMIC_IMAGE_EXTENSION_OPT_IN": "dynamiczne rozszerzenia graficzne",
-        "SEARCH_PARTNERS_OPT_IN": "rozszerzenie kampanii na partnerów wyszukiwania",
-        "UNKNOWN": "typ rekomendacji nieznany",
-        "UNSPECIFIED": "typ rekomendacji nieokreślony",
-    }
-    return labels.get(value, "typ rekomendacji do sprawdzenia")
-
-
-def _ads_keyword_match_type_label(value: str) -> str:
-    labels = {
-        "BROAD": "dopasowanie przybliżone",
-        "PHRASE": "dopasowanie do wyrażenia",
-        "EXACT": "dopasowanie ścisłe",
-        "UNKNOWN": "dopasowanie nieznane",
-        "UNSPECIFIED": "dopasowanie nieokreślone",
-    }
-    return labels.get(value, "dopasowanie do sprawdzenia")
-
-
-def _ads_negative_keyword_level_label(value: str) -> str:
-    labels = {
-        "ad_group": "grupa reklam",
-        "campaign_review_required": "poziom kampanii wymaga sprawdzenia",
-    }
-    return labels.get(value, "poziom do sprawdzenia")
-
-
-def _wordpress_post_status_label(value: str) -> str:
-    labels = {
-        "draft": "szkic",
-        "pending": "czeka na sprawdzenie",
-        "private": "prywatny",
-        "publish": "opublikowany",
-    }
-    return labels.get(value, "status wpisu do sprawdzenia")
+    """Compatibility facade for callers that import the legacy service helper."""
+    return ads_recommendation_type_label(value)
 
 
 def _action_payload_apply_allowed(payload: dict[str, Any]) -> bool:

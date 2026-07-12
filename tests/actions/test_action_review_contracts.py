@@ -78,6 +78,26 @@ def test_audit_event_labels_keep_operator_copy_and_safe_fallback() -> None:
     assert audit_event_label("unknown_event") == "Zdarzenie audytu"
 
 
+def test_operator_payload_labels_keep_nested_action_copy_polish() -> None:
+    from wilq.actions.operator_labels import payload_with_operator_labels
+
+    payload = {
+        "status": "blocked_apply",
+        "required_validation": ["human_review_before_apply"],
+        "recommendation_type": "TARGET_ROAS_OPT_IN",
+        "preview": [{"post_status": "draft", "match_type": "EXACT", "level": "ad_group"}],
+    }
+
+    enriched = payload_with_operator_labels(payload)
+
+    assert enriched["status_label"] == "zapis zmian zablokowany"
+    assert enriched["required_validation_labels"] == ["sprawdzenie przez człowieka przed zapisem"]
+    assert enriched["recommendation_type_label"] == "strategia zwrotu z reklam"
+    assert enriched["preview"][0]["post_status_label"] == "szkic"
+    assert enriched["preview"][0]["match_type_label"] == "dopasowanie ścisłe"
+    assert enriched["preview"][0]["level_label"] == "grupa reklam"
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
