@@ -320,15 +320,13 @@ from wilq.actions.wordpress_draft import (
 )
 from wilq.actions.wordpress_mutation_requirements import (
     WordPressDraftApplyCapability,
+    execute_supported_wordpress_mutation_adapter,
     wordpress_draft_activation_packet,
     wordpress_draft_apply_capability,
     wordpress_draft_execution_readiness_requirements,
     wordpress_draft_target_content_readiness_requirements,
     wordpress_draft_write_readiness,
     wordpress_draft_write_readiness_requirements,
-)
-from wilq.actions.wordpress_mutation_requirements import (
-    wordpress_draft_writes_enabled as _wordpress_draft_writes_enabled,
 )
 from wilq.actions.wordpress_preview import (
     wordpress_draft_handoff_preview_cards,
@@ -337,11 +335,6 @@ from wilq.actions.wordpress_preview import (
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
-from wilq.connectors.wordpress.client import create_wordpress_draft_post
-from wilq.content.handoff.wordpress_execution import execute_content_wordpress_draft_handoff
-from wilq.content.handoff.wordpress_execution import (
-    wordpress_draft_execution_errors as _wordpress_draft_execution_errors_impl,
-)
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
@@ -1581,46 +1574,11 @@ def _execute_supported_mutation_adapter(
     wordpress_capability: WordPressDraftApplyCapability | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     _ = request
-    if mutation_adapter == "wordpress_draft_execution_boundary":
-        if wordpress_capability is not None:
-            execution = execute_content_wordpress_draft_handoff(
-                handoff=wordpress_capability.handoff,
-                draft_package=wordpress_capability.draft_package,
-                mode="live",
-                live_write_enabled=_wordpress_draft_writes_enabled(),
-                create_draft=create_wordpress_draft_post,
-                action_apply_authorized=True,
-                write_authorization=wordpress_capability.write_authorization,
-                write_authorization_verified=True,
-            )
-            return {
-                "adapter": mutation_adapter,
-                "connector": action.connector,
-                "allowed_operation": "create_wordpress_draft",
-                "execution_status": execution.status,
-                "execution_mode": execution.mode,
-                "external_write_attempted": execution.external_write_attempted,
-                "execution_result": execution.model_dump(mode="json"),
-                "redacted": True,
-            }, _wordpress_draft_execution_errors_impl(execution)
-        execution = execute_content_wordpress_draft_handoff(
-            handoff=None,
-            draft_package=None,
-            mode="dry_run",
-            live_write_enabled=False,
-            create_draft=None,
-        )
-        return {
-            "adapter": mutation_adapter,
-            "connector": action.connector,
-            "allowed_operation": "create_wordpress_draft",
-            "execution_status": execution.status,
-            "execution_mode": execution.mode,
-            "external_write_attempted": execution.external_write_attempted,
-            "execution_result": execution.model_dump(mode="json"),
-            "redacted": True,
-        }, _wordpress_draft_execution_errors_impl(execution)
-    return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
+    return execute_supported_wordpress_mutation_adapter(
+        action,
+        mutation_adapter,
+        wordpress_capability,
+    )
 
 
 def _mutation_readiness_blockers(

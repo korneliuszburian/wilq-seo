@@ -342,7 +342,10 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
         "_wordpress_draft_apply_capability",
         lambda *_: (capability, []),
     )
-    monkeypatch.setattr(action_service, "create_wordpress_draft_post", lambda _payload: "321")
+    monkeypatch.setattr(
+        "wilq.actions.wordpress_mutation_requirements.create_wordpress_draft_post",
+        lambda _payload: "321",
+    )
 
     result = apply_action(
         action,
@@ -555,8 +558,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
         lambda *_args, **_kwargs: snapshot,
     )
     monkeypatch.setattr(
-        action_service,
-        "execute_content_wordpress_draft_handoff",
+        "wilq.actions.wordpress_mutation_requirements.execute_content_wordpress_draft_handoff",
         lambda **_kwargs: SimpleNamespace(
             status="created",
             mode="live",

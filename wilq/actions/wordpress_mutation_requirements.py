@@ -5,11 +5,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from wilq.actions.audit_store import latest_action_confirmation_event, latest_preview_event
+from wilq.connectors.wordpress.client import create_wordpress_draft_post
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
+    wordpress_draft_execution_errors,
 )
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
@@ -115,6 +117,44 @@ def wordpress_draft_writes_enabled() -> bool:
         "yes",
         "on",
     }
+
+
+def execute_supported_wordpress_mutation_adapter(
+    action: ActionObject,
+    mutation_adapter: str,
+    wordpress_capability: WordPressDraftApplyCapability | None = None,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    if mutation_adapter != "wordpress_draft_execution_boundary":
+        return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
+    if wordpress_capability is not None:
+        execution = execute_content_wordpress_draft_handoff(
+            handoff=wordpress_capability.handoff,
+            draft_package=wordpress_capability.draft_package,
+            mode="live",
+            live_write_enabled=wordpress_draft_writes_enabled(),
+            create_draft=create_wordpress_draft_post,
+            action_apply_authorized=True,
+            write_authorization=wordpress_capability.write_authorization,
+            write_authorization_verified=True,
+        )
+    else:
+        execution = execute_content_wordpress_draft_handoff(
+            handoff=None,
+            draft_package=None,
+            mode="dry_run",
+            live_write_enabled=False,
+            create_draft=None,
+        )
+    return {
+        "adapter": mutation_adapter,
+        "connector": action.connector,
+        "allowed_operation": "create_wordpress_draft",
+        "execution_status": execution.status,
+        "execution_mode": execution.mode,
+        "external_write_attempted": execution.external_write_attempted,
+        "execution_result": execution.model_dump(mode="json"),
+        "redacted": True,
+    }, wordpress_draft_execution_errors(execution)
 
 
 def wordpress_draft_write_readiness(

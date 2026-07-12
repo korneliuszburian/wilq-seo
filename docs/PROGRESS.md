@@ -889,6 +889,22 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Po managed restart API health jest `ok`; readiness nadal fail-closed. Fresh
   browser proof: `.local-lab/proof/continuation-2026-07-12/wordpress-capability-desktop.png`,
   `wordpress-capability-mobile-after-restart.png`.
+- Kolejny slice `jnra` przeniósł wykonanie obsługiwanego adaptera WordPress
+  (`execute_supported_wordpress_mutation_adapter`) do tego samego ownera
+  `wilq/actions/wordpress_mutation_requirements.py`; service zachowuje tylko
+  cienką fasadę orkiestracyjną. 39 focused testów, Ruff, mypy, complexity i
+  diff check przechodzą. Po restarcie cold readiness wymagało rozgrzania
+  istniejącego diagnostics path (pierwszy request przekroczył 20 s), następnie
+  HTTP 200 w 18.9 s; kontrakt nadal `ready_to_request_apply=false`,
+  `vendor_write_possible=false`, `publication_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/wordpress-adapter-owner-desktop.png`,
+  `wordpress-adapter-owner-mobile.png`.
+- Re-audyt runtime ujawnił osobny, potwierdzony problem cold latency dla
+  `/api/actions/act_apply_wordpress_draft_handoff/mutation-readiness`: pierwszy
+  request po restarcie przekroczył 20 s, a rozgrzany request trwał 18.9 s mimo
+  zachowania fail-closed. Utworzono `wilq-seo-c9h9.14` jako P1, zależny od
+  `jnra`; zakres rozdziela istniejący diagnostics warm-up od adaptera i nie
+  dodaje endpointu ani write.
 
 ## Weryfikacja
 
