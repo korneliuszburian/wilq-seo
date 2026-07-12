@@ -602,6 +602,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   brak zapisanego wyniku ludzkiego review, blocked KPI/budget claims i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-strategy-review-preview.png`.
+- Service Profile knowledge-promotion i private-proposal preview cards są teraz
+  składane w istniejącym `wilq/actions/service_profile.py`; service zachowuje
+  tylko dispatcher i callbacks prezentacyjne. Publiczne source facts oraz
+  redacted private proposal nadal mają evidence, review gates, blocked claims i
+  `apply_allowed=false`; świeży private browser proof:
+  `.local-lab/proof/continuation-2026-07-12/service-profile-private-preview-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

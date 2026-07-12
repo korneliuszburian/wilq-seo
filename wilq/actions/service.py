@@ -182,7 +182,9 @@ from wilq.actions.payloads import (
 from wilq.actions.review_gate import build_action_review_gate
 from wilq.actions.service_profile import (
     knowledge_promotion_action,
+    knowledge_promotion_preview_cards,
     private_proposal_promotion_action,
+    private_proposal_promotion_preview_cards,
 )
 from wilq.actions.social import social_draft_actions, social_draft_input_preview_cards
 from wilq.actions.wordpress_draft import (
@@ -2264,101 +2266,25 @@ def _content_brief_preview_card(
 def _service_profile_knowledge_promotion_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(preview_items[:6]):
-        source_fact_ids = _string_list(item.get("source_fact_ids"))
-        source_connectors = _string_list(item.get("source_connector_labels"))
-        required_validation = _string_list(item.get("required_validation_labels"))
-        blocked_claims = _string_list(item.get("blocked_claims"))
-        rows = [
-            _preview_row("Karta", str(item.get("target_card_title") or "karta usługi")),
-            _preview_row(
-                "Status teraz",
-                str(item.get("current_lifecycle_label") or "wymaga review"),
-            ),
-            _preview_row(
-                "Status po decyzji",
-                str(item.get("target_lifecycle_label") or "approved-current po review"),
-            ),
-            _preview_row(
-                "Review",
-                str(item.get("required_human_role") or "Wilku albo owner wiedzy"),
-            ),
-        ]
-        if source_fact_ids:
-            rows.append(_preview_row("Source facts", ", ".join(source_fact_ids[:3])))
-        if source_connectors:
-            rows.append(_preview_row("Źródła", ", ".join(source_connectors[:3])))
-        if required_validation:
-            rows.append(_preview_row("Warunki", ", ".join(required_validation[:4])))
-        if blocked_claims:
-            rows.append(_preview_row("Claimy blokowane", ", ".join(blocked_claims[:3])))
-        blocked_reason = item.get("promotion_blocked_reason")
-        if isinstance(blocked_reason, str) and blocked_reason:
-            rows.append(_preview_row("Blokada", blocked_reason))
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=f"service_profile_knowledge_promotion_{index}",
-                kind="service_profile_knowledge_promotion_review",
-                title_label="Awans wiedzy Service Profile do sprawdzenia",
-                subtitle_label="request po review, bez edycji knowledge base",
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
+    return knowledge_promotion_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+    )
 
 
 def _service_profile_private_proposal_promotion_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(preview_items[:6]):
-        required_validation = _string_list(item.get("required_validation_labels"))
-        blocked_claims = _string_list(item.get("blocked_claims"))
-        rows = [
-            _preview_row("Propozycja", str(item.get("target_card_title") or "private proposal")),
-            _preview_row("Zakres", str(item.get("scope") or "private source")),
-            _preview_row("Ryzyko", str(item.get("risk_tier") or "unknown")),
-            _preview_row("Wsparcie", str(item.get("support_level") or "review-required")),
-            _preview_row(
-                "Aktualność źródła",
-                str(item.get("freshness_status") or "do potwierdzenia"),
-            ),
-            _preview_row(
-                "Zakres dostępu",
-                str(item.get("audience") or "do potwierdzenia"),
-            ),
-            _preview_row(
-                "Review",
-                str(item.get("required_human_role") or "Wilku albo owner wiedzy"),
-            ),
-            _preview_row("Redakcja", "redacted, bez raw private text"),
-        ]
-        if required_validation:
-            rows.append(_preview_row("Warunki", ", ".join(required_validation[:5])))
-        if blocked_claims:
-            rows.append(_preview_row("Claimy blokowane", ", ".join(blocked_claims[:4])))
-        blocked_reason = item.get("promotion_blocked_reason")
-        if isinstance(blocked_reason, str) and blocked_reason:
-            rows.append(_preview_row("Blokada", blocked_reason))
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=f"service_profile_private_proposal_promotion_{index}",
-                kind="service_profile_private_proposal_promotion_review",
-                title_label="Prywatna propozycja Service Profile do sprawdzenia",
-                subtitle_label="review redacted źródła, bez promocji i bez zapisu",
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
+    return private_proposal_promotion_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+    )
 
 
 def _social_draft_input_preview_cards(

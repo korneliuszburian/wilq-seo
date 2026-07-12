@@ -533,6 +533,11 @@ ich rozmiaru.
   współdzielone w module domenowym przez callbacki, a live karta zachowuje brak ludzkiego review,
   blocked claims i brak zapisu. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-strategy-review-preview.png`.
+- Service Profile public knowledge-promotion oraz redacted private-proposal
+  preview renderery są teraz w `wilq/actions/service_profile.py`; service
+  deleguje przez typed callbacks, a live karty zachowują evidence, review gates,
+  blocked claims i `apply_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/service-profile-private-preview-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
