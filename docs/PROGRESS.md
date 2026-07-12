@@ -79,6 +79,13 @@ w git, Beads i `docs/progress/archive/`.
 - Nowy potwierdzony następny slice `wilq-seo-97a3`: wydzielenie snapshot stage
   adapters z `api.py` (868 LOC) do typed ownera, z zachowaniem parity i bez
   zmiany kontraktów ani safety.
+- `wilq-seo-97a3` wykonany: snapshot stage adapters i helpery stanu są teraz w
+  `wilq/content/workflow/stage_snapshot.py`, a API używa typed callbacks oraz
+  kompatybilnego wrappera. `api.py` spadł do 644 LOC; focused content suite,
+  Ruff, mypy, complexity i diff check przechodzą. Live snapshot homepage ma
+  świeżość `fresh`, public canonical `https://www.ekologus.pl/`, 2 evidence
+  IDs i konektory GSC/WordPress; browser `/content-workflow` pokazuje decyzję,
+  sekcje public/dev, CTA preview i blokadę ActionObject.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

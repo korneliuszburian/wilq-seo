@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from datetime import date
+from functools import partial
 from typing import Literal
 
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.briefs.sales import (
-    ContentSalesBrief,
     ContentSalesBriefSeed,
 )
 from wilq.content.claims.ledger import ContentClaimLedger
@@ -16,9 +15,6 @@ from wilq.content.drafts.openai_runtime import (
 from wilq.content.drafts.openai_sdk import (
     build_openai_sdk_client,
     openai_structured_draft_live_enabled,
-)
-from wilq.content.drafts.package import (
-    ContentDraftPackage,
 )
 from wilq.content.drafts.preview import (
     build_structured_draft_preview,
@@ -41,15 +37,11 @@ from wilq.content.inventory.records import (
     ContentInventoryRecord,
 )
 from wilq.content.knowledge.cards import (
-    ContentKnowledgeCardMatch,
     match_content_knowledge_cards,
 )
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
     build_content_work_item_service_profile_context,
-)
-from wilq.content.measurement.window import (
-    ContentDateRange,
 )
 from wilq.content.quality.review import (
     build_content_quality_review,
@@ -68,26 +60,15 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftWriteReadinessBlocker,
     ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemBlockedSnapshotResponse,
-    ContentWorkItemDraftPackageRequest,
-    ContentWorkItemDraftPackageResponse,
-    ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
-    ContentWorkItemMeasurementWindowRequest,
-    ContentWorkItemMeasurementWindowResponse,
-    ContentWorkItemPreflightRequest,
-    ContentWorkItemPreflightResponse,
     ContentWorkItemQualityReviewRequest,
     ContentWorkItemQualityReviewResponse,
     ContentWorkItemRevisionApplyRequest,
     ContentWorkItemRevisionApplyResponse,
     ContentWorkItemRevisionPlanRequest,
     ContentWorkItemRevisionPlanResponse,
-    ContentWorkItemSalesBriefRequest,
-    ContentWorkItemSalesBriefResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
-    ContentWorkItemStructuredDraftGenerationRequest,
-    ContentWorkItemStructuredDraftGenerationResponse,
     ContentWorkItemStructuredDraftPreviewRequest,
     ContentWorkItemStructuredDraftPreviewResponse,
     ContentWorkItemStructuredDraftRuntimeRequest,
@@ -96,7 +77,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
     ContentWorkItemWordPressDraftExecutionResponse,
-    ContentWorkItemWordPressDraftHandoffRequest,
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
@@ -147,6 +127,16 @@ from wilq.content.workflow.stage_readiness import (
 from wilq.content.workflow.stage_review import (
     build_content_work_item_human_review_response,
     build_content_work_item_wordpress_draft_handoff_response,
+)
+from wilq.content.workflow.stage_snapshot import (
+    SnapshotStageCallbacks,
+    snapshot_draft_package,
+    snapshot_human_review,
+    snapshot_measurement_window,
+    snapshot_preflight,
+    snapshot_sales_brief,
+    snapshot_structured_generation,
+    snapshot_wordpress_handoff,
 )
 from wilq.content.workflow.stage_write_readiness import (
     WriteReadinessCallbacks,
@@ -568,6 +558,15 @@ def _build_content_work_item_snapshot_response(
         item,
         knowledge_match=knowledge_match,
     )
+    stage_callbacks = SnapshotStageCallbacks(
+        preflight=build_content_work_item_preflight_response,
+        sales_brief=build_content_work_item_sales_brief_response,
+        draft_package=build_content_work_item_draft_package_response,
+        structured_generation=build_content_work_item_structured_draft_generation_response,
+        human_review=build_content_work_item_human_review_response,
+        wordpress_handoff=build_content_work_item_wordpress_draft_handoff_response,
+        measurement_window=build_content_work_item_measurement_window_response,
+    )
     return assemble_content_work_item_snapshot(
         item=item,
         inventory_records=inventory_records,
@@ -580,244 +579,21 @@ def _build_content_work_item_snapshot_response(
         service_profile_context=service_profile_context,
         measurement_window_id=f"measure_{item.id}",
         callbacks=SnapshotAssemblyCallbacks(
-            preflight=_snapshot_preflight,
-            sales_brief=_snapshot_sales_brief,
-            draft_package=_snapshot_draft_package,
-            structured_generation=_snapshot_structured_generation,
-            human_review=_snapshot_human_review,
-            wordpress_handoff=_snapshot_wordpress_handoff,
-            measurement_window=_snapshot_measurement_window,
+            preflight=partial(snapshot_preflight, callbacks=stage_callbacks),
+            sales_brief=partial(snapshot_sales_brief, callbacks=stage_callbacks),
+            draft_package=partial(snapshot_draft_package, callbacks=stage_callbacks),
+            structured_generation=partial(
+                snapshot_structured_generation, callbacks=stage_callbacks
+            ),
+            human_review=partial(snapshot_human_review, callbacks=stage_callbacks),
+            wordpress_handoff=partial(snapshot_wordpress_handoff, callbacks=stage_callbacks),
+            measurement_window=partial(
+                snapshot_measurement_window, callbacks=stage_callbacks
+            ),
             operator_steps=workflow_steps.content_workflow_operator_steps,
         ),
         human_review_record=human_review_record,
         audit=audit,
-    )
-
-
-def _snapshot_preflight(
-    item: ContentWorkItem,
-    inventory_records: list[ContentInventoryRecord],
-) -> ContentWorkItemPreflightResponse:
-    return build_content_work_item_preflight_response(
-        ContentWorkItemPreflightRequest(
-            item=item,
-            inventory_records=inventory_records,
-            duplicate_risk="clear",
-        )
-    )
-
-
-def _snapshot_sales_brief(
-    item: ContentWorkItem,
-    inventory_records: list[ContentInventoryRecord],
-    claim_ledger: ContentClaimLedger,
-    seed: ContentSalesBriefSeed,
-    enrichment: ContentOpportunityEnrichment,
-    knowledge_match: ContentKnowledgeCardMatch,
-    measurement_window_id: str,
-) -> ContentWorkItemSalesBriefResponse:
-    return build_content_work_item_sales_brief_response(
-        ContentWorkItemSalesBriefRequest(
-            item=item.model_copy(
-                update={
-                    "preserve_first_plan_status": "approved",
-                    "measurement_window_status": "planned",
-                    "measurement_window_id": measurement_window_id,
-                }
-            ),
-            inventory_records=inventory_records,
-            duplicate_risk="clear",
-            claim_ledger=claim_ledger,
-            seed=seed,
-            enrichment=enrichment,
-            knowledge_match=knowledge_match,
-        )
-    )
-
-
-def _snapshot_draft_package(
-    item: ContentWorkItem,
-    inventory_records: list[ContentInventoryRecord],
-    claim_ledger: ContentClaimLedger,
-    seed: ContentSalesBriefSeed,
-    enrichment: ContentOpportunityEnrichment,
-    knowledge_match: ContentKnowledgeCardMatch,
-    measurement_window_id: str,
-    brief_id: str | None,
-    brief: ContentSalesBrief | None,
-) -> ContentWorkItemDraftPackageResponse:
-    return build_content_work_item_draft_package_response(
-        ContentWorkItemDraftPackageRequest(
-            item=_snapshot_item_ready_for_draft(
-                item,
-                claim_ledger,
-                measurement_window_id,
-                brief_id,
-            ),
-            inventory_records=inventory_records,
-            duplicate_risk="clear",
-            claim_ledger=claim_ledger,
-            seed=seed,
-            enrichment=enrichment,
-            knowledge_match=knowledge_match,
-            sales_brief=brief,
-        )
-    )
-
-
-def _snapshot_structured_generation(
-    item: ContentWorkItem,
-    claim_ledger: ContentClaimLedger,
-    measurement_window_id: str,
-    brief_id: str | None,
-    brief: ContentSalesBrief | None,
-    draft: ContentDraftPackage | None,
-) -> ContentWorkItemStructuredDraftGenerationResponse:
-    return build_content_work_item_structured_draft_generation_response(
-        ContentWorkItemStructuredDraftGenerationRequest(
-            item=_snapshot_item_ready_for_draft(
-                item,
-                claim_ledger,
-                measurement_window_id,
-                brief_id,
-                draft,
-            ),
-            sales_brief=brief,
-            claim_ledger=claim_ledger,
-            draft_package=draft,
-        )
-    )
-
-
-def _snapshot_human_review(
-    item: ContentWorkItem,
-    claim_ledger: ContentClaimLedger,
-    measurement_window_id: str,
-    brief_id: str | None,
-    draft: ContentDraftPackage | None,
-    human_review_record: ContentHumanReview | None,
-) -> ContentWorkItemHumanReviewResponse:
-    return build_content_work_item_human_review_response(
-        ContentWorkItemHumanReviewRequest(
-            item=_snapshot_item_ready_for_handoff(
-                item,
-                claim_ledger,
-                measurement_window_id,
-                brief_id,
-                draft,
-            ),
-            review=human_review_record,
-            draft_package=draft,
-            claim_ledger=claim_ledger,
-        )
-    )
-
-
-def _snapshot_wordpress_handoff(
-    item: ContentWorkItem,
-    draft: ContentDraftPackage | None,
-    human_review: ContentHumanReview | None,
-    audit: ContentWordPressDraftAuditEnvelope | None,
-) -> ContentWorkItemWordPressDraftHandoffResponse:
-    return build_content_work_item_wordpress_draft_handoff_response(
-        ContentWorkItemWordPressDraftHandoffRequest(
-            item=item,
-            draft_package=draft,
-            human_review=human_review,
-            audit=audit,
-        )
-    )
-
-
-def _snapshot_measurement_window(
-    item: ContentWorkItem,
-    claim_ledger: ContentClaimLedger,
-    wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse,
-    measurement_window_id: str,
-    brief_id: str | None,
-    draft: ContentDraftPackage | None,
-    human_review: ContentWorkItemHumanReviewResponse,
-) -> ContentWorkItemMeasurementWindowResponse:
-    return build_content_work_item_measurement_window_response(
-        ContentWorkItemMeasurementWindowRequest(
-            item=_snapshot_item_ready_for_measurement(
-                item,
-                claim_ledger,
-                measurement_window_id,
-                brief_id,
-                draft,
-                human_review,
-            ),
-            handoff=wordpress_handoff.handoff_result.handoff,
-            baseline_period=ContentDateRange(start=date(2026, 5, 1), end=date(2026, 5, 31)),
-            observation_period=ContentDateRange(start=date(2026, 7, 1), end=date(2026, 7, 31)),
-            allowed_metrics=["gsc_clicks", "gsc_impressions", "ga4_engaged_sessions"],
-            source_connectors=["google_search_console", "google_analytics_4"],
-        )
-    )
-
-
-def _snapshot_item_ready_for_draft(
-    item: ContentWorkItem,
-    claim_ledger: ContentClaimLedger,
-    measurement_window_id: str,
-    brief_id: str | None,
-    draft: ContentDraftPackage | None = None,
-) -> ContentWorkItem:
-    update: dict[str, object] = {
-        "preflight_status": "draft_allowed",
-        "preserve_first_plan_status": "approved",
-        "sales_brief_status": "approved",
-        "sales_brief_id": brief_id,
-        "claim_ledger_status": "approved",
-        "claim_ledger_id": claim_ledger.id,
-        "measurement_window_status": "planned",
-        "measurement_window_id": measurement_window_id,
-    }
-    if draft is not None:
-        update.update({"draft_package_status": "ready", "draft_package_id": draft.id})
-    return item.model_copy(update=update)
-
-
-def _snapshot_item_ready_for_handoff(
-    item: ContentWorkItem,
-    claim_ledger: ContentClaimLedger,
-    measurement_window_id: str,
-    brief_id: str | None,
-    draft: ContentDraftPackage | None,
-) -> ContentWorkItem:
-    return _snapshot_item_ready_for_draft(
-        item,
-        claim_ledger,
-        measurement_window_id,
-        brief_id,
-        draft,
-    ).model_copy(update={"preflight_status": "handoff_allowed"})
-
-
-def _snapshot_item_ready_for_measurement(
-    item: ContentWorkItem,
-    claim_ledger: ContentClaimLedger,
-    measurement_window_id: str,
-    brief_id: str | None,
-    draft: ContentDraftPackage | None,
-    human_review: ContentWorkItemHumanReviewResponse,
-) -> ContentWorkItem:
-    return _snapshot_item_ready_for_handoff(
-        item,
-        claim_ledger,
-        measurement_window_id,
-        brief_id,
-        draft,
-    ).model_copy(
-        update={
-            "human_review_status": human_review.reviewed_item.human_review_status,
-            "human_review_id": human_review.reviewed_item.human_review_id,
-            "audit_status": "missing",
-            "audit_id": None,
-            "measurement_window_status": "missing",
-            "measurement_window_id": None,
-        }
     )
 
 

@@ -87,6 +87,9 @@ skonfigurowanym adapterze/env nadal fail-closed zwraca blocker
 `actionobject_apply_path_required`; `api.py` ma teraz 868 LOC.
 Następny aktywny seam to `wilq-seo-97a3`: snapshot stage adapters, bez nowych
 endpointów i bez odblokowania vendor writes.
+`wilq-seo-97a3` jest zamknięty: stage adapters i helpery stanu są w
+`wilq/content/workflow/stage_snapshot.py`, `api.py` ma 644 LOC, a live snapshot
+i browser proof zachowują freshness/evidence oraz fail-closed ActionObject.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
