@@ -44,4 +44,6 @@ zgłoszeń, podtytuł i podsumowanie próbek. Merchant module przejął stałą
 
 ## Commit
 
-Hash implementacji zostanie dopisany po pushu w osobnym docs-only commicie.
+Implementacja: `29548958` (`refactor: extract merchant feed preview cards`),
+wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
+commitem.
