@@ -17,6 +17,7 @@ confirmation i impact blockers. Service pozostaje orkiestratorem.
 - Po managed restart `/api/health` jest `ok`; Ads action detail HTTP 200 ma
   evidence, `Zapis zmian zablokowany` i `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/preview-summary-live.png`.
+- Commit implementacji: `c942aa2` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
