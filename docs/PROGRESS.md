@@ -522,6 +522,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   callbacks. Live `/api/actions` nadal pokazuje LinkedIn/Facebook w trybie
   `prepare` z evidence IDs, czterema kartami `social_draft_input_review` i bez
   publikacji; focused social/action tests, Ruff, mypy i complexity przechodzą.
+- Kolejny bounded seam Ads: renderer `budget_apply_preview_v1` jest teraz w
+  `wilq/actions/google_ads/previews.py`; service przekazuje callbacks do rows,
+  money labels i safety labels. Live Ads action ma `prepare`, evidence ID,
+  cztery `google_ads_budget_review` cards, `apply_allowed=false` i
+  `api_mutation_ready=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-budget-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
