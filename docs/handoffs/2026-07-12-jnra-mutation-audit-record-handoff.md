@@ -18,6 +18,7 @@ właścicielem statusu audytu i redacted vendor-write trace.
   `vendor_write_possible=false`, Ads detail ma evidence, blokadę zapisu i
   `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/mutation-audit-live.png`.
+- Commit implementacji: `b2a9274` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
