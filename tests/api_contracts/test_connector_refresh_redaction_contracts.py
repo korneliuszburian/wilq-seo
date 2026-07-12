@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,8 @@ import pytest
 from apps.api.wilq_api.routers import connectors as connectors_router
 from tests._contract_support.api_client import client
 from tests._contract_support.env import clear_google_ads_env
+from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus, utc_now
+from wilq.storage.local_state import local_state_store
 
 
 def test_connector_refresh_run_persists_redacted_evidence(
@@ -71,6 +74,11 @@ def test_connector_status_exposes_typed_refresh_state_without_credentials(
     assert refresh_state["state_label"]
     assert refresh_state["safe_next_step"]
     assert refresh_state["affected_decisions"] == ["ads_diagnostics", "command_center"]
+    assert refresh_state["automatic_refresh"]["eligible"] is False
+    assert refresh_state["automatic_refresh"]["reason"] == "missing_credentials"
+    assert refresh_state["automatic_refresh"]["reason_label"]
+    assert refresh_state["automatic_refresh"]["safe_next_step"]
+    assert refresh_state["automatic_refresh"]["cooldown_seconds"] == 900
     serialized = json.dumps(refresh_state)
     assert "GOOGLE_ADS_CLIENT_SECRET" not in serialized
     assert "refresh_token" not in serialized.lower()
@@ -125,6 +133,52 @@ def test_async_connector_refresh_reuses_active_run(
     assert second.json()["status"] == "queued"
 
 
+def test_configured_stale_connector_exposes_auto_refresh_trigger_policy(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "stale_trigger_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    for name in (
+        "GOOGLE_ADS_DEVELOPER_TOKEN",
+        "GOOGLE_ADS_CLIENT_ID",
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "GOOGLE_ADS_REFRESH_TOKEN",
+        "GOOGLE_ADS_CUSTOMER_ID",
+        "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
+    ):
+        monkeypatch.setenv(name, "configured-test-value")
+    completed_at = utc_now() - timedelta(hours=49)
+    local_state_store().save_connector_refresh_run(
+        ConnectorRefreshRun(
+            id="refresh_google_ads_stale_trigger",
+            connector_id="google_ads",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            completed_at=completed_at,
+            evidence_ids=["ev_refresh_google_ads_stale_trigger"],
+            external_call_attempted=False,
+            vendor_data_collected=True,
+            summary="Stale trigger policy fixture.",
+        )
+    )
+
+    response = client.get("/api/connectors/google_ads/status")
+
+    assert response.status_code == 200
+    refresh_state = response.json()["refresh_state"]
+    assert refresh_state["state"] == "stale"
+    assert refresh_state["refresh_allowed"] is True
+    assert refresh_state["automatic_refresh"] == {
+        "eligible": True,
+        "reason": "eligible_stale",
+        "reason_label": "Stare źródło kwalifikuje się do odczytu",
+        "safe_next_step": "Można bezpiecznie zlecić read-only refresh.",
+        "cooldown_seconds": 900,
+    }
+
+
 def test_connector_status_blocks_duplicate_refresh_while_run_is_active(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -156,3 +210,5 @@ def test_connector_status_blocks_duplicate_refresh_while_run_is_active(
     assert refresh_state["state"] == "queued"
     assert refresh_state["refresh_allowed"] is False
     assert "poczekaj" in refresh_state["safe_next_step"]
+    assert refresh_state["automatic_refresh"]["eligible"] is False
+    assert refresh_state["automatic_refresh"]["reason"] == "active_run"

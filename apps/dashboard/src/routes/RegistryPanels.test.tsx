@@ -80,7 +80,14 @@ describe("RegistryPanels", () => {
               last_run_started_at: null,
               last_run_completed_at: null,
               safe_next_step: "Uzupełnij dostęp przed odczytem.",
-              affected_decisions: ["ads_diagnostics", "command_center"]
+              affected_decisions: ["ads_diagnostics", "command_center"],
+              automatic_refresh: {
+                eligible: false,
+                reason: "missing_credentials",
+                reason_label: "Brakuje dostępu do źródła",
+                safe_next_step: "Uzupełnij credentials przed odczytem.",
+                cooldown_seconds: 900
+              }
             },
             risk_notes: "Zapis Ads wymaga ActionObject, review człowieka i audit eventu.",
             health_check: "credential_presence",

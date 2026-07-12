@@ -91,6 +91,16 @@ w git, Beads i `docs/progress/archive/`.
   ukrywa przycisk i pokazuje komunikat oczekiwania; focused Vitest 2/2,
   typecheck/lint green. Desktop render po zmianie zachowuje decyzję i CTA dla
   dozwolonych źródeł; proof `.local-lab/proof/4wwo-sources-refresh-state.png`.
+- `wilq-seo-xu5s` domyka API-owned politykę kwalifikacji automatycznego
+  read-only refresh: `ConnectorRefreshState.automatic_refresh` zwraca typed
+  `eligible`, reason, Polish label, safe next step i 900 s cooldown. Tylko stale,
+  configured, read-capable źródło bez credentials/aktywnego runu może zostać
+  oznaczone `eligible_stale`; unknown, partial, failed, blocked, missing i
+  cooldown są jawnie fail-closed. Live API po restarcie wskazuje obecnie
+  Google Ads, Merchant i Localo jako eligible, bez uruchomienia żadnego vendor
+  read. Backend 6/6, shared schema 34/34, dashboard focused 31/31, typecheck,
+  lint, build, Ruff, mypy, complexity i diff check przechodzą. Sam dashboardowy
+  trigger loop pozostaje osobnym kolejnym slice'em `4wwo`.
 - Po domknięciu refresh boundary przeszedłem do potwierdzonego `jnra`: read-only
   projekcje historii audytu i mutation auditów są teraz w
   `wilq/actions/audit_store.py`, z limitem 10 wpisów na akcję i bez zmiany

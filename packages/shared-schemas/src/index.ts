@@ -17,7 +17,26 @@ export const ConnectorRefreshStateSchema = z.object({
   last_run_started_at: z.string().nullable().optional(),
   last_run_completed_at: z.string().nullable().optional(),
   safe_next_step: z.string(),
-  affected_decisions: z.array(z.string())
+  affected_decisions: z.array(z.string()),
+  automatic_refresh: z.object({
+    eligible: z.boolean(),
+    reason: z.enum([
+      "eligible_stale",
+      "not_stale",
+      "active_run",
+      "cooldown",
+      "missing_credentials",
+      "not_configured",
+      "read_unavailable",
+      "partial_read",
+      "failed_read",
+      "blocked_read",
+      "unknown_state"
+    ]),
+    reason_label: z.string(),
+    safe_next_step: z.string(),
+    cooldown_seconds: z.number()
+  })
 });
 
 export const ConnectorStatusSchema = z.object({
@@ -44,7 +63,14 @@ export const ConnectorStatusSchema = z.object({
     state_label: "stan odświeżenia do sprawdzenia",
     refresh_allowed: false,
     safe_next_step: "Sprawdź stan źródła przed użyciem danych w decyzji.",
-    affected_decisions: []
+    affected_decisions: [],
+    automatic_refresh: {
+      eligible: false,
+      reason: "unknown_state",
+      reason_label: "Automatyczne odświeżenie wymaga sprawdzenia.",
+      safe_next_step: "Sprawdź stan źródła przed automatycznym odczytem.",
+      cooldown_seconds: 900
+    }
   }),
   error: z.string().nullable().optional(),
   rate_limit_notes: z.string().nullable().optional(),

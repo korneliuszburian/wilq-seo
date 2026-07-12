@@ -26,7 +26,14 @@ const connectors = [
       state_label: "odczyt zablokowany",
       refresh_allowed: false,
       safe_next_step: "Uzupełnij dostęp przed odczytem.",
-      affected_decisions: ["ads_diagnostics", "command_center"]
+      affected_decisions: ["ads_diagnostics", "command_center"],
+      automatic_refresh: {
+        eligible: false,
+        reason: "missing_credentials",
+        reason_label: "Brakuje dostępu do źródła",
+        safe_next_step: "Uzupełnij credentials przed odczytem.",
+        cooldown_seconds: 900
+      }
     },
     supported_actions: []
   },
@@ -49,7 +56,14 @@ const connectors = [
       state_label: "wymaga odświeżenia",
       refresh_allowed: true,
       safe_next_step: "Uruchom bezpieczny odczyt źródła przed wnioskiem z danych.",
-      affected_decisions: ["ga4_diagnostics", "command_center"]
+      affected_decisions: ["ga4_diagnostics", "command_center"],
+      automatic_refresh: {
+        eligible: true,
+        reason: "eligible_stale",
+        reason_label: "Stare źródło kwalifikuje się do odczytu",
+        safe_next_step: "Można bezpiecznie zlecić read-only refresh.",
+        cooldown_seconds: 900
+      }
     },
     supported_actions: []
   }
@@ -8083,7 +8097,14 @@ describe("WILQ dashboard", () => {
       state_label: "odczyt w kolejce",
       refresh_allowed: false,
       safe_next_step: "Odczyt jest w kolejce; poczekaj na wynik przed decyzją.",
-      affected_decisions: ["ga4_diagnostics", "command_center"]
+      affected_decisions: ["ga4_diagnostics", "command_center"],
+      automatic_refresh: {
+        eligible: false,
+        reason: "active_run",
+        reason_label: "Odczyt źródła już trwa",
+        safe_next_step: "Poczekaj na zakończenie aktywnego odczytu.",
+        cooldown_seconds: 900
+      }
     };
 
     try {

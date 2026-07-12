@@ -825,6 +825,13 @@ ich rozmiaru.
   status checked/blocked, metryki, source connectors, blocker i union evidence.
   Focused audit/review/preview tests, Ruff, mypy, diff check i API smoke
   przechodzą; brak zmian w measurement claims albo vendor writes.
+- `wilq-seo-xu5s` dodał typed API-owned policy do
+  `ConnectorRefreshState.automatic_refresh`: eligibility, reason, Polish copy,
+  safe next step i 900 s cooldown. Stale configured read-only connector może
+  być tylko `eligible_stale`; unknown, partial, failed, blocked, missing
+  credentials, aktywny run oraz cooldown pozostają nieeligible. Shared dashboard
+  schema używa tego samego kontraktu, ale UI nie uruchamia jeszcze automatycznego
+  refreshu — to następny osobny slice `4wwo`, bez vendor write.
 
 ## Resume
 

@@ -73,6 +73,28 @@ class ConnectorRefreshJobState(StrEnum):
     unknown = "unknown"
 
 
+class ConnectorRefreshTriggerReason(StrEnum):
+    eligible_stale = "eligible_stale"
+    not_stale = "not_stale"
+    active_run = "active_run"
+    cooldown = "cooldown"
+    missing_credentials = "missing_credentials"
+    not_configured = "not_configured"
+    read_unavailable = "read_unavailable"
+    partial_read = "partial_read"
+    failed_read = "failed_read"
+    blocked_read = "blocked_read"
+    unknown_state = "unknown_state"
+
+
+class ConnectorRefreshTriggerPolicy(BaseModel):
+    eligible: bool = False
+    reason: ConnectorRefreshTriggerReason = ConnectorRefreshTriggerReason.unknown_state
+    reason_label: str = "Automatyczne odświeżenie wymaga sprawdzenia."
+    safe_next_step: str = "Sprawdź stan źródła przed automatycznym odczytem."
+    cooldown_seconds: int = 900
+
+
 class ConnectorRefreshState(BaseModel):
     state: ConnectorRefreshJobState = ConnectorRefreshJobState.unknown
     state_label: str = "stan odświeżenia do sprawdzenia"
@@ -83,6 +105,9 @@ class ConnectorRefreshState(BaseModel):
     last_run_completed_at: datetime | None = None
     safe_next_step: str = "Sprawdź stan źródła przed użyciem danych w decyzji."
     affected_decisions: list[str] = Field(default_factory=list)
+    automatic_refresh: ConnectorRefreshTriggerPolicy = Field(
+        default_factory=ConnectorRefreshTriggerPolicy
+    )
 
 
 class ActionMode(StrEnum):
@@ -407,9 +432,8 @@ def _metric_dimension_label(value: str) -> str:
     return labels.get(value, "wymiar")
 
 
-def _metric_dimension_value_label(key: str, value: str) -> str:
-    text = str(value or "").strip()
-    labels = {
+def _metric_dimension_value_labels() -> dict[str, str]:
+    return {
         "active_places": "aktywne miejsca",
         "authority_summary": "autorytet domeny",
         "BROAD": "dopasowanie szerokie",
@@ -458,6 +482,14 @@ def _metric_dimension_value_label(key: str, value: str) -> str:
         "image_too_small_for_high_resolution": "grafika za mała do wysokiej rozdzielczości",
         "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "poprawa siły zasobów Performance Max",
     }
+
+
+METRIC_DIMENSION_VALUE_LABELS = _metric_dimension_value_labels()
+
+
+def _metric_dimension_value_label(key: str, value: str) -> str:
+    text = str(value or "").strip()
+    labels = METRIC_DIMENSION_VALUE_LABELS
     if key == "connector_id":
         return source_connector_label(value)
     if key == "wordpress_connector":

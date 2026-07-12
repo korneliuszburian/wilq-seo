@@ -38,6 +38,7 @@ import {
   ContentWordPressAuthoringPayloadPreviewResultSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
+  ConnectorRefreshStateSchema,
   KnowledgeTaxonomyEntrySchema,
   AdsOperatorSummarySchema,
   MerchantDiagnosticsResponseSchema,
@@ -110,6 +111,33 @@ describe("ActionObjectSchema", () => {
       ActionObjectSchema.safeParse({
         ...validAction,
         validation_status: "pending_validation"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ConnectorRefreshStateSchema", () => {
+  it("requires the API-owned automatic refresh policy", () => {
+    const parsed = ConnectorRefreshStateSchema.parse({
+      state: "stale",
+      state_label: "wymaga odświeżenia",
+      refresh_allowed: true,
+      safe_next_step: "Uruchom bezpieczny odczyt.",
+      affected_decisions: ["merchant_diagnostics"],
+      automatic_refresh: {
+        eligible: true,
+        reason: "eligible_stale",
+        reason_label: "Stare źródło kwalifikuje się do odczytu",
+        safe_next_step: "Można bezpiecznie zlecić read-only refresh.",
+        cooldown_seconds: 900
+      }
+    });
+
+    expect(parsed.automatic_refresh.eligible).toBe(true);
+    expect(
+      ConnectorRefreshStateSchema.safeParse({
+        ...parsed,
+        automatic_refresh: { ...parsed.automatic_refresh, reason: "invented" }
       }).success
     ).toBe(false);
   });

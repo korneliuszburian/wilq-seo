@@ -22,6 +22,8 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshState,
     ConnectorRefreshStatus,
+    ConnectorRefreshTriggerPolicy,
+    ConnectorRefreshTriggerReason,
     ConnectorStatus,
     ConnectorStatusValue,
     FreshnessState,
@@ -478,6 +480,13 @@ def _connector_refresh_state(
         ),
         ConnectorRefreshJobState.unknown: "Uruchom bezpieczny odczyt, aby potwierdzić stan źródła.",
     }
+    automatic_refresh = _connector_refresh_trigger_policy(
+        configured=configured,
+        read=read,
+        missing_credentials=missing_credentials,
+        state=state,
+        latest_run=latest_run,
+    )
     return ConnectorRefreshState(
         state=state,
         state_label=labels[state],
@@ -488,6 +497,84 @@ def _connector_refresh_state(
         last_run_completed_at=latest_run.completed_at if latest_run is not None else None,
         safe_next_step=next_steps[state],
         affected_decisions=affected_decisions,
+        automatic_refresh=automatic_refresh,
+    )
+
+
+def _connector_refresh_trigger_policy(
+    *,
+    configured: bool,
+    read: bool,
+    missing_credentials: list[str],
+    state: ConnectorRefreshJobState,
+    latest_run: ConnectorRefreshRun | None,
+) -> ConnectorRefreshTriggerPolicy:
+    cooldown_seconds = 900
+    reason: ConnectorRefreshTriggerReason
+    if missing_credentials:
+        reason = ConnectorRefreshTriggerReason.missing_credentials
+    elif not configured:
+        reason = ConnectorRefreshTriggerReason.not_configured
+    elif not read:
+        reason = ConnectorRefreshTriggerReason.read_unavailable
+    elif state in {ConnectorRefreshJobState.queued, ConnectorRefreshJobState.running}:
+        reason = ConnectorRefreshTriggerReason.active_run
+    elif state == ConnectorRefreshJobState.partial:
+        reason = ConnectorRefreshTriggerReason.partial_read
+    elif state == ConnectorRefreshJobState.failed:
+        reason = ConnectorRefreshTriggerReason.failed_read
+    elif state == ConnectorRefreshJobState.blocked:
+        reason = ConnectorRefreshTriggerReason.blocked_read
+    elif state == ConnectorRefreshJobState.unknown:
+        reason = ConnectorRefreshTriggerReason.unknown_state
+    elif state != ConnectorRefreshJobState.stale:
+        reason = ConnectorRefreshTriggerReason.not_stale
+    elif latest_run is not None and latest_run.completed_at is not None:
+        elapsed = utc_now() - latest_run.completed_at
+        if elapsed < timedelta(seconds=cooldown_seconds):
+            reason = ConnectorRefreshTriggerReason.cooldown
+        else:
+            reason = ConnectorRefreshTriggerReason.eligible_stale
+    else:
+        reason = ConnectorRefreshTriggerReason.eligible_stale
+    labels = {
+        ConnectorRefreshTriggerReason.eligible_stale: "Stare źródło kwalifikuje się do odczytu",
+        ConnectorRefreshTriggerReason.not_stale: "Źródło nie wymaga automatycznego odczytu",
+        ConnectorRefreshTriggerReason.active_run: "Odczyt źródła już trwa",
+        ConnectorRefreshTriggerReason.cooldown: "Odczyt źródła był uruchomiony niedawno",
+        ConnectorRefreshTriggerReason.missing_credentials: "Brakuje dostępu do źródła",
+        ConnectorRefreshTriggerReason.not_configured: "Źródło nie jest skonfigurowane",
+        ConnectorRefreshTriggerReason.read_unavailable: "Odczyt źródła jest niedostępny",
+        ConnectorRefreshTriggerReason.partial_read: "Ostatni odczyt źródła był częściowy",
+        ConnectorRefreshTriggerReason.failed_read: "Ostatni odczyt źródła zakończył się błędem",
+        ConnectorRefreshTriggerReason.blocked_read: "Odczyt źródła jest zablokowany",
+        ConnectorRefreshTriggerReason.unknown_state: "Stan źródła jest nieznany",
+    }
+    next_steps = {
+        ConnectorRefreshTriggerReason.eligible_stale: "Można bezpiecznie zlecić read-only refresh.",
+        ConnectorRefreshTriggerReason.not_stale: (
+            "Użyj ostatniego odczytu zgodnie z jego świeżością."
+        ),
+        ConnectorRefreshTriggerReason.active_run: "Poczekaj na zakończenie aktywnego odczytu.",
+        ConnectorRefreshTriggerReason.cooldown: (
+            "Poczekaj do końca okna ochronnego przed kolejnym odczytem."
+        ),
+        ConnectorRefreshTriggerReason.missing_credentials: "Uzupełnij credentials przed odczytem.",
+        ConnectorRefreshTriggerReason.not_configured: "Skonfiguruj źródło przed odczytem.",
+        ConnectorRefreshTriggerReason.read_unavailable: "Pozostaw automatyczny odczyt wyłączony.",
+        ConnectorRefreshTriggerReason.partial_read: (
+            "Zweryfikuj częściowy odczyt i uruchom go ręcznie."
+        ),
+        ConnectorRefreshTriggerReason.failed_read: "Sprawdź błąd i uruchom odczyt po naprawie.",
+        ConnectorRefreshTriggerReason.blocked_read: "Usuń blocker dostępu przed odczytem.",
+        ConnectorRefreshTriggerReason.unknown_state: "Najpierw potwierdź stan źródła read-only.",
+    }
+    return ConnectorRefreshTriggerPolicy(
+        eligible=reason == ConnectorRefreshTriggerReason.eligible_stale,
+        reason=reason,
+        reason_label=labels[reason],
+        safe_next_step=next_steps[reason],
+        cooldown_seconds=cooldown_seconds,
     )
 
 
