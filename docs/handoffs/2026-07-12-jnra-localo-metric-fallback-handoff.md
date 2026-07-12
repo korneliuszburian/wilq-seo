@@ -39,3 +39,6 @@ access through typed callbacks; service still owns I/O and orchestration.
 - `wilq-seo-c9h9.4` remains closed; no return to the completed WordPress apply
   path.
 
+## Commit
+
+Implementacja i handoff: `25a7fb13` (`refactor: isolate Localo metric fallback`).
