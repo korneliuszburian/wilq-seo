@@ -118,6 +118,15 @@ w git, Beads i `docs/progress/archive/`.
   `wilq/actions/mutation_target.py`; candidate ID, canonical URL i label
   fallback pozostają identyczne, a `service.py` ma 3868 LOC. Focused readiness
   tests, Ruff, mypy, complexity i diff check są zielone.
+- Następny seam `jnra` przeniósł WordPress draft payload/handoff preview cards do
+  `wilq/actions/wordpress_preview.py`; dispatcher zachowuje te same typed cards,
+  labels i draft-only blockers przez jawne callbacks. Focused action/content
+  preview tests, Ruff, mypy, complexity i diff check są zielone; `service.py` ma
+  3782 LOC.
+- Live action proof po restart: `/actions/act_prepare_wordpress_draft_handoff`
+  renderuje typed WordPress cards z URL publicznym/kanonicznym, blocked claims i
+  `zapis zmian zablokowany`; screenshot/text są w
+  `.local-lab/proof/continuation-2026-07-12/action-preview-cards.*`.
 - `kgvy` slice wykonany: optimizer-readiness assembly przeniesiono do
   `wilq/briefing/ads_optimizer.py`, a `ads_diagnostics.py` zmniejszył się o 358
   linii. Osiem obszarów zachowuje evidence IDs, source connectors, blocked claims

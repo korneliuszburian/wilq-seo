@@ -456,6 +456,13 @@ ich rozmiaru.
 - Target projection readiness jest teraz w `wilq/actions/mutation_target.py`;
   service przekazuje istniejący preview-items callback i nie składa targetu z
   raw payloadu. `service.py` ma 3868 LOC; payloady i safety gates bez zmian.
+- WordPress draft payload/handoff preview cards są teraz w
+  `wilq/actions/wordpress_preview.py`; dispatcher zachowuje istniejące preview
+  contracts i callbacki operator labels. `service.py` ma 3782 LOC; brak nowej
+  ścieżki write/publish.
+- Action detail proof po restart pokazuje cztery typed WordPress preview cards,
+  canonical/public URL rows i blocked claims; artefakt jest w
+  `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
 - `4wwo` ma teraz istniejący `/api/connectors` rozszerzony o typed
   `refresh_state`: stan odczytu, `refresh_allowed`, ostatni run, safe next step i
   affected decisions. `/settings` pokazuje tę informację ponad ręcznym CTA;

@@ -162,6 +162,10 @@ from wilq.actions.wordpress_mutation_requirements import (
     wordpress_draft_execution_readiness_requirements,
     wordpress_draft_target_content_readiness_requirements,
 )
+from wilq.actions.wordpress_preview import (
+    wordpress_draft_handoff_preview_cards,
+    wordpress_draft_payload_preview_card,
+)
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -1946,9 +1950,21 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
     if action.payload.get("preview_contract") == "content_brief_preview_v1":
         return _content_refresh_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "wordpress_draft_handoff_preview_v1":
-        return _wordpress_draft_handoff_preview_cards(action.payload)
+        return wordpress_draft_handoff_preview_cards(
+            action.payload,
+            preview_row=_preview_row,
+            string_list=_string_list,
+            apply_state_label=_apply_state_label,
+            system_readiness_label=_system_readiness_label,
+        )
     if action.payload.get("preview_contract") == "wordpress_draft_apply_preview_v1":
-        return _wordpress_draft_handoff_preview_cards(action.payload)
+        return wordpress_draft_handoff_preview_cards(
+            action.payload,
+            preview_row=_preview_row,
+            string_list=_string_list,
+            apply_state_label=_apply_state_label,
+            system_readiness_label=_system_readiness_label,
+        )
     if (
         action.payload.get("preview_contract")
         == "service_profile_knowledge_promotion_preview_v1"
@@ -2149,7 +2165,15 @@ def _content_refresh_preview_cards(
         _content_brief_preview_card(item, index) for index, item in enumerate(content_items[:3])
     ]
     cards.extend(
-        _wordpress_draft_payload_preview_card(item, index)
+        wordpress_draft_payload_preview_card(
+            item,
+            index,
+            preview_row=_preview_row,
+            string_list=_string_list,
+            apply_state_label=_apply_state_label,
+            system_readiness_label=_system_readiness_label,
+            content_primary_url_label=_content_primary_url_label,
+        )
         for index, item in enumerate(draft_items[:1])
     )
     return cards
@@ -2204,120 +2228,6 @@ def _content_brief_preview_card(
         apply_state_label=_apply_state_label(item.get("apply_allowed")),
         system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
     )
-
-
-def _wordpress_draft_payload_preview_card(
-    item: dict[str, Any],
-    index: int,
-) -> ActionPreviewCardViewModel:
-    draft_payload_value = item.get("draft_payload")
-    draft_payload = draft_payload_value if isinstance(draft_payload_value, dict) else {}
-    rows = [
-        _preview_row("Temat", str(item.get("topic") or "treść do sprawdzenia")),
-        _preview_row("Status wpisu", str(item.get("post_status_label") or "szkic")),
-        _preview_row(
-            "Tytuł szkicu",
-            str(draft_payload.get("post_title") or "tytuł do sprawdzenia"),
-        ),
-        _preview_row("URL publiczny", _content_primary_url_label(item)),
-    ]
-    for label, key in (
-        ("Kontrole treści", "content_gate_status_summary"),
-        ("Co blokuje szkic", "draft_blocker_labels"),
-        ("Warunki szkicu", "draft_generation_summary"),
-        ("Gotowość po sprawdzeniu", "draft_readiness_review_summary"),
-        ("Szkic WordPress", "wordpress_draft_handoff_summary"),
-        ("Pomiar po publikacji", "post_publication_measurement_summary"),
-        ("Warunki sprawdzenia", "required_validation_labels"),
-    ):
-        values = _string_list(item.get(key))
-        if values:
-            rows.append(_preview_row(label, ", ".join(values[:3])))
-    blocked_claims = _string_list(item.get("blocked_claim_labels"))
-    if blocked_claims:
-        rows.append(_preview_row("Czego nie wolno twierdzić", ", ".join(blocked_claims[:4])))
-    return ActionPreviewCardViewModel(
-        id=f"wordpress_draft_payload_preview_{index}",
-        kind="wordpress_draft_payload_review",
-        title_label="Szkic WordPress do sprawdzenia",
-        subtitle_label="szkic bez publikacji",
-        status_label="zapis zmian zablokowany",
-        rows=rows,
-        apply_state_label=_apply_state_label(item.get("apply_allowed")),
-        system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-    )
-
-
-def _wordpress_draft_handoff_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(preview_items[:4]):
-        rows = [
-            _preview_row("Temat", str(item.get("topic") or "treść do sprawdzenia")),
-            _preview_row(
-                "URL publiczny",
-                str(
-                    item.get("source_public_url")
-                    or item.get("final_canonical_url")
-                    or "URL publiczny niepotwierdzony"
-                ),
-            ),
-            _preview_row(
-                "URL kanoniczny",
-                str(item.get("final_canonical_url") or "URL kanoniczny niepotwierdzony"),
-            ),
-        ]
-        preview_url = item.get("preview_url")
-        if isinstance(preview_url, str) and preview_url:
-            rows.append(_preview_row("Podgląd projektu", preview_url))
-        rows.extend(
-            [
-                _preview_row(
-                    "Kontrola URL-a",
-                    str(item.get("canonical_gate_status_label") or "wymaga sprawdzenia"),
-                ),
-                _preview_row(
-                    "Duplikaty",
-                    str(item.get("duplicate_gate_status_label") or "wymaga sprawdzenia"),
-                ),
-                _preview_row(
-                    "Następny krok",
-                    str(item.get("required_next_action_label") or "sprawdzenie szkicu"),
-                ),
-            ]
-        )
-        handoff_summary = _string_list(item.get("wordpress_draft_handoff_summary"))
-        if handoff_summary:
-            rows.append(_preview_row("Szkic WordPress", ", ".join(handoff_summary[:3])))
-        measurement_summary = _string_list(item.get("post_publication_measurement_summary"))
-        if measurement_summary:
-            rows.append(_preview_row("Pomiar po publikacji", ", ".join(measurement_summary[:3])))
-        validation_labels = _string_list(item.get("required_validation_labels"))
-        if validation_labels:
-            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(validation_labels[:4])))
-        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
-        if blocked_claim_labels:
-            rows.append(
-                _preview_row(
-                    "Czego nie wolno twierdzić",
-                    ", ".join(blocked_claim_labels[:4]),
-                )
-            )
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=f"wordpress_draft_handoff_{index}",
-                kind="wordpress_draft_handoff_review",
-                title_label="Szkic WordPress do sprawdzenia",
-                subtitle_label="podgląd bez zapisu i bez publikacji",
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
 
 
 def _service_profile_knowledge_promotion_preview_cards(
