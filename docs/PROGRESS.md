@@ -40,6 +40,11 @@ w git, Beads i `docs/progress/archive/`.
   adapters do `wilq/content/workflow/stage_drafts.py`. 12 focused content tests,
   Ruff, mypy, live snapshot i write-gate proof przechodzą; `api.py` spadł do
   1352 LOC. Human review/handoff mają osobny follow-up `wilq-seo-frgd`.
+- `wilq-seo-frgd` wydziela human-review i WordPress handoff adapters do
+  `wilq/content/workflow/stage_review.py`. 17 focused testów, Ruff, mypy,
+  browser `/content-workflow` i live safety proof przechodzą; `api.py` spadł do
+  1313 LOC. Handoff nadal ma blocker, a publish pozostaje nieaktywne. Measurement
+  adapter ma osobny follow-up `wilq-seo-s8dl`.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
