@@ -36,3 +36,6 @@ nie dodano endpointu, write path ani nowych reguł biznesowych.
 - Następny seam wybierz po świeżym runtime/complexity review i nie powtarzaj
   gotowych audit/review/operator-label boundaries.
 
+## Commit
+
+Implementacja i handoff: `508f841b` (`refactor: centralize action operator labels`).
