@@ -28,6 +28,13 @@ wrappera Ads ani drugiego expert endpointu.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najnowszy wykonany slice to
+
+`wilq-seo-c9h9.18`: Ahrefs branch tactical queue został wydzielony do
+`wilq/briefing/tactical_ahrefs.py`. Matcher cross-source jest kompilowany raz na
+batch, a live queue zachowuje 24 itemy, 19 grup i 3 action IDs. Focused tests,
+Ruff i mypy przechodzą. Complexity audit nadal pokazuje istniejący budżet
+`tactical_queue.py` (1311 LOC) oraz `_merchant_feed_items` (115 LOC); nie jest to
+ukrywane jako sukces i pozostaje zakresem dalszego Beada.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie

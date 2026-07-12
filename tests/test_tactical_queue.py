@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from wilq.briefing.tactical_queue import build_tactical_queue
+from wilq.content.planning.ahrefs_overlap import AhrefsCrossSourceMatcher
 from wilq.schemas import MetricFact, OpportunityDomain
 
 
@@ -61,6 +62,46 @@ def test_tactical_queue_uses_latest_gsc_query_page_identity() -> None:
         "ctr": 0.02,
         "impressions": 500,
     }
+
+
+def test_tactical_queue_compiles_ahrefs_matcher_once_for_batch(monkeypatch) -> None:
+    import wilq.briefing.tactical_ahrefs as tactical_ahrefs
+
+    calls = 0
+    original = AhrefsCrossSourceMatcher.from_metric_facts
+
+    class CountingMatcher:
+        @classmethod
+        def from_metric_facts(cls, **kwargs):
+            nonlocal calls
+            calls += 1
+            return original(**kwargs)
+
+    monkeypatch.setattr(tactical_ahrefs, "AhrefsCrossSourceMatcher", CountingMatcher)
+    build_tactical_queue(
+        use_cache=False,
+        facts_by_connector={
+            "ahrefs": [
+                MetricFact(
+                    name="ahrefs_content_gap_count",
+                    value=1,
+                    period="ahrefs_gap",
+                    source_connector="ahrefs",
+                    evidence_id="ev_ahrefs_batch",
+                    dimensions={"keyword": "bdo odpady", "competitor_domain": "denios.pl"},
+                ),
+                MetricFact(
+                    name="ahrefs_top_page_gap_count",
+                    value=1,
+                    period="ahrefs_gap",
+                    source_connector="ahrefs",
+                    evidence_id="ev_ahrefs_batch_two",
+                    dimensions={"keyword": "audyt odpadowy", "competitor_domain": "manutan.pl"},
+                ),
+            ]
+        },
+    )
+    assert calls == 1
 
 
 def test_tactical_queue_keeps_weak_ahrefs_overlap_manual_without_action() -> None:

@@ -15,10 +15,8 @@ from wilq.briefing.merchant_labels import (
     MERCHANT_SEVERITY_LABELS,
 )
 from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
-from wilq.content.planning.ahrefs_overlap import (
-    AhrefsCrossSourceOverlap,
-    assess_ahrefs_cross_source_overlap,
-)
+from wilq.briefing.tactical_ahrefs import build_ahrefs_gap_items
+from wilq.content.planning.ahrefs_overlap import AhrefsCrossSourceOverlap
 from wilq.schemas import (
     ActionRisk,
     MetricFact,
@@ -741,97 +739,12 @@ def _ahrefs_gap_items(
     gsc_cross_check_facts: list[MetricFact],
     wordpress_cross_check_facts: list[MetricFact],
 ) -> list[TacticalQueueItem]:
-    gap_groups = _group_ahrefs_gap_facts(facts)
-    items: list[TacticalQueueItem] = []
-    for index, group in enumerate(gap_groups.items(), start=1):
-        (gap_type, keyword, source_url, referenced_public_url, competitor_domain), group_facts = (
-            group
-        )
-        if _is_ahrefs_off_topic(keyword, source_url, referenced_public_url, competitor_domain):
-            continue
-        topic = _ahrefs_topic(keyword, source_url, referenced_public_url, competitor_domain)
-        confirmation = assess_ahrefs_cross_source_overlap(
-            keyword=keyword,
-            referenced_public_url=referenced_public_url or None,
-            gsc_facts=gsc_cross_check_facts,
-            wordpress_facts=wordpress_cross_check_facts,
-        )
-        gsc_exact = confirmation.gsc.strength == "exact"
-        wordpress_exact = confirmation.wordpress.strength == "exact"
-        priority = _ahrefs_gap_priority(gap_type, topic, competitor_domain, index)
-        items.append(
-            TacticalQueueItem(
-                id=f"tq_ahrefs_{_stable_slug(gap_type)}_{_stable_slug(topic)}",
-                title=f"Ahrefs: sprawdź lukę treści `{topic}`",
-                domain=OpportunityDomain.content,
-                intent=_ahrefs_content_intent(gap_type),
-                priority=priority,
-                risk=ActionRisk.medium,
-                source_connectors=_unique(
-                    [
-                        "ahrefs",
-                        *confirmation.gsc.source_connectors,
-                        *confirmation.wordpress.source_connectors,
-                    ]
-                ),
-                evidence_ids=_unique(
-                    [
-                        *(fact.evidence_id for fact in group_facts),
-                        *confirmation.gsc.evidence_ids,
-                        *confirmation.wordpress.evidence_ids,
-                    ]
-                ),
-                metric_facts=group_facts[:6],
-                dimensions={
-                    "gap_type": gap_type,
-                    "topic": topic,
-                    "keyword": keyword,
-                    "source_url": source_url,
-                    "referenced_public_url": referenced_public_url,
-                    "competitor_domain": competitor_domain,
-                    "gsc_demand": "present" if gsc_exact else "missing",
-                    "wordpress_inventory_match": "present" if wordpress_exact else "missing",
-                    "gsc_cross_check_strength": confirmation.gsc.strength,
-                    "gsc_cross_check_label": _ahrefs_cross_check_label("GSC", confirmation),
-                    "wordpress_cross_check_strength": confirmation.wordpress.strength,
-                    "wordpress_cross_check_label": _ahrefs_cross_check_label(
-                        "WordPress",
-                        confirmation,
-                    ),
-                    "gsc_overlap_terms": (
-                        ", ".join(confirmation.gsc.matching_labels) if gsc_exact else ""
-                    ),
-                    "wordpress_overlap_urls": (
-                        ", ".join(confirmation.wordpress.matching_labels)
-                        if wordpress_exact
-                        else ""
-                    ),
-                },
-                diagnosis=_ahrefs_gap_diagnosis(
-                    gap_type,
-                    topic,
-                    source_url,
-                    referenced_public_url,
-                    competitor_domain,
-                    group_facts,
-                    confirmation,
-                ),
-                next_step=_ahrefs_gap_next_step(topic, confirmation),
-                blocked_claims=[
-                    "wzrost ruchu",
-                    "wzrost autorytetu",
-                    "gwarancja pozycji",
-                    "wzrost liczby leadów",
-                    "plan treści bez sprawdzenia GSC i WordPress",
-                ],
-                action_ids=(
-                    action_ids_by_connector.get("ahrefs", [])
-                    if confirmation.has_exact_match
-                    else []
-                ),
-            )
-        )
-    return items
+    return build_ahrefs_gap_items(
+        facts=facts,
+        action_ids=action_ids_by_connector,
+        gsc_facts=gsc_cross_check_facts,
+        wordpress_facts=wordpress_cross_check_facts,
+    )
 
 
 def _group_ahrefs_gap_facts(facts: list[MetricFact]) -> dict[tuple[str, ...], list[MetricFact]]:

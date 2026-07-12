@@ -5,6 +5,19 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
+  moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
+  `AhrefsCrossSourceMatcher` raz na batch i zachowuje exact/weak/missing,
+  evidence/source connectors oraz brak akcji dla niepotwierdzonych tematów.
+  Focused tactical/Ahrefs tests (8), Ruff, mypy i live
+  `/api/marketing/tactical-queue` (24 items, 19 groups, 3 action IDs) przechodzą.
+  Complexity pozostaje jawnie naruszona przez istniejący monolit
+  `tactical_queue.py` (1311 LOC) i `_merchant_feed_items` (115 LOC); ten slice
+  zmniejszył plik o 90+ LOC i wymaga dalszego, osobnego extraction Beada.
+- Live rebaseline: API `ok`, 104 362 metric facts, 4 580 refresh runs, 9/12
+  konektorów skonfigurowanych; kolejka contentowa ma 2 kandydatów i blocker
+  `not_enough_actionable_candidates`, więc WILQ nie tworzy sztucznego tematu.
+
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
   GA4, Merchant Center, GSC i WordPress. Istniejące diagnostyki Ads/GA4/Merchant
