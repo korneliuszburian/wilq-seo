@@ -82,6 +82,9 @@ from wilq.actions.content_review_details import (
 from wilq.actions.content_review_details import (
     draft_readiness_review_details as _draft_readiness_review_details_from_checked_items,
 )
+from wilq.actions.content_review_details import (
+    is_raw_content_review_audit_event as _is_raw_content_review_audit_event,
+)
 from wilq.actions.ga4.tracking_preview import (
     ga4_tracking_quality_preview_cards as build_ga4_tracking_quality_preview_cards,
 )
@@ -1979,14 +1982,6 @@ def _with_review_gate(
         mutation_audits,
     )
     return _action_with_operator_labels(action)
-
-
-def _is_raw_content_review_audit_event(action_id: str, event: AuditEvent) -> bool:
-    if action_id != "act_prepare_content_refresh_queue":
-        return False
-    if not event.event_type.startswith("human_review_"):
-        return False
-    return _audit_event_has_raw_contract_text(event)
 
 
 def _action_with_operator_labels(action: ActionObject) -> ActionObject:

@@ -796,6 +796,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   service LOC spadł do 2248, a live Ads detail zachowuje evidence, blokadę
   zapisu i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/action-projection-live.png`.
+- Filtr raw human-review audit events dla content refresh jest teraz w
+  istniejącym `wilq/actions/content_review_details.py`; `service.py` nie
+  posiada już content-specific wyjątku. Zachowano dokładny scope action ID,
+  prefix eventu i redakcję raw contract. Focused audit/preview/review tests: 33
+  passed, service LOC spadł do 2245, a live Ads detail zachowuje evidence,
+  blokadę zapisu i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/content-filter-live.png`.
 
 ## Weryfikacja
 

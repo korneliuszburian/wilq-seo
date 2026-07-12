@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+from wilq.actions.audit_store import audit_event_has_raw_contract_text
+from wilq.schemas import AuditEvent
+
+
+def is_raw_content_review_audit_event(action_id: str, event: AuditEvent) -> bool:
+    if action_id != "act_prepare_content_refresh_queue":
+        return False
+    if not event.event_type.startswith("human_review_"):
+        return False
+    return audit_event_has_raw_contract_text(event)
 
 def content_url_review_details(checked_items: list[str]) -> dict[str, str]:
     return _details_for_allowed_keys(

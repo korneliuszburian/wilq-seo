@@ -33,6 +33,21 @@ def test_content_review_details_keep_allowed_fields_and_ignore_unknown_values() 
     }
 
 
+def test_content_raw_review_event_filter_is_scoped_to_content_action() -> None:
+    from wilq.actions.content_review_details import is_raw_content_review_audit_event
+    from wilq.schemas import AuditEvent
+
+    event = AuditEvent(
+        id="audit_raw_content",
+        event_type="human_review_approved_for_prepare",
+        actor="operator",
+        summary="payload_preview=raw",
+    )
+
+    assert is_raw_content_review_audit_event("act_prepare_content_refresh_queue", event)
+    assert not is_raw_content_review_audit_event("act_record_ads_strategy_review", event)
+
+
 def test_review_outcome_projection_keeps_latest_human_event() -> None:
     from wilq.actions.review_gate import (
         latest_human_review_event,
