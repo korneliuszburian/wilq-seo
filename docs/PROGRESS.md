@@ -936,6 +936,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   routingu Merchant oraz `test_action_preview_contracts.py` +
   `test_action_object_contracts.py` przechodzą, Ruff/mypy/complexity/diff check
   i managed API smoke przechodzą.
+- Kolejny slice `jnra` przeniósł konstrukcję human-review `AuditEvent` do
+  `wilq/actions/audit_store.py` (`build_human_review_audit_event`).
+  `record_action_review` pozostaje orkiestratorem review gate i operator
+  projection; event type, actor, summary, details i evidence mają jednego
+  ownera. Nowy test audit-store oraz focused review/preview tests przechodzą;
+  Ruff, mypy i diff check są zielone.
 
 ## Weryfikacja
 

@@ -805,6 +805,11 @@ ich rozmiaru.
   usunięto 311 lokalnych preview wrapperów. Merchant dispatcher regression,
   focused action preview/object tests, Ruff, mypy, complexity, diff check i
   managed API smoke przechodzą; payloady, safety i endpointy pozostają bez zmian.
+- Konstrukcja human-review `AuditEvent` jest teraz własnością
+  `wilq/actions/audit_store.py` (`build_human_review_audit_event`); service
+  przekazuje tylko dane review i nadal aktualizuje review gate oraz projekcję
+  operatora. Event type, actor, summary, details i evidence pozostają bez
+  zmian, a focused audit/review/preview tests, Ruff, mypy i diff check przechodzą.
 
 ## Resume
 

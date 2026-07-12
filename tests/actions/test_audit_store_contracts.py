@@ -203,3 +203,25 @@ def test_build_apply_audit_event_owns_event_type_summary_and_evidence() -> None:
     assert event.event_type_label == "Zapis zmian zablokowany"
     assert event.actor == "operator"
     assert event.evidence_ids == ["ev_apply_builder"]
+
+
+def test_build_human_review_audit_event_owns_review_event_metadata() -> None:
+    action = ActionObject.model_construct(
+        id="act_review_audit_builder",
+        evidence_ids=["ev_review_builder"],
+    )
+
+    event = audit_store.build_human_review_audit_event(
+        action=action,
+        reviewed_by="operator",
+        outcome="approved_for_prepare",
+        summary="Review zaakceptowany.",
+        details={"checked_items": ["public_url"]},
+    )
+
+    assert event.id.startswith("audit_act_review_audit_builder_human_review_")
+    assert event.event_type == "human_review_approved_for_prepare"
+    assert event.event_type_label == "Przegląd operatora zapisany"
+    assert event.actor == "operator"
+    assert event.evidence_ids == ["ev_review_builder"]
+    assert event.details == {"checked_items": ["public_url"]}

@@ -253,6 +253,28 @@ def build_apply_audit_event(
     )
 
 
+def build_human_review_audit_event(
+    *,
+    action: ActionObject,
+    reviewed_by: str,
+    outcome: str,
+    summary: str,
+    details: dict[str, Any],
+) -> AuditEvent:
+    """Build the canonical human-review event before operator projection."""
+    event_type = f"human_review_{outcome}"
+    return AuditEvent(
+        id=f"audit_{action.id}_human_review_{uuid4().hex[:12]}",
+        action_id=action.id,
+        event_type=event_type,
+        event_type_label=audit_event_label(event_type),
+        actor=reviewed_by,
+        summary=summary,
+        evidence_ids=action.evidence_ids,
+        details=details,
+    )
+
+
 def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, dict):
         clean: dict[str, Any] = {}

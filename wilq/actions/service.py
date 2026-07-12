@@ -40,7 +40,7 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     audit_event_with_operator_label as _audit_event_with_operator_label_impl,
 )
-from wilq.actions.audit_store import build_apply_audit_event
+from wilq.actions.audit_store import build_apply_audit_event, build_human_review_audit_event
 from wilq.actions.audit_store import (
     latest_action_confirmation_event as _latest_action_confirmation_event_impl,
 )
@@ -1148,14 +1148,11 @@ def record_action_review(
     action: ActionObject,
     request: ActionReviewRequest,
 ) -> ActionReviewResult:
-    audit = AuditEvent(
-        id=f"audit_{action.id}_human_review_{uuid4().hex[:12]}",
-        action_id=action.id,
-        event_type=f"human_review_{request.outcome}",
-        event_type_label=_action_audit_event_label(f"human_review_{request.outcome}"),
-        actor=request.reviewed_by,
+    audit = build_human_review_audit_event(
+        action=action,
+        reviewed_by=request.reviewed_by,
+        outcome=request.outcome,
         summary=_action_review_summary(request),
-        evidence_ids=action.evidence_ids,
         details=_action_review_details(request),
     )
     action.audit_events = [audit, *action.audit_events]
