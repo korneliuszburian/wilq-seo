@@ -19,6 +19,7 @@ requirements. Service nie duplikuje już tej write policy.
   vendor-write capability, Ads detail zachowuje evidence i
   `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/wp-env-live.png`.
+- Commit implementacji: `3b47314` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
