@@ -101,9 +101,11 @@ from wilq.actions.localo.visibility_preview import (
     local_visibility_preview_cards as build_local_visibility_preview_cards,
 )
 from wilq.actions.merchant import (
+    MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
     merchant_feed_issue_action_from_metric_facts,
     seed_merchant_feed_issue_action,
 )
+from wilq.actions.merchant_preview import merchant_preview_cards as build_merchant_preview_cards
 from wilq.actions.metric_utils import (
     metric_fact_label,
     unique_values,
@@ -248,7 +250,6 @@ from wilq.schemas import (
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
-MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
 SERVICE_PROFILE_PUBLIC_REVIEW_SCOPES = {"public_service_card"}
 SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES = {
     "private_service_proposal",
@@ -2691,83 +2692,17 @@ def _as_dict(value: Any) -> dict[str, Any]:
 
 
 def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-        and item.get("preview_contract") == MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT
-    ]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(_prioritized_merchant_preview_items(preview_items)[:4]):
-        sample_titles = _string_list(item.get("sample_titles"))
-        rows = [
-            _preview_row("Problem", str(item.get("issue_type_label") or "problem do sprawdzenia")),
-            _preview_row(
-                "Atrybut",
-                str(item.get("affected_attribute_label") or "atrybut do sprawdzenia"),
-            ),
-            _preview_row(
-                "Zgłoszenia",
-                _merchant_issue_count_label(item.get("metric_snapshot")),
-            ),
-            _preview_row(
-                "Próbki produktów",
-                _merchant_sample_summary(item),
-            ),
-        ]
-        if sample_titles:
-            rows.append(_preview_row("Tytuły próbek", ", ".join(sample_titles[:2])))
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=str(item.get("id") or f"merchant_preview_{index}"),
-                kind="merchant_feed_issue_review",
-                title_label="Problem pliku produktowego do sprawdzenia",
-                subtitle_label=_merchant_preview_subtitle(item),
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
-
-
-def _merchant_preview_subtitle(item: dict[str, Any]) -> str:
-    issue_label = str(item.get("issue_type_label") or "problem pliku produktowego")
-    attribute_label = str(item.get("affected_attribute_label") or "").strip()
-    if attribute_label and attribute_label not in {"atrybut", "atrybut do sprawdzenia"}:
-        return f"{attribute_label} - {issue_label}"
-    return issue_label
-
-
-def _prioritized_merchant_preview_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return sorted(
-        items,
-        key=lambda item: (
-            0
-            if _string_list(item.get("sample_titles"))
-            or _string_list(item.get("sample_product_ids"))
-            else 1,
-            str(item.get("id") or ""),
-        ),
+    return build_merchant_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
     )
 
 
 def _preview_row(label: str, value: str) -> ActionPreviewRowViewModel:
     return ActionPreviewRowViewModel(label=label, value=value)
-
-
-def _merchant_issue_count_label(value: Any) -> str:
-    if isinstance(value, dict):
-        issue_count = value.get("issue_product_count")
-        if isinstance(issue_count, int | float):
-            count = int(issue_count)
-            if count == 1:
-                return "1 zgłoszenie problemu"
-            if 2 <= count <= 4:
-                return f"{count} zgłoszenia problemu"
-            return f"{count} zgłoszeń problemu"
-    return "brak liczby zgłoszeń"
 
 
 def _micros_money_label(
@@ -2779,29 +2714,6 @@ def _micros_money_label(
     if not isinstance(value, int | float):
         return missing_label
     return f"{value / 1_000_000:.2f} {currency_code}"
-
-
-def _merchant_sample_summary(item: dict[str, Any]) -> str:
-    titles = _string_list(item.get("sample_titles"))
-    product_ids = _string_list(item.get("sample_product_ids"))
-    if titles:
-        count = len(titles)
-        if count == 1:
-            return "1 próbka z nazwą produktu"
-        if 2 <= count <= 4:
-            return f"{count} próbki z nazwami produktów"
-        return f"{count} próbek z nazwami produktów"
-    if product_ids:
-        count = len(product_ids)
-        if count == 1:
-            return "1 próbka produktu bez nazwy"
-        if 2 <= count <= 4:
-            return f"{count} próbki produktów bez nazw"
-        return f"{count} próbek produktów bez nazw"
-    reason = item.get("sample_unavailable_reason_label") or item.get("sample_unavailable_reason")
-    if isinstance(reason, str) and reason:
-        return reason
-    return "brak próbek produktów"
 
 
 def _apply_state_label(value: Any) -> str:

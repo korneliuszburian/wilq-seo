@@ -292,3 +292,40 @@ def test_local_visibility_preview_keeps_contracts_and_claim_blockers() -> None:
     assert "brak lokalnych rankingów" in rows["Braki"]
     assert "widoczność konkurencji" in rows["Czego nie wolno twierdzić"]
     assert cards[0].apply_state_label == "zapis zmian zablokowany"
+
+
+def test_merchant_preview_keeps_issue_context_and_product_samples() -> None:
+    from wilq.actions.merchant_preview import merchant_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = merchant_preview_cards(
+        {
+            "payload_preview": [
+                {
+                    "id": "merchant_feed_issue_review_1",
+                    "preview_contract": "merchant_feed_issue_review_preview_v1",
+                    "issue_type_label": "zmiana dostępności",
+                    "affected_attribute_label": "dostępność",
+                    "metric_snapshot": {"issue_product_count": 23},
+                    "sample_product_ids": ["SKU-1"],
+                    "sample_titles": ["Sorbent chemiczny 10 kg"],
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                }
+            ]
+        },
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Problem"] == "zmiana dostępności"
+    assert rows["Zgłoszenia"] == "23 zgłoszeń problemu"
+    assert rows["Próbki produktów"] == "1 próbka z nazwą produktu"
+    assert rows["Tytuły próbek"] == "Sorbent chemiczny 10 kg"
+    assert cards[0].subtitle_label == "dostępność - zmiana dostępności"

@@ -576,6 +576,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `apply_allowed=false`/`api_mutation_ready=false`. Focused behavior test, Ruff,
   mypy, complexity i browser proof przechodzą:
   `.local-lab/proof/continuation-2026-07-12/localo-visibility-preview-cards.png`.
+- Merchant feed preview jest teraz wydzielony do
+  `wilq/actions/merchant_preview.py`; service zachowuje istniejący kontrakt
+  klas problemów, priorytety próbek i polskie etykiety. Live action ma cztery
+  typed cards, evidence, product-sample context i `apply_allowed=false`/
+  `api_mutation_ready=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/merchant-feed-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

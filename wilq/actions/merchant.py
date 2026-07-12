@@ -21,6 +21,8 @@ from wilq.schemas import (
     OpportunityDomain,
 )
 
+MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
+
 
 def seed_merchant_feed_issue_action() -> ActionObject:
     return ActionObject(

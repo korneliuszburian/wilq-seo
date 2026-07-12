@@ -512,6 +512,11 @@ ich rozmiaru.
   metric rows, a live karta zachowuje kontrakty odczytu, freshness/evidence,
   blocked claims i brak zapisu. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/localo-visibility-preview-cards.png`.
+- Merchant feed preview renderer jest teraz w
+  `wilq/actions/merchant_preview.py`; service przekazuje callbacki do rows,
+  próbek i safety labels, a live cztery karty zachowują issue context, evidence,
+  blocked claims i brak zapisu. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/merchant-feed-preview-cards.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
