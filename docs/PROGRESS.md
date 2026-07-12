@@ -763,6 +763,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   tests: 26 passed, service LOC spadł do 2351, a runtime Ads detail zachowuje
   evidence, `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/preview-summary-live.png`.
+- Składanie szczegółów human review (outcome, reviewer, checked items,
+  blokady oraz content URL/draft readiness details) jest teraz w istniejącym
+  `wilq/actions/review_gate.py`; service dostarcza tylko callbacki content
+  review. Focused preview/confirmation/review tests: 26 passed, service LOC
+  spadł do 2344, a live Ads detail zachowuje evidence, blokadę zapisu i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/review-details-live.png`.
 
 ## Weryfikacja
 

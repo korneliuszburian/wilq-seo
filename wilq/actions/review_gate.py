@@ -85,6 +85,27 @@ def action_review_summary(
     return " ".join(parts)
 
 
+def action_review_details(
+    request: ActionReviewRequest,
+    *,
+    content_url_review_details: Callable[[list[str]], dict[str, Any] | None],
+    draft_readiness_review_details: Callable[[list[str]], dict[str, Any] | None],
+) -> dict[str, Any]:
+    details: dict[str, Any] = {
+        "review_outcome": request.outcome,
+        "reviewed_by": request.reviewed_by,
+        "checked_items": request.checked_items,
+        "blockers": request.blockers,
+    }
+    url_review = content_url_review_details(request.checked_items)
+    if url_review:
+        details["content_url_review"] = url_review
+    draft_readiness_review = draft_readiness_review_details(request.checked_items)
+    if draft_readiness_review:
+        details["content_draft_readiness_review"] = draft_readiness_review
+    return details
+
+
 def review_summary_item(
     item: str,
     *,

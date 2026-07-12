@@ -287,6 +287,9 @@ from wilq.actions.review_gate import (
     action_required_checks as build_action_required_checks,
 )
 from wilq.actions.review_gate import (
+    action_review_details as build_action_review_details,
+)
+from wilq.actions.review_gate import (
     action_review_summary as build_action_review_summary,
 )
 from wilq.actions.review_gate import (
@@ -2480,24 +2483,11 @@ def _canonical_contract_key(value: str) -> str:
 
 
 def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
-    details: dict[str, Any] = {
-        "review_outcome": request.outcome,
-        "reviewed_by": request.reviewed_by,
-        "checked_items": request.checked_items,
-        "blockers": request.blockers,
-    }
-    url_review = _content_url_review_details_from_checked_items(request.checked_items)
-    if url_review:
-        details["content_url_review"] = url_review
-    draft_readiness_review = _draft_readiness_review_details_from_checked_items(
-        request.checked_items
+    return build_action_review_details(
+        request,
+        content_url_review_details=_content_url_review_details_from_checked_items,
+        draft_readiness_review_details=_draft_readiness_review_details_from_checked_items,
     )
-    if draft_readiness_review:
-        details["content_draft_readiness_review"] = draft_readiness_review
-    return details
-
-
-
 
 def _ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str]:
     blockers: list[str] = []
