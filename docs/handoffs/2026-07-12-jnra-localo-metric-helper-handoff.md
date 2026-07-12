@@ -34,4 +34,5 @@ pozostaje fasadą. Nie zmieniono endpointu, payloadu ani safety loop.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `2c7b17be` (`refactor: extract localo metric
+rows`), wypchnięty na `origin/main`.
