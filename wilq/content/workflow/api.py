@@ -35,7 +35,6 @@ from wilq.content.handoff.wordpress_authoring import (
 )
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionResult,
-    ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.inventory.records import (
@@ -67,7 +66,6 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftReadback,
     ContentWordPressDraftWriteReadinessBlocker,
-    ContentWordPressDraftWriteReadinessRequirement,
     ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemDraftPackageRequest,
@@ -156,14 +154,24 @@ from wilq.content.workflow.stage_write_readiness import (
 from wilq.content.workflow.stage_write_readiness import (
     build_content_wordpress_draft_write_readiness_response as _build_write_readiness,
 )
+from wilq.content.workflow.stage_write_readiness import (
+    wordpress_draft_write_audit_blockers as _wordpress_draft_write_audit_blockers,
+)
+from wilq.content.workflow.stage_write_readiness import (
+    wordpress_draft_write_audit_readiness as _wordpress_draft_write_audit_readiness,
+)
+from wilq.content.workflow.stage_write_readiness import (
+    wordpress_draft_write_authorization_status as _wordpress_draft_write_authorization_status,
+)
+from wilq.content.workflow.stage_write_readiness import (
+    wordpress_draft_write_authorization_verified as _wordpress_draft_write_authorization_verified,
+)
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import (
-    AuditEvent,
     ContentDecisionItem,
     ContentDiagnosticsResponse,
     ContentFreshnessAssessment,
 )
-from wilq.storage.local_state import local_state_store
 
 
 def build_content_wordpress_draft_activation_packet_response(
@@ -385,184 +393,6 @@ def _wordpress_draft_activation_steps(
     if not {*handoff_blockers, *execution_blockers}:
         steps.append("Sprawdź payload dry-run, a live write zostaw wyłączony do osobnej decyzji.")
     return steps
-
-
-def _wordpress_draft_write_authorization_verified(
-    authorization: ContentWordPressDraftWriteAuthorization | None,
-) -> bool:
-    if authorization is None:
-        return False
-    events = {
-        event.id: event
-        for event in local_state_store().list_audit_events(
-            action_id=authorization.action_id
-        )
-    }
-    required = {
-        authorization.preview_audit_id: "action_preview_generated",
-        authorization.review_audit_id: "human_review_",
-        authorization.confirmation_audit_id: "action_apply_confirmed",
-    }
-    if authorization.apply_audit_id:
-        required[authorization.apply_audit_id] = "apply_succeeded"
-    for event_id, expected_type in required.items():
-        event = events.get(event_id)
-        if event is None or event.action_id != authorization.action_id:
-            return False
-        if expected_type.endswith("_"):
-            if not event.event_type.startswith(expected_type):
-                return False
-        elif event.event_type != expected_type:
-                return False
-    confirmation_event = events.get(authorization.confirmation_audit_id)
-    apply_event = (
-        events.get(authorization.apply_audit_id)
-        if authorization.apply_audit_id is not None
-        else None
-    )
-    confirmed_by = authorization.confirmed_by.strip()
-    if not (
-        confirmed_by
-        and confirmation_event is not None
-        and confirmation_event.actor == confirmed_by
-    ):
-        return False
-    if authorization.apply_audit_id is None:
-        return True
-    return bool(apply_event is not None and apply_event.actor == confirmed_by)
-
-
-def _wordpress_draft_write_audit_readiness(
-    action_id: str,
-) -> tuple[
-    list[ContentWordPressDraftWriteReadinessRequirement],
-    ContentWordPressDraftWriteAuthorization | None,
-]:
-    events = sorted(
-        local_state_store().list_audit_events(action_id=action_id),
-        key=lambda event: event.created_at,
-        reverse=True,
-    )
-    preview = _latest_exact_event(events, "action_preview_generated")
-    review = _latest_prefix_event(events, "human_review_")
-    confirmation = _latest_exact_event(events, "action_apply_confirmed")
-    requirements = [
-        _readiness_requirement(
-            event_type="action_preview_generated",
-            label="Podgląd akcji wygenerowany",
-            event=preview,
-        ),
-        _readiness_requirement(
-            event_type="human_review_*",
-            label="Review człowieka zapisane",
-            event=review,
-        ),
-        _readiness_requirement(
-            event_type="action_apply_confirmed",
-            label="Potwierdzenie operatora zapisane",
-            event=confirmation,
-        ),
-    ]
-    if (
-        preview is None
-        or review is None
-        or confirmation is None
-        or not confirmation.actor.strip()
-    ):
-        return requirements, None
-    return requirements, ContentWordPressDraftWriteAuthorization(
-        action_id=action_id,
-        preview_audit_id=preview.id,
-        review_audit_id=review.id,
-        confirmation_audit_id=confirmation.id,
-        confirmed_by=confirmation.actor,
-    )
-
-
-def _latest_exact_event(
-    events: list[AuditEvent],
-    event_type: str,
-) -> AuditEvent | None:
-    return next((event for event in events if event.event_type == event_type), None)
-
-
-def _latest_prefix_event(
-    events: list[AuditEvent],
-    event_type_prefix: str,
-) -> AuditEvent | None:
-    return next(
-        (event for event in events if event.event_type.startswith(event_type_prefix)),
-        None,
-    )
-
-
-def _readiness_requirement(
-    *,
-    event_type: str,
-    label: str,
-    event: AuditEvent | None,
-) -> ContentWordPressDraftWriteReadinessRequirement:
-    return ContentWordPressDraftWriteReadinessRequirement(
-        event_type=event_type,
-        label=label,
-        satisfied=event is not None,
-        audit_event_id=event.id if event is not None else None,
-        actor=event.actor if event is not None else None,
-    )
-
-
-def _wordpress_draft_write_audit_blockers(
-    requirements: list[ContentWordPressDraftWriteReadinessRequirement],
-    authorization: ContentWordPressDraftWriteAuthorization | None,
-) -> list[ContentWordPressDraftWriteReadinessBlocker]:
-    missing = [requirement for requirement in requirements if not requirement.satisfied]
-    blocker_codes = {
-        "action_preview_generated": "missing_action_preview_audit",
-        "human_review_*": "missing_human_review_audit",
-        "action_apply_confirmed": "missing_action_confirmation_audit",
-    }
-    blockers = [
-        ContentWordPressDraftWriteReadinessBlocker(
-            code=blocker_codes.get(requirement.event_type, "missing_action_audit"),
-            label=f"Brakuje: {requirement.label}",
-            reason=(
-                "Live write wymaga pełnego śladu ActionObject zanim adapter "
-                "WordPress może zapisać szkic."
-            ),
-            next_step=(
-                "Wykonaj validate/preview, review człowieka i confirm/apply "
-                "w WILQ, bez ręcznego składania ID."
-            ),
-        )
-        for requirement in missing
-    ]
-    if not missing and authorization is None:
-        blockers.append(
-            ContentWordPressDraftWriteReadinessBlocker(
-                code="audit_actor_mismatch",
-                label="Audit trail nie wskazuje jednego operatora",
-                reason=(
-                    "Potwierdzenie musi mieć niepustego aktora, "
-                    "żeby WILQ mógł zbudować write_authorization."
-                ),
-                next_step=(
-                    "Powtórz confirm jedną ścieżką operatora zamiast "
-                    "składać audit ręcznie."
-                ),
-            )
-        )
-    return blockers
-
-
-def _wordpress_draft_write_authorization_status(
-    requirements: list[ContentWordPressDraftWriteReadinessRequirement],
-    authorization: ContentWordPressDraftWriteAuthorization | None,
-) -> Literal["missing_audit_trace", "audit_actor_mismatch", "available"]:
-    if any(not requirement.satisfied for requirement in requirements):
-        return "missing_audit_trace"
-    if authorization is None:
-        return "audit_actor_mismatch"
-    return "available"
 
 
 def _wordpress_draft_write_next_step(

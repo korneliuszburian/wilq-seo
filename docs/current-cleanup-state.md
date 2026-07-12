@@ -81,6 +81,10 @@ orchestration śledzi `wilq-seo-b0ja`.
 `wilq/content/workflow/stage_write_readiness.py`. Live kontrakt nadal wymaga
 ActionObject/audit i nie odblokowuje zapisu. `api.py` ma 956 LOC; pozostałe
 audit helpers śledzi `wilq-seo-fc5b`.
+`wilq-seo-fc5b` wydzielił helpery odczytu audit trail i weryfikacji
+write-authorization do tego samego typed ownera. Live readiness przy
+skonfigurowanym adapterze/env nadal fail-closed zwraca blocker
+`actionobject_apply_path_required`; `api.py` ma teraz 868 LOC.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie

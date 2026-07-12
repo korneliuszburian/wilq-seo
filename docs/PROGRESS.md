@@ -70,6 +70,12 @@ w git, Beads i `docs/progress/archive/`.
   Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do 956
   LOC. Write remains fail-closed, a pozostałe audit helpers mają osobny
   follow-up `wilq-seo-fc5b`.
+- `wilq-seo-fc5b` wydziela odczyt i interpretację audit trail WordPress do
+  `wilq/content/workflow/stage_write_readiness.py`, zachowując kompatybilne
+  wrappery API. Focused readiness tests, Ruff, mypy, complexity i diff check
+  przechodzą; live readiness nadal zwraca `ready=false` oraz
+  `actionobject_apply_path_required`, nawet przy skonfigurowanym adapterze i
+  env. Browser route pozostaje dostępny, a zapis/publikacja nie są odblokowane.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
