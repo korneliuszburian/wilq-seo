@@ -41,4 +41,6 @@ labels; reguły celu i lokalnego kontekstu pozostają w module domenowym.
 
 ## Commit
 
-Hash implementacji zostanie dopisany po pushu w osobnym docs-only commicie.
+Implementacja: `df04275c` (`refactor: extract ads target guardrail preview`),
+wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
+commitem.
