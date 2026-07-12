@@ -2447,8 +2447,7 @@ describe("Content work item workflow schemas", () => {
       ]
     };
 
-    expect(
-      ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+    const snapshot = ContentWorkItemWorkflowSnapshotResponseSchema.parse({
         freshness_assessment: {
           state: "fresh",
           state_label: "dane treści świeże",
@@ -2560,8 +2559,11 @@ describe("Content work item workflow schemas", () => {
             summary: "nie wie, jak podejść do BDO"
           }
         ]
-      }).success
-    ).toBe(true);
+    });
+
+    expect(snapshot.service_profile_context.binding_status).toBe("not_evaluated");
+    expect(snapshot.service_profile_context.decision_status).toBe("not_evaluated");
+    expect(snapshot.service_profile_context.service_card_id).toBeUndefined();
   });
 
   it("accepts a typed blocked content workflow snapshot", () => {

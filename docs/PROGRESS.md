@@ -55,17 +55,31 @@ w git, Beads i `docs/progress/archive/`.
   Rekord WordPress bez publicznego URL, w tym identycznie zatytułowany szkic na
   `ekologus.dev.proudsite.pl`, jest odrzucany przed dopasowaniem frazy i nie
   może odblokować inventory, canonical ani kolejki.
-- Re-audyt BDOS/WILQ potwierdził kolejny niezdublowany work item: `r564.6`
-  rozszerzy istniejący snapshot content workflow o typed per-item Service
-  Profile context. Dziś snapshot ma Claim Ledger/brief/review/pomiar, ale nie
-  ma bindingu usługi ani approval policy; Service Profile jest osobną trasą.
-  `v9ab.11` pozostaje osobnym, gotowym zadaniem Workspace Dossier/memory.
-- Świeży re-audyt `r564` potwierdza `blocked_by_external_state`, nie lukę
-  kolejki: GSC daje tylko jeden unikalny publiczny URL, a Ahrefsowe rekordy nie
-  mają bezpiecznego `referenced_public_url`. Nie twórz sztucznego trzeciego
-  tematu. Następne potwierdzone zakresy to `r564.6` (typed Service Profile w
-  work-item snapshot) oraz evidence-backed candidate density parenta `r564`;
-  brak `r564.5` nie może wrócić przez drugi matcher w queue, skillu ani React.
+- `wilq-seo-r564.6` domyka per-item Service Profile context bez nowego route:
+  istniejący snapshot work itemu niesie teraz compact typed binding usługi,
+  approval/claim status, freshness, evidence, source connectors, missing
+  contracts i safe next step. Liczniki policy dotyczą tylko dopasowanej karty
+  usługi, a pełny Claim Ledger pozostaje osobno. Binding pochodzi wyłącznie z
+  istniejącego typed knowledge matcher; `service_fit` z enrichmentu pozostaje
+  opisem tematu, nie podstawą claimów. W blocked snapshot context jest jawnie
+  `not_evaluated`.
+  Desktop i mobile pokazują jedną decyzję „Usługa i zasady twierdzeń” przy
+  stronie publicznej, a techniczne ID są w disclosure.
+- Live po managed restarcie: homepage `https://www.ekologus.pl/` ma binding
+  `ekologus_service_homepage_overview`, źródło `public_site`, evidence
+  `ev_content_service_profile_source_facts`, freshness signal `2026-07-02` i
+  uczciwy status `blocked` z review przed finalnym draftem; write/publish
+  pozostają false. Proof jest w `.local-lab/proof/r5646-service-profile/`.
+- Parent `r564` pozostaje `blocked_by_external_state`, nie luką kolejki: GSC
+  daje jeden unikalny publiczny URL, Ahrefsowe rekordy nie mają bezpiecznego
+  `referenced_public_url`, a live queue ma 2 kandydatów / 1 actionable przy
+  minimum 3. Nie twórz sztucznego trzeciego tematu. Następny niezależny,
+  gotowy slice UI to `3bst.7`: podnieść istniejący Ahrefs blocker i safe next
+  step nad galerię danych bez reguł matchowania w React.
+- Complexity po `r564.6` ma jeden potwierdzony, śledzony dług techniczny:
+  `wilq/content/workflow/api.py` ma 1500 LOC przy budżecie 800. Utworzony
+  `c9h9.16` wydzieli tylko typed snapshot assembly seam; nie jest zgodą na
+  mechaniczny split ani zmianę zachowania workflow.
 
 - Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
   99 906 metric facts, 4 577 refresh runs, 12 connectorów (9 configured,

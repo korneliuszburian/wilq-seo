@@ -58,7 +58,12 @@ from wilq.content.inventory.records import (
     resolve_content_inventory,
 )
 from wilq.content.knowledge.cards import (
+    ContentKnowledgeCardMatch,
     match_content_knowledge_cards,
+)
+from wilq.content.knowledge.work_item_service_profile import (
+    ContentWorkItemServiceProfileContext,
+    build_content_work_item_service_profile_context,
 )
 from wilq.content.measurement.outcome import interpret_content_measurement_outcome
 from wilq.content.measurement.window import (
@@ -1208,6 +1213,13 @@ def build_content_work_item_blocked_snapshot_response_for_work_item(
         evidence_ids=candidate.evidence_ids,
         source_connectors=candidate.source_connectors,
         candidate=candidate,
+        service_profile_context=ContentWorkItemServiceProfileContext.not_evaluated(
+            reason=(
+                "Work item jest zablokowany przed snapshotem workflow; WILQ nie "
+                "przypisuje usługi z samego tytułu ani kolejki."
+            ),
+            safe_next_step=candidate.safe_next_step,
+        ),
     )
 
 
@@ -1247,6 +1259,11 @@ def _build_content_work_item_snapshot_response(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     measurement_window_id = f"measure_{item.id}"
+    knowledge_match = match_content_knowledge_cards(item)
+    service_profile_context = build_content_work_item_service_profile_context(
+        item,
+        knowledge_match=knowledge_match,
+    )
     preflight = _snapshot_preflight(item, inventory_records)
     sales_brief = _snapshot_sales_brief(
         item,
@@ -1254,6 +1271,7 @@ def _build_content_work_item_snapshot_response(
         claim_ledger,
         seed,
         enrichment,
+        knowledge_match,
         measurement_window_id,
     )
     brief = sales_brief.sales_brief_result.brief
@@ -1263,6 +1281,7 @@ def _build_content_work_item_snapshot_response(
         claim_ledger,
         seed,
         enrichment,
+        knowledge_match,
         measurement_window_id,
         None if brief is None else brief.id,
         brief,
@@ -1304,6 +1323,7 @@ def _build_content_work_item_snapshot_response(
     snapshot = ContentWorkItemWorkflowSnapshotResponse(
         freshness_assessment=freshness_assessment,
         candidate=candidate,
+        service_profile_context=service_profile_context,
         claim_ledger=claim_ledger,
         preflight=preflight,
         sales_brief=sales_brief,
@@ -1336,6 +1356,7 @@ def _snapshot_sales_brief(
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
     enrichment: ContentOpportunityEnrichment,
+    knowledge_match: ContentKnowledgeCardMatch,
     measurement_window_id: str,
 ) -> ContentWorkItemSalesBriefResponse:
     return build_content_work_item_sales_brief_response(
@@ -1352,7 +1373,7 @@ def _snapshot_sales_brief(
             claim_ledger=claim_ledger,
             seed=seed,
             enrichment=enrichment,
-            knowledge_match=match_content_knowledge_cards(item),
+            knowledge_match=knowledge_match,
         )
     )
 
@@ -1363,6 +1384,7 @@ def _snapshot_draft_package(
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
     enrichment: ContentOpportunityEnrichment,
+    knowledge_match: ContentKnowledgeCardMatch,
     measurement_window_id: str,
     brief_id: str | None,
     brief: ContentSalesBrief | None,
@@ -1380,7 +1402,7 @@ def _snapshot_draft_package(
             claim_ledger=claim_ledger,
             seed=seed,
             enrichment=enrichment,
-            knowledge_match=match_content_knowledge_cards(item),
+            knowledge_match=knowledge_match,
             sales_brief=brief,
         )
     )

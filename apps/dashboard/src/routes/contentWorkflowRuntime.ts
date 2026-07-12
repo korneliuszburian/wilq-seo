@@ -10,12 +10,14 @@ import {
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemStructuredDraftGenerationResponse,
   type ContentWorkItemWordPressDraftHandoffResponse,
+  type ContentWorkItemWorkflowSnapshotResponse,
   type ContentWorkItemSnapshotResponse
 } from "../lib/api";
 
 export type ContentWorkflowSnapshot = {
   freshnessAssessment: ContentFreshnessAssessment;
   candidate: ContentWorkItemQueueCandidate;
+  serviceProfileContext: ContentWorkItemWorkflowSnapshotResponse["service_profile_context"];
   claimLedger: ContentClaimLedger;
   preflight: ContentWorkItemPreflightResponse;
   salesBrief: ContentWorkItemSalesBriefResponse;
@@ -44,6 +46,7 @@ function workflowSnapshotFromApi(
   return {
     freshnessAssessment: snapshot.freshness_assessment,
     candidate: snapshot.candidate,
+    serviceProfileContext: snapshot.service_profile_context,
     claimLedger: snapshot.claim_ledger,
     preflight: snapshot.preflight,
     salesBrief: snapshot.sales_brief,

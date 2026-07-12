@@ -92,6 +92,10 @@ def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow
     assert payload["candidate"]["work_item_id"] == blocked["work_item_id"]
     assert "preflight" not in payload
     assert "sales_brief" not in payload
+    assert payload["service_profile_context"]["binding_status"] == "not_evaluated"
+    assert payload["service_profile_context"]["decision_status"] == "not_evaluated"
+    assert payload["service_profile_context"]["service_card_id"] is None
+    assert payload["service_profile_context"]["safe_next_step"] == blocked["safe_next_step"]
 
 
 def test_homepage_work_item_builds_review_required_public_brief_without_publish(
@@ -107,6 +111,20 @@ def test_homepage_work_item_builds_review_required_public_brief_without_publish(
     )
     assert snapshot["candidate"]["work_item_id"] == snapshot["preflight"]["item"]["id"]
     assert snapshot["candidate"]["freshness_assessment"]["next_step"]
+    service_profile_context = snapshot["service_profile_context"]
+    assert service_profile_context["binding_status"] == "bound"
+    assert service_profile_context["decision_status"] == "blocked"
+    assert service_profile_context["service_card_id"] == "ekologus_service_homepage_overview"
+    assert service_profile_context["service_label"] == "Strona główna i przegląd oferty Ekologus"
+    assert service_profile_context["service_status"] == "source_backed_review_required"
+    assert service_profile_context["evidence_ids"] == ["ev_content_service_profile_source_facts"]
+    assert service_profile_context["source_connectors"] == ["public_site"]
+    assert service_profile_context["freshness_as_of"] == "2026-07-02"
+    assert service_profile_context["claim_policy_scope_label"].startswith(
+        "Ten skrót dotyczy tylko"
+    )
+    assert service_profile_context["missing_contracts"]
+    assert service_profile_context["safe_next_step"]
     brief_result = snapshot["sales_brief"]["sales_brief_result"]
     blocker_codes = [blocker["code"] for blocker in brief_result["blockers"]]
 

@@ -47,6 +47,17 @@ manualnym cross-checkiem bez akcji. Nie przywracaj matcherów z dowolnego tokenu
 `source_url` lub domeny konkurenta i nie doklejaj tej reguły w React/skillach.
 WordPress bez publicznego URL, także dev Proudsite z identycznym tytułem, nie
 jest rekordem inventory dla tego seamu i nie może przejść do `exact`.
+`r564.6` jest zamknięty: istniejący work-item snapshot projektuje compact typed
+Service Profile context z istniejącego matcher'a kart wiedzy. Context zawiera
+binding/status usługi, policy wyłącznie dopasowanej karty (pełny Claim Ledger
+pozostaje niżej), freshness, source/evidence lineage, missing contracts i jeden
+safe next step; nie ma nowego endpointu ani inferencji z enrichmentowego
+`service_fit`. Snapshot zablokowany przed workflow zwraca
+`not_evaluated`, a nie zgadywanie usługi. Dashboard renderuje jedną sekcję przy
+  publicznej stronie; raw IDs są wyłącznie w disclosure. Mobile 390 px ma
+  `scrollWidth=390` po naprawie shrinku workbenchu. Live homepage jest `bound`,
+  ale `blocked` do finalnych treści, więc slice nie omija review, ActionObjectu
+  ani draft-only/publish gates.
 
 ## Prawda produktu
 
@@ -79,12 +90,13 @@ jest rekordem inventory dla tego seamu i nie może przejść do `exact`.
   aktualnym proof.
 - Mobile freshness został skondensowany, a source status bar jest poziomym
   scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
-- Re-audyt 1440x900 i live snapshot wykazał realną, niezdublowaną lukę
-  `r564.6`: work item ma Claim Ledger/brief/review/pomiar, lecz nie ma typed
-  per-item Service Profile bindingu ani approval policy; osobna trasa Service
-  Profile nie może być substytutem dla decyzji pisania. Rozszerz istniejący
-  snapshot, nie dodawaj endpointu ani reguły w React. `v9ab.11` pozostaje
-  osobnym zadaniem pamięci Workspace Dossier.
+- Live work item ma teraz przy publicznej stronie typed Service Profile binding
+  i approval policy: homepage jest `bound` do
+  `ekologus_service_homepage_overview`, ale `blocked` przez review-required
+  publiczne karty usług. Marketer widzi dowód, świeżość, pierwszy bloker i safe
+  next step bez przechodzenia do osobnej trasy; ID, evidence i review action
+  są pod disclosure. `v9ab.11` pozostaje osobnym zadaniem pamięci Workspace
+  Dossier.
 - `4wwo` jest zamknięty przez `3gre`: `/settings` automatycznie zleca tylko
   jedno read-only odświeżenie, gdy istniejąca API-owned polityka zwraca
   `automatic_refresh.eligible=true`. POST zwraca utrwalony `queued` run,
@@ -869,5 +881,8 @@ ich rozmiaru.
    ponownie gotowych mutation/readiness ani WordPress preview boundaries.
 5. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
    nadal wymaga evidence-backed candidate density bez sztucznego tematu.
-6. `r564.5` jest zamknięty; następnym content slice jest `r564.6`, czyli typed
-   Service Profile context w istniejącym snapshot work itemu, bez nowego route.
+6. `r564.5` i `r564.6` są zamknięte. Nie zgaduj usługi z `service_fit`: istnieje
+   tylko typed binding snapshotu, a blocked snapshot pozostaje `not_evaluated`.
+7. Parent `r564` jest zablokowany zewnętrznie przy 1 actionable z wymaganych 3;
+   nie twórz tematu dla wypełnienia progu. Następny niezależny UI slice to
+   `3bst.7` — pokaż istniejący Ahrefs manual blocker przed kartami danych.

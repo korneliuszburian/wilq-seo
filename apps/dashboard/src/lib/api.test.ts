@@ -411,6 +411,13 @@ describe("content workflow API helpers", () => {
     expect(snapshot.response_type).toBe("workflow_snapshot");
     if (snapshot.response_type !== "workflow_snapshot") throw new Error("Expected workflow snapshot");
     expect(snapshot.preflight.item.id).toBe("content_work_item_bdo");
+    expect(snapshot.service_profile_context.service_card_id).toBe(
+      "ekologus_service_bdo_reporting"
+    );
+    expect(snapshot.service_profile_context.decision_status).toBe("blocked");
+    expect(snapshot.service_profile_context.evidence_ids).toEqual([
+      "ev_content_service_profile_source_facts"
+    ]);
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/content/work-items/snapshot"
     ]);
@@ -628,6 +635,32 @@ function workflowSnapshot() {
     response_type: "workflow_snapshot",
     freshness_assessment: contentFreshnessAssessment(),
     candidate: contentQueueResponse().candidates[0],
+    service_profile_context: {
+      binding_status: "bound",
+      decision_status: "blocked",
+      status_label: "Kontekst usługi nie jest zatwierdzony do finalnych treści",
+      reason: "Service Profile wymaga review.",
+      service_card_id: "ekologus_service_bdo_reporting",
+      service_label: "BDO i sprawozdawczość środowiskowa",
+      service_status: "source_backed_review_required",
+      service_status_label: "źródło istnieje, wymagane review",
+      freshness_label: "publiczna strona wymaga review (ostatni sygnał: 2026-07-02)",
+      freshness_as_of: "2026-07-02",
+      source_summary_label: "Źródło profilu: publiczna strona Ekologus",
+      allowed_claims: ["Ekologus może pomóc firmie uporządkować obowiązki BDO."],
+      claims_needing_review: ["Potwierdź zakres usługi przed finalnym draftem"],
+      blocked_claims: ["Gwarancje efektu są zablokowane"],
+      claim_policy_scope_label:
+        "Ten skrót dotyczy tylko dopasowanej karty usługi. Pełny rejestr twierdzeń dla szkicu jest niżej.",
+      evidence_requirements: ["Dowód bieżący z connectora jest wymagany."],
+      missing_contracts: ["Publiczne karty usług sprawdzone przez człowieka"],
+      safe_next_step: "Sprawdź kartę usługi BDO przed finalnym draftem.",
+      source_connectors: ["public_site"],
+      evidence_ids: ["ev_content_service_profile_source_facts"],
+      knowledge_card_ids: ["ekologus_service_bdo_reporting"],
+      review_action_id: "service_profile_review_card_ekologus_service_bdo_reporting",
+      review_action_label: "Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa"
+    },
     claim_ledger: claimLedger(),
     preflight: responseByPath["/api/content/work-items/preflight"],
     sales_brief: responseByPath["/api/content/work-items/sales-brief"],

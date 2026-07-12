@@ -1025,6 +1025,12 @@ Stop and record a blocker if:
 
 ## Progress
 
+- 2026-07-12: `wilq-seo-r564.6` closes the last screen-level gap between the
+  existing Service Profile and a selected content work item. The existing
+  snapshot now projects only a typed knowledge-card binding with compact claim
+  policy, freshness, evidence, missing contracts and safe next step; it never
+  infers a service from enrichment prose. The real homepage remains blocked for
+  final content pending public-card review, and WordPress stays draft-only.
 - 2026-07-01: Goal 005 Beads epic `wilq-seo-1oa` created. Initial recovery,
   knowledge audit, Service Profile, UAT, Sales Brief signal-quality and variant
   selection slices created.

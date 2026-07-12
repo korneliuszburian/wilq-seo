@@ -196,18 +196,32 @@ describe("ContentWorkflowSurface", () => {
       "Okno pomiaru"
     ]);
     expect(screen.getAllByText("BDO dla firm")[0]).toBeInTheDocument();
+    expect(screen.getByLabelText("Decyzja usługi i zasad twierdzeń")).toBeInTheDocument();
+    expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
+    expect(
+      screen.getByText("Kontekst usługi nie jest zatwierdzony do finalnych treści")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź kartę usługi BDO przed finalnym draftem.")).toBeInTheDocument();
+    expect(screen.getByText(/Publiczne karty usług sprawdzone przez człowieka/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Ten skrót dotyczy tylko dopasowanej karty usługi/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Nie używaj dla tej usługi: Gwarancje efektu są zablokowane/))
+      .toBeInTheDocument();
+    expect(screen.getByText("Dowody i warunki")).toBeInTheDocument();
     expect(screen.getByText("Wzbogacenie tematu")).toBeInTheDocument();
     expect(screen.getByText(/Firma chce wiedzieć, czy musi aktualizować obowiązki BDO/))
       .toBeInTheDocument();
     expect(screen.getByText("informacyjno-usługowa")).toBeInTheDocument();
     expect(screen.getByText("obsługa środowiskowa Ekologus")).toBeInTheDocument();
+    expect(screen.getByText("Nie zastępuje typed decyzji usługi pokazanej wyżej.")).toBeInTheDocument();
     expect(screen.getAllByText("GSC pokazuje popyt na temat BDO.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Jakość briefu").length).toBeGreaterThan(0);
     expect(screen.getAllByText("sygnał użyteczny, ale wymaga review").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji/).length)
       .toBeGreaterThan(0);
     expect(screen.getByText("Ograniczenia wiedzy i dowody")).toBeInTheDocument();
-    expect(screen.getByText(/ev_content_service_profile_source_facts/)).toBeInTheDocument();
+    expect(screen.getAllByText(/ev_content_service_profile_source_facts/).length).toBeGreaterThan(0);
     expect(await screen.findByText("Dev draft WordPress")).toBeInTheDocument();
     expect(screen.getByLabelText("Decyzja mobilna")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Otwórz decyzję i dowody" })).toBeInTheDocument();
@@ -1297,6 +1311,7 @@ function workflowSnapshot({
     response_type: "workflow_snapshot",
     freshness_assessment: contentFreshnessAssessment(),
     candidate: contentQueueResponse().candidates[0],
+    service_profile_context: serviceProfileContext(),
     claim_ledger: claimLedger(),
     preflight: {
       item: workItem(),
@@ -1378,6 +1393,36 @@ function workflowSnapshot({
       ]
     },
     operator_steps: operatorSteps({ review: Boolean(review), handoff: Boolean(handoff) })
+  };
+}
+
+function serviceProfileContext() {
+  return {
+    binding_status: "bound" as const,
+    decision_status: "blocked" as const,
+    status_label: "Kontekst usługi nie jest zatwierdzony do finalnych treści",
+    reason:
+      "WILQ dopasował kartę BDO, ale Service Profile nie ma jeszcze zatwierdzenia do production-depth.",
+    service_card_id: "ekologus_service_bdo_reporting",
+    service_label: "BDO i sprawozdawczość środowiskowa",
+    service_status: "source_backed_review_required",
+    service_status_label: "źródło istnieje, wymagane review",
+    freshness_label: "publiczna strona wymaga review (ostatni sygnał: 2026-07-02)",
+    freshness_as_of: "2026-07-02",
+    source_summary_label: "Źródło profilu: publiczna strona Ekologus",
+    allowed_claims: ["Ekologus może pomóc firmie uporządkować obowiązki BDO."],
+    claims_needing_review: ["Potwierdź zakres usługi przed finalnym draftem"],
+    blocked_claims: ["Gwarancje efektu są zablokowane"],
+    claim_policy_scope_label:
+      "Ten skrót dotyczy tylko dopasowanej karty usługi. Pełny rejestr twierdzeń dla szkicu jest niżej.",
+    evidence_requirements: ["Dowód bieżący z connectora jest wymagany."],
+    missing_contracts: ["Publiczne karty usług sprawdzone przez człowieka"],
+    safe_next_step: "Sprawdź kartę usługi BDO przed finalnym draftem.",
+    source_connectors: ["public_site"],
+    evidence_ids: ["ev_content_service_profile_source_facts"],
+    knowledge_card_ids: ["ekologus_service_bdo_reporting"],
+    review_action_id: "service_profile_review_card_ekologus_service_bdo_reporting",
+    review_action_label: "Sprawdź kartę usługi: BDO i sprawozdawczość środowiskowa"
   };
 }
 

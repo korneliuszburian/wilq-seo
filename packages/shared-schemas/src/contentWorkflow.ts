@@ -1647,10 +1647,75 @@ export const ContentWorkflowOperatorStepSchema = z.object({
   summary: z.string()
 });
 
+export const ContentWorkItemServiceProfileBindingStatusSchema = z.enum([
+  "not_evaluated",
+  "bound",
+  "unbound"
+]);
+
+export const ContentWorkItemServiceProfileDecisionStatusSchema = z.enum([
+  "not_evaluated",
+  "ready",
+  "review_required",
+  "blocked"
+]);
+
+export const ContentWorkItemServiceProfileContextSchema = z.object({
+  binding_status: ContentWorkItemServiceProfileBindingStatusSchema,
+  decision_status: ContentWorkItemServiceProfileDecisionStatusSchema,
+  status_label: z.string(),
+  reason: z.string(),
+  service_card_id: z.string().nullable().optional(),
+  service_label: z.string().nullable().optional(),
+  service_status: z.string().nullable().optional(),
+  service_status_label: z.string().default(""),
+  freshness_label: z.string().default(""),
+  freshness_as_of: z.string().nullable().optional(),
+  source_summary_label: z.string().default(""),
+  allowed_claims: z.array(z.string()).default([]),
+  claims_needing_review: z.array(z.string()).default([]),
+  blocked_claims: z.array(z.string()).default([]),
+  claim_policy_scope_label: z.string().default(""),
+  evidence_requirements: z.array(z.string()).default([]),
+  missing_contracts: z.array(z.string()).default([]),
+  safe_next_step: z.string(),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  knowledge_card_ids: z.array(z.string()).default([]),
+  review_action_id: z.string().nullable().optional(),
+  review_action_label: z.string().nullable().optional()
+});
+
+const ContentWorkItemServiceProfileContextDefault = {
+  binding_status: "not_evaluated" as const,
+  decision_status: "not_evaluated" as const,
+  status_label: "Profil usługi nie został jeszcze oceniony",
+  reason:
+    "Workflow nie ma jeszcze bezpiecznego snapshotu do sprawdzenia usługi, więc WILQ jej nie przypisuje.",
+  service_status_label: "",
+  freshness_label: "",
+  freshness_as_of: null,
+  source_summary_label: "",
+  allowed_claims: [],
+  claims_needing_review: [],
+  blocked_claims: [],
+  claim_policy_scope_label:
+    "Nie ma jeszcze przypisanej karty usługi, więc WILQ nie pokazuje polityki twierdzeń dla tego work itemu.",
+  evidence_requirements: [],
+  missing_contracts: [],
+  safe_next_step: "Najpierw usuń blocker workflow, potem sprawdź profil usługi.",
+  source_connectors: [],
+  evidence_ids: [],
+  knowledge_card_ids: []
+};
+
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   response_type: z.literal("workflow_snapshot").default("workflow_snapshot"),
   freshness_assessment: ContentFreshnessAssessmentSchema,
   candidate: ContentWorkItemQueueCandidateSchema,
+  service_profile_context: ContentWorkItemServiceProfileContextSchema.default(
+    ContentWorkItemServiceProfileContextDefault
+  ),
   claim_ledger: ContentClaimLedgerSchema,
   preflight: ContentWorkItemPreflightResponseSchema,
   sales_brief: ContentWorkItemSalesBriefResponseSchema,
@@ -1676,7 +1741,10 @@ export const ContentWorkItemBlockedSnapshotResponseSchema = z.object({
   preflight_status: z.string(),
   blockers: z.array(ContentWorkItemQueueBlockerSchema).default([]),
   ...ContentEvidenceTraceFields,
-  candidate: ContentWorkItemQueueCandidateSchema
+  candidate: ContentWorkItemQueueCandidateSchema,
+  service_profile_context: ContentWorkItemServiceProfileContextSchema.default(
+    ContentWorkItemServiceProfileContextDefault
+  )
 });
 
 export const ContentWorkItemSnapshotResponseSchema = z.discriminatedUnion(
@@ -1875,6 +1943,9 @@ export type ContentWorkItemMeasurementOutcomeResponse = z.infer<
   typeof ContentWorkItemMeasurementOutcomeResponseSchema
 >;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
+export type ContentWorkItemServiceProfileContext = z.infer<
+  typeof ContentWorkItemServiceProfileContextSchema
+>;
 export type ContentWorkItemWorkflowSnapshotResponse = z.infer<
   typeof ContentWorkItemWorkflowSnapshotResponseSchema
 >;

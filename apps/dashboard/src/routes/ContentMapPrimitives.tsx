@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export function ContentMapColumn({ children, icon, subtitle, title }: { children: ReactNode; icon: ReactNode; subtitle: string; title: string }) {
-  return <div className="relative z-10 rounded-md border border-line bg-white p-4 shadow-sm"><div className="mb-3 flex items-start gap-3"><div className="rounded-md border border-line bg-surface p-2 text-action">{icon}</div><div><h2 className="text-base font-semibold text-ink">{title}</h2><p className="mt-1 text-xs text-slate-500">{subtitle}</p></div></div>{children}</div>;
+  return <div className="relative z-10 min-w-0 rounded-md border border-line bg-white p-4 shadow-sm"><div className="mb-3 flex items-start gap-3"><div className="rounded-md border border-line bg-surface p-2 text-action">{icon}</div><div><h2 className="text-base font-semibold text-ink">{title}</h2><p className="mt-1 text-xs text-slate-500">{subtitle}</p></div></div>{children}</div>;
 }
 
 export function ContentMapConnectors() {

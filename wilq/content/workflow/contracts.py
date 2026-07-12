@@ -45,6 +45,9 @@ from wilq.content.inventory.records import (
     ContentInventoryResolution,
 )
 from wilq.content.knowledge.cards import ContentKnowledgeCardMatch
+from wilq.content.knowledge.work_item_service_profile import (
+    ContentWorkItemServiceProfileContext,
+)
 from wilq.content.measurement.outcome import (
     ContentMeasurementObservedMetric,
     ContentMeasurementOutcomeInterpretation,
@@ -427,6 +430,9 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     response_type: Literal["workflow_snapshot"] = "workflow_snapshot"
     freshness_assessment: ContentFreshnessAssessment
     candidate: ContentWorkItemQueueCandidate
+    service_profile_context: ContentWorkItemServiceProfileContext = Field(
+        default_factory=ContentWorkItemServiceProfileContext.not_evaluated
+    )
     claim_ledger: ContentClaimLedger
     preflight: ContentWorkItemPreflightResponse
     sales_brief: ContentWorkItemSalesBriefResponse
@@ -456,6 +462,9 @@ class ContentWorkItemBlockedSnapshotResponse(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     candidate: ContentWorkItemQueueCandidate
+    service_profile_context: ContentWorkItemServiceProfileContext = Field(
+        default_factory=ContentWorkItemServiceProfileContext.not_evaluated
+    )
 
 
 ContentWorkItemSnapshotResponse = (

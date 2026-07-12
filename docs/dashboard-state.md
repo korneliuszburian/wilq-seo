@@ -1,6 +1,6 @@
 # Dashboard State
 
-Last updated: 2026-07-10
+Last updated: 2026-07-12
 
 This is the living state file for WILQ dashboard work. Read it before changing
 any dashboard route, dashboard API view-model, dashboard copy, dashboard test or
@@ -45,19 +45,17 @@ The dev reader stays generic: it detects
 flexible rows by `acf_fc_layout` and nested text candidates, never by a fixed
 client-specific ACF key.
 
-The current manual usefulness score is 5/10. Method: one reviewer checked the
-ten first-screen questions in this file against live API data, a 1440×900
-render, a 390×844 render and the content Playwright proof. Desktop answers page,
-public/dev context, decision direction and dry-run next step. It fails current
-freshness, cold-load speed and mobile first-viewport CTA. Existing-draft
-duplication is now closed by removing the direct live/create path; the action
-detail also renders a typed current/proposed/blocked preview. A real dev draft
-write may return only through canonical ActionObject apply. Do not restore a
-direct adapter or describe prior draft creation as current write readiness.
-Next work is evidence-backed candidate density under parent `r564`; weak Ahrefs
-similarity is now explicitly manual-only (`r564.5` closed), while mobile UX
-(`r564.3`) and canonical dev-only apply (`c9h9.4`) are closed. The deleted legacy planner
-must not return.
+The current reviewer estimate is 6/10. Method: marketer/operator review of the
+live snapshot, a 1440×900 render and a 390×844 render. Desktop and mobile now
+answer page, public/dev context, decision direction, service/claim policy,
+proof, blocker and dry-run next step without revealing IDs above the fold. The
+typed service context correctly remains blocked until public-card review, so it
+does not pretend that the writer is production-ready. Existing-draft duplication
+remains closed by removing the direct live/create path; a real dev draft write
+may return only through canonical ActionObject apply. The live queue is still
+1 actionable item of the required 3 and must not invent a third. `r564.5`,
+`r564.6`, `r564.3` and `c9h9.4` are closed. The next independent UI problem is
+`3bst.7` on `/ahrefs`; the deleted legacy planner must not return.
 
 The target content workbench must show:
 
@@ -80,9 +78,9 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 | --- | ---: | --- | --- | --- | --- | --- |
 | `/command-center` | 70% | Good IA direction: daily priority, blockers and source freshness. Still too easy to become summary-of-everything. | `GET /api/dashboard/command-center`, `getCommandCenter()` | Daily queue, blocked claims, source freshness. | Needs stronger routing into one concrete work item. | Keep as cockpit; do not add more cards. Route into content workbench once content view is ready. |
 | `/opportunities` | 50% | Useful as registry but overlaps with Command Center and Actions. | `GET /api/opportunities`, `getOpportunities()` | Opportunity list with evidence/action links. | Duplicates "Kolejka" mental model. | Eventually merge into one decision/action queue; avoid new UI work here now. |
-| `/content-workflow` | 6/10 | Primary "Treści i SEO" workspace. Live queue has 2 total candidates, 1 actionable, and requires a minimum of 3, while content freshness is now fresh after read-only refresh. Queue and selected snapshot carry typed freshness; queue-owned first card renders before snapshot/enrichment, API prewarm keeps cold queue under 5 s, and mobile has a compact decision card before heavy detail. Ahrefs supporting rows now distinguish exact proof from weak manual similarity. | Existing queue, snapshot, enrichment, authoring-profile, activation/readiness and action endpoints in `api.ts`; no new endpoint is needed. Direct execution is dry-run only; React forces `mode=dry_run` and null authorization. | Concrete public page selection; public/dev role split; fresh source status; evidence lineage; queue decision and safe next step before subordinate reads; mobile decision/blocker/safe CTA; no duplicate-create/direct-live CTA; publish/destructive false. | Fresh 1440x900 proof passes layout, but the snapshot still lacks a typed per-item Service Profile binding: Claim Ledger can be seen without the service approval/claim-policy context. Live queue remains blocked at 1 of 3 and must not invent a third topic. | `r564.5` jest zamknięty. `r564.6` rozszerza istniejący snapshot o Service Profile context; zachowaj zamknięty viewport `r564.3` i usuniętą live path. |
+| `/content-workflow` | 6/10 | Primary "Treści i SEO" workspace. Live queue has 2 total candidates, 1 actionable, and requires a minimum of 3, while content freshness is now fresh after read-only refresh. Queue and selected snapshot carry typed freshness; selected snapshot also owns a compact per-item Service Profile decision: typed service binding, approval and policy for that card (full Claim Ledger stays separate), source/freshness/evidence, first blocker and safe next step. IDs remain in disclosure; mobile retains a compact decision card before heavy detail and has no horizontal page overflow at 390 px. Ahrefs supporting rows distinguish exact proof from weak manual similarity. | Existing queue and existing snapshot plus enrichment, authoring-profile, activation/readiness and action endpoints in `api.ts`; no new endpoint. Direct execution is dry-run only; React forces `mode=dry_run` and null authorization. | Concrete public page selection; public/dev role split; fresh source status; service/claim context next to current page; evidence lineage; queue decision and safe next step; no duplicate-create/direct-live CTA; publish/destructive false. | Service Profile is honestly review-blocked; live queue remains blocked at 1 of 3 and must not invent a third topic. Production-depth and final draft remain unavailable until human review. | `r564.5` and `r564.6` are closed. Preserve the snapshot-owned context and the closed mobile viewport `r564.3`; do not infer service from enrichment or restore a live path. |
 | `/content-inventory` | 20% | Hidden technical placeholder. Inventory remains an input to `/content-workflow`, not a separate writing cockpit. | currently generic/compact route; check `surfaceRegistry.ts` before adding code | Concept is needed inside content workbench. | Not a real marketer view yet. | Do not build separate cockpit; expose inventory inside content workbench. |
-| `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. | `GET /api/content/service-profile`, `getContentServiceProfile()` | Services, claim policy, source status, review-required data. | Not enough approved-current production depth; can overwhelm writer. | Feed allowed/blocked claims into content workbench, not as primary task screen. |
+| `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. Its selected-card policy is now projected into the existing content work-item snapshot. | `GET /api/content/service-profile` is the source assembly; `GET /api/content/work-items/{id}/snapshot` projects its compact typed context; no frontend join. | Services, claim policy, source status and review-required data. | Not enough approved-current production depth; can overwhelm writer. | Keep owner review here; preserve the compact work-item projection instead of duplicating a second content view. |
 | `/knowledge` | 65% | Admin/review support surface with current "Wiedza" IA. Operating-map remains the only initial read; cards/playbooks defer until disclosure. `list_workflows()` now uses only command-center decisions; standalone map core is `4.878 s`. Managed runtime starts a non-blocking map prewarm after readiness; first/second warmed HTTP reads measured `0.003550 s` / `0.003175 s`. First decision/blockers render in the browser proof; focused current Playwright passes 1/1 in 2.7 s. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map`; `build_knowledge_operating_map_cached()` and existing disclosure controls | Source lineage and claim review. | Prewarm stability must be checked on subsequent restarts; live knowledge/source freshness remains separate from cache latency. | Keep prewarm fail-open and non-blocking; do not re-enable concurrent subordinate reads. |
 | `/actions` | 75% | Safe action queue renders from a cached/prewarmed existing list seam; after managed restart HTTP reads measured `0.082513 s` and `0.021151 s`. First decision card remains useful while mutation readiness is pending and explicitly keeps write blocked; operation labels wrap without overlap. | `GET /api/actions`, existing action validate/preview/review/confirm/impact endpoints; `list_actions_cached()` lifecycle seam | Review/preview/confirm/audit flow; evidence IDs remain in list response. | Full dashboard-api smoke now asserts current queue, blocker and lifecycle copy; mutation readiness remains separately review-gated. | `c9h9.11` and stale assertion work in `c9h9.8` are closed; do not restore registry IA. |
 | `/actions/:id` | 70% | Decision-first detail answers what to do, why, write status, evidence and next safe step. Existing-draft action now has typed current/proposed/blocked preview. Fresh full-page and first-viewport screenshots exist locally. | `GET /api/actions/{id}`, `GET /api/actions/{id}/mutation-readiness`, preview/validate/review/confirm endpoints | Polish decision hero, explicit blocked write, typed preview card, evidence summary; raw payload/audit stay in disclosure. Focused Vitest and Playwright pass. | One below-fold readiness sentence still uses technical `apply-capable ActionObject`; queue performance is separate. | Keep pattern; copy-tune below-fold term later, never bypass safety. |
