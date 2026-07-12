@@ -657,6 +657,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   przekazuje tylko etykiety i callbacki domenowe. Live strategy action zachowuje
   2 evidence IDs, jawne blocked claims i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/action-summary-live.png`.
+- Audit summary/operator text normalization, raw contract detection and
+  identifier redaction są teraz w istniejącym `wilq/actions/audit_store.py`;
+  `service.py` zachowuje kompatybilną fasadę. Live strategy action nadal ma 2
+  evidence IDs, blokadę zapisu i redacted operator surface; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/audit-summary-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

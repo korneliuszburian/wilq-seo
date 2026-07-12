@@ -578,6 +578,10 @@ ich rozmiaru.
   `wilq/actions/action_blockers.py`; live Ads karta zachowuje safety labels,
   blocked claims i brak zapisu. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/action-summary-live.png`.
+- Audit summary/operator text normalization i raw identifier redaction są teraz
+  w `wilq/actions/audit_store.py`; live Ads karta zachowuje review gates,
+  evidence i brak zapisu. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/audit-summary-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
