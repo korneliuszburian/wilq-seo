@@ -42,4 +42,6 @@ module `visibility.py`.
 
 ## Commit
 
-Hash implementacji zostanie dopisany po pushu w osobnym docs-only commicie.
+Implementacja: `a86ceba1` (`refactor: extract localo visibility preview cards`),
+wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
+commitem.
