@@ -676,6 +676,15 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   managed restart i browser proof przechodzą; live Ads strategy action nadal
   ma 2 evidence IDs, `Zapis zablokowany` i `apply_allowed=false`;
   proof: `.local-lab/proof/continuation-2026-07-12/operator-labels-live.png`.
+- Read-only helpery metryk `latest_metric_facts_by_identity`,
+  `metric_fact_sort_time` i `facts_by_connector` są teraz w istniejącym
+  `wilq/actions/metric_utils.py`; `service.py` zachowuje kompatybilne fasady,
+  a deduplikacja po źródle/nazwie/wymiarach, kolejność `collected_at` i kolejność
+  faktów w grupach pozostają identyczne. Focused metric/action tests (6 passed),
+  Ruff, mypy, complexity, managed runtime i browser proof przechodzą; live
+  `/api/actions` ma 21 akcji, 0 write-capable, a strategy action zachowuje 2
+  evidence IDs i `apply_allowed=false`; proof:
+  `.local-lab/proof/continuation-2026-07-12/metric-utils-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

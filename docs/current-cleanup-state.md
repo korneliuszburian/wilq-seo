@@ -594,6 +594,13 @@ ich rozmiaru.
   service. Live strategy action po restarcie zachowuje 2 evidence IDs,
   `apply_allowed=false`, `Zapis zablokowany`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/operator-labels-live.png`.
+- Read-only deduplikacja i grupowanie faktów metrycznych zostały przeniesione do
+  istniejącego `wilq/actions/metric_utils.py`; service zachowuje fasady, a
+  najnowszy fakt po `(source_connector, name, dimensions)` oraz sortowanie po
+  `collected_at` pozostają bez zmian. Live po restarcie: `/api/actions` HTTP 200,
+  21 akcji, 0 write-capable; strategy action ma 2 evidence IDs i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/metric-utils-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

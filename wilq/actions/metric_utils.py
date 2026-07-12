@@ -26,6 +26,37 @@ def unique_values(items: Iterable[str]) -> list[str]:
     return unique_items
 
 
+def metric_fact_sort_time(fact: MetricFact) -> str:
+    if fact.collected_at is None:
+        return ""
+    return fact.collected_at.isoformat()
+
+
+def latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
+    latest_by_key: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
+    for fact in metric_facts:
+        key = (
+            fact.source_connector,
+            fact.name,
+            tuple(sorted(fact.dimensions.items())),
+        )
+        current = latest_by_key.get(key)
+        if current is None or metric_fact_sort_time(fact) > metric_fact_sort_time(current):
+            latest_by_key[key] = fact
+    return sorted(
+        latest_by_key.values(),
+        key=metric_fact_sort_time,
+        reverse=True,
+    )
+
+
+def facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
+    grouped: dict[str, list[MetricFact]] = {}
+    for fact in facts:
+        grouped.setdefault(fact.source_connector, []).append(fact)
+    return grouped
+
+
 def metric_sentence(facts: list[MetricFact]) -> str:
     if not facts:
         return "Najważniejsze fakty: nie ma potwierdzonych metryk do pokazania"

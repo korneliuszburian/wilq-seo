@@ -162,8 +162,17 @@ from wilq.actions.merchant import (
 )
 from wilq.actions.merchant_preview import merchant_preview_cards as build_merchant_preview_cards
 from wilq.actions.metric_utils import (
+    facts_by_connector as _facts_by_connector_impl,
+)
+from wilq.actions.metric_utils import (
+    latest_metric_facts_by_identity as _latest_metric_facts_by_identity_impl,
+)
+from wilq.actions.metric_utils import (
     metric_fact_label,
     unique_values,
+)
+from wilq.actions.metric_utils import (
+    metric_fact_sort_time as _metric_fact_sort_time_impl,
 )
 from wilq.actions.mutation_contract import mutation_apply_contract as _mutation_apply_contract
 from wilq.actions.mutation_plan import activation_next_step as _activation_next_step
@@ -945,27 +954,11 @@ def _latest_google_ads_metric_facts() -> list[MetricFact]:
 
 
 def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
-    latest_by_key: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
-    for fact in metric_facts:
-        key = (
-            fact.source_connector,
-            fact.name,
-            tuple(sorted(fact.dimensions.items())),
-        )
-        current = latest_by_key.get(key)
-        if current is None or _metric_fact_sort_time(fact) > _metric_fact_sort_time(current):
-            latest_by_key[key] = fact
-    return sorted(
-        latest_by_key.values(),
-        key=lambda fact: _metric_fact_sort_time(fact),
-        reverse=True,
-    )
+    return _latest_metric_facts_by_identity_impl(metric_facts)
 
 
 def _metric_fact_sort_time(fact: MetricFact) -> str:
-    if fact.collected_at is None:
-        return ""
-    return fact.collected_at.isoformat()
+    return _metric_fact_sort_time_impl(fact)
 
 
 def _wordpress_draft_handoff_action(
@@ -1105,10 +1098,7 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
 
 
 def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
-    grouped: dict[str, list[MetricFact]] = {}
-    for fact in facts:
-        grouped.setdefault(fact.source_connector, []).append(fact)
-    return grouped
+    return _facts_by_connector_impl(facts)
 
 
 def _plain_metric_value_label(
