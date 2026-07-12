@@ -18,6 +18,7 @@ handoff/package, potem preview/review/confirm.
   `vendor_write_possible=false`; Ads detail ma evidence, blokadę zapisu i
   `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/mutation-next-live.png`.
+- Commit implementacji: `c0f3ec3` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
