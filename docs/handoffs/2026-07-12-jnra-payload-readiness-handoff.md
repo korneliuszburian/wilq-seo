@@ -41,3 +41,6 @@ zapisu.
 - Kolejny seam wymaga świeżego odczytu pozostałego orchestratora; nie powtarzaj
   gotowych payload/readiness boundary.
 
+## Commit
+
+Implementacja i handoff: `add6a2d9` (`refactor: centralize payload readiness parsing`).
