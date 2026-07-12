@@ -35,3 +35,6 @@ store. Nie zmieniono evidence lineage, freshness, ActionObject ani write gates.
 - Następny wybór wymaga świeżego review orchestratora, bez powrotu do gotowych
   Ads/payload/review/cache boundaries.
 
+## Commit
+
+Implementacja i handoff: `dfe080e2` (`refactor: centralize Ads metric fact selection`).
