@@ -74,6 +74,12 @@ reads wyniosły 1.354044 s, 1.351506 s i 1.212189 s przy zachowanym
 nie ma ryzyka podania stale evidence. Osobny `c9h9.18` śledzi tactical queue
 monolith: jego Ahrefs branch może przyjąć ten matcher dopiero po typed
 extraction, nie przez wyjątek od budgetu.
+`c9h9.15` jest zamknięty: detect-secrets ma jedną localną pragma allowlist
+wyłącznie przy testowej nazwie pola redakcji. Scoped test dowodzi, że identyczne
+pole bez pragma nadal jest wykrywane w innym pliku, a `scripts/security.sh`
+przechodzi z pustymi wynikami detect-secrets. Nie dopisuj credentiali na tej
+samej fizycznej linii fixture; semgrep nadal nie jest zainstalowany i jego
+nieuruchomienie pozostaje jawne.
 
 ## Prawda produktu
 

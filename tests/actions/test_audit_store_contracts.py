@@ -109,7 +109,7 @@ def test_audit_details_for_operator_redacts_raw_contracts_and_labels_review_fiel
             "checked_items": ["reviewed_url", "draft_readiness_notes"],
             "blockers": ["human_confirm_before_apply"],
             "payload_preview": "raw payload should stay hidden",
-            "nested": {"safe": "ok", "mapping_secret": "hide"},
+            "nested": {"safe": "ok", "mapping_secret": "hide"},  # pragma: allowlist secret
         },
         string_list=lambda value: value if isinstance(value, list) else [],
         review_summary_item=lambda item: f"review:{item}",

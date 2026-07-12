@@ -104,6 +104,14 @@ w git, Beads i `docs/progress/archive/`.
   dodatkowej optymalizacji. Nowy `c9h9.18` wydzieli wyłącznie Ahrefs tactical
   branch do typed seamu przed użyciem compiled matcher; nie zmieni reguł
   exact/weak ani ActionObjectów.
+- `wilq-seo-c9h9.15` domyka fałszywą blokadę bramki sekretów najwęższym
+  wyjątkiem: celowa testowa nazwa pola redakcji ma inline
+  `# pragma: allowlist secret` na jednej linii. Nowy scoped test potwierdza
+  jednocześnie brak wyniku dla tej fixture, dokładnie jeden allowlisted
+  `Secret Keyword` oraz wykrycie tego samego nieallowlistowanego pola w innym
+  pliku tymczasowym. `scripts/security.sh` przechodzi z `{"results": {}}`;
+  pip-audit nie znalazł znanych podatności, a semgrep pozostaje jawnie
+  niedostępny, więc nie jest traktowany jako zaliczona bramka.
 
 - Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
   99 906 metric facts, 4 577 refresh runs, 12 connectorów (9 configured,
