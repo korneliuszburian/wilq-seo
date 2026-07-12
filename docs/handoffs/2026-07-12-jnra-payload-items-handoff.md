@@ -21,6 +21,7 @@ reguł domenowych ani nie omija ActionObject safety loop.
   `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/payload-items-live.png`
   oraz snapshot z technicznymi szczegółami za disclosure.
+- Commit implementacji: `08f0486` wypchnięty na `origin/main`.
 - Brak nowych endpointów, POST/vendor write, zmian credentiali lub publikacji.
 
 ## Beads
