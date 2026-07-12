@@ -57,6 +57,7 @@ from wilq.actions.google_ads.change_history import (
 )
 from wilq.actions.google_ads.custom_segments import (
     custom_segment_action_from_metric_facts,
+    custom_segment_preview_cards,
 )
 from wilq.actions.google_ads.demand_gen import (
     demand_gen_channel_label,
@@ -2385,65 +2386,13 @@ def _ads_negative_keyword_preview_cards(
 def _ads_custom_segment_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(preview_items[:4]):
-        targeting_preview = next(
-            (target for target in item.get("targeting_preview", []) if isinstance(target, dict)),
-            {},
-        )
-        safety_review = item.get("safety_review")
-        safety_review = safety_review if isinstance(safety_review, dict) else {}
-        source_terms = _string_list(item.get("source_terms"))
-        rows = [
-            _preview_row(
-                "Nazwa",
-                str(item.get("custom_segment_name") or "segment do sprawdzenia"),
-            ),
-            _preview_row(
-                "Typ odbiorców",
-                str(item.get("member_type_label") or "typ odbiorców do sprawdzenia"),
-            ),
-            _preview_row(
-                "Hasła źródłowe",
-                ", ".join(source_terms[:4]) if source_terms else "brak haseł",
-            ),
-            _preview_row(
-                "Kampania do sprawdzenia",
-                str(targeting_preview.get("campaign_name") or "kampania do sprawdzenia"),
-            ),
-            _preview_row(
-                "Bezpieczeństwo",
-                str(safety_review.get("status_label") or "wymaga sprawdzenia"),
-            ),
-        ]
-        missing_requirement_labels = _string_list(safety_review.get("missing_requirement_labels"))
-        if missing_requirement_labels:
-            rows.append(_preview_row("Braki", ", ".join(missing_requirement_labels[:4])))
-        requirement_labels = _string_list(item.get("required_validation_labels"))
-        if requirement_labels:
-            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
-        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
-        if blocked_claim_labels:
-            rows.append(
-                _preview_row(
-                    "Czego nie wolno twierdzić",
-                    ", ".join(blocked_claim_labels[:4]),
-                )
-            )
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=f"ads_custom_segment_preview_{index}",
-                kind="google_ads_custom_segment_review",
-                title_label="Segment odbiorców do sprawdzenia",
-                subtitle_label="ocena segmentu bez zapisu zmian",
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
+    return custom_segment_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+    )
 
 
 def _ads_change_history_preview_cards(

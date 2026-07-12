@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from wilq.actions.validation_copy import (
@@ -13,6 +13,8 @@ from wilq.actions.validation_copy import (
 from wilq.schemas import (
     ActionMode,
     ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
     ActionRisk,
     ActionStatus,
     MetricFact,
@@ -37,6 +39,80 @@ CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION = [
     "google_ads_mutation_audit",
     "human_confirm_before_apply",
 ]
+
+PreviewRow = Callable[[str, str], ActionPreviewRowViewModel]
+StringList = Callable[[Any], list[str]]
+StateLabel = Callable[[Any], str]
+
+
+def custom_segment_preview_cards(
+    payload: dict[str, Any],
+    *,
+    preview_row: PreviewRow,
+    string_list: StringList,
+    apply_state_label: StateLabel,
+    system_readiness_label: StateLabel,
+) -> list[ActionPreviewCardViewModel]:
+    """Render custom-segment review cards without exposing vendor IDs."""
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        targeting_preview = next(
+            (target for target in item.get("targeting_preview", []) if isinstance(target, dict)),
+            {},
+        )
+        safety_review = item.get("safety_review")
+        safety_review = safety_review if isinstance(safety_review, dict) else {}
+        source_terms = string_list(item.get("source_terms"))
+        rows = [
+            preview_row(
+                "Nazwa",
+                str(item.get("custom_segment_name") or "segment do sprawdzenia"),
+            ),
+            preview_row(
+                "Typ odbiorców",
+                str(item.get("member_type_label") or "typ odbiorców do sprawdzenia"),
+            ),
+            preview_row(
+                "Hasła źródłowe",
+                ", ".join(source_terms[:4]) if source_terms else "brak haseł",
+            ),
+            preview_row(
+                "Kampania do sprawdzenia",
+                str(targeting_preview.get("campaign_name") or "kampania do sprawdzenia"),
+            ),
+            preview_row(
+                "Bezpieczeństwo",
+                str(safety_review.get("status_label") or "wymaga sprawdzenia"),
+            ),
+        ]
+        missing_requirement_labels = string_list(safety_review.get("missing_requirement_labels"))
+        if missing_requirement_labels:
+            rows.append(preview_row("Braki", ", ".join(missing_requirement_labels[:4])))
+        requirement_labels = string_list(item.get("required_validation_labels"))
+        if requirement_labels:
+            rows.append(preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_claim_labels = string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"ads_custom_segment_preview_{index}",
+                kind="google_ads_custom_segment_review",
+                title_label="Segment odbiorców do sprawdzenia",
+                subtitle_label="ocena segmentu bez zapisu zmian",
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=system_readiness_label(item.get("api_mutation_ready")),
+            )
+        )
+    return cards
 
 
 def custom_segment_action(
