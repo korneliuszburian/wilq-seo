@@ -828,6 +828,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   redacted vendor payload. Focused audit/mutation tests przechodzą, service LOC
   spadł do 2161, a live readiness nadal raportuje `vendor_write_possible=false`;
   browser proof: `.local-lab/proof/continuation-2026-07-12/mutation-audit-live.png`.
+- Mapowanie błędów apply na event audytu (`apply_succeeded`,
+  `apply_confirmation_missing`, `apply_blocked`) jest teraz w istniejącym
+  `wilq/actions/audit_store.py`; service zachowuje tylko kompatybilną fasadę.
+  Focused audit/mutation tests przechodzą, service LOC spadł do 2154, a live
+  Ads detail zachowuje evidence, blokadę zapisu i `apply_allowed=false`; browser
+  proof: `.local-lab/proof/continuation-2026-07-12/apply-event-live.png`.
 
 ## Weryfikacja
 

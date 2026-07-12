@@ -217,6 +217,18 @@ def mutation_audit_summary(
     return f"Mutation executed through adapter {adapter}; vendor payload remains redacted."
 
 
+def apply_audit_event_type(errors: list[str]) -> str:
+    if not errors:
+        return "apply_succeeded"
+    confirmation_errors = {
+        "Wymagane jest jawne potwierdzenie zapisu zmian.",
+        "Brakuje osoby potwierdzającej zapis zmian.",
+    }
+    if any(error in confirmation_errors for error in errors):
+        return "apply_confirmation_missing"
+    return "apply_blocked"
+
+
 def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, dict):
         clean: dict[str, Any] = {}

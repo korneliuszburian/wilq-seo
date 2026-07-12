@@ -174,3 +174,12 @@ def test_mutation_audit_record_keeps_redacted_write_attempt_flags() -> None:
     assert audit.external_write_attempted is False
     assert audit.evidence_ids == ["ev_test"]
     assert "before any vendor API call" in audit.summary
+
+
+def test_apply_audit_event_type_distinguishes_confirmation_and_other_blockers() -> None:
+    assert audit_store.apply_audit_event_type([]) == "apply_succeeded"
+    assert (
+        audit_store.apply_audit_event_type(["Brakuje osoby potwierdzającej zapis zmian."])
+        == "apply_confirmation_missing"
+    )
+    assert audit_store.apply_audit_event_type(["inny blocker"]) == "apply_blocked"

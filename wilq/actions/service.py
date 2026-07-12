@@ -28,6 +28,7 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     action_mutation_audit_record as _action_mutation_audit_record_impl,
 )
+from wilq.actions.audit_store import apply_audit_event_type as _apply_audit_event_type_impl
 from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
@@ -1682,15 +1683,7 @@ def _wordpress_draft_activation_packet(
 
 
 def _apply_audit_event_type(errors: list[str]) -> str:
-    if not errors:
-        return "apply_succeeded"
-    confirmation_errors = {
-        "Wymagane jest jawne potwierdzenie zapisu zmian.",
-        "Brakuje osoby potwierdzającej zapis zmian.",
-    }
-    if any(error in confirmation_errors for error in errors):
-        return "apply_confirmation_missing"
-    return "apply_blocked"
+    return _apply_audit_event_type_impl(errors)
 
 
 def _action_mutation_audit_record(

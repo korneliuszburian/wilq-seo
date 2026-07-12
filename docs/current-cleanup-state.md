@@ -731,6 +731,11 @@ ich rozmiaru.
   zmiany redaction i external-write flags. Live readiness nadal raportuje
   `vendor_write_possible=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/mutation-audit-live.png`.
+- Mapowanie błędów apply na event audytu jest teraz w istniejącym
+  `wilq/actions/audit_store.py`; service zachowuje kompatybilną fasadę.
+  Live Ads detail nadal zachowuje evidence, `Zapis zmian zablokowany` i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/apply-event-live.png`.
 
 ## Resume
 
