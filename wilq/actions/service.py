@@ -1748,7 +1748,7 @@ def _execute_supported_mutation_adapter(
                 "external_write_attempted": execution.external_write_attempted,
                 "execution_result": execution.model_dump(mode="json"),
                 "redacted": True,
-            }, _wordpress_draft_execution_errors(execution)
+            }, _wordpress_draft_execution_errors_impl(execution)
         execution = execute_content_wordpress_draft_handoff(
             handoff=None,
             draft_package=None,
@@ -1765,12 +1765,8 @@ def _execute_supported_mutation_adapter(
             "external_write_attempted": execution.external_write_attempted,
             "execution_result": execution.model_dump(mode="json"),
             "redacted": True,
-        }, _wordpress_draft_execution_errors(execution)
+        }, _wordpress_draft_execution_errors_impl(execution)
     return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
-
-
-def _wordpress_draft_execution_errors(execution: Any) -> list[str]:
-    return _wordpress_draft_execution_errors_impl(execution)
 
 
 def _mutation_readiness_blockers(

@@ -862,6 +862,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `wilq/actions/service.py`; świeży `rg` potwierdza brak referencji, a typowane
   readiness requirements nadal pochodzą z istniejących modułów. 48 focused
   testów akcji, Ruff, mypy, complexity i diff check przechodzi.
+- Kolejny mały slice `jnra` usunął lokalną fasadę
+  `_wordpress_draft_execution_errors`; `service.py` korzysta bezpośrednio z
+  istniejącego formattera `wilq/content/handoff/wordpress_execution.py`.
+  Focused mutation/WordPress execution tests, Ruff, mypy, complexity i diff
+  check przechodzą; kontrakt oraz fail-closed execution errors bez zmian.
 
 ## Weryfikacja
 
