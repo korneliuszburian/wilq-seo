@@ -35,4 +35,5 @@ service pozostaje fasadą. Nie zmieniono endpointu, payloadu ani safety loop.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `0d0ce147` (`refactor: extract ga4 metric rows`),
+wypchnięty na `origin/main`.
