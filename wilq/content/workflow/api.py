@@ -4,10 +4,6 @@ from datetime import date
 from typing import Literal
 
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
-from wilq.connectors.wordpress.client import (
-    WordPressDraftReadError,
-    read_wordpress_draft_post,
-)
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefSeed,
@@ -70,7 +66,6 @@ from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftReadback,
-    ContentWordPressDraftReadbackBlocker,
     ContentWordPressDraftWriteReadinessBlocker,
     ContentWordPressDraftWriteReadinessRequirement,
     ContentWordPressDraftWriteReadinessResponse,
@@ -125,6 +120,12 @@ from wilq.content.workflow.snapshot_assembly import (
 )
 from wilq.content.workflow.stage_activation import (
     ActivationProjectionCallbacks,
+    wordpress_draft_activation_missing_labels,
+    wordpress_draft_activation_missing_step,
+    wordpress_draft_activation_missing_step_label,
+    wordpress_draft_human_review_checklist,
+    wordpress_draft_readback,
+    wordpress_draft_review_preview_status_label,
 )
 from wilq.content.workflow.stage_activation import (
     build_content_wordpress_draft_activation_packet_response as _build_activation_packet,
@@ -168,12 +169,12 @@ def build_content_wordpress_draft_activation_packet_response(
     return _build_activation_packet(
         snapshot,
         callbacks=ActivationProjectionCallbacks(
-            readback=_wordpress_draft_readback,
-            missing_step=_wordpress_draft_activation_missing_step,
-            missing_step_label=_wordpress_draft_activation_missing_step_label,
-            missing_labels=_wordpress_draft_activation_missing_labels,
-            review_preview_label=_wordpress_draft_review_preview_status_label,
-            checklist=_wordpress_draft_human_review_checklist,
+            readback=wordpress_draft_readback,
+            missing_step=wordpress_draft_activation_missing_step,
+            missing_step_label=wordpress_draft_activation_missing_step_label,
+            missing_labels=wordpress_draft_activation_missing_labels,
+            review_preview_label=wordpress_draft_review_preview_status_label,
+            checklist=wordpress_draft_human_review_checklist,
             next_step=_wordpress_draft_activation_next_step,
             steps=_wordpress_draft_activation_steps,
             writes_enabled=_wordpress_draft_writes_enabled,
@@ -282,150 +283,6 @@ def build_content_work_item_wordpress_draft_execution_response(
             section_overrides=request.section_overrides,
         ),
     )
-
-
-def _wordpress_draft_readback(
-    execution: ContentWordPressDraftExecutionResult,
-) -> ContentWordPressDraftReadback | None:
-    if execution.status != "created":
-        return None
-    post_id = (execution.wordpress_post_id or "").strip()
-    if not post_id:
-        return ContentWordPressDraftReadback(
-            status="blocked",
-            wordpress_post_id=None,
-            blockers=[
-                ContentWordPressDraftReadbackBlocker(
-                    code="missing_wordpress_post_id",
-                    label="Brak ID szkicu WordPress",
-                    reason=(
-                        "WILQ zapisał wynik utworzenia szkicu, ale nie ma ID wpisu "
-                        "potrzebnego do odczytu z dev WordPressa."
-                    ),
-                    next_step=(
-                        "Utwórz szkic ponownie przez ActionObject albo sprawdź audit "
-                        "wykonania zapisu."
-                    ),
-                )
-            ],
-        )
-    try:
-        readback = read_wordpress_draft_post(post_id)
-    except WordPressDraftReadError as exc:
-        return ContentWordPressDraftReadback(
-            status="blocked",
-            wordpress_post_id=post_id,
-            blockers=[
-                ContentWordPressDraftReadbackBlocker(
-                    code="wordpress_draft_read_failed",
-                    label="Nie udało się odczytać szkicu WordPress",
-                    reason=exc.public_message,
-                    next_step=(
-                        "Sprawdź dostęp REST WordPress i odśwież panel szkicu. "
-                        "Nie traktuj samego ID jako potwierdzenia treści."
-                    ),
-                )
-            ],
-        )
-    return ContentWordPressDraftReadback(
-        status="available",
-        wordpress_post_id=readback.post_id,
-        post_status=readback.status,
-        title=readback.title,
-        link=readback.link,
-        modified_gmt=readback.modified_gmt,
-        content_summary=readback.content_summary,
-        content_word_count=readback.content_word_count,
-        acf_field_count=readback.acf_field_count,
-        acf_field_names=readback.acf_field_names,
-    )
-
-
-def _wordpress_draft_activation_missing_step(
-    *,
-    draft_package_ready: bool,
-    human_review_ready: bool,
-    audit_ready: bool,
-    handoff_ready: bool,
-    dry_run_ready: bool,
-) -> Literal["draft_package", "human_review", "audit", "handoff", "dry_run", "ready"]:
-    if not draft_package_ready:
-        return "draft_package"
-    if not human_review_ready:
-        return "human_review"
-    if not audit_ready:
-        return "audit"
-    if not handoff_ready:
-        return "handoff"
-    if not dry_run_ready:
-        return "dry_run"
-    return "ready"
-
-
-def _wordpress_draft_activation_missing_step_label(step: str) -> str:
-    labels = {
-        "draft_package": "przygotuj paczkę szkicu",
-        "human_review": "zapisz review człowieka",
-        "audit": "zapisz audit przekazania do WordPress",
-        "handoff": "przygotuj handoff WordPress draft-only",
-        "dry_run": "wygeneruj podgląd dry-run payloadu WordPress",
-        "ready": "podgląd draft-only jest gotowy do review",
-    }
-    return labels.get(step, "sprawdź paczkę aktywacji WordPress")
-
-
-def _wordpress_draft_activation_missing_labels(
-    *,
-    draft_package_ready: bool,
-    human_review_ready: bool,
-    audit_ready: bool,
-    handoff_ready: bool,
-    dry_run_ready: bool,
-) -> list[str]:
-    labels: list[str] = []
-    if not draft_package_ready:
-        labels.append("paczka szkicu")
-    if not human_review_ready:
-        labels.append("review człowieka")
-    if not audit_ready:
-        labels.append("audit przekazania")
-    if not handoff_ready:
-        labels.append("handoff WordPress")
-    if not dry_run_ready:
-        labels.append("podgląd dry-run")
-    return labels
-
-
-def _wordpress_draft_review_preview_status_label(
-    draft_package_ready: bool,
-) -> str:
-    if draft_package_ready:
-        return "Paczka szkicu jest gotowa do review człowieka."
-    return "Najpierw przygotuj paczkę szkicu z Claim Ledgerem i dowodami."
-
-
-def _wordpress_draft_human_review_checklist(
-    *,
-    draft_package_ready: bool,
-    human_review_ready: bool,
-) -> list[str]:
-    if human_review_ready:
-        return [
-            "Review człowieka jest zapisane; teraz sprawdź audyt i handoff WordPress.",
-        ]
-    if not draft_package_ready:
-        return [
-            "Przygotuj paczkę szkicu z tytułem, sekcjami, mapą dowodów i Claim Ledgerem.",
-            "Nie oceniaj handoffu WordPress przed paczką szkicu.",
-        ]
-    return [
-        "Czy tytuł, sekcje i kolejność odpowiadają intencji wybranego tematu?",
-        "Czy każdy claim ma dowód albo jest jawnie zablokowany w Claim Ledger?",
-        "Czy treść brzmi jak Ekologus, a nie jak generyczny artykuł SEO?",
-        "Czy CTA jest konsultacyjne i nie obiecuje wyniku, decyzji ani braku kar?",
-        "Czy materiał ma zostać tylko szkicem WordPress, bez publikacji i bez "
-        "aktualizacji istniejącego wpisu?",
-    ]
 
 
 def build_content_wordpress_draft_write_readiness_response(
