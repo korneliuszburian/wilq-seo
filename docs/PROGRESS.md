@@ -776,6 +776,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   service LOC spadł do 2312, a live Ads detail zachowuje evidence, blokadę
   zapisu i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/audit-details-live.png`.
+- Projekcja etykiet `ActionReviewGate` (status, blokady, review outcome,
+  impact, mutation adapter i ślad audytu) jest teraz w istniejącym
+  `wilq/actions/operator_labels.py`; service zachowuje tylko callbacki dla
+  review outcome i count blockerów. Focused audit/preview/review tests: 30
+  passed, service LOC spadł do 2266, a live Ads detail zachowuje evidence,
+  blokadę zapisu i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/gate-labels-live.png`.
 
 ## Weryfikacja
 

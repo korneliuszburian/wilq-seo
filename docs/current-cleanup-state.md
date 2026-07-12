@@ -689,6 +689,12 @@ ich rozmiaru.
   Focused audit/preview/review tests: 29 passed, a live Ads detail zachowuje
   evidence, `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/audit-details-live.png`.
+- Projekcja etykiet `ActionReviewGate` jest teraz w istniejącym
+  `wilq/actions/operator_labels.py`; service zachowuje callbacki review outcome
+  i count blockerów. Focused audit/preview/review tests: 30 passed, a live Ads
+  detail zachowuje evidence, `Zapis zmian zablokowany` i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/gate-labels-live.png`.
 
 ## Resume
 

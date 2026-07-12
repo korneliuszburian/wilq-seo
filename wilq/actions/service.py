@@ -216,25 +216,10 @@ from wilq.actions.operator_labels import (
     action_mode_label as _action_mode_label,
 )
 from wilq.actions.operator_labels import (
-    action_mutation_adapter_label as _action_mutation_adapter_label,
-)
-from wilq.actions.operator_labels import (
-    action_mutation_adapter_reached_label as _action_mutation_adapter_reached_label,
-)
-from wilq.actions.operator_labels import (
-    action_mutation_attempted_label as _action_mutation_attempted_label,
-)
-from wilq.actions.operator_labels import (
     action_mutation_audit_status_label as _action_mutation_audit_status_label,
 )
 from wilq.actions.operator_labels import (
-    action_mutation_audit_trace_label as _action_mutation_audit_trace_label,
-)
-from wilq.actions.operator_labels import (
     action_result_status_label as _action_result_status_label,
-)
-from wilq.actions.operator_labels import (
-    action_review_gate_status_label as _action_review_gate_status_label,
 )
 from wilq.actions.operator_labels import (
     action_risk_label as _action_risk_label,
@@ -248,6 +233,9 @@ from wilq.actions.operator_labels import (
 from wilq.actions.operator_labels import (
     ads_recommendation_type_label,
     payload_with_operator_labels,
+)
+from wilq.actions.operator_labels import (
+    review_gate_with_operator_labels as _review_gate_with_operator_labels_impl,
 )
 from wilq.actions.payload_readiness import (
     action_preview_item_view_models,
@@ -2315,44 +2303,10 @@ def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardVi
 
 
 def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGate:
-    return gate.model_copy(
-        update={
-            "status_label": _action_review_gate_status_label(gate.status),
-            "apply_blocker_summary_label": blocker_count_label(
-                gate.apply_blocker_labels or gate.apply_blockers
-            ),
-            "last_mutation_blocker_summary_label": blocker_count_label(
-                gate.last_mutation_blocker_labels or gate.last_mutation_blockers
-            ),
-            "last_review_outcome_label": review_outcome_label(gate.last_review_outcome)
-            if gate.last_review_outcome
-            else None,
-            "last_impact_check_status_label": _action_result_status_label(
-                gate.last_impact_check_status
-            )
-            if gate.last_impact_check_status
-            else None,
-            "last_mutation_audit_status_label": _action_mutation_audit_status_label(
-                gate.last_mutation_audit_status
-            )
-            if gate.last_mutation_audit_status
-            else None,
-            "last_mutation_attempted_label": _action_mutation_attempted_label(
-                gate.last_mutation_attempted
-            ),
-            "last_mutation_adapter_reached_label": _action_mutation_adapter_reached_label(
-                gate.last_mutation_adapter_reached
-            ),
-            "last_external_write_attempted_label": _action_mutation_attempted_label(
-                gate.last_external_write_attempted
-            ),
-            "last_mutation_adapter_label": _action_mutation_adapter_label(
-                gate.last_mutation_adapter
-            ),
-            "last_mutation_audit_trace_label": _action_mutation_audit_trace_label(
-                gate.last_mutation_audit_event_id
-            ),
-        }
+    return _review_gate_with_operator_labels_impl(
+        gate,
+        review_outcome_label=review_outcome_label,
+        blocker_count_label=blocker_count_label,
     )
 
 

@@ -98,6 +98,37 @@ def test_operator_payload_labels_keep_nested_action_copy_polish() -> None:
     assert enriched["preview"][0]["level_label"] == "grupa reklam"
 
 
+def test_review_gate_operator_projection_keeps_mutation_safety_labels() -> None:
+    from wilq.actions.operator_labels import review_gate_with_operator_labels
+    from wilq.schemas import ActionReviewGate
+
+    gate = ActionReviewGate(
+        status="blocked_apply",
+        apply_blockers=["action_validation_required"],
+        last_review_outcome="approved_for_prepare",
+        last_impact_check_status="blocked",
+        last_mutation_audit_status="blocked",
+        last_mutation_attempted=False,
+        last_mutation_adapter_reached=False,
+        last_external_write_attempted=False,
+        last_mutation_adapter="wordpress_draft",
+        last_mutation_audit_event_id="audit_1",
+    )
+
+    projected = review_gate_with_operator_labels(
+        gate,
+        review_outcome_label=lambda value: f"review:{value}",
+        blocker_count_label=lambda values: f"blokady:{len(values)}",
+    )
+
+    assert projected.status_label == "zapis zmian zablokowany"
+    assert projected.apply_blocker_summary_label == "blokady:1"
+    assert projected.last_review_outcome_label == "review:approved_for_prepare"
+    assert projected.last_impact_check_status_label == "zablokowany"
+    assert projected.last_mutation_attempted_label == "nie próbowano zapisu w systemie zewnętrznym"
+    assert projected.last_mutation_audit_trace_label == "ślad bezpieczeństwa zapisany"
+
+
 def test_review_gate_builders_keep_required_checks_and_checklist_fallbacks() -> None:
     from wilq.actions.review_gate import action_operator_checklist, action_required_checks
 

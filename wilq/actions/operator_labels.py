@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from wilq.actions.gate_labels import action_gate_labels
 from wilq.operator_labels import source_connector_labels
-from wilq.schemas import ActionMode, ActionRisk, ActionStatus
+from wilq.schemas import ActionMode, ActionReviewGate, ActionRisk, ActionStatus
 
 
 def action_mode_label(value: ActionMode | str) -> str:
@@ -125,6 +126,53 @@ def action_result_status_label(value: str | None) -> str:
         "failed": "błąd",
     }
     return labels.get(value or "", "zapisane")
+
+
+def review_gate_with_operator_labels(
+    gate: ActionReviewGate,
+    *,
+    review_outcome_label: Callable[[str], str],
+    blocker_count_label: Callable[[list[str]], str],
+) -> ActionReviewGate:
+    return gate.model_copy(
+        update={
+            "status_label": action_review_gate_status_label(gate.status),
+            "apply_blocker_summary_label": blocker_count_label(
+                gate.apply_blocker_labels or gate.apply_blockers
+            ),
+            "last_mutation_blocker_summary_label": blocker_count_label(
+                gate.last_mutation_blocker_labels or gate.last_mutation_blockers
+            ),
+            "last_review_outcome_label": review_outcome_label(gate.last_review_outcome)
+            if gate.last_review_outcome
+            else None,
+            "last_impact_check_status_label": action_result_status_label(
+                gate.last_impact_check_status
+            )
+            if gate.last_impact_check_status
+            else None,
+            "last_mutation_audit_status_label": action_mutation_audit_status_label(
+                gate.last_mutation_audit_status
+            )
+            if gate.last_mutation_audit_status
+            else None,
+            "last_mutation_attempted_label": action_mutation_attempted_label(
+                gate.last_mutation_attempted
+            ),
+            "last_mutation_adapter_reached_label": action_mutation_adapter_reached_label(
+                gate.last_mutation_adapter_reached
+            ),
+            "last_external_write_attempted_label": action_mutation_attempted_label(
+                gate.last_external_write_attempted
+            ),
+            "last_mutation_adapter_label": action_mutation_adapter_label(
+                gate.last_mutation_adapter
+            ),
+            "last_mutation_audit_trace_label": action_mutation_audit_trace_label(
+                gate.last_mutation_audit_event_id
+            ),
+        }
+    )
 
 
 def operator_state_label(value: str) -> str:
