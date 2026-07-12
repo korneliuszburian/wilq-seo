@@ -39,3 +39,6 @@ fallback registry build.
 - `wilq-seo-jnra` pozostaje `in_progress` dla kolejnych niezależnych seamów.
 - `wilq-seo-c9h9.11` pozostaje zamknięty; zbre nie zmienia listowego contractu.
 
+## Commit
+
+Implementacja i handoff: `abc63034` (`perf: reuse cached action details`).
