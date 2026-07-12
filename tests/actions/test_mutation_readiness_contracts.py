@@ -73,6 +73,34 @@ def test_wordpress_readiness_builders_are_limited_to_apply_action() -> None:
     assert wordpress_draft_activation_packet(action) is None
 
 
+def test_wordpress_activation_packet_reuses_cached_diagnostics(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from wilq.actions.wordpress_mutation_requirements import wordpress_draft_activation_packet
+
+    action = ActionObject.model_construct(id="act_apply_wordpress_draft_handoff")
+    sentinel = object()
+    snapshot = SimpleNamespace()
+    monkeypatch.setattr(
+        "wilq.briefing.content_diagnostics.build_content_diagnostics_cached",
+        lambda: sentinel,
+    )
+    monkeypatch.setattr(
+        "wilq.briefing.content_diagnostics.build_content_diagnostics",
+        lambda **_: (_ for _ in ()).throw(AssertionError("uncached diagnostics build")),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.build_content_work_item_diagnostics_snapshot_response",
+        lambda diagnostics: snapshot if diagnostics is sentinel else None,
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.api.build_content_wordpress_draft_activation_packet_response",
+        lambda selected_snapshot, *, action_id: (selected_snapshot, action_id),
+    )
+
+    assert wordpress_draft_activation_packet(action) == (snapshot, action.id)
+
+
 def test_wordpress_execution_errors_keep_blocker_labels_and_reasons() -> None:
     from wilq.content.handoff.wordpress_execution import (
         execute_content_wordpress_draft_handoff,

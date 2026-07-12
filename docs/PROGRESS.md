@@ -899,12 +899,18 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `vendor_write_possible=false`, `publication_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/wordpress-adapter-owner-desktop.png`,
   `wordpress-adapter-owner-mobile.png`.
-- Re-audyt runtime ujawnił osobny, potwierdzony problem cold latency dla
-  `/api/actions/act_apply_wordpress_draft_handoff/mutation-readiness`: pierwszy
-  request po restarcie przekroczył 20 s, a rozgrzany request trwał 18.9 s mimo
-  zachowania fail-closed. Utworzono `wilq-seo-c9h9.14` jako P1, zależny od
-  `jnra`; zakres rozdziela istniejący diagnostics warm-up od adaptera i nie
-  dodaje endpointu ani write.
+- Re-audyt runtime początkowo ujawnił >20 s cold latency dla
+  `/api/actions/act_apply_wordpress_draft_handoff/mutation-readiness`, ale po
+  zamknięciu osieroconych instancji Chrome quiet proof wyniósł queue 0.003760 s,
+  readiness 1.442645 s. `wilq-seo-c9h9.14` zamknięto jako external-state false
+  positive; nie zostawiamy zadania dla problemu, którego kod nie reprodukuje.
+- Niezależne hardening cache jest potwierdzone testem: default diagnostics TTL
+  wzrósł z 15 do 60 s, a activation packet korzysta z cached diagnostics.
+  Refresh/mutation nadal jawnie czyszczą cache; brak zmiany freshness/evidence
+  contractów.
+- Fresh mobile browser proof po quiet managed stack: `.local-lab/proof/continuation-2026-07-12/c9h9-14-cache-mobile.png`;
+  decyzja, blocker i bezpieczne CTA pozostają marketer-facing, a technical
+  details są niżej.
 
 ## Weryfikacja
 

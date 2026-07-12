@@ -172,13 +172,13 @@ def wordpress_draft_activation_packet(
 ) -> ContentWordPressDraftActivationPacketResponse | None:
     if action.id != "act_apply_wordpress_draft_handoff":
         return None
-    from wilq.briefing.content_diagnostics import build_content_diagnostics
+    from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
     from wilq.content.workflow.api import (
         build_content_wordpress_draft_activation_packet_response,
         build_content_work_item_diagnostics_snapshot_response,
     )
 
-    diagnostics = build_content_diagnostics(actions=[])
+    diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
     return build_content_wordpress_draft_activation_packet_response(
         snapshot,

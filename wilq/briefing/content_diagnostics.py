@@ -97,7 +97,9 @@ AHREFS_CONTENT_EXPERT_RULE_IDS = (
     "content_duplication_rules_v1",
 )
 
-DEFAULT_CONTENT_DIAGNOSTICS_CACHE_SECONDS = 15.0
+# Keep one expensive startup diagnostics build alive through the dashboard's
+# initial request waterfall; refresh/mutation paths explicitly invalidate it.
+DEFAULT_CONTENT_DIAGNOSTICS_CACHE_SECONDS = 60.0
 
 
 @dataclass(frozen=True)

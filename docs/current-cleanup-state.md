@@ -782,10 +782,11 @@ ich rozmiaru.
   koszt rozgrzewki (pierwszy readiness request >20 s, po rozgrzaniu HTTP 200
   w 18.9 s), więc nie przypisuję tego temu seamowi bezpośrednio. Safety
   pozostaje fail-closed.
-- Nowy potwierdzony Bead `wilq-seo-c9h9.14` śledzi cold latency mutation
-  readiness po restarcie (>20 s cold, 18.9 s warm). To osobny seam od zamkniętego
-  content queue waterfall i Localo detail; najpierw trzeba odizolować istniejący
-  diagnostics warm-up, zanim przypisze się winę adapterowi.
+- `wilq-seo-c9h9.14` zamknięto jako external-state false positive: po zamknięciu
+  osieroconych Chrome quiet cold queue wyniósł 0.003760 s, readiness 1.442645 s.
+  Niezależnie utrwalono bezpieczne hardening: diagnostics cache 60 s i cached
+  activation packet, z zachowaniem jawnej invalidacji po refresh/mutacji.
+- Browser proof po quiet stack: `.local-lab/proof/continuation-2026-07-12/c9h9-14-cache-mobile.png`.
 
 ## Resume
 

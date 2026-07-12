@@ -14,6 +14,34 @@ def test_content_diagnostics_cache_reuses_one_build_for_initial_request_flow(mon
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.setenv("WILQ_CONTENT_DIAGNOSTICS_CACHE_SECONDS", "15")
     content_diagnostics_module.clear_content_diagnostics_cache()
+
+
+def test_content_diagnostics_default_cache_survives_startup_waterfall(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.delenv("WILQ_CONTENT_DIAGNOSTICS_CACHE_SECONDS", raising=False)
+    content_diagnostics_module.clear_content_diagnostics_cache()
+    now = 100.0
+    calls = 0
+    sentinel = ContentDiagnosticsResponse.model_construct()
+
+    def fake_build() -> ContentDiagnosticsResponse:
+        nonlocal calls
+        calls += 1
+        return sentinel
+
+    monkeypatch.setattr(content_diagnostics_module, "monotonic", lambda: now)
+    monkeypatch.setattr(content_diagnostics_module, "build_content_diagnostics", fake_build)
+
+    first = content_diagnostics_module.build_content_diagnostics_cached()
+    now += 30.0
+    second = content_diagnostics_module.build_content_diagnostics_cached()
+
+    assert first is sentinel
+    assert second is sentinel
+    assert calls == 1
+    content_diagnostics_module.clear_content_diagnostics_cache()
     calls = 0
     sentinel = ContentDiagnosticsResponse.model_construct()
 
