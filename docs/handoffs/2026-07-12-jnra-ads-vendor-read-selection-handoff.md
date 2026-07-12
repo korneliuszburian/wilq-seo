@@ -40,3 +40,6 @@ business-context gates, preview i ActionObject safety loop pozostają bez zmian.
 - Następny seam wymaga świeżego review pozostałego orchestratora, bez powrotu do
   gotowych payload/readiness/review/cache boundaries.
 
+## Commit
+
+Implementacja i handoff: `64f12529` (`refactor: centralize Ads vendor read selection`).
