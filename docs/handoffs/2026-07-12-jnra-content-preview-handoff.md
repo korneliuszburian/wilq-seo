@@ -38,4 +38,5 @@ payloadu ani ścieżki WordPress write.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `e3bba902` (`refactor: extract content brief
+preview`), wypchnięty na `origin/main`.
