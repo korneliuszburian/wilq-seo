@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from wilq.actions.metric_utils import metric_sentence, prioritize_action_metrics
@@ -17,6 +17,8 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     ActionStatus,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
     MetricFact,
     OpportunityDomain,
 )
@@ -88,6 +90,30 @@ def localo_visibility_review_action_from_metric_facts(
         localo_visibility_payload=localo_visibility_payload,
         metric_sentence=metric_sentence(metrics),
     )
+
+
+def localo_action_metric_facts(
+    *,
+    facts: list[MetricFact],
+    refresh_runs: Iterable[ConnectorRefreshRun],
+    metric_facts_by_evidence_ids: Callable[[list[str]], list[MetricFact]],
+    is_probe_only_fact: Callable[[MetricFact], bool],
+) -> list[MetricFact]:
+    value_facts = [fact for fact in facts if not is_probe_only_fact(fact)]
+    if value_facts:
+        return value_facts
+    for run in refresh_runs:
+        if run.status != ConnectorRefreshStatus.completed or not run.vendor_data_collected:
+            continue
+        facts_by_evidence = metric_facts_by_evidence_ids(run.evidence_ids)
+        value_facts = [
+            fact
+            for fact in facts_by_evidence
+            if fact.source_connector == "localo" and not is_probe_only_fact(fact)
+        ]
+        if value_facts:
+            return value_facts
+    return []
 LOCALO_CLAIMS_BY_MISSING_CONTRACT = {
     "local_rankings": "lokalne pozycje",
     "gbp_visibility": "wyniki profilu firmy w Google",

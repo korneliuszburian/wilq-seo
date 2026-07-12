@@ -146,6 +146,7 @@ from wilq.actions.google_ads.search_term_ngrams import (
     search_term_ngram_action_from_metric_facts,
 )
 from wilq.actions.localo.visibility import (
+    localo_action_metric_facts,
     localo_visibility_review_action_from_metric_facts,
     localo_visibility_review_payload_from_metric_facts,
 )
@@ -897,21 +898,12 @@ def _seed_social_metric_actions(
 
 
 def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
-    value_facts = [fact for fact in facts if not _is_probe_only_fact(fact)]
-    if value_facts:
-        return value_facts
-    for run in list_connector_refresh_runs(connector_id="localo"):
-        if run.status != ConnectorRefreshStatus.completed or not run.vendor_data_collected:
-            continue
-        facts_by_evidence = metric_store().list_metric_facts_by_evidence_ids(run.evidence_ids)
-        value_facts = [
-            fact
-            for fact in facts_by_evidence
-            if fact.source_connector == "localo" and not _is_probe_only_fact(fact)
-        ]
-        if value_facts:
-            return value_facts
-    return []
+    return localo_action_metric_facts(
+        facts=facts,
+        refresh_runs=list_connector_refresh_runs(connector_id="localo"),
+        metric_facts_by_evidence_ids=metric_store().list_metric_facts_by_evidence_ids,
+        is_probe_only_fact=_is_probe_only_fact,
+    )
 
 
 def _action_metric_facts() -> list[MetricFact]:

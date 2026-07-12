@@ -601,6 +601,14 @@ ich rozmiaru.
   21 akcji, 0 write-capable; strategy action ma 2 evidence IDs i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/metric-utils-live.png`.
+- Localo fallback po probe-only faktach jest teraz w istniejącym
+  `wilq/actions/localo/visibility.py`, z callbackami na storage i refresh runs;
+  runtime po rozgrzaniu zachowuje 10 metryk, evidence i `apply_allowed=false`.
+  Browser proof: `.local-lab/proof/continuation-2026-07-12/localo-metric-fallback-live.png`.
+- Nowy potwierdzony blocker utrzymaniowy: `wilq-seo-zbre` śledzi pierwszy
+  detail Localo po restarcie (>60 s), podczas gdy retry wyniósł 13.241167 s.
+  Nie zamykaj tego przez zmianę listowego `c9h9.11`; zakres dotyczy detail
+  view-model/cache/prewarm i musi zachować evidence/freshness/apply=false.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

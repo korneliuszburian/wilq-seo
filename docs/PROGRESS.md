@@ -685,6 +685,15 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `/api/actions` ma 21 akcji, 0 write-capable, a strategy action zachowuje 2
   evidence IDs i `apply_allowed=false`; proof:
   `.local-lab/proof/continuation-2026-07-12/metric-utils-live.png`.
+- Localo-specific fallback po probe-only faktach jest teraz własnością
+  istniejącego `wilq/actions/localo/visibility.py`; storage i refresh-run I/O
+  pozostają callbackami service. Focused Localo/metric/action tests (7 passed),
+  Ruff, mypy, complexity, managed runtime i browser proof przechodzą; ciepły
+  detail HTTP 200 ma 10 metryk, evidence ID i `apply_allowed=false`;
+  proof: `.local-lab/proof/continuation-2026-07-12/localo-metric-fallback-live.png`.
+- Re-audit utworzył `wilq-seo-zbre`: pierwszy Localo action-detail po managed
+  restart przekroczył 60 s, retry po rozgrzaniu wyniósł 13.241167 s. To osobny
+  detail SLA, nie duplikat zamkniętego `c9h9.11` dla listy `/api/actions`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
