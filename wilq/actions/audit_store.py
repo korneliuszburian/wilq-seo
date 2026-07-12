@@ -229,6 +229,30 @@ def apply_audit_event_type(errors: list[str]) -> str:
     return "apply_blocked"
 
 
+def build_apply_audit_event(
+    *,
+    action: ActionObject,
+    audit_id: str,
+    actor: str,
+    errors: list[str],
+) -> AuditEvent:
+    """Build the redacted apply audit event with one canonical event-type map."""
+    event_type = apply_audit_event_type(errors)
+    return AuditEvent(
+        id=audit_id,
+        action_id=action.id,
+        event_type=event_type,
+        event_type_label=audit_event_label(event_type),
+        actor=actor,
+        summary=(
+            "; ".join(errors)
+            if errors
+            else "Zmiany zapisane przez sprawdzoną ścieżkę API."
+        ),
+        evidence_ids=action.evidence_ids,
+    )
+
+
 def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, dict):
         clean: dict[str, Any] = {}

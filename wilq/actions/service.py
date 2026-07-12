@@ -30,7 +30,6 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     action_mutation_audit_record as _action_mutation_audit_record_impl,
 )
-from wilq.actions.audit_store import apply_audit_event_type as _apply_audit_event_type_impl
 from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
@@ -40,6 +39,7 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     audit_event_with_operator_label as _audit_event_with_operator_label_impl,
 )
+from wilq.actions.audit_store import build_apply_audit_event
 from wilq.actions.audit_store import (
     latest_action_confirmation_event as _latest_action_confirmation_event_impl,
 )
@@ -1413,14 +1413,11 @@ def apply_action(
         errors.extend(adapter_errors)
 
     actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
-    audit = AuditEvent(
-        id=f"audit_{action.id}_{len(action.audit_events) + 1}",
-        action_id=action.id,
-        event_type=_apply_audit_event_type_impl(errors),
-        event_type_label=_action_audit_event_label(_apply_audit_event_type_impl(errors)),
+    audit = build_apply_audit_event(
+        action=action,
+        audit_id=f"audit_{action.id}_{len(action.audit_events) + 1}",
         actor=actor,
-        summary="; ".join(errors) if errors else "Zmiany zapisane przez sprawdzoną ścieżkę API.",
-        evidence_ids=action.evidence_ids,
+        errors=errors,
     )
     mutation_audit = _action_mutation_audit_record_impl(
         action=action,

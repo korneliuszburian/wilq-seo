@@ -183,3 +183,23 @@ def test_apply_audit_event_type_distinguishes_confirmation_and_other_blockers() 
         == "apply_confirmation_missing"
     )
     assert audit_store.apply_audit_event_type(["inny blocker"]) == "apply_blocked"
+
+
+def test_build_apply_audit_event_owns_event_type_summary_and_evidence() -> None:
+    action = ActionObject.model_construct(
+        id="act_apply_audit_builder",
+        evidence_ids=["ev_apply_builder"],
+    )
+
+    event = audit_store.build_apply_audit_event(
+        action=action,
+        audit_id="audit_apply_builder",
+        actor="operator",
+        errors=["Brakuje osoby potwierdzającej zapis zmian."],
+    )
+
+    assert event.id == "audit_apply_builder"
+    assert event.event_type == "apply_confirmation_missing"
+    assert event.event_type_label == "Zapis zmian zablokowany"
+    assert event.actor == "operator"
+    assert event.evidence_ids == ["ev_apply_builder"]

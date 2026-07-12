@@ -924,6 +924,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   typed capability i adapter safety, ale nie duplikuje już 15 warunków
   fail-closed. 68 focused review/action/mutation tests, Ruff, mypy, complexity,
   diff check i live API safety smoke przechodzą.
+- Kolejny slice `jnra` przeniósł budowanie apply `AuditEvent` do istniejącego
+  `wilq/actions/audit_store.py` (`build_apply_audit_event`). `apply_action`
+  pozostaje orkiestratorem, ale event type, operator label, summary, actor i
+  evidence są składane w jednym owner module. 55 focused audit/review/action
+  tests, Ruff, mypy, complexity, diff check i live safety smoke przechodzą.
 
 ## Weryfikacja
 

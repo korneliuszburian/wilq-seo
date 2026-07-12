@@ -795,6 +795,9 @@ ich rozmiaru.
   `wilq/actions/action_blockers.py`; service nadal kontroluje kolejność
   validate → preview → review → confirm → impact → audit → adapter, ale reguły
   blockerów są w jednym typed owner module.
+- Apply `AuditEvent` assembly jest teraz własnością `audit_store.py`; event type,
+  label, summary, actor i evidence nie są już składane lokalnie w service.
+  Mutation audit i fail-closed status pozostają bez zmian.
 
 ## Resume
 
