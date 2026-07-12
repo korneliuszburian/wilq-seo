@@ -246,6 +246,7 @@ from wilq.actions.operator_labels import (
     payload_with_operator_labels,
 )
 from wilq.actions.payload_readiness import (
+    action_preview_item_view_models,
     payload_api_mutation_ready,
     payload_apply_allowed,
 )
@@ -349,7 +350,6 @@ from wilq.schemas import (
     ActionMutationReadinessSummaryResponse,
     ActionObject,
     ActionPreviewCardViewModel,
-    ActionPreviewItemViewModel,
     ActionPreviewRequest,
     ActionPreviewResult,
     ActionPreviewRowViewModel,
@@ -1216,11 +1216,15 @@ def preview_action(
     raw_preview_items = _payload_preview_items(action.payload)
     included_items = raw_preview_items[: preview_request.max_items]
     preview_cards = _action_preview_cards(action)
-    preview_items = _action_preview_item_view_models(
+    preview_items = action_preview_item_view_models(
         action=action,
         raw_items=raw_preview_items,
         preview_cards=preview_cards,
         max_items=preview_request.max_items,
+        preview_row=_preview_row,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+        preview_contract_label=_preview_contract_label,
     )
     blockers = action_preview_blockers(action, raw_preview_items)
     status: Literal["preview_ready", "blocked"] = "blocked" if blockers else "preview_ready"
@@ -2056,159 +2060,6 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
     }:
         return _social_draft_input_preview_cards(action.payload)
     return action.preview_cards
-
-
-def _action_preview_item_view_models(
-    *,
-    action: ActionObject,
-    raw_items: list[dict[str, Any]],
-    preview_cards: list[ActionPreviewCardViewModel],
-    max_items: int,
-) -> list[ActionPreviewItemViewModel]:
-    if preview_cards:
-        return [
-            _preview_item_from_card(
-                card=card,
-                raw_item=raw_items[index] if index < len(raw_items) else None,
-                index=index,
-            )
-            for index, card in enumerate(preview_cards[:max_items])
-        ]
-    return [
-        _preview_item_from_raw_payload(action, item, index)
-        for index, item in enumerate(raw_items[:max_items])
-    ]
-
-
-def _preview_item_from_card(
-    *,
-    card: ActionPreviewCardViewModel,
-    raw_item: dict[str, Any] | None,
-    index: int,
-) -> ActionPreviewItemViewModel:
-    rows = list(card.rows[:4])
-    if card.apply_state_label:
-        rows.append(_preview_row("Zapis zmian", card.apply_state_label))
-    if card.system_readiness_label:
-        rows.append(_preview_row("Gotowość systemu", card.system_readiness_label))
-    return ActionPreviewItemViewModel(
-        id=f"preview_item_{index + 1}",
-        preview_contract=_preview_item_contract(raw_item),
-        candidate_id=_preview_item_candidate_id(raw_item),
-        title_label=card.title_label or f"Pozycja podglądu {index + 1}",
-        status_label=card.status_label,
-        rows=rows,
-    )
-
-
-def _preview_item_from_raw_payload(
-    action: ActionObject,
-    item: dict[str, Any],
-    index: int,
-) -> ActionPreviewItemViewModel:
-    rows = _safe_raw_preview_rows(item)
-    if not rows:
-        rows = [
-            _preview_row(
-                "Zakres", _preview_contract_label(_preview_contract(action.payload, [item]))
-            ),
-        ]
-    return ActionPreviewItemViewModel(
-        id=f"preview_item_{index + 1}",
-        preview_contract=_preview_item_contract(item),
-        candidate_id=_preview_item_candidate_id(item),
-        title_label=_raw_preview_title(item, index),
-        status_label=_raw_preview_status(item),
-        rows=rows[:6],
-    )
-
-
-def _preview_item_contract(item: dict[str, Any] | None) -> str | None:
-    if not item:
-        return None
-    value = item.get("preview_contract")
-    if isinstance(value, str) and value == "wordpress_draft_payload_preview_v1":
-        return value
-    return None
-
-
-def _preview_item_candidate_id(item: dict[str, Any] | None) -> str | None:
-    if not item:
-        return None
-    if item.get("preview_contract") != "wordpress_draft_payload_preview_v1":
-        return None
-    value = item.get("candidate_id")
-    return value if isinstance(value, str) and value else None
-
-
-def _safe_raw_preview_rows(item: dict[str, Any]) -> list[ActionPreviewRowViewModel]:
-    rows: list[ActionPreviewRowViewModel] = []
-    for label, value in _raw_preview_label_values(item):
-        rows.append(_preview_row(label, value))
-        if len(rows) >= 4:
-            break
-    if "apply_allowed" in item:
-        rows.append(_preview_row("Zapis zmian", _apply_state_label(item.get("apply_allowed"))))
-    if "api_mutation_ready" in item:
-        rows.append(
-            _preview_row(
-                "Gotowość systemu", _system_readiness_label(item.get("api_mutation_ready"))
-            )
-        )
-    return rows
-
-
-def _raw_preview_label_values(item: dict[str, Any]) -> list[tuple[str, str]]:
-    values: list[tuple[str, str]] = []
-    for key, value in item.items():
-        if not key.endswith("_label"):
-            continue
-        if key in {"id_label", "preview_contract_label"}:
-            continue
-        label = _raw_preview_row_label(key)
-        if isinstance(value, str) and value:
-            values.append((label, value))
-        elif isinstance(value, list):
-            values.extend((label, entry) for entry in value if isinstance(entry, str) and entry)
-    return values
-
-
-def _raw_preview_row_label(key: str) -> str:
-    labels = {
-        "affected_attribute_label": "Atrybut",
-        "issue_type_label": "Problem",
-        "mode_label": "Tryb",
-        "operation_type_label": "Operacja",
-        "readiness_label": "Gotowość",
-        "recommendation_type_label": "Rekomendacja",
-        "reason_label": "Powód",
-        "risk_label": "Ryzyko",
-        "status_label": "Status",
-        "validation_status_label": "Walidacja",
-    }
-    return labels.get(key, "Szczegół")
-
-
-def _raw_preview_title(item: dict[str, Any], index: int) -> str:
-    for key in (
-        "title_label",
-        "issue_type_label",
-        "recommendation_type_label",
-        "operation_type_label",
-        "mode_label",
-    ):
-        value = item.get(key)
-        if isinstance(value, str) and value:
-            return value
-    return f"Pozycja podglądu {index + 1}"
-
-
-def _raw_preview_status(item: dict[str, Any]) -> str:
-    for key in ("status_label", "validation_status_label", "readiness_label"):
-        value = item.get(key)
-        if isinstance(value, str) and value:
-            return value
-    return ""
 
 
 def _preview_contract_label(value: str | None) -> str:

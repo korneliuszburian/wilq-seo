@@ -655,6 +655,12 @@ ich rozmiaru.
   Localo detail zachowuje evidence, `Zapis zmian zablokowany` oraz
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/audit-selectors-live.png`.
+- Generyczna projekcja `preview_items` (typed cards i bezpieczne surowe rows)
+  jest teraz w istniejącym `wilq/actions/payload_readiness.py`; service
+  zachowuje callbacki etykiet i ten sam limit/kontrakt candidate ID. Focused
+  payload/preview/confirmation tests: 19 passed, a live Ads detail zachowuje
+  evidence, `Zapis zmian zablokowany` i `apply_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/payload-items-live.png`.
 
 ## Resume
 

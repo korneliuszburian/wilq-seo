@@ -737,6 +737,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   managed runtime i browser proof przechodzą; Ads i Localo zachowują evidence,
   `Zapis zmian zablokowany` oraz `apply_allowed=false`; proof:
   `.local-lab/proof/continuation-2026-07-12/audit-selectors-live.png`.
+- Generyczna projekcja `preview_items` (karty i surowe payload rows) jest teraz
+  w istniejącym `wilq/actions/payload_readiness.py`; service przekazuje tylko
+  callbacki etykiet/wierszy. Zachowano limity, kontrakt WordPress candidate ID,
+  statusy i blokady zapisu. Focused payload/preview/confirmation tests: 19
+  passed, Ruff/mypy/complexity/diff check zielone. Po restarcie Ads detail ma
+  HTTP 200, 1 kartę, evidence i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/payload-items-live.png`.
 
 ## Weryfikacja
 
