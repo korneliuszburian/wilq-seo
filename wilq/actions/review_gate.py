@@ -9,6 +9,7 @@ from wilq.schemas import (
     ActionObject,
     ActionReviewGate,
     ActionReviewOutcome,
+    ActionReviewRequest,
     AuditEvent,
 )
 
@@ -23,6 +24,90 @@ ConfirmationRequired = Callable[[list[str], ActionMode], bool]
 ReviewOutcome = Callable[[AuditEvent | None], ActionReviewOutcome | None]
 ImpactStatus = Callable[[AuditEvent | None], Literal["checked", "blocked"] | None]
 AuditSummary = Callable[[AuditEvent], str]
+OutcomeLabel = Callable[[str], str]
+SummaryItem = Callable[[str], str]
+BlockerLabel = Callable[[str], str]
+ContractLabel = Callable[[str], str]
+GateLabel = Callable[[str], str | None]
+BlockedClaimLabels = Callable[[list[str]], list[str]]
+
+
+def action_review_summary(
+    request: ActionReviewRequest,
+    *,
+    outcome_label: OutcomeLabel,
+    summary_item: SummaryItem,
+    blocker_label: BlockerLabel,
+) -> str:
+    parts = [
+        f"Wynik przeglądu: {outcome_label(request.outcome)}.",
+        f"Notatka: {request.notes}",
+    ]
+    if request.checked_items:
+        parts.append(
+            "Sprawdzone: "
+            f"{', '.join(summary_item(item) for item in request.checked_items[:8])}."
+        )
+    if request.blockers:
+        parts.append(
+            f"Blokady: {', '.join(blocker_label(item) for item in request.blockers[:8])}."
+        )
+    parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
+    return " ".join(parts)
+
+
+def review_summary_item(
+    item: str,
+    *,
+    contract_label: ContractLabel,
+    source_type_label: Callable[[str], str],
+) -> str:
+    if item.startswith("candidate:"):
+        return "wybrano pozycję do sprawdzenia"
+    if item.startswith("source_type:"):
+        return f"źródło: {source_type_label(item.removeprefix('source_type:'))}"
+    if item.startswith("mode:"):
+        return f"tryb: {contract_label(item.removeprefix('mode:'))}"
+    if item.startswith("url_review_outcome:"):
+        return f"URL finalny: {contract_label(item.removeprefix('url_review_outcome:'))}"
+    if item.startswith("reviewed_url:"):
+        return "sprawdzony URL zapisany w szczegółach audytu"
+    if item.startswith("review_notes:"):
+        return "notatka URL zapisana w szczegółach audytu"
+    if item.startswith("draft_readiness_notes:"):
+        return "notatka gotowości szkicu zapisana w szczegółach audytu"
+    if ":" in item:
+        key, value = item.split(":", 1)
+        return f"{contract_label(key)}: {contract_label(canonical_contract_key(value))}"
+    return item
+
+
+def review_blocker_label(
+    item: str,
+    *,
+    gate_label: GateLabel,
+    contract_label: ContractLabel,
+    blocked_claim_labels: BlockedClaimLabels,
+) -> str:
+    if item.startswith("blocked_claim:"):
+        raw_claim = item.removeprefix("blocked_claim:").strip()
+        claim_labels = blocked_claim_labels([raw_claim])
+        claim_label = claim_labels[0] if claim_labels else raw_claim
+        return f"nie wolno twierdzić: {claim_label}"
+    return gate_label(canonical_contract_key(item)) or contract_label(canonical_contract_key(item))
+
+
+def review_source_type_label(value: str, *, contract_label: ContractLabel) -> str:
+    labels = {
+        "gsc_query_page": "GSC i publiczny URL",
+        "ahrefs_content_gap": "Ahrefs jako sygnał do sprawdzenia",
+        "wordpress_inventory": "spis treści WordPress",
+    }
+    return labels.get(value, contract_label(value))
+
+
+def canonical_contract_key(value: str) -> str:
+    return value.strip().lower().replace(" ", "_")
 
 
 def build_action_review_gate(

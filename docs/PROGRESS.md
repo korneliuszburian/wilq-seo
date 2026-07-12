@@ -631,6 +631,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Live action zachowuje 1 evidence ID, landing/source/campaign context,
   blocked ROAS/revenue claims i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/ga4-metric-helper-live.png`.
+- Review summary/blocker label assembly jest teraz w istniejącym
+  `wilq/actions/review_gate.py`; service zachowuje tylko callbacki do outcome,
+  contract labels, gate labels i zredagowanych claimów. Safety loop i Polish
+  review copy pozostają bez zmian; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/review-gate-summary-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

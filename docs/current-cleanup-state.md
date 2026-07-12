@@ -558,6 +558,10 @@ ich rozmiaru.
   landing/source/campaign rows, blocked conversion/ROAS/revenue claims i
   `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ga4-metric-helper-live.png`.
+- Review summary, checked-item i blocker label assembly jest teraz w
+  `wilq/actions/review_gate.py`; service przekazuje typed callbacks, a live
+  ActionObject zachowuje review gates, blocked claims i brak zapisu. Browser
+  proof: `.local-lab/proof/continuation-2026-07-12/review-gate-summary-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

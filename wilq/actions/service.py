@@ -188,7 +188,24 @@ from wilq.actions.payload_readiness import (
 from wilq.actions.payloads import (
     validate_action_payload,
 )
-from wilq.actions.review_gate import build_action_review_gate
+from wilq.actions.review_gate import (
+    action_review_summary as build_action_review_summary,
+)
+from wilq.actions.review_gate import (
+    build_action_review_gate,
+)
+from wilq.actions.review_gate import (
+    canonical_contract_key as canonical_review_contract_key,
+)
+from wilq.actions.review_gate import (
+    review_blocker_label as build_review_blocker_label,
+)
+from wilq.actions.review_gate import (
+    review_source_type_label as build_review_source_type_label,
+)
+from wilq.actions.review_gate import (
+    review_summary_item as build_review_summary_item,
+)
 from wilq.actions.service_profile import (
     knowledge_promotion_action,
     knowledge_promotion_preview_cards,
@@ -2530,68 +2547,37 @@ def _action_review_gate(
 
 
 def _action_review_summary(request: ActionReviewRequest) -> str:
-    parts = [
-        f"Wynik przeglądu: {_review_outcome_label(request.outcome)}.",
-        f"Notatka: {request.notes}",
-    ]
-    if request.checked_items:
-        parts.append(
-            "Sprawdzone: "
-            f"{', '.join(_review_summary_item(item) for item in request.checked_items[:8])}."
-        )
-    if request.blockers:
-        parts.append(
-            f"Blokady: {', '.join(_review_blocker_label(item) for item in request.blockers[:8])}."
-        )
-    parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
-    return " ".join(parts)
+    return build_action_review_summary(
+        request,
+        outcome_label=_review_outcome_label,
+        summary_item=_review_summary_item,
+        blocker_label=_review_blocker_label,
+    )
 
 
 def _review_summary_item(item: str) -> str:
-    if item.startswith("candidate:"):
-        return "wybrano pozycję do sprawdzenia"
-    if item.startswith("source_type:"):
-        return f"źródło: {_review_source_type_label(item.removeprefix('source_type:'))}"
-    if item.startswith("mode:"):
-        return f"tryb: {content_contract_label(item.removeprefix('mode:'))}"
-    if item.startswith("url_review_outcome:"):
-        return f"URL finalny: {content_contract_label(item.removeprefix('url_review_outcome:'))}"
-    if item.startswith("reviewed_url:"):
-        return "sprawdzony URL zapisany w szczegółach audytu"
-    if item.startswith("review_notes:"):
-        return "notatka URL zapisana w szczegółach audytu"
-    if item.startswith("draft_readiness_notes:"):
-        return "notatka gotowości szkicu zapisana w szczegółach audytu"
-    if ":" in item:
-        key, value = item.split(":", 1)
-        label = content_contract_label(key)
-        value_label = content_contract_label(_canonical_contract_key(value))
-        return f"{label}: {value_label}"
-    return item
+    return build_review_summary_item(
+        item,
+        contract_label=content_contract_label,
+        source_type_label=_review_source_type_label,
+    )
 
 
 def _review_blocker_label(item: str) -> str:
-    if item.startswith("blocked_claim:"):
-        raw_claim = item.removeprefix("blocked_claim:").strip()
-        claim_labels = operator_blocked_claims([raw_claim])
-        claim_label = claim_labels[0] if claim_labels else raw_claim
-        return f"nie wolno twierdzić: {claim_label}"
-    return _action_gate_label(_canonical_contract_key(item)) or content_contract_label(
-        _canonical_contract_key(item)
+    return build_review_blocker_label(
+        item,
+        gate_label=_action_gate_label,
+        contract_label=content_contract_label,
+        blocked_claim_labels=operator_blocked_claims,
     )
 
 
 def _review_source_type_label(value: str) -> str:
-    labels = {
-        "gsc_query_page": "GSC i publiczny URL",
-        "ahrefs_content_gap": "Ahrefs jako sygnał do sprawdzenia",
-        "wordpress_inventory": "spis treści WordPress",
-    }
-    return labels.get(value, content_contract_label(value))
+    return build_review_source_type_label(value, contract_label=content_contract_label)
 
 
 def _canonical_contract_key(value: str) -> str:
-    return value.strip().lower().replace(" ", "_")
+    return canonical_review_contract_key(value)
 
 
 def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
