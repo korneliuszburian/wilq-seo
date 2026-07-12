@@ -46,3 +46,13 @@ def mutation_apply_contract(
             "preview, review, confirm i audytu ActionObject."
         ),
     )
+
+
+def supported_mutation_adapter(action: ActionObject) -> str | None:
+    if (
+        action.id == "act_apply_wordpress_draft_handoff"
+        and action.connector == "wordpress_ekologus"
+        and action.payload.get("allowed_operation") == "create_wordpress_draft"
+    ):
+        return "wordpress_draft_execution_boundary"
+    return None

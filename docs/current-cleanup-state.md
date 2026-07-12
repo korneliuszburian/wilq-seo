@@ -744,6 +744,10 @@ ich rozmiaru.
   `wilq/content/handoff/wordpress_execution.py`; service deleguje typed result
   bez zmiany fail-closed labels/reasons i redacted trace. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/wp-errors-live.png`.
+- Rozpoznawanie obsługiwanego mutation adaptera jest teraz w istniejącym
+  `wilq/actions/mutation_contract.py`; canonical WordPress draft-only operation
+  pozostaje jedyną obsługiwaną ścieżką. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/adapter-boundary-live.png`.
 
 ## Resume
 

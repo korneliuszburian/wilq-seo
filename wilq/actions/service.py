@@ -207,6 +207,9 @@ from wilq.actions.metric_utils import (
     metric_fact_sort_time as _metric_fact_sort_time_impl,
 )
 from wilq.actions.mutation_contract import mutation_apply_contract as _mutation_apply_contract
+from wilq.actions.mutation_contract import (
+    supported_mutation_adapter as _supported_mutation_adapter_impl,
+)
 from wilq.actions.mutation_plan import activation_next_step as _activation_next_step
 from wilq.actions.mutation_plan import activation_plan_steps as _activation_plan_steps
 from wilq.actions.mutation_plan import first_write_candidate as _first_write_candidate
@@ -1726,13 +1729,7 @@ def _mutation_audit_summary(
 
 
 def _supported_mutation_adapter(action: ActionObject) -> str | None:
-    if (
-        action.id == "act_apply_wordpress_draft_handoff"
-        and action.connector == "wordpress_ekologus"
-        and action.payload.get("allowed_operation") == "create_wordpress_draft"
-    ):
-        return "wordpress_draft_execution_boundary"
-    return None
+    return _supported_mutation_adapter_impl(action)
 
 
 def _execute_supported_mutation_adapter(

@@ -82,3 +82,17 @@ def test_wordpress_execution_errors_keep_blocker_labels_and_reasons() -> None:
     assert execution.status == "blocked"
     assert errors
     assert "Brakuje zatwierdzonego przekazania" in errors[0]
+
+
+def test_supported_mutation_adapter_is_limited_to_canonical_wordpress_draft() -> None:
+    from wilq.actions.mutation_contract import supported_mutation_adapter
+
+    action = ActionObject.model_construct(
+        id="act_apply_wordpress_draft_handoff",
+        connector="wordpress_ekologus",
+        payload={"allowed_operation": "create_wordpress_draft"},
+    )
+    assert supported_mutation_adapter(action) == "wordpress_draft_execution_boundary"
+
+    action.payload["allowed_operation"] = "wordpress_publish"
+    assert supported_mutation_adapter(action) is None

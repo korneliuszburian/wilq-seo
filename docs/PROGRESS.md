@@ -846,6 +846,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   labels/reasons i redacted adapter trace; focused WordPress/mutation tests,
   source Ruff/mypy/complexity/diff check oraz browser proof przechodzą:
   `.local-lab/proof/continuation-2026-07-12/wp-errors-live.png`.
+- Rozpoznawanie obsługiwanego mutation adaptera jest teraz w istniejącym
+  `wilq/actions/mutation_contract.py`; service nie definiuje już własnej
+  capability predicate. Canonical WordPress draft-only operation pozostaje
+  jedyną obsługiwaną ścieżką, a publish/arbitrary operation zwraca brak adaptera.
+  Focused mutation contract tests, source Ruff/mypy/complexity/diff check i
+  browser proof przechodzą: `.local-lab/proof/continuation-2026-07-12/adapter-boundary-live.png`.
 
 ## Weryfikacja
 
