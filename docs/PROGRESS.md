@@ -730,6 +730,14 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
 
+- Selektory najnowszych zdarzeń preview/confirmation/impact oraz mutation audit
+  są teraz w istniejącym `wilq/actions/audit_store.py`; `service.py` zachowuje
+  tylko kompatybilne fasady. Typy eventów i sortowanie po `created_at` pozostały
+  bez zmian. Focused audit/review tests (10 passed), Ruff, mypy, complexity,
+  managed runtime i browser proof przechodzą; Ads i Localo zachowują evidence,
+  `Zapis zmian zablokowany` oraz `apply_allowed=false`; proof:
+  `.local-lab/proof/continuation-2026-07-12/audit-selectors-live.png`.
+
 ## Weryfikacja
 
 - Backend baseline: 765 passed, 2 skipped; ten slice: 5 content test files

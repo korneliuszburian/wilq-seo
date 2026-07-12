@@ -646,6 +646,16 @@ ich rozmiaru.
   zielonym, dopóki nie zostaną rozwiązane. Goal 005 nadal czeka na realny Wilku
   UAT albo owner defer.
 
+## Ostatni seam audytowy
+
+- Selektory najnowszych zdarzeń preview/confirmation/impact oraz mutation audit
+  są teraz własnością istniejącego `wilq/actions/audit_store.py`; `service.py`
+  deleguje bez zmiany typów eventów, kolejności `created_at` ani świeżej
+  walidacji/review gate. Focused audit/review tests (10 passed), a live Ads i
+  Localo detail zachowuje evidence, `Zapis zmian zablokowany` oraz
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/audit-selectors-live.png`.
+
 ## Resume
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.

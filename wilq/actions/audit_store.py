@@ -179,6 +179,38 @@ def audit_event_label(event_type: str) -> str:
     return labels.get(event_type, "Zdarzenie audytu")
 
 
+def latest_preview_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type == "action_preview_generated":
+            return event
+    return None
+
+
+def latest_action_confirmation_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type in {
+            "action_apply_confirmed",
+            "ads_target_guardrail_confirmed",
+        }:
+            return event
+    return None
+
+
+def latest_action_impact_check_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type in {"action_impact_check_completed", "action_impact_check_blocked"}:
+            return event
+    return None
+
+
+def latest_mutation_audit(
+    audits: list[ActionMutationAuditRecord],
+) -> ActionMutationAuditRecord | None:
+    if not audits:
+        return None
+    return sorted(audits, key=lambda item: item.created_at, reverse=True)[0]
+
+
 def persisted_audit_events_by_action_id(action_ids: set[str]) -> dict[str, list[AuditEvent]]:
     if not action_ids:
         return {}

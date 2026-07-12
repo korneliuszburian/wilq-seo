@@ -32,6 +32,18 @@ from wilq.actions.audit_store import (
     contains_raw_audit_contract_text as _contains_raw_audit_contract_text,
 )
 from wilq.actions.audit_store import (
+    latest_action_confirmation_event as _latest_action_confirmation_event_impl,
+)
+from wilq.actions.audit_store import (
+    latest_action_impact_check_event as _latest_action_impact_check_event_impl,
+)
+from wilq.actions.audit_store import (
+    latest_mutation_audit as _latest_mutation_audit_impl,
+)
+from wilq.actions.audit_store import (
+    latest_preview_event as _latest_preview_event_impl,
+)
+from wilq.actions.audit_store import (
     operator_audit_summary_text as _operator_audit_summary_text_impl,
 )
 from wilq.actions.audit_store import (
@@ -2759,35 +2771,21 @@ def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _latest_preview_event(events: list[AuditEvent]) -> AuditEvent | None:
-    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
-        if event.event_type == "action_preview_generated":
-            return event
-    return None
+    return _latest_preview_event_impl(events)
 
 
 def _latest_action_confirmation_event(events: list[AuditEvent]) -> AuditEvent | None:
-    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
-        if event.event_type in {
-            "action_apply_confirmed",
-            "ads_target_guardrail_confirmed",
-        }:
-            return event
-    return None
+    return _latest_action_confirmation_event_impl(events)
 
 
 def _latest_action_impact_check_event(events: list[AuditEvent]) -> AuditEvent | None:
-    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
-        if event.event_type in {"action_impact_check_completed", "action_impact_check_blocked"}:
-            return event
-    return None
+    return _latest_action_impact_check_event_impl(events)
 
 
 def _latest_mutation_audit(
     audits: list[ActionMutationAuditRecord],
 ) -> ActionMutationAuditRecord | None:
-    if not audits:
-        return None
-    return sorted(audits, key=lambda item: item.created_at, reverse=True)[0]
+    return _latest_mutation_audit_impl(audits)
 
 
 def _impact_status_from_event(event: AuditEvent | None) -> Literal["checked", "blocked"] | None:
