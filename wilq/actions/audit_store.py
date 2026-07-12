@@ -125,6 +125,27 @@ def audit_details_for_operator(
     return operator_details
 
 
+def audit_event_with_operator_label(
+    event: AuditEvent,
+    *,
+    string_list: StringList,
+    review_summary_item: OperatorItemLabel,
+    review_blocker_label: OperatorItemLabel,
+) -> AuditEvent:
+    return event.model_copy(
+        update={
+            "event_type_label": event.event_type_label or audit_event_label(event.event_type),
+            "summary": action_audit_summary_for_operator(event),
+            "details": audit_details_for_operator(
+                event.details,
+                string_list=string_list,
+                review_summary_item=review_summary_item,
+                review_blocker_label=review_blocker_label,
+            ),
+        }
+    )
+
+
 def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, dict):
         clean: dict[str, Any] = {}

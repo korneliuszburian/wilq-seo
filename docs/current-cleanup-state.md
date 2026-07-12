@@ -695,6 +695,11 @@ ich rozmiaru.
   detail zachowuje evidence, `Zapis zmian zablokowany` i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/gate-labels-live.png`.
+- Projekcja `AuditEvent` dla operatora jest teraz w istniejącym
+  `wilq/actions/audit_store.py`; service zachowuje callbacki etykiet review.
+  Focused audit/preview/review tests: 31 passed, a live Ads detail zachowuje
+  evidence, `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/event-projection-live.png`.
 
 ## Resume
 

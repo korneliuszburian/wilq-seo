@@ -783,6 +783,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   passed, service LOC spadł do 2266, a live Ads detail zachowuje evidence,
   blokadę zapisu i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/gate-labels-live.png`.
+- Projekcja `AuditEvent` dla operatora (event label, bezpieczny summary i
+  zredagowane details) jest teraz w istniejącym `wilq/actions/audit_store.py`;
+  service zachowuje tylko callbacki etykiet review. Focused audit/preview/review
+  tests: 31 passed, service LOC spadł do 2261, a live Ads detail zachowuje
+  evidence, blokadę zapisu i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/event-projection-live.png`.
 
 ## Weryfikacja
 

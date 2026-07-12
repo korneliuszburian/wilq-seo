@@ -25,12 +25,14 @@ from wilq.actions.action_blockers import (
 from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
 )
-from wilq.actions.audit_store import audit_details_for_operator
 from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
 from wilq.actions.audit_store import (
     audit_event_label as _action_audit_event_label,
+)
+from wilq.actions.audit_store import (
+    audit_event_with_operator_label as _audit_event_with_operator_label_impl,
 )
 from wilq.actions.audit_store import (
     latest_action_confirmation_event as _latest_action_confirmation_event_impl,
@@ -2311,18 +2313,11 @@ def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGat
 
 
 def _audit_event_with_operator_label(event: AuditEvent) -> AuditEvent:
-    return event.model_copy(
-        update={
-            "event_type_label": event.event_type_label
-            or _action_audit_event_label(event.event_type),
-            "summary": _action_audit_summary_for_operator(event),
-            "details": audit_details_for_operator(
-                event.details,
-                string_list=_string_list,
-                review_summary_item=_review_summary_item,
-                review_blocker_label=_review_blocker_label,
-            ),
-        }
+    return _audit_event_with_operator_label_impl(
+        event,
+        string_list=_string_list,
+        review_summary_item=_review_summary_item,
+        review_blocker_label=_review_blocker_label,
     )
 
 

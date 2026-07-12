@@ -123,3 +123,24 @@ def test_audit_details_for_operator_redacts_raw_contracts_and_labels_review_fiel
     assert details["blockers"] == ["blocker:human_confirm_before_apply"]
     assert "payload_preview" not in details
     assert details["nested"] == {"safe": "ok"}
+
+
+def test_audit_event_operator_projection_uses_store_owned_summary_and_labels() -> None:
+    event = AuditEvent(
+        id="audit_preview_test",
+        event_type="action_preview_generated",
+        actor="system",
+        summary="preview pozycje=2, blocked",
+        details={"checked_items": ["reviewed_url"]},
+    )
+
+    projected = audit_store.audit_event_with_operator_label(
+        event,
+        string_list=lambda value: value if isinstance(value, list) else [],
+        review_summary_item=lambda item: f"review:{item}",
+        review_blocker_label=lambda item: f"blocker:{item}",
+    )
+
+    assert projected.event_type_label == "Podgląd zmian wygenerowany"
+    assert "zapis zmian pozostaje zablokowany" in projected.summary
+    assert projected.details["checked_items"] == ["review:reviewed_url"]
