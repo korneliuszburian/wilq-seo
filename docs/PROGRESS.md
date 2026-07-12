@@ -343,6 +343,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   istniejącego `Ga4ConversionReadinessContract`; gotowy kontrakt daje
   `conversion_readiness_ready`. Pozostałe guards (low volume, baseline, date
   window, conflict, multi-source) pozostają otwarte.
+- `v9ab.8` ma też `date_window`: daily-check korzysta z istniejącego
+  `ContentGscSearchAnalyticsContract`, zwracając `date_window_ready` albo
+  blokadę przy braku bounded availability/completeness. Live content item ma
+  `stale_connector` + `date_window_ready`; focused tests, Ruff, mypy i
+  complexity przechodzą.
 - Prywatna Service Profile proposal-promotion ma teraz analogiczny konstruktor
   w `wilq/actions/service_profile.py`; service buduje tylko redacted review rows,
   a domenowy moduł zachowuje `redacted`, evidence, `apply_allowed=false` i

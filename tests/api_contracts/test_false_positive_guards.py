@@ -2,9 +2,14 @@
 
 from wilq.briefing.false_positive_guards import (
     evaluate_conversion_readiness_guard,
+    evaluate_gsc_date_window_guard,
     evaluate_source_trace_guard,
 )
-from wilq.schemas import FreshnessState, Ga4ConversionReadinessContract
+from wilq.schemas import (
+    ContentGscSearchAnalyticsContract,
+    FreshnessState,
+    Ga4ConversionReadinessContract,
+)
 
 
 def test_stale_source_guard_blocks_daily_recommendation() -> None:
@@ -46,3 +51,18 @@ def test_conversion_guard_uses_ga4_read_contract() -> None:
     assert result.guard_id == "missing_conversion"
     assert result.status == "blocked"
     assert result.next_step == "Sprawdź zdarzenia kluczowe."
+
+
+def test_gsc_date_window_guard_requires_bounded_contract() -> None:
+    contract = ContentGscSearchAnalyticsContract(
+        data_availability_checked=True,
+        aggregate_date_start="2026-06-01",
+        aggregate_date_end="2026-06-30",
+        latest_available_detail_date="2026-06-30",
+        detail_data_completeness="partial",
+    )
+
+    result = evaluate_gsc_date_window_guard(contract)
+
+    assert result.guard_id == "date_window_ready"
+    assert result.status == "pass"

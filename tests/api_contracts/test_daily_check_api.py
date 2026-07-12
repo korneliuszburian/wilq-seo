@@ -38,5 +38,16 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
             for item in ga4_items
             for guard in item["false_positive_guards"]
         )
+    content_items = [
+        item
+        for item in [*payload["safe_next_actions"], *payload["blocked_recommendations"]]
+        if "gsc_platform_traps_v1" in item["expert_rule_ids"]
+    ]
+    if content_items:
+        assert any(
+            guard in {"date_window_ready", "date_window"}
+            for item in content_items
+            for guard in item["false_positive_guards"]
+        )
     if payload["do_not_touch"]:
         assert all(item["status"] == "blocked" for item in payload["do_not_touch"])

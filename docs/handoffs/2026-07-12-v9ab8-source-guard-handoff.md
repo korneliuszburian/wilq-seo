@@ -32,11 +32,14 @@ odczytu.
 - Aktualny live GA4 item ma `conversion_readiness_ready` obok
   `stale_connector`; browser proof po restarcie:
   `.local-lab/proof/daily-check-conversion-guard.png`.
+- Content item ma `date_window_ready` obok `stale_connector` po sprawdzeniu
+  `ContentGscSearchAnalyticsContract`; browser proof:
+  `.local-lab/proof/daily-check-date-window-guard.png`.
 
 ## Pozostały zakres Beada
 
 Nie zamykaj `v9ab.8`. Brakuje osobnych, potwierdzonych guardów dla low volume,
-no baseline, date window, source conflict i
+no baseline, source conflict i
 multi-source-required. Każdy powinien mieć własny test i nie może udawać danych.
 
 ## Następny slice

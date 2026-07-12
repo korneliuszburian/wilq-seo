@@ -4,7 +4,11 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from wilq.schemas import FreshnessState, Ga4ConversionReadinessContract
+from wilq.schemas import (
+    ContentGscSearchAnalyticsContract,
+    FreshnessState,
+    Ga4ConversionReadinessContract,
+)
 
 
 class FalsePositiveGuardResult(BaseModel):
@@ -60,6 +64,31 @@ def evaluate_conversion_readiness_guard(
             contract.next_step
             or "Najpierw potwierdź mapowanie konwersji i zdarzeń kluczowych w GA4."
         ),
+    )
+
+
+def evaluate_gsc_date_window_guard(
+    contract: ContentGscSearchAnalyticsContract | None,
+) -> FalsePositiveGuardResult:
+    """Require the existing GSC contract to expose a bounded available window."""
+    if contract is not None and contract.data_availability_checked:
+        has_window = bool(
+            contract.aggregate_date_start
+            and contract.aggregate_date_end
+            and contract.latest_available_detail_date
+        )
+        if has_window and contract.detail_data_completeness:
+            return FalsePositiveGuardResult(
+                guard_id="date_window_ready",
+                status="pass",
+                reason="GSC ma potwierdzony zakres dat i opis kompletności odczytu.",
+                next_step="Można porównać decyzję w ramach tego okna danych.",
+            )
+    return FalsePositiveGuardResult(
+        guard_id="date_window",
+        status="blocked",
+        reason="GSC nie potwierdza kompletnego, ograniczonego zakresu dat dla tej decyzji.",
+        next_step="Najpierw sprawdź dostępny zakres dat i kompletność odczytu GSC.",
     )
 
 

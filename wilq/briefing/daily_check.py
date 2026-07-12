@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal
 
+from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.briefing.daily_runtime import build_daily_runtime
 from wilq.briefing.false_positive_guards import (
     FalsePositiveGuardResult,
     evaluate_conversion_readiness_guard,
+    evaluate_gsc_date_window_guard,
     evaluate_source_trace_guard,
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
@@ -36,8 +38,9 @@ def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
     runtime = build_daily_runtime(use_cache=use_cache)
     connector_refs = _connector_refs(runtime.connectors)
     ga4_guard = _ga4_conversion_guard(runtime.command_center.daily_decisions)
+    content_guard = _content_date_window_guard(runtime.command_center.daily_decisions)
     items = [
-        _daily_item(decision, ga4_guard=ga4_guard)
+        _daily_item(decision, ga4_guard=ga4_guard, content_guard=content_guard)
         for decision in runtime.command_center.daily_decisions
     ]
     safe_next_actions = [
@@ -87,6 +90,7 @@ def _daily_item(
     decision: DailyDecision,
     *,
     ga4_guard: FalsePositiveGuardResult | None = None,
+    content_guard: FalsePositiveGuardResult | None = None,
 ) -> DailyCheckItem:
     rule_ids = list(_RULE_IDS_BY_DOMAIN.get(decision.domain, ()))
     guard = evaluate_source_trace_guard(
@@ -98,6 +102,8 @@ def _daily_item(
     guards = [guard]
     if decision.domain == "ga4" and ga4_guard is not None:
         guards.append(ga4_guard)
+    if decision.domain == "content" and content_guard is not None:
+        guards.append(content_guard)
     blocked_guard = next((item for item in guards if item.status == "blocked"), guard)
     is_blocked = decision.status == "blocked" or blocked_guard.status == "blocked"
     category: Literal["blocked_recommendation", "safe_next_action"] = (
@@ -143,6 +149,18 @@ def _ga4_conversion_guard(
             next_step="Najpierw sprawdź dostęp i odczyt GA4.",
         )
     return evaluate_conversion_readiness_guard(contract)
+
+
+def _content_date_window_guard(
+    decisions: list[DailyDecision],
+) -> FalsePositiveGuardResult | None:
+    if not any(decision.domain == "content" for decision in decisions):
+        return None
+    try:
+        contract = build_content_diagnostics_cached().gsc_search_analytics_contract
+    except Exception:
+        contract = None
+    return evaluate_gsc_date_window_guard(contract)
 
 
 def _do_not_touch_item(items: list[DailyCheckItem]) -> DailyCheckItem:
