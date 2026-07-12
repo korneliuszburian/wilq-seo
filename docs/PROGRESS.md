@@ -113,6 +113,10 @@ w git, Beads i `docs/progress/archive/`.
   Focused readiness/review/Goal 005 tests, Ruff, mypy, complexity i diff check
   są zielone. Live po refreshu: 99906 metric facts, 4577 refresh runs,
   21 actions, 0 vendor-write possible i 0 attempted.
+- Kolejny seam `jnra` przeniósł target projection readiness do
+  `wilq/actions/mutation_target.py`; candidate ID, canonical URL i label
+  fallback pozostają identyczne, a `service.py` ma 3868 LOC. Focused readiness
+  tests, Ruff, mypy, complexity i diff check są zielone.
 - `kgvy` slice wykonany: optimizer-readiness assembly przeniesiono do
   `wilq/briefing/ads_optimizer.py`, a `ads_diagnostics.py` zmniejszył się o 358
   linii. Osiem obszarów zachowuje evidence IDs, source connectors, blocked claims

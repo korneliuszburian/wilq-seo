@@ -103,6 +103,7 @@ from wilq.actions.mutation_readiness import mutation_readiness_blockers
 from wilq.actions.mutation_requirements import base_mutation_readiness_requirements
 from wilq.actions.mutation_response import build_mutation_readiness_response
 from wilq.actions.mutation_summary import build_mutation_readiness_summary
+from wilq.actions.mutation_target import mutation_readiness_target
 from wilq.actions.operator_labels import (
     action_evidence_summary_label as _action_evidence_summary_label,
 )
@@ -1506,7 +1507,11 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
     blockers = _mutation_readiness_blockers(requirements)
     vendor_write_possible = _vendor_write_possible(action, mutation_adapter)
     apply_contract = _mutation_apply_contract(action, mutation_adapter)
-    target = _mutation_readiness_target(action, activation_packet=wordpress_activation_packet)
+    target = mutation_readiness_target(
+        action,
+        activation_packet=wordpress_activation_packet,
+        preview_items=_payload_preview_items,
+    )
     return build_mutation_readiness_response(
         action=action,
         mutation_adapter=mutation_adapter,
@@ -1519,42 +1524,6 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         operator_next_step=_mutation_readiness_next_step(action, blockers),
         latest_mutation_audit=latest_mutation_audit,
     )
-
-
-def _mutation_readiness_target(
-    action: ActionObject,
-    *,
-    activation_packet: ContentWordPressDraftActivationPacketResponse | None = None,
-) -> dict[str, str | None]:
-    if activation_packet is not None:
-        label_parts = [
-            part
-            for part in [
-                activation_packet.topic,
-                activation_packet.final_canonical_url,
-            ]
-            if isinstance(part, str) and part.strip()
-        ]
-        return {
-            "candidate_id": activation_packet.work_item_id,
-            "label": " | ".join(label_parts) if label_parts else activation_packet.topic,
-            "url": activation_packet.final_canonical_url,
-        }
-    preview_items = _payload_preview_items(action.payload)
-    first = preview_items[0] if preview_items else {}
-    candidate_id = first.get("candidate_id")
-    topic = first.get("topic")
-    url = (
-        first.get("final_canonical_url")
-        or first.get("intended_final_url")
-        or first.get("source_public_url")
-    )
-    label_parts = [part for part in [topic, url] if isinstance(part, str) and part.strip()]
-    return {
-        "candidate_id": candidate_id if isinstance(candidate_id, str) else None,
-        "label": " | ".join(label_parts) if label_parts else None,
-        "url": url if isinstance(url, str) else None,
-    }
 
 
 def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:

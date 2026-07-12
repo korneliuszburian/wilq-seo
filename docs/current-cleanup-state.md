@@ -452,6 +452,9 @@ ich rozmiaru.
   do `wilq/actions/wordpress_mutation_requirements.py`; `service.py` ma 3897 LOC.
   Live readiness nadal raportuje 21 akcji, 0 vendor-write possible i 0 attempted;
   publikacja i destructive writes pozostają false.
+- Target projection readiness jest teraz w `wilq/actions/mutation_target.py`;
+  service przekazuje istniejący preview-items callback i nie składa targetu z
+  raw payloadu. `service.py` ma 3868 LOC; payloady i safety gates bez zmian.
 - `4wwo` ma teraz istniejący `/api/connectors` rozszerzony o typed
   `refresh_state`: stan odczytu, `refresh_allowed`, ostatni run, safe next step i
   affected decisions. `/settings` pokazuje tę informację ponad ręcznym CTA;

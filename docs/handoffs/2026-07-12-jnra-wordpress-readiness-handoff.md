@@ -9,9 +9,11 @@ builders z `wilq/actions/service.py`:
 
 - gotowość handoffu i paczki szkicu;
 - gotowość targetu po Claim Ledger/review/dry-run.
+- target projection readiness (candidate ID, canonical URL i operator label).
 
 `service.py` pozostaje cieńszym orchestrator/facade i przekazuje callback do
-istniejącego `_payload_preview_items`. Nie dodano endpointu, adaptera ani
+istniejącego `_payload_preview_items`; target projection jest w
+`wilq/actions/mutation_target.py`. Nie dodano endpointu, adaptera ani
 możliwości write. Blocker codes, evidence, polskie labels i kolejność
 `validate → preview → review → confirm → audit → adapter` pozostały bez zmian.
 
@@ -20,7 +22,8 @@ możliwości write. Blocker codes, evidence, polskie labels i kolejność
 - Focused mutation-readiness, review, confirmation, preview, validation i Goal
   005 tests — zielone.
 - Ruff, mypy i `git diff --check` — zielone.
-- Complexity po seame: `service.py` 3 897 LOC; znany frozen-file budget jest
+- Complexity po pierwszym seame: `service.py` 3 897 LOC; po target projection
+  drugi seam obniżył go do 3 868 LOC. Znany frozen-file budget jest
   udokumentowany, bez nowego zachowania w monolicie.
 - Live po managed restart: API `ok`; 21 akcji; `vendor_write_possible=0`;
   `would_attempt_vendor_write=0`; WordPress apply contract ma
