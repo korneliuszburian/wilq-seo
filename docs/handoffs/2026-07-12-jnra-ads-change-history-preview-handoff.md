@@ -29,8 +29,7 @@ fold. Technical details pozostają za istniejącym disclosure.
 
 `wilq-seo-jnra` pozostaje `in_progress`; WordPress `7b285df2`, social
 `3895ca5a`, Ads budget `65df313f`, recommendation `ca1f2bcc`, negative-keyword
-`0146a70f`, custom-segment `6b10dd03`; ten change-history seam czeka na
-commit/push.
+`0146a70f`, custom-segment `6b10dd03`, change-history `d386b07c`.
 
 ## Następny krok
 
