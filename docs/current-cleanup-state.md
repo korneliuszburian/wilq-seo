@@ -437,6 +437,11 @@ ich rozmiaru.
   `wilq/actions/mutation_summary.py`; service zachowuje wybór kandydatów,
   blocker counts i operator next-step callbacks, a typed summary nadal raportuje
   21 akcji i 0 write-capable.
+- W kolejnym seamu `jnra` wybór pierwszej kandydatury zapisu, plan aktywacji i
+  operator summary next step przeniesiono do `wilq/actions/mutation_plan.py`.
+  Service nadal składa readiness z istniejących requirements/blockers i przekazuje
+  callback, bez zmiany payloadów ani write gates. Live summary po restarcie ma
+  21 akcji, 0 vendor-write possible i 0 attempted; `service.py` ma 4046 LOC.
 - `4wwo` ma teraz istniejący `/api/connectors` rozszerzony o typed
   `refresh_state`: stan odczytu, `refresh_allowed`, ostatni run, safe next step i
   affected decisions. `/settings` pokazuje tę informację ponad ręcznym CTA;
@@ -451,7 +456,8 @@ ich rozmiaru.
 
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Kontynuuj `jnra`: wydziel review-gate assembly z zachowaniem pełnego
-   ActionObject safety loop i testów zachowania.
+3. Kontynuuj `jnra`: wybierz następny mały, potwierdzony seam z aktualnego
+   complexity/runtime review; nie przenoś ponownie gotowych `mutation_plan`
+   ani `mutation_summary` boundary.
 4. `r564.3` może zostać zamknięty dopiero po browser proof 390×844 ze świeżym,
    nieblokowanym kandydatem; obecny stan zewnętrzny tego nie dowodzi.

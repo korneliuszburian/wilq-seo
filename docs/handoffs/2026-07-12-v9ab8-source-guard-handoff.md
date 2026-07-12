@@ -44,5 +44,7 @@ multi-source-required. Każdy powinien mieć własny test i nie może udawać da
 
 ## Następny slice
 
-Kontynuuj `v9ab.8` od `low_volume`/`no_baseline` tylko po znalezieniu istniejącego
-typed read contractu, który dostarcza te fakty; bez heurystyki z samego copy.
+`v9ab.8` pozostaje otwarty, ale bez potwierdzonego typed read contractu dla
+`low_volume`, `no_baseline`, `source_conflict` i `multi-source-required` nie
+dopisuj heurystyki. Bieżący wykonany slice przeszedł do gotowego `jnra` i jest
+opisany w handoffie `2026-07-12-jnra-mutation-plan-handoff.md`.

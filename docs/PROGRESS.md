@@ -85,6 +85,12 @@ w git, Beads i `docs/progress/archive/`.
   `wilq/actions/audit_store.py`, z limitem 10 wpisów na akcję i bez zmiany
   ActionObject safety loop. Focused action suite 9 passed, Ruff/mypy/diff check
   green; complexity: 394 plików Python / 132243 LOC, `service.py` 4224 LOC.
+- Kontynuacja `jnra` wydzieliła wybór pierwszej kandydatury zapisu oraz plan
+  aktywacji/readiness do `wilq/actions/mutation_plan.py`. `service.py` zachowuje
+  orkiestrację i ten sam ActionObject safety loop; live `/api/actions/mutation-readiness`
+  raportuje 21 akcji, 0 vendor-write possible i 0 attempted, z WordPress
+  draft-only jako pierwszą kandydaturą. Focused mutation/review/Goal 005 tests,
+  Ruff, mypy, complexity i diff check przechodzą; `service.py` ma 4046 LOC.
 - `kgvy` slice wykonany: optimizer-readiness assembly przeniesiono do
   `wilq/briefing/ads_optimizer.py`, a `ads_diagnostics.py` zmniejszył się o 358
   linii. Osiem obszarów zachowuje evidence IDs, source connectors, blocked claims
