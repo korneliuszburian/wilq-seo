@@ -34,4 +34,5 @@ review/audit safety loop ani vendor writes.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `a32bb094` (`refactor: extract review outcome
+projection`), wypchnięty na `origin/main`.
