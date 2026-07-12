@@ -20,6 +20,7 @@ zwracają brak adaptera.
   `apply=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/adapter-boundary-live.png`.
 - Brak nowych endpointów, vendor writes, zmian credentiali lub publikacji.
+- Commit implementacji: `2f6ef1c` (`refactor: centralize supported mutation adapter`).
 
 ## Beads
 
