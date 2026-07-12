@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from wilq.content.planning.ahrefs_overlap import assess_ahrefs_cross_source_overlap
+from wilq.content.planning.ahrefs_overlap import (
+    AhrefsCrossSourceMatcher,
+    assess_ahrefs_cross_source_overlap,
+)
 from wilq.schemas import MetricFact
 
 
@@ -118,3 +121,35 @@ def test_dev_workspace_url_cannot_become_wordpress_confirmation() -> None:
     assert overlap.wordpress.source_connectors == ()
     assert overlap.wordpress.evidence_ids == ()
     assert overlap.has_exact_match is False
+
+
+def test_compiled_matcher_preserves_exact_phrase_and_public_url_lineage() -> None:
+    matcher = AhrefsCrossSourceMatcher.from_metric_facts(
+        gsc_facts=[
+            _fact(
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_bdo_odpady",
+                query="bdo odpady",
+                page="https://www.ekologus.pl/bdo/",
+            )
+        ],
+        wordpress_facts=[
+            _fact(
+                source_connector="wordpress_ekologus",
+                evidence_id="ev_wp_bdo_odpady",
+                title="Obsługa BDO odpady dla firm",
+                content_url="https://ekologus.pl/bdo/",
+            )
+        ],
+    )
+
+    overlap = matcher.assess(
+        keyword="bdo odpady",
+        referenced_public_url="https://www.ekologus.pl/bdo/",
+    )
+
+    assert overlap.gsc.strength == "exact"
+    assert overlap.gsc.matching_labels == ("bdo odpady",)
+    assert overlap.wordpress.strength == "exact"
+    assert overlap.wordpress.matching_labels == ("https://ekologus.pl/bdo/",)
+    assert overlap.has_exact_match is True

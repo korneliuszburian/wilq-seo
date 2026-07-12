@@ -65,10 +65,15 @@ dowody i safe next step są jednym priorytetowym regionem nad kartami. React
 wyłącznie renderuje typed kontrakt — nie klasyfikuje dopasowań i nie tworzy
 ActionObjectu. W pierwszym viewportcie nie ma surowych ID; desktop/mobile proof
 jest w `.local-lab/proof/3bst7-ahrefs/`, a re-review marketer/operator to 7/10.
-Jedyny świeży problem tej trasy to `c9h9.17`: HTTP diagnostics zajmuje około
-14–16 s. Najpierw zmierz przyczynę i użyj istniejącego cache/prewarm seam'u z
-inwalidacją przy Ahrefs oraz inputach GSC/WordPress; nie maskuj loadingu i nie
-osłabiaj freshness/evidence.
+`c9h9.17` jest zamknięty: root cause nie był w readach DuckDB, lecz w 338-krotnym
+budowaniu tych samych rekordów GSC/WordPress podczas oceny 338 luk. Immutable
+`AhrefsCrossSourceMatcher` kompiluje je raz na batch; raw helper zachowuje się
+jak kompatybilny adapter dla pojedynczego wywołania. Po restarcie trzy live HTTP
+reads wyniosły 1.354044 s, 1.351506 s i 1.212189 s przy zachowanym
+`manual_required`, 6 kandydatach i 0 ActionObjectach. Nie dodano cache'a, więc
+nie ma ryzyka podania stale evidence. Osobny `c9h9.18` śledzi tactical queue
+monolith: jego Ahrefs branch może przyjąć ten matcher dopiero po typed
+extraction, nie przez wyjątek od budgetu.
 
 ## Prawda produktu
 
@@ -895,6 +900,6 @@ ich rozmiaru.
 6. `r564.5` i `r564.6` są zamknięte. Nie zgaduj usługi z `service_fit`: istnieje
    tylko typed binding snapshotu, a blocked snapshot pozostaje `not_evaluated`.
 7. Parent `r564` jest zablokowany zewnętrznie przy 1 actionable z wymaganych 3;
-   nie twórz tematu dla wypełnienia progu. `3bst.7` jest domknięty; następny
-   niezależny slice to `c9h9.17`, czyli latency istniejącego Ahrefs diagnostics,
-   bez zmiany jego manualnego cross-checku.
+   nie twórz tematu dla wypełnienia progu. `3bst.7` i `c9h9.17` są domknięte;
+   `c9h9.18` ma osobno wydzielić Ahrefs branch tactical queue przed przeniesieniem
+   compiled matcher do tego monolitu.

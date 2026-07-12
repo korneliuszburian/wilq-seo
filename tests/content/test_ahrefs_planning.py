@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from wilq.content.planning.ahrefs import ahrefs_gap_record_decisions
+from wilq.content.planning import ahrefs_overlap
+from wilq.content.planning.ahrefs import (
+    ahrefs_cross_source_candidate_rows,
+    ahrefs_gap_record_decisions,
+)
 from wilq.schemas import MetricFact
 
 
@@ -154,3 +158,62 @@ def test_ahrefs_gap_record_decision_keeps_weak_overlap_manual_without_action() -
     assert decision.action_ids == []
     assert "słabe podobieństwo" in candidate.next_step
     assert "potwierdzenia popytu ani duplikatu" in candidate.next_step
+
+
+def test_candidate_rows_compile_cross_source_records_once_for_a_batch(monkeypatch) -> None:
+    gsc_record_calls = 0
+    wordpress_record_calls = 0
+    original_gsc_records = ahrefs_overlap._gsc_records
+    original_wordpress_records = ahrefs_overlap._wordpress_records
+
+    def count_gsc_records(facts):
+        nonlocal gsc_record_calls
+        gsc_record_calls += 1
+        return original_gsc_records(facts)
+
+    def count_wordpress_records(facts):
+        nonlocal wordpress_record_calls
+        wordpress_record_calls += 1
+        return original_wordpress_records(facts)
+
+    monkeypatch.setattr(ahrefs_overlap, "_gsc_records", count_gsc_records)
+    monkeypatch.setattr(ahrefs_overlap, "_wordpress_records", count_wordpress_records)
+
+    rows = ahrefs_cross_source_candidate_rows(
+        [
+            _fact(
+                "ahrefs_content_gap_count",
+                evidence_id="ev_ahrefs_bdo_1",
+                gap_type="content_gap",
+                keyword="bdo odpady",
+                competitor_domain="denios.pl",
+            ),
+            _fact(
+                "ahrefs_content_gap_count",
+                evidence_id="ev_ahrefs_bdo_2",
+                gap_type="content_gap",
+                keyword="odpady bdo",
+                competitor_domain="denios.pl",
+            ),
+        ],
+        [
+            _fact(
+                "impressions",
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_bdo",
+                query="bdo odpady",
+                page="https://www.ekologus.pl/bdo/",
+            ),
+            _fact(
+                "content_object_seen",
+                source_connector="wordpress_ekologus",
+                evidence_id="ev_wp_bdo",
+                title="BDO odpady",
+                content_url="https://www.ekologus.pl/bdo/",
+            ),
+        ],
+    )
+
+    assert len(rows) == 2
+    assert gsc_record_calls == 1
+    assert wordpress_record_calls == 1

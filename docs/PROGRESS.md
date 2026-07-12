@@ -88,11 +88,22 @@ w git, Beads i `docs/progress/archive/`.
   `wilq/content/workflow/api.py` ma 1500 LOC przy budżecie 800. Utworzony
   `c9h9.16` wydzieli tylko typed snapshot assembly seam; nie jest zgodą na
   mechaniczny split ani zmianę zachowania workflow.
-- Nowy, niezależny `c9h9.17` śledzi potwierdzony performance blocker Ahrefs:
-  po managed restarcie kolejne HTTP `GET /api/ahrefs/diagnostics` trwały
-  `14.654183 s` i `15.872616 s` mimo zdrowego API. Nie ma jeszcze cache'a ani
-  optymalizacji — task wymaga najpierw zmierzenia przyczyny, potem bezpiecznego
-  seam'u z invalidacją dla Ahrefs oraz cross-checku GSC/WordPress.
+- `wilq-seo-c9h9.17` domyka performance blocker Ahrefs bez cache'a i bez
+  poluzowania freshness: live endpoint przed naprawą trwał `14.654183 s`,
+  `15.872616 s`, a kolejny red-capable loop `17.760386 s`. Isolated profile
+  znalazł 338-krotne budowanie tych samych rekordów GSC/WordPress dla 338 luk
+  (`93 mln` wywołań, `46.961183 s` CPU). Immutable
+  `AhrefsCrossSourceMatcher` kompiluje rekordy raz na batch, a dotychczasowy
+  raw matcher pozostaje adapterem dla pojedynczych wywołań. Po managed
+  restarcie trzy HTTP reads wyniosły `1.354044 s`, `1.351506 s` i `1.212189 s`.
+  Kontrakt nie zmienił się: `manual_required`, 6 kandydatów, 0 exact GSC/WordPress
+  i 0 akcji. Browser proof pierwszej decyzji jest w
+  `.local-lab/proof/c9h9-17-ahrefs-latency/`.
+- Podczas tego slice’a potwierdzono osobny dług monolitu tactical queue:
+  `tactical_queue.py` ma 1400 LOC przy budżecie 800, więc nie ukryto w nim
+  dodatkowej optymalizacji. Nowy `c9h9.18` wydzieli wyłącznie Ahrefs tactical
+  branch do typed seamu przed użyciem compiled matcher; nie zmieni reguł
+  exact/weak ani ActionObjectów.
 
 - Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
   99 906 metric facts, 4 577 refresh runs, 12 connectorów (9 configured,

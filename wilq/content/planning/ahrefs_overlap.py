@@ -81,6 +81,49 @@ class _SourceRecord:
     evidence_id: str
 
 
+@dataclass(frozen=True)
+class AhrefsCrossSourceMatcher:
+    """Compile immutable GSC and public-WordPress records once for batch checks."""
+
+    gsc_records: tuple[_SourceRecord, ...]
+    wordpress_records: tuple[_SourceRecord, ...]
+
+    @classmethod
+    def from_metric_facts(
+        cls,
+        *,
+        gsc_facts: Iterable[MetricFact],
+        wordpress_facts: Iterable[MetricFact],
+    ) -> AhrefsCrossSourceMatcher:
+        return cls(
+            gsc_records=_gsc_records(gsc_facts),
+            wordpress_records=_wordpress_records(wordpress_facts),
+        )
+
+    def assess(
+        self,
+        *,
+        keyword: str,
+        referenced_public_url: str | None,
+    ) -> AhrefsCrossSourceOverlap:
+        topic_words = _words(keyword)
+        referenced_url_key = _public_url_key(referenced_public_url)
+        return AhrefsCrossSourceOverlap(
+            gsc=_assess_source(
+                topic_words,
+                referenced_url_key,
+                self.gsc_records,
+                reference_is_exact=False,
+            ),
+            wordpress=_assess_source(
+                topic_words,
+                referenced_url_key,
+                self.wordpress_records,
+                reference_is_exact=True,
+            ),
+        )
+
+
 def assess_ahrefs_cross_source_overlap(
     *,
     keyword: str,
@@ -94,21 +137,12 @@ def assess_ahrefs_cross_source_overlap(
     topic evidence. GSC demand needs an exact query phrase; WordPress inventory
     needs an exact public URL or an exact phrase in typed inventory metadata.
     """
-    topic_words = _words(keyword)
-    referenced_url_key = _public_url_key(referenced_public_url)
-    return AhrefsCrossSourceOverlap(
-        gsc=_assess_source(
-            topic_words,
-            referenced_url_key,
-            _gsc_records(gsc_facts),
-            reference_is_exact=False,
-        ),
-        wordpress=_assess_source(
-            topic_words,
-            referenced_url_key,
-            _wordpress_records(wordpress_facts),
-            reference_is_exact=True,
-        ),
+    return AhrefsCrossSourceMatcher.from_metric_facts(
+        gsc_facts=gsc_facts,
+        wordpress_facts=wordpress_facts,
+    ).assess(
+        keyword=keyword,
+        referenced_public_url=referenced_public_url,
     )
 
 

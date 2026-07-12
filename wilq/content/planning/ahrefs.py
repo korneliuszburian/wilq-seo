@@ -8,7 +8,7 @@ from typing import Literal
 
 from wilq.content.planning.ahrefs_overlap import (
     AhrefsCrossSourceMatch,
-    assess_ahrefs_cross_source_overlap,
+    AhrefsCrossSourceMatcher,
 )
 from wilq.content.planning.decisions import polish_count_word, slug
 from wilq.schemas import (
@@ -596,11 +596,14 @@ def _score_ahrefs_gap_facts(
     wordpress_facts = [
         fact for fact in all_content_facts if fact.source_connector.startswith("wordpress")
     ]
+    cross_source_matcher = AhrefsCrossSourceMatcher.from_metric_facts(
+        gsc_facts=gsc_facts,
+        wordpress_facts=wordpress_facts,
+    )
     scored = [
         _score_ahrefs_gap_fact(
             fact,
-            gsc_facts=gsc_facts,
-            wordpress_facts=wordpress_facts,
+            cross_source_matcher=cross_source_matcher,
         )
         for fact in gap_facts
     ]
@@ -619,8 +622,7 @@ def _score_ahrefs_gap_facts(
 def _score_ahrefs_gap_fact(
     fact: MetricFact,
     *,
-    gsc_facts: list[MetricFact],
-    wordpress_facts: list[MetricFact],
+    cross_source_matcher: AhrefsCrossSourceMatcher,
 ) -> AhrefsGapFactScore:
     dimensions = fact.dimensions
     keyword = dimensions.get("keyword", "")
@@ -641,11 +643,9 @@ def _score_ahrefs_gap_fact(
     )
     normalized_text = _normalize_text(text)
     tokens = _tokens_from_text(text)
-    cross_source_overlap = assess_ahrefs_cross_source_overlap(
+    cross_source_overlap = cross_source_matcher.assess(
         keyword=keyword,
         referenced_public_url=referenced_public_url or None,
-        gsc_facts=gsc_facts,
-        wordpress_facts=wordpress_facts,
     )
     score = 0
     reasons: list[str] = []
