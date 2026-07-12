@@ -242,6 +242,12 @@ from wilq.actions.payloads import (
     validate_action_payload,
 )
 from wilq.actions.review_gate import (
+    action_operator_checklist as build_action_operator_checklist,
+)
+from wilq.actions.review_gate import (
+    action_required_checks as build_action_required_checks,
+)
+from wilq.actions.review_gate import (
     action_review_summary as build_action_review_summary,
 )
 from wilq.actions.review_gate import (
@@ -2675,30 +2681,20 @@ def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any
 
 
 def _action_required_checks(payload: dict[str, Any]) -> list[str]:
-    checks = _string_list(payload.get("required_validation"))
-    if checks:
-        return checks
-    preview_checks: list[str] = []
-    for preview in _payload_preview_items(payload):
-        preview_checks.extend(_string_list(preview.get("required_validation")))
-    if preview_checks:
-        return unique_values(preview_checks)
-    for key in ("review_steps", "queue_steps", "draft_constraints"):
-        values = _string_list(payload.get(key))
-        if values:
-            return values
-    return ["validate_action_object", "human_review_before_apply"]
+    return build_action_required_checks(
+        payload,
+        string_list=_string_list,
+        preview_items=_payload_preview_items,
+        unique_values=unique_values,
+    )
 
 
 def _action_operator_checklist(payload: dict[str, Any]) -> list[str]:
-    checklist = _string_list(payload.get("operator_review_gates"))
-    if checklist:
-        return checklist
-    for key in ("review_steps", "queue_steps"):
-        values = _string_list(payload.get(key))
-        if values:
-            return values
-    return _action_required_checks(payload)
+    return build_action_operator_checklist(
+        payload,
+        string_list=_string_list,
+        required_checks=lambda: _action_required_checks(payload),
+    )
 
 
 def _action_gate_labels(values: Iterable[str]) -> list[str]:

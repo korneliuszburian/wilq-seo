@@ -616,6 +616,11 @@ ich rozmiaru.
   wierszy z `apply_allowed`. Live Localo i Ads detail po restarcie zachowują
   evidence, blokadę zapisu i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/payload-readiness-live.png`.
+- Review-gate buildery `required_checks` i `operator_checklist` są teraz w
+  istniejącym `wilq/actions/review_gate.py`; service zachowuje tylko callbacks,
+  a Localo/Ads detail zachowuje 5 checks, 5 checklist, świeży gate i
+  `apply_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/review-gate-builders-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

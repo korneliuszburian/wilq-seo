@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Literal
+from typing import Any, Literal
 
 from wilq.schemas import (
     ActionMode,
@@ -30,6 +30,9 @@ BlockerLabel = Callable[[str], str]
 ContractLabel = Callable[[str], str]
 GateLabel = Callable[[str], str | None]
 BlockedClaimLabels = Callable[[list[str]], list[str]]
+StringList = Callable[[Any], list[str]]
+PreviewItems = Callable[[dict[str, Any]], list[dict[str, Any]]]
+UniqueValues = Callable[[Iterable[str]], list[str]]
 
 
 def review_outcome_label(outcome: str) -> str:
@@ -134,6 +137,44 @@ def review_source_type_label(value: str, *, contract_label: ContractLabel) -> st
 
 def canonical_contract_key(value: str) -> str:
     return value.strip().lower().replace(" ", "_")
+
+
+def action_required_checks(
+    payload: dict[str, Any],
+    *,
+    string_list: StringList,
+    preview_items: PreviewItems,
+    unique_values: UniqueValues,
+) -> list[str]:
+    checks = string_list(payload.get("required_validation"))
+    if checks:
+        return checks
+    preview_checks: list[str] = []
+    for preview in preview_items(payload):
+        preview_checks.extend(string_list(preview.get("required_validation")))
+    if preview_checks:
+        return unique_values(preview_checks)
+    for key in ("review_steps", "queue_steps", "draft_constraints"):
+        values = string_list(payload.get(key))
+        if values:
+            return values
+    return ["validate_action_object", "human_review_before_apply"]
+
+
+def action_operator_checklist(
+    payload: dict[str, Any],
+    *,
+    string_list: StringList,
+    required_checks: Callable[[], list[str]],
+) -> list[str]:
+    checklist = string_list(payload.get("operator_review_gates"))
+    if checklist:
+        return checklist
+    for key in ("review_steps", "queue_steps"):
+        values = string_list(payload.get(key))
+        if values:
+            return values
+    return required_checks()
 
 
 def build_action_review_gate(

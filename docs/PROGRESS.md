@@ -705,6 +705,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Ads detale mają HTTP 200, evidence, `zapis zmian zablokowany` i
   `apply_allowed=false`; proof:
   `.local-lab/proof/continuation-2026-07-12/payload-readiness-live.png`.
+- Wybór `required_checks` i `operator_checklist` jest teraz w istniejącym
+  `wilq/actions/review_gate.py`; service przekazuje tylko parser payloadu,
+  `string_list` i deduplikację. Localo i Ads detail po restarcie zachowują po 5
+  wymaganych checks/checklist, `kontrola WILQ poprawna`, evidence i
+  `apply_allowed=false`; focused review/payload tests (8 passed), Ruff, mypy,
+  complexity i browser proof przechodzą; proof:
+  `.local-lab/proof/continuation-2026-07-12/review-gate-builders-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

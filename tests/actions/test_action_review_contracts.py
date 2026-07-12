@@ -98,6 +98,40 @@ def test_operator_payload_labels_keep_nested_action_copy_polish() -> None:
     assert enriched["preview"][0]["level_label"] == "grupa reklam"
 
 
+def test_review_gate_builders_keep_required_checks_and_checklist_fallbacks() -> None:
+    from wilq.actions.review_gate import action_operator_checklist, action_required_checks
+
+    payload = {
+        "payload_preview": [
+            {"required_validation": ["one", "two", "one"]},
+        ],
+    }
+    def string_list(value: object) -> list[str]:
+        return value if isinstance(value, list) else []
+
+    def preview_items(value: dict[str, object]) -> list[dict[str, object]]:
+        rows = value.get("payload_preview", [])
+        return rows if isinstance(rows, list) else []
+
+    def unique_values(values: object) -> list[str]:
+        return list(dict.fromkeys(values)) if isinstance(values, list) else []
+
+    required = action_required_checks(
+        payload,
+        string_list=string_list,
+        preview_items=preview_items,
+        unique_values=unique_values,
+    )
+    checklist = action_operator_checklist(
+        payload,
+        string_list=string_list,
+        required_checks=lambda: required,
+    )
+
+    assert required == ["one", "two"]
+    assert checklist == ["one", "two"]
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
