@@ -791,6 +791,10 @@ ich rozmiaru.
   `service.py` przekazuje callbacki domenowe przez mały typed seam. Status
   review, blockerów, confirm/impact/mutation audit i apply safety pozostaje
   bez zmian.
+- Preflight apply blocker ordering jest teraz własnością
+  `wilq/actions/action_blockers.py`; service nadal kontroluje kolejność
+  validate → preview → review → confirm → impact → audit → adapter, ale reguły
+  blockerów są w jednym typed owner module.
 
 ## Resume
 

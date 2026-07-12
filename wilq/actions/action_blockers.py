@@ -5,10 +5,12 @@ from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
 from wilq.schemas import (
+    ActionApplyRequest,
     ActionConfirmRequest,
     ActionImpactCheckRequest,
     ActionMode,
     ActionObject,
+    ActionRisk,
     AuditEvent,
 )
 
@@ -88,6 +90,52 @@ def action_impact_check_blockers(
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
     return unique_values(blockers)
+
+
+def action_apply_preflight_blockers(
+    *,
+    action: ActionObject,
+    request: ActionApplyRequest | None,
+    connector_configured: bool,
+    preview_present: bool,
+    confirmation_present: bool,
+    impact_checked: bool,
+    mutation_adapter: str | None,
+    wordpress_capability_present: bool,
+    payload_apply_allowed: Callable[[dict[str, Any]], bool],
+    payload_api_mutation_ready: Callable[[dict[str, Any]], bool],
+) -> list[str]:
+    """Collect apply preflight blockers before any vendor adapter can run."""
+    blockers: list[str] = []
+    if request is None or request.confirm is not True:
+        blockers.append("Wymagane jest jawne potwierdzenie zapisu zmian.")
+    if request is not None and request.confirm is True and not request.confirmed_by:
+        blockers.append("Brakuje osoby potwierdzającej zapis zmian.")
+    if not preview_present:
+        blockers.append("Przed zapisem zmian wymagany jest podgląd zmian.")
+    if not confirmation_present:
+        blockers.append("Przed zapisem zmian wymagany jest zapis audytu potwierdzenia.")
+    if not impact_checked:
+        blockers.append("Przed zapisem zmian wymagane jest sprawdzenie efektu.")
+    if action.validation_status != "valid":
+        blockers.append("Akcja musi być sprawdzona w WILQ przed zapisem zmian.")
+    if action.mode != ActionMode.apply:
+        blockers.append("Akcja nie ma trybu zapisu zmian w zewnętrznym systemie.")
+    if not action.evidence_ids:
+        blockers.append("Akcja nie może zapisać zmian bez dowodów źródłowych.")
+    if not connector_configured:
+        blockers.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
+    if action.risk in {ActionRisk.high, ActionRisk.critical}:
+        blockers.append("Zapisy zmian o wysokim i krytycznym ryzyku są zablokowane w Goal 001.")
+    if action.payload.get("destructive") is True:
+        blockers.append("Destrukcyjne zmiany nie są zaimplementowane w Goal 001.")
+    if not wordpress_capability_present and not payload_apply_allowed(action.payload):
+        blockers.append("Payload akcji nie pozwala jeszcze na zapis zmian.")
+    if not wordpress_capability_present and not payload_api_mutation_ready(action.payload):
+        blockers.append("Payload akcji nie jest gotowy do mutacji API.")
+    if mutation_adapter is None:
+        blockers.append("Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji.")
+    return blockers
 
 
 def action_apply_blockers(

@@ -918,6 +918,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `apply_allowed`. 67 focused review/action/mutation tests, Ruff, mypy,
   complexity, diff check i live API smoke przechodzą; brak nowych endpointów i
   vendor writes.
+- Kolejny slice `jnra` przeniósł kolejność preflight blockerów apply do
+  istniejącego `wilq/actions/action_blockers.py` jako
+  `action_apply_preflight_blockers`. `apply_action` zachowuje orchestration,
+  typed capability i adapter safety, ale nie duplikuje już 15 warunków
+  fail-closed. 68 focused review/action/mutation tests, Ruff, mypy, complexity,
+  diff check i live API safety smoke przechodzą.
 
 ## Weryfikacja
 

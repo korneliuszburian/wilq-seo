@@ -12,6 +12,7 @@ from wilq.actions.action_blockers import (
     action_apply_blockers as _action_apply_blockers_impl,
 )
 from wilq.actions.action_blockers import (
+    action_apply_preflight_blockers,
     action_confirmation_blockers,
     action_confirmation_event_type,
     action_confirmation_summary,
@@ -1387,34 +1388,20 @@ def apply_action(
     latest_confirmation = _latest_action_confirmation_event(action.audit_events)
     latest_impact_check = _latest_action_impact_check_event(action.audit_events)
     mutation_adapter = _supported_mutation_adapter(action)
-    if request is None or request.confirm is not True:
-        errors.append("Wymagane jest jawne potwierdzenie zapisu zmian.")
-    if request is not None and request.confirm is True and not request.confirmed_by:
-        errors.append("Brakuje osoby potwierdzającej zapis zmian.")
-    if latest_preview is None:
-        errors.append("Przed zapisem zmian wymagany jest podgląd zmian.")
-    if latest_confirmation is None:
-        errors.append("Przed zapisem zmian wymagany jest zapis audytu potwierdzenia.")
-    if _impact_status_from_event(latest_impact_check) != "checked":
-        errors.append("Przed zapisem zmian wymagane jest sprawdzenie efektu.")
-    if action.validation_status != "valid":
-        errors.append("Akcja musi być sprawdzona w WILQ przed zapisem zmian.")
-    if action.mode != ActionMode.apply:
-        errors.append("Akcja nie ma trybu zapisu zmian w zewnętrznym systemie.")
-    if not action.evidence_ids:
-        errors.append("Akcja nie może zapisać zmian bez dowodów źródłowych.")
-    if connector is None or not connector.configured:
-        errors.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
-    if action.risk in {ActionRisk.high, ActionRisk.critical}:
-        errors.append("Zapisy zmian o wysokim i krytycznym ryzyku są zablokowane w Goal 001.")
-    if action.payload.get("destructive") is True:
-        errors.append("Destrukcyjne zmiany nie są zaimplementowane w Goal 001.")
-    if wordpress_capability is None and not _action_payload_apply_allowed(action.payload):
-        errors.append("Payload akcji nie pozwala jeszcze na zapis zmian.")
-    if wordpress_capability is None and not _action_payload_api_mutation_ready(action.payload):
-        errors.append("Payload akcji nie jest gotowy do mutacji API.")
-    if mutation_adapter is None:
-        errors.append("Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji.")
+    errors.extend(
+        action_apply_preflight_blockers(
+            action=action,
+            request=request,
+            connector_configured=connector is not None and connector.configured,
+            preview_present=latest_preview is not None,
+            confirmation_present=latest_confirmation is not None,
+            impact_checked=_impact_status_from_event(latest_impact_check) == "checked",
+            mutation_adapter=mutation_adapter,
+            wordpress_capability_present=wordpress_capability is not None,
+            payload_apply_allowed=_action_payload_apply_allowed,
+            payload_api_mutation_ready=_action_payload_api_mutation_ready,
+        )
+    )
     adapter_result: dict[str, Any] | None = None
     if not errors and mutation_adapter is not None:
         adapter_result, adapter_errors = _execute_supported_mutation_adapter(

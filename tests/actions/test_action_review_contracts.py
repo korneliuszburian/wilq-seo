@@ -248,6 +248,41 @@ def test_action_review_gate_owns_gate_assembly_behind_callback_seam() -> None:
     assert gate.confirmation_required is True
 
 
+def test_action_apply_preflight_blockers_keep_fail_closed_order() -> None:
+    from wilq.actions.action_blockers import action_apply_preflight_blockers
+    from wilq.schemas import ActionApplyRequest, ActionObject
+
+    action = ActionObject.model_construct(
+        mode="apply",
+        risk="medium",
+        validation_status="valid",
+        evidence_ids=["ev_apply"],
+        payload={"apply_allowed": False, "api_mutation_ready": False},
+    )
+    blockers = action_apply_preflight_blockers(
+        action=action,
+        request=ActionApplyRequest(confirm=False),
+        connector_configured=True,
+        preview_present=False,
+        confirmation_present=False,
+        impact_checked=False,
+        mutation_adapter=None,
+        wordpress_capability_present=False,
+        payload_apply_allowed=lambda payload: payload.get("apply_allowed") is True,
+        payload_api_mutation_ready=lambda payload: payload.get("api_mutation_ready") is True,
+    )
+
+    assert blockers == [
+        "Wymagane jest jawne potwierdzenie zapisu zmian.",
+        "Przed zapisem zmian wymagany jest podgląd zmian.",
+        "Przed zapisem zmian wymagany jest zapis audytu potwierdzenia.",
+        "Przed zapisem zmian wymagane jest sprawdzenie efektu.",
+        "Payload akcji nie pozwala jeszcze na zapis zmian.",
+        "Payload akcji nie jest gotowy do mutacji API.",
+        "Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji.",
+    ]
+
+
 def test_latest_google_ads_vendor_read_ignores_non_vendor_runs_and_tiebreaks_id() -> None:
     from wilq.actions.google_ads.business_context import latest_google_ads_vendor_read
     from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus
