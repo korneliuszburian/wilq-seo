@@ -123,6 +123,12 @@ from wilq.content.workflow.snapshot_assembly import (
     SnapshotAssemblyCallbacks,
     assemble_content_work_item_snapshot,
 )
+from wilq.content.workflow.stage_activation import (
+    ActivationProjectionCallbacks,
+)
+from wilq.content.workflow.stage_activation import (
+    build_content_wordpress_draft_activation_packet_response as _build_activation_packet,
+)
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
     build_content_work_item_draft_variants_response,  # noqa: F401 - router compatibility export
@@ -151,6 +157,30 @@ from wilq.schemas import (
     ContentFreshnessAssessment,
 )
 from wilq.storage.local_state import local_state_store
+
+
+def build_content_wordpress_draft_activation_packet_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    action_id: str = "act_apply_wordpress_draft_handoff",
+    latest_execution_result: ContentWordPressDraftExecutionResult | None = None,
+) -> ContentWordPressDraftActivationPacketResponse:
+    return _build_activation_packet(
+        snapshot,
+        callbacks=ActivationProjectionCallbacks(
+            readback=_wordpress_draft_readback,
+            missing_step=_wordpress_draft_activation_missing_step,
+            missing_step_label=_wordpress_draft_activation_missing_step_label,
+            missing_labels=_wordpress_draft_activation_missing_labels,
+            review_preview_label=_wordpress_draft_review_preview_status_label,
+            checklist=_wordpress_draft_human_review_checklist,
+            next_step=_wordpress_draft_activation_next_step,
+            steps=_wordpress_draft_activation_steps,
+            writes_enabled=_wordpress_draft_writes_enabled,
+        ),
+        action_id=action_id,
+        latest_execution_result=latest_execution_result,
+    )
 
 
 def build_content_work_item_structured_draft_runtime_response(
@@ -251,89 +281,6 @@ def build_content_work_item_wordpress_draft_execution_response(
             ),
             section_overrides=request.section_overrides,
         ),
-    )
-
-
-def build_content_wordpress_draft_activation_packet_response(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    *,
-    action_id: str = "act_apply_wordpress_draft_handoff",
-    latest_execution_result: ContentWordPressDraftExecutionResult | None = None,
-) -> ContentWordPressDraftActivationPacketResponse:
-    item = snapshot.preflight.item
-    draft_package = snapshot.draft_package.draft_package_result.draft_package
-    handoff_result = snapshot.wordpress_handoff.handoff_result
-    handoff = handoff_result.handoff
-    execution = latest_execution_result or execute_content_wordpress_draft_handoff(
-        handoff=handoff,
-        draft_package=draft_package,
-        mode="dry_run",
-        live_write_enabled=False,
-        create_draft=None,
-    )
-    handoff_blockers: list[str] = [blocker.code for blocker in handoff_result.blockers]
-    execution_blockers: list[str] = [blocker.code for blocker in execution.blockers]
-    execution_ready = execution.status in {"dry_run_ready", "created"}
-    draft_readback = _wordpress_draft_readback(execution)
-    human_review_ready = "missing_human_review" not in handoff_blockers
-    audit_ready = "missing_audit" not in handoff_blockers
-    activation_missing_step = _wordpress_draft_activation_missing_step(
-        draft_package_ready=draft_package is not None,
-        human_review_ready=human_review_ready,
-        audit_ready=audit_ready,
-        handoff_ready=handoff is not None,
-        dry_run_ready=execution_ready,
-    )
-    return ContentWordPressDraftActivationPacketResponse(
-        action_id=action_id,
-        work_item_id=item.id,
-        topic=item.topic,
-        final_canonical_url=item.final_canonical_url,
-        draft_package_ready=draft_package is not None,
-        draft_package_id=draft_package.id if draft_package is not None else None,
-        review_preview_ready=draft_package is not None,
-        review_preview_status_label=_wordpress_draft_review_preview_status_label(
-            draft_package is not None
-        ),
-        human_review_checklist=_wordpress_draft_human_review_checklist(
-            draft_package_ready=draft_package is not None,
-            human_review_ready=human_review_ready,
-        ),
-        human_review_ready=human_review_ready,
-        audit_ready=audit_ready,
-        handoff_ready=handoff is not None,
-        handoff_id=handoff.id if handoff is not None else None,
-        dry_run_ready=execution_ready,
-        live_write_enabled_by_env=_wordpress_draft_writes_enabled(),
-        handoff_blockers=handoff_blockers,
-        execution_blockers=execution_blockers,
-        activation_missing_step=activation_missing_step,
-        activation_missing_step_label=_wordpress_draft_activation_missing_step_label(
-            activation_missing_step
-        ),
-        activation_missing_readiness_labels=_wordpress_draft_activation_missing_labels(
-            draft_package_ready=draft_package is not None,
-            human_review_ready=human_review_ready,
-            audit_ready=audit_ready,
-            handoff_ready=handoff is not None,
-            dry_run_ready=execution_ready,
-        ),
-        execution_result=execution,
-        draft_readback=draft_readback,
-        operator_next_step=_wordpress_draft_activation_next_step(
-            handoff_blockers,
-            execution_blockers,
-            execution_status=execution.status,
-            draft_readback=draft_readback,
-        ),
-        next_steps=_wordpress_draft_activation_steps(
-            draft_package_ready=draft_package is not None,
-            handoff_blockers=handoff_blockers,
-            execution_blockers=execution_blockers,
-            execution_status=execution.status,
-        ),
-        evidence_ids=item.evidence_ids,
-        source_connectors=item.source_connectors,
     )
 
 

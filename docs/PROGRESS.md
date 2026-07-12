@@ -55,6 +55,11 @@ w git, Beads i `docs/progress/archive/`.
   Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do 1201
   LOC. Update istniejącego draftu nadal jest jawnie zablokowany; pozostałe
   activation/write-readiness orchestration ma osobny Bead `wilq-seo-eieh`.
+- `wilq-seo-eieh` wydziela typed WordPress activation packet projection do
+  `wilq/content/workflow/stage_activation.py`. Focused activation/readiness
+  tests, Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do
+  1148 LOC. Dry-run pozostaje fail-closed, a pozostałe readback/label helpers
+  mają osobny follow-up `wilq-seo-nlax`.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

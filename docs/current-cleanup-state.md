@@ -69,6 +69,10 @@ pozostałe readiness helpers śledzi `wilq-seo-kvgd`.
 `wilq/content/workflow/stage_readiness.py`. Live kontrakt nadal blokuje update
 istniejącego draftu i nie odblokowuje publikacji. `api.py` ma 1201 LOC;
 pozostałe activation/write-readiness orchestration śledzi `wilq-seo-eieh`.
+`wilq-seo-eieh` wydzielił typed WordPress activation packet projection do
+`wilq/content/workflow/stage_activation.py`. Live dry-run pozostaje
+fail-closed, bez publikacji i bez vendor write. `api.py` ma 1148 LOC;
+pozostałe readback/label helpers śledzi `wilq-seo-nlax`.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
