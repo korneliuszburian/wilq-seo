@@ -160,6 +160,25 @@ def operator_impact_summary_part(part: str) -> str:
     return impact_comparison_summary_label(part) or part
 
 
+def audit_event_label(event_type: str) -> str:
+    labels = {
+        "action_preview_generated": "Podgląd zmian wygenerowany",
+        "human_review_approved_for_prepare": "Przegląd operatora zapisany",
+        "human_review_needs_changes": "Przegląd wymaga poprawek",
+        "human_review_rejected": "Przegląd odrzucony",
+        "human_review_deferred": "Przegląd odłożony",
+        "action_apply_confirmed": "Podgląd potwierdzony",
+        "action_confirmation_blocked": "Potwierdzenie zablokowane",
+        "action_apply_confirmation_blocked": "Potwierdzenie zablokowane",
+        "action_impact_check_completed": "Sprawdzenie efektu zapisane",
+        "action_impact_check_blocked": "Sprawdzenie efektu zablokowane",
+        "apply_confirmation_missing": "Zapis zmian zablokowany",
+        "action_apply_blocked": "Zapis zmian zablokowany",
+        "action_apply_completed": "Zapis zmian wykonany",
+    }
+    return labels.get(event_type, "Zdarzenie audytu")
+
+
 def persisted_audit_events_by_action_id(action_ids: set[str]) -> dict[str, list[AuditEvent]]:
     if not action_ids:
         return {}

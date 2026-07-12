@@ -26,6 +26,9 @@ from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
 from wilq.actions.audit_store import (
+    audit_event_label as _action_audit_event_label,
+)
+from wilq.actions.audit_store import (
     contains_raw_audit_contract_text as _contains_raw_audit_contract_text,
 )
 from wilq.actions.audit_store import (
@@ -2743,25 +2746,6 @@ def _action_preview_summary(
 def _operator_audit_summary_text(summary: str) -> str:
     """Compatibility facade for callers that import the legacy service helper."""
     return _operator_audit_summary_text_impl(summary)
-
-
-def _action_audit_event_label(event_type: str) -> str:
-    labels = {
-        "action_preview_generated": "Podgląd zmian wygenerowany",
-        "human_review_approved_for_prepare": "Przegląd operatora zapisany",
-        "human_review_needs_changes": "Przegląd wymaga poprawek",
-        "human_review_rejected": "Przegląd odrzucony",
-        "human_review_deferred": "Przegląd odłożony",
-        "action_apply_confirmed": "Podgląd potwierdzony",
-        "action_confirmation_blocked": "Potwierdzenie zablokowane",
-        "action_apply_confirmation_blocked": "Potwierdzenie zablokowane",
-        "action_impact_check_completed": "Sprawdzenie efektu zapisane",
-        "action_impact_check_blocked": "Sprawdzenie efektu zablokowane",
-        "apply_confirmation_missing": "Zapis zmian zablokowany",
-        "action_apply_blocked": "Zapis zmian zablokowany",
-        "action_apply_completed": "Zapis zmian wykonany",
-    }
-    return labels.get(event_type, "Zdarzenie audytu")
 
 
 def _payload_with_operator_labels(payload: dict[str, Any]) -> dict[str, Any]:

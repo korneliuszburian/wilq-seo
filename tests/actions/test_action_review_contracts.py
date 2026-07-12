@@ -71,6 +71,13 @@ def test_review_outcome_projection_keeps_latest_human_event() -> None:
     assert review_outcome_label("approved_for_prepare") == "zatwierdzone do dalszego przygotowania"
 
 
+def test_audit_event_labels_keep_operator_copy_and_safe_fallback() -> None:
+    from wilq.actions.audit_store import audit_event_label
+
+    assert audit_event_label("action_preview_generated") == "Podgląd zmian wygenerowany"
+    assert audit_event_label("unknown_event") == "Zdarzenie audytu"
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

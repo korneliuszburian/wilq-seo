@@ -662,6 +662,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `service.py` zachowuje kompatybilną fasadę. Live strategy action nadal ma 2
   evidence IDs, blokadę zapisu i redacted operator surface; browser proof:
   `.local-lab/proof/continuation-2026-07-12/audit-summary-live.png`.
+- Mapowanie etykiet zdarzeń audytu jest teraz w istniejącym
+  `wilq/actions/audit_store.py`; `service.py` deleguje labelowanie znanych
+  review/preview/confirm/impact/apply eventów i bezpieczny fallback, bez zmiany
+  ActionObject safety loop. Focused audit/review tests, Ruff, mypy, complexity,
+  managed runtime i świeży browser proof przechodzą; live Ads strategy action
+  ma 2 evidence IDs, `apply_allowed=false` i stan `Zapis zablokowany`;
+  proof: `.local-lab/proof/continuation-2026-07-12/event-label-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
