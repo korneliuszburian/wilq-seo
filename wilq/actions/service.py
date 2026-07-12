@@ -40,7 +40,11 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     audit_event_with_operator_label as _audit_event_with_operator_label_impl,
 )
-from wilq.actions.audit_store import build_apply_audit_event, build_human_review_audit_event
+from wilq.actions.audit_store import (
+    build_apply_audit_event,
+    build_human_review_audit_event,
+    build_preview_audit_event,
+)
 from wilq.actions.audit_store import (
     latest_action_confirmation_event as _latest_action_confirmation_event_impl,
 )
@@ -1187,18 +1191,14 @@ def preview_action(
     )
     blockers = action_preview_blockers(action, raw_preview_items)
     status: Literal["preview_ready", "blocked"] = "blocked" if blockers else "preview_ready"
-    audit = AuditEvent(
-        id=f"audit_{action.id}_preview_{uuid4().hex[:12]}",
-        action_id=action.id,
-        event_type="action_preview_generated",
-        event_type_label=_action_audit_event_label("action_preview_generated"),
+    audit = build_preview_audit_event(
+        action=action,
         actor=preview_request.requested_by or "wilq_api",
         summary=_action_preview_summary(
             status=status,
             included_items=len(included_items),
             preview_items=len(raw_preview_items),
         ),
-        evidence_ids=action.evidence_ids,
     )
     action.audit_events = [audit, *action.audit_events]
     return ActionPreviewResult(

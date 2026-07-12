@@ -225,3 +225,23 @@ def test_build_human_review_audit_event_owns_review_event_metadata() -> None:
     assert event.actor == "operator"
     assert event.evidence_ids == ["ev_review_builder"]
     assert event.details == {"checked_items": ["public_url"]}
+
+
+def test_build_preview_audit_event_stays_dry_run_and_keeps_evidence() -> None:
+    action = ActionObject.model_construct(
+        id="act_preview_audit_builder",
+        evidence_ids=["ev_preview_builder"],
+    )
+
+    event = audit_store.build_preview_audit_event(
+        action=action,
+        actor="operator",
+        summary="Podgląd zmian gotowy.",
+    )
+
+    assert event.id.startswith("audit_act_preview_audit_builder_preview_")
+    assert event.event_type == "action_preview_generated"
+    assert event.event_type_label == "Podgląd zmian wygenerowany"
+    assert event.actor == "operator"
+    assert event.summary == "Podgląd zmian gotowy."
+    assert event.evidence_ids == ["ev_preview_builder"]

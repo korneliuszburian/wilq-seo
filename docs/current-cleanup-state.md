@@ -810,6 +810,11 @@ ich rozmiaru.
   przekazuje tylko dane review i nadal aktualizuje review gate oraz projekcję
   operatora. Event type, actor, summary, details i evidence pozostają bez
   zmian, a focused audit/review/preview tests, Ruff, mypy i diff check przechodzą.
+- Dry-run `action_preview_generated` event jest teraz składany przez
+  `audit_store.py` (`build_preview_audit_event`); `preview_action` zachowuje
+  `mutation_allowed=false`, bieżące blockery/status i istniejącą projekcję
+  operatora. Audit/preview tests, Ruff i mypy przechodzą, bez zmian w API,
+  payloadach lub adapterach vendorów.
 
 ## Resume
 

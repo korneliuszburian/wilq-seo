@@ -942,6 +942,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   projection; event type, actor, summary, details i evidence mają jednego
   ownera. Nowy test audit-store oraz focused review/preview tests przechodzą;
   Ruff, mypy i diff check są zielone.
+- Następny slice `jnra` przeniósł dry-run `action_preview_generated` event do
+  `audit_store.py` (`build_preview_audit_event`). `preview_action` nadal tworzy
+  tylko podgląd (`mutation_allowed=false`) i liczy blocker/status lokalnie, ale
+  event ID, label, actor, summary i evidence mają wspólny audit owner. Focused
+  audit/preview tests, Ruff i mypy przechodzą; brak zmian endpointu lub vendor write.
 
 ## Weryfikacja
 

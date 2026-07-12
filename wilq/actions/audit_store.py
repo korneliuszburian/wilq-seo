@@ -275,6 +275,24 @@ def build_human_review_audit_event(
     )
 
 
+def build_preview_audit_event(
+    *,
+    action: ActionObject,
+    actor: str,
+    summary: str,
+) -> AuditEvent:
+    """Build the dry-run preview event without implying an external write."""
+    return AuditEvent(
+        id=f"audit_{action.id}_preview_{uuid4().hex[:12]}",
+        action_id=action.id,
+        event_type="action_preview_generated",
+        event_type_label=audit_event_label("action_preview_generated"),
+        actor=actor,
+        summary=summary,
+        evidence_ids=action.evidence_ids,
+    )
+
+
 def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, dict):
         clean: dict[str, Any] = {}
