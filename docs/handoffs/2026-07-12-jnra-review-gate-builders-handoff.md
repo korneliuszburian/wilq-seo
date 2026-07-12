@@ -34,3 +34,6 @@ safety loop.
 - Następny wybór wymaga świeżego przeglądu orchestratora, bez powtarzania
   payload/readiness/review-gate boundary.
 
+## Commit
+
+Implementacja i handoff: `ce262ff7` (`refactor: centralize review gate builders`).
