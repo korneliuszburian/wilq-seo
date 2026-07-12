@@ -76,6 +76,9 @@ w git, Beads i `docs/progress/archive/`.
   przechodzą; live readiness nadal zwraca `ready=false` oraz
   `actionobject_apply_path_required`, nawet przy skonfigurowanym adapterze i
   env. Browser route pozostaje dostępny, a zapis/publikacja nie są odblokowane.
+- Nowy potwierdzony następny slice `wilq-seo-97a3`: wydzielenie snapshot stage
+  adapters z `api.py` (868 LOC) do typed ownera, z zachowaniem parity i bez
+  zmiany kontraktów ani safety.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
