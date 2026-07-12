@@ -12,12 +12,12 @@ wskazówkami.
 - DuckDB: 98 919 metric facts, 4 574 refresh runs; connector summary z API:
   12 ogółem, 9 skonfigurowanych, 2 bez credentials. Nie drukowano ścieżek
   prywatnych ani payloadów vendorów.
-- Live konektory: Google Search Console ma świeży ostatni odczyt, a Google Ads,
-  GA4, WordPress i Ahrefs pozostają stale; to nie jest dowód bieżącej decyzji
-  publikacyjnej. `GET /api/connectors` zwraca 12 typed statusów.
-- Content diagnostics: dwa decision rows z evidence IDs i source connectors;
-  dashboard pokazuje refresh-first blocker dla WordPress/GA4/Ahrefs, więc
-  świeżość zależna od tych źródeł blokuje bezpieczną decyzję.
+- Live content connectors po read-only refreshu są świeże: GSC, WordPress sklep,
+  GA4 i Ahrefs mają aktualny odczyt; Ads pozostaje niezależnie stale. `GET
+  /api/connectors` zwraca 12 typed statusów.
+- Content work-items queue: 2 kandydatów, 1 actionable, freshness `fresh`,
+  `requires_refresh=false`; jedyny blocker to `not_enough_actionable_candidates`.
+  Nie zwiększamy kolejki sztucznie bez nowych dowodów.
 - Complexity report 2026-07-12: 405 plików Python, 133 807 non-empty LOC,
   0 changed-code violations; hotspoty: Ads diagnostics 6 616 LOC, action
   service 4 003 LOC, content diagnostics 1 478 LOC.
@@ -33,14 +33,14 @@ Status używa wyłącznie wymaganego słownika.
 | Obszar | Status | Aktualny stan | Dowód | Problem | Istniejący Bead | Brakujące zadanie |
 | --- | --- | --- | --- | --- | --- | --- |
 | API | `partially_complete` | Typed health, diagnostics, queue, snapshots i action readiness działają; direct WordPress live jest fail-closed. Queue/snapshot carry typed freshness and reuse one short-lived diagnostics build. | Live HTTP, focused content tests, API smoke. | Raw diagnostics rows remain broader than the gated queue; secondary routes still have cold gaps. | `.9`–`.13` | Wszystkie potwierdzone cold gaps mają zadania. |
-| `/content-workflow` | `partially_complete` | Konkretna homepage, public/dev sections, typed freshness blocker, queue-owned decision card, typed preview i review-only CTA. | Live API, focused content/dashboard tests, desktop/mobile browser proof 2026-07-12. | Mobile decision jest w first viewport, ale świeży candidate zależy od zewnętrznego refreshu; stale sources blokują publikacyjną pewność. | zamknięte `c9h9.4`, otwarty `r564.3` | Dokończyć tylko po świeżym, nieblokowanym candidate proof. |
+| `/content-workflow` | `partially_complete` | Konkretna homepage, public/dev sections, świeżość, queue-owned decision card, typed preview i review-only CTA. | Live queue API, focused content/dashboard tests, świeży desktop/mobile browser proof 2026-07-12. | Mobile decision jest w first viewport; kolejka ma tylko 1 actionable z wymaganych 3, więc blocker jest produktowo uczciwy. | zamknięte `c9h9.4`, zamknięte `r564.3`, otwarty parent `r564` | Dodać kolejnych kandydatów tylko przez realny evidence-backed workflow. |
 | Dashboard IA | `partially_complete` | Legacy planner usunięty; główne nav prowadzi do `/content-workflow`. | Route registry, negative route tests, render. | Część E2E utrwalała stare stringi; drugorzędne trasy mają cold latency. | `c9h9.8`–`.13`, `r564`, `ho41` | Utworzone na podstawie failure proof. |
 | ActionObject safety | `proved_complete` | Preview/review/confirm/audit oraz canonical dev-only create apply są spięte przez typed capability; direct content live i UI create pozostają fail-closed. | Route integration, mutation audit, dev-host zero-HTTP tests, shared dashboard contract. | Live UI nadal blokuje zapis bez bieżącego review/audytu — to zamierzony stan bezpieczeństwa. | zamknięte `c9h9.3`, `c9h9.4`, `r564.4` | Brak nowego zadania w tym seamie. |
-| Connectors/freshness | `partially_complete` | Diagnostics, queue and selected snapshot expose current freshness; primary stale sources block actionability. | Live HTTP, `ContentFreshnessAssessment`, focused backend tests, desktop/mobile render. | Raw diagnostics decision rows remain historical review context; refresh job itself is external/read-only. | brak nowego freshness Bead | Brak nowego zadania freshness. |
-| Tests/evals | `partially_complete` | Focused content/action backend suite, dashboard ContentWorkflow/CommandCenter 17/17 i 13/13 fresh skill evals pozostają zielone. | `pytest`, Vitest, strict skill coverage, complexity i browser proof. | Full cold Playwright i zewnętrzna świeżość nie są zastępowane przez wąskie zielone testy. | zamknięte `.8`–`.13`, otwarty `r564.3` | Utrzymać aktualny proof i nie zamykać r564.3 bez fresh candidate. |
+| Connectors/freshness | `partially_complete` | Content queue i snapshot expose fresh state after read-only refresh; primary queue blocker is now candidate density, not stale data. | Live HTTP, `ContentFreshnessAssessment`, refresh-run IDs, desktop/mobile render. | Raw diagnostics rows remain review context; Ads/other independent stale sources are not silently treated as content proof. | brak nowego freshness Bead | Brak nowego zadania freshness. |
+| Tests/evals | `partially_complete` | Focused content/action backend suite, dashboard ContentWorkflow/CommandCenter 17/17 i 13/13 fresh skill evals pozostają zielone. | `pytest`, Vitest, strict skill coverage, complexity i browser proof. | Full cold Playwright i zewnętrzna świeżość nie są zastępowane przez wąskie zielone testy. | zamknięte `.8`–`.13`, zamknięte `r564.3`, otwarty parent `r564` | Candidate density/evidence work pozostaje osobnym zakresem parenta. |
 | Monolity | `partially_complete` | Domenowe seamy istnieją, ale główne runtime/test hotspots pozostają. | Complexity report i file/function counts. | Jeden frozen service zmieniony bez LOC growth; 15 existing changed-code violations. | `ho41`, `jnra`, `kgvy`, `50wa`, `0q74` | Nie utworzono duplikatów splitu. |
 | Skills | `proved_complete` | 13 skills ma deterministic i non-interactive proof; GSC/Custom kontrakty poprawiono semantycznie. | Strict 13/13, 0 gaps/warnings; scores 9–10; wszystkie smokes pass. | To nie zastępuje realnego Wilku UAT ani usefulness każdej trasy. | `6rw.5` i istniejące eval Beads | Brak. |
-| Docs/Beads | `partially_complete` | `c9h9.2` rebaseline odświeżony do `ba033433`; statusy c9h9.3–.13 sprawdzone z aktualnego JSONL. | `bd show`, `bd ready --json`, aktualny audit ledger. | `r564.3` i parent `r564` pozostają otwarte przez zewnętrzny refresh; Goal 005 czeka na owner input. | `c9h9.2`, `r564.3` | Po tym ledgerze prowadzić tylko do `r564.3` albo innego potwierdzonego ready Beada. |
+| Docs/Beads | `partially_complete` | `c9h9.2` rebaseline odświeżony do `ba033433`; statusy c9h9.3–.13 i r564.3 sprawdzone z aktualnego JSONL. | `bd show`, `bd ready --json`, aktualny audit ledger. | Parent `r564` pozostaje otwarty na candidate density/evidence work; Goal 005 czeka na owner input. | `r564`, handoff | Prowadzić do parenta albo innego potwierdzonego ready Beada. |
 
 ## Audyt wymagań
 
@@ -66,8 +66,8 @@ Status używa wyłącznie wymaganego słownika.
 1. Live źródła contentu są stale, więc queue ma `blocked`, 0 actionable i
    blokery `content_sources_require_refresh` oraz `not_enough_actionable_candidates`.
 2. Goal 005 nadal czeka na realny Wilku UAT albo jawny owner defer.
-3. Mobile proof jest już w first viewport, ale `r564.3` nie ma jeszcze świeżego,
-   nieblokowanego candidate z zewnętrznego refreshu.
+3. Mobile proof i źródła contentu są świeże; parent `r564` nadal pokazuje
+   blocker, bo kolejka ma tylko 1 actionable z minimum 3.
 
 ## Największe ryzyka
 
@@ -100,8 +100,8 @@ Status używa wyłącznie wymaganego słownika.
 - `c9h9.5` P0 360 min — freshness w decisions/evidence — **closed**.
 - `c9h9.6` P0 300 min — content cold waterfall — **closed 2026-07-11**.
 - `r564.2` P0 180 min — duplicate draft prevention — **closed**.
-- `r564.3` P1 240 min — mobile first viewport — depends on `.5`, `.6`,
-  `r564.2`.
+- `r564.3` P1 240 min — mobile first viewport — **closed 2026-07-12** after
+  fresh source refresh and desktop/mobile browser proof.
 - `r564.4` P1 60 min — typed existing-draft preview — **closed**.
 - `c9h9.7` P2 30 min — deterministic Service Profile test — **closed**.
 - `c9h9.8` P1 90 min — current behavior E2E assertions — **closed**.
@@ -112,15 +112,14 @@ Status używa wyłącznie wymaganego słownika.
 - `c9h9.13` P1 240 min — Merchant first decision latency — **closed 2026-07-11**;
   cache/prewarm, focused contract and desktop/mobile proof pass.
 
-Produktowa kolejność po zamknięciu `.5` → `.6` → `.4` pozostaje przy `r564.3`
-(mobile triage). Aktualny API/browser proof potwierdza layout, ale stale źródła
-nie pozwalają udawać gotowego candidate. Secondary route latency nie wyprzedza
-głównej ścieżki content.
+Produktowa kolejność po zamknięciu `.5` → `.6` → `.4` przechodzi przez zamknięty
+`r564.3` do parenta `r564` (candidate density/evidence). Aktualny API/browser
+proof potwierdza layout i świeżość; blocker 1/3 pozostaje jawny. Secondary route
+latency nie wyprzedza głównej ścieżki content.
 
 ## Następny slice i warunek przejścia
 
-Następny slice: `r564.3`. Aktualny browser proof spełnia mobile URL/temat,
-decision, blocker i bezpieczny CTA, ale zewnętrzny stan nadal nie dostarcza
-świeżego, nieblokowanego candidate. Warunek przejścia: odczyt źródeł potwierdzi
-świeżość i candidate gotowy do pracy; wtedy ponowić desktop/mobile proof i dopiero
-rozważyć zamknięcie Beada.
+Następny slice: parent `r564` — pozyskać kolejne kandydaty wyłącznie przez
+istniejący evidence-backed workflow, bez wymyślania metryk. `r564.3` jest
+zamknięty po świeżym desktop/mobile proof; candidate work wymaga osobnego zakresu
+parenta lub istniejącego ready Beada.

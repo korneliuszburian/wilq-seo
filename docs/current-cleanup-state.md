@@ -26,10 +26,10 @@ readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
 label hydration groups są wydzielone. Summary compaction i primary read-contract
 bootstrap są wydzielone, parity jest potwierdzone. Następny krok to świeży review
 pozostałego orchestratora, nie kolejny sztuczny wrapper.
-Polityka
-automatycznego stale-triggera (cooldown,
-backoff, audit) pozostaje jawnie wyłączona do czasu osobnego kontraktu; `r564.3`
-pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
+Polityka automatycznego stale-triggera (cooldown, backoff, audit) pozostaje
+jawnie wyłączona do czasu osobnego kontraktu; `r564.3` jest zamknięty, a parent
+`r564` blokuje się wyłącznie na candidate density. Nie przywracaj direct
+WordPress write.
 
 ## Prawda produktu
 
@@ -39,24 +39,25 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Managed runtime: 98 919 metric facts i 4 574 refresh runs; konektory
   12/9 configured/2 missing
   credentials/1 disabled.
-- Źródła contentowe są stale. Queue i selected snapshot pokazują typed freshness,
-  a primary stale proof daje `content_sources_require_refresh`.
-- Read-only refresh 2026-07-11 nie odblokował kolejki: GSC zwrócił niepełny
-  odczyt (2 evidence), WordPress ekologus przekroczył 60 s timeout; kolejka ma
-  nadal 2 kandydatów, 1 actionable i `not_enough_actionable_candidates`.
+- Źródła contentowe są teraz świeże po read-only refreshu 2026-07-12. Queue i
+  selected snapshot pokazują typed freshness `fresh`, a blockerem pozostaje
+  `not_enough_actionable_candidates`.
+- Refresh zakończył się dla WordPress sklep, GA4 i Ahrefs; kolejka ma 2
+  kandydatów, 1 actionable i minimum 3. Nie twórz sztucznego trzeciego tematu.
 - Queue-owned first decision renderuje przed snapshotem; cold queue po API
   prewarm ma budżet `<5 s`, a selected snapshot/enrichment mają lokalne stany
   (`c9h9.6` zamknięty).
 - Desktop pokazuje konkretną homepage, public/dev sections, GSC, typed preview
   i preview-only CTA. Mobile ma teraz kompaktową decyzję/blocker/CTA przed
-  ciężkim kontekstem; realny świeży kandydat nadal czeka na zewnętrzny proof.
+  ciężkim kontekstem; świeżość jest potwierdzona, ale próg kolejki nadal wymaga
+  kolejnych evidence-backed kandydatów.
 - Review-only CTA dla kanonicznego apply jest warunkowy: wymaga gotowej paczki i
   handoffu, prowadzi wyłącznie do `/actions/act_apply_wordpress_draft_handoff`
   i nie wywołuje `/apply`; stale live queue pozostaje bez CTA. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-workflow-desktop.png`.
 - `r564.3` ma mobile-only decision card przed ciężkim kontekstem: temat/URL,
-  rekomendacja, blocker i przycisk „Otwórz decyzję i dowody”. Przy stale live
-  queue karta nie udaje gotowości; screenshot
+  rekomendacja, blocker i przycisk „Otwórz decyzję i dowody”. Przy świeżym live
+  queue karta nie udaje gotowości przy progu 1/3; screenshot
   `.local-lab/proof/continuation-2026-07-12/content-workflow-mobile.png` jest
   aktualnym proof.
 - Mobile freshness został skondensowany, a source status bar jest poziomym
@@ -360,8 +361,8 @@ Zamknięte w tym slice:
 
 Otwarte product blockers:
 
-- `r564.3` — mobile first viewport; świeży, nieblokowany content candidate nadal
-  zależy od zewnętrznego refreshu.
+- `r564.3` — **closed** po świeżym desktop/mobile proof; parent `r564` nadal
+  ma tylko 1 actionable candidate z minimum 3.
 - `c9h9.9`, `c9h9.10`, `c9h9.11`, `c9h9.12` i `c9h9.8` są zamknięte po
   API/browser proof; obecny pełny `dashboard-api.spec.ts` przechodzi 13/13.
 
@@ -464,5 +465,5 @@ ich rozmiaru.
 3. Kontynuuj `jnra`: wybierz następny mały, potwierdzony seam z aktualnego
    complexity/runtime review; nie przenoś ponownie gotowych `mutation_plan`
    ani `mutation_summary` boundary.
-4. `r564.3` może zostać zamknięty dopiero po browser proof 390×844 ze świeżym,
-   nieblokowanym kandydatem; obecny stan zewnętrzny tego nie dowodzi.
+4. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
+   nadal wymaga evidence-backed candidate density bez sztucznego tematu.

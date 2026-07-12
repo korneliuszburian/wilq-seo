@@ -34,9 +34,9 @@ w git, Beads i `docs/progress/archive/`.
   2 `review_ready`, `pass=true`; to nie znosi blokady stale źródeł.
 - `c9h9.4` jest zamknięty i nie wymaga ponownej implementacji. Aktualny
   desktop/mobile browser proof `/content-workflow` jest w
-  `.local-lab/proof/continuation-2026-07-12/`; `r564.3` pozostaje otwarty,
-  bo mobile card jest poprawna, lecz zewnętrzny refresh nie potwierdza świeżego
-  candidate do pracy.
+  `.local-lab/proof/continuation-2026-07-12/`; `r564.3` jest zamknięty po
+  świeżym proof, a parent `r564` nadal ma 2 kandydatów i tylko 1 actionable przy
+  minimum 3; blocker `not_enough_actionable_candidates` pozostaje jawny.
 
 - `kgvy` reconciliation boundary jest domknięty: `_reconcile_ads_change_history_contracts`
   oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline
@@ -273,28 +273,31 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   refresh-first next step są widoczne przed kolejką; homepage jest domyślnym
   wyborem zamiast Ahrefs-only braku canonical.
 - Decision/CTA dla workflow mają queue-owned first card; mobile triage pokazuje
-  decyzję, blocker i CTA w 390×844, ale pełna gotowość nadal wymaga świeżego
-  candidate dla `r564.3`.
+  decyzję, blocker i CTA w 390×844 na świeżych danych. `r564.3` jest zamknięty;
+  dalsze candidate density należy do parenta `r564`.
 - `c9h9.4` jest zamknięty: centralny apply ma typed `wordpress_draft` input,
   capability binding, route audit i dev-host guard; live CTA pozostaje
   zablokowane bez realnej gotowości.
-- `r564.3` w toku: dodano mobile-only `Decyzja mobilna` po bannerze źródeł i
+- `r564.3` zamknięty: dodano mobile-only `Decyzja mobilna` po bannerze źródeł i
   statusach, z URL/tematem, rekomendacją, najważniejszym blockerem i bezpiecznym
   CTA otwierającym decyzję/dowody. CTA nie wykonuje zapisu. Focused
   ContentWorkflow Vitest 15/15, dashboard lint/typecheck green; live mobile
-  screenshot `.local-lab/proof/continuation-2026-07-12/content-workflow-mobile.png` pokazuje uczciwy
-  refresh-first blocker przy aktualnym stale runtime.
-- Próba read-only odświeżenia dla `r564.3` 2026-07-11: GSC zwrócił HTTP 200,
+  screenshot `.local-lab/proof/continuation-2026-07-12/content-workflow-fresh-mobile.png`
+  pokazuje uczciwy blocker `Za mało tematów gotowych do pracy` przy świeżych danych.
+- Read-only odświeżenie dla `r564.3` 2026-07-12 zakończyło się dla WordPress
+  sklep, GA4 i Ahrefs; queue ma teraz `fresh`/`requires_refresh=false`, ale
+  nadal 2 kandydatów i 1 actionable przy minimum 3. Historyczna próba 2026-07-11
+  pozostaje dowodem wcześniejszego timeoutu, nie aktualnym stanem.
+- Historyczna próba read-only dla `r564.3` 2026-07-11: GSC zwrócił HTTP 200,
   ale kontrakt oznaczył odczyt jako niepełny (`evidence_count=2`); WordPress
   ekologus nie odpowiedział w 60 s. Kolejka po próbie nadal ma 2 kandydatów,
   1 actionable i blocker `not_enough_actionable_candidates`; stale pozostają
   sklep WordPress, GA4 i Ahrefs. Świeży, nieblokowany kandydat nadal nie jest
-  potwierdzony, więc `r564.3` pozostaje otwarty przez stan zewnętrzny, nie brak
-  implementacji karty.
-- Mobile freshness banner jest teraz skondensowany (summary poniżej desktop
+  potwierdzony. Ten wynik został zastąpiony świeżym odczytem z 2026-07-12.
+- Mobile freshness banner jest skondensowany (summary poniżej desktop
   breakpointu), a pięć statusów źródeł tworzy poziomy scroll zamiast pięciu
-  pionowych kart. Dzięki temu decision card ma realną szansę wejść w 390×844;
-  Vitest 15/15, lint/typecheck i nowy screenshot stale proof przechodzą.
+  pionowych kart. Dzięki temu decision card wchodzi w 390×844; Vitest 17/17,
+  lint/typecheck i świeży screenshot proof przechodzą.
 - `c9h9.13` Merchant jest zamknięty: istniejący `/api/merchant/diagnostics` ma
   15-sekundowy cache i managed-runtime prewarm, bez nowego endpointu. HTTP po
   restarcie: `0.004860 s` pierwszy odczyt, `0.007203 s` drugi; desktop/mobile
@@ -526,8 +529,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 
 ## Kolejność wykonania
 
-1. `r564.3` — utrzymać mobile decision proof i ponowić tylko po świeżym,
-   nieblokowanym candidate z zewnętrznego refreshu.
+1. `r564` — pozyskać kolejne candidate wyłącznie przez evidence-backed workflow;
+   nie wymyślać trzeciego tematu przy blockerze `not_enough_actionable_candidates`.
 2. `jnra` — najmniejszy bezpieczny seam monolitu Action Service, po potwierdzeniu
    że nie narusza ActionObject safety loop.
 3. `d380` albo `0q74` — kolejny potwierdzony utrzymaniowy slice po wyborze
