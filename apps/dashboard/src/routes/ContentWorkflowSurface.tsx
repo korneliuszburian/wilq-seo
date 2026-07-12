@@ -864,9 +864,9 @@ function ContentPageWorkbench({
 
         <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
           <div className="rounded-md border border-line bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-ink">Praca na devie</h2>
+            <h2 className="text-base font-semibold text-ink">Podgląd na devie</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Edytuj sekcję i sprawdź podgląd szkicu. Zapis na dev odbywa się dopiero przez centralną akcję.
+              Sprawdź propozycję na stronie roboczej i popraw sekcje przed review. Nic nie zostanie opublikowane.
             </p>
             <button
               type="button"
@@ -884,7 +884,7 @@ function ContentPageWorkbench({
               Pokaż kontekst
             </a>
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              Zapis na dev wymaga centralnej akcji ActionObject; ten ekran przygotowuje tylko podgląd.
+              Ten krok przygotowuje wyłącznie podgląd. Zapis wymaga osobnego zatwierdzenia.
             </p>
             {existingDraftUpdateReadiness.data ? (
               <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-slate-700">
@@ -1265,7 +1265,7 @@ function WordPressDraftWorkPanel({
             </div>
             {canOpenCanonicalApplyReview ? (
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                Ten link otwiera podgląd i review ActionObject. Nie wykonuje zapisu ani publikacji.
+                Ten link otwiera podgląd do sprawdzenia. Nie wykonuje zapisu ani publikacji.
               </p>
             ) : null}
             {latestCreatedExecution ? (
@@ -1475,8 +1475,8 @@ function ContentSectionWritingWorkbench({
               })}
               <div className="rounded-md border border-action/20 bg-action/5 p-3">
                 <p className="text-sm leading-6 text-slate-700">
-                  Podgląd sprawdza tekst i payload szkicu. Zapis na dev wymaga centralnej akcji
-                  ActionObject; publikacja i nadpisywanie publicznej strony pozostają zablokowane.
+                  Podgląd sprawdza tekst i proponowane sekcje. Publikacja i nadpisywanie publicznej
+                  strony pozostają zablokowane.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-3">
                   <button

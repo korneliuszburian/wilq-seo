@@ -86,6 +86,10 @@ w git, Beads i `docs/progress/archive/`.
   świeżość `fresh`, public canonical `https://www.ekologus.pl/`, 2 evidence
   IDs i konektory GSC/WordPress; browser `/content-workflow` pokazuje decyzję,
   sekcje public/dev, CTA preview i blokadę ActionObject.
+- `wilq-seo-3bst.11` wykonany dla głównej trasy `/content-workflow`: pierwszy
+  viewport używa copy „Podgląd na devie”, prowadzi do konkretnego CTA i obietnicy
+  braku publikacji; mechanika ActionObject/centralnej akcji nie dominuje widoku.
+  Vitest 15/15, ESLint, TypeScript, Vite build i screenshot desktop przechodzą.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

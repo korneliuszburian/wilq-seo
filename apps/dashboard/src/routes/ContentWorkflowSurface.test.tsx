@@ -726,7 +726,7 @@ describe("ContentWorkflowSurface", () => {
         section_overrides: expect.any(Array)
       });
     });
-    expect(screen.getAllByText(/Zapis na dev wymaga centralnej akcji ActionObject/).length)
+    expect(screen.getAllByText(/Ten krok przygotowuje wyłącznie podgląd/).length)
       .toBeGreaterThan(0);
   });
 

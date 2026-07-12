@@ -90,6 +90,9 @@ endpointów i bez odblokowania vendor writes.
 `wilq-seo-97a3` jest zamknięty: stage adapters i helpery stanu są w
 `wilq/content/workflow/stage_snapshot.py`, `api.py` ma 644 LOC, a live snapshot
 i browser proof zachowują freshness/evidence oraz fail-closed ActionObject.
+`wilq-seo-3bst.11` jest zamknięty dla głównej trasy content workflow: copy
+above-the-fold jest marketer-first, a mechanika bezpieczeństwa pozostaje niżej
+lub w disclosure; nie zmieniono API ani safety.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
