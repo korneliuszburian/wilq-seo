@@ -251,3 +251,44 @@ def test_ga4_tracking_preview_keeps_landing_source_and_measurement_blockers() ->
     assert "brak strony wejścia" in rows["Braki wymiarów"]
     assert "jakość kampanii" in rows["Czego nie wolno twierdzić"]
     assert cards[0].apply_state_label == "zapis zmian zablokowany"
+
+
+def test_local_visibility_preview_keeps_contracts_and_claim_blockers() -> None:
+    from wilq.actions.localo.visibility_preview import local_visibility_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = local_visibility_preview_cards(
+        {
+            "payload_preview": [
+                {
+                    "metric_snapshot": {"localo_reviews_count": 12},
+                    "metric_snapshot_labels": {"localo_reviews_count": "liczba opinii"},
+                    "allowed_contract_labels": ["agregat opinii"],
+                    "missing_read_contract_labels": ["brak lokalnych rankingów"],
+                    "required_validation_labels": ["potwierdź odczyt przez człowieka"],
+                    "blocked_claim_labels": ["widoczność konkurencji"],
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                }
+            ]
+        },
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        metric_snapshot_rows=lambda snapshot, labels, keys: [
+            ActionPreviewRowViewModel(label=str(labels[key]), value=str(snapshot[key]))
+            for key in keys
+            if key in snapshot and key in labels
+        ],
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["liczba opinii"] == "12"
+    assert rows["Dozwolone odczyty"] == "agregat opinii"
+    assert "brak lokalnych rankingów" in rows["Braki"]
+    assert "widoczność konkurencji" in rows["Czego nie wolno twierdzić"]
+    assert cards[0].apply_state_label == "zapis zmian zablokowany"

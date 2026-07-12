@@ -570,6 +570,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `apply_allowed=false`/`api_mutation_ready=false`. Focused behavior test, Ruff,
   mypy, complexity i browser proof przechodzą:
   `.local-lab/proof/continuation-2026-07-12/ga4-tracking-preview-cards.png`.
+- Localo visibility preview jest teraz wydzielony do
+  `wilq/actions/localo/visibility_preview.py`; live action zachowuje typed
+  agregaty widoczności, dozwolone i brakujące kontrakty, blocked claims oraz
+  `apply_allowed=false`/`api_mutation_ready=false`. Focused behavior test, Ruff,
+  mypy, complexity i browser proof przechodzą:
+  `.local-lab/proof/continuation-2026-07-12/localo-visibility-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

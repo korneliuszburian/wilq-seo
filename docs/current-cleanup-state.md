@@ -507,6 +507,11 @@ ich rozmiaru.
   metric rows, a live karta zachowuje landing/source/campaign evidence,
   tracking gaps, blocked claims i brak zapisu. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ga4-tracking-preview-cards.png`.
+- Localo visibility preview renderer jest teraz w
+  `wilq/actions/localo/visibility_preview.py`; service przekazuje callback do
+  metric rows, a live karta zachowuje kontrakty odczytu, freshness/evidence,
+  blocked claims i brak zapisu. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/localo-visibility-preview-cards.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
