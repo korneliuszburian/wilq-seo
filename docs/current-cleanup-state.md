@@ -372,7 +372,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 616 LOC;
-- `wilq/actions/service.py`: 3 868 non-empty LOC;
+- `wilq/actions/service.py`: 1 650 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -382,17 +382,15 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Latest complexity report (2026-07-11): 398 plików Python,
-132485 non-empty LOC. Bounded content seed extraction, metric-candidate
-orchestration, Social, Localo, Merchant, GA4, Content and Ads campaign/
-recommendation/change-history/search-term/custom-segment/negative-keyword/
-Demand Gen module extraction were audited with
-`--allow-frozen --allow-budget-violations`: service.py remains a frozen-growth
-file because the seam removes inline code, while pre-existing content/service
-budget findings remain tracked for the broader `jnra` cleanup. This 4wwo schema
-slice also surfaces the pre-existing `_metric_dimension_value_label` budget
-finding in `schemas/core.py`; it is unrelated to refresh-state behavior and is
-tracked separately. Historyczne duże
+Aktualny rebaseline complexity (2026-07-12): 422 pliki Python / 136631
+non-empty LOC; `service.py` ma 1650 LOC po canonical registry seamu i cache-key
+dla live Google Ads refreshu. Cache zapisuje inventory tylko, gdy fingerprint
+jest taki sam przed i po buildzie. Standardowy
+`--changed` jawnie wymaga akceptacji frozen facade i istniejącego dużego pliku
+testowego; wariant `--allow-frozen --allow-budget-violations` przechodzi, a
+raportowane przekroczenia testów są wcześniejsze i niezwiązane z asercją parity.
+Nie przenoś gotowych WordPress/readiness/preview granic tylko po to, by obniżyć
+ten licznik.
 testy pozostają osobnym otwartym cleanup scope; bieżący seed seam nie zwiększa
 ich rozmiaru.
 
@@ -842,9 +840,10 @@ ich rozmiaru.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
 3. `4wwo` jest zamknięty; nie twórz drugiego dashboardowego triggera ani
    reguły stale/cooldown w React.
-4. Kontynuuj `jnra`: wybierz następny mały, potwierdzony seam z aktualnego
+4. `jnra.1` jest zamknięty po parity list/detail i cache safety proof. Kontynuuj
+   `jnra` wyłącznie od kolejnego małego, potwierdzonego seamu z aktualnego
    complexity/runtime review; nie przenoś ponownie gotowych mutation/readiness
-   ani WordPress preview boundaries. Demand Gen preview jest zamknięty; następny
-   kandydat wymaga świeżego odczytu `service.py` i istniejących modułów Ads.
+   ani WordPress preview boundaries. Candidate Keyword Planner wymaga świeżego
+   odczytu `service.py` i istniejącego modułu Ads przed rozpoczęciem.
 5. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
    nadal wymaga evidence-backed candidate density bez sztucznego tematu.

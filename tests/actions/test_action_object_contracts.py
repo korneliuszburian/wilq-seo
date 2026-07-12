@@ -1899,7 +1899,15 @@ def test_daily_context_pack_preserves_human_review_outcome(
     )
 
 
-def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
+def test_google_ads_oauth_repair_action_is_explicit_and_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(action_service, "_google_ads_live_data_available", lambda: False)
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    assert "act_configure_google_ads_env" in {
+        action["id"] for action in actions_response.json()
+    }
     response = client.get("/api/actions/act_configure_google_ads_env")
     assert response.status_code == 200
     action = response.json()
@@ -1953,6 +1961,8 @@ def test_google_ads_business_context_action_is_review_only(
     actions = {action["id"]: action for action in actions_response.json()}
     assert ADS_BUSINESS_CONTEXT_ACTION_ID in actions
     assert "act_configure_google_ads_env" not in actions
+    legacy_action_response = client.get("/api/actions/act_configure_google_ads_env")
+    assert legacy_action_response.status_code == 404
 
     action_response = client.get(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}")
     assert action_response.status_code == 200

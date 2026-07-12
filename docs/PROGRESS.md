@@ -84,6 +84,17 @@ w git, Beads i `docs/progress/archive/`.
   jawną blokadą dostępu.
   Live proof 2026-07-11: Google Sheets `refresh_google_sheets_1204e9337620`
   queued → completed, `external_call_attempted=false`, bez sekretów.
+- Zamknięty `wilq-seo-jnra.1` naprawia realny rozjazd rejestru akcji: po live Google Ads
+  read `/api/actions` ukrywał legacy OAuth repair, lecz direct lookup po ID
+  zwracał go nadal. `list_actions()` i `get_action()` korzystają teraz z jednej
+  canonical registry assembly. Live HTTP po managed restarcie: legacy action
+  jest nieobecna z listy i zwraca 404, a aktywna akcja Keyword Planner nadal
+  zwraca 200. Warm cache porównuje także key najnowszego Google Ads refreshu i
+  zapisuje inventory tylko przy stabilnym fingerprint przed/po buildzie, więc
+  przejście no-live → live nie zwraca stale legacy action. Full focused action
+  contracts 48/48, evidence contracts 6/6, cache tests 4/4, Ruff i mypy
+  przechodzą; WordPress mutation readiness nadal jest false/false/false bez
+  vendor write.
 - Async refresh deduplikuje teraz aktywny run per connector: drugi queued/running
   request zwraca ten sam `run_id` i nie tworzy równoległego odczytu. Focused
   redaction/async contract suite: 4 passed; Ruff, mypy i diff check green.
@@ -1005,8 +1016,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
-- Latest full complexity run: 407 Python files / 133845 non-empty LOC,
-  0 changed-code violations; current `service.py` hotspot is 3868 LOC.
+- Aktualny rebaseline complexity po `jnra.1`: 422 Python files / 136631
+  non-empty LOC; `service.py` ma 1650 LOC. Standardowy changed audit zatrzymuje
+  się na jawnie frozen facade oraz istniejącym dużym pliku testowym; dopuszczony
+  wariant dla udokumentowanego seamu przechodzi i nie ukrywa tych wcześniejszych
+  budżetów jako sukcesu zmiany.
 
 ## Kolejność wykonania
 

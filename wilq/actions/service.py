@@ -354,6 +354,7 @@ DEFAULT_ACTION_LIST_CACHE_SECONDS = 15.0
 class ActionListCacheEntry:
     created_at: float
     actions: list[ActionObject]
+    google_ads_registry_key: tuple[str, str, bool] | None = None
 
 
 _cached_action_list: ActionListCacheEntry | None = None
@@ -552,22 +553,7 @@ ACTION_METRIC_FACT_LIMITS = {
 
 
 def list_actions() -> list[ActionObject]:
-    actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
-    if _google_ads_live_data_available():
-        actions.pop("act_configure_google_ads_env", None)
-        business_context_action = _google_ads_business_context_action()
-        if business_context_action is not None:
-            actions[business_context_action.id] = business_context_action
-        target_confirmation_action = _google_ads_target_confirmation_action()
-        if target_confirmation_action is not None:
-            actions[target_confirmation_action.id] = target_confirmation_action
-        strategy_review_action = _google_ads_strategy_review_action()
-        if strategy_review_action is not None:
-            actions[strategy_review_action.id] = strategy_review_action
-        keyword_planner_action = _google_ads_keyword_planner_access_action()
-        if keyword_planner_action is not None:
-            actions[keyword_planner_action.id] = keyword_planner_action
-    return _with_persisted_review_gates(actions.values())
+    return _with_persisted_review_gates(_action_registry().values())
 
 
 def list_actions_cached() -> list[ActionObject]:
@@ -575,8 +561,13 @@ def list_actions_cached() -> list[ActionObject]:
     cached = _read_action_list_cache()
     if cached is not None:
         return cached
-    actions = list_actions()
-    _write_action_list_cache(actions)
+    actions: list[ActionObject] = []
+    for _ in range(2):
+        registry_key = _google_ads_registry_cache_key()
+        actions = list_actions()
+        if registry_key == _google_ads_registry_cache_key():
+            _write_action_list_cache(actions, google_ads_registry_key=registry_key)
+            return actions
     return actions
 
 
@@ -591,14 +582,24 @@ def _read_action_list_cache() -> list[ActionObject] | None:
         return None
     if monotonic() - _cached_action_list.created_at > cache_seconds:
         return None
+    if _cached_action_list.google_ads_registry_key != _google_ads_registry_cache_key():
+        return None
     return _cached_action_list.actions
 
 
-def _write_action_list_cache(actions: list[ActionObject]) -> None:
+def _write_action_list_cache(
+    actions: list[ActionObject],
+    *,
+    google_ads_registry_key: tuple[str, str, bool] | None,
+) -> None:
     global _cached_action_list
     if _action_list_cache_seconds() <= 0:
         return
-    _cached_action_list = ActionListCacheEntry(created_at=monotonic(), actions=actions)
+    _cached_action_list = ActionListCacheEntry(
+        created_at=monotonic(),
+        actions=actions,
+        google_ads_registry_key=google_ads_registry_key,
+    )
 
 
 def _action_list_cache_seconds() -> float:
@@ -613,6 +614,23 @@ def _action_list_cache_seconds() -> float:
         return DEFAULT_ACTION_LIST_CACHE_SECONDS
 
 
+def _action_registry() -> dict[str, ActionObject]:
+    """Build one canonical inventory for action list and direct lookup."""
+    actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
+    if not _google_ads_live_data_available():
+        return actions
+    actions.pop("act_configure_google_ads_env", None)
+    for action in (
+        _google_ads_business_context_action(),
+        _google_ads_target_confirmation_action(),
+        _google_ads_strategy_review_action(),
+        _google_ads_keyword_planner_access_action(),
+    ):
+        if action is not None:
+            actions[action.id] = action
+    return actions
+
+
 def get_action(action_id: str) -> ActionObject | None:
     cached_actions = _read_action_list_cache()
     action = next(
@@ -622,20 +640,7 @@ def get_action(action_id: str) -> ActionObject | None:
     if action is not None:
         action = action.model_copy(deep=True)
     else:
-        actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
-        business_context_action = _google_ads_business_context_action()
-        if business_context_action is not None:
-            actions[business_context_action.id] = business_context_action
-        target_confirmation_action = _google_ads_target_confirmation_action()
-        if target_confirmation_action is not None:
-            actions[target_confirmation_action.id] = target_confirmation_action
-        strategy_review_action = _google_ads_strategy_review_action()
-        if strategy_review_action is not None:
-            actions[strategy_review_action.id] = strategy_review_action
-        keyword_planner_action = _google_ads_keyword_planner_access_action()
-        if keyword_planner_action is not None:
-            actions[keyword_planner_action.id] = keyword_planner_action
-        action = actions.get(action_id)
+        action = _action_registry().get(action_id)
     if action is None:
         return None
     action = _with_persisted_validation_state(action)
@@ -654,6 +659,13 @@ def _google_ads_live_data_available() -> bool:
         latest_run.status == ConnectorRefreshStatus.completed
         and latest_run.vendor_data_collected is True
     )
+
+
+def _google_ads_registry_cache_key() -> tuple[str, str, bool] | None:
+    latest_run = _latest_google_ads_vendor_read()
+    if latest_run is None:
+        return None
+    return (latest_run.id, latest_run.status.value, latest_run.vendor_data_collected)
 
 
 def _latest_google_ads_vendor_read() -> ConnectorRefreshRun | None:
