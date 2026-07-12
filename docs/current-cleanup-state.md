@@ -468,6 +468,10 @@ ich rozmiaru.
 - Po restart/reload live API pozostaje zdrowe: 99 906 metric facts, 4 577
   refresh runs, queue `fresh`/1 actionable z minimum 3, WordPress readiness
   nadal fail-closed.
+- Social preview builder jest teraz w istniejącym `wilq/actions/social.py`;
+  service nie duplikuje już źródłowych rows, labels ani blokady publikacji.
+  Live akcje LinkedIn/Facebook mają `prepare`, evidence IDs, cztery typed
+  `social_draft_input_review` cards i nie tworzą write-capable path.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

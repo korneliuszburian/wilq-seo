@@ -517,6 +517,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Live proof po managed restart: API health `ok`, 99 906 metric facts / 4 577
   refresh runs, content queue `fresh` lecz zablokowana przy 1 actionable z 3,
   a WordPress handoff nadal ma cztery typed preview cards i brak ścieżki zapisu.
+- Następny bounded seam `jnra`: social preview cards są teraz składane przez
+  `wilq/actions/social.py`, a `service.py` przekazuje tylko presentation
+  callbacks. Live `/api/actions` nadal pokazuje LinkedIn/Facebook w trybie
+  `prepare` z evidence IDs, czterema kartami `social_draft_input_review` i bez
+  publikacji; focused social/action tests, Ruff, mypy i complexity przechodzą.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
