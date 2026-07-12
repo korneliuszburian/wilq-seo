@@ -40,4 +40,5 @@ do typed rows, list oraz safety labels. Nie dodano endpointu ani capability zapi
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `57894cef` (`refactor: extract service profile
+previews`), wypchnięty na `origin/main`.
