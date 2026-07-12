@@ -34,4 +34,5 @@ loop oraz brak vendor writes pozostają bez zmian.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `251a1efa` (`refactor: extract action summaries`),
+wypchnięty na `origin/main`.
