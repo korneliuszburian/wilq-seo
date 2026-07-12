@@ -34,4 +34,5 @@ human-confirm i payload string lists; safety loop nie został osłabiony.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `658effb0` (`refactor: extract action blockers`),
+wypchnięty na `origin/main`.
