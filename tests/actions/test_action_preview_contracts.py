@@ -11,6 +11,12 @@ from tests._contract_support.assertions import (
     assert_preview_items_are_operator_view_models,
     preview_card_row_values,
 )
+from wilq.actions.google_ads.business_context import micros_money_label
+
+
+def test_ads_micros_money_label_is_fail_closed_for_missing_values() -> None:
+    assert micros_money_label(1_250_000) == "1.25 PLN"
+    assert micros_money_label(None) == "kwota niepotwierdzona"
 
 
 def test_action_preview_generates_dry_run_audit_without_apply(

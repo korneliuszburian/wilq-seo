@@ -118,6 +118,9 @@ from wilq.actions.google_ads.business_context import (
 from wilq.actions.google_ads.business_context import (
     connector_refresh_recency_key as ads_connector_refresh_recency_key,
 )
+from wilq.actions.google_ads.business_context import (
+    micros_money_label as _micros_money_label,
+)
 from wilq.actions.google_ads.campaign_review import (
     campaign_review_action_from_metric_facts,
 )
@@ -2305,17 +2308,6 @@ def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardVi
         apply_state_label=_apply_state_label,
         system_readiness_label=_system_readiness_label,
     )
-
-
-def _micros_money_label(
-    value: Any,
-    currency_code: str = "PLN",
-    *,
-    missing_label: str = "kwota niepotwierdzona",
-) -> str:
-    if not isinstance(value, int | float):
-        return missing_label
-    return f"{value / 1_000_000:.2f} {currency_code}"
 
 
 def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGate:

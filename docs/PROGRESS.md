@@ -751,6 +751,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   proof przechodzą; Ads detail nadal pokazuje evidence, blokadę zapisu i
   `apply_allowed=false`; proof:
   `.local-lab/proof/continuation-2026-07-12/payload-labels-live.png`.
+- Google Ads money formatter dla wartości micros jest teraz własnością
+  `wilq/actions/google_ads/business_context.py`; service przekazuje istniejący
+  formatter do preview builderów. Brakujące wartości pozostają jawnie
+  `kwota niepotwierdzona`, bez wymyślania kosztu. Focused Ads preview suite:
+  26 passed, Ruff/mypy/complexity/diff check, API smoke i browser proof zielone;
+  proof: `.local-lab/proof/continuation-2026-07-12/money-label-live.png`.
 
 ## Weryfikacja
 

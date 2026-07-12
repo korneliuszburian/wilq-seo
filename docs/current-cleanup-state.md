@@ -667,6 +667,12 @@ ich rozmiaru.
   Ads detail zachowuje evidence, `Zapis zmian zablokowany` i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/payload-labels-live.png`.
+- Google Ads formatter wartości micros jest teraz w istniejącym
+  `wilq/actions/google_ads/business_context.py`; service nie posiada już tego
+  Ads-specific helpera. Brak wartości pozostaje `kwota niepotwierdzona`.
+  Focused Ads preview suite: 26 passed, a live Ads action zachowuje evidence,
+  `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/money-label-live.png`.
 
 ## Resume
 

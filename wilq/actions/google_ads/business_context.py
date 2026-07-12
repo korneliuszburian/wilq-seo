@@ -428,6 +428,17 @@ def _percentage_label(value: Any) -> str:
     return f"{numeric_label}%"
 
 
+def micros_money_label(
+    value: Any,
+    currency_code: str = "PLN",
+    *,
+    missing_label: str = "kwota niepotwierdzona",
+) -> str:
+    if not isinstance(value, int | float):
+        return missing_label
+    return f"{value / 1_000_000:.2f} {currency_code}"
+
+
 def ads_strategy_review_preview_cards(
     payload: dict[str, Any],
     *,
