@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Iterable
-from typing import Any
+from typing import Any, Protocol
 
 from wilq.actions.validation_copy import missing, no_destructive_change, no_write, wrong
 from wilq.schemas import (
@@ -23,6 +23,20 @@ StringList = Callable[[Any], list[str]]
 ContextRows = Callable[[dict[str, Any]], list[ActionPreviewRowViewModel]]
 StateLabel = Callable[[Any], str]
 SummaryLabel = Callable[[Any], str]
+
+
+class MetricLabel(Protocol):
+    def __call__(self, value: Any, *, missing_label: str = "brak danych") -> str: ...
+
+
+class MoneyLabel(Protocol):
+    def __call__(
+        self,
+        value: Any,
+        currency_code: str = "PLN",
+        *,
+        missing_label: str = "kwota niepotwierdzona",
+    ) -> str: ...
 
 ADS_BUSINESS_CONTEXT_ACTION_ID = "act_configure_ads_business_context"
 ADS_BUSINESS_CONTEXT_ACTION_TYPE = "configure_ads_business_context"
@@ -307,6 +321,74 @@ def ads_target_guardrail_preview_cards(
             system_readiness_label=system_readiness_label(payload.get("api_mutation_ready")),
         )
     ]
+
+
+def ads_business_context_preview_rows(
+    payload: dict[str, Any],
+    *,
+    preview_row: PreviewRow,
+    plain_metric_value_label: MetricLabel,
+    micros_money_label: MoneyLabel,
+) -> list[ActionPreviewRowViewModel]:
+    """Build shared Ads business-context rows for operator cards."""
+    context = payload.get("current_context")
+    context = context if isinstance(context, dict) else {}
+    configured_sources = context.get("configured_sources")
+    configured_sources = configured_sources if isinstance(configured_sources, list) else []
+    configured_sources = [item for item in configured_sources if isinstance(item, str)]
+    return [
+        preview_row("Marża", _percentage_label(context.get("profit_margin"))),
+        preview_row("Cel biznesowy", plain_metric_value_label(context.get("business_goal"))),
+        preview_row("Cel budżetu", plain_metric_value_label(context.get("budget_goal"))),
+        preview_row(
+            "Docelowy zwrot z reklam",
+            plain_metric_value_label(
+                context.get("target_roas"),
+                missing_label="nie ustawiono; WILQ nie ocenia opłacalności Ads",
+            ),
+        ),
+        preview_row(
+            "Docelowy koszt pozyskania celu",
+            micros_money_label(
+                context.get("target_cpa_micros"),
+                missing_label="nie ustawiono; WILQ nie ocenia kosztu celu",
+            ),
+        ),
+        preview_row("Ustawione pola", _configured_source_count_label(configured_sources)),
+    ]
+
+
+def ads_strategy_review_summary(value: Any) -> str:
+    if not isinstance(value, dict):
+        return "przegląd strategii nie jest zapisany"
+    outcome = value.get("outcome")
+    labels = {
+        "approved_for_prepare": "zatwierdzone do przygotowania",
+        "needs_changes": "wymaga poprawek",
+        "rejected": "odrzucone",
+        "deferred": "odłożone",
+    }
+    if isinstance(outcome, str):
+        return labels.get(outcome, "przegląd zapisany")
+    return "przegląd zapisany"
+
+
+def _configured_source_count_label(values: list[str]) -> str:
+    count = len(values)
+    if count == 0:
+        return "żadne pole nie jest ustawione lokalnie"
+    if count == 1:
+        return "1 pole ustawione lokalnie"
+    if 2 <= count <= 4:
+        return f"{count} pola ustawione lokalnie"
+    return f"{count} pól ustawionych lokalnie"
+
+
+def _percentage_label(value: Any) -> str:
+    if not isinstance(value, int | float):
+        return "wartość procentowa niepotwierdzona"
+    numeric_label = f"{value * 100:.2f}".rstrip("0").rstrip(".")
+    return f"{numeric_label}%"
 
 
 def ads_strategy_review_preview_cards(

@@ -48,9 +48,13 @@ from wilq.actions.google_ads.business_context import (
     ads_business_context_configured,
     ads_business_context_missing_read_contracts,
     ads_strategy_review_state,
+    ads_strategy_review_summary,
     business_context_action,
     strategy_review_action,
     target_confirmation_action,
+)
+from wilq.actions.google_ads.business_context import (
+    ads_business_context_preview_rows as build_ads_business_context_preview_rows,
 )
 from wilq.actions.google_ads.business_context import (
     ads_strategy_review_preview_cards as build_ads_strategy_review_preview_cards,
@@ -2539,7 +2543,7 @@ def _ads_strategy_review_preview_cards(
         business_context_rows=_ads_business_context_preview_rows,
         preview_row=_preview_row,
         string_list=_string_list,
-        strategy_summary=_ads_strategy_review_summary,
+        strategy_summary=ads_strategy_review_summary,
         apply_state_label=_apply_state_label,
         system_readiness_label=_system_readiness_label,
     )
@@ -2548,68 +2552,12 @@ def _ads_strategy_review_preview_cards(
 def _ads_business_context_preview_rows(
     payload: dict[str, Any],
 ) -> list[ActionPreviewRowViewModel]:
-    context = _as_dict(payload.get("current_context"))
-    configured_sources = _string_list(context.get("configured_sources"))
-    return [
-        _preview_row("Marża", _percentage_label(context.get("profit_margin"))),
-        _preview_row("Cel biznesowy", _plain_metric_value_label(context.get("business_goal"))),
-        _preview_row("Cel budżetu", _plain_metric_value_label(context.get("budget_goal"))),
-        _preview_row(
-            "Docelowy zwrot z reklam",
-            _plain_metric_value_label(
-                context.get("target_roas"),
-                missing_label="nie ustawiono; WILQ nie ocenia opłacalności Ads",
-            ),
-        ),
-        _preview_row(
-            "Docelowy koszt pozyskania celu",
-            _micros_money_label(
-                context.get("target_cpa_micros"),
-                missing_label="nie ustawiono; WILQ nie ocenia kosztu celu",
-            ),
-        ),
-        _preview_row(
-            "Ustawione pola",
-            _configured_source_count_label(configured_sources),
-        ),
-    ]
-
-
-def _ads_strategy_review_summary(value: Any) -> str:
-    if not isinstance(value, dict):
-        return "przegląd strategii nie jest zapisany"
-    outcome = value.get("outcome")
-    labels = {
-        "approved_for_prepare": "zatwierdzone do przygotowania",
-        "needs_changes": "wymaga poprawek",
-        "rejected": "odrzucone",
-        "deferred": "odłożone",
-    }
-    if isinstance(outcome, str):
-        return labels.get(outcome, "przegląd zapisany")
-    return "przegląd zapisany"
-
-
-def _configured_source_count_label(values: list[str]) -> str:
-    count = len(values)
-    if count == 0:
-        return "żadne pole nie jest ustawione lokalnie"
-    if count == 1:
-        return "1 pole ustawione lokalnie"
-    if 2 <= count <= 4:
-        return f"{count} pola ustawione lokalnie"
-    return f"{count} pól ustawionych lokalnie"
-
-
-def _percentage_label(value: Any) -> str:
-    if not isinstance(value, int | float):
-        return "wartość procentowa niepotwierdzona"
-    numeric_label = f"{value * 100:.2f}".rstrip("0").rstrip(".")
-    return f"{numeric_label}%"
-
-
-def _as_dict(value: Any) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
+    return build_ads_business_context_preview_rows(
+        payload,
+        preview_row=_preview_row,
+        plain_metric_value_label=_plain_metric_value_label,
+        micros_money_label=_micros_money_label,
+    )
 
 
 def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:

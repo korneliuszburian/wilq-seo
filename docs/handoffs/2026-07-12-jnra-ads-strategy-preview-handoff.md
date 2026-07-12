@@ -5,7 +5,9 @@
 Wydzieliłem renderer operator-facing dla `act_record_ads_strategy_review` do
 istniejącego `wilq/actions/google_ads/business_context.py`. Service zachowuje
 dispatcher i przekazuje callbacks do business-context rows, summary, list oraz
-safety labels; strategia i review gates pozostają API-owned.
+safety labels; wspólne wiersze kontekstu, summary oraz etykiety liczników źródeł
+nie są już powielane w monolicie service. Strategia i review gates pozostają
+API-owned.
 
 ## Dowód produktu
 
@@ -27,6 +29,10 @@ safety labels; strategia i review gates pozostają API-owned.
 - Complexity changed audit: brak nowych naruszeń; frozen `service.py` pozostaje
   znanym hotspotem.
 - `git diff --check`: passed.
+- Świeży runtime po restarcie: API health `ok`, metrics `99,906` facts / `4,577`
+  refresh runs / `8` connectors; live strategy action nadal ma 2 evidence IDs,
+  `apply_allowed=false` i brak zapisanego review. Browser proof odświeżony:
+  `.local-lab/proof/continuation-2026-07-12/ads-strategy-review-preview-live.png`.
 
 ## Beads i następny krok
 
@@ -41,5 +47,5 @@ safety labels; strategia i review gates pozostają API-owned.
 ## Commit
 
 Implementacja: `a1615880` (`refactor: extract ads strategy preview`),
-wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
-commitem.
+wypchnięta na `origin/main`. Bounded helper extraction zostanie zapisany w
+osobnym commicie tego samego handoffu.
