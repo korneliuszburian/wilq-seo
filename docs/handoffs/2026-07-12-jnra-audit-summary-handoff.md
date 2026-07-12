@@ -36,4 +36,5 @@ callerów/testów; redaction semantics pozostają bez zmian.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `4f5646ce` (`refactor: extract audit summaries`),
+wypchnięty na `origin/main`.
