@@ -36,3 +36,6 @@ zapisu ani zmiany safety loop.
 - Następny seam wybierz po świeżym `rg`/complexity/runtime review, bez
   ponownego dotykania gotowych audit/review boundaries.
 
+## Commit
+
+Implementacja i handoff: `ac1d78cf` (`refactor: extract audit event labels`).
