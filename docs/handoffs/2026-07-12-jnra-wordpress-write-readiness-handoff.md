@@ -18,6 +18,7 @@ env-gate, REST adapter i write authorization z audytu.
   `vendor_write_possible=false`, Ads detail ma evidence, blokadę zapisu i
   `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/wp-readiness-live.png`.
+- Commit implementacji: `f1cbbbd` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
