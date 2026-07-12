@@ -391,3 +391,36 @@ def test_ads_target_guardrail_preview_keeps_business_context_and_claim_blocks() 
     assert "brak potwierdzenia celu" in rows["Braki"]
     assert "ocena opłacalności" in rows["Czego nie wolno twierdzić"]
     assert cards[0].apply_state_label == "zapis zmian zablokowany"
+
+
+def test_ads_strategy_preview_keeps_review_state_and_claim_blocks() -> None:
+    from wilq.actions.google_ads.business_context import ads_strategy_review_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = ads_strategy_review_preview_cards(
+        {
+            "latest_strategy_review": {"outcome": "needs_changes"},
+            "operator_review_gate_labels": ["człowiek sprawdza strategię"],
+            "required_validation_labels": ["sprawdź cel budżetu"],
+            "blocked_claim_labels": ["automatyczna optymalizacja"],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+        },
+        business_context_rows=lambda payload: [
+            ActionPreviewRowViewModel(label="Cel biznesowy", value="review jakości leadów")
+        ],
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        strategy_summary=lambda value: "wymaga poprawek",
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Cel biznesowy"] == "review jakości leadów"
+    assert rows["Ostatni przegląd strategii"] == "wymaga poprawek"
+    assert "automatyczna optymalizacja" in rows["Czego nie wolno twierdzić"]
+    assert cards[0].apply_state_label == "zapis zmian zablokowany"

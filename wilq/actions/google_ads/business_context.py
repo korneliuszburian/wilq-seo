@@ -22,6 +22,7 @@ PreviewRow = Callable[[str, str], ActionPreviewRowViewModel]
 StringList = Callable[[Any], list[str]]
 ContextRows = Callable[[dict[str, Any]], list[ActionPreviewRowViewModel]]
 StateLabel = Callable[[Any], str]
+SummaryLabel = Callable[[Any], str]
 
 ADS_BUSINESS_CONTEXT_ACTION_ID = "act_configure_ads_business_context"
 ADS_BUSINESS_CONTEXT_ACTION_TYPE = "configure_ads_business_context"
@@ -300,6 +301,52 @@ def ads_target_guardrail_preview_cards(
             kind="google_ads_target_guardrail_review",
             title_label="Cel Ads do potwierdzenia",
             subtitle_label="ocena celu biznesowego bez zapisu zmian",
+            status_label="zapis zmian zablokowany",
+            rows=rows,
+            apply_state_label=apply_state_label(payload.get("apply_allowed")),
+            system_readiness_label=system_readiness_label(payload.get("api_mutation_ready")),
+        )
+    ]
+
+
+def ads_strategy_review_preview_cards(
+    payload: dict[str, Any],
+    *,
+    business_context_rows: ContextRows,
+    preview_row: PreviewRow,
+    string_list: StringList,
+    strategy_summary: SummaryLabel,
+    apply_state_label: StateLabel,
+    system_readiness_label: StateLabel,
+) -> list[ActionPreviewCardViewModel]:
+    """Render Ads strategy review without exposing technical payloads."""
+    rows = business_context_rows(payload)
+    rows.append(
+        preview_row(
+            "Ostatni przegląd strategii",
+            strategy_summary(payload.get("latest_strategy_review")),
+        )
+    )
+    gate_labels = string_list(payload.get("operator_review_gate_labels"))
+    if gate_labels:
+        rows.append(preview_row("Warunki przeglądu", ", ".join(gate_labels[:5])))
+    requirement_labels = string_list(payload.get("required_validation_labels"))
+    if requirement_labels:
+        rows.append(preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:5])))
+    blocked_claim_labels = string_list(payload.get("blocked_claim_labels"))
+    if blocked_claim_labels:
+        rows.append(
+            preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(blocked_claim_labels[:4]),
+            )
+        )
+    return [
+        ActionPreviewCardViewModel(
+            id="ads_strategy_review",
+            kind="google_ads_strategy_review",
+            title_label="Ocena strategii Ads do zapisania",
+            subtitle_label="decyzja człowieka bez zapisu zmian w Google Ads",
             status_label="zapis zmian zablokowany",
             rows=rows,
             apply_state_label=apply_state_label(payload.get("apply_allowed")),

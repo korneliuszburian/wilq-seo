@@ -53,6 +53,9 @@ from wilq.actions.google_ads.business_context import (
     target_confirmation_action,
 )
 from wilq.actions.google_ads.business_context import (
+    ads_strategy_review_preview_cards as build_ads_strategy_review_preview_cards,
+)
+from wilq.actions.google_ads.business_context import (
     ads_target_guardrail_preview_cards as build_ads_target_guardrail_preview_cards,
 )
 from wilq.actions.google_ads.campaign_review import (
@@ -2531,39 +2534,15 @@ def _ads_target_guardrail_preview_cards(
 def _ads_strategy_review_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    rows = _ads_business_context_preview_rows(payload)
-    rows.append(
-        _preview_row(
-            "Ostatni przegląd strategii",
-            _ads_strategy_review_summary(payload.get("latest_strategy_review")),
-        )
+    return build_ads_strategy_review_preview_cards(
+        payload,
+        business_context_rows=_ads_business_context_preview_rows,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        strategy_summary=_ads_strategy_review_summary,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
     )
-    gate_labels = _string_list(payload.get("operator_review_gate_labels"))
-    if gate_labels:
-        rows.append(_preview_row("Warunki przeglądu", ", ".join(gate_labels[:5])))
-    requirement_labels = _string_list(payload.get("required_validation_labels"))
-    if requirement_labels:
-        rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:5])))
-    blocked_claim_labels = _string_list(payload.get("blocked_claim_labels"))
-    if blocked_claim_labels:
-        rows.append(
-            _preview_row(
-                "Czego nie wolno twierdzić",
-                ", ".join(blocked_claim_labels[:4]),
-            )
-        )
-    return [
-        ActionPreviewCardViewModel(
-            id="ads_strategy_review",
-            kind="google_ads_strategy_review",
-            title_label="Ocena strategii Ads do zapisania",
-            subtitle_label="decyzja człowieka bez zapisu zmian w Google Ads",
-            status_label="zapis zmian zablokowany",
-            rows=rows,
-            apply_state_label=_apply_state_label(payload.get("apply_allowed")),
-            system_readiness_label=_system_readiness_label(payload.get("api_mutation_ready")),
-        )
-    ]
 
 
 def _ads_business_context_preview_rows(

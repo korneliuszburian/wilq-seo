@@ -594,6 +594,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   brak potwierdzonego ROAS/CPA, blocked KPI/budget claims i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-target-guardrail-preview.png`.
+- Ads strategy-review preview jest teraz w istniejącym
+  `wilq/actions/google_ads/business_context.py`; service przekazuje callback do
+  business-context rows, summary i safety labels. Live action ma 2 evidence IDs,
+  brak zapisanego wyniku ludzkiego review, blocked KPI/budget claims i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-strategy-review-preview.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
