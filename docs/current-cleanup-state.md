@@ -496,6 +496,12 @@ ich rozmiaru.
   quality/mode contracts, blocked claims oraz `apply_allowed=false` i
   `api_mutation_ready=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-demand-gen-preview-cards.png`.
+- Search-term n-gram preview renderer jest teraz w
+  `wilq/actions/google_ads/search_term_ngram_preview.py`; service przekazuje
+  callbacks do labels i metryk, a live cztery karty zachowują evidence,
+  przykłady zapytań, blocked claims oraz `apply_allowed=false`/
+  `api_mutation_ready=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-search-ngram-preview-cards.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

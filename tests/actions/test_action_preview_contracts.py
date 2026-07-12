@@ -164,3 +164,46 @@ def test_demand_gen_preview_keeps_readiness_blockers_in_operator_card() -> None:
     assert "brak odczytu kreacji" in rows["Braki"]
     assert "gotowość trybu Demand Gen" in rows["Czego nie wolno twierdzić"]
     assert cards[0].apply_state_label == "zapis zmian zablokowany"
+
+
+def test_search_term_ngram_preview_keeps_metrics_and_safety_rows() -> None:
+    from wilq.actions.google_ads.search_term_ngram_preview import search_term_ngram_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = search_term_ngram_preview_cards(
+        {
+            "ngram_preview": [
+                {
+                    "ngram": "pompa ciepła",
+                    "ngram_size": 2,
+                    "source_search_term_count": 3,
+                    "sample_search_terms": ["pompa ciepła dom", "pompa ciepła cena"],
+                    "clicks": 12,
+                    "impressions": 240,
+                    "cost_micros": 1250000,
+                    "conversions": 0,
+                    "missing_read_contract_labels": ["brak kontroli intencji"],
+                    "required_validation_labels": ["sprawdź 90 dni"],
+                    "blocked_claim_labels": ["marnowanie budżetu"],
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                }
+            ]
+        },
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        plain_metric_value_label=lambda value: str(value if value is not None else "brak danych"),
+        micros_money_label=lambda value: f"{value} mikro",
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Temat"] == "pompa ciepła"
+    assert rows["Kliknięcia"] == "12"
+    assert "brak kontroli intencji" in rows["Braki"]
+    assert "marnowanie budżetu" in rows["Czego nie wolno twierdzić"]
+    assert cards[0].apply_state_label == "zapis zmian zablokowany"

@@ -557,6 +557,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Ruff, mypy, complexity i browser proof przechodzą; pierwszy viewport jasno
   pokazuje „Zapis zablokowany”, a karta chowa techniczne payloady:
   `.local-lab/proof/continuation-2026-07-12/ads-demand-gen-preview-cards.png`.
+- Search-term n-gram preview jest teraz wydzielony do
+  `wilq/actions/google_ads/search_term_ngram_preview.py`; live action ma cztery
+  typed cards z metrykami, przykładami zapytań, freshness/evidence i blokadą
+  przejścia do wykluczeń. `apply_allowed=false` i
+  `api_mutation_ready=false`; focused behavior test, Ruff, mypy, complexity i
+  browser proof przechodzą:
+  `.local-lab/proof/continuation-2026-07-12/ads-search-ngram-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
