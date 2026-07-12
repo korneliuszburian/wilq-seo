@@ -17,6 +17,7 @@ review gate nie przejmuje logiki content ani nie omija human review.
 - Po managed restart `/api/health` jest `ok`; Ads detail ma evidence,
   `Zapis zmian zablokowany` i `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/review-details-live.png`.
+- Commit implementacji: `2789acf` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
