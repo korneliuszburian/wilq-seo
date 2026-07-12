@@ -40,4 +40,6 @@ safety labels; strategia i review gates pozostają API-owned.
 
 ## Commit
 
-Hash implementacji zostanie dopisany po pushu w osobnym docs-only commicie.
+Implementacja: `a1615880` (`refactor: extract ads strategy preview`),
+wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
+commitem.
