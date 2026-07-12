@@ -574,6 +574,10 @@ ich rozmiaru.
   `wilq/actions/action_blockers.py`; live Ads karta zachowuje blocked claims,
   review gates i `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/action-blockers-live.png`.
+- Confirmation/impact summary assembly jest teraz w
+  `wilq/actions/action_blockers.py`; live Ads karta zachowuje safety labels,
+  blocked claims i brak zapisu. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/action-summary-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

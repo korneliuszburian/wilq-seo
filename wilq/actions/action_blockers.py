@@ -1,15 +1,26 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
-from wilq.schemas import ActionConfirmRequest, ActionMode, ActionObject, AuditEvent
+from wilq.schemas import (
+    ActionConfirmRequest,
+    ActionImpactCheckRequest,
+    ActionMode,
+    ActionObject,
+    AuditEvent,
+)
 
 AdsTargetBlockers = Callable[[ActionConfirmRequest], list[str]]
 HumanConfirmation = Callable[[list[str]], bool]
 MutationAdapter = Callable[[ActionObject], str | None]
 StringList = Callable[[Any], list[str]]
+GateLabels = Callable[[list[str]], list[str]]
+OperatorNote = Callable[[str], str]
+StatusLabel = Callable[[str], str]
+ConnectorLabels = Callable[[list[str]], list[str]]
+MoneyLabel = Callable[[Any], str]
 
 
 def action_preview_blockers(
@@ -90,3 +101,98 @@ def action_apply_blockers(
     blocked_claims = string_list(action.payload.get("blocked_claims"))
     blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
     return unique_values(blockers)
+
+
+def action_confirmation_event_type(action: ActionObject, confirmed: bool) -> str:
+    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
+        return (
+            "ads_target_guardrail_confirmed"
+            if confirmed
+            else "ads_target_guardrail_confirmation_blocked"
+        )
+    return "action_apply_confirmed" if confirmed else "action_confirmation_blocked"
+
+
+def action_confirmation_summary(
+    action: ActionObject,
+    request: ActionConfirmRequest,
+    blockers: list[str],
+    latest_preview: AuditEvent | None,
+    *,
+    ads_target_summary: Callable[[ActionConfirmRequest, list[str]], str],
+    gate_labels: GateLabels,
+    operator_note: OperatorNote,
+) -> str:
+    del latest_preview
+    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
+        return ads_target_summary(request, blockers)
+    if blockers:
+        return (
+            "Potwierdzenie zapisu zmian zablokowane: "
+            f"{', '.join(gate_labels(blockers))}. "
+            f"{operator_note(request.notes)}"
+            "Ten krok nie zapisuje zmian w zewnętrznych systemach."
+        )
+    return (
+        "Potwierdzenie podglądu zapisane. "
+        f"{operator_note(request.notes)}"
+        "Ten krok nie zapisuje zmian w zewnętrznych systemach."
+    )
+
+
+def ads_target_confirmation_summary(
+    request: ActionConfirmRequest,
+    blockers: list[str],
+    *,
+    gate_labels: GateLabels,
+    micros_money_label: MoneyLabel,
+) -> str:
+    if blockers:
+        return (
+            "Potwierdzenie celu Ads zablokowane: "
+            f"{', '.join(gate_labels(blockers))}. "
+            f"Notatka: {request.notes}. "
+            "Ten krok nie zapisuje zmian w Google Ads."
+        )
+    if request.target_roas is not None:
+        target_summary = f"docelowy zwrot z reklam: {request.target_roas:g}"
+    else:
+        target_summary = (
+            f"docelowy koszt pozyskania celu: {micros_money_label(request.target_cpa_micros)}"
+        )
+    return (
+        f"Potwierdzono roboczą zasadę bezpieczeństwa celu Ads: {target_summary}. "
+        f"Notatka: {request.notes}. "
+        "Ten zapis odblokowuje tylko kontekst przeglądu celu; nie zapisuje zmian, "
+        "nie potwierdza rentowności i nie skaluje budżetu."
+    )
+
+
+def action_impact_check_summary(
+    *,
+    request: ActionImpactCheckRequest,
+    status: Literal["checked", "blocked"],
+    metric_fact_count: int,
+    source_connectors: list[str],
+    blockers: list[str],
+    status_label: StatusLabel,
+    connector_labels: ConnectorLabels,
+    gate_labels: GateLabels,
+) -> str:
+    parts = [
+        f"Sprawdzenie efektu: {status_label(status)}.",
+        f"Porównanie sprzed zmiany: {request.pre_window_days} dni.",
+        f"Porównanie po zmianie: {request.post_window_days} dni.",
+        f"Metryki z dowodami: {metric_fact_count}.",
+        "Źródła: "
+        + (
+            f"{', '.join(connector_labels(source_connectors))}."
+            if source_connectors
+            else "brak."
+        ),
+    ]
+    if blockers:
+        parts.append(f"Blokady: {', '.join(gate_labels(blockers))}.")
+    parts.append(f"Notatka: {request.notes}.")
+    parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
+    return " ".join(parts)

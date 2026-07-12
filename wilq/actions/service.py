@@ -13,8 +13,12 @@ from uuid import uuid4
 from wilq.actions.action_blockers import (
     action_apply_blockers,
     action_confirmation_blockers,
+    action_confirmation_event_type,
+    action_confirmation_summary,
     action_impact_check_blockers,
+    action_impact_check_summary,
     action_preview_blockers,
+    ads_target_confirmation_summary,
 )
 from wilq.actions.audit_store import (
     persisted_audit_events_by_action_id as _persisted_audit_events_by_action_id,
@@ -1245,12 +1249,27 @@ def confirm_action(
     audit = AuditEvent(
         id=f"audit_{action.id}_confirm_{uuid4().hex[:12]}",
         action_id=action.id,
-        event_type=_action_confirmation_event_type(action, confirmed),
+        event_type=action_confirmation_event_type(action, confirmed),
         event_type_label=_action_audit_event_label(
-            _action_confirmation_event_type(action, confirmed)
+            action_confirmation_event_type(action, confirmed)
         ),
         actor=request.confirmed_by,
-        summary=_action_confirmation_summary(action, request, blockers, latest_preview),
+        summary=action_confirmation_summary(
+            action,
+            request,
+            blockers,
+            latest_preview,
+            ads_target_summary=(
+                lambda target_request, target_blockers: ads_target_confirmation_summary(
+                    target_request,
+                    target_blockers,
+                    gate_labels=_action_gate_labels,
+                    micros_money_label=_micros_money_label,
+                )
+            ),
+            gate_labels=_action_gate_labels,
+            operator_note=_operator_note_sentence,
+        ),
         evidence_ids=action.evidence_ids,
     )
     action.audit_events = [audit, *action.audit_events]
@@ -1295,12 +1314,15 @@ def impact_check_action(
             else "action_impact_check_blocked"
         ),
         actor=request.checked_by,
-        summary=_action_impact_check_summary(
+        summary=action_impact_check_summary(
             request=request,
             status=status,
             metric_fact_count=len(action.metrics),
             source_connectors=source_connectors,
             blockers=blockers,
+            status_label=_action_result_status_label,
+            connector_labels=_source_connector_labels,
+            gate_labels=_action_gate_labels,
         ),
         evidence_ids=evidence_ids,
     )
@@ -2622,39 +2644,6 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
 
 
 
-def _action_confirmation_event_type(action: ActionObject, confirmed: bool) -> str:
-    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
-        return (
-            "ads_target_guardrail_confirmed"
-            if confirmed
-            else "ads_target_guardrail_confirmation_blocked"
-        )
-    return "action_apply_confirmed" if confirmed else "action_confirmation_blocked"
-
-
-def _action_confirmation_summary(
-    action: ActionObject,
-    request: ActionConfirmRequest,
-    blockers: list[str],
-    latest_preview: AuditEvent | None,
-) -> str:
-    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
-        return _ads_target_confirmation_summary(request, blockers)
-
-    if blockers:
-        return (
-            "Potwierdzenie zapisu zmian zablokowane: "
-            f"{', '.join(_action_gate_labels(blockers))}. "
-            f"{_operator_note_sentence(request.notes)}"
-            "Ten krok nie zapisuje zmian w zewnętrznych systemach."
-        )
-    return (
-        "Potwierdzenie podglądu zapisane. "
-        f"{_operator_note_sentence(request.notes)}"
-        "Ten krok nie zapisuje zmian w zewnętrznych systemach."
-    )
-
-
 def _ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str]:
     blockers: list[str] = []
     target_count = int(request.target_roas is not None) + int(request.target_cpa_micros is not None)
@@ -2663,58 +2652,6 @@ def _ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str
     if target_count > 1:
         blockers.append("exactly_one_target_guardrail_allowed")
     return blockers
-
-
-def _ads_target_confirmation_summary(
-    request: ActionConfirmRequest,
-    blockers: list[str],
-) -> str:
-    if blockers:
-        return (
-            "Potwierdzenie celu Ads zablokowane: "
-            f"{', '.join(_action_gate_labels(blockers))}. "
-            f"Notatka: {request.notes}. "
-            "Ten krok nie zapisuje zmian w Google Ads."
-        )
-    if request.target_roas is not None:
-        target_summary = f"docelowy zwrot z reklam: {request.target_roas:g}"
-    else:
-        target_summary = (
-            f"docelowy koszt pozyskania celu: {_micros_money_label(request.target_cpa_micros)}"
-        )
-    return (
-        f"Potwierdzono roboczą zasadę bezpieczeństwa celu Ads: {target_summary}. "
-        f"Notatka: {request.notes}. "
-        "Ten zapis odblokowuje tylko kontekst przeglądu celu; nie zapisuje zmian, "
-        "nie potwierdza rentowności i nie skaluje budżetu."
-    )
-
-
-def _action_impact_check_summary(
-    *,
-    request: ActionImpactCheckRequest,
-    status: Literal["checked", "blocked"],
-    metric_fact_count: int,
-    source_connectors: list[str],
-    blockers: list[str],
-) -> str:
-    parts = [
-        f"Sprawdzenie efektu: {_action_result_status_label(status)}.",
-        f"Porównanie sprzed zmiany: {request.pre_window_days} dni.",
-        f"Porównanie po zmianie: {request.post_window_days} dni.",
-        f"Metryki z dowodami: {metric_fact_count}.",
-        "Źródła: "
-        + (
-            f"{', '.join(_source_connector_labels(source_connectors))}."
-            if source_connectors
-            else "brak."
-        ),
-    ]
-    if blockers:
-        parts.append(f"Blokady: {', '.join(_action_gate_labels(blockers))}.")
-    parts.append(f"Notatka: {request.notes}.")
-    parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
-    return " ".join(parts)
 
 
 def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:

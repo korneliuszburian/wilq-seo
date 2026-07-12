@@ -652,6 +652,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   mutation-adapter i readiness callbacks. Live strategy action zachowuje jawne
   blocked claims, `apply_allowed=false` i brak vendor write; browser proof:
   `.local-lab/proof/continuation-2026-07-12/action-blockers-live.png`.
+- Confirmation event types, confirmation summaries, Ads target summaries i
+  impact-check summaries są teraz w `wilq/actions/action_blockers.py`; service
+  przekazuje tylko etykiety i callbacki domenowe. Live strategy action zachowuje
+  2 evidence IDs, jawne blocked claims i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/action-summary-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
