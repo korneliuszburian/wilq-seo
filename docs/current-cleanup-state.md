@@ -77,6 +77,10 @@ pozostałe readback/label helpers śledzi `wilq-seo-nlax`.
 `wilq/content/workflow/stage_activation.py`. Live dry-run/readback pozostają
 fail-closed, bez publikacji. `api.py` ma 1017 LOC; pozostałe write-readiness
 orchestration śledzi `wilq-seo-b0ja`.
+`wilq-seo-b0ja` wydzielił write-readiness projection do
+`wilq/content/workflow/stage_write_readiness.py`. Live kontrakt nadal wymaga
+ActionObject/audit i nie odblokowuje zapisu. `api.py` ma 956 LOC; pozostałe
+audit helpers śledzi `wilq-seo-fc5b`.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie

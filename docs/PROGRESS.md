@@ -65,6 +65,11 @@ w git, Beads i `docs/progress/archive/`.
   tests, Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do
   1017 LOC. Dry-run i readback pozostają fail-closed; pozostałe write-readiness
   orchestration ma osobny follow-up `wilq-seo-b0ja`.
+- `wilq-seo-b0ja` wydziela write-readiness projection do
+  `wilq/content/workflow/stage_write_readiness.py`. Focused readiness tests,
+  Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do 956
+  LOC. Write remains fail-closed, a pozostałe audit helpers mają osobny
+  follow-up `wilq-seo-fc5b`.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
