@@ -6,7 +6,6 @@ from contextlib import suppress
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any, Literal
-from uuid import uuid4
 
 from wilq.actions.action_blockers import (
     action_apply_blockers as _action_apply_blockers_impl,
@@ -35,7 +34,7 @@ from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
 from wilq.actions.audit_store import (
-    audit_event_label as _action_audit_event_label,
+    audit_event_label as _audit_event_label_impl,
 )
 from wilq.actions.audit_store import (
     audit_event_with_operator_label as _audit_event_with_operator_label_impl,
@@ -44,6 +43,7 @@ from wilq.actions.audit_store import (
     build_apply_audit_event,
     build_confirmation_audit_event,
     build_human_review_audit_event,
+    build_impact_check_audit_event,
     build_preview_audit_event,
 )
 from wilq.actions.audit_store import (
@@ -1285,18 +1285,15 @@ def impact_check_action(
     )
     if not source_connectors:
         source_connectors = [action.connector]
-    audit = AuditEvent(
-        id=f"audit_{action.id}_impact_{uuid4().hex[:12]}",
-        action_id=action.id,
-        event_type="action_impact_check_completed"
+    event_type = (
+        "action_impact_check_completed"
         if status == "checked"
-        else "action_impact_check_blocked",
-        event_type_label=_action_audit_event_label(
-            "action_impact_check_completed"
-            if status == "checked"
-            else "action_impact_check_blocked"
-        ),
+        else "action_impact_check_blocked"
+    )
+    audit = build_impact_check_audit_event(
+        action=action,
         actor=request.checked_by,
+        event_type=event_type,
         summary=action_impact_check_summary(
             request=request,
             status=status,
@@ -1752,6 +1749,11 @@ def _action_operator_checklist(payload: dict[str, Any]) -> list[str]:
 
 def _action_gate_labels(values: Iterable[str]) -> list[str]:
     return action_gate_labels(values)
+
+
+def _action_audit_event_label(event_type: str) -> str:
+    """Compatibility facade for API context compaction callers."""
+    return _audit_event_label_impl(event_type)
 
 
 def _source_connector_label(connector_id: str) -> str:

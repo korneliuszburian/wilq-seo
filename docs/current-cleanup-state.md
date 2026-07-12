@@ -820,6 +820,11 @@ ich rozmiaru.
   blocker evaluation, Ads target summary i review-gate orchestration. Event
   type/label, actor, summary i evidence nie zmieniły się; 39 focused tests,
   Ruff, mypy, diff check oraz managed API readiness smoke przechodzą.
+- Impact-check `AuditEvent` jest teraz składany przez
+  `audit_store.build_impact_check_audit_event`; `impact_check_action` zachowuje
+  status checked/blocked, metryki, source connectors, blocker i union evidence.
+  Focused audit/review/preview tests, Ruff, mypy, diff check i API smoke
+  przechodzą; brak zmian w measurement claims albo vendor writes.
 
 ## Resume
 

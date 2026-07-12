@@ -953,6 +953,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   event ID/type/label/actor/summary/evidence. 39 focused audit/review/preview
   testów, Ruff, mypy, managed API smoke i diff check przechodzą; confirm nadal
   nie wykonuje zapisu vendorowego.
+- Następny slice `jnra` przeniósł impact-check `AuditEvent` do
+  `audit_store.py` (`build_impact_check_audit_event`). `impact_check_action`
+  nadal wylicza status, metryki, source connectors, blocker i evidence union;
+  store składa event type/label/actor/summary z jawnym lineage. 40 focused
+  audit/review/preview testów, Ruff, mypy, diff check i API smoke przechodzą.
 
 ## Weryfikacja
 

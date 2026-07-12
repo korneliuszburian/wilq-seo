@@ -266,3 +266,22 @@ def test_build_confirmation_audit_event_keeps_review_only_semantics() -> None:
     assert event.actor == "operator"
     assert event.summary == "Potwierdzenie zablokowane."
     assert event.evidence_ids == ["ev_confirmation_builder"]
+
+
+def test_build_impact_check_audit_event_keeps_measurement_evidence() -> None:
+    action = ActionObject.model_construct(id="act_impact_audit_builder")
+
+    event = audit_store.build_impact_check_audit_event(
+        action=action,
+        actor="operator",
+        event_type="action_impact_check_blocked",
+        summary="Sprawdzenie efektu zablokowane.",
+        evidence_ids=["ev_impact_builder", "ev_metric_builder"],
+    )
+
+    assert event.id.startswith("audit_act_impact_audit_builder_impact_")
+    assert event.event_type == "action_impact_check_blocked"
+    assert event.event_type_label == "Sprawdzenie efektu zablokowane"
+    assert event.actor == "operator"
+    assert event.summary == "Sprawdzenie efektu zablokowane."
+    assert event.evidence_ids == ["ev_impact_builder", "ev_metric_builder"]
