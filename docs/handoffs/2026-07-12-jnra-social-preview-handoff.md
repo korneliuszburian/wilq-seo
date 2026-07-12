@@ -19,6 +19,9 @@ labels/rows/formatowania. Payload social, evidence IDs, Polish safety copy,
 - Live po managed restart: API health `ok`; LinkedIn i Facebook mają po cztery
   `social_draft_input_review` cards, evidence IDs i tryb `prepare`; nie ma
   publish/write action.
+- Browser proof action detail: `.local-lab/proof/continuation-2026-07-12/`
+  (`social-preview-cards.png` i `.txt`) pokazuje decyzję bez zapisu,
+  „publikacja zablokowana”, źródło danych i blocked claims above technical details.
 
 ## Stan grafu
 
