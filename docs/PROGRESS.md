@@ -24,8 +24,22 @@ w git, Beads i `docs/progress/archive/`.
   runtime i nowy typed projection `/api/marketing/daily-check`. Wynik zwraca
   checked/skipped connectors, freshness, evidence IDs, source connectors,
   expert rule IDs, blocked recommendations, safe next actions i do-not-touch;
-  live stan jest uczciwie `blocked` przy stale źródłach. Focused API/schema
+  live stan jest uczciwie `blocked` przy realnej blokadzie. Focused API/schema
   tests, Ruff, mypy, complexity i browser proof Command Center przechodzą.
+- `wilq-seo-v9ab.8.1` domyka kolejny false-positive guard bez nowego endpointu:
+  aggregate `decision_prepare_content_refresh_queue` przechodzi do review tylko,
+  gdy oba WordPress source wymagane przez `wordpress_platform_traps_v1` mają
+  własny typed `MetricFact` z evidence. Sama deklaracja konektora nie wystarcza.
+  Guard nie dotyka indywidualnych publicznych work orderów, więc nie miesza
+  `ekologus.pl` z osobnym sklepem. Live po restarcie: content queue ma
+  `source_trace_ready`, `multi_source_ready`, `date_window_ready` oraz proof
+  obu WordPress sources; focused contracts 27/27, Ruff i mypy przechodzą.
+- Świeży re-audyt `r564` potwierdza `blocked_by_external_state`, nie lukę
+  kolejki: GSC daje tylko jeden unikalny publiczny URL, a Ahrefsowe rekordy nie
+  mają bezpiecznego `referenced_public_url`. Nie twórz sztucznego trzeciego
+  tematu. Osobne potwierdzone follow-upy są śledzone w `r564.5` (weak
+  token-only Ahrefs overlap) oraz `v9ab.8.2` (brak typed measurement baseline
+  w aggregate daily content queue).
 
 - Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
   99 906 metric facts, 4 577 refresh runs, 12 connectorów (9 configured,
@@ -64,7 +78,7 @@ w git, Beads i `docs/progress/archive/`.
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 99 906 metric facts i 4 577
+- Managed API i dashboard są zdrowe. DuckDB ma 104 362 metric facts i 4 580
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
 - Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.

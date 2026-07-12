@@ -10,13 +10,16 @@ produktowe slice'y: platform traps mają typed kontrakt, source lineage i safe
 next steps, a ExpertRule ma teraz pełne warunki, kontrakty, false-positive gates
 i safety. Istniejące diagnostyki nie wymyślają tych ograniczeń w React ani
 skillach. Daily-check korzysta z istniejącego runtime i zwraca typed projection
-z traceability; live stan `blocked` przy stale źródłach nie jest maskowany.
+z traceability; live stan `blocked` przy realnej blokadzie nie jest maskowany.
 `wilq-seo-v9ab.8` jest rozpoczęty: source-trace guard blokuje stale/missing
 source i brak dowodu/reguły przed rekomendacją, `missing_conversion` korzysta
 z istniejącego `Ga4ConversionReadinessContract`, a content `date_window` z
-`ContentGscSearchAnalyticsContract`. Pozostałe false-positive guards
-pozostają otwarte; nie zaczynaj od kolejnego wrappera Ads ani drugiego expert
-endpointu.
+`ContentGscSearchAnalyticsContract`. `v9ab.8.1` dodaje dla aggregate daily
+content queue evidence-backed `multi_source_required`: komplet nazw connectorów
+nie wystarcza, każdy wymagany WordPress source musi mieć typed MetricFact z
+evidence; indywidualne publiczne work ordery nie dziedziczą scope sklepu.
+Pozostałe false-positive guards pozostają otwarte; nie zaczynaj od kolejnego
+wrappera Ads ani drugiego expert endpointu.
 
 Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
 readiness w `kgvy`, najnowszy wykonany slice to
@@ -28,15 +31,16 @@ bootstrap są wydzielone, parity jest potwierdzone. Następny krok to świeży r
 pozostałego orchestratora, nie kolejny sztuczny wrapper.
 Polityka automatycznego stale-triggera (cooldown, backoff, audit) pozostaje
 jawnie wyłączona do czasu osobnego kontraktu; `r564.3` jest zamknięty, a parent
-`r564` blokuje się wyłącznie na candidate density. Nie przywracaj direct
-WordPress write.
+`r564` blokuje się wyłącznie na candidate density: jeden unikalny publiczny URL
+z GSC i Ahrefs bez bezpiecznego referenced public URL. Nie twórz sztucznego
+tematu ani nie przywracaj direct WordPress write.
 
 ## Prawda produktu
 
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
 - Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
-- Managed runtime: 99 906 metric facts i 4 577 refresh runs; konektory
+- Managed runtime: 104 362 metric facts i 4 580 refresh runs; konektory
   12/9 configured/2 missing
   credentials/1 disabled.
 - Źródła contentowe są teraz świeże po read-only refreshu 2026-07-12. Queue i

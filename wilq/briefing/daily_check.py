@@ -9,9 +9,11 @@ from wilq.briefing.false_positive_guards import (
     FalsePositiveGuardResult,
     evaluate_conversion_readiness_guard,
     evaluate_gsc_date_window_guard,
+    evaluate_multi_source_required_guard,
     evaluate_source_trace_guard,
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
+from wilq.expert.rules import get_expert_rule
 from wilq.schemas import (
     ActionRisk,
     ConnectorStatus,
@@ -23,6 +25,7 @@ from wilq.schemas import (
 )
 
 WORKSPACE_ID = "ekologus"
+_CONTENT_QUEUE_DECISION_ID = "decision_prepare_content_refresh_queue"
 
 _RULE_IDS_BY_DOMAIN: dict[str, tuple[str, ...]] = {
     "google_ads": ("ads_diagnostics_v1", "ads_platform_traps_v1"),
@@ -93,18 +96,27 @@ def _daily_item(
     content_guard: FalsePositiveGuardResult | None = None,
 ) -> DailyCheckItem:
     rule_ids = list(_RULE_IDS_BY_DOMAIN.get(decision.domain, ()))
-    guard = evaluate_source_trace_guard(
+    source_trace_guard = evaluate_source_trace_guard(
         source_connectors=decision.source_connectors,
         evidence_ids=decision.evidence_ids,
         expert_rule_ids=rule_ids,
         freshness=decision.freshness,
     )
-    guards = [guard]
+    guards = [source_trace_guard]
+    evidence_ids = list(decision.evidence_ids)
+    multi_source_guard = _multi_source_required_guard(decision, rule_ids)
+    if multi_source_guard is not None:
+        multi_source_result, required_evidence_ids = multi_source_guard
+        guards.append(multi_source_result)
+        evidence_ids = list(dict.fromkeys([*evidence_ids, *required_evidence_ids]))
     if decision.domain == "ga4" and ga4_guard is not None:
         guards.append(ga4_guard)
     if decision.domain == "content" and content_guard is not None:
         guards.append(content_guard)
-    blocked_guard = next((item for item in guards if item.status == "blocked"), guard)
+    blocked_guard = next(
+        (item for item in guards if item.status == "blocked"),
+        source_trace_guard,
+    )
     is_blocked = decision.status == "blocked" or blocked_guard.status == "blocked"
     category: Literal["blocked_recommendation", "safe_next_action"] = (
         "blocked_recommendation" if is_blocked else "safe_next_action"
@@ -124,13 +136,48 @@ def _daily_item(
         summary=summary,
         next_step=next_step,
         source_connectors=decision.source_connectors,
-        evidence_ids=decision.evidence_ids,
+        evidence_ids=evidence_ids,
         expert_rule_ids=rule_ids,
         freshness=decision.freshness,
         action_ids=decision.action_ids,
         blocked_claims=decision.blocked_claims,
         false_positive_guards=[item.guard_id for item in guards],
         risk=decision.risk,
+    )
+
+
+def _multi_source_required_guard(
+    decision: DailyDecision,
+    rule_ids: list[str],
+) -> tuple[FalsePositiveGuardResult, list[str]] | None:
+    if decision.id != _CONTENT_QUEUE_DECISION_ID:
+        return None
+    multi_source_rules = [
+        rule
+        for rule_id in rule_ids
+        if (rule := get_expert_rule(rule_id)) is not None
+        and len(set(rule.required_connectors)) >= 2
+    ]
+    if len(multi_source_rules) != 1:
+        return None
+    required_connectors = multi_source_rules[0].required_connectors
+    evidence_backed_connectors = [
+        fact.source_connector for fact in decision.metric_facts if fact.evidence_id
+    ]
+    required_evidence_ids = list(
+        dict.fromkeys(
+            fact.evidence_id
+            for fact in decision.metric_facts
+            if fact.source_connector in required_connectors and fact.evidence_id
+        )
+    )
+    return (
+        evaluate_multi_source_required_guard(
+            source_connectors=decision.source_connectors,
+            evidence_backed_connectors=evidence_backed_connectors,
+            required_connectors=required_connectors,
+        ),
+        required_evidence_ids,
     )
 
 

@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from wilq.operator_labels import source_connector_labels
 from wilq.schemas import (
     ContentGscSearchAnalyticsContract,
     FreshnessState,
@@ -89,6 +90,37 @@ def evaluate_gsc_date_window_guard(
         status="blocked",
         reason="GSC nie potwierdza kompletnego, ograniczonego zakresu dat dla tej decyzji.",
         next_step="Najpierw sprawdź dostępny zakres dat i kompletność odczytu GSC.",
+    )
+
+
+def evaluate_multi_source_required_guard(
+    *,
+    source_connectors: list[str],
+    evidence_backed_connectors: list[str],
+    required_connectors: list[str],
+) -> FalsePositiveGuardResult:
+    """Require typed fact-and-evidence coverage for every rule-required source."""
+    required = list(dict.fromkeys(connector for connector in required_connectors if connector))
+    declared = set(source_connectors)
+    evidence_backed = set(evidence_backed_connectors)
+    missing = [
+        connector
+        for connector in required
+        if connector not in declared or connector not in evidence_backed
+    ]
+    if missing:
+        labels = ", ".join(source_connector_labels(missing))
+        return FalsePositiveGuardResult(
+            guard_id="multi_source_required",
+            status="blocked",
+            reason=f"Brakuje potwierdzonego dowodu z wymaganego źródła: {labels}.",
+            next_step=f"Odśwież {labels} w WILQ przed ręcznym review tej decyzji.",
+        )
+    return FalsePositiveGuardResult(
+        guard_id="multi_source_ready",
+        status="pass",
+        reason="Każde źródło wymagane przez regułę ma własny potwierdzony dowód.",
+        next_step="Można przejść do ręcznego review wskazanej decyzji.",
     )
 
 

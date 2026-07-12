@@ -49,5 +49,19 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
             for item in content_items
             for guard in item["false_positive_guards"]
         )
+        content_queue_items = [
+            item
+            for item in content_items
+            if item["id"] == "daily_check_decision_prepare_content_refresh_queue"
+        ]
+        if content_queue_items:
+            assert any(
+                guard in {"multi_source_ready", "multi_source_required"}
+                for item in content_queue_items
+                for guard in item["false_positive_guards"]
+            )
+            assert all(
+                item["evidence_ids"] for item in content_queue_items
+            )
     if payload["do_not_touch"]:
         assert all(item["status"] == "blocked" for item in payload["do_not_touch"])
