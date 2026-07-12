@@ -810,6 +810,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   34 passed, service LOC spadł do 2225, a live readiness raportuje
   `vendor_write_possible=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/mutation-next-live.png`.
+- Reguła `vendor_write_possible` jest teraz w istniejącym
+  `wilq/actions/mutation_readiness.py`; service deleguje z tą samą bramką
+  `apply + adapter + payload_apply_allowed + api_mutation_ready`. Focused
+  mutation contract test oraz readiness/API proof przechodzą, a live readiness
+  nadal raportuje `vendor_write_possible=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/vendor-write-live.png`.
 
 ## Weryfikacja
 

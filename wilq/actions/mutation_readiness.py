@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+from wilq.actions.payload_readiness import (
+    payload_api_mutation_ready,
+    payload_apply_allowed,
+    payload_preview_items,
+)
 from wilq.schemas import (
+    ActionMode,
     ActionMutationReadinessBlocker,
     ActionMutationReadinessRequirement,
     ActionObject,
@@ -169,3 +175,13 @@ def mutation_readiness_next_step(
                 "WILQ mógł zbudować write_authorization; live write nadal stop."
             )
     return blockers[0].next_step
+
+
+def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -> bool:
+    preview_items = payload_preview_items(action.payload)
+    return (
+        mutation_adapter is not None
+        and action.mode == ActionMode.apply
+        and payload_apply_allowed(action.payload, preview_items)
+        and payload_api_mutation_ready(action.payload, preview_items)
+    )

@@ -215,6 +215,9 @@ from wilq.actions.mutation_readiness import (
 from wilq.actions.mutation_readiness import (
     mutation_readiness_next_step as _mutation_readiness_next_step_impl,
 )
+from wilq.actions.mutation_readiness import (
+    vendor_write_possible as _vendor_write_possible_impl,
+)
 from wilq.actions.mutation_requirements import base_mutation_readiness_requirements
 from wilq.actions.mutation_response import build_mutation_readiness_response
 from wilq.actions.mutation_summary import build_mutation_readiness_summary
@@ -1639,12 +1642,7 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
 
 
 def _vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -> bool:
-    return (
-        mutation_adapter is not None
-        and action.mode == ActionMode.apply
-        and _action_payload_apply_allowed(action.payload)
-        and _action_payload_api_mutation_ready(action.payload)
-    )
+    return _vendor_write_possible_impl(action, mutation_adapter)
 
 
 def _wordpress_draft_write_readiness_requirements(

@@ -716,6 +716,11 @@ ich rozmiaru.
   kolejności blockerów ani fail-closed apply. Focused mutation/audit/preview/
   review tests: 34 passed, live readiness zachowuje `vendor_write_possible=false`;
   browser proof: `.local-lab/proof/continuation-2026-07-12/mutation-next-live.png`.
+- Reguła `vendor_write_possible` jest teraz w istniejącym
+  `wilq/actions/mutation_readiness.py`; service deleguje bez zmiany bramki
+  `apply + adapter + payload readiness`. Live readiness nadal raportuje
+  `vendor_write_possible=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/vendor-write-live.png`.
 
 ## Resume
 
