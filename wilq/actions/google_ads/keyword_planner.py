@@ -1,9 +1,22 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from wilq.actions.validation_copy import missing, no_destructive_change, no_write, wrong
-from wilq.schemas import ActionMode, ActionObject, ActionRisk, ActionStatus, OpportunityDomain
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
+    ActionRisk,
+    ActionStatus,
+    OpportunityDomain,
+)
+
+PreviewRow = Callable[[str, str], ActionPreviewRowViewModel]
+StringList = Callable[[Any], list[str]]
+StateLabel = Callable[[Any], str]
 
 KEYWORD_PLANNER_ACCESS_ACTION_ID = "act_configure_google_ads_keyword_planner_access"
 KEYWORD_PLANNER_ACCESS_ACTION_TYPE = "configure_google_ads_keyword_planner_access"
@@ -100,3 +113,56 @@ def validate_keyword_planner_access_payload(payload: dict[str, Any]) -> list[str
     if payload.get("destructive") is not False:
         errors.append(no_destructive_change(subject))
     return errors
+
+
+def keyword_planner_access_preview_cards(
+    payload: dict[str, Any],
+    *,
+    preview_row: PreviewRow,
+    string_list: StringList,
+    apply_state_label: StateLabel,
+) -> list[ActionPreviewCardViewModel]:
+    """Render Keyword Planner access blocker without exposing technical payloads."""
+    rows = [
+        preview_row(
+            "Zablokowany dostęp",
+            str(payload.get("blocked_api") or "Keyword Planner"),
+        ),
+        preview_row(
+            "Powód",
+            "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera",
+        ),
+    ]
+    required_state_labels = string_list(payload.get("required_google_ads_state_labels"))
+    if required_state_labels:
+        rows.append(preview_row("Wymagany stan", ", ".join(required_state_labels[:4])))
+    rows.append(
+        preview_row(
+            "Następny krok",
+            "sprawdź status tokena deweloperskiego w Google Ads, "
+            "a po akceptacji ponów odczyt danych",
+        )
+    )
+    requirement_labels = string_list(payload.get("required_validation_labels"))
+    if requirement_labels:
+        rows.append(preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+    blocked_claim_labels = string_list(payload.get("blocked_claim_labels"))
+    if blocked_claim_labels:
+        rows.append(
+            preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(blocked_claim_labels[:4]),
+            )
+        )
+    return [
+        ActionPreviewCardViewModel(
+            id="keyword_planner_access_preview",
+            kind="google_ads_keyword_planner_access_review",
+            title_label="Dostęp do Keyword Plannera do odblokowania",
+            subtitle_label="blokada dostępu bez zapisu zmian",
+            status_label="zapis zmian zablokowany",
+            rows=rows,
+            apply_state_label=apply_state_label(payload.get("apply_allowed")),
+            system_readiness_label="wymaga zmiany po stronie Google Ads",
+        )
+    ]

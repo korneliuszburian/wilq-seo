@@ -582,6 +582,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   typed cards, evidence, product-sample context i `apply_allowed=false`/
   `api_mutation_ready=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/merchant-feed-preview-cards.png`.
+- Keyword Planner access preview jest teraz w istniejącym
+  `wilq/actions/google_ads/keyword_planner.py`; service przekazuje callbacks do
+  rows/list/state labels. Live action ma 2 evidence IDs, jawny blocker
+  `DEVELOPER_TOKEN_NOT_APPROVED`, bezpieczny next step, blocked claims i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/keyword-planner-access-preview.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

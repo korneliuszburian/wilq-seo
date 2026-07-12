@@ -517,6 +517,11 @@ ich rozmiaru.
   próbek i safety labels, a live cztery karty zachowują issue context, evidence,
   blocked claims i brak zapisu. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/merchant-feed-preview-cards.png`.
+- Keyword Planner access preview renderer jest teraz w istniejącym
+  `wilq/actions/google_ads/keyword_planner.py`; karta zachowuje zewnętrzny
+  blocker dostępu, evidence, wymagany next step, blocked claims i brak zapisu.
+  Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/keyword-planner-access-preview.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

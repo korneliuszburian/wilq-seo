@@ -329,3 +329,30 @@ def test_merchant_preview_keeps_issue_context_and_product_samples() -> None:
     assert rows["Próbki produktów"] == "1 próbka z nazwą produktu"
     assert rows["Tytuły próbek"] == "Sorbent chemiczny 10 kg"
     assert cards[0].subtitle_label == "dostępność - zmiana dostępności"
+
+
+def test_keyword_planner_preview_keeps_external_access_blocker() -> None:
+    from wilq.actions.google_ads.keyword_planner import keyword_planner_access_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = keyword_planner_access_preview_cards(
+        {
+            "blocked_api": "Keyword Planner",
+            "required_google_ads_state_labels": ["zatwierdzony dostęp deweloperski"],
+            "required_validation_labels": ["ponów odczyt po akceptacji"],
+            "blocked_claim_labels": ["prognoza", "rozmiar odbiorców"],
+            "apply_allowed": False,
+        },
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Zablokowany dostęp"] == "Keyword Planner"
+    assert "zatwierdzony dostęp deweloperski" in rows["Wymagany stan"]
+    assert "prognoza" in rows["Czego nie wolno twierdzić"]
+    assert cards[0].apply_state_label == "zapis zmian zablokowany"
