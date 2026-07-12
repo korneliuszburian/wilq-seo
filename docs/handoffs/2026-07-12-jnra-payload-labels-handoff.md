@@ -17,6 +17,7 @@ callbacki domenowe oraz istniejące facade names przez import alias.
 - Po managed stack restart `/api/health` jest `ok`; Ads detail HTTP 200 ma
   evidence, `Zapis zmian zablokowany` i `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/payload-labels-live.png`.
+- Commit implementacji: `bc49e05` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, POST mutations lub sekretów.
 
 ## Beads
