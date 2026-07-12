@@ -867,6 +867,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   istniejącego formattera `wilq/content/handoff/wordpress_execution.py`.
   Focused mutation/WordPress execution tests, Ruff, mypy, complexity i diff
   check przechodzą; kontrakt oraz fail-closed execution errors bez zmian.
+- Kolejny slice `jnra` usunął nieużywany `_mutation_audit_summary` i jego
+  import z `service.py`; formatter pozostaje własnością `audit_store.py`.
+  21 focused audit/mutation tests, Ruff, mypy, complexity i diff check
+  przechodzą; brak zmiany eventów audytu lub safety loop.
 
 ## Weryfikacja
 

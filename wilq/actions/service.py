@@ -50,7 +50,6 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     latest_preview_event as _latest_preview_event_impl,
 )
-from wilq.actions.audit_store import mutation_audit_summary
 from wilq.actions.audit_store import (
     operator_audit_summary_text as _operator_audit_summary_text_impl,
 )
@@ -1698,21 +1697,6 @@ def _action_mutation_audit_record(
         errors=errors,
         mutation_adapter=mutation_adapter,
         adapter_result=adapter_result,
-    )
-
-
-def _mutation_audit_summary(
-    errors: list[str],
-    mutation_adapter: str | None,
-    *,
-    adapter_reached: bool,
-    external_write_attempted: bool,
-) -> str:
-    return mutation_audit_summary(
-        errors,
-        mutation_adapter,
-        adapter_reached=adapter_reached,
-        external_write_attempted=external_write_attempted,
     )
 
 

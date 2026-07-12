@@ -760,6 +760,9 @@ ich rozmiaru.
   apply używa bezpośrednio istniejącego formattera WordPress execution.
   Focused mutation/WordPress tests przechodzą, a fail-closed labels/reasons
   pozostają bez zmian.
+- Usunięto nieużywany `_mutation_audit_summary` i import z `service.py`; aktywna
+  implementacja nadal znajduje się w `wilq/actions/audit_store.py`. 21 focused
+  audit/mutation tests przechodzi bez zmiany eventów audytu.
 
 ## Resume
 
