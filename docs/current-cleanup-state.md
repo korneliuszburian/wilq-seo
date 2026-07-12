@@ -61,6 +61,10 @@ zakresem `wilq-seo-frgd`.
 `wilq/content/workflow/stage_review.py`. Live snapshot zachowuje fresh evidence,
 0 human-review blockers dla bieżącego kandydata, ale 1 handoff blocker i brak
 publikacji. `api.py` ma 1313 LOC; measurement extraction śledzi `wilq-seo-s8dl`.
+`wilq-seo-s8dl` wydzielił measurement window/outcome adapters do
+`wilq/content/workflow/stage_measurement.py`. Live snapshot zachowuje fresh
+evidence, 1 measurement blocker i brak success claim. `api.py` ma 1272 LOC;
+pozostałe readiness helpers śledzi `wilq-seo-kvgd`.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie

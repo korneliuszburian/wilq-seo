@@ -54,12 +54,8 @@ from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
     build_content_work_item_service_profile_context,
 )
-from wilq.content.measurement.outcome import interpret_content_measurement_outcome
 from wilq.content.measurement.window import (
     ContentDateRange,
-    apply_content_measurement_window_to_work_item,
-    build_content_measurement_window,
-    content_measurement_window_outcome_blockers,
 )
 from wilq.content.quality.review import (
     build_content_quality_review,
@@ -86,8 +82,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
-    ContentWorkItemMeasurementOutcomeRequest,
-    ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowRequest,
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightRequest,
@@ -136,6 +130,10 @@ from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
     build_content_work_item_draft_variants_response,  # noqa: F401 - router compatibility export
     build_content_work_item_structured_draft_generation_response,
+)
+from wilq.content.workflow.stage_measurement import (
+    build_content_work_item_measurement_outcome_response,  # noqa: F401 - router compatibility export
+    build_content_work_item_measurement_window_response,
 )
 from wilq.content.workflow.stage_preparation import (
     build_content_work_item_preflight_response,
@@ -924,49 +922,6 @@ def build_content_work_item_wordpress_authoring_payload_preview_response(
             draft_package=request.draft_package,
             authoring_profile=profile,
         ),
-    )
-
-
-def build_content_work_item_measurement_window_response(
-    request: ContentWorkItemMeasurementWindowRequest,
-) -> ContentWorkItemMeasurementWindowResponse:
-    measurement_result = build_content_measurement_window(
-        item=request.item,
-        handoff=request.handoff,
-        baseline_period=request.baseline_period,
-        observation_period=request.observation_period,
-        allowed_metrics=request.allowed_metrics,
-        source_connectors=request.source_connectors,
-    )
-    updated_item = (
-        apply_content_measurement_window_to_work_item(
-            request.item,
-            measurement_result.window,
-        )
-        if measurement_result.window is not None
-        else request.item
-    )
-    return ContentWorkItemMeasurementWindowResponse(
-        item=request.item,
-        updated_item=updated_item,
-        measurement_window_result=measurement_result,
-        outcome_blockers=(
-            content_measurement_window_outcome_blockers(measurement_result.window)
-            if measurement_result.window is not None
-            else []
-        ),
-    )
-
-
-def build_content_work_item_measurement_outcome_response(
-    request: ContentWorkItemMeasurementOutcomeRequest,
-) -> ContentWorkItemMeasurementOutcomeResponse:
-    return ContentWorkItemMeasurementOutcomeResponse(
-        outcome=interpret_content_measurement_outcome(
-            window=request.window,
-            observed_metrics=request.observed_metrics,
-            as_of=request.as_of,
-        )
     )
 
 

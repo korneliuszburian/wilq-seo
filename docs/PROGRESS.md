@@ -45,6 +45,11 @@ w git, Beads i `docs/progress/archive/`.
   browser `/content-workflow` i live safety proof przechodzą; `api.py` spadł do
   1313 LOC. Handoff nadal ma blocker, a publish pozostaje nieaktywne. Measurement
   adapter ma osobny follow-up `wilq-seo-s8dl`.
+- `wilq-seo-s8dl` wydziela measurement window/outcome adapters do
+  `wilq/content/workflow/stage_measurement.py`. 19 focused content tests,
+  Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do 1272
+  LOC. Measurement nadal zwraca blocker bez success claims; dalsze readiness
+  helpers mają osobny follow-up `wilq-seo-kvgd`.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
