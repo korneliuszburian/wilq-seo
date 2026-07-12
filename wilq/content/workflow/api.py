@@ -148,6 +148,10 @@ from wilq.content.workflow.queue import (
     build_content_work_item_queue_candidate,
     build_content_work_item_queue_response,
 )
+from wilq.content.workflow.snapshot_assembly import (
+    SnapshotAssemblyCallbacks,
+    assemble_content_work_item_snapshot,
+)
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import (
     AuditEvent,
@@ -1258,83 +1262,35 @@ def _build_content_work_item_snapshot_response(
     human_review_record: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
-    measurement_window_id = f"measure_{item.id}"
     knowledge_match = match_content_knowledge_cards(item)
     service_profile_context = build_content_work_item_service_profile_context(
         item,
         knowledge_match=knowledge_match,
     )
-    preflight = _snapshot_preflight(item, inventory_records)
-    sales_brief = _snapshot_sales_brief(
-        item,
-        inventory_records,
-        claim_ledger,
-        seed,
-        enrichment,
-        knowledge_match,
-        measurement_window_id,
-    )
-    brief = sales_brief.sales_brief_result.brief
-    draft_package = _snapshot_draft_package(
-        item,
-        inventory_records,
-        claim_ledger,
-        seed,
-        enrichment,
-        knowledge_match,
-        measurement_window_id,
-        None if brief is None else brief.id,
-        brief,
-    )
-    draft = draft_package.draft_package_result.draft_package
-    structured_generation = _snapshot_structured_generation(
-        item,
-        claim_ledger,
-        measurement_window_id,
-        None if brief is None else brief.id,
-        brief,
-        draft,
-    )
-    human_review = _snapshot_human_review(
-        item,
-        claim_ledger,
-        measurement_window_id,
-        None if brief is None else brief.id,
-        draft,
-        human_review_record,
-    )
-    wordpress_handoff = build_content_work_item_wordpress_draft_handoff_response(
-        ContentWorkItemWordPressDraftHandoffRequest(
-            item=human_review.reviewed_item,
-            draft_package=draft,
-            human_review=human_review.review,
-            audit=audit,
-        )
-    )
-    measurement_window = _snapshot_measurement_window(
-        item,
-        claim_ledger,
-        wordpress_handoff,
-        measurement_window_id,
-        None if brief is None else brief.id,
-        draft,
-        human_review,
-    )
-    snapshot = ContentWorkItemWorkflowSnapshotResponse(
+    return assemble_content_work_item_snapshot(
+        item=item,
+        inventory_records=inventory_records,
+        claim_ledger=claim_ledger,
+        seed=seed,
+        enrichment=enrichment,
         freshness_assessment=freshness_assessment,
         candidate=candidate,
+        knowledge_match=knowledge_match,
         service_profile_context=service_profile_context,
-        claim_ledger=claim_ledger,
-        preflight=preflight,
-        sales_brief=sales_brief,
-        draft_package=draft_package,
-        structured_generation=structured_generation,
-        human_review=human_review,
-        wordpress_handoff=wordpress_handoff,
-        measurement_window=measurement_window,
+        measurement_window_id=f"measure_{item.id}",
+        callbacks=SnapshotAssemblyCallbacks(
+            preflight=_snapshot_preflight,
+            sales_brief=_snapshot_sales_brief,
+            draft_package=_snapshot_draft_package,
+            structured_generation=_snapshot_structured_generation,
+            human_review=_snapshot_human_review,
+            wordpress_handoff=_snapshot_wordpress_handoff,
+            measurement_window=_snapshot_measurement_window,
+            operator_steps=workflow_steps.content_workflow_operator_steps,
+        ),
+        human_review_record=human_review_record,
+        audit=audit,
     )
-    snapshot.operator_steps = workflow_steps.content_workflow_operator_steps(snapshot)
-    return snapshot
 
 
 def _snapshot_preflight(
@@ -1452,6 +1408,22 @@ def _snapshot_human_review(
             review=human_review_record,
             draft_package=draft,
             claim_ledger=claim_ledger,
+        )
+    )
+
+
+def _snapshot_wordpress_handoff(
+    item: ContentWorkItem,
+    draft: ContentDraftPackage | None,
+    human_review: ContentHumanReview | None,
+    audit: ContentWordPressDraftAuditEnvelope | None,
+) -> ContentWorkItemWordPressDraftHandoffResponse:
+    return build_content_work_item_wordpress_draft_handoff_response(
+        ContentWorkItemWordPressDraftHandoffRequest(
+            item=item,
+            draft_package=draft,
+            human_review=human_review,
+            audit=audit,
         )
     )
 

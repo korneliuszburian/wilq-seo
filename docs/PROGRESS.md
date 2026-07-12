@@ -23,6 +23,14 @@ w git, Beads i `docs/progress/archive/`.
   Focused contracts (17), Ruff, mypy i live tactical queue (24 items, 4 Merchant
   items) przechodzą. Complexity spadła do 1195 LOC; pozostałe naruszenie pliku
   jest jawnie odnotowane jako dalszy zakres, bez udawania pełnego splitu.
+- `wilq-seo-c9h9.16` wydziela typed orchestrator snapshotu do
+  `wilq/content/workflow/snapshot_assembly.py`. API pozostaje adapterem stage
+  callbacks, a response shape i write gates nie zmieniają się. Focused content
+  contracts: 12 passed; Ruff, mypy, diff check, live snapshot i browser proof
+  `/content-workflow` przechodzą. Live snapshot jest `workflow_snapshot`, fresh,
+  z 2 evidence IDs (GSC + WordPress); Service Profile, handoff i measurement
+  pozostają jawnie review/blocker, bez publikacji. Complexity `api.py` spadła
+  do 1470 LOC; pozostałe naruszenie pliku jest jawne i wymaga osobnego seama.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
