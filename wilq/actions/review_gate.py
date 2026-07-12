@@ -25,7 +25,6 @@ ReviewGateStatus = Literal[
     "blocked_apply",
 ]
 GateLabels = Callable[[Iterable[str]], list[str]]
-ConfirmationRequired = Callable[[list[str], ActionMode], bool]
 ReviewOutcome = Callable[[AuditEvent | None], ActionReviewOutcome | None]
 ImpactStatus = Callable[[AuditEvent | None], Literal["checked", "blocked"] | None]
 AuditSummary = Callable[[AuditEvent], str]
@@ -42,7 +41,6 @@ ApplyBlockersBuilder = Callable[..., list[str]]
 RequiredChecksBuilder = Callable[[dict[str, Any]], list[str]]
 OperatorChecklistBuilder = Callable[[dict[str, Any]], list[str]]
 PayloadApplyAllowed = Callable[[dict[str, Any]], bool]
-RequiresHumanConfirmation = Callable[[list[str]], bool]
 SupportedMutationAdapter = Callable[[ActionObject], str | None]
 
 
@@ -209,6 +207,17 @@ def action_operator_checklist(
     return required_checks()
 
 
+def requires_human_confirmation(required_checks: list[str]) -> bool:
+    return any("human" in check and "confirm" in check for check in required_checks)
+
+
+def action_confirmation_required(required_checks: list[str], mode: ActionMode) -> bool:
+    return requires_human_confirmation(required_checks) or mode in {
+        ActionMode.prepare,
+        ActionMode.apply,
+    }
+
+
 def build_action_review_gate(
     *,
     action: ActionObject,
@@ -221,7 +230,6 @@ def build_action_review_gate(
     last_mutation_audit: ActionMutationAuditRecord | None,
     apply_blockers: list[str],
     gate_labels: GateLabels,
-    confirmation_required: ConfirmationRequired,
     review_outcome: ReviewOutcome,
     review_summary: AuditSummary,
     confirmation_summary: AuditSummary,
@@ -246,7 +254,7 @@ def build_action_review_gate(
         operator_checklist_labels=gate_labels(operator_checklist),
         apply_blockers=apply_blockers,
         apply_blocker_labels=gate_labels(apply_blockers),
-        confirmation_required=confirmation_required(required_checks, action.mode),
+        confirmation_required=action_confirmation_required(required_checks, action.mode),
         apply_allowed=contract_apply_allowed,
         last_review_outcome=review_outcome(last_review),
         last_reviewed_by=last_review.actor if last_review is not None else None,
@@ -312,11 +320,9 @@ def action_review_gate(
     required_checks_builder: RequiredChecksBuilder,
     operator_checklist_builder: OperatorChecklistBuilder,
     payload_apply_allowed: PayloadApplyAllowed,
-    requires_human_confirmation: RequiresHumanConfirmation,
     supported_mutation_adapter: SupportedMutationAdapter,
     string_list: StringList,
     gate_labels: GateLabels,
-    confirmation_required: ConfirmationRequired,
     review_summary: AuditSummary,
     confirmation_summary: AuditSummary,
     impact_status: ImpactStatus,
@@ -350,7 +356,6 @@ def action_review_gate(
         last_mutation_audit=last_mutation_audit,
         apply_blockers=apply_blockers,
         gate_labels=gate_labels,
-        confirmation_required=confirmation_required,
         review_outcome=review_outcome_from_event,
         review_summary=review_summary,
         confirmation_summary=confirmation_summary,

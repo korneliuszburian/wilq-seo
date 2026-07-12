@@ -372,7 +372,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 616 LOC;
-- `wilq/actions/service.py`: 1 616 non-empty LOC;
+- `wilq/actions/service.py`: 1 608 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -382,10 +382,10 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 - `tests/api_contracts/test_ads_contracts.py`: 4 971 LOC; największy test
   2 914 linii.
 
-Aktualny rebaseline complexity (2026-07-12): 423 pliki Python / 136735
-non-empty LOC; `service.py` ma 1616 LOC po canonical registry seamu i przeniesieniu
-Keyword Planner eligibility do właściciela domenowego. Cache zapisuje inventory
-tylko, gdy fingerprint Google Ads jest taki sam przed i po buildzie. Standardowy
+Aktualny rebaseline complexity (2026-07-12): 423 pliki Python / 136751
+non-empty LOC; `service.py` ma 1608 LOC po canonical registry, Keyword Planner
+eligibility i confirmation policy seamu. Cache zapisuje inventory tylko, gdy
+fingerprint Google Ads jest taki sam przed i po buildzie. Standardowy
 `--changed` jawnie wymaga akceptacji frozen facade i istniejącego dużego pliku
 testowego; wariant `--allow-frozen --allow-budget-violations` przechodzi, a
 raportowane przekroczenia testów są wcześniejsze i niezwiązane z asercją parity.
@@ -840,9 +840,9 @@ ich rozmiaru.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
 3. `4wwo` jest zamknięty; nie twórz drugiego dashboardowego triggera ani
    reguły stale/cooldown w React.
-4. `jnra.1` i `jnra.2` są zamknięte po parity/cache oraz Keyword Planner safety
-   proof. Kontynuuj `jnra` wyłącznie od kolejnego małego, potwierdzonego seamu
-   z aktualnego complexity/runtime review; nie przenoś ponownie gotowych
-   mutation/readiness ani WordPress preview boundaries.
+4. `jnra.1`, `jnra.2` i `jnra.3` są zamknięte po parity/cache, Keyword Planner
+   i review-gate safety proof. Kontynuuj `jnra` wyłącznie od kolejnego małego,
+   potwierdzonego seamu z aktualnego complexity/runtime review; nie przenoś
+   ponownie gotowych mutation/readiness ani WordPress preview boundaries.
 5. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
    nadal wymaga evidence-backed candidate density bez sztucznego tematu.

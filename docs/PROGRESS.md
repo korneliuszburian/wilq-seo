@@ -102,6 +102,12 @@ w git, Beads i `docs/progress/archive/`.
   evidence. Focused factory/API/preview contracts przechodzą; live HTTP nadal
   pokazuje `prepare`, `apply_allowed=false`, `destructive=false` i brak raw
   vendor markers.
+- `wilq-seo-jnra.3` przenosi politykę `confirmation_required` do istniejącego
+  `review_gate.py`, który już składa required checks i apply blockers. Semantyka
+  pozostaje fail-closed: `prepare` i `apply` wymagają confirmation, zaś
+  `suggest` tylko przy case-sensitive checku zawierającym `human` i `confirm`.
+  Focused review/confirmation contracts przechodzą; live prepare action nadal
+  ma `confirmation_required=true`, `apply_allowed=false` i brak write path.
 - Async refresh deduplikuje teraz aktywny run per connector: drugi queued/running
   request zwraca ten sam `run_id` i nie tworzy równoległego odczytu. Focused
   redaction/async contract suite: 4 passed; Ruff, mypy i diff check green.
@@ -1022,8 +1028,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
-- Aktualny rebaseline complexity po `jnra.2`: 423 Python files / 136735
-  non-empty LOC; `service.py` ma 1616 LOC. Standardowy changed audit zatrzymuje
+- Aktualny rebaseline complexity po `jnra.3`: 423 Python files / 136751
+  non-empty LOC; `service.py` ma 1608 LOC. Standardowy changed audit zatrzymuje
   się na jawnie frozen facade oraz istniejącym dużym pliku testowym; dopuszczony
   wariant dla udokumentowanego seamu przechodzi i nie ukrywa tych wcześniejszych
   budżetów jako sukcesu zmiany.

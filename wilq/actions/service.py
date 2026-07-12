@@ -1638,11 +1638,9 @@ def _action_review_gate(
         required_checks_builder=_action_required_checks,
         operator_checklist_builder=_action_operator_checklist,
         payload_apply_allowed=_action_payload_apply_allowed,
-        requires_human_confirmation=_requires_human_confirmation,
         supported_mutation_adapter=_supported_mutation_adapter,
         string_list=_string_list,
         gate_labels=_action_gate_labels,
-        confirmation_required=_action_confirmation_required,
         review_summary=lambda event: _operator_audit_summary_text(event.summary),
         confirmation_summary=_action_audit_summary_for_operator,
         impact_status=_impact_status_from_event,
@@ -1764,16 +1762,6 @@ def _action_payload_apply_allowed(payload: dict[str, Any]) -> bool:
 
 def _action_payload_api_mutation_ready(payload: dict[str, Any]) -> bool:
     return payload_api_mutation_ready(payload, _payload_preview_items(payload))
-
-
-def _action_confirmation_required(required_checks: list[str], mode: ActionMode) -> bool:
-    if _requires_human_confirmation(required_checks):
-        return True
-    return mode in {ActionMode.prepare, ActionMode.apply}
-
-
-def _requires_human_confirmation(required_checks: list[str]) -> bool:
-    return any("human" in check and "confirm" in check for check in required_checks)
 
 
 def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:

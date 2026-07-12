@@ -214,6 +214,34 @@ def test_review_gate_builders_keep_required_checks_and_checklist_fallbacks() -> 
     assert checklist == ["one", "two"]
 
 
+@pytest.mark.parametrize(
+    ("mode", "required_checks", "expects_human_confirmation", "expected"),
+    [
+        ("suggest", [], False, False),
+        ("suggest", ["human_review_before_apply"], False, False),
+        ("suggest", ["human_confirm_before_apply"], True, True),
+        ("suggest", ["human_any_confirm_anywhere"], True, True),
+        ("suggest", ["HUMAN_CONFIRM"], False, False),
+        ("prepare", [], False, True),
+        ("apply", [], False, True),
+    ],
+)
+def test_review_gate_owns_confirmation_required_policy(
+    mode: str,
+    required_checks: list[str],
+    expects_human_confirmation: bool,
+    expected: bool,
+) -> None:
+    from wilq.actions.review_gate import (
+        action_confirmation_required,
+        requires_human_confirmation,
+    )
+    from wilq.schemas import ActionMode
+
+    assert requires_human_confirmation(required_checks) is expects_human_confirmation
+    assert action_confirmation_required(required_checks, ActionMode(mode)) is expected
+
+
 def test_action_review_gate_owns_gate_assembly_behind_callback_seam() -> None:
     from wilq.actions.review_gate import action_review_gate
     from wilq.schemas import ActionObject
@@ -232,11 +260,9 @@ def test_action_review_gate_owns_gate_assembly_behind_callback_seam() -> None:
         required_checks_builder=lambda _payload: ["human_confirm_before_apply"],
         operator_checklist_builder=lambda _payload: ["human_confirm_before_apply"],
         payload_apply_allowed=lambda _payload: False,
-        requires_human_confirmation=lambda _checks: True,
         supported_mutation_adapter=lambda _action: None,
         string_list=lambda value: value if isinstance(value, list) else [],
         gate_labels=lambda values: list(values),
-        confirmation_required=lambda _checks, _mode: True,
         review_summary=lambda event: event.summary,
         confirmation_summary=lambda event: event.summary,
         impact_status=lambda _event: None,
