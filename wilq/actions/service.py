@@ -322,6 +322,9 @@ from wilq.actions.wordpress_mutation_requirements import (
     wordpress_draft_target_content_readiness_requirements,
     wordpress_draft_write_readiness_requirements,
 )
+from wilq.actions.wordpress_mutation_requirements import (
+    wordpress_draft_writes_enabled as _wordpress_draft_writes_enabled,
+)
 from wilq.actions.wordpress_preview import (
     wordpress_draft_handoff_preview_cards,
     wordpress_draft_payload_preview_card,
@@ -348,7 +351,6 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftWriteReadinessResponse,
 )
 from wilq.content.workflow.store import content_workflow_store
-from wilq.credentials.runtime import variable_value
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
@@ -1777,15 +1779,6 @@ def _execute_supported_mutation_adapter(
             "redacted": True,
         }, _wordpress_draft_execution_errors(execution)
     return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
-
-
-def _wordpress_draft_writes_enabled() -> bool:
-    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
 
 
 def _wordpress_draft_execution_errors(execution: Any) -> list[str]:

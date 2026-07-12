@@ -1,9 +1,22 @@
+import pytest
+
 from wilq.actions.mutation_readiness import mutation_readiness_next_step
 from wilq.actions.wordpress_mutation_requirements import (
     wordpress_draft_write_readiness_requirements,
 )
 from wilq.content.workflow.contracts import ContentWordPressDraftWriteReadinessResponse
 from wilq.schemas import ActionMode, ActionMutationReadinessBlocker, ActionObject
+
+
+def test_wordpress_draft_write_env_reader_is_owned_by_mutation_requirements(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.actions.wordpress_mutation_requirements import wordpress_draft_writes_enabled
+
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    assert wordpress_draft_writes_enabled() is True
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "false")
+    assert wordpress_draft_writes_enabled() is False
 
 
 def test_mutation_readiness_next_step_keeps_wordpress_safe_order() -> None:

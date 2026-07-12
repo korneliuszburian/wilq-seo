@@ -8,9 +8,19 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
 )
+from wilq.credentials.runtime import variable_value
 from wilq.schemas import ActionMutationReadinessRequirement, ActionObject
 
 PreviewItems = Callable[[dict[str, Any]], list[dict[str, Any]]]
+
+
+def wordpress_draft_writes_enabled() -> bool:
+    return (variable_value("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def wordpress_draft_execution_readiness_requirements(

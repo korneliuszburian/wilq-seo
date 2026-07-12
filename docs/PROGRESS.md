@@ -834,6 +834,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Focused audit/mutation tests przechodzą, service LOC spadł do 2154, a live
   Ads detail zachowuje evidence, blokadę zapisu i `apply_allowed=false`; browser
   proof: `.local-lab/proof/continuation-2026-07-12/apply-event-live.png`.
+- Odczyt env `WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES` jest teraz własnością
+  istniejącego `wilq/actions/wordpress_mutation_requirements.py`; service nie
+  duplikuje WordPress write policy ani credential lookup. Focused WordPress /
+  mutation tests, source Ruff/mypy/complexity/diff check i managed runtime
+  przechodzą; live readiness pozostaje fail-closed; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/wp-env-live.png`.
 
 ## Weryfikacja
 

@@ -736,6 +736,10 @@ ich rozmiaru.
   Live Ads detail nadal zachowuje evidence, `Zapis zmian zablokowany` i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/apply-event-live.png`.
+- Odczyt env `WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES` jest teraz w istniejącym
+  `wilq/actions/wordpress_mutation_requirements.py`; service nie duplikuje
+  WordPress write policy. Live readiness pozostaje fail-closed; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/wp-env-live.png`.
 
 ## Resume
 
