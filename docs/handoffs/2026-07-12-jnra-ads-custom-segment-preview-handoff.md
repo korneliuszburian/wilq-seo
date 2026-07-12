@@ -28,7 +28,7 @@ prepare mode i ActionObject safety loop pozostały bez zmian.
 
 `wilq-seo-jnra` pozostaje `in_progress`; WordPress `7b285df2`, social
 `3895ca5a`, Ads budget `65df313f`, recommendation `ca1f2bcc`, negative-keyword
-`0146a70f`; ten custom-segment seam czeka na commit/push.
+`0146a70f`, custom-segment `6b10dd03`.
 
 ## Następny krok
 
