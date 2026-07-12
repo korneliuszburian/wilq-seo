@@ -35,6 +35,12 @@ batch, a live queue zachowuje 24 itemy, 19 grup i 3 action IDs. Focused tests,
 Ruff i mypy przechodzą. Complexity audit nadal pokazuje istniejący budżet
 `tactical_queue.py` (1311 LOC) oraz `_merchant_feed_items` (115 LOC); nie jest to
 ukrywane jako sukces i pozostaje zakresem dalszego Beada.
+
+Następnie `wilq-seo-ipps` wydzielił Merchant issue/status assembly do
+`wilq/briefing/tactical_merchant.py`. Live kolejka zachowuje 24 elementy, w tym
+4 Merchant, oraz dotychczasowe evidence/action semantics. Complexity
+`tactical_queue.py` spadła do 1195 LOC; pozostały monolit jest kolejnym,
+potwierdzonym zakresem, a nie ukrytym wyjątkiem.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie

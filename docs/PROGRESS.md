@@ -17,6 +17,12 @@ w git, Beads i `docs/progress/archive/`.
 - Live rebaseline: API `ok`, 104 362 metric facts, 4 580 refresh runs, 9/12
   konektorów skonfigurowanych; kolejka contentowa ma 2 kandydatów i blocker
   `not_enough_actionable_candidates`, więc WILQ nie tworzy sztucznego tematu.
+- `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
+  `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
+  polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
+  Focused contracts (17), Ruff, mypy i live tactical queue (24 items, 4 Merchant
+  items) przechodzą. Complexity spadła do 1195 LOC; pozostałe naruszenie pliku
+  jest jawnie odnotowane jako dalszy zakres, bez udawania pełnego splitu.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
