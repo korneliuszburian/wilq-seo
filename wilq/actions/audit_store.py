@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from typing import Any
 
 from wilq.operator_labels import impact_comparison_summary_label
@@ -10,6 +11,9 @@ from wilq.schemas import ActionMutationAuditRecord, AuditEvent
 from wilq.storage.local_state import local_state_store
 
 _MAX_EVENTS_PER_ACTION = 10
+
+StringList = Callable[[Any], list[str]]
+OperatorItemLabel = Callable[[str], str]
 
 RAW_AUDIT_IDENTIFIER_RE = re.compile(r"\baudit_[A-Za-z0-9_:-]+\b")
 RAW_AUDIT_REFERENCE_CLAUSE_RE = re.compile(
@@ -96,6 +100,51 @@ def audit_detail_contains_raw_contract_text(value: Any) -> bool:
     if isinstance(value, str):
         return contains_raw_audit_contract_text(value)
     return False
+
+
+def audit_details_for_operator(
+    details: dict[str, Any],
+    *,
+    string_list: StringList,
+    review_summary_item: OperatorItemLabel,
+    review_blocker_label: OperatorItemLabel,
+) -> dict[str, Any]:
+    operator_details: dict[str, Any] = {}
+    for key, value in details.items():
+        if contains_raw_audit_contract_text(str(key)):
+            continue
+        clean_value = _audit_detail_value_for_operator(value)
+        if clean_value is not None:
+            operator_details[str(key)] = clean_value
+    checked_items = string_list(operator_details.get("checked_items"))
+    if checked_items:
+        operator_details["checked_items"] = [review_summary_item(item) for item in checked_items]
+    blockers = string_list(operator_details.get("blockers"))
+    if blockers:
+        operator_details["blockers"] = [review_blocker_label(item) for item in blockers]
+    return operator_details
+
+
+def _audit_detail_value_for_operator(value: Any) -> Any:
+    if isinstance(value, dict):
+        clean: dict[str, Any] = {}
+        for key, item in value.items():
+            if contains_raw_audit_contract_text(str(key)):
+                continue
+            clean_item = _audit_detail_value_for_operator(item)
+            if clean_item is not None:
+                clean[str(key)] = clean_item
+        return clean or None
+    if isinstance(value, list):
+        clean_items = [
+            clean_item
+            for item in value
+            if (clean_item := _audit_detail_value_for_operator(item)) is not None
+        ]
+        return clean_items or None
+    if isinstance(value, str) and contains_raw_audit_contract_text(value):
+        return None
+    return value
 
 
 def contains_raw_audit_contract_text(summary: str) -> bool:

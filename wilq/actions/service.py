@@ -25,14 +25,12 @@ from wilq.actions.action_blockers import (
 from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
 )
+from wilq.actions.audit_store import audit_details_for_operator
 from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
 from wilq.actions.audit_store import (
     audit_event_label as _action_audit_event_label,
-)
-from wilq.actions.audit_store import (
-    contains_raw_audit_contract_text as _contains_raw_audit_contract_text,
 )
 from wilq.actions.audit_store import (
     latest_action_confirmation_event as _latest_action_confirmation_event_impl,
@@ -2364,48 +2362,14 @@ def _audit_event_with_operator_label(event: AuditEvent) -> AuditEvent:
             "event_type_label": event.event_type_label
             or _action_audit_event_label(event.event_type),
             "summary": _action_audit_summary_for_operator(event),
-            "details": _audit_details_for_operator(event.details),
+            "details": audit_details_for_operator(
+                event.details,
+                string_list=_string_list,
+                review_summary_item=_review_summary_item,
+                review_blocker_label=_review_blocker_label,
+            ),
         }
     )
-
-
-def _audit_details_for_operator(details: dict[str, Any]) -> dict[str, Any]:
-    operator_details: dict[str, Any] = {}
-    for key, value in details.items():
-        if _contains_raw_audit_contract_text(str(key)):
-            continue
-        clean_value = _audit_detail_value_for_operator(value)
-        if clean_value is not None:
-            operator_details[str(key)] = clean_value
-    checked_items = _string_list(operator_details.get("checked_items"))
-    if checked_items:
-        operator_details["checked_items"] = [_review_summary_item(item) for item in checked_items]
-    blockers = _string_list(operator_details.get("blockers"))
-    if blockers:
-        operator_details["blockers"] = [_review_blocker_label(item) for item in blockers]
-    return operator_details
-
-
-def _audit_detail_value_for_operator(value: Any) -> Any:
-    if isinstance(value, dict):
-        clean: dict[str, Any] = {}
-        for key, item in value.items():
-            if _contains_raw_audit_contract_text(str(key)):
-                continue
-            clean_item = _audit_detail_value_for_operator(item)
-            if clean_item is not None:
-                clean[str(key)] = clean_item
-        return clean or None
-    if isinstance(value, list):
-        clean_items = [
-            clean_item
-            for item in value
-            if (clean_item := _audit_detail_value_for_operator(item)) is not None
-        ]
-        return clean_items or None
-    if isinstance(value, str) and _contains_raw_audit_contract_text(value):
-        return None
-    return value
 
 
 def _action_review_gate(

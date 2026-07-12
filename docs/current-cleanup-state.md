@@ -684,6 +684,11 @@ ich rozmiaru.
   readiness. Focused preview/confirmation/review tests: 26 passed, a live Ads
   detail zachowuje evidence, `Zapis zmian zablokowany` i `apply_allowed=false`;
   browser proof: `.local-lab/proof/continuation-2026-07-12/review-details-live.png`.
+- Redakcja technicznych szczegółów audytu jest teraz w istniejącym
+  `wilq/actions/audit_store.py`; service przekazuje callbacki etykiet review.
+  Focused audit/preview/review tests: 29 passed, a live Ads detail zachowuje
+  evidence, `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/audit-details-live.png`.
 
 ## Resume
 

@@ -770,6 +770,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   spadł do 2344, a live Ads detail zachowuje evidence, blokadę zapisu i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/review-details-live.png`.
+- Redakcja technicznych szczegółów audytu (raw payload/mapping/claim IDs) jest
+  teraz w istniejącym `wilq/actions/audit_store.py`; service przekazuje tylko
+  callbacki etykiet review. Focused audit/preview/review tests: 29 passed,
+  service LOC spadł do 2312, a live Ads detail zachowuje evidence, blokadę
+  zapisu i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/audit-details-live.png`.
 
 ## Weryfikacja
 

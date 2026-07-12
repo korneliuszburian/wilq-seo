@@ -101,3 +101,25 @@ def test_audit_event_selectors_keep_latest_relevant_event_and_mutation_audit() -
     assert latest_confirmation is not None and latest_confirmation.id == "audit_confirm"
     assert audit_store.latest_action_impact_check_event(events) is None
     assert latest_mutation is not None and latest_mutation.id == "mutation_new"
+
+
+def test_audit_details_for_operator_redacts_raw_contracts_and_labels_review_fields() -> None:
+    details = audit_store.audit_details_for_operator(
+        {
+            "checked_items": ["reviewed_url", "draft_readiness_notes"],
+            "blockers": ["human_confirm_before_apply"],
+            "payload_preview": "raw payload should stay hidden",
+            "nested": {"safe": "ok", "mapping_secret": "hide"},
+        },
+        string_list=lambda value: value if isinstance(value, list) else [],
+        review_summary_item=lambda item: f"review:{item}",
+        review_blocker_label=lambda item: f"blocker:{item}",
+    )
+
+    assert details["checked_items"] == [
+        "review:reviewed_url",
+        "review:draft_readiness_notes",
+    ]
+    assert details["blockers"] == ["blocker:human_confirm_before_apply"]
+    assert "payload_preview" not in details
+    assert details["nested"] == {"safe": "ok"}
