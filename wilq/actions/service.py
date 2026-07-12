@@ -116,6 +116,9 @@ from wilq.actions.localo.visibility import (
 from wilq.actions.localo.visibility_preview import (
     local_visibility_preview_cards as build_local_visibility_preview_cards,
 )
+from wilq.actions.localo.visibility_preview import (
+    metric_snapshot_preview_rows_for_keys,
+)
 from wilq.actions.merchant import (
     MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
     merchant_feed_issue_action_from_metric_facts,
@@ -2324,26 +2327,10 @@ def _local_visibility_preview_cards(
         payload,
         preview_row=_preview_row,
         string_list=_string_list,
-        metric_snapshot_rows=_metric_snapshot_preview_rows_for_keys,
+        metric_snapshot_rows=metric_snapshot_preview_rows_for_keys,
         apply_state_label=_apply_state_label,
         system_readiness_label=_system_readiness_label,
     )
-
-
-def _metric_snapshot_preview_rows_for_keys(
-    metric_snapshot: dict[Any, Any],
-    metric_labels: dict[Any, Any],
-    keys: list[str],
-) -> list[ActionPreviewRowViewModel]:
-    rows: list[ActionPreviewRowViewModel] = []
-    for key in keys:
-        if key not in metric_snapshot:
-            continue
-        label = metric_labels.get(key)
-        if not isinstance(label, str) or not label:
-            continue
-        rows.append(_preview_row(label, _metric_snapshot_value_label(key, metric_snapshot[key])))
-    return rows
 
 
 def _keyword_planner_access_preview_cards(

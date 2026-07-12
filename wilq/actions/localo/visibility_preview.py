@@ -70,3 +70,44 @@ def local_visibility_preview_cards(
             )
         )
     return cards
+
+
+def metric_snapshot_preview_rows_for_keys(
+    metric_snapshot: dict[Any, Any],
+    metric_labels: dict[Any, Any],
+    keys: list[str],
+) -> list[ActionPreviewRowViewModel]:
+    """Build Localo metric rows without exposing unlabelled payload fields."""
+    rows: list[ActionPreviewRowViewModel] = []
+    for key in keys:
+        if key not in metric_snapshot:
+            continue
+        label = metric_labels.get(key)
+        if not isinstance(label, str) or not label:
+            continue
+        rows.append(
+            ActionPreviewRowViewModel(
+                label=label,
+                value=_metric_snapshot_value_label(key, metric_snapshot[key]),
+            )
+        )
+    return rows
+
+
+def _metric_snapshot_value_label(key: str, value: Any) -> str:
+    percent_metric_keys = {
+        "engagement_rate",
+        "localo_avg_visibility_change",
+        "localo_review_reply_rate",
+    }
+    if key in percent_metric_keys and isinstance(value, int | float):
+        return f"{value * 100:.2f}%"
+    if isinstance(value, bool):
+        return "tak" if value else "nie"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return f"{value:.2f}".rstrip("0").rstrip(".")
+    if isinstance(value, str) and value:
+        return value
+    return "wartość niepotwierdzona"

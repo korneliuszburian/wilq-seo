@@ -620,6 +620,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Live output nadal ma 3 `content_brief_review` cards, 3 evidence IDs i blokadę
   zapisu; świeży browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-refresh-composition-live.png`.
+- Localo metric snapshot rows używane przez preview są teraz w istniejącym
+  `wilq/actions/localo/visibility_preview.py`; service przekazuje domenowy
+  helper zamiast posiadać własną kopię. Live action zachowuje 1 evidence ID,
+  agregaty widoczności, blocked GBP/konkurencja claims i `apply_allowed=false`;
+  browser proof:
+  `.local-lab/proof/continuation-2026-07-12/localo-metric-helper-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

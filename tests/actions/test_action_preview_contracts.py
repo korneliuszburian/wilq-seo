@@ -294,6 +294,21 @@ def test_local_visibility_preview_keeps_contracts_and_claim_blockers() -> None:
     assert cards[0].apply_state_label == "zapis zmian zablokowany"
 
 
+def test_localo_metric_rows_keep_labels_and_percentage_format() -> None:
+    from wilq.actions.localo.visibility_preview import metric_snapshot_preview_rows_for_keys
+
+    rows = metric_snapshot_preview_rows_for_keys(
+        {
+            "localo_avg_visibility_change": 0.125,
+            "unknown_metric": 4,
+        },
+        {"localo_avg_visibility_change": "zmiana widoczności", "unknown_metric": ""},
+        ["localo_avg_visibility_change", "unknown_metric", "missing_metric"],
+    )
+
+    assert [(row.label, row.value) for row in rows] == [("zmiana widoczności", "12.50%")]
+
+
 def test_merchant_preview_keeps_issue_context_and_product_samples() -> None:
     from wilq.actions.merchant_preview import merchant_preview_cards
     from wilq.schemas import ActionPreviewRowViewModel

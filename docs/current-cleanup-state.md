@@ -548,6 +548,11 @@ ich rozmiaru.
   callback do istniejącej karty WordPress draft. Live content action nadal ma
   evidence, publiczne URL-e i `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-refresh-composition-live.png`.
+- Localo metric snapshot row helper jest teraz w
+  `wilq/actions/localo/visibility_preview.py`; live Localo karta zachowuje
+  agregaty, evidence, brakujące kontrakty, blocked claims i `apply_allowed=false`.
+  Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/localo-metric-helper-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
