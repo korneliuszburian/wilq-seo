@@ -486,6 +486,10 @@ ich rozmiaru.
 - Custom-segment preview renderer jest teraz w istniejącym
   `wilq/actions/google_ads/custom_segments.py`; live action zachowuje source
   terms, safety blockers, audience-size/Keyword Planner gates i brak zapisu.
+- Change-history preview renderer jest teraz w istniejącym
+  `wilq/actions/google_ads/change_history.py`; raw event IDs, resource/operation
+  enums i field names są schowane z operator card, a technical details pozostają
+  dostępne niżej przez istniejący disclosure.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

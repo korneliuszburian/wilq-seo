@@ -543,6 +543,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `google_ads_custom_segment_review` card, evidence ID, Keyword Planner/
   audience-size blockers, blocked claims i `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-custom-preview-cards.png`.
+- Change-history preview jest teraz w `wilq/actions/google_ads/change_history.py`;
+  dodatkowo usunąłem potwierdzony przeciek raw event IDs, enumów i nazw pól z
+  karty above fold. Behavior test i browser proof potwierdzają genericzne rows,
+  4 cards, evidence ID, blocked claims i brak zapisu:
+  `.local-lab/proof/continuation-2026-07-12/ads-change-history-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

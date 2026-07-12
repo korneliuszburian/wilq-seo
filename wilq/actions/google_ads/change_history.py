@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from wilq.actions.validation_copy import (
@@ -16,6 +16,8 @@ from wilq.actions.validation_copy import (
 from wilq.schemas import (
     ActionMode,
     ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
     ActionRisk,
     ActionStatus,
     MetricFact,
@@ -34,6 +36,87 @@ CHANGE_HISTORY_IMPACT_REQUIRED_VALIDATION = [
     "business_goal_review",
     "block_apply_until_mutation_audit",
 ]
+
+PreviewRow = Callable[[str, str], ActionPreviewRowViewModel]
+StringList = Callable[[Any], list[str]]
+StateLabel = Callable[[Any], str]
+GateLabels = Callable[[list[str]], list[str]]
+
+
+def change_history_preview_cards(
+    payload: dict[str, Any],
+    *,
+    preview_row: PreviewRow,
+    string_list: StringList,
+    action_gate_labels: GateLabels,
+    blocked_claims: GateLabels,
+    apply_state_label: StateLabel,
+    system_readiness_label: StateLabel,
+) -> list[ActionPreviewCardViewModel]:
+    """Render change-history impact cards without exposing raw vendor IDs."""
+    preview_items = [
+        item for item in payload.get("change_history_preview", []) if isinstance(item, dict)
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        changed_field_count = item.get("changed_field_count")
+        field_summary = (
+            f"{changed_field_count} pól zmiany"
+            if isinstance(changed_field_count, (int, float))
+            or (isinstance(changed_field_count, str) and changed_field_count.isdigit())
+            else "pola zmiany do sprawdzenia"
+        )
+        rows = [
+            preview_row("Zdarzenie", "zmiana Google Ads do sprawdzenia"),
+            preview_row(
+                "Data zmiany",
+                str(item.get("change_date_time") or "data niepotwierdzona"),
+            ),
+            preview_row(
+                "Zasób",
+                str(item.get("change_resource_type_label") or "zasób do sprawdzenia"),
+            ),
+            preview_row(
+                "Operacja",
+                str(item.get("resource_change_operation_label") or "operacja do sprawdzenia"),
+            ),
+            preview_row("Pola", field_summary),
+        ]
+        missing_read_contract_labels = string_list(item.get("missing_read_contract_labels"))
+        if not missing_read_contract_labels:
+            missing_read_contract_labels = action_gate_labels(
+                string_list(item.get("missing_read_contracts"))
+            )
+        if missing_read_contract_labels:
+            rows.append(preview_row("Braki", ", ".join(missing_read_contract_labels[:4])))
+        requirement_labels = string_list(item.get("required_validation_labels"))
+        if not requirement_labels:
+            requirement_labels = action_gate_labels(string_list(item.get("required_validation")))
+        if requirement_labels:
+            rows.append(preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_labels = string_list(item.get("blocked_claim_labels"))
+        if not blocked_labels:
+            blocked_labels = blocked_claims(string_list(item.get("blocked_claims")))
+        if blocked_labels:
+            rows.append(
+                preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"ads_change_history_preview_{index}",
+                kind="google_ads_change_history_review",
+                title_label="Zmiana Google Ads do sprawdzenia",
+                subtitle_label="ocena wpływu zmiany bez zapisu zmian",
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=system_readiness_label(item.get("api_mutation_ready")),
+            )
+        )
+    return cards
 
 
 def change_history_impact_action(

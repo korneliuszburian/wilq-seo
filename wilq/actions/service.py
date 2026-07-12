@@ -54,6 +54,7 @@ from wilq.actions.google_ads.campaign_review import (
 )
 from wilq.actions.google_ads.change_history import (
     change_history_impact_action_from_metric_facts,
+    change_history_preview_cards,
 )
 from wilq.actions.google_ads.custom_segments import (
     custom_segment_action_from_metric_facts,
@@ -2398,69 +2399,15 @@ def _ads_custom_segment_preview_cards(
 def _ads_change_history_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item for item in payload.get("change_history_preview", []) if isinstance(item, dict)
-    ]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(preview_items[:4]):
-        changed_fields = _string_list(item.get("changed_fields"))
-        rows = [
-            _preview_row(
-                "Zdarzenie",
-                str(item.get("change_event_id") or "zmiana do sprawdzenia"),
-            ),
-            _preview_row(
-                "Data zmiany",
-                str(item.get("change_date_time") or "data niepotwierdzona"),
-            ),
-            _preview_row(
-                "Zasób",
-                str(item.get("change_resource_type") or "zasób do sprawdzenia"),
-            ),
-            _preview_row(
-                "Operacja",
-                str(item.get("resource_change_operation") or "operacja do sprawdzenia"),
-            ),
-            _preview_row(
-                "Pola",
-                ", ".join(changed_fields[:4]) if changed_fields else "brak listy pól",
-            ),
-        ]
-        missing_read_contract_labels = _string_list(item.get("missing_read_contract_labels"))
-        if not missing_read_contract_labels:
-            missing_read_contract_labels = _action_gate_labels(
-                _string_list(item.get("missing_read_contracts"))
-            )
-        if missing_read_contract_labels:
-            rows.append(_preview_row("Braki", ", ".join(missing_read_contract_labels[:4])))
-        requirement_labels = _string_list(item.get("required_validation_labels"))
-        if not requirement_labels:
-            requirement_labels = _action_gate_labels(_string_list(item.get("required_validation")))
-        if requirement_labels:
-            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
-        blocked_labels = _string_list(item.get("blocked_claim_labels"))
-        if not blocked_labels:
-            blocked_labels = operator_blocked_claims(_string_list(item.get("blocked_claims")))
-        if blocked_labels:
-            rows.append(
-                _preview_row(
-                    "Czego nie wolno twierdzić",
-                    ", ".join(blocked_labels[:4]),
-                )
-            )
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=str(item.get("id") or f"ads_change_history_preview_{index}"),
-                kind="google_ads_change_history_review",
-                title_label="Zmiana Google Ads do sprawdzenia",
-                subtitle_label="ocena wpływu zmiany bez zapisu zmian",
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
+    return change_history_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        action_gate_labels=_action_gate_labels,
+        blocked_claims=operator_blocked_claims,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+    )
 
 
 def _demand_gen_readiness_preview_cards(

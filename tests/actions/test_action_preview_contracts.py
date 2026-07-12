@@ -83,3 +83,45 @@ def test_content_action_preview_exposes_review_only_brief_payload(
         for card in preview["preview_cards"]
     )
     assert "action_mode_prepare_only" in preview["blockers"]
+
+
+def test_change_history_preview_hides_vendor_ids_and_field_enums() -> None:
+    from wilq.actions.google_ads.change_history import change_history_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = change_history_preview_cards(
+        {
+            "change_history_preview": [
+                {
+                    "id": "change_history_preview_1783057185097981_0_9",
+                    "change_event_id": "1783057185097981~0~9",
+                    "change_date_time": "2026-07-03 07:39:45.097981",
+                    "change_resource_type": "AD_GROUP_CRITERION",
+                    "resource_change_operation": "CREATE",
+                    "changed_field_count": "7",
+                    "changed_fields": ["adGroup", "criterionId", "keyword.text"],
+                    "required_validation_labels": ["sprawdź historię zmian"],
+                    "blocked_claim_labels": ["wpływ zmian"],
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                }
+            ]
+        },
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        action_gate_labels=lambda values: values,
+        blocked_claims=lambda values: values,
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Zdarzenie"] == "zmiana Google Ads do sprawdzenia"
+    assert rows["Pola"] == "7 pól zmiany"
+    serialized = str(cards[0].model_dump())
+    assert "1783057185097981" not in serialized
+    assert "AD_GROUP_CRITERION" not in serialized
+    assert "adGroup" not in serialized
