@@ -766,6 +766,10 @@ ich rozmiaru.
 - `service.py` korzysta bezpośrednio z `mutation_readiness.vendor_write_possible`
   zamiast lokalnej fasady; live WordPress readiness nadal pokazuje
   `vendor_write_possible=false`, a apply pozostaje fail-closed.
+- Usunięto lokalne fasady `_wordpress_draft_*`, `_apply_audit_event_type` i
+  `_action_mutation_audit_record`; service wywołuje istniejące moduły readiness,
+  audit i WordPress bezpośrednio. API nadal pokazuje
+  `ready_to_request_apply=false` i `publication_allowed=false`.
 
 ## Resume
 

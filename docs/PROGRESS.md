@@ -876,6 +876,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `mutation_readiness.py`. 22 focused audit/mutation tests, Ruff, mypy,
   complexity, diff check i live WordPress readiness smoke przechodzą; API nadal
   raportuje `vendor_write_possible=false`.
+- Kolejny slice `jnra` usunął trzy lokalne fasady readiness/audit używane tylko
+  wewnątrz `service.py`: `_wordpress_draft_*`, `_apply_audit_event_type` i
+  `_action_mutation_audit_record`. Service wywołuje istniejące owner modules
+  bezpośrednio; focused WordPress/mutation/audit tests, Ruff, mypy, complexity,
+  diff check i API smoke przechodzą. `ready_to_request_apply=false` pozostaje.
 
 ## Weryfikacja
 

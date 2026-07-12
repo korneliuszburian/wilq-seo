@@ -350,10 +350,6 @@ from wilq.content.knowledge.service_profile import content_service_profile_respo
 from wilq.content.workflow.api import (
     build_content_work_item_diagnostics_snapshot_response_for_work_item,
 )
-from wilq.content.workflow.contracts import (
-    ContentWordPressDraftActivationPacketResponse,
-    ContentWordPressDraftWriteReadinessResponse,
-)
 from wilq.content.workflow.store import content_workflow_store
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
@@ -1453,13 +1449,13 @@ def apply_action(
     audit = AuditEvent(
         id=f"audit_{action.id}_{len(action.audit_events) + 1}",
         action_id=action.id,
-        event_type=_apply_audit_event_type(errors),
-        event_type_label=_action_audit_event_label(_apply_audit_event_type(errors)),
+        event_type=_apply_audit_event_type_impl(errors),
+        event_type_label=_action_audit_event_label(_apply_audit_event_type_impl(errors)),
         actor=actor,
         summary="; ".join(errors) if errors else "Zmiany zapisane przez sprawdzoną ścieżkę API.",
         evidence_ids=action.evidence_ids,
     )
-    mutation_audit = _action_mutation_audit_record(
+    mutation_audit = _action_mutation_audit_record_impl(
         action=action,
         audit_event=audit,
         actor=actor,
@@ -1577,8 +1573,8 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
     latest_mutation_audit = _latest_mutation_audit(
         _persisted_mutation_audits_for_action(action.id)
     )
-    wordpress_draft_readiness = _wordpress_draft_write_readiness(action)
-    wordpress_activation_packet = _wordpress_draft_activation_packet(action)
+    wordpress_draft_readiness = wordpress_draft_write_readiness(action)
+    wordpress_activation_packet = wordpress_draft_activation_packet(action)
     requirements = base_mutation_readiness_requirements(
         action=action,
         connector_configured=connector is not None and connector.configured,
@@ -1605,7 +1601,7 @@ def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessRe
         )
     )
     requirements.extend(
-        _wordpress_draft_write_readiness_requirements(
+        wordpress_draft_write_readiness_requirements(
             action,
             wordpress_draft_readiness=wordpress_draft_readiness,
         )
@@ -1647,52 +1643,6 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
         activation_plan_steps=_activation_plan_steps(first_write_candidate),
         activation_next_step=_activation_next_step(first_write_candidate),
         operator_next_step=_mutation_readiness_summary_next_step,
-    )
-
-
-def _wordpress_draft_write_readiness_requirements(
-    action: ActionObject,
-    *,
-    wordpress_draft_readiness: ContentWordPressDraftWriteReadinessResponse | None = None,
-) -> list[ActionMutationReadinessRequirement]:
-    return wordpress_draft_write_readiness_requirements(
-        action,
-        wordpress_draft_readiness=wordpress_draft_readiness,
-    )
-
-
-def _wordpress_draft_write_readiness(
-    action: ActionObject,
-) -> ContentWordPressDraftWriteReadinessResponse | None:
-    return wordpress_draft_write_readiness(action)
-
-
-def _wordpress_draft_activation_packet(
-    action: ActionObject,
-) -> ContentWordPressDraftActivationPacketResponse | None:
-    return wordpress_draft_activation_packet(action)
-
-
-def _apply_audit_event_type(errors: list[str]) -> str:
-    return _apply_audit_event_type_impl(errors)
-
-
-def _action_mutation_audit_record(
-    *,
-    action: ActionObject,
-    audit_event: AuditEvent,
-    actor: str,
-    errors: list[str],
-    mutation_adapter: str | None,
-    adapter_result: dict[str, Any] | None,
-) -> ActionMutationAuditRecord:
-    return _action_mutation_audit_record_impl(
-        action=action,
-        audit_event=audit_event,
-        actor=actor,
-        errors=errors,
-        mutation_adapter=mutation_adapter,
-        adapter_result=adapter_result,
     )
 
 
