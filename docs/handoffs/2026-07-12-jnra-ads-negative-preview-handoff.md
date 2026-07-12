@@ -27,8 +27,8 @@ ActionObject safety loop pozostały bez zmian.
 ## Stan grafu
 
 `wilq-seo-jnra` pozostaje `in_progress`; WordPress `7b285df2`, social
-`3895ca5a`, Ads budget `65df313f`, recommendation `ca1f2bcc`; ten negative-keyword
-seam czeka na commit/push.
+`3895ca5a`, Ads budget `65df313f`, recommendation `ca1f2bcc`, negative-keyword
+`0146a70f`.
 
 ## Następny krok
 
