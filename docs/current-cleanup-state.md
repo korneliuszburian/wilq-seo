@@ -53,11 +53,12 @@ pozostaje zewnętrznie blokowany. Nie przywracaj direct WordPress write.
 - Review-only CTA dla kanonicznego apply jest warunkowy: wymaga gotowej paczki i
   handoffu, prowadzi wyłącznie do `/actions/act_apply_wordpress_draft_handoff`
   i nie wywołuje `/apply`; stale live queue pozostaje bez CTA. Browser proof:
-  `.local-lab/proof/content-workflow-c9h9-4-review-only.png`.
+  `.local-lab/proof/continuation-2026-07-12/content-workflow-desktop.png`.
 - `r564.3` ma mobile-only decision card przed ciężkim kontekstem: temat/URL,
   rekomendacja, blocker i przycisk „Otwórz decyzję i dowody”. Przy stale live
   queue karta nie udaje gotowości; screenshot
-  `.local-lab/proof/r564-3-mobile-stale-blocker.png` jest aktualnym proof.
+  `.local-lab/proof/continuation-2026-07-12/content-workflow-mobile.png` jest
+  aktualnym proof.
 - Mobile freshness został skondensowany, a source status bar jest poziomym
   scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
 - `4wwo` ma teraz opcjonalny async read-only refresh przez istniejący endpoint:
@@ -369,8 +370,8 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 
 ## Complexity checkpoint
 
-- `wilq/briefing/ads_diagnostics.py`: 6 475 LOC;
-- `wilq/actions/service.py`: 4 244 non-empty LOC;
+- `wilq/briefing/ads_diagnostics.py`: 6 616 LOC;
+- `wilq/actions/service.py`: 4 003 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;

@@ -54,7 +54,7 @@ duplication is now closed by removing the direct live/create path; the action
 detail also renders a typed current/proposed/blocked preview. A real dev draft
 write may return only through canonical ActionObject apply. Do not restore a
 direct adapter or describe prior draft creation as current write readiness.
-Next work is canonical dev-only apply (`c9h9.4`), then mobile UX (`r564.3`). The deleted legacy planner
+Next work is mobile UX completion (`r564.3`); canonical dev-only apply (`c9h9.4`) is closed. The deleted legacy planner
 must not return.
 
 The target content workbench must show:

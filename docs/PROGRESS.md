@@ -27,6 +27,17 @@ w git, Beads i `docs/progress/archive/`.
   live stan jest uczciwie `blocked` przy stale źródłach. Focused API/schema
   tests, Ruff, mypy, complexity i browser proof Command Center przechodzą.
 
+- Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
+  98 919 metric facts, 4 574 refresh runs, 12 connectorów (9 configured,
+  2 missing credentials), complexity 405 plików / 133 807 LOC / 0 changed-code
+  violations. Dashboard usefulness audit zwraca 14 surfaces, 12 `demo_ready`,
+  2 `review_ready`, `pass=true`; to nie znosi blokady stale źródeł.
+- `c9h9.4` jest zamknięty i nie wymaga ponownej implementacji. Aktualny
+  desktop/mobile browser proof `/content-workflow` jest w
+  `.local-lab/proof/continuation-2026-07-12/`; `r564.3` pozostaje otwarty,
+  bo mobile card jest poprawna, lecz zewnętrzny refresh nie potwierdza świeżego
+  candidate do pracy.
+
 - `kgvy` reconciliation boundary jest domknięty: `_reconcile_ads_change_history_contracts`
   oraz `_reconcile_ads_budget_and_business_context_contracts` wydzielają inline
   aktualizacje missing contracts. Nie zmieniają evidence/source/freshness ani
@@ -261,8 +272,9 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Desktop 1440×900 i mobile 390×844: stale-source blocker, źródła, powód i
   refresh-first next step są widoczne przed kolejką; homepage jest domyślnym
   wyborem zamiast Ahrefs-only braku canonical.
-- Decision/CTA dla świeżego workflow mają teraz queue-owned first card; pełna
-  mobile triage nadal wymaga `r564.3`.
+- Decision/CTA dla workflow mają queue-owned first card; mobile triage pokazuje
+  decyzję, blocker i CTA w 390×844, ale pełna gotowość nadal wymaga świeżego
+  candidate dla `r564.3`.
 - `c9h9.4` jest zamknięty: centralny apply ma typed `wordpress_draft` input,
   capability binding, route audit i dev-host guard; live CTA pozostaje
   zablokowane bez realnej gotowości.
@@ -270,7 +282,7 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   statusach, z URL/tematem, rekomendacją, najważniejszym blockerem i bezpiecznym
   CTA otwierającym decyzję/dowody. CTA nie wykonuje zapisu. Focused
   ContentWorkflow Vitest 15/15, dashboard lint/typecheck green; live mobile
-  screenshot `.local-lab/proof/r564-3-mobile-stale-blocker.png` pokazuje uczciwy
+  screenshot `.local-lab/proof/continuation-2026-07-12/content-workflow-mobile.png` pokazuje uczciwy
   refresh-first blocker przy aktualnym stale runtime.
 - Próba read-only odświeżenia dla `r564.3` 2026-07-11: GSC zwrócił HTTP 200,
   ale kontrakt oznaczył odczyt jako niepełny (`evidence_count=2`); WordPress
@@ -509,14 +521,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
-- Latest `c9h9.4` complexity run: 378 Python files / 131261 non-empty LOC,
-  8 changed Python files, 0 frozen growth files, 3 focused test-function
-  budget violations (121, 105 and 130 lines). The extra route proof is a
-  deliberate integration test; no production monolith grew.
+- Latest full complexity run: 405 Python files / 133807 non-empty LOC,
+  0 changed-code violations; current `service.py` hotspot is 4003 LOC.
 
 ## Kolejność wykonania
 
-1. `r564.3` — decision/blocker/CTA w mobile first viewport; świeży kandydat nadal zależy od zewnętrznego refresh.
+1. `r564.3` — utrzymać mobile decision proof i ponowić tylko po świeżym,
+   nieblokowanym candidate z zewnętrznego refreshu.
 2. `jnra` — najmniejszy bezpieczny seam monolitu Action Service, po potwierdzeniu
    że nie narusza ActionObject safety loop.
 3. `d380` albo `0q74` — kolejny potwierdzony utrzymaniowy slice po wyborze
