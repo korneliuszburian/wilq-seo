@@ -24,6 +24,7 @@ from wilq.actions.action_blockers import (
 from wilq.actions.action_blockers import (
     action_preview_summary as _action_preview_summary,
 )
+from wilq.actions.action_previews import action_preview_cards as build_action_preview_cards
 from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
 )
@@ -70,9 +71,6 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
-from wilq.actions.content_preview import (
-    content_refresh_preview_cards,
-)
 from wilq.actions.content_refresh import (
     content_contract_label,
     content_contract_labels,
@@ -90,12 +88,6 @@ from wilq.actions.content_review_details import (
 )
 from wilq.actions.content_review_details import (
     is_raw_content_review_audit_event as _is_raw_content_review_audit_event,
-)
-from wilq.actions.ga4.tracking_preview import (
-    ga4_tracking_quality_preview_cards as build_ga4_tracking_quality_preview_cards,
-)
-from wilq.actions.ga4.tracking_preview import (
-    metric_snapshot_preview_rows,
 )
 from wilq.actions.ga4.tracking_quality import (
     ga4_tracking_quality_action_from_metric_facts,
@@ -119,15 +111,6 @@ from wilq.actions.google_ads.business_context import (
     target_confirmation_action,
 )
 from wilq.actions.google_ads.business_context import (
-    ads_business_context_preview_rows as build_ads_business_context_preview_rows,
-)
-from wilq.actions.google_ads.business_context import (
-    ads_strategy_review_preview_cards as build_ads_strategy_review_preview_cards,
-)
-from wilq.actions.google_ads.business_context import (
-    ads_target_guardrail_preview_cards as build_ads_target_guardrail_preview_cards,
-)
-from wilq.actions.google_ads.business_context import (
     connector_refresh_recency_key as ads_connector_refresh_recency_key,
 )
 from wilq.actions.google_ads.business_context import (
@@ -138,11 +121,9 @@ from wilq.actions.google_ads.campaign_review import (
 )
 from wilq.actions.google_ads.change_history import (
     change_history_impact_action_from_metric_facts,
-    change_history_preview_cards,
 )
 from wilq.actions.google_ads.custom_segments import (
     custom_segment_action_from_metric_facts,
-    custom_segment_preview_cards,
 )
 from wilq.actions.google_ads.demand_gen import (
     demand_gen_channel_label,
@@ -153,28 +134,17 @@ from wilq.actions.google_ads.demand_gen_preview import (
     demand_gen_readiness_preview_cards as build_demand_gen_readiness_preview_cards,
 )
 from wilq.actions.google_ads.keyword_planner import (
-    KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
     keyword_planner_access_action,
-)
-from wilq.actions.google_ads.keyword_planner import (
-    keyword_planner_access_preview_cards as build_keyword_planner_access_preview_cards,
 )
 from wilq.actions.google_ads.negative_keywords import (
     negative_keyword_action_from_metric_facts,
-    negative_keyword_preview_cards,
 )
 from wilq.actions.google_ads.oauth import oauth_repair_action
-from wilq.actions.google_ads.previews import budget_preview_cards
 from wilq.actions.google_ads.recommendations import (
-    recommendation_preview_cards,
     recommendation_review_action_from_metric_facts,
     seed_recommendation_review_action,
 )
-from wilq.actions.google_ads.search_term_ngram_preview import (
-    search_term_ngram_preview_cards as build_search_term_ngram_preview_cards,
-)
 from wilq.actions.google_ads.search_term_ngrams import (
-    SEARCH_TERM_NGRAM_PREVIEW_CONTRACT,
     search_term_ngram_action_from_metric_facts,
 )
 from wilq.actions.localo.visibility import (
@@ -182,18 +152,11 @@ from wilq.actions.localo.visibility import (
     localo_visibility_review_action_from_metric_facts,
     localo_visibility_review_payload_from_metric_facts,
 )
-from wilq.actions.localo.visibility_preview import (
-    local_visibility_preview_cards as build_local_visibility_preview_cards,
-)
-from wilq.actions.localo.visibility_preview import (
-    metric_snapshot_preview_rows_for_keys,
-)
 from wilq.actions.merchant import (
     MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
     merchant_feed_issue_action_from_metric_facts,
     seed_merchant_feed_issue_action,
 )
-from wilq.actions.merchant_preview import merchant_preview_cards as build_merchant_preview_cards
 from wilq.actions.metric_utils import (
     facts_by_connector as _facts_by_connector_impl,
 )
@@ -311,11 +274,9 @@ from wilq.actions.review_gate import (
 )
 from wilq.actions.service_profile import (
     knowledge_promotion_action,
-    knowledge_promotion_preview_cards,
     private_proposal_promotion_action,
-    private_proposal_promotion_preview_cards,
 )
-from wilq.actions.social import social_draft_actions, social_draft_input_preview_cards
+from wilq.actions.social import social_draft_actions
 from wilq.actions.wordpress_draft import (
     draft_apply_action,
     draft_handoff_action,
@@ -332,7 +293,6 @@ from wilq.actions.wordpress_mutation_requirements import (
     wordpress_draft_write_readiness_requirements,
 )
 from wilq.actions.wordpress_preview import (
-    wordpress_draft_handoff_preview_cards,
     wordpress_draft_payload_preview_card,
 )
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
@@ -362,7 +322,6 @@ from wilq.schemas import (
     ActionPreviewCardViewModel,
     ActionPreviewRequest,
     ActionPreviewResult,
-    ActionPreviewRowViewModel,
     ActionReviewGate,
     ActionReviewRequest,
     ActionReviewResult,
@@ -1658,178 +1617,22 @@ def _action_with_operator_labels(action: ActionObject) -> ActionObject:
 
 
 def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewModel]:
-    if action.payload.get("preview_contract") == MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT:
-        return _merchant_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "budget_apply_preview_v1":
-        return _ads_budget_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "recommendation_apply_preview_v1":
-        return _ads_recommendation_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "custom_segment_change_preview_v1":
-        return _ads_custom_segment_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "negative_keyword_change_preview_v1":
-        return _ads_negative_keyword_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "change_history_impact_review_v1":
-        return _ads_change_history_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "demand_gen_readiness_review_preview_v1":
-        return _demand_gen_readiness_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == SEARCH_TERM_NGRAM_PREVIEW_CONTRACT:
-        return _search_term_ngram_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "ga4_tracking_quality_review_v1":
-        return _ga4_tracking_quality_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "local_visibility_review_preview_v1":
-        return _local_visibility_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "content_brief_preview_v1":
-        return _content_refresh_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "wordpress_draft_handoff_preview_v1":
-        return wordpress_draft_handoff_preview_cards(
-            action.payload,
-            preview_row=_preview_row,
-            string_list=_string_list,
-            apply_state_label=_apply_state_label,
-            system_readiness_label=_system_readiness_label,
-        )
-    if action.payload.get("preview_contract") == "wordpress_draft_apply_preview_v1":
-        return wordpress_draft_handoff_preview_cards(
-            action.payload,
-            preview_row=_preview_row,
-            string_list=_string_list,
-            apply_state_label=_apply_state_label,
-            system_readiness_label=_system_readiness_label,
-        )
-    if (
-        action.payload.get("preview_contract")
-        == "service_profile_knowledge_promotion_preview_v1"
-    ):
-        return _service_profile_knowledge_promotion_preview_cards(action.payload)
-    if action.payload.get("preview_contract") == "private_source_proposal_promotion_preview_v1":
-        return _service_profile_private_proposal_promotion_preview_cards(action.payload)
-    if action.payload.get("action_type") == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
-        return _keyword_planner_access_preview_cards(action.payload)
-    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
-        return _ads_target_guardrail_preview_cards(action.payload)
-    if action.payload.get("action_type") == "record_ads_strategy_review":
-        return _ads_strategy_review_preview_cards(action.payload)
-    if action.payload.get("action_type") in {
-        "linkedin_post_candidate",
-        "facebook_post_candidate",
-    }:
-        return _social_draft_input_preview_cards(action.payload)
-    return action.preview_cards
-
-
-def _content_refresh_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return content_refresh_preview_cards(
-        payload,
+    return build_action_preview_cards(
+        action,
         preview_row=_preview_row,
         string_list=_string_list,
         apply_state_label=_apply_state_label,
         system_readiness_label=_system_readiness_label,
         wordpress_draft_preview_card=wordpress_draft_payload_preview_card,
-    )
-
-
-def _service_profile_knowledge_promotion_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return knowledge_promotion_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _service_profile_private_proposal_promotion_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return private_proposal_promotion_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _social_draft_input_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return social_draft_input_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
         source_connector_labels=_source_connector_labels,
         metric_fact_label=metric_fact_label,
         plain_metric_value_label=_plain_metric_value_label,
-        apply_state_label=_apply_state_label,
+        action_gate_labels=action_gate_labels,
+        business_context_summary=ads_strategy_review_summary,
     )
 
 
-def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:
-    return budget_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        micros_money_label=_micros_money_label,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _ads_recommendation_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return recommendation_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _ads_negative_keyword_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return negative_keyword_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _ads_custom_segment_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return custom_segment_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _ads_change_history_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return change_history_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        action_gate_labels=_action_gate_labels,
-        blocked_claims=operator_blocked_claims,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _demand_gen_readiness_preview_cards(
+def demand_gen_readiness_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
     return build_demand_gen_readiness_preview_cards(
@@ -1837,111 +1640,6 @@ def _demand_gen_readiness_preview_cards(
         preview_row=_preview_row,
         string_list=_string_list,
         channel_label=demand_gen_channel_label,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def demand_gen_readiness_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return _demand_gen_readiness_preview_cards(payload)
-
-
-def _search_term_ngram_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return build_search_term_ngram_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        plain_metric_value_label=_plain_metric_value_label,
-        micros_money_label=_micros_money_label,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _ga4_tracking_quality_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return build_ga4_tracking_quality_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        metric_snapshot_rows=metric_snapshot_preview_rows,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _local_visibility_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return build_local_visibility_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        metric_snapshot_rows=metric_snapshot_preview_rows_for_keys,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _keyword_planner_access_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return build_keyword_planner_access_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        apply_state_label=_apply_state_label,
-    )
-
-
-def _ads_target_guardrail_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return build_ads_target_guardrail_preview_cards(
-        payload,
-        business_context_rows=_ads_business_context_preview_rows,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _ads_strategy_review_preview_cards(
-    payload: dict[str, Any],
-) -> list[ActionPreviewCardViewModel]:
-    return build_ads_strategy_review_preview_cards(
-        payload,
-        business_context_rows=_ads_business_context_preview_rows,
-        preview_row=_preview_row,
-        string_list=_string_list,
-        strategy_summary=ads_strategy_review_summary,
-        apply_state_label=_apply_state_label,
-        system_readiness_label=_system_readiness_label,
-    )
-
-
-def _ads_business_context_preview_rows(
-    payload: dict[str, Any],
-) -> list[ActionPreviewRowViewModel]:
-    return build_ads_business_context_preview_rows(
-        payload,
-        preview_row=_preview_row,
-        plain_metric_value_label=_plain_metric_value_label,
-        micros_money_label=_micros_money_label,
-    )
-
-
-def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:
-    return build_merchant_preview_cards(
-        payload,
-        preview_row=_preview_row,
-        string_list=_string_list,
         apply_state_label=_apply_state_label,
         system_readiness_label=_system_readiness_label,
     )

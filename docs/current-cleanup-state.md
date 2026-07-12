@@ -798,6 +798,13 @@ ich rozmiaru.
 - Apply `AuditEvent` assembly jest teraz własnością `audit_store.py`; event type,
   label, summary, actor i evidence nie są już składane lokalnie w service.
   Mutation audit i fail-closed status pozostają bez zmian.
+- Routing typed previewów jest teraz własnością
+  `wilq/actions/action_previews.py`; dispatcher używa map kontraktów/action types
+  i deleguje renderowanie do modułów domenowych. `service.py` zachowuje tylko
+  callbacki operator labels oraz publiczny compatibility wrapper Demand Gen;
+  usunięto 311 lokalnych preview wrapperów. Merchant dispatcher regression,
+  focused action preview/object tests, Ruff, mypy, complexity, diff check i
+  managed API smoke przechodzą; payloady, safety i endpointy pozostają bez zmian.
 
 ## Resume
 

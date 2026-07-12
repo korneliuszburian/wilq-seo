@@ -929,6 +929,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   pozostaje orkiestratorem, ale event type, operator label, summary, actor i
   evidence są składane w jednym owner module. 55 focused audit/review/action
   tests, Ruff, mypy, complexity, diff check i live safety smoke przechodzą.
+- Najnowszy slice `jnra` wyciął routing previewów z `service.py` do nowego
+  `wilq/actions/action_previews.py`. Kontrakty previewów są mapowane w jednym
+  typed dispatcherze, a renderery pozostają w modułach domenowych; usunięto 311
+  lokalnych wrapperów/fasad bez zmiany ActionObject safety loop. Nowy test
+  routingu Merchant oraz `test_action_preview_contracts.py` +
+  `test_action_object_contracts.py` przechodzą, Ruff/mypy/complexity/diff check
+  i managed API smoke przechodzą.
 
 ## Weryfikacja
 

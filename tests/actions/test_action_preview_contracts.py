@@ -12,7 +12,17 @@ from tests._contract_support.assertions import (
     preview_card_row_values,
 )
 from wilq.actions.action_blockers import action_preview_summary
+from wilq.actions.action_previews import action_preview_cards
 from wilq.actions.google_ads.business_context import micros_money_label
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
+    ActionRisk,
+    ActionStatus,
+    OpportunityDomain,
+)
 
 
 def test_ads_micros_money_label_is_fail_closed_for_missing_values() -> None:
@@ -27,6 +37,56 @@ def test_action_preview_summary_keeps_write_safety_copy() -> None:
     assert "Nie zapisano zmian w zewnętrznych systemach" in action_preview_summary(
         status="preview_ready", included_items=2, preview_items=2
     )
+
+
+def test_action_preview_dispatcher_routes_contract_to_domain_owner() -> None:
+    action = ActionObject(
+        id="act_merchant_preview",
+        title="Problemy pliku produktowego",
+        domain=OpportunityDomain.merchant,
+        connector="merchant_center",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_merchant_preview"],
+        human_diagnosis="Problem pliku do sprawdzenia.",
+        recommended_reason="Wymaga kontroli.",
+        payload={
+            "preview_contract": "merchant_feed_issue_review_preview_v1",
+            "payload_preview": [
+                {
+                    "preview_contract": "merchant_feed_issue_review_preview_v1",
+                    "issue_type_label": "Brak ceny",
+                    "affected_attribute_label": "Cena",
+                    "metric_snapshot": {"issue_product_count": 2},
+                }
+            ],
+        },
+        validation_status="not_validated",
+        created_by="test",
+    )
+
+    cards = action_preview_cards(
+        action,
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        apply_state_label=lambda _: "zapis zmian zablokowany",
+        system_readiness_label=lambda _: "wymaga sprawdzenia",
+        wordpress_draft_preview_card=lambda *_args, **_kwargs: ActionPreviewCardViewModel(
+            id="stub", kind="stub", title_label="stub"
+        ),
+        source_connector_labels=lambda values: values,
+        metric_fact_label=lambda value: value,
+        plain_metric_value_label=lambda value, **_kwargs: str(value),
+        action_gate_labels=lambda values: values,
+        business_context_summary=lambda value: value,
+    )
+
+    assert len(cards) == 1
+    assert cards[0].kind == "merchant_feed_issue_review"
+    assert cards[0].rows[0].value == "Brak ceny"
 
 
 def test_action_preview_generates_dry_run_audit_without_apply(
