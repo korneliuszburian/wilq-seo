@@ -35,4 +35,5 @@ payloadu ani safety loop.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `4ddcb34f` (`refactor: extract content preview
+composition`), wypchnięty na `origin/main`.
