@@ -3,8 +3,8 @@
 Data: 2026-07-12 Europe/Warsaw
 
 Baseline before the preview-card seam: `0e5917a2`; preview-card seam commit:
-`0ae4eba0`; payload-preview assembly seam is included in this handoff and its
-commit will be recorded in the final progress line.
+`0ae4eba0`; payload-preview assembly seam is committed and pushed as
+`7b285df2`.
 
 ## Zrobione
 
