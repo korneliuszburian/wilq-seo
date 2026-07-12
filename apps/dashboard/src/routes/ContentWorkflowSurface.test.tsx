@@ -298,6 +298,31 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
   }, 10_000);
 
+  it("switches between marketer mode and technical audit mode", async () => {
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByRole("button", { name: "Marketer" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByText("Decyzja, blocker i następny bezpieczny krok.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Audyt techniczny" }));
+    expect(screen.getByRole("button", { name: "Audyt techniczny" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByText("Dowody, audyt i kontrakty do sprawdzenia technicznego.")).toBeInTheDocument();
+    expect(screen.getByText("Audyt techniczny: workflow, kolejka i ślad działania")).toBeInTheDocument();
+  });
+
   it("keeps the queue decision visible while the selected workflow snapshot loads", async () => {
     let resolveSnapshot: ((value: ContentWorkItemWorkflowSnapshotResponse) => void) | undefined;
     vi.mocked(getContentWorkItemSnapshot).mockImplementation(

@@ -90,6 +90,12 @@ w git, Beads i `docs/progress/archive/`.
   viewport używa copy „Podgląd na devie”, prowadzi do konkretnego CTA i obietnicy
   braku publikacji; mechanika ActionObject/centralnej akcji nie dominuje widoku.
   Vitest 15/15, ESLint, TypeScript, Vite build i screenshot desktop przechodzą.
+- `wilq-seo-3bst.10` wykonany na `/content-workflow`: widoczny przełącznik
+  `Marketer` / `Audyt techniczny` steruje zakresem pierwszego widoku i otwiera
+  techniczne szczegóły dopiero w trybie audytu. Marketer widzi decyzję, blocker
+  i następny krok; evidence IDs, kontrakty i ślad działania pozostają w audycie.
+  Vitest 16/16, ESLint, TypeScript, Vite build, live API i screenshoty obu trybów
+  przechodzą.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

@@ -334,6 +334,7 @@ function ContentWorkflowLoaded({
     authoringProfile.data ?? null
   );
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"marketer" | "technical">("marketer");
   const draft = data.draftPackage.draft_package_result.draft_package;
   const handoff = data.wordpressHandoff.handoff_result.handoff;
   const window = data.measurementWindow.measurement_window_result.window;
@@ -341,6 +342,44 @@ function ContentWorkflowLoaded({
 
   return (
     <main className="w-full px-4 py-5 lg:px-7 2xl:px-8">
+      <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-white px-4 py-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Widok pracy</p>
+          <p className="mt-1 text-sm text-slate-700">
+            {viewMode === "marketer"
+              ? "Decyzja, blocker i następny bezpieczny krok."
+              : "Dowody, audyt i kontrakty do sprawdzenia technicznego."}
+          </p>
+        </div>
+        <div className="flex rounded-md border border-line bg-surface p-1" role="group" aria-label="Tryb widoku">
+          <button
+            type="button"
+            aria-pressed={viewMode === "marketer"}
+            onClick={() => {
+              setViewMode("marketer");
+              setDetailsOpen(false);
+            }}
+            className={`rounded px-3 py-2 text-sm font-semibold ${
+              viewMode === "marketer" ? "bg-white text-action shadow-sm" : "text-slate-600"
+            }`}
+          >
+            Marketer
+          </button>
+          <button
+            type="button"
+            aria-pressed={viewMode === "technical"}
+            onClick={() => {
+              setViewMode("technical");
+              setDetailsOpen(true);
+            }}
+            className={`rounded px-3 py-2 text-sm font-semibold ${
+              viewMode === "technical" ? "bg-white text-action shadow-sm" : "text-slate-600"
+            }`}
+          >
+            Audyt techniczny
+          </button>
+        </div>
+      </section>
           <ContentPageWorkbench
             actions={actions}
             authoringProfile={authoringProfile}
@@ -357,7 +396,9 @@ function ContentWorkflowLoaded({
         onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
       >
         <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-ink">
-          Szczegóły workflow, kolejka i audyt techniczny
+          {viewMode === "technical"
+            ? "Audyt techniczny: workflow, kolejka i ślad działania"
+            : "Szczegóły workflow, kolejka i audyt techniczny"}
         </summary>
         {detailsOpen ? (
           <div className="border-t border-line p-4">
