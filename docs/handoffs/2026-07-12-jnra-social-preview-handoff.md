@@ -23,7 +23,7 @@ labels/rows/formatowania. Payload social, evidence IDs, Polish safety copy,
 ## Stan grafu
 
 `wilq-seo-jnra` pozostaje `in_progress`; WordPress payload preview seam jest
-pushnięty jako `7b285df2`, a ten social seam czeka na commit/push.
+pushnięty jako `7b285df2`, a social preview seam jako `3895ca5a`.
 
 ## Następny krok
 
