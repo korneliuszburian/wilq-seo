@@ -7342,10 +7342,12 @@ const socialPublisherContextPack = {
 
 let ga4RefreshRunReadCount = 0;
 let shouldFailGa4RefreshRunRead = false;
+let ahrefsDiagnosticsOverride: typeof ahrefsDiagnostics | null = null;
 
 function mockFetch() {
   ga4RefreshRunReadCount = 0;
   shouldFailGa4RefreshRunRead = false;
+  ahrefsDiagnosticsOverride = null;
   vi.stubGlobal("fetch", vi.fn(mockWilqApiFetch));
 }
 
@@ -7707,7 +7709,7 @@ function mockDiagnosticApi(url: string) {
     ["/api/content/preflight", contentPreflight],
     ["/api/ga4/diagnostics", ga4Diagnostics],
     ["/api/localo/diagnostics", localoDiagnostics],
-    ["/api/ahrefs/diagnostics", ahrefsDiagnostics],
+    ["/api/ahrefs/diagnostics", ahrefsDiagnosticsOverride ?? ahrefsDiagnostics],
     ["/api/demand-gen/diagnostics", demandGenDiagnostics],
     ["/api/connectors", connectors],
     ["/api/metrics/status", metricStoreStatus],
@@ -9467,6 +9469,56 @@ describe("WILQ dashboard", () => {
     );
     expect(routeSource).not.toContain("contract.missing_read_contracts.length");
     expect(routeSource).not.toContain("contract.blocked_claims.length");
+  });
+
+  it("ahrefs route puts the API-owned manual cross-check before ready cards", async () => {
+    const manualAhrefsDiagnostics = structuredClone(ahrefsDiagnostics);
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_status = "manual_required";
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_status_label =
+      "sprawdzenie GSC i WordPress wymaga ręcznej oceny";
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_summary =
+      "WILQ ma 6 propozycji Ahrefs, ale nie znalazł jeszcze dopasowania w GSC ani WordPress.";
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_next_step =
+      "Sprawdź ręcznie GSC i spis WordPress dla tematów Ahrefs przed tworzeniem briefu.";
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_gsc_match_count = 0;
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_wordpress_match_count = 0;
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_source_connectors = [];
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_evidence_ids = [];
+    const candidate = manualAhrefsDiagnostics.gap_read_contract.cross_check_candidates[0];
+    manualAhrefsDiagnostics.gap_read_contract.cross_check_candidates = Array.from(
+      { length: 6 },
+      () => candidate
+    );
+    manualAhrefsDiagnostics.gap_read_contract.evidence_summary_label = "6 dowodów źródłowych";
+    ahrefsDiagnosticsOverride = manualAhrefsDiagnostics;
+
+    renderApp("/ahrefs");
+
+    const priorityStrip = await screen.findByRole("region", {
+      name: "Najpierw zweryfikuj GSC i WordPress"
+    });
+    expect(
+      within(priorityStrip).getByText("sprawdzenie GSC i WordPress wymaga ręcznej oceny")
+    ).toBeInTheDocument();
+    expect(
+      within(priorityStrip).getByText(
+        "WILQ ma 6 propozycji Ahrefs, ale nie znalazł jeszcze dopasowania w GSC ani WordPress."
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(priorityStrip).getByText(
+        "Sprawdź ręcznie GSC i spis WordPress dla tematów Ahrefs przed tworzeniem briefu."
+      )
+    ).toBeInTheDocument();
+    expect(within(priorityStrip).getByText("Tematy do ręcznej oceny")).toBeInTheDocument();
+    expect(within(priorityStrip).getByText("6")).toBeInTheDocument();
+    expect(within(priorityStrip).queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(within(priorityStrip).queryByText(/act_/)).not.toBeInTheDocument();
+
+    const routeText = document.body.textContent ?? "";
+    expect(routeText.indexOf("Najpierw zweryfikuj GSC i WordPress")).toBeLessThan(
+      routeText.indexOf("Użyj Ahrefs tylko jako kontekstu autorytetu")
+    );
   });
 
   it("demand gen route renders readiness contract instead of generic registry", async () => {

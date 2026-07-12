@@ -1,4 +1,4 @@
-# Current Cleanup State — 2026-07-12
+# Current Cleanup State — 2026-07-13
 
 Przeczytaj przed cleanupem, refaktorem dashboardu albo zmianą kontraktu API.
 Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
@@ -58,6 +58,17 @@ safe next step; nie ma nowego endpointu ani inferencji z enrichmentowego
   `scrollWidth=390` po naprawie shrinku workbenchu. Live homepage jest `bound`,
   ale `blocked` do finalnych treści, więc slice nie omija review, ActionObjectu
   ani draft-only/publish gates.
+`3bst.7` jest zamknięty: `/ahrefs` nie zaczyna już od równorzędnych kart
+`gotowe`, gdy `gap_read_contract.cross_check_status=manual_required`.
+Istniejący API-owned blocker, podsumowanie, liczba tematów/zero potwierdzeń,
+dowody i safe next step są jednym priorytetowym regionem nad kartami. React
+wyłącznie renderuje typed kontrakt — nie klasyfikuje dopasowań i nie tworzy
+ActionObjectu. W pierwszym viewportcie nie ma surowych ID; desktop/mobile proof
+jest w `.local-lab/proof/3bst7-ahrefs/`, a re-review marketer/operator to 7/10.
+Jedyny świeży problem tej trasy to `c9h9.17`: HTTP diagnostics zajmuje około
+14–16 s. Najpierw zmierz przyczynę i użyj istniejącego cache/prewarm seam'u z
+inwalidacją przy Ahrefs oraz inputach GSC/WordPress; nie maskuj loadingu i nie
+osłabiaj freshness/evidence.
 
 ## Prawda produktu
 
@@ -884,5 +895,6 @@ ich rozmiaru.
 6. `r564.5` i `r564.6` są zamknięte. Nie zgaduj usługi z `service_fit`: istnieje
    tylko typed binding snapshotu, a blocked snapshot pozostaje `not_evaluated`.
 7. Parent `r564` jest zablokowany zewnętrznie przy 1 actionable z wymaganych 3;
-   nie twórz tematu dla wypełnienia progu. Następny niezależny UI slice to
-   `3bst.7` — pokaż istniejący Ahrefs manual blocker przed kartami danych.
+   nie twórz tematu dla wypełnienia progu. `3bst.7` jest domknięty; następny
+   niezależny slice to `c9h9.17`, czyli latency istniejącego Ahrefs diagnostics,
+   bez zmiany jego manualnego cross-checku.

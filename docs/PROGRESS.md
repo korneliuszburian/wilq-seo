@@ -3,7 +3,7 @@
 Krótki recovery ledger, nie append-only changelog. Historyczne proof pozostaje
 w git, Beads i `docs/progress/archive/`.
 
-## Stan bieżący — 2026-07-12
+## Stan bieżący — 2026-07-13
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
@@ -70,16 +70,29 @@ w git, Beads i `docs/progress/archive/`.
   `ev_content_service_profile_source_facts`, freshness signal `2026-07-02` i
   uczciwy status `blocked` z review przed finalnym draftem; write/publish
   pozostają false. Proof jest w `.local-lab/proof/r5646-service-profile/`.
+- `wilq-seo-3bst.7` domyka jeden marketer-first slice diagnostyczny bez nowego
+  endpointu ani reguły w React: `/ahrefs` pokazuje teraz przed galerią kart
+  API-owned region „Najpierw zweryfikuj GSC i WordPress”. Rozróżnia on gotowość
+  odczytu Ahrefs od decyzji, pokazuje 6 tematów do ręcznej oceny, po 0
+  potwierdzeń GSC/WordPress, podsumowanie dowodów i jeden safe next step.
+  Live `gap_read_contract` pozostaje `manual_required`, z zerem ActionObjectów;
+  surowe ID nie wchodzą do pierwszego viewportu. Desktop 1440×900 i mobile
+  390×844 są w `.local-lab/proof/3bst7-ahrefs/`; mobile ma `scrollWidth=390`.
+  Re-review marketer/operator: 7/10 — w 30 sekund widać, że „gotowe” dotyczy
+  danych, nie briefu ani publikacji; szczegóły Ahrefs zostają niżej.
 - Parent `r564` pozostaje `blocked_by_external_state`, nie luką kolejki: GSC
   daje jeden unikalny publiczny URL, Ahrefsowe rekordy nie mają bezpiecznego
   `referenced_public_url`, a live queue ma 2 kandydatów / 1 actionable przy
-  minimum 3. Nie twórz sztucznego trzeciego tematu. Następny niezależny,
-  gotowy slice UI to `3bst.7`: podnieść istniejący Ahrefs blocker i safe next
-  step nad galerię danych bez reguł matchowania w React.
+  minimum 3. Nie twórz sztucznego trzeciego tematu.
 - Complexity po `r564.6` ma jeden potwierdzony, śledzony dług techniczny:
   `wilq/content/workflow/api.py` ma 1500 LOC przy budżecie 800. Utworzony
   `c9h9.16` wydzieli tylko typed snapshot assembly seam; nie jest zgodą na
   mechaniczny split ani zmianę zachowania workflow.
+- Nowy, niezależny `c9h9.17` śledzi potwierdzony performance blocker Ahrefs:
+  po managed restarcie kolejne HTTP `GET /api/ahrefs/diagnostics` trwały
+  `14.654183 s` i `15.872616 s` mimo zdrowego API. Nie ma jeszcze cache'a ani
+  optymalizacji — task wymaga najpierw zmierzenia przyczyny, potem bezpiecznego
+  seam'u z invalidacją dla Ahrefs oraz cross-checku GSC/WordPress.
 
 - Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
   99 906 metric facts, 4 577 refresh runs, 12 connectorów (9 configured,

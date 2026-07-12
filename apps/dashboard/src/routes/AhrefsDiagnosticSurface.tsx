@@ -71,10 +71,58 @@ export function AhrefsDiagnosticSurface() {
         ) : null}
       </section>
 
+      <AhrefsCrossCheckPriority data={data} />
       <AhrefsOperatorSummary data={data} />
       <AhrefsGapContractPanel data={data} />
       <AhrefsDiagnosticProof data={data} />
     </DiagnosticSurfaceShell>
+  );
+}
+
+function AhrefsCrossCheckPriority({ data }: { data: AhrefsDiagnosticsResponse }) {
+  const contract = data.gap_read_contract;
+  if (contract.cross_check_status !== "manual_required") {
+    return null;
+  }
+
+  return (
+    <section
+      aria-label="Najpierw zweryfikuj GSC i WordPress"
+      className="mb-6 rounded-md border border-wait/35 bg-wait/10 p-4"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-normal text-wait">
+            Najpierw zweryfikuj GSC i WordPress
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-ink">
+            {contract.cross_check_status_label}
+          </h2>
+        </div>
+        <span className="rounded-md border border-wait/35 bg-white px-2 py-1 text-xs font-semibold text-wait">
+          Status danych Ahrefs: {contract.status_label}
+        </span>
+      </div>
+      {contract.cross_check_summary ? (
+        <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-700">
+          {contract.cross_check_summary}
+        </p>
+      ) : null}
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <MetricTile label="Tematy do ręcznej oceny" value={contract.cross_check_candidates.length} />
+        <MetricTile label="Potwierdzenia GSC" value={contract.cross_check_gsc_match_count} />
+        <MetricTile
+          label="Potwierdzenia WordPress"
+          value={contract.cross_check_wordpress_match_count}
+        />
+      </div>
+      <p className="mt-3 text-sm font-semibold leading-6 text-ink">
+        {contract.cross_check_next_step || contract.next_step}
+      </p>
+      <p className="mt-2 text-xs leading-5 text-slate-600">
+        Dowody Ahrefs: {contract.evidence_summary_label}
+      </p>
+    </section>
   );
 }
 
@@ -165,7 +213,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
           <p className="mt-1 text-sm leading-6 text-slate-600">{contract.summary}</p>
         </div>
         <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
-          {contract.status_label}
+          Status danych Ahrefs: {contract.status_label}
         </span>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
