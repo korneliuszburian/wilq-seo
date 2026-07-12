@@ -543,6 +543,11 @@ ich rozmiaru.
   content-refresh zachowuje evidence, publiczne URL-e, review gates i
   `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-brief-preview-live.png`.
+- Content-refresh preview composition jest teraz w
+  `wilq/actions/content_preview.py`; service zachowuje tylko dispatcher i
+  callback do istniejącej karty WordPress draft. Live content action nadal ma
+  evidence, publiczne URL-e i `apply_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/content-refresh-composition-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

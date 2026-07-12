@@ -614,6 +614,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   action ma 3 evidence IDs, trzy typed `content_brief_review` cards, publiczne
   URL-e i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-brief-preview-live.png`.
+- Content-refresh preview composition (brief cards + reviewed WordPress draft
+  card) jest teraz w `wilq/actions/content_preview.py`; `service.py` przekazuje
+  jedynie typed callbacks i zachowuje istniejący WordPress preview adapter.
+  Live output nadal ma 3 `content_brief_review` cards, 3 evidence IDs i blokadę
+  zapisu; świeży browser proof:
+  `.local-lab/proof/continuation-2026-07-12/content-refresh-composition-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

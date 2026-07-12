@@ -23,8 +23,7 @@ from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
 from wilq.actions.content_preview import (
-    content_brief_preview_card,
-    content_primary_url_label,
+    content_refresh_preview_cards,
 )
 from wilq.actions.content_refresh import (
     content_contract_label,
@@ -2163,38 +2162,14 @@ def _preview_contract_label(value: str | None) -> str:
 def _content_refresh_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    content_items = [
-        item for item in payload.get("content_brief_preview", []) if isinstance(item, dict)
-    ]
-    draft_items = [
-        item
-        for item in payload.get("wordpress_draft_payload_preview", [])
-        if isinstance(item, dict)
-    ]
-    cards = [
-        content_brief_preview_card(
-            item,
-            index,
-            preview_row=_preview_row,
-            string_list=_string_list,
-            apply_state_label=_apply_state_label,
-            system_readiness_label=_system_readiness_label,
-        )
-        for index, item in enumerate(content_items[:3])
-    ]
-    cards.extend(
-        wordpress_draft_payload_preview_card(
-            item,
-            index,
-            preview_row=_preview_row,
-            string_list=_string_list,
-            apply_state_label=_apply_state_label,
-            system_readiness_label=_system_readiness_label,
-            content_primary_url_label=content_primary_url_label,
-        )
-        for index, item in enumerate(draft_items[:1])
+    return content_refresh_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+        wordpress_draft_preview_card=wordpress_draft_payload_preview_card,
     )
-    return cards
 
 
 def _service_profile_knowledge_promotion_preview_cards(
