@@ -17,6 +17,7 @@ statusu, label/reason blockerów i fail-closed adapter trace.
 - Po managed restart API health jest `ok`; Ads detail zachowuje evidence,
   `Zapis zmian zablokowany` i `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/wp-errors-live.png`.
+- Commit implementacji: `ae064e0` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
