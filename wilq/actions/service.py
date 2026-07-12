@@ -321,8 +321,10 @@ from wilq.actions.wordpress_draft import (
     existing_draft_update_action,
 )
 from wilq.actions.wordpress_mutation_requirements import (
+    wordpress_draft_activation_packet,
     wordpress_draft_execution_readiness_requirements,
     wordpress_draft_target_content_readiness_requirements,
+    wordpress_draft_write_readiness,
     wordpress_draft_write_readiness_requirements,
 )
 from wilq.actions.wordpress_mutation_requirements import (
@@ -347,9 +349,6 @@ from wilq.content.handoff.wordpress_execution import (
 )
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.workflow.api import (
-    build_content_wordpress_draft_activation_packet_response,
-    build_content_wordpress_draft_write_readiness_response,
-    build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_diagnostics_snapshot_response_for_work_item,
 )
 from wilq.content.workflow.contracts import (
@@ -1670,24 +1669,13 @@ def _wordpress_draft_write_readiness_requirements(
 def _wordpress_draft_write_readiness(
     action: ActionObject,
 ) -> ContentWordPressDraftWriteReadinessResponse | None:
-    if action.id != "act_apply_wordpress_draft_handoff":
-        return None
-    return build_content_wordpress_draft_write_readiness_response(action_id=action.id)
+    return wordpress_draft_write_readiness(action)
 
 
 def _wordpress_draft_activation_packet(
     action: ActionObject,
 ) -> ContentWordPressDraftActivationPacketResponse | None:
-    if action.id != "act_apply_wordpress_draft_handoff":
-        return None
-    from wilq.briefing.content_diagnostics import build_content_diagnostics
-
-    diagnostics = build_content_diagnostics(actions=[])
-    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
-    return build_content_wordpress_draft_activation_packet_response(
-        snapshot,
-        action_id=action.id,
-    )
+    return wordpress_draft_activation_packet(action)
 
 
 def _apply_audit_event_type(errors: list[str]) -> str:

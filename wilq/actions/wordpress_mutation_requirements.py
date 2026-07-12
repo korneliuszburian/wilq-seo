@@ -23,6 +23,35 @@ def wordpress_draft_writes_enabled() -> bool:
     }
 
 
+def wordpress_draft_write_readiness(
+    action: ActionObject,
+) -> ContentWordPressDraftWriteReadinessResponse | None:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return None
+    from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
+
+    return build_content_wordpress_draft_write_readiness_response(action_id=action.id)
+
+
+def wordpress_draft_activation_packet(
+    action: ActionObject,
+) -> ContentWordPressDraftActivationPacketResponse | None:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return None
+    from wilq.briefing.content_diagnostics import build_content_diagnostics
+    from wilq.content.workflow.api import (
+        build_content_wordpress_draft_activation_packet_response,
+        build_content_work_item_diagnostics_snapshot_response,
+    )
+
+    diagnostics = build_content_diagnostics(actions=[])
+    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
+    return build_content_wordpress_draft_activation_packet_response(
+        snapshot,
+        action_id=action.id,
+    )
+
+
 def wordpress_draft_execution_readiness_requirements(
     action: ActionObject,
     *,

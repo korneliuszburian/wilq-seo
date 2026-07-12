@@ -2,6 +2,8 @@ import pytest
 
 from wilq.actions.mutation_readiness import mutation_readiness_next_step
 from wilq.actions.wordpress_mutation_requirements import (
+    wordpress_draft_activation_packet,
+    wordpress_draft_write_readiness,
     wordpress_draft_write_readiness_requirements,
 )
 from wilq.content.workflow.contracts import ContentWordPressDraftWriteReadinessResponse
@@ -62,6 +64,13 @@ def test_wordpress_write_readiness_requirements_keep_fail_closed_contract() -> N
         "wordpress_write_authorization",
     ]
     assert all(requirement.satisfied is False for requirement in requirements)
+
+
+def test_wordpress_readiness_builders_are_limited_to_apply_action() -> None:
+    action = ActionObject.model_construct(id="act_prepare_wordpress_draft_handoff")
+
+    assert wordpress_draft_write_readiness(action) is None
+    assert wordpress_draft_activation_packet(action) is None
 
 
 def test_wordpress_execution_errors_keep_blocker_labels_and_reasons() -> None:

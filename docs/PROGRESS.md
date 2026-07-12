@@ -852,6 +852,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   jedyną obsługiwaną ścieżką, a publish/arbitrary operation zwraca brak adaptera.
   Focused mutation contract tests, source Ruff/mypy/complexity/diff check i
   browser proof przechodzą: `.local-lab/proof/continuation-2026-07-12/adapter-boundary-live.png`.
+- Najnowszy slice `jnra` przeniósł buildery `wordpress_draft_write_readiness`
+  i `wordpress_draft_activation_packet` do istniejącego modułu
+  `wilq/actions/wordpress_mutation_requirements.py`; `service.py` zachowuje
+  kompatybilne fasady, a kontrakt apply pozostaje draft-only. Focused mutation
+  readiness/action tests (7 testów), Ruff, mypy, complexity, diff check oraz
+  live API smoke przechodzą; brak nowych endpointów i vendor writes.
 
 ## Weryfikacja
 

@@ -748,6 +748,11 @@ ich rozmiaru.
   `wilq/actions/mutation_contract.py`; canonical WordPress draft-only operation
   pozostaje jedyną obsługiwaną ścieżką. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/adapter-boundary-live.png`.
+- Buildery `wordpress_draft_write_readiness` i
+  `wordpress_draft_activation_packet` są teraz własnością istniejącego
+  `wilq/actions/wordpress_mutation_requirements.py`; `service.py` deleguje
+  bez zmiany kontraktu. Focused mutation readiness/action tests i live API
+  smoke przechodzą, a apply nadal raportuje `vendor_write_possible=false`.
 
 ## Resume
 
