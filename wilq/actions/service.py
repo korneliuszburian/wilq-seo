@@ -73,6 +73,7 @@ from wilq.actions.google_ads.negative_keywords import (
 from wilq.actions.google_ads.oauth import oauth_repair_action
 from wilq.actions.google_ads.previews import budget_preview_cards
 from wilq.actions.google_ads.recommendations import (
+    recommendation_preview_cards,
     recommendation_review_action_from_metric_facts,
     seed_recommendation_review_action,
 )
@@ -2359,53 +2360,13 @@ def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCard
 def _ads_recommendation_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(preview_items[:4]):
-        rows = [
-            _preview_row(
-                "Typ rekomendacji",
-                str(item.get("recommendation_type_label") or "rekomendacja do sprawdzenia"),
-            ),
-            _preview_row(
-                "Kampania",
-                "powiązana kampania do sprawdzenia"
-                if item.get("campaign_id")
-                else "brak powiązanej kampanii",
-            ),
-            _preview_row(
-                "Budżet kampanii",
-                "powiązany budżet do sprawdzenia"
-                if item.get("campaign_budget_id")
-                else "brak powiązanego budżetu",
-            ),
-        ]
-        requirement_labels = _string_list(item.get("required_validation_labels"))
-        if requirement_labels:
-            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
-        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
-        if blocked_claim_labels:
-            rows.append(
-                _preview_row(
-                    "Czego nie wolno twierdzić",
-                    ", ".join(blocked_claim_labels[:4]),
-                )
-            )
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=str(item.get("id") or f"ads_recommendation_preview_{index}"),
-                kind="google_ads_recommendation_review",
-                title_label="Rekomendacja Google Ads do sprawdzenia",
-                subtitle_label=str(
-                    item.get("operation_type_label") or "ocena rekomendacji bez zapisu zmian"
-                ),
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
+    return recommendation_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+    )
 
 
 def _ads_negative_keyword_preview_cards(

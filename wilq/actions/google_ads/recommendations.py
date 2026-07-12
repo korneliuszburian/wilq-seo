@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from wilq.actions.validation_copy import (
@@ -17,6 +17,8 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
     ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
     ActionRisk,
     ActionStatus,
     MetricFact,
@@ -31,6 +33,68 @@ RECOMMENDATION_REVIEW_BLOCKED_CLAIMS = [
     "zapis zmian kampanii",
     "obietnica poprawy wyniku",
 ]
+
+PreviewRow = Callable[[str, str], ActionPreviewRowViewModel]
+StringList = Callable[[Any], list[str]]
+StateLabel = Callable[[Any], str]
+
+
+def recommendation_preview_cards(
+    payload: dict[str, Any],
+    *,
+    preview_row: PreviewRow,
+    string_list: StringList,
+    apply_state_label: StateLabel,
+    system_readiness_label: StateLabel,
+) -> list[ActionPreviewCardViewModel]:
+    """Render recommendation review cards while hiding vendor identifiers."""
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        rows = [
+            preview_row(
+                "Typ rekomendacji",
+                str(item.get("recommendation_type_label") or "rekomendacja do sprawdzenia"),
+            ),
+            preview_row(
+                "Kampania",
+                "powiązana kampania do sprawdzenia"
+                if item.get("campaign_id")
+                else "brak powiązanej kampanii",
+            ),
+            preview_row(
+                "Budżet kampanii",
+                "powiązany budżet do sprawdzenia"
+                if item.get("campaign_budget_id")
+                else "brak powiązanego budżetu",
+            ),
+        ]
+        requirement_labels = string_list(item.get("required_validation_labels"))
+        if requirement_labels:
+            rows.append(preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_claim_labels = string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=str(item.get("id") or f"ads_recommendation_preview_{index}"),
+                kind="google_ads_recommendation_review",
+                title_label="Rekomendacja Google Ads do sprawdzenia",
+                subtitle_label=str(
+                    item.get("operation_type_label") or "ocena rekomendacji bez zapisu zmian"
+                ),
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=system_readiness_label(item.get("api_mutation_ready")),
+            )
+        )
+    return cards
 
 
 def seed_recommendation_review_action() -> ActionObject:

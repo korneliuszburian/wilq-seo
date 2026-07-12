@@ -528,6 +528,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   cztery `google_ads_budget_review` cards, `apply_allowed=false` i
   `api_mutation_ready=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-budget-preview-cards.png`.
+- Następny seam Ads recommendations jest w `wilq/actions/google_ads/recommendations.py`;
+  dispatcher zachowuje `recommendation_apply_preview_v1`, evidence i blocked
+  claims, a live action ma cztery `google_ads_recommendation_review` cards,
+  `apply_allowed=false` i `api_mutation_ready=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-recommendation-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
