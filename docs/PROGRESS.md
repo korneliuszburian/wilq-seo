@@ -712,6 +712,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `apply_allowed=false`; focused review/payload tests (8 passed), Ruff, mypy,
   complexity i browser proof przechodzą; proof:
   `.local-lab/proof/continuation-2026-07-12/review-gate-builders-live.png`.
+- Selekcja najnowszego Google Ads `vendor_read` i recency tie-breaker są teraz
+  w istniejącym `wilq/actions/google_ads/business_context.py`; service tylko
+  dostarcza listę refresh runs. Ads strategy detail zachowuje 2 evidence IDs,
+  5 checks, świeży gate i `apply_allowed=false`; Localo pozostaje bez zmian.
+  Focused Ads/review tests (9 passed), Ruff, mypy, complexity, managed runtime
+  i browser proof przechodzą; proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-vendor-read-selection-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

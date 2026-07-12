@@ -132,6 +132,43 @@ def test_review_gate_builders_keep_required_checks_and_checklist_fallbacks() -> 
     assert checklist == ["one", "two"]
 
 
+def test_latest_google_ads_vendor_read_ignores_non_vendor_runs_and_tiebreaks_id() -> None:
+    from wilq.actions.google_ads.business_context import latest_google_ads_vendor_read
+    from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus
+
+    started_at = datetime.fromisoformat("2026-07-12T10:00:00+00:00")
+    runs = [
+        ConnectorRefreshRun(
+            id="status_probe",
+            connector_id="google_ads",
+            mode=ConnectorRefreshMode.status_probe,
+            status=ConnectorRefreshStatus.completed,
+            started_at=started_at,
+            summary="probe",
+        ),
+        ConnectorRefreshRun(
+            id="vendor_a",
+            connector_id="google_ads",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=started_at,
+            summary="read",
+        ),
+        ConnectorRefreshRun(
+            id="vendor_b",
+            connector_id="google_ads",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=started_at,
+            summary="read",
+        ),
+    ]
+
+    latest = latest_google_ads_vendor_read(runs)
+
+    assert latest is not None and latest.id == "vendor_b"
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

@@ -14,6 +14,8 @@ from wilq.schemas import (
     ActionStatus,
     AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
     OpportunityDomain,
 )
 from wilq.storage.local_state import local_state_store
@@ -65,6 +67,20 @@ ADS_BUSINESS_CONTEXT_BLOCKING_CONTRACTS = {
     "business_goal",
     "human_budget_goal",
 }
+
+
+def latest_google_ads_vendor_read(
+    runs: Iterable[ConnectorRefreshRun],
+) -> ConnectorRefreshRun | None:
+    vendor_reads = [run for run in runs if run.mode == ConnectorRefreshMode.vendor_read]
+    if not vendor_reads:
+        return None
+    return max(vendor_reads, key=connector_refresh_recency_key)
+
+
+def connector_refresh_recency_key(run: ConnectorRefreshRun) -> tuple[str, str]:
+    timestamp = run.completed_at or run.started_at
+    return (timestamp.isoformat(), run.id)
 
 
 def business_context_action(

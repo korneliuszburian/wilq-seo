@@ -89,6 +89,7 @@ from wilq.actions.google_ads.business_context import (
     ads_strategy_review_state,
     ads_strategy_review_summary,
     business_context_action,
+    latest_google_ads_vendor_read,
     strategy_review_action,
     target_confirmation_action,
 )
@@ -100,6 +101,9 @@ from wilq.actions.google_ads.business_context import (
 )
 from wilq.actions.google_ads.business_context import (
     ads_target_guardrail_preview_cards as build_ads_target_guardrail_preview_cards,
+)
+from wilq.actions.google_ads.business_context import (
+    connector_refresh_recency_key as ads_connector_refresh_recency_key,
 )
 from wilq.actions.google_ads.campaign_review import (
     campaign_review_action_from_metric_facts,
@@ -343,7 +347,6 @@ from wilq.schemas import (
     ActionStatus,
     ActionValidationResult,
     AuditEvent,
-    ConnectorRefreshMode,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
@@ -674,19 +677,13 @@ def _google_ads_live_data_available() -> bool:
 
 
 def _latest_google_ads_vendor_read() -> ConnectorRefreshRun | None:
-    runs = [
-        run
-        for run in list_connector_refresh_runs(connector_id="google_ads")
-        if run.mode == ConnectorRefreshMode.vendor_read
-    ]
-    if not runs:
-        return None
-    return max(runs, key=_connector_refresh_recency_key)
+    return latest_google_ads_vendor_read(
+        list_connector_refresh_runs(connector_id="google_ads")
+    )
 
 
 def _connector_refresh_recency_key(run: ConnectorRefreshRun) -> tuple[str, str]:
-    timestamp = run.completed_at or run.started_at
-    return (timestamp.isoformat(), run.id)
+    return ads_connector_refresh_recency_key(run)
 
 
 def _google_ads_business_context_action() -> ActionObject | None:

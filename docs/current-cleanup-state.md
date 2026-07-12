@@ -621,6 +621,12 @@ ich rozmiaru.
   a Localo/Ads detail zachowuje 5 checks, 5 checklist, świeży gate i
   `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/review-gate-builders-live.png`.
+- Najnowszy Google Ads `vendor_read` jest wybierany w istniejącym
+  `wilq/actions/google_ads/business_context.py` z deterministycznym
+  tie-breakerem `(completed_at|started_at, id)`; service zachowuje tylko I/O.
+  Live Ads detail ma 2 evidence IDs, 5 checks, `kontrola WILQ poprawna` i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-vendor-read-selection-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
