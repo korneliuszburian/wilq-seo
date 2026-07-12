@@ -636,6 +636,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   contract labels, gate labels i zredagowanych claimów. Safety loop i Polish
   review copy pozostają bez zmian; browser proof:
   `.local-lab/proof/continuation-2026-07-12/review-gate-summary-live.png`.
+- Parsery szczegółów review URL i draft-readiness są teraz w nowym wąskim
+  `wilq/actions/content_review_details.py`; `service.py` zachowuje tylko
+  składanie ActionReviewDetails. Dozwolone klucze i redakcja nieznanych pól są
+  pokryte testem; live content action zachowuje 3 evidence IDs, typed cards i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/content-review-details-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

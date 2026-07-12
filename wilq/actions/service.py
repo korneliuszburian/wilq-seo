@@ -34,6 +34,12 @@ from wilq.actions.content_refresh import (
     post_publication_measurement_summary,
     seed_content_refresh_action,
 )
+from wilq.actions.content_review_details import (
+    content_url_review_details as _content_url_review_details_from_checked_items,
+)
+from wilq.actions.content_review_details import (
+    draft_readiness_review_details as _draft_readiness_review_details_from_checked_items,
+)
 from wilq.actions.ga4.tracking_preview import (
     ga4_tracking_quality_preview_cards as build_ga4_tracking_quality_preview_cards,
 )
@@ -2596,51 +2602,6 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
     if draft_readiness_review:
         details["content_draft_readiness_review"] = draft_readiness_review
     return details
-
-
-def _content_url_review_details_from_checked_items(
-    checked_items: list[str],
-) -> dict[str, str]:
-    tokens: dict[str, str] = {}
-    allowed_keys = {
-        "candidate",
-        "url_review_outcome",
-        "reviewed_url",
-        "review_notes",
-    }
-    for item in checked_items:
-        if ":" not in item:
-            continue
-        key, value = item.split(":", 1)
-        key = key.strip()
-        value = value.strip()
-        if key in allowed_keys and value:
-            tokens[key] = value
-    return tokens
-
-
-def _draft_readiness_review_details_from_checked_items(
-    checked_items: list[str],
-) -> dict[str, str]:
-    tokens: dict[str, str] = {}
-    allowed_keys = {
-        "candidate",
-        "draft_readiness_outcome",
-        "canonical_review_outcome",
-        "duplicate_review_outcome",
-        "legal_factual_review_outcome",
-        "human_review_outcome",
-        "draft_readiness_notes",
-    }
-    for item in checked_items:
-        if ":" not in item:
-            continue
-        key, value = item.split(":", 1)
-        key = key.strip()
-        value = value.strip()
-        if key in allowed_keys and value:
-            tokens[key] = value
-    return tokens
 
 
 def _review_outcome_label(outcome: str) -> str:

@@ -7,6 +7,31 @@ import pytest
 from tests._contract_support.api_client import client
 
 
+def test_content_review_details_keep_allowed_fields_and_ignore_unknown_values() -> None:
+    from wilq.actions.content_review_details import (
+        content_url_review_details,
+        draft_readiness_review_details,
+    )
+
+    checked_items = [
+        "candidate: candidate_1",
+        "reviewed_url: https://www.ekologus.pl/usluga",
+        "draft_readiness_outcome: ready_for_review",
+        "unknown: should_be_ignored",
+        "review_notes: operator checked canonical URL",
+    ]
+
+    assert content_url_review_details(checked_items) == {
+        "candidate": "candidate_1",
+        "reviewed_url": "https://www.ekologus.pl/usluga",
+        "review_notes": "operator checked canonical URL",
+    }
+    assert draft_readiness_review_details(checked_items) == {
+        "candidate": "candidate_1",
+        "draft_readiness_outcome": "ready_for_review",
+    }
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

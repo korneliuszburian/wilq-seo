@@ -562,6 +562,10 @@ ich rozmiaru.
   `wilq/actions/review_gate.py`; service przekazuje typed callbacks, a live
   ActionObject zachowuje review gates, blocked claims i brak zapisu. Browser
   proof: `.local-lab/proof/continuation-2026-07-12/review-gate-summary-live.png`.
+- Parsery content URL review i draft-readiness są teraz w
+  `wilq/actions/content_review_details.py`; live content action zachowuje
+  evidence, publiczne URL-e, review gates i `apply_allowed=false`. Browser
+  proof: `.local-lab/proof/continuation-2026-07-12/content-review-details-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
