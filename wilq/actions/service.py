@@ -22,6 +22,10 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
+from wilq.actions.content_preview import (
+    content_brief_preview_card,
+    content_primary_url_label,
+)
 from wilq.actions.content_refresh import (
     content_contract_label,
     content_contract_labels,
@@ -1061,33 +1065,6 @@ def _plain_metric_value_label(
     if isinstance(value, str) and value:
         return value
     return missing_label
-
-
-def _content_primary_url_label(item: dict[str, Any]) -> str:
-    for key in ("final_canonical_url", "intended_final_url", "source_public_url"):
-        value = item.get(key)
-        if isinstance(value, str) and value:
-            return value
-    return "URL niepotwierdzony"
-
-
-def _content_metric_snapshot_label(value: Any) -> str:
-    if not isinstance(value, dict):
-        return ""
-    parts: list[str] = []
-    clicks = value.get("clicks")
-    impressions = value.get("impressions")
-    ctr = value.get("ctr")
-    position = value.get("average_position")
-    if isinstance(clicks, int | float):
-        parts.append(f"kliknięcia: {_plain_metric_value_label(clicks)}")
-    if isinstance(impressions, int | float):
-        parts.append(f"wyświetlenia: {_plain_metric_value_label(impressions)}")
-    if isinstance(ctr, int | float):
-        parts.append(f"CTR: {ctr * 100:.2f}%")
-    if isinstance(position, int | float):
-        parts.append(f"pozycja: {_plain_metric_value_label(position)}")
-    return "; ".join(parts)
 
 
 def _metric_snapshot_preview_rows(
@@ -2195,7 +2172,15 @@ def _content_refresh_preview_cards(
         if isinstance(item, dict)
     ]
     cards = [
-        _content_brief_preview_card(item, index) for index, item in enumerate(content_items[:3])
+        content_brief_preview_card(
+            item,
+            index,
+            preview_row=_preview_row,
+            string_list=_string_list,
+            apply_state_label=_apply_state_label,
+            system_readiness_label=_system_readiness_label,
+        )
+        for index, item in enumerate(content_items[:3])
     ]
     cards.extend(
         wordpress_draft_payload_preview_card(
@@ -2205,62 +2190,11 @@ def _content_refresh_preview_cards(
             string_list=_string_list,
             apply_state_label=_apply_state_label,
             system_readiness_label=_system_readiness_label,
-            content_primary_url_label=_content_primary_url_label,
+            content_primary_url_label=content_primary_url_label,
         )
         for index, item in enumerate(draft_items[:1])
     )
     return cards
-
-
-def _content_brief_preview_card(
-    item: dict[str, Any],
-    index: int,
-) -> ActionPreviewCardViewModel:
-    rows = [
-        _preview_row("Temat", str(item.get("topic") or "treść do sprawdzenia")),
-        _preview_row("Tryb", str(item.get("mode_label") or "wymaga sprawdzenia")),
-        _preview_row(
-            "URL publiczny",
-            _content_primary_url_label(item),
-        ),
-    ]
-    decision_options = _string_list(item.get("decision_option_labels"))
-    if decision_options:
-        rows.append(_preview_row("Opcje", ", ".join(decision_options[:4])))
-    brief_goal = item.get("brief_goal")
-    if isinstance(brief_goal, str) and brief_goal:
-        rows.append(_preview_row("Cel planu treści", brief_goal))
-    content_angle = item.get("content_angle")
-    if isinstance(content_angle, str) and content_angle:
-        rows.append(_preview_row("Kąt treści", content_angle))
-    h1_direction = item.get("h1_direction")
-    if isinstance(h1_direction, str) and h1_direction:
-        rows.append(_preview_row("H1", h1_direction))
-    cta_direction = item.get("cta_direction")
-    if isinstance(cta_direction, str) and cta_direction:
-        rows.append(_preview_row("CTA", cta_direction))
-    metric_summary = _content_metric_snapshot_label(item.get("metric_snapshot"))
-    if metric_summary:
-        rows.append(_preview_row("Metryki", metric_summary))
-    missing_evidence = _string_list(item.get("missing_evidence"))
-    if missing_evidence:
-        rows.append(_preview_row("Brakujące dowody", ", ".join(missing_evidence[:3])))
-    publication_blockers = _string_list(item.get("publication_blocker_labels"))
-    if publication_blockers:
-        rows.append(_preview_row("Blokady publikacji", ", ".join(publication_blockers[:4])))
-    validation_labels = _string_list(item.get("required_validation_labels"))
-    if validation_labels:
-        rows.append(_preview_row("Warunki sprawdzenia", ", ".join(validation_labels[:4])))
-    return ActionPreviewCardViewModel(
-        id=f"content_brief_preview_{index}",
-        kind="content_brief_review",
-        title_label="Plan treści do sprawdzenia",
-        subtitle_label="brief bez pisania i bez publikacji",
-        status_label="zapis zmian zablokowany",
-        rows=rows,
-        apply_state_label=_apply_state_label(item.get("apply_allowed")),
-        system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-    )
 
 
 def _service_profile_knowledge_promotion_preview_cards(

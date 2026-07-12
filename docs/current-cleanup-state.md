@@ -538,6 +538,11 @@ ich rozmiaru.
   deleguje przez typed callbacks, a live karty zachowują evidence, review gates,
   blocked claims i `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/service-profile-private-preview-live.png`.
+- Content brief preview renderer jest teraz w nowym
+  `wilq/actions/content_preview.py`; service pozostaje dispatcherem, a live
+  content-refresh zachowuje evidence, publiczne URL-e, review gates i
+  `apply_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/content-brief-preview-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

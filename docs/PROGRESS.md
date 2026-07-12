@@ -608,6 +608,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   redacted private proposal nadal mają evidence, review gates, blocked claims i
   `apply_allowed=false`; świeży private browser proof:
   `.local-lab/proof/continuation-2026-07-12/service-profile-private-preview-live.png`.
+- Content brief preview card jest teraz w nowym, wąskim
+  `wilq/actions/content_preview.py`; `service.py` przekazuje callbacks do rows,
+  list i safety labels, a content-refresh payload pozostaje API-owned. Live
+  action ma 3 evidence IDs, trzy typed `content_brief_review` cards, publiczne
+  URL-e i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/content-brief-preview-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
