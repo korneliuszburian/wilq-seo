@@ -2,8 +2,9 @@
 
 Data: 2026-07-12 Europe/Warsaw
 
-Baseline before the preview-card seam: `0e5917a2`; this handoff is completed
-with the next preview-card commit.
+Baseline before the preview-card seam: `0e5917a2`; preview-card seam commit:
+`0ae4eba0`; payload-preview assembly seam is included in this handoff and its
+commit will be recorded in the final progress line.
 
 ## Zrobione
 
@@ -22,12 +23,19 @@ możliwości write. Blocker codes, evidence, polskie labels i kolejność
 WordPress payload/handoff preview cards są teraz w
 `wilq/actions/wordpress_preview.py`; dispatcher przekazuje jawne callbacks do
 row/string/label helpers, bez importu service do modułu domenowego.
+Składanie `wordpress_draft_payload_preview_v1` jest teraz osobno w
+`wilq/actions/wordpress_payload_preview.py`; reguły treści i labels pozostają
+w `content_refresh` przez jawny support mapping. To jest assembly seam, nie nowy
+kontrakt i nie nowa możliwość zapisu.
 
 ## Weryfikacja
 
 - Focused mutation-readiness, review, confirmation, preview, validation i Goal
   005 tests — zielone.
 - Ruff, mypy i `git diff --check` — zielone.
+- Focused content/action contracts po payload assembly seam — zielone; nowy
+  moduł nie ma funkcji ponad lokalny budżet (pozostały tylko wcześniejsze
+  findings w `content_refresh.py`).
 - Complexity po pierwszych seamach: `service.py` 3 897 LOC; target projection
   obniżył go do 3 868 LOC, a preview-card seam do 3 782 LOC. Znany frozen-file budget jest
   udokumentowany, bez nowego zachowania w monolicie.
@@ -39,6 +47,8 @@ row/string/label helpers, bez importu service do modułu domenowego.
   canonical/public URL rows, blocked claims i „zapis zmian zablokowany”.
 - Aktualne runtime metrics po read-only refreshu: 99 906 metric facts,
   4 577 refresh runs.
+- Live content queue: `fresh`, `requires_refresh=false`, 2 kandydatów, 1
+  actionable, minimum 3; WordPress handoff pozostaje preview-only.
 
 ## Stan grafu
 
@@ -48,7 +58,7 @@ przez candidate density: 2 kandydatów, 1 actionable, minimum 3.
 
 ## Następny krok
 
-Uruchom świeży complexity/runtime review `service.py` i wybierz kolejny
-niedublujący się domain seam. Przed zmianą pobierz live WILQ API; po zmianie
+Po wypchnięciu tego payload assembly seam uruchom świeży complexity/runtime
+review `service.py` i wybierz kolejny niedublujący się domain seam. Przed zmianą pobierz live WILQ API; po zmianie
 uruchom focused tests, Ruff, mypy, complexity, API smoke, `git diff --check`,
 commit i push na `origin/main`. Nie przywracaj direct WordPress write.

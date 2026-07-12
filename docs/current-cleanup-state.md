@@ -460,6 +460,14 @@ ich rozmiaru.
   `wilq/actions/wordpress_preview.py`; dispatcher zachowuje istniejące preview
   contracts i callbacki operator labels. `service.py` ma 3782 LOC; brak nowej
   ścieżki write/publish.
+- Payload assembly dla `wordpress_draft_payload_preview_v1` jest teraz w
+  `wilq/actions/wordpress_payload_preview.py`; `content_refresh` pozostaje
+  właścicielem reguł, labels i blockerów przez jawny support boundary. Nie ma
+  zmiany w evidence IDs, canonical/duplicate gates, blocked claims ani
+  `apply_allowed=false`. Nowy moduł nie dodaje budżetowych naruszeń funkcji.
+- Po restart/reload live API pozostaje zdrowe: 99 906 metric facts, 4 577
+  refresh runs, queue `fresh`/1 actionable z minimum 3, WordPress readiness
+  nadal fail-closed.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
@@ -478,7 +486,7 @@ ich rozmiaru.
 1. Potwierdź clean/synced `main` po commicie tego slice’a.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
 3. Kontynuuj `jnra`: wybierz następny mały, potwierdzony seam z aktualnego
-   complexity/runtime review; nie przenoś ponownie gotowych `mutation_plan`
-   ani `mutation_summary` boundary.
+   complexity/runtime review; nie przenoś ponownie gotowych mutation/readiness
+   ani WordPress preview boundaries.
 4. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
    nadal wymaga evidence-backed candidate density bez sztucznego tematu.

@@ -508,6 +508,15 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - `/actions/act_prepare_wordpress_existing_draft_update`: first viewport mówi
   „Przygotuj i oceń bez zapisu zmian” oraz „Zapis zablokowany”; pełny render ma
   typed preview i technical disclosure.
+- `jnra` ma kolejny bounded seam: składanie `wordpress_draft_payload_preview_v1`
+  przeniesiono do `wilq/actions/wordpress_payload_preview.py`. `content_refresh`
+  zachowuje policy helpers, evidence/source lineage, canonical/duplicate gates,
+  blocked claims i `apply_allowed=false`; nowy moduł składa ten sam typed payload
+  przez jawny support boundary. Focused action/content contracts, Ruff, mypy,
+  complexity i diff check przechodzą.
+- Live proof po managed restart: API health `ok`, 99 906 metric facts / 4 577
+  refresh runs, content queue `fresh` lecz zablokowana przy 1 actionable z 3,
+  a WordPress handoff nadal ma cztery typed preview cards i brak ścieżki zapisu.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

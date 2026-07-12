@@ -6,6 +6,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from wilq.actions.metric_utils import metric_sentence, prioritize_action_metrics, unique_values
+from wilq.actions.wordpress_payload_preview import build_wordpress_draft_payload_preview
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
@@ -820,192 +821,37 @@ def _wordpress_draft_payload_preview(
     url_review: dict[str, str] | None = None,
     draft_readiness_review: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    topic = str(preview.get("topic") or "Plan treści")
-    mode = str(preview.get("mode") or "review")
-    source_type = str(preview.get("source_type") or "unknown")
-    source_public_url = (
-        preview.get("source_public_url")
-        if isinstance(preview.get("source_public_url"), str)
-        else None
-    )
-    intended_final_url = (
-        preview.get("intended_final_url")
-        if isinstance(preview.get("intended_final_url"), str)
-        else source_public_url
-    )
-    final_canonical_url = (
-        preview.get("final_canonical_url")
-        if isinstance(preview.get("final_canonical_url"), str)
-        else intended_final_url
-    )
-    inventory_gate_status = (
-        preview.get("inventory_gate_status")
-        if isinstance(preview.get("inventory_gate_status"), str)
-        else None
-    )
-    canonical_gate_status = (
-        preview.get("canonical_gate_status")
-        if isinstance(preview.get("canonical_gate_status"), str)
-        else None
-    )
-    duplicate_gate_status = (
-        preview.get("duplicate_gate_status")
-        if isinstance(preview.get("duplicate_gate_status"), str)
-        else None
-    )
-    draft_generation_status = _draft_generation_status(
-        inventory_gate_status=inventory_gate_status,
-        canonical_gate_status=canonical_gate_status,
-        duplicate_gate_status=duplicate_gate_status,
-    )
-    draft_blockers = _draft_blockers(draft_generation_status)
-    wordpress_draft_final_url = final_canonical_url or intended_final_url or source_public_url
-    wordpress_draft_handoff_status = _wordpress_draft_handoff_status(
-        draft_generation_status=draft_generation_status,
-        draft_readiness_outcome=(draft_readiness_review or {}).get("draft_readiness_outcome"),
-    )
-    wordpress_draft_handoff_blockers = _wordpress_draft_handoff_blockers(
-        wordpress_draft_handoff_status
-    )
-    draft_generation_contract = _draft_generation_contract(
-        draft_generation_status=draft_generation_status,
-        draft_blockers=draft_blockers,
-    )
-    draft_readiness_review_contract = _draft_readiness_review_contract()
-    wordpress_draft_handoff_contract = _wordpress_draft_handoff_contract(
-        wordpress_draft_handoff_status=wordpress_draft_handoff_status,
-        wordpress_draft_handoff_blockers=wordpress_draft_handoff_blockers,
-        final_canonical_url=wordpress_draft_final_url,
-    )
-    post_publication_plan = post_publication_measurement_plan(
-        final_canonical_url=wordpress_draft_final_url,
-    )
-    required_validation = _unique(
-        [
-            "operator_review_approved_for_prepare",
-            *[item for item in preview.get("required_validation", []) if isinstance(item, str)],
-            "wordpress_draft_payload_review",
-            "human_confirm_before_wordpress_write",
-        ]
-    )
-    candidate_id = str(preview["candidate_id"])
-    operation_type = _wordpress_draft_operation(mode)
-    blocked_claims = _unique(
-        [item for item in preview.get("blocked_claims", []) if isinstance(item, str)]
-    )
-    return {
-        "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
-        "source_preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
-        "candidate_id": candidate_id,
-        "source_type": source_type,
-        "source_type_label": _content_contract_label(source_type),
-        "mode": mode,
-        "mode_label": _content_contract_label(mode),
-        "connector": "wordpress_ekologus",
-        "operation_type": operation_type,
-        "operation_type_label": _content_contract_label(operation_type),
-        "post_status": "draft",
-        "post_status_label": _content_contract_label("draft"),
-        "topic": topic,
-        "intent": preview.get("intent") if isinstance(preview.get("intent"), str) else None,
-        "source_public_url": source_public_url,
-        "preview_url": preview.get("preview_url")
-        if isinstance(preview.get("preview_url"), str)
-        else None,
-        "intended_final_url": intended_final_url,
-        "final_canonical_url": final_canonical_url,
-        "content_url_review_recorded_outcome": (
-            (url_review or {}).get("url_review_outcome") or None
-        ),
-        "content_url_review_reviewed_url": ((url_review or {}).get("reviewed_url") or None),
-        "content_url_review_notes": ((url_review or {}).get("review_notes") or None),
-        "inventory_gate_status": inventory_gate_status,
-        "inventory_gate_status_label": _content_contract_label(inventory_gate_status),
-        "canonical_gate_status": canonical_gate_status,
-        "canonical_gate_status_label": _content_contract_label(canonical_gate_status),
-        "duplicate_gate_status": duplicate_gate_status,
-        "duplicate_gate_status_label": _content_contract_label(duplicate_gate_status),
-        "content_gate_summary": preview.get("content_gate_summary")
-        if isinstance(preview.get("content_gate_summary"), str)
-        else None,
-        "content_gate_status_summary": _content_gate_status_summary(
-            inventory_gate_status=inventory_gate_status,
-            canonical_gate_status=canonical_gate_status,
-            duplicate_gate_status=duplicate_gate_status,
-            content_gate_summary=preview.get("content_gate_summary")
-            if isinstance(preview.get("content_gate_summary"), str)
-            else None,
-        ),
-        "draft_generation_status": draft_generation_status,
-        "draft_generation_status_label": _content_contract_label(draft_generation_status),
-        "draft_blockers": draft_blockers,
-        "draft_blocker_labels": _content_contract_labels(draft_blockers),
-        "draft_generation_contract": draft_generation_contract,
-        "draft_generation_summary": _draft_generation_summary(draft_generation_contract),
-        "draft_readiness_review_contract": draft_readiness_review_contract,
-        "draft_readiness_review_contract_summary": _draft_readiness_review_contract_summary(
-            draft_readiness_review_contract
-        ),
-        "draft_readiness_review_recorded_outcome": (
-            (draft_readiness_review or {}).get("draft_readiness_outcome") or None
-        ),
-        "canonical_review_recorded_outcome": (
-            (draft_readiness_review or {}).get("canonical_review_outcome") or None
-        ),
-        "duplicate_review_recorded_outcome": (
-            (draft_readiness_review or {}).get("duplicate_review_outcome") or None
-        ),
-        "legal_factual_review_recorded_outcome": (
-            (draft_readiness_review or {}).get("legal_factual_review_outcome") or None
-        ),
-        "human_review_recorded_outcome": (
-            (draft_readiness_review or {}).get("human_review_outcome") or None
-        ),
-        "draft_readiness_review_notes": (
-            (draft_readiness_review or {}).get("draft_readiness_notes") or None
-        ),
-        "draft_readiness_review_summary": _draft_readiness_review_summary(
-            draft_readiness_review or {}
-        ),
-        "wordpress_draft_handoff_status": wordpress_draft_handoff_status,
-        "wordpress_draft_handoff_blockers": wordpress_draft_handoff_blockers,
-        "wordpress_draft_handoff_blocker_labels": _content_contract_labels(
-            wordpress_draft_handoff_blockers
-        ),
-        "wordpress_draft_handoff_summary": _wordpress_draft_handoff_summary(
-            wordpress_draft_handoff_status,
-            wordpress_draft_handoff_blockers,
-        ),
-        "wordpress_draft_handoff_contract": wordpress_draft_handoff_contract,
-        "wordpress_draft_handoff_contract_summary": (
-            _wordpress_draft_handoff_contract_summary(wordpress_draft_handoff_contract)
-        ),
-        "post_publication_measurement_plan": post_publication_plan,
-        "post_publication_measurement_summary": _post_publication_measurement_summary(
-            post_publication_plan
-        ),
-        "draft_payload": {
-            "post_status": "draft",
-            "post_status_label": _content_contract_label("draft"),
-            "post_title": _draft_title(topic, mode),
-            "post_excerpt_direction": _draft_excerpt_direction(preview),
-            "content_blocks": _draft_content_blocks(preview),
+    return build_wordpress_draft_payload_preview(
+        preview,
+        support={
+            "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
+            "source_preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
+            "draft_generation_status": _draft_generation_status,
+            "draft_blockers": _draft_blockers,
+            "wordpress_draft_handoff_status": _wordpress_draft_handoff_status,
+            "wordpress_draft_handoff_blockers": _wordpress_draft_handoff_blockers,
+            "draft_generation_contract": _draft_generation_contract,
+            "draft_readiness_review_contract": _draft_readiness_review_contract,
+            "wordpress_draft_handoff_contract": _wordpress_draft_handoff_contract,
+            "post_publication_measurement_plan": post_publication_measurement_plan,
+            "unique": _unique,
+            "wordpress_draft_operation": _wordpress_draft_operation,
+            "content_contract_label": _content_contract_label,
+            "content_contract_labels": _content_contract_labels,
+            "content_gate_status_summary": _content_gate_status_summary,
+            "draft_generation_summary": _draft_generation_summary,
+            "draft_readiness_review_contract_summary": _draft_readiness_review_contract_summary,
+            "draft_readiness_review_summary": _draft_readiness_review_summary,
+            "wordpress_draft_handoff_summary": _wordpress_draft_handoff_summary,
+            "wordpress_draft_handoff_contract_summary": _wordpress_draft_handoff_contract_summary,
+            "post_publication_measurement_summary": _post_publication_measurement_summary,
+            "draft_title": _draft_title,
+            "draft_excerpt_direction": _draft_excerpt_direction,
+            "draft_content_blocks": _draft_content_blocks,
         },
-        "required_validation": required_validation,
-        "required_validation_labels": _content_contract_labels(required_validation),
-        "blocked_claims": blocked_claims,
-        "blocked_claim_labels": _content_contract_labels(blocked_claims),
-        "source_connectors": _unique(
-            [item for item in preview.get("source_connectors", []) if isinstance(item, str)]
-        ),
-        "evidence_ids": _unique(
-            [item for item in preview.get("evidence_ids", []) if isinstance(item, str)]
-        ),
-        "mutation_allowed": False,
-        "apply_allowed": False,
-        "api_mutation_ready": False,
-        "destructive": False,
-    }
+        url_review=url_review,
+        draft_readiness_review=draft_readiness_review,
+    )
 
 
 def _wordpress_draft_operation(mode: str) -> str:
