@@ -36,6 +36,10 @@ w git, Beads i `docs/progress/archive/`.
   Ruff, mypy, live `workflow_snapshot` i evidence/freshness/write-gate proof
   przechodzą. `api.py` spadł do 1416 LOC; pozostały draft/review/handoff stage
   ma osobny follow-up `wilq-seo-mseb`.
+- `wilq-seo-mseb` wydziela draft package, structured-generation i draft-variants
+  adapters do `wilq/content/workflow/stage_drafts.py`. 12 focused content tests,
+  Ruff, mypy, live snapshot i write-gate proof przechodzą; `api.py` spadł do
+  1352 LOC. Human review/handoff mają osobny follow-up `wilq-seo-frgd`.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

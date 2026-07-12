@@ -11,9 +11,7 @@ from wilq.connectors.wordpress.client import (
 )
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
-    ContentSalesBriefBuildResult,
     ContentSalesBriefSeed,
-    build_content_sales_brief,
 )
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.openai_runtime import (
@@ -26,15 +24,10 @@ from wilq.content.drafts.openai_sdk import (
 )
 from wilq.content.drafts.package import (
     ContentDraftPackage,
-    build_content_draft_package,
 )
 from wilq.content.drafts.preview import (
     build_structured_draft_preview,
 )
-from wilq.content.drafts.structured_generation import (
-    build_structured_draft_generation_contract,
-)
-from wilq.content.drafts.variants import build_content_draft_variants
 from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichment,
     build_content_opportunity_enrichment,
@@ -95,8 +88,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
-    ContentWorkItemDraftVariantsRequest,
-    ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeRequest,
@@ -145,12 +136,14 @@ from wilq.content.workflow.snapshot_assembly import (
     SnapshotAssemblyCallbacks,
     assemble_content_work_item_snapshot,
 )
+from wilq.content.workflow.stage_drafts import (
+    build_content_work_item_draft_package_response,
+    build_content_work_item_draft_variants_response,  # noqa: F401 - router compatibility export
+    build_content_work_item_structured_draft_generation_response,
+)
 from wilq.content.workflow.stage_preparation import (
     build_content_work_item_preflight_response,
     build_content_work_item_sales_brief_response,
-)
-from wilq.content.workflow.stage_preparation import (
-    inventory_and_preflight as _inventory_and_preflight,
 )
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import (
@@ -160,69 +153,6 @@ from wilq.schemas import (
     ContentFreshnessAssessment,
 )
 from wilq.storage.local_state import local_state_store
-
-
-def build_content_work_item_draft_package_response(
-    request: ContentWorkItemDraftPackageRequest,
-) -> ContentWorkItemDraftPackageResponse:
-    inventory_resolution, preflight_verdict = _inventory_and_preflight(
-        item=request.item,
-        inventory_records=request.inventory_records,
-        duplicate_risk=request.duplicate_risk,
-    )
-    sales_brief_result = (
-        ContentSalesBriefBuildResult(brief=request.sales_brief)
-        if request.sales_brief is not None
-        else build_content_sales_brief(
-            item=request.item,
-            preflight=preflight_verdict,
-            inventory=inventory_resolution,
-            claim_ledger=request.claim_ledger,
-            seed=request.seed,
-            enrichment=request.enrichment,
-            knowledge_match=request.knowledge_match or match_content_knowledge_cards(request.item),
-        )
-    )
-    return ContentWorkItemDraftPackageResponse(
-        item=request.item,
-        inventory_resolution=inventory_resolution,
-        preflight_verdict=preflight_verdict,
-        sales_brief_result=sales_brief_result,
-        draft_package_result=build_content_draft_package(
-            item=request.item,
-            preflight=preflight_verdict,
-            sales_brief=sales_brief_result.brief,
-            claim_ledger=request.claim_ledger,
-        ),
-    )
-
-
-def build_content_work_item_structured_draft_generation_response(
-    request: ContentWorkItemStructuredDraftGenerationRequest,
-) -> ContentWorkItemStructuredDraftGenerationResponse:
-    return ContentWorkItemStructuredDraftGenerationResponse(
-        item=request.item,
-        structured_generation_result=build_structured_draft_generation_contract(
-            item=request.item,
-            sales_brief=request.sales_brief,
-            claim_ledger=request.claim_ledger,
-            draft_package=request.draft_package,
-        ),
-    )
-
-
-def build_content_work_item_draft_variants_response(
-    request: ContentWorkItemDraftVariantsRequest,
-) -> ContentWorkItemDraftVariantsResponse:
-    return ContentWorkItemDraftVariantsResponse(
-        item=request.item,
-        draft_variants_result=build_content_draft_variants(
-            item=request.item,
-            sales_brief=request.sales_brief,
-            claim_ledger=request.claim_ledger,
-            draft_package=request.draft_package,
-        ),
-    )
 
 
 def build_content_work_item_structured_draft_runtime_response(
