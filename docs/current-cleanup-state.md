@@ -661,6 +661,12 @@ ich rozmiaru.
   payload/preview/confirmation tests: 19 passed, a live Ads detail zachowuje
   evidence, `Zapis zmian zablokowany` i `apply_allowed=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/payload-items-live.png`.
+- Wspólne fabryki preview row, state/readiness labels, string-list sanitization
+  i preview-contract label są teraz w `wilq/actions/payload_readiness.py`;
+  service nie duplikuje tego copy. Focused payload suite: 20 passed, a live
+  Ads detail zachowuje evidence, `Zapis zmian zablokowany` i
+  `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/payload-labels-live.png`.
 
 ## Resume
 

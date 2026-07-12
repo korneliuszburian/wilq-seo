@@ -251,10 +251,25 @@ from wilq.actions.payload_readiness import (
     payload_apply_allowed,
 )
 from wilq.actions.payload_readiness import (
+    apply_state_label as _apply_state_label,
+)
+from wilq.actions.payload_readiness import (
     payload_preview_contract as _payload_preview_contract_impl,
 )
 from wilq.actions.payload_readiness import (
     payload_preview_items as _payload_preview_items_impl,
+)
+from wilq.actions.payload_readiness import (
+    preview_contract_label as _preview_contract_label,
+)
+from wilq.actions.payload_readiness import (
+    preview_row as _preview_row,
+)
+from wilq.actions.payload_readiness import (
+    string_list as _string_list,
+)
+from wilq.actions.payload_readiness import (
+    system_readiness_label as _system_readiness_label,
 )
 from wilq.actions.payloads import (
     validate_action_payload,
@@ -2062,17 +2077,6 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
     return action.preview_cards
 
 
-def _preview_contract_label(value: str | None) -> str:
-    labels = {
-        MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT: "przegląd problemów Merchant",
-        "content_brief_preview_v1": "brief treści do sprawdzenia",
-        "wordpress_draft_payload_preview_v1": "szkic WordPress do sprawdzenia",
-        "local_visibility_review_preview_v1": "widoczność lokalna do sprawdzenia",
-        "ga4_tracking_quality_review_v1": "jakość pomiaru GA4 do sprawdzenia",
-    }
-    return labels.get(value or "", "podgląd zmian do sprawdzenia")
-
-
 def _content_refresh_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
@@ -2303,10 +2307,6 @@ def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardVi
     )
 
 
-def _preview_row(label: str, value: str) -> ActionPreviewRowViewModel:
-    return ActionPreviewRowViewModel(label=label, value=value)
-
-
 def _micros_money_label(
     value: Any,
     currency_code: str = "PLN",
@@ -2316,20 +2316,6 @@ def _micros_money_label(
     if not isinstance(value, int | float):
         return missing_label
     return f"{value / 1_000_000:.2f} {currency_code}"
-
-
-def _apply_state_label(value: Any) -> str:
-    return "zapis zmian dopuszczony" if value is True else "zapis zmian zablokowany"
-
-
-def _system_readiness_label(value: Any) -> str:
-    return "system gotowy do zapisu" if value is True else "system zablokowany przed zapisem"
-
-
-def _string_list(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    return [item for item in value if isinstance(item, str) and item]
 
 
 def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGate:

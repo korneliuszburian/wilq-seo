@@ -744,6 +744,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   passed, Ruff/mypy/complexity/diff check zielone. Po restarcie Ads detail ma
   HTTP 200, 1 kartę, evidence i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/payload-items-live.png`.
+- Wspólne fabryki preview row, state/readiness labels, string-list sanitization
+  i preview-contract label są teraz w `wilq/actions/payload_readiness.py`;
+  service zachowuje delegację domenową bez duplikowania copy. Focused payload
+  suite: 20 passed, Ruff/mypy/complexity/diff check oraz managed API/browser
+  proof przechodzą; Ads detail nadal pokazuje evidence, blokadę zapisu i
+  `apply_allowed=false`; proof:
+  `.local-lab/proof/continuation-2026-07-12/payload-labels-live.png`.
 
 ## Weryfikacja
 

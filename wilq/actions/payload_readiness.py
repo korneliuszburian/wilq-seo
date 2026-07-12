@@ -257,3 +257,32 @@ def _raw_preview_status(item: dict[str, Any]) -> str:
         if isinstance(value, str) and value:
             return value
     return ""
+
+
+def preview_row(label: str, value: str) -> ActionPreviewRowViewModel:
+    return ActionPreviewRowViewModel(label=label, value=value)
+
+
+def apply_state_label(value: Any) -> str:
+    return "zapis zmian dopuszczony" if value is True else "zapis zmian zablokowany"
+
+
+def system_readiness_label(value: Any) -> str:
+    return "system gotowy do zapisu" if value is True else "system zablokowany przed zapisem"
+
+
+def string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str) and item]
+
+
+def preview_contract_label(value: str | None) -> str:
+    labels = {
+        "merchant_feed_issue_preview_v1": "przegląd problemów Merchant",
+        "content_brief_preview_v1": "brief treści do sprawdzenia",
+        "wordpress_draft_payload_preview_v1": "szkic WordPress do sprawdzenia",
+        "local_visibility_review_preview_v1": "widoczność lokalna do sprawdzenia",
+        "ga4_tracking_quality_review_v1": "jakość pomiaru GA4 do sprawdzenia",
+    }
+    return labels.get(value or "", "podgląd zmian do sprawdzenia")

@@ -1,7 +1,12 @@
 from wilq.actions.payload_readiness import (
     action_preview_item_view_models,
+    apply_state_label,
     payload_preview_contract,
     payload_preview_items,
+    preview_contract_label,
+    preview_row,
+    string_list,
+    system_readiness_label,
 )
 from wilq.schemas import ActionObject, ActionPreviewCardViewModel, ActionPreviewRowViewModel
 
@@ -80,3 +85,12 @@ def test_action_preview_item_view_models_project_cards_and_raw_rows() -> None:
 
     assert raw_items[0].title_label == "brak ceny"
     assert [item.label for item in raw_items[0].rows[-2:]] == ["Zapis zmian", "Gotowość systemu"]
+
+
+def test_payload_operator_helpers_keep_polish_safety_labels() -> None:
+    assert apply_state_label(True) == "zapis zmian dopuszczony"
+    assert apply_state_label(False) == "zapis zmian zablokowany"
+    assert system_readiness_label(False) == "system zablokowany przed zapisem"
+    assert string_list(["review", 1, ""]) == ["review"]
+    assert preview_contract_label("content_brief_preview_v1") == "brief treści do sprawdzenia"
+    assert preview_row("Status", "zablokowany").label == "Status"
