@@ -33,4 +33,5 @@ dozwolone klucze, ignorują nieznane pola i nie zmieniają ActionObject safety l
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `4a605fa0` (`refactor: extract content review
+details`), wypchnięty na `origin/main`.
