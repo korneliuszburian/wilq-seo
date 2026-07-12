@@ -490,6 +490,12 @@ ich rozmiaru.
   `wilq/actions/google_ads/change_history.py`; raw event IDs, resource/operation
   enums i field names są schowane z operator card, a technical details pozostają
   dostępne niżej przez istniejący disclosure.
+- Demand Gen readiness preview renderer jest teraz w
+  `wilq/actions/google_ads/demand_gen_preview.py`; service przekazuje jawne
+  callbacks, a live card zachowuje 4 evidence IDs, freshness, missing landing
+  quality/mode contracts, blocked claims oraz `apply_allowed=false` i
+  `api_mutation_ready=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-demand-gen-preview-cards.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
@@ -509,6 +515,7 @@ ich rozmiaru.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
 3. Kontynuuj `jnra`: wybierz następny mały, potwierdzony seam z aktualnego
    complexity/runtime review; nie przenoś ponownie gotowych mutation/readiness
-   ani WordPress preview boundaries.
+   ani WordPress preview boundaries. Demand Gen preview jest zamknięty; następny
+   kandydat wymaga świeżego odczytu `service.py` i istniejących modułów Ads.
 4. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
    nadal wymaga evidence-backed candidate density bez sztucznego tematu.

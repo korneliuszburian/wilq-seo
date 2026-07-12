@@ -125,3 +125,42 @@ def test_change_history_preview_hides_vendor_ids_and_field_enums() -> None:
     assert "1783057185097981" not in serialized
     assert "AD_GROUP_CRITERION" not in serialized
     assert "adGroup" not in serialized
+
+
+def test_demand_gen_preview_keeps_readiness_blockers_in_operator_card() -> None:
+    from wilq.actions.google_ads.demand_gen_preview import demand_gen_readiness_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = demand_gen_readiness_preview_cards(
+        {
+            "payload_preview": [
+                {
+                    "campaign_channel_counts": {"DEMAND_GEN": 2},
+                    "campaign_rows_evaluated": 4,
+                    "demand_gen_campaign_row_count": 2,
+                    "demand_gen_ad_group_ad_row_count": 1,
+                    "demand_gen_creative_asset_row_count": 0,
+                    "demand_gen_landing_quality_row_count": 0,
+                    "missing_read_contract_labels": ["brak odczytu kreacji"],
+                    "required_validation_labels": ["sprawdź jakość stron wejścia"],
+                    "blocked_claim_labels": ["gotowość trybu Demand Gen"],
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                }
+            ]
+        },
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        channel_label=lambda value: "Demand Gen" if value == "DEMAND_GEN" else value,
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Kanały kampanii"] == "Demand Gen: 2"
+    assert "brak odczytu kreacji" in rows["Braki"]
+    assert "gotowość trybu Demand Gen" in rows["Czego nie wolno twierdzić"]
+    assert cards[0].apply_state_label == "zapis zmian zablokowany"

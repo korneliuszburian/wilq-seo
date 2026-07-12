@@ -548,6 +548,15 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   karty above fold. Behavior test i browser proof potwierdzają genericzne rows,
   4 cards, evidence ID, blocked claims i brak zapisu:
   `.local-lab/proof/continuation-2026-07-12/ads-change-history-preview-cards.png`.
+- Demand Gen readiness preview jest teraz wydzielony do
+  `wilq/actions/google_ads/demand_gen_preview.py`; `service.py` przekazuje tylko
+  jawne callbacks do rows/labels. Live action
+  `act_review_demand_gen_readiness` ma jeden typed card, 4 evidence IDs,
+  freshness z Google Ads/GA4, brakujące kontrakty dla landing quality i mode
+  control oraz `apply_allowed=false`/`api_mutation_ready=false`. Behavior test,
+  Ruff, mypy, complexity i browser proof przechodzą; pierwszy viewport jasno
+  pokazuje „Zapis zablokowany”, a karta chowa techniczne payloady:
+  `.local-lab/proof/continuation-2026-07-12/ads-demand-gen-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
