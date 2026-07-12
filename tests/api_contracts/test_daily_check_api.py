@@ -60,8 +60,30 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
                 for item in content_queue_items
                 for guard in item["false_positive_guards"]
             )
+            assert any(
+                guard in {"measurement_baseline_ready", "missing_measurement_baseline"}
+                for item in content_queue_items
+                for guard in item["false_positive_guards"]
+            )
             assert all(
                 item["evidence_ids"] for item in content_queue_items
             )
+            queue_response = client.get("/api/content/work-items/queue")
+            assert queue_response.status_code == 200
+            queue = queue_response.json()
+            if any(
+                blocker["code"] == "not_enough_actionable_candidates"
+                for blocker in queue["blockers"]
+            ):
+                progress = (
+                    f'{queue["actionable_candidate_count"]} z '
+                    f'{queue["minimum_actionable_candidate_count"]} tematów gotowych do pracy'
+                )
+                assert all(
+                    "Pełna kolejka pozostaje zablokowana" in item["summary"]
+                    and progress in item["summary"]
+                    and progress in item["next_step"]
+                    for item in content_queue_items
+                )
     if payload["do_not_touch"]:
         assert all(item["status"] == "blocked" for item in payload["do_not_touch"])

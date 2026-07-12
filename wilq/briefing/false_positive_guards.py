@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from wilq.content.enrichment.opportunity import ContentOpportunityMeasurementBaseline
 from wilq.operator_labels import source_connector_labels
 from wilq.schemas import (
     ContentGscSearchAnalyticsContract,
@@ -121,6 +122,34 @@ def evaluate_multi_source_required_guard(
         status="pass",
         reason="Każde źródło wymagane przez regułę ma własny potwierdzony dowód.",
         next_step="Można przejść do ręcznego review wskazanej decyzji.",
+    )
+
+
+def evaluate_content_measurement_baseline_guard(
+    baselines: list[ContentOpportunityMeasurementBaseline],
+) -> FalsePositiveGuardResult:
+    """Require one actionable content item with metric, source, and evidence lineage."""
+    if any(
+        baseline.status == "ready_to_plan"
+        and baseline.metrics_to_watch
+        and baseline.source_connectors
+        and baseline.evidence_ids
+        for baseline in baselines
+    ):
+        return FalsePositiveGuardResult(
+            guard_id="measurement_baseline_ready",
+            status="pass",
+            reason="Co najmniej jeden temat ma bazę metryk, źródeł i dowodów do pomiaru.",
+            next_step="Można zaplanować późniejszy pomiar po ręcznym review tematu.",
+        )
+    return FalsePositiveGuardResult(
+        guard_id="missing_measurement_baseline",
+        status="blocked",
+        reason="Żaden temat gotowy do pracy nie ma potwierdzonej bazy pomiaru.",
+        next_step=(
+            "Najpierw wybierz temat z metrykami GSC albo GA4 oraz dowodami WILQ; "
+            "nie oceniaj efektu treści bez tej bazy."
+        ),
     )
 
 

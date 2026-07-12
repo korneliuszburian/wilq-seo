@@ -18,6 +18,11 @@ z istniejącego `Ga4ConversionReadinessContract`, a content `date_window` z
 content queue evidence-backed `multi_source_required`: komplet nazw connectorów
 nie wystarcza, każdy wymagany WordPress source musi mieć typed MetricFact z
 evidence; indywidualne publiczne work ordery nie dziedziczą scope sklepu.
+Zamknięty `v9ab.8.2` wymaga dodatkowo actionable `ContentOpportunityMeasurementBaseline`
+z metrykami, connectorami i evidence; publiczny URL, zablokowany Ahrefs record,
+mismatch albo wyjątek nie mogą udawać bazy pomiaru. Jeden gotowy temat może być
+review-ready, ale daily output musi nadal nazwać queue density blocker (obecnie
+1 z 3), więc nie myli pojedynczego review z gotowym backlogiem.
 Pozostałe false-positive guards pozostają otwarte; nie zaczynaj od kolejnego
 wrappera Ads ani drugiego expert endpointu.
 
@@ -66,6 +71,12 @@ tematu ani nie przywracaj direct WordPress write.
   aktualnym proof.
 - Mobile freshness został skondensowany, a source status bar jest poziomym
   scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
+- Re-audyt 1440x900 i live snapshot wykazał realną, niezdublowaną lukę
+  `r564.6`: work item ma Claim Ledger/brief/review/pomiar, lecz nie ma typed
+  per-item Service Profile bindingu ani approval policy; osobna trasa Service
+  Profile nie może być substytutem dla decyzji pisania. Rozszerz istniejący
+  snapshot, nie dodawaj endpointu ani reguły w React. `v9ab.11` pozostaje
+  osobnym zadaniem pamięci Workspace Dossier.
 - `4wwo` jest zamknięty przez `3gre`: `/settings` automatycznie zleca tylko
   jedno read-only odświeżenie, gdy istniejąca API-owned polityka zwraca
   `automatic_refresh.eligible=true`. POST zwraca utrwalony `queued` run,

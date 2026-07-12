@@ -34,6 +34,19 @@ w git, Beads i `docs/progress/archive/`.
   `ekologus.pl` z osobnym sklepem. Live po restarcie: content queue ma
   `source_trace_ready`, `multi_source_ready`, `date_window_ready` oraz proof
   obu WordPress sources; focused contracts 27/27, Ruff i mypy przechodzą.
+- `wilq-seo-v9ab.8.2` domyka osobny false positive: aggregate content queue
+  wymaga teraz co najmniej jednego actionable work itemu z typed
+  `ContentOpportunityMeasurementBaseline` (`ready_to_plan`, metryki,
+  connectors i evidence). Publiczny URL sam nie wystarcza, blokowany Ahrefs
+  candidate nie jest promowany, a wyjątek/mismatch fail-closed. Gdy jeden temat
+  jest mierzalny, daily item zachowuje `review_required`, lecz jawnie mówi, że
+  pełna kolejka pozostaje zablokowana przy 1 z 3 tematów; nie myli pojedynczego
+  review z gotowym backlogiem.
+- Re-audyt BDOS/WILQ potwierdził kolejny niezdublowany work item: `r564.6`
+  rozszerzy istniejący snapshot content workflow o typed per-item Service
+  Profile context. Dziś snapshot ma Claim Ledger/brief/review/pomiar, ale nie
+  ma bindingu usługi ani approval policy; Service Profile jest osobną trasą.
+  `v9ab.11` pozostaje osobnym, gotowym zadaniem Workspace Dossier/memory.
 - Świeży re-audyt `r564` potwierdza `blocked_by_external_state`, nie lukę
   kolejki: GSC daje tylko jeden unikalny publiczny URL, a Ahrefsowe rekordy nie
   mają bezpiecznego `referenced_public_url`. Nie twórz sztucznego trzeciego
