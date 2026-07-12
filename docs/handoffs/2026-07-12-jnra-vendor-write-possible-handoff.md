@@ -17,6 +17,7 @@ oraz `api_mutation_ready` muszą być spełnione jednocześnie.
   `vendor_write_possible=false`, a Ads detail zachowuje evidence,
   `Zapis zmian zablokowany` i `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/vendor-write-live.png`.
+- Commit implementacji: `4845101` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
