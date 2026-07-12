@@ -17,6 +17,7 @@ review gate, preview cards oraz audit event.
 - Po managed restart `/api/health` jest `ok`; Ads detail HTTP 200 ma evidence,
   `Zapis zmian zablokowany` i `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/action-projection-live.png`.
+- Commit implementacji: `6b5c72b` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
