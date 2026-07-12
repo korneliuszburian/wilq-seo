@@ -372,7 +372,7 @@ service. Żaden z nich nie może przejąć product semantics freshness/write.
 ## Complexity checkpoint
 
 - `wilq/briefing/ads_diagnostics.py`: 6 616 LOC;
-- `wilq/actions/service.py`: 4 003 non-empty LOC;
+- `wilq/actions/service.py`: 3 868 non-empty LOC;
 - `wilq/actions/merchant.py`: 308 non-empty LOC;
 - `wilq/actions/social.py`: 154 non-empty LOC;
 - `wilq/actions/metric_utils.py`: 25 non-empty LOC;
@@ -447,7 +447,8 @@ ich rozmiaru.
 - Kontrakt apply dla WordPress draft-only jest teraz w
   `wilq/actions/mutation_contract.py`; nieobsługiwane akcje nadal dostają `None`,
   a apply contract zachowuje blokadę publikacji/destrukcji i wymagane audyty.
-  `service.py` ma 4003 LOC; następny seam wymaga nowego complexity/runtime review.
+  `service.py` ma 3868 LOC po target projection; następny seam wymaga nowego
+  complexity/runtime review.
 - Najnowszy `jnra` seam przeniósł WordPress-specific execution/target readiness
   do `wilq/actions/wordpress_mutation_requirements.py`; `service.py` ma 3897 LOC.
   Live readiness nadal raportuje 21 akcji, 0 vendor-write possible i 0 attempted;

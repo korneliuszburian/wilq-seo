@@ -28,7 +28,7 @@ w git, Beads i `docs/progress/archive/`.
   tests, Ruff, mypy, complexity i browser proof Command Center przechodzą.
 
 - Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
-  98 919 metric facts, 4 574 refresh runs, 12 connectorów (9 configured,
+  99 906 metric facts, 4 577 refresh runs, 12 connectorów (9 configured,
   2 missing credentials), complexity 405 plików / 133 807 LOC / 0 changed-code
   violations. Dashboard usefulness audit zwraca 14 surfaces, 12 `demo_ready`,
   2 `review_ready`, `pass=true`; to nie znosi blokady stale źródeł.
@@ -64,7 +64,7 @@ w git, Beads i `docs/progress/archive/`.
   aktywną prawdą produktu.
 - `ekologus.pl` pozostaje publicznym źródłem i canonical SEO. Proudsite jest
   wyłącznie workspace’em draft/dev.
-- Managed API i dashboard są zdrowe. DuckDB ma 98 919 metric facts i 4 574
+- Managed API i dashboard są zdrowe. DuckDB ma 99 906 metric facts i 4 577
   refresh runs. Konektory: 12 ogółem, 9 skonfigurowanych, 2 bez credentials,
   1 wyłączony.
 - Kolejka contentowa jest `blocked`: 2 kandydatów, 1 actionable, minimum 3.
@@ -106,7 +106,8 @@ w git, Beads i `docs/progress/archive/`.
   `wilq/actions/mutation_contract.py`. Zachowane są `create_wordpress_draft`,
   `publication_allowed=false`, `destructive_allowed=false`, wymagane audyty,
   env gate i `None` dla nieobsługiwanych akcji; readiness/Goal 005 tests, Ruff,
-  mypy, complexity i diff check pozostają zielone, a `service.py` ma 4003 LOC.
+  mypy, complexity i diff check pozostają zielone, a `service.py` ma 3868 LOC po
+  kolejnych target/readiness seamach.
 - Najnowszy seam `jnra` przeniósł WordPress-specific readiness requirements do
   `wilq/actions/wordpress_mutation_requirements.py`; `service.py` ma 3897 LOC,
   a dry-run/Claim Ledger blockers i ActionObject safety pozostają bez zmian.
@@ -534,8 +535,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
-- Latest full complexity run: 405 Python files / 133807 non-empty LOC,
-  0 changed-code violations; current `service.py` hotspot is 4003 LOC.
+- Latest full complexity run: 407 Python files / 133845 non-empty LOC,
+  0 changed-code violations; current `service.py` hotspot is 3868 LOC.
 
 ## Kolejność wykonania
 
