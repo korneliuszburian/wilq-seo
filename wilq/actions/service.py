@@ -52,6 +52,9 @@ from wilq.actions.google_ads.business_context import (
     strategy_review_action,
     target_confirmation_action,
 )
+from wilq.actions.google_ads.business_context import (
+    ads_target_guardrail_preview_cards as build_ads_target_guardrail_preview_cards,
+)
 from wilq.actions.google_ads.campaign_review import (
     campaign_review_action_from_metric_facts,
 )
@@ -2515,41 +2518,14 @@ def _keyword_planner_access_preview_cards(
 def _ads_target_guardrail_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    rows = _ads_business_context_preview_rows(payload)
-    target_options = _string_list(
-        _as_dict(payload.get("target_env_options")).get("target_roas_or_cpa_labels")
+    return build_ads_target_guardrail_preview_cards(
+        payload,
+        business_context_rows=_ads_business_context_preview_rows,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
     )
-    if target_options:
-        rows.append(_preview_row("Opcje celu", ", ".join(target_options[:4])))
-    missing_labels = _string_list(payload.get("missing_read_contract_labels"))
-    if missing_labels:
-        rows.append(_preview_row("Braki", ", ".join(missing_labels[:4])))
-    allowed_labels = _string_list(payload.get("allowed_uses_after_confirmation_labels"))
-    if allowed_labels:
-        rows.append(_preview_row("Po potwierdzeniu", ", ".join(allowed_labels[:4])))
-    requirement_labels = _string_list(payload.get("required_validation_labels"))
-    if requirement_labels:
-        rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:5])))
-    blocked_claim_labels = _string_list(payload.get("blocked_claim_labels"))
-    if blocked_claim_labels:
-        rows.append(
-            _preview_row(
-                "Czego nie wolno twierdzić",
-                ", ".join(blocked_claim_labels[:4]),
-            )
-        )
-    return [
-        ActionPreviewCardViewModel(
-            id="ads_target_guardrail_review",
-            kind="google_ads_target_guardrail_review",
-            title_label="Cel Ads do potwierdzenia",
-            subtitle_label="ocena celu biznesowego bez zapisu zmian",
-            status_label="zapis zmian zablokowany",
-            rows=rows,
-            apply_state_label=_apply_state_label(payload.get("apply_allowed")),
-            system_readiness_label=_system_readiness_label(payload.get("api_mutation_ready")),
-        )
-    ]
 
 
 def _ads_strategy_review_preview_cards(

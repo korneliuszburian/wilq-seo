@@ -522,6 +522,11 @@ ich rozmiaru.
   blocker dostępu, evidence, wymagany next step, blocked claims i brak zapisu.
   Browser proof:
   `.local-lab/proof/continuation-2026-07-12/keyword-planner-access-preview.png`.
+- Ads target-guardrail preview renderer jest teraz w istniejącym
+  `wilq/actions/google_ads/business_context.py`; service przekazuje typed
+  business-context rows, a live karta zachowuje brak potwierdzonego celu,
+  blocked claims i brak zapisu. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-target-guardrail-preview.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

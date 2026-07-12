@@ -356,3 +356,38 @@ def test_keyword_planner_preview_keeps_external_access_blocker() -> None:
     assert "zatwierdzony dostęp deweloperski" in rows["Wymagany stan"]
     assert "prognoza" in rows["Czego nie wolno twierdzić"]
     assert cards[0].apply_state_label == "zapis zmian zablokowany"
+
+
+def test_ads_target_guardrail_preview_keeps_business_context_and_claim_blocks() -> None:
+    from wilq.actions.google_ads.business_context import ads_target_guardrail_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = ads_target_guardrail_preview_cards(
+        {
+            "current_context": {"business_goal": "rentowność"},
+            "target_env_options": {"target_roas_or_cpa_labels": ["docelowy ROAS"]},
+            "missing_read_contract_labels": ["brak potwierdzenia celu"],
+            "allowed_uses_after_confirmation_labels": ["przegląd celu"],
+            "required_validation_labels": ["potwierdź target"],
+            "blocked_claim_labels": ["ocena opłacalności"],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+        },
+        business_context_rows=lambda payload: [
+            ActionPreviewRowViewModel(label="Cel biznesowy", value="rentowność")
+        ],
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Cel biznesowy"] == "rentowność"
+    assert rows["Opcje celu"] == "docelowy ROAS"
+    assert "brak potwierdzenia celu" in rows["Braki"]
+    assert "ocena opłacalności" in rows["Czego nie wolno twierdzić"]
+    assert cards[0].apply_state_label == "zapis zmian zablokowany"

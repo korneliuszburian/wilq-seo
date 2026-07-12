@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from wilq.actions.validation_copy import missing, no_destructive_change, no_write, wrong
 from wilq.schemas import (
     ActionMode,
     ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
     ActionRisk,
     ActionStatus,
     AdsStrategyReviewRecord,
@@ -15,6 +17,11 @@ from wilq.schemas import (
     OpportunityDomain,
 )
 from wilq.storage.local_state import local_state_store
+
+PreviewRow = Callable[[str, str], ActionPreviewRowViewModel]
+StringList = Callable[[Any], list[str]]
+ContextRows = Callable[[dict[str, Any]], list[ActionPreviewRowViewModel]]
+StateLabel = Callable[[Any], str]
 
 ADS_BUSINESS_CONTEXT_ACTION_ID = "act_configure_ads_business_context"
 ADS_BUSINESS_CONTEXT_ACTION_TYPE = "configure_ads_business_context"
@@ -252,6 +259,53 @@ def ads_target_confirmation_payload(
         "apply_allowed": False,
         "destructive": False,
     }
+
+
+def ads_target_guardrail_preview_cards(
+    payload: dict[str, Any],
+    *,
+    business_context_rows: ContextRows,
+    preview_row: PreviewRow,
+    string_list: StringList,
+    apply_state_label: StateLabel,
+    system_readiness_label: StateLabel,
+) -> list[ActionPreviewCardViewModel]:
+    """Render target guardrail review without exposing technical payloads."""
+    rows = business_context_rows(payload)
+    target_env_options = payload.get("target_env_options")
+    target_env_options = target_env_options if isinstance(target_env_options, dict) else {}
+    target_options = string_list(target_env_options.get("target_roas_or_cpa_labels"))
+    if target_options:
+        rows.append(preview_row("Opcje celu", ", ".join(target_options[:4])))
+    missing_labels = string_list(payload.get("missing_read_contract_labels"))
+    if missing_labels:
+        rows.append(preview_row("Braki", ", ".join(missing_labels[:4])))
+    allowed_labels = string_list(payload.get("allowed_uses_after_confirmation_labels"))
+    if allowed_labels:
+        rows.append(preview_row("Po potwierdzeniu", ", ".join(allowed_labels[:4])))
+    requirement_labels = string_list(payload.get("required_validation_labels"))
+    if requirement_labels:
+        rows.append(preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:5])))
+    blocked_claim_labels = string_list(payload.get("blocked_claim_labels"))
+    if blocked_claim_labels:
+        rows.append(
+            preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(blocked_claim_labels[:4]),
+            )
+        )
+    return [
+        ActionPreviewCardViewModel(
+            id="ads_target_guardrail_review",
+            kind="google_ads_target_guardrail_review",
+            title_label="Cel Ads do potwierdzenia",
+            subtitle_label="ocena celu biznesowego bez zapisu zmian",
+            status_label="zapis zmian zablokowany",
+            rows=rows,
+            apply_state_label=apply_state_label(payload.get("apply_allowed")),
+            system_readiness_label=system_readiness_label(payload.get("api_mutation_ready")),
+        )
+    ]
 
 
 def ads_strategy_review_payload() -> dict[str, Any]:
