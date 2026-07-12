@@ -3,7 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from wilq.actions.metric_utils import unique_values
 from wilq.actions.validation_copy import missing, no_destructive_change, no_write, wrong
+from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -11,6 +13,9 @@ from wilq.schemas import (
     ActionPreviewRowViewModel,
     ActionRisk,
     ActionStatus,
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
     OpportunityDomain,
 )
 
@@ -28,6 +33,47 @@ KEYWORD_PLANNER_ACCESS_BLOCKED_CLAIMS = [
     "zapis kierowania reklam",
     "skuteczność kampanii",
 ]
+
+
+def keyword_planner_access_action_from_vendor_read(
+    run: ConnectorRefreshRun | None,
+) -> ActionObject | None:
+    """Build the review-only access action from one recognized live read."""
+    if (
+        run is None
+        or run.mode != ConnectorRefreshMode.vendor_read
+        or run.status != ConnectorRefreshStatus.completed
+        or not run.vendor_data_collected
+    ):
+        return None
+    blocker = _keyword_planner_access_blocker(run)
+    if blocker is None:
+        return None
+    return keyword_planner_access_action(
+        blocker=blocker,
+        evidence_ids=unique_values(
+            [connector_evidence_id("google_ads"), *run.evidence_ids]
+        ),
+    )
+
+
+def _keyword_planner_access_blocker(run: ConnectorRefreshRun) -> str | None:
+    status = str(run.metric_summary.get("keyword_planner_status") or "").lower()
+    blocker = str(run.metric_summary.get("keyword_planner_blocker") or "").strip()
+    http_status = str(run.metric_summary.get("keyword_planner_http_status") or "").strip()
+    if status != "blocked":
+        return None
+    blocker_text = " ".join(part for part in (blocker, http_status) if part)
+    if not blocker_text:
+        return None
+    normalized = blocker_text.lower()
+    if (
+        "developer_token_not_approved" not in normalized
+        and "permission_denied" not in normalized
+        and http_status != "403"
+    ):
+        return None
+    return "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
 
 
 def keyword_planner_access_action(*, blocker: str, evidence_ids: list[str]) -> ActionObject:

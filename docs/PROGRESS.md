@@ -95,6 +95,13 @@ w git, Beads i `docs/progress/archive/`.
   contracts 48/48, evidence contracts 6/6, cache tests 4/4, Ruff i mypy
   przechodzą; WordPress mutation readiness nadal jest false/false/false bez
   vendor write.
+- `wilq-seo-jnra.2` przenosi Keyword Planner eligibility i sanitizację blokady
+  do istniejącego modułu Google Ads. Factory przyjmuje jeden refresh run,
+  akceptuje wyłącznie completed `vendor_read` z potwierdzonymi danymi i znaną
+  blokadą, a do ActionObjecta przekazuje tylko polski zsanityzowany powód oraz
+  evidence. Focused factory/API/preview contracts przechodzą; live HTTP nadal
+  pokazuje `prepare`, `apply_allowed=false`, `destructive=false` i brak raw
+  vendor markers.
 - Async refresh deduplikuje teraz aktywny run per connector: drugi queued/running
   request zwraca ten sam `run_id` i nie tworzy równoległego odczytu. Focused
   redaction/async contract suite: 4 passed; Ruff, mypy i diff check green.
@@ -607,11 +614,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   typed cards, evidence, product-sample context i `apply_allowed=false`/
   `api_mutation_ready=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/merchant-feed-preview-cards.png`.
-- Keyword Planner access preview jest teraz w istniejącym
-  `wilq/actions/google_ads/keyword_planner.py`; service przekazuje callbacks do
-  rows/list/state labels. Live action ma 2 evidence IDs, jawny blocker
-  `DEVELOPER_TOKEN_NOT_APPROVED`, bezpieczny next step, blocked claims i
-  `apply_allowed=false`; browser proof:
+- Keyword Planner access factory i preview są teraz w istniejącym
+  `wilq/actions/google_ads/keyword_planner.py`; live action ma 2 evidence IDs,
+  zsanityzowaną zewnętrzną blokadę dostępu, bezpieczny next step, blocked claims
+  i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/keyword-planner-access-preview.png`.
 - Ads target-guardrail preview jest teraz w istniejącym
   `wilq/actions/google_ads/business_context.py`; service przekazuje callback do
@@ -1016,8 +1022,8 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   focused budget violations in `wilq/briefing/content_diagnostics.py`. Main and
   diagnostics changed only for the documented cache/prewarm seam; no broad
   split was introduced.
-- Aktualny rebaseline complexity po `jnra.1`: 422 Python files / 136631
-  non-empty LOC; `service.py` ma 1650 LOC. Standardowy changed audit zatrzymuje
+- Aktualny rebaseline complexity po `jnra.2`: 423 Python files / 136735
+  non-empty LOC; `service.py` ma 1616 LOC. Standardowy changed audit zatrzymuje
   się na jawnie frozen facade oraz istniejącym dużym pliku testowym; dopuszczony
   wariant dla udokumentowanego seamu przechodzi i nie ukrywa tych wcześniejszych
   budżetów jako sukcesu zmiany.

@@ -139,7 +139,7 @@ from wilq.actions.google_ads.demand_gen_preview import (
     demand_gen_readiness_preview_cards as build_demand_gen_readiness_preview_cards,
 )
 from wilq.actions.google_ads.keyword_planner import (
-    keyword_planner_access_action,
+    keyword_planner_access_action_from_vendor_read,
 )
 from wilq.actions.google_ads.negative_keywords import (
     negative_keyword_action_from_metric_facts,
@@ -624,7 +624,7 @@ def _action_registry() -> dict[str, ActionObject]:
         _google_ads_business_context_action(),
         _google_ads_target_confirmation_action(),
         _google_ads_strategy_review_action(),
-        _google_ads_keyword_planner_access_action(),
+        keyword_planner_access_action_from_vendor_read(_latest_google_ads_vendor_read()),
     ):
         if action is not None:
             actions[action.id] = action
@@ -731,44 +731,6 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
             [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
         ),
     )
-
-
-def _google_ads_keyword_planner_access_action() -> ActionObject | None:
-    latest_run = _latest_google_ads_vendor_read()
-    if (
-        latest_run is None
-        or latest_run.status != ConnectorRefreshStatus.completed
-        or not latest_run.vendor_data_collected
-    ):
-        return None
-    blocker = _keyword_planner_access_blocker(latest_run)
-    if blocker is None:
-        return None
-    return keyword_planner_access_action(
-        blocker=blocker,
-        evidence_ids=unique_values(
-            [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
-        ),
-    )
-
-
-def _keyword_planner_access_blocker(run: ConnectorRefreshRun) -> str | None:
-    status = str(run.metric_summary.get("keyword_planner_status") or "").lower()
-    blocker = str(run.metric_summary.get("keyword_planner_blocker") or "").strip()
-    http_status = str(run.metric_summary.get("keyword_planner_http_status") or "").strip()
-    if status != "blocked":
-        return None
-    blocker_text = " ".join(part for part in (blocker, http_status) if part)
-    if not blocker_text:
-        return None
-    normalized = blocker_text.lower()
-    if (
-        "developer_token_not_approved" not in normalized
-        and "permission_denied" not in normalized
-        and http_status != "403"
-    ):
-        return None
-    return "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
 
 
 def seed_metric_action_candidates() -> dict[str, ActionObject]:
