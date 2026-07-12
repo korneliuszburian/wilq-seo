@@ -626,6 +626,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   agregaty widoczności, blocked GBP/konkurencja claims i `apply_allowed=false`;
   browser proof:
   `.local-lab/proof/continuation-2026-07-12/localo-metric-helper-live.png`.
+- GA4 metric snapshot rows i formatter są teraz w istniejącym
+  `wilq/actions/ga4/tracking_preview.py`; service przekazuje domenowy helper.
+  Live action zachowuje 1 evidence ID, landing/source/campaign context,
+  blocked ROAS/revenue claims i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ga4-metric-helper-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

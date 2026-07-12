@@ -553,6 +553,11 @@ ich rozmiaru.
   agregaty, evidence, brakujące kontrakty, blocked claims i `apply_allowed=false`.
   Browser proof:
   `.local-lab/proof/continuation-2026-07-12/localo-metric-helper-live.png`.
+- GA4 metric snapshot row helper jest teraz w
+  `wilq/actions/ga4/tracking_preview.py`; live GA4 karta zachowuje evidence,
+  landing/source/campaign rows, blocked conversion/ROAS/revenue claims i
+  `apply_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ga4-metric-helper-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

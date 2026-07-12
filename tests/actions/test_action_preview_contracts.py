@@ -309,6 +309,20 @@ def test_localo_metric_rows_keep_labels_and_percentage_format() -> None:
     assert [(row.label, row.value) for row in rows] == [("zmiana widoczności", "12.50%")]
 
 
+def test_ga4_metric_rows_keep_labels_and_hide_unlabelled_fields() -> None:
+    from wilq.actions.ga4.tracking_preview import metric_snapshot_preview_rows
+
+    rows = metric_snapshot_preview_rows(
+        {"engagement_rate": 0.4, "sessions": 14, "unknown": 7},
+        {"engagement_rate": "zaangażowanie", "sessions": "sesje", "unknown": ""},
+    )
+
+    assert [(row.label, row.value) for row in rows] == [
+        ("zaangażowanie", "40.00%"),
+        ("sesje", "14"),
+    ]
+
+
 def test_merchant_preview_keeps_issue_context_and_product_samples() -> None:
     from wilq.actions.merchant_preview import merchant_preview_cards
     from wilq.schemas import ActionPreviewRowViewModel

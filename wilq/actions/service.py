@@ -37,6 +37,9 @@ from wilq.actions.content_refresh import (
 from wilq.actions.ga4.tracking_preview import (
     ga4_tracking_quality_preview_cards as build_ga4_tracking_quality_preview_cards,
 )
+from wilq.actions.ga4.tracking_preview import (
+    metric_snapshot_preview_rows,
+)
 from wilq.actions.ga4.tracking_quality import (
     ga4_tracking_quality_action_from_metric_facts,
     seed_ga4_tracking_quality_action,
@@ -1067,30 +1070,6 @@ def _plain_metric_value_label(
     if isinstance(value, str) and value:
         return value
     return missing_label
-
-
-def _metric_snapshot_preview_rows(
-    metric_snapshot: dict[Any, Any],
-    metric_labels: dict[Any, Any],
-) -> list[ActionPreviewRowViewModel]:
-    rows: list[ActionPreviewRowViewModel] = []
-    for key, value in metric_snapshot.items():
-        label = metric_labels.get(key)
-        if not isinstance(label, str) or not label:
-            continue
-        rows.append(_preview_row(label, _metric_snapshot_value_label(str(key), value)))
-    return rows
-
-
-def _metric_snapshot_value_label(key: str, value: Any) -> str:
-    percent_metric_keys = {
-        "engagement_rate",
-        "localo_avg_visibility_change",
-        "localo_review_reply_rate",
-    }
-    if key in percent_metric_keys and isinstance(value, int | float):
-        return f"{value * 100:.2f}%"
-    return _plain_metric_value_label(value)
 
 
 def _is_probe_only_fact(fact: MetricFact) -> bool:
@@ -2314,7 +2293,7 @@ def _ga4_tracking_quality_preview_cards(
         payload,
         preview_row=_preview_row,
         string_list=_string_list,
-        metric_snapshot_rows=_metric_snapshot_preview_rows,
+        metric_snapshot_rows=metric_snapshot_preview_rows,
         apply_state_label=_apply_state_label,
         system_readiness_label=_system_readiness_label,
     )
