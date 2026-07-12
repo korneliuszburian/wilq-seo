@@ -34,4 +34,5 @@ zredagowanych claimów; safety loop pozostaje bez zmian.
 
 ## Commit
 
-Commit implementacji i docs zostanie dopisany po pushu.
+Commit implementacji i docs: `79552fb8` (`refactor: extract review summary
+labels`), wypchnięty na `origin/main`.
