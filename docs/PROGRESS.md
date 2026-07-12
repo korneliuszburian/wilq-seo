@@ -647,6 +647,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   zachowuje tylko orchestrację gate. Live Ads strategy action ma 2 evidence IDs,
   `kontrola WILQ poprawna` i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/review-outcome-projection-live.png`.
+- Preview, confirmation, impact-check i apply blocker rules są teraz w nowym
+  `wilq/actions/action_blockers.py`; service przekazuje tylko Ads guardrail,
+  mutation-adapter i readiness callbacks. Live strategy action zachowuje jawne
+  blocked claims, `apply_allowed=false` i brak vendor write; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/action-blockers-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

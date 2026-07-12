@@ -10,6 +10,12 @@ from typing import Any, Literal
 from urllib.parse import urlparse
 from uuid import uuid4
 
+from wilq.actions.action_blockers import (
+    action_apply_blockers,
+    action_confirmation_blockers,
+    action_impact_check_blockers,
+    action_preview_blockers,
+)
 from wilq.actions.audit_store import (
     persisted_audit_events_by_action_id as _persisted_audit_events_by_action_id,
 )
@@ -1189,7 +1195,7 @@ def preview_action(
         preview_cards=preview_cards,
         max_items=preview_request.max_items,
     )
-    blockers = _action_preview_blockers(action, raw_preview_items)
+    blockers = action_preview_blockers(action, raw_preview_items)
     status: Literal["preview_ready", "blocked"] = "blocked" if blockers else "preview_ready"
     audit = AuditEvent(
         id=f"audit_{action.id}_preview_{uuid4().hex[:12]}",
@@ -1229,7 +1235,12 @@ def confirm_action(
 ) -> ActionConfirmResult:
     action.review_gate = _action_review_gate(action)
     latest_preview = _latest_preview_event(action.audit_events)
-    blockers = _action_confirmation_blockers(action, request, latest_preview)
+    blockers = action_confirmation_blockers(
+        action,
+        request,
+        latest_preview,
+        ads_target_blockers=_ads_target_confirmation_blockers,
+    )
     confirmed = not blockers
     audit = AuditEvent(
         id=f"audit_{action.id}_confirm_{uuid4().hex[:12]}",
@@ -1262,7 +1273,7 @@ def impact_check_action(
 ) -> ActionImpactCheckResult:
     action.review_gate = _action_review_gate(action)
     latest_confirmation = _latest_action_confirmation_event(action.audit_events)
-    blockers = _action_impact_check_blockers(action, latest_confirmation)
+    blockers = action_impact_check_blockers(action, latest_confirmation)
     status: Literal["checked", "blocked"] = "blocked" if blockers else "checked"
     evidence_ids = unique_values(
         [*action.evidence_ids, *(fact.evidence_id for fact in action.metrics)]
@@ -2528,12 +2539,15 @@ def _action_review_gate(
     last_confirmation = _latest_action_confirmation_event(action.audit_events)
     last_impact_check = _latest_action_impact_check_event(action.audit_events)
     last_mutation_audit = _latest_mutation_audit(mutation_audits or [])
-    apply_blockers = _action_apply_blockers(
+    apply_blockers = action_apply_blockers(
         action=action,
         required_checks=required_checks,
         apply_allowed=apply_allowed,
         confirmation_satisfied=last_confirmation is not None,
         impact_sanity_satisfied=_impact_status_from_event(last_impact_check) == "checked",
+        requires_human_confirmation=_requires_human_confirmation,
+        supported_mutation_adapter=_supported_mutation_adapter,
+        string_list=_string_list,
     )
     return build_action_review_gate(
         action=action,
@@ -2608,37 +2622,6 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
 
 
 
-def _action_preview_blockers(
-    action: ActionObject,
-    preview_items: list[dict[str, Any]],
-) -> list[str]:
-    blockers: list[str] = []
-    if not preview_items:
-        blockers.append("payload_preview_missing")
-    if action.payload.get("destructive") is True:
-        blockers.append("destructive_actions_blocked")
-    blockers.extend(action.review_gate.apply_blockers)
-    return unique_values(blockers)
-
-
-def _action_confirmation_blockers(
-    action: ActionObject,
-    request: ActionConfirmRequest,
-    latest_preview: AuditEvent | None,
-) -> list[str]:
-    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
-        return _ads_target_confirmation_blockers(request)
-
-    blockers: list[str] = []
-    if not request.preview_acknowledged:
-        blockers.append("preview_acknowledgement_required")
-    if latest_preview is None:
-        blockers.append("dry_run_preview_required")
-    if action.payload.get("destructive") is True:
-        blockers.append("destructive_actions_blocked")
-    return unique_values(blockers)
-
-
 def _action_confirmation_event_type(action: ActionObject, confirmed: bool) -> str:
     if action.payload.get("action_type") == "confirm_ads_target_guardrails":
         return (
@@ -2707,22 +2690,6 @@ def _ads_target_confirmation_summary(
     )
 
 
-def _action_impact_check_blockers(
-    action: ActionObject,
-    latest_confirmation: AuditEvent | None,
-) -> list[str]:
-    blockers: list[str] = []
-    if latest_confirmation is None:
-        blockers.append("action_confirmation_required")
-    if not action.metrics:
-        blockers.append("metric_facts_required")
-    if not action.evidence_ids:
-        blockers.append("evidence_ids_required")
-    if action.payload.get("destructive") is True:
-        blockers.append("destructive_actions_blocked")
-    return unique_values(blockers)
-
-
 def _action_impact_check_summary(
     *,
     request: ActionImpactCheckRequest,
@@ -2785,34 +2752,6 @@ def _action_operator_checklist(payload: dict[str, Any]) -> list[str]:
         if values:
             return values
     return _action_required_checks(payload)
-
-
-def _action_apply_blockers(
-    *,
-    action: ActionObject,
-    required_checks: list[str],
-    apply_allowed: bool,
-    confirmation_satisfied: bool,
-    impact_sanity_satisfied: bool,
-) -> list[str]:
-    blockers: list[str] = []
-    if action.mode != ActionMode.apply:
-        blockers.append("action_mode_prepare_only")
-    if action.validation_status != "valid":
-        blockers.append("action_validation_required")
-    if not apply_allowed:
-        blockers.append("payload_apply_allowed_false")
-    if action.payload.get("destructive") is True:
-        blockers.append("destructive_actions_blocked")
-    if _requires_human_confirmation(required_checks) and not confirmation_satisfied:
-        blockers.append("human_confirm_before_apply")
-    if not impact_sanity_satisfied:
-        blockers.append("impact_sanity_check_required")
-    if action.mode == ActionMode.apply and _supported_mutation_adapter(action) is None:
-        blockers.append("vendor_mutation_adapter_required")
-    blocked_claims = _string_list(action.payload.get("blocked_claims"))
-    blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
-    return unique_values(blockers)
 
 
 def _action_gate_labels(values: Iterable[str]) -> list[str]:
