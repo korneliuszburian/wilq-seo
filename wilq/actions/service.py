@@ -339,6 +339,9 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
 )
+from wilq.content.handoff.wordpress_execution import (
+    wordpress_draft_execution_errors as _wordpress_draft_execution_errors_impl,
+)
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.workflow.api import (
     build_content_wordpress_draft_activation_packet_response,
@@ -1782,15 +1785,7 @@ def _execute_supported_mutation_adapter(
 
 
 def _wordpress_draft_execution_errors(execution: Any) -> list[str]:
-    if execution.status in {"dry_run_ready", "created"}:
-        return []
-    blockers = [
-        f"{blocker.label}: {blocker.reason}"
-        for blocker in execution.blockers
-    ]
-    if blockers:
-        return blockers
-    return ["WordPress draft execution contract blocked the adapter."]
+    return _wordpress_draft_execution_errors_impl(execution)
 
 
 def _mutation_requirement(

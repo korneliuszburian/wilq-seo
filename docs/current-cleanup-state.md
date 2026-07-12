@@ -740,6 +740,10 @@ ich rozmiaru.
   `wilq/actions/wordpress_mutation_requirements.py`; service nie duplikuje
   WordPress write policy. Live readiness pozostaje fail-closed; browser proof:
   `.local-lab/proof/continuation-2026-07-12/wp-env-live.png`.
+- Formatowanie blockerów wykonania WordPress draft jest teraz w istniejącym
+  `wilq/content/handoff/wordpress_execution.py`; service deleguje typed result
+  bez zmiany fail-closed labels/reasons i redacted trace. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/wp-errors-live.png`.
 
 ## Resume
 

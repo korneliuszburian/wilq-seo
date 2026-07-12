@@ -62,3 +62,23 @@ def test_wordpress_write_readiness_requirements_keep_fail_closed_contract() -> N
         "wordpress_write_authorization",
     ]
     assert all(requirement.satisfied is False for requirement in requirements)
+
+
+def test_wordpress_execution_errors_keep_blocker_labels_and_reasons() -> None:
+    from wilq.content.handoff.wordpress_execution import (
+        execute_content_wordpress_draft_handoff,
+        wordpress_draft_execution_errors,
+    )
+
+    execution = execute_content_wordpress_draft_handoff(
+        handoff=None,
+        draft_package=None,
+        mode="dry_run",
+        live_write_enabled=False,
+        create_draft=None,
+    )
+
+    errors = wordpress_draft_execution_errors(execution)
+    assert execution.status == "blocked"
+    assert errors
+    assert "Brakuje zatwierdzonego przekazania" in errors[0]

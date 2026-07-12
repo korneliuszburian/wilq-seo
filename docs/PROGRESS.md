@@ -840,6 +840,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   mutation tests, source Ruff/mypy/complexity/diff check i managed runtime
   przechodzą; live readiness pozostaje fail-closed; browser proof:
   `.local-lab/proof/continuation-2026-07-12/wp-env-live.png`.
+- Formatowanie blockerów wykonania WordPress draft jest teraz w istniejącym
+  `wilq/content/handoff/wordpress_execution.py`; service przekazuje typed
+  execution result bez własnej interpretacji statusu. Zachowano fail-closed
+  labels/reasons i redacted adapter trace; focused WordPress/mutation tests,
+  source Ruff/mypy/complexity/diff check oraz browser proof przechodzą:
+  `.local-lab/proof/continuation-2026-07-12/wp-errors-live.png`.
 
 ## Weryfikacja
 

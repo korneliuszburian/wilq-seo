@@ -90,6 +90,17 @@ class ContentWordPressDraftExecutionResult(BaseModel):
     blockers: list[ContentWordPressDraftExecutionBlocker] = Field(default_factory=list)
 
 
+def wordpress_draft_execution_errors(
+    execution: ContentWordPressDraftExecutionResult,
+) -> list[str]:
+    if execution.status in {"dry_run_ready", "created"}:
+        return []
+    blockers = [f"{blocker.label}: {blocker.reason}" for blocker in execution.blockers]
+    if blockers:
+        return blockers
+    return ["WordPress draft execution contract blocked the adapter."]
+
+
 def execute_content_wordpress_draft_handoff(
     *,
     handoff: ContentWordPressDraftHandoff | None,
