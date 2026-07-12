@@ -44,3 +44,6 @@ vendor write.
 - `r564` pozostaje zewnętrznie zablokowany przez `not_enough_actionable_candidates`;
   nie twórz sztucznego trzeciego tematu.
 
+## Commit
+
+Implementacja i handoff: `7f321c26` (`refactor: centralize metric action helpers`).
