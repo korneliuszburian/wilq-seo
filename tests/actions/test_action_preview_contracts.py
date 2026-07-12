@@ -11,12 +11,22 @@ from tests._contract_support.assertions import (
     assert_preview_items_are_operator_view_models,
     preview_card_row_values,
 )
+from wilq.actions.action_blockers import action_preview_summary
 from wilq.actions.google_ads.business_context import micros_money_label
 
 
 def test_ads_micros_money_label_is_fail_closed_for_missing_values() -> None:
     assert micros_money_label(1_250_000) == "1.25 PLN"
     assert micros_money_label(None) == "kwota niepotwierdzona"
+
+
+def test_action_preview_summary_keeps_write_safety_copy() -> None:
+    assert "zapis zmian pozostaje zablokowany" in action_preview_summary(
+        status="blocked", included_items=1, preview_items=2
+    )
+    assert "Nie zapisano zmian w zewnętrznych systemach" in action_preview_summary(
+        status="preview_ready", included_items=2, preview_items=2
+    )
 
 
 def test_action_preview_generates_dry_run_audit_without_apply(

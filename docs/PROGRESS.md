@@ -757,6 +757,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `kwota niepotwierdzona`, bez wymyślania kosztu. Focused Ads preview suite:
   26 passed, Ruff/mypy/complexity/diff check, API smoke i browser proof zielone;
   proof: `.local-lab/proof/continuation-2026-07-12/money-label-live.png`.
+- Summary podglądu akcji (liczba pokazanych pozycji, blokada zapisu i brak
+  zewnętrznego zapisu) jest teraz w istniejącym `wilq/actions/action_blockers.py`;
+  `service.py` zachowuje tylko orkiestrację. Focused preview/confirmation/review
+  tests: 26 passed, service LOC spadł do 2351, a runtime Ads detail zachowuje
+  evidence, `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/preview-summary-live.png`.
 
 ## Weryfikacja
 

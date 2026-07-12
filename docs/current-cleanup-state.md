@@ -673,6 +673,12 @@ ich rozmiaru.
   Focused Ads preview suite: 26 passed, a live Ads action zachowuje evidence,
   `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/money-label-live.png`.
+- Summary podglądu akcji jest teraz w istniejącym
+  `wilq/actions/action_blockers.py`; service zachowuje tylko orkiestrację.
+  Zachowano polski komunikat braku zapisu i count pozycji. Focused
+  preview/confirmation/review tests: 26 passed, a live Ads detail zachowuje
+  evidence, `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/preview-summary-live.png`.
 
 ## Resume
 

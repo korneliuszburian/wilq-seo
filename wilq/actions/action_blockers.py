@@ -36,6 +36,24 @@ def action_preview_blockers(
     return unique_values(blockers)
 
 
+def action_preview_summary(
+    *,
+    status: Literal["preview_ready", "blocked"],
+    included_items: int,
+    preview_items: int,
+) -> str:
+    if status == "blocked":
+        return (
+            "Podgląd zmian przygotowany, ale zapis zmian pozostaje zablokowany. "
+            f"Pokazano {included_items} z {preview_items} pozycji do sprawdzenia. "
+            "Nie zapisano zmian w zewnętrznych systemach."
+        )
+    return (
+        f"Podgląd zmian przygotowany. Pokazano {included_items} z {preview_items} "
+        "pozycji do sprawdzenia. Nie zapisano zmian w zewnętrznych systemach."
+    )
+
+
 def action_confirmation_blockers(
     action: ActionObject,
     request: ActionConfirmRequest,

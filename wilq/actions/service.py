@@ -19,6 +19,9 @@ from wilq.actions.action_blockers import (
     action_preview_blockers,
     ads_target_confirmation_summary,
 )
+from wilq.actions.action_blockers import (
+    action_preview_summary as _action_preview_summary,
+)
 from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
 )
@@ -2543,24 +2546,6 @@ def _source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
         if label not in labels:
             labels.append(label)
     return labels
-
-
-def _action_preview_summary(
-    *,
-    status: Literal["preview_ready", "blocked"],
-    included_items: int,
-    preview_items: int,
-) -> str:
-    if status == "blocked":
-        return (
-            f"Podgląd zmian przygotowany, ale zapis zmian pozostaje zablokowany. "
-            f"Pokazano {included_items} z {preview_items} pozycji do sprawdzenia. "
-            "Nie zapisano zmian w zewnętrznych systemach."
-        )
-    return (
-        f"Podgląd zmian przygotowany. Pokazano {included_items} z {preview_items} "
-        "pozycji do sprawdzenia. Nie zapisano zmian w zewnętrznych systemach."
-    )
 
 
 def _operator_audit_summary_text(summary: str) -> str:
