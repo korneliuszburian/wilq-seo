@@ -69,6 +69,7 @@ from wilq.actions.google_ads.keyword_planner import (
 )
 from wilq.actions.google_ads.negative_keywords import (
     negative_keyword_action_from_metric_facts,
+    negative_keyword_preview_cards,
 )
 from wilq.actions.google_ads.oauth import oauth_repair_action
 from wilq.actions.google_ads.previews import budget_preview_cards
@@ -2372,53 +2373,13 @@ def _ads_recommendation_preview_cards(
 def _ads_negative_keyword_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
-    cards: list[ActionPreviewCardViewModel] = []
-    for index, item in enumerate(preview_items[:4]):
-        rows = [
-            _preview_row("Hasło", str(item.get("search_term") or "hasło do sprawdzenia")),
-            _preview_row(
-                "Wykluczenie",
-                str(item.get("negative_keyword_text") or "wykluczenie do sprawdzenia"),
-            ),
-            _preview_row(
-                "Dopasowanie",
-                str(item.get("match_type_label") or "dopasowanie do sprawdzenia"),
-            ),
-            _preview_row("Poziom", str(item.get("level_label") or "poziom do sprawdzenia")),
-            _preview_row(
-                "Kampania",
-                str(item.get("campaign_name") or "kampania do sprawdzenia"),
-            ),
-            _preview_row(
-                "Grupa reklam",
-                str(item.get("ad_group_name") or "grupa reklam do sprawdzenia"),
-            ),
-        ]
-        requirement_labels = _string_list(item.get("required_validation_labels"))
-        if requirement_labels:
-            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
-        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
-        if blocked_claim_labels:
-            rows.append(
-                _preview_row(
-                    "Czego nie wolno twierdzić",
-                    ", ".join(blocked_claim_labels[:4]),
-                )
-            )
-        cards.append(
-            ActionPreviewCardViewModel(
-                id=f"ads_negative_keyword_preview_{index}",
-                kind="google_ads_negative_keyword_review",
-                title_label="Wykluczenie słowa do sprawdzenia",
-                subtitle_label="ocena intencji zapytania bez zapisu zmian",
-                status_label="zapis zmian zablokowany",
-                rows=rows,
-                apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
-            )
-        )
-    return cards
+    return negative_keyword_preview_cards(
+        payload,
+        preview_row=_preview_row,
+        string_list=_string_list,
+        apply_state_label=_apply_state_label,
+        system_readiness_label=_system_readiness_label,
+    )
 
 
 def _ads_custom_segment_preview_cards(

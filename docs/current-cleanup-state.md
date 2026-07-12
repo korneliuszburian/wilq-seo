@@ -480,6 +480,9 @@ ich rozmiaru.
 - Recommendation preview renderer jest teraz w istniejącym
   `wilq/actions/google_ads/recommendations.py`; live action ma cztery typed
   cards, evidence ID, blokadę zapisu i blocked claims bez raw vendor payloadu.
+- Negative-keyword preview renderer jest teraz w istniejącym
+  `wilq/actions/google_ads/negative_keywords.py`; live action zachowuje
+  evidence, 90-dniowe safety gates, blocked claims i brak ścieżki zapisu.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

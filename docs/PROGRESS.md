@@ -533,6 +533,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   claims, a live action ma cztery `google_ads_recommendation_review` cards,
   `apply_allowed=false` i `api_mutation_ready=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-recommendation-preview-cards.png`.
+- Następny seam Ads negative keywords jest w istniejącym
+  `wilq/actions/google_ads/negative_keywords.py`; live action ma dwa typed
+  `google_ads_negative_keyword_review` cards, evidence ID, 90-dniowe warunki
+  sprawdzenia i `apply_allowed=false`. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ads-negative-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.
