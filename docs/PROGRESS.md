@@ -31,6 +31,11 @@ w git, Beads i `docs/progress/archive/`.
   z 2 evidence IDs (GSC + WordPress); Service Profile, handoff i measurement
   pozostają jawnie review/blocker, bez publikacji. Complexity `api.py` spadła
   do 1470 LOC; pozostałe naruszenie pliku jest jawne i wymaga osobnego seama.
+- `wilq-seo-zdm2` wydziela preflight i Sales Brief adapters do
+  `wilq/content/workflow/stage_preparation.py`. 12 focused content tests,
+  Ruff, mypy, live `workflow_snapshot` i evidence/freshness/write-gate proof
+  przechodzą. `api.py` spadł do 1416 LOC; pozostały draft/review/handoff stage
+  ma osobny follow-up `wilq-seo-mseb`.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

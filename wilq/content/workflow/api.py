@@ -52,10 +52,7 @@ from wilq.content.handoff.wordpress_execution import (
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.inventory.records import (
-    ContentInventoryDuplicateRisk,
     ContentInventoryRecord,
-    ContentInventoryResolution,
-    resolve_content_inventory,
 )
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCardMatch,
@@ -71,10 +68,6 @@ from wilq.content.measurement.window import (
     apply_content_measurement_window_to_work_item,
     build_content_measurement_window,
     content_measurement_window_outcome_blockers,
-)
-from wilq.content.preflight.workflow import (
-    ContentPreflightVerdict,
-    build_content_preflight_verdict,
 )
 from wilq.content.quality.review import (
     build_content_quality_review,
@@ -152,6 +145,13 @@ from wilq.content.workflow.snapshot_assembly import (
     SnapshotAssemblyCallbacks,
     assemble_content_work_item_snapshot,
 )
+from wilq.content.workflow.stage_preparation import (
+    build_content_work_item_preflight_response,
+    build_content_work_item_sales_brief_response,
+)
+from wilq.content.workflow.stage_preparation import (
+    inventory_and_preflight as _inventory_and_preflight,
+)
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import (
     AuditEvent,
@@ -160,47 +160,6 @@ from wilq.schemas import (
     ContentFreshnessAssessment,
 )
 from wilq.storage.local_state import local_state_store
-
-
-def build_content_work_item_preflight_response(
-    request: ContentWorkItemPreflightRequest,
-) -> ContentWorkItemPreflightResponse:
-    inventory_resolution = resolve_content_inventory(
-        request.inventory_records,
-        duplicate_risk=request.duplicate_risk,
-    )
-    return ContentWorkItemPreflightResponse(
-        item=request.item,
-        inventory_resolution=inventory_resolution,
-        preflight_verdict=build_content_preflight_verdict(
-            request.item,
-            inventory_resolution,
-        ),
-    )
-
-
-def build_content_work_item_sales_brief_response(
-    request: ContentWorkItemSalesBriefRequest,
-) -> ContentWorkItemSalesBriefResponse:
-    inventory_resolution, preflight_verdict = _inventory_and_preflight(
-        item=request.item,
-        inventory_records=request.inventory_records,
-        duplicate_risk=request.duplicate_risk,
-    )
-    return ContentWorkItemSalesBriefResponse(
-        item=request.item,
-        inventory_resolution=inventory_resolution,
-        preflight_verdict=preflight_verdict,
-        sales_brief_result=build_content_sales_brief(
-            item=request.item,
-            preflight=preflight_verdict,
-            inventory=inventory_resolution,
-            claim_ledger=request.claim_ledger,
-            seed=request.seed,
-            enrichment=request.enrichment,
-            knowledge_match=request.knowledge_match or match_content_knowledge_cards(request.item),
-        ),
-    )
 
 
 def build_content_work_item_draft_package_response(
@@ -1564,23 +1523,4 @@ def _queue_candidate_for_decision(
     return build_content_work_item_queue_candidate(
         decision,
         diagnostics.freshness_assessment,
-    )
-
-
-def _inventory_and_preflight(
-    *,
-    item: ContentWorkItem,
-    inventory_records: list[ContentInventoryRecord],
-    duplicate_risk: ContentInventoryDuplicateRisk,
-) -> tuple[ContentInventoryResolution, ContentPreflightVerdict]:
-    inventory_resolution = resolve_content_inventory(
-        inventory_records,
-        duplicate_risk=duplicate_risk,
-    )
-    return (
-        inventory_resolution,
-        build_content_preflight_verdict(
-            item,
-            inventory_resolution,
-        ),
     )

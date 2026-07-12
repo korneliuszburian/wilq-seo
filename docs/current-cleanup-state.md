@@ -49,6 +49,10 @@ stage callbacks i response contract, ale składanie kolejności preflight → br
 pozostaje fresh/evidence-first, a Service Profile i handoff blokują finalne
 twierdzenia/zapis zgodnie z kontraktem. `api.py` ma 1470 LOC; dalszy split jest
 osobnym potwierdzonym zadaniem.
+`wilq-seo-zdm2` wydzielił preflight i Sales Brief adapters do
+`wilq/content/workflow/stage_preparation.py`. Snapshot nadal zachowuje fresh
+evidence z GSC/WordPress oraz blokadę Service Profile/handoff. `api.py` ma
+1416 LOC; draft/review/handoff extraction jest osobnym Beadem `wilq-seo-mseb`.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
