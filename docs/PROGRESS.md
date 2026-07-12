@@ -91,6 +91,11 @@ w git, Beads i `docs/progress/archive/`.
   raportuje 21 akcji, 0 vendor-write possible i 0 attempted, z WordPress
   draft-only jako pierwszą kandydaturą. Focused mutation/review/Goal 005 tests,
   Ruff, mypy, complexity i diff check przechodzą; `service.py` ma 4046 LOC.
+- Następny mały seam `jnra` przeniósł kontrakt apply do
+  `wilq/actions/mutation_contract.py`. Zachowane są `create_wordpress_draft`,
+  `publication_allowed=false`, `destructive_allowed=false`, wymagane audyty,
+  env gate i `None` dla nieobsługiwanych akcji; readiness/Goal 005 tests, Ruff,
+  mypy, complexity i diff check pozostają zielone, a `service.py` ma 4003 LOC.
 - `kgvy` slice wykonany: optimizer-readiness assembly przeniesiono do
   `wilq/briefing/ads_optimizer.py`, a `ads_diagnostics.py` zmniejszył się o 358
   linii. Osiem obszarów zachowuje evidence IDs, source connectors, blocked claims

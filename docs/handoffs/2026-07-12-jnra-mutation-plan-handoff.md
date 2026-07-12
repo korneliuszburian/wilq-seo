@@ -24,6 +24,12 @@ akcji, endpointu ani możliwości zapisu.
   `would_attempt_vendor_write_count=0`, pierwsza kandydatura
   `act_apply_wordpress_draft_handoff`; publikacja i destructive writes pozostają
   blokowane.
+- Kolejny bounded seam wydzielił `mutation_apply_contract` do
+  `wilq/actions/mutation_contract.py`. Kontrakt nadal zezwala wyłącznie na
+  `create_wordpress_draft`, ma `publication_allowed=false`,
+  `destructive_allowed=false`, wymagane audyty i env flagę; pozostałe akcje
+  zwracają `None` jak wcześniej. Focused readiness/Goal 005 tests, Ruff, mypy,
+  complexity i diff check pozostają zielone; `service.py` ma 4003 LOC.
 
 ## Bead
 

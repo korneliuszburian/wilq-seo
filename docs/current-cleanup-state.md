@@ -442,6 +442,10 @@ ich rozmiaru.
   Service nadal składa readiness z istniejących requirements/blockers i przekazuje
   callback, bez zmiany payloadów ani write gates. Live summary po restarcie ma
   21 akcji, 0 vendor-write possible i 0 attempted; `service.py` ma 4046 LOC.
+- Kontrakt apply dla WordPress draft-only jest teraz w
+  `wilq/actions/mutation_contract.py`; nieobsługiwane akcje nadal dostają `None`,
+  a apply contract zachowuje blokadę publikacji/destrukcji i wymagane audyty.
+  `service.py` ma 4003 LOC; następny seam wymaga nowego complexity/runtime review.
 - `4wwo` ma teraz istniejący `/api/connectors` rozszerzony o typed
   `refresh_state`: stan odczytu, `refresh_allowed`, ostatni run, safe next step i
   affected decisions. `/settings` pokazuje tę informację ponad ręcznym CTA;
