@@ -822,6 +822,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   Focused WordPress/mutation readiness tests przechodzą, service LOC spadł do
   2195, a live readiness zachowuje `vendor_write_possible=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/wp-readiness-live.png`.
+- Budowanie `ActionMutationAuditRecord` i bezpiecznego mutation summary jest
+  teraz w istniejącym `wilq/actions/audit_store.py`; service deleguje assembly.
+  Zachowano status, adapter reach, external-write flags, evidence, blockers i
+  redacted vendor payload. Focused audit/mutation tests przechodzą, service LOC
+  spadł do 2161, a live readiness nadal raportuje `vendor_write_possible=false`;
+  browser proof: `.local-lab/proof/continuation-2026-07-12/mutation-audit-live.png`.
 
 ## Weryfikacja
 

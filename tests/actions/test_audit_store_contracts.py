@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from wilq.actions import audit_store
-from wilq.schemas import ActionMutationAuditRecord, AuditEvent
+from wilq.schemas import ActionMutationAuditRecord, ActionObject, AuditEvent
 
 
 class _FakeAuditStore:
@@ -144,3 +144,33 @@ def test_audit_event_operator_projection_uses_store_owned_summary_and_labels() -
     assert projected.event_type_label == "Podgląd zmian wygenerowany"
     assert "zapis zmian pozostaje zablokowany" in projected.summary
     assert projected.details["checked_items"] == ["review:reviewed_url"]
+
+
+def test_mutation_audit_record_keeps_redacted_write_attempt_flags() -> None:
+    action = ActionObject.model_construct(
+        id="act_test_mutation",
+        connector="wordpress_ekologus",
+        payload={"action_type": "create_wordpress_draft"},
+        evidence_ids=["ev_test"],
+    )
+    event = AuditEvent(
+        id="audit_apply_blocked",
+        event_type="action_apply_blocked",
+        actor="operator",
+        summary="blocked",
+    )
+
+    audit = audit_store.action_mutation_audit_record(
+        action=action,
+        audit_event=event,
+        actor="operator",
+        errors=["missing_confirmation_audit"],
+        mutation_adapter="wordpress_draft_execution_boundary",
+        adapter_result=None,
+    )
+
+    assert audit.status == "blocked"
+    assert audit.adapter_reached is False
+    assert audit.external_write_attempted is False
+    assert audit.evidence_ids == ["ev_test"]
+    assert "before any vendor API call" in audit.summary

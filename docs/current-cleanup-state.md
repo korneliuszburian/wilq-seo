@@ -726,6 +726,11 @@ ich rozmiaru.
   zmiany typed requirements i fail-closed authorization. Live readiness nadal
   raportuje `vendor_write_possible=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/wp-readiness-live.png`.
+- Budowanie `ActionMutationAuditRecord` i mutation summary jest teraz w
+  istniejącym `wilq/actions/audit_store.py`; service deleguje assembly bez
+  zmiany redaction i external-write flags. Live readiness nadal raportuje
+  `vendor_write_possible=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/mutation-audit-live.png`.
 
 ## Resume
 

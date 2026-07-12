@@ -26,6 +26,9 @@ from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
 )
 from wilq.actions.audit_store import (
+    action_mutation_audit_record as _action_mutation_audit_record_impl,
+)
+from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
 )
 from wilq.actions.audit_store import (
@@ -46,6 +49,7 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     latest_preview_event as _latest_preview_event_impl,
 )
+from wilq.actions.audit_store import mutation_audit_summary
 from wilq.actions.audit_store import (
     operator_audit_summary_text as _operator_audit_summary_text_impl,
 )
@@ -224,9 +228,6 @@ from wilq.actions.mutation_summary import build_mutation_readiness_summary
 from wilq.actions.mutation_target import mutation_readiness_target
 from wilq.actions.operator_labels import (
     action_evidence_summary_label as _action_evidence_summary_label,
-)
-from wilq.actions.operator_labels import (
-    action_mutation_audit_status_label as _action_mutation_audit_status_label,
 )
 from wilq.actions.operator_labels import (
     action_result_status_label as _action_result_status_label,
@@ -1701,35 +1702,13 @@ def _action_mutation_audit_record(
     mutation_adapter: str | None,
     adapter_result: dict[str, Any] | None,
 ) -> ActionMutationAuditRecord:
-    status: Literal["blocked", "applied"] = "blocked" if errors else "applied"
-    action_type = action.payload.get("action_type")
-    adapter_reached = adapter_result is not None
-    external_write_attempted = (
-        adapter_result.get("external_write_attempted") is True
-        if adapter_result is not None
-        else False
-    )
-    return ActionMutationAuditRecord(
-        id=f"mutation_{action.id}_{uuid4().hex[:12]}",
-        action_id=action.id,
-        connector=action.connector,
-        action_type=action_type if isinstance(action_type, str) else None,
-        status=status,
-        status_label=_action_mutation_audit_status_label(status),
-        adapter_reached=adapter_reached,
-        external_write_attempted=external_write_attempted,
-        mutation_attempted=external_write_attempted,
-        mutation_adapter=mutation_adapter,
+    return _action_mutation_audit_record_impl(
+        action=action,
+        audit_event=audit_event,
         actor=actor,
-        audit_event_id=audit_event.id,
-        evidence_ids=action.evidence_ids,
-        blockers=errors,
-        summary=_mutation_audit_summary(
-            errors,
-            mutation_adapter,
-            adapter_reached=adapter_reached,
-            external_write_attempted=external_write_attempted,
-        ),
+        errors=errors,
+        mutation_adapter=mutation_adapter,
+        adapter_result=adapter_result,
     )
 
 
@@ -1740,25 +1719,12 @@ def _mutation_audit_summary(
     adapter_reached: bool,
     external_write_attempted: bool,
 ) -> str:
-    if errors:
-        if adapter_reached:
-            attempted = (
-                "External vendor write was attempted."
-                if external_write_attempted
-                else "No external vendor write was attempted."
-            )
-            return (
-                "Mutation adapter reached but did not complete successfully. "
-                f"{attempted} Blockers: {', '.join(errors)}"
-            )
-        return f"Mutation blocked before any vendor API call. Blockers: {', '.join(errors)}"
-    adapter = mutation_adapter or "unknown"
-    if not external_write_attempted:
-        return (
-            f"Mutation completed through adapter {adapter}, but no external vendor "
-            "write was attempted; vendor payload remains redacted."
-        )
-    return f"Mutation executed through adapter {adapter}; vendor payload remains redacted."
+    return mutation_audit_summary(
+        errors,
+        mutation_adapter,
+        adapter_reached=adapter_reached,
+        external_write_attempted=external_write_attempted,
+    )
 
 
 def _supported_mutation_adapter(action: ActionObject) -> str | None:
