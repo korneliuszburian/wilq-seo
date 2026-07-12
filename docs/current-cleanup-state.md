@@ -610,6 +610,12 @@ ich rozmiaru.
   każdym odczycie. Cold Localo detail po restarcie: HTTP 200 w `0.013299 s`,
   10 metryk, evidence i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/localo-cold-fixed-live.png`.
+- Preview payload extraction jest teraz w istniejącym
+  `wilq/actions/payload_readiness.py`; wspólny parser zachowuje priorytet
+  WordPress/budget/custom/negative/ngram, `payload_preview` i ostatni fallback
+  wierszy z `apply_allowed`. Live Localo i Ads detail po restarcie zachowują
+  evidence, blokadę zapisu i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/payload-readiness-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

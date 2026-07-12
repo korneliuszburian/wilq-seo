@@ -232,6 +232,12 @@ from wilq.actions.payload_readiness import (
     payload_api_mutation_ready,
     payload_apply_allowed,
 )
+from wilq.actions.payload_readiness import (
+    payload_preview_contract as _payload_preview_contract_impl,
+)
+from wilq.actions.payload_readiness import (
+    payload_preview_items as _payload_preview_items_impl,
+)
 from wilq.actions.payloads import (
     validate_action_payload,
 )
@@ -2665,13 +2671,7 @@ def _ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str
 
 
 def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:
-    if isinstance(payload.get("preview_contract"), str):
-        return str(payload["preview_contract"])
-    for item in preview_items:
-        contract = item.get("preview_contract")
-        if isinstance(contract, str):
-            return contract
-    return None
+    return _payload_preview_contract_impl(payload, preview_items)
 
 
 def _action_required_checks(payload: dict[str, Any]) -> list[str]:
@@ -2770,32 +2770,7 @@ def _requires_human_confirmation(required_checks: list[str]) -> bool:
 
 
 def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    for key in (
-        "wordpress_draft_payload_preview",
-        "budget_payload_preview",
-        "custom_segment_payload_preview",
-        "negative_keyword_payload_preview",
-        "ngram_preview",
-    ):
-        preview = payload.get(key)
-        if isinstance(preview, list):
-            items = [item for item in preview if isinstance(item, dict)]
-            if items:
-                return items
-        if isinstance(preview, dict):
-            return [preview]
-    preview = payload.get("payload_preview")
-    if isinstance(preview, list):
-        return [item for item in preview if isinstance(item, dict)]
-    if isinstance(preview, dict):
-        return [preview]
-    preview_items: list[dict[str, Any]] = []
-    for value in payload.values():
-        if isinstance(value, list):
-            preview_items.extend(
-                item for item in value if isinstance(item, dict) and "apply_allowed" in item
-            )
-    return preview_items
+    return _payload_preview_items_impl(payload)
 
 
 def _latest_preview_event(events: list[AuditEvent]) -> AuditEvent | None:
