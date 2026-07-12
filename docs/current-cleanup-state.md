@@ -566,6 +566,10 @@ ich rozmiaru.
   `wilq/actions/content_review_details.py`; live content action zachowuje
   evidence, publiczne URL-e, review gates i `apply_allowed=false`. Browser
   proof: `.local-lab/proof/continuation-2026-07-12/content-review-details-live.png`.
+- Review outcome label i human-review event projection są teraz w
+  `wilq/actions/review_gate.py`; live Ads strategy karta zachowuje review gate,
+  evidence i blokadę zapisu. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/review-outcome-projection-live.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.

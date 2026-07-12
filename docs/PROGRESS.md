@@ -642,6 +642,11 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   pokryte testem; live content action zachowuje 3 evidence IDs, typed cards i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-review-details-live.png`.
+- Review outcome label, latest human-review event selection i event-to-outcome
+  projection są teraz w istniejącym `wilq/actions/review_gate.py`; service
+  zachowuje tylko orchestrację gate. Live Ads strategy action ma 2 evidence IDs,
+  `kontrola WILQ poprawna` i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/review-outcome-projection-live.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

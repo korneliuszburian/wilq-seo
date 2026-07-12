@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,44 @@ def test_content_review_details_keep_allowed_fields_and_ignore_unknown_values() 
         "candidate": "candidate_1",
         "draft_readiness_outcome": "ready_for_review",
     }
+
+
+def test_review_outcome_projection_keeps_latest_human_event() -> None:
+    from wilq.actions.review_gate import (
+        latest_human_review_event,
+        review_outcome_from_event,
+        review_outcome_label,
+    )
+    from wilq.schemas import AuditEvent
+
+    events = [
+        AuditEvent(
+            id="audit_old",
+            event_type="human_review_needs_changes",
+            actor="operator",
+            created_at=datetime.fromisoformat("2026-07-12T04:00:00+00:00"),
+            summary="old",
+        ),
+        AuditEvent(
+            id="audit_new",
+            event_type="human_review_approved_for_prepare",
+            actor="operator",
+            created_at=datetime.fromisoformat("2026-07-12T05:00:00+00:00"),
+            summary="new",
+        ),
+        AuditEvent(
+            id="audit_preview",
+            event_type="action_preview_generated",
+            actor="system",
+            created_at=datetime.fromisoformat("2026-07-12T06:00:00+00:00"),
+            summary="preview",
+        ),
+    ]
+
+    latest = latest_human_review_event(events)
+    assert latest is not None and latest.id == "audit_new"
+    assert review_outcome_from_event(latest) == "approved_for_prepare"
+    assert review_outcome_label("approved_for_prepare") == "zatwierdzone do dalszego przygotowania"
 
 
 def test_action_review_records_human_outcome_without_apply(

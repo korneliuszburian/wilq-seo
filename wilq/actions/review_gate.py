@@ -32,6 +32,32 @@ GateLabel = Callable[[str], str | None]
 BlockedClaimLabels = Callable[[list[str]], list[str]]
 
 
+def review_outcome_label(outcome: str) -> str:
+    labels = {
+        "approved_for_prepare": "zatwierdzone do dalszego przygotowania",
+        "needs_changes": "wymaga poprawek",
+        "rejected": "odrzucone",
+        "deferred": "odłożone",
+    }
+    return labels.get(outcome, outcome)
+
+
+def latest_human_review_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type.startswith("human_review_"):
+            return event
+    return None
+
+
+def review_outcome_from_event(event: AuditEvent | None) -> ActionReviewOutcome | None:
+    if event is None:
+        return None
+    outcome = event.event_type.removeprefix("human_review_")
+    if outcome in {"approved_for_prepare", "needs_changes", "rejected", "deferred"}:
+        return outcome  # type: ignore[return-value]
+    return None
+
+
 def action_review_summary(
     request: ActionReviewRequest,
     *,

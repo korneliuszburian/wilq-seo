@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from contextlib import suppress
 from dataclasses import dataclass
 from time import monotonic
-from typing import Any, Literal, cast
+from typing import Any, Literal
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -199,6 +199,9 @@ from wilq.actions.review_gate import (
 )
 from wilq.actions.review_gate import (
     build_action_review_gate,
+    latest_human_review_event,
+    review_outcome_from_event,
+    review_outcome_label,
 )
 from wilq.actions.review_gate import (
     canonical_contract_key as canonical_review_contract_key,
@@ -282,7 +285,6 @@ from wilq.schemas import (
     ActionPreviewResult,
     ActionPreviewRowViewModel,
     ActionReviewGate,
-    ActionReviewOutcome,
     ActionReviewRequest,
     ActionReviewResult,
     ActionRisk,
@@ -2433,7 +2435,7 @@ def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGat
             "last_mutation_blocker_summary_label": blocker_count_label(
                 gate.last_mutation_blocker_labels or gate.last_mutation_blockers
             ),
-            "last_review_outcome_label": _review_outcome_label(gate.last_review_outcome)
+            "last_review_outcome_label": review_outcome_label(gate.last_review_outcome)
             if gate.last_review_outcome
             else None,
             "last_impact_check_status_label": _action_result_status_label(
@@ -2522,7 +2524,7 @@ def _action_review_gate(
     required_checks = _action_required_checks(action.payload)
     operator_checklist = _action_operator_checklist(action.payload)
     apply_allowed = _action_payload_apply_allowed(action.payload)
-    last_review = _latest_human_review_event(action.audit_events)
+    last_review = latest_human_review_event(action.audit_events)
     last_confirmation = _latest_action_confirmation_event(action.audit_events)
     last_impact_check = _latest_action_impact_check_event(action.audit_events)
     last_mutation_audit = _latest_mutation_audit(mutation_audits or [])
@@ -2545,7 +2547,7 @@ def _action_review_gate(
         apply_blockers=apply_blockers,
         gate_labels=_action_gate_labels,
         confirmation_required=_action_confirmation_required,
-        review_outcome=_review_outcome_from_event,
+        review_outcome=review_outcome_from_event,
         review_summary=lambda event: _operator_audit_summary_text(event.summary),
         confirmation_summary=_action_audit_summary_for_operator,
         impact_status=_impact_status_from_event,
@@ -2555,7 +2557,7 @@ def _action_review_gate(
 def _action_review_summary(request: ActionReviewRequest) -> str:
     return build_action_review_summary(
         request,
-        outcome_label=_review_outcome_label,
+        outcome_label=review_outcome_label,
         summary_item=_review_summary_item,
         blocker_label=_review_blocker_label,
     )
@@ -2604,30 +2606,6 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
     return details
 
 
-def _review_outcome_label(outcome: str) -> str:
-    labels = {
-        "approved_for_prepare": "zatwierdzone do dalszego przygotowania",
-        "needs_changes": "wymaga poprawek",
-        "rejected": "odrzucone",
-        "deferred": "odłożone",
-    }
-    return labels.get(outcome, outcome)
-
-
-def _latest_human_review_event(events: list[AuditEvent]) -> AuditEvent | None:
-    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
-        if event.event_type.startswith("human_review_"):
-            return event
-    return None
-
-
-def _review_outcome_from_event(event: AuditEvent | None) -> ActionReviewOutcome | None:
-    if event is None:
-        return None
-    outcome = event.event_type.removeprefix("human_review_")
-    if outcome in {"approved_for_prepare", "needs_changes", "rejected", "deferred"}:
-        return cast(ActionReviewOutcome, outcome)
-    return None
 
 
 def _action_preview_blockers(
