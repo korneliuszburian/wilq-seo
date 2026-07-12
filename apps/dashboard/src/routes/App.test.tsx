@@ -58,10 +58,10 @@ const connectors = [
       safe_next_step: "Uruchom bezpieczny odczyt źródła przed wnioskiem z danych.",
       affected_decisions: ["ga4_diagnostics", "command_center"],
       automatic_refresh: {
-        eligible: true,
-        reason: "eligible_stale",
-        reason_label: "Stare źródło kwalifikuje się do odczytu",
-        safe_next_step: "Można bezpiecznie zlecić read-only refresh.",
+        eligible: false,
+        reason: "cooldown",
+        reason_label: "Odczyt źródła był uruchomiony niedawno",
+        safe_next_step: "Poczekaj do końca okna ochronnego przed kolejnym odczytem.",
         cooldown_seconds: 900
       }
     },
@@ -7325,7 +7325,12 @@ const socialPublisherContextPack = {
   }
 };
 
+let ga4RefreshRunReadCount = 0;
+let shouldFailGa4RefreshRunRead = false;
+
 function mockFetch() {
+  ga4RefreshRunReadCount = 0;
+  shouldFailGa4RefreshRunRead = false;
   vi.stubGlobal("fetch", vi.fn(mockWilqApiFetch));
 }
 
@@ -7641,14 +7646,41 @@ function mockDiagnosticApi(url: string) {
         connector_id: "google_analytics_4",
         connector_label: "Google Analytics 4",
         mode: "vendor_read",
-        status: "completed",
-        status_label: "odczyt zakończony",
-        external_call_attempted: true,
-        vendor_data_collected: true,
-        metrics_persisted: true,
-        evidence_ids: ["ev_refresh_google_analytics_4_dashboard"],
-        evidence_summary_label: "1 dowód źródłowy",
-        summary: "Odczyt Google Analytics 4 zakończony z dashboardu."
+        status: "queued",
+        status_label: "odczyt w kolejce",
+        external_call_attempted: false,
+        vendor_data_collected: false,
+        metrics_persisted: false,
+        evidence_ids: [],
+        evidence_summary_label: "Dowody pojawią się po zakończeniu odczytu",
+        summary: "Odczyt Google Analytics 4 czeka w kolejce dashboardu."
+      })
+    );
+  }
+  if (url.includes("/api/connectors/refresh-runs/")) {
+    if (shouldFailGa4RefreshRunRead) {
+      return Promise.reject(new Error("refresh status unavailable"));
+    }
+    const isFirstRead = ga4RefreshRunReadCount++ === 0;
+    return Promise.resolve(
+      Response.json({
+        ...connectorRefreshRuns[0],
+        id: url.split("/").at(-1),
+        connector_id: "google_analytics_4",
+        connector_label: "Google Analytics 4",
+        mode: "vendor_read",
+        status: isFirstRead ? "queued" : "completed",
+        status_label: isFirstRead ? "odczyt w kolejce" : "odczyt zakończony",
+        external_call_attempted: !isFirstRead,
+        vendor_data_collected: !isFirstRead,
+        metrics_persisted: !isFirstRead,
+        evidence_ids: isFirstRead ? [] : ["ev_refresh_google_analytics_4_dashboard"],
+        evidence_summary_label: isFirstRead
+          ? "Dowody pojawią się po zakończeniu odczytu"
+          : "1 dowód źródłowy",
+        summary: isFirstRead
+          ? "Odczyt Google Analytics 4 nadal czeka w kolejce."
+          : "Odczyt Google Analytics 4 zakończony z dashboardu."
       })
     );
   }
@@ -8051,6 +8083,9 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/refresh"))
+    ).toHaveLength(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne źródeł" }));
     expect(screen.getAllByText("Google Ads").length).toBeGreaterThan(0);
@@ -8069,6 +8104,11 @@ describe("WILQ dashboard", () => {
 
     const ga4Card = screen.getByRole("heading", { name: "Google Analytics 4" }).closest("article");
     expect(ga4Card).not.toBeNull();
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) =>
+        String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+      )
+    ).toHaveLength(0);
     fireEvent.click(
       within(ga4Card as HTMLElement).getByRole("button", { name: "Odśwież dane" })
     );
@@ -8086,7 +8126,150 @@ describe("WILQ dashboard", () => {
       mode: "vendor_read",
       run_async: true
     });
-    expect(await screen.findByText(/Odczyt zakończony/)).toBeInTheDocument();
+    expect(await screen.findByText("odczyt w kolejce")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).includes("/api/connectors/refresh-runs/")
+        )
+      ).toHaveLength(1)
+    );
+    await waitFor(
+      () =>
+        expect(
+          vi.mocked(fetch).mock.calls.filter(([url]) =>
+            String(url).includes("/api/connectors/refresh-runs/")
+          )
+        ).toHaveLength(2),
+      { timeout: 3_000 }
+    );
+    expect(await screen.findByText(/Odczyt zakończony/, {}, { timeout: 3_000 })).toBeInTheDocument();
+  });
+
+  it("clears the stale source warning when the API returns a fresh terminal state", async () => {
+    const ga4Connector = connectors[1];
+    const previousFreshness = ga4Connector.freshness;
+    const previousFreshnessLabel = ga4Connector.freshness_label;
+    const previousRefreshState = ga4Connector.refresh_state;
+    ga4Connector.freshness = { state: "fresh" };
+    ga4Connector.freshness_label = "dane odświeżone";
+    ga4Connector.refresh_state = {
+      state: "ready",
+      state_label: "odświeżone",
+      refresh_allowed: true,
+      safe_next_step: "Użyj ostatniego odczytu zgodnie ze świeżością.",
+      affected_decisions: ["ga4_diagnostics", "command_center"],
+      automatic_refresh: {
+        eligible: false,
+        reason: "not_stale",
+        reason_label: "Źródło nie wymaga automatycznego odczytu",
+        safe_next_step: "Użyj ostatniego odczytu zgodnie ze świeżością.",
+        cooldown_seconds: 900
+      }
+    };
+
+    try {
+      renderApp("/settings");
+      await screen.findByRole("heading", { name: "Dostęp do źródeł" });
+      expect(screen.queryByText(/1 źródło wymaga odświeżenia przed oceną wyników/)).toBeNull();
+      expect(screen.queryByText("Do odświeżenia")).toBeNull();
+      const ga4Card = screen.getByRole("heading", { name: "Google Analytics 4" }).closest("article");
+      expect(ga4Card).not.toBeNull();
+      expect(within(ga4Card as HTMLElement).getByText("Aktywny")).toBeInTheDocument();
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+        )
+      ).toHaveLength(0);
+    } finally {
+      ga4Connector.freshness = previousFreshness;
+      ga4Connector.freshness_label = previousFreshnessLabel;
+      ga4Connector.refresh_state = previousRefreshState;
+    }
+  });
+
+  it("shows a safe blocker and retry when refresh-run status cannot be read", async () => {
+    shouldFailGa4RefreshRunRead = true;
+    try {
+      renderApp("/settings");
+      const ga4Card = await screen.findByRole("heading", { name: "Google Analytics 4" });
+      const card = ga4Card.closest("article");
+      expect(card).not.toBeNull();
+      fireEvent.click(within(card as HTMLElement).getByRole("button", { name: "Odśwież dane" }));
+
+      expect(
+        await screen.findByText(/Stan pozostaje niepotwierdzony; sprawdź dostęp albo spróbuj ponownie/)
+      ).toBeInTheDocument();
+      expect(within(card as HTMLElement).getByRole("button", { name: "Odśwież dane" })).toBeEnabled();
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).includes("/api/connectors/refresh-runs/")
+        )
+      ).toHaveLength(1);
+    } finally {
+      shouldFailGa4RefreshRunRead = false;
+    }
+  });
+
+  it("starts one read-only refresh when the API marks a stale connector eligible", async () => {
+    const ga4Connector = connectors[1];
+    const previousRefreshState = ga4Connector.refresh_state;
+    ga4Connector.refresh_state = {
+      ...previousRefreshState,
+      automatic_refresh: {
+        eligible: true,
+        reason: "eligible_stale",
+        reason_label: "Stare źródło kwalifikuje się do odczytu",
+        safe_next_step: "Można bezpiecznie zlecić read-only refresh.",
+        cooldown_seconds: 900
+      }
+    };
+
+    try {
+      renderApp("/settings");
+      await waitFor(() =>
+        expect(
+          vi.mocked(fetch).mock.calls.filter(([url]) =>
+            String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+          )
+        ).toHaveLength(1)
+      );
+
+      const refreshCall = vi.mocked(fetch).mock.calls.find(([url]) =>
+        String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+      );
+      expect(JSON.parse(String(refreshCall?.[1]?.body))).toMatchObject({
+        mode: "vendor_read",
+        run_async: true
+      });
+      expect(await screen.findByText("odczyt w kolejce")).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          vi.mocked(fetch).mock.calls.filter(([url]) =>
+            String(url).includes("/api/connectors/refresh-runs/")
+          )
+        ).toHaveLength(1)
+      );
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/api/connectors"))
+      ).toHaveLength(1);
+      expect(
+        await screen.findByText(/Odczyt zakończony/, {}, { timeout: 3_000 })
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/api/connectors"))
+            .length
+        ).toBe(2)
+      );
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+        )
+      ).toHaveLength(1);
+    } finally {
+      ga4Connector.refresh_state = previousRefreshState;
+    }
   });
 
   it("hides the refresh CTA while the API reports an active source run", async () => {
@@ -8116,6 +8299,80 @@ describe("WILQ dashboard", () => {
       expect(ga4Card).not.toBeNull();
       expect(within(ga4Card as HTMLElement).queryByRole("button", { name: "Odśwież dane" })).toBeNull();
       expect(within(ga4Card as HTMLElement).getByText(/Odczyt jest w kolejce/)).toBeInTheDocument();
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+        )
+      ).toHaveLength(0);
+    } finally {
+      ga4Connector.refresh_state = previousRefreshState;
+    }
+  });
+
+  it.each([
+    {
+      state: "partial",
+      stateLabel: "odczyt częściowy",
+      reason: "partial_read",
+      nextStep: "Sprawdź brakujący zakres przed decyzją."
+    },
+    {
+      state: "failed",
+      stateLabel: "odczyt nieudany",
+      reason: "failed_read",
+      nextStep: "Napraw dostęp przed ponownym odczytem."
+    },
+    {
+      state: "unknown",
+      stateLabel: "stan odczytu nieznany",
+      reason: "unknown_state",
+      nextStep: "Potwierdź stan źródła przed kolejną próbą."
+    },
+    {
+      state: "blocked",
+      stateLabel: "odczyt zablokowany",
+      reason: "blocked_read",
+      nextStep: "Usuń blocker dostępu przed odczytem."
+    }
+  ])("keeps API-owned $state refresh state visible without an automatic retry", async ({
+    state,
+    stateLabel,
+    reason,
+    nextStep
+  }) => {
+    const ga4Connector = connectors[1];
+    const previousRefreshState = ga4Connector.refresh_state;
+    ga4Connector.refresh_state = {
+      state,
+      state_label: stateLabel,
+      refresh_allowed: false,
+      safe_next_step: nextStep,
+      affected_decisions: ["ga4_diagnostics", "command_center"],
+      automatic_refresh: {
+        eligible: false,
+        reason,
+        reason_label: "Automatyczny odczyt pozostaje zablokowany",
+        safe_next_step: nextStep,
+        cooldown_seconds: 900
+      }
+    };
+
+    try {
+      renderApp("/settings");
+      const ga4Card = await screen.findByRole("heading", { name: "Google Analytics 4" });
+      const card = ga4Card.closest("article");
+      expect(card).not.toBeNull();
+      expect(
+        within(card as HTMLElement).getByText(
+          (_, element) => element?.textContent === `Stan odczytu: ${stateLabel}. ${nextStep}`
+        )
+      ).toBeInTheDocument();
+      expect(within(card as HTMLElement).queryByRole("button", { name: "Odśwież dane" })).toBeNull();
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).endsWith("/api/connectors/google_analytics_4/refresh")
+        )
+      ).toHaveLength(0);
     } finally {
       ga4Connector.refresh_state = previousRefreshState;
     }

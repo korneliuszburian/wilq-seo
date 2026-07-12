@@ -73,11 +73,15 @@ w git, Beads i `docs/progress/archive/`.
 - Queue i selected snapshot przenoszą teraz typed freshness; stale primary
   sources dają `content_sources_require_refresh`, `recommended_mode=block` i
   refresh-first `safe_next_step`. To zamyka P0 `c9h9.5`.
-- `wilq-seo-4wwo` ma pierwszy async slice: istniejący read-only connector refresh
-  przyjmuje `run_async`, zapisuje status `queued`, wykonuje bezpieczne przejście
-  `running` → terminalny wynik, a dashboard `/settings` odpytuje istniejący
-  refresh-run i invaliduje view-modele po zakończeniu. Domyślna ścieżka synchroniczna
-  pozostaje kompatybilna; automatyczny stale-trigger jest świadomie poza zakresem.
+- `wilq-seo-3gre` i parent `4wwo` są domknięte: `/settings` uruchamia najwyżej
+  jeden async `vendor_read` dla connectora, ale wyłącznie gdy API zwraca
+  `automatic_refresh.eligible=true`. React nie ocenia stale/cooldown: po POST
+  `queued` śledzi istniejący refresh-run przez GET i invaliduje `connectors` oraz
+  tylko cache decyzji wskazanych przez API w `affected_decisions` dopiero po
+  terminalnym wyniku. Błąd odczytu statusu pozostaje polskim blockerem z retry,
+  a nie udawanym błędem vendora. Live proof: Ads, Merchant i Localo przeszły do
+  `odświeżone`; 0 źródeł wymaga odświeżenia. LinkedIn i Facebook pozostają
+  jawną blokadą dostępu.
   Live proof 2026-07-11: Google Sheets `refresh_google_sheets_1204e9337620`
   queued → completed, `external_call_attempted=false`, bez sekretów.
 - Async refresh deduplikuje teraz aktywny run per connector: drugi queued/running
@@ -99,8 +103,8 @@ w git, Beads i `docs/progress/archive/`.
   cooldown są jawnie fail-closed. Live API po restarcie wskazuje obecnie
   Google Ads, Merchant i Localo jako eligible, bez uruchomienia żadnego vendor
   read. Backend 6/6, shared schema 34/34, dashboard focused 31/31, typecheck,
-  lint, build, Ruff, mypy, complexity i diff check przechodzą. Sam dashboardowy
-  trigger loop pozostaje osobnym kolejnym slice'em `4wwo`.
+  lint, build, Ruff, mypy, complexity i diff check przechodzą. Dashboardowy
+  trigger loop został domknięty przez `3gre` bez nowego endpointu ani write path.
 - Po domknięciu refresh boundary przeszedłem do potwierdzonego `jnra`: read-only
   projekcje historii audytu i mutation auditów są teraz w
   `wilq/actions/audit_store.py`, z limitem 10 wpisów na akcję i bez zmiany

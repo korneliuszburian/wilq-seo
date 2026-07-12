@@ -62,14 +62,14 @@ WordPress write.
   aktualnym proof.
 - Mobile freshness został skondensowany, a source status bar jest poziomym
   scrollem; nie usuwamy statusów, tylko skracamy ich udział w first viewport.
-- `4wwo` ma teraz opcjonalny async read-only refresh przez istniejący endpoint:
-  POST zwraca utrwalony `queued` run, background completion przechodzi przez
-  `running` do terminalnego statusu, a `/settings` polluje `GET
-  /api/connectors/refresh-runs/{run_id}` i invaliduje źródła/diagnostyki/command
-  center po zakończeniu. Live proof 2026-07-11 dla wyłączonego Google Sheets:
-  `refresh_google_sheets_1204e9337620`, queued → completed, bez external call.
-  Automatyczny trigger stale pozostaje wyłączony do czasu osobnego kontraktu
-  rate-limit/backoff/audit.
+- `4wwo` jest zamknięty przez `3gre`: `/settings` automatycznie zleca tylko
+  jedno read-only odświeżenie, gdy istniejąca API-owned polityka zwraca
+  `automatic_refresh.eligible=true`. POST zwraca utrwalony `queued` run,
+  istniejący GET przechodzi przez `running` do terminalnego statusu, a dopiero
+  wtedy dashboard invaliduje `connectors` i cache decyzji wskazanych przez
+  `refresh_state.affected_decisions`. React nie rozstrzyga stale/cooldown.
+  Nieudany odczyt statusu pozostaje blockerem „stan niepotwierdzony” z retry,
+  nie jest klasyfikowany jako błąd vendora ani nie tworzy write path.
 - Async slice utrzymuje 392 pliki Pythona i 132 145 niepustych linii; raport
   complexity wskazuje tylko istniejące przekroczenie `_metric_dimension_value_label`
   w dotkniętym `schemas/core.py`, bez zamrożonego wzrostu.
@@ -827,19 +827,24 @@ ich rozmiaru.
   przechodzą; brak zmian w measurement claims albo vendor writes.
 - `wilq-seo-xu5s` dodał typed API-owned policy do
   `ConnectorRefreshState.automatic_refresh`: eligibility, reason, Polish copy,
-  safe next step i 900 s cooldown. Stale configured read-only connector może
-  być tylko `eligible_stale`; unknown, partial, failed, blocked, missing
-  credentials, aktywny run oraz cooldown pozostają nieeligible. Shared dashboard
-  schema używa tego samego kontraktu, ale UI nie uruchamia jeszcze automatycznego
-  refreshu — to następny osobny slice `4wwo`, bez vendor write.
+  safe next step i 900 s cooldown. `wilq-seo-3gre` konsumuje już wyłącznie
+  `eligible=true`: `/settings` zleca jeden istniejący async `vendor_read` na
+  connector identity, odpytuje refresh-run i po terminalnym wyniku invaliduje
+  sources oraz tylko API-wskazane decision view-models. Nie ma nowego endpointu
+  ani write-capable action.
+  Live dashboard po odczytach Ads, Merchant i Localo pokazuje 0 źródeł do
+  odświeżenia; LinkedIn/Facebook nadal są uczciwie zablokowane brakiem dostępu.
 
 ## Resume
 
-1. Potwierdź clean/synced `main` po commicie tego slice’a.
+1. Potwierdź clean/synced `main` po commicie `3gre`; `3gre` i parent `4wwo`
+   są już zamknięte w Beads.
 2. Odczytaj live connectors, diagnostics i queue; nie używaj liczb z pamięci.
-3. Kontynuuj `jnra`: wybierz następny mały, potwierdzony seam z aktualnego
+3. `4wwo` jest zamknięty; nie twórz drugiego dashboardowego triggera ani
+   reguły stale/cooldown w React.
+4. Kontynuuj `jnra`: wybierz następny mały, potwierdzony seam z aktualnego
    complexity/runtime review; nie przenoś ponownie gotowych mutation/readiness
    ani WordPress preview boundaries. Demand Gen preview jest zamknięty; następny
    kandydat wymaga świeżego odczytu `service.py` i istniejących modułów Ads.
-4. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
+5. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
    nadal wymaga evidence-backed candidate density bez sztucznego tematu.

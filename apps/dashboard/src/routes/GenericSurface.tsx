@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, FileJson, RefreshCw, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   getConnectors,
@@ -942,29 +942,115 @@ function KnowledgePlaybooksDetails({
 
 function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[] }) {
   const [showConnectorDetails, setShowConnectorDetails] = useState(false);
-  const [refreshRunId, setRefreshRunId] = useState<string | null>(null);
+  const [refreshRunsByConnector, setRefreshRunsByConnector] = useState<
+    Record<string, ConnectorRefreshRun>
+  >({});
+  const [refreshRunErrors, setRefreshRunErrors] = useState<Record<string, Error>>({});
+  const automaticRefreshes = useRef(new Set<string>());
+  const completedRefreshes = useRef(new Set<string>());
+  const activeRefreshPolls = useRef(new Set<string>());
+  const refreshPollTimeouts = useRef(new Map<string, number>());
   const queryClient = useQueryClient();
+  const pollRefreshRun = useCallback(
+    (connectorId: string, runId: string) => {
+      if (activeRefreshPolls.current.has(runId)) return;
+      activeRefreshPolls.current.add(runId);
+
+      const scheduleNextPoll = () => {
+        const timeoutId = window.setTimeout(() => {
+          refreshPollTimeouts.current.delete(runId);
+          void poll();
+        }, 500);
+        refreshPollTimeouts.current.set(runId, timeoutId);
+      };
+      const poll = async () => {
+        let run: ConnectorRefreshRun;
+        try {
+          run = await getConnectorRefreshRun(runId);
+        } catch {
+          setRefreshRunErrors((current) => ({
+            ...current,
+            [connectorId]: new Error(
+              "Nie udało się sprawdzić statusu odświeżenia; stan źródła pozostaje niepotwierdzony."
+            )
+          }));
+          activeRefreshPolls.current.delete(runId);
+          refreshPollTimeouts.current.delete(runId);
+          return;
+        }
+
+        setRefreshRunErrors((current) => {
+          if (!current[connectorId]) return current;
+          const remaining = { ...current };
+          delete remaining[connectorId];
+          return remaining;
+        });
+        setRefreshRunsByConnector((current) => ({ ...current, [connectorId]: run }));
+        if (!isRefreshRunInProgress(run.status)) {
+          activeRefreshPolls.current.delete(runId);
+          refreshPollTimeouts.current.delete(runId);
+          return;
+        }
+
+        scheduleNextPoll();
+      };
+
+      scheduleNextPoll();
+    },
+    []
+  );
   const refreshMutation = useMutation({
     mutationFn: refreshConnector,
     onSuccess: (run) => {
-      setRefreshRunId(run.id);
-      void queryClient.invalidateQueries({ queryKey: ["connectors"] });
-      void queryClient.invalidateQueries({ queryKey: ["command-center"] });
-      void queryClient.invalidateQueries({ queryKey: ["ads-diagnostics"] });
-      void queryClient.invalidateQueries({ queryKey: ["ga4-diagnostics"] });
-      void queryClient.invalidateQueries({ queryKey: ["merchant-diagnostics"] });
-      void queryClient.invalidateQueries({ queryKey: ["content-diagnostics"] });
+      setRefreshRunsByConnector((current) => ({ ...current, [run.connector_id]: run }));
+      setRefreshRunErrors((current) => {
+        if (!current[run.connector_id]) return current;
+        const remaining = { ...current };
+        delete remaining[run.connector_id];
+        return remaining;
+      });
+      if (isRefreshRunInProgress(run.status)) {
+        pollRefreshRun(run.connector_id, run.id);
+      }
     }
   });
-  const refreshRunQuery = useQuery({
-    queryKey: ["connector-refresh-run", refreshRunId],
-    queryFn: () => getConnectorRefreshRun(refreshRunId as string),
-    enabled: refreshRunId !== null,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return status === "queued" || status === "running" ? 500 : false;
-    }
-  });
+
+  useEffect(
+    () => () => {
+      refreshPollTimeouts.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      refreshPollTimeouts.current.clear();
+      activeRefreshPolls.current.clear();
+    },
+    []
+  );
+
+  useEffect(() => {
+    Object.values(refreshRunsByConnector).forEach((run) => {
+      if (
+        isRefreshRunInProgress(run.status)
+        || completedRefreshes.current.has(run.id)
+      ) {
+        return;
+      }
+      completedRefreshes.current.add(run.id);
+      const affectedDecisions = connectors.find((connector) => connector.id === run.connector_id)
+        ?.refresh_state.affected_decisions ?? [];
+      invalidateSourceDependentQueries(queryClient, affectedDecisions);
+    });
+  }, [connectors, queryClient, refreshRunsByConnector]);
+
+  useEffect(() => {
+    connectors.forEach((connector) => {
+      if (
+        !connector.refresh_state.automatic_refresh.eligible
+        || automaticRefreshes.current.has(connector.id)
+      ) {
+        return;
+      }
+      automaticRefreshes.current.add(connector.id);
+      refreshMutation.mutate(connector.id);
+    });
+  }, [connectors, refreshMutation]);
   const missing = connectors.filter((connector) => hasMissingSourceAccess(connector));
   const freshDailySources = connectors.filter(
     (connector) =>
@@ -1026,31 +1112,30 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
           <h2 className="text-base font-semibold text-ink">Dostęp do źródeł</h2>
         </div>
         <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
-          {connectors.map((connector) => (
-            <SourceAccessCard
-              key={connector.id}
-              connector={connector}
-              onRefresh={() => refreshMutation.mutate(connector.id)}
-              refreshing={
-                (refreshMutation.isPending && refreshMutation.variables === connector.id)
-                || (refreshRunQuery.data?.connector_id === connector.id
-                  && (refreshRunQuery.data.status === "queued"
-                    || refreshRunQuery.data.status === "running"))
-              }
-              refreshError={
-                refreshMutation.error && refreshMutation.variables === connector.id
-                  ? refreshMutation.error
-                  : null
-              }
-              refreshResult={
-                refreshRunQuery.data?.connector_id === connector.id
-                  ? refreshRunQuery.data
-                  : refreshMutation.data?.connector_id === connector.id
-                    ? refreshMutation.data
-                  : null
-              }
-            />
-          ))}
+          {connectors.map((connector) => {
+            const trackedRefreshRun = refreshRunsByConnector[connector.id];
+            const refreshRunError = refreshRunErrors[connector.id] ?? null;
+            const mutationRefreshRun =
+              refreshMutation.data?.connector_id === connector.id ? refreshMutation.data : null;
+            const refreshResult = trackedRefreshRun ?? mutationRefreshRun;
+            return (
+              <SourceAccessCard
+                key={connector.id}
+                connector={connector}
+                onRefresh={() => refreshMutation.mutate(connector.id)}
+                refreshing={
+                  (refreshMutation.isPending && refreshMutation.variables === connector.id)
+                  || (!refreshRunError && isRefreshRunInProgress(refreshResult?.status))
+                }
+                refreshError={
+                  refreshMutation.error && refreshMutation.variables === connector.id
+                    ? refreshMutation.error
+                    : refreshRunError
+                }
+                refreshResult={refreshResult}
+              />
+            );
+          })}
         </div>
       </section>
 
@@ -1113,6 +1198,28 @@ function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[]
       </section>
     </>
   );
+}
+
+const sourceDecisionQueryKeys: Record<string, string> = {
+  ads_diagnostics: "ads-diagnostics",
+  command_center: "command-center",
+  content_diagnostics: "content-diagnostics",
+  ga4_diagnostics: "ga4-diagnostics",
+  merchant_diagnostics: "merchant-diagnostics"
+};
+
+function invalidateSourceDependentQueries(queryClient: QueryClient, affectedDecisions: string[]) {
+  void queryClient.invalidateQueries({ queryKey: ["connectors"] });
+  affectedDecisions.forEach((decision) => {
+    const queryKey = sourceDecisionQueryKeys[decision];
+    if (queryKey) {
+      void queryClient.invalidateQueries({ queryKey: [queryKey] });
+    }
+  });
+}
+
+function isRefreshRunInProgress(status: ConnectorRefreshRun["status"] | null | undefined) {
+  return status === "queued" || status === "running";
 }
 
 function SourceStatTile({
@@ -1197,18 +1304,18 @@ function SourceAccessCard({
             />
             {refreshing ? "Odświeżam dane" : "Odśwież dane"}
           </button>
-          {refreshResult ? (
+          {refreshError ? (
+            <p className="text-xs leading-5 text-risk">
+              Nie udało się uruchomić lub sprawdzić odczytu źródła. Stan pozostaje niepotwierdzony;
+              sprawdź dostęp albo spróbuj ponownie.
+            </p>
+          ) : refreshResult ? (
             <p className={`text-xs leading-5 ${refreshing ? "text-wait" : "text-success"}`}>
               {refreshing
                 ? refreshResult.status_label || "Odczyt trwa; poczekaj na wynik."
                 : refreshResult.status === "failed" || refreshResult.status === "blocked"
                   ? refreshResult.status_label || "Odczyt zablokowany; sprawdź dostęp."
                   : "Odczyt zakończony. WILQ odświeży decyzje po aktualizacji źródła."}
-            </p>
-          ) : null}
-          {refreshError ? (
-            <p className="text-xs leading-5 text-risk">
-              Nie udało się odświeżyć źródła. Sprawdź dostęp lub spróbuj ponownie.
             </p>
           ) : null}
         </div>
