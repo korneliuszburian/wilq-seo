@@ -803,6 +803,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   passed, service LOC spadł do 2245, a live Ads detail zachowuje evidence,
   blokadę zapisu i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-filter-live.png`.
+- Wyznaczanie `operator_next_step` dla mutation readiness jest teraz w
+  istniejącym `wilq/actions/mutation_readiness.py`; service zachowuje tylko
+  delegację. Zachowano kolejność WordPress handoff/package → preview/review/
+  confirm oraz fail-closed apply. Focused mutation/audit/preview/review tests:
+  34 passed, service LOC spadł do 2225, a live readiness raportuje
+  `vendor_write_possible=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/mutation-next-live.png`.
 
 ## Weryfikacja
 

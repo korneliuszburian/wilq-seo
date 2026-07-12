@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from wilq.schemas import ActionMutationReadinessBlocker, ActionMutationReadinessRequirement
+from wilq.schemas import (
+    ActionMutationReadinessBlocker,
+    ActionMutationReadinessRequirement,
+    ActionObject,
+)
 
 MUTATION_READINESS_BLOCKER_COPY: dict[str, tuple[str, str, str]] = {
     "valid_action": (
@@ -133,3 +137,35 @@ def mutation_readiness_blockers(
             )
         )
     return blockers
+
+
+def mutation_readiness_next_step(
+    action: ActionObject,
+    blockers: list[ActionMutationReadinessBlocker],
+) -> str:
+    if not blockers:
+        return (
+            "Warunki zapisu są spełnione; apply nadal wymaga osobnego POST z "
+            "jawnym potwierdzeniem operatora."
+        )
+    if action.id == "act_apply_wordpress_draft_handoff":
+        blocker_codes = {blocker.code for blocker in blockers}
+        if {
+            "missing_wordpress_draft_handoff_ready",
+            "missing_wordpress_draft_package_ready",
+        } & blocker_codes:
+            return (
+                "Najpierw przygotuj zatwierdzony WordPress handoff i paczkę "
+                "szkicu dla wybranego content itemu; adapter boundary już "
+                "istnieje, ale live write zostaje wyłączony."
+            )
+        if {
+            "missing_preview_audit",
+            "missing_confirmation_audit",
+            "missing_wordpress_write_authorization",
+        } & blocker_codes:
+            return (
+                "Przejdź preview, human review i confirm w ActionObject, żeby "
+                "WILQ mógł zbudować write_authorization; live write nadal stop."
+            )
+    return blockers[0].next_step

@@ -209,7 +209,12 @@ from wilq.actions.mutation_plan import first_write_candidate_reason as _first_wr
 from wilq.actions.mutation_plan import (
     mutation_readiness_summary_next_step as _mutation_readiness_summary_next_step,
 )
-from wilq.actions.mutation_readiness import mutation_readiness_blockers
+from wilq.actions.mutation_readiness import (
+    mutation_readiness_blockers,
+)
+from wilq.actions.mutation_readiness import (
+    mutation_readiness_next_step as _mutation_readiness_next_step_impl,
+)
 from wilq.actions.mutation_requirements import base_mutation_readiness_requirements
 from wilq.actions.mutation_response import build_mutation_readiness_response
 from wilq.actions.mutation_summary import build_mutation_readiness_summary
@@ -1891,32 +1896,7 @@ def _mutation_readiness_next_step(
     action: ActionObject,
     blockers: list[ActionMutationReadinessBlocker],
 ) -> str:
-    if not blockers:
-        return (
-            "Warunki zapisu są spełnione; apply nadal wymaga osobnego POST z "
-            "jawnym potwierdzeniem operatora."
-        )
-    if action.id == "act_apply_wordpress_draft_handoff":
-        blocker_codes = {blocker.code for blocker in blockers}
-        if {
-            "missing_wordpress_draft_handoff_ready",
-            "missing_wordpress_draft_package_ready",
-        } & blocker_codes:
-            return (
-                "Najpierw przygotuj zatwierdzony WordPress handoff i paczkę "
-                "szkicu dla wybranego content itemu; adapter boundary już "
-                "istnieje, ale live write zostaje wyłączony."
-            )
-        if {
-            "missing_preview_audit",
-            "missing_confirmation_audit",
-            "missing_wordpress_write_authorization",
-        } & blocker_codes:
-            return (
-                "Przejdź preview, human review i confirm w ActionObject, żeby "
-                "WILQ mógł zbudować write_authorization; live write nadal stop."
-            )
-    return blockers[0].next_step
+    return _mutation_readiness_next_step_impl(action, blockers)
 
 
 def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[ActionObject]:

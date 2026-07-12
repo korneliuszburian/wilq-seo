@@ -711,6 +711,11 @@ ich rozmiaru.
   live Ads detail zachowuje evidence, `Zapis zmian zablokowany` i
   `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/content-filter-live.png`.
+- Wyznaczanie `operator_next_step` dla mutation readiness jest teraz w
+  istniejącym `wilq/actions/mutation_readiness.py`; service deleguje bez zmiany
+  kolejności blockerów ani fail-closed apply. Focused mutation/audit/preview/
+  review tests: 34 passed, live readiness zachowuje `vendor_write_possible=false`;
+  browser proof: `.local-lab/proof/continuation-2026-07-12/mutation-next-live.png`.
 
 ## Resume
 
