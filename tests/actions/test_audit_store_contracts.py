@@ -245,3 +245,24 @@ def test_build_preview_audit_event_stays_dry_run_and_keeps_evidence() -> None:
     assert event.actor == "operator"
     assert event.summary == "Podgląd zmian gotowy."
     assert event.evidence_ids == ["ev_preview_builder"]
+
+
+def test_build_confirmation_audit_event_keeps_review_only_semantics() -> None:
+    action = ActionObject.model_construct(
+        id="act_confirmation_audit_builder",
+        evidence_ids=["ev_confirmation_builder"],
+    )
+
+    event = audit_store.build_confirmation_audit_event(
+        action=action,
+        actor="operator",
+        event_type="action_confirmation_blocked",
+        summary="Potwierdzenie zablokowane.",
+    )
+
+    assert event.id.startswith("audit_act_confirmation_audit_builder_confirm_")
+    assert event.event_type == "action_confirmation_blocked"
+    assert event.event_type_label == "Potwierdzenie zablokowane"
+    assert event.actor == "operator"
+    assert event.summary == "Potwierdzenie zablokowane."
+    assert event.evidence_ids == ["ev_confirmation_builder"]

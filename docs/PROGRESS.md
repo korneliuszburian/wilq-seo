@@ -947,6 +947,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   tylko podgląd (`mutation_allowed=false`) i liczy blocker/status lokalnie, ale
   event ID, label, actor, summary i evidence mają wspólny audit owner. Focused
   audit/preview tests, Ruff i mypy przechodzą; brak zmian endpointu lub vendor write.
+- Kolejny slice `jnra` przeniósł confirmation `AuditEvent` do
+  `audit_store.py` (`build_confirmation_audit_event`). `confirm_action` zachowuje
+  obliczanie blockerów, Ads target summary, status i review gate, a store składa
+  event ID/type/label/actor/summary/evidence. 39 focused audit/review/preview
+  testów, Ruff, mypy, managed API smoke i diff check przechodzą; confirm nadal
+  nie wykonuje zapisu vendorowego.
 
 ## Weryfikacja
 

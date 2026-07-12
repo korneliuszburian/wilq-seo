@@ -815,6 +815,11 @@ ich rozmiaru.
   `mutation_allowed=false`, bieżące blockery/status i istniejącą projekcję
   operatora. Audit/preview tests, Ruff i mypy przechodzą, bez zmian w API,
   payloadach lub adapterach vendorów.
+- Confirmation `AuditEvent` jest teraz składany przez
+  `audit_store.build_confirmation_audit_event`; `confirm_action` nadal posiada
+  blocker evaluation, Ads target summary i review-gate orchestration. Event
+  type/label, actor, summary i evidence nie zmieniły się; 39 focused tests,
+  Ruff, mypy, diff check oraz managed API readiness smoke przechodzą.
 
 ## Resume
 

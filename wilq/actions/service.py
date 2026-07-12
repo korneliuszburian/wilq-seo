@@ -42,6 +42,7 @@ from wilq.actions.audit_store import (
 )
 from wilq.actions.audit_store import (
     build_apply_audit_event,
+    build_confirmation_audit_event,
     build_human_review_audit_event,
     build_preview_audit_event,
 )
@@ -1232,14 +1233,11 @@ def confirm_action(
         ads_target_blockers=_ads_target_confirmation_blockers,
     )
     confirmed = not blockers
-    audit = AuditEvent(
-        id=f"audit_{action.id}_confirm_{uuid4().hex[:12]}",
-        action_id=action.id,
-        event_type=action_confirmation_event_type(action, confirmed),
-        event_type_label=_action_audit_event_label(
-            action_confirmation_event_type(action, confirmed)
-        ),
+    event_type = action_confirmation_event_type(action, confirmed)
+    audit = build_confirmation_audit_event(
+        action=action,
         actor=request.confirmed_by,
+        event_type=event_type,
         summary=action_confirmation_summary(
             action,
             request,
@@ -1256,7 +1254,6 @@ def confirm_action(
             gate_labels=_action_gate_labels,
             operator_note=_operator_note_sentence,
         ),
-        evidence_ids=action.evidence_ids,
     )
     action.audit_events = [audit, *action.audit_events]
     action.review_gate = _action_review_gate(action)

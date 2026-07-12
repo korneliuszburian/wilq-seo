@@ -293,6 +293,25 @@ def build_preview_audit_event(
     )
 
 
+def build_confirmation_audit_event(
+    *,
+    action: ActionObject,
+    actor: str,
+    event_type: str,
+    summary: str,
+) -> AuditEvent:
+    """Build the review confirmation event without performing a mutation."""
+    return AuditEvent(
+        id=f"audit_{action.id}_confirm_{uuid4().hex[:12]}",
+        action_id=action.id,
+        event_type=event_type,
+        event_type_label=audit_event_label(event_type),
+        actor=actor,
+        summary=summary,
+        evidence_ids=action.evidence_ids,
+    )
+
+
 def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, dict):
         clean: dict[str, Any] = {}
