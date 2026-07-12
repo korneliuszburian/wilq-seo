@@ -96,6 +96,10 @@ w git, Beads i `docs/progress/archive/`.
   i następny krok; evidence IDs, kontrakty i ślad działania pozostają w audycie.
   Vitest 16/16, ESLint, TypeScript, Vite build, live API i screenshoty obu trybów
   przechodzą.
+- Re-audyt `wilq-seo-3bst.5` nie znalazł luki do implementacji: `/opportunities`
+  już renderuje kanoniczną „Kolejkę decyzji i akcji”, łączy work orders z
+  ActionObjects, a testy i live API potwierdzają 5 opportunities oraz 21 akcji.
+  Stary Bead zamknięto jako wykonany, bez duplikowania endpointu.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
