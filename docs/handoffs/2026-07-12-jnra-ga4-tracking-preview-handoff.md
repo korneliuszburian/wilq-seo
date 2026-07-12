@@ -39,4 +39,6 @@ evidence pozostają w istniejącym module tracking quality.
 
 ## Commit
 
-Hash implementacji zostanie dopisany po pushu w osobnym docs-only commicie.
+Implementacja: `847c53b3` (`refactor: extract ga4 tracking preview cards`),
+wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
+commitem.
