@@ -318,6 +318,7 @@ from wilq.actions.wordpress_draft import (
 from wilq.actions.wordpress_mutation_requirements import (
     wordpress_draft_execution_readiness_requirements,
     wordpress_draft_target_content_readiness_requirements,
+    wordpress_draft_write_readiness_requirements,
 )
 from wilq.actions.wordpress_preview import (
     wordpress_draft_handoff_preview_cards,
@@ -1650,39 +1651,10 @@ def _wordpress_draft_write_readiness_requirements(
     *,
     wordpress_draft_readiness: ContentWordPressDraftWriteReadinessResponse | None = None,
 ) -> list[ActionMutationReadinessRequirement]:
-    if action.id != "act_apply_wordpress_draft_handoff":
-        return []
-    readiness = wordpress_draft_readiness or build_content_wordpress_draft_write_readiness_response(
-        action_id=action.id
+    return wordpress_draft_write_readiness_requirements(
+        action,
+        wordpress_draft_readiness=wordpress_draft_readiness,
     )
-    authorization_ready = readiness.suggested_write_authorization is not None
-    blocker_codes = ", ".join(blocker.code for blocker in readiness.blockers[:4]) or None
-    return [
-        _mutation_requirement(
-            code="wordpress_draft_write_readiness",
-            label="WordPress draft write readiness przechodzi",
-            satisfied=readiness.ready,
-            evidence=blocker_codes or "ready",
-        ),
-        _mutation_requirement(
-            code="wordpress_draft_live_write_env",
-            label="Env pozwala na zapis szkicu WordPress",
-            satisfied=readiness.live_write_enabled_by_env,
-            evidence=str(readiness.live_write_enabled_by_env).lower(),
-        ),
-        _mutation_requirement(
-            code="wordpress_rest_adapter_configured",
-            label="REST adapter WordPress jest skonfigurowany",
-            satisfied=readiness.rest_adapter_configured,
-            evidence=str(readiness.rest_adapter_configured).lower(),
-        ),
-        _mutation_requirement(
-            code="wordpress_write_authorization",
-            label="Autoryzacja write z audytu jest gotowa",
-            satisfied=authorization_ready,
-            evidence="ready" if authorization_ready else "missing",
-        ),
-    ]
 
 
 def _wordpress_draft_write_readiness(

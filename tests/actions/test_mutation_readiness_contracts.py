@@ -1,4 +1,8 @@
 from wilq.actions.mutation_readiness import mutation_readiness_next_step
+from wilq.actions.wordpress_mutation_requirements import (
+    wordpress_draft_write_readiness_requirements,
+)
+from wilq.content.workflow.contracts import ContentWordPressDraftWriteReadinessResponse
 from wilq.schemas import ActionMode, ActionMutationReadinessBlocker, ActionObject
 
 
@@ -27,3 +31,21 @@ def test_vendor_write_possible_requires_apply_and_both_payload_readiness_flags()
     assert vendor_write_possible(action, None) is False
     action.payload["api_mutation_ready"] = False
     assert vendor_write_possible(action, "wordpress_draft_execution_boundary") is False
+
+
+def test_wordpress_write_readiness_requirements_keep_fail_closed_contract() -> None:
+    action = ActionObject.model_construct(id="act_apply_wordpress_draft_handoff")
+    readiness = ContentWordPressDraftWriteReadinessResponse(operator_next_step="review")
+
+    requirements = wordpress_draft_write_readiness_requirements(
+        action,
+        wordpress_draft_readiness=readiness,
+    )
+
+    assert [requirement.code for requirement in requirements] == [
+        "wordpress_draft_write_readiness",
+        "wordpress_draft_live_write_env",
+        "wordpress_rest_adapter_configured",
+        "wordpress_write_authorization",
+    ]
+    assert all(requirement.satisfied is False for requirement in requirements)

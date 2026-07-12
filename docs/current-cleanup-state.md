@@ -721,6 +721,11 @@ ich rozmiaru.
   `apply + adapter + payload readiness`. Live readiness nadal raportuje
   `vendor_write_possible=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/vendor-write-live.png`.
+- WordPress draft write-readiness requirements są teraz w istniejącym
+  `wilq/actions/wordpress_mutation_requirements.py`; service deleguje bez
+  zmiany typed requirements i fail-closed authorization. Live readiness nadal
+  raportuje `vendor_write_possible=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/wp-readiness-live.png`.
 
 ## Resume
 

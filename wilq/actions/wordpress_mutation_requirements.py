@@ -4,7 +4,10 @@ from collections.abc import Callable
 from typing import Any
 
 from wilq.content.handoff.wordpress_execution import execute_content_wordpress_draft_handoff
-from wilq.content.workflow.contracts import ContentWordPressDraftActivationPacketResponse
+from wilq.content.workflow.contracts import (
+    ContentWordPressDraftActivationPacketResponse,
+    ContentWordPressDraftWriteReadinessResponse,
+)
 from wilq.schemas import ActionMutationReadinessRequirement, ActionObject
 
 PreviewItems = Callable[[dict[str, Any]], list[dict[str, Any]]]
@@ -126,6 +129,46 @@ def wordpress_draft_target_content_readiness_requirements(
     ]
 
 
+def wordpress_draft_write_readiness_requirements(
+    action: ActionObject,
+    *,
+    wordpress_draft_readiness: ContentWordPressDraftWriteReadinessResponse | None = None,
+) -> list[ActionMutationReadinessRequirement]:
+    if action.id != "act_apply_wordpress_draft_handoff":
+        return []
+    readiness = wordpress_draft_readiness
+    if readiness is None:
+        from wilq.content.workflow.api import build_content_wordpress_draft_write_readiness_response
+
+        readiness = build_content_wordpress_draft_write_readiness_response(action_id=action.id)
+    authorization_ready = readiness.suggested_write_authorization is not None
+    blocker_codes = ", ".join(blocker.code for blocker in readiness.blockers[:4]) or None
+    return [
+        _requirement(
+            code="wordpress_draft_write_readiness",
+            label="WordPress draft write readiness przechodzi",
+            satisfied=readiness.ready,
+            evidence=blocker_codes or "ready",
+        ),
+        _requirement(
+            code="wordpress_draft_live_write_env",
+            label="Env pozwala na zapis szkicu WordPress",
+            satisfied=readiness.live_write_enabled_by_env,
+            evidence=str(readiness.live_write_enabled_by_env).lower(),
+        ),
+        _requirement(
+            code="wordpress_rest_adapter_configured",
+            label="REST adapter WordPress jest skonfigurowany",
+            satisfied=readiness.rest_adapter_configured,
+            evidence=str(readiness.rest_adapter_configured).lower(),
+        ),
+        _requirement(
+            code="wordpress_write_authorization",
+            label="Autoryzacja write z audytu jest gotowa",
+            satisfied=authorization_ready,
+            evidence="ready" if authorization_ready else "missing",
+        ),
+    ]
 def _requirement(
     *,
     code: str,

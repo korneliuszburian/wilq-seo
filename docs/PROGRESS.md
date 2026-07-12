@@ -816,6 +816,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   mutation contract test oraz readiness/API proof przechodzą, a live readiness
   nadal raportuje `vendor_write_possible=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/vendor-write-live.png`.
+- WordPress draft write-readiness requirements są teraz składane w istniejącym
+  `wilq/actions/wordpress_mutation_requirements.py`; service deleguje bez
+  zmiany czterech typed requirements, evidence blockerów i autoryzacji audytu.
+  Focused WordPress/mutation readiness tests przechodzą, service LOC spadł do
+  2195, a live readiness zachowuje `vendor_write_possible=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/wp-readiness-live.png`.
 
 ## Weryfikacja
 
