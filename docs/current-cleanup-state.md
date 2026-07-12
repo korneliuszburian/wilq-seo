@@ -700,6 +700,11 @@ ich rozmiaru.
   Focused audit/preview/review tests: 31 passed, a live Ads detail zachowuje
   evidence, `Zapis zmian zablokowany` i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/event-projection-live.png`.
+- Składanie operatorowego `ActionObject` view-modelu jest teraz w istniejącym
+  `wilq/actions/operator_labels.py`; service przekazuje callbacki typed
+  projection. Focused audit/preview/review tests: 32 passed, a live Ads detail
+  zachowuje evidence, `Zapis zmian zablokowany` i `apply_allowed=false`;
+  browser proof: `.local-lab/proof/continuation-2026-07-12/action-projection-live.png`.
 
 ## Resume
 

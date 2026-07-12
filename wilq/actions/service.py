@@ -215,22 +215,16 @@ from wilq.actions.operator_labels import (
     action_evidence_summary_label as _action_evidence_summary_label,
 )
 from wilq.actions.operator_labels import (
-    action_mode_label as _action_mode_label,
-)
-from wilq.actions.operator_labels import (
     action_mutation_audit_status_label as _action_mutation_audit_status_label,
 )
 from wilq.actions.operator_labels import (
     action_result_status_label as _action_result_status_label,
 )
 from wilq.actions.operator_labels import (
-    action_risk_label as _action_risk_label,
-)
-from wilq.actions.operator_labels import (
-    action_status_label as _action_status_label,
-)
-from wilq.actions.operator_labels import (
     action_validation_status_label as _action_validation_status_label,
+)
+from wilq.actions.operator_labels import (
+    action_with_operator_labels as _action_with_operator_labels_impl,
 )
 from wilq.actions.operator_labels import (
     ads_recommendation_type_label,
@@ -1996,21 +1990,14 @@ def _is_raw_content_review_audit_event(action_id: str, event: AuditEvent) -> boo
 
 
 def _action_with_operator_labels(action: ActionObject) -> ActionObject:
-    connector = get_connector_status(action.connector)
-    return action.model_copy(
-        update={
-            "connector_label": connector.label if connector is not None else "źródło danych",
-            "mode_label": _action_mode_label(action.mode),
-            "risk_label": _action_risk_label(action.risk),
-            "status_label": _action_status_label(action.status),
-            "evidence_summary_label": _action_evidence_summary_label(action.evidence_ids),
-            "validation_status_label": _action_validation_status_label(action.validation_status),
-            "review_gate": _review_gate_with_operator_labels(action.review_gate),
-            "preview_cards": _action_preview_cards(action),
-            "audit_events": [
-                _audit_event_with_operator_label(event) for event in action.audit_events
-            ],
-        }
+    return _action_with_operator_labels_impl(
+        action,
+        connector_label=_source_connector_label,
+        evidence_summary_label=_action_evidence_summary_label,
+        validation_status_label=_action_validation_status_label,
+        review_gate=_review_gate_with_operator_labels,
+        preview_cards=_action_preview_cards,
+        audit_event=_audit_event_with_operator_label,
     )
 
 

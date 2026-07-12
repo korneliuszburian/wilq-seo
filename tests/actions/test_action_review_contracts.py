@@ -129,6 +129,42 @@ def test_review_gate_operator_projection_keeps_mutation_safety_labels() -> None:
     assert projected.last_mutation_audit_trace_label == "ślad bezpieczeństwa zapisany"
 
 
+def test_action_operator_projection_delegates_typed_view_model_parts() -> None:
+    from wilq.actions.operator_labels import action_with_operator_labels
+    from wilq.schemas import ActionObject, ActionPreviewCardViewModel, ActionReviewGate
+
+    action = ActionObject.model_construct(
+        id="act_test",
+        connector="localo",
+        evidence_ids=["ev_1"],
+        mode="prepare",
+        risk="low",
+        status="ready",
+        validation_status="valid",
+        review_gate=ActionReviewGate(),
+        payload={},
+        audit_events=[],
+    )
+
+    projected = action_with_operator_labels(
+        action,
+        connector_label=lambda connector: f"connector:{connector}",
+        evidence_summary_label=lambda evidence: f"evidence:{len(evidence)}",
+        validation_status_label=lambda status: f"validation:{status}",
+        review_gate=lambda gate: gate,
+        preview_cards=lambda value: [
+            ActionPreviewCardViewModel(id=value.id, kind="test", title_label="test")
+        ],
+        audit_event=lambda event: event,
+    )
+
+    assert projected.connector_label == "connector:localo"
+    assert projected.mode_label == "przygotowanie"
+    assert projected.evidence_summary_label == "evidence:1"
+    assert projected.validation_status_label == "validation:valid"
+    assert projected.preview_cards[0].id == "act_test"
+
+
 def test_review_gate_builders_keep_required_checks_and_checklist_fallbacks() -> None:
     from wilq.actions.review_gate import action_operator_checklist, action_required_checks
 

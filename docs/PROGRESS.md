@@ -789,6 +789,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   tests: 31 passed, service LOC spadł do 2261, a live Ads detail zachowuje
   evidence, blokadę zapisu i `apply_allowed=false`; browser proof:
   `.local-lab/proof/continuation-2026-07-12/event-projection-live.png`.
+- Składanie operatorowego `ActionObject` view-modelu jest teraz w istniejącym
+  `wilq/actions/operator_labels.py`; service przekazuje callbacki connectora,
+  evidence, review gate, preview cards i audit event. Zachowano typed labels,
+  preview i redakcję audytu. Focused audit/preview/review tests: 32 passed,
+  service LOC spadł do 2248, a live Ads detail zachowuje evidence, blokadę
+  zapisu i `apply_allowed=false`; browser proof:
+  `.local-lab/proof/continuation-2026-07-12/action-projection-live.png`.
 
 ## Weryfikacja
 

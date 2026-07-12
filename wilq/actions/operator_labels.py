@@ -5,7 +5,22 @@ from typing import Any
 
 from wilq.actions.gate_labels import action_gate_labels
 from wilq.operator_labels import source_connector_labels
-from wilq.schemas import ActionMode, ActionReviewGate, ActionRisk, ActionStatus
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionPreviewCardViewModel,
+    ActionReviewGate,
+    ActionRisk,
+    ActionStatus,
+    AuditEvent,
+)
+
+ConnectorLabel = Callable[[str], str]
+EvidenceSummaryLabel = Callable[[list[str]], str]
+ValidationStatusLabel = Callable[[str], str]
+ReviewGateProjection = Callable[[ActionReviewGate], ActionReviewGate]
+PreviewCards = Callable[[ActionObject], list[ActionPreviewCardViewModel]]
+AuditEventProjection = Callable[[AuditEvent], AuditEvent]
 
 
 def action_mode_label(value: ActionMode | str) -> str:
@@ -126,6 +141,31 @@ def action_result_status_label(value: str | None) -> str:
         "failed": "błąd",
     }
     return labels.get(value or "", "zapisane")
+
+
+def action_with_operator_labels(
+    action: ActionObject,
+    *,
+    connector_label: ConnectorLabel,
+    evidence_summary_label: EvidenceSummaryLabel,
+    validation_status_label: ValidationStatusLabel,
+    review_gate: ReviewGateProjection,
+    preview_cards: PreviewCards,
+    audit_event: AuditEventProjection,
+) -> ActionObject:
+    return action.model_copy(
+        update={
+            "connector_label": connector_label(action.connector),
+            "mode_label": action_mode_label(action.mode),
+            "risk_label": action_risk_label(action.risk),
+            "status_label": action_status_label(action.status),
+            "evidence_summary_label": evidence_summary_label(action.evidence_ids),
+            "validation_status_label": validation_status_label(action.validation_status),
+            "review_gate": review_gate(action.review_gate),
+            "preview_cards": preview_cards(action),
+            "audit_events": [audit_event(event) for event in action.audit_events],
+        }
+    )
 
 
 def review_gate_with_operator_labels(
