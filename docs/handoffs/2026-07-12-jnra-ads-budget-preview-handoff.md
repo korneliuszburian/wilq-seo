@@ -27,8 +27,8 @@ blocked claims, `prepare` mode i ActionObject safety loop pozostały bez zmian.
 ## Stan grafu
 
 `wilq-seo-jnra` pozostaje `in_progress`; WordPress payload preview jest
-pushnięty jako `7b285df2`, social preview jako `3895ca5a`, a ten Ads seam czeka
-na commit/push.
+pushnięty jako `7b285df2`, social preview jako `3895ca5a`, a Ads budget preview
+jako `65df313f`.
 
 ## Następny krok
 
