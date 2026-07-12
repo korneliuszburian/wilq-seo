@@ -7,7 +7,7 @@ from wilq.content.preflight.verdicts import (
     content_preflight_similar_urls,
     content_preflight_status,
 )
-from wilq.schemas import ContentAhrefsCandidateRow, ContentDecisionItem
+from wilq.schemas import ContentAhrefsCandidateRow, ContentAhrefsCrossCheck, ContentDecisionItem
 
 
 def _decision(**overrides: object) -> ContentDecisionItem:
@@ -86,6 +86,10 @@ def test_preflight_similar_urls_deduplicates_inventory_and_ahrefs_overlap() -> N
         final_canonical_url="https://ekologus.pl/bdo/",
         ahrefs_candidate_rows=[
             _ahrefs_row(
+                wordpress_cross_check=ContentAhrefsCrossCheck(
+                    strength="exact",
+                    label="potwierdzone dopasowanie w WordPress",
+                ),
                 wordpress_overlap_urls=[
                     "https://ekologus.pl/bdo/",
                     "https://ekologus.pl/zielony-lad/",
@@ -98,6 +102,22 @@ def test_preflight_similar_urls_deduplicates_inventory_and_ahrefs_overlap() -> N
         "https://ekologus.pl/bdo/",
         "https://ekologus.pl/zielony-lad/",
     ]
+
+
+def test_preflight_ignores_weak_ahrefs_wordpress_overlap_as_similar_url() -> None:
+    decision = _decision(
+        ahrefs_candidate_rows=[
+            _ahrefs_row(
+                wordpress_cross_check=ContentAhrefsCrossCheck(
+                    strength="weak",
+                    label="słabe podobieństwo w WordPress — sprawdź ręcznie",
+                ),
+                wordpress_overlap_urls=["https://ekologus.pl/lejek-do-kontenerow-ibc/"],
+            )
+        ],
+    )
+
+    assert content_preflight_similar_urls(decision) == []
 
 
 def test_preflight_query_overlap_uses_gsc_query_count_and_primary_query() -> None:

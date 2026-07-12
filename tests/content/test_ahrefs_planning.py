@@ -97,3 +97,60 @@ def test_ahrefs_gap_record_decisions_filters_relevant_candidates_before_content_
     assert candidate.relevance_status == "relevant"
     assert candidate.gsc_demand_label == "jest w GSC"
     assert candidate.wordpress_inventory_match_label == "jest w WordPress"
+    assert candidate.gsc_cross_check.strength == "exact"
+    assert candidate.gsc_cross_check.evidence_ids == ["ev_gsc_bdo"]
+    assert candidate.wordpress_cross_check.strength == "exact"
+    assert candidate.wordpress_cross_check.evidence_ids == ["ev_wp_bdo"]
+    assert candidate.source_connectors == [
+        "ahrefs",
+        "google_search_console",
+        "wordpress_ekologus",
+    ]
+    assert candidate.evidence_ids == ["ev_ahrefs_bdo", "ev_gsc_bdo", "ev_wp_bdo"]
+
+
+def test_ahrefs_gap_record_decision_keeps_weak_overlap_manual_without_action() -> None:
+    decisions = ahrefs_gap_record_decisions(
+        [
+            _fact(
+                "ahrefs_content_gap_count",
+                evidence_id="ev_ahrefs_mieszalnik_ibc",
+                gap_type="content_gap",
+                keyword="mieszalnik IBC",
+                source_url="https://denios.pl/mieszalnik-ibc/",
+                competitor_domain="denios.pl",
+            ),
+            _fact(
+                "impressions",
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_kontener_ibc",
+                query="kontener IBC odpady",
+                page="https://www.ekologus.pl/kontener-ibc/",
+            ),
+            _fact(
+                "content_object_seen",
+                source_connector="wordpress_ekologus",
+                evidence_id="ev_wp_lejek_ibc",
+                title="Lejek do kontenerów IBC",
+                content_url="https://www.ekologus.pl/lejek-do-kontenerow-ibc/",
+            ),
+        ],
+        ["act_prepare_content_refresh_queue"],
+        knowledge_card_ids=("card_ahrefs_content_gap_playbook",),
+        expert_rule_ids=("content_brief_rules_v1",),
+    )
+
+    assert len(decisions) == 1
+    decision = decisions[0]
+    candidate = decision.ahrefs_candidate_rows[0]
+    assert candidate.gsc_demand == "missing"
+    assert candidate.wordpress_inventory_match == "missing"
+    assert candidate.gsc_cross_check.strength == "weak"
+    assert candidate.wordpress_cross_check.strength == "weak"
+    assert candidate.gsc_overlap_terms == []
+    assert candidate.wordpress_overlap_urls == []
+    assert decision.metric_tiles["Powiązanie z GSC"] == 0
+    assert decision.metric_tiles["Powiązanie z WordPress"] == 0
+    assert decision.action_ids == []
+    assert "słabe podobieństwo" in candidate.next_step
+    assert "potwierdzenia popytu ani duplikatu" in candidate.next_step

@@ -6,8 +6,18 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
+from wilq.content.planning.ahrefs_overlap import (
+    AhrefsCrossSourceMatch,
+    assess_ahrefs_cross_source_overlap,
+)
 from wilq.content.planning.decisions import polish_count_word, slug
-from wilq.schemas import ActionRisk, ContentAhrefsCandidateRow, ContentDecisionItem, MetricFact
+from wilq.schemas import (
+    ActionRisk,
+    ContentAhrefsCandidateRow,
+    ContentAhrefsCrossCheck,
+    ContentDecisionItem,
+    MetricFact,
+)
 
 AHREFS_GAP_FACT_NAMES = {
     "ahrefs_content_gap_count",
@@ -78,7 +88,9 @@ CONTENT_AHREFS_REASON_LABELS = {
     "ekologus_domain_term": "pasuje do zakresu Ekologus",
     "relevant_competitor_domain": "istotny konkurent",
     "gsc_overlap": "pokrywa się z GSC",
+    "gsc_overlap_weak": "słabe podobieństwo do GSC",
     "wordpress_inventory_overlap": "pokrywa się z WordPress",
+    "wordpress_inventory_overlap_weak": "słabe podobieństwo do WordPress",
     "content_candidate": "propozycja treści",
     "backlink_review_only": "sprawdzenie linków",
     "off_topic_phrase": "fraza poza tematem",
@@ -141,14 +153,25 @@ class AhrefsGapFactScore:
     score: int
     status: Literal["relevant", "review", "off_topic"]
     reasons: tuple[str, ...]
-    gsc_overlap_terms: tuple[str, ...] = ()
-    wordpress_overlap_urls: tuple[str, ...] = ()
+    gsc_cross_check: AhrefsCrossSourceMatch
+    wordpress_cross_check: AhrefsCrossSourceMatch
 
 
 @dataclass(frozen=True)
-class ContentSignal:
-    label: str
-    tokens: frozenset[str]
+class AhrefsGapDecisionAnalysis:
+    gap_facts: list[MetricFact]
+    gap_counts: dict[str, int]
+    evidence_ids: list[str]
+    relevant_scores: list[AhrefsGapFactScore]
+    review_scores: list[AhrefsGapFactScore]
+    off_topic_scores: list[AhrefsGapFactScore]
+    candidate_scores: list[AhrefsGapFactScore]
+    display_facts: list[MetricFact]
+    sample_keywords: list[str]
+    topic_hint: str
+    content_action_ids: list[str]
+    gsc_overlap_count: int
+    wordpress_overlap_count: int
 
 
 def ahrefs_gap_record_decisions(
@@ -158,6 +181,22 @@ def ahrefs_gap_record_decisions(
     knowledge_card_ids: tuple[str, ...],
     expert_rule_ids: tuple[str, ...],
 ) -> list[ContentDecisionItem]:
+    analysis = _analyse_ahrefs_gap_decision(metric_facts, action_ids)
+    if analysis is None:
+        return []
+    return [
+        _ahrefs_gap_decision_item(
+            analysis,
+            knowledge_card_ids=knowledge_card_ids,
+            expert_rule_ids=expert_rule_ids,
+        )
+    ]
+
+
+def _analyse_ahrefs_gap_decision(
+    metric_facts: list[MetricFact],
+    action_ids: list[str],
+) -> AhrefsGapDecisionAnalysis | None:
     all_gap_facts = _unique_metric_facts(
         fact
         for fact in metric_facts
@@ -166,7 +205,7 @@ def ahrefs_gap_record_decisions(
     record_gap_facts = [fact for fact in all_gap_facts if _is_ahrefs_record_gap_fact(fact)]
     gap_facts = record_gap_facts or all_gap_facts
     if not gap_facts:
-        return []
+        return None
 
     gap_counts = _ahrefs_gap_fact_counts(gap_facts)
     evidence_ids = _unique(fact.evidence_id for fact in gap_facts)
@@ -186,114 +225,162 @@ def ahrefs_gap_record_decisions(
     topic_hint = ", ".join(sample_keywords[:4])
     if not topic_hint:
         topic_hint = ", ".join(competitor_domains[:4]) if competitor_domains else "brak próbek"
-    content_action_ids = [
-        action_id for action_id in action_ids if action_id == "act_prepare_content_refresh_queue"
-    ]
+    has_exact_cross_source_match = any(
+        score.gsc_cross_check.strength == "exact"
+        or score.wordpress_cross_check.strength == "exact"
+        for score in candidate_scores
+    )
+    content_action_ids = (
+        [
+            action_id
+            for action_id in action_ids
+            if action_id == "act_prepare_content_refresh_queue"
+        ]
+        if has_exact_cross_source_match
+        else []
+    )
     gsc_overlap_count = _ahrefs_relevance_reason_count(scored_facts, "gsc_overlap")
     wordpress_overlap_count = _ahrefs_relevance_reason_count(
         scored_facts,
         "wordpress_inventory_overlap",
     )
-    decision_status: Literal["ready", "blocked"] = "ready" if candidate_scores else "blocked"
-    relevant_label = polish_count_word(len(relevant_scores), "pasujący", "pasujące", "pasujących")
-    review_label = polish_count_word(len(review_scores), "rekord", "rekordy", "rekordów")
-    off_topic_label = polish_count_word(
-        len(off_topic_scores),
-        "rekord",
-        "rekordy",
-        "rekordów",
+    return AhrefsGapDecisionAnalysis(
+        gap_facts=gap_facts,
+        gap_counts=gap_counts,
+        evidence_ids=evidence_ids,
+        relevant_scores=relevant_scores,
+        review_scores=review_scores,
+        off_topic_scores=off_topic_scores,
+        candidate_scores=candidate_scores,
+        display_facts=display_facts,
+        sample_keywords=sample_keywords,
+        topic_hint=topic_hint,
+        content_action_ids=content_action_ids,
+        gsc_overlap_count=gsc_overlap_count,
+        wordpress_overlap_count=wordpress_overlap_count,
     )
-    ahrefs_gap_record_label = polish_count_word(
-        len(gap_facts),
-        "rekord luk",
-        "rekordy luk",
-        "rekordów luk",
+
+
+def _ahrefs_gap_decision_item(
+    analysis: AhrefsGapDecisionAnalysis,
+    *,
+    knowledge_card_ids: tuple[str, ...],
+    expert_rule_ids: tuple[str, ...],
+) -> ContentDecisionItem:
+    labels = _ahrefs_gap_decision_labels(analysis)
+    return ContentDecisionItem(
+        id="content_decision_ahrefs_gap_records_review",
+        decision_type="review_ahrefs_gap_records",
+        status="ready" if analysis.candidate_scores else "blocked",
+        title="Ahrefs: zweryfikuj luki SEO przed planem treści",
+        summary=(
+            f"WILQ ma {len(analysis.gap_facts)} {labels['records']} Ahrefs: "
+            f"{analysis.gap_counts['content_gap']} {labels['content_gap']}, "
+            f"{analysis.gap_counts['organic_keyword_gap']} {labels['organic_keyword_gap']}, "
+            f"{analysis.gap_counts['top_page_gap']} {labels['top_page_gap']} i "
+            f"{analysis.gap_counts['backlink_gap']} {labels['backlink_gap']}. "
+            "Ocena jakości wskazuje "
+            f"{len(analysis.relevant_scores)} {labels['relevant']}, "
+            f"{len(analysis.review_scores)} {labels['review']} do ręcznej oceny i "
+            f"{len(analysis.off_topic_scores)} {labels['off_topic']} poza zakresem. "
+            "To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu."
+        ),
+        priority=18 if analysis.relevant_scores else 32 if analysis.review_scores else 45,
+        metric_tiles={
+            "rekordy Ahrefs": len(analysis.gap_facts),
+            "pasujące": len(analysis.relevant_scores),
+            "do sprawdzenia": len(analysis.review_scores),
+            "poza zakresem": len(analysis.off_topic_scores),
+            "Powiązanie z GSC": analysis.gsc_overlap_count,
+            "Powiązanie z WordPress": analysis.wordpress_overlap_count,
+            "luki treści": analysis.gap_counts["content_gap"],
+            "luki linków zwrotnych": analysis.gap_counts["backlink_gap"],
+        },
+        queries=analysis.sample_keywords,
+        query_count=len(analysis.sample_keywords),
+        primary_query=analysis.sample_keywords[0] if analysis.sample_keywords else None,
+        source_connectors=["ahrefs"],
+        evidence_ids=analysis.evidence_ids,
+        metric_facts=analysis.display_facts,
+        ahrefs_candidate_rows=_ahrefs_candidate_rows(analysis.candidate_scores),
+        action_ids=analysis.content_action_ids,
+        knowledge_card_ids=list(knowledge_card_ids),
+        expert_rule_ids=list(expert_rule_ids),
+        blocked_claims=[
+            "rekomendacja treści poza zakresem",
+            "plan treści bez kontroli trafności",
+            "wzrost ruchu",
+            "wzrost autorytetu",
+            "gwarancja pozycji",
+            "wzrost liczby leadów",
+        ],
+        rationale=(
+            "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela "
+            "rekordy pasujące do zakresu Ekologus od tematów szerokich i poza zakresem. "
+            "WILQ nie może zrobić planu treści z rekordu bez filtrowania, popytu z GSC "
+            "i dopasowania w spisie treści WordPress."
+        ),
+        next_step=(
+            f"Najpierw przejrzyj pasujące rekordy: {analysis.topic_hint}. Odrzuć "
+            f"{len(analysis.off_topic_scores)} rekordów poza zakresem i dopiero potem "
+            "połącz sensowne tematy z GSC i WordPress jako odświeżenie, scalenie, "
+            "zachowanie, utworzenie albo blokadę."
+        ),
+        risk=ActionRisk.medium if analysis.candidate_scores else ActionRisk.high,
     )
-    content_gap_label = polish_count_word(
-        gap_counts["content_gap"],
-        "luka treści",
-        "luki treści",
-        "luk treści",
-    )
-    organic_keyword_gap_label = polish_count_word(
-        gap_counts["organic_keyword_gap"],
-        "luka w słowach organicznych",
-        "luki w słowach organicznych",
-        "luk w słowach organicznych",
-    )
-    top_page_gap_label = polish_count_word(
-        gap_counts["top_page_gap"],
-        "luka w najlepszych stronach konkurencji",
-        "luki w najlepszych stronach konkurencji",
-        "luk w najlepszych stronach konkurencji",
-    )
-    backlink_gap_label = polish_count_word(
-        gap_counts["backlink_gap"],
-        "luka linków zwrotnych",
-        "luki linków zwrotnych",
-        "luk linków zwrotnych",
-    )
-    return [
-        ContentDecisionItem(
-            id="content_decision_ahrefs_gap_records_review",
-            decision_type="review_ahrefs_gap_records",
-            status=decision_status,
-            title="Ahrefs: zweryfikuj luki SEO przed planem treści",
-            summary=(
-                f"WILQ ma {len(gap_facts)} {ahrefs_gap_record_label} Ahrefs: "
-                f"{gap_counts['content_gap']} {content_gap_label}, "
-                f"{gap_counts['organic_keyword_gap']} {organic_keyword_gap_label}, "
-                f"{gap_counts['top_page_gap']} {top_page_gap_label} i "
-                f"{gap_counts['backlink_gap']} {backlink_gap_label}. Ocena jakości wskazuje "
-                f"{len(relevant_scores)} {relevant_label}, "
-                f"{len(review_scores)} {review_label} do ręcznej oceny i "
-                f"{len(off_topic_scores)} {off_topic_label} poza zakresem. "
-                "To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu."
-            ),
-            priority=18 if relevant_scores else 32 if review_scores else 45,
-            metric_tiles={
-                "rekordy Ahrefs": len(gap_facts),
-                "pasujące": len(relevant_scores),
-                "do sprawdzenia": len(review_scores),
-                "poza zakresem": len(off_topic_scores),
-                "Powiązanie z GSC": gsc_overlap_count,
-                "Powiązanie z WordPress": wordpress_overlap_count,
-                "luki treści": gap_counts["content_gap"],
-                "luki linków zwrotnych": gap_counts["backlink_gap"],
-            },
-            queries=sample_keywords,
-            query_count=len(sample_keywords),
-            primary_query=sample_keywords[0] if sample_keywords else None,
-            source_connectors=["ahrefs"],
-            evidence_ids=evidence_ids,
-            metric_facts=display_facts,
-            ahrefs_candidate_rows=_ahrefs_candidate_rows(candidate_scores),
-            action_ids=content_action_ids,
-            knowledge_card_ids=list(knowledge_card_ids),
-            expert_rule_ids=list(expert_rule_ids),
-            blocked_claims=[
-                "rekomendacja treści poza zakresem",
-                "plan treści bez kontroli trafności",
-                "wzrost ruchu",
-                "wzrost autorytetu",
-                "gwarancja pozycji",
-                "wzrost liczby leadów",
-            ],
-            rationale=(
-                "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela "
-                "rekordy pasujące do zakresu Ekologus od tematów szerokich i poza zakresem. "
-                "WILQ nie może zrobić planu treści z rekordu bez filtrowania, popytu z GSC "
-                "i dopasowania w spisie treści WordPress."
-            ),
-            next_step=(
-                f"Najpierw przejrzyj pasujące rekordy: {topic_hint}. Odrzuć "
-                f"{len(off_topic_scores)} rekordów poza zakresem i dopiero potem "
-                "połącz sensowne tematy z GSC i WordPress jako odświeżenie, scalenie, "
-                "zachowanie, utworzenie albo blokadę."
-            ),
-            risk=ActionRisk.medium if candidate_scores else ActionRisk.high,
-        )
-    ]
+
+
+def _ahrefs_gap_decision_labels(analysis: AhrefsGapDecisionAnalysis) -> dict[str, str]:
+    return {
+        "records": polish_count_word(
+            len(analysis.gap_facts),
+            "rekord luk",
+            "rekordy luk",
+            "rekordów luk",
+        ),
+        "content_gap": polish_count_word(
+            analysis.gap_counts["content_gap"],
+            "luka treści",
+            "luki treści",
+            "luk treści",
+        ),
+        "organic_keyword_gap": polish_count_word(
+            analysis.gap_counts["organic_keyword_gap"],
+            "luka w słowach organicznych",
+            "luki w słowach organicznych",
+            "luk w słowach organicznych",
+        ),
+        "top_page_gap": polish_count_word(
+            analysis.gap_counts["top_page_gap"],
+            "luka w najlepszych stronach konkurencji",
+            "luki w najlepszych stronach konkurencji",
+            "luk w najlepszych stronach konkurencji",
+        ),
+        "backlink_gap": polish_count_word(
+            analysis.gap_counts["backlink_gap"],
+            "luka linków zwrotnych",
+            "luki linków zwrotnych",
+            "luk linków zwrotnych",
+        ),
+        "relevant": polish_count_word(
+            len(analysis.relevant_scores),
+            "pasujący",
+            "pasujące",
+            "pasujących",
+        ),
+        "review": polish_count_word(
+            len(analysis.review_scores),
+            "rekord",
+            "rekordy",
+            "rekordów",
+        ),
+        "off_topic": polish_count_word(
+            len(analysis.off_topic_scores),
+            "rekord",
+            "rekordy",
+            "rekordów",
+        ),
+    }
 
 
 def _ahrefs_candidate_rows(
@@ -319,8 +406,10 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
     fact = score.fact
     dimensions = fact.dimensions
     topic = _ahrefs_candidate_topic(fact)
-    gsc_overlap = "gsc_overlap" in score.reasons
-    wordpress_overlap = "wordpress_inventory_overlap" in score.reasons
+    gsc_cross_check = score.gsc_cross_check
+    wordpress_cross_check = score.wordpress_cross_check
+    gsc_overlap = gsc_cross_check.strength == "exact"
+    wordpress_overlap = wordpress_cross_check.strength == "exact"
     return ContentAhrefsCandidateRow(
         id=f"ahrefs_candidate_{slug(f'{topic}_{fact.name}_{fact.evidence_id}')}",
         topic=topic,
@@ -334,22 +423,72 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
             _content_ahrefs_reason_label(reason) for reason in score.reasons
         ],
         gsc_demand="present" if gsc_overlap else "missing",
-        gsc_demand_label="jest w GSC" if gsc_overlap else "brak dopasowania w GSC",
+        gsc_demand_label=_gsc_demand_label(gsc_cross_check),
+        gsc_cross_check=_cross_check_view(gsc_cross_check, source="GSC"),
         wordpress_inventory_match="present" if wordpress_overlap else "missing",
-        wordpress_inventory_match_label=(
-            "jest w WordPress" if wordpress_overlap else "brak dopasowania w WordPress"
+        wordpress_inventory_match_label=_wordpress_inventory_match_label(wordpress_cross_check),
+        wordpress_cross_check=_cross_check_view(wordpress_cross_check, source="WordPress"),
+        gsc_overlap_terms=list(gsc_cross_check.matching_labels) if gsc_overlap else [],
+        wordpress_overlap_urls=(
+            list(wordpress_cross_check.matching_labels) if wordpress_overlap else []
         ),
-        gsc_overlap_terms=list(score.gsc_overlap_terms),
-        wordpress_overlap_urls=list(score.wordpress_overlap_urls),
         keyword=dimensions.get("keyword") or None,
         competitor_domain=dimensions.get("competitor_domain") or None,
         source_url=dimensions.get("source_url") or None,
         referenced_public_url=dimensions.get("referenced_public_url") or None,
         metric_name=fact.name,
         metric_value=fact.value,
-        evidence_ids=[fact.evidence_id],
+        source_connectors=_unique(
+            [
+                fact.source_connector,
+                *gsc_cross_check.source_connectors,
+                *wordpress_cross_check.source_connectors,
+            ]
+        ),
+        evidence_ids=_unique(
+            [
+                fact.evidence_id,
+                *gsc_cross_check.evidence_ids,
+                *wordpress_cross_check.evidence_ids,
+            ]
+        ),
         next_step=_ahrefs_candidate_next_step(score, topic),
     )
+
+
+def _cross_check_view(
+    check: AhrefsCrossSourceMatch,
+    *,
+    source: str,
+) -> ContentAhrefsCrossCheck:
+    labels = {
+        "exact": f"potwierdzone dopasowanie w {source}",
+        "weak": f"słabe podobieństwo w {source} — sprawdź ręcznie",
+        "missing": f"brak potwierdzonego dopasowania w {source}",
+    }
+    return ContentAhrefsCrossCheck(
+        strength=check.strength,
+        label=labels[check.strength],
+        matching_labels=list(check.matching_labels),
+        source_connectors=list(check.source_connectors),
+        evidence_ids=list(check.evidence_ids),
+    )
+
+
+def _gsc_demand_label(check: AhrefsCrossSourceMatch) -> str:
+    if check.strength == "exact":
+        return "jest w GSC"
+    if check.strength == "weak":
+        return "słabe podobieństwo GSC — sprawdź ręcznie"
+    return "brak potwierdzenia w GSC"
+
+
+def _wordpress_inventory_match_label(check: AhrefsCrossSourceMatch) -> str:
+    if check.strength == "exact":
+        return "jest w WordPress"
+    if check.strength == "weak":
+        return "słabe podobieństwo WordPress — sprawdź ręcznie"
+    return "brak potwierdzenia w WordPress"
 
 
 def _content_ahrefs_gap_type_label(value: str) -> str:
@@ -382,11 +521,19 @@ def _ahrefs_candidate_topic(fact: MetricFact) -> str:
 
 def _ahrefs_candidate_next_step(score: AhrefsGapFactScore, topic: str) -> str:
     overlap_labels = []
-    if score.gsc_overlap_terms:
-        overlap_labels.append(f"GSC: {', '.join(score.gsc_overlap_terms[:2])}")
-    if score.wordpress_overlap_urls:
-        overlap_labels.append(f"WP: {len(score.wordpress_overlap_urls)} URL")
+    if score.gsc_cross_check.strength == "exact":
+        overlap_labels.append(f"GSC: {', '.join(score.gsc_cross_check.matching_labels[:2])}")
+    if score.wordpress_cross_check.strength == "exact":
+        overlap_labels.append(f"WP: {len(score.wordpress_cross_check.matching_labels)} URL")
     overlap_context = f" Wspólne sygnały: {'; '.join(overlap_labels)}." if overlap_labels else ""
+    if (
+        score.gsc_cross_check.strength == "weak"
+        or score.wordpress_cross_check.strength == "weak"
+    ):
+        return (
+            f"WILQ widzi tylko słabe podobieństwo dla `{topic}`. Sprawdź ręcznie GSC "
+            "i spis WordPress; nie traktuj go jako potwierdzenia popytu ani duplikatu."
+        )
     if score.status == "relevant":
         return (
             f"Zweryfikuj `{topic}` z GSC i spisem treści WordPress, potem zdecyduj: "
@@ -443,23 +590,17 @@ def _score_ahrefs_gap_facts(
     gap_facts: list[MetricFact],
     all_content_facts: list[MetricFact],
 ) -> list[AhrefsGapFactScore]:
-    gsc_signals = _content_signals(
-        all_content_facts,
-        source_connector="google_search_console",
-        dimension_keys=("query", "page"),
-        label_keys=("query", "page"),
-    )
-    wordpress_signals = _content_signals(
-        all_content_facts,
-        source_connector_prefix="wordpress",
-        dimension_keys=("content_url", "title", "slug", "path"),
-        label_keys=("content_url", "title", "slug", "path"),
-    )
+    gsc_facts = [
+        fact for fact in all_content_facts if fact.source_connector == "google_search_console"
+    ]
+    wordpress_facts = [
+        fact for fact in all_content_facts if fact.source_connector.startswith("wordpress")
+    ]
     scored = [
         _score_ahrefs_gap_fact(
             fact,
-            gsc_signals=gsc_signals,
-            wordpress_signals=wordpress_signals,
+            gsc_facts=gsc_facts,
+            wordpress_facts=wordpress_facts,
         )
         for fact in gap_facts
     ]
@@ -478,8 +619,8 @@ def _score_ahrefs_gap_facts(
 def _score_ahrefs_gap_fact(
     fact: MetricFact,
     *,
-    gsc_signals: tuple[ContentSignal, ...],
-    wordpress_signals: tuple[ContentSignal, ...],
+    gsc_facts: list[MetricFact],
+    wordpress_facts: list[MetricFact],
 ) -> AhrefsGapFactScore:
     dimensions = fact.dimensions
     keyword = dimensions.get("keyword", "")
@@ -500,8 +641,12 @@ def _score_ahrefs_gap_fact(
     )
     normalized_text = _normalize_text(text)
     tokens = _tokens_from_text(text)
-    gsc_overlap_terms = _matching_content_signal_labels(tokens, gsc_signals)
-    wordpress_overlap_urls = _matching_content_signal_labels(tokens, wordpress_signals)
+    cross_source_overlap = assess_ahrefs_cross_source_overlap(
+        keyword=keyword,
+        referenced_public_url=referenced_public_url or None,
+        gsc_facts=gsc_facts,
+        wordpress_facts=wordpress_facts,
+    )
     score = 0
     reasons: list[str] = []
 
@@ -514,12 +659,16 @@ def _score_ahrefs_gap_fact(
     if competitor_domain in AHREFS_RELEVANT_COMPETITOR_DOMAINS:
         score += 3
         reasons.append("relevant_competitor_domain")
-    if gsc_overlap_terms:
+    if cross_source_overlap.gsc.strength == "exact":
         score += 2
         reasons.append("gsc_overlap")
-    if wordpress_overlap_urls:
+    elif cross_source_overlap.gsc.strength == "weak":
+        reasons.append("gsc_overlap_weak")
+    if cross_source_overlap.wordpress.strength == "exact":
         score += 2
         reasons.append("wordpress_inventory_overlap")
+    elif cross_source_overlap.wordpress.strength == "weak":
+        reasons.append("wordpress_inventory_overlap_weak")
 
     gap_type = dimensions.get("gap_type", "")
     if gap_type in {"content_gap", "organic_keyword_gap", "top_page_gap"}:
@@ -555,56 +704,9 @@ def _score_ahrefs_gap_fact(
         score=score,
         status=status,
         reasons=tuple(reasons),
-        gsc_overlap_terms=gsc_overlap_terms,
-        wordpress_overlap_urls=wordpress_overlap_urls,
+        gsc_cross_check=cross_source_overlap.gsc,
+        wordpress_cross_check=cross_source_overlap.wordpress,
     )
-
-
-def _content_signals(
-    facts: list[MetricFact],
-    *,
-    dimension_keys: tuple[str, ...],
-    label_keys: tuple[str, ...],
-    source_connector: str | None = None,
-    source_connector_prefix: str | None = None,
-) -> tuple[ContentSignal, ...]:
-    signal_tokens: dict[str, set[str]] = {}
-    for fact in facts:
-        if source_connector is not None and fact.source_connector != source_connector:
-            continue
-        if source_connector_prefix is not None and not fact.source_connector.startswith(
-            source_connector_prefix
-        ):
-            continue
-        label = _first_dimension_value(fact, label_keys)
-        if not label:
-            continue
-        tokens: set[str] = set()
-        for key in dimension_keys:
-            tokens.update(_tokens_from_text(fact.dimensions.get(key, "")))
-        if tokens:
-            signal_tokens.setdefault(label, set()).update(tokens)
-    return tuple(
-        ContentSignal(label=label, tokens=frozenset(tokens))
-        for label, tokens in signal_tokens.items()
-    )
-
-
-def _first_dimension_value(fact: MetricFact, keys: tuple[str, ...]) -> str | None:
-    for key in keys:
-        value = fact.dimensions.get(key)
-        if value:
-            return value
-    return None
-
-
-def _matching_content_signal_labels(
-    tokens: set[str],
-    signals: tuple[ContentSignal, ...],
-    *,
-    limit: int = 4,
-) -> tuple[str, ...]:
-    return tuple(_unique(signal.label for signal in signals if tokens & signal.tokens)[:limit])
 
 
 def _ahrefs_relevance_reason_count(

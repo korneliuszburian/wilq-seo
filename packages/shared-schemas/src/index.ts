@@ -2414,6 +2414,55 @@ export const ContentDiagnosticSectionSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const ContentAhrefsCrossCheckSchema = z.object({
+  strength: z.enum(["exact", "weak", "missing"]).default("missing"),
+  label: z.string().default("brak potwierdzonego dopasowania"),
+  matching_labels: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentAhrefsCandidateRowSchema = z.object({
+  id: z.string(),
+  topic: z.string(),
+  gap_type: z.string(),
+  gap_type_label: z.string().default(""),
+  relevance_status: z.enum(["relevant", "review", "off_topic"]),
+  relevance_status_label: z.string().default(""),
+  relevance_score: z.number(),
+  business_relevance_reasons: z.array(z.string()).default([]),
+  business_relevance_reason_labels: z.array(z.string()).default([]),
+  gsc_demand: z.enum(["present", "missing"]),
+  gsc_demand_label: z.string().default(""),
+  gsc_cross_check: ContentAhrefsCrossCheckSchema.default({
+    strength: "missing",
+    label: "brak potwierdzonego dopasowania",
+    matching_labels: [],
+    source_connectors: [],
+    evidence_ids: []
+  }),
+  wordpress_inventory_match: z.enum(["present", "missing"]),
+  wordpress_inventory_match_label: z.string().default(""),
+  wordpress_cross_check: ContentAhrefsCrossCheckSchema.default({
+    strength: "missing",
+    label: "brak potwierdzonego dopasowania",
+    matching_labels: [],
+    source_connectors: [],
+    evidence_ids: []
+  }),
+  gsc_overlap_terms: z.array(z.string()).default([]),
+  wordpress_overlap_urls: z.array(z.string()).default([]),
+  keyword: z.string().nullable().optional(),
+  competitor_domain: z.string().nullable().optional(),
+  source_url: z.string().nullable().optional(),
+  referenced_public_url: z.string().nullable().optional(),
+  metric_name: z.string(),
+  metric_value: z.union([z.string(), z.number()]),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()),
+  next_step: z.string()
+});
+
 export const ContentDecisionItemSchema = z.object({
   id: z.string(),
   decision_type: z.enum([
@@ -2474,35 +2523,7 @@ export const ContentDecisionItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
-  ahrefs_candidate_rows: z
-    .array(
-      z.object({
-        id: z.string(),
-        topic: z.string(),
-        gap_type: z.string(),
-        gap_type_label: z.string().default(""),
-        relevance_status: z.enum(["relevant", "review", "off_topic"]),
-        relevance_status_label: z.string().default(""),
-        relevance_score: z.number(),
-        business_relevance_reasons: z.array(z.string()).default([]),
-        business_relevance_reason_labels: z.array(z.string()).default([]),
-        gsc_demand: z.enum(["present", "missing"]),
-        gsc_demand_label: z.string().default(""),
-        wordpress_inventory_match: z.enum(["present", "missing"]),
-        wordpress_inventory_match_label: z.string().default(""),
-        gsc_overlap_terms: z.array(z.string()).default([]),
-        wordpress_overlap_urls: z.array(z.string()).default([]),
-        keyword: z.string().nullable().optional(),
-        competitor_domain: z.string().nullable().optional(),
-        source_url: z.string().nullable().optional(),
-        referenced_public_url: z.string().nullable().optional(),
-        metric_name: z.string(),
-        metric_value: z.union([z.string(), z.number()]),
-        evidence_ids: z.array(z.string()),
-        next_step: z.string()
-      })
-    )
-    .default([]),
+  ahrefs_candidate_rows: z.array(ContentAhrefsCandidateRowSchema).default([]),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
@@ -3074,35 +3095,7 @@ export const AhrefsGapReadContractSchema = z.object({
   cross_check_wordpress_match_count: z.number().default(0),
   cross_check_source_connectors: z.array(z.string()).default([]),
   cross_check_evidence_ids: z.array(z.string()).default([]),
-  cross_check_candidates: z
-    .array(
-      z.object({
-        id: z.string(),
-        topic: z.string(),
-        gap_type: z.string(),
-        gap_type_label: z.string().default(""),
-        relevance_status: z.enum(["relevant", "review", "off_topic"]),
-        relevance_status_label: z.string().default(""),
-        relevance_score: z.number(),
-        business_relevance_reasons: z.array(z.string()).default([]),
-        business_relevance_reason_labels: z.array(z.string()).default([]),
-        gsc_demand: z.enum(["present", "missing"]),
-        gsc_demand_label: z.string().default(""),
-        wordpress_inventory_match: z.enum(["present", "missing"]),
-        wordpress_inventory_match_label: z.string().default(""),
-        gsc_overlap_terms: z.array(z.string()).default([]),
-        wordpress_overlap_urls: z.array(z.string()).default([]),
-        keyword: z.string().nullable().optional(),
-        competitor_domain: z.string().nullable().optional(),
-        source_url: z.string().nullable().optional(),
-        referenced_public_url: z.string().nullable().optional(),
-        metric_name: z.string(),
-        metric_value: z.union([z.string(), z.number()]),
-        evidence_ids: z.array(z.string()),
-        next_step: z.string()
-      })
-    )
-    .default([]),
+  cross_check_candidates: z.array(ContentAhrefsCandidateRowSchema).default([]),
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high", "critical"])
 });

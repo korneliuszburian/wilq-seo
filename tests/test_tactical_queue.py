@@ -63,6 +63,76 @@ def test_tactical_queue_uses_latest_gsc_query_page_identity() -> None:
     }
 
 
+def test_tactical_queue_keeps_weak_ahrefs_overlap_manual_without_action() -> None:
+    queue = build_tactical_queue(
+        use_cache=False,
+        facts_by_connector={
+            "ahrefs": [
+                MetricFact(
+                    name="ahrefs_content_gap_count",
+                    value=1,
+                    period="ahrefs_gap",
+                    source_connector="ahrefs",
+                    evidence_id="ev_ahrefs_mieszalnik_ibc",
+                    dimensions={
+                        "gap_type": "content_gap",
+                        "keyword": "mieszalnik IBC",
+                        "source_url": "https://denios.pl/mieszalnik-ibc/",
+                        "competitor_domain": "denios.pl",
+                    },
+                )
+            ],
+            "google_search_console": [
+                _gsc_fact(
+                    "impressions",
+                    120,
+                    "kontener IBC odpady",
+                    "https://www.ekologus.pl/kontener-ibc/",
+                    "ev_gsc_kontener_ibc",
+                    datetime(2026, 7, 1, 8, 0, tzinfo=UTC),
+                )
+            ],
+            "wordpress_ekologus": [
+                MetricFact(
+                    name="content_object_seen",
+                    value=1,
+                    period="wordpress_inventory",
+                    source_connector="wordpress_ekologus",
+                    evidence_id="ev_wp_lejek_ibc",
+                    dimensions={
+                        "title": "Lejek do kontenerów IBC",
+                        "content_url": "https://www.ekologus.pl/lejek-do-kontenerow-ibc/",
+                    },
+                )
+            ],
+        },
+    )
+
+    item = next(item for item in queue.items if item.id.startswith("tq_ahrefs_"))
+
+    assert item.dimensions["gsc_cross_check_strength"] == "weak"
+    assert item.dimensions["wordpress_cross_check_strength"] == "weak"
+    assert item.dimensions["gsc_demand"] == "missing"
+    assert item.dimensions["wordpress_inventory_match"] == "missing"
+    assert item.dimensions["gsc_overlap_terms"] == ""
+    assert item.dimensions["wordpress_overlap_urls"] == ""
+    assert item.action_ids == []
+    assert "act_prepare_content_refresh_queue" not in item.action_ids
+    assert set(item.source_connectors) == {
+        "ahrefs",
+        "google_search_console",
+        "wordpress_ekologus",
+    }
+    assert set(item.evidence_ids) == {
+        "ev_ahrefs_mieszalnik_ibc",
+        "ev_gsc_kontener_ibc",
+        "ev_wp_lejek_ibc",
+    }
+    assert "słabe podobieństwo" in item.diagnosis
+    assert "słabe podobieństwo" in item.next_step
+    assert "dokładne dopasowanie" not in item.diagnosis
+
+
 def _gsc_fact(
     name: str,
     value: float | int,

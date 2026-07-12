@@ -204,10 +204,10 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
                   <h3 className="mt-1 text-sm font-semibold">{candidate.topic}</h3>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
                     <span className="rounded-md border border-line px-2 py-1">
-                      GSC: {candidate.gsc_demand_label}
+                      GSC: {candidate.gsc_cross_check.label}
                     </span>
                     <span className="rounded-md border border-line px-2 py-1">
-                      WP: {candidate.wordpress_inventory_match_label}
+                      WP: {candidate.wordpress_cross_check.label}
                     </span>
                   </div>
                   <p className="mt-2 text-xs leading-5 text-slate-700">

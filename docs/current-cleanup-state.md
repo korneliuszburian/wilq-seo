@@ -39,6 +39,14 @@ jawnie wyłączona do czasu osobnego kontraktu; `r564.3` jest zamknięty, a pare
 `r564` blokuje się wyłącznie na candidate density: jeden unikalny publiczny URL
 z GSC i Ahrefs bez bezpiecznego referenced public URL. Nie twórz sztucznego
 tematu ani nie przywracaj direct WordPress write.
+`r564.5` jest zamknięty: Ahrefs cross-check ma jeden pure typed seam
+`wilq/content/planning/ahrefs_overlap.py`, wspólny dla planera i tactical queue.
+Tylko `exact` URL/phrase lineage może dać `present`, punkty relevance,
+review-only ActionObject albo preflight duplicate URL; `weak` ma być widocznym
+manualnym cross-checkiem bez akcji. Nie przywracaj matcherów z dowolnego tokenu,
+`source_url` lub domeny konkurenta i nie doklejaj tej reguły w React/skillach.
+WordPress bez publicznego URL, także dev Proudsite z identycznym tytułem, nie
+jest rekordem inventory dla tego seamu i nie może przejść do `exact`.
 
 ## Prawda produktu
 
@@ -861,3 +869,5 @@ ich rozmiaru.
    ponownie gotowych mutation/readiness ani WordPress preview boundaries.
 5. `r564.3` jest zamknięty po świeżym browser proof 390×844; parent `r564`
    nadal wymaga evidence-backed candidate density bez sztucznego tematu.
+6. `r564.5` jest zamknięty; następnym content slice jest `r564.6`, czyli typed
+   Service Profile context w istniejącym snapshot work itemu, bez nowego route.

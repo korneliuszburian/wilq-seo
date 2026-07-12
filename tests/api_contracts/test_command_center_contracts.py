@@ -829,7 +829,9 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         item["dimensions"].get("affected_attribute") == "image_link" for item in merchant_items
     )
     assert all(" / " not in item["title"] for item in merchant_items)
-    ahrefs_items = [item for item in queue["items"] if item["source_connectors"] == ["ahrefs"]]
+    ahrefs_items = [
+        item for item in queue["items"] if "ahrefs" in item["source_connectors"]
+    ]
     assert ahrefs_items
     assert any(
         item["dimensions"].get("keyword") == "audyt środowiskowy"

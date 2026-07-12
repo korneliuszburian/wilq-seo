@@ -32,6 +32,18 @@ class ContentDiagnosticSection(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class ContentAhrefsCrossCheck(BaseModel):
+    strength: Literal["exact", "weak", "missing"] = "missing"
+    label: str = "brak potwierdzonego dopasowania"
+    matching_labels: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+
+    @classmethod
+    def missing(cls) -> ContentAhrefsCrossCheck:
+        return cls()
+
+
 class ContentAhrefsCandidateRow(BaseModel):
     id: str
     topic: str
@@ -44,8 +56,14 @@ class ContentAhrefsCandidateRow(BaseModel):
     business_relevance_reason_labels: list[str] = Field(default_factory=list)
     gsc_demand: Literal["present", "missing"]
     gsc_demand_label: str = ""
+    gsc_cross_check: ContentAhrefsCrossCheck = Field(
+        default_factory=ContentAhrefsCrossCheck.missing
+    )
     wordpress_inventory_match: Literal["present", "missing"]
     wordpress_inventory_match_label: str = ""
+    wordpress_cross_check: ContentAhrefsCrossCheck = Field(
+        default_factory=ContentAhrefsCrossCheck.missing
+    )
     gsc_overlap_terms: list[str] = Field(default_factory=list)
     wordpress_overlap_urls: list[str] = Field(default_factory=list)
     keyword: str | None = None
@@ -54,6 +72,7 @@ class ContentAhrefsCandidateRow(BaseModel):
     referenced_public_url: str | None = None
     metric_name: str
     metric_value: int | float | str
+    source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     next_step: str
 

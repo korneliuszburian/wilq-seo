@@ -908,8 +908,16 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert zielony_lad_candidate["relevance_status"] == "relevant"
     assert zielony_lad_candidate["gsc_demand"] == "present"
     assert zielony_lad_candidate["gsc_demand_label"] == "jest w GSC"
+    assert zielony_lad_candidate["gsc_cross_check"]["strength"] == "exact"
+    assert zielony_lad_candidate["gsc_cross_check"]["source_connectors"] == [
+        "google_search_console"
+    ]
     assert zielony_lad_candidate["wordpress_inventory_match"] == "present"
     assert zielony_lad_candidate["wordpress_inventory_match_label"] == "jest w WordPress"
+    assert zielony_lad_candidate["wordpress_cross_check"]["strength"] == "exact"
+    assert zielony_lad_candidate["wordpress_cross_check"]["source_connectors"] == [
+        "wordpress_ekologus"
+    ]
     assert zielony_lad_candidate["gsc_overlap_terms"] == ["zielony ład"]
     assert zielony_lad_candidate["wordpress_overlap_urls"] == [
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
@@ -918,7 +926,17 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "gsc_overlap" in zielony_lad_candidate["business_relevance_reasons"]
     assert "wordpress_inventory_overlap" in zielony_lad_candidate["business_relevance_reasons"]
     assert "content_candidate" in zielony_lad_candidate["business_relevance_reasons"]
-    assert zielony_lad_candidate["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
+    assert set(zielony_lad_candidate["source_connectors"]) == {
+        "ahrefs",
+        "google_search_console",
+        "wordpress_ekologus",
+    }
+    assert "ev_refresh_ahrefs_gap_records" in zielony_lad_candidate["evidence_ids"]
+    assert set(zielony_lad_candidate["evidence_ids"]) == {
+        "ev_refresh_ahrefs_gap_records",
+        *zielony_lad_candidate["gsc_cross_check"]["evidence_ids"],
+        *zielony_lad_candidate["wordpress_cross_check"]["evidence_ids"],
+    }
     assert "Wspólne sygnały: GSC: zielony ład" in zielony_lad_candidate["next_step"]
     assert "branża.example" not in json.dumps(ahrefs_decision["ahrefs_candidate_rows"])
     assert ahrefs_decision["source_connectors"] == ["ahrefs"]
@@ -1007,6 +1025,13 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "metric_name" not in context_candidate
     assert "id" not in context_candidate
     assert context_candidate["gap_type_label"]
+    assert context_candidate["gsc_cross_check"]["strength"] == "exact"
+    assert context_candidate["wordpress_cross_check"]["strength"] == "exact"
+    assert set(context_candidate["source_connectors"]) == {
+        "ahrefs",
+        "google_search_console",
+        "wordpress_ekologus",
+    }
     assert "competitor_page" not in json.dumps(
         context_ahrefs_decision["ahrefs_candidate_rows"], ensure_ascii=False
     )

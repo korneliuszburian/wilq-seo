@@ -42,6 +42,19 @@ w git, Beads i `docs/progress/archive/`.
   jest mierzalny, daily item zachowuje `review_required`, lecz jawnie mówi, że
   pełna kolejka pozostaje zablokowana przy 1 z 3 tematów; nie myli pojedynczego
   review z gotowym backlogiem.
+- `wilq-seo-r564.5` domyka false positive Ahrefs bez nowego endpointu: jeden
+  typed pure seam klasyfikuje cross-check GSC/WordPress jako `exact`, `weak`
+  albo `missing` i jest wspólny dla content planning oraz tactical queue.
+  Wyłącznie `exact` może oznaczyć popyt/inventory jako obecne, podbić score,
+  wystawić review-only kolejkę lub wejść do preflight podobnych publicznych URL.
+  `weak` zachowuje źródła i evidence, lecz jest ręcznym cross-checkiem bez
+  ActionObjectu, briefu ani claimu duplikatu. Live po managed restarcie:
+  Ahrefs `manual_required`, 6 kandydatów i 0 akcji; tactical queue ma 10 pozycji
+  Ahrefs i 0 przypiętych akcji. Desktop/mobile proof jest w
+  `.local-lab/proof/bdos-wilq-2026-07-12/`.
+  Rekord WordPress bez publicznego URL, w tym identycznie zatytułowany szkic na
+  `ekologus.dev.proudsite.pl`, jest odrzucany przed dopasowaniem frazy i nie
+  może odblokować inventory, canonical ani kolejki.
 - Re-audyt BDOS/WILQ potwierdził kolejny niezdublowany work item: `r564.6`
   rozszerzy istniejący snapshot content workflow o typed per-item Service
   Profile context. Dziś snapshot ma Claim Ledger/brief/review/pomiar, ale nie
@@ -50,9 +63,9 @@ w git, Beads i `docs/progress/archive/`.
 - Świeży re-audyt `r564` potwierdza `blocked_by_external_state`, nie lukę
   kolejki: GSC daje tylko jeden unikalny publiczny URL, a Ahrefsowe rekordy nie
   mają bezpiecznego `referenced_public_url`. Nie twórz sztucznego trzeciego
-  tematu. Osobne potwierdzone follow-upy są śledzone w `r564.5` (weak
-  token-only Ahrefs overlap) oraz `v9ab.8.2` (brak typed measurement baseline
-  w aggregate daily content queue).
+  tematu. Następne potwierdzone zakresy to `r564.6` (typed Service Profile w
+  work-item snapshot) oraz evidence-backed candidate density parenta `r564`;
+  brak `r564.5` nie może wrócić przez drugi matcher w queue, skillu ani React.
 
 - Rebaseline `c9h9.2` został ponownie sprawdzony na `ba033433`: API health `ok`,
   99 906 metric facts, 4 577 refresh runs, 12 connectorów (9 configured,

@@ -359,7 +359,7 @@ def _ahrefs_source_facts(
                     f"{'; '.join(row.business_relevance_reasons[:2])}"
                 ).strip("; "),
                 evidence_ids=row.evidence_ids,
-                source_connectors=["ahrefs"],
+                source_connectors=row.source_connectors or ["ahrefs"],
                 metric_value=row.metric_value,
                 source_url=row.source_url or row.referenced_public_url,
             )

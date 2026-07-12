@@ -6465,8 +6465,22 @@ const ahrefsDiagnostics = {
         business_relevance_reason_labels: ["pokrywa się z GSC", "pokrywa się z WordPress"],
         gsc_demand: "present",
         gsc_demand_label: "jest w GSC",
+        gsc_cross_check: {
+          strength: "exact",
+          label: "potwierdzone dopasowanie w GSC",
+          matching_labels: ["audyt środowiskowy"],
+          source_connectors: ["google_search_console"],
+          evidence_ids: ["ev_refresh_gsc_cross_check"]
+        },
         wordpress_inventory_match: "present",
         wordpress_inventory_match_label: "jest w WordPress",
+        wordpress_cross_check: {
+          strength: "exact",
+          label: "potwierdzone dopasowanie w WordPress",
+          matching_labels: ["https://www.ekologus.pl/audyt-srodowiskowy/"],
+          source_connectors: ["wordpress_ekologus"],
+          evidence_ids: ["ev_refresh_wp_cross_check"]
+        },
         gsc_overlap_terms: ["audyt środowiskowy"],
         wordpress_overlap_urls: ["https://www.ekologus.pl/audyt-srodowiskowy/"],
         keyword: "audyt środowiskowy",
@@ -6475,6 +6489,7 @@ const ahrefsDiagnostics = {
         referenced_public_url: null,
         metric_name: "ahrefs_content_gap_count",
         metric_value: 1,
+        source_connectors: ["ahrefs", "google_search_console", "wordpress_ekologus"],
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         next_step:
           "Zweryfikuj audyt środowiskowy z GSC i spisem treści WordPress, potem zdecyduj: odświeżenie, scalenie, utworzenie albo blokada."
@@ -9407,8 +9422,8 @@ describe("WILQ dashboard", () => {
       screen.getByText(/WILQ znalazł 1 kandydata Ahrefs do walidacji/)
     ).toBeInTheDocument();
     expect(screen.getByText("audyt środowiskowy")).toBeInTheDocument();
-    expect(screen.getByText("GSC: jest w GSC")).toBeInTheDocument();
-    expect(screen.getByText("WP: jest w WordPress")).toBeInTheDocument();
+    expect(screen.getByText("GSC: potwierdzone dopasowanie w GSC")).toBeInTheDocument();
+    expect(screen.getByText("WP: potwierdzone dopasowanie w WordPress")).toBeInTheDocument();
     expect(screen.getByText("Dane kompletne dla tej decyzji")).toBeInTheDocument();
     expect(screen.getByText("2 zablokowane obietnice")).toBeInTheDocument();
     expect(screen.queryByText(/typed Ahrefs gap records/i)).not.toBeInTheDocument();

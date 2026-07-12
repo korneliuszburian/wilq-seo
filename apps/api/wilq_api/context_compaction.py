@@ -145,6 +145,26 @@ def context_pack_text(value: Any, limit: int) -> str | None:
     return f"{value[: limit - 3]}..."
 
 
+def compact_ahrefs_cross_check_for_context(check: Any) -> dict[str, Any]:
+    if not isinstance(check, dict):
+        return {}
+    compact: dict[str, Any] = {
+        "strength": check.get("strength", "missing"),
+        "label": check.get("label", "brak potwierdzonego dopasowania"),
+    }
+    for key, limit in (
+        ("matching_labels", 4),
+        ("source_connectors", 3),
+        ("evidence_ids", 3),
+    ):
+        values = check.get(key)
+        if not isinstance(values, list):
+            values = []
+        compact[key] = values[:limit]
+        compact[f"{key}_total"] = len(values)
+    return compact
+
+
 def without_metric_facts(value: Any) -> Any:
     if isinstance(value, dict):
         return {

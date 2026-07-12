@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from time import monotonic
@@ -16,6 +15,10 @@ from wilq.briefing.merchant_labels import (
     MERCHANT_SEVERITY_LABELS,
 )
 from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
+from wilq.content.planning.ahrefs_overlap import (
+    AhrefsCrossSourceOverlap,
+    assess_ahrefs_cross_source_overlap,
+)
 from wilq.schemas import (
     ActionRisk,
     MetricFact,
@@ -112,21 +115,6 @@ AHREFS_RELEVANT_TERMS = (
     "beczka",
     "sorbent",
 )
-CONTENT_SIGNAL_STOPWORDS = {
-    "api",
-    "blog",
-    "com",
-    "dev",
-    "html",
-    "http",
-    "https",
-    "page",
-    "pages",
-    "pl",
-    "proudsite",
-    "shop",
-    "www",
-}
 DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS = 30.0
 _cached_tactical_queue: TacticalQueueCacheEntry | None = None
 
@@ -143,18 +131,6 @@ class WordPressMatch:
     confidence: WordPressMatchConfidence
     requested_url_key: str
     requested_path_key: str
-
-
-@dataclass(frozen=True)
-class ContentSignal:
-    label: str
-    tokens: frozenset[str]
-
-
-@dataclass(frozen=True)
-class AhrefsContentConfirmation:
-    gsc_overlap_terms: tuple[str, ...]
-    wordpress_overlap_urls: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -223,23 +199,22 @@ def _build_tactical_queue(
     action_ids_by_connector = _tactical_action_ids_by_connector()
     wordpress_index = _wordpress_content_index(facts)
     gsc_page_counts = _gsc_page_counts(facts)
-    gsc_signals = _content_signals(
-        facts,
-        source_connector="google_search_console",
-        dimension_keys=("query", "page"),
-        label_keys=("query", "page"),
-    )
-    wordpress_signals = _content_signals(
-        facts,
-        source_connector_prefix="wordpress",
-        dimension_keys=("content_url", "title", "slug", "path"),
-        label_keys=("content_url",),
-    )
+    gsc_cross_check_facts = [
+        fact for fact in facts if fact.source_connector == "google_search_console"
+    ]
+    wordpress_cross_check_facts = [
+        fact for fact in facts if fact.source_connector.startswith("wordpress")
+    ]
     items = [
         *_gsc_content_items(facts, action_ids_by_connector, wordpress_index, gsc_page_counts),
         *_ga4_quality_items(facts, action_ids_by_connector, wordpress_index),
         *_merchant_feed_items(facts, action_ids_by_connector),
-        *_ahrefs_gap_items(facts, action_ids_by_connector, gsc_signals, wordpress_signals),
+        *_ahrefs_gap_items(
+            facts,
+            action_ids_by_connector,
+            gsc_cross_check_facts,
+            wordpress_cross_check_facts,
+        ),
     ]
     items = _balanced_tactical_items(items, limit=TACTICAL_QUEUE_LIMIT)
     return TacticalQueueResponse(
@@ -763,8 +738,8 @@ def _merchant_feed_items(
 def _ahrefs_gap_items(
     facts: list[MetricFact],
     action_ids_by_connector: dict[str, list[str]],
-    gsc_signals: tuple[ContentSignal, ...],
-    wordpress_signals: tuple[ContentSignal, ...],
+    gsc_cross_check_facts: list[MetricFact],
+    wordpress_cross_check_facts: list[MetricFact],
 ) -> list[TacticalQueueItem]:
     gap_groups = _group_ahrefs_gap_facts(facts)
     items: list[TacticalQueueItem] = []
@@ -775,14 +750,14 @@ def _ahrefs_gap_items(
         if _is_ahrefs_off_topic(keyword, source_url, referenced_public_url, competitor_domain):
             continue
         topic = _ahrefs_topic(keyword, source_url, referenced_public_url, competitor_domain)
-        confirmation = _ahrefs_content_confirmation(
-            keyword,
-            source_url,
-            referenced_public_url,
-            competitor_domain,
-            gsc_signals,
-            wordpress_signals,
+        confirmation = assess_ahrefs_cross_source_overlap(
+            keyword=keyword,
+            referenced_public_url=referenced_public_url or None,
+            gsc_facts=gsc_cross_check_facts,
+            wordpress_facts=wordpress_cross_check_facts,
         )
+        gsc_exact = confirmation.gsc.strength == "exact"
+        wordpress_exact = confirmation.wordpress.strength == "exact"
         priority = _ahrefs_gap_priority(gap_type, topic, competitor_domain, index)
         items.append(
             TacticalQueueItem(
@@ -792,8 +767,20 @@ def _ahrefs_gap_items(
                 intent=_ahrefs_content_intent(gap_type),
                 priority=priority,
                 risk=ActionRisk.medium,
-                source_connectors=["ahrefs"],
-                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
+                source_connectors=_unique(
+                    [
+                        "ahrefs",
+                        *confirmation.gsc.source_connectors,
+                        *confirmation.wordpress.source_connectors,
+                    ]
+                ),
+                evidence_ids=_unique(
+                    [
+                        *(fact.evidence_id for fact in group_facts),
+                        *confirmation.gsc.evidence_ids,
+                        *confirmation.wordpress.evidence_ids,
+                    ]
+                ),
                 metric_facts=group_facts[:6],
                 dimensions={
                     "gap_type": gap_type,
@@ -802,12 +789,23 @@ def _ahrefs_gap_items(
                     "source_url": source_url,
                     "referenced_public_url": referenced_public_url,
                     "competitor_domain": competitor_domain,
-                    "gsc_demand": "present" if confirmation.gsc_overlap_terms else "missing",
-                    "wordpress_inventory_match": (
-                        "present" if confirmation.wordpress_overlap_urls else "missing"
+                    "gsc_demand": "present" if gsc_exact else "missing",
+                    "wordpress_inventory_match": "present" if wordpress_exact else "missing",
+                    "gsc_cross_check_strength": confirmation.gsc.strength,
+                    "gsc_cross_check_label": _ahrefs_cross_check_label("GSC", confirmation),
+                    "wordpress_cross_check_strength": confirmation.wordpress.strength,
+                    "wordpress_cross_check_label": _ahrefs_cross_check_label(
+                        "WordPress",
+                        confirmation,
                     ),
-                    "gsc_overlap_terms": ", ".join(confirmation.gsc_overlap_terms),
-                    "wordpress_overlap_urls": ", ".join(confirmation.wordpress_overlap_urls),
+                    "gsc_overlap_terms": (
+                        ", ".join(confirmation.gsc.matching_labels) if gsc_exact else ""
+                    ),
+                    "wordpress_overlap_urls": (
+                        ", ".join(confirmation.wordpress.matching_labels)
+                        if wordpress_exact
+                        else ""
+                    ),
                 },
                 diagnosis=_ahrefs_gap_diagnosis(
                     gap_type,
@@ -826,7 +824,11 @@ def _ahrefs_gap_items(
                     "wzrost liczby leadów",
                     "plan treści bez sprawdzenia GSC i WordPress",
                 ],
-                action_ids=action_ids_by_connector.get("ahrefs", []),
+                action_ids=(
+                    action_ids_by_connector.get("ahrefs", [])
+                    if confirmation.has_exact_match
+                    else []
+                ),
             )
         )
     return items
@@ -876,23 +878,6 @@ def is_reviewable_ahrefs_gap_fact(fact: MetricFact) -> bool:
         dimensions.get("source_url", ""),
         dimensions.get("referenced_public_url", ""),
         _normalized_domain(dimensions.get("competitor_domain", "")),
-    )
-
-
-def _ahrefs_content_confirmation(
-    keyword: str,
-    source_url: str,
-    referenced_public_url: str,
-    competitor_domain: str,
-    gsc_signals: tuple[ContentSignal, ...],
-    wordpress_signals: tuple[ContentSignal, ...],
-) -> AhrefsContentConfirmation:
-    tokens = _content_tokens_from_text(
-        " ".join((keyword, source_url, referenced_public_url, competitor_domain))
-    )
-    return AhrefsContentConfirmation(
-        gsc_overlap_terms=_matching_signal_labels(tokens, gsc_signals),
-        wordpress_overlap_urls=_matching_signal_labels(tokens, wordpress_signals),
     )
 
 
@@ -972,7 +957,7 @@ def _ahrefs_gap_diagnosis(
     referenced_public_url: str,
     competitor_domain: str,
     facts: list[MetricFact],
-    confirmation: AhrefsContentConfirmation,
+    confirmation: AhrefsCrossSourceOverlap,
 ) -> str:
     context = ", ".join(
         part
@@ -995,29 +980,67 @@ def _ahrefs_gap_diagnosis(
     )
 
 
-def _ahrefs_confirmation_text(confirmation: AhrefsContentConfirmation) -> str:
-    if confirmation.gsc_overlap_terms and confirmation.wordpress_overlap_urls:
-        return "GSC i WordPress potwierdzają overlap tematu."
-    if confirmation.gsc_overlap_terms:
-        return "GSC potwierdza overlap tematu; WordPress wymaga sprawdzenia."
-    if confirmation.wordpress_overlap_urls:
-        return "WordPress potwierdza overlap tematu; GSC demand wymaga sprawdzenia."
-    return "Brak powiązania z GSC i WordPress w bieżących dowodach."
+def _ahrefs_cross_check_label(
+    source: str,
+    confirmation: AhrefsCrossSourceOverlap,
+) -> str:
+    check = confirmation.gsc if source == "GSC" else confirmation.wordpress
+    labels = {
+        "exact": f"potwierdzone dopasowanie w {source}",
+        "weak": f"słabe podobieństwo w {source} — sprawdź ręcznie",
+        "missing": f"brak potwierdzonego dopasowania w {source}",
+    }
+    return labels[check.strength]
+
+
+def _ahrefs_confirmation_text(confirmation: AhrefsCrossSourceOverlap) -> str:
+    if confirmation.gsc.strength == "exact" and confirmation.wordpress.strength == "exact":
+        return "GSC i WordPress potwierdzają dokładne dopasowanie tematu."
+    if confirmation.gsc.strength == "exact":
+        wordpress_note = (
+            " WordPress ma tylko słabe podobieństwo i wymaga ręcznej oceny."
+            if confirmation.wordpress.strength == "weak"
+            else " WordPress wymaga sprawdzenia."
+        )
+        return f"GSC potwierdza dokładne dopasowanie tematu.{wordpress_note}"
+    if confirmation.wordpress.strength == "exact":
+        gsc_note = (
+            " GSC ma tylko słabe podobieństwo i wymaga ręcznej oceny."
+            if confirmation.gsc.strength == "weak"
+            else " GSC wymaga sprawdzenia popytu."
+        )
+        return f"WordPress potwierdza dokładne dopasowanie tematu.{gsc_note}"
+    if confirmation.gsc.strength == "weak" or confirmation.wordpress.strength == "weak":
+        return (
+            "WILQ widzi wyłącznie słabe podobieństwo w GSC lub WordPress; "
+            "nie jest to potwierdzenie popytu ani istniejącej treści."
+        )
+    return "Brak potwierdzonego dopasowania z GSC i WordPress w bieżących dowodach."
 
 
 def _ahrefs_gap_next_step(
     topic: str,
-    confirmation: AhrefsContentConfirmation,
+    confirmation: AhrefsCrossSourceOverlap,
 ) -> str:
-    if confirmation.gsc_overlap_terms and confirmation.wordpress_overlap_urls:
+    if confirmation.gsc.strength == "exact" and confirmation.wordpress.strength == "exact":
         return (
-            f"Zweryfikuj `{topic}` na podstawie GSC i WordPress overlap, potem "
+            f"Zweryfikuj `{topic}` na podstawie dokładnych dopasowań GSC i WordPress, potem "
             "wybierz odświeżenie, scalenie, nową treść albo blokadę. Nie traktuj Ahrefs jako "
             "samodzielnej obietnicy ruchu."
         )
+    if confirmation.has_exact_match:
+        return (
+            f"Jedno źródło dokładnie potwierdza `{topic}`. Ręcznie sprawdź drugie źródło, "
+            "potem wybierz odświeżenie, scalenie, nową treść albo blokadę."
+        )
+    if confirmation.gsc.strength == "weak" or confirmation.wordpress.strength == "weak":
+        return (
+            f"WILQ widzi tylko słabe podobieństwo dla `{topic}`. Sprawdź ręcznie GSC "
+            "i spis WordPress; nie przygotowuj briefu ani decyzji o duplikacie na tej podstawie."
+        )
     return (
         f"Sprawdź ręcznie `{topic}` w GSC i spisie treści WordPress, potem wybierz "
-        "odświeżenie, scalenie, nową treść albo blokadę. Bez overlapu nie twórz briefu tylko "
+        "odświeżenie, scalenie, nową treść albo blokadę. Bez dopasowania nie twórz briefu tylko "
         "z Ahrefs."
     )
 
@@ -1046,61 +1069,6 @@ def _normalize_ahrefs_text(value: str) -> str:
         {"ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n", "ó": "o", "ś": "s", "ź": "z", "ż": "z"}
     )
     return value.lower().translate(replacements)
-
-
-def _content_signals(
-    facts: list[MetricFact],
-    *,
-    dimension_keys: tuple[str, ...],
-    label_keys: tuple[str, ...],
-    source_connector: str | None = None,
-    source_connector_prefix: str | None = None,
-) -> tuple[ContentSignal, ...]:
-    signal_tokens: dict[str, set[str]] = {}
-    for fact in facts:
-        if source_connector is not None and fact.source_connector != source_connector:
-            continue
-        if source_connector_prefix is not None and not fact.source_connector.startswith(
-            source_connector_prefix
-        ):
-            continue
-        label = _first_dimension_value(fact, label_keys)
-        if not label:
-            continue
-        tokens: set[str] = set()
-        for key in dimension_keys:
-            tokens.update(_content_tokens_from_text(fact.dimensions.get(key, "")))
-        if tokens:
-            signal_tokens.setdefault(label, set()).update(tokens)
-    return tuple(
-        ContentSignal(label=label, tokens=frozenset(tokens))
-        for label, tokens in signal_tokens.items()
-    )
-
-
-def _first_dimension_value(fact: MetricFact, keys: tuple[str, ...]) -> str | None:
-    for key in keys:
-        value = fact.dimensions.get(key)
-        if value:
-            return value
-    return None
-
-
-def _matching_signal_labels(
-    tokens: set[str],
-    signals: tuple[ContentSignal, ...],
-    *,
-    limit: int = 4,
-) -> tuple[str, ...]:
-    return tuple(_unique(signal.label for signal in signals if tokens & signal.tokens)[:limit])
-
-
-def _content_tokens_from_text(text: str) -> set[str]:
-    return {
-        token
-        for token in re.split(r"[^a-z0-9]+", _normalize_ahrefs_text(text))
-        if len(token) > 2 and token not in CONTENT_SIGNAL_STOPWORDS
-    }
 
 
 def _normalized_domain(value: str) -> str:

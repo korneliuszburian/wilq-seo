@@ -33,7 +33,12 @@ def content_preflight_similar_urls(decision: ContentDecisionItem) -> list[str]:
     urls: list[str | None] = []
     if decision.wordpress_match == "found":
         urls.append(content_decision_final_canonical_url(decision) or decision.source_public_url)
-    urls.extend(url for row in decision.ahrefs_candidate_rows for url in row.wordpress_overlap_urls)
+    urls.extend(
+        url
+        for row in decision.ahrefs_candidate_rows
+        if row.wordpress_cross_check.strength == "exact"
+        for url in row.wordpress_overlap_urls
+    )
     return _unique(url for url in urls if url)
 
 

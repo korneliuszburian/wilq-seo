@@ -96,21 +96,33 @@ def compact_ahrefs_diagnostics_for_context(
 def compact_ahrefs_cross_check_candidate_for_context(
     candidate: dict[str, Any],
 ) -> dict[str, Any]:
-    return {
+    compact = {
         key: candidate[key]
         for key in (
             "topic",
             "gap_type_label",
             "relevance_status_label",
             "gsc_demand_label",
+            "gsc_cross_check",
             "wordpress_inventory_match_label",
+            "wordpress_cross_check",
             "gsc_overlap_terms",
             "wordpress_overlap_urls",
+            "source_connectors",
             "next_step",
             "evidence_ids",
         )
         if key in candidate
     }
+    for key in ("gsc_cross_check", "wordpress_cross_check"):
+        if key in compact:
+            compact[key] = context_compaction.compact_ahrefs_cross_check_for_context(compact[key])
+    for key, limit in (("source_connectors", 3), ("evidence_ids", 3)):
+        value = compact.get(key)
+        if isinstance(value, list):
+            compact[key] = value[:limit]
+            compact[f"{key}_total"] = len(value)
+    return compact
 
 
 def compact_ahrefs_decision_for_context(decision: dict[str, Any]) -> dict[str, Any]:

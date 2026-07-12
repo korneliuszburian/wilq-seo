@@ -186,7 +186,9 @@ def _compact_content_ahrefs_candidate_row_for_context(
         "relevance_score",
         "business_relevance_reason_labels",
         "gsc_demand_label",
+        "gsc_cross_check",
         "wordpress_inventory_match_label",
+        "wordpress_cross_check",
         "gsc_overlap_terms",
         "wordpress_overlap_urls",
         "keyword",
@@ -194,6 +196,7 @@ def _compact_content_ahrefs_candidate_row_for_context(
         "source_url",
         "referenced_public_url",
         "metric_value",
+        "source_connectors",
         "evidence_ids",
         "next_step",
     }
@@ -202,12 +205,16 @@ def _compact_content_ahrefs_candidate_row_for_context(
         ("business_relevance_reason_labels", 4),
         ("gsc_overlap_terms", 4),
         ("wordpress_overlap_urls", 3),
+        ("source_connectors", 3),
         ("evidence_ids", 3),
     ):
         value = compact.get(key)
         if isinstance(value, list):
             compact[key] = value[:limit]
             compact[f"{key}_total"] = len(value)
+    for key in ("gsc_cross_check", "wordpress_cross_check"):
+        if key in compact:
+            compact[key] = context_compaction.compact_ahrefs_cross_check_for_context(compact[key])
     return compact
 
 
