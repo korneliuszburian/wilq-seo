@@ -214,6 +214,40 @@ def test_review_gate_builders_keep_required_checks_and_checklist_fallbacks() -> 
     assert checklist == ["one", "two"]
 
 
+def test_action_review_gate_owns_gate_assembly_behind_callback_seam() -> None:
+    from wilq.actions.review_gate import action_review_gate
+    from wilq.schemas import ActionObject
+
+    action = ActionObject.model_construct(
+        id="act_review_seam",
+        mode="prepare",
+        validation_status="valid",
+        payload={"apply_allowed": False},
+        audit_events=[],
+    )
+    gate = action_review_gate(
+        action=action,
+        mutation_audits=[],
+        action_apply_blockers_builder=lambda **_: ["payload_apply_allowed_false"],
+        required_checks_builder=lambda _payload: ["human_confirm_before_apply"],
+        operator_checklist_builder=lambda _payload: ["human_confirm_before_apply"],
+        payload_apply_allowed=lambda _payload: False,
+        requires_human_confirmation=lambda _checks: True,
+        supported_mutation_adapter=lambda _action: None,
+        string_list=lambda value: value if isinstance(value, list) else [],
+        gate_labels=lambda values: list(values),
+        confirmation_required=lambda _checks, _mode: True,
+        review_summary=lambda event: event.summary,
+        confirmation_summary=lambda event: event.summary,
+        impact_status=lambda _event: None,
+    )
+
+    assert gate.status == "validated_prepare_only"
+    assert gate.apply_allowed is False
+    assert gate.apply_blockers == ["payload_apply_allowed_false"]
+    assert gate.confirmation_required is True
+
+
 def test_latest_google_ads_vendor_read_ignores_non_vendor_runs_and_tiebreaks_id() -> None:
     from wilq.actions.google_ads.business_context import latest_google_ads_vendor_read
     from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus

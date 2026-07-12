@@ -9,7 +9,9 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from wilq.actions.action_blockers import (
-    action_apply_blockers,
+    action_apply_blockers as _action_apply_blockers_impl,
+)
+from wilq.actions.action_blockers import (
     action_confirmation_blockers,
     action_confirmation_event_type,
     action_confirmation_summary,
@@ -286,19 +288,19 @@ from wilq.actions.review_gate import (
     action_review_details as build_action_review_details,
 )
 from wilq.actions.review_gate import (
-    action_review_summary as build_action_review_summary,
+    action_review_gate as build_action_review_gate,
 )
 from wilq.actions.review_gate import (
-    build_action_review_gate,
-    latest_human_review_event,
-    review_outcome_from_event,
-    review_outcome_label,
+    action_review_summary as build_action_review_summary,
 )
 from wilq.actions.review_gate import (
     canonical_contract_key as canonical_review_contract_key,
 )
 from wilq.actions.review_gate import (
     review_blocker_label as build_review_blocker_label,
+)
+from wilq.actions.review_gate import (
+    review_outcome_label,
 )
 from wilq.actions.review_gate import (
     review_source_type_label as build_review_source_type_label,
@@ -1982,36 +1984,18 @@ def _action_review_gate(
     action: ActionObject,
     mutation_audits: list[ActionMutationAuditRecord] | None = None,
 ) -> ActionReviewGate:
-    required_checks = _action_required_checks(action.payload)
-    operator_checklist = _action_operator_checklist(action.payload)
-    apply_allowed = _action_payload_apply_allowed(action.payload)
-    last_review = latest_human_review_event(action.audit_events)
-    last_confirmation = _latest_action_confirmation_event(action.audit_events)
-    last_impact_check = _latest_action_impact_check_event(action.audit_events)
-    last_mutation_audit = _latest_mutation_audit(mutation_audits or [])
-    apply_blockers = action_apply_blockers(
+    return build_action_review_gate(
         action=action,
-        required_checks=required_checks,
-        apply_allowed=apply_allowed,
-        confirmation_satisfied=last_confirmation is not None,
-        impact_sanity_satisfied=_impact_status_from_event(last_impact_check) == "checked",
+        mutation_audits=mutation_audits,
+        action_apply_blockers_builder=_action_apply_blockers_impl,
+        required_checks_builder=_action_required_checks,
+        operator_checklist_builder=_action_operator_checklist,
+        payload_apply_allowed=_action_payload_apply_allowed,
         requires_human_confirmation=_requires_human_confirmation,
         supported_mutation_adapter=_supported_mutation_adapter,
         string_list=_string_list,
-    )
-    return build_action_review_gate(
-        action=action,
-        required_checks=required_checks,
-        operator_checklist=operator_checklist,
-        apply_allowed=apply_allowed,
-        last_review=last_review,
-        last_confirmation=last_confirmation,
-        last_impact_check=last_impact_check,
-        last_mutation_audit=last_mutation_audit,
-        apply_blockers=apply_blockers,
         gate_labels=_action_gate_labels,
         confirmation_required=_action_confirmation_required,
-        review_outcome=review_outcome_from_event,
         review_summary=lambda event: _operator_audit_summary_text(event.summary),
         confirmation_summary=_action_audit_summary_for_operator,
         impact_status=_impact_status_from_event,

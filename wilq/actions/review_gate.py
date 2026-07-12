@@ -3,6 +3,11 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Any, Literal
 
+from wilq.actions.audit_store import (
+    latest_action_confirmation_event,
+    latest_action_impact_check_event,
+    latest_mutation_audit,
+)
 from wilq.schemas import (
     ActionMode,
     ActionMutationAuditRecord,
@@ -33,6 +38,12 @@ BlockedClaimLabels = Callable[[list[str]], list[str]]
 StringList = Callable[[Any], list[str]]
 PreviewItems = Callable[[dict[str, Any]], list[dict[str, Any]]]
 UniqueValues = Callable[[Iterable[str]], list[str]]
+ApplyBlockersBuilder = Callable[..., list[str]]
+RequiredChecksBuilder = Callable[[dict[str, Any]], list[str]]
+OperatorChecklistBuilder = Callable[[dict[str, Any]], list[str]]
+PayloadApplyAllowed = Callable[[dict[str, Any]], bool]
+RequiresHumanConfirmation = Callable[[list[str]], bool]
+SupportedMutationAdapter = Callable[[ActionObject], str | None]
 
 
 def review_outcome_label(outcome: str) -> str:
@@ -221,6 +232,7 @@ def build_action_review_gate(
         apply_allowed=apply_allowed,
         apply_blockers=apply_blockers,
     )
+
     contract_apply_allowed = (
         apply_allowed and action.mode == ActionMode.apply and not apply_blockers
     )
@@ -289,6 +301,60 @@ def build_action_review_gate(
         last_mutation_blocker_labels=(
             gate_labels(last_mutation_audit.blockers) if last_mutation_audit is not None else []
         ),
+    )
+
+
+def action_review_gate(
+    *,
+    action: ActionObject,
+    mutation_audits: list[ActionMutationAuditRecord] | None,
+    action_apply_blockers_builder: ApplyBlockersBuilder,
+    required_checks_builder: RequiredChecksBuilder,
+    operator_checklist_builder: OperatorChecklistBuilder,
+    payload_apply_allowed: PayloadApplyAllowed,
+    requires_human_confirmation: RequiresHumanConfirmation,
+    supported_mutation_adapter: SupportedMutationAdapter,
+    string_list: StringList,
+    gate_labels: GateLabels,
+    confirmation_required: ConfirmationRequired,
+    review_summary: AuditSummary,
+    confirmation_summary: AuditSummary,
+    impact_status: ImpactStatus,
+) -> ActionReviewGate:
+    """Build the complete review gate behind one typed, callback-based seam."""
+    required_checks = required_checks_builder(action.payload)
+    operator_checklist = operator_checklist_builder(action.payload)
+    apply_allowed = payload_apply_allowed(action.payload)
+    last_review = latest_human_review_event(action.audit_events)
+    last_confirmation = latest_action_confirmation_event(action.audit_events)
+    last_impact_check = latest_action_impact_check_event(action.audit_events)
+    last_mutation_audit = latest_mutation_audit(mutation_audits or [])
+    apply_blockers = action_apply_blockers_builder(
+        action=action,
+        required_checks=required_checks,
+        apply_allowed=apply_allowed,
+        confirmation_satisfied=last_confirmation is not None,
+        impact_sanity_satisfied=impact_status(last_impact_check) == "checked",
+        requires_human_confirmation=requires_human_confirmation,
+        supported_mutation_adapter=supported_mutation_adapter,
+        string_list=string_list,
+    )
+    return build_action_review_gate(
+        action=action,
+        required_checks=required_checks,
+        operator_checklist=operator_checklist,
+        apply_allowed=apply_allowed,
+        last_review=last_review,
+        last_confirmation=last_confirmation,
+        last_impact_check=last_impact_check,
+        last_mutation_audit=last_mutation_audit,
+        apply_blockers=apply_blockers,
+        gate_labels=gate_labels,
+        confirmation_required=confirmation_required,
+        review_outcome=review_outcome_from_event,
+        review_summary=review_summary,
+        confirmation_summary=confirmation_summary,
+        impact_status=impact_status,
     )
 
 

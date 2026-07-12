@@ -911,6 +911,13 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 - Fresh mobile browser proof po quiet managed stack: `.local-lab/proof/continuation-2026-07-12/c9h9-14-cache-mobile.png`;
   decyzja, blocker i bezpieczne CTA pozostają marketer-facing, a technical
   details są niżej.
+- Kolejny slice `jnra` przeniósł składanie `_action_review_gate` do istniejącego
+  `wilq/actions/review_gate.py` jako callback-based typed seam. Service zachowuje
+  tylko domenowe callbacki (payload, adapter, labels, audit summary), a owner
+  module składa status, blockers, review/confirm/impact/mutation audit i
+  `apply_allowed`. 67 focused review/action/mutation tests, Ruff, mypy,
+  complexity, diff check i live API smoke przechodzą; brak nowych endpointów i
+  vendor writes.
 
 ## Weryfikacja
 

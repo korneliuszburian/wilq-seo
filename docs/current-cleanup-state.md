@@ -787,6 +787,10 @@ ich rozmiaru.
   Niezależnie utrwalono bezpieczne hardening: diagnostics cache 60 s i cached
   activation packet, z zachowaniem jawnej invalidacji po refresh/mutacji.
 - Browser proof po quiet stack: `.local-lab/proof/continuation-2026-07-12/c9h9-14-cache-mobile.png`.
+- `_action_review_gate` jest teraz własnością `wilq/actions/review_gate.py`;
+  `service.py` przekazuje callbacki domenowe przez mały typed seam. Status
+  review, blockerów, confirm/impact/mutation audit i apply safety pozostaje
+  bez zmian.
 
 ## Resume
 
