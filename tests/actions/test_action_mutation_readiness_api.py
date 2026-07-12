@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 import wilq.actions.service as action_service
 from apps.api.wilq_api.main import app
 from wilq.actions.service import apply_action
+from wilq.actions.wordpress_mutation_requirements import WordPressDraftApplyCapability
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftWriteAuthorization
@@ -325,7 +326,7 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
             "publish_ready": False,
         }
     )
-    capability = action_service.WordPressDraftApplyCapability(
+    capability = WordPressDraftApplyCapability(
         handoff=handoff,
         draft_package=draft_package,
         write_authorization=ContentWordPressDraftWriteAuthorization(
@@ -425,16 +426,14 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         lambda: SimpleNamespace(),
     )
     monkeypatch.setattr(
-        action_service,
-        "content_workflow_store",
+        "wilq.content.workflow.store.content_workflow_store",
         lambda: SimpleNamespace(
             latest_human_review=lambda _work_item_id: review,
             latest_audit_for_review=lambda _review_id: audit,
         ),
     )
     monkeypatch.setattr(
-        action_service,
-        "build_content_work_item_diagnostics_snapshot_response_for_work_item",
+        "wilq.content.workflow.api.build_content_work_item_diagnostics_snapshot_response_for_work_item",
         lambda _diagnostics, _work_item_id, *, human_review, audit: snapshot,
     )
 
@@ -545,16 +544,14 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
         lambda: SimpleNamespace(),
     )
     monkeypatch.setattr(
-        action_service,
-        "content_workflow_store",
+        "wilq.content.workflow.store.content_workflow_store",
         lambda: SimpleNamespace(
             latest_human_review=lambda _id: review,
             latest_audit_for_review=lambda _id: SimpleNamespace(id="audit_content_route"),
         ),
     )
     monkeypatch.setattr(
-        action_service,
-        "build_content_work_item_diagnostics_snapshot_response_for_work_item",
+        "wilq.content.workflow.api.build_content_work_item_diagnostics_snapshot_response_for_work_item",
         lambda *_args, **_kwargs: snapshot,
     )
     monkeypatch.setattr(

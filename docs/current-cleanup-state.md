@@ -770,6 +770,12 @@ ich rozmiaru.
   `_action_mutation_audit_record`; service wywołuje istniejące moduły readiness,
   audit i WordPress bezpośrednio. API nadal pokazuje
   `ready_to_request_apply=false` i `publication_allowed=false`.
+- Typed `WordPressDraftApplyCapability` oraz exact binding bieżącego snapshotu
+  są teraz własnością `wilq/actions/wordpress_mutation_requirements.py`;
+  service ma tylko kompatybilną fasadę. Po restarcie managed stack API jest
+  zdrowe, a browser proof desktop/mobile potwierdza marketer-facing route i
+  preview-only dev boundary:
+  `.local-lab/proof/continuation-2026-07-12/wordpress-capability-mobile-after-restart.png`.
 
 ## Resume
 

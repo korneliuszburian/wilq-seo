@@ -6,7 +6,6 @@ from contextlib import suppress
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any, Literal
-from urllib.parse import urlparse
 from uuid import uuid4
 
 from wilq.actions.action_blockers import (
@@ -320,7 +319,9 @@ from wilq.actions.wordpress_draft import (
     existing_draft_update_action,
 )
 from wilq.actions.wordpress_mutation_requirements import (
+    WordPressDraftApplyCapability,
     wordpress_draft_activation_packet,
+    wordpress_draft_apply_capability,
     wordpress_draft_execution_readiness_requirements,
     wordpress_draft_target_content_readiness_requirements,
     wordpress_draft_write_readiness,
@@ -337,20 +338,11 @@ from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.connectors.wordpress.client import create_wordpress_draft_post
-from wilq.content.drafts.package import ContentDraftPackage
-from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
-from wilq.content.handoff.wordpress_execution import (
-    ContentWordPressDraftWriteAuthorization,
-    execute_content_wordpress_draft_handoff,
-)
+from wilq.content.handoff.wordpress_execution import execute_content_wordpress_draft_handoff
 from wilq.content.handoff.wordpress_execution import (
     wordpress_draft_execution_errors as _wordpress_draft_execution_errors_impl,
 )
 from wilq.content.knowledge.service_profile import content_service_profile_response
-from wilq.content.workflow.api import (
-    build_content_work_item_diagnostics_snapshot_response_for_work_item,
-)
-from wilq.content.workflow.store import content_workflow_store
 from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
@@ -396,13 +388,6 @@ SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES = {
     "private_evidence_policy_proposal",
 }
 DEFAULT_ACTION_LIST_CACHE_SECONDS = 15.0
-
-
-@dataclass(frozen=True)
-class WordPressDraftApplyCapability:
-    handoff: ContentWordPressDraftHandoff
-    draft_package: ContentDraftPackage
-    write_authorization: ContentWordPressDraftWriteAuthorization
 
 
 @dataclass(frozen=True)
@@ -1494,69 +1479,8 @@ def _wordpress_draft_apply_capability(
     action: ActionObject,
     request: ActionApplyRequest | None,
 ) -> tuple[WordPressDraftApplyCapability | None, list[str]]:
-    if action.id != "act_apply_wordpress_draft_handoff":
-        return None, []
-    input_contract = request.wordpress_draft if request is not None else None
-    if input_contract is None:
-        return None, [
-            "Apply szkicu WordPress wymaga typed work item, handoff, draft package i target URL."
-        ]
-    if request is None or not request.confirmed_by:
-        return None, ["Apply szkicu WordPress wymaga potwierdzonego aktora operatora."]
-
-    from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-
-    diagnostics = build_content_diagnostics_cached()
-    review = content_workflow_store().latest_human_review(input_contract.work_item_id)
-    if review is None:
-        return None, ["Brakuje zapisanego review człowieka dla wskazanego work itemu."]
-    audit = content_workflow_store().latest_audit_for_review(review.id)
-    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-        diagnostics,
-        input_contract.work_item_id,
-        human_review=review,
-        audit=audit,
-    )
-    if snapshot is None:
-        return None, ["Wskazany work item nie istnieje w aktualnej kolejce WILQ."]
-    draft_package = snapshot.draft_package.draft_package_result.draft_package
-    handoff = snapshot.wordpress_handoff.handoff_result.handoff
-    if draft_package is None or handoff is None:
-        return None, ["Brakuje kompletnej paczki szkicu albo handoffu WordPress."]
-    if handoff.id != input_contract.handoff_id:
-        return None, ["Handoff WordPress nie pasuje do wskazanego ActionObject apply."]
-    if draft_package.id != input_contract.draft_package_id:
-        return None, ["Paczka szkicu nie pasuje do wskazanego ActionObject apply."]
-    if handoff.work_item_id != input_contract.work_item_id:
-        return None, ["Handoff nie pasuje do wskazanego work itemu."]
-    if handoff.final_canonical_url != input_contract.target_url:
-        return None, ["Canonical URL nie pasuje do zatwierdzonego handoffu."]
-    target_host = (urlparse(input_contract.target_url).hostname or "").lower()
-    if target_host not in {"ekologus.pl", "www.ekologus.pl"}:
-        return None, ["Apply szkicu wymaga publicznego canonical URL Ekologus."]
-    if handoff.publish_allowed or handoff.destructive_update_allowed:
-        return None, ["Handoff WordPress nie jest draft-only."]
-
-    confirmation = _latest_action_confirmation_event(action.audit_events)
-    if confirmation is None or confirmation.actor != request.confirmed_by:
-        return None, ["Aktor confirm nie pasuje do zapisanego audytu ActionObject."]
-    preview = _latest_preview_event(action.audit_events)
-    if preview is None:
-        return None, ["Brakuje audytu preview ActionObject."]
-    return (
-        WordPressDraftApplyCapability(
-            handoff=handoff,
-            draft_package=draft_package,
-            write_authorization=ContentWordPressDraftWriteAuthorization(
-                action_id=action.id,
-                preview_audit_id=preview.id,
-                review_audit_id=review.id,
-                confirmation_audit_id=confirmation.id,
-                confirmed_by=request.confirmed_by,
-            ),
-        ),
-        [],
-    )
+    """Compatibility seam for callers/tests while ownership lives in WordPress requirements."""
+    return wordpress_draft_apply_capability(action, request)
 
 
 def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessResponse:

@@ -881,6 +881,14 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `_action_mutation_audit_record`. Service wywołuje istniejące owner modules
   bezpośrednio; focused WordPress/mutation/audit tests, Ruff, mypy, complexity,
   diff check i API smoke przechodzą. `ready_to_request_apply=false` pozostaje.
+- Najnowszy slice `jnra` przeniósł typed `WordPressDraftApplyCapability` i
+  walidację exact work item/handoff/draft package/canonical URL/confirm actor do
+  istniejącego `wilq/actions/wordpress_mutation_requirements.py`; service
+  zachowuje jedną kompatybilną fasadę dla istniejących testów. 39 focused
+  WordPress/mutation/audit tests, Ruff, mypy, complexity i diff check przechodzą.
+  Po managed restart API health jest `ok`; readiness nadal fail-closed. Fresh
+  browser proof: `.local-lab/proof/continuation-2026-07-12/wordpress-capability-desktop.png`,
+  `wordpress-capability-mobile-after-restart.png`.
 
 ## Weryfikacja
 
