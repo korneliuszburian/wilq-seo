@@ -42,4 +42,6 @@ pozostaje jawny i nie jest zamieniany w rekomendację.
 
 ## Commit
 
-Hash implementacji zostanie dopisany po pushu w osobnym docs-only commicie.
+Implementacja: `a08d2d66` (`refactor: extract keyword planner preview cards`),
+wypchnięta na `origin/main`. Ten handoff zostanie domknięty osobnym docs-only
+commitem.
