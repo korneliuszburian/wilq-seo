@@ -207,3 +207,47 @@ def test_search_term_ngram_preview_keeps_metrics_and_safety_rows() -> None:
     assert "brak kontroli intencji" in rows["Braki"]
     assert "marnowanie budżetu" in rows["Czego nie wolno twierdzić"]
     assert cards[0].apply_state_label == "zapis zmian zablokowany"
+
+
+def test_ga4_tracking_preview_keeps_landing_source_and_measurement_blockers() -> None:
+    from wilq.actions.ga4.tracking_preview import ga4_tracking_quality_preview_cards
+    from wilq.schemas import ActionPreviewRowViewModel
+
+    cards = ga4_tracking_quality_preview_cards(
+        {
+            "payload_preview": [
+                {
+                    "landing_page_label": "/uslugi",
+                    "source_medium_label": "google / cpc",
+                    "campaign_name_label": "Ekologus Search",
+                    "metric_snapshot": {"sessions": 14},
+                    "metric_snapshot_labels": {"sessions": "sesje"},
+                    "tracking_dimension_gap_labels": ["brak strony wejścia"],
+                    "required_validation_labels": ["sprawdź konfigurację GA4"],
+                    "blocked_claim_labels": ["jakość kampanii"],
+                    "apply_allowed": False,
+                    "api_mutation_ready": False,
+                }
+            ]
+        },
+        preview_row=lambda label, value: ActionPreviewRowViewModel(label=label, value=value),
+        string_list=lambda value: [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else [],
+        metric_snapshot_rows=lambda snapshot, labels: [
+            ActionPreviewRowViewModel(label=str(labels[key]), value=str(snapshot[key]))
+            for key in snapshot
+            if key in labels
+        ],
+        apply_state_label=lambda value: "zapis zmian zablokowany",
+        system_readiness_label=lambda value: "system zablokowany przed zapisem",
+    )
+
+    assert len(cards) == 1
+    rows = {row.label: row.value for row in cards[0].rows}
+    assert rows["Strona wejścia"] == "/uslugi"
+    assert rows["Źródło"] == "google / cpc"
+    assert rows["sesje"] == "14"
+    assert "brak strony wejścia" in rows["Braki wymiarów"]
+    assert "jakość kampanii" in rows["Czego nie wolno twierdzić"]
+    assert cards[0].apply_state_label == "zapis zmian zablokowany"

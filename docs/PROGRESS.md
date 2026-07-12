@@ -564,6 +564,12 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   `api_mutation_ready=false`; focused behavior test, Ruff, mypy, complexity i
   browser proof przechodzą:
   `.local-lab/proof/continuation-2026-07-12/ads-search-ngram-preview-cards.png`.
+- GA4 tracking-quality preview jest teraz wydzielony do
+  `wilq/actions/ga4/tracking_preview.py`; live action zachowuje landing/source/
+  campaign rows, metric snapshot, tracking gaps, blocked claims i
+  `apply_allowed=false`/`api_mutation_ready=false`. Focused behavior test, Ruff,
+  mypy, complexity i browser proof przechodzą:
+  `.local-lab/proof/continuation-2026-07-12/ga4-tracking-preview-cards.png`.
 - Manual usefulness `/content-workflow` pozostaje 6/10: freshness i pierwsza
   decyzja są jawne, ale pełna karta świeżego workflow i mobile triage nadal
   wymagają dopracowania.

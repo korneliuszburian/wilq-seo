@@ -502,6 +502,11 @@ ich rozmiaru.
   przykłady zapytań, blocked claims oraz `apply_allowed=false`/
   `api_mutation_ready=false`. Browser proof:
   `.local-lab/proof/continuation-2026-07-12/ads-search-ngram-preview-cards.png`.
+- GA4 tracking-quality preview renderer jest teraz w
+  `wilq/actions/ga4/tracking_preview.py`; service przekazuje callback do typed
+  metric rows, a live karta zachowuje landing/source/campaign evidence,
+  tracking gaps, blocked claims i brak zapisu. Browser proof:
+  `.local-lab/proof/continuation-2026-07-12/ga4-tracking-preview-cards.png`.
 - Action detail proof po restart pokazuje cztery typed WordPress preview cards,
   canonical/public URL rows i blocked claims; artefakt jest w
   `.local-lab/proof/continuation-2026-07-12/action-preview-cards.png`.
