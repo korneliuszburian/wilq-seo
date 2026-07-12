@@ -16,6 +16,7 @@ fail-closed `kwota niepotwierdzona` pozostały bez zmian.
 - Po managed restart API health jest `ok`; Ads action detail ma evidence,
   `Zapis zmian zablokowany` i `apply_allowed=false`.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/money-label-live.png`.
+- Commit implementacji: `241abee` wypchnięty na `origin/main`.
 - Brak nowych endpointów, vendor writes, credential changes lub publikacji.
 
 ## Beads
