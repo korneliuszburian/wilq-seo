@@ -26,7 +26,7 @@ claims i ActionObject safety loop pozostały bez zmian.
 ## Stan grafu
 
 `wilq-seo-jnra` pozostaje `in_progress`; WordPress payload `7b285df2`, social
-`3895ca5a`, Ads budget `65df313f`; ten recommendation seam czeka na commit/push.
+`3895ca5a`, Ads budget `65df313f`, recommendation preview `ca1f2bcc`.
 
 ## Następny krok
 
