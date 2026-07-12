@@ -21,6 +21,7 @@ kompatybilności, a ActionObject safety loop pozostaje bez zmian.
   i HTTP 200.
 - Browser proof: `.local-lab/proof/continuation-2026-07-12/audit-selectors-live.png`
   oraz snapshot z technicznym disclosure poniżej decyzji.
+- Commit implementacji: `b9f5ca3` wypchnięty na `origin/main`.
 - Brak POST, vendor write, zmiany credentiali lub nowych endpointów.
 
 ## Beads
