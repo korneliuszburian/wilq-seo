@@ -50,6 +50,11 @@ w git, Beads i `docs/progress/archive/`.
   Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do 1272
   LOC. Measurement nadal zwraca blocker bez success claims; dalsze readiness
   helpers mają osobny follow-up `wilq-seo-kvgd`.
+- `wilq-seo-kvgd` wydziela existing-draft update readiness projection do
+  `wilq/content/workflow/stage_readiness.py`. Pełne content workflow contracts,
+  Ruff, mypy, live snapshot i browser proof przechodzą; `api.py` spadł do 1201
+  LOC. Update istniejącego draftu nadal jest jawnie zablokowany; pozostałe
+  activation/write-readiness orchestration ma osobny Bead `wilq-seo-eieh`.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

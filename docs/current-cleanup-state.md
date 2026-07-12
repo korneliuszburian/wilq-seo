@@ -65,6 +65,10 @@ publikacji. `api.py` ma 1313 LOC; measurement extraction śledzi `wilq-seo-s8dl`
 `wilq/content/workflow/stage_measurement.py`. Live snapshot zachowuje fresh
 evidence, 1 measurement blocker i brak success claim. `api.py` ma 1272 LOC;
 pozostałe readiness helpers śledzi `wilq-seo-kvgd`.
+`wilq-seo-kvgd` wydzielił existing-draft update readiness projection do
+`wilq/content/workflow/stage_readiness.py`. Live kontrakt nadal blokuje update
+istniejącego draftu i nie odblokowuje publikacji. `api.py` ma 1201 LOC;
+pozostałe activation/write-readiness orchestration śledzi `wilq-seo-eieh`.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
