@@ -1773,21 +1773,6 @@ def _wordpress_draft_execution_errors(execution: Any) -> list[str]:
     return _wordpress_draft_execution_errors_impl(execution)
 
 
-def _mutation_requirement(
-    *,
-    code: str,
-    label: str,
-    satisfied: bool,
-    evidence: str | None = None,
-) -> ActionMutationReadinessRequirement:
-    return ActionMutationReadinessRequirement(
-        code=code,
-        label=label,
-        satisfied=satisfied,
-        evidence=evidence,
-    )
-
-
 def _mutation_readiness_blockers(
     requirements: list[ActionMutationReadinessRequirement],
 ) -> list[ActionMutationReadinessBlocker]:

@@ -858,6 +858,10 @@ tests, dashboard typecheck/Vitest oraz screenshots w
   kompatybilne fasady, a kontrakt apply pozostaje draft-only. Focused mutation
   readiness/action tests (7 testów), Ruff, mypy, complexity, diff check oraz
   live API smoke przechodzą; brak nowych endpointów i vendor writes.
+- Kolejny slice `jnra` usunął martwy helper `_mutation_requirement` z
+  `wilq/actions/service.py`; świeży `rg` potwierdza brak referencji, a typowane
+  readiness requirements nadal pochodzą z istniejących modułów. 48 focused
+  testów akcji, Ruff, mypy, complexity i diff check przechodzi.
 
 ## Weryfikacja
 

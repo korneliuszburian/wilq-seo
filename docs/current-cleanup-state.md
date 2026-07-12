@@ -753,6 +753,9 @@ ich rozmiaru.
   `wilq/actions/wordpress_mutation_requirements.py`; `service.py` deleguje
   bez zmiany kontraktu. Focused mutation readiness/action tests i live API
   smoke przechodzą, a apply nadal raportuje `vendor_write_possible=false`.
+- Usunięto nieużywany helper `_mutation_requirement` z `service.py`; `rg` nie
+  znajduje pozostałych referencji, bez zmiany kontraktu readiness ani safety
+  loop. 48 focused testów akcji przechodzi.
 
 ## Resume
 
