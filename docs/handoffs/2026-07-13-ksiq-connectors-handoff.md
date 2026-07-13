@@ -770,6 +770,11 @@
   Komponent renderuje wyłącznie typed URL/sekcje; nie zawiera decyzji SEO,
   canonical matching ani inferencji evidence. Focused route tests, Playwright
   layout proof, dashboard lint/typecheck/build i diff check przechodzą.
+- `ho41` continuation 5 2026-07-13: wspólny marketer fact tile przeniesiony do
+  `apps/dashboard/src/routes/ContentWorkflowFactTile.tsx` (8 LOC). Route nie
+  posiada już tej powtarzalnej prymitywy prezentacyjnej; etykiety/liczniki
+  pozostają w istniejących call sites. Focused route tests, Playwright proof,
+  lint/typecheck/build i diff check przechodzą.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

@@ -76,6 +76,9 @@ without adding a write path or client-specific ACF assumptions.
 The public WordPress page/section column is now `ContentPublicPageColumn.tsx`;
 it renders only the selected URL and section headings and does not infer SEO
 decisions, canonical matches or evidence.
+The shared marketer fact tile is now `ContentWorkflowFactTile.tsx`; it is a
+presentation-only primitive used by existing panels and does not own metric
+meaning or business rules.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

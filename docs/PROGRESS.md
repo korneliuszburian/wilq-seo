@@ -38,6 +38,11 @@ w git, Beads i `docs/progress/archive/`.
   selected public URL and typed section headings; no SEO decision, canonical
   matching or evidence inference moved into React. Focused route tests,
   Playwright layout proof, dashboard lint/typecheck/build and diff check pass.
+- `wilq-seo-ho41` continuation 5: moved the shared marketer fact tile into
+  `ContentWorkflowFactTile.tsx` (8 LOC), so the route no longer owns this
+  repeated presentation primitive. All existing labels/counts remain typed at
+  their call sites; no API or decision semantics changed. Focused route tests,
+  Playwright layout proof, lint/typecheck/build and diff check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i
