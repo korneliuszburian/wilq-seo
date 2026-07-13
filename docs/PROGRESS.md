@@ -111,6 +111,10 @@ w git, Beads i `docs/progress/archive/`.
   content ma disclosure evidence/freshness, a pełny workflow pozostaje niżej.
   Vitest 18/18, ESLint, TypeScript, Vite build i finalne screenshoty 390×844
   przechodzą. Render score wzrósł do 8/10 dla obu mobile surfaces.
+- `wilq-seo-3bst.13` wykonany: `docs/roadmap/dashboard-target-visualization-2026-07-13.md`
+  definiuje aktualny target brief dla design roastu, oparty wyłącznie na
+  realnych WILQ routes/API, marketer-vs-audit IA, content workflow i ActionObject
+  safety. Nie dodaje fikcyjnych możliwości ani endpointów.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

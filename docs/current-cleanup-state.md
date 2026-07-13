@@ -104,6 +104,9 @@ content marketer 8/10, audit 8/10, queue 7/10, command center 7/10, mobile
 `wilq-seo-3bst.9` zamknięty: mobile triage command center/content pokazuje jedną
 pracę, dwa blokery i jeden CTA; finalne render scores to 8/10, bez nowego API i
 bez duplikowania reguł biznesowych w React.
+`wilq-seo-3bst.13` zamknięty: aktualny target visualization brief jest w
+`docs/roadmap/dashboard-target-visualization-2026-07-13.md` i odróżnia realne
+capabilities WILQ od propozycji designu.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
