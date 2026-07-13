@@ -510,6 +510,14 @@ PY
     exit 1
   fi
 
+  if [ ! -s "$result_file" ]; then
+    echo "Codex eval produced no result.json for $skill. Stderr tail:" >&2
+    tail -n 80 "$stderr_file" >&2 || true
+    echo "Codex eval trace tail:" >&2
+    tail -n 80 "$jsonl_file" >&2 || true
+    exit 1
+  fi
+
   uv run python - "$result_file" "$skill" "$api_base" "$cases_file" <<'PY'
 import json
 import re
