@@ -134,6 +134,12 @@
   Draft-only, publish=false, destructive-update=false i ActionObject gate
   pozostają wymuszone, focused gates przechodzą. Następny seam: Social
   publisher/context-pack contracts.
+- Dwudziesty szósty seam: `packages/shared-schemas/src/social_publisher.ts`
+  zawiera review-only social draft context i publisher context-pack (38 LOC),
+  a `packages/shared-schemas/src/context_pack.ts` agreguje pełny API context
+  pack (43 LOC); `index.ts` ma 227 LOC. Dedupe blocker, publish=false i
+  evidence lineage wymuszone, focused gates przechodzą. Następny seam:
+  remaining aggregate/type aliases.
 
 ## Następny krok
 

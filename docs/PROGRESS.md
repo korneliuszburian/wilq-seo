@@ -101,6 +101,12 @@ w git, Beads i `docs/progress/archive/`.
   destructive-update=false i ActionObject gate pozostają wymuszone. Shared
   schema/dashboard lint, build, tests i typecheck przechodzą. Następny seam:
   Social publisher/context-pack contracts.
+- Dwudziesty szósty seam: `social_publisher.ts` zawiera review-only social draft
+  context i publisher context-pack (38 LOC), a `context_pack.ts` agreguje pełny
+  API context pack (43 LOC); `index.ts` ma 227 LOC. Historyczny dedupe blocker,
+  publish=false i evidence lineage pozostają wymuszone. Shared schema/dashboard
+  lint, build, tests i typecheck przechodzą. Następny seam: remaining aggregate/
+  type aliases.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

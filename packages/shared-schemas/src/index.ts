@@ -7,19 +7,7 @@ import {
 import {
   ContentPreflightResponseSchema
 } from "./content_preflight";
-import {
-  ConnectorRefreshRunSchema,
-  ConnectorStatusSchema,
-  EvidenceSchema
-  ,MetricFactSchema
-} from "./connectors";
-import {
-  ActionObjectSchema
-} from "./actions";
-import {
-  MarketingBriefSchema,
-  TacticalQueueResponseSchema
-} from "./marketing";
+import { MetricFactSchema } from "./connectors";
 import {
   AdsAccountCurrencyReadContractSchema,
   AdsBudgetPacingReadContractSchema,
@@ -101,6 +89,11 @@ import {
   WordPressAuthoringProfileSchema
 } from "./wordpress_authoring";
 import {
+  SocialDraftContextSchema,
+  SocialPublisherContextPackSchema
+} from "./social_publisher";
+import { ContextPackResponseSchema } from "./context_pack";
+import {
   MerchantDecisionItemSchema,
   MerchantDiagnosticSectionSchema,
   MerchantDiagnosticsResponseSchema
@@ -133,6 +126,8 @@ export * from "./workflow_contracts";
 export * from "./demand_gen";
 export * from "./social_history";
 export * from "./wordpress_authoring";
+export * from "./social_publisher";
+export * from "./context_pack";
 export * from "./merchant_diagnostics";
 
 
@@ -141,61 +136,6 @@ export * from "./merchant_diagnostics";
 
 
 
-export const SocialDraftContextSchema = z.object({
-  mode: z.literal("review_only"),
-  publish_allowed: z.literal(false),
-  missing_publish_access: z.record(z.string(), z.array(z.string())),
-  draft_action_ids: z.array(z.string()),
-  source_inputs: z.array(z.record(z.string(), z.unknown())),
-  draft_constraints: z.array(z.string()),
-  blocked_claims: z.array(z.string()),
-  source_metric_names: z.array(z.string()).optional(),
-  source_connectors: z.array(z.string()).optional(),
-  evidence_ids: z.array(z.string()).optional(),
-  historical_social_inventory_status: z.enum(["missing", "invalid", "review_ready"]),
-  historical_social_inventory_status_label: z.string(),
-  duplicate_risk_status: z.literal("blocked_until_social_history_review"),
-  duplicate_risk_status_label: z.string(),
-  required_history_sources: z.array(z.enum(["linkedin", "facebook"])),
-  missing_history_evidence: z.array(z.string()),
-  social_history_inventory: SocialHistoryInventorySchema,
-  history_audit_endpoint: z.literal("/api/social/history-inventory/audit"),
-  history_audit_contract: z.literal("social_history_inventory_v1"),
-  operator_next_step: z.string()
-});
-
-export const SocialPublisherContextPackSchema = z.object({
-  strict_instruction: z.string(),
-  connector_status: z.array(ConnectorStatusSchema),
-  active_action_objects: z.array(ActionObjectSchema),
-  evidence_summaries: z.array(EvidenceSchema),
-  social_draft_context: SocialDraftContextSchema
-});
-
-export const ContextPackResponseSchema = z.object({
-  current_product_rules: z.array(z.string()),
-  available_connectors: z.array(z.string()),
-  connector_status: z.array(ConnectorStatusSchema),
-  top_opportunities: z.array(OpportunitySchema),
-  active_action_objects: z.array(ActionObjectSchema),
-  connector_refresh_runs: z.array(ConnectorRefreshRunSchema),
-  evidence_summaries: z.array(EvidenceSchema),
-  knowledge_card_summaries: z.array(KnowledgeCardSchema),
-  expert_rule_summaries: z.array(ExpertRuleSummarySchema),
-  expert_capabilities: z.array(ExpertCapabilitySchema),
-  command_center: CommandCenterResponseSchema,
-  marketing_brief: MarketingBriefSchema,
-  tactical_queue: TacticalQueueResponseSchema,
-  ads_diagnostics: AdsDiagnosticsResponseSchema,
-  merchant_diagnostics: MerchantDiagnosticsResponseSchema,
-  content_diagnostics: ContentDiagnosticsResponseSchema,
-  content_preflight: ContentPreflightResponseSchema.optional(),
-  ga4_diagnostics: Ga4DiagnosticsResponseSchema,
-  localo_diagnostics: LocaloDiagnosticsResponseSchema.optional(),
-  ahrefs_diagnostics: AhrefsDiagnosticsResponseSchema.optional(),
-  demand_gen_readiness: DemandGenReadinessContractSchema.optional(),
-  strict_instruction: z.string()
-});
 
 export type MetricFact = z.infer<typeof MetricFactSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;
