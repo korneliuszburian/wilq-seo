@@ -323,6 +323,24 @@ def assert_ads_business_context_decision_contract(
     assert decision["action_ids"] == expected_actions
 
 
+def assert_ads_derived_kpi_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove derived KPIs are available but profitability claims stay gated."""
+    contract = payload["derived_kpi_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["allowed_metrics"] == [
+        "ctr",
+        "average_cpc_micros",
+        "conversion_rate",
+        "cost_per_conversion_micros",
+        "roas",
+        "value_per_conversion",
+    ]
+    assert "profit_margin" in contract["missing_read_contracts"]
+    for available in ("account_currency", "recommendations", "impression_share", "change_history"):
+        assert available not in contract["missing_read_contracts"]
+    assert "opłacalność" in contract["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2582,22 +2600,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         expected_business_context_actions,
         operator_summary,
     )
+    assert_ads_derived_kpi_contract_basics(payload)
     derived_kpi_contract = payload["derived_kpi_read_contract"]
-    assert derived_kpi_contract["status"] == "ready"
-    assert derived_kpi_contract["allowed_metrics"] == [
-        "ctr",
-        "average_cpc_micros",
-        "conversion_rate",
-        "cost_per_conversion_micros",
-        "roas",
-        "value_per_conversion",
-    ]
-    assert "profit_margin" in derived_kpi_contract["missing_read_contracts"]
-    assert "account_currency" not in derived_kpi_contract["missing_read_contracts"]
-    assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
-    assert "impression_share" not in derived_kpi_contract["missing_read_contracts"]
-    assert "change_history" not in derived_kpi_contract["missing_read_contracts"]
-    assert "opłacalność" in derived_kpi_contract["blocked_claims"]
     assert derived_kpi_contract["kpi_rows"] == [
         {
             "campaign_id": "101",

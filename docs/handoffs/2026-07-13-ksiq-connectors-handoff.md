@@ -402,6 +402,9 @@
 - Ósmy pod-slice zakończony: policy IDs, review gates, ActionObject IDs i
   blocked decision card są w nazwanych helperach. Następny krok: derived KPI
   contract oraz jego blocked-claim semantics.
+- Dziewiąty pod-slice zakończony: `assert_ads_derived_kpi_contract_basics`
+  przejął KPI gates i blocked profitability claim. Następny krok to pełny KPI
+  row/evidence proof.
 
 ## Następny krok
 
