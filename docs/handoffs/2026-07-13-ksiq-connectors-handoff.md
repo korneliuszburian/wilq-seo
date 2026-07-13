@@ -831,6 +831,11 @@
   child payloady są typed i niezmienione. 19 focused Vitest, lint, typecheck,
   build i diff check przechodzą. E2E nadal kończy się na istniejącym locatorze
   `Treści: praca nad stroną`; brak dowodu regresji tego seamu.
+- `ho41` continuation 17 2026-07-13: `MobileContentTriage.tsx` wydzielony jako
+  mobile-only decision presentation boundary. Candidate, blockers, freshness,
+  evidence counts i review-only CTA pozostają API-owned inputs. 19 focused
+  Vitest, lint, typecheck, build i diff check przechodzą. E2E nadal zatrzymuje
+  się na istniejącym locatorze `Treści: praca nad stroną`.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent
