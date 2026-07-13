@@ -37,6 +37,10 @@ w git, Beads i `docs/progress/archive/`.
   który został poprawiony i pokryty testem; po poprawce świeże przebiegi w
   `schema-fix5-20260713`/`schema-fix6-20260713` przechodzą dla wszystkich
   czterech wymaganych skillów.
+- `v9ab.13` continuation 2026-07-13: świeży `export_marketer_uat_packet.py`
+  zwrócił `ekologus_marketer_uat_packet_v1` z 5 uporządkowanymi widokami i 5
+  pytaniami końcowymi. To jest gotowy materiał do sesji, ale nie udaję UAT:
+  nadal brakuje realnego uczestnika, czasu, werdyktu albo explicit owner defer.
 - Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
   najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
