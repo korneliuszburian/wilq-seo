@@ -120,6 +120,9 @@ w git, Beads i `docs/progress/archive/`.
 - Ads search-term safety contract jest teraz w
   `scripts/ads_search_term_safety_assertions.py`. Live smoke kończy się
   `exit 0`; `main` ma 737 LOC/167 branches, helper 19 LOC/8 branches.
+- Ads keyword-match context contract jest teraz w
+  `scripts/ads_keyword_match_assertions.py`. Live smoke kończy się `exit 0`;
+  `main` ma 723 LOC/161 branches, helper 17 LOC/7 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

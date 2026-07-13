@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from ads_change_history_assertions import validate_change_history_contract
 from ads_change_impact_assertions import validate_change_impact_contract
 from ads_impression_share_assertions import validate_impression_share_contract
+from ads_keyword_match_assertions import validate_keyword_match_context_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
 from ads_search_term_review_assertions import validate_search_term_review_contract
@@ -243,23 +244,9 @@ def main() -> int:
         ads_diagnostics, pack
     )
     search_term_safety_read_contract = validate_search_term_safety_contract(ads_diagnostics, pack)
-    if keyword_match_context_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose keyword_match_context_read_contract")
-    if not keyword_match_context_read_contract.get("blocked_claims"):
-        raise SystemExit("Keyword match context contract must list zablokowane obietnice")
-    if keyword_match_context_read_contract.get("status") == "ready":
-        pack_keyword_context_contract = (
-            pack.get("ads_diagnostics", {}).get("keyword_match_context_read_contract") or {}
-        )
-        if pack_keyword_context_contract.get("summary") != (
-            keyword_match_context_read_contract.get("summary")
-        ):
-            raise SystemExit("Context-pack Ads diagnostics must include keyword match context")
-    elif "keyword_match_context_read" not in keyword_match_context_read_contract.get(
-        "missing_read_contracts",
-        [],
-    ):
-        raise SystemExit("Blocked keyword match context must list missing read contract")
+    keyword_match_context_read_contract = validate_keyword_match_context_contract(
+        ads_diagnostics, pack
+    )
     if keyword_planner_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose keyword_planner_read_contract")
     if not keyword_planner_read_contract.get("blocked_claims"):

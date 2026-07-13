@@ -95,6 +95,9 @@
 - Search-term safety contract jest w
   `scripts/ads_search_term_safety_assertions.py`; live smoke przechodzi, a
   `main` ma 737 LOC/167 branches. Następny seam: keyword-match context.
+- Keyword-match context contract jest w
+  `scripts/ads_keyword_match_assertions.py`; live smoke przechodzi, a
+  `main` ma 723 LOC/161 branches. Następny seam: Keyword Planner contract.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
