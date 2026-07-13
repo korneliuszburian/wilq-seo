@@ -45,7 +45,7 @@ from wilq.briefing.content_diagnostics import (
     clear_content_diagnostics_cache,
 )
 from wilq.briefing.daily_runtime import (
-    build_daily_runtime,
+    build_daily_check_runtime,
     clear_daily_runtime_cache,
 )
 from wilq.briefing.merchant_diagnostics import (
@@ -111,7 +111,7 @@ async def _prewarm_knowledge_map() -> None:
 async def _prewarm_daily_runtime() -> None:
     """Warm the daily operator view after readiness without blocking startup."""
     with suppress(Exception):
-        await asyncio.to_thread(build_daily_runtime)
+        await asyncio.to_thread(build_daily_check_runtime)
 
 
 app = FastAPI(title="WILQ Marketing API", version="0.1.0", lifespan=wilq_lifespan)

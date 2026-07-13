@@ -5,7 +5,7 @@ from datetime import date
 from typing import Literal
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-from wilq.briefing.daily_runtime import build_daily_runtime
+from wilq.briefing.daily_runtime import build_daily_check_runtime
 from wilq.briefing.false_positive_guards import (
     FalsePositiveGuardResult,
     evaluate_content_measurement_baseline_guard,
@@ -60,7 +60,7 @@ class _ContentMeasurementGuardContext:
 
 def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
     """Compile the existing daily decision queue into a traceable operator result."""
-    runtime = build_daily_runtime(use_cache=use_cache)
+    runtime = build_daily_check_runtime(use_cache=use_cache)
     connector_refs = _connector_refs(runtime.connectors)
     ga4_guard = _ga4_conversion_guard(runtime.command_center.daily_decisions)
     content_guard = _content_date_window_guard(runtime.command_center.daily_decisions)

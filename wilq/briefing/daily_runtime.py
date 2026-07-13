@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from threading import Lock
 from time import monotonic
 
 from wilq.actions.service import list_actions
@@ -29,6 +30,7 @@ DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 30.0
 _cached_base: DailyRuntimeBaseCacheEntry | None = None
 _cached_command_center: DailyCommandCenterCacheEntry | None = None
 _cached_marketing_brief: DailyMarketingBriefCacheEntry | None = None
+_daily_runtime_build_lock = Lock()
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,14 @@ class DailyRuntime:
     core_actions: list[ActionObject]
     command_center: CommandCenterResponse
     marketing_brief: MarketingBrief
+
+
+@dataclass(frozen=True)
+class DailyCheckRuntime:
+    """Narrow cached view needed by the API-owned daily-check compiler."""
+
+    connectors: list[ConnectorStatus]
+    command_center: CommandCenterResponse
 
 
 @dataclass(frozen=True)
@@ -87,35 +97,52 @@ def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
     )
 
 
+def build_daily_check_runtime(use_cache: bool = True) -> DailyCheckRuntime:
+    """Build only the connector and command-center views used by daily-check."""
+    base = build_daily_runtime_base(use_cache=use_cache)
+    command_center = build_daily_command_center(use_cache=use_cache, base=base)
+    return DailyCheckRuntime(
+        connectors=base.connectors,
+        command_center=command_center,
+    )
+
+
 def build_daily_runtime_base(use_cache: bool = True) -> DailyRuntimeBase:
     if use_cache:
         cached_base = _read_daily_runtime_base_cache()
         if cached_base is not None:
             return cached_base
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        connectors_future = executor.submit(list_connector_statuses)
-        actions_future = executor.submit(list_actions)
-        refresh_runs_future = executor.submit(list_connector_refresh_runs)
-        command_facts_future = executor.submit(
-            metric_store().list_latest_metric_facts_by_connector_limits,
-            command_center_metric_fact_limits(),
-        )
+    with _daily_runtime_build_lock:
+        if use_cache:
+            cached_base = _read_daily_runtime_base_cache()
+            if cached_base is not None:
+                return cached_base
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            connectors_future = executor.submit(list_connector_statuses)
+            actions_future = executor.submit(list_actions)
+            refresh_runs_future = executor.submit(list_connector_refresh_runs)
+            command_facts_future = executor.submit(
+                metric_store().list_latest_metric_facts_by_connector_limits,
+                command_center_metric_fact_limits(),
+            )
 
-        connectors = connectors_future.result()
-        actions = actions_future.result()
-        refresh_runs = refresh_runs_future.result()
-        command_center_facts_by_connector = command_facts_future.result()
-        tactical_queue = build_tactical_queue(facts_by_connector=command_center_facts_by_connector)
-    base = DailyRuntimeBase(
-        connectors=connectors,
-        actions=actions,
-        refresh_runs=refresh_runs,
-        tactical_queue=tactical_queue,
-        command_center_facts_by_connector=command_center_facts_by_connector,
-    )
-    if use_cache:
-        _write_daily_runtime_base_cache(base)
-    return base
+            connectors = connectors_future.result()
+            actions = actions_future.result()
+            refresh_runs = refresh_runs_future.result()
+            command_center_facts_by_connector = command_facts_future.result()
+            tactical_queue = build_tactical_queue(
+                facts_by_connector=command_center_facts_by_connector
+            )
+        base = DailyRuntimeBase(
+            connectors=connectors,
+            actions=actions,
+            refresh_runs=refresh_runs,
+            tactical_queue=tactical_queue,
+            command_center_facts_by_connector=command_center_facts_by_connector,
+        )
+        if use_cache:
+            _write_daily_runtime_base_cache(base)
+        return base
 
 
 def build_daily_command_center(

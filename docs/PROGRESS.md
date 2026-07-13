@@ -5,6 +5,13 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `inoz` continuation: daily-check now uses a narrow cached runtime that omits
+  the marketing brief, and concurrent base-cache builds are serialized with a
+  re-check to prevent duplicate cold work. Focused tests, Ruff, mypy and
+  `git diff --check` pass. Managed restart still measured a cold first read of
+  `13.991204 s`, followed by `2.733938 s` and `2.824721 s`; this is recorded as
+  an unresolved startup latency blocker, not a false completion. Browser
+  `/content-workflow` proof remains marketer-readable and draft-only.
 - `v9ab.13` recheck 2026-07-13 19:31Z: świeży packet UAT pokazuje 24 zadania
   Centrum pracy, 1330 zgłoszeń Merchant, 2 decyzje Treści oraz konkretną
   stronę główną `https://www.ekologus.pl/` z 22 zapytaniami i dopasowaniem

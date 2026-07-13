@@ -5,6 +5,12 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`wilq-seo-inoz` pozostaje otwarty: narrow daily-check runtime i serializacja
+base-cache usuwają duplicate concurrent builds, ale cold first read po readiness
+pozostaje potwierdzonym blockerem (`13.991204 s`, potem `2.733938 s` i
+`2.824721 s`). Nie udawaj ukończenia; kolejny wybór to jawna koordynacja
+prewarm/readiness albo typed `prewarm_in_progress`.
+
 `v9ab.13` ma świeży packet z 2026-07-13 19:31Z: Treści pokazują konkretną
 stronę główną z 22 zapytaniami i dopasowaniem GSC/WordPress, ale Ahrefs nadal
 blokuje temat bez canonicalu. To nadal materiał do realnego review, nie UAT.

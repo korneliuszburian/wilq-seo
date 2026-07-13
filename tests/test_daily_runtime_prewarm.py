@@ -7,12 +7,12 @@ import asyncio
 from apps.api.wilq_api import main
 
 
-def test_daily_runtime_prewarm_builds_the_existing_cached_runtime(
+def test_daily_runtime_prewarm_builds_the_daily_check_runtime(
     monkeypatch,
 ) -> None:
     calls: list[bool] = []
 
-    monkeypatch.setattr(main, "build_daily_runtime", lambda: calls.append(True))
+    monkeypatch.setattr(main, "build_daily_check_runtime", lambda: calls.append(True))
 
     asyncio.run(main._prewarm_daily_runtime())
 
