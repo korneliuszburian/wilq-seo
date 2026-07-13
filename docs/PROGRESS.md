@@ -2251,3 +2251,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
   Test docelowy i pełny action-object suite przechodzą; stare angielskie
   techniczne frazy są nadal odrzucane w widocznej kopii.
+- Szesnasta kontynuacja `50wa`: content-refresh review-gate Polish language
+  test przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
+  Nowy i pełny action-object suite przechodzą; operator widzi polską instrukcję,
+  a query/topic nie wraca do widocznej kopii.

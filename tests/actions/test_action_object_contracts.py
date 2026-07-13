@@ -1260,32 +1260,6 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
     assert '"target", "site", "mapping", "review"' not in service_source
 
 
-def test_content_refresh_review_gates_use_polish_operator_language(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
-    monkeypatch.setenv(
-        "WILQ_STATE_DB",
-        str(tmp_path / "content_review_gate_language.sqlite3"),
-    )
-
-    response = client.get("/api/actions/act_prepare_content_refresh_queue")
-
-    assert response.status_code == 200
-    action = response.json()
-    review_gate_copy = "\n".join(
-        [
-            *action["payload"]["operator_review_gates"],
-            *action["review_gate"]["operator_checklist"],
-            *action["review_gate"]["operator_checklist_labels"],
-        ]
-    )
-
-    assert "sprawdź intencję zapytania i tematu" in review_gate_copy
-    assert "query" + "/topic" not in review_gate_copy
-
-
 def test_wordpress_handoff_review_gate_avoids_payload_jargon(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
