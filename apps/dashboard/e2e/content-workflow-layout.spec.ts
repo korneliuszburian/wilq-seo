@@ -21,10 +21,11 @@ test.describe("WILQ content workflow layout proof", () => {
     await page.goto("/content-workflow");
     const queuePayload = (await (await queueResponse).json()) as {
       queue_status?: string;
+      freshness_assessment?: { requires_refresh?: boolean };
     };
     expect(Date.now() - queueStartedAt).toBeLessThan(5_000);
 
-    if (queuePayload.queue_status === "blocked") {
+    if (queuePayload.queue_status === "blocked" && queuePayload.freshness_assessment?.requires_refresh) {
       await expect(page.getByRole("heading", { name: "Workflow treści bez slopu" })).toBeVisible();
       await expect(page.getByRole("heading", { name: /Źródła treści:/ })).toBeVisible();
       await expect(page.getByRole("status").getByText(/Następny bezpieczny krok:/)).toBeVisible();

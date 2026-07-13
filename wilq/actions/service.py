@@ -94,6 +94,9 @@ from wilq.actions.gate_labels import (
 from wilq.actions.gate_labels import (
     action_gate_labels,
 )
+from wilq.actions.google_ads.action_candidates import (
+    seed_metric_actions as seed_google_ads_metric_actions,
+)
 from wilq.actions.google_ads.business_context import (
     ads_business_context_configured,
     ads_business_context_missing_read_contracts,
@@ -620,48 +623,21 @@ def _seed_google_ads_metric_actions(
     by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
 ) -> None:
     google_ads_facts = by_connector.get("google_ads", [])
-    demand_gen_action = demand_gen_readiness_action_from_metric_facts(
-        google_ads_facts,
-        by_connector.get("google_analytics_4", []),
-        latest_google_ads_evidence_ids=latest_vendor_read_evidence_ids("google_ads"),
-        latest_ga4_evidence_ids=latest_vendor_read_evidence_ids("google_analytics_4"),
+    actions.update(
+        seed_google_ads_metric_actions(
+            google_ads_facts=google_ads_facts,
+            ga4_facts=by_connector.get("google_analytics_4", []),
+            latest_google_ads_evidence_ids=latest_vendor_read_evidence_ids("google_ads"),
+            latest_ga4_evidence_ids=latest_vendor_read_evidence_ids("google_analytics_4"),
+            demand_gen_action=demand_gen_readiness_action_from_metric_facts,
+            campaign_review_action=campaign_review_action_from_metric_facts,
+            recommendation_action=recommendation_review_action_from_metric_facts,
+            change_history_action=change_history_impact_action_from_metric_facts,
+            search_term_ngram_action=search_term_ngram_action_from_metric_facts,
+            custom_segment_action=custom_segment_action_from_metric_facts,
+            negative_keyword_action=negative_keyword_action_from_metric_facts,
+        )
     )
-    if demand_gen_action is not None:
-        actions[demand_gen_action.id] = demand_gen_action
-
-    campaign_review_action_result = campaign_review_action_from_metric_facts(
-        google_ads_facts
-    )
-    if campaign_review_action_result is not None:
-        action = campaign_review_action_result
-        actions[action.id] = action
-
-    recommendation_action = recommendation_review_action_from_metric_facts(google_ads_facts)
-    if recommendation_action is not None:
-        action = recommendation_action
-        actions[action.id] = action
-
-    change_history_action = change_history_impact_action_from_metric_facts(google_ads_facts)
-    if change_history_action is not None:
-        action = change_history_action
-        actions[action.id] = action
-
-    search_term_ngram_action_result = search_term_ngram_action_from_metric_facts(
-        google_ads_facts
-    )
-    if search_term_ngram_action_result is not None:
-        action = search_term_ngram_action_result
-        actions[action.id] = action
-
-    custom_segment_action_result = custom_segment_action_from_metric_facts(google_ads_facts)
-    if custom_segment_action_result is not None:
-        action = custom_segment_action_result
-        actions[action.id] = action
-
-    negative_keyword_action_result = negative_keyword_action_from_metric_facts(google_ads_facts)
-    if negative_keyword_action_result is not None:
-        action = negative_keyword_action_result
-        actions[action.id] = action
 
 
 def _seed_localo_metric_actions(

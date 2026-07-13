@@ -2619,3 +2619,18 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   mypy, complexity, API health, dashboard title and Playwright proof pass.
   Complexity reports the expected frozen service-file budget warning while the
   file shrank to 1201 LOC; this is not a new growth regression.
+- `jnra` continuation 11 2026-07-13: Google Ads metric-action candidate
+  assembly moved into `wilq/actions/google_ads/action_candidates.py`; the
+  service facade retains factory callback injection and action IDs/payloads are
+  unchanged. Focused action-cache/metric-fact/Ads contract tests (22 passed),
+  Ruff, mypy, complexity, API action count (21) and mutation-readiness smoke
+  (0 vendor writes) pass. `service.py` is now 1183 LOC; the only complexity
+  finding is the documented frozen-file budget warning.
+- Content freshness re-check 2026-07-13: read-only GSC refresh
+  `refresh_google_search_console_be3dc376b2d5` and asynchronous WordPress
+  refresh `refresh_wordpress_ekologus_fc459b5eb89d` completed with redacted
+  evidence IDs. Queue is now fresh with 2 candidates and 1 actionable of the
+  required 3; density remains a blocker. Browser proof initially exposed a
+  stale test assumption that every blocked queue has a freshness banner. The
+  E2E branch now follows the typed `freshness_assessment.requires_refresh`
+  contract; dashboard lint, typecheck and Playwright pass.

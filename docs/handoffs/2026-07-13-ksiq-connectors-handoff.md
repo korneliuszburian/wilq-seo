@@ -1032,6 +1032,17 @@
   and Playwright proof pass. Do not repeat apply/impact/confirmation or this
   mutation-readiness seam; next work must be a fresh product or architecture
   boundary.
+- `jnra` continuation 11 2026-07-13: Google Ads metric-action candidate
+  assembly now lives in `wilq/actions/google_ads/action_candidates.py`; the
+  facade preserves callback injection and action output. Focused action/Ads
+  tests (22 passed), Ruff, mypy, complexity, API action count and mutation
+  readiness pass; `service.py` is 1183 LOC. Do not repeat this candidate seam.
+- Content queue freshness was actively rechecked: GSC and WordPress read-only
+  refreshes completed with evidence IDs, yielding fresh data, 2 candidates and
+  1 actionable of 3 required. The remaining blocker is density, not stale
+  sources. Browser proof caught and fixed a stale E2E branch that assumed every
+  blocked queue renders `Źródła treści:`; it now follows the API freshness
+  contract. Do not treat the queue as ready until actionable density reaches 3.
 
 ## Następny krok
 
