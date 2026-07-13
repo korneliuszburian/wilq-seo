@@ -130,6 +130,9 @@ claim-count and safe-next-step inputs without owning ranking logic.
 The decision panel header is now `ContentWorkflowDecisionHeader.tsx`; it renders
 typed topic, publication-blocked state and stepper inputs while route/model code
 retains workflow semantics.
+The decision panel's claim summary is now `ContentWorkflowClaimSummary.tsx`; it
+renders typed claim counts and review/brief/WordPress links while claim-gate
+semantics remain API/model-owned.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
