@@ -47,6 +47,11 @@ w git, Beads i `docs/progress/archive/`.
   Content freshness nadal współdzieli istniejący `contentWorkflow` contract.
   Shared schema/dashboard lint, build, tests i typecheck przechodzą. Następny
   seam: Content preflight contracts.
+- Szesnasty seam: `content_preflight.ts` zawiera `ContentPreflightItem` oraz
+  `ContentPreflightResponse` (50 LOC); `index.ts` ma 1 580 LOC. Istniejące
+  statusy i gate'y create/draft/WordPress/canonical/duplicate pozostają bez
+  zmian. Shared schema/dashboard lint, build, tests i typecheck przechodzą.
+  Następny seam: GA4 diagnostic contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

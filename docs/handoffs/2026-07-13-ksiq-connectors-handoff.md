@@ -82,6 +82,10 @@
   (264 LOC); `index.ts` ma 1 623 LOC. Content freshness współdzieli istniejący
   `contentWorkflow` contract, focused gates przechodzą. Następny seam: Content
   preflight contracts.
+- Szesnasty seam: `packages/shared-schemas/src/content_preflight.ts` zawiera
+  `ContentPreflightItem` oraz `ContentPreflightResponse` (50 LOC); `index.ts`
+  ma 1 580 LOC. Statusy i gate'y create/draft/WordPress/canonical/duplicate bez
+  zmian, focused gates przechodzą. Następny seam: GA4 diagnostic contracts.
 
 ## Następny krok
 
