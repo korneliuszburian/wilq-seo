@@ -98,6 +98,9 @@ Marketer/Audyt techniczny; tryb audytu otwiera szczegóły, a tryb marketera nie
 eksponuje raw payloadów, ID ani kontraktów above the fold.
 `wilq-seo-3bst.5` zamknięty po re-audycie jako już wykonany: Kolejka jest
 kanoniczną powierzchnią decyzji i akcji; nie ma podstaw do drugiego queue API.
+`wilq-seo-3bst.12` zamknięty po świeżym desktop/mobile packet i render review:
+content marketer 8/10, audit 8/10, queue 7/10, command center 7/10, mobile
+7/10. Wynik pozostaje review evidence, nie zastępuje Wilku UAT.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
