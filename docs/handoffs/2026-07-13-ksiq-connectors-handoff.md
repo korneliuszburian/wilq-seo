@@ -549,6 +549,12 @@
   strategy-review blocker i KPI-vs-target evidence są zachowane. Focused
   Ads/Ruff/mypy/diff check zielone; główny test ma 936 linii i 12 branchy.
   Następny krok: końcowy audit completion criteria.
+- Re-audit po pięćdziesiątym trzecim pod-slice: `audit_complexity` raportuje 0
+  changed-code budget violations, ale główny test nadal ma 936 linii i 12
+  branchy. Kontrakty i focused bramki są zielone, lecz `c9h9.22` pozostaje
+  otwarty, bo acceptance wymaga fizycznego splitu funkcji do modułów/testów
+  zachowania. Następny krok: przeniesienie pierwszej grupy helperów do
+  osobnego modułu bez zmiany runtime.
 
 ## Następny krok
 

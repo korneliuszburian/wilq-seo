@@ -2061,3 +2061,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   target interpretation, strategy-review blocker i KPI-vs-target evidence.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 936 linii i 12
   branchy. Następny seam: końcowy audit completion criteria.
+- Re-audit po pięćdziesiątym trzecim pod-slice: `audit_complexity` raportuje 0
+  changed-code budget violations, ale `test_ads_diagnostics_exposes_live_campaign_metric_facts`
+  nadal ma 936 linii i 12 branchy. Wszystkie wydzielone kontrakty i focused
+  bramki są zielone, jednak `c9h9.22` pozostaje otwarty, bo acceptance wymaga
+  fizycznego splitu funkcji do modułów/testów zachowania. Następny slice:
+  przeniesienie pierwszej grupy helperów do osobnego modułu bez zmiany runtime.
