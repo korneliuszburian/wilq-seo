@@ -511,6 +511,12 @@
   Ads/Ruff/mypy/diff check zielone; główny test ma 1201 linii i 12 branchy.
   Następny krok: pozostałe action payloady i finalny tail.
 
+- Czterdziesty siódmy pod-slice zakończony: campaign review ActionObject
+  payload jest w `assert_ads_campaign_review_action_payload`; budget context,
+  Polish disclosure, safety review i fail-closed mutation flags są zachowane.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1122 linii i 12
+  branchy. Następny krok: pozostałe ActionObject payloady i status/context tail.
+
 ## Następny krok
 
 - Po commit/push kontynuować `wilq-seo-c9h9.22`; nie wracać do connector schemas.

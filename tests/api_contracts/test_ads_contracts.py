@@ -2006,6 +2006,62 @@ def assert_ads_write_blocker_decision_contract(
     assert payload["blocker_count"] == 2
 
 
+def assert_ads_campaign_review_action_payload(action: dict[str, Any]) -> None:
+    """Prove campaign review payload exposes facts while blocking budget writes."""
+    payload = action["payload"]
+    assert payload["action_type"] == "campaign_change_review"
+    candidate = payload["campaign_candidates"][0]
+    assert candidate["campaign_name"] == "Brand Search"
+    assert candidate["review_priority"] == "wysokie"
+    assert candidate["review_score"] == 50
+    assert "Kolejność oceny kampanii" in candidate["review_reason"]
+    assert candidate["human_review_gates"] == [
+        "review_campaign_goal",
+        "review_conversion_quality",
+        "review_budget_context",
+        "review_search_terms_before_budget_decision",
+        "human_strategy_review",
+    ]
+    assert candidate["target_context"]["target_status"] == "no_target"
+    assert candidate["derived_kpis"]["roas"] == 37.5625
+    assert candidate["budget_context"] == {
+        "budget_amount_micros": 30000000,
+        "cost_micros_7d": 12000000,
+        "seven_day_budget_micros": 210000000,
+        "spend_to_budget_ratio_7d": 0.057143,
+        "has_recommended_budget": True,
+        "recommended_budget_amount_micros": 42000000,
+    }
+    assert payload["preview_contract"] == "budget_apply_preview_v1"
+    budget_preview = payload["budget_payload_preview"][0]
+    assert budget_preview["operation_type"] == "CampaignBudgetOperation"
+    assert budget_preview["proposed_budget_amount_micros"] == 42000000
+    assert budget_preview["api_mutation_ready"] is False
+    assert budget_preview["apply_allowed"] is False
+    card = action["preview_cards"][0]
+    assert card["kind"] == "google_ads_budget_review"
+    assert card["title_label"] == "Budżet kampanii do sprawdzenia"
+    rows = {row["label"]: row["value"] for row in card["rows"]}
+    assert rows["Kampania"] == "Brand Search"
+    assert rows["Budżet"] == "Brand budget"
+    assert rows["Obecny budżet"] == "30.00 PLN"
+    assert rows["Propozycja"] == "42.00 PLN"
+    assert "CampaignBudgetOperation" not in str(card)
+    assert "101" not in str(card)
+    assert "701" not in str(card)
+    safety = budget_preview["safety_review"]
+    assert safety["safety_contract"] == "campaign_budget_apply_safety_v1"
+    assert safety["apply_allowed"] is False
+    assert safety["api_mutation_ready"] is False
+    assert safety["destructive"] is False
+    assert payload["apply_allowed"] is False
+    assert payload["destructive"] is False
+    assert "budget_pacing" in payload["required_validation"]
+    assert "budget_apply_preview" in payload["required_validation"]
+    assert "campaign_budget_apply_safety" in payload["required_validation"]
+    assert "skalowanie budżetu" in payload["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4482,86 +4538,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         for action in actions_payload
         if action["id"] == "act_prepare_ads_campaign_review_queue"
     )
-    assert campaign_review_action["payload"]["action_type"] == "campaign_change_review"
-    assert campaign_review_action["payload"]["campaign_candidates"][0]["campaign_name"] == (
-        "Brand Search"
-    )
-    assert (
-        campaign_review_action["payload"]["campaign_candidates"][0]["review_priority"] == "wysokie"
-    )
-    assert campaign_review_action["payload"]["campaign_candidates"][0]["review_score"] == 50
-    assert (
-        "Kolejność oceny kampanii"
-        in campaign_review_action["payload"]["campaign_candidates"][0]["review_reason"]
-    )
-    assert campaign_review_action["payload"]["campaign_candidates"][0]["human_review_gates"] == [
-        "review_campaign_goal",
-        "review_conversion_quality",
-        "review_budget_context",
-        "review_search_terms_before_budget_decision",
-        "human_strategy_review",
-    ]
-    assert (
-        campaign_review_action["payload"]["campaign_candidates"][0]["target_context"][
-            "target_status"
-        ]
-        == "no_target"
-    )
-    assert (
-        campaign_review_action["payload"]["campaign_candidates"][0]["derived_kpis"]["roas"]
-        == 37.5625
-    )
-    assert campaign_review_action["payload"]["campaign_candidates"][0]["budget_context"] == {
-        "budget_amount_micros": 30000000,
-        "cost_micros_7d": 12000000,
-        "seven_day_budget_micros": 210000000,
-        "spend_to_budget_ratio_7d": 0.057143,
-        "has_recommended_budget": True,
-        "recommended_budget_amount_micros": 42000000,
-    }
-    assert campaign_review_action["payload"]["preview_contract"] == ("budget_apply_preview_v1")
-    assert (
-        campaign_review_action["payload"]["budget_payload_preview"][0]["operation_type"]
-        == "CampaignBudgetOperation"
-    )
-    assert campaign_review_action["preview_cards"]
-    budget_preview_card = campaign_review_action["preview_cards"][0]
-    assert budget_preview_card["kind"] == "google_ads_budget_review"
-    assert budget_preview_card["title_label"] == "Budżet kampanii do sprawdzenia"
-    budget_preview_rows = {row["label"]: row["value"] for row in budget_preview_card["rows"]}
-    assert budget_preview_rows["Kampania"] == "Brand Search"
-    assert budget_preview_rows["Budżet"] == "Brand budget"
-    assert budget_preview_rows["Obecny budżet"] == "30.00 PLN"
-    assert budget_preview_rows["Propozycja"] == "42.00 PLN"
-    assert "CampaignBudgetOperation" not in str(budget_preview_card)
-    assert "101" not in str(budget_preview_card)
-    assert "701" not in str(budget_preview_card)
-    assert (
-        campaign_review_action["payload"]["budget_payload_preview"][0][
-            "proposed_budget_amount_micros"
-        ]
-        == 42000000
-    )
-    assert (
-        campaign_review_action["payload"]["budget_payload_preview"][0]["api_mutation_ready"]
-        is False
-    )
-    assert campaign_review_action["payload"]["budget_payload_preview"][0]["apply_allowed"] is False
-    budget_safety_review = campaign_review_action["payload"]["budget_payload_preview"][0][
-        "safety_review"
-    ]
-    assert budget_safety_review["safety_contract"] == "campaign_budget_apply_safety_v1"
-    assert budget_safety_review["apply_allowed"] is False
-    assert budget_safety_review["api_mutation_ready"] is False
-    assert budget_safety_review["destructive"] is False
-    assert campaign_review_action["payload"]["apply_allowed"] is False
-    assert campaign_review_action["payload"]["destructive"] is False
-    assert "budget_pacing" in campaign_review_action["payload"]["required_validation"]
-    assert "budget_apply_preview" in campaign_review_action["payload"]["required_validation"]
-    assert (
-        "campaign_budget_apply_safety" in campaign_review_action["payload"]["required_validation"]
-    )
-    assert "skalowanie budżetu" in campaign_review_action["payload"]["blocked_claims"]
+    assert_ads_campaign_review_action_payload(campaign_review_action)
     campaign_review_validation_response = client.post(
         "/api/actions/act_prepare_ads_campaign_review_queue/validate",
         json={},

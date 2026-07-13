@@ -2025,3 +2025,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   source-term gates, payload preview i ActionObject safety. Focused
   Ads/Ruff/mypy/diff check zielone; główny test ma 1201 linii i 12 branchy.
   Następny seam: pozostałe action payloady i finalny tail.
+- Czterdziesty siódmy pod-slice c9h9.22: campaign review ActionObject payload
+  wydzielony do `assert_ads_campaign_review_action_payload`; zachowano budget
+  context, Polish disclosure, safety review i fail-closed mutation flags.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1122 linii i 12
+  branchy. Następny seam: pozostałe ActionObject payloady i status/context tail.
