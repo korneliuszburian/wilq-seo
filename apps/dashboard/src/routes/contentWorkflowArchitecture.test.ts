@@ -21,6 +21,14 @@ describe("ContentWorkflow architecture boundary", () => {
     expect(routeSource).toContain("<ContentWorkflowLoaded");
   });
 
+  it("keeps first-screen and draft presentation in extracted owners", () => {
+    expect(routeSource).toContain("<ContentPageWorkbenchView");
+    expect(routeSource).toContain("<WordPressDraftWorkPanelView");
+    expect(routeSource).toContain("<WorkflowStepsList");
+    expect(routeSource).not.toContain("Treści: praca nad stroną");
+    expect(routeSource).not.toContain('<FactTile label="Publikacja"');
+  });
+
   it("keeps ActionDetail remote queries behind its domain hook", () => {
     expect(actionRouteSource).toContain("useActionDetailQueries");
     expect(actionRouteSource).not.toContain('queryKey: ["actions", actionId]');

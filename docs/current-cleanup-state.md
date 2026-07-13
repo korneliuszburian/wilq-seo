@@ -14,6 +14,13 @@ IDs oraz readiness `ready`; mutation audit delta wynosi 0, a vendor-write
 possible/attempt counts wynoszą 0. Nie powtarzać tego cache seamu. Następny
 pomiar cold readiness należy do `inoz`.
 
+`c9h9.24` usuwa martwy `ContentWorkflowDiagnosticSurface.test.tsx`; nie
+przywracać tego source-string testu. Query/wiring i extracted-owner seam mają
+właściciela w `contentWorkflowArchitecture.test.ts`, a realne copy i draft-only
+zachowanie w renderowanym `ContentWorkflowSurface.test.tsx`. Full dashboard,
+typecheck, lint
+i live `/content-workflow` proof przechodzą bez zmiany runtime code.
+
 `wilq-seo-inoz` pozostaje otwarty: narrow daily-check runtime i serializacja
 base-cache usuwają duplicate concurrent builds, a pierwszy request podczas
 prewarmu zwraca typed `daily_check_runtime_prewarm` zamiast czekać lub zmyślać.

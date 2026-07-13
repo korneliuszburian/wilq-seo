@@ -17,6 +17,16 @@ w git, Beads i `docs/progress/archive/`.
   testów, Ruff, mypy i identyfikowalny `/ga4` browser proof przechodzą. Nie
   dodawać cache w React ani drugiego endpointu; dalszy cold-read problem należy
   do `inoz`.
+- `c9h9.24` cleanup: fresh recheck znalazł dwa czerwone source-string assertions
+  po podziale `/content-workflow`. Repo-wide reference i coverage check
+  potwierdził, że cały `ContentWorkflowDiagnosticSurface.test.tsx` dublował
+  aktualne testy: `contentWorkflowArchitecture.test.ts` chroni query/wiring
+  seam, a renderowany `ContentWorkflowSurface.test.tsx` chroni polskie copy,
+  draft-only payload, brak live CTA i canonical review link. Martwy test-theater
+  artefakt usunięto zamiast przywracać stringi do route monolitu. Mały test
+  architektury nadal pilnuje extracted first-screen/draft owners. Focused 20/20,
+  pełny dashboard 157/157, typecheck, lint, browser `/content-workflow` i diff
+  check przechodzą; runtime code nie zmienił się.
 - `inoz` continuation: daily-check now uses a narrow cached runtime that omits
   the marketing brief, and concurrent base-cache builds are serialized with a
   re-check to prevent duplicate cold work. Focused tests, Ruff, mypy and
