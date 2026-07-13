@@ -5,6 +5,14 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `wilq-seo-0hdm` slice: API lifespan uruchamia background prewarm istniejącego
+  `daily_runtime` cache po readiness przez `asyncio.to_thread`; health/startup
+  nie czeka na ciężki build, a refreshowa inwalidacja cache pozostaje bez zmian.
+  Test helpera, daily-check API contracts, Ruff, mypy, managed restart,
+  trzy odczyty HTTP po prewarmie (`2.528725 s`, `4.875843 s`, `2.786930 s`)
+  i Playwright `/content-workflow` 1/1 przechodzą. Po prewarmie daily-check
+  zachowuje `blocked`, świeżość, 23 evidence IDs, source connectors i
+  `0` vendor writes; kolejka nadal ma 1 actionable z wymaganych 3.
 - `iux3` slice: dashboard usefulness audit respektuje teraz API-owned semantic
   readiness. Live `Service Profile` z `ready_for_daily_content=false` jest
   `review_ready`, a jawny `status/queue_status=blocked` jest `blocked`, nawet

@@ -5,6 +5,12 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`wilq-seo-0hdm` jest gotowy do zamknięcia po proofie prewarm: background
+`build_daily_runtime` działa po readiness, a pierwsze trzy odczyty
+`/api/marketing/daily-check` po restarcie trwały `2.528725 s`, `4.875843 s`
+i `2.786930 s`. Nie zmieniono kontraktu decyzji, freshness, evidence ani
+safety. Handoff: `docs/handoffs/2026-07-13-0hdm-daily-runtime-prewarm.md`.
+
 `iux3` jest wykonany: usefulness audit nie może już nazywać powierzchni
 `demo_ready`, gdy typed API raportuje blokadę albo review-required readiness.
 To jest audyt jakości, nie zmiana API/dashboardu. Live proof: 11
@@ -19,13 +25,13 @@ również jest zamknięty: jego pierwszy zakres dodał
 `DailyDecision`/`DailyCheckItem`. Live bieżące decyzje nie deklarują jeszcze
 tych kontraktów, więc nie są sztucznie blokowane. `v9ab.10` oraz `v9ab.13` mają
 aktualny proof przygotowania/eval; nie powtarzaj tych slice'ów. Bieżący kodowy
-slice `jnra` przeniósł live Ads business-context
+slice `kgvy` przeniósł live Ads business-context
 action assembly do istniejącego `wilq/actions/google_ads/business_context.py`;
 registry, ActionObject safety i payload pozostają bez zmian. `lt1`, `jst` i
 `r564` nadal wymagają odpowiednio review kart albo realnego Wilku/operatora i
 nie mogą być zamykane syntetycznym testem.
 
-Recheck `jnra` 2026-07-13: helper `live_business_context_actions` przejął
+Recheck `kgvy` 2026-07-13: helper `live_business_context_actions` przejął
 business-context/target/strategy action construction z fasady `service.py`.
 Focused Ads/action contracts, Ruff, mypy, managed API health, 21-action
 registry, `/api/ads/diagnostics` i `/content-workflow` HTTP proof przechodzą;

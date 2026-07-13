@@ -45,6 +45,7 @@ from wilq.briefing.content_diagnostics import (
     clear_content_diagnostics_cache,
 )
 from wilq.briefing.daily_runtime import (
+    build_daily_runtime,
     clear_daily_runtime_cache,
 )
 from wilq.briefing.merchant_diagnostics import (
@@ -80,6 +81,7 @@ def cors_origins() -> list[str]:
 @asynccontextmanager
 async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
     knowledge_prewarm_task: asyncio.Task[None] | None = None
+    daily_runtime_prewarm_task: asyncio.Task[None] | None = None
     if not os.getenv("PYTEST_CURRENT_TEST"):
         with suppress(Exception):
             build_content_diagnostics_cached()
@@ -88,18 +90,28 @@ async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
         with suppress(Exception):
             list_actions_cached()
         knowledge_prewarm_task = asyncio.create_task(_prewarm_knowledge_map())
+        daily_runtime_prewarm_task = asyncio.create_task(_prewarm_daily_runtime())
     try:
         yield
     finally:
         if knowledge_prewarm_task is not None:
             with suppress(Exception):
                 await knowledge_prewarm_task
+        if daily_runtime_prewarm_task is not None:
+            with suppress(Exception):
+                await daily_runtime_prewarm_task
 
 
 async def _prewarm_knowledge_map() -> None:
     """Warm the expensive map after readiness without delaying API startup."""
     with suppress(Exception):
         await asyncio.to_thread(build_knowledge_operating_map_cached)
+
+
+async def _prewarm_daily_runtime() -> None:
+    """Warm the daily operator view after readiness without blocking startup."""
+    with suppress(Exception):
+        await asyncio.to_thread(build_daily_runtime)
 
 
 app = FastAPI(title="WILQ Marketing API", version="0.1.0", lifespan=wilq_lifespan)
