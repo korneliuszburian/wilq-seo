@@ -881,6 +881,12 @@
   draft/readback status używają tych samych typed query/action inputs; write
   safety i public/dev roles bez zmian. 19 focused Vitest, lint, typecheck, build
   i diff check przechodzą. E2E nadal kończy się na istniejącym locatorze.
+- `ho41` continuation 27 2026-07-13: `ContentSectionWritingWorkbench.tsx`
+  wydzielony z `ContentWorkflowSurface.tsx`. Lokalny stan edytora sekcji,
+  draft-only dry-run, readback dev draft i ACF preview zachowują typed inputs
+  oraz bezpieczeństwo public/dev. Route ma 1807 LOC; ESLint, typecheck, 19
+  focused tests, build i diff check przechodzą. E2E nadal blokuje się na
+  istniejącym heading locatorze, gdy live queue jest zablokowana.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

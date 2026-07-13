@@ -139,6 +139,10 @@ owned by the API-facing model layer.
 The dev WordPress readiness/workbench panel is now
 `WordPressDraftWorkPanel.tsx`; it consumes the existing typed query/action
 inputs and preserves draft-only, canonical apply-review and public/dev safety.
+The section-writing/ACF workbench is now `ContentSectionWritingWorkbench.tsx`;
+it owns only local editor state and composes typed public inventory, draft-only
+dry-run and ACF preview inputs. Route orchestration and business semantics stay
+outside the component.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

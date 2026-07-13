@@ -16,6 +16,14 @@ w git, Beads i `docs/progress/archive/`.
   ale jawnie nie jest dowodem sesji Wilku. Brak uczestnika, czasu i werdyktu;
   `jst` pozostaje otwarty do realnej rozmowy albo explicit owner defer.
 
+- `ho41` continuation 27 2026-07-13: `ContentSectionWritingWorkbench.tsx`
+  wydzielony z route. Edycja sekcji, draft-only dry-run, readback dev draft i
+  podgląd ACF korzystają z typed query/action inputs; public/dev role oraz
+  blokada publikacji pozostają bez zmian. Route spadł z 2038 do 1807 LOC.
+  ESLint, TypeScript, 19 focused Vitest, build i diff check przechodzą.
+  Browser E2E nadal blokuje się na istniejącym locatorze nagłówka przy live
+  queue `blocked`.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback
