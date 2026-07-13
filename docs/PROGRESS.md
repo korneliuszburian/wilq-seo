@@ -2685,3 +2685,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   inventory, fail-closed mutation smoke and content-workflow Playwright pass;
   `service.py` is now 1035 LOC with only the expected temporary frozen-file
   warning.
+- Cleanup state refresh 2026-07-13: `docs/current-cleanup-state.md` now points
+  to the current ActionObject seam set and explicitly records closed c9h9.18,
+  ipps and c9h9.23 boundaries. Do not use the older tactical-queue paragraphs
+  as a next-task instruction without a new runtime contradiction.

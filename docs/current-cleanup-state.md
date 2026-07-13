@@ -26,21 +26,18 @@ review-ready, ale daily output musi nadal nazwać queue density blocker (obecnie
 Pozostałe false-positive guards pozostają otwarte; nie zaczynaj od kolejnego
 wrappera Ads ani drugiego expert endpointu.
 
-Po domknięciu boundary `wilq-seo-4wwo`, seamie `jnra/audit_store.py` i optimizer
-readiness w `kgvy`, najnowszy wykonany slice to
+Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
+fasady ActionObject: Google Ads/content/non-Ads candidate assembly,
+WordPress draft-handoff oraz persisted validation/audit i review-gate state są
+wydzielone do typed modułów. `service.py` ma 1035 LOC; publiczne API, action IDs,
+audit ordering, fail-closed mutation readiness i callback injection pozostają
+bez zmian. Ostatni proof: 21 akcji, 0 vendor writes, API health i
+`/content-workflow` Playwright zielone. Nie powtarzaj tych seamów.
 
-`wilq-seo-c9h9.18`: Ahrefs branch tactical queue został wydzielony do
-`wilq/briefing/tactical_ahrefs.py`. Matcher cross-source jest kompilowany raz na
-batch, a live queue zachowuje 24 itemy, 19 grup i 3 action IDs. Focused tests,
-Ruff i mypy przechodzą. Complexity audit nadal pokazuje istniejący budżet
-`tactical_queue.py` (1311 LOC) oraz `_merchant_feed_items` (115 LOC); nie jest to
-ukrywane jako sukces i pozostaje zakresem dalszego Beada.
-
-Następnie `wilq-seo-ipps` wydzielił Merchant issue/status assembly do
-`wilq/briefing/tactical_merchant.py`. Live kolejka zachowuje 24 elementy, w tym
-4 Merchant, oraz dotychczasowe evidence/action semantics. Complexity
-`tactical_queue.py` spadła do 1195 LOC; pozostały monolit jest kolejnym,
-potwierdzonym zakresem, a nie ukrytym wyjątkiem.
+`c9h9.23` zamknięty: WordPress readback tests patchują aktualnego właściciela
+`stage_activation.read_wordpress_draft_post`; nie dodano produkcyjnego aliasu.
+Tactical queue ma wcześniejsze extractiony Ahrefs/Merchant z osobnymi handoffami;
+nie wracaj do `c9h9.18`/`ipps` bez nowego runtime contradiction.
 
 `wilq-seo-c9h9.16` wydziela orchestrację snapshotu workflow do
 `wilq/content/workflow/snapshot_assembly.py`. Publiczne API zachowuje istniejące

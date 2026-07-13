@@ -1086,6 +1086,10 @@
   complexity, API health/action inventory, fail-closed mutation smoke and
   Playwright proof pass; service.py is 1035 LOC. Do not repeat action-state
   hydration/review-gate work or closed WordPress/candidate slices.
+- Recovery index refreshed: `docs/current-cleanup-state.md` now names the
+  current ActionObject seam set and closed tactical/readback boundaries. The
+  next agent must re-audit active Beads and live evidence; do not repeat
+  c9h9.18, ipps, c9h9.23 or action-state/candidate extractions.
 
 ## Następny krok
 
