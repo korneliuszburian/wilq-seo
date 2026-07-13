@@ -893,6 +893,12 @@
   semantics nie zostały przeniesione do Reacta. Route ma 1656 LOC. ESLint,
   typecheck, 19 focused tests, build i diff check przechodzą; Playwright nadal
   blokuje się na istniejącym heading locatorze przez live queue `blocked`.
+- `ho41` continuation 29 2026-07-13: `WorkflowOperatorControls.tsx`
+  wydzielony jako presentation-only boundary. Route nadal wylicza typed control
+  items oraz disabled reasons z istniejących safety/review helpers; komponent
+  renderuje temat, draft-only copy i przyciski. Route ma 1614 LOC. ESLint,
+  typecheck, 19 focused tests, build i diff check przechodzą; Playwright nadal
+  blokuje się na istniejącym heading locatorze przy live queue `blocked`.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

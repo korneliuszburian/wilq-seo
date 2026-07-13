@@ -32,6 +32,14 @@ w git, Beads i `docs/progress/archive/`.
   nadal zatrzymuje się na istniejącym locatorze nagłówka przy zablokowanej
   live kolejce.
 
+- `ho41` continuation 29 2026-07-13: `WorkflowOperatorControls.tsx`
+  wydzielony jako presentation boundary. Lista typed kontroli nadal powstaje
+  w route z istniejących safety/review helpers; komponent renderuje tylko
+  temat, copy draft-only i przyciski. Route spadł do 1614 LOC. ESLint,
+  TypeScript, 19 focused Vitest, build i diff check przechodzą. Playwright
+  ponownie potwierdził istniejącą blokadę heading locatora przy live queue
+  `blocked`.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback

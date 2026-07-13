@@ -1,9 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  ExternalLink,
-  Stamp
-} from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
@@ -56,7 +52,6 @@ import { ContentPageIdentityCard } from "./ContentPageIdentityCard";
 import { ContentSignalColumn } from "./ContentSignalColumn";
 import { ContentDevTargetColumn } from "./ContentDevTargetColumn";
 import { ContentPublicPageColumn } from "./ContentPublicPageColumn";
-import { ContentWorkflowControlButton as WorkflowControlButton } from "./ContentWorkflowControlButton";
 import { ContentOpportunityEnrichmentPanel } from "./ContentOpportunityEnrichmentPanel";
 import { ClaimLedgerGatePanel } from "./ClaimLedgerGatePanel";
 import { WorkflowSafetyPanels } from "./WorkflowSafetyPanels";
@@ -67,6 +62,10 @@ import { ContentWorkflowDecisionPanel } from "./ContentWorkflowDecisionPanel";
 import { WordPressDraftWorkPanel as WordPressDraftWorkPanelView } from "./WordPressDraftWorkPanel";
 import { ContentSectionWritingWorkbench as ContentSectionWritingWorkbenchView } from "./ContentSectionWritingWorkbench";
 import { ServiceProfileDecisionStrip } from "./ServiceProfileDecisionStrip";
+import {
+  WorkflowOperatorControls as WorkflowOperatorControlsView,
+  type WorkflowControlItem
+} from "./WorkflowOperatorControls";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import {
   defaultSectionBody,
@@ -367,7 +366,10 @@ function ContentWorkflowLoaded({
               selectedWorkItemId={selectedWorkItemId}
               onSelectWorkItem={onSelectWorkItem}
             />
-            <WorkflowOperatorControls data={data} actions={actions} />
+            <WorkflowOperatorControlsView
+              controls={workflowControlItems(data, actions)}
+              topic={data.preflight.item.topic}
+            />
             <WorkflowProofSummary data={data} />
             <ClaimLedgerGatePanel data={data} />
             <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
@@ -1249,50 +1251,6 @@ function acfPreviewRequest(
     authoring_profile: authoringProfile
   };
 }
-
-function WorkflowOperatorControls({
-  data,
-  actions
-}: {
-  data: ContentWorkflowSnapshot;
-  actions: ContentWorkflowActions;
-}) {
-  const item = data.preflight.item;
-  const controls = workflowControlItems(data, actions);
-  return (
-    <section id="content-workflow-actions" className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Stamp aria-hidden="true" size={18} className="text-action" />
-            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Decyzje operatora
-            </h2>
-          </div>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Te przyciski zapisują sprawdzenie i audyt w WILQ. Nie publikują treści, nie nadpisują
-            strony i nie tworzą publicznego wpisu w WordPress.
-          </p>
-          <p className="mt-2 text-xs text-slate-500">
-            Temat: <span className="font-medium text-ink">{item.topic}</span>
-          </p>
-        </div>
-        <div className="grid w-full gap-3 sm:w-auto sm:min-w-80">
-          {controls.map((control) => (
-            <WorkflowControlButton key={control.label} {...control} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-type WorkflowControlItem = {
-  label: string;
-  disabledReason: string | null;
-  pending: boolean;
-  onClick: () => void;
-};
 
 function workflowControlItems(
   data: ContentWorkflowSnapshot,

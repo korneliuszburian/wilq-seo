@@ -146,6 +146,9 @@ outside the component.
 The Service Profile decision block is now `ServiceProfileDecisionStrip.tsx`;
 it renders typed service status, claim counts, blockers and technical
 disclosure without owning Service Profile or claim-policy semantics.
+Operator review/audit controls are now rendered by
+`WorkflowOperatorControls.tsx`; the route still owns the typed control list and
+disabled-reason/safety decisions, while the component owns layout only.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
