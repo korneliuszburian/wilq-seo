@@ -1744,3 +1744,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   ładowania operating map. App + knowledge focused 13/13, dashboard typecheck/
   lint i diff check przechodzą; `App.test.tsx` ma 8786 LOC. Następny seam:
   Merchant route.
+- Siedemnasty slice: Merchant source/contract proof przeniesiony do
+  `MerchantDiagnosticSurface.test.tsx`; zachowano typed action/evidence labels,
+  readiness blockers, bezpieczne disclosure i brak legacy formatterów/raw
+  payloadów. Merchant + App focused 12/12, dashboard typecheck/lint i diff check
+  przechodzą; `App.test.tsx` ma 8763 LOC. Następny seam: GA4 route.
