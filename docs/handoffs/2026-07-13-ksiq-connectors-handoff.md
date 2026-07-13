@@ -628,6 +628,11 @@
   label pozostają w dotychczasowych helperach. `ads_diagnostics.py` ma 6 902
   linie fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff check
   zielone. Następny seam: decision/surface label hydration.
+- Dziewiąty slice wykonany: `ads_label_hydration.py` obejmuje teraz także
+  decision i surface labels (sekcje oraz blocked handoff). Polityki label są
+  nadal w helperach fasady przez callbacki. `ads_diagnostics.py` ma 6 863 linie
+  fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff check zielone.
+  Następny seam: contract-specific label hydration.
 
 ## Następny krok
 

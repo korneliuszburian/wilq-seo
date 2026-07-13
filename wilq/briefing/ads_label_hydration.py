@@ -100,3 +100,81 @@ def hydrate_summary_labels(
     response.operator_summary.top_blocked_claim_summary_label = blocked_claim_count_label(
         response.operator_summary.top_blocked_claim_labels
     )
+
+
+def hydrate_decision_labels(
+    response: AdsDiagnosticsResponse,
+    currency_code: str | None,
+    *,
+    status_label: Callable[[str], str],
+    decision_type_label: Callable[[str], str],
+    priority_label: Callable[[int], str],
+    start_here_summary: Callable[[Any, str | None], str],
+    measurement_plan: Callable[[Any], str],
+    risk_label: Callable[[str], str],
+    missing_contract_labels: Callable[[list[str]], list[str]],
+    unique: Callable[[Iterable[str]], list[str]],
+) -> None:
+    response.decision_queue = [
+        decision.model_copy(
+            update={
+                "status_label": status_label(decision.status),
+                "decision_type_label": decision_type_label(decision.decision_type),
+                "priority_label": priority_label(decision.priority),
+                "start_here_summary": start_here_summary(decision, currency_code),
+                "measurement_plan": measurement_plan(decision),
+                "risk_label": risk_label(decision.risk),
+                "source_connector_labels": source_connector_labels(decision.source_connectors),
+                "evidence_summary_label": evidence_count_label(decision.evidence_ids),
+                "action_summary_label": action_count_label(decision.action_ids),
+                "missing_read_contract_labels": missing_contract_labels(
+                    decision.missing_read_contracts
+                ),
+                "missing_read_contract_summary_label": missing_contract_count_label(
+                    decision.missing_read_contracts
+                ),
+                "blocked_claim_labels": unique(decision.blocked_claims),
+                "blocked_claim_summary_label": blocked_claim_count_label(
+                    unique(decision.blocked_claims)
+                ),
+                "operator_review_gate_summary_label": required_validation_count_label(
+                    decision.operator_review_gate_labels or decision.operator_review_gates
+                ),
+            }
+        )
+        for decision in response.decision_queue
+    ]
+
+
+def hydrate_surface_labels(
+    response: AdsDiagnosticsResponse,
+    *,
+    status_label: Callable[[str], str],
+    unique: Callable[[Iterable[str]], list[str]],
+) -> None:
+    response.sections = [
+        section.model_copy(
+            update={
+                "status_label": status_label(section.status),
+                "source_connector_labels": source_connector_labels(section.source_connectors),
+                "evidence_summary_label": evidence_count_label(section.evidence_ids),
+                "action_summary_label": action_count_label(section.action_ids),
+                "blocked_claim_labels": unique(section.blocked_claims),
+            }
+        )
+        for section in response.sections
+    ]
+    if response.blocked_handoff is not None:
+        response.blocked_handoff = response.blocked_handoff.model_copy(
+            update={
+                "status_label": status_label(response.blocked_handoff.status),
+                "source_connector_labels": source_connector_labels(
+                    response.blocked_handoff.source_connectors
+                ),
+                "evidence_summary_label": evidence_count_label(
+                    response.blocked_handoff.evidence_ids
+                ),
+                "action_summary_label": action_count_label(response.blocked_handoff.action_ids),
+                "blocked_claim_labels": unique(response.blocked_handoff.blocked_claims),
+            }
+        )

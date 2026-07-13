@@ -2151,3 +2151,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   nowego endpointu ani zmiany payloadu; `ads_diagnostics.py` ma 6 902 linie
   fizyczne. Ads contracts, Ruff, mypy, complexity audit i diff check przechodzą
   (dwa znane budżety monolitu). Następny slice: decision/surface label hydration.
+- Dziewiąty slice `kgvy`: rozszerzono `wilq/briefing/ads_label_hydration.py`
+  o decision i surface labels. Kolejka decyzji, sekcje i blocked handoff są
+  mapowane poza fasadą; polityki statusu/priorytetu/ryzyka pozostają w helperach
+  przekazywanych callbackami. Bez endpointu ani zmiany payloadu;
+  `ads_diagnostics.py` ma 6 863 linie fizyczne. Ads contracts, Ruff, mypy,
+  complexity audit i diff check przechodzą. Następny slice: contract-specific
+  label hydration.

@@ -62,8 +62,10 @@ from wilq.briefing.ads_decision_queue import (
 )
 from wilq.briefing.ads_decision_queue_contracts import build_decision_queue
 from wilq.briefing.ads_label_hydration import (
+    hydrate_decision_labels,
     hydrate_review_gate_labels,
     hydrate_summary_labels,
+    hydrate_surface_labels,
 )
 from wilq.briefing.ads_metric_tiles import (
     budget_context_metric_tiles,
@@ -5702,67 +5704,26 @@ def _hydrate_ads_decision_labels(
     response: AdsDiagnosticsResponse,
     currency_code: str | None,
 ) -> None:
-    response.decision_queue = [
-        decision.model_copy(
-            update={
-                "status_label": _ads_status_label(decision.status),
-                "decision_type_label": _ads_decision_type_label(decision.decision_type),
-                "priority_label": _ads_priority_label(decision.priority),
-                "start_here_summary": _ads_decision_start_here_summary(
-                    decision,
-                    currency_code,
-                ),
-                "measurement_plan": _ads_decision_measurement_plan(decision),
-                "risk_label": _ads_risk_label(decision.risk),
-                "source_connector_labels": source_connector_labels(decision.source_connectors),
-                "evidence_summary_label": evidence_count_label(decision.evidence_ids),
-                "action_summary_label": action_count_label(decision.action_ids),
-                "missing_read_contract_labels": _ads_missing_read_contract_labels(
-                    decision.missing_read_contracts
-                ),
-                "missing_read_contract_summary_label": missing_contract_count_label(
-                    decision.missing_read_contracts
-                ),
-                "blocked_claim_labels": _unique(decision.blocked_claims),
-                "blocked_claim_summary_label": blocked_claim_count_label(
-                    _unique(decision.blocked_claims)
-                ),
-                "operator_review_gate_summary_label": required_validation_count_label(
-                    decision.operator_review_gate_labels or decision.operator_review_gates
-                ),
-            }
-        )
-        for decision in response.decision_queue
-    ]
+    hydrate_decision_labels(
+        response,
+        currency_code,
+        status_label=_ads_status_label,
+        decision_type_label=_ads_decision_type_label,
+        priority_label=_ads_priority_label,
+        start_here_summary=_ads_decision_start_here_summary,
+        measurement_plan=_ads_decision_measurement_plan,
+        risk_label=_ads_risk_label,
+        missing_contract_labels=_ads_missing_read_contract_labels,
+        unique=_unique,
+    )
 
 
 def _hydrate_ads_surface_labels(response: AdsDiagnosticsResponse) -> None:
-    response.sections = [
-        section.model_copy(
-            update={
-                "status_label": _ads_status_label(section.status),
-                "source_connector_labels": source_connector_labels(section.source_connectors),
-                "evidence_summary_label": evidence_count_label(section.evidence_ids),
-                "action_summary_label": action_count_label(section.action_ids),
-                "blocked_claim_labels": _unique(section.blocked_claims),
-            }
-        )
-        for section in response.sections
-    ]
-    if response.blocked_handoff is not None:
-        response.blocked_handoff = response.blocked_handoff.model_copy(
-            update={
-                "status_label": _ads_status_label(response.blocked_handoff.status),
-                "source_connector_labels": source_connector_labels(
-                    response.blocked_handoff.source_connectors
-                ),
-                "evidence_summary_label": evidence_count_label(
-                    response.blocked_handoff.evidence_ids
-                ),
-                "action_summary_label": action_count_label(response.blocked_handoff.action_ids),
-                "blocked_claim_labels": _unique(response.blocked_handoff.blocked_claims),
-            }
-        )
+    hydrate_surface_labels(
+        response,
+        status_label=_ads_status_label,
+        unique=_unique,
+    )
 
 
 def _hydrate_ads_contract_labels(
