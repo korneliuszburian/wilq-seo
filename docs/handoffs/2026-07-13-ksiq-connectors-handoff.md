@@ -59,6 +59,10 @@
   `index.ts` ma 2 467 LOC. Zależności keyword-match, MetricFact i
   ActionPreview zachowane, focused gates przechodzą. Następny seam:
   Ads change-history i impact-readiness contracts.
+- Jedenasty seam: `packages/shared-schemas/src/ads_change_history.ts` zawiera
+  change-history row/read oraz impact-readiness row/read contracts (99 LOC);
+  `index.ts` ma 2 377 LOC. Read-only evidence/apply safety bez zmian, focused
+  gates przechodzą. Następny seam: Ads decision/summary contracts.
 
 ## Następny krok
 

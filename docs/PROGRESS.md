@@ -21,6 +21,11 @@ w git, Beads i `docs/progress/archive/`.
   MetricFact i ActionPreview dependencies zachowane. Shared schema/dashboard
   lint, build, tests i typecheck przechodzą. Następny seam: Ads change-history
   i impact-readiness contracts.
+- Jedenasty seam: `ads_change_history.ts` zawiera change-history row/read oraz
+  impact-readiness row/read contracts (99 LOC); `index.ts` ma 2 377 LOC.
+  Read-only evidence i apply safety pozostają bez zmian. Shared schema/dashboard
+  lint, build, tests i typecheck przechodzą. Następny seam: Ads decision/summary
+  contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
