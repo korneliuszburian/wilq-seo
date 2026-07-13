@@ -104,6 +104,9 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/ads_recommendation_assertions.py`, rozdzielony na ready/packed
   preview checks. Live smoke po zmianie kończy się `exit 0`; `main` ma 838
   LOC/214 branches, a helpery mieszczą się w budżecie (18/16 branches).
+- Ads impression-share contract jest teraz w
+  `scripts/ads_impression_share_assertions.py`. Live smoke po zmianie kończy
+  się `exit 0`; `main` ma 820 LOC/207 branches, nowy helper 19 LOC/8 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

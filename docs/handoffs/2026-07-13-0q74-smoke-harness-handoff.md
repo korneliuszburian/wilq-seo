@@ -79,6 +79,9 @@
   `scripts/ads_recommendation_assertions.py`, z osobnymi walidatorami ready i
   packed preview. Live smoke przechodzi po zmianie; `main` ma 838 LOC/214
   branches. Następny seam może dotyczyć impression-share/change-history.
+- Impression-share read contract jest w
+  `scripts/ads_impression_share_assertions.py`; live smoke przechodzi, a
+  `main` ma 820 LOC/207 branches. Następny seam: change-history/readiness.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

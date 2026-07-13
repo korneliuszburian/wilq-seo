@@ -10,6 +10,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from ads_impression_share_assertions import validate_impression_share_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
 from ads_smoke_runtime import load_ads_context
@@ -229,25 +230,7 @@ def main() -> int:
         if pack_budget_decision.get("expert_rule_ids") != budget_decision.get("expert_rule_ids"):
             raise SystemExit("Context pack budget decision expert rules differ")
     recommendations_read_contract = validate_recommendations_contract(ads_diagnostics, pack)
-    if impression_share_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose impression_share_read_contract")
-    if not impression_share_read_contract.get("blocked_claims"):
-        raise SystemExit("Impression share contract must list zablokowane obietnice")
-    if impression_share_read_contract.get("status") == "ready":
-        pack_impression_share_contract = (
-            pack.get("ads_diagnostics", {}).get("impression_share_read_contract") or {}
-        )
-        if pack_impression_share_contract.get("summary") != impression_share_read_contract.get(
-            "summary"
-        ):
-            raise SystemExit("Context pack impression share contract differs")
-        if "zmiana budżetu" not in impression_share_read_contract.get("blocked_claims", []):
-            raise SystemExit("Impression share contract must keep zmiana budżetu blocked")
-    elif "impression_share" not in impression_share_read_contract.get(
-        "missing_read_contracts",
-        [],
-    ):
-        raise SystemExit("Blocked impression share contract must list missing impression_share")
+    impression_share_read_contract = validate_impression_share_contract(ads_diagnostics, pack)
     if change_history_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose change_history_read_contract")
     if not change_history_read_contract.get("blocked_claims"):
