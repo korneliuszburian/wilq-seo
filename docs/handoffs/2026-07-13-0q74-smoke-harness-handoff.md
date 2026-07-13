@@ -202,6 +202,9 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - GA4 smoke now delegates route/context/readiness and decision assertions to
   `ga4_assertions.py`. Live proof: conversion readiness `ready`, four
   decisions, one action; evidence/source trace and measurement-claim gates pass.
+- GSC smoke now uses the existing freshness/decision/card/report helpers plus
+  `gsc_runtime_assertions.py`. Live proof: 1,978 query/page facts, two
+  decisions, one action; Ruff, smoke and complexity pass.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

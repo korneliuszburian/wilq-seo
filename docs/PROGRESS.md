@@ -38,6 +38,10 @@ w git, Beads i `docs/progress/archive/`.
   conversion readiness `ready`, 4 decyzje i 1 action; evidence/source trace oraz
   blokady claimów pomiarowych są zachowane. Ruff, smoke i complexity audit
   przechodzą bez wyjątku.
+- GSC smoke ma teraz dodatkowy `gsc_runtime_assertions.py` i skrócony główny
+  kontrakt, korzystający z istniejących helperów freshness/decision/card/report.
+  Live proof: 1 978 query/page facts, 2 decyzje, 1 action; Ruff, smoke i
+  complexity audit przechodzą bez wyjątku.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
