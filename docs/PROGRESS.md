@@ -2641,3 +2641,11 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   complexity, API health/action inventory and Playwright proof pass. The API
   still exposes 21 actions with the content refresh action present; no write
   path or payload contract changed. `service.py` is now 1177 LOC.
+- `jnra` continuation 13 2026-07-13: remaining non-Ads metric-action
+  candidate assembly (Merchant, GA4, Localo and social) moved into
+  `wilq/actions/metric_action_candidates.py`; the service facade keeps the
+  existing factory and Localo evidence callbacks. Action IDs remain identical.
+  Focused action/metric/content/Ads contract tests (20 passed), Ruff, mypy,
+  complexity, API health/action inventory and mutation-readiness smoke pass;
+  Playwright content-workflow proof passes. `service.py` is now 1150 LOC and
+  still has only the documented frozen-file budget warning.

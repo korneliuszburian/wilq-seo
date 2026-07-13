@@ -154,6 +154,9 @@ from wilq.actions.merchant import (
     MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
     merchant_feed_issue_action_from_metric_facts,
 )
+from wilq.actions.metric_action_candidates import (
+    seed_non_ads_metric_actions,
+)
 from wilq.actions.metric_action_facts import load_action_metric_facts
 from wilq.actions.metric_utils import (
     facts_by_connector as _facts_by_connector_impl,
@@ -565,34 +568,23 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
     by_connector = _facts_by_connector(facts)
     actions: dict[str, ActionObject] = {}
 
-    _seed_merchant_metric_actions(by_connector, actions)
-    _seed_ga4_metric_actions(by_connector, actions)
+    actions.update(
+        seed_non_ads_metric_actions(
+            by_connector=by_connector,
+            merchant_action=lambda facts: merchant_feed_issue_action_from_metric_facts(
+                facts,
+                preview_contract=MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
+            ),
+            ga4_action=ga4_tracking_quality_action_from_metric_facts,
+            localo_facts=_localo_action_metric_facts,
+            localo_payload=localo_visibility_review_payload_from_metric_facts,
+            localo_action=localo_visibility_review_action_from_metric_facts,
+            social_action=social_draft_actions,
+        )
+    )
     _seed_content_metric_actions(by_connector, actions)
     _seed_google_ads_metric_actions(by_connector, actions)
-    _seed_localo_metric_actions(by_connector, actions)
-    _seed_social_metric_actions(by_connector, actions)
     return actions
-
-
-def _seed_merchant_metric_actions(
-    by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
-) -> None:
-    merchant_facts = by_connector.get("google_merchant_center", [])
-    action = merchant_feed_issue_action_from_metric_facts(
-        merchant_facts,
-        preview_contract=MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
-    )
-    if action is not None:
-        actions[action.id] = action
-
-
-def _seed_ga4_metric_actions(
-    by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
-) -> None:
-    ga4_facts = by_connector.get("google_analytics_4", [])
-    action = ga4_tracking_quality_action_from_metric_facts(ga4_facts)
-    if action is not None:
-        actions[action.id] = action
 
 
 def _seed_content_metric_actions(
@@ -632,33 +624,6 @@ def _seed_google_ads_metric_actions(
             negative_keyword_action=negative_keyword_action_from_metric_facts,
         )
     )
-
-
-def _seed_localo_metric_actions(
-    by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
-) -> None:
-    localo_facts = _localo_action_metric_facts(by_connector.get("localo", []))
-    localo_visibility_payload = localo_visibility_review_payload_from_metric_facts(localo_facts)
-    if localo_visibility_payload is None:
-        return
-    action = localo_visibility_review_action_from_metric_facts(
-        localo_facts=localo_facts,
-        localo_visibility_payload=localo_visibility_payload,
-    )
-    actions[action.id] = action
-
-
-def _seed_social_metric_actions(
-    by_connector: dict[str, list[MetricFact]], actions: dict[str, ActionObject]
-) -> None:
-    social_facts = [
-        *by_connector.get("google_search_console", []),
-        *by_connector.get("google_merchant_center", []),
-        *by_connector.get("wordpress_ekologus", []),
-        *by_connector.get("google_analytics_4", []),
-    ]
-    if social_facts:
-        actions.update(social_draft_actions(social_facts))
 
 
 def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:

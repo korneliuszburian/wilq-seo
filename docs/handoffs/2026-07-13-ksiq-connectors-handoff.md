@@ -1049,6 +1049,14 @@
   (17 passed), Ruff, mypy, complexity, API health/action inventory and
   Playwright proof pass; 21 actions remain and no write semantics changed. Do
   not repeat this content-candidate seam.
+- `jnra` continuation 13 2026-07-13: remaining non-Ads metric-action
+  candidate assembly (Merchant, GA4, Localo and social) now lives in
+  `wilq/actions/metric_action_candidates.py`; callback injection preserves
+  factory/evidence behavior and action IDs. Focused action/metric/content/Ads
+  tests (20 passed), Ruff, mypy, complexity, API health/action inventory,
+  mutation-readiness and Playwright proof pass. `service.py` is 1150 LOC. Do
+  not repeat this general metric-candidate seam or the closed Ads/content
+  candidate seams.
 
 ## Następny krok
 
