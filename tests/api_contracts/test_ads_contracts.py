@@ -1663,6 +1663,27 @@ def assert_ads_negative_keyword_safety_contract(
     assert section["status"] == "ready"
 
 
+def assert_ads_decision_queue_identity_contract(payload: dict[str, Any]) -> None:
+    """Prove the Ads queue exposes every review lane and the write blocker."""
+    decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
+    assert set(decisions_by_id) == {
+        "ads_review_campaign_activity",
+        "ads_review_campaign_triage",
+        "ads_review_business_context",
+        "ads_review_derived_kpis",
+        "ads_review_budget_context",
+        "ads_review_recommendations",
+        "ads_review_impression_share",
+        "ads_review_change_history",
+        "ads_review_search_terms",
+        "ads_review_search_term_ngrams",
+        "ads_review_search_term_safety",
+        "ads_review_negative_keyword_safety",
+        "ads_prepare_custom_segments_from_search_terms",
+        "ads_block_write_actions_without_actionobject",
+    }
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4039,6 +4060,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_negative_keyword_safety_contract(
         payload, refresh_response.json()["evidence_ids"][-1]
     )
+    assert_ads_decision_queue_identity_contract(payload)
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert set(decisions_by_id) == {
         "ads_review_campaign_activity",

@@ -1975,3 +1975,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   fail-closed flags payloadu. Focused Ads/Ruff/mypy/diff check zielone;
   główny test ma 1528 linii i 12 branchy. Następny seam: decision queue
   assertions i końcowy action safety tail.
+- Trzydziesty ósmy pod-slice c9h9.22: identity contract kolejki decyzji Ads
+  wydzielony do `assert_ads_decision_queue_identity_contract`; zachowano pełny
+  zestaw review lanes, custom-segment review i jawny blocker ActionObject.
+  Focused Ads suite, Ruff, mypy i diff check zielone; główny test ma 1529 linii
+  i 12 branchy. Następny seam: decyzje operatora i końcowy action tail.

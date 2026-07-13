@@ -459,6 +459,11 @@
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1528 linii i 12
   branchy. Następny krok: decision queue assertions i końcowy action safety
   tail.
+- Trzydziesty ósmy pod-slice zakończony: identity kolejki decyzji Ads jest w
+  `assert_ads_decision_queue_identity_contract`; pełny zestaw review lanes,
+  custom-segment review i blocker ActionObject pozostają dowiedzione.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1529 linii i 12
+  branchy. Następny krok: decyzje operatora i końcowy action tail.
 
 ## Następny krok
 
