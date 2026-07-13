@@ -24,6 +24,10 @@
   dzięki czemu ActionObject nie importuje product logic z barrel.
 - `index.ts` ma 3 638 linii; `actions.ts` 417, `connectors.ts` 156. Dashboard
   typecheck/lint oraz shared schema test/build przechodzą.
+- Trzeci seam: `packages/shared-schemas/src/marketing.ts` zawiera
+  MarketingBrief/TacticalQueue schemas i aliasy typów; `index.ts` ma 3 532
+  linii. Zależności MetricFact i connector summary nadal są importowane z
+  istniejącego modułu, bez duplikacji i bez zmiany payloadów.
 
 ## Następny krok
 

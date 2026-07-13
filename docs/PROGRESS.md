@@ -77,6 +77,12 @@ w git, Beads i `docs/progress/archive/`.
   `connectors.ts` 156. Shared schemas 34 passed/10 skipped, lint/build oraz
   dashboard lint/typecheck przechodzą; focused tests potwierdzają brak zmiany
   zachowania.
+- Trzeci `ksiq` seam wydzielił `MarketingBrief` i `TacticalQueue` schemas oraz
+  typy do `packages/shared-schemas/src/marketing.ts`, z zależnościami
+  `MetricFact`/connector summary przez istniejące moduły. Barrel pozostaje
+  kompatybilny; schema tests 34/10, lint/build i dashboard lint/typecheck są
+  zielone. `index.ts` ma teraz 3 532 linii, a marketing module 117; nie dodano
+  endpointów ani zmieniono payloadów.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
