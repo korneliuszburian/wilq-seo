@@ -186,6 +186,9 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - Merchant output shaping and action/brief/connector runtime assertions now
   live in named helpers; live smoke remains 19 occurrences, 14 clusters and 7
   decisions, and changed-code complexity passes without an exception.
+- Localo smoke is now split into refresh, runtime and report helpers. Live
+  proof: `access_ready`, refresh `completed`, one review action; claim/write
+  gates remain blocked as designed. Ruff, smoke and complexity pass.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

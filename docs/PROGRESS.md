@@ -18,6 +18,10 @@ w git, Beads i `docs/progress/archive/`.
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke
   i changed-code complexity audit przechodzą bez budżetowego wyjątku.
+- Localo smoke został rozdzielony na `localo_refresh_assertions.py`,
+  `localo_runtime_assertions.py` i `localo_report_compaction.py`. Live proof
+  potwierdza `access_ready`, refresh `completed`, jedno review action i zachowane
+  blokady claimów/zapisu; Ruff, smoke i complexity audit przechodzą bez wyjątku.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
