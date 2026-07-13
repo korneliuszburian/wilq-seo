@@ -14,6 +14,7 @@ from ads_change_history_assertions import validate_change_history_contract
 from ads_change_impact_assertions import validate_change_impact_contract
 from ads_impression_share_assertions import validate_impression_share_contract
 from ads_keyword_match_assertions import validate_keyword_match_context_contract
+from ads_keyword_planner_assertions import validate_keyword_planner_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
 from ads_search_term_review_assertions import validate_search_term_review_contract
@@ -247,38 +248,7 @@ def main() -> int:
     keyword_match_context_read_contract = validate_keyword_match_context_contract(
         ads_diagnostics, pack
     )
-    if keyword_planner_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose keyword_planner_read_contract")
-    if not keyword_planner_read_contract.get("blocked_claims"):
-        raise SystemExit("Keyword Planner contract must list zablokowane obietnice")
-    pack_keyword_planner_contract = (
-        pack.get("ads_diagnostics", {}).get("keyword_planner_read_contract") or {}
-    )
-    if pack_keyword_planner_contract.get("summary") != keyword_planner_read_contract.get("summary"):
-        raise SystemExit("Context pack Keyword Planner contract differs")
-    if keyword_planner_read_contract.get("status") == "ready":
-        if not keyword_planner_read_contract.get("idea_rows"):
-            raise SystemExit("Ready Keyword Planner contract must expose idea rows")
-        if not pack_keyword_planner_contract.get("idea_rows"):
-            raise SystemExit("Context pack must include ready Keyword Planner idea rows")
-        if "keyword_planner_enrichment" in keyword_planner_read_contract.get(
-            "missing_read_contracts",
-            [],
-        ):
-            raise SystemExit("Ready Keyword Planner contract must not stay missing")
-        if "forecast_or_audience_size" not in keyword_planner_read_contract.get(
-            "missing_read_contracts",
-            [],
-        ):
-            raise SystemExit("Keyword Planner must keep forecast or audience-size blocked")
-    else:
-        if "keyword_planner_enrichment" not in keyword_planner_read_contract.get(
-            "missing_read_contracts",
-            [],
-        ):
-            raise SystemExit("Blocked Keyword Planner contract must list missing enrichment")
-        if keyword_planner_read_contract.get("idea_rows"):
-            raise SystemExit("Blocked Keyword Planner contract must not expose idea rows")
+    keyword_planner_read_contract = validate_keyword_planner_contract(ads_diagnostics, pack)
     if custom_segments_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose custom_segments_read_contract")
     pack_custom_segments_contract = (

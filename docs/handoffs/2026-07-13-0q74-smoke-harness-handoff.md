@@ -98,6 +98,10 @@
 - Keyword-match context contract jest w
   `scripts/ads_keyword_match_assertions.py`; live smoke przechodzi, a
   `main` ma 723 LOC/161 branches. Następny seam: Keyword Planner contract.
+- Keyword Planner contract jest w
+  `scripts/ads_keyword_planner_assertions.py`; live smoke przechodzi, a
+  `main` ma 692 LOC/150 branches. Enrichment i forecast/audience-size nadal
+  pozostają jawnie zablokowane.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
