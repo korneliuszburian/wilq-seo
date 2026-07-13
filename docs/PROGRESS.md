@@ -1815,4 +1815,6 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   blokady rekomendacji bez ranking proof i bezpieczeństwa copy.
   Localo + App focused 8/8, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 7670 LOC. Następny seam: re-audit pełnego runu albo kolejny
-  potwierdzony fixture route.
+  potwierdzony fixture route. Po slice wykonano browser proof `/content-workflow`:
+  pierwszy viewport pokazuje decyzję, blocker, CTA i świeżość/dowody za
+  disclosure; screenshot obejrzany, bez technicznych ID above the fold.
