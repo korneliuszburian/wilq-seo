@@ -68,6 +68,11 @@ def test_codex_skill_eval_schema_requires_openai_style_hard_gates() -> None:
         "invalid_action_validation",
         "generic_workflow_output",
     }.issubset(set(schema["properties"]["failure_tags"]["items"]["enum"]))
+    daily_check = schema["properties"]["daily_check"]
+    assert daily_check["type"] == "object"
+    assert daily_check["additionalProperties"] is False
+    assert "status" in daily_check["required"]
+    assert "daily_check" in required
 
 
 def test_codex_skill_eval_harness_validates_hard_gates_independently_of_score() -> None:

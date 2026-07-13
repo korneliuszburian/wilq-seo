@@ -28,6 +28,22 @@ Usefulness is scored on a 1-10 scale:
 `failure_tags` are eval failures in the skill answer, not normal WILQ product
 blockers.
 
+## 2026-07-13 - Daily-check field schema repair and fresh proof
+
+- WILQ API proof: `health=ok`, `metric_fact_count=107900`; the API-owned
+  `DailyCheckResult` is `blocked` with typed freshness, evidence IDs,
+  connector IDs, expert rules and safe next actions.
+- Fixed a real harness contradiction: post-validation required top-level
+  `daily_check`, while the structured output schema rejected that field.
+  The schema now requires the field and permits the typed daily-check object;
+  deterministic harness checks still enforce its status/freshness/lineage for
+  the six daily-check skills.
+- Fresh canonical run:
+  `.local-lab/evals/codex-skill/fresh-20260713e/wilq-daily-command/result.json`
+  returned `api_used=true`, Polish output, usefulness `10`, all hard gates true
+  and empty `failure_tags`. This is one fresh skill proof, not a 13/13 claim;
+  remaining skills need their own current run.
+
 For each skill:
 
 1. Use a realistic Polish marketer prompt.

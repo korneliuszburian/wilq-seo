@@ -252,6 +252,113 @@
     },
     "notes": {
       "type": "string"
+    },
+    "daily_check": {
+      "type": "object",
+      "additionalProperties": false,
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["ready", "review_ready", "blocked", "degraded"]
+            },
+            "freshness": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "state": {"type": "string"},
+                "last_success_at": {"type": ["string", "null"]},
+                "checked_at": {"type": ["string", "null"]},
+                "notes": {"type": ["string", "null"]}
+              },
+              "required": ["state", "last_success_at", "checked_at", "notes"]
+            },
+            "source_connectors": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "expert_rule_ids": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "blocked_recommendation_ids": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "safe_next_action_ids": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {"type": ["string", "null"]},
+                  "status": {"type": ["string", "null"]},
+                  "title": {"type": ["string", "null"]},
+                  "source_connectors": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  },
+                  "evidence_ids": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  },
+                  "expert_rule_ids": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  },
+                  "freshness": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "state": {"type": "string"},
+                      "last_success_at": {"type": ["string", "null"]},
+                      "checked_at": {"type": ["string", "null"]},
+                      "notes": {"type": ["string", "null"]}
+                    },
+                    "required": ["state", "last_success_at", "checked_at", "notes"]
+                  },
+                  "next_step": {"type": ["string", "null"]},
+                  "action_ids": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  },
+                  "false_positive_guards": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  }
+                },
+                "required": [
+                  "id",
+                  "status",
+                  "title",
+                  "source_connectors",
+                  "evidence_ids",
+                  "expert_rule_ids",
+                  "freshness",
+                  "next_step",
+                  "action_ids",
+                  "false_positive_guards"
+                ]
+              }
+            }
+          },
+      "required": [
+            "status",
+            "freshness",
+            "source_connectors",
+            "evidence_ids",
+            "expert_rule_ids",
+            "blocked_recommendation_ids",
+            "safe_next_action_ids",
+            "items"
+      ]
     }
   },
   "required": [
@@ -276,6 +383,7 @@
     "eval_rubric",
     "failure_tags",
     "decision_quality",
-    "notes"
+    "notes",
+    "daily_check"
   ]
 }

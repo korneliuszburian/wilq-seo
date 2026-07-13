@@ -64,10 +64,11 @@ optional isolated runtime flags `CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG=1` and
 a passing skill proof.
 
 Recheck 2026-07-13 po ostatnim pushu: API `health=ok`, runtime raportuje
-107900 metric facts i 12 connectorów, a izolowany eval `wilq-daily-command`
-z `--ignore-user-config`/`skills.config=[]` zatrzymuje się na
-`thread.started`/`turn.started` bez wyniku. Nie używać starego artefaktu jako
-dowodu; zadanie `v9ab.10` pozostaje otwarte.
+107900 metric facts i 12 connectorów. Po naprawie schema evala świeży
+`wilq-daily-command` harness zapisał `fresh-20260713e/.../result.json` z
+`api_used=true`, score 10, wszystkimi hard gates i pustym `failure_tags`.
+Pozostałe skill evale wymagają osobnego świeżego przebiegu; zadanie `v9ab.10`
+pozostaje otwarte.
 
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,

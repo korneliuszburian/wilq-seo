@@ -129,8 +129,8 @@ for skill in "${skills[@]}"; do
     wilq-daily-command|wilq-content-doctor|wilq-content-strategist|wilq-content-operator|wilq-ga4-analyst|wilq-ads-doctor)
       uv run python scripts/daily_check_skill_contract.py --api-base "$api_base" --skill "$skill" >"$daily_check_file"
       ;;
-    *)
-      printf '{}\n' >"$daily_check_file"
+  *)
+      printf '%s\n' '{"status":"blocked","freshness":{"state":"unknown","last_success_at":null,"checked_at":null,"notes":"Zakres daily-check nie jest oceniany dla tego skilla."},"source_connectors":[],"evidence_ids":[],"expert_rule_ids":[],"blocked_recommendation_ids":[],"safe_next_action_ids":[],"items":[]}' >"$daily_check_file"
       ;;
   esac
 
@@ -167,13 +167,14 @@ smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --a
 smoke_output = open(smoke_output_path, encoding="utf-8").read()
 daily_check_output = open(daily_check_path, encoding="utf-8").read()
 api_instruction = (
-    "Najpierw sprawdź API, pobierz /api/dashboard/command-center, /api/marketing/brief "
-    "oraz context-pack przez smoke script. Potwierdź zgodność marketing_brief i "
-    "command_center.action_plan w context-packu. Finalny JSON dla daily command musi "
-    "uwzględnić Plan działań marketera przez recommendations, action_candidates, "
-    "notes albo operator_next_step."
+    "Smoke script został już wykonany przez harness. Zinterpretuj przekazane dane "
+    "z /api/dashboard/command-center, /api/marketing/brief i daily-check; "
+    "potwierdź zgodność marketing_brief i command_center.action_plan. Finalny JSON "
+    "dla daily command musi uwzględnić Plan działań marketera przez recommendations, "
+    "action_candidates, notes albo operator_next_step."
     if is_daily_command
-    else "Najpierw sprawdź API i context-pack właściwy dla skillu."
+    else "Smoke script został już wykonany przez harness; zinterpretuj przekazany "
+    "typed context-pack i route diagnostics bez ponownego odczytu API."
 )
 daily_check_skill = skill in {
     "wilq-daily-command",
@@ -191,6 +192,11 @@ daily_check_instruction = (
     "zachowaj blocker zamiast rekomendacji.\n</daily_check_contract>\n"
     if daily_check_skill
     else ""
+)
+daily_check_field_instruction = (
+    "Top-level pole `daily_check` jest wymagane przez schemat wyniku. Dla tego skilla "
+    "wypełnij je dokładnym API-owned kontraktem z `<daily_check_result>`; dla pozostałych "
+    "skillów przepisz neutralny, zablokowany kontrakt z pustymi listami bez wymyślania danych.\n"
 )
 surface_instruction = (
     f"\n<surface>\nOceniany dashboard workflow route: {surface_path}. "
@@ -309,7 +315,8 @@ forbidden_connectors_instruction = (
     else ""
 )
 print(f"""<task>
-Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
+Przygotuj końcowy wynik eval dla workflow {skill} w trybie operatorskim WILQ dla Ekologus.
+To jest pure-output turn: nie wywołuj skilla, nie czytaj jego instrukcji i nie wykonuj narzędzi.
 Zadanie: {task_pl}
 </task>
 {surface_instruction}
@@ -426,6 +433,7 @@ Oczekiwane connector surfaces: {connectors}
     pierwszy teraz, a nie tylko wymienia listę route'ów albo akcji.
   - `notes_pl` krótko wyjaśnia po polsku, dlaczego decyzja jest użyteczna albo
     co blokuje pełną decyzję.
+- {daily_check_field_instruction}
 - Pole `eval_rubric` jest obowiązkowe. Ustaw
   `evaluator_type="deterministic_pass_fail"` i oceń hard gate'y:
   evidence_requirement_handled, source_connector_requirement_handled,
