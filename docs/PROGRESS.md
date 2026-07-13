@@ -33,6 +33,11 @@ w git, Beads i `docs/progress/archive/`.
   current ACF section rendering and draft-only copy remain unchanged; the
   component owns no write or matching logic. Focused dashboard lint, typecheck,
   route tests and browser reload proof are required before commit.
+- `wilq-seo-ho41` continuation 4: extracted the public WordPress page/section
+  column into `ContentPublicPageColumn.tsx` (47 LOC). It renders only the
+  selected public URL and typed section headings; no SEO decision, canonical
+  matching or evidence inference moved into React. Focused route tests,
+  Playwright layout proof, dashboard lint/typecheck/build and diff check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

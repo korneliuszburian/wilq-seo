@@ -73,6 +73,9 @@ only the route's typed signal rows and does not rank or invent evidence.
 The dev-only WordPress/ACF target column is now `ContentDevTargetColumn.tsx`; it
 keeps explicit target selection and draft-only wording in a separate boundary
 without adding a write path or client-specific ACF assumptions.
+The public WordPress page/section column is now `ContentPublicPageColumn.tsx`;
+it renders only the selected URL and section headings and does not infer SEO
+decisions, canonical matches or evidence.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
