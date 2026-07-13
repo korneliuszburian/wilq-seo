@@ -1854,3 +1854,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   proof; stan dostępu, blokada rekomendacji bez ranking proof i safety copy są
   dowiedzione w `LocaloDiagnosticSurface.test.tsx`. App + Localo focused 5/5,
   typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6547 LOC.
+- Trzydziesty piąty slice: usunięto z `App.test.tsx` dwa duplikaty Ahrefs route
+  proof; rozdział autorytetu/luk i cross-check GSC/WordPress są dowiedzione w
+  `AhrefsDiagnosticSurface.test.tsx`. App + Ahrefs focused 3/3,
+  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6419 LOC.
