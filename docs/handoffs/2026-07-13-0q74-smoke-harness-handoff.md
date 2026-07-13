@@ -38,6 +38,9 @@
   Keyword Planner/forecast/audience size oraz `apply_allowed=false`.
 - Content Operator smoke przechodzi z kolejką `blocked` (2 kandydatów, 1
   actionable przy minimum 3), dry-run WordPress i `publish_allowed=false`.
+- Pierwszy shared assertion seam dodany do harnessu: `require_polish_language`
+  oraz `require_evidence_sources`; GA4, Merchant i GSC używają tych samych
+  guardrails. Ich live smoke przechodzą po migracji.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

@@ -10,7 +10,12 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
+from scripts.skill_smoke_harness import (
+    has_polish_metric_source_guardrails,
+    request_json,
+    require_evidence_sources,
+    require_polish_language,
+)
 
 SKILL_NAME = "wilq-ga4-analyst"
 GA4_CONNECTOR_ID = "google_analytics_4"
@@ -40,8 +45,7 @@ def main() -> int:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
     ga4_diagnostics = request_json(args.api_base, "GET", "/api/ga4/diagnostics")
-    if ga4_diagnostics.get("language") != "pl-PL":
-        raise SystemExit("GA4 diagnostics must declare language=pl-PL")
+    require_polish_language(ga4_diagnostics, "GA4 diagnostics")
     section_ids = [section.get("id") for section in ga4_diagnostics.get("sections", [])]
     required_sections = {
         "ga4_landing_behavior",
@@ -123,10 +127,9 @@ def main() -> int:
         if not decision_types & allowed_decision_types:
             raise SystemExit("GA4 diagnostics decision_queue has no useful decision types")
         for decision in decision_queue:
-            if not decision.get("evidence_ids"):
-                raise SystemExit(f"GA4 decision lacks evidence IDs: {decision.get('id')}")
-            if GA4_CONNECTOR_ID not in decision.get("source_connectors", []):
-                raise SystemExit(f"GA4 decision lacks source connector: {decision.get('id')}")
+            require_evidence_sources(
+                decision, f"GA4 decision {decision.get('id')}", GA4_CONNECTOR_ID
+            )
             if not decision.get("next_step"):
                 raise SystemExit(f"GA4 decision lacks next_step: {decision.get('id')}")
         decision_action_ids = {

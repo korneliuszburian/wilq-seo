@@ -43,3 +43,20 @@ def has_polish_metric_source_guardrails(value: str) -> bool:
         if not unicodedata.combining(char)
     ).replace("ł", "l")
     return "metryk" in normalized and "dowod" in normalized and "zrodl" in normalized
+
+
+def require_polish_language(payload: dict[str, Any], label: str) -> None:
+    if payload.get("language") != "pl-PL":
+        raise SystemExit(f"{label} must declare language=pl-PL")
+
+
+def require_evidence_sources(
+    payload: dict[str, Any], label: str, required_connector: str | None = None
+) -> None:
+    if not payload.get("evidence_ids"):
+        raise SystemExit(f"{label} lacks evidence IDs")
+    connectors = payload.get("source_connectors") or []
+    if not connectors:
+        raise SystemExit(f"{label} lacks source connectors")
+    if required_connector is not None and required_connector not in connectors:
+        raise SystemExit(f"{label} lacks source connector {required_connector}")

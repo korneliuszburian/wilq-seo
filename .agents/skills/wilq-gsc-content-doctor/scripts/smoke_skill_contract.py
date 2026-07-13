@@ -10,7 +10,11 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
+from scripts.skill_smoke_harness import (
+    has_polish_metric_source_guardrails,
+    request_json,
+    require_polish_language,
+)
 
 SKILL_NAME = "wilq-gsc-content-doctor"
 REQUIRED_CONNECTORS = ["google_search_console", "wordpress_ekologus", "wordpress_sklep"]
@@ -40,8 +44,7 @@ def main() -> int:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
     content_diagnostics = request_json(args.api_base, "GET", "/api/content/diagnostics")
-    if content_diagnostics.get("language") != "pl-PL":
-        raise SystemExit("Content diagnostics language must be pl-PL")
+    require_polish_language(content_diagnostics, "Content diagnostics")
     sections = content_diagnostics.get("sections")
     if not isinstance(sections, list) or not sections:
         raise SystemExit("Content diagnostics must expose sections")

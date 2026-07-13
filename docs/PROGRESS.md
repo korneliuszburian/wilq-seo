@@ -59,6 +59,9 @@ w git, Beads i `docs/progress/archive/`.
 - `wilq-seo-0q74` rozszerzony o Content Operator: dwanaście smoke’ów używa
   wspólnego transportu; live proof przechodzi z kolejką zablokowaną przy 2/3
   kandydatów, dry-run WordPress i `publish_allowed=false`.
+- `wilq-seo-0q74` ma pierwszy wspólny seam asercji: `require_polish_language`
+  i `require_evidence_sources` w harnessie; GA4, Merchant i GSC używają go bez
+  zmiany API/product logic. Live smoke i Ruff przechodzą.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

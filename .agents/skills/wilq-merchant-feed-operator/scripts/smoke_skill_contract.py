@@ -10,7 +10,12 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
+from scripts.skill_smoke_harness import (
+    has_polish_metric_source_guardrails,
+    request_json,
+    require_evidence_sources,
+    require_polish_language,
+)
 
 SKILL_NAME = "wilq-merchant-feed-operator"
 MERCHANT_FEED_ACTION_ID = "act_review_merchant_feed_issues"
@@ -51,8 +56,7 @@ def main() -> int:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
     merchant_diagnostics = request_json(args.api_base, "GET", "/api/merchant/diagnostics")
-    if merchant_diagnostics.get("language") != "pl-PL":
-        raise SystemExit("Merchant diagnostics language must be pl-PL")
+    require_polish_language(merchant_diagnostics, "Merchant diagnostics")
     sections = merchant_diagnostics.get("sections")
     if not isinstance(sections, list) or not sections:
         raise SystemExit("Merchant diagnostics must expose sections")
@@ -123,10 +127,7 @@ def main() -> int:
         for row in product_performance_readiness.get("performance_rows") or []:
             if not row.get("product_id"):
                 raise SystemExit("Product performance rows must include product_id")
-            if not row.get("source_connectors") or not row.get("evidence_ids"):
-                raise SystemExit(
-                    "Product performance rows must include source connectors and evidence IDs"
-                )
+            require_evidence_sources(row, "Product performance row")
     elif performance_status == "blocked":
         blocked_claims = set(product_performance_readiness.get("blocked_claims") or [])
         if not {
