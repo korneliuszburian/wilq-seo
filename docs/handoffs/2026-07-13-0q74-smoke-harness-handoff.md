@@ -63,6 +63,11 @@
   Smoke main ma teraz 94 LOC/11 branches, runtime zachowuje walidację health,
   context-pack, diagnostics, actionów, briefu i konektorów. Live smoke, Ruff,
   complexity i diff check przechodzą; nie zmieniono API ani write safety.
+- GSC refresh/Search Analytics contract jest w
+  `scripts/gsc_refresh_contract.py`; live smoke przechodzi (1 978 query/page
+  metric facts), a main spadł do 434 LOC/122 branches. Ads nie został zmieniony:
+  aktualny endpoint ma 8,6 MB, full-context 11,2 MB, a pełny smoke kończy się
+  bez outputu przed proof; wymaga osobnej diagnostyki pamięci/raportu.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
