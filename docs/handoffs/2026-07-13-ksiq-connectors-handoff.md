@@ -289,6 +289,14 @@
   niestabilność zakresu/full-run, nie jako dowód regresji slice’ów; przed claimem
   pełnego green gate trzeba powtórzyć lub odseparować timeouty.
 
+- Dwudziesty szósty slice: fixture Merchant diagnostics została wyciągnięta z
+  `App.test.tsx` do `merchantDiagnostic.fixture.ts`, a
+  `MerchantDiagnosticSurface.test.tsx` dostał behavior proof pierwszego ekranu:
+  decyzja, blocker, świeżość, bezpieczny next step i disclosure pełnego review.
+  Focused Merchant 2/2, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 8180 LOC. Następny seam: kolejny największy lokalny fixture
+  lub re-audit pełnego runu po ustabilizowaniu timeoutów.
+
 ## Następny krok
 
 - Po commit/push wybrać kolejny domain seam z `wilq-seo-ksiq` na podstawie
