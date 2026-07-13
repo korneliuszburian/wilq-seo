@@ -110,19 +110,14 @@ from wilq.content.workflow.stage_activation import (
 )
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
-    build_content_work_item_draft_variants_response,  # noqa: F401 - router compatibility export
     build_content_work_item_structured_draft_generation_response,
 )
 from wilq.content.workflow.stage_measurement import (
-    build_content_work_item_measurement_outcome_response,  # noqa: F401 - router compatibility export
     build_content_work_item_measurement_window_response,
 )
 from wilq.content.workflow.stage_preparation import (
     build_content_work_item_preflight_response,
     build_content_work_item_sales_brief_response,
-)
-from wilq.content.workflow.stage_readiness import (
-    build_content_wordpress_existing_draft_update_readiness_response,  # noqa: F401 - router compatibility export
 )
 from wilq.content.workflow.stage_review import (
     build_content_work_item_human_review_response,

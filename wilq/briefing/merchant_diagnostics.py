@@ -7,7 +7,8 @@ from datetime import datetime
 from time import monotonic
 from typing import Literal
 
-from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
+from wilq.actions.merchant import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT
+from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.merchant_labels import (
     merchant_dimension_label,
