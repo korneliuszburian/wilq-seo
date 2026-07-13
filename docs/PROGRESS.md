@@ -23,6 +23,10 @@ w git, Beads i `docs/progress/archive/`.
   rozjazd `marketer_decision.review_action_ids` względem bieżącej listy akcji
   `content_diagnostics`. To osobny follow-up kontraktu API, nie regresja
   harnessu.
+- `wilq-seo-c9h9.19` zamknięty jako redundantny po managed restart i live proof:
+  marketer review card była już API-owned; poprawiono wyłącznie GSC smoke, aby
+  wiązał action IDs z wybraną decyzją, nie z globalną listą akcji. Handoff:
+  `docs/handoffs/2026-07-13-0q74-smoke-harness-handoff.md`.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
