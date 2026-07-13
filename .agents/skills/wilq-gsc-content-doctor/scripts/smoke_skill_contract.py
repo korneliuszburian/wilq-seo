@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from gsc_decision_parity import validate_gsc_context_parity
 from gsc_freshness_assertions import validate_freshness_and_gsc_contract
+from gsc_marketer_card_assertions import validate_marketer_decision_card
 from gsc_refresh_contract import read_latest_gsc_refresh_contract
 from gsc_report_compaction import compact_gsc_brief_items, compact_gsc_connector_statuses
 
@@ -83,46 +84,9 @@ def main() -> int:
         pack, content_diagnostics
     )
 
-    marketer_decision = content_diagnostics.get("marketer_decision")
-    if content_diagnostics.get("live_data_available") is True:
-        if not isinstance(marketer_decision, dict):
-            raise SystemExit("Content diagnostics must expose marketer_decision")
-        if marketer_decision.get("review_card_label") != "Karta decyzji dla Wilka":
-            raise SystemExit("Content marketer decision must expose Wilku review card label")
-        required_review_fields = {
-            "review_decision_after_review",
-            "review_question_for_wilku",
-            "review_next_safe_click",
-        }
-        missing_review_fields = [
-            field
-            for field in sorted(required_review_fields)
-            if not str(marketer_decision.get(field) or "").strip()
-        ]
-        if missing_review_fields:
-            raise SystemExit(
-                "Content marketer decision missing Wilku review fields: "
-                + ", ".join(missing_review_fields)
-            )
-        if "publik" not in str(marketer_decision.get("review_next_safe_click") or "").lower():
-            raise SystemExit("Wilku review next click must explicitly block publication")
-        review_action_ids = marketer_decision.get("review_action_ids")
-        selected_decision = next(
-            (
-                item
-                for item in endpoint_decision_trace
-                if item.get("id") == marketer_decision.get("technical_decision_id")
-            ),
-            None,
-        )
-        selected_action_ids = (selected_decision or {}).get("action_ids") or []
-        expected_review_action_ids = (
-            [CONTENT_ACTION_ID] if CONTENT_ACTION_ID in selected_action_ids else []
-        )
-        if review_action_ids != expected_review_action_ids:
-            raise SystemExit(
-                "Wilku review card action IDs must match the selected content decision"
-            )
+    marketer_decision = validate_marketer_decision_card(
+        content_diagnostics, endpoint_decision_trace, CONTENT_ACTION_ID
+    )
 
     gsc_metric_facts = request_json(
         args.api_base,

@@ -142,6 +142,10 @@
   przechodzi z 1 scoped decision, evidence/action subset parity i blokadą
   Ahrefs scope. `main` ma 315 LOC/72 branches. Następny seam: marketer card
   parity.
+- GSC marketer decision card parity jest w
+  `scripts/gsc_marketer_card_assertions.py`; live smoke przechodzi z kartą
+  `Karta decyzji dla Wilka`, review fields i selected action IDs. `main` ma 278
+  LOC/59 branches. Następny re-audyt wybierze Merchant/Localo hotspot.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
