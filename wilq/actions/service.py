@@ -247,6 +247,7 @@ from wilq.actions.payload_readiness import (
 from wilq.actions.payloads import (
     validate_action_payload,
 )
+from wilq.actions.registry_assembly import assemble_action_registry
 from wilq.actions.review_gate import (
     action_operator_checklist as build_action_operator_checklist,
 )
@@ -615,20 +616,18 @@ def _action_list_cache_seconds() -> float:
 
 
 def _action_registry() -> dict[str, ActionObject]:
-    """Build one canonical inventory for action list and direct lookup."""
-    actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
-    if not _google_ads_live_data_available():
-        return actions
-    actions.pop("act_configure_google_ads_env", None)
-    for action in (
-        _google_ads_business_context_action(),
-        _google_ads_target_confirmation_action(),
-        _google_ads_strategy_review_action(),
-        keyword_planner_access_action_from_vendor_read(_latest_google_ads_vendor_read()),
-    ):
-        if action is not None:
-            actions[action.id] = action
-    return actions
+    return assemble_action_registry(
+        _STATIC_ACTIONS,
+        seed_metric_action_candidates(),
+        live_data_available=_google_ads_live_data_available(),
+        configure_action_id="act_configure_google_ads_env",
+        live_actions=(
+            _google_ads_business_context_action(),
+            _google_ads_target_confirmation_action(),
+            _google_ads_strategy_review_action(),
+            keyword_planner_access_action_from_vendor_read(_latest_google_ads_vendor_read()),
+        ),
+    )
 
 
 def get_action(action_id: str) -> ActionObject | None:

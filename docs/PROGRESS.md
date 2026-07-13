@@ -2165,3 +2165,13 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Ruff, mypy, complexity audit i diff check przechodzą (dwa znane budżety).
   Następny slice: sprawdzić, czy pozostałe preview/payload label helpers mają
   jeszcze bezpieczną wspólną granicę.
+- Re-audit `kgvy`: budget/recommendation/negative-keyword/custom-segment
+  preview helpers nie mają wspólnej bezpiecznej granicy; nie utworzono
+  sztucznego modułu. Następny aktywny zakres przeszedł do `jnra`.
+- Slice `jnra`: wydzielono `wilq/actions/registry_assembly.py` jako kanoniczną
+  assembly inventory static + metric + live Ads. `list_actions` i direct lookup
+  zachowują parity, a configure action znika tylko przy potwierdzonych danych
+  vendor-read. `test_action_list_cache.py` przechodzi 4/4, Ruff, mypy i diff
+  check zielone. Complexity oznacza kontrolowany frozen-file risk `service.py`;
+  szeroki action-object test ma niezwiązany błąd kolekcji `_merchant_feed_items`
+  w `tactical_queue`.

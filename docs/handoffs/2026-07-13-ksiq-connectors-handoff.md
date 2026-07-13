@@ -639,6 +639,14 @@
   helperach. `ads_diagnostics.py` ma 6 876 linii fizycznych; Ads contracts,
   Ruff, mypy, complexity audit i diff check zielone. Następny seam: pozostałe
   preview/payload label helpers, tylko jeśli mają wspólną bezpieczną granicę.
+- Re-audit `kgvy` potwierdził brak wspólnej granicy dla pozostałych previewów;
+  nie przenosić ich mechanicznie. Następny aktywny task: `jnra`.
+- Slice `jnra`: `wilq/actions/registry_assembly.py` przejął kanoniczne składanie
+  inventory static/metric/live Ads. `list_actions` i direct lookup zachowują
+  parity, configure action znika tylko przy live vendor-read. `test_action_list_cache.py`
+  4/4, Ruff/mypy/diff zielone. Complexity pokazuje kontrolowany frozen-file risk
+  `service.py`; szeroki action-object test ma niezwiązany import error
+  `_merchant_feed_items` z `tactical_queue`.
 
 ## Następny krok
 
