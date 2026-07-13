@@ -2013,3 +2013,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   preview-card disclosure i wszystkie fail-closed flags. Focused
   Ads/Ruff/mypy/diff check zielone; główny test ma 1319 linii i 12 branchy.
   Następny seam: search-term/safety/negative-keyword decisions.
+- Czterdziesty piąty pod-slice c9h9.22: search-term, search-safety i
+  negative-keyword decision proof wydzielone do
+  `assert_ads_search_decision_contracts`; zachowano priorytety, 90-dniowe
+  evidence, review gates, knowledge cards i blokady unsafe claims. Focused
+  Ads/Ruff/mypy/diff check zielone; główny test ma 1265 linii i 12 branchy.
+  Następny seam: custom-segment decision i finalny action tail.

@@ -1902,6 +1902,58 @@ def assert_ads_ngram_action_payload(action: dict[str, Any]) -> None:
     assert "ngram_to_negative_keyword_change_preview" not in str(preview_card)
 
 
+def assert_ads_search_decision_contracts(decisions_by_id: dict[str, Any]) -> None:
+    """Prove search, safety and negative-keyword decision lanes stay gated."""
+    search = decisions_by_id["ads_review_search_terms"]
+    assert search["status"] == "ready"
+    assert search["priority"] == 40
+    assert search["metric_tiles"] == {
+        "zapytania": 2,
+        "kliknięcia": 10,
+        "koszt": "12 PLN",
+    }
+    assert search["search_term_rows"][0]["search_term"] == "bdo rejestracja"
+    assert search["missing_read_contracts"] == []
+    assert search["operator_review_gates"] == ["negative_keyword_action_validation"]
+    assert "dodanie wykluczających słów kluczowych" in search["blocked_claims"]
+    safety = decisions_by_id["ads_review_search_term_safety"]
+    assert safety["status"] == "ready"
+    assert safety["priority"] == 50
+    assert safety["metric_tiles"] == {
+        "90 dni": 1,
+        "kliknięcia": 10,
+        "koszt": "8.00 PLN",
+    }
+    assert safety["decision_type"] == "review_search_term_safety"
+    assert safety["search_term_safety_rows"][0]["search_term"] == "odpady cena"
+    assert "dodanie wykluczających słów kluczowych" in safety["blocked_claims"]
+    assert safety["missing_read_contracts"] == []
+    assert safety["operator_review_gates"] == ["human_intent_review"]
+    assert safety["knowledge_card_ids"] == [
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_search_playbook",
+    ]
+    negative = decisions_by_id["ads_review_negative_keyword_safety"]
+    assert negative["status"] == "ready"
+    assert negative["priority"] == 45
+    assert negative["metric_tiles"] == {
+        "propozycje": 1,
+        "pilne": 0,
+        "wysokie": 1,
+        "podgląd akcji": 1,
+        "kontekst słów": 1,
+    }
+    assert negative["decision_type"] == "review_negative_keyword_safety"
+    assert negative["negative_keyword_candidates"][0]["search_term"] == "odpady cena"
+    assert negative["search_term_safety_rows"][0]["clicks_90d"] == 10
+    assert negative["negative_keyword_payload_preview"][0]["negative_keyword_text"] == "odpady cena"
+    assert negative["missing_read_contracts"] == []
+    assert negative["operator_review_gates"] == ["human_intent_review"]
+    assert negative["keyword_match_context_rows"][0]["keyword_text"] == "odpady"
+    assert negative["action_ids"] == ["act_prepare_negative_keyword_review_queue"]
+    assert "marnowanie budżetu na zapytaniach" in negative["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4317,61 +4369,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ngram_validate_response = client.post(f"/api/actions/{SEARCH_TERM_NGRAM_ACTION_ID}/validate")
     assert ngram_validate_response.status_code == 200
     assert ngram_validate_response.json()["valid"] is True
-    search_terms_decision = decisions_by_id["ads_review_search_terms"]
-    assert search_terms_decision["status"] == "ready"
-    assert search_terms_decision["priority"] == 40
-    assert search_terms_decision["metric_tiles"] == {
-        "zapytania": 2,
-        "kliknięcia": 10,
-        "koszt": "12 PLN",
-    }
-    assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
-    assert search_terms_decision["missing_read_contracts"] == []
-    assert search_terms_decision["operator_review_gates"] == ["negative_keyword_action_validation"]
-    assert "dodanie wykluczających słów kluczowych" in search_terms_decision["blocked_claims"]
-    search_term_safety_decision = decisions_by_id["ads_review_search_term_safety"]
-    assert search_term_safety_decision["status"] == "ready"
-    assert search_term_safety_decision["priority"] == 50
-    assert search_term_safety_decision["metric_tiles"] == {
-        "90 dni": 1,
-        "kliknięcia": 10,
-        "koszt": "8.00 PLN",
-    }
-    assert search_term_safety_decision["decision_type"] == "review_search_term_safety"
-    assert search_term_safety_decision["search_term_safety_rows"][0]["search_term"] == (
-        "odpady cena"
-    )
-    assert "dodanie wykluczających słów kluczowych" in search_term_safety_decision["blocked_claims"]
-    assert search_term_safety_decision["missing_read_contracts"] == []
-    assert search_term_safety_decision["operator_review_gates"] == ["human_intent_review"]
-    assert search_term_safety_decision["knowledge_card_ids"] == [
-        "card_google_ads_negative_keywords_playbook",
-        "card_google_ads_search_playbook",
-    ]
-    negative_keyword_decision = decisions_by_id["ads_review_negative_keyword_safety"]
-    assert negative_keyword_decision["status"] == "ready"
-    assert negative_keyword_decision["priority"] == 45
-    assert negative_keyword_decision["metric_tiles"] == {
-        "propozycje": 1,
-        "pilne": 0,
-        "wysokie": 1,
-        "podgląd akcji": 1,
-        "kontekst słów": 1,
-    }
-    assert negative_keyword_decision["decision_type"] == "review_negative_keyword_safety"
-    assert negative_keyword_decision["negative_keyword_candidates"][0]["search_term"] == (
-        "odpady cena"
-    )
-    assert negative_keyword_decision["search_term_safety_rows"][0]["clicks_90d"] == 10
-    assert (
-        negative_keyword_decision["negative_keyword_payload_preview"][0]["negative_keyword_text"]
-        == "odpady cena"
-    )
-    assert negative_keyword_decision["missing_read_contracts"] == []
-    assert negative_keyword_decision["operator_review_gates"] == ["human_intent_review"]
-    assert negative_keyword_decision["keyword_match_context_rows"][0]["keyword_text"] == ("odpady")
-    assert negative_keyword_decision["action_ids"] == ["act_prepare_negative_keyword_review_queue"]
-    assert "marnowanie budżetu na zapytaniach" in negative_keyword_decision["blocked_claims"]
+    assert_ads_search_decision_contracts(decisions_by_id)
     custom_segments_decision = decisions_by_id["ads_prepare_custom_segments_from_search_terms"]
     assert custom_segments_decision["status"] == "ready"
     assert custom_segments_decision["priority"] == 55
