@@ -272,6 +272,12 @@
   readiness labels, review-only constraints i brak raw payloadów/legacy
   formatterów. Demand Gen + App focused 9/9, dashboard typecheck/lint i diff
   check przechodzą; `App.test.tsx` ma 8621 LOC. Następny seam: Evidence detail.
+- Dwudziesty czwarty slice: Evidence detail behavior przeniesiony do
+  `EvidenceDetailRoute.test.tsx`; kontrolowany typed evidence fixture dowodzi
+  marketer-readable trace, świeżości i technical disclosure bez raw IDs above
+  the fold. Evidence + App focused 8/8, dashboard typecheck/lint i diff check
+  przechodzą; `App.test.tsx` ma 8599 LOC. Następny krok: re-audit pozostałych
+  route proofs i aktywnego Bead graph.
 
 ## Następny krok
 

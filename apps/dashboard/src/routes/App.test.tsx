@@ -8596,26 +8596,4 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });
 
-  it("evidence detail route renders source trace from linked evidence id", async () => {
-    renderApp("/evidence/ev_refresh_merchant_feed");
-    await waitFor(() =>
-      expect(
-        screen.getByRole("heading", { name: "Dowód z Merchant Center" })
-      ).toBeInTheDocument()
-    );
-    expect(
-      screen.getByText("Merchant Center product-file diagnostics collected sanitized product issue counters.")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Źródło: Merchant Center")).toBeInTheDocument();
-    expect(screen.getByText("Typ źródła: odczyt źródła danych")).toBeInTheDocument();
-    expect(screen.getByText("Świeżość: świeże dane")).toBeInTheDocument();
-    expect(screen.queryByText("Źródło: google_merchant_center")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "ev_refresh_merchant_feed" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/ID dowodu/)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne dowodu" }));
-
-    expect(screen.getByText(/Klucz dowodu w WILQ:/)).toBeInTheDocument();
-    expect(screen.queryByText(/ID dowodu/)).not.toBeInTheDocument();
-  });
 });
