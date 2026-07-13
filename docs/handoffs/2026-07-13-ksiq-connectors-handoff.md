@@ -656,6 +656,10 @@
   bez importowania mega-testu. Nowy test i pełny action-object test przechodzą;
   legacy plik zmniejszył się o 40 linii. Pozostało 12 historycznych hotspotów
   complexity do dalszych niezależnych behavior splitów.
+- Czwarta kontynuacja `50wa`: context-pack review-gate contract jest teraz w
+  `tests/api_contracts/test_context_safety_contracts.py`. Nowy i pełny
+  action-object test przechodzą; legacy plik zmniejszył się o 23 linie. Nadal
+  pozostają historyczne hotspoty complexity.
 - Druga kontynuacja `50wa`: typed preview-card contract jest w osobnym
   `tests/actions/test_action_preview_cards_contracts.py` z lokalnym helperem,
   bez zależności od mega-testu. Nowy i pełny action-object test przechodzą;

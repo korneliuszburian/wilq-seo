@@ -2837,33 +2837,6 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
     assert "sessions=30" not in serialized
 
 
-def test_daily_context_pack_preserves_action_review_gates(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
-
-    response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
-
-    assert response.status_code == 200
-    payload = response.json()
-    actions = {action["id"]: action for action in payload["active_action_objects"]}
-    merchant_action = actions["act_review_merchant_feed_issues"]
-    assert merchant_action["review_gate"]["status"] == "pending_validation"
-    assert merchant_action["review_gate"]["apply_allowed"] is False
-    assert "apply_blockers" not in merchant_action["review_gate"]
-    assert merchant_action["review_gate"]["apply_blockers_total"] >= 2
-    assert "wymagane sprawdzenie w WILQ" in merchant_action["review_gate"]["apply_blocker_labels"]
-    assert (
-        "podgląd zmian nie pozwala na zapis"
-        in merchant_action["review_gate"]["apply_blocker_labels"]
-    )
-    assert "payload_apply_allowed_false" not in json.dumps(
-        merchant_action["review_gate"], ensure_ascii=False
-    )
-    assert "last_mutation_adapter" not in merchant_action["review_gate"]
-
-
 def test_action_validation_rejects_unsupported_payload_action_type() -> None:
     action = ActionObject(
         id="bad_payload",
