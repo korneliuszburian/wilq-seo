@@ -2520,3 +2520,11 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   contract przeniesiono 1:1 do `tests/actions/test_action_evidence_contracts.py`.
   Test docelowy i pełny action-object suite przechodzą; każda akcja zachowuje
   evidence IDs, review gate i blokadę apply bez dowodu.
+- `jnra` continuation 2026-07-13: bounded latest metric-fact batch retrieval
+  moved from `wilq/actions/service.py` into
+  `wilq/actions/metric_action_facts.py`. The public facade still owns the
+  vendor-specific Google Ads callback and probe-fact policy; the new module
+  owns connector-limit loading plus identity dedupe. Focused action suites
+  (12 tests), Ruff, mypy and diff check pass. Complexity audit still reports
+  the pre-existing frozen `service.py` budget risk; this slice reduces the
+  facade and adds no behavior or vendor write path.

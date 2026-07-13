@@ -945,7 +945,14 @@
   `2026-07-13T12:34:35Z`). This is preparation evidence only; no participant,
   time-to-understand or verdict was invented. Keep `jst` open until Wilku
   session feedback or explicit owner defer is supplied.
+- `jnra` continuation 2026-07-13: extracted bounded latest metric-fact batch
+  loading to `wilq/actions/metric_action_facts.py`; vendor-specific Google Ads
+  retrieval and probe-fact filtering remain explicit callbacks owned by the
+  service facade. Focused action tests (12), Ruff, mypy and diff check pass.
+  Complexity still flags the pre-existing frozen service monolith; do not treat
+  that report as a regression from this behavior-preserving extraction.
 
 ## Następny krok
 
-- Po commit/push kontynuować `wilq-seo-c9h9.22`; nie wracać do connector schemas.
+- Po commit/push kontynuować kolejny świeży seam `jnra` w lifecycle
+  orchestration; nie wracać do zamkniętych childów ani connector schemas.

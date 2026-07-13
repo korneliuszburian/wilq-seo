@@ -162,18 +162,13 @@ from wilq.actions.merchant import (
     merchant_feed_issue_action_from_metric_facts,
     seed_merchant_feed_issue_action,
 )
+from wilq.actions.metric_action_facts import load_action_metric_facts
 from wilq.actions.metric_utils import (
     facts_by_connector as _facts_by_connector_impl,
 )
 from wilq.actions.metric_utils import (
-    latest_metric_facts_by_identity as _latest_metric_facts_by_identity_impl,
-)
-from wilq.actions.metric_utils import (
     metric_fact_label,
     unique_values,
-)
-from wilq.actions.metric_utils import (
-    metric_fact_sort_time as _metric_fact_sort_time_impl,
 )
 from wilq.actions.mutation_contract import mutation_apply_contract as _mutation_apply_contract
 from wilq.actions.mutation_contract import (
@@ -877,26 +872,13 @@ def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
 
 
 def _action_metric_facts() -> list[MetricFact]:
-    facts: list[MetricFact] = []
-    facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
-        {
-            connector_id: ACTION_METRIC_FACT_LIMITS.get(
-                connector_id,
-                ACTION_METRIC_FACT_LIMIT,
-            )
-            for connector_id in ACTION_METRIC_CONNECTORS
-        },
+    return load_action_metric_facts(
+        store=metric_store(),
+        connector_ids=ACTION_METRIC_CONNECTORS,
+        limits=ACTION_METRIC_FACT_LIMITS,
+        latest_google_ads_facts=_latest_google_ads_metric_facts,
+        is_probe_only_fact=_is_probe_only_fact,
     )
-    google_ads_latest_facts = _latest_google_ads_metric_facts()
-    if google_ads_latest_facts:
-        facts_by_connector["google_ads"] = google_ads_latest_facts
-    for connector_id in ACTION_METRIC_CONNECTORS:
-        facts.extend(
-            fact
-            for fact in facts_by_connector.get(connector_id, [])
-            if not _is_probe_only_fact(fact)
-        )
-    return _latest_metric_facts_by_identity(facts)
 
 
 def _latest_google_ads_metric_facts() -> list[MetricFact]:
@@ -904,14 +886,6 @@ def _latest_google_ads_metric_facts() -> list[MetricFact]:
         _latest_google_ads_vendor_read(),
         metric_facts_by_evidence_ids=metric_store().list_metric_facts_by_evidence_ids,
     )
-
-
-def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
-    return _latest_metric_facts_by_identity_impl(metric_facts)
-
-
-def _metric_fact_sort_time(fact: MetricFact) -> str:
-    return _metric_fact_sort_time_impl(fact)
 
 
 def _wordpress_draft_handoff_action(
