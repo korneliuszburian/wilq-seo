@@ -83,6 +83,12 @@ w git, Beads i `docs/progress/archive/`.
   and is passed as typed display input; blockers, instructions and evidence IDs
   remain unchanged. Focused route tests, Playwright proof, lint/typecheck/build
   and diff check pass.
+- `wilq-seo-ho41` continuation 14: extracted `AcfPreviewPanel.tsx` and its
+  recursive field preview renderer. ACF safety classification remains in the
+  existing route helper and is passed as typed display input. Focused route
+  tests (19), lint, typecheck and build pass; live E2E reached the app but
+  failed on the pre-existing heading locator, so it is not attributed to this
+  seam.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

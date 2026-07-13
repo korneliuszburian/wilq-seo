@@ -101,6 +101,9 @@ typed safety text, findings, dimensions and next step.
 The revision-plan panel is now `ContentRevisionPlanPanel.tsx`; revision safety
 classification remains in the route helper while the component renders typed
 blockers, instructions and required evidence.
+The ACF authoring preview is now `AcfPreviewPanel.tsx`; its recursive field
+renderer is shared with the existing authoring readback while ACF safety text
+continues to come from the route helper.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

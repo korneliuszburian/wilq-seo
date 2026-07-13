@@ -815,6 +815,12 @@
   helperze i jest przekazana jako typed display input; blockers, instructions i
   evidence IDs bez zmian. Focused route tests, Playwright proof, lint/typecheck/
   build i diff check przechodzą.
+- `ho41` continuation 14 2026-07-13: `AcfPreviewPanel.tsx` wydzielony wraz z
+  rekurencyjnym rendererem pól ACF; safety text nadal pochodzi z route helpera.
+  19 focused Vitest, lint, typecheck i build przechodzą. E2E uruchomione bez
+  projektu `chromium` (konfiguracja repo nie definiuje projektu), a bez filtra
+  doszło do aplikacji i zakończyło się na istniejącym locatorze nagłówka; brak
+  dowodu regresji tego seamu.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent
