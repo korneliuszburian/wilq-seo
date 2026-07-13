@@ -41,6 +41,12 @@ w git, Beads i `docs/progress/archive/`.
   response (307 LOC); `index.ts` ma 1 872 LOC. Connector/evidence/action
   contracts pozostają bez zmian. Shared schema/dashboard lint, build, tests i
   typecheck przechodzą. Następny seam: Content diagnostic contracts.
+- Piętnasty seam: `content_diagnostics.ts` zawiera content diagnostic section,
+  Ahrefs candidate/cross-check, decision queue, operator summary, GSC contract,
+  marketer decision i diagnostics response (264 LOC); `index.ts` ma 1 623 LOC.
+  Content freshness nadal współdzieli istniejący `contentWorkflow` contract.
+  Shared schema/dashboard lint, build, tests i typecheck przechodzą. Następny
+  seam: Content preflight contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

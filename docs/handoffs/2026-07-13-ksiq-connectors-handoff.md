@@ -76,6 +76,12 @@
   readiness i Merchant diagnostics response (307 LOC); `index.ts` ma 1 872 LOC.
   Connector/evidence/action contracts bez zmian, focused gates przechodzą.
   Następny seam: Content diagnostic contracts.
+- Piętnasty seam: `packages/shared-schemas/src/content_diagnostics.ts` zawiera
+  content diagnostic section, Ahrefs candidate/cross-check, decision queue,
+  operator summary, GSC contract, marketer decision i diagnostics response
+  (264 LOC); `index.ts` ma 1 623 LOC. Content freshness współdzieli istniejący
+  `contentWorkflow` contract, focused gates przechodzą. Następny seam: Content
+  preflight contracts.
 
 ## Następny krok
 

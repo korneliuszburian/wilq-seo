@@ -2,9 +2,13 @@ import { z } from "zod";
 
 import {
   ContentDraftPackageSchema,
-  ContentFreshnessAssessmentSchema,
   ContentWordPressDraftHandoffSchema
 } from "./contentWorkflow";
+import {
+  ContentAhrefsCandidateRowSchema,
+  ContentDiagnosticSectionSchema,
+  ContentDiagnosticsResponseSchema,
+} from "./content_diagnostics";
 import {
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
@@ -51,6 +55,7 @@ import {
 } from "./merchant_diagnostics";
 
 export * from "./contentWorkflow";
+export * from "./content_diagnostics";
 export * from "./connectors";
 export * from "./actions";
 export * from "./marketing";
@@ -100,260 +105,6 @@ export const OpportunitySchema = z.object({
 
 
 
-export const ContentDiagnosticSectionSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.enum(["ready", "blocked", "missing"]),
-  summary: z.string(),
-  diagnosis: z.string(),
-  next_step: z.string(),
-  source_connectors: z.array(z.string()),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  metric_facts: z.array(MetricFactSchema),
-  tactical_items: z.array(TacticalQueueItemSchema),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([]),
-  risk: z.enum(["low", "medium", "high", "critical"])
-});
-
-export const ContentAhrefsCrossCheckSchema = z.object({
-  strength: z.enum(["exact", "weak", "missing"]).default("missing"),
-  label: z.string().default("brak potwierdzonego dopasowania"),
-  matching_labels: z.array(z.string()).default([]),
-  source_connectors: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()).default([])
-});
-
-export const ContentAhrefsCandidateRowSchema = z.object({
-  id: z.string(),
-  topic: z.string(),
-  gap_type: z.string(),
-  gap_type_label: z.string().default(""),
-  relevance_status: z.enum(["relevant", "review", "off_topic"]),
-  relevance_status_label: z.string().default(""),
-  relevance_score: z.number(),
-  business_relevance_reasons: z.array(z.string()).default([]),
-  business_relevance_reason_labels: z.array(z.string()).default([]),
-  gsc_demand: z.enum(["present", "missing"]),
-  gsc_demand_label: z.string().default(""),
-  gsc_cross_check: ContentAhrefsCrossCheckSchema.default({
-    strength: "missing",
-    label: "brak potwierdzonego dopasowania",
-    matching_labels: [],
-    source_connectors: [],
-    evidence_ids: []
-  }),
-  wordpress_inventory_match: z.enum(["present", "missing"]),
-  wordpress_inventory_match_label: z.string().default(""),
-  wordpress_cross_check: ContentAhrefsCrossCheckSchema.default({
-    strength: "missing",
-    label: "brak potwierdzonego dopasowania",
-    matching_labels: [],
-    source_connectors: [],
-    evidence_ids: []
-  }),
-  gsc_overlap_terms: z.array(z.string()).default([]),
-  wordpress_overlap_urls: z.array(z.string()).default([]),
-  keyword: z.string().nullable().optional(),
-  competitor_domain: z.string().nullable().optional(),
-  source_url: z.string().nullable().optional(),
-  referenced_public_url: z.string().nullable().optional(),
-  metric_name: z.string(),
-  metric_value: z.union([z.string(), z.number()]),
-  source_connectors: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()),
-  next_step: z.string()
-});
-
-export const ContentDecisionItemSchema = z.object({
-  id: z.string(),
-  decision_type: z.enum([
-    "block_until_vendor_read",
-    "refresh_or_merge",
-    "merge_create_after_inventory_check",
-    "inventory_check_before_create",
-    "block_as_tracking_not_content",
-    "review_ahrefs_gap_records"
-  ]),
-  status: z.enum(["ready", "blocked"]),
-  status_label: z.string().default(""),
-  decision_type_label: z.string().default(""),
-  title: z.string(),
-  summary: z.string().nullable().optional(),
-  priority: z.number(),
-  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
-  page: z.string().nullable().optional(),
-  normalized_page_path: z.string().nullable().optional(),
-  queries: z.array(z.string()),
-  query_count: z.number(),
-  primary_query: z.string().nullable().optional(),
-  total_clicks: z.number().nullable().optional(),
-  total_impressions: z.number().nullable().optional(),
-  aggregate_ctr: z.number().nullable().optional(),
-  best_average_position: z.number().nullable().optional(),
-  wordpress_match: z.string().nullable().optional(),
-  wordpress_match_label: z.string().nullable().optional(),
-  wordpress_match_confidence: z.string().nullable().optional(),
-  wordpress_match_confidence_label: z.string().nullable().optional(),
-  wordpress_title_or_h1: z.string().nullable().optional(),
-  wordpress_inventory_source: z.string().nullable().optional(),
-  wordpress_modified_gmt: z.string().nullable().optional(),
-  wordpress_section_headings: z.array(z.string()).default([]),
-  wordpress_section_count: z.number().nullable().optional(),
-  wordpress_section_inventory_status: z.enum(["available", "missing"]).default("missing"),
-  wordpress_content_summary: z.string().nullable().optional(),
-  wordpress_content_word_count: z.number().nullable().optional(),
-  wordpress_content_inventory_status: z.enum(["available", "missing"]).default("missing"),
-  wordpress_content_inventory_note: z.string().nullable().optional(),
-  wordpress_block_names: z.array(z.string()).default([]),
-  wordpress_block_count: z.number().nullable().optional(),
-  wordpress_acf_section_inventory_status: z.enum(["available", "missing"]).default("missing"),
-  wordpress_acf_section_inventory_note: z.string().nullable().optional(),
-  source_public_url: z.string().nullable().optional(),
-  preview_url: z.string().nullable().optional(),
-  intended_final_url: z.string().nullable().optional(),
-  final_canonical_url: z.string().nullable().optional(),
-  inventory_gate_status: z.string().nullable().optional(),
-  inventory_gate_status_label: z.string().nullable().optional(),
-  canonical_gate_status: z.string().nullable().optional(),
-  canonical_gate_status_label: z.string().nullable().optional(),
-  duplicate_gate_status: z.string().nullable().optional(),
-  duplicate_gate_status_label: z.string().nullable().optional(),
-  content_gate_summary: z.string().nullable().optional(),
-  source_connectors: z.array(z.string()),
-  source_connector_labels: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  metric_facts: z.array(MetricFactSchema),
-  ahrefs_candidate_rows: z.array(ContentAhrefsCandidateRowSchema).default([]),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([]),
-  rationale: z.string(),
-  next_step: z.string(),
-  risk: z.enum(["low", "medium", "high", "critical"])
-});
-
-export const ContentOperatorSummarySchema = z.object({
-  id: z.literal("content_operator_summary"),
-  title: z.string(),
-  summary: z.string(),
-  next_step: z.string(),
-  top_decision_ids: z.array(z.string()),
-  confirmed_wordpress_count: z.number(),
-  missing_wordpress_count: z.number(),
-  current_site_match_count: z.number(),
-  decision_type_labels: z.array(z.string()),
-  source_connectors: z.array(z.string()),
-  source_connector_labels: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([]),
-  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({})
-});
-
-export const ContentGscSearchAnalyticsContractSchema = z.object({
-  source_connector: z.literal("google_search_console"),
-  evidence_ids: z.array(z.string()).default([]),
-  data_availability_checked: z.boolean(),
-  date_availability_status: z.string(),
-  expected_data_delay_days_min: z.number().default(2),
-  expected_data_delay_days_max: z.number().default(3),
-  availability_date_start: z.string().nullable().optional(),
-  availability_date_end: z.string().nullable().optional(),
-  detail_date_start: z.string().nullable().optional(),
-  detail_date_end: z.string().nullable().optional(),
-  latest_available_detail_date: z.string().nullable().optional(),
-  search_type: z.string(),
-  detail_dimensions: z.string(),
-  detail_data_completeness: z.string(),
-  read_granularity: z.literal("single_day_latest_available").default("single_day_latest_available"),
-  api_recommended_page_size: z.number().default(25000),
-  api_daily_row_cap_per_search_type: z.number().default(50000),
-  query_page_row_limit: z.number().nullable().optional(),
-  query_page_max_rows: z.number().nullable().optional(),
-  query_page_rows_truncated: z.boolean(),
-  aggregate_date_start: z.string().nullable().optional(),
-  aggregate_date_end: z.string().nullable().optional(),
-  aggregate_dimensions: z.string().default(""),
-  aggregate_aggregation_type: z.string().default(""),
-  aggregate_data_completeness: z.string().default(""),
-  aggregate_row_count: z.number().nullable().optional(),
-  aggregate_clicks: z.number().nullable().optional(),
-  aggregate_impressions: z.number().nullable().optional(),
-  aggregate_ctr: z.number().nullable().optional(),
-  aggregate_average_position: z.number().nullable().optional(),
-  aggregate_summary_label: z.string().default(""),
-  summary_label: z.string(),
-  partial_detail_warning_label: z.string(),
-  paging_label: z.string(),
-  official_limits_label: z.string().default(""),
-  wilq_internal_cap_label: z.string().default("")
-});
-
-export const ContentMarketerDecisionSchema = z.object({
-  id: z.string(),
-  technical_decision_id: z.string(),
-  status: z.enum(["ready", "blocked"]),
-  decision: z.string(),
-  mode_label: z.string(),
-  why_it_matters: z.string(),
-  safe_next_action: z.string(),
-  review_card_label: z.string().default("Karta decyzji dla Wilka"),
-  review_decision_after_review: z.string(),
-  review_question_for_wilku: z.string(),
-  review_next_safe_click: z.string(),
-  review_action_ids: z.array(z.string()).default([]),
-  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
-  content_angle: z.string().nullable().optional(),
-  h1_direction: z.string().nullable().optional(),
-  h2_direction: z.array(z.string()).default([]),
-  faq_direction: z.array(z.string()).default([]),
-  cta_direction: z.string().nullable().optional(),
-  source_facts: z.array(z.string()).default([]),
-  blocked_claims: z.array(z.string()).default([]),
-  missing_inputs: z.array(z.string()).default([]),
-  evidence_summary: z.string(),
-  source_connectors: z.array(z.string()).default([]),
-  source_connector_labels: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()).default([]),
-  measurement_plan: z.string(),
-  source_public_url: z.string().nullable().optional(),
-  preview_url: z.string().nullable().optional(),
-  intended_final_url: z.string().nullable().optional(),
-  final_canonical_url: z.string().nullable().optional()
-});
-
-export const ContentDiagnosticsResponseSchema = z.object({
-  generated_at: z.string().nullable().optional(),
-  language: z.literal("pl-PL"),
-  strict_instruction: z.string(),
-  connectors: z.array(ConnectorStatusSchema),
-  latest_refreshes: z.array(ConnectorRefreshRunSchema),
-  live_data_available: z.boolean(),
-  live_data_status_label: z.string().default(""),
-  freshness_assessment: ContentFreshnessAssessmentSchema,
-  gsc_search_analytics_contract: ContentGscSearchAnalyticsContractSchema.nullable().optional(),
-  query_page_count: z.number(),
-  matched_inventory_count: z.number(),
-  operator_summary: ContentOperatorSummarySchema,
-  marketer_decision: ContentMarketerDecisionSchema.nullable().optional(),
-  decision_queue: z.array(ContentDecisionItemSchema),
-  sections: z.array(ContentDiagnosticSectionSchema),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  source_connector_labels: z.array(z.string()).default([]),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocker_count: z.number()
-});
 
 export const ContentPreflightItemSchema = z.object({
   id: z.string(),
