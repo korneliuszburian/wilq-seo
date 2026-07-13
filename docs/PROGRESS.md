@@ -2278,3 +2278,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   test przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
   Nowy i pełny action-object suite przechodzą; dev URL, mapping terms i raw
   review payload pozostają poza widocznym outputem.
+- Dwudziesta trzecia kontynuacja `50wa`: dimensioned content action preview
+  regression po nowszym aggregate run przeniesiono do
+  `tests/api_contracts/test_content_workflow_contracts.py`. Test docelowy i
+  pełny action-object suite przechodzą; context-pack retry wrócił do 9/9
+  skonfigurowanych connectorów po wcześniejszym timeoutcie.

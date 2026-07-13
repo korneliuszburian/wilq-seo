@@ -728,6 +728,10 @@
 - Dwudziesta druga kontynuacja `50wa`: legacy content review audit redaction
   contract jest teraz w `tests/api_contracts/test_content_workflow_contracts.py`.
   Nowy i pełny suite przechodzą; nie powtarzać tego content splitu.
+- Dwudziesta trzecia kontynuacja `50wa`: dimensioned content action preview
+  contract jest teraz w `tests/api_contracts/test_content_workflow_contracts.py`.
+  Nowy i pełny suite przechodzą; retry context-pack potwierdził 9 connectorów,
+  wszystkie skonfigurowane.
 
 ## Następny krok
 
