@@ -154,6 +154,10 @@
   `scripts/merchant_product_readiness.py`; live smoke przechodzi ze statusem
   performance `blocked`, a `main` ma 288 LOC/87 branches. Blokady przychodu,
   ROAS i write pozostają jawne.
+- Merchant price impact readiness jest w
+  `scripts/merchant_price_readiness.py`; live smoke przechodzi ze statusem
+  `blocked`, preview contract i `apply_allowed=false`. `main` ma 242 LOC/67
+  branches. Następny seam: Merchant issue/decision queue parity.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

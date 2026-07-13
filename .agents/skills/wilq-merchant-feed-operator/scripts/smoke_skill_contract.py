@@ -11,6 +11,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from merchant_context_parity import validate_merchant_context_parity
+from merchant_price_readiness import validate_price_readiness
 from merchant_product_readiness import validate_product_readiness
 
 from scripts.skill_smoke_harness import (
@@ -65,55 +66,9 @@ def main() -> int:
     packed_merchant = validate_merchant_context_parity(merchant_diagnostics, pack)
     product_sample_readiness = merchant_diagnostics.get("product_sample_readiness")
     product_performance_readiness = validate_product_readiness(merchant_diagnostics)
-    price_impact_readiness = merchant_diagnostics.get("price_impact_readiness")
-    if not isinstance(price_impact_readiness, dict):
-        raise SystemExit("Merchant diagnostics must expose price_impact_readiness")
-    required_price_contracts = set(price_impact_readiness.get("required_read_contracts") or [])
-    if not {
-        "google_ads_shopping_product_current_price",
-        "google_ads_shopping_product_price_history",
-        "merchant_price_change_event_or_snapshot",
-        "google_ads_or_ga4_product_performance_window",
-    }.issubset(required_price_contracts):
-        raise SystemExit("Merchant price_impact_readiness must name price readiness read contracts")
-    price_status = price_impact_readiness.get("status")
-    price_preview = price_impact_readiness.get("change_preview") or []
-    if price_status == "ready":
-        if price_impact_readiness.get("products_with_current_price", 0) <= 0:
-            raise SystemExit("Ready price_impact_readiness must include current prices")
-        if price_impact_readiness.get("products_with_previous_price", 0) <= 0:
-            raise SystemExit("Ready price_impact_readiness must include previous prices")
-        if price_impact_readiness.get("products_with_price_change", 0) <= 0:
-            raise SystemExit("Ready price_impact_readiness must include changed prices")
-        if price_impact_readiness.get("products_with_performance_metrics", 0) <= 0:
-            raise SystemExit("Ready price_impact_readiness must include performance windows")
-    elif price_status == "blocked":
-        blocked_claims = set(price_impact_readiness.get("blocked_claims") or [])
-        if not {
-            "wpływ zmiany ceny",
-            "zwrot z reklam na poziomie produktu",
-            "opłacalność produktu",
-            "zapis do pliku produktowego",
-        }.issubset(blocked_claims):
-            raise SystemExit(
-                "Blocked price_impact_readiness must block price/zwrot z reklam claims"
-            )
-        if not price_impact_readiness.get("missing_read_contracts"):
-            raise SystemExit("Blocked price_impact_readiness must list missing read contracts")
-    else:
-        raise SystemExit("Merchant price_impact_readiness status must be ready or blocked")
-    if price_preview:
-        if price_preview[0].get("preview_contract") != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT:
-            raise SystemExit("Merchant price readiness preview contract mismatch")
-        if price_preview[0].get("apply_allowed") is not False:
-            raise SystemExit("Merchant price readiness preview must keep apply_allowed=false")
-        if price_preview[0].get("api_mutation_ready") is not False:
-            raise SystemExit("Merchant price readiness preview must keep api_mutation_ready=false")
-        products = price_preview[0].get("products") or []
-        if products:
-            first_product = products[0]
-            if "has_price_change" not in first_product:
-                raise SystemExit("Merchant price readiness preview must expose has_price_change")
+    price_impact_readiness, price_status, price_preview = validate_price_readiness(
+        merchant_diagnostics
+    )
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
     decision_queue = merchant_diagnostics.get("decision_queue") or []
     packed_decision_queue = packed_merchant.get("decision_queue") or []

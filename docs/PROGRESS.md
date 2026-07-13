@@ -184,6 +184,10 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/merchant_product_readiness.py`; live smoke `ok` potwierdził status
   performance `blocked` i blokady przychodu/ROAS/write. Merchant `main` spadł
   do 288 LOC/87 branches, helper 56 LOC/20 branches.
+- Merchant price impact readiness jest teraz w
+  `scripts/merchant_price_readiness.py`; live smoke `ok` potwierdził status
+  `blocked`, preview contract i `apply_allowed=false`. Merchant `main` spadł
+  do 242 LOC/67 branches, helper 51 LOC/18 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
