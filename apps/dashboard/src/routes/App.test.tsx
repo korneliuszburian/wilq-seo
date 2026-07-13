@@ -8027,51 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("knowledge route renders compiled cards and playbooks", async () => {
-    renderApp("/knowledge");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Wiedza" })).toBeInTheDocument()
-    );
-    expect(screen.getByText("Wiedza oparta na źródłach, twierdzenia usług, status review i stan zatwierdzenia.")).toBeInTheDocument();
-    expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText(/Karta ma źródła, ale wymaga decyzji człowieka/)).toBeInTheDocument();
-    expect(screen.getByText("Co blokuje produkcję treści")).toBeInTheDocument();
-    expect(screen.getByText("Brak zatwierdzenia człowieka")).toBeInTheDocument();
-    expect(screen.getByText("Zablokowane twierdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Kolejka sprawdzania wiedzy")).toBeInTheDocument();
-    expect(screen.getByText("Status twierdzeń")).toBeInTheDocument();
-    expect(screen.getByText("zatwierdzonych")).toBeInTheDocument();
-    expect(screen.getByText("Brak osobnego etapu przygotowania.")).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByText("ocena zmarnowanego budżetu")).toBeInTheDocument()
-    );
-    expect(screen.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż kartę" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Zasady pracy z wiedzą" }).length).toBeGreaterThan(0);
-    expect(screen.queryByText("Skill: dostępny")).not.toBeInTheDocument();
-    expect(screen.queryByText("Karty wiedzy: 1")).not.toBeInTheDocument();
-    expect(screen.queryByText("Playbooki: 1")).not.toBeInTheDocument();
-    expect(screen.queryByText("Reguły eksperckie: 1")).not.toBeInTheDocument();
-    expect(screen.queryByText(/card_google_ads_search_playbook/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/google_ads_search_playbook/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/ads_search_terms_v1/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Powiązania")).not.toBeInTheDocument();
-    expect(screen.queryByText("wzorzec Ads / playbook marketingowy")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż kartę" }));
-    expect(screen.queryByText("Google Ads search diagnostics")).not.toBeInTheDocument();
-    const playbooksToggle = screen.getAllByRole("button", { name: "Zasady pracy z wiedzą" })[0];
-    fireEvent.click(playbooksToggle);
-    expect(screen.queryByText("Wymagane dowody: search_terms, evidence_ids")).not.toBeInTheDocument();
-    expect(screen.queryByText("Okazja z wyszukiwanych haseł oparta o dowody.")).not.toBeInTheDocument();
-    expect(screen.queryByText("Knowledge Cards")).not.toBeInTheDocument();
-    expect(screen.queryByText("Machine-Readable Playbooks")).not.toBeInTheDocument();
-    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
-    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-    expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
-    expect(screen.queryByText("Connector Status")).not.toBeInTheDocument();
-  });
-
   it("knowledge route shows its layout while the operating map is still loading", async () => {
     vi.stubGlobal(
       "fetch",

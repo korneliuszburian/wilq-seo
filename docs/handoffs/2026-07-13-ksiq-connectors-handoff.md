@@ -231,6 +231,12 @@
   brakujących kontraktów, zablokowanych twierdzeń, persisted run oraz disclosure
   evidence/action. App + workflow focused 13/13, dashboard typecheck/lint i diff
   check przechodzą; `App.test.tsx` ma 8831 LOC. Następny seam: knowledge route.
+- Szesnasty slice: knowledge route proof przeniesiony do
+  `KnowledgeSurface.test.tsx`; kontrolowany typed API fixture dowodzi kolejki
+  review, blokady twierdzeń, braku raw registry oraz użytecznego layoutu podczas
+  ładowania operating map. App + knowledge focused 13/13, dashboard typecheck/
+  lint i diff check przechodzą; `App.test.tsx` ma 8786 LOC. Następny seam:
+  Merchant route.
 
 ## Następny krok
 
