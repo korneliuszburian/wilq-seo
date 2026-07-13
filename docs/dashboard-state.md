@@ -124,6 +124,9 @@ recommendation logic.
 The decision panel's publication blockers are now
 `ContentWorkflowPublicationBlockers.tsx`; human-review, draft-only and
 forbidden-claim copy remains a typed presentation boundary.
+The decision panel's next-action card is now
+`ContentWorkflowNextDecisionPanel.tsx`; it renders typed decision, proof,
+claim-count and safe-next-step inputs without owning ranking logic.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
