@@ -1,8 +1,33 @@
 import { readFileSync } from "node:fs";
 
-import { describe, expect, it } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+import { demandGenDiagnostics } from "./demandGenDiagnostics.fixture";
+import { DemandGenDiagnosticSurface } from "./DemandGenDiagnosticSurface";
+
+vi.mock("../lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/api")>();
+  return { ...actual, getDemandGenDiagnostics: vi.fn().mockResolvedValue(demandGenDiagnostics) };
+});
 
 describe("DemandGenDiagnosticSurface", () => {
+  it("blocks a Demand Gen plan when the channel is absent from evidence", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DemandGenDiagnosticSurface />
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Demand Gen" })).toBeInTheDocument());
+    expect(screen.getByText("Sprawdzenie Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma wiedzieć przed planem Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText(/nie ma kampanii Demand Gen ani Discovery/)).toBeInTheDocument();
+    expect(screen.getByText("Podgląd gotowości Demand Gen")).toBeInTheDocument();
+  });
+
   it("keeps Demand Gen readiness typed, evidence-backed and review-only", () => {
     const routeSource = readFileSync("src/routes/DemandGenDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("data.preview_cards");

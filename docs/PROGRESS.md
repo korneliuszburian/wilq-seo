@@ -1829,3 +1829,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   cross-checku GSC/WordPress i konkretnych luk SEO. Ahrefs + App focused 8/8,
   dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma 7138 LOC.
   Następny seam: Demand Gen albo dedykowana stabilizacja równoległego runu.
+- Trzydziesty pierwszy slice: fixture Demand Gen diagnostics została wyciągnięta
+  z `App.test.tsx` do `demandGenDiagnostics.fixture.ts`, a
+  `DemandGenDiagnosticSurface.test.tsx` dostał behavior proof blokady planu,
+  gdy kanał nie występuje w dowodach. Demand Gen + App focused 8/8, dashboard
+  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6903 LOC.
+  Następny krok: ponowić serialny pełny gate po kolejnym seamie albo przejść
+  do dedykowanej stabilizacji równoległości.
