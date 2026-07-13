@@ -193,6 +193,11 @@
   compact blockerów bez registry/payload dumpów. App + GenericSurface focused
   24/24, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
   9222 LOC. Następny seam: system route technical disclosure.
+- Dziewiąty slice: system-route technical disclosure przeniesiony do
+  `SystemSurface.test.tsx` z kontrolowanymi typed connector/workflow fixtures.
+  Test dowodzi audytowego widoku, eksperymentalnych obszarów i braku raw
+  payloadów. App + System focused 19/19, dashboard typecheck/lint i diff check
+  przechodzą; `App.test.tsx` ma 9197 LOC. Następny seam: actions route proof.
 
 ## Następny krok
 

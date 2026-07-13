@@ -163,6 +163,11 @@ w git, Beads i `docs/progress/archive/`.
   compact blockerów oraz braku registry/payload dumpów. App + GenericSurface
   focused 24/24, typecheck/lint/diff check przechodzą; `App.test.tsx` ma 9222
   LOC.
+- Dziewiąty slice przeniósł system-route technical disclosure do
+  `SystemSurface.test.tsx`; test z kontrolowanymi connector/workflow fixtures
+  dowodzi audytowego widoku, eksperymentalnych obszarów i braku raw payloadów.
+  App + System focused 19/19, typecheck/lint/diff check przechodzą;
+  `App.test.tsx` ma 9197 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke
