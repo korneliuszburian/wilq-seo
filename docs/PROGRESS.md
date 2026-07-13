@@ -1764,3 +1764,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   technical disclosure i brak legacy count/placeholder copy. Localo + App
   focused 10/10, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 8706 LOC. Następny seam: Social.
+- Dwudziesty pierwszy slice: Social publisher behavior proof przeniesiony do
+  `SocialPublisherSurface.test.tsx`; zachowano review-only mode, blokadę
+  historii/dedupe, metadata-only discovery i brak technicznych ID w operator
+  copy. Social + App focused 9/9, dashboard typecheck/lint i diff check
+  przechodzą; `App.test.tsx` ma 8662 LOC. Następny seam: Ahrefs.

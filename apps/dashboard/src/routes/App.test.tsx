@@ -8413,50 +8413,6 @@ describe("WILQ dashboard", () => {
     ).toBe(false);
   });
 
-  it("social route renders workflow-specific blockers", async () => {
-    renderApp("/social-publisher");
-    await waitFor(
-      () =>
-        expect(screen.getByRole("heading", { name: "Publikacje social" })).toBeInTheDocument(),
-      { timeout: 10_000 }
-    );
-    expect(screen.getByText("Social jest tylko do review")).toBeInTheDocument();
-    expect(screen.getByText("Historia social blokuje brak powtórek")).toBeInTheDocument();
-    expect(screen.getByText("Jakie pola trzeba zebrać")).toBeInTheDocument();
-    expect(screen.getByText("Kanał")).toBeInTheDocument();
-    expect(screen.getByText("Data publikacji")).toBeInTheDocument();
-    expect(screen.getByText("Temat")).toBeInTheDocument();
-    expect(screen.getByText("Usługa")).toBeInTheDocument();
-    expect(screen.getByText("Claim")).toBeInTheDocument();
-    expect(screen.getByText("CTA")).toBeInTheDocument();
-    expect(screen.getByText("URL albo ID posta")).toBeInTheDocument();
-    expect(screen.getByText("Dowód źródłowy")).toBeInTheDocument();
-    const auditSection = screen
-      .getByText("Jak sprawdzić zebrane metadane")
-      .closest("div");
-    expect(auditSection).toHaveTextContent("/api/social/history-inventory/audit");
-    expect(auditSection).toHaveTextContent("metadata-only JSON");
-    expect(auditSection).toHaveTextContent("social_history_inventory_v1");
-    expect(auditSection).toHaveTextContent("review metadanych");
-    const templateSection = screen.getByText("Gotowy szablon metadanych").closest("div");
-    expect(templateSection).not.toBeNull();
-    expect(screen.getByText(/Nie dodawaj raw treści postów/)).toBeInTheDocument();
-    expect(templateSection).toHaveTextContent("linkedin, facebook");
-    expect(screen.getByText("Od czego zacząć discovery")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "https://www.linkedin.com/company/ekologus-esg-eko-audyt-ochrona-srodowiska-dokumentacje-srodowiskowe-szkolenia-sorbenty/posts/?feedView=all"
-      )
-    ).toBeInTheDocument();
-    expect(screen.getByText("https://www.facebook.com/ekologus/?locale=pl_PL")).toBeInTheDocument();
-    expect(screen.getAllByText("brakuje dostępu")).toHaveLength(2);
-    expect(screen.getAllByText(/Pełna treść posta nie jest wymagana/)).toHaveLength(2);
-    expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
-    expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
-    expect(screen.queryByText(/access token/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/act_/)).not.toBeInTheDocument();
-  });
 
   it("ahrefs route renders authority context and clean gap review language", async () => {
     renderApp("/ahrefs");
