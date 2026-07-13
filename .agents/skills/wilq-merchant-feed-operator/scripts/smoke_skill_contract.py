@@ -4,16 +4,21 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import urllib.parse
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from merchant_context_parity import validate_merchant_context_parity
-from merchant_issue_parity import validate_issue_decision_parity
+from merchant_issue_parity import validate_issue_decision_parity, validate_price_decision_parity
 from merchant_price_readiness import validate_price_readiness
 from merchant_product_readiness import validate_product_readiness
+from merchant_report_compaction import build_merchant_smoke_report
+from merchant_runtime_assertions import (
+    collect_connector_results,
+    compact_brief_items,
+    validate_action_ids,
+)
 
 from scripts.skill_smoke_harness import (
     has_polish_metric_source_guardrails,
@@ -75,35 +80,16 @@ def main() -> int:
     )
     packed_decision_queue = packed_merchant.get("decision_queue") or []
     unknowns = merchant_diagnostics.get("unknowns") or []
-    if price_impact_readiness.get("products_with_current_price", 0) > 0 or price_preview:
-        for surface_name, decisions in (
-            ("Merchant diagnostics", decision_queue),
-            ("Context pack merchant_diagnostics", packed_decision_queue),
-        ):
-            price_decision = find_decision(decisions, MERCHANT_PRICE_IMPACT_DECISION_ID)
-            if price_decision is None:
-                raise SystemExit(f"{surface_name} must expose {MERCHANT_PRICE_IMPACT_DECISION_ID}")
-            if price_decision.get("decision_type") != MERCHANT_PRICE_IMPACT_DECISION_TYPE:
-                raise SystemExit(
-                    f"{surface_name} price decision must use {MERCHANT_PRICE_IMPACT_DECISION_TYPE}"
-                )
-            if price_decision.get("status") != price_status:
-                raise SystemExit(f"{surface_name} price decision status must match price readiness")
-            decision_preview = price_decision.get("change_preview") or []
-            if not decision_preview:
-                raise SystemExit(f"{surface_name} price decision must expose change_preview")
-            if (
-                decision_preview[0].get("preview_contract")
-                != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT
-            ):
-                raise SystemExit(f"{surface_name} price decision preview contract mismatch")
-            decision_claims = set(price_decision.get("blocked_claims") or [])
-            if not {
-                "wpływ zmiany ceny",
-                "zwrot z reklam na poziomie produktu",
-                "zapis do pliku produktowego",
-            }.issubset(decision_claims):
-                raise SystemExit(f"{surface_name} price decision must block price claims")
+    validate_price_decision_parity(
+        price_impact_readiness,
+        price_preview,
+        price_status,
+        decision_queue,
+        packed_decision_queue,
+        MERCHANT_PRICE_IMPACT_DECISION_ID,
+        MERCHANT_PRICE_IMPACT_DECISION_TYPE,
+        MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT,
+    )
     merchant_action = next(
         (
             action
@@ -129,50 +115,13 @@ def main() -> int:
     ):
         raise SystemExit("Merchant change preview must keep blocked write state")
 
-    action_validations = []
-    for action_id in merchant_diagnostics.get("action_ids", []):
-        quoted_action = urllib.parse.quote(str(action_id), safe="")
-        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
-        action_validations.append(
-            {
-                "action_id": validation.get("action_id"),
-                "valid": validation.get("valid"),
-                "status": validation.get("status"),
-                "errors": validation.get("errors", []),
-            }
-        )
-        if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Merchant action validation failed: {validation}")
+    action_validations = validate_action_ids(
+        args.api_base, merchant_diagnostics.get("action_ids", []), request_json
+    )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = [
-        {
-            "id": item.get("id"),
-            "title": item.get("title"),
-            "kind": item.get("kind"),
-            "source_connectors": item.get("source_connectors", []),
-            "evidence_ids": item.get("evidence_ids", []),
-            "action_ids": item.get("action_ids", []),
-            "metric_facts": item.get("metric_facts", []),
-        }
-        for section in brief.get("sections", [])
-        for item in section.get("items", [])
-        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
-    ][:8]
-
-    connector_results = []
-    for connector in REQUIRED_CONNECTORS:
-        quoted = urllib.parse.quote(connector, safe="")
-        status = request_json(args.api_base, "GET", f"/api/connectors/{quoted}/status")
-        connector_results.append(
-            {
-                "id": status.get("id"),
-                "status": status.get("status"),
-                "configured": status.get("configured"),
-                "missing_credentials": status.get("missing_credentials", []),
-                "error": status.get("error"),
-            }
-        )
+    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS)
+    connector_results = collect_connector_results(args.api_base, REQUIRED_CONNECTORS, request_json)
 
     instruction = str(pack.get("strict_instruction", ""))
     if not has_polish_metric_source_guardrails(instruction):
@@ -180,80 +129,26 @@ def main() -> int:
             "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
         )
 
-    print(
-        json.dumps(
-            {
-                "skill": SKILL_NAME,
-                "api_base": args.api_base,
-                "health": health.get("status"),
-                "required_connectors": connector_results,
-                "merchant_diagnostics": {
-                    "live_data_available": merchant_diagnostics.get("live_data_available"),
-                    "product_count": merchant_diagnostics.get("product_count"),
-                    "issue_count": merchant_diagnostics.get("issue_count"),
-                    "issue_cluster_count": len(issue_clusters),
-                    "decision_count": len(decision_queue),
-                    "top_issue_clusters": issue_clusters[:5],
-                    "decision_queue": decision_queue[:5],
-                    "unknowns": unknowns,
-                    "freshness_assessment": freshness_assessment,
-                    "operator_summary": operator_summary,
-                    "blocker_count": merchant_diagnostics.get("blocker_count"),
-                    "section_ids": [
-                        section.get("id")
-                        for section in merchant_diagnostics.get("sections", [])
-                        if section.get("id")
-                    ],
-                    "evidence_ids": merchant_diagnostics.get("evidence_ids", []),
-                    "action_ids": merchant_diagnostics.get("action_ids", []),
-                    "tactical_item_ids": [
-                        item.get("id")
-                        for section in merchant_diagnostics.get("sections", [])
-                        for item in section.get("tactical_items", [])
-                        if item.get("id")
-                    ][:20],
-                    "blocked_claims": [
-                        claim
-                        for section in merchant_diagnostics.get("sections", [])
-                        for claim in section.get("blocked_claims", [])
-                    ][:20],
-                    "product_sample_readiness": product_sample_readiness,
-                    "product_performance_readiness": product_performance_readiness,
-                    "price_impact_readiness": price_impact_readiness,
-                    "latest_refresh_status": (merchant_diagnostics.get("latest_refresh") or {}).get(
-                        "status"
-                    ),
-                    "context_pack_action_status": context_pack_action_status,
-                    "context_pack_validation_status": context_pack_validation_status,
-                    "preview_card_kinds": [
-                        item.get("kind") for item in merchant_preview_cards if item.get("kind")
-                    ],
-                },
-                "brief_items": brief_items,
-                "evidence_count": len(pack.get("evidence_summaries") or []),
-                "opportunity_count": len(pack.get("top_opportunities") or []),
-                "action_count": len(pack.get("active_action_objects") or []),
-                "evidence_ids": [
-                    item.get("id")
-                    for item in (pack.get("evidence_summaries") or [])
-                    if item.get("id")
-                ][:20],
-                "opportunity_ids": [
-                    item.get("id")
-                    for item in (pack.get("top_opportunities") or [])
-                    if item.get("id")
-                ][:20],
-                "action_validations": action_validations,
-                "action_ids": [
-                    item.get("id")
-                    for item in (pack.get("active_action_objects") or [])
-                    if item.get("id")
-                ][:20],
-            },
-            indent=2,
-            sort_keys=True,
-        )
-    )
+    print(json.dumps(build_merchant_smoke_report(
+        api_base=args.api_base,
+        health=health,
+        connector_results=connector_results,
+        merchant_diagnostics=merchant_diagnostics,
+        issue_clusters=issue_clusters,
+        decision_queue=decision_queue,
+        unknowns=unknowns,
+        freshness_assessment=freshness_assessment,
+        operator_summary=operator_summary,
+        product_sample_readiness=product_sample_readiness,
+        product_performance_readiness=product_performance_readiness,
+        price_impact_readiness=price_impact_readiness,
+        merchant_preview_cards=merchant_preview_cards,
+        brief_items=brief_items,
+        action_validations=action_validations,
+        pack=pack,
+        context_pack_action_status=context_pack_action_status,
+        context_pack_validation_status=context_pack_validation_status,
+    ), indent=2, sort_keys=True))
     return 0
 
 

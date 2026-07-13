@@ -14,6 +14,10 @@ w git, Beads i `docs/progress/archive/`.
   `connectorRefreshRun.fixture.ts` między App i `ConnectorRefreshRunList`;
   focused Vitest wzrósł do 32 testów, lint/typecheck nadal przechodzą, a
   omnibus nie duplikuje już danych testowych.
+- Merchant smoke report shaping i runtime assertions są teraz w
+  `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
+  live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke
+  i changed-code complexity audit przechodzą bez budżetowego wyjątku.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

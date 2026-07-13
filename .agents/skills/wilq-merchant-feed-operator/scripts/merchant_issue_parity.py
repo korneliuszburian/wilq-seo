@@ -3,6 +3,40 @@ from __future__ import annotations
 from typing import Any
 
 
+def validate_price_decision_parity(
+    price_impact_readiness: dict[str, Any],
+    price_preview: list[dict[str, Any]],
+    price_status: str,
+    decision_queue: list[dict[str, Any]],
+    packed_decision_queue: list[dict[str, Any]],
+    decision_id: str,
+    decision_type: str,
+    preview_contract: str,
+) -> None:
+    if price_impact_readiness.get("products_with_current_price", 0) <= 0 and not price_preview:
+        return
+    for surface_name, decisions in (
+        ("Merchant diagnostics", decision_queue),
+        ("Context pack merchant_diagnostics", packed_decision_queue),
+    ):
+        price_decision = next((item for item in decisions if item.get("id") == decision_id), None)
+        if price_decision is None:
+            raise SystemExit(f"{surface_name} must expose {decision_id}")
+        if price_decision.get("decision_type") != decision_type:
+            raise SystemExit(f"{surface_name} price decision must use {decision_type}")
+        if price_decision.get("status") != price_status:
+            raise SystemExit(f"{surface_name} price decision status must match price readiness")
+        decision_preview = price_decision.get("change_preview") or []
+        if not decision_preview or decision_preview[0].get("preview_contract") != preview_contract:
+            raise SystemExit(f"{surface_name} price decision preview contract mismatch")
+        if not {
+            "wpływ zmiany ceny",
+            "zwrot z reklam na poziomie produktu",
+            "zapis do pliku produktowego",
+        }.issubset(set(price_decision.get("blocked_claims") or [])):
+            raise SystemExit(f"{surface_name} price decision must block price claims")
+
+
 def validate_issue_decision_parity(
     merchant_diagnostics: dict[str, Any], packed_merchant: dict[str, Any]
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
