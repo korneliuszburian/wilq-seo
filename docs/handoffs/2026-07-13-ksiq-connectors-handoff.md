@@ -1067,6 +1067,11 @@
   a removed `wilq.content.workflow.api.read_wordpress_draft_post` symbol. Do
   not reopen completed candidate or mutation seams; treat that stale boundary
   as a separate confirmed maintenance item if it remains active after audit.
+- `c9h9.23` is closed: both WordPress execution tests now patch
+  `wilq.content.workflow.stage_activation.read_wordpress_draft_post`, the
+  actual current seam. The stale test failure is resolved without a production
+  alias or endpoint; WordPress suite, complexity, API health,
+  mutation-readiness and Playwright proof pass. Do not recreate this issue.
 
 ## Następny krok
 

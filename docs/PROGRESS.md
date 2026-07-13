@@ -2661,3 +2661,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   because it monkeypatches a removed `read_wordpress_draft_post` symbol; no
   touched file owns that stale test/API boundary, so it is recorded separately
   rather than misattributed to this extraction.
+- `c9h9.23` 2026-07-13: fixed both WordPress readback test monkeypatches to
+  target `wilq.content.workflow.stage_activation`, the current owner. The
+  previously red `tests/content/test_wordpress_execution_api.py` now passes;
+  no production alias or endpoint was added. Complexity reports zero changed
+  Python budget/frozen-growth violations; API health/action inventory,
+  fail-closed mutation readiness and content-workflow Playwright remain green.

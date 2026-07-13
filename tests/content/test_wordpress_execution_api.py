@@ -533,7 +533,7 @@ def test_wordpress_activation_packet_remembers_created_dev_draft(
     )
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
-        "wilq.content.workflow.api.read_wordpress_draft_post",
+        "wilq.content.workflow.stage_activation.read_wordpress_draft_post",
         read_draft,
     )
     _persist_write_authorization_events()
@@ -618,7 +618,7 @@ def test_wordpress_activation_packet_keeps_created_result_when_readback_fails(
     )
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
-        "wilq.content.workflow.api.read_wordpress_draft_post",
+        "wilq.content.workflow.stage_activation.read_wordpress_draft_post",
         read_draft,
     )
     _persist_write_authorization_events()
