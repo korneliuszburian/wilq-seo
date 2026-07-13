@@ -5,6 +5,14 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `wilq-seo-8qqr` slice: istniejący boundary GA4 ma teraz typed TTL cache,
+  używany przez router i daily-check oraz czyszczony przy invalidacji API.
+  Prewarm daily runtime przygotowuje też GA4 contract. Live baseline przed
+  zmianą: GA4 `4.354704/2.129338/1.737154 s`, daily-check `10.894200/1.812485/
+  2.127347 s`; po zmianie, po prewarmie: GA4 `0.003595/0.090934 s`,
+  daily-check `0.073996/0.077939/0.054049 s`. Status, evidence/freshness i
+  no-write safety pozostają bez zmian. Bead pozostaje otwarty do parity
+  concurrency/TTL i pełnego live proof.
 - `inoz` continuation: daily-check now uses a narrow cached runtime that omits
   the marketing brief, and concurrent base-cache builds are serialized with a
   re-check to prevent duplicate cold work. Focused tests, Ruff, mypy and

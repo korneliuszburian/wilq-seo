@@ -19,7 +19,7 @@ from wilq.briefing.false_positive_guards import (
     evaluate_source_conflict_guard,
     evaluate_source_trace_guard,
 )
-from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
+from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics_cached
 from wilq.briefing.recommendation_log import list_recommendation_logs
 from wilq.content.enrichment.opportunity import build_content_opportunity_enrichment
 from wilq.content.workflow.queue import (
@@ -389,7 +389,7 @@ def _ga4_conversion_guard(
     if not any(decision.domain == "ga4" for decision in decisions):
         return None
     try:
-        contract = build_ga4_diagnostics().conversion_readiness_contract
+        contract = build_ga4_diagnostics_cached().conversion_readiness_contract
     except Exception:
         return FalsePositiveGuardResult(
             guard_id="missing_conversion",

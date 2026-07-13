@@ -50,6 +50,10 @@ from wilq.briefing.daily_runtime import (
     finish_daily_check_prewarm,
     start_daily_check_prewarm,
 )
+from wilq.briefing.ga4_diagnostics import (
+    build_ga4_diagnostics_cached,
+    clear_ga4_diagnostics_cache,
+)
 from wilq.briefing.merchant_diagnostics import (
     build_merchant_diagnostics_cached,
     clear_merchant_diagnostics_cache,
@@ -116,6 +120,8 @@ async def _prewarm_daily_runtime() -> None:
     try:
         with suppress(Exception):
             await asyncio.to_thread(build_daily_check_runtime)
+        with suppress(Exception):
+            await asyncio.to_thread(build_ga4_diagnostics_cached)
     finally:
         finish_daily_check_prewarm()
 
@@ -205,6 +211,7 @@ def clear_api_view_model_caches() -> None:
     clear_ads_summary_cache()
     clear_knowledge_operating_map_cache()
     clear_daily_runtime_cache()
+    clear_ga4_diagnostics_cache()
     clear_skill_context_cache()
 
 

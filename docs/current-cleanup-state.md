@@ -5,6 +5,12 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`wilq-seo-8qqr` ma pierwszy proof: GA4 diagnostics cache jest używany przez
+router, daily-check i post-readiness prewarm; po prewarmie live GA4 trwało
+`0.003595/0.090934 s`, a daily-check `0.073996/0.077939/0.054049 s`. Nie
+zamykać jeszcze: trzeba sprawdzić concurrency, TTL i invalidację na live
+refreshu.
+
 `wilq-seo-inoz` pozostaje otwarty: narrow daily-check runtime i serializacja
 base-cache usuwają duplicate concurrent builds, a pierwszy request podczas
 prewarmu zwraca typed `daily_check_runtime_prewarm` zamiast czekać lub zmyślać.

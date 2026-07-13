@@ -16,7 +16,7 @@ from wilq.briefing.daily_runtime import (
     build_daily_command_center,
     build_daily_marketing_brief,
 )
-from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
+from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics_cached
 from wilq.briefing.localo_diagnostics import build_localo_diagnostics
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics_cached
 from wilq.briefing.recommendation_log import save_recommendation_log
@@ -96,7 +96,7 @@ def content_preflight() -> ContentPreflightResponse:
 
 @router.get("/api/ga4/diagnostics", response_model=Ga4DiagnosticsResponse)
 def ga4_diagnostics() -> Ga4DiagnosticsResponse:
-    return build_ga4_diagnostics()
+    return build_ga4_diagnostics_cached()
 
 
 @router.get("/api/localo/diagnostics", response_model=LocaloDiagnosticsResponse)

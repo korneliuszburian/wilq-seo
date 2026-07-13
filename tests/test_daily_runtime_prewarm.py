@@ -13,6 +13,7 @@ def test_daily_runtime_prewarm_builds_the_daily_check_runtime(
     calls: list[bool] = []
 
     monkeypatch.setattr(main, "build_daily_check_runtime", lambda: calls.append(True))
+    monkeypatch.setattr(main, "build_ga4_diagnostics_cached", lambda: None)
 
     asyncio.run(main._prewarm_daily_runtime())
 
@@ -27,6 +28,7 @@ def test_daily_runtime_prewarm_clears_in_progress_state_on_failure(monkeypatch) 
         "build_daily_check_runtime",
         lambda: (_ for _ in ()).throw(RuntimeError()),
     )
+    monkeypatch.setattr(main, "build_ga4_diagnostics_cached", lambda: None)
     monkeypatch.setattr(main, "finish_daily_check_prewarm", lambda: calls.append("finished"))
 
     asyncio.run(main._prewarm_daily_runtime())
@@ -71,8 +73,9 @@ def test_api_cache_invalidation_clears_daily_runtime(monkeypatch) -> None:
     monkeypatch.setattr(main, "clear_ads_summary_cache", lambda: None)
     monkeypatch.setattr(main, "clear_knowledge_operating_map_cache", lambda: None)
     monkeypatch.setattr(main, "clear_daily_runtime_cache", lambda: calls.append("daily"))
+    monkeypatch.setattr(main, "clear_ga4_diagnostics_cache", lambda: calls.append("ga4"))
     monkeypatch.setattr(main, "clear_skill_context_cache", lambda: None)
 
     main.clear_api_view_model_caches()
 
-    assert calls == ["daily"]
+    assert calls == ["daily", "ga4"]

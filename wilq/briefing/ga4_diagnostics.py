@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable
+from dataclasses import dataclass
+from time import monotonic
 from typing import Literal
 
 from wilq.actions.service import list_actions
@@ -33,6 +36,8 @@ from wilq.storage.metric_store import metric_store
 GA4_CONNECTOR_ID = "google_analytics_4"
 GA4_METRIC_FACT_LIMIT = 2000
 GA4_STALE_AFTER_HOURS = 48
+DEFAULT_GA4_DIAGNOSTICS_CACHE_SECONDS = 60.0
+_cached_ga4_diagnostics: Ga4DiagnosticsCacheEntry | None = None
 GA4_CONVERSION_METRIC_NAMES = {
     "conversions",
     "ecommerce_purchases",
@@ -99,6 +104,12 @@ Ga4DecisionType = Literal[
     "review_traffic_quality",
     "review_landing_mapping",
 ]
+
+
+@dataclass(frozen=True)
+class Ga4DiagnosticsCacheEntry:
+    created_at: float
+    diagnostics: Ga4DiagnosticsResponse
 
 
 def build_ga4_diagnostics(
@@ -191,6 +202,52 @@ def build_ga4_diagnostics(
         ),
     )
     return _ga4_response_with_marketer_labels(response)
+
+
+def build_ga4_diagnostics_cached() -> Ga4DiagnosticsResponse:
+    """Reuse one GA4 read contract across daily-check and the diagnostics route."""
+    cached = _read_ga4_diagnostics_cache()
+    if cached is not None:
+        return cached
+    diagnostics = build_ga4_diagnostics()
+    _write_ga4_diagnostics_cache(diagnostics)
+    return diagnostics
+
+
+def clear_ga4_diagnostics_cache() -> None:
+    global _cached_ga4_diagnostics
+    _cached_ga4_diagnostics = None
+
+
+def _read_ga4_diagnostics_cache() -> Ga4DiagnosticsResponse | None:
+    cache_seconds = _ga4_diagnostics_cache_seconds()
+    if cache_seconds <= 0 or _cached_ga4_diagnostics is None:
+        return None
+    if monotonic() - _cached_ga4_diagnostics.created_at > cache_seconds:
+        return None
+    return _cached_ga4_diagnostics.diagnostics
+
+
+def _write_ga4_diagnostics_cache(diagnostics: Ga4DiagnosticsResponse) -> None:
+    global _cached_ga4_diagnostics
+    if _ga4_diagnostics_cache_seconds() <= 0:
+        return
+    _cached_ga4_diagnostics = Ga4DiagnosticsCacheEntry(
+        created_at=monotonic(),
+        diagnostics=diagnostics,
+    )
+
+
+def _ga4_diagnostics_cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_GA4_DIAGNOSTICS_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_GA4_DIAGNOSTICS_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_GA4_DIAGNOSTICS_CACHE_SECONDS
 
 
 def _operator_summary(
