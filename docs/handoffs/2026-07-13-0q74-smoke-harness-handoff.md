@@ -110,6 +110,10 @@
   `scripts/ads_search_term_ngram_assertions.py`; live smoke przechodzi, a
   `main` ma 664 LOC/135 branches. N-gram-specific change-preview blocker
   pozostaje jawny; następny seam to negative-keyword contract.
+- Negative-keyword contract jest w
+  `scripts/ads_negative_keyword_assertions.py`; live smoke przechodzi, a
+  `main` ma 644 LOC/125 branches. Payload preview i action ID są sprawdzane,
+  automatyczne wykluczenie pozostaje zablokowane.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

@@ -16,6 +16,7 @@ from ads_custom_segments_assertions import validate_custom_segments_contract
 from ads_impression_share_assertions import validate_impression_share_contract
 from ads_keyword_match_assertions import validate_keyword_match_context_contract
 from ads_keyword_planner_assertions import validate_keyword_planner_contract
+from ads_negative_keyword_assertions import validate_negative_keyword_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
 from ads_search_term_ngram_assertions import validate_search_term_ngram_contract
@@ -258,27 +259,7 @@ def main() -> int:
         for candidate in custom_segments_read_contract.get("candidates") or []
     )
     validate_search_term_ngram_contract(ads_diagnostics)
-    if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
-    if not negative_keywords_read_contract.get("blocked_claims"):
-        raise SystemExit("Negative keyword contract must list zablokowane obietnice")
-    if negative_keywords_read_contract.get("status") == "ready":
-        if not negative_keywords_read_contract.get("candidates"):
-            raise SystemExit("Ready negative keyword contract must expose candidates")
-        if not negative_keywords_read_contract.get("payload_preview"):
-            raise SystemExit("Ready negative keyword contract must expose payload_preview")
-        if "negative_keyword_change_preview" in (
-            negative_keywords_read_contract.get("missing_read_contracts") or []
-        ):
-            raise SystemExit(
-                "Ready negative keyword contract must not list change preview as missing"
-            )
-        if "act_prepare_negative_keyword_review_queue" not in (
-            negative_keywords_read_contract.get("action_ids") or []
-        ):
-            raise SystemExit("Ready negative keyword contract must expose action")
-    elif not negative_keywords_read_contract.get("missing_read_contracts"):
-        raise SystemExit("Blocked negative keyword contract must list missing read contracts")
+    negative_keywords_read_contract = validate_negative_keyword_contract(ads_diagnostics)
 
     action_ids = ads_diagnostics.get("action_ids") or []
     if ads_diagnostics.get("live_data_available") is True:
