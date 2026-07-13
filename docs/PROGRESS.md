@@ -50,6 +50,9 @@ w git, Beads i `docs/progress/archive/`.
 - `wilq-seo-0q74` rozszerzony o Ahrefs: ósmy smoke używa wspólnego harnessu;
   live proof przechodzi z 338 gap facts, 6 manual cross-check candidates i bez
   action IDs dla niepotwierdzonych luk.
+- `wilq-seo-0q74` rozszerzony o Campaign Builder i Social: dziesięć smoke’ów
+  używa wspólnego transportu; live proof przechodzi, a Social zachowuje
+  missing credentials/history jako jawny blocker review-only.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
