@@ -41,6 +41,9 @@ w git, Beads i `docs/progress/archive/`.
 - `wilq-seo-0q74` rozszerzony o Localo: piąty smoke używa wspólnego harnessu;
   live proof przechodzi (`access_ready`, 4 lokalizacje, 23 monitorowane frazy,
   review-only action), Ruff przechodzi.
+- `wilq-seo-0q74` rozszerzony o GA4: szósty smoke używa wspólnego harnessu;
+  live proof przechodzi z decyzjami `fix_measurement`/`review_traffic_quality`,
+  blokadą `(not set)` jako problemu pomiaru i bez claimów ROAS/przychodu.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
