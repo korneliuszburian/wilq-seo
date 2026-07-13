@@ -19,6 +19,7 @@ from ads_keyword_planner_assertions import validate_keyword_planner_contract
 from ads_negative_keyword_assertions import validate_negative_keyword_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
+from ads_report_compaction import compact_ads_brief_items
 from ads_search_term_ngram_assertions import validate_search_term_ngram_contract
 from ads_search_term_review_assertions import validate_search_term_review_contract
 from ads_search_term_safety_assertions import validate_search_term_safety_contract
@@ -279,21 +280,7 @@ def main() -> int:
         label="Ads",
     )
 
-    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = [
-        {
-            "id": item.get("id"),
-            "title": item.get("title"),
-            "kind": item.get("kind"),
-            "source_connectors": item.get("source_connectors", []),
-            "evidence_ids": item.get("evidence_ids", []),
-            "action_ids": item.get("action_ids", []),
-            "metric_facts": item.get("metric_facts", []),
-        }
-        for section in brief.get("sections", [])
-        for item in section.get("items", [])
-        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
-    ][:8]
+    brief_items = compact_ads_brief_items(args.api_base, REQUIRED_CONNECTORS)
 
     connector_results = []
     for connector in REQUIRED_CONNECTORS:

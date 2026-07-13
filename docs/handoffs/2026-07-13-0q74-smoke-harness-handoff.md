@@ -117,6 +117,9 @@
 - Ads review action loop korzysta ze wspólnego `validate_action_ids` harnessu;
   live smoke przechodzi z 6 walidacjami `valid/status=valid`, a `main` ma 633
   LOC/122 branches. Następny seam: compact raportu/briefu.
+- Ads brief compaction jest w `scripts/ads_report_compaction.py`; live smoke
+  przechodzi, a `main` ma 619 LOC/121 branches. Output pozostaje ograniczony do
+  operatorowych evidence/action fields, bez vendor payloadów.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
