@@ -2634,3 +2634,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   stale test assumption that every blocked queue has a freshness banner. The
   E2E branch now follows the typed `freshness_assessment.requires_refresh`
   contract; dashboard lint, typecheck and Playwright pass.
+- `jnra` continuation 12 2026-07-13: content metric-action candidate assembly
+  moved into `wilq/actions/content_candidates.py`; the service facade keeps
+  the existing candidate, WordPress draft-handoff and draft-apply callback
+  seams. Content workflow/action-list tests (17 passed), Ruff, mypy,
+  complexity, API health/action inventory and Playwright proof pass. The API
+  still exposes 21 actions with the content refresh action present; no write
+  path or payload contract changed. `service.py` is now 1177 LOC.

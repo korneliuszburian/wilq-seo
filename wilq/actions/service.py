@@ -70,6 +70,7 @@ from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
 from wilq.actions.confirmation_lifecycle import confirm_action as confirm_action_lifecycle
+from wilq.actions.content_candidates import seed_metric_actions as seed_content_metric_actions
 from wilq.actions.content_refresh import (
     content_contract_label,
     content_contract_labels,
@@ -602,21 +603,14 @@ def _seed_content_metric_actions(
         *by_connector.get("google_search_console", []),
         *by_connector.get("ahrefs", []),
     ]
-    candidate = content_refresh_metric_candidate(content_facts)
-    if candidate is None:
-        return
-    actions[candidate.action.id] = candidate.action
-    wordpress_draft_action = _wordpress_draft_handoff_action(
-        content_payload=candidate.payload,
-        content_action_metrics=candidate.action_metrics,
+    actions.update(
+        seed_content_metric_actions(
+            content_facts=content_facts,
+            candidate_builder=content_refresh_metric_candidate,
+            draft_handoff_builder=_wordpress_draft_handoff_action,
+            draft_apply_builder=_wordpress_draft_apply_action,
+        )
     )
-    if wordpress_draft_action is None:
-        return
-    actions[wordpress_draft_action.id] = wordpress_draft_action
-    wordpress_draft_apply_action = _wordpress_draft_apply_action(
-        handoff_action=wordpress_draft_action,
-    )
-    actions[wordpress_draft_apply_action.id] = wordpress_draft_apply_action
 
 
 def _seed_google_ads_metric_actions(

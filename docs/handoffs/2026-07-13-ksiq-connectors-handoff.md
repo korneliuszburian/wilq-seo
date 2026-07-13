@@ -1043,6 +1043,12 @@
   sources. Browser proof caught and fixed a stale E2E branch that assumed every
   blocked queue renders `Źródła treści:`; it now follows the API freshness
   contract. Do not treat the queue as ready until actionable density reaches 3.
+- `jnra` continuation 12 2026-07-13: content metric-action candidate assembly
+  now lives in `wilq/actions/content_candidates.py`; the facade preserves the
+  candidate and WordPress draft-only callback seams. Content/action-list tests
+  (17 passed), Ruff, mypy, complexity, API health/action inventory and
+  Playwright proof pass; 21 actions remain and no write semantics changed. Do
+  not repeat this content-candidate seam.
 
 ## Następny krok
 
