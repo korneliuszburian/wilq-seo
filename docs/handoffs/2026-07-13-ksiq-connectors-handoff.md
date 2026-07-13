@@ -140,6 +140,12 @@
   pack (43 LOC); `index.ts` ma 227 LOC. Dedupe blocker, publish=false i
   evidence lineage wymuszone, focused gates przechodzą. Następny seam:
   remaining aggregate/type aliases.
+- Dwudziesty siódmy seam: aliasy typów zostały przeniesione do
+  `packages/shared-schemas/src/types.ts` (160 LOC), dzięki czemu
+  `packages/shared-schemas/src/index.ts` ma 31 LOC i pełni tylko rolę export
+  map. Publiczne nazwy pozostają kompatybilne; build/test shared-schemas,
+  dashboard typecheck/lint oraz `git diff --check` przechodzą. Następny krok:
+  świeży import/use audit i wybór kolejnego potwierdzonego seama.
 
 ## Następny krok
 

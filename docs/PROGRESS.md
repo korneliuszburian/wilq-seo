@@ -107,6 +107,10 @@ w git, Beads i `docs/progress/archive/`.
   publish=false i evidence lineage pozostają wymuszone. Shared schema/dashboard
   lint, build, tests i typecheck przechodzą. Następny seam: remaining aggregate/
   type aliases.
+- Dwudziesty siódmy seam: `types.ts` przejmuje wszystkie pozostałe publiczne
+  aliasy `z.infer`/`z.input`, a `index.ts` jest teraz wyłącznie stabilną mapą
+  eksportów (31 LOC). Nazwy i kształty typów pozostają bez zmian; shared
+  schema build/test, dashboard typecheck/lint i `git diff --check` przechodzą.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
