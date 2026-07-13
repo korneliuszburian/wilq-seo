@@ -108,6 +108,7 @@ for skill in "${skills[@]}"; do
   stderr_file="$skill_out/stderr.log"
   smoke_output_file="$skill_out/smoke.json"
   smoke_stderr_file="$skill_out/smoke.stderr.log"
+  daily_check_file="$skill_out/daily_check.json"
 
   script_name="smoke_skill_contract.py"
   if [ "$skill" = "wilq-daily-command" ]; then
@@ -119,12 +120,20 @@ for skill in "${skills[@]}"; do
     tail -n 80 "$smoke_stderr_file" >&2 || true
     exit 1
   fi
+  case "$skill" in
+    wilq-daily-command|wilq-content-doctor|wilq-content-strategist|wilq-content-operator|wilq-ga4-analyst|wilq-ads-doctor)
+      uv run python scripts/daily_check_skill_contract.py --api-base "$api_base" --skill "$skill" >"$daily_check_file"
+      ;;
+    *)
+      printf '{}\n' >"$daily_check_file"
+      ;;
+  esac
 
-  uv run python - "$cases_file" "$skill" "$api_base" "$smoke_output_file" >"$prompt_file" <<'PY'
+  uv run python - "$cases_file" "$skill" "$api_base" "$smoke_output_file" "$daily_check_file" >"$prompt_file" <<'PY'
 import json
 import sys
 
-cases_path, skill, api_base, smoke_output_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+cases_path, skill, api_base, smoke_output_path, daily_check_path = sys.argv[1:]
 cases = {case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())}
 case = cases[skill]
 connectors = ", ".join(f"`{connector}`" for connector in case["expected_connectors"])
@@ -151,6 +160,7 @@ is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
 smoke_output = open(smoke_output_path, encoding="utf-8").read()
+daily_check_output = open(daily_check_path, encoding="utf-8").read()
 api_instruction = (
     "Najpierw sprawdź API, pobierz /api/dashboard/command-center, /api/marketing/brief "
     "oraz context-pack przez smoke script. Potwierdź zgodność marketing_brief i "
@@ -159,6 +169,23 @@ api_instruction = (
     "notes albo operator_next_step."
     if is_daily_command
     else "Najpierw sprawdź API i context-pack właściwy dla skillu."
+)
+daily_check_skill = skill in {
+    "wilq-daily-command",
+    "wilq-content-doctor",
+    "wilq-content-strategist",
+    "wilq-content-operator",
+    "wilq-ga4-analyst",
+    "wilq-ads-doctor",
+}
+daily_check_instruction = (
+    "\n<daily_check_contract>\nUżyj załączonego API-owned DailyCheckResult jako źródła znaczenia, "
+    "nie wymyślaj własnej decyzji ponad jego status, blokady, evidence_ids, source_connectors, "
+    "expert_rule_ids, freshness i safe next step. Finalny JSON musi zawierać pole `daily_check` "
+    "z tymi polami oraz zachować dokładne identyfikatory. Jeśli DailyCheckResult blokuje wniosek, "
+    "zachowaj blocker zamiast rekomendacji.\n</daily_check_contract>\n"
+    if daily_check_skill
+    else ""
 )
 surface_instruction = (
     f"\n<surface>\nOceniany dashboard workflow route: {surface_path}. "
@@ -294,6 +321,7 @@ Zadanie: {task_pl}
 {expected_no_actions_instruction}
 {forbidden_actions_instruction}
 {forbidden_connectors_instruction}
+{daily_check_instruction}
 
 <quality_bar>
 Ten eval mierzy BDOS-class usefulness, nie samo przejście schema.
@@ -412,6 +440,10 @@ Oczekiwane connector surfaces: {connectors}
 <smoke_command>
 {smoke_command}
 </smoke_command>
+
+<daily_check_result>
+{daily_check_output}
+</daily_check_result>
 
 <smoke_output>
 {smoke_output}
@@ -548,6 +580,31 @@ if data.get("api_base") != api_base:
     errors.append(f"api_base mismatch: {data.get('api_base')!r}")
 if data.get("api_used") is not True:
     errors.append("api_used must be true")
+daily_check_skills = {
+    "wilq-daily-command",
+    "wilq-content-doctor",
+    "wilq-content-strategist",
+    "wilq-content-operator",
+    "wilq-ga4-analyst",
+    "wilq-ads-doctor",
+}
+if expected_skill in daily_check_skills:
+    daily_check = data.get("daily_check")
+    if not isinstance(daily_check, dict):
+        errors.append("daily_check must be an object for daily-check eval skills")
+    else:
+        if daily_check.get("status") not in {"ready", "review_ready", "blocked", "degraded"}:
+            errors.append("daily_check.status must preserve DailyCheckResult status")
+        freshness = daily_check.get("freshness")
+        if not isinstance(freshness, dict) or freshness.get("state") not in {
+            "fresh", "stale", "missing", "unknown"
+        }:
+            errors.append("daily_check.freshness must preserve typed freshness")
+        for field in ("evidence_ids", "source_connectors", "expert_rule_ids"):
+            if not isinstance(daily_check.get(field), list):
+                errors.append(f"daily_check.{field} must be a list")
+        if not isinstance(daily_check.get("items"), list) or not daily_check.get("items"):
+            errors.append("daily_check.items must preserve at least one API-owned item")
 if expected_skill == "wilq-daily-command" and not data.get("evidence_ids"):
     errors.append("wilq-daily-command must return evidence_ids from MarketingBrief")
 if data.get("polish_diacritics_present") is not True:

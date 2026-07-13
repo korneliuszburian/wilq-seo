@@ -41,6 +41,13 @@ Service Profile has
 0 approved production-depth), so reviewed-card work and real Wilku UAT remain
 human/owner gates, not missing API behavior.
 
+`v9ab.10` is now the next eval slice: `scripts/daily_check_skill_contract.py`
+reads the API-owned `/api/marketing/daily-check` for daily-command, content,
+GA4 and Ads skill runs, compacts status/freshness/evidence/source/rule IDs and
+typed blockers, and `codex_skill_eval.sh` injects that contract into the eval
+prompt and requires a `daily_check` object in the result. Deterministic helper
+test and live checks pass; full Codex runs remain the next proof step.
+
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,
 WordPress draft-handoff oraz persisted validation/audit i review-gate state są

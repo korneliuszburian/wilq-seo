@@ -16,6 +16,12 @@ w git, Beads i `docs/progress/archive/`.
   dev-only URL, brak multi-source evidence i brak baseline. Residual
   low-volume/source-conflict jest osobnym `v9ab.8.3` do zaprojektowania typed
   kontraktu; nie jest udawany jako gotowa funkcja.
+- `v9ab.10` rozpoczęty: eval harness ma teraz osobny typed preflight
+  `scripts/daily_check_skill_contract.py` dla daily-command/content/GA4/Ads,
+  a prompt i grader wymagają zachowania statusu, freshness, evidence IDs,
+  source connectors, expert rule IDs, blockerów i safe next step z
+  `/api/marketing/daily-check`. Helper test, live API checks, Ruff/mypy i
+  shell syntax przechodzą; pełny Codex eval jest kolejnym proofem.
 
 - Re-audyt live WILQ 2026-07-13 17:06Z: `/api/content/work-items/queue`
   zwraca `blocked`, 2 kandydatów, 1 actionable przy minimum 3; GSC i publiczny
