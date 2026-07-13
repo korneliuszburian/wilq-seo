@@ -57,6 +57,43 @@ def test_source_trace_guard_requires_all_trace_fields() -> None:
     assert result.status == "blocked"
 
 
+def test_daily_item_blocks_recommendation_without_evidence() -> None:
+    item = _daily_item(
+        _content_queue_decision(
+            source_connectors=["google_search_console"], metric_facts=[]
+        ).model_copy(update={"evidence_ids": []})
+    )
+
+    assert item.status == "blocked"
+    assert item.category == "blocked_recommendation"
+    assert "missing_evidence" in item.false_positive_guards
+
+
+def test_daily_item_blocks_recommendation_without_expert_rule() -> None:
+    item = _daily_item(
+        DailyDecision(
+            id="decision_without_expert_rule",
+            title="Decyzja bez reguły eksperckiej",
+            domain="unknown_domain",
+            route="/command-center",
+            status="ready",
+            priority=10,
+            co_widzimy="Dane wymagają sprawdzenia.",
+            dlaczego_to_ma_znaczenie="Bez reguły nie ma bezpiecznej interpretacji.",
+            bezpieczny_next_step="Uzupełnij regułę i dowody.",
+            why_it_matters="Brak reguły blokuje rekomendację.",
+            operator_action="Nie rekomenduj działania.",
+            source_connectors=["google_search_console"],
+            evidence_ids=["ev_unknown_rule"],
+            freshness=FreshnessState(state="fresh"),
+        )
+    )
+
+    assert item.status == "blocked"
+    assert item.category == "blocked_recommendation"
+    assert "missing_expert_rule" in item.false_positive_guards
+
+
 def test_conversion_guard_uses_ga4_read_contract() -> None:
     contract = Ga4ConversionReadinessContract(
         status="blocked",
