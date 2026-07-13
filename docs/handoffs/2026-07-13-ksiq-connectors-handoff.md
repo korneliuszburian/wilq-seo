@@ -407,6 +407,8 @@
   row/evidence proof.
 - Re-audit: 0 changed-code budget violations; główny test ma 2689 linii i 24
   branchy. Branch budget jest zielony, line budget pozostaje otwarty.
+- Dziesiąty/jedenasty pod-slice: KPI row/evidence/blocked claims oraz section
+  readiness są w helperach. Następny handoff ma rozbić budget pacing contract.
 
 ## Następny krok
 

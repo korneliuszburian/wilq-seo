@@ -341,6 +341,78 @@ def assert_ads_derived_kpi_contract_basics(payload: dict[str, Any]) -> None:
     assert "opłacalność" in contract["blocked_claims"]
 
 
+def assert_ads_derived_kpi_row_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove KPI values, lineage and blocked profitability semantics."""
+    assert contract["kpi_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "ctr": 0.1,
+            "average_cpc_micros": 1333333.333333,
+            "conversion_rate": 0.277778,
+            "cost_per_conversion_micros": 4800000.0,
+            "roas": 37.5625,
+            "value_per_conversion": 180.3,
+            "target_roas": None,
+            "roas_vs_target": None,
+            "target_cpa_micros": None,
+            "cpa_vs_target_micros": None,
+            "target_status": "no_target",
+            "target_status_label": "brak celu",
+            "target_review_priority": 90,
+            "evidence_ids": [evidence_id],
+            "source_metric_names": [
+                "clicks",
+                "conversion_value",
+                "conversions",
+                "cost_micros",
+                "impressions",
+            ],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "opłacalność",
+                "skalowanie budżetu",
+                "zmarnowany budżet",
+                "zapis rekomendacji",
+            ],
+            "blocked_claim_labels": [
+                "opłacalność",
+                "skalowanie budżetu",
+                "zmarnowany budżet",
+                "zapis rekomendacji",
+            ],
+            "blocked_claim_summary_label": "4 zablokowane obietnice",
+        }
+    ]
+
+
+def assert_ads_diagnostic_section_contract(payload: dict[str, Any]) -> None:
+    """Prove first-screen diagnostic sections remain ready and source-traced."""
+    live_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_live_data_status"
+    )
+    assert live_section["status"] == "ready"
+    assert "wskazać dowód w WILQ" in live_section["diagnosis"]
+    assert "ID dowodu" not in live_section["diagnosis"]
+    assert live_section["expert_rule_ids"] == [
+        "ads_diagnostics_v1",
+        "ads_principles_v1",
+        "ads_platform_traps_v1",
+    ]
+    campaign_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
+    )
+    assert campaign_section["status"] == "ready"
+    assert campaign_section["title"] == "Aktywność kampanii Google Ads"
+    kpi_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_derived_kpi"
+    )
+    assert kpi_section["status"] == "ready"
+    assert "rentowności" in kpi_section["diagnosis"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2602,68 +2674,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert_ads_derived_kpi_contract_basics(payload)
     derived_kpi_contract = payload["derived_kpi_read_contract"]
-    assert derived_kpi_contract["kpi_rows"] == [
-        {
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "ctr": 0.1,
-            "average_cpc_micros": 1333333.333333,
-            "conversion_rate": 0.277778,
-            "cost_per_conversion_micros": 4800000.0,
-            "roas": 37.5625,
-            "value_per_conversion": 180.3,
-            "target_roas": None,
-            "roas_vs_target": None,
-            "target_cpa_micros": None,
-            "cpa_vs_target_micros": None,
-            "target_status": "no_target",
-            "target_status_label": "brak celu",
-            "target_review_priority": 90,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "source_metric_names": [
-                "clicks",
-                "conversion_value",
-                "conversions",
-                "cost_micros",
-                "impressions",
-            ],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "opłacalność",
-                "skalowanie budżetu",
-                "zmarnowany budżet",
-                "zapis rekomendacji",
-            ],
-            "blocked_claim_labels": [
-                "opłacalność",
-                "skalowanie budżetu",
-                "zmarnowany budżet",
-                "zapis rekomendacji",
-            ],
-            "blocked_claim_summary_label": "4 zablokowane obietnice",
-        }
-    ]
-    live_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_live_data_status"
+    assert_ads_derived_kpi_row_contract(
+        derived_kpi_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert live_section["status"] == "ready"
-    assert "wskazać dowód w WILQ" in live_section["diagnosis"]
-    assert "ID dowodu" not in live_section["diagnosis"]
-    assert live_section["expert_rule_ids"] == [
-        "ads_diagnostics_v1",
-        "ads_principles_v1",
-        "ads_platform_traps_v1",
-    ]
-    campaign_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
-    )
-    assert campaign_section["status"] == "ready"
-    assert campaign_section["title"] == "Aktywność kampanii Google Ads"
-    derived_kpi_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_derived_kpi"
-    )
-    assert derived_kpi_section["status"] == "ready"
-    assert "rentowności" in derived_kpi_section["diagnosis"]
+    assert_ads_diagnostic_section_contract(payload)
     budget_contract = payload["budget_pacing_read_contract"]
     assert budget_contract["status"] == "ready"
     assert budget_contract["empty_state_message"] == (

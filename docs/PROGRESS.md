@@ -1911,3 +1911,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
 - Re-audit po dziewiątym pod-slice: `audit_complexity` raportuje 0
   changed-code budget violations. Główny Ads test ma 2689 linii i 24 branchy;
   branch budget jest zielony, ale line budget nadal wymaga ekstrakcji.
+- Dziesiąty i jedenasty pod-slice c9h9.22: derived KPI row/evidence/blocked
+  claims oraz diagnostic section readiness wydzielone do nazwanych helperów.
+  Focused Ads/Ruff/mypy/diff check przechodzą; następny seam to budget pacing
+  contract.
