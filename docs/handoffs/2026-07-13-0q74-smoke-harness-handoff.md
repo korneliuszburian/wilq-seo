@@ -192,6 +192,10 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - Custom Segments smoke is now split into candidate assertions, runtime
   transport and report shaping. Live proof: read contract `ready`, one
   candidate, one action; apply remains blocked. Ruff, smoke and complexity pass.
+- Ahrefs smoke is now split into contract assertions, runtime transport and
+  report shaping. Live proof: `manual_required`, 8 gap records, 0 actions;
+  freshness/evidence/blocked-claim gates remain explicit. Ruff, smoke and
+  complexity pass.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

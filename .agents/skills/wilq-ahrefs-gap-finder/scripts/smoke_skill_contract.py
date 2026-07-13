@@ -4,11 +4,18 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import urllib.parse
 from pathlib import Path
-from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+
+from ahrefs_contract_assertions import validate_ahrefs_contract
+from ahrefs_report import build_report
+from ahrefs_runtime import (
+    collect_action_validations,
+    collect_connector_results,
+    compact_brief_items,
+    validate_polish_instruction,
+)
 
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
 
@@ -45,106 +52,22 @@ def main() -> int:
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
-    ahrefs_diagnostics = pack.get("ahrefs_diagnostics")
-    if not isinstance(ahrefs_diagnostics, dict):
-        raise SystemExit("Context pack ahrefs_diagnostics must be an object")
-    if ahrefs_diagnostics.get("language") != "pl-PL":
-        raise SystemExit("Ahrefs diagnostics must use pl-PL language contract")
-    decision_ids = {
-        decision.get("id")
-        for decision in ahrefs_diagnostics.get("decision_queue", [])
-        if isinstance(decision, dict)
-    }
-    if not decision_ids:
-        raise SystemExit("Ahrefs diagnostics must expose a decision_queue")
-    gap_contract = ahrefs_diagnostics.get("gap_read_contract") or {}
-    if not isinstance(gap_contract, dict):
-        raise SystemExit("Ahrefs diagnostics gap_read_contract must be an object")
+    (
+        ahrefs_diagnostics,
+        gap_contract,
+        decision_ids,
+        gap_records,
+        gap_record_count,
+        freshness_states,
+        freshness_labels,
+    ) = validate_ahrefs_contract(pack)
     operator_summary = ahrefs_diagnostics.get("operator_summary") or {}
-    if not isinstance(operator_summary, dict):
-        raise SystemExit("Ahrefs diagnostics operator_summary must be an object")
-    if operator_summary.get("review_card_label") != "Karta review Ahrefs":
-        raise SystemExit("Ahrefs diagnostics must expose review_card_label")
-    for field in (
-        "review_decision_after_review",
-        "review_question_for_operator",
-        "review_next_safe_click",
-    ):
-        if not operator_summary.get(field):
-            raise SystemExit(f"Ahrefs diagnostics must expose {field}")
-    if not isinstance(operator_summary.get("review_action_ids"), list):
-        raise SystemExit("Ahrefs diagnostics must expose review_action_ids")
     missing_read_contracts = gap_contract.get("missing_read_contracts") or []
-    missing_read_contract_count = gap_contract.get("missing_read_contracts_total")
-    if not isinstance(missing_read_contract_count, int):
-        missing_read_contract_count = len(missing_read_contracts)
-    gap_records = gap_contract.get("gap_records") or []
-    gap_record_count = gap_contract.get("gap_record_count")
-    if not isinstance(gap_record_count, int):
-        gap_record_count = len(gap_records)
-    if gap_record_count and "ahrefs_review_gap_records" not in decision_ids:
-        raise SystemExit("Ahrefs diagnostics must expose gap review decision")
-    if (
-        missing_read_contract_count
-        and "ahrefs_block_gap_claims_without_records" not in decision_ids
-    ):
-        raise SystemExit("Ahrefs diagnostics must block gap claims when contracts are missing")
-    if not missing_read_contract_count and gap_contract.get("status") != "ready":
-        raise SystemExit(
-            "Ahrefs diagnostics gap contract must be ready when no contracts are missing"
-        )
-    if not missing_read_contract_count and "ahrefs_review_gap_records" not in decision_ids:
-        raise SystemExit("Ahrefs diagnostics must expose ready gap review decision")
     cross_check_status = gap_contract.get("cross_check_status")
-    if cross_check_status not in {"api_backed", "manual_required", "missing"}:
-        raise SystemExit("Ahrefs diagnostics must expose cross_check_status")
-    if not gap_contract.get("cross_check_summary"):
-        raise SystemExit("Ahrefs diagnostics must expose cross_check_summary")
-    if not gap_contract.get("cross_check_next_step"):
-        raise SystemExit("Ahrefs diagnostics must expose cross_check_next_step")
-    if gap_record_count and not isinstance(gap_contract.get("cross_check_candidates_total"), int):
-        raise SystemExit("Ahrefs context pack must expose cross_check_candidates_total")
-    freshness_states = sorted(
-        {
-            str(fact.get("freshness_state"))
-            for record in gap_records
-            if isinstance(record, dict)
-            for fact in record.get("metric_facts", [])
-            if isinstance(fact, dict) and fact.get("freshness_state")
-        }
-    )
-    freshness_labels = sorted(
-        {
-            str(fact.get("freshness_label"))
-            for record in gap_records
-            if isinstance(record, dict)
-            for fact in record.get("metric_facts", [])
-            if isinstance(fact, dict) and fact.get("freshness_label")
-        }
-    )
-    if gap_records and not freshness_states:
-        raise SystemExit("Ahrefs gap data must expose freshness_state")
-    serialized_ahrefs = json.dumps(ahrefs_diagnostics, ensure_ascii=False)
-    for required_term in ("evidence_ids", "missing_read_contracts", "blocked_claims"):
-        if required_term not in serialized_ahrefs:
-            raise SystemExit(f"Ahrefs diagnostics missing {required_term}")
     diagnostics_action_ids = ahrefs_diagnostics.get("action_ids") or []
-    action_validations: dict[str, dict[str, Any]] = {}
-    for action_id in diagnostics_action_ids:
-        if not isinstance(action_id, str) or not action_id:
-            continue
-        quoted_action = urllib.parse.quote(action_id, safe="")
-        validation = request_json(
-            args.api_base,
-            "POST",
-            f"/api/actions/{quoted_action}/validate",
-            timeout_seconds=args.timeout_seconds,
-        )
-        action_validations[action_id] = {
-            "valid": validation.get("valid"),
-            "status": validation.get("status"),
-            "errors": validation.get("errors", []),
-        }
+    action_validations = collect_action_validations(
+        args.api_base, diagnostics_action_ids, request_json, args.timeout_seconds
+    )
     context_action_ids = [
         item.get("id")
         for item in (pack.get("active_action_objects") or [])
@@ -161,12 +84,8 @@ def main() -> int:
                 "Ahrefs operator summary must expose content refresh review action "
                 "when cross-check is API-backed"
             )
-        if CONTENT_REFRESH_ACTION_ID not in str(
-            operator_summary.get("review_next_safe_click", "")
-        ):
-            raise SystemExit(
-                "Ahrefs operator summary must name the safe content refresh click"
-            )
+        if CONTENT_REFRESH_ACTION_ID not in str(operator_summary.get("review_next_safe_click", "")):
+            raise SystemExit("Ahrefs operator summary must name the safe content refresh click")
         if not action_validations.get(CONTENT_REFRESH_ACTION_ID, {}).get("valid"):
             raise SystemExit("Ahrefs content refresh action must validate as valid")
         if CONTENT_REFRESH_ACTION_ID not in context_action_ids:
@@ -181,102 +100,31 @@ def main() -> int:
         )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = [
-        {
-            "id": item.get("id"),
-            "title": item.get("title"),
-            "kind": item.get("kind"),
-            "source_connectors": item.get("source_connectors", []),
-            "evidence_ids": item.get("evidence_ids", []),
-            "action_ids": item.get("action_ids", []),
-            "metric_facts": item.get("metric_facts", []),
-        }
-        for section in brief.get("sections", [])
-        for item in section.get("items", [])
-        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
-    ][:8]
+    brief_items = compact_brief_items(brief, REQUIRED_CONNECTORS)
+    connector_results = collect_connector_results(args.api_base, REQUIRED_CONNECTORS, request_json)
 
-    connector_results = []
-    for connector in REQUIRED_CONNECTORS:
-        quoted = urllib.parse.quote(connector, safe="")
-        status = request_json(args.api_base, "GET", f"/api/connectors/{quoted}/status")
-        connector_results.append(
-            {
-                "id": status.get("id"),
-                "status": status.get("status"),
-                "configured": status.get("configured"),
-                "missing_credentials": status.get("missing_credentials", []),
-                "error": status.get("error"),
-            }
-        )
-
-    instruction = str(pack.get("strict_instruction", ""))
-    if not has_polish_metric_source_guardrails(instruction):
-        raise SystemExit(
-            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
-        )
+    validate_polish_instruction(pack, has_polish_metric_source_guardrails)
 
     print(
         json.dumps(
-            {
-                "skill": SKILL_NAME,
-                "api_base": args.api_base,
-                "health": health.get("status"),
-                "required_connectors": connector_results,
-                "brief_items": brief_items,
-                "evidence_count": len(pack.get("evidence_summaries") or []),
-                "opportunity_count": len(pack.get("top_opportunities") or []),
-                "action_count": len(pack.get("active_action_objects") or []),
-                "diagnostics_action_ids": diagnostics_action_ids[:20],
-                "action_validations": action_validations,
-                "ahrefs_authority_fact_count": ahrefs_diagnostics.get("authority_fact_count"),
-                "ahrefs_gap_fact_count": ahrefs_diagnostics.get("gap_fact_count"),
-                "ahrefs_blocker_count": ahrefs_diagnostics.get("blocker_count"),
-                "gap_read_contract": {
-                    "status": gap_contract.get("status"),
-                    "gap_record_count": gap_record_count,
-                    "gap_records_omitted": bool(gap_contract.get("gap_records_omitted")),
-                    "missing_read_contracts": missing_read_contracts,
-                    "blocked_claims": gap_contract.get("blocked_claims", []),
-                    "cross_check_status": cross_check_status,
-                    "cross_check_summary": gap_contract.get("cross_check_summary"),
-                    "cross_check_candidates_total": gap_contract.get(
-                        "cross_check_candidates_total"
-                    ),
-                    "freshness_states": freshness_states,
-                    "freshness_labels": freshness_labels[:5],
-                    "review_mode": "validation-only",
-                },
-                "ahrefs_review_card": {
-                    "review_card_label": operator_summary.get("review_card_label"),
-                    "review_decision_after_review": operator_summary.get(
-                        "review_decision_after_review"
-                    ),
-                    "review_question_for_operator": operator_summary.get(
-                        "review_question_for_operator"
-                    ),
-                    "review_next_safe_click": operator_summary.get(
-                        "review_next_safe_click"
-                    ),
-                    "review_action_ids": operator_summary.get("review_action_ids", []),
-                },
-                "ahrefs_decision_ids": sorted(decision_ids),
-                "evidence_ids": [
-                    item.get("id")
-                    for item in (pack.get("evidence_summaries") or [])
-                    if item.get("id")
-                ][:20],
-                "opportunity_ids": [
-                    item.get("id")
-                    for item in (pack.get("top_opportunities") or [])
-                    if item.get("id")
-                ][:20],
-                "action_ids": [
-                    item.get("id")
-                    for item in (pack.get("active_action_objects") or [])
-                    if item.get("id")
-                ][:20],
-            },
+            build_report(
+                health,
+                args.api_base,
+                connector_results,
+                brief_items,
+                pack,
+                ahrefs_diagnostics,
+                gap_contract,
+                gap_record_count,
+                missing_read_contracts,
+                cross_check_status,
+                freshness_states,
+                freshness_labels,
+                operator_summary,
+                diagnostics_action_ids,
+                action_validations,
+                decision_ids,
+            ),
             indent=2,
             sort_keys=True,
         )

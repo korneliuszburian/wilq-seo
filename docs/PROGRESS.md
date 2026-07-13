@@ -26,6 +26,10 @@ w git, Beads i `docs/progress/archive/`.
   `custom_segments_runtime.py` i `custom_segments_report.py`. Live proof:
   read contract `ready`, 1 kandydat, 1 action; safety nadal blokuje apply.
   Ruff, live smoke i changed-code complexity (0 violations) przechodzą.
+- Ahrefs smoke ma teraz `ahrefs_contract_assertions.py`, `ahrefs_runtime.py`
+  i `ahrefs_report.py`. Live proof: `manual_required`, 8 gap records, 0 actions;
+  freshness/evidence/blocked-claim gates zachowane. Ruff, smoke i complexity
+  audit przechodzą bez wyjątku.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
