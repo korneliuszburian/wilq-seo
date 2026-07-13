@@ -15,6 +15,7 @@ from wilq.actions.action_blockers import (
     action_confirmation_summary,
     action_preview_blockers,
     ads_target_confirmation_summary,
+    ads_target_confirmation_blockers,
 )
 from wilq.actions.action_blockers import (
     action_preview_summary as _action_preview_summary,
@@ -800,7 +801,7 @@ def confirm_action(
         confirmation_blockers=action_confirmation_blockers,
         confirmation_event_type=action_confirmation_event_type,
         confirmation_summary=action_confirmation_summary,
-        ads_target_blockers=_ads_target_confirmation_blockers,
+        ads_target_blockers=ads_target_confirmation_blockers,
         ads_target_summary=ads_target_confirmation_summary,
         gate_labels=_action_gate_labels,
         money_label=_micros_money_label,
@@ -1089,16 +1090,6 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
         content_url_review_details=_content_url_review_details_from_checked_items,
         draft_readiness_review_details=_draft_readiness_review_details_from_checked_items,
     )
-
-def _ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str]:
-    blockers: list[str] = []
-    target_count = int(request.target_roas is not None) + int(request.target_cpa_micros is not None)
-    if target_count == 0:
-        blockers.append("target_roas_or_cpa_required")
-    if target_count > 1:
-        blockers.append("exactly_one_target_guardrail_allowed")
-    return blockers
-
 
 def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:
     return _payload_preview_contract_impl(payload, preview_items)

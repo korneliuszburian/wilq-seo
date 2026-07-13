@@ -76,6 +76,17 @@ def action_confirmation_blockers(
     return unique_values(blockers)
 
 
+def ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str]:
+    """Require exactly one Ads target guardrail before recording review context."""
+    target_count = int(request.target_roas is not None) + int(request.target_cpa_micros is not None)
+    blockers: list[str] = []
+    if target_count == 0:
+        blockers.append("target_roas_or_cpa_required")
+    if target_count > 1:
+        blockers.append("exactly_one_target_guardrail_allowed")
+    return blockers
+
+
 def action_impact_check_blockers(
     action: ActionObject,
     latest_confirmation: AuditEvent | None,

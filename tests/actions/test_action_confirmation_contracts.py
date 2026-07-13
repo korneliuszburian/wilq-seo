@@ -4,8 +4,24 @@ from pathlib import Path
 
 import pytest
 
+from wilq.actions.action_blockers import ads_target_confirmation_blockers
+from wilq.schemas import ActionConfirmRequest
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
+
+
+def test_ads_target_confirmation_blockers_require_one_guardrail() -> None:
+    assert ads_target_confirmation_blockers(
+        ActionConfirmRequest(confirmed_by="operator", notes="brak celu")
+    ) == ["target_roas_or_cpa_required"]
+    assert ads_target_confirmation_blockers(
+        ActionConfirmRequest(
+            confirmed_by="operator",
+            notes="dwa cele",
+            target_roas=2.0,
+            target_cpa_micros=1000000,
+        )
+    ) == ["exactly_one_target_guardrail_allowed"]
 
 
 def test_action_confirm_requires_prior_preview(

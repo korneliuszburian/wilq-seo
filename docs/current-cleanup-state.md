@@ -48,6 +48,13 @@ bez zmian. Ostatni proof: 21 akcji, 0 vendor writes, API health i
 Tactical queue ma wcześniejsze extractiony Ahrefs/Merchant z osobnymi handoffami;
 nie wracaj do `c9h9.18`/`ipps` bez nowego runtime contradiction.
 
+`jnra` continuation 2026-07-13: czysty guard celu Ads został przeniesiony do
+`wilq/actions/action_blockers.py`, czyli do istniejącego ownera confirmation
+blockers. `service.py` tylko wstrzykuje typed callable; endpoint i blokady
+`target_roas_or_cpa_required` / `exactly_one_target_guardrail_allowed` zachowują
+kontrakt. Focused confirmation/Ads tests, Ruff, mypy, complexity, API smoke i
+`/content-workflow` Playwright przechodzą; brak wpływu na vendor writes.
+
 `wilq-seo-c9h9.16` wydziela orchestrację snapshotu workflow do
 `wilq/content/workflow/snapshot_assembly.py`. Publiczne API zachowuje istniejące
 stage callbacks i response contract, ale składanie kolejności preflight → brief
