@@ -54,6 +54,11 @@
   `packages/shared-schemas/src/ads_keyword_planner_contracts.ts` (34 LOC);
   `index.ts` ma 2 548 LOC. Payloady/eksporty zachowane, wszystkie focused gates
   przechodzą. Następny seam: negative-keyword contracts.
+- Dziesiąty seam: `packages/shared-schemas/src/ads_negative_keywords.ts`
+  zawiera payload preview, candidate i read contract wykluczeń (95 LOC);
+  `index.ts` ma 2 467 LOC. Zależności keyword-match, MetricFact i
+  ActionPreview zachowane, focused gates przechodzą. Następny seam:
+  Ads change-history i impact-readiness contracts.
 
 ## Następny krok
 

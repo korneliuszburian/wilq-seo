@@ -16,6 +16,11 @@ w git, Beads i `docs/progress/archive/`.
   2 548 LOC. Payloady i eksporty zachowane; shared schema/dashboard lint,
   build, tests i typecheck przechodzą. Następny seam: negative-keyword
   contracts.
+- Dziesiąty seam: `ads_negative_keywords.ts` zawiera payload preview, candidate
+  i read contract wykluczeń (95 LOC); `index.ts` ma 2 467 LOC. Keyword-match,
+  MetricFact i ActionPreview dependencies zachowane. Shared schema/dashboard
+  lint, build, tests i typecheck przechodzą. Następny seam: Ads change-history
+  i impact-readiness contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
