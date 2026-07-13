@@ -242,13 +242,22 @@ def main() -> int:
         if "publik" not in str(marketer_decision.get("review_next_safe_click") or "").lower():
             raise SystemExit("Wilku review next click must explicitly block publication")
         review_action_ids = marketer_decision.get("review_action_ids")
-        if CONTENT_ACTION_ID in (content_diagnostics.get("action_ids") or []):
-            if review_action_ids != [CONTENT_ACTION_ID]:
-                raise SystemExit(
-                    "Wilku review card must point only to content refresh review action"
-                )
-        elif review_action_ids:
-            raise SystemExit("Wilku review card must not invent review action IDs")
+        selected_decision = next(
+            (
+                item
+                for item in endpoint_decision_trace
+                if item.get("id") == marketer_decision.get("technical_decision_id")
+            ),
+            None,
+        )
+        selected_action_ids = (selected_decision or {}).get("action_ids") or []
+        expected_review_action_ids = (
+            [CONTENT_ACTION_ID] if CONTENT_ACTION_ID in selected_action_ids else []
+        )
+        if review_action_ids != expected_review_action_ids:
+            raise SystemExit(
+                "Wilku review card action IDs must match the selected content decision"
+            )
 
     gsc_metric_facts = request_json(
         args.api_base,
