@@ -63,6 +63,12 @@ optional isolated runtime flags `CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG=1` and
 `result.json` (context/turn runtime), so this remains an external blocker, not
 a passing skill proof.
 
+Recheck 2026-07-13 po ostatnim pushu: API `health=ok`, runtime raportuje
+107900 metric facts i 12 connectorów, a izolowany eval `wilq-daily-command`
+z `--ignore-user-config`/`skills.config=[]` zatrzymuje się na
+`thread.started`/`turn.started` bez wyniku. Nie używać starego artefaktu jako
+dowodu; zadanie `v9ab.10` pozostaje otwarte.
+
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,
 WordPress draft-handoff oraz persisted validation/audit i review-gate state są

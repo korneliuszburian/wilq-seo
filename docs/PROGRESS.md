@@ -30,6 +30,12 @@ w git, Beads i `docs/progress/archive/`.
   Focused pytest, Ruff, strict coverage i `git diff --check` przechodzą; Bead
   zamknięty. Następny aktywny zakres pozostaje `v9ab.10`, zablokowany wyłącznie
   przez brak świeżego `result.json` w bieżącym runtime Codex.
+- `v9ab.10` recheck 2026-07-13: WILQ API pozostaje osiągalne (`health=ok`,
+  `metric_fact_count=107900`, 12 connectorów w kontrakcie runtime), a
+  `daily-check` odpowiada jako `blocked` z zachowaną świeżością. Izolowane
+  próby evala z `--ignore-user-config` i wyłączoną konfiguracją skills kończą
+  się tylko na `thread.started`/`turn.started`, bez `result.json`; nie liczę
+  tego jako proofu ani nie zamykam zadania na podstawie starego artefaktu.
 - Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
   najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
