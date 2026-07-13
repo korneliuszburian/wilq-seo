@@ -129,6 +129,9 @@
 - Final report shaping helpers są w `scripts/ads_report_compaction.py`; live
   smoke przechodzi, output pozostaje compact/operator-safe, a `main` ma 607
   LOC/120 branches. Następny potwierdzony zakres: kolejny skill smoke hotspot.
+- GSC content action validation używa wspólnego `validate_action_ids`; live
+  smoke przechodzi z 1 walidacją `valid/status=valid`, a `main` ma 425 LOC/120
+  branches. Następny GSC seam: compact brief/status.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

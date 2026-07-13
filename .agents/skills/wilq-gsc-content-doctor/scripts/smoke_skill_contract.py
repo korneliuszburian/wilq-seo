@@ -16,6 +16,7 @@ from scripts.skill_smoke_harness import (
     has_polish_metric_source_guardrails,
     request_json,
     require_polish_language,
+    validate_action_ids,
 )
 
 SKILL_NAME = "wilq-gsc-content-doctor"
@@ -246,20 +247,11 @@ def main() -> int:
         and CONTENT_ACTION_ID not in action_ids
     ):
         raise SystemExit("Live GSC content diagnostics must expose content refresh action")
-    action_validations = []
-    if CONTENT_ACTION_ID in action_ids:
-        quoted_action = urllib.parse.quote(CONTENT_ACTION_ID, safe="")
-        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
-        action_validations.append(
-            {
-                "action_id": validation.get("action_id"),
-                "valid": validation.get("valid"),
-                "status": validation.get("status"),
-                "errors": validation.get("errors", []),
-            }
-        )
-        if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"GSC content action validation failed: {validation}")
+    action_validations = validate_action_ids(
+        args.api_base,
+        [CONTENT_ACTION_ID] if CONTENT_ACTION_ID in action_ids else [],
+        label="GSC content",
+    )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [

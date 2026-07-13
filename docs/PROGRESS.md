@@ -158,6 +158,9 @@ w git, Beads i `docs/progress/archive/`.
   w `scripts/ads_report_compaction.py`. Live smoke kończy się `exit 0`; `main`
   pozostaje na 607 LOC/120 branches, a final output nadal nie zawiera surowych
   vendor payloadów.
+- GSC content action validation korzysta teraz ze wspólnego
+  `validate_action_ids` harnessu. Live smoke kończy się `ok`, 1 walidacja ma
+  `valid/status=valid`; GSC `main` spadł do 425 LOC/120 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
