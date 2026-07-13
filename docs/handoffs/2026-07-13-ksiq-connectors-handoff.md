@@ -1011,6 +1011,12 @@
   test/runtime injection. Ads contracts, Ruff, mypy, complexity, API health,
   dashboard route and Playwright proof pass. Do not recreate cache/freshness
   work; next seam must be a distinct confirmed Ads domain boundary.
+- `kgvy` continuation 3 2026-07-13: campaign metric row grouping/projection
+  now lives in `wilq/briefing/ads_campaign_metrics.py`; the compatibility
+  wrapper preserves existing metric-helper injection. Ads contracts, Ruff,
+  mypy, complexity, API health, dashboard route and Playwright proof pass. Do
+  not repeat cache/freshness/campaign-row work; next seam must be distinct and
+  evidence-backed.
 
 ## Następny krok
 

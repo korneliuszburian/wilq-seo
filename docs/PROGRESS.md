@@ -2596,3 +2596,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Polish summaries and the 48h threshold are unchanged. Ads/action-cache tests
   (17 passed), Ruff, mypy, complexity, API health, dashboard title and
   Playwright proof pass; remaining Ads size/function warnings are pre-existing.
+- `kgvy` continuation 3 2026-07-13: campaign metric row grouping/projection
+  moved into `wilq/briefing/ads_campaign_metrics.py`; `ads_diagnostics.py`
+  retains a thin compatibility wrapper and injects existing helper owners.
+  Target context, review score, blocked claims and evidence behavior are
+  unchanged. Ads/action-cache tests (17 passed), Ruff, mypy, complexity, API
+  health, dashboard title and Playwright proof pass; Ads monolith is now 6139
+  LOC with only pre-existing budget warnings.
