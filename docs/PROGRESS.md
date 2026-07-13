@@ -22,6 +22,10 @@ w git, Beads i `docs/progress/archive/`.
   `localo_runtime_assertions.py` i `localo_report_compaction.py`. Live proof
   potwierdza `access_ready`, refresh `completed`, jedno review action i zachowane
   blokady claimów/zapisu; Ruff, smoke i complexity audit przechodzą bez wyjątku.
+- Custom Segments smoke ma teraz osobne `custom_segment_assertions.py`,
+  `custom_segments_runtime.py` i `custom_segments_report.py`. Live proof:
+  read contract `ready`, 1 kandydat, 1 action; safety nadal blokuje apply.
+  Ruff, live smoke i changed-code complexity (0 violations) przechodzą.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
