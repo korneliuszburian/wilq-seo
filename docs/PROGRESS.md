@@ -5,11 +5,17 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
-- Re-audyt live WILQ po `1834d25d`: `/api/content/work-items/queue` zwraca
-  `blocked`, 2 kandydatów, 0 actionable przy minimum 3; świeżość jest `stale`
-  dla `google_search_console` i `wordpress_ekologus`. Nie tworzyć sztucznego
-  tematu. `r564` nie ma nowej luki kodowej po zamknięciu dzieci; oczekuje na
-  zewnętrzne odświeżenie/evidence.
+- Re-audyt live WILQ 2026-07-13 17:06Z: `/api/content/work-items/queue`
+  zwraca `blocked`, 2 kandydatów, 1 actionable przy minimum 3; GSC i publiczny
+  WordPress są teraz `fresh`. Pozostały blocker to wyłącznie
+  `not_enough_actionable_candidates`; Ahrefs-only rekord nadal nie ma
+  publicznego URL-a i pozostaje fail-closed. Nie tworzyć sztucznego tematu.
+  `r564` nie ma nowej luki kodowej po zamknięciu dzieci.
+- Live `/api/marketing/daily-check` 2026-07-13 17:06Z zwraca `blocked`, 9
+  connectorów sprawdzonych i 3 pominięte, z jedną jawną kolejką GA4 do kontroli
+  (`act_review_ga4_tracking_quality`); odpowiedź zachowuje evidence IDs,
+  expert rule IDs, freshness, blocked claims i safe next steps. To jest gotowy
+  materiał operacyjny do review, nie dowód pełnej gotowości content backlogu.
 - `jst` pre-UAT proof 2026-07-13: `scripts/export_marketer_uat_packet.py`
   wykonał live packet z API (5 tras, status procesu 0, wygenerowano
   `2026-07-13T12:34:35Z`). Packet zawiera aktualne dowody, blokady i pytania,
