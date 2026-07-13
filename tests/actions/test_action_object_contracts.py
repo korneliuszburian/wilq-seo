@@ -22,10 +22,7 @@ from apps.api.wilq_api.context_daily import (
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.ads_review_seed import seed_google_ads_live_review_metric_facts
 from tests._contract_support.api_client import client
-from tests._contract_support.env import (
-    clear_google_ads_env,
-    clear_google_service_env,
-)
+from tests._contract_support.env import clear_google_ads_env
 from wilq.actions.content_refresh import (
     _draft_content_block_label,
     content_contract_label,
@@ -87,7 +84,6 @@ from wilq.briefing.merchant_diagnostics import (
     _merchant_refresh_status_label,
     _merchant_risk_label,
     _merchant_status_label,
-    build_merchant_diagnostics,
 )
 from wilq.briefing.merchant_labels import (
     merchant_dimension_label,
@@ -1773,25 +1769,6 @@ def test_google_ads_oauth_repair_action_is_explicit_and_redacted(
     assert "ya29." not in serialized
     assert "refresh-token" not in serialized.lower()
     assert "client-secret-test" not in serialized
-
-
-def test_merchant_blocked_feed_section_uses_operator_read_wording(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_blocked_state.sqlite3"))
-    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_blocked_metrics.duckdb"))
-    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
-    clear_google_service_env(monkeypatch)
-
-    diagnostics = build_merchant_diagnostics()
-    feed_section = next(
-        section for section in diagnostics.sections if section.id == "merchant_feed_health"
-    )
-
-    assert feed_section.status == "blocked"
-    assert "Uruchom odczyt danych Merchant" in feed_section.next_step
-    assert "vendor_read" not in feed_section.next_step
 
 
 def test_google_ads_business_context_action_is_review_only(

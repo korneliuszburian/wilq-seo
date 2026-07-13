@@ -20,6 +20,7 @@ from wilq.briefing.merchant_diagnostics import (
     _merchant_price_impact_readiness,
     _merchant_product_performance_readiness,
     _merchant_product_performance_readiness_with_operator_labels,
+    build_merchant_diagnostics,
     build_merchant_diagnostics_cached,
     clear_merchant_diagnostics_cache,
 )
@@ -37,6 +38,25 @@ from wilq.schemas import (
     MerchantProductSampleReadiness,
     MetricFact,
 )
+
+
+def test_merchant_blocked_feed_section_uses_operator_read_wording(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_blocked_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_blocked_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+
+    diagnostics = build_merchant_diagnostics()
+    feed_section = next(
+        section for section in diagnostics.sections if section.id == "merchant_feed_health"
+    )
+
+    assert feed_section.status == "blocked"
+    assert "Uruchom odczyt danych Merchant" in feed_section.next_step
+    assert "vendor_read" not in feed_section.next_step
 
 
 def test_merchant_diagnostics_cache_reuses_one_build_outside_test_runtime(

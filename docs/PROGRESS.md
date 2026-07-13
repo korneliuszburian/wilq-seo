@@ -2217,3 +2217,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Ruff oraz diff check są zielone. API health pozostaje `ok`, a context-pack
   zwrócił 8 aktywnych connectorów skonfigurowanych; summary systemowe 12/9/2
   traktuję jako odrębny zakres diagnostyczny, nie jako dowód live endpointu.
+- Ósma kontynuacja `50wa`: blokadę sekcji Merchant feed przeniesiono do
+  `tests/api_contracts/test_merchant_contracts.py`, korzystając z istniejącego
+  kontraktu diagnostyki Merchant. Nowy test i pełny action-object test przechodzą;
+  Ruff oraz diff check pozostają zielone. Pierwsza próba ujawniła brak importu
+  `build_merchant_diagnostics` w docelowym pliku; został uzupełniony zgodnie z
+  aktualnym API, bez zmiany produktu.

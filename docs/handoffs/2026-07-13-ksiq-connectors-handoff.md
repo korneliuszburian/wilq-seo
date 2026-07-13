@@ -680,6 +680,10 @@
   `tests/actions/test_action_confirmation_contracts.py`, obok blokady impact
   bez confirm. Nowy i pełny action-object test przechodzą; pozostały legacy
   mega-test nadal ma historyczne hotspoty i kwalifikuje się do dalszych splitów.
+- Ósma kontynuacja `50wa`: Merchant feed blocked-section wording contract jest
+  teraz w `tests/api_contracts/test_merchant_contracts.py`. Test docelowy oraz
+  pełny action-object suite przechodzą; import został dopasowany do aktualnego
+  `build_merchant_diagnostics` API po pierwszym kontrolowanym błędzie kolekcji.
 
 ## Następny krok
 
