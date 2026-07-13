@@ -704,6 +704,9 @@
 - Czternasta kontynuacja `50wa`: homepage content candidate ID traceability jest
   teraz w `tests/api_contracts/test_content_workflow_contracts.py`. Nowy i pełny
   suite przechodzą; nie powtarzać tego splitu w action mega-teście.
+- Piętnasta kontynuacja `50wa`: empty content-refresh operator-language contract
+  jest teraz w `tests/api_contracts/test_content_workflow_contracts.py`. Nowy i
+  pełny suite przechodzą; zachowano ochronę przed technicznym angielskim copy.
 
 ## Następny krok
 

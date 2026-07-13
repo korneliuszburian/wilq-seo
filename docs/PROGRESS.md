@@ -2247,3 +2247,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   traceability test przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
   Test docelowy i pełny action-object suite przechodzą; canonical public URL
   pozostaje właścicielem identyfikatora kandydata.
+- Piętnasta kontynuacja `50wa`: empty content-refresh operator-language test
+  przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
+  Test docelowy i pełny action-object suite przechodzą; stare angielskie
+  techniczne frazy są nadal odrzucane w widocznej kopii.
