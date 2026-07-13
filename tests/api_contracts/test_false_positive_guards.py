@@ -94,6 +94,73 @@ def test_daily_item_blocks_recommendation_without_expert_rule() -> None:
     assert "missing_expert_rule" in item.false_positive_guards
 
 
+def test_daily_item_blocks_ga4_performance_claim_without_conversion_contract() -> None:
+    guard = evaluate_conversion_readiness_guard(
+        Ga4ConversionReadinessContract(
+            status="blocked",
+            title="GA4",
+            summary="Brak zdarzeń kluczowych.",
+            next_step="Sprawdź mapowanie zdarzeń.",
+            missing_read_contracts=["conversion_or_key_event_mapping"],
+        )
+    )
+    item = _daily_item(
+        DailyDecision(
+            id="decision_ga4_without_conversion_contract",
+            title="Oceń jakość ruchu GA4",
+            domain="ga4",
+            route="/analytics",
+            status="ready",
+            priority=10,
+            co_widzimy="Ruch wymaga kontroli.",
+            dlaczego_to_ma_znaczenie="Bez konwersji nie wolno oceniać skuteczności.",
+            bezpieczny_next_step="Sprawdź mapowanie zdarzeń.",
+            why_it_matters="Brak kontraktu pomiaru blokuje werdykt.",
+            operator_action="Nie oceniaj CPA ani ROAS.",
+            source_connectors=["google_analytics_4"],
+            evidence_ids=["ev_ga4_missing_conversion"],
+            freshness=FreshnessState(state="fresh"),
+        ),
+        ga4_guard=guard,
+    )
+
+    assert item.status == "blocked"
+    assert item.category == "blocked_recommendation"
+    assert "missing_conversion" in item.false_positive_guards
+
+
+def test_daily_item_blocks_gsc_conclusion_without_bounded_date_window() -> None:
+    guard = evaluate_gsc_date_window_guard(
+        ContentGscSearchAnalyticsContract(
+            data_availability_checked=False,
+            detail_data_completeness="unknown",
+        )
+    )
+    item = _daily_item(
+        DailyDecision(
+            id="decision_gsc_without_date_window",
+            title="Oceń ruch z GSC",
+            domain="content",
+            route="/content-workflow",
+            status="ready",
+            priority=10,
+            co_widzimy="Dane GSC wymagają zakresu dat.",
+            dlaczego_to_ma_znaczenie="Bez okna nie ma bezpiecznego porównania.",
+            bezpieczny_next_step="Ustal pełne okno danych.",
+            why_it_matters="Brak zakresu blokuje wniosek o zmianie.",
+            operator_action="Nie ogłaszaj spadku.",
+            source_connectors=["google_search_console"],
+            evidence_ids=["ev_gsc_missing_window"],
+            freshness=FreshnessState(state="fresh"),
+        ),
+        content_guard=guard,
+    )
+
+    assert item.status == "blocked"
+    assert item.category == "blocked_recommendation"
+    assert "date_window" in item.false_positive_guards
+
+
 def test_conversion_guard_uses_ga4_read_contract() -> None:
     contract = Ga4ConversionReadinessContract(
         status="blocked",
