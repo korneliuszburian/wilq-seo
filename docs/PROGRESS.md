@@ -5,16 +5,18 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
-- `wilq-seo-8qqr` slice: istniejący boundary GA4 ma teraz typed TTL cache,
-  używany przez router i daily-check oraz czyszczony przy invalidacji API.
-  Prewarm daily runtime przygotowuje też GA4 contract. Live baseline przed
-  zmianą: GA4 `4.354704/2.129338/1.737154 s`, daily-check `10.894200/1.812485/
-  2.127347 s`; po zmianie, po prewarmie: GA4 `0.003595/0.090934 s`,
-  daily-check `0.073996/0.077939/0.054049 s`. Status, evidence/freshness i
-  no-write safety pozostają bez zmian. Bead pozostaje otwarty do parity
-  concurrency/TTL i pełnego live proof. Po dodaniu locka live restart dał
-  `10.038843/0.003666/0.005881 s`; cold build jest serializowany, a kolejne
-  odczyty są cache hitami.
+- `wilq-seo-8qqr` zamknięty: istniejący boundary GA4 ma typed TTL cache używany
+  przez router, daily-check i prewarm; lock serializuje concurrent cold build,
+  a invalidacja API czyści cache. Testy chronią hit, expiry, clear i
+  concurrency. Read-only live refresh GA4 zakończył się z redacted
+  `vendor_data_collected=true` i `metrics_persisted=true`. Warm hit bezpośrednio
+  przed refreshem miał `0.003541 s`; cold rebuild po invalidacji na tym samym
+  PID trwał `4.580455 s`, a kolejny hit `0.004964 s`. Pozostały 4 decyzje,
+  8 evidence IDs i conversion readiness `ready`. Mutation audit delta wynosi 0,
+  a readiness 21 akcji/0 możliwych i 0 planowanych vendor writes. Focused 40
+  testów, Ruff, mypy i identyfikowalny `/ga4` browser proof przechodzą. Nie
+  dodawać cache w React ani drugiego endpointu; dalszy cold-read problem należy
+  do `inoz`.
 - `inoz` continuation: daily-check now uses a narrow cached runtime that omits
   the marketing brief, and concurrent base-cache builds are serialized with a
   re-check to prevent duplicate cold work. Focused tests, Ruff, mypy and
