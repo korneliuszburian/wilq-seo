@@ -36,6 +36,11 @@ w git, Beads i `docs/progress/archive/`.
   nadal eksportuje ten sam kontrakt, bez zmiany endpointów ani payloadów.
   Shared schema/dashboard lint, build, tests i typecheck przechodzą. Następny
   seam: Merchant diagnostic sections/response.
+- Czternasty seam: `merchant_diagnostics.ts` zawiera sekcje, issue clusters,
+  decision queue, freshness/unknowns, product readiness i Merchant diagnostics
+  response (307 LOC); `index.ts` ma 1 872 LOC. Connector/evidence/action
+  contracts pozostają bez zmian. Shared schema/dashboard lint, build, tests i
+  typecheck przechodzą. Następny seam: Content diagnostic contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

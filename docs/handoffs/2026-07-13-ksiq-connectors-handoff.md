@@ -71,6 +71,11 @@
   freshness assessment i pełny diagnostics response (89 LOC); `index.ts` ma
   2 161 LOC. Eksporty, endpointy i payloady bez zmian; focused gates przechodzą.
   Następny seam: Merchant diagnostic sections/response.
+- Czternasty seam: `packages/shared-schemas/src/merchant_diagnostics.ts`
+  zawiera sekcje, issue clusters, decision queue, freshness/unknowns, product
+  readiness i Merchant diagnostics response (307 LOC); `index.ts` ma 1 872 LOC.
+  Connector/evidence/action contracts bez zmian, focused gates przechodzą.
+  Następny seam: Content diagnostic contracts.
 
 ## Następny krok
 
