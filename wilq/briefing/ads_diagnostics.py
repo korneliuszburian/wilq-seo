@@ -92,13 +92,7 @@ from wilq.briefing.ads_metric_tiles import (
     search_terms_metric_tiles,
 )
 from wilq.briefing.ads_metric_utils import (
-    clean_metric_tiles as _clean_metric_tiles,
-)
-from wilq.briefing.ads_metric_utils import (
     format_money_micros as _format_money_micros,
-)
-from wilq.briefing.ads_metric_utils import (
-    round_metric as _round_metric,
 )
 from wilq.briefing.ads_primary_contracts import build_primary_read_contracts
 from wilq.briefing.ads_response_assembly import build_diagnostics_response
@@ -1852,31 +1846,6 @@ def _account_currency_read_contract(
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         next_step=("Uruchom odczyt danych Google Ads z polem `customer.currency_code`."),
-    )
-
-
-def _business_context_metric_tiles_legacy(
-    *,
-    profit_margin: float | None,
-    business_goal: str | None,
-    budget_goal: str | None,
-    target_roas: float | None,
-    target_cpa_micros: int | None,
-    target_confirmation: object | None,
-    strategy_review_status: str,
-) -> dict[str, int | float | str]:
-    return _clean_metric_tiles(
-        {
-            "marża": _format_ratio_percent(profit_margin)
-            if profit_margin is not None
-            else "marża niepodana",
-            "cel biznesowy": business_goal or "cel niepotwierdzony",
-            "cel budżetu": budget_goal or "cel budżetu niepotwierdzony",
-            "docelowy zwrot z reklam": target_roas,
-            "docelowy koszt pozyskania celu": _format_micros(target_cpa_micros),
-            "źródło celu": "potwierdzone" if target_confirmation is not None else None,
-            "ocena strategii": _strategy_review_label(strategy_review_status),
-        }
     )
 
 
@@ -5137,23 +5106,6 @@ def _format_micros(value: float | None) -> str | None:
     if account_units >= 10:
         return f"{account_units:.1f}"
     return f"{account_units:.2f}"
-
-
-def _format_ratio_percent(value: float | None) -> str | None:
-    if value is None:
-        return None
-    return f"{_round_metric(value * 100)}%"
-
-
-def _strategy_review_label(status: str) -> str:
-    labels = {
-        "missing": "ocena strategii nieprzeprowadzona",
-        "approved_for_prepare": "zatwierdzone",
-        "needs_changes": "wymaga poprawek",
-        "rejected": "odrzucone",
-        "deferred": "odłożone",
-    }
-    return labels.get(status, "status oceny strategii do sprawdzenia")
 
 
 def _metric_sentence(facts: list[MetricFact]) -> str:

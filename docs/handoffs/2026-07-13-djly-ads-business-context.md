@@ -28,6 +28,9 @@ Piąty seam przeniósł również `business_context_read_metric_tiles` do typed
 ownera. Formatowanie marży, kosztu, celu i statusu review pozostaje zgodne z
 dotychczasowym payloadem.
 
+Cleanup usunął `_business_context_metric_tiles_legacy` oraz osierocone
+formatery z fasady. To nie zmienia payloadu; następny proof dotyczy parity/runtime.
+
 ## Dowód
 
 - `tests/test_ads_business_context_contracts.py` potwierdza blocked,
@@ -53,6 +56,5 @@ dotychczasowym payloadem.
 
 ## Nie powtarzać
 
-Nie przenosić ponownie strategy-review projection, contract state, review gates,
-policy IDs, summary, target interpretation ani metric tiles. Pozostało usunięcie
-nieużywanych prywatnych helperów z fasady i pełny parity audit.
+Nie przenosić ponownie żadnego z tych seamów ani przywracać legacy helpera.
+Pozostał pełny parity/runtime audit istniejącego ownera.

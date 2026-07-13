@@ -39,6 +39,10 @@ w git, Beads i `docs/progress/archive/`.
   rentowności, target KPI, skalowania i zapisu oraz review-only allowed uses
   przy potwierdzonym celu. Focused Ads contracts, Ruff, mypy i diff check
   przechodzą; metric tiles pozostają osobnym seamem.
+- `djly` cleanup: po potwierdzeniu metric-tile owner usunięto nieużywany
+  `_business_context_metric_tiles_legacy` oraz osierocone formatery z
+  `ads_diagnostics.py`; Ruff i Ads contracts przechodzą. Nie zmieniono
+  payloadów ani reguł biznesowych.
 - `v9ab.13` recheck 2026-07-13 19:31Z: świeży packet UAT pokazuje 24 zadania
   Centrum pracy, 1330 zgłoszeń Merchant, 2 decyzje Treści oraz konkretną
   stronę główną `https://www.ekologus.pl/` z 22 zapytaniami i dopasowaniem
