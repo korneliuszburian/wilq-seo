@@ -26,6 +26,13 @@ review-ready, ale daily output musi nadal nazwać queue density blocker (obecnie
 Pozostałe false-positive guards pozostają otwarte; nie zaczynaj od kolejnego
 wrappera Ads ani drugiego expert endpointu.
 
+Live audit 2026-07-13: system status reports 107898 metric facts and 12
+connectors (9 configured, 2 missing credentials; secrets redacted). Content
+queue is fresh but density-blocked at 1 actionable of 3. Service Profile has
+12 knowledge cards (3 seeded contract proof, 9 source-backed review-required,
+0 approved production-depth), so reviewed-card work and real Wilku UAT remain
+human/owner gates, not missing API behavior.
+
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,
 WordPress draft-handoff oraz persisted validation/audit i review-gate state są

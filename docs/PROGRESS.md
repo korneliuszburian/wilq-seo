@@ -2689,3 +2689,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   to the current ActionObject seam set and explicitly records closed c9h9.18,
   ipps and c9h9.23 boundaries. Do not use the older tactical-queue paragraphs
   as a next-task instruction without a new runtime contradiction.
+- Live product audit 2026-07-13: WILQ reports 107898 metric facts, 12
+  connectors (9 configured, 2 missing credentials, redacted runtime), a fresh
+  content queue with 2 candidates/1 actionable of 3 required, and Service
+  Profile knowledge readiness `source_backed_review_required` (12 cards: 3
+  seeded contract proof, 9 review-required, 0 approved production-depth).
+  Existing `r564`, `jst` and `lt1` remain the correct Beads; no duplicate task
+  or synthetic UAT/recommendation was created.

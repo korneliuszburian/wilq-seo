@@ -1090,6 +1090,11 @@
   current ActionObject seam set and closed tactical/readback boundaries. The
   next agent must re-audit active Beads and live evidence; do not repeat
   c9h9.18, ipps, c9h9.23 or action-state/candidate extractions.
+- Live product audit 2026-07-13: 107898 metric facts; 12 connectors (9
+  configured, 2 missing credentials, redacted); content queue fresh but 1/3
+  actionable; Service Profile 12 cards with 0 approved production-depth and 9
+  review-required. Next work must use existing `r564`, `jst` or `lt1` gates and
+  must not invent a third topic, synthetic UAT verdict or duplicate endpoint.
 
 ## Następny krok
 
