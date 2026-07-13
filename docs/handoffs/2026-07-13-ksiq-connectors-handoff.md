@@ -735,6 +735,9 @@
 - Dwudziesta czwarta kontynuacja `50wa`: content candidate review audit contract
   jest teraz 1:1 w `tests/api_contracts/test_content_workflow_contracts.py`.
   Nowy i pełny suite przechodzą; nie powtarzać tego wieloetapowego splitu.
+- Dwudziesta piąta kontynuacja `50wa`: content-strategist context-pack reviewed
+  draft preview contract jest teraz 1:1 w `tests/api_contracts/test_content_workflow_contracts.py`.
+  Nowy i pełny suite przechodzą; raw payload pozostaje ukryty.
 
 ## Następny krok
 

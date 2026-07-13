@@ -27,6 +27,200 @@ from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 
+def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "content_review_context_state.sqlite3"),
+    )
+
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    candidate = action["payload"]["content_brief_preview"][0]
+    candidate_id = candidate["candidate_id"]
+
+    review_response = client.post(
+        "/api/actions/act_prepare_content_refresh_queue/review",
+        json={
+            "outcome": "approved_for_prepare",
+            "reviewed_by": "operator_test",
+            "notes": f"Wybrano propozycję briefu {candidate_id} do context-pack proof.",
+            "checked_items": [
+                f"candidate:{candidate_id}",
+                f"source_type:{candidate['source_type']}",
+                f"mode:{candidate['mode']}",
+            ],
+            "blockers": [
+                "payload_apply_allowed_false",
+                "wordpress_write_not_requested",
+                "blocked_claim:gwarancja pozycji",
+            ],
+        },
+    )
+    assert review_response.status_code == 200
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-content-strategist"},
+    )
+
+    assert context_response.status_code == 200
+    context = context_response.json()
+    actions_by_id = {item["id"]: item for item in context["active_action_objects"]}
+    content_action = actions_by_id["act_prepare_content_refresh_queue"]
+    assert "payload" not in content_action
+    assert "action_plan" in content_action
+    payload = content_action["action_plan"]
+
+    assert payload["content_plan_items_total"] >= 1
+    assert payload["content_plan_items_included"] >= 1
+    brief_preview = next(
+        item for item in payload["content_plan_items"] if item["candidate_id"] == candidate_id
+    )
+    assert brief_preview["intent"]
+    assert brief_preview["source_type_label"] == "Google Search Console"
+    assert brief_preview["mode_label"] == "odśwież istniejącą treść"
+    assert brief_preview["publication_readiness_status_label"] == ("zablokowane do sprawdzenia")
+    assert "gwarancja pozycji" in brief_preview["blocked_claim_labels"]
+    assert brief_preview["content_angle"]
+    assert brief_preview["audience"]
+    assert brief_preview["h1_direction"]
+    assert brief_preview["seo_title_direction"]
+    assert brief_preview["meta_description_direction"]
+    assert brief_preview["h2_direction"]
+    assert brief_preview["faq_direction"]
+    assert brief_preview["schema_direction"]
+    assert brief_preview["key_objections"]
+    assert brief_preview["cta_direction"]
+    assert brief_preview["internal_link_direction"]
+    assert "publication_readiness_status" not in brief_preview
+    assert "publication_blockers" not in brief_preview
+    assert "kontrola prawna i faktograficzna" in brief_preview["publication_blocker_labels"]
+    assert brief_preview["legal_review_notes"]
+    assert brief_preview["brand_voice_notes"]
+    assert brief_preview["source_facts"]
+    assert all("target_url=" not in fact for fact in brief_preview["source_facts"])
+    assert all("GSC page=" not in fact for fact in brief_preview["source_facts"])
+    assert all("queries=" not in fact for fact in brief_preview["source_facts"])
+    assert any("Strona z GSC:" in fact for fact in brief_preview["source_facts"])
+    assert brief_preview["missing_evidence"]
+    assert brief_preview["metric_tiles"]["kliknięcia"] > 0
+    assert "forbidden_claims" not in brief_preview
+    assert brief_preview["source_public_url"]
+    assert brief_preview["final_canonical_url"]
+    assert brief_preview["intended_final_url"]
+    assert "ekologus.dev.proudsite.pl" not in brief_preview["final_canonical_url"]
+    assert not [
+        key
+        for key in brief_preview
+        if key.startswith(("target_site_", "mapping_review_", "transition_candidate"))
+        or key == "current_transition_candidate_url"
+    ]
+    assert "required_validation" not in brief_preview
+    assert "kontrola duplikacji i kanibalizacji" in brief_preview["required_check_labels"]
+    assert "odśwież istniejącą treść" in brief_preview["decision_option_labels"]
+    assert payload["wordpress_draft_preview_items_total"] == 1
+    assert payload["wordpress_draft_preview_items_included"] == 1
+    draft_preview = payload["wordpress_draft_preview_items"][0]
+    assert "preview_contract" not in draft_preview
+    assert "source_preview_contract" not in draft_preview
+    assert draft_preview["candidate_id"] == candidate_id
+    assert draft_preview["intent"]
+    assert draft_preview["post_status"] == "draft"
+    assert draft_preview["operation_type_label"] == ("wersja robocza istniejącej treści")
+    assert draft_preview["post_status_label"] == "szkic"
+    assert draft_preview["draft_generation_status_label"]
+    assert "gwarancja pozycji" in draft_preview["blocked_claim_labels"]
+    assert draft_preview["draft_payload"]["post_title"].startswith("Odświeżenie:")
+    assert any(
+        block.get("section_label") == "intencja"
+        for block in draft_preview["draft_payload"]["content_blocks"]
+    )
+    assert draft_preview["source_public_url"]
+    assert draft_preview["final_canonical_url"]
+    assert draft_preview["intended_final_url"]
+    assert not [
+        key
+        for key in draft_preview
+        if key.startswith(("target_site_", "mapping_review_", "transition_candidate"))
+        or key == "current_transition_candidate_url"
+    ]
+    assert "draft_generation_status" not in draft_preview
+    assert "inventory_gate_status" not in draft_preview
+    assert "canonical_gate_status" not in draft_preview
+    assert "duplicate_gate_status" not in draft_preview
+    assert draft_preview["inventory_gate_status_label"]
+    assert draft_preview["canonical_gate_status_label"]
+    assert draft_preview["duplicate_gate_status_label"]
+    assert draft_preview["content_gate_summary"]
+    draft_contract = draft_preview["draft_generation_contract"]
+    assert draft_contract["contract_version"] == "content_draft_generation_v1"
+    assert draft_contract["language"] == "pl-PL"
+    assert "status" not in draft_contract
+    assert draft_contract["allowed_output_kind"] in {
+        "outline_only_until_checks_complete",
+        "reviewable_polish_draft_preview",
+    }
+    assert "duplicate_or_cannibalization_check" in draft_contract["requires_passed_gates"]
+    assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
+    assert (
+        "warunek: kontrola duplikacji i kanibalizacji" in draft_preview["draft_generation_summary"]
+    )
+    assert "zakaz: obietnica gotowości do publikacji" in draft_preview["draft_generation_summary"]
+    assert draft_preview["wordpress_draft_handoff_status"] in {
+        "blocked_until_draft_checks_complete",
+        "blocked_until_draft_readiness_review",
+        "blocked_until_wordpress_draft_handoff_action",
+    }
+    assert (
+        "wordpress_draft_write_not_requested" in draft_preview["wordpress_draft_handoff_blockers"]
+    )
+    assert (
+        "zapis szkicu WordPress nie został zlecony"
+        in draft_preview["wordpress_draft_handoff_blocker_labels"]
+    )
+    assert (
+        "blokada: zapis szkicu WordPress nie został zlecony"
+        in draft_preview["wordpress_draft_handoff_summary"]
+    )
+    wordpress_draft_contract = draft_preview["wordpress_draft_handoff_contract"]
+    assert wordpress_draft_contract["contract_version"] == "wordpress_draft_handoff_v1"
+    assert wordpress_draft_contract["scope"] == "blocked_preview_only"
+    assert "wordpress_publish" in wordpress_draft_contract["blocked_outputs"]
+    assert (
+        "blokuje: publikacja WordPress" in draft_preview["wordpress_draft_handoff_contract_summary"]
+    )
+    measurement_plan = draft_preview["post_publication_measurement_plan"]
+    assert measurement_plan["contract_version"] == "post_publication_measurement_plan_v1"
+    assert measurement_plan["scope"] == "blocked_preview_only"
+    assert "status" not in measurement_plan
+    assert "google_search_console" in measurement_plan["required_source_connectors"]
+    assert "google_analytics_4" in measurement_plan["required_source_connectors"]
+    assert "content_success_verdict" in measurement_plan["blocked_outputs"]
+    assert (
+        "blokuje: werdykt skuteczności treści"
+        in draft_preview["post_publication_measurement_summary"]
+    )
+    assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
+    assert (
+        "potwierdzenie człowieka przed zapisem WordPress" in draft_preview["draft_blocker_labels"]
+    )
+    assert (
+        "wymaga: wynik decyzji człowieka"
+        in draft_preview["draft_readiness_review_contract_summary"]
+    )
+    assert "required_validation" not in draft_preview
+    assert "kontrola duplikacji i kanibalizacji" in draft_preview["required_check_labels"]
+    assert draft_preview["apply_status_label"] == "zablokowane do sprawdzenia"
+    assert draft_preview["write_status_label"] == "bez zapisu automatycznego"
+    assert draft_preview["evidence_ids"]
+    assert "blocked_claims" not in draft_preview
+    assert "gwarancja pozycji" in draft_preview["blocked_claim_labels"]
+    assert content_action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
 def test_content_brief_candidate_review_persists_audit_event(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

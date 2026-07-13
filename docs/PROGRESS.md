@@ -2287,3 +2287,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   audit test przeniesiono 1:1 do `tests/api_contracts/test_content_workflow_contracts.py`.
   Test docelowy i pełny action-object suite przechodzą; review gate, draft-only
   preview, evidence i blokady claimów zachowują dotychczasowe asercje.
+- Dwudziesta piąta kontynuacja `50wa`: content-strategist context-pack reviewed
+  draft preview test przeniesiono 1:1 do `tests/api_contracts/test_content_workflow_contracts.py`.
+  Test docelowy, pełny action-object suite, Ruff i diff check są zielone; typed
+  action plan nadal ukrywa raw payload i blokuje nieudowodnione claimy.
