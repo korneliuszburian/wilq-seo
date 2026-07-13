@@ -423,6 +423,9 @@
   identity/impact/evidence/blocked claims i review-copy są w helperach. Test
   ujawnił brak lokalnej referencji sekcji po ekstrakcji; referencję przywrócono
   jawnie i pełny focused gate jest zielony.
+- Dziewiętnasty/dwudziesty pod-slice zakończony: recommendation payload
+  preview/safety i recommendations section proof są w helperach. Następny
+  handoff powinien przejść do impression-share contract.
 
 ## Następny krok
 

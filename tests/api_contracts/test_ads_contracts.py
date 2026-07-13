@@ -704,6 +704,77 @@ def assert_ads_recommendation_review_copy(
     assert "701" not in str(preview)
 
 
+def assert_ads_recommendation_payload_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove recommendation apply preview is fully review-gated and non-mutating."""
+    preview = contract["payload_preview"][0]
+    assert contract["payload_preview"] == [
+        {
+            "id": "recommendation_apply_preview_rec-1",
+            "recommendation_id": "rec-1",
+            "recommendation_resource_name": "customers/test/recommendations/rec-1",
+            "recommendation_type": "CAMPAIGN_BUDGET",
+            "recommendation_type_label": "budżet kampanii",
+            "campaign_id": "101",
+            "campaign_budget_id": "701",
+            "operation_type": "ApplyRecommendationOperation",
+            "operation_type_label": "zastosowanie rekomendacji Google Ads",
+            "reason": preview["reason"],
+            "evidence_ids": [evidence_id],
+            "source_metric_names": preview["source_metric_names"],
+            "required_validation": [
+                "review_recommendation_type",
+                "review_impact_metrics",
+                "review_change_history",
+                "review_business_goal",
+                "recommendation_apply_preview",
+                "google_ads_rmf_compliance_review",
+                "human_confirm_before_apply",
+            ],
+            "required_validation_labels": [
+                "sprawdzenie typu rekomendacji",
+                "sprawdzenie wpływu rekomendacji",
+                "sprawdzenie historii zmian",
+                "sprawdzenie celu biznesowego",
+                "podgląd zapisu rekomendacji",
+                "ocena zgodności Google Ads RMF",
+                "potwierdzenie człowieka przed zapisem",
+            ],
+            "blocked_claims": [
+                "zapis rekomendacji",
+                "automatyczne przyjęcie rekomendacji",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+                "obietnica poprawy wyniku",
+            ],
+            "blocked_claim_labels": [
+                "zapis rekomendacji",
+                "automatyczne przyjęcie rekomendacji",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+                "obietnica poprawy wyniku",
+            ],
+            "api_mutation_ready": False,
+            "apply_allowed": False,
+            "destructive": False,
+        }
+    ]
+
+
+def assert_ads_recommendations_section_contract(payload: dict[str, Any]) -> None:
+    """Prove recommendation surface is knowledge/rule-backed and review-only."""
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_recommendations"
+    )
+    assert section["status"] == "ready"
+    assert section["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
+    assert section["expert_rule_ids"] == [
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2991,70 +3062,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     recommendation_row = recommendations_contract["recommendation_rows"][0]
     assert recommendation_row["payload_preview"] == recommendations_contract["payload_preview"][0]
     assert_ads_recommendation_review_copy(recommendations_contract, recommendation_row)
-    assert recommendations_contract["payload_preview"] == [
-        {
-            "id": "recommendation_apply_preview_rec-1",
-            "recommendation_id": "rec-1",
-            "recommendation_resource_name": "customers/test/recommendations/rec-1",
-            "recommendation_type": "CAMPAIGN_BUDGET",
-            "recommendation_type_label": "budżet kampanii",
-            "campaign_id": "101",
-            "campaign_budget_id": "701",
-            "operation_type": "ApplyRecommendationOperation",
-            "operation_type_label": "zastosowanie rekomendacji Google Ads",
-            "reason": recommendations_contract["payload_preview"][0]["reason"],
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "source_metric_names": recommendations_contract["payload_preview"][0][
-                "source_metric_names"
-            ],
-            "required_validation": [
-                "review_recommendation_type",
-                "review_impact_metrics",
-                "review_change_history",
-                "review_business_goal",
-                "recommendation_apply_preview",
-                "google_ads_rmf_compliance_review",
-                "human_confirm_before_apply",
-            ],
-            "required_validation_labels": [
-                "sprawdzenie typu rekomendacji",
-                "sprawdzenie wpływu rekomendacji",
-                "sprawdzenie historii zmian",
-                "sprawdzenie celu biznesowego",
-                "podgląd zapisu rekomendacji",
-                "ocena zgodności Google Ads RMF",
-                "potwierdzenie człowieka przed zapisem",
-            ],
-            "blocked_claims": [
-                "zapis rekomendacji",
-                "automatyczne przyjęcie rekomendacji",
-                "zmiana budżetu",
-                "zapis zmian kampanii",
-                "obietnica poprawy wyniku",
-            ],
-            "blocked_claim_labels": [
-                "zapis rekomendacji",
-                "automatyczne przyjęcie rekomendacji",
-                "zmiana budżetu",
-                "zapis zmian kampanii",
-                "obietnica poprawy wyniku",
-            ],
-            "api_mutation_ready": False,
-            "apply_allowed": False,
-            "destructive": False,
-        }
-    ]
-    recommendations_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_recommendations"
+    assert_ads_recommendation_payload_contract(
+        recommendations_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert recommendations_section["status"] == "ready"
-    assert recommendations_section["knowledge_card_ids"] == [
-        "card_google_ads_budget_review_playbook"
-    ]
-    assert recommendations_section["expert_rule_ids"] == [
-        "ads_recommendations_v1",
-        "ads_principles_v1",
-    ]
+    assert_ads_recommendations_section_contract(payload)
     impression_share_contract = payload["impression_share_read_contract"]
     assert impression_share_contract["status"] == "ready"
     assert impression_share_contract["empty_state_message"] == (

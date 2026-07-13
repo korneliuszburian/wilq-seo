@@ -1932,3 +1932,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   identity/impact/evidence/blocked claims i review-copy wydzielone do helperów.
   Focused Ads/Ruff/mypy/diff check zielone; naprawiono też jawnie odtworzoną
   lokalną referencję sekcji ujawnioną przez test po ekstrakcji.
+- Dziewiętnasty/dwudziesty pod-slice c9h9.22: recommendation payload
+  preview/safety oraz recommendations section knowledge/rule proof wydzielone.
+  Validation labels i false mutation flags zachowane; focused
+  Ads/Ruff/mypy/diff check zielone.
