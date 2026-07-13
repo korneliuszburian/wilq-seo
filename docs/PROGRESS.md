@@ -1908,8 +1908,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   blocked profitability claim wydzielone do
   `assert_ads_derived_kpi_contract_basics`. Focused Ads/Ruff/mypy/diff check
   przechodzą; KPI row/evidence semantics pozostają następnym seamem.
-- Re-audit po dwudziestym szóstym pod-slice: `audit_complexity` raportuje 0
-  changed-code budget violations. Główny Ads test ma 2095 linii i 19 branchy;
+- Re-audit po dwudziestym ósmym pod-slice: `audit_complexity` raportuje 0
+  changed-code budget violations. Główny Ads test ma 2002 linii i 18 branchy;
   branch budget jest zielony, ale line budget nadal wymaga ekstrakcji.
 - Dziesiąty i jedenasty pod-slice c9h9.22: derived KPI row/evidence/blocked
   claims oraz diagnostic section readiness wydzielone do nazwanych helperów.
@@ -1946,3 +1946,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
 - Dwudziesty piąty/szósty pod-slice c9h9.22: optimizer readiness review-only
   contract oraz change-history basics/row evidence proof wydzielone. Focused
   Ads/Ruff/mypy/diff check zielone; następny seam to change-impact readiness.
+- Dwudziesty siódmy/ósmy pod-slice c9h9.22: change-impact basics, readiness
+  row evidence/blocked claims oraz change-history section proof wydzielone.
+  Focused Ads/Ruff/mypy/diff check zielone; następny seam to optimizer linkage
+  i pozostały diagnostic tail.

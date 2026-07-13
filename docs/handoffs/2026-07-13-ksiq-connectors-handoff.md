@@ -435,6 +435,9 @@
 - Dwudziesty piąty/szósty pod-slice zakończony: optimizer review-only i
   change-history basics/row proof są w helperach. Następny krok: change-impact
   readiness contract.
+- Dwudziesty siódmy/ósmy pod-slice zakończony: change-impact basics, readiness
+  row evidence/blocked claims i change-history section proof są w helperach.
+  Następny krok: optimizer linkage i pozostały diagnostic tail.
 
 ## Następny krok
 
