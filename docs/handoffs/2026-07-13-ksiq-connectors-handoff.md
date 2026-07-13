@@ -754,6 +754,12 @@
   2 kandydatów, 0 actionable, minimum 3; GSC i WordPress public są stale.
   Następny seam `ho41`: kolejny duży blok presentacyjny tylko po sprawdzeniu
   aktualnej architektury, bez odblokowywania write/publish.
+- `ho41` continuation 2 2026-07-13: istniejąca kolumna GSC/Ahrefs/brief
+  wydzielona do `apps/dashboard/src/routes/ContentSignalColumn.tsx` (62 LOC).
+  Komponent dostaje tylko typed query chips, metric tiles i signal rows; nie
+  zawiera rankingu ani reguł evidence. Focused dashboard lint/typecheck,
+  route tests i build przechodzą. Kolejka nadal stale/blocked (2 kandydatów,
+  0 actionable/3), więc nie traktować renderu jako gotowości treści.
 
 ## Następny krok
 

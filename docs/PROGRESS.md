@@ -12,6 +12,11 @@ w git, Beads i `docs/progress/archive/`.
   TypeScript and focused ContentWorkflow tests pass. Live WILQ queue is
   currently `blocked`: 2 candidates, 0 actionable of 3 required; GSC and
   public WordPress are stale, so this refactor does not claim content readiness.
+- `wilq-seo-ho41` continuation 2: extracted the existing GSC/Ahrefs/brief
+  signal column into `ContentSignalColumn.tsx` (62 LOC). It receives the
+  already typed query chips, metric tiles and signal rows; ranking/evidence
+  logic remains in the route/API view-model. Focused dashboard lint, typecheck,
+  route tests and build remain green.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i
