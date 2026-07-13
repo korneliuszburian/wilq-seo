@@ -1818,3 +1818,14 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   potwierdzony fixture route. Po slice wykonano browser proof `/content-workflow`:
   pierwszy viewport pokazuje decyzję, blocker, CTA i świeżość/dowody za
   disclosure; screenshot obejrzany, bez technicznych ID above the fold.
+- Re-audit po 28 slice’ach: równoległy dashboard run miał 3 błędy (ActionDetail
+  i dwa timeouty ciężkich route tests), ale serialny pełny run z
+  `--maxWorkers=1` przeszedł 44/44 pliki i 162/162 testy. Focused ActionDetail
+  też przechodzi; klasyfikuję problem jako niestabilność równoległego runu,
+  nie regresję funkcjonalną.
+- Trzydziesty slice: fixture Ahrefs diagnostics została wyciągnięta z
+  `App.test.tsx` do `ahrefsDiagnostics.fixture.ts`, a
+  `AhrefsDiagnosticSurface.test.tsx` dostał behavior proof rozdziału autorytetu,
+  cross-checku GSC/WordPress i konkretnych luk SEO. Ahrefs + App focused 8/8,
+  dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma 7138 LOC.
+  Następny seam: Demand Gen albo dedykowana stabilizacja równoległego runu.
