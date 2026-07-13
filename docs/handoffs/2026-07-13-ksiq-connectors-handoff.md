@@ -405,6 +405,8 @@
 - Dziewiąty pod-slice zakończony: `assert_ads_derived_kpi_contract_basics`
   przejął KPI gates i blocked profitability claim. Następny krok to pełny KPI
   row/evidence proof.
+- Re-audit: 0 changed-code budget violations; główny test ma 2689 linii i 24
+  branchy. Branch budget jest zielony, line budget pozostaje otwarty.
 
 ## Następny krok
 
