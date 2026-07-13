@@ -14,8 +14,8 @@ from wilq.actions.action_blockers import (
     action_confirmation_event_type,
     action_confirmation_summary,
     action_preview_blockers,
-    ads_target_confirmation_summary,
     ads_target_confirmation_blockers,
+    ads_target_confirmation_summary,
 )
 from wilq.actions.action_blockers import (
     action_preview_summary as _action_preview_summary,
@@ -579,7 +579,7 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
 
 def seed_metric_action_candidates() -> dict[str, ActionObject]:
     facts = _action_metric_facts()
-    by_connector = _facts_by_connector(facts)
+    by_connector = _facts_by_connector_impl(facts)
     actions: dict[str, ActionObject] = {}
 
     actions.update(
@@ -702,10 +702,6 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
         measurement_plan=post_publication_measurement_plan,
         measurement_summary=post_publication_measurement_summary,
     )
-
-
-def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
-    return _facts_by_connector_impl(facts)
 
 
 def _plain_metric_value_label(
