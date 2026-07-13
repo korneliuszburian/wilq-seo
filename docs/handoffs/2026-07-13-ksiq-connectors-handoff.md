@@ -845,6 +845,11 @@
   brakującego inventory pozostają typed inputs; canonical/SEO logic bez zmian.
   19 focused Vitest, lint, typecheck, build i diff check przechodzą. E2E nadal
   kończy się na istniejącym locatorze `Treści: praca nad stroną`.
+- `ho41` continuation 20 2026-07-13: `MobileDecisionCard.tsx` wydzielony jako
+  compact mobile decision boundary. Queue decision/blocker/freshness fallback i
+  review-only CTA pozostają typed inputs; recommendation logic bez zmian. 19
+  focused Vitest, lint, typecheck, build i diff check przechodzą. E2E nadal
+  kończy się na istniejącym locatorze nagłówka.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

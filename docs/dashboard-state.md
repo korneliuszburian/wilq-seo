@@ -118,6 +118,9 @@ they remain presentation-only and do not own route or decision semantics.
 The public inventory card is now `ContentPublicInventoryPanel.tsx`; it renders
 typed public title/URL/section state and the existing missing-inventory blocker
 without moving canonical or SEO logic into React.
+The compact mobile decision is now `MobileDecisionCard.tsx`; it renders typed
+queue decision/blocker/freshness inputs and the review-only CTA without owning
+recommendation logic.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
