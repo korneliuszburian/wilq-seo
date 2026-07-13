@@ -1888,3 +1888,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `assert_ads_operator_summary_contract`. Focused Ads/Ruff/mypy/diff check
   przechodzą; główny test ma 2802 linii i 28 branchy. Następny seam: marketer
   summary text oraz decision metric tiles.
+- Piąty pod-slice c9h9.22: Polish marketer summary text i campaign/budget
+  metric tiles wydzielone do `assert_ads_marketer_copy_and_tiles`. Focused
+  Ads/Ruff/mypy/diff check przechodzą; główny test ma 2779 linii i 26 branchy.
+  Następny seam: account currency oraz zablokowany business context.

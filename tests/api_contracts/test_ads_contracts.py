@@ -195,6 +195,34 @@ def assert_ads_operator_summary_contract(
     assert summary["next_step"]
 
 
+def assert_ads_marketer_copy_and_tiles(payload: dict[str, Any]) -> None:
+    """Keep Polish copy and human-readable tiles separate from contracts."""
+    marketer_text = "\n".join(
+        [
+            payload["campaign_read_contract"]["summary"],
+            payload["search_terms_read_contract"]["summary"],
+            payload["search_term_review_summary_contract"]["summary"],
+            payload["search_term_ngram_read_contract"]["summary"],
+            payload["search_term_safety_read_contract"]["summary"],
+            *[decision["summary"] for decision in payload["decision_queue"]],
+        ]
+    )
+    assert "koszt_micros=" not in marketer_text
+    assert "koszt 12 PLN" in marketer_text
+    campaign_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_campaign_activity"
+    )
+    assert campaign_decision["metric_tiles"]["koszt"] == "12 PLN"
+    budget_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_budget_context"
+    )
+    assert budget_decision["metric_tiles"]["koszt 7 dni"] == "12 PLN"
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2428,30 +2456,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         payload, read_contract, refresh_response.json()["evidence_ids"][-1]
     )
     operator_summary = payload["operator_summary"]
-    marketer_text = "\n".join(
-        [
-            payload["campaign_read_contract"]["summary"],
-            payload["search_terms_read_contract"]["summary"],
-            payload["search_term_review_summary_contract"]["summary"],
-            payload["search_term_ngram_read_contract"]["summary"],
-            payload["search_term_safety_read_contract"]["summary"],
-            *[decision["summary"] for decision in payload["decision_queue"]],
-        ]
-    )
-    assert "koszt_micros=" not in marketer_text
-    assert "koszt 12 PLN" in marketer_text
-    campaign_decision = next(
-        decision
-        for decision in payload["decision_queue"]
-        if decision["id"] == "ads_review_campaign_activity"
-    )
-    assert campaign_decision["metric_tiles"]["koszt"] == "12 PLN"
-    budget_decision = next(
-        decision
-        for decision in payload["decision_queue"]
-        if decision["id"] == "ads_review_budget_context"
-    )
-    assert budget_decision["metric_tiles"]["koszt 7 dni"] == "12 PLN"
+    assert_ads_marketer_copy_and_tiles(payload)
     currency_contract = payload["account_currency_read_contract"]
     assert currency_contract["status"] == "ready"
     assert currency_contract["currency_code"] == "PLN"

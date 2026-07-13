@@ -390,6 +390,9 @@
 - Czwarty pod-slice zakończony: `assert_ads_operator_summary_contract` przejął
   kolejność decyzji, totals, evidence/action IDs i Polish next step. Test ma
   2802 linii/28 branchy; następny slice to marketer summary text i metric tiles.
+- Piąty pod-slice zakończony: `assert_ads_marketer_copy_and_tiles` przejął
+  Polish summary i campaign/budget tiles. Test ma 2779 linii/26 branchy; kolejny
+  slice obejmuje account currency oraz business-context blocker.
 
 ## Następny krok
 
