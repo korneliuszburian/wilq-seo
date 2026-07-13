@@ -917,6 +917,13 @@
   typecheck, 19 focused tests, build i diff check przechodzą. Browser proof
   nadal blokuje się na istniejącym heading locatorze przy live queue `blocked`;
   ActionObject/safety semantics bez zmian.
+- `ho41` continuation 33 2026-07-13: `contentWorkflowSafetyModel.ts`
+  przejął safety copy i disabled-reason projections dla draft, handoff,
+  structured output, quality review, revision, ACF, execution i measurement.
+  Route ma 655 LOC, poniżej budżetu 800; ActionObject gates i readiness
+  semantics pozostają w istniejącym flow. ESLint, typecheck, 19 focused tests,
+  build i diff check przechodzą; browser proof nadal blokuje się na istniejącym
+  heading locatorze przy live queue `blocked`.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

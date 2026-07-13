@@ -62,6 +62,14 @@ w git, Beads i `docs/progress/archive/`.
   focused Vitest, build i diff check przechodzą. Playwright nadal zatrzymuje
   się na istniejącym heading locatorze przy live queue `blocked`.
 
+- `ho41` continuation 33 2026-07-13: `contentWorkflowSafetyModel.ts`
+  przejął safety copy i disabled-reason projections dla draft, handoff,
+  structured output, quality review, revision, ACF, execution i measurement.
+  Route spadł do 655 LOC, poniżej budżetu 800; wszystkie safety gates i
+  ActionObject call sites pozostały w istniejącym flow. ESLint, TypeScript, 19
+  focused Vitest, build i diff check przechodzą. Playwright nadal zatrzymuje
+  się na istniejącym heading locatorze przy live queue `blocked`.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback

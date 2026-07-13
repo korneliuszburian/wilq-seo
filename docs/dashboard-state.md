@@ -158,6 +158,8 @@ while route orchestration retains workflow semantics.
 `contentWorkflowActionModel.ts` owns typed request construction and response
 projection for the existing review/draft/ACF paths; it does not perform vendor
 writes or bypass ActionObject gates.
+`contentWorkflowSafetyModel.ts` owns only Polish safety explanations and
+disabled-reason projections; it does not decide readiness or mutate vendors.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
