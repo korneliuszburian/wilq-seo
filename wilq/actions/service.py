@@ -26,6 +26,9 @@ from wilq.actions.action_state import (
 from wilq.actions.action_state import (
     with_persisted_validation_state as with_persisted_validation_state_state,
 )
+from wilq.actions.action_state import (
+    with_review_gate as with_review_gate_state,
+)
 from wilq.actions.action_validation import validate_action as validate_action_lifecycle
 from wilq.actions.apply_lifecycle import apply_action as apply_action_lifecycle
 from wilq.actions.audit_store import (
@@ -955,35 +958,17 @@ def _with_review_gate(
     audit_events: list[AuditEvent] | None = None,
     mutation_audits: list[ActionMutationAuditRecord] | None = None,
 ) -> ActionObject:
-    if audit_events is not None:
-        action.audit_events = audit_events[:10]
-    state_audit_events = [
-        event for event in action.audit_events if not _audit_event_has_raw_contract_text(event)
-    ]
-    action.payload = content_payload_with_reviewed_wordpress_draft_previews(
-        action.payload,
-        review_event_summaries=(
-            event.summary
-            for event in state_audit_events
-            if event.event_type == "human_review_approved_for_prepare"
-        ),
-        review_event_details=(
-            event.details
-            for event in state_audit_events
-            if event.event_type == "human_review_approved_for_prepare"
-        ),
-    )
-    action.payload = _payload_with_operator_labels(action.payload)
-    review_gate_events = [
-        event
-        for event in action.audit_events
-        if not _is_raw_content_review_audit_event(action.id, event)
-    ]
-    action.review_gate = _action_review_gate(
-        action.model_copy(update={"audit_events": review_gate_events}),
+    return with_review_gate_state(
+        action,
+        audit_events,
         mutation_audits,
+        audit_event_has_raw_contract_text=_audit_event_has_raw_contract_text,
+        content_payload_with_reviewed_previews=content_payload_with_reviewed_wordpress_draft_previews,
+        payload_with_operator_labels=_payload_with_operator_labels,
+        is_raw_content_review_audit_event=_is_raw_content_review_audit_event,
+        action_review_gate=_action_review_gate,
+        action_with_operator_labels=_action_with_operator_labels,
     )
-    return _action_with_operator_labels(action)
 
 
 def _action_with_operator_labels(action: ActionObject) -> ActionObject:

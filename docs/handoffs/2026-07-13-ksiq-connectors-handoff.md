@@ -1079,6 +1079,13 @@
   content tests, Ruff, mypy, complexity, API health/action inventory,
   fail-closed mutation smoke and Playwright proof pass; service.py is 1050 LOC.
   Do not repeat this action-state seam or closed WordPress/candidate slices.
+- `jnra` continuation 16 2026-07-13: review-gate state projection now lives in
+  `wilq/actions/action_state.py`; the service facade injects audit filtering,
+  content preview projection, payload labels, gate construction and operator
+  labels. Focused action list/mutation tests (13 passed), Ruff, mypy,
+  complexity, API health/action inventory, fail-closed mutation smoke and
+  Playwright proof pass; service.py is 1035 LOC. Do not repeat action-state
+  hydration/review-gate work or closed WordPress/candidate slices.
 
 ## Następny krok
 

@@ -2676,3 +2676,12 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   and content-workflow Playwright pass. `service.py` is 1050 LOC; complexity
   reports only the expected temporary frozen-file warning while the facade
   shrinks.
+- `jnra` continuation 16 2026-07-13: review-gate state projection moved into
+  `wilq/actions/action_state.py`; service compatibility wrapper injects audit
+  filtering, content preview projection, payload labels, gate builder and
+  operator labels. Review-event ordering, raw-contract filtering, mutation
+  audit propagation and ActionObject output remain unchanged. Focused action
+  list/mutation tests (13 passed), Ruff, mypy, complexity, API health/action
+  inventory, fail-closed mutation smoke and content-workflow Playwright pass;
+  `service.py` is now 1035 LOC with only the expected temporary frozen-file
+  warning.
