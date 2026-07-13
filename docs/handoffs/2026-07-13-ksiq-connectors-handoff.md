@@ -426,6 +426,9 @@
 - Dziewiętnasty/dwudziesty pod-slice zakończony: recommendation payload
   preview/safety i recommendations section proof są w helperach. Następny
   handoff powinien przejść do impression-share contract.
+- Dwudziesty pierwszy/drugi pod-slice zakończony: impression-share basics, row
+  evidence/blocked claims i section proof są w helperach. Następny krok:
+  campaign triage contract.
 
 ## Następny krok
 

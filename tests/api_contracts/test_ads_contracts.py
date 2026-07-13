@@ -775,6 +775,75 @@ def assert_ads_recommendations_section_contract(payload: dict[str, Any]) -> None
     ]
 
 
+def assert_ads_impression_share_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove impression-share source metrics and claim blockers."""
+    contract = payload["impression_share_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["empty_state_message"] == (
+        "Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej "
+        "ekspozycji przez budżet albo ranking bez metryk udziału w wyświetleniach."
+    )
+    for forbidden in ("impression share", "budget-lost", "rank-lost"):
+        assert forbidden not in f"{contract['summary']} {contract['empty_state_message']}"
+    assert contract["allowed_metrics"] == [
+        "search_impression_share",
+        "search_budget_lost_impression_share",
+        "search_rank_lost_impression_share",
+    ]
+    assert "impression_share" not in contract["missing_read_contracts"]
+    assert "change_history" not in contract["missing_read_contracts"]
+    assert "zmiana budżetu" in contract["blocked_claims"]
+
+
+def assert_ads_impression_share_row_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove impression-share row metrics preserve source lineage and blockers."""
+    row = contract["impression_share_rows"][0]
+    assert contract["impression_share_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "campaign_status_label": "aktywna",
+            "advertising_channel_type": "SEARCH",
+            "advertising_channel_type_label": "sieć wyszukiwania",
+            "search_impression_share": 0.73,
+            "search_budget_lost_impression_share": 0.18,
+            "search_rank_lost_impression_share": 0.09,
+            "evidence_ids": [evidence_id],
+            "metric_facts": row["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "zmarnowany budżet",
+                "obietnica poprawy wyniku",
+            ],
+            "blocked_claim_labels": [
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "zmarnowany budżet",
+                "obietnica poprawy wyniku",
+            ],
+            "blocked_claim_summary_label": "4 zablokowane obietnice",
+        }
+    ]
+
+
+def assert_ads_impression_share_section_contract(payload: dict[str, Any]) -> None:
+    """Prove impression-share section is backed by the budget playbook."""
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_impression_share"
+    )
+    assert section["status"] == "ready"
+    assert section["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
+    assert section["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
+        "ads_principles_v1",
+    ]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3066,64 +3135,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         recommendations_contract, refresh_response.json()["evidence_ids"][-1]
     )
     assert_ads_recommendations_section_contract(payload)
+    assert_ads_impression_share_contract_basics(payload)
     impression_share_contract = payload["impression_share_read_contract"]
-    assert impression_share_contract["status"] == "ready"
-    assert impression_share_contract["empty_state_message"] == (
-        "Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej "
-        "ekspozycji przez budżet albo ranking bez metryk udziału w wyświetleniach."
+    assert_ads_impression_share_row_contract(
+        impression_share_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert "impression share" not in impression_share_contract["summary"]
-    assert "impression share" not in impression_share_contract["empty_state_message"]
-    assert "budget-lost" not in impression_share_contract["summary"]
-    assert "rank-lost" not in impression_share_contract["summary"]
-    assert impression_share_contract["allowed_metrics"] == [
-        "search_impression_share",
-        "search_budget_lost_impression_share",
-        "search_rank_lost_impression_share",
-    ]
-    assert "impression_share" not in impression_share_contract["missing_read_contracts"]
-    assert "change_history" not in impression_share_contract["missing_read_contracts"]
-    assert "zmiana budżetu" in impression_share_contract["blocked_claims"]
-    assert impression_share_contract["impression_share_rows"] == [
-        {
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_status": "ENABLED",
-            "campaign_status_label": "aktywna",
-            "advertising_channel_type": "SEARCH",
-            "advertising_channel_type_label": "sieć wyszukiwania",
-            "search_impression_share": 0.73,
-            "search_budget_lost_impression_share": 0.18,
-            "search_rank_lost_impression_share": 0.09,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "metric_facts": impression_share_contract["impression_share_rows"][0]["metric_facts"],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "skalowanie budżetu",
-                "zmiana budżetu",
-                "zmarnowany budżet",
-                "obietnica poprawy wyniku",
-            ],
-            "blocked_claim_labels": [
-                "skalowanie budżetu",
-                "zmiana budżetu",
-                "zmarnowany budżet",
-                "obietnica poprawy wyniku",
-            ],
-            "blocked_claim_summary_label": "4 zablokowane obietnice",
-        }
-    ]
-    impression_share_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_impression_share"
-    )
-    assert impression_share_section["status"] == "ready"
-    assert impression_share_section["knowledge_card_ids"] == [
-        "card_google_ads_budget_review_playbook"
-    ]
-    assert impression_share_section["expert_rule_ids"] == [
-        "ads_scaling_candidates_v1",
-        "ads_principles_v1",
-    ]
+    assert_ads_impression_share_section_contract(payload)
     campaign_triage_contract = payload["campaign_triage_read_contract"]
     assert campaign_triage_contract["status"] == "ready"
     assert campaign_triage_contract["title"] == "Kolejność oceny kampanii Ads"

@@ -1936,3 +1936,6 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   preview/safety oraz recommendations section knowledge/rule proof wydzielone.
   Validation labels i false mutation flags zachowane; focused
   Ads/Ruff/mypy/diff check zielone.
+- Dwudziesty pierwszy/drugi pod-slice c9h9.22: impression-share basics, row
+  evidence/blocked claims oraz section knowledge/rule proof wydzielone.
+  Focused Ads/Ruff/mypy/diff check zielone; następny seam to campaign triage.
