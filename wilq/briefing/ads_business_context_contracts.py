@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Any, Literal
 
 from wilq.actions.google_ads.business_context import ADS_STRATEGY_REVIEW_ACTION_ID
+from wilq.briefing.ads_metric_utils import clean_metric_tiles, round_metric
 from wilq.schemas import AdsBusinessTargetInterpretation, AdsStrategyReviewReadinessContract
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
@@ -360,6 +361,34 @@ def business_target_interpretation(
     )
 
 
+def business_context_read_metric_tiles(
+    *,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_roas: float | None,
+    target_cpa_micros: int | None,
+    target_confirmation: object | None,
+    strategy_review_status: str,
+) -> dict[str, int | float | str]:
+    """Project business-context fields into the existing operator tile shape."""
+    return clean_metric_tiles(
+        {
+            "marża": (
+                f"{round_metric(profit_margin * 100)}%"
+                if profit_margin is not None
+                else "marża niepodana"
+            ),
+            "cel biznesowy": business_goal or "cel niepotwierdzony",
+            "cel budżetu": budget_goal or "cel budżetu niepotwierdzony",
+            "docelowy zwrot z reklam": target_roas,
+            "docelowy koszt pozyskania celu": _format_micros(target_cpa_micros),
+            "źródło celu": "potwierdzone" if target_confirmation is not None else None,
+            "ocena strategii": _strategy_review_label(strategy_review_status),
+        }
+    )
+
+
 def _preliminary_target_interpretation(
     *,
     allowed_uses: list[str],
@@ -440,6 +469,28 @@ def _ready_target_interpretation(
         policy_ids=business_policy_ids,
         evidence_ids=evidence_ids,
     )
+
+
+def _format_micros(value: float | None) -> str | None:
+    if value is None:
+        return None
+    account_units = value / 1_000_000
+    if account_units >= 100:
+        return f"{account_units:.0f}"
+    if account_units >= 10:
+        return f"{account_units:.1f}"
+    return f"{account_units:.2f}"
+
+
+def _strategy_review_label(status: str) -> str:
+    labels = {
+        "missing": "ocena strategii nieprzeprowadzona",
+        "approved_for_prepare": "zatwierdzone",
+        "needs_changes": "wymaga poprawek",
+        "rejected": "odrzucone",
+        "deferred": "odłożone",
+    }
+    return labels.get(status, "status oceny strategii do sprawdzenia")
 
 
 def _unique(values: Iterable[str]) -> list[str]:

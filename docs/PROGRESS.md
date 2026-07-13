@@ -34,6 +34,11 @@ w git, Beads i `docs/progress/archive/`.
   interpretation i metric-tile assembly; policy oraz summary są teraz również
   wydzielone i mają testy parytetu fasady. `ads_diagnostics.py` zmniejszył się
   do 5864 LOC; znane budżety monolitu pozostają jawne.
+- `djly` continuation 4: target interpretation i wymagania brakujących
+  kontraktów są teraz składane przez typed owner. Zachowano blocked uses dla
+  rentowności, target KPI, skalowania i zapisu oraz review-only allowed uses
+  przy potwierdzonym celu. Focused Ads contracts, Ruff, mypy i diff check
+  przechodzą; metric tiles pozostają osobnym seamem.
 - `v9ab.13` recheck 2026-07-13 19:31Z: świeży packet UAT pokazuje 24 zadania
   Centrum pracy, 1330 zgłoszeń Merchant, 2 decyzje Treści oraz konkretną
   stronę główną `https://www.ekologus.pl/` z 22 zapytaniami i dopasowaniem

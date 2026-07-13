@@ -41,6 +41,7 @@ from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_
 from wilq.briefing.ads_business_context_contracts import (
     business_context_contract_state,
     business_context_policy_ids,
+    business_context_read_metric_tiles,
     business_context_review_gates,
     business_context_summary_and_next_step,
     business_target_interpretation,
@@ -1854,7 +1855,7 @@ def _account_currency_read_contract(
     )
 
 
-def _business_context_metric_tiles(
+def _business_context_metric_tiles_legacy(
     *,
     profit_margin: float | None,
     business_goal: str | None,
@@ -2023,7 +2024,7 @@ def _business_context_read_contract(
         target_missing=target_missing,
         strategy_review_approved=strategy_review_approved,
     )
-    metric_tiles = _business_context_metric_tiles(
+    metric_tiles = business_context_read_metric_tiles(
         profit_margin=profit_margin,
         business_goal=business_goal,
         budget_goal=budget_goal,

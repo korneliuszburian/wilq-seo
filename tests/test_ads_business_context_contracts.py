@@ -5,6 +5,7 @@ from __future__ import annotations
 from wilq.briefing.ads_business_context_contracts import (
     business_context_contract_state,
     business_context_policy_ids,
+    business_context_read_metric_tiles,
     business_context_review_gates,
     business_context_summary_and_next_step,
     business_target_interpretation,
@@ -149,3 +150,25 @@ def test_business_target_interpretation_keeps_confirmed_target_review_only() -> 
     assert result.status == "ready"
     assert "target_roas_review" in result.allowed_uses
     assert "automatic_scaling" in result.blocked_uses
+
+
+def test_business_context_read_metric_tiles_preserve_existing_operator_shape() -> None:
+    tiles = business_context_read_metric_tiles(
+        profit_margin=0.2,
+        business_goal="pozyskanie zapytań",
+        budget_goal="utrzymać obecny budżet",
+        target_roas=3.0,
+        target_cpa_micros=1_250_000,
+        target_confirmation=object(),
+        strategy_review_status="approved_for_prepare",
+    )
+
+    assert tiles == {
+        "marża": "20%",
+        "cel biznesowy": "pozyskanie zapytań",
+        "cel budżetu": "utrzymać obecny budżet",
+        "docelowy zwrot z reklam": 3.0,
+        "docelowy koszt pozyskania celu": "1.25",
+        "źródło celu": "potwierdzone",
+        "ocena strategii": "zatwierdzone",
+    }

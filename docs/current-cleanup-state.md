@@ -15,11 +15,9 @@ nie zmiana metryk.
 
 `djly` ma pierwszy bounded seam: strategy-review readiness jest w
 `wilq/briefing/ads_business_context_contracts.py`, z zachowaniem prepare-only
-safety. Drugi seam przeniósł tam również missing-contract state i review gates;
-nie powtarzać tych projection seamów. Następny krok wymaga parytetu target
-interpretation/metric-tile assembly; policy i summary są już w typed ownerze.
-Nie powtarzać tych seamów; następny krok wymaga parytetu target interpretation
-i metric tiles.
+safety. Drugi seam przeniósł tam również missing-contract state i review gates,
+a policy, summary i target interpretation są już w typed ownerze. Nie powtarzać
+tych projection seamów; następny krok wymaga parytetu metric tiles.
 
 `v9ab.13` ma świeży packet z 2026-07-13 19:31Z: Treści pokazują konkretną
 stronę główną z 22 zapytaniami i dopasowaniem GSC/WordPress, ale Ahrefs nadal
