@@ -8411,11 +8411,6 @@ describe("WILQ dashboard", () => {
         String(url).endsWith("/api/marketing/tactical-queue")
       )
     ).toBe(false);
-    const routeSource = readFileSync("src/routes/LocaloDiagnosticSurface.tsx", "utf8");
-    expect(routeSource).toContain("data.operator_summary.missing_read_contract_summary_label");
-    expect(routeSource).not.toContain('empty="brak"');
-    expect(routeSource).not.toContain("Localo / {decision.decision_type_label} / {decision.priority_label}");
-    expect(routeSource).not.toContain("data.operator_summary.missing_read_contracts.length");
   });
 
   it("social route renders workflow-specific blockers", async () => {

@@ -252,6 +252,11 @@
   public/dev rozdział, draft-only publication gate, Polish review copy i brak
   legacy formatterów. Content + App focused 11/11, dashboard typecheck/lint i
   diff check przechodzą; `App.test.tsx` ma 8711 LOC. Następny seam: Localo.
+- Dwudziesty slice: Localo source/contract proof przeniesiony do
+  `LocaloDiagnosticSurface.test.tsx`; zachowano missing-read blocker, API-owned
+  technical disclosure i brak legacy count/placeholder copy. Localo + App
+  focused 10/10, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 8706 LOC. Następny seam: Social.
 
 ## Następny krok
 
