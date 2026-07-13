@@ -62,6 +62,14 @@ w git, Beads i `docs/progress/archive/`.
   recommendations `ready`, context-pack 222338 bajtów. Ruff, mypy,
   `git diff --check` oraz changed-code complexity przechodzą bez wyjątku;
   Ads `smoke_skill_contract.py::main` mieści się teraz w lokalnych budżetach.
+- Shared TypeScript schemas mają pierwszy domenowy entrypoint
+  `packages/shared-schemas/src/connectors.ts`: connector status/refresh,
+  freshness, evidence, refresh-run, metric-store i connector-summary są
+  eksportowane przez stabilny barrel, a `index.ts` zmniejszył się z 4 199 do
+  4 069 linii. Shared schema tests (34 passed/10 skipped), build/lint oraz
+  dashboard lint/typecheck i focused Vitest (2/2) przechodzą; API i runtime
+  zachowania nie zostały zmienione. Następny seam `ksiq` musi wydzielić kolejny
+  rzeczywisty domain, nie kopiować typów do nowych fasad.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
