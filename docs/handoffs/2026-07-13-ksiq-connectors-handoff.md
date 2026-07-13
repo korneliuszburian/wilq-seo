@@ -35,6 +35,10 @@
 - Piąty seam: `packages/shared-schemas/src/ads_review_contracts.ts` zawiera
   recommendations oraz impression-share schemas (124 LOC). `index.ts` ma
   3 057 LOC; shared schema/dashboard lint, build, tests i typecheck przechodzą.
+- Szósty seam: campaign-triage i optimizer-readiness schemas dołączono do
+  `ads_campaigns.ts` (516 LOC); `index.ts` ma 2 928 LOC. Review-only,
+  blocked-claim i apply safety contracts pozostały bez zmian. Następny seam:
+  search-term contracts.
 
 ## Następny krok
 

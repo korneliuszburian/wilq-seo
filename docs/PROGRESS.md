@@ -95,6 +95,11 @@ w git, Beads i `docs/progress/archive/`.
   kompatybilne. Shared schema 34 passed/10 skipped, lint/build oraz dashboard
   lint/typecheck przechodzą. Następny Ads seam: campaign triage/readiness albo
   search-term contracts, osobno i z aktualnym proofem.
+- Szósty `ksiq` seam dołączył Ads campaign-triage i optimizer-readiness do
+  `ads_campaigns.ts`; moduł ma 516 LOC, a `index.ts` 2928 LOC. Kontrakty
+  review-only, blocked claims i `apply_allowed=false` zachowują te same typy.
+  Shared schema 34 passed/10 skipped, lint/build oraz dashboard typecheck/lint
+  przechodzą. Następny Ads seam pozostaje search-term contracts.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
