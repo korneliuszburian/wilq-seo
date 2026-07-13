@@ -387,6 +387,9 @@
 - Trzeci pod-slice zakończony: `assert_ads_campaign_row_contract` przejął
   rendering, evidence, blocked claims i review gates kampanii. Test spadł do
   2841 linii; następny handoff ma rozdzielić operator summary/decision queue.
+- Czwarty pod-slice zakończony: `assert_ads_operator_summary_contract` przejął
+  kolejność decyzji, totals, evidence/action IDs i Polish next step. Test ma
+  2802 linii/28 branchy; następny slice to marketer summary text i metric tiles.
 
 ## Następny krok
 

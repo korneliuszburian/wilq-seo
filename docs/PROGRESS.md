@@ -1883,3 +1883,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   review gates wydzielone do `assert_ads_campaign_row_contract`. Focused Ads,
   Ruff, mypy i diff check przechodzą; główny test spadł z 2912 do 2841 linii.
   Następny seam: operator summary i decision queue.
+- Czwarty pod-slice c9h9.22: operator summary (kolejność decyzji, totals,
+  evidence/action IDs i Polish next step) wydzielone do
+  `assert_ads_operator_summary_contract`. Focused Ads/Ruff/mypy/diff check
+  przechodzą; główny test ma 2802 linii i 28 branchy. Następny seam: marketer
+  summary text oraz decision metric tiles.

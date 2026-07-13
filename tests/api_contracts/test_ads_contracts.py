@@ -155,6 +155,46 @@ def assert_ads_campaign_row_contract(
     assert "Kolejność oceny kampanii" in row["review_reason"]
 
 
+def assert_ads_operator_summary_contract(
+    payload: dict[str, Any], read_contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove the operator summary independently from detailed decision cards."""
+    summary = payload["operator_summary"]
+    assert summary["id"] == "ads_operator_summary"
+    assert summary["title"] == "Co marketer ma sprawdzić teraz w Google Ads"
+    assert summary["top_decision_ids"] == [
+        decision["id"]
+        for decision in sorted(
+            payload["decision_queue"],
+            key=lambda decision: (0 if decision["status"] == "ready" else 1, decision["priority"]),
+        )[:5]
+    ]
+    assert summary["campaign_count"] == len(read_contract["campaign_rows"])
+    assert summary["search_term_count"] == len(
+        payload["search_terms_read_contract"]["search_term_rows"]
+    )
+    assert summary["total_clicks"] == 9
+    assert summary["total_impressions"] == 90
+    assert summary["total_cost_micros"] == 12000000
+    assert summary["total_conversions"] == 2.5
+    assert summary["total_conversion_value"] == 450.75
+    assert summary["ready_area_count"] == payload["optimizer_readiness_contract"]["ready_area_count"]
+    assert summary["blocked_area_count"] == payload["optimizer_readiness_contract"]["blocked_area_count"]
+    assert "clicks" in summary["allowed_metrics"]
+    assert "google_ads" in summary["source_connectors"]
+    assert summary["source_connector_labels"] == ["Google Ads"]
+    assert evidence_id in summary["evidence_ids"]
+    assert "dowód" in summary["evidence_summary_label"]
+    assert "act_prepare_ads_campaign_review_queue" in summary["action_ids"]
+    assert "akcj" in summary["action_summary_label"]
+    assert "zwrot z reklam" in summary["blocked_claims"]
+    assert summary["missing_read_contract_summary_label"]
+    assert summary["operator_review_gate_summary_label"]
+    assert summary["blocked_claim_summary_label"]
+    assert summary["summary"]
+    assert summary["next_step"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2384,49 +2424,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_campaign_read_contract_basics(payload)
     read_contract = payload["campaign_read_contract"]
     assert_ads_campaign_row_contract(read_contract, refresh_response.json()["evidence_ids"][-1])
+    assert_ads_operator_summary_contract(
+        payload, read_contract, refresh_response.json()["evidence_ids"][-1]
+    )
     operator_summary = payload["operator_summary"]
-    assert operator_summary["id"] == "ads_operator_summary"
-    assert operator_summary["title"] == "Co marketer ma sprawdzić teraz w Google Ads"
-    assert operator_summary["top_decision_ids"] == [
-        decision["id"]
-        for decision in sorted(
-            payload["decision_queue"],
-            key=lambda decision: (
-                0 if decision["status"] == "ready" else 1,
-                decision["priority"],
-            ),
-        )[:5]
-    ]
-    assert operator_summary["campaign_count"] == len(read_contract["campaign_rows"])
-    assert operator_summary["search_term_count"] == len(
-        payload["search_terms_read_contract"]["search_term_rows"]
-    )
-    assert operator_summary["total_clicks"] == 9
-    assert operator_summary["total_impressions"] == 90
-    assert operator_summary["total_cost_micros"] == 12000000
-    assert operator_summary["total_conversions"] == 2.5
-    assert operator_summary["total_conversion_value"] == 450.75
-    assert (
-        operator_summary["ready_area_count"]
-        == payload["optimizer_readiness_contract"]["ready_area_count"]
-    )
-    assert (
-        operator_summary["blocked_area_count"]
-        == payload["optimizer_readiness_contract"]["blocked_area_count"]
-    )
-    assert "clicks" in operator_summary["allowed_metrics"]
-    assert "google_ads" in operator_summary["source_connectors"]
-    assert operator_summary["source_connector_labels"] == ["Google Ads"]
-    assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
-    assert "dowód" in operator_summary["evidence_summary_label"]
-    assert "act_prepare_ads_campaign_review_queue" in operator_summary["action_ids"]
-    assert "akcj" in operator_summary["action_summary_label"]
-    assert "zwrot z reklam" in operator_summary["blocked_claims"]
-    assert operator_summary["missing_read_contract_summary_label"]
-    assert operator_summary["operator_review_gate_summary_label"]
-    assert operator_summary["blocked_claim_summary_label"]
-    assert operator_summary["summary"]
-    assert operator_summary["next_step"]
     marketer_text = "\n".join(
         [
             payload["campaign_read_contract"]["summary"],
