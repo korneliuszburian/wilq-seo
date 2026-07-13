@@ -48,6 +48,11 @@ w git, Beads i `docs/progress/archive/`.
   existing workflow panels; the new boundary owns layout only and does not
   alter blocked claims or ActionObject behavior. Focused route tests,
   Playwright proof, lint/typecheck/build and diff check pass.
+- `wilq-seo-ho41` continuation 7: moved the three-use Claim Ledger list layout
+  into `ContentClaimList.tsx` (31 LOC). Claim status, evidence IDs and blocked
+  wording remain supplied by the typed ledger entries; the boundary owns only
+  rendering. Focused route tests, Playwright proof, lint/typecheck/build and
+  diff check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

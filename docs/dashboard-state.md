@@ -81,6 +81,8 @@ presentation-only primitive used by existing panels and does not own metric
 meaning or business rules.
 The repeated safety card layout is now `ContentSafetyPanel.tsx`; its callers
 continue to provide API-owned safety copy and blocked-claim meaning.
+The three-use Claim Ledger list layout is now `ContentClaimList.tsx`; it renders
+typed claim text, reasons and evidence IDs without classifying claim status.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
