@@ -2187,3 +2187,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   importowany jako biblioteka, a nowy plik ma minimalne zależności. Stary
   `test_action_object_contracts.py` zmniejszył się o 40 linii; oba testy,
   Ruff i diff check zielone. Pozostało 12 historycznych hotspotów complexity.
+- Druga kontynuacja `50wa`: typed preview-card behavior test przeniesiono do
+  `tests/actions/test_action_preview_cards_contracts.py` razem z lokalnym
+  helperem payload detection. Mega-test zmniejszył się o kolejne 33 linie;
+  nowy test i pełny action-object test przechodzą, Ruff i diff check zielone.
+  Complexity nadal pokazuje te same 12 historycznych hotspotów.

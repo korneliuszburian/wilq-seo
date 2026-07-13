@@ -656,6 +656,10 @@
   bez importowania mega-testu. Nowy test i pełny action-object test przechodzą;
   legacy plik zmniejszył się o 40 linii. Pozostało 12 historycznych hotspotów
   complexity do dalszych niezależnych behavior splitów.
+- Druga kontynuacja `50wa`: typed preview-card contract jest w osobnym
+  `tests/actions/test_action_preview_cards_contracts.py` z lokalnym helperem,
+  bez zależności od mega-testu. Nowy i pełny action-object test przechodzą;
+  legacy plik zmniejszył się o 33 linie. Pozostało 12 hotspotów complexity.
 
 ## Następny krok
 
