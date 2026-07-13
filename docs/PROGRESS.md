@@ -2528,3 +2528,11 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   (12 tests), Ruff, mypy and diff check pass. Complexity audit still reports
   the pre-existing frozen `service.py` budget risk; this slice reduces the
   facade and adds no behavior or vendor write path.
+- `jnra` continuation 2 2026-07-13: Service Profile promotion ActionObject
+  assembly moved into `wilq/actions/service_profile.py`; the facade retains
+  compatibility wrappers and injects the current profile provider so existing
+  review-scope behavior and tests remain stable. Content/API contract suites,
+  Ruff, mypy and diff check pass. After managed stack restart, live API exposes
+  both Service Profile actions, health is OK, and `/content-workflow` Playwright
+  proof passes 1/1. `service.py` is now 1447 LOC; frozen monolith risk remains
+  explicitly tracked, with no new write path or payload semantics.

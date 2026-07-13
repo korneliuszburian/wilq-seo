@@ -951,6 +951,13 @@
   service facade. Focused action tests (12), Ruff, mypy and diff check pass.
   Complexity still flags the pre-existing frozen service monolith; do not treat
   that report as a regression from this behavior-preserving extraction.
+- `jnra` continuation 2 2026-07-13: moved Service Profile promotion action
+  assembly to `wilq/actions/service_profile.py`, preserving the facade's
+  injectable profile provider for existing tests and runtime parity. Focused
+  content/API suites, Ruff, mypy, API health/action smoke and content-workflow
+  Playwright proof are green. The managed stack was restarted after the code
+  change; `service.py` is 1447 LOC. Do not reopen closed c9h9.4 or repeat old
+  WordPress safety slices.
 
 ## Następny krok
 

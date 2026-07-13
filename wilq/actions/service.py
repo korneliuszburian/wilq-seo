@@ -274,8 +274,8 @@ from wilq.actions.review_gate import (
     review_summary_item as build_review_summary_item,
 )
 from wilq.actions.service_profile import (
-    knowledge_promotion_action,
-    private_proposal_promotion_action,
+    service_profile_knowledge_promotion_action,
+    service_profile_private_proposal_promotion_action,
 )
 from wilq.actions.social import social_draft_actions
 from wilq.actions.wordpress_draft import (
@@ -300,7 +300,7 @@ from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.content.knowledge.service_profile import content_service_profile_response
-from wilq.evidence.registry import SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID, connector_evidence_id
+from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
     evidence_count_label,
@@ -337,12 +337,6 @@ from wilq.schemas import (
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
-SERVICE_PROFILE_PUBLIC_REVIEW_SCOPES = {"public_service_card"}
-SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES = {
-    "private_service_proposal",
-    "private_claim_policy_proposal",
-    "private_evidence_policy_proposal",
-}
 DEFAULT_ACTION_LIST_CACHE_SECONDS = 15.0
 
 
@@ -385,144 +379,12 @@ def _wordpress_existing_draft_update_action() -> ActionObject:
 
 
 def _service_profile_knowledge_promotion_action() -> ActionObject | None:
-    profile = content_service_profile_response()
-    review_actions_by_target = {
-        action.target_card_id: action
-        for action in profile.review_actions
-        if action.review_scope in SERVICE_PROFILE_PUBLIC_REVIEW_SCOPES
-        and action.target_card_id
-    }
-    rows: list[dict[str, Any]] = []
-    for section in profile.service_sections:
-        review_action = review_actions_by_target.get(section.card_id)
-        if review_action is None:
-            continue
-        if section.status != "source_backed_review_required":
-            continue
-        if "public_site" not in section.source_connector_labels:
-            continue
-        rows.append(
-            {
-                "id": f"knowledge_promotion_{section.card_id}",
-                "preview_contract": "service_profile_knowledge_promotion_preview_v1",
-                "operation_type": "knowledge_card_promotion_review",
-                "target_card_id": section.card_id,
-                "target_card_title": section.title,
-                "current_lifecycle": section.status,
-                "current_lifecycle_label": section.status_label,
-                "target_lifecycle": "approved_current",
-                "target_lifecycle_label": "zatwierdzone i aktualne po review człowieka",
-                "source_fact_ids": section.source_fact_ids,
-                "source_connector_labels": section.source_connector_labels,
-                "source_lineage_labels": section.source_lineage_labels,
-                "review_action_id": review_action.action_id,
-                "required_human_role": review_action.required_human_role,
-                "blocked_claims": [claim.label for claim in section.forbidden_claims],
-                "claims_needing_review": [
-                    claim.label for claim in section.claims_needing_review
-                ],
-                "required_validation": [
-                    "public_source_trace_review",
-                    "blocked_claims_review",
-                    "owner_human_review_record",
-                    "separate_audited_promotion_request",
-                ],
-                "required_validation_labels": [
-                    "sprawdź źródła publiczne",
-                    "sprawdź zakazane twierdzenia",
-                    "zapisz decyzję Wilka/ownera",
-                    "przygotuj osobny audyt awansu",
-                ],
-                "promotion_blocked_reason": (
-                    "Ta akcja tylko przygotowuje request po review. Nie edytuje "
-                    "source_facts.json, nie zmienia lifecycle i nie odblokowuje "
-                    "production-depth."
-                ),
-                "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
-                "apply_allowed": False,
-                "api_mutation_ready": False,
-                "destructive": False,
-            }
-        )
-    if not rows:
-        return None
-    return knowledge_promotion_action(
-        source_fact_count=profile.technical_trace.source_fact_count,
-        rows=rows,
-    )
+    return service_profile_knowledge_promotion_action(profile=content_service_profile_response())
 
 
 def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
-    profile = content_service_profile_response()
-    review_actions_by_target = {
-        action.target_card_id: action
-        for action in profile.review_actions
-        if action.review_scope in SERVICE_PROFILE_PRIVATE_REVIEW_SCOPES
-        and action.target_card_id
-    }
-    rows: list[dict[str, Any]] = []
-    for proposal in profile.private_source_proposals:
-        review_action = review_actions_by_target.get(proposal.target_card_id)
-        if review_action is None:
-            continue
-        if proposal.review_status != "review_required":
-            continue
-        rows.append(
-            {
-                "id": f"private_proposal_promotion_{proposal.proposal_id}",
-                "preview_contract": "private_source_proposal_promotion_preview_v1",
-                "operation_type": "private_source_proposal_promotion_review",
-                "proposal_id": proposal.proposal_id,
-                "source_id": proposal.source_id,
-                "source_type": proposal.source_type,
-                "privacy_class": proposal.privacy_class,
-                "scope": proposal.scope,
-                "target_card_id": proposal.target_card_id,
-                "target_card_title": proposal.target_card_title,
-                "review_action_id": review_action.action_id,
-                "required_human_role": review_action.required_human_role,
-                "support_level": proposal.support_level,
-                "risk_tier": proposal.risk_tier,
-                "freshness_status": proposal.freshness_status,
-                "audience": proposal.audience,
-                "data_classes": proposal.data_classes,
-                "source_block_refs": proposal.source_block_refs,
-                "retention_decision": proposal.retention_decision,
-                "deletion_path": proposal.deletion_path,
-                "eval_case_ids": proposal.eval_case_ids,
-                "confidence_label": proposal.confidence_label,
-                "blocked_claims": proposal.blocked_claims,
-                "required_validation": [
-                    "redacted_source_trace_review",
-                    "private_owner_human_review_record",
-                    "blocked_claims_review",
-                    "separate_source_fact_promotion_request",
-                    "focused_eval_before_policy_or_service_use",
-                ],
-                "required_validation_labels": [
-                    "sprawdź redacted źródło",
-                    "zapisz decyzję Wilka/ownera",
-                    "sprawdź zakazane twierdzenia",
-                    "przygotuj osobny request awansu source fact",
-                    "uruchom focused eval przed użyciem",
-                ],
-                "promotion_blocked_reason": (
-                    "Ta akcja tylko przygotowuje review prywatnej propozycji. Nie "
-                    "edytuje source_facts.json, nie promuje private proposal, nie "
-                    "zmienia lifecycle i nie odblokowuje production-depth."
-                ),
-                "evidence_ids": [SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID],
-                "redacted": True,
-                "apply_allowed": False,
-                "api_mutation_ready": False,
-                "destructive": False,
-            }
-        )
-    if not rows:
-        return None
-    return private_proposal_promotion_action(
-        proposal_count=len(profile.private_source_proposals),
-        rows=rows,
+    return service_profile_private_proposal_promotion_action(
+        profile=content_service_profile_response()
     )
 
 
