@@ -2169,6 +2169,18 @@ def assert_ads_status_probe_contract(
     assert payload["search_term_safety_read_contract"]["safety_rows"]
 
 
+def assert_ads_action_inventory(action_payload: list[dict[str, Any]]) -> None:
+    """Prove diagnostics exposes only expected review actions, not env setup."""
+    action_ids = {action["id"] for action in action_payload}
+    assert "act_configure_google_ads_env" not in action_ids
+    assert "act_prepare_ads_campaign_review_queue" in action_ids
+    assert CHANGE_HISTORY_IMPACT_ACTION_ID in action_ids
+    assert SEARCH_TERM_NGRAM_ACTION_ID in action_ids
+    assert "act_prepare_google_ads_recommendation_review_queue" in action_ids
+    assert "act_prepare_custom_segments_from_search_terms" in action_ids
+    assert "act_prepare_negative_keyword_review_queue" in action_ids
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4623,14 +4635,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
     actions_payload = actions_response.json()
-    action_ids = {action["id"] for action in actions_payload}
-    assert "act_configure_google_ads_env" not in action_ids
-    assert "act_prepare_ads_campaign_review_queue" in action_ids
-    assert CHANGE_HISTORY_IMPACT_ACTION_ID in action_ids
-    assert SEARCH_TERM_NGRAM_ACTION_ID in action_ids
-    assert "act_prepare_google_ads_recommendation_review_queue" in action_ids
-    assert "act_prepare_custom_segments_from_search_terms" in action_ids
-    assert "act_prepare_negative_keyword_review_queue" in action_ids
+    assert_ads_action_inventory(actions_payload)
     campaign_review_action = next(
         action
         for action in actions_payload
