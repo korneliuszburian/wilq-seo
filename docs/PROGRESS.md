@@ -1721,3 +1721,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   passes 1/1 in 19.1s with a refreshed screenshot proof.
   smoke 19 occurrences, 14 clusters, 7 decisions; freshness/count semantics
   and decision/drilldown sources remain explicit; API unchanged.
+
+- Trzynasty slice: Custom Segments source/contract proof przeniesiony do
+  `CustomSegmentsDiagnosticSurface.test.tsx`; zachowano validation status,
+  missing-read i blocked-claim labels, evidence/action summaries oraz preview
+  card, bez raw payloadów i legacy formatterów. App + Custom Segments focused
+  15/15, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
+  8892 LOC. Następny seam: legacy operating routes.

@@ -215,6 +215,12 @@
   claims, typed panel fields i brak raw payloadów/legacy routes. Ads + App
   focused 16/16, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 8914 LOC. Następny seam: Custom Segments diagnostic proof.
+- Trzynasty slice: Custom Segments source/contract proof przeniesiony do
+  `CustomSegmentsDiagnosticSurface.test.tsx`; zachowano validation status,
+  missing-read i blocked-claim labels, evidence/action summaries oraz preview
+  card, bez raw payloadów i legacy formatterów. App + Custom Segments focused
+  15/15, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
+  8892 LOC. Następny seam: legacy operating routes.
 
 ## Następny krok
 
