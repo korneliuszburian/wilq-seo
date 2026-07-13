@@ -153,6 +153,11 @@ w git, Beads i `docs/progress/archive/`.
   `SettingsSourceRefresh.test.tsx`: świeży odczyt usuwa blocker, przywraca
   status Aktywny i nie uruchamia kolejnego refreshu. App/settings focused
   29/29, typecheck/lint/diff check przechodzą; `App.test.tsx` ma 9312 LOC.
+- Siódmy settings slice przeniósł macierz `partial/failed/unknown/blocked` do
+  `SettingsSourceRefresh.test.tsx` i typed fixture helpera. Każdy stan pozostaje
+  widoczny z API-owned safe next step, bez automatycznego retry lub POST-u.
+  App/settings focused 29/29, typecheck/lint/diff check przechodzą;
+  `App.test.tsx` ma 9243 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

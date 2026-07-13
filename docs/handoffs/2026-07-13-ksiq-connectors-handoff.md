@@ -183,6 +183,11 @@
   status Aktywny i nie wykonuje kolejnego refreshu. App/settings focused 29/29,
   dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma 9312 LOC.
   Następny seam: pozostałe partial/failed/unknown state matrix.
+- Siódmy settings slice: macierz `partial/failed/unknown/blocked` została
+  przeniesiona do `SettingsSourceRefresh.test.tsx` z typed helperem fixture.
+  Każdy stan pokazuje API-owned next step i nie uruchamia retry/POST-u.
+  App/settings focused 29/29, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 9243 LOC. Następny seam: pozostałe settings error paths.
 
 ## Następny krok
 

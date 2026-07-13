@@ -8,6 +8,7 @@ import {
   completedSettingsRefreshRun,
   eligibleSettingsConnectors,
   freshSettingsConnectors,
+  nonReadySettingsConnectors,
   queuedSettingsRefreshRun,
   settingsConnectors
 } from "./settingsSurface.fixture";
@@ -201,6 +202,77 @@ describe("SettingsSourceRefresh", () => {
     );
     expect(card).not.toBeNull();
     expect(within(card as HTMLElement).getByText("Aktywny")).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith("/api/connectors/google_analytics_4/refresh")
+      )
+    ).toHaveLength(0);
+  });
+
+  it.each([
+    {
+      state: "partial" as const,
+      stateLabel: "odczyt częściowy",
+      reason: "partial_read" as const,
+      nextStep: "Sprawdź brakujący zakres przed decyzją."
+    },
+    {
+      state: "failed" as const,
+      stateLabel: "odczyt nieudany",
+      reason: "failed_read" as const,
+      nextStep: "Napraw dostęp przed ponownym odczytem."
+    },
+    {
+      state: "unknown" as const,
+      stateLabel: "stan odczytu nieznany",
+      reason: "unknown_state" as const,
+      nextStep: "Potwierdź stan źródła przed kolejną próbą."
+    },
+    {
+      state: "blocked" as const,
+      stateLabel: "odczyt zablokowany",
+      reason: "blocked_read" as const,
+      nextStep: "Usuń blocker dostępu przed odczytem."
+    }
+  ])("keeps API-owned $state state visible without retry", async ({
+    state,
+    stateLabel,
+    reason,
+    nextStep
+  }) => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/api/connectors") && !init?.method) {
+        return Promise.resolve(
+          Response.json(nonReadySettingsConnectors(state, stateLabel, reason, nextStep))
+        );
+      }
+      if (url.endsWith("/api/connectors/google_analytics_4/refresh")) {
+        return Promise.reject(new Error("non-ready state must not refresh automatically"));
+      }
+      return Promise.reject(new Error(`Unexpected settings request: ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GenericSurface routeName="/settings" />
+      </QueryClientProvider>
+    );
+
+    const card = (await screen.findByRole("heading", { name: "Google Analytics 4" })).closest(
+      "article"
+    );
+    expect(card).not.toBeNull();
+    expect(
+      within(card as HTMLElement).getByText(
+        (_, element) => element?.textContent === `Stan odczytu: ${stateLabel}. ${nextStep}`
+      )
+    ).toBeInTheDocument();
+    expect(within(card as HTMLElement).queryByRole("button", { name: "Odśwież dane" })).toBeNull();
     expect(
       fetchMock.mock.calls.filter(([input]) =>
         String(input).endsWith("/api/connectors/google_analytics_4/refresh")

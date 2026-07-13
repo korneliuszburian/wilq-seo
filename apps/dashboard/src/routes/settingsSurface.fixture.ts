@@ -162,3 +162,32 @@ export const freshSettingsConnectors: ConnectorStatus[] = settingsConnectors.map
       }
     : connector
 );
+
+export function nonReadySettingsConnectors(
+  state: "partial" | "failed" | "unknown" | "blocked",
+  stateLabel: string,
+  reason: "partial_read" | "failed_read" | "unknown_state" | "blocked_read",
+  nextStep: string
+): ConnectorStatus[] {
+  return settingsConnectors.map((connector) =>
+    connector.id === "google_analytics_4"
+      ? {
+          ...connector,
+          refresh_state: {
+            ...connector.refresh_state,
+            state,
+            state_label: stateLabel,
+            refresh_allowed: false,
+            safe_next_step: nextStep,
+            automatic_refresh: {
+              ...connector.refresh_state.automatic_refresh,
+              eligible: false,
+              reason,
+              reason_label: "Automatyczny odczyt pozostaje zablokowany",
+              safe_next_step: nextStep
+            }
+          }
+        }
+      : connector
+  );
+}
