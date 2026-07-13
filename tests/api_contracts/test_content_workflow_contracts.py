@@ -27,6 +27,214 @@ from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 
+def test_content_brief_candidate_review_persists_audit_event(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_review_state.sqlite3"))
+
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    candidate = action["payload"]["content_brief_preview"][0]
+    candidate_id = candidate["candidate_id"]
+    reviewed_url = candidate["final_canonical_url"] or candidate["source_public_url"]
+
+    review_response = client.post(
+        "/api/actions/act_prepare_content_refresh_queue/review",
+        json={
+            "outcome": "approved_for_prepare",
+            "reviewed_by": "operator_test",
+            "notes": f"Wybrano kandydata briefu {candidate_id} do dalszego review.",
+            "checked_items": [
+                f"candidate:{candidate_id}",
+                f"source_type:{candidate['source_type']}",
+                f"mode:{candidate['mode']}",
+                "url_review_outcome:confirm_final_canonical_url",
+                f"reviewed_url:{reviewed_url}",
+                "review_notes:operator potwierdzil publiczny URL do dalszego review",
+                "draft_readiness_outcome:needs_duplicate_resolution",
+                "canonical_review_outcome:canonical_needs_target_confirmation",
+                "duplicate_review_outcome:merge_required_before_draft",
+                "legal_factual_review_outcome:needs_expert_review",
+                "human_review_outcome:prepare_only_review_recorded",
+                "draft_readiness_notes:canonical i duplikaty wymagaja dalszego review",
+            ],
+            "blockers": [
+                "payload_apply_allowed_false",
+                "wordpress_write_not_requested",
+                "blocked_claim:gwarancja pozycji",
+            ],
+        },
+    )
+
+    assert review_response.status_code == 200
+    result = review_response.json()
+    assert result["status"] == "recorded"
+    assert result["audit_event"]["event_type"] == "human_review_approved_for_prepare"
+    assert result["review_gate"]["apply_allowed"] is False
+    assert result["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+    assert "wybrano pozycję do sprawdzenia" in result["audit_event"]["summary"]
+    assert "URL finalny: potwierdź finalny URL kanoniczny" in result["audit_event"]["summary"]
+    assert "sprawdzony URL zapisany w szczegółach audytu" in result["audit_event"]["summary"]
+    for raw_term in (
+        f"candidate:{candidate_id}",
+        "source_type:gsc_query_page",
+        "mode:refresh",
+        "payload_apply_allowed_false",
+        "wordpress_write_not_requested",
+        "blocked_claim:",
+    ):
+        assert raw_term not in result["audit_event"]["summary"]
+    assert "podgląd zmian nie pozwala na zapis" in result["audit_event"]["summary"]
+    assert "zapis WordPress nie został zlecony" in result["audit_event"]["summary"]
+    assert "nie wolno twierdzić: gwarancja pozycji" in result["audit_event"]["summary"]
+    assert result["audit_event"]["details"]["content_url_review"] == {
+        "candidate": candidate_id,
+        "url_review_outcome": "confirm_final_canonical_url",
+        "reviewed_url": reviewed_url,
+        "review_notes": "operator potwierdzil publiczny URL do dalszego review",
+    }
+    assert result["audit_event"]["details"]["content_draft_readiness_review"] == {
+        "candidate": candidate_id,
+        "draft_readiness_outcome": "needs_duplicate_resolution",
+        "canonical_review_outcome": "canonical_needs_target_confirmation",
+        "duplicate_review_outcome": "merge_required_before_draft",
+        "legal_factual_review_outcome": "needs_expert_review",
+        "human_review_outcome": "prepare_only_review_recorded",
+        "draft_readiness_notes": "canonical i duplikaty wymagaja dalszego review",
+    }
+    assert (
+        "Ten krok nie zapisuje zmian w zewnętrznych systemach" in result["audit_event"]["summary"]
+    )
+
+    audit_response = client.get("/api/audit/events?action_id=act_prepare_content_refresh_queue")
+    assert audit_response.status_code == 200
+    persisted_audit = audit_response.json()[0]
+    assert persisted_audit["event_type"] == "human_review_approved_for_prepare"
+    assert "wybrano pozycję do sprawdzenia" in persisted_audit["summary"]
+    assert f"candidate:{candidate_id}" not in persisted_audit["summary"]
+    assert persisted_audit["details"]["content_url_review"]["reviewed_url"] == (reviewed_url)
+
+    reviewed_action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    assert reviewed_action_response.status_code == 200
+    reviewed_action = reviewed_action_response.json()
+    draft_previews = reviewed_action["payload"]["wordpress_draft_payload_preview"]
+    assert len(draft_previews) == 1
+    draft_preview = draft_previews[0]
+    assert draft_preview["preview_contract"] == "wordpress_draft_payload_preview_v1"
+    assert draft_preview["source_preview_contract"] == "content_brief_preview_v1"
+    assert draft_preview["candidate_id"] == candidate_id
+    assert draft_preview["intent"]
+    assert draft_preview["post_status"] == "draft"
+    assert draft_preview["mutation_allowed"] is False
+    assert draft_preview["apply_allowed"] is False
+    assert draft_preview["api_mutation_ready"] is False
+    assert draft_preview["destructive"] is False
+    assert draft_preview["content_url_review_recorded_outcome"] == "confirm_final_canonical_url"
+    assert draft_preview["content_url_review_reviewed_url"] == reviewed_url
+    assert draft_preview["content_url_review_notes"] == (
+        "operator potwierdzil publiczny URL do dalszego review"
+    )
+    assert not any(
+        key.startswith("target_site_")
+        or key.startswith("mapping_review_")
+        or key.startswith("transition_candidate")
+        for key in draft_preview
+    )
+    assert "current_transition_candidate_url" not in draft_preview
+    assert draft_preview["draft_readiness_review_recorded_outcome"] == "needs_duplicate_resolution"
+    assert (
+        draft_preview["canonical_review_recorded_outcome"] == "canonical_needs_target_confirmation"
+    )
+    assert draft_preview["duplicate_review_recorded_outcome"] == "merge_required_before_draft"
+    assert draft_preview["legal_factual_review_recorded_outcome"] == "needs_expert_review"
+
+    assert draft_preview["human_review_recorded_outcome"] == "prepare_only_review_recorded"
+    assert (
+        draft_preview["draft_readiness_review_notes"]
+        == "canonical i duplikaty wymagaja dalszego review"
+    )
+    assert draft_preview["draft_generation_status"] == "blocked_pending_canonical_duplicate_review"
+    assert "final_canonical_review" in draft_preview["draft_blockers"]
+    assert "duplicate_or_cannibalization_check" in draft_preview["draft_blockers"]
+    assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
+    assert draft_preview["inventory_gate_status"]
+    assert draft_preview["canonical_gate_status"]
+    assert draft_preview["duplicate_gate_status"]
+    assert draft_preview["content_gate_summary"]
+    assert (
+        "spis treści: spis potwierdzony na obecnej stronie"
+        in draft_preview["content_gate_status_summary"]
+    )
+    assert (
+        "URL kanoniczny: publiczny URL kanoniczny potwierdzony"
+        in draft_preview["content_gate_status_summary"]
+    )
+    assert (
+        "duplikaty: istniejąca publiczna treść wymaga odświeżenia albo scalenia"
+        in draft_preview["content_gate_status_summary"]
+    )
+    draft_contract = draft_preview["draft_generation_contract"]
+    assert draft_contract["contract_version"] == "content_draft_generation_v1"
+    assert draft_contract["language"] == "pl-PL"
+    assert draft_contract["status"] == draft_preview["draft_generation_status"]
+    assert draft_contract["allowed_output_kind"] in {
+        "outline_only_until_checks_complete",
+        "reviewable_polish_draft_preview",
+    }
+    assert "duplicate_or_cannibalization_check" in draft_contract["requires_passed_gates"]
+    assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
+    readiness_contract = draft_preview["draft_readiness_review_contract"]
+    assert readiness_contract["contract_version"] == "content_draft_readiness_review_v1"
+    assert readiness_contract["scope"] == "review_only"
+    assert "needs_duplicate_resolution" in readiness_contract["allowed_outcomes"]
+    assert "canonical_review_outcome" in readiness_contract["required_fields"]
+    assert "wordpress_draft_write" in readiness_contract["blocked_outputs"]
+    assert draft_preview["wordpress_draft_handoff_status"] == "blocked_until_draft_checks_complete"
+    assert (
+        "wordpress_draft_write_not_requested" in draft_preview["wordpress_draft_handoff_blockers"]
+    )
+    wordpress_draft_contract = draft_preview["wordpress_draft_handoff_contract"]
+    assert wordpress_draft_contract["contract_version"] == "wordpress_draft_handoff_v1"
+    assert wordpress_draft_contract["scope"] == "blocked_preview_only"
+    assert wordpress_draft_contract["final_canonical_url"] == draft_preview["final_canonical_url"]
+    assert "target_site_url" not in wordpress_draft_contract
+    assert wordpress_draft_contract["required_next_action_contract"] == "wordpress_draft_handoff_v1"
+    assert "content_draft_readiness_review" in wordpress_draft_contract["requires_passed_gates"]
+    assert "wordpress_draft_write" in wordpress_draft_contract["blocked_outputs"]
+    measurement_plan = draft_preview["post_publication_measurement_plan"]
+    assert measurement_plan["contract_version"] == "post_publication_measurement_plan_v1"
+    assert measurement_plan["scope"] == "blocked_preview_only"
+    assert measurement_plan["final_canonical_url"] == draft_preview["final_canonical_url"]
+    assert "target_site_url" not in measurement_plan
+    assert measurement_plan["status"] == "blocked_until_publish_and_followup_data"
+    assert "google_search_console" in measurement_plan["required_source_connectors"]
+    assert "google_analytics_4" in measurement_plan["required_source_connectors"]
+    assert "28d_after_publish" in measurement_plan["followup_windows"]
+    assert "followup_window_captured" in measurement_plan["requires_before_claims"]
+    assert "ranking_gain_claim" in measurement_plan["blocked_outputs"]
+    assert "obietnica wzrostu leadów" in measurement_plan["blocked_outputs"]
+    assert draft_preview["draft_payload"]["post_status"] == "draft"
+    assert draft_preview["post_status_label"] == "szkic"
+    assert draft_preview["draft_payload"]["post_status_label"] == "szkic"
+    assert draft_preview["draft_payload"]["post_title"]
+    assert "human_confirm_before_wordpress_write" in draft_preview["required_validation"]
+    assert "gwarancja pozycji" in draft_preview["blocked_claims"]
+    assert draft_preview["evidence_ids"]
+
+    preview_response = client.post(
+        "/api/actions/act_prepare_content_refresh_queue/preview",
+        json={"requested_by": "operator_test", "max_items": 12},
+    )
+    assert preview_response.status_code == 200
+    preview_items = preview_response.json()["preview_items"]
+    assert any(
+        item.get("preview_contract") == "wordpress_draft_payload_preview_v1"
+        and item.get("candidate_id") == candidate_id
+        for item in preview_items
+    )
 def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregate_runs(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

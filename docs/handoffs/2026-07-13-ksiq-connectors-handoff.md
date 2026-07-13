@@ -732,6 +732,9 @@
   contract jest teraz w `tests/api_contracts/test_content_workflow_contracts.py`.
   Nowy i pełny suite przechodzą; retry context-pack potwierdził 9 connectorów,
   wszystkie skonfigurowane.
+- Dwudziesta czwarta kontynuacja `50wa`: content candidate review audit contract
+  jest teraz 1:1 w `tests/api_contracts/test_content_workflow_contracts.py`.
+  Nowy i pełny suite przechodzą; nie powtarzać tego wieloetapowego splitu.
 
 ## Następny krok
 

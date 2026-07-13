@@ -2283,3 +2283,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `tests/api_contracts/test_content_workflow_contracts.py`. Test docelowy i
   pełny action-object suite przechodzą; context-pack retry wrócił do 9/9
   skonfigurowanych connectorów po wcześniejszym timeoutcie.
+- Dwudziesta czwarta kontynuacja `50wa`: wieloetapowy content candidate review
+  audit test przeniesiono 1:1 do `tests/api_contracts/test_content_workflow_contracts.py`.
+  Test docelowy i pełny action-object suite przechodzą; review gate, draft-only
+  preview, evidence i blokady claimów zachowują dotychczasowe asercje.
