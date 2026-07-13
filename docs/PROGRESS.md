@@ -1986,3 +1986,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   blokadę claimu zmarnowanego budżetu. Focused Ads/Ruff/mypy/diff check zielone;
   główny test ma 1482 linii i 12 branchy. Następny seam: derived KPI/budget
   decision proof.
+- Czterdziesty pod-slice c9h9.22: derived KPI i budget decision proof
+  wydzielone do `assert_ads_derived_kpi_and_budget_decisions`; zachowano
+  metric tiles, source/action lineage, review-safe blocked claims i
+  `apply_allowed=false` dla preview budżetu. Focused Ads/Ruff/mypy/diff check
+  zielone; główny test ma 1446 linii i 12 branchy. Następny seam:
+  recommendation decision proof i końcowy action tail.

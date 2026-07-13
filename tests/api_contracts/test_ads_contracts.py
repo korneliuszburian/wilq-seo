@@ -1736,6 +1736,49 @@ def assert_ads_campaign_decision_contract(decisions_by_id: dict[str, Any]) -> No
     assert "zmarnowany budżet" in triage["blocked_claims"]
 
 
+def assert_ads_derived_kpi_and_budget_decisions(
+    decisions_by_id: dict[str, Any]
+) -> None:
+    """Prove KPI and budget decisions expose facts without unsafe verdicts."""
+    kpi = decisions_by_id["ads_review_derived_kpis"]
+    assert kpi["status"] == "ready"
+    assert kpi["priority"] == 25
+    assert kpi["metric_tiles"] == {
+        "kampanie": 1,
+        "wiersze kosztu pozyskania celu": 1,
+        "wiersze zwrotu z reklam": 1,
+    }
+    assert kpi["decision_type"] == "review_derived_kpi"
+    assert kpi["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
+    assert kpi["derived_kpi_rows"][0]["roas"] == 37.5625
+    assert kpi["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert "opłacalność" in kpi["blocked_claims"]
+    assert "budget_pacing" not in kpi["missing_read_contracts"]
+    budget = decisions_by_id["ads_review_budget_context"]
+    assert budget["status"] == "ready"
+    assert budget["priority"] == 30
+    assert budget["metric_tiles"] == {
+        "budżety": 1,
+        "podgląd budżetu": 1,
+        "koszt 7 dni": "12 PLN",
+    }
+    assert budget["decision_type"] == "review_budget_context"
+    assert budget["budget_rows"][0]["campaign_name"] == "Brand Search"
+    assert budget["budget_rows"][0]["spend_to_budget_ratio_7d"] == 0.057143
+    preview = budget["budget_apply_preview"][0]
+    assert preview["operation_type"] == "CampaignBudgetOperation"
+    assert preview["api_mutation_ready"] is False
+    assert preview["apply_allowed"] is False
+    assert budget["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert budget["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
+    assert budget["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
+    assert "zmiana budżetu" in budget["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4131,44 +4174,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_block_write_actions_without_actionobject",
     }
     assert_ads_campaign_decision_contract(decisions_by_id)
-    derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
-    assert derived_kpi_decision["status"] == "ready"
-    assert derived_kpi_decision["priority"] == 25
-    assert derived_kpi_decision["metric_tiles"] == {
-        "kampanie": 1,
-        "wiersze kosztu pozyskania celu": 1,
-        "wiersze zwrotu z reklam": 1,
-    }
-    assert derived_kpi_decision["decision_type"] == "review_derived_kpi"
-    assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
-    assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
-    assert derived_kpi_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert "opłacalność" in derived_kpi_decision["blocked_claims"]
-    assert "budget_pacing" not in derived_kpi_decision["missing_read_contracts"]
+    assert_ads_derived_kpi_and_budget_decisions(decisions_by_id)
     budget_decision = decisions_by_id["ads_review_budget_context"]
-    assert budget_decision["status"] == "ready"
-    assert budget_decision["priority"] == 30
-    assert budget_decision["metric_tiles"] == {
-        "budżety": 1,
-        "podgląd budżetu": 1,
-        "koszt 7 dni": "12 PLN",
-    }
-    assert budget_decision["decision_type"] == "review_budget_context"
-    assert budget_decision["budget_rows"][0]["campaign_name"] == "Brand Search"
-    assert budget_decision["budget_rows"][0]["spend_to_budget_ratio_7d"] == 0.057143
-    assert budget_decision["budget_apply_preview"][0]["operation_type"] == (
-        "CampaignBudgetOperation"
-    )
-    assert budget_decision["budget_apply_preview"][0]["api_mutation_ready"] is False
-    assert budget_decision["budget_apply_preview"][0]["apply_allowed"] is False
-    assert budget_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert budget_decision["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
-    assert budget_decision["expert_rule_ids"] == [
-        "ads_scaling_candidates_v1",
-        "ads_recommendations_v1",
-        "ads_principles_v1",
-    ]
-    assert "zmiana budżetu" in budget_decision["blocked_claims"]
     recommendations_decision = decisions_by_id["ads_review_recommendations"]
     assert recommendations_decision["status"] == "ready"
     assert recommendations_decision["priority"] == 35

@@ -470,6 +470,12 @@
   claimu zmarnowanego budżetu są zachowane. Focused Ads/Ruff/mypy/diff check
   zielone; główny test ma 1482 linii i 12 branchy. Następny krok:
   derived KPI/budget decision proof.
+- Czterdziesty pod-slice zakończony: derived KPI i budget decision proof są w
+  `assert_ads_derived_kpi_and_budget_decisions`; metric tiles, source/action
+  lineage, blocked claims i `apply_allowed=false` dla preview budżetu są
+  zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1446
+  linii i 12 branchy. Następny krok: recommendation decision proof i końcowy
+  action tail.
 
 ## Następny krok
 
