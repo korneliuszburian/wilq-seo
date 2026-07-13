@@ -8027,56 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("refreshes stale source data from the sources view", async () => {
-    renderApp("/settings");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Dostęp do źródeł" })).toBeInTheDocument()
-    );
-
-    const ga4Card = screen.getByRole("heading", { name: "Google Analytics 4" }).closest("article");
-    expect(ga4Card).not.toBeNull();
-    expect(
-      vi.mocked(fetch).mock.calls.filter(([url]) =>
-        String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-      )
-    ).toHaveLength(0);
-    fireEvent.click(
-      within(ga4Card as HTMLElement).getByRole("button", { name: "Odśwież dane" })
-    );
-
-    await waitFor(() =>
-      expect(vi.mocked(fetch).mock.calls.some(([url, init]) =>
-        String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-        && init?.method === "POST"
-      )).toBe(true)
-    );
-    const refreshCall = vi.mocked(fetch).mock.calls.find(([url]) =>
-      String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-    );
-    expect(JSON.parse(String(refreshCall?.[1]?.body))).toMatchObject({
-      mode: "vendor_read",
-      run_async: true
-    });
-    expect(await screen.findByText("odczyt w kolejce")).toBeInTheDocument();
-    await waitFor(() =>
-      expect(
-        vi.mocked(fetch).mock.calls.filter(([url]) =>
-          String(url).includes("/api/connectors/refresh-runs/")
-        )
-      ).toHaveLength(1)
-    );
-    await waitFor(
-      () =>
-        expect(
-          vi.mocked(fetch).mock.calls.filter(([url]) =>
-            String(url).includes("/api/connectors/refresh-runs/")
-          )
-        ).toHaveLength(2),
-      { timeout: 3_000 }
-    );
-    expect(await screen.findByText(/Odczyt zakończony/, {}, { timeout: 3_000 })).toBeInTheDocument();
-  });
-
   it("clears the stale source warning when the API returns a fresh terminal state", async () => {
     const ga4Connector = connectors[1];
     const previousFreshness = ga4Connector.freshness;

@@ -125,6 +125,11 @@ w git, Beads i `docs/progress/archive/`.
   test dowodzi decyzji, blockerów, freshness oraz ukrycia technicznych
   payloadów bez uruchamiania całego `App.test.tsx`. Usunięto 47 linii z
   omnibusu; focused test, dashboard typecheck/lint i diff check przechodzą.
+- Następny settings slice wydzielił read-only refresh flow do
+  `SettingsSourceRefresh.test.tsx`; typed queued/completed runs są w fixture,
+  a test sprawdza POST `vendor_read`, polling statusu i komunikat zakończenia
+  bez uruchamiania omnibusu. `App.test.tsx` ma 9471 LOC; focused 2/2,
+  dashboard typecheck/lint i `git diff --check` przechodzą.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

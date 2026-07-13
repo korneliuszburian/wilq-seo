@@ -152,6 +152,12 @@
   freshness, blokery decyzji i techniczne disclosure. App.test.tsx zmalał do
   9522 LOC; focused test 1/1, dashboard typecheck/lint i `git diff --check`
   przechodzą. Następny seam: pozostałe settings/source refresh behaviors.
+- Kontynuacja `wilq-seo-pidl`: read-only refresh źródła została przeniesiona do
+  `SettingsSourceRefresh.test.tsx`; fixture zawiera typed queued/completed
+  refresh runs. Test dowodzi POST `vendor_read`, polling i finalnego komunikatu
+  bez App omnibusu. `App.test.tsx` ma 9471 LOC; focused 2/2, dashboard
+  typecheck/lint i `git diff --check` przechodzą. Następny seam: blocker/error
+  path dla statusu refresh.
 
 ## Następny krok
 

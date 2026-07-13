@@ -1,4 +1,4 @@
-import type { ConnectorStatus } from "@wilq/shared-schemas";
+import type { ConnectorRefreshRun, ConnectorStatus } from "@wilq/shared-schemas";
 
 export const settingsConnectors: ConnectorStatus[] = [
   {
@@ -64,3 +64,38 @@ export const settingsConnectors: ConnectorStatus[] = [
     supported_actions: []
   }
 ];
+
+export const queuedSettingsRefreshRun: ConnectorRefreshRun = {
+  id: "refresh-ga4-1",
+  connector_id: "google_analytics_4",
+  connector_label: "Google Analytics 4",
+  mode: "vendor_read",
+  status: "queued",
+  status_label: "odczyt w kolejce",
+  started_at: "2026-07-13T07:00:00Z",
+  completed_at: null,
+  evidence_ids: [],
+  evidence_summary_label: "0 dowodów źródłowych",
+  missing_credentials: [],
+  checked_credentials: ["GOOGLE_ANALYTICS_PROPERTY_ID"],
+  external_call_attempted: false,
+  vendor_data_collected: false,
+  metrics_persisted: false,
+  metric_summary: {},
+  summary: "Odczyt źródła w kolejce.",
+  errors: [],
+  redacted: true
+};
+
+export const completedSettingsRefreshRun: ConnectorRefreshRun = {
+  ...queuedSettingsRefreshRun,
+  status: "completed",
+  status_label: "odczyt zakończony",
+  completed_at: "2026-07-13T07:00:02Z",
+  evidence_ids: ["ev_refresh_settings_ga4"],
+  evidence_summary_label: "1 dowód źródłowy",
+  external_call_attempted: true,
+  vendor_data_collected: true,
+  metrics_persisted: true,
+  summary: "Odczyt źródła zakończony.",
+};
