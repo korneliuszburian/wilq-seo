@@ -168,6 +168,11 @@
   read-only POST-u, pollingu i wyniku końcowego bez oceniania eligibility w
   React. Focused 3/3, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 9388 LOC. Następny seam: aktywny run ukrywający CTA.
+- `wilq-seo-pidl.1` zamknięty: warning duplicate-key pochodził z adversarialnego
+  testu, który sześć razy zwracał ten sam obiekt Ahrefs. Fixture klonuje rekordy
+  ze stabilnym sufiksem ID; App/Ahrefs focused 26/26 przechodzi bez warningu,
+  dashboard typecheck/lint i diff check przechodzą. Brak zmian produkcji/API;
+  browser proof nie był potrzebny dla fixture-only zmiany.
 
 ## Następny krok
 

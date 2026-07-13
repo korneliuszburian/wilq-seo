@@ -9243,7 +9243,10 @@ describe("WILQ dashboard", () => {
     const candidate = manualAhrefsDiagnostics.gap_read_contract.cross_check_candidates[0];
     manualAhrefsDiagnostics.gap_read_contract.cross_check_candidates = Array.from(
       { length: 6 },
-      () => candidate
+      (_, index) => ({
+        ...candidate,
+        id: `${candidate.id}_${index + 1}`
+      })
     );
     manualAhrefsDiagnostics.gap_read_contract.evidence_summary_label = "6 dowodów źródłowych";
     ahrefsDiagnosticsOverride = manualAhrefsDiagnostics;
