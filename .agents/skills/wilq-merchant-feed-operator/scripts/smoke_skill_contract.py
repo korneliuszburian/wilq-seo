@@ -11,11 +11,11 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from merchant_context_parity import validate_merchant_context_parity
+from merchant_product_readiness import validate_product_readiness
 
 from scripts.skill_smoke_harness import (
     has_polish_metric_source_guardrails,
     request_json,
-    require_evidence_sources,
     require_polish_language,
 )
 
@@ -64,62 +64,7 @@ def main() -> int:
         raise SystemExit("Merchant diagnostics must expose sections")
     packed_merchant = validate_merchant_context_parity(merchant_diagnostics, pack)
     product_sample_readiness = merchant_diagnostics.get("product_sample_readiness")
-    if not isinstance(product_sample_readiness, dict):
-        raise SystemExit("Merchant diagnostics must expose product_sample_readiness")
-    current_read_contract = product_sample_readiness.get("current_read_contract")
-    if current_read_contract != "merchant_aggregate_product_statuses":
-        raise SystemExit("Merchant product_sample_readiness must name the aggregate read contract")
-    required_product_contracts = set(product_sample_readiness.get("required_read_contracts") or [])
-    if not {
-        "merchant_products_list_product_status",
-        "merchant_reports_product_view_issue_filter",
-    }.issubset(required_product_contracts):
-        raise SystemExit("Merchant product_sample_readiness must name product-level read contracts")
-    if product_sample_readiness.get("sample_products_available") is True:
-        if product_sample_readiness.get("sample_count", 0) <= 0:
-            raise SystemExit("Merchant product_sample_readiness ready state must include samples")
-        if not product_sample_readiness.get("sample_product_ids"):
-            raise SystemExit("Merchant diagnostics with samples must expose sample product IDs")
-    elif product_sample_readiness.get("status") != "blocked":
-        raise SystemExit("Merchant product_sample_readiness without samples must be blocked")
-    product_performance_readiness = merchant_diagnostics.get("product_performance_readiness")
-    if not isinstance(product_performance_readiness, dict):
-        raise SystemExit("Merchant diagnostics must expose product_performance_readiness")
-    required_performance_contracts = set(
-        product_performance_readiness.get("required_read_contracts") or []
-    )
-    if not {
-        "merchant_product_id_join_key",
-        "google_ads_shopping_product_performance",
-        "ga4_item_product_performance",
-    }.issubset(required_performance_contracts):
-        raise SystemExit(
-            "Merchant product_performance_readiness must name product performance read contracts"
-        )
-    performance_status = product_performance_readiness.get("status")
-    if performance_status == "ready":
-        if product_performance_readiness.get("joined_product_count", 0) <= 0:
-            raise SystemExit("Ready product_performance_readiness must include joined products")
-        if not product_performance_readiness.get("performance_rows"):
-            raise SystemExit("Ready product_performance_readiness must include rows")
-        for row in product_performance_readiness.get("performance_rows") or []:
-            if not row.get("product_id"):
-                raise SystemExit("Product performance rows must include product_id")
-            require_evidence_sources(row, "Product performance row")
-    elif performance_status == "blocked":
-        blocked_claims = set(product_performance_readiness.get("blocked_claims") or [])
-        if not {
-            "zwrot z reklam na poziomie produktu",
-            "odzyskany przychód produktu",
-            "efekt naprawy produktu",
-            "zapis do pliku produktowego",
-        }.issubset(blocked_claims):
-            raise SystemExit(
-                "Blocked product_performance_readiness must block product "
-                "przychód/zwrot z reklam claims"
-            )
-    else:
-        raise SystemExit("Merchant product_performance_readiness status must be ready or blocked")
+    product_performance_readiness = validate_product_readiness(merchant_diagnostics)
     price_impact_readiness = merchant_diagnostics.get("price_impact_readiness")
     if not isinstance(price_impact_readiness, dict):
         raise SystemExit("Merchant diagnostics must expose price_impact_readiness")

@@ -150,6 +150,10 @@
   `scripts/merchant_context_parity.py`; live smoke przechodzi z 19 issue items,
   evidence/action parity i price readiness parity. Merchant `main` ma 343
   LOC/107 branches. Następny seam: product sample/performance readiness.
+- Merchant product sample/performance readiness jest w
+  `scripts/merchant_product_readiness.py`; live smoke przechodzi ze statusem
+  performance `blocked`, a `main` ma 288 LOC/87 branches. Blokady przychodu,
+  ROAS i write pozostają jawne.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
