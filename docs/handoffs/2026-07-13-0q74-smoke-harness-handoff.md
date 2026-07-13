@@ -75,6 +75,10 @@
   `scripts/ads_readiness_assertions.py`; drugi długi live smoke kończy się
   `exit 0`, a `main` ma 934 LOC/255 branches. Następny seam może wyjmować
   pojedynczy kontrakt raportowania, bez zmiany API ani safety.
+- Recommendations read contract jest w
+  `scripts/ads_recommendation_assertions.py`, z osobnymi walidatorami ready i
+  packed preview. Live smoke przechodzi po zmianie; `main` ma 838 LOC/214
+  branches. Następny seam może dotyczyć impression-share/change-history.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

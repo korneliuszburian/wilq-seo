@@ -11,6 +11,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from ads_readiness_assertions import validate_optimizer_readiness
+from ads_recommendation_assertions import validate_recommendations_contract
 from ads_smoke_runtime import load_ads_context
 
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
@@ -227,103 +228,7 @@ def main() -> int:
             raise SystemExit("Context pack budget decision knowledge cards differ")
         if pack_budget_decision.get("expert_rule_ids") != budget_decision.get("expert_rule_ids"):
             raise SystemExit("Context pack budget decision expert rules differ")
-    if recommendations_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose recommendations_read_contract")
-    if not recommendations_read_contract.get("blocked_claims"):
-        raise SystemExit("Recommendations contract must list zablokowane obietnice")
-    if recommendations_read_contract.get("status") == "ready":
-        pack_recommendations_contract = (
-            pack.get("ads_diagnostics", {}).get("recommendations_read_contract") or {}
-        )
-        if pack_recommendations_contract.get("summary") != recommendations_read_contract.get(
-            "summary"
-        ):
-            raise SystemExit("Context pack recommendations contract differs")
-        if "zapis rekomendacji" not in recommendations_read_contract.get(
-            "blocked_claims",
-            [],
-        ):
-            raise SystemExit("Recommendations contract must keep apply blocked")
-        recommendation_rows = recommendations_read_contract.get("recommendation_rows") or []
-        impact_row_count = sum(1 for row in recommendation_rows if row.get("impact_available"))
-        payload_preview = recommendations_read_contract.get("payload_preview") or []
-        if impact_row_count > 0 and "recommendation_impact_preview" in (
-            recommendations_read_contract.get("missing_read_contracts") or []
-        ):
-            raise SystemExit("Ready recommendation impact must not remain missing")
-        if payload_preview and "recommendation_apply_preview" in (
-            recommendations_read_contract.get("missing_read_contracts") or []
-        ):
-            raise SystemExit("Ready recommendation change preview must not remain missing")
-        if payload_preview and "act_prepare_google_ads_recommendation_review_queue" not in (
-            recommendations_read_contract.get("action_ids") or []
-        ):
-            raise SystemExit("Ready recommendation change preview must expose action")
-        if recommendation_rows:
-            missing_triage = [
-                row.get("recommendation_id")
-                or row.get("recommendation_type")
-                or "unknown_recommendation"
-                for row in recommendation_rows
-                if row.get("review_priority")
-                not in {
-                    "pilne",
-                    "wysokie",
-                    "normalne",
-                    "niski sygnał",
-                }
-                or not isinstance(row.get("review_score"), int)
-                or not (0 <= row.get("review_score", -1) <= 100)
-                or "kolejność przeglądu rekomendacji" not in row.get("review_reason", "")
-                or not row.get("human_review_gates")
-            ]
-            if missing_triage:
-                raise SystemExit(
-                    "Ready recommendation rows must expose review triage: "
-                    + ", ".join(missing_triage)
-                )
-        for item in payload_preview:
-            if item.get("operation_type") != "ApplyRecommendationOperation":
-                raise SystemExit("Recommendation preview must use ApplyRecommendationOperation")
-            if item.get("apply_allowed") is not False:
-                raise SystemExit("Recommendation preview must keep apply_allowed=false")
-            if item.get("api_mutation_ready") is not False:
-                raise SystemExit("Recommendation preview must not be mutation-ready")
-        pack_recommendation_rows = (
-            pack_recommendations_contract.get(
-                "recommendation_rows",
-            )
-            or []
-        )
-        pack_payload_preview = pack_recommendations_contract.get("payload_preview") or []
-        pack_compaction = pack.get("ads_diagnostics", {}).get("context_pack_compaction") or {}
-        pack_payload_preview_total = pack_compaction.get("recommendation_apply_preview_total")
-        pack_payload_preview_included = pack_compaction.get("recommendation_apply_preview_included")
-        pack_impact_row_count = sum(
-            1 for row in pack_recommendation_rows if row.get("impact_available")
-        )
-        if pack_impact_row_count > impact_row_count:
-            raise SystemExit("Context pack recommendation impact row count differs")
-        if recommendation_rows and not all(
-            row.get("review_reason") and row.get("human_review_gates")
-            for row in pack_recommendation_rows
-        ):
-            raise SystemExit("Context pack recommendation rows must preserve review triage")
-        if pack_payload_preview_total is not None and pack_payload_preview_total < len(
-            pack_payload_preview
-        ):
-            raise SystemExit("Context pack recommendation change preview total undercounts")
-        if pack_payload_preview_included is not None and pack_payload_preview_included != len(
-            pack_payload_preview
-        ):
-            raise SystemExit("Context pack recommendation change preview included differs")
-        if len(pack_payload_preview) > len(payload_preview):
-            raise SystemExit("Context pack recommendation change preview over-includes")
-    elif "recommendations" not in recommendations_read_contract.get(
-        "missing_read_contracts",
-        [],
-    ):
-        raise SystemExit("Blocked recommendations contract must list missing recommendations")
+    recommendations_read_contract = validate_recommendations_contract(ads_diagnostics, pack)
     if impression_share_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose impression_share_read_contract")
     if not impression_share_read_contract.get("blocked_claims"):
