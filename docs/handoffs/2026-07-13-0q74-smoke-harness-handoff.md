@@ -180,3 +180,5 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.
+- Merchant issue/decision queue parity: `scripts/merchant_issue_parity.py`;
+  live smoke 19 occurrences, 14 clusters, 7 decisions; API unchanged.

@@ -1448,3 +1448,5 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   decision, public URL, current page/signals/dev workspace, safe draft-preview
   CTA, evidence section, no loader, and no horizontal overflow. Playwright
   passes 1/1 in 19.1s with a refreshed screenshot proof.
+  smoke 19 occurrences, 14 clusters, 7 decisions; freshness/count semantics
+  and decision/drilldown sources remain explicit; API unchanged.
