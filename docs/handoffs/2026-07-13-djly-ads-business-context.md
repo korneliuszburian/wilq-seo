@@ -24,6 +24,10 @@ zachowują dotychczasową kolejność. Stare prywatne helpery fasady są tymczas
 pozostawione wyłącznie jako compatibility reference i nie są już ścieżką
 runtime; ich usunięcie jest kolejnym cleanup slice'em.
 
+Piąty seam przeniósł również `business_context_read_metric_tiles` do typed
+ownera. Formatowanie marży, kosztu, celu i statusu review pozostaje zgodne z
+dotychczasowym payloadem.
+
 ## Dowód
 
 - `tests/test_ads_business_context_contracts.py` potwierdza blocked,
@@ -44,9 +48,11 @@ runtime; ich usunięcie jest kolejnym cleanup slice'em.
   profitability i budget changes pozostają zablokowane.
 - Complexity audit: `ads_diagnostics.py` spadł do 5864 LOC, ale nadal jest
   ponad lokalnym budżetem; extraction-only violation jest jawnie zachowany.
+- Complexity recheck po target/metric seamie: 0 changed-code violations;
+  stare limity pliku i `build_ads_diagnostics` pozostają znane.
 
 ## Nie powtarzać
 
 Nie przenosić ponownie strategy-review projection, contract state, review gates,
-policy IDs, summary ani target interpretation. Następny seam to usunięcie
-nieużywanych legacy helperów albo metric tiles — tylko z testem parytetu.
+policy IDs, summary, target interpretation ani metric tiles. Pozostało usunięcie
+nieużywanych prywatnych helperów z fasady i pełny parity audit.
