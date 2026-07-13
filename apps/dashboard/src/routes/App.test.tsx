@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8027,36 +8025,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("knowledge route shows its layout while the operating map is still loading", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn((input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.endsWith("/api/knowledge/cards")) {
-          return Promise.resolve(Response.json(knowledgeCards));
-        }
-        if (url.endsWith("/api/knowledge/playbooks")) {
-          return Promise.resolve(Response.json(playbooks));
-        }
-        if (url.endsWith("/api/knowledge/operating-map")) {
-          return new Promise<Response>(() => {});
-        }
-        return Promise.resolve(Response.json({}));
-      })
-    );
-
-    renderApp("/knowledge");
-
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Wiedza" })).toBeInTheDocument()
-    );
-    expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Kolejka sprawdzania wiedzy")).toBeInTheDocument();
-    expect(screen.getByText("Status twierdzeń")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Zobacz pełną kolejkę" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż kartę" })).toBeInTheDocument();
-    expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBe(1);
-  });
 
   it("merchant route renders dedicated product-file diagnostics", async () => {
     renderApp("/merchant");

@@ -278,6 +278,11 @@
   the fold. Evidence + App focused 8/8, dashboard typecheck/lint i diff check
   przechodzą; `App.test.tsx` ma 8599 LOC. Następny krok: re-audit pozostałych
   route proofs i aktywnego Bead graph.
+- Dwudziesty piąty slice: usunięto z `App.test.tsx` zduplikowany knowledge
+  loading proof, ponieważ ten sam loading/layout behavior jest już dowiedziony
+  przez `KnowledgeSurface.test.tsx`. Knowledge + App focused 8/8, dashboard
+  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 8567 LOC. Pozostałe
+  route proofs: Merchant, GA4, Localo, Ahrefs (2) i Demand Gen.
 
 ## Następny krok
 
