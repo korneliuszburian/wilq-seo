@@ -17,6 +17,12 @@ w git, Beads i `docs/progress/archive/`.
 - Live rebaseline: API `ok`, 104 362 metric facts, 4 580 refresh runs, 9/12
   konektorów skonfigurowanych; kolejka contentowa ma 2 kandydatów i blocker
   `not_enough_actionable_candidates`, więc WILQ nie tworzy sztucznego tematu.
+- `wilq-seo-0q74` rozpoczęty: `scripts/skill_smoke_harness.py` współdzieli
+  transport JSON i guardrail polskiego evidence/source między Ads i GSC smoke.
+  Ads smoke przechodzi na live API; GSC dociera do API, ale ujawnia istniejący
+  rozjazd `marketer_decision.review_action_ids` względem bieżącej listy akcji
+  `content_diagnostics`. To osobny follow-up kontraktu API, nie regresja
+  harnessu.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
