@@ -1802,3 +1802,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Focused Merchant 2/2, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 8180 LOC. Następny seam: kolejny największy lokalny fixture
   lub re-audit pełnego runu po ustabilizowaniu timeoutów.
+- Dwudziesty siódmy slice: fixture GA4 diagnostics została wyciągnięta z
+  `App.test.tsx` do `ga4Diagnostics.fixture.ts`, a
+  `Ga4DiagnosticSurface.test.tsx` dostał behavior proof decyzji pomiarowej,
+  świeżości, blokady twierdzeń o konwersjach i disclosure problemów pomiaru.
+  GA4 + App focused 8/8, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 7955 LOC. API health działa; metric store raportuje 104362
+  facts i 4580 refresh runs. Następny seam: Localo albo re-audit timeoutów.
