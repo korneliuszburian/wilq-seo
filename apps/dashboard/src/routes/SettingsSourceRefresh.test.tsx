@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { GenericSurface } from "./GenericSurface";
 import {
+  activeSettingsConnectors,
   completedSettingsRefreshRun,
   eligibleSettingsConnectors,
   queuedSettingsRefreshRun,
@@ -132,5 +133,40 @@ describe("SettingsSourceRefresh", () => {
         String(input).endsWith("/api/connectors/google_analytics_4/refresh")
       )
     ).toHaveLength(1);
+  });
+
+  it("hides the refresh CTA while the API reports an active source run", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/api/connectors") && !init?.method) {
+        return Promise.resolve(Response.json(activeSettingsConnectors));
+      }
+      if (url.endsWith("/api/connectors/google_analytics_4/refresh")) {
+        return Promise.reject(new Error("active run must not start another refresh"));
+      }
+      return Promise.reject(new Error(`Unexpected settings request: ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GenericSurface routeName="/settings" />
+      </QueryClientProvider>
+    );
+
+    const card = (await screen.findByRole("heading", { name: "Google Analytics 4" })).closest(
+      "article"
+    );
+    expect(card).not.toBeNull();
+    expect(within(card as HTMLElement).queryByRole("button", { name: "Odśwież dane" })).toBeNull();
+    expect(within(card as HTMLElement).getByText(/Odczyt jest w kolejce/)).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith("/api/connectors/google_analytics_4/refresh")
+      )
+    ).toHaveLength(0);
   });
 });

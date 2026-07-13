@@ -144,6 +144,11 @@ w git, Beads i `docs/progress/archive/`.
   klonuje teraz rekord z deterministycznym sufiksem ID; App/Ahrefs focused
   26/26 przechodzi bez React duplicate-key warning, a typecheck/lint/diff check
   pozostają zielone. Produkcja i kontrakt API bez zmian.
+- Piąty settings slice wydzielił aktywny-run guard do
+  `SettingsSourceRefresh.test.tsx`: gdy API zwraca `refresh_allowed=false` i
+  `active_run`, CTA nie wykonuje POST-u, pokazuje stan kolejki i pozostaje
+  zgodne z kontraktem API. App/settings focused 29/29, typecheck/lint/diff check
+  przechodzą; `App.test.tsx` ma 9354 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

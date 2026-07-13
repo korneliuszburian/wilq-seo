@@ -173,6 +173,11 @@
   ze stabilnym sufiksem ID; App/Ahrefs focused 26/26 przechodzi bez warningu,
   dashboard typecheck/lint i diff check przechodzą. Brak zmian produkcji/API;
   browser proof nie był potrzebny dla fixture-only zmiany.
+- Piąty settings slice: aktywny-run guard jest teraz pokryty w
+  `SettingsSourceRefresh.test.tsx`; przy `refresh_allowed=false` i
+  `active_run` CTA nie wykonuje POST-u, a operator widzi kolejkę. App/settings
+  focused 29/29, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 9354 LOC. Następny seam: API terminal-state freshness.
 
 ## Następny krok
 

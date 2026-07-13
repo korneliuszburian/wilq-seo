@@ -8069,43 +8069,6 @@ describe("WILQ dashboard", () => {
     }
   });
 
-  it("hides the refresh CTA while the API reports an active source run", async () => {
-    const ga4Connector = connectors[1];
-    const previousRefreshState = ga4Connector.refresh_state;
-    ga4Connector.refresh_state = {
-      state: "queued",
-      state_label: "odczyt w kolejce",
-      refresh_allowed: false,
-      safe_next_step: "Odczyt jest w kolejce; poczekaj na wynik przed decyzją.",
-      affected_decisions: ["ga4_diagnostics", "command_center"],
-      automatic_refresh: {
-        eligible: false,
-        reason: "active_run",
-        reason_label: "Odczyt źródła już trwa",
-        safe_next_step: "Poczekaj na zakończenie aktywnego odczytu.",
-        cooldown_seconds: 900
-      }
-    };
-
-    try {
-      renderApp("/settings");
-      await waitFor(() =>
-        expect(screen.getByRole("heading", { name: "Dostęp do źródeł" })).toBeInTheDocument()
-      );
-      const ga4Card = screen.getByRole("heading", { name: "Google Analytics 4" }).closest("article");
-      expect(ga4Card).not.toBeNull();
-      expect(within(ga4Card as HTMLElement).queryByRole("button", { name: "Odśwież dane" })).toBeNull();
-      expect(within(ga4Card as HTMLElement).getByText(/Odczyt jest w kolejce/)).toBeInTheDocument();
-      expect(
-        vi.mocked(fetch).mock.calls.filter(([url]) =>
-          String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-        )
-      ).toHaveLength(0);
-    } finally {
-      ga4Connector.refresh_state = previousRefreshState;
-    }
-  });
-
   it.each([
     {
       state: "partial",

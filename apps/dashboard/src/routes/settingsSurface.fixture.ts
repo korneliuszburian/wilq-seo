@@ -117,3 +117,25 @@ export const eligibleSettingsConnectors: ConnectorStatus[] = settingsConnectors.
       }
     : connector
 );
+
+export const activeSettingsConnectors: ConnectorStatus[] = settingsConnectors.map((connector) =>
+  connector.id === "google_analytics_4"
+    ? {
+        ...connector,
+        refresh_state: {
+          ...connector.refresh_state,
+          state: "queued",
+          state_label: "odczyt w kolejce",
+          refresh_allowed: false,
+          safe_next_step: "Odczyt jest w kolejce; poczekaj na wynik przed decyzją.",
+          automatic_refresh: {
+            ...connector.refresh_state.automatic_refresh,
+            eligible: false,
+            reason: "active_run",
+            reason_label: "Odczyt źródła już trwa",
+            safe_next_step: "Poczekaj na zakończenie aktywnego odczytu."
+          }
+        }
+      }
+    : connector
+);
