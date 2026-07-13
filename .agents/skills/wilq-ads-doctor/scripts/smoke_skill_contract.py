@@ -10,31 +10,13 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from ads_account_readiness import validate_account_business_budget
-from ads_change_history_assertions import validate_change_history_contract
-from ads_change_impact_assertions import validate_change_impact_contract
+from ads_campaign_contract import validate_campaign_contract
 from ads_context_lineage import validate_context_lineage
-from ads_custom_segments_assertions import validate_custom_segments_contract
-from ads_impression_share_assertions import validate_impression_share_contract
-from ads_keyword_match_assertions import validate_keyword_match_context_contract
-from ads_keyword_planner_assertions import validate_keyword_planner_contract
-from ads_negative_keyword_assertions import validate_negative_keyword_contract
+from ads_contract_orchestration import validate_ads_contracts
 from ads_readiness_assertions import validate_optimizer_readiness
-from ads_recommendation_assertions import validate_recommendations_contract
-from ads_report_compaction import (
-    compact_ads_brief_items,
-    compact_blocked_handoff,
-    compact_connector_statuses,
-    unique_ids,
-)
-from ads_search_term_ngram_assertions import validate_search_term_ngram_contract
-from ads_search_term_review_assertions import validate_search_term_review_contract
-from ads_search_term_safety_assertions import validate_search_term_safety_contract
+from ads_smoke_aux import validate_auxiliary_contracts
+from ads_smoke_report import build_ads_report
 from ads_smoke_runtime import load_ads_context
-
-from scripts.skill_smoke_harness import (
-    has_polish_metric_source_guardrails,
-    validate_action_ids,
-)
 
 SKILL_NAME = "wilq-ads-doctor"
 REQUIRED_CONNECTORS = ["google_ads"]
@@ -78,21 +60,6 @@ def main() -> int:
     account_currency_read_contract = ads_diagnostics.get("account_currency_read_contract") or {}
     business_context_read_contract = ads_diagnostics.get("business_context_read_contract") or {}
     budget_pacing_read_contract = ads_diagnostics.get("budget_pacing_read_contract") or {}
-    recommendations_read_contract = ads_diagnostics.get("recommendations_read_contract") or {}
-    impression_share_read_contract = ads_diagnostics.get("impression_share_read_contract") or {}
-    change_history_read_contract = ads_diagnostics.get("change_history_read_contract") or {}
-    change_impact_readiness_contract = ads_diagnostics.get("change_impact_readiness_contract") or {}
-    search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
-    search_term_review_summary_contract = (
-        ads_diagnostics.get("search_term_review_summary_contract") or {}
-    )
-    search_term_safety_read_contract = ads_diagnostics.get("search_term_safety_read_contract") or {}
-    keyword_match_context_read_contract = (
-        ads_diagnostics.get("keyword_match_context_read_contract") or {}
-    )
-    keyword_planner_read_contract = ads_diagnostics.get("keyword_planner_read_contract") or {}
-    negative_keywords_read_contract = ads_diagnostics.get("negative_keywords_read_contract") or {}
-    custom_segments_read_contract = ads_diagnostics.get("custom_segments_read_contract") or {}
     decision_queue = ads_diagnostics.get("decision_queue") or []
     pack_decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
     full_pack_decision_queue = full_pack.get("ads_diagnostics", {}).get("decision_queue") or []
@@ -113,36 +80,12 @@ def main() -> int:
             _find_readiness_item,
         )
     )
-    if (
-        campaign_read_contract.get("status") == "ready"
-        and campaign_read_contract.get("campaign_rows")
-        and "act_prepare_ads_campaign_review_queue" not in (ads_diagnostics.get("action_ids") or [])
-    ):
-        raise SystemExit("Ready campaign diagnostics must expose campaign review action")
-    if campaign_read_contract.get("status") == "ready" and campaign_read_contract.get(
-        "campaign_rows"
-    ):
-        if campaign_triage_read_contract.get("status") != "ready":
-            raise SystemExit("Ready campaign diagnostics must expose campaign triage contract")
-        triage_rows = campaign_triage_read_contract.get("triage_rows") or []
-        if not triage_rows:
-            raise SystemExit("Ready campaign triage contract must expose triage rows")
-        if "zmarnowany budżet" not in campaign_triage_read_contract.get(
-            "blocked_claims",
-            [],
-        ):
-            raise SystemExit("Campaign triage contract must keep zmarnowany budżet blocked")
-        pack_triage_contract = (
-            pack.get("ads_diagnostics", {}).get("campaign_triage_read_contract") or {}
-        )
-        if pack_triage_contract.get("summary") != campaign_triage_read_contract.get("summary"):
-            raise SystemExit("Context pack campaign triage contract differs")
-        if not pack_triage_contract.get("triage_rows"):
-            raise SystemExit("Context pack must include campaign triage rows")
-        if "act_prepare_ads_campaign_review_queue" not in (
-            campaign_triage_read_contract.get("action_ids") or []
-        ):
-            raise SystemExit("Campaign triage contract must expose campaign review action")
+    validate_campaign_contract(
+        campaign_read_contract,
+        campaign_triage_read_contract,
+        ads_diagnostics,
+        pack,
+    )
     strategy_readiness_contract = validate_account_business_budget(
         pack,
         account_currency_read_contract,
@@ -151,422 +94,39 @@ def main() -> int:
         budget_decision,
         pack_budget_decision,
     )
-    recommendations_read_contract = validate_recommendations_contract(ads_diagnostics, pack)
-    impression_share_read_contract = validate_impression_share_contract(ads_diagnostics, pack)
-    change_history_read_contract = validate_change_history_contract(ads_diagnostics, pack)
-    change_impact_readiness_contract = validate_change_impact_contract(
-        ads_diagnostics, pack, change_history_read_contract
-    )
-    search_term_review_summary_contract = validate_search_term_review_contract(
-        ads_diagnostics, pack
-    )
-    search_term_safety_read_contract = validate_search_term_safety_contract(ads_diagnostics, pack)
-    keyword_match_context_read_contract = validate_keyword_match_context_contract(
-        ads_diagnostics, pack
-    )
-    keyword_planner_read_contract = validate_keyword_planner_contract(ads_diagnostics, pack)
-    custom_segments_read_contract = validate_custom_segments_contract(
-        ads_diagnostics, pack, keyword_planner_read_contract
-    )
-    custom_segment_idea_count = sum(
-        len(candidate.get("keyword_planner_ideas") or [])
-        for candidate in custom_segments_read_contract.get("candidates") or []
-    )
-    validate_search_term_ngram_contract(ads_diagnostics)
-    negative_keywords_read_contract = validate_negative_keyword_contract(ads_diagnostics)
+    contracts = validate_ads_contracts(ads_diagnostics, pack)
 
-    action_ids = ads_diagnostics.get("action_ids") or []
-    if ads_diagnostics.get("live_data_available") is True:
-        missing_validated_actions = sorted(set(VALIDATED_ACTION_IDS) - set(action_ids))
-        if missing_validated_actions:
-            raise SystemExit(
-                "Live Ads diagnostics must expose review actions for validation: "
-                + ", ".join(missing_validated_actions)
-            )
-    action_validations = validate_action_ids(
+    action_validations, brief_items, connector_results = validate_auxiliary_contracts(
         args.api_base,
-        [action_id for action_id in VALIDATED_ACTION_IDS if action_id in action_ids],
-        label="Ads",
+        pack,
+        ads_diagnostics,
+        REQUIRED_CONNECTORS,
+        VALIDATED_ACTION_IDS,
     )
 
-    brief_items = compact_ads_brief_items(args.api_base, REQUIRED_CONNECTORS)
-
-    connector_results = compact_connector_statuses(args.api_base, REQUIRED_CONNECTORS)
-
-    instruction = str(pack.get("strict_instruction", ""))
-    if not has_polish_metric_source_guardrails(instruction):
-        raise SystemExit(
-            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
-        )
-
-    print(
-        json.dumps(
-            {
-                "skill": SKILL_NAME,
-                "api_base": args.api_base,
-                "health": health.get("status"),
-                "required_connectors": connector_results,
-                "knowledge_card_ids": unique_ids(
-                    [
-                        *[
-                            card_id
-                            for decision in decision_queue
-                            for card_id in decision.get("knowledge_card_ids", [])
-                        ],
-                        *[
-                            card.get("id")
-                            for card in pack.get("knowledge_card_summaries", [])
-                            if card.get("id")
-                        ],
-                    ]
-                ),
-                "expert_rule_ids": unique_ids(
-                    [
-                        *[
-                            rule_id
-                            for decision in decision_queue
-                            for rule_id in decision.get("expert_rule_ids", [])
-                        ],
-                        *[
-                            rule.get("id")
-                            for rule in pack.get("expert_rule_summaries", [])
-                            if rule.get("id")
-                        ],
-                    ]
-                ),
-                "ads_diagnostics": {
-                    "live_data_available": ads_diagnostics.get("live_data_available"),
-                    "blocker_count": ads_diagnostics.get("blocker_count"),
-                    "campaign_read_contract": {
-                        "status": campaign_read_contract.get("status"),
-                        "summary": campaign_read_contract.get("summary"),
-                        "allowed_metrics": campaign_read_contract.get("allowed_metrics", []),
-                        "missing_read_contracts": campaign_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "row_count": len(campaign_read_contract.get("campaign_rows") or []),
-                        "has_campaign_review_action": (
-                            "act_prepare_ads_campaign_review_queue"
-                            in (ads_diagnostics.get("action_ids") or [])
-                        ),
-                    },
-                    "optimizer_readiness_contract": {
-                        "status": optimizer_readiness_contract.get("status"),
-                        "mode": optimizer_readiness_contract.get("mode"),
-                        "ready_area_count": optimizer_readiness_contract.get("ready_area_count"),
-                        "blocked_area_count": optimizer_readiness_contract.get(
-                            "blocked_area_count"
-                        ),
-                        "apply_allowed": optimizer_readiness_contract.get("apply_allowed"),
-                        "readiness_item_ids": [
-                            item.get("id")
-                            for item in optimizer_readiness_contract.get(
-                                "readiness_items",
-                            )
-                            or []
-                            if item.get("id")
-                        ],
-                        "missing_read_contracts": optimizer_readiness_contract.get(
-                            "missing_read_contracts",
-                            [],
-                        ),
-                        "blocked_claims": optimizer_readiness_contract.get(
-                            "blocked_claims",
-                            [],
-                        ),
-                    },
-                    "account_currency_read_contract": {
-                        "status": account_currency_read_contract.get("status"),
-                        "currency_code": account_currency_read_contract.get("currency_code"),
-                        "missing_read_contracts": account_currency_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "blocked_claims": account_currency_read_contract.get("blocked_claims", []),
-                    },
-                    "business_context_read_contract": {
-                        "status": business_context_read_contract.get("status"),
-                        "configured_sources": business_context_read_contract.get(
-                            "configured_sources", []
-                        ),
-                        "strategy_review_readiness_contract": {
-                            "status": strategy_readiness_contract.get("status"),
-                            "latest_review_status": strategy_readiness_contract.get(
-                                "latest_review_status"
-                            ),
-                            "missing_read_contracts": strategy_readiness_contract.get(
-                                "missing_read_contracts", []
-                            ),
-                            "action_ids": strategy_readiness_contract.get("action_ids", []),
-                            "apply_allowed": strategy_readiness_contract.get("apply_allowed"),
-                        },
-                        "missing_read_contracts": business_context_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "blocked_claims": business_context_read_contract.get("blocked_claims", []),
-                    },
-                    "budget_pacing_read_contract": {
-                        "status": budget_pacing_read_contract.get("status"),
-                        "summary": budget_pacing_read_contract.get("summary"),
-                        "allowed_metrics": budget_pacing_read_contract.get("allowed_metrics", []),
-                        "missing_read_contracts": budget_pacing_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "row_count": len(budget_pacing_read_contract.get("budget_rows") or []),
-                    },
-                    "budget_decision": {
-                        "id": budget_decision.get("id"),
-                        "status": budget_decision.get("status"),
-                        "knowledge_card_ids": budget_decision.get("knowledge_card_ids", []),
-                        "expert_rule_ids": budget_decision.get("expert_rule_ids", []),
-                        "action_ids": budget_decision.get("action_ids", []),
-                        "blocked_claims": budget_decision.get("blocked_claims", []),
-                    },
-                    "recommendations_read_contract": {
-                        "status": recommendations_read_contract.get("status"),
-                        "summary": recommendations_read_contract.get("summary"),
-                        "allowed_metrics": recommendations_read_contract.get(
-                            "allowed_metrics",
-                            [],
-                        ),
-                        "missing_read_contracts": recommendations_read_contract.get(
-                            "missing_read_contracts",
-                            [],
-                        ),
-                        "row_count": len(
-                            recommendations_read_contract.get("recommendation_rows") or []
-                        ),
-                        "apply_preview_count": len(
-                            recommendations_read_contract.get("payload_preview") or []
-                        ),
-                        "impact_row_count": sum(
-                            1
-                            for row in recommendations_read_contract.get(
-                                "recommendation_rows",
-                            )
-                            or []
-                            if row.get("impact_available")
-                        ),
-                        "urgent_review_count": sum(
-                            1
-                            for row in recommendations_read_contract.get(
-                                "recommendation_rows",
-                            )
-                            or []
-                            if row.get("review_priority") == "pilne"
-                        ),
-                        "high_review_count": sum(
-                            1
-                            for row in recommendations_read_contract.get(
-                                "recommendation_rows",
-                            )
-                            or []
-                            if row.get("review_priority") == "wysokie"
-                        ),
-                        "blocked_claims": recommendations_read_contract.get(
-                            "blocked_claims",
-                            [],
-                        ),
-                        "action_ids": recommendations_read_contract.get("action_ids", []),
-                    },
-                    "impression_share_read_contract": {
-                        "status": impression_share_read_contract.get("status"),
-                        "summary": impression_share_read_contract.get("summary"),
-                        "allowed_metrics": impression_share_read_contract.get(
-                            "allowed_metrics",
-                            [],
-                        ),
-                        "missing_read_contracts": impression_share_read_contract.get(
-                            "missing_read_contracts",
-                            [],
-                        ),
-                        "row_count": len(
-                            impression_share_read_contract.get("impression_share_rows") or []
-                        ),
-                        "blocked_claims": impression_share_read_contract.get(
-                            "blocked_claims",
-                            [],
-                        ),
-                    },
-                    "change_history_read_contract": {
-                        "status": change_history_read_contract.get("status"),
-                        "summary": change_history_read_contract.get("summary"),
-                        "allowed_metrics": change_history_read_contract.get(
-                            "allowed_metrics",
-                            [],
-                        ),
-                        "missing_read_contracts": change_history_read_contract.get(
-                            "missing_read_contracts",
-                            [],
-                        ),
-                        "row_count": len(
-                            change_history_read_contract.get("change_history_rows") or []
-                        ),
-                        "blocked_claims": change_history_read_contract.get(
-                            "blocked_claims",
-                            [],
-                        ),
-                    },
-                    "change_impact_readiness_contract": {
-                        "status": change_impact_readiness_contract.get("status"),
-                        "summary": change_impact_readiness_contract.get("summary"),
-                        "allowed_metrics": change_impact_readiness_contract.get(
-                            "allowed_metrics",
-                            [],
-                        ),
-                        "missing_read_contracts": change_impact_readiness_contract.get(
-                            "missing_read_contracts",
-                            [],
-                        ),
-                        "row_count": len(
-                            change_impact_readiness_contract.get("readiness_rows") or []
-                        ),
-                        "current_snapshot_count": sum(
-                            1
-                            for row in change_impact_readiness_contract.get(
-                                "readiness_rows",
-                            )
-                            or []
-                            if row.get("current_campaign_metrics_available")
-                        ),
-                        "apply_allowed": change_impact_readiness_contract.get("apply_allowed"),
-                        "blocked_claims": change_impact_readiness_contract.get(
-                            "blocked_claims",
-                            [],
-                        ),
-                    },
-                    "search_terms_read_contract": {
-                        "status": search_terms_read_contract.get("status"),
-                        "summary": search_terms_read_contract.get("summary"),
-                        "allowed_metrics": search_terms_read_contract.get("allowed_metrics", []),
-                        "missing_read_contracts": search_terms_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "row_count": len(search_terms_read_contract.get("search_term_rows") or []),
-                    },
-                    "search_term_review_summary_contract": {
-                        "status": search_term_review_summary_contract.get("status"),
-                        "summary": search_term_review_summary_contract.get("summary"),
-                        "campaign_review_row_count": len(
-                            search_term_review_summary_contract.get("campaign_review_rows") or []
-                        ),
-                        "zero_conversion_search_term_count": (
-                            search_term_review_summary_contract.get(
-                                "zero_conversion_search_term_count"
-                            )
-                        ),
-                    },
-                    "search_term_safety_read_contract": {
-                        "status": search_term_safety_read_contract.get("status"),
-                        "summary": search_term_safety_read_contract.get("summary"),
-                        "allowed_metrics": search_term_safety_read_contract.get(
-                            "allowed_metrics",
-                            [],
-                        ),
-                        "missing_read_contracts": search_term_safety_read_contract.get(
-                            "missing_read_contracts",
-                            [],
-                        ),
-                        "row_count": len(search_term_safety_read_contract.get("safety_rows") or []),
-                        "blocked_claims": search_term_safety_read_contract.get(
-                            "blocked_claims",
-                            [],
-                        ),
-                    },
-                    "keyword_match_context_read_contract": {
-                        "status": keyword_match_context_read_contract.get("status"),
-                        "summary": keyword_match_context_read_contract.get("summary"),
-                        "context_row_count": len(
-                            keyword_match_context_read_contract.get("context_rows") or []
-                        ),
-                        "missing_read_contracts": keyword_match_context_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "blocked_claims": keyword_match_context_read_contract.get(
-                            "blocked_claims", []
-                        ),
-                    },
-                    "keyword_planner_read_contract": {
-                        "status": keyword_planner_read_contract.get("status"),
-                        "summary": keyword_planner_read_contract.get("summary"),
-                        "idea_row_count": len(keyword_planner_read_contract.get("idea_rows") or []),
-                        "missing_read_contracts": keyword_planner_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "blocked_claims": keyword_planner_read_contract.get("blocked_claims", []),
-                    },
-                    "custom_segments_read_contract": {
-                        "status": custom_segments_read_contract.get("status"),
-                        "summary": custom_segments_read_contract.get("summary"),
-                        "candidate_count": len(
-                            custom_segments_read_contract.get("candidates") or []
-                        ),
-                        "keyword_planner_idea_count": custom_segment_idea_count,
-                        "missing_read_contracts": custom_segments_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "blocked_claims": custom_segments_read_contract.get("blocked_claims", []),
-                        "action_ids": custom_segments_read_contract.get("action_ids", []),
-                    },
-                    "negative_keywords_read_contract": {
-                        "status": negative_keywords_read_contract.get("status"),
-                        "summary": negative_keywords_read_contract.get("summary"),
-                        "candidate_count": len(
-                            negative_keywords_read_contract.get("candidates") or []
-                        ),
-                        "payload_preview_count": len(
-                            negative_keywords_read_contract.get("payload_preview") or []
-                        ),
-                        "missing_read_contracts": negative_keywords_read_contract.get(
-                            "missing_read_contracts", []
-                        ),
-                        "blocked_claims": negative_keywords_read_contract.get("blocked_claims", []),
-                        "action_ids": negative_keywords_read_contract.get("action_ids", []),
-                    },
-                    "blocked_handoff": compact_blocked_handoff(blocked_handoff),
-                    "section_ids": [
-                        section.get("id")
-                        for section in ads_diagnostics.get("sections", [])
-                        if section.get("id")
-                    ],
-                    "evidence_ids": ads_diagnostics.get("evidence_ids", []),
-                    "action_ids": ads_diagnostics.get("action_ids", []),
-                    "blocked_claims": [
-                        claim
-                        for section in ads_diagnostics.get("sections", [])
-                        for claim in section.get("blocked_claims", [])
-                    ][:20],
-                    "latest_refresh_status": (ads_diagnostics.get("latest_refresh") or {}).get(
-                        "status"
-                    ),
-                },
-                "brief_items": brief_items,
-                "evidence_count": len(pack.get("evidence_summaries") or []),
-                "opportunity_count": len(pack.get("top_opportunities") or []),
-                "action_count": len(pack.get("active_action_objects") or []),
-                "action_validations": action_validations,
-                "context_pack_bytes": pack_bytes,
-                "context_pack_decision_count": len(pack_decision_queue),
-                "full_context_decision_count": len(full_pack_decision_queue),
-                "evidence_ids": [
-                    item.get("id")
-                    for item in (pack.get("evidence_summaries") or [])
-                    if item.get("id")
-                ][:20],
-                "opportunity_ids": [
-                    item.get("id")
-                    for item in (pack.get("top_opportunities") or [])
-                    if item.get("id")
-                ][:20],
-                "action_ids": [
-                    item.get("id")
-                    for item in (pack.get("active_action_objects") or [])
-                    if item.get("id")
-                ][:20],
-            },
-            indent=2,
-            sort_keys=True,
-        )
+    report = build_ads_report(
+        api_base=args.api_base,
+        health=health,
+        pack=pack,
+        diagnostics=ads_diagnostics,
+        campaign=campaign_read_contract,
+        optimizer=optimizer_readiness_contract,
+        currency=account_currency_read_contract,
+        business=business_context_read_contract,
+        strategy=strategy_readiness_contract,
+        budget=budget_pacing_read_contract,
+        budget_decision=budget_decision,
+        contracts=contracts,
+        decision_queue=decision_queue,
+        brief_items=brief_items,
+        connector_results=connector_results,
+        blocked_handoff=blocked_handoff,
+        action_validations=action_validations,
+        pack_bytes=pack_bytes,
+        pack_decision_queue=pack_decision_queue,
+        full_pack_decision_queue=full_pack_decision_queue,
     )
+    print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
 

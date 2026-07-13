@@ -215,6 +215,15 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
   live proof: three contracts `ready`, six action validations, safety preserved.
   The remaining Ads main is explicitly over budget (511 LOC/81 branches) and
   was audited only with documented `--allow-budget-violations`; continue splitting.
+- Latest Ads seam: campaign validation, contract orchestration, auxiliary
+  action/Polish guards and report shaping now live in
+  `ads_campaign_contract.py`, `ads_contract_orchestration.py`, `ads_smoke_aux.py`
+  and `ads_smoke_report.py`. No API or safety behavior changed. Live proof:
+  `health=ok`, live data, 1 blocker, 6 action IDs,
+  account/business/budget/recommendations `ready`, context-pack 222338 bytes.
+  Ruff, mypy, diff check and changed-code complexity pass without exception;
+  Ads smoke `main` is within local budgets. Select the next seam from a fresh
+  complexity/runtime audit; do not reopen completed extractions.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

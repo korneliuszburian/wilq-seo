@@ -55,6 +55,13 @@ w git, Beads i `docs/progress/archive/`.
   6 walidacji actions i zachowane blokady safety. Ten slice używa jawnie
   `--allow-budget-violations`, bo pozostały Ads `main` ma 511 LOC/81 branches;
   dalszy split jest odrębnym zakresem, nie ukrytym sukcesem.
+- Ads smoke orchestration/report jest teraz podzielony między
+  `ads_campaign_contract.py`, `ads_contract_orchestration.py`,
+  `ads_smoke_aux.py` i `ads_smoke_report.py`. Live proof pozostaje `health=ok`,
+  live Ads data, 1 blocker, 6 action IDs, account/business/budget i
+  recommendations `ready`, context-pack 222338 bajtów. Ruff, mypy,
+  `git diff --check` oraz changed-code complexity przechodzą bez wyjątku;
+  Ads `smoke_skill_contract.py::main` mieści się teraz w lokalnych budżetach.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
