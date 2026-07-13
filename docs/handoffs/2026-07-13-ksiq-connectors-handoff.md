@@ -529,6 +529,11 @@
   forecast/90-day safety blockers, disclosure i `apply_allowed=false` są
   zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1018
   linii i 12 branchy. Następny krok: status-probe/context-pack tail.
+- Pięćdziesiąty pod-slice zakończony: status-probe post-refresh contract jest
+  w `assert_ads_status_probe_contract`; latest-refresh lineage, live-data proof
+  i wymagane read rows po status probe są zachowane. Focused Ads/Ruff/mypy/diff
+  check zielone; główny test ma 1009 linii i 12 branchy. Następny krok:
+  context-pack/action inventory tail.
 
 ## Następny krok
 

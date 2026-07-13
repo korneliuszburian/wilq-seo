@@ -2041,3 +2041,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   forecast/90-day safety blockers, disclosure i `apply_allowed=false`.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1018 linii i 12
   branchy. Następny seam: status-probe/context-pack tail.
+- Pięćdziesiąty pod-slice c9h9.22: status-probe post-refresh contract
+  wydzielony do `assert_ads_status_probe_contract`; zachowano latest-refresh
+  lineage, live-data proof i wymagane read rows po status probe. Focused
+  Ads/Ruff/mypy/diff check zielone; główny test ma 1009 linii i 12 branchy.
+  Następny seam: context-pack/action inventory tail.

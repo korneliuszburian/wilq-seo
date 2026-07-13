@@ -2153,6 +2153,22 @@ def assert_ads_negative_keyword_action_payload(action: dict[str, Any]) -> None:
     assert "90_day_safety_check" in payload["required_validation"]
 
 
+def assert_ads_status_probe_contract(
+    payload: dict[str, Any], refresh_id: str
+) -> None:
+    """Prove status probe preserves the last completed live refresh."""
+    assert payload["live_data_available"] is True
+    assert payload["latest_refresh"]["id"] == refresh_id
+    assert payload["blocked_handoff"] is None
+    assert payload["campaign_read_contract"]["campaign_rows"]
+    assert payload["budget_pacing_read_contract"]["budget_rows"]
+    assert payload["recommendations_read_contract"]["recommendation_rows"]
+    assert payload["impression_share_read_contract"]["impression_share_rows"]
+    assert payload["change_history_read_contract"]["change_history_rows"]
+    assert payload["search_terms_read_contract"]["search_term_rows"]
+    assert payload["search_term_safety_read_contract"]["safety_rows"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4581,16 +4597,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     after_probe_response = client.get("/api/ads/diagnostics")
     assert after_probe_response.status_code == 200
     after_probe_payload = after_probe_response.json()
-    assert after_probe_payload["live_data_available"] is True
-    assert after_probe_payload["latest_refresh"]["id"] == refresh_response.json()["id"]
-    assert after_probe_payload["blocked_handoff"] is None
-    assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
-    assert after_probe_payload["budget_pacing_read_contract"]["budget_rows"]
-    assert after_probe_payload["recommendations_read_contract"]["recommendation_rows"]
-    assert after_probe_payload["impression_share_read_contract"]["impression_share_rows"]
-    assert after_probe_payload["change_history_read_contract"]["change_history_rows"]
-    assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
-    assert after_probe_payload["search_term_safety_read_contract"]["safety_rows"]
+    assert_ads_status_probe_contract(after_probe_payload, refresh_response.json()["id"])
 
     context_response = client.post(
         "/api/codex/context-pack",
