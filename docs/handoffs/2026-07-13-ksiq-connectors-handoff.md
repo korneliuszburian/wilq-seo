@@ -198,6 +198,12 @@
   Test dowodzi audytowego widoku, eksperymentalnych obszarów i braku raw
   payloadów. App + System focused 19/19, dashboard typecheck/lint i diff check
   przechodzą; `App.test.tsx` ma 9197 LOC. Następny seam: actions route proof.
+- Dziesiąty slice: actions route proof przeniesiony do
+  `ActionsSurface.test.tsx` z kontrolowanymi ActionObject fixtures i
+  mockowanym API boundary. Test dowodzi marketer-facing kolejki, bezpiecznej
+  akcji, lifecycle oraz ukrycia raw IDs/registry dumpów. App + Actions focused
+  18/18, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
+  9152 LOC. Następny seam: mutation-readiness loading proof.
 
 ## Następny krok
 

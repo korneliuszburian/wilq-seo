@@ -168,6 +168,11 @@ w git, Beads i `docs/progress/archive/`.
   dowodzi audytowego widoku, eksperymentalnych obszarów i braku raw payloadów.
   App + System focused 19/19, typecheck/lint/diff check przechodzą;
   `App.test.tsx` ma 9197 LOC.
+- Dziesiąty slice przeniósł actions route proof do `ActionsSurface.test.tsx` z
+  kontrolowanymi ActionObject fixtures i mockowanym API boundary. Test dowodzi
+  marketer-facing kolejki, bezpiecznej akcji, lifecycle oraz ukrycia raw IDs i
+  registry dumpów. App + Actions focused 18/18, typecheck/lint/diff check
+  przechodzą; `App.test.tsx` ma 9152 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

@@ -8027,51 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("actions route starts from marketer-facing actions instead of registry dumps", async () => {
-    renderApp("/actions");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Akcje" })).toBeInTheDocument()
-    );
-    expect(screen.getByText("Bezpieczne przygotowanie zmian: podgląd, review, potwierdzenie i audyt przed każdym zapisem, publikacją lub zastosowaniem.")).toBeInTheDocument();
-    expect(screen.getByText("akcji")).toBeInTheDocument();
-    expect(screen.getByText("gotowe do review")).toBeInTheDocument();
-    expect(screen.getByText("zablokowane")).toBeInTheDocument();
-    expect(screen.getByText("dowodów")).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByText("Najbliższa bezpieczna akcja")).toBeInTheDocument()
-    );
-    expect(screen.getByText("Aktywuj zapis szkicu WordPress draft-only")).toBeInTheDocument();
-    expect(screen.getAllByText("zapis zablokowany").length).toBeGreaterThan(0);
-    expect(screen.getByText("Co nadal blokuje zapis")).toBeInTheDocument();
-    expect(screen.queryByText("Payload nadal blokuje apply")).not.toBeInTheDocument();
-    expect(screen.getByText("Szkic WordPress")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Kolejka akcji" })).toBeInTheDocument();
-    expect(screen.getByText("Merchant review produktów")).toBeInTheDocument();
-    expect(screen.getByText("Brief SEO: nowy wpis blogowy")).toBeInTheDocument();
-    expect(screen.getByText("Przegląd ruchu GA4")).toBeInTheDocument();
-    expect(screen.getByText("Przebieg akcji")).toBeInTheDocument();
-    expect(screen.getByText("Walidacja")).toBeInTheDocument();
-    expect(screen.getByText("Podgląd")).toBeInTheDocument();
-    expect(screen.getByText("Review")).toBeInTheDocument();
-    expect(screen.getByText("Potwierdzenie")).toBeInTheDocument();
-    expect(screen.getByText("Audyt")).toBeInTheDocument();
-    expect(screen.queryByText(/Szczegóły techniczne są dostępne/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/rejestru technicznego/i)).not.toBeInTheDocument();
-    expect(screen.queryByText("Dowody powiązane z akcjami")).not.toBeInTheDocument();
-    expect(screen.queryByText("Najważniejsze akcje demo")).not.toBeInTheDocument();
-    expect(screen.queryByText("Pełna lista akcji - szczegóły")).not.toBeInTheDocument();
-    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Zobacz podgląd" }).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("button", { name: "Pokaż dane techniczne akcji" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
-    expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
-    expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-  });
-
   it("keeps the first action useful while mutation readiness is still loading", async () => {
     let resolveReadiness!: (response: Response) => void;
     const pendingReadiness = new Promise<Response>((resolve) => {
