@@ -929,6 +929,9 @@
   polski blocker/freshness/safe next step i overflow. Aktualny Playwright
   przechodzi 1/1 z live `queue_status=blocked`; nie maskuje blokady ani nie
   wymusza sztucznego tematu.
+- Re-audyt Beads 2026-07-13: zamknięto `ho41` (route 655 LOC, typed
+  boundaries, ready/blocked proof) oraz `6rw.5` (blocked-state E2E guardrail).
+  Nie powtarzać tych slice'ów bez nowej sprzeczności runtime lub kontraktu.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

@@ -77,6 +77,11 @@ w git, Beads i `docs/progress/archive/`.
   pełne asercje workbencha. Playwright 1/1 przechodzi na aktualnym live stanie,
   ESLint i diff check przechodzą. To testuje zachowanie, nie historyczny copy.
 
+- Re-audyt Beads 2026-07-13: `ho41` zamknięty po osiągnięciu route budgetu
+  655 LOC, typed boundaries i ready/blocked browser proof. `6rw.5` zamknięty
+  po naprawie E2E blocked-state guardrail. Nie wracać do tych zakresów bez
+  nowej sprzeczności runtime/kontraktu.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback
