@@ -1057,6 +1057,16 @@
   mutation-readiness and Playwright proof pass. `service.py` is 1150 LOC. Do
   not repeat this general metric-candidate seam or the closed Ads/content
   candidate seams.
+- `jnra` continuation 14 2026-07-13: WordPress draft-handoff assembly now
+  lives in `wilq/actions/wordpress_handoff.py`; service compatibility wrappers
+  preserve preview/apply contract, canonical/duplicate gates, blocked claims
+  and measurement plan. Focused action/content/mutation tests, Ruff, mypy,
+  complexity, API health/action inventory, fail-closed mutation smoke and
+  Playwright proof pass; service.py is 1058 LOC. One broader pre-existing test
+  remains unrelated: `tests/content/test_wordpress_execution_api.py` patches
+  a removed `wilq.content.workflow.api.read_wordpress_draft_post` symbol. Do
+  not reopen completed candidate or mutation seams; treat that stale boundary
+  as a separate confirmed maintenance item if it remains active after audit.
 
 ## Następny krok
 

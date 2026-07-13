@@ -2649,3 +2649,15 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   complexity, API health/action inventory and mutation-readiness smoke pass;
   Playwright content-workflow proof passes. `service.py` is now 1150 LOC and
   still has only the documented frozen-file budget warning.
+- `jnra` continuation 14 2026-07-13: WordPress draft-handoff assembly moved
+  into `wilq/actions/wordpress_handoff.py`; the service facade retains
+  compatibility wrappers and callback injection for draft preview, apply
+  contract, canonical/duplicate gates and measurement plan. Focused action,
+  content-workflow and mutation-readiness contract tests, Ruff, mypy,
+  complexity, API health/action inventory, fail-closed mutation smoke and
+  Playwright proof pass. The API still exposes 21 actions, 0 vendor writes and
+  the content action. `service.py` is now 1058 LOC. A broader legacy test still
+  fails before this seam in `tests/content/test_wordpress_execution_api.py`
+  because it monkeypatches a removed `read_wordpress_draft_post` symbol; no
+  touched file owns that stale test/API boundary, so it is recorded separately
+  rather than misattributed to this extraction.
