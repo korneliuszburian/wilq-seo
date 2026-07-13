@@ -993,6 +993,13 @@
   mutation-readiness tests, Ruff, mypy, API health, dashboard route and
   Playwright proof pass. Next target: apply preflight/mutation lifecycle;
   do not reopen earlier preview/confirmation seams.
+- `jnra` continuation 9 2026-07-13: canonical apply preflight/mutation
+  lifecycle now lives in `wilq/actions/apply_lifecycle.py`. WordPress
+  capability and connector callbacks remain injected through the facade so
+  tests and runtime preserve the existing seam. Safety tests, Ruff, mypy,
+  complexity, API health, dashboard route and Playwright proof pass. Next
+  target: mutation readiness projection only if a fresh code gap is confirmed;
+  do not reopen closed WordPress safety scope.
 
 ## Następny krok
 

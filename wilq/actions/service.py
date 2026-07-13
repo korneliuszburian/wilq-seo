@@ -11,7 +11,6 @@ from wilq.actions.action_blockers import (
     action_apply_blockers as _action_apply_blockers_impl,
 )
 from wilq.actions.action_blockers import (
-    action_apply_preflight_blockers,
     action_confirmation_blockers,
     action_confirmation_event_type,
     action_confirmation_summary,
@@ -23,11 +22,9 @@ from wilq.actions.action_blockers import (
 )
 from wilq.actions.action_previews import action_preview_cards as build_action_preview_cards
 from wilq.actions.action_validation import validate_action as validate_action_lifecycle
+from wilq.actions.apply_lifecycle import apply_action as apply_action_lifecycle
 from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
-)
-from wilq.actions.audit_store import (
-    action_mutation_audit_record as _action_mutation_audit_record_impl,
 )
 from wilq.actions.audit_store import (
     audit_event_has_raw_contract_text as _audit_event_has_raw_contract_text,
@@ -39,7 +36,6 @@ from wilq.actions.audit_store import (
     audit_event_with_operator_label as _audit_event_with_operator_label_impl,
 )
 from wilq.actions.audit_store import (
-    build_apply_audit_event,
     build_confirmation_audit_event,
     build_preview_audit_event,
 )
@@ -985,77 +981,15 @@ def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
 ) -> ActionApplyResult:
-    errors: list[str] = []
-    wordpress_capability, capability_errors = _wordpress_draft_apply_capability(action, request)
-    errors.extend(capability_errors)
-    connector = get_connector_status(action.connector)
-    latest_preview = _latest_preview_event(action.audit_events)
-    latest_confirmation = _latest_action_confirmation_event(action.audit_events)
-    latest_impact_check = _latest_action_impact_check_event(action.audit_events)
-    mutation_adapter = _supported_mutation_adapter(action)
-    errors.extend(
-        action_apply_preflight_blockers(
-            action=action,
-            request=request,
-            connector_configured=connector is not None and connector.configured,
-            preview_present=latest_preview is not None,
-            confirmation_present=latest_confirmation is not None,
-            impact_checked=_impact_status_from_event(latest_impact_check) == "checked",
-            mutation_adapter=mutation_adapter,
-            wordpress_capability_present=wordpress_capability is not None,
-            payload_apply_allowed=_action_payload_apply_allowed,
-            payload_api_mutation_ready=_action_payload_api_mutation_ready,
-        )
-    )
-    adapter_result: dict[str, Any] | None = None
-    if not errors and mutation_adapter is not None:
-        adapter_result, adapter_errors = _execute_supported_mutation_adapter(
-            action,
-            mutation_adapter,
-            request,
-            wordpress_capability,
-        )
-        errors.extend(adapter_errors)
-
-    actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
-    audit = build_apply_audit_event(
-        action=action,
-        audit_id=f"audit_{action.id}_{len(action.audit_events) + 1}",
-        actor=actor,
-        errors=errors,
-    )
-    mutation_audit = _action_mutation_audit_record_impl(
-        action=action,
-        audit_event=audit,
-        actor=actor,
-        errors=errors,
-        mutation_adapter=mutation_adapter,
-        adapter_result=adapter_result,
-    )
-    action.audit_events.append(audit)
-    if errors:
-        action.status = ActionStatus.blocked
-        action.review_gate = _action_review_gate(action)
-        return ActionApplyResult(
-            action_id=action.id,
-            applied=False,
-            status="blocked",
-            status_label=_action_result_status_label("blocked"),
-            audit_event=_audit_event_with_operator_label(audit),
-            mutation_audit=mutation_audit,
-            errors=errors,
-            adapter_result=adapter_result,
-        )
-    action.status = ActionStatus.applied
-    action.review_gate = _action_review_gate(action)
-    return ActionApplyResult(
-        action_id=action.id,
-        applied=True,
-        status="applied",
-        status_label=_action_result_status_label("applied"),
-        audit_event=_audit_event_with_operator_label(audit),
-        mutation_audit=mutation_audit,
-        adapter_result=adapter_result,
+    return apply_action_lifecycle(
+        action,
+        request,
+        review_gate=_action_review_gate,
+        wordpress_apply_capability=_wordpress_draft_apply_capability,
+        connector_status=get_connector_status,
+        impact_status=_impact_status_from_event,
+        status_label=_action_result_status_label,
+        audit_event_label=_audit_event_with_operator_label,
     )
 
 

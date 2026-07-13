@@ -2574,3 +2574,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Impact/review/mutation-readiness tests (35 passed), Ruff, mypy, complexity,
   API health, dashboard title and Playwright proof pass; service.py is now
   1299 LOC.
+- `jnra` continuation 9 2026-07-13: canonical apply preflight/mutation
+  lifecycle moved into `wilq/actions/apply_lifecycle.py`. The facade injects
+  existing WordPress capability and connector callbacks, preserving fail-closed
+  gates, adapter execution and mutation audit semantics. A regression caught a
+  direct dependency bypass and was fixed before commit. Safety suite (39
+  passed), Ruff, mypy, complexity, API health/dashboard title and Playwright
+  proof pass; service.py is now 1234 LOC.
