@@ -223,6 +223,16 @@ def assert_ads_marketer_copy_and_tiles(payload: dict[str, Any]) -> None:
     assert budget_decision["metric_tiles"]["koszt 7 dni"] == "12 PLN"
 
 
+def assert_ads_account_currency_contract(payload: dict[str, Any]) -> None:
+    """Prove currency context before any budget interpretation."""
+    currency_contract = payload["account_currency_read_contract"]
+    assert currency_contract["status"] == "ready"
+    assert currency_contract["currency_code"] == "PLN"
+    assert currency_contract["allowed_metrics"] == ["account_currency_code"]
+    assert currency_contract["missing_read_contracts"] == []
+    assert "zmiana budżetu" in currency_contract["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2457,12 +2467,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     operator_summary = payload["operator_summary"]
     assert_ads_marketer_copy_and_tiles(payload)
-    currency_contract = payload["account_currency_read_contract"]
-    assert currency_contract["status"] == "ready"
-    assert currency_contract["currency_code"] == "PLN"
-    assert currency_contract["allowed_metrics"] == ["account_currency_code"]
-    assert currency_contract["missing_read_contracts"] == []
-    assert "zmiana budżetu" in currency_contract["blocked_claims"]
+    assert_ads_account_currency_contract(payload)
     business_context_contract = payload["business_context_read_contract"]
     assert business_context_contract["status"] == "blocked"
     assert business_context_contract["profit_margin"] is None

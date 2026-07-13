@@ -393,6 +393,9 @@
 - Piąty pod-slice zakończony: `assert_ads_marketer_copy_and_tiles` przejął
   Polish summary i campaign/budget tiles. Test ma 2779 linii/26 branchy; kolejny
   slice obejmuje account currency oraz business-context blocker.
+- Szósty pod-slice zakończony: `assert_ads_account_currency_contract` przejął
+  PLN context i blocked budget-change claim. Następny handoff powinien rozbić
+  business-context blocked contract na mniejsze behavior assertions.
 
 ## Następny krok
 

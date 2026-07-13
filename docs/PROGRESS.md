@@ -1892,3 +1892,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   metric tiles wydzielone do `assert_ads_marketer_copy_and_tiles`. Focused
   Ads/Ruff/mypy/diff check przechodzą; główny test ma 2779 linii i 26 branchy.
   Następny seam: account currency oraz zablokowany business context.
+- Szósty pod-slice c9h9.22: account currency proof wydzielony do
+  `assert_ads_account_currency_contract`, z zachowaniem PLN i blokady zmiany
+  budżetu. Focused Ads/Ruff/mypy/diff check przechodzą; następny jest duży
+  zablokowany business-context contract.
