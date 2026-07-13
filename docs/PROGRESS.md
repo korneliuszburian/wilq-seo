@@ -1728,3 +1728,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   card, bez raw payloadów i legacy formatterów. App + Custom Segments focused
   15/15, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
   8892 LOC. Następny seam: legacy operating routes.
+- Czternasty slice: zachowanie ukrytego `/ads-doctor/search-terms` oraz kontrakt
+  Ahrefs przeniesione do `LegacyOperatingRoutes.test.tsx`; test renderuje
+  bezpieczny link do `/ads-doctor`, blocker i brak registry dumpów. App + legacy
+  focused 14/14, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 8874 LOC. Następny seam: workflow route proof.

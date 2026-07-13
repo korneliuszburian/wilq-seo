@@ -8027,24 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("legacy operating routes do not fall back to registry dumps", async () => {
-    renderApp("/ads-doctor/search-terms");
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Search terms" })).toBeInTheDocument());
-    expect(screen.getByText("ukryty placeholder")).toBeInTheDocument();
-    expect(screen.getByText(/Otwórz Reklamy i pomiar/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Otwórz bezpieczny widok" })).toHaveAttribute(
-      "href",
-      "/ads-doctor"
-    );
-    expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
-    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
-    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-    const routeSource = readFileSync("src/routes/AhrefsDiagnosticSurface.tsx", "utf8");
-    expect(routeSource).toContain("decision.evidence_summary_label");
-    expect(routeSource).toContain("contract.evidence_summary_label");
-    expect(routeSource).not.toContain("formatAhrefsEvidenceCount");
-  });
-
   it("workflow route renders persisted workflow runs", async () => {
     renderApp("/workflows");
     await waitFor(() => expect(screen.getByText("Ostatnie uruchomienia")).toBeInTheDocument());
