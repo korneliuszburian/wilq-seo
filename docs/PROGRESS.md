@@ -68,6 +68,11 @@ w git, Beads i `docs/progress/archive/`.
   blocked copy and counts remain unchanged; the route only orchestrates the
   panel. Focused route tests, Playwright proof, lint/typecheck/build and diff
   check pass.
+- `wilq-seo-ho41` continuation 11: extracted the blocked-candidate state into
+  `ContentWorkflowBlockedCandidate.tsx` (34 LOC). Queue freshness, blocker
+  reason, safe next step and typed candidate metrics remain unchanged; the
+  route no longer owns this empty/blocked surface layout. Focused route tests,
+  Playwright proof, lint/typecheck/build and diff check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

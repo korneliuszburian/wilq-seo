@@ -92,6 +92,9 @@ inferring service fit or replacing Service Profile decisions.
 The Claim Ledger gate panel is now `ClaimLedgerGatePanel.tsx`; it preserves the
 existing typed ledger filtering and evidence rendering while the route only
 orchestrates its placement.
+The blocked-candidate state is now `ContentWorkflowBlockedCandidate.tsx`; it
+renders the existing queue freshness, blocker, safe next step and candidate
+metrics without changing their API-owned meaning.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
