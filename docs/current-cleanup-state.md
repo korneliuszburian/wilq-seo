@@ -5,6 +5,10 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`v9ab.13` ma świeży packet z 2026-07-13 19:31Z: Treści pokazują konkretną
+stronę główną z 22 zapytaniami i dopasowaniem GSC/WordPress, ale Ahrefs nadal
+blokuje temat bez canonicalu. To nadal materiał do realnego review, nie UAT.
+
 `wilq-seo-0hdm` jest gotowy do zamknięcia po proofie prewarm: background
 `build_daily_runtime` działa po readiness, a pierwsze trzy odczyty
 `/api/marketing/daily-check` po restarcie trwały `2.528725 s`, `4.875843 s`

@@ -21,6 +21,21 @@ Ostatni odczyt live:
 - 3 safe next actions;
 - 1 element `do_not_touch`.
 
+Świeży packet `ekologus_marketer_uat_packet_v1` wygenerowany 2026-07-13
+19:31:16Z zawiera dodatkowo:
+
+- 24 zadania w Centrum pracy, z pierwszym krokiem Merchant;
+- 1330 zgłoszeń problemów Merchant, nadal review-only;
+- Treści: 2 decyzje, 1 potwierdzone dopasowanie WordPress i 1 actionable
+  temat — strona główna `https://www.ekologus.pl/` z 22 zapytaniami;
+- Ahrefs pozostaje zablokowany do ręcznego cross-checku, bez publicznego URL-a
+  i canonicalu;
+- Ads: 18 kampanii i 9 akcji do sprawdzenia, bez zapisu zmian;
+- GA4: 2 jawne problemy pomiaru, bez interpretacji jako problemu kampanii.
+
+To jest lepszy materiał do sesji niż wcześniejszy skrót, ale nadal nie jest
+werdyktem marketera.
+
 Nie interpretuj tych liczb jako sukcesu marketingowego. To opis kolejki pracy
 i jej ograniczeń. Szczegóły, identyfikatory dowodów, reguł i akcji Wilku ma
 sprawdzić bezpośrednio w WILQ/API, nie w tym skrócie.

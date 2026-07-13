@@ -5,6 +5,12 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `v9ab.13` recheck 2026-07-13 19:31Z: świeży packet UAT pokazuje 24 zadania
+  Centrum pracy, 1330 zgłoszeń Merchant, 2 decyzje Treści oraz konkretną
+  stronę główną `https://www.ekologus.pl/` z 22 zapytaniami i dopasowaniem
+  GSC/WordPress. Ahrefs pozostaje zablokowany bez publicznego URL/canonicalu,
+  a GA4 ma 2 problemy pomiaru. Packet jest przygotowany do sesji, ale nadal
+  nie zawiera uczestnika, czasu ani werdyktu UAT.
 - `wilq-seo-0hdm` slice: API lifespan uruchamia background prewarm istniejącego
   `daily_runtime` cache po readiness przez `asyncio.to_thread`; health/startup
   nie czeka na ciężki build, a refreshowa inwalidacja cache pozostaje bez zmian.
