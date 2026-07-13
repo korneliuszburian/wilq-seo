@@ -1592,6 +1592,77 @@ def assert_ads_custom_segment_candidate_contract(
     assert candidate["evidence_ids"] == [evidence_id]
 
 
+def assert_ads_negative_keyword_safety_contract(
+    payload: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove negative-keyword review is evidence-backed and fail-closed."""
+    contract = payload["negative_keywords_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["title"] == "Ocena wykluczeń z wyszukiwanych haseł"
+    assert contract["action_ids"] == ["act_prepare_negative_keyword_review_queue"]
+    assert "90_day_safety_check" not in contract["missing_read_contracts"]
+    assert "negative_keyword_change_preview" not in contract["missing_read_contracts"]
+    assert contract["missing_read_contracts"] == []
+    assert contract["missing_read_contract_labels"] == []
+    assert contract["missing_read_contract_summary_label"] == "Dane kompletne dla tej decyzji"
+    assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
+    assert "dodanie wykluczających słów kluczowych" in contract["blocked_claim_labels"]
+    assert contract["blocked_claim_summary_label"]
+    candidate = contract["candidates"][0]
+    assert candidate["search_term"] == "odpady cena"
+    assert candidate["review_priority"] == "wysokie"
+    assert candidate["review_score"] == 53
+    assert "kolejność oceny" in candidate["review_reason"]
+    assert "nie ocena zmarnowanego budżetu" in candidate["review_reason"]
+    assert candidate["human_review_gates"] == [
+        "sprawdź intencję zapytania",
+        "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
+        "sprawdź 90-dniowy odczyt bezpieczeństwa",
+        "zatwierdź poziom wykluczenia przed zapisem zmian",
+    ]
+    context_row = candidate["keyword_context_rows"][0]
+    assert context_row["keyword_text"] == "odpady"
+    assert context_row["match_type"] == "BROAD"
+    assert context_row["match_type_label"] == "dopasowanie przybliżone"
+    preview = contract["payload_preview"][0]
+    assert preview == candidate["payload_preview"]
+    assert preview["match_type"] == "EXACT"
+    assert preview["match_type_label"] == "dopasowanie ścisłe"
+    assert preview["level"] == "ad_group"
+    assert preview["level_label"] == "grupa reklam"
+    assert preview["required_validation_labels"] == [
+        "sprawdzenie intencji zapytania",
+        "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+        "90-dniowa kontrola bezpieczeństwa",
+        "potwierdzenie człowieka przed zapisem",
+    ]
+    assert preview["blocked_claim_labels"] == preview["blocked_claims"]
+    assert preview["api_mutation_ready"] is False
+    assert preview["apply_allowed"] is False
+    assert preview["destructive"] is False
+    assert candidate["clicks_90d"] == 10
+    assert candidate["cost_micros_90d"] == 8000000
+    assert candidate["conversions_90d"] == 0
+    assert candidate["safety_evidence_ids"] == [evidence_id]
+    assert candidate["safety_status"] == "read_ready_needs_human_review"
+    assert candidate["safety_status_label"] == "90-dniowy odczyt gotowy"
+    assert candidate["validation_status"] == "pending_validation"
+    assert candidate["validation_status_label"] == "do sprawdzenia"
+    assert "90_day_safety_check" in candidate["required_checks"]
+    assert candidate["required_check_labels"] == [
+        "sprawdzenie intencji zapytania",
+        "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+        "90-dniowa kontrola bezpieczeństwa",
+        "podgląd zmian wykluczeń",
+        "potwierdzenie człowieka przed zapisem",
+    ]
+    assert candidate["blocked_claim_labels"] == candidate["blocked_claims"]
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_negative_keyword_safety"
+    )
+    assert section["status"] == "ready"
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3965,109 +4036,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_custom_segments"
     )
     assert custom_segments_section["status"] == "ready"
-    negative_keywords_contract = payload["negative_keywords_read_contract"]
-    assert negative_keywords_contract["status"] == "ready"
-    assert negative_keywords_contract["title"] == "Ocena wykluczeń z wyszukiwanych haseł"
-    assert negative_keywords_contract["action_ids"] == ["act_prepare_negative_keyword_review_queue"]
-    assert "90_day_safety_check" not in negative_keywords_contract["missing_read_contracts"]
-    assert (
-        "negative_keyword_change_preview"
-        not in negative_keywords_contract["missing_read_contracts"]
+    assert_ads_negative_keyword_safety_contract(
+        payload, refresh_response.json()["evidence_ids"][-1]
     )
-    assert negative_keywords_contract["missing_read_contracts"] == []
-    assert negative_keywords_contract["missing_read_contract_labels"] == []
-    assert negative_keywords_contract["missing_read_contract_summary_label"] == (
-        "Dane kompletne dla tej decyzji"
-    )
-    assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract["blocked_claims"]
-    assert (
-        "dodanie wykluczających słów kluczowych"
-        in negative_keywords_contract["blocked_claim_labels"]
-    )
-    assert negative_keywords_contract["blocked_claim_summary_label"]
-    assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
-    assert negative_keywords_contract["candidates"][0]["review_priority"] == "wysokie"
-    assert negative_keywords_contract["candidates"][0]["review_score"] == 53
-    assert "kolejność oceny" in negative_keywords_contract["candidates"][0]["review_reason"]
-    assert (
-        "nie ocena zmarnowanego budżetu"
-        in negative_keywords_contract["candidates"][0]["review_reason"]
-    )
-    assert negative_keywords_contract["candidates"][0]["human_review_gates"] == [
-        "sprawdź intencję zapytania",
-        "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
-        "sprawdź 90-dniowy odczyt bezpieczeństwa",
-        "zatwierdź poziom wykluczenia przed zapisem zmian",
-    ]
-    assert (
-        negative_keywords_contract["candidates"][0]["keyword_context_rows"][0]["keyword_text"]
-        == "odpady"
-    )
-    assert (
-        negative_keywords_contract["candidates"][0]["keyword_context_rows"][0]["match_type"]
-        == "BROAD"
-    )
-    assert (
-        negative_keywords_contract["candidates"][0]["keyword_context_rows"][0]["match_type_label"]
-        == "dopasowanie przybliżone"
-    )
-    assert (
-        negative_keywords_contract["payload_preview"][0]
-        == (negative_keywords_contract["candidates"][0]["payload_preview"])
-    )
-    assert negative_keywords_contract["payload_preview"][0]["match_type"] == "EXACT"
-    assert negative_keywords_contract["payload_preview"][0]["match_type_label"] == (
-        "dopasowanie ścisłe"
-    )
-    assert negative_keywords_contract["payload_preview"][0]["level"] == "ad_group"
-    assert negative_keywords_contract["payload_preview"][0]["level_label"] == "grupa reklam"
-    assert negative_keywords_contract["payload_preview"][0]["required_validation_labels"] == [
-        "sprawdzenie intencji zapytania",
-        "sprawdzenie istniejących słów kluczowych i typów dopasowania",
-        "90-dniowa kontrola bezpieczeństwa",
-        "potwierdzenie człowieka przed zapisem",
-    ]
-    assert (
-        negative_keywords_contract["payload_preview"][0]["blocked_claim_labels"]
-        == (negative_keywords_contract["payload_preview"][0]["blocked_claims"])
-    )
-    assert negative_keywords_contract["payload_preview"][0]["api_mutation_ready"] is False
-    assert negative_keywords_contract["payload_preview"][0]["apply_allowed"] is False
-    assert negative_keywords_contract["payload_preview"][0]["destructive"] is False
-    assert negative_keywords_contract["candidates"][0]["clicks_90d"] == 10
-    assert negative_keywords_contract["candidates"][0]["cost_micros_90d"] == 8000000
-    assert negative_keywords_contract["candidates"][0]["conversions_90d"] == 0
-    assert negative_keywords_contract["candidates"][0]["safety_evidence_ids"] == [
-        refresh_response.json()["evidence_ids"][-1]
-    ]
-    assert negative_keywords_contract["candidates"][0]["safety_status"] == (
-        "read_ready_needs_human_review"
-    )
-    assert negative_keywords_contract["candidates"][0]["safety_status_label"] == (
-        "90-dniowy odczyt gotowy"
-    )
-    assert negative_keywords_contract["candidates"][0]["validation_status"] == (
-        "pending_validation"
-    )
-    assert negative_keywords_contract["candidates"][0]["validation_status_label"] == (
-        "do sprawdzenia"
-    )
-    assert "90_day_safety_check" in negative_keywords_contract["candidates"][0]["required_checks"]
-    assert negative_keywords_contract["candidates"][0]["required_check_labels"] == [
-        "sprawdzenie intencji zapytania",
-        "sprawdzenie istniejących słów kluczowych i typów dopasowania",
-        "90-dniowa kontrola bezpieczeństwa",
-        "podgląd zmian wykluczeń",
-        "potwierdzenie człowieka przed zapisem",
-    ]
-    assert (
-        negative_keywords_contract["candidates"][0]["blocked_claim_labels"]
-        == (negative_keywords_contract["candidates"][0]["blocked_claims"])
-    )
-    negative_keywords_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_negative_keyword_safety"
-    )
-    assert negative_keywords_section["status"] == "ready"
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert set(decisions_by_id) == {
         "ads_review_campaign_activity",

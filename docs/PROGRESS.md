@@ -1969,3 +1969,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `api_mutation_ready=false` oraz braku prognozy/rozmiaru odbiorców. Focused
   Ads/Ruff/mypy/diff check zielone; główny test ma 1628 linii i 13 branchy.
   Następny seam: custom-segment candidate/payload safety i końcowy tail.
+- Trzydziesty siódmy pod-slice c9h9.22: negative-keyword safety contract
+  wydzielony do `assert_ads_negative_keyword_safety_contract`; zachowano
+  90-dniowe dowody, kontekst dopasowania, review gates i wszystkie
+  fail-closed flags payloadu. Focused Ads/Ruff/mypy/diff check zielone;
+  główny test ma 1528 linii i 12 branchy. Następny seam: decision queue
+  assertions i końcowy action safety tail.

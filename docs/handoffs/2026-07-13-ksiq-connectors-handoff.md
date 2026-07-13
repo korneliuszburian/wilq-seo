@@ -453,6 +453,12 @@
   przy braku prognozy/rozmiaru odbiorców. Focused Ads/Ruff/mypy/diff check
   zielone; główny test ma 1628 linii i 13 branchy. Następny krok:
   custom-segment candidate/payload safety i końcowy diagnostic tail.
+- Trzydziesty siódmy pod-slice zakończony: negative-keyword safety contract
+  jest w `assert_ads_negative_keyword_safety_contract`; 90-dniowe evidence,
+  match context, review gates i fail-closed payload flags są zachowane.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1528 linii i 12
+  branchy. Następny krok: decision queue assertions i końcowy action safety
+  tail.
 
 ## Następny krok
 
