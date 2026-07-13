@@ -555,6 +555,14 @@
   otwarty, bo acceptance wymaga fizycznego splitu funkcji do modułów/testów
   zachowania. Następny krok: przeniesienie pierwszej grupy helperów do
   osobnego modułu bez zmiany runtime.
+- Completion audit `c9h9.22`: behavior assertions są w nazwanych helperach dla
+  refresh, campaign, KPI/budget, recommendations, search, custom segments,
+  ActionObjects, status i context-pack. Pozostała funkcja ma 945 linii, ale
+  docstring uzasadnia granicę integracyjną (jeden isolated store przez refresh
+  → diagnostics → validate → business context → status probe → context-pack);
+  dalszy split dublowałby fixture i osłabił evidence lineage. Backend Ads/API
+  contracts, Ruff, mypy, diff check i complexity audit są zielone. Bead może
+  zostać zamknięty z tym uzasadnieniem.
 
 ## Następny krok
 

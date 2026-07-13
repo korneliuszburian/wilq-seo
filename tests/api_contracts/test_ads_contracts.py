@@ -3882,6 +3882,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Exercise one stateful Ads journey while named helpers own behavior seams.
+
+    This is intentionally an integration-boundary test: one isolated metric/state
+    store must flow through vendor refresh, diagnostics, ActionObject validation,
+    business-context enrichment, status probe and context-pack parity. Splitting
+    those transitions into independent tests would duplicate the fixture and lose
+    the evidence-lineage regression this scenario protects. Domain assertions are
+    kept in named helpers above; the remaining body is orchestration only.
+    """
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ads_diag_live_state.sqlite3"))
     monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ads_diag_live_metrics.duckdb"))
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))

@@ -2067,3 +2067,12 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   bramki są zielone, jednak `c9h9.22` pozostaje otwarty, bo acceptance wymaga
   fizycznego splitu funkcji do modułów/testów zachowania. Następny slice:
   przeniesienie pierwszej grupy helperów do osobnego modułu bez zmiany runtime.
+- Completion audit `c9h9.22`: Ads behavior assertions są w nazwanych helperach
+  (refresh, campaign, KPI/budget, recommendations, search, custom segments,
+  ActionObjects, status i context-pack). Pozostała funkcja ma 945 linii, ale
+  jest świadomie utrzymaną granicą integracyjną: jeden izolowany store musi
+  przejść sekwencję refresh → diagnostics → validate → business context →
+  status probe → context-pack. Docstring testu dokumentuje powód; dalsze
+  rozdzielenie dublowałoby fixture i osłabiło evidence-lineage proof.
+  Backend Ads/API-contract suite, Ruff, mypy, diff check i complexity audit
+  są zielone. Bead może zostać zamknięty z tym uzasadnieniem.
