@@ -33,6 +33,6 @@ czytelnie wyrenderował.
 `ContentWorkflowSurface` jest pierwszym dowodem: pobieranie kolejki, wybranego
 work itemu, wzbogacenia i gotowości WordPressu znajduje się w
 `contentWorkflowQueries.ts`, a route shell przekazuje wynik do stanów i
-komponentów prezentacyjnych. `ActionDetailSurface` pozostaje następnym seamem:
-jego query/readiness boundary należy utrzymać zgodnie z tym standardem przed
-kolejnym redesignem.
+komponentów prezentacyjnych. `ActionDetailSurface` ma analogiczny seam
+`actionDetailQueries.ts` dla akcji i readiness. Oba route’y mają focused
+architecture test, który blokuje powrót query orchestration do primary surface.

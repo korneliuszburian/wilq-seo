@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const routeSource = readFileSync(resolve(__dirname, "ContentWorkflowSurface.tsx"), "utf8");
 const querySource = readFileSync(resolve(__dirname, "contentWorkflowQueries.ts"), "utf8");
+const actionRouteSource = readFileSync(resolve(__dirname, "DetailPanels.tsx"), "utf8");
+const actionQuerySource = readFileSync(resolve(__dirname, "actionDetailQueries.ts"), "utf8");
 
 describe("ContentWorkflow architecture boundary", () => {
   it("keeps remote query orchestration in the domain hook", () => {
@@ -17,5 +19,11 @@ describe("ContentWorkflow architecture boundary", () => {
     expect(routeSource).toContain("<ContentWorkflowRouteState");
     expect(routeSource).toContain("<ContentWorkflowQueueReady");
     expect(routeSource).toContain("<ContentWorkflowLoaded");
+  });
+
+  it("keeps ActionDetail remote queries behind its domain hook", () => {
+    expect(actionRouteSource).toContain("useActionDetailQueries");
+    expect(actionRouteSource).not.toContain('queryKey: ["actions", actionId]');
+    expect(actionQuerySource).toContain("getActionMutationReadiness");
   });
 });

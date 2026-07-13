@@ -5,12 +5,12 @@ import { useState } from "react";
 import {
   ActionObject,
   Evidence,
-  getAction,
   getActionMutationReadiness,
   getEvidenceById,
   getOpportunities,
   Opportunity
 } from "../lib/api";
+import { useActionDetailQueries } from "./actionDetailQueries";
 import { LoadingBand } from "../components/OperatorPrimitives";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { StatusBadge } from "../components/StatusBadge";
@@ -22,14 +22,7 @@ import {
 } from "./ActionPanels";
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
-  const action = useQuery({
-    queryKey: ["actions", actionId],
-    queryFn: () => getAction(actionId)
-  });
-  const mutationReadiness = useQuery({
-    queryKey: ["actions", actionId, "mutation-readiness"],
-    queryFn: () => getActionMutationReadiness(actionId)
-  });
+  const { action, mutationReadiness } = useActionDetailQueries(actionId);
 
   if (action.isLoading) return <LoadingBand />;
   if (action.error) return <ErrorState />;

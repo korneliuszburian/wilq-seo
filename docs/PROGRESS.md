@@ -1269,3 +1269,6 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   no endpoint or business rule changed.
 - Remaining d380 scope: apply the same boundary review to ActionDetailSurface
   and replace stale route-string E2E assertions with behavior/fixture proof.
+- Follow-up seam completed in the same slice: `ActionDetailSurface` now uses
+  `actionDetailQueries.ts` for action/readiness reads; architecture test covers
+  both primary route boundaries. Focused ActionDetail suite is 20/20.
