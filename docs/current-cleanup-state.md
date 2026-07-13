@@ -101,6 +101,9 @@ kanoniczną powierzchnią decyzji i akcji; nie ma podstaw do drugiego queue API.
 `wilq-seo-3bst.12` zamknięty po świeżym desktop/mobile packet i render review:
 content marketer 8/10, audit 8/10, queue 7/10, command center 7/10, mobile
 7/10. Wynik pozostaje review evidence, nie zastępuje Wilku UAT.
+`wilq-seo-3bst.9` zamknięty: mobile triage command center/content pokazuje jedną
+pracę, dwa blokery i jeden CTA; finalne render scores to 8/10, bez nowego API i
+bez duplikowania reguł biznesowych w React.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie

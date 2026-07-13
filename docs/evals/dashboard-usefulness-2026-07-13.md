@@ -17,7 +17,8 @@ operatora na renderze, nie wynik testu DOM.
 | `/content-workflow` marketer | 8/10 | public URL, decyzja, blocker, freshness, dev preview i „nic nie zostanie opublikowane” są above the fold | zmniejszyć ciężar sekcji statusów przy dłuższym scrollu |
 | `/content-workflow` technical audit | 8/10 | przełącznik odsłania dowody/kontrakty/ślad bez mieszania z marketer view | nazwać techniczne sekcje według celu debugowania, nie mechanizmu |
 | `/opportunities` / `Kolejka` | 7/10 | jedna canonical queue łączy opportunities i actions | pokazać jawnie filtr gotowe/zablokowane/review na pierwszym ekranie |
-| `/content-workflow` mobile | 7/10 | tryb marketer i CTA są dostępne bez poziomego overflow | skrócić pionowy blok źródeł przed edytorem sekcji |
+| `/content-workflow` mobile | 8/10 | compact triage pokazuje jedną stronę, dwa blokery, jedno CTA i disclosure dowodów w pierwszym viewportcie | skrócić pionowy blok źródeł przed edytorem sekcji |
+| `/command-center` mobile | 8/10 | compact triage pokazuje jedną pracę, dwa blokery, jeden CTA i zakaz twierdzeń | dodać jawny filtr kolejki dopiero po rozwiązaniu candidate density |
 
 ## Live API context
 

@@ -46,6 +46,14 @@ export function CommandCenter() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="lg:hidden">
+        <MobileDailyTriage
+          item={topWork}
+          blockers={blockerRows(data, blockedOrders).slice(0, 2)}
+          forbiddenClaims={forbiddenClaims.slice(0, 2)}
+        />
+      </div>
+      <div className="hidden lg:block">
       <DashboardToolbar
         title="Dzisiaj"
         description="Twoje dzienne centrum operacyjne. Skup się na tym, co ma największy wpływ."
@@ -152,7 +160,67 @@ export function CommandCenter() {
           ]}
         />
       </div>
+      </div>
     </main>
+  );
+}
+
+function MobileDailyTriage({
+  item,
+  blockers,
+  forbiddenClaims
+}: {
+  item: WorkOrder | undefined;
+  blockers: ReturnType<typeof blockerRows>;
+  forbiddenClaims: string[];
+}) {
+  return (
+    <section aria-label="Mobilny triage dnia" className="space-y-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Dzisiaj · triage</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">Jedna praca na teraz</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Najpierw wykonaj ten krok. Resztę kolejki otworzysz później.
+        </p>
+      </div>
+      {item ? (
+        <article className="rounded-md border border-action/30 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-normal text-action">Następna praca</p>
+              <h2 className="mt-2 text-lg font-semibold leading-6 text-ink">{item.title}</h2>
+            </div>
+            <PriorityBadge value={priorityBadge(item.priority)} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">Powód: {item.summary}</p>
+          <p className="mt-3 text-sm font-semibold leading-6 text-ink">{item.next_safe_step}</p>
+          <a
+            href={item.route}
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-md bg-action px-4 text-sm font-semibold text-white"
+          >
+            Otwórz tę pracę
+          </a>
+        </article>
+      ) : (
+        <BlockerNotice message="Brak zlecenia pracy z WILQ API." />
+      )}
+      <div className="rounded-md border border-wait/30 bg-wait/10 p-4">
+        <h2 className="text-sm font-semibold text-ink">Dwa najważniejsze blokery</h2>
+        <ul className="mt-3 space-y-3">
+          {blockers.map((blocker) => (
+            <li key={blocker.title} className="text-sm leading-5 text-slate-700">
+              <span className="font-semibold text-ink">{blocker.title}</span>
+              <span className="mt-1 block">{blocker.description}</span>
+            </li>
+          ))}
+        </ul>
+        {forbiddenClaims.length ? (
+          <p className="mt-3 border-t border-wait/20 pt-3 text-xs leading-5 text-slate-600">
+            Nie obiecuj dziś: {forbiddenClaims.join("; ")}
+          </p>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

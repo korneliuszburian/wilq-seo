@@ -106,6 +106,11 @@ w git, Beads i `docs/progress/archive/`.
   `/content-workflow` marketer 8/10, technical audit 8/10, queue 7/10,
   command center 7/10, mobile 7/10. To nie jest automatyczne 10/10 — główne
   braki to candidate density i skrócenie command center.
+- `wilq-seo-3bst.9` wykonany: mobile triage na `/command-center` i
+  `/content-workflow` pokazuje jedną pracę/decyzję, dwa blokery i jeden CTA;
+  content ma disclosure evidence/freshness, a pełny workflow pozostaje niżej.
+  Vitest 18/18, ESLint, TypeScript, Vite build i finalne screenshoty 390×844
+  przechodzą. Render score wzrósł do 8/10 dla obu mobile surfaces.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,
