@@ -48,6 +48,11 @@
   Ads `main` 1006 LOC/290 branches, GSC `main` 499/132, Merchant 367/115,
   Localo 302/92 i Content Strategist `validate_content_action_preview`
   171/67.
+- Content Strategist preview seam jest teraz w
+  `scripts/content_action_preview.py`; jego własny moduł mieści się w lokalnym
+  budżecie. Pozostały w dotkniętym smoke file istniejące hotspoty: `main`
+  199 LOC/26 branches, `validate_content_decision_queue` 26 branches i
+  `validate_wordpress_draft_handoff_action_preview` 29 branches.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
@@ -58,9 +63,9 @@
 
 ## Następny slice
 
-Następny slice: wydzielić Content Strategist `validate_content_action_preview`
-do nazwanego modułu/harness helperów, zachowując dokładnie ten sam live smoke;
-dopiero potem wejść w największy Ads `main`.
+Następny slice: wydzielić Content Strategist decision-queue/handoff assertions
+do kolejnych nazwanych helperów, zachowując live smoke; dopiero potem wejść w
+największy Ads `main`.
 następnie wydzielić wspólne asercje evidence/source/action safety.
 Nie zmieniać product logic w harnessie. Największe funkcje `main` nadal są
 otwarte i wymagają osobnych, testowalnych modułów asercji.

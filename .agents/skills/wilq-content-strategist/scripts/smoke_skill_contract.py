@@ -10,6 +10,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from content_action_preview import assert_current_content_url_keys, validate_content_action_preview
+
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
 
 SKILL_NAME = "wilq-content-strategist"
@@ -46,19 +48,6 @@ CURRENT_CONTENT_URL_KEYS = frozenset(
     }
 )
 MARKETER_FACING_JARGON = ("action",)
-
-
-def assert_current_content_url_keys(value: dict[str, Any], label: str) -> None:
-    unexpected_url_keys = sorted(
-        key
-        for key in value
-        if (key.endswith("_url") or key.endswith("_host")) and key not in CURRENT_CONTENT_URL_KEYS
-    )
-    if unexpected_url_keys:
-        raise SystemExit(
-            f"{label} exposes non-current content URL fields: " + ", ".join(unexpected_url_keys)
-        )
-
 
 
 def main() -> int:
@@ -119,6 +108,7 @@ def main() -> int:
     )
     content_brief_preview = validate_content_action_preview(
         pack.get("active_action_objects"),
+        content_action_id=CONTENT_ACTION_ID,
         require_preview=require_content_preview,
     )
     validate_wordpress_draft_handoff_action_preview(pack.get("active_action_objects"))
@@ -340,179 +330,6 @@ def validate_content_operator_summary(content_diagnostics: dict[str, Any]) -> No
         assert_current_content_url_keys(decision, "Content decision_queue")
 
 
-def validate_content_action_preview(
-    active_actions: Any,
-    *,
-    require_preview: bool,
-) -> list[dict[str, Any]]:
-    if not isinstance(active_actions, list):
-        raise SystemExit("Context pack active_action_objects must be a list")
-    content_action = next(
-        (
-            action
-            for action in active_actions
-            if isinstance(action, dict) and action.get("id") == CONTENT_ACTION_ID
-        ),
-        None,
-    )
-    if not isinstance(content_action, dict):
-        raise SystemExit(f"Context pack missing active {CONTENT_ACTION_ID}")
-    payload = content_action.get("action_plan")
-    if not isinstance(payload, dict):
-        raise SystemExit("Content action plan must be an object")
-    url_contract = payload.get("content_url_review_contract")
-    url_summary = payload.get("content_url_review_summary")
-    if isinstance(url_contract, dict):
-        if url_contract.get("contract") != "content_url_preflight_review_v1":
-            raise SystemExit("Content URL review contract has invalid version")
-        if url_contract.get("scope") != "review_only":
-            raise SystemExit("Content URL review contract must be review_only")
-        if "wordpress_publish" not in set(url_contract.get("blocked_outputs") or []):
-            raise SystemExit("Content URL review contract must block wordpress_publish")
-    elif isinstance(url_summary, dict):
-        if int(url_summary.get("required_fields_total") or 0) <= 0:
-            raise SystemExit("Content URL review summary lacks required field count")
-        if int(url_summary.get("allowed_outcomes_total") or 0) <= 0:
-            raise SystemExit("Content URL review summary lacks allowed outcome count")
-        if "URL" not in str(url_summary.get("next_step") or ""):
-            raise SystemExit("Content URL review summary lacks readable next step")
-    else:
-        raise SystemExit("Content action lacks URL review contract or summary")
-    assert_current_content_url_keys(payload, "Content action payload")
-    previews = payload.get("content_plan_items")
-    if not require_preview and previews is None:
-        return []
-    if not isinstance(previews, list) or not previews:
-        raise SystemExit("Content action lacks content_plan_items")
-    if int(payload.get("content_plan_items_included") or 0) <= 0:
-        raise SystemExit("Content action context omits content_plan_items")
-    first_preview = previews[0]
-    if not isinstance(first_preview, dict):
-        raise SystemExit("Content brief preview must be an object")
-    if first_preview.get("apply_status_label") != "zablokowane do sprawdzenia":
-        raise SystemExit("Content brief preview must keep apply blocked")
-    if first_preview.get("write_status_label") != "bez zapisu automatycznego":
-        raise SystemExit("Content brief preview must keep write blocked")
-    for preview in previews:
-        if not isinstance(preview, dict):
-            continue
-        assert_current_content_url_keys(preview, "Content context-pack preview")
-    if not first_preview.get("evidence_ids"):
-        raise SystemExit("Content brief preview lacks evidence IDs")
-    if "gwarancja pozycji" not in set(first_preview.get("blocked_claim_labels") or []):
-        raise SystemExit("Content brief preview must block gwarancja pozycji claims")
-    required_string_fields = [
-        "intent",
-        "content_angle",
-        "audience",
-        "h1_direction",
-        "seo_title_direction",
-        "meta_description_direction",
-        "schema_direction",
-        "cta_direction",
-        "content_gate_summary",
-    ]
-    for field in required_string_fields:
-        if not str(first_preview.get(field) or "").strip():
-            raise SystemExit(f"Content brief preview lacks {field}")
-    required_list_fields = [
-        "key_objections",
-        "h2_direction",
-        "faq_direction",
-        "internal_link_direction",
-        "source_facts",
-        "missing_evidence",
-        "blocked_claim_labels",
-        "legal_review_notes",
-        "brand_voice_notes",
-        "required_check_labels",
-    ]
-    for field in required_list_fields:
-        value = first_preview.get(field)
-        if not isinstance(value, list) or not value:
-            raise SystemExit(f"Content brief preview lacks {field}")
-    publication_blocker_labels = first_preview.get("publication_blocker_labels")
-    if (
-        (not isinstance(publication_blocker_labels, list) or not publication_blocker_labels)
-        and int(first_preview.get("publication_blockers_total") or 0) <= 0
-    ):
-        raise SystemExit("Content brief preview lacks publication blocker labels")
-    if "gwarancja pozycji" not in set(first_preview.get("blocked_claim_labels") or []):
-        raise SystemExit("Content brief preview blocked_claim_labels must block gwarancja pozycji")
-    for field in (
-        "source_public_url",
-        "final_canonical_url",
-        "intended_final_url",
-    ):
-        if field not in first_preview:
-            raise SystemExit(f"Content brief preview lacks {field}")
-    if "ekologus.dev.proudsite.pl" in str(first_preview.get("final_canonical_url") or ""):
-        raise SystemExit("Content brief preview final_canonical_url must not point to dev preview")
-    requirements = first_preview.get("required_check_labels")
-    if not isinstance(requirements, list) or not requirements:
-        raise SystemExit("Content brief preview lacks required_check_labels")
-    if not any("duplikacji" in str(requirement) for requirement in requirements):
-        raise SystemExit(
-            "Content brief preview required_check_labels must include duplicate review"
-        )
-    gsc_preview = next(
-        (
-            item
-            for item in previews
-            if isinstance(item, dict) and item.get("source_type") == "gsc_query_page"
-        ),
-        None,
-    )
-    if isinstance(gsc_preview, dict):
-        for field in (
-            "source_public_url",
-            "final_canonical_url",
-            "intended_final_url",
-            "inventory_gate_status",
-            "canonical_gate_status",
-            "duplicate_gate_status",
-        ):
-            if not str(gsc_preview.get(field) or "").strip():
-                raise SystemExit(f"GSC content brief preview lacks {field}")
-        if "ekologus.dev.proudsite.pl" in str(gsc_preview.get("final_canonical_url") or ""):
-            raise SystemExit("GSC content brief final_canonical_url must not point to dev preview")
-    return [
-        {
-            "topic": preview.get("topic"),
-            "source_type": preview.get("source_type"),
-            "content_angle": preview.get("content_angle"),
-            "intent": preview.get("intent"),
-            "audience": preview.get("audience"),
-            "key_objections_label": "obiekcje",
-            "key_objections": (preview.get("key_objections") or [])[:4],
-            "h1_direction": preview.get("h1_direction"),
-            "seo_title_direction": preview.get("seo_title_direction"),
-            "meta_description_direction": preview.get("meta_description_direction"),
-            "h2_direction": (preview.get("h2_direction") or [])[:4],
-            "faq_direction": (preview.get("faq_direction") or [])[:4],
-            "schema_direction": preview.get("schema_direction"),
-            "inventory_gate_status": preview.get("inventory_gate_status"),
-            "canonical_gate_status": preview.get("canonical_gate_status"),
-            "duplicate_gate_status": preview.get("duplicate_gate_status"),
-            "content_gate_summary": preview.get("content_gate_summary"),
-            "cta_direction": preview.get("cta_direction"),
-            "publication_readiness_status": preview.get("publication_readiness_status"),
-            "publication_blockers": (preview.get("publication_blockers") or [])[:6],
-            "source_facts_label": "fakty źródłowe",
-            "source_facts": (preview.get("source_facts") or [])[:4],
-            "missing_evidence": (preview.get("missing_evidence") or [])[:3],
-            "blocked_claim_labels": (preview.get("blocked_claim_labels") or [])[:6],
-            "source_public_url": preview.get("source_public_url"),
-            "final_canonical_url": preview.get("final_canonical_url"),
-            "intended_final_url": preview.get("intended_final_url"),
-            "preview_url": preview.get("preview_url"),
-            "evidence_ids": (preview.get("evidence_ids") or [])[:5],
-        }
-        for preview in previews[:3]
-        if isinstance(preview, dict)
-    ]
-
-
 def validate_wordpress_draft_handoff_action_preview(active_actions: Any) -> None:
     if not isinstance(active_actions, list):
         raise SystemExit("Context pack active_action_objects must be a list")
@@ -554,8 +371,7 @@ def validate_wordpress_draft_handoff_action_preview(active_actions: Any) -> None
         ):
             if required_label not in card_text:
                 raise SystemExit(
-                    "WordPress draft handoff context-pack preview lacks "
-                    f"{required_label!r}"
+                    f"WordPress draft handoff context-pack preview lacks {required_label!r}"
                 )
         for forbidden_marker in (
             "candidate_id",

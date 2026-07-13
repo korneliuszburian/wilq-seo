@@ -68,6 +68,11 @@ w git, Beads i `docs/progress/archive/`.
   changed files 0 i zero changed-code violations. Następny potwierdzony hotspot
   do wydzielenia to Content Strategist `validate_content_action_preview`
   (171 LOC / 67 branches), przed Ads `main` (1006/290).
+- `validate_content_action_preview` wydzielony do
+  `.agents/skills/wilq-content-strategist/scripts/content_action_preview.py`;
+  live smoke/Ruff/diff przechodzą, a nowy moduł nie ma violationów. Pozostałe
+  Content Strategist `main`/decision-queue/WordPress assertions są jawnie
+  następnym zakresem.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
