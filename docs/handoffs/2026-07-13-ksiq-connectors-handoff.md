@@ -887,6 +887,12 @@
   oraz bezpieczeństwo public/dev. Route ma 1807 LOC; ESLint, typecheck, 19
   focused tests, build i diff check przechodzą. E2E nadal blokuje się na
   istniejącym heading locatorze, gdy live queue jest zablokowana.
+- `ho41` continuation 28 2026-07-13: `ServiceProfileDecisionStrip.tsx`
+  wydzielony z route. Typed service status, claim counts, blocker, evidence
+  disclosure i safe next step pozostają presentation-only; Service Profile
+  semantics nie zostały przeniesione do Reacta. Route ma 1656 LOC. ESLint,
+  typecheck, 19 focused tests, build i diff check przechodzą; Playwright nadal
+  blokuje się na istniejącym heading locatorze przez live queue `blocked`.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

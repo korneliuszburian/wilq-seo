@@ -143,6 +143,9 @@ The section-writing/ACF workbench is now `ContentSectionWritingWorkbench.tsx`;
 it owns only local editor state and composes typed public inventory, draft-only
 dry-run and ACF preview inputs. Route orchestration and business semantics stay
 outside the component.
+The Service Profile decision block is now `ServiceProfileDecisionStrip.tsx`;
+it renders typed service status, claim counts, blockers and technical
+disclosure without owning Service Profile or claim-policy semantics.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

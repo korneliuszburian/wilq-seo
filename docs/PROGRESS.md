@@ -24,6 +24,14 @@ w git, Beads i `docs/progress/archive/`.
   Browser E2E nadal blokuje się na istniejącym locatorze nagłówka przy live
   queue `blocked`.
 
+- `ho41` continuation 28 2026-07-13: `ServiceProfileDecisionStrip.tsx`
+  wydzielony z route. Usługa, status wiedzy, blocker, claim policy, safe next
+  step i techniczne dowody są nadal wyłącznie typed display inputs; logika
+  Service Profile nie trafiła do Reacta. Route spadł do 1656 LOC. ESLint,
+  TypeScript, 19 focused Vitest, build i diff check przechodzą. Playwright
+  nadal zatrzymuje się na istniejącym locatorze nagłówka przy zablokowanej
+  live kolejce.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback
