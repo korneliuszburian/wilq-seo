@@ -769,6 +769,11 @@
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent
   a third topic or reopen a closed child; await external refresh/evidence.
+- `jst` pre-UAT 2026-07-13: live `export_marketer_uat_packet.py` completed
+  against `http://127.0.0.1:8000` (5 routes, packet generated at
+  `2026-07-13T12:34:35Z`). This is preparation evidence only; no participant,
+  time-to-understand or verdict was invented. Keep `jst` open until Wilku
+  session feedback or explicit owner defer is supplied.
 
 ## Następny krok
 

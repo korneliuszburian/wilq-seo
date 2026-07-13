@@ -10,6 +10,11 @@ w git, Beads i `docs/progress/archive/`.
   dla `google_search_console` i `wordpress_ekologus`. Nie tworzyć sztucznego
   tematu. `r564` nie ma nowej luki kodowej po zamknięciu dzieci; oczekuje na
   zewnętrzne odświeżenie/evidence.
+- `jst` pre-UAT proof 2026-07-13: `scripts/export_marketer_uat_packet.py`
+  wykonał live packet z API (5 tras, status procesu 0, wygenerowano
+  `2026-07-13T12:34:35Z`). Packet zawiera aktualne dowody, blokady i pytania,
+  ale jawnie nie jest dowodem sesji Wilku. Brak uczestnika, czasu i werdyktu;
+  `jst` pozostaje otwarty do realnej rozmowy albo explicit owner defer.
 
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
