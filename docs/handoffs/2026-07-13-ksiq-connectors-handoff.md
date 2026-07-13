@@ -563,6 +563,10 @@
   dalszy split dublowałby fixture i osłabił evidence lineage. Backend Ads/API
   contracts, Ruff, mypy, diff check i complexity audit są zielone. Bead może
   zostać zamknięty z tym uzasadnieniem.
+- Roadmap re-audit zamknął stale-open `wilq-seo-0q74`: Ads smoke ma już
+  modułowe runtime/orchestration/readiness/auxiliary/report seams,
+  deterministyczny live smoke przechodzi, a strict skill coverage daje 13/13,
+  0 gaps i 0 warnings. Nie wracać do tej ukończonej pracy.
 
 ## Następny krok
 

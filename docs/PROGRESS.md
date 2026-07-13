@@ -2076,3 +2076,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   rozdzielenie dublowałoby fixture i osłabiło evidence-lineage proof.
   Backend Ads/API-contract suite, Ruff, mypy, diff check i complexity audit
   są zielone. Bead może zostać zamknięty z tym uzasadnieniem.
+- Roadmap re-audit zamknął stale-open `wilq-seo-0q74`: aktualny Ads smoke jest
+  już modułowy (`ads_smoke_runtime`, orchestration, readiness, auxiliary i
+  report seams), deterministyczny smoke live przechodzi, a
+  `audit_skill_eval_coverage.py --strict` raportuje 13/13 skills, 0 gaps i 0
+  warnings. Nie powtarzamy wykonanej pracy.
