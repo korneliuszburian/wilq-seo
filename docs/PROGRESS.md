@@ -90,6 +90,11 @@ w git, Beads i `docs/progress/archive/`.
   `index.ts` ma 580 LOC. Blokady claimów i review-only apply pozostają bez
   zmian. Shared schema/dashboard lint, build, tests i typecheck przechodzą.
   Następny seam: Social history contracts.
+- Dwudziesty czwarty seam: `social_history.ts` zawiera inventory source,
+  discovery seed, metadata-only inventory i import audit (79 LOC); `index.ts`
+  ma 511 LOC. Duplicate-free i publish claims pozostają zablokowane do review,
+  a raw post bodies nadal są zabronione. Shared schema/dashboard lint, build,
+  tests i typecheck przechodzą. Następny seam: WordPress authoring contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

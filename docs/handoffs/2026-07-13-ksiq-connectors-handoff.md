@@ -123,6 +123,11 @@
   review i safety gates (89 LOC); `index.ts` ma 580 LOC. Blokady claimów i
   review-only apply bez zmian, focused gates przechodzą. Następny seam: Social
   history contracts.
+- Dwudziesty czwarty seam: `packages/shared-schemas/src/social_history.ts`
+  zawiera inventory source, discovery seed, metadata-only inventory i import
+  audit (79 LOC); `index.ts` ma 511 LOC. Duplicate-free/publish claims nadal
+  zablokowane do review, raw post bodies zabronione, focused gates przechodzą.
+  Następny seam: WordPress authoring contracts.
 
 ## Następny krok
 
