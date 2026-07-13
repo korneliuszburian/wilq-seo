@@ -102,6 +102,10 @@
   `scripts/ads_keyword_planner_assertions.py`; live smoke przechodzi, a
   `main` ma 692 LOC/150 branches. Enrichment i forecast/audience-size nadal
   pozostają jawnie zablokowane.
+- Custom-segments contract jest w
+  `scripts/ads_custom_segments_assertions.py`; live smoke przechodzi, a
+  `main` ma 675 LOC/140 branches. Audience-size, skuteczność i zapis kierowania
+  pozostają jawnie zablokowane.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

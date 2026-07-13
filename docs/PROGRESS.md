@@ -127,6 +127,10 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/ads_keyword_planner_assertions.py`. Live smoke kończy się `exit 0`;
   `main` ma 692 LOC/150 branches, helper 27 LOC/13 branches. Blocker
   enrichment/forecast pozostaje jawny.
+- Ads custom-segments contract jest teraz w
+  `scripts/ads_custom_segments_assertions.py`. Live smoke kończy się `exit 0`;
+  `main` ma 675 LOC/140 branches, helper 29 LOC/13 branches. Audience-size,
+  skuteczność i zapis kierowania nadal pozostają zablokowane.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

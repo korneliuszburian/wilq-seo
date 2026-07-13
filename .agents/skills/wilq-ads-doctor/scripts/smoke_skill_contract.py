@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from ads_change_history_assertions import validate_change_history_contract
 from ads_change_impact_assertions import validate_change_impact_contract
+from ads_custom_segments_assertions import validate_custom_segments_contract
 from ads_impression_share_assertions import validate_impression_share_contract
 from ads_keyword_match_assertions import validate_keyword_match_context_contract
 from ads_keyword_planner_assertions import validate_keyword_planner_contract
@@ -249,30 +250,13 @@ def main() -> int:
         ads_diagnostics, pack
     )
     keyword_planner_read_contract = validate_keyword_planner_contract(ads_diagnostics, pack)
-    if custom_segments_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose custom_segments_read_contract")
-    pack_custom_segments_contract = (
-        pack.get("ads_diagnostics", {}).get("custom_segments_read_contract") or {}
+    custom_segments_read_contract = validate_custom_segments_contract(
+        ads_diagnostics, pack, keyword_planner_read_contract
     )
-    if pack_custom_segments_contract.get("summary") != custom_segments_read_contract.get("summary"):
-        raise SystemExit("Context pack custom segments contract differs")
-    custom_segments_missing = set(custom_segments_read_contract.get("missing_read_contracts") or [])
     custom_segment_idea_count = sum(
         len(candidate.get("keyword_planner_ideas") or [])
         for candidate in custom_segments_read_contract.get("candidates") or []
     )
-    if keyword_planner_read_contract.get("status") == "ready":
-        if "keyword_planner_enrichment" in custom_segments_missing:
-            raise SystemExit("Ready Keyword Planner must unblock custom segments enrichment")
-        if not custom_segment_idea_count:
-            raise SystemExit("Ready Keyword Planner must enrich custom segment candidates")
-    elif custom_segments_read_contract.get("status") == "ready":
-        if "keyword_planner_enrichment" not in custom_segments_missing:
-            raise SystemExit(
-                "Custom segments must keep Keyword Planner enrichment missing when blocked"
-            )
-        if custom_segment_idea_count:
-            raise SystemExit("Blocked Keyword Planner must not enrich custom segment candidates")
     if search_term_ngram_read_contract.get("status") == "ready":
         ngram_missing = set(search_term_ngram_read_contract.get("missing_read_contracts") or [])
         if "negative_keyword_change_preview" in ngram_missing:
