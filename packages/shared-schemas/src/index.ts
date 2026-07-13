@@ -26,7 +26,6 @@ import {
 } from "./actions";
 import {
   MarketingBriefSchema,
-  TacticalQueueItemSchema,
   TacticalQueueResponseSchema
 } from "./marketing";
 import {
@@ -52,6 +51,11 @@ import {
 } from "./ads_negative_keywords";
 import { AdsDiagnosticsResponseSchema } from "./ads_diagnostics";
 import {
+  Ga4DecisionItemSchema,
+  Ga4DiagnosticsResponseSchema,
+  Ga4DiagnosticSectionSchema
+} from "./ga4_diagnostics";
+import {
   MerchantDecisionItemSchema,
   MerchantDiagnosticSectionSchema,
   MerchantDiagnosticsResponseSchema
@@ -73,6 +77,7 @@ export * from "./ads_negative_keywords";
 export * from "./ads_change_history";
 export * from "./ads_decisions";
 export * from "./ads_diagnostics";
+export * from "./ga4_diagnostics";
 export * from "./merchant_diagnostics";
 
 export const DecisionStateSchema = z.enum(["ready", "stale", "blocked", "missing", "unknown"]);
@@ -111,151 +116,6 @@ export const OpportunitySchema = z.object({
 
 
 
-export const Ga4DiagnosticSectionSchema = z.object({
-  id: z.string(),
-  label: z.string().default(""),
-  title: z.string(),
-  status: z.enum(["ready", "blocked", "missing"]),
-  status_label: z.string().default(""),
-  summary: z.string(),
-  diagnosis: z.string(),
-  next_step: z.string(),
-  source_connectors: z.array(z.string()),
-  source_connector_labels: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  metric_facts: z.array(MetricFactSchema),
-  tactical_items: z.array(TacticalQueueItemSchema),
-  action_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([]),
-  risk: z.enum(["low", "medium", "high", "critical"]),
-  risk_label: z.string().default("")
-});
-
-export const Ga4DecisionItemSchema = z.object({
-  id: z.string(),
-  decision_type: z.enum([
-    "fix_measurement",
-    "review_traffic_quality",
-    "review_landing_mapping"
-  ]),
-  decision_type_label: z.string().default(""),
-  title: z.string(),
-  status: z.enum(["ready", "blocked"]),
-  status_label: z.string().default(""),
-  priority: z.number(),
-  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
-  landing_page: z.string().nullable().optional(),
-  landing_page_label: z.string().default(""),
-  source_medium: z.string().nullable().optional(),
-  source_medium_label: z.string().default(""),
-  campaign_name: z.string().nullable().optional(),
-  campaign_name_label: z.string().default(""),
-  wordpress_match: z.string().nullable().optional(),
-  wordpress_match_label: z.string().nullable().optional(),
-  wordpress_match_confidence: z.string().nullable().optional(),
-  wordpress_match_confidence_label: z.string().nullable().optional(),
-  wordpress_content_url: z.string().nullable().optional(),
-  source_connectors: z.array(z.string()),
-  source_connector_labels: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  metric_facts: z.array(MetricFactSchema),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([]),
-  rationale: z.string(),
-  next_step: z.string(),
-  risk: z.enum(["low", "medium", "high", "critical"]),
-  risk_label: z.string().default("")
-});
-
-export const Ga4ConversionReadinessContractSchema = z.object({
-  id: z.literal("ga4_conversion_readiness_contract"),
-  status: z.enum(["ready", "blocked"]),
-  status_label: z.string().default(""),
-  title: z.string(),
-  summary: z.string(),
-  allowed_metrics: z.array(z.string()),
-  available_read_contracts: z.array(z.string()),
-  available_read_contract_labels: z.array(z.string()).optional().default([]),
-  missing_read_contracts: z.array(z.string()),
-  missing_read_contract_labels: z.array(z.string()).optional().default([]),
-  missing_read_contract_summary_label: z.string().optional().default(""),
-  conversion_like_metric_count: z.number(),
-  dimensioned_behavior_metric_count: z.number(),
-  landing_group_count: z.number(),
-  source_connectors: z.array(z.string()),
-  source_connector_labels: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocked_claims: z.array(z.string()),
-  next_step: z.string(),
-  risk: z.enum(["low", "medium", "high", "critical"])
-});
-
-export const Ga4FreshnessAssessmentSchema = z.object({
-  state: z.enum(["fresh", "stale", "missing", "blocked"]),
-  state_label: z.string().default(""),
-  checked_at: z.string().nullable().optional(),
-  latest_refresh_id: z.string().nullable().optional(),
-  latest_refresh_completed_at: z.string().nullable().optional(),
-  age_hours: z.number().nullable().optional(),
-  stale_after_hours: z.number(),
-  requires_refresh: z.boolean(),
-  summary: z.string(),
-  next_step: z.string()
-});
-
-export const Ga4OperatorSummarySchema = z.object({
-  id: z.literal("ga4_operator_summary"),
-  title: z.string(),
-  summary: z.string(),
-  next_step: z.string(),
-  top_decision_ids: z.array(z.string()),
-  measurement_issue_count: z.number(),
-  wordpress_missing_count: z.number(),
-  conversion_readiness_status: z.enum(["ready", "blocked"]),
-  source_connectors: z.array(z.string()),
-  source_connector_labels: z.array(z.string()).default([]),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([])
-});
-
-export const Ga4DiagnosticsResponseSchema = z.object({
-  generated_at: z.string().nullable().optional(),
-  language: z.literal("pl-PL"),
-  strict_instruction: z.string(),
-  connector: ConnectorStatusSchema,
-  connector_status_label: z.string().default(""),
-  latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
-  latest_refresh_status_label: z.string().default(""),
-  live_data_available: z.boolean(),
-  live_data_status_label: z.string().default(""),
-  landing_group_count: z.number(),
-  low_engagement_count: z.number(),
-  wordpress_match_count: z.number(),
-  freshness_assessment: Ga4FreshnessAssessmentSchema,
-  conversion_readiness_contract: Ga4ConversionReadinessContractSchema,
-  operator_summary: Ga4OperatorSummarySchema,
-  decision_queue: z.array(Ga4DecisionItemSchema),
-  sections: z.array(Ga4DiagnosticSectionSchema),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  source_connector_labels: z.array(z.string()).default([]),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocker_count: z.number(),
-  decision_blocker_count: z.number()
-});
 
 export const LocaloAccessProbeSchema = z.object({
   status: z.enum(["access_ready", "access_blocked", "unknown"]),

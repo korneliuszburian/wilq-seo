@@ -52,6 +52,12 @@ w git, Beads i `docs/progress/archive/`.
   statusy i gate'y create/draft/WordPress/canonical/duplicate pozostają bez
   zmian. Shared schema/dashboard lint, build, tests i typecheck przechodzą.
   Następny seam: GA4 diagnostic contracts.
+- Siedemnasty seam: `ga4_diagnostics.ts` zawiera GA4 diagnostic sections,
+  decision items, conversion readiness, freshness, operator summary i response
+  (152 LOC); `index.ts` ma 1 440 LOC. Rozdział jakości ruchu od braków pomiaru
+  pozostaje w istniejących polach kontraktu. Shared schema/dashboard lint,
+  build, tests i typecheck przechodzą. Następny seam: Localo diagnostic
+  contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

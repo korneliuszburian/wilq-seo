@@ -86,6 +86,11 @@
   `ContentPreflightItem` oraz `ContentPreflightResponse` (50 LOC); `index.ts`
   ma 1 580 LOC. Statusy i gate'y create/draft/WordPress/canonical/duplicate bez
   zmian, focused gates przechodzą. Następny seam: GA4 diagnostic contracts.
+- Siedemnasty seam: `packages/shared-schemas/src/ga4_diagnostics.ts` zawiera
+  GA4 diagnostic sections, decision items, conversion readiness, freshness,
+  operator summary i response (152 LOC); `index.ts` ma 1 440 LOC. Rozdział
+  jakości ruchu od braków pomiaru bez zmian, focused gates przechodzą. Następny
+  seam: Localo diagnostic contracts.
 
 ## Następny krok
 
