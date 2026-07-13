@@ -911,6 +911,12 @@
   zachowane. Route ma 1038 LOC. ESLint, typecheck, 19 focused tests, build i
   diff check przechodzą; browser proof nadal zatrzymuje się na istniejącym
   heading locatorze przy live queue `blocked`.
+- `ho41` continuation 32 2026-07-13: `contentWorkflowActionModel.ts` przejął
+  typed response projections, request builders i dry-run submit helpery dla
+  structured draft, review, audit, ACF i WordPress. Route ma 891 LOC; ESLint,
+  typecheck, 19 focused tests, build i diff check przechodzą. Browser proof
+  nadal blokuje się na istniejącym heading locatorze przy live queue `blocked`;
+  ActionObject/safety semantics bez zmian.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

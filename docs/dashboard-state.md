@@ -155,6 +155,9 @@ rows); it does not introduce route-level business rules.
 The main public/dev authoring surface is now `ContentPageWorkbench.tsx`; it
 receives typed snapshot/query inputs and a minimal dry-run action interface,
 while route orchestration retains workflow semantics.
+`contentWorkflowActionModel.ts` owns typed request construction and response
+projection for the existing review/draft/ACF paths; it does not perform vendor
+writes or bypass ActionObject gates.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
