@@ -2231,3 +2231,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   contract przeniesiono do `tests/api_contracts/test_ads_contracts.py`, obok
   istniejących diagnostyk Ads. Nowy test i pełny action-object test przechodzą;
   Ruff oraz diff check są zielone.
+- Jedenasta kontynuacja `50wa`: pełny behavior test potwierdzenia targetu Ads
+  i lokalnego stanu przeniesiono do `tests/api_contracts/test_ads_contracts.py`.
+  Test docelowy oraz pełny action-object suite przechodzą; kontrakt zachowuje
+  blokadę użycia targetu do apply bez review strategii.

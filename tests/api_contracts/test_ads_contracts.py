@@ -99,6 +99,112 @@ def test_google_ads_business_context_action_is_review_only(
     assert apply_detail["audit_event"]["event_type"] == "apply_confirmation_missing"
 
 
+def test_google_ads_target_guardrail_confirmation_persists_local_target(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_google_ads_env(monkeypatch)
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_ADS_PROFIT_MARGIN", "0.35")
+    monkeypatch.setenv("WILQ_ADS_BUSINESS_GOAL", "lead quality review")
+    monkeypatch.setenv("WILQ_ADS_BUDGET_GOAL", "protect current monthly budget")
+    monkeypatch.delenv("WILQ_ADS_TARGET_ROAS", raising=False)
+    monkeypatch.delenv("WILQ_ADS_TARGET_CPA_MICROS", raising=False)
+
+    before_response = client.get("/api/ads/diagnostics")
+    assert before_response.status_code == 200
+    before_payload = before_response.json()
+    assert before_payload["business_context_read_contract"]["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID in before_payload["action_ids"]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in before_payload["action_ids"]
+
+    confirm_response = client.post(
+        f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/confirm",
+        json={
+            "confirmed_by": "operator_test",
+            "notes": "Potwierdzam roboczy target zwrotu z reklam 4.2 do sprawdzenia kampanii.",
+            "target_roas": 4.2,
+        },
+    )
+
+    assert confirm_response.status_code == 200
+    confirmation = confirm_response.json()
+    assert confirmation["confirmed"] is True
+    assert confirmation["status"] == "confirmed"
+    assert confirmation["blockers"] == []
+    assert confirmation["audit_event"]["event_type"] == "ads_target_guardrail_confirmed"
+    assert "docelowy zwrot z reklam: 4.2" in confirmation["audit_event"]["summary"]
+    assert "target_roas=" not in confirmation["audit_event"]["summary"]
+    assert "target_cpa_micros=" not in confirmation["audit_event"]["summary"]
+    assert confirmation["review_gate"]["last_confirmation_by"] == "operator_test"
+    assert confirmation["review_gate"]["apply_allowed"] is False
+
+    after_response = client.get("/api/ads/diagnostics")
+    assert after_response.status_code == 200
+    after_payload = after_response.json()
+    business_context = after_payload["business_context_read_contract"]
+    assert business_context["target_roas"] == 4.2
+    assert business_context["target_cpa_micros"] is None
+    assert business_context["missing_read_contracts"] == ["human_strategy_review"]
+    assert (
+        f"local_state:{ADS_TARGET_CONFIRMATION_ACTION_ID}" in business_context["configured_sources"]
+    )
+    assert business_context["target_interpretation"]["status"] == "preliminary"
+    assert "target_roas_review_context" in business_context["target_interpretation"]["allowed_uses"]
+    assert "budget_apply" in business_context["target_interpretation"]["blocked_uses"]
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID not in after_payload["action_ids"]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in after_payload["action_ids"]
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    action_ids = {action["id"] for action in actions_response.json()}
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID not in action_ids
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in action_ids
+
+    audit_response = client.get(f"/api/audit/events?action_id={ADS_TARGET_CONFIRMATION_ACTION_ID}")
+    assert audit_response.status_code == 200
+    assert audit_response.json()[0]["event_type"] == "ads_target_guardrail_confirmed"
+    assert "docelowy zwrot z reklam: 4.2" in audit_response.json()[0]["summary"]
+    assert "target_roas=" not in audit_response.json()[0]["summary"]
+
+    strategy_review_response = client.post(
+        f"/api/actions/{ADS_STRATEGY_REVIEW_ACTION_ID}/review",
+        json={
+            "outcome": "approved_for_prepare",
+            "reviewed_by": "operator_test",
+            "notes": "Strategia Ads zatwierdzona do dalszego sprawdzenia bez zapisu zmian.",
+            "checked_items": [
+                "review_profit_margin_model",
+                "review_business_goal",
+                "review_target_fit",
+            ],
+            "blockers": ["apply nadal zablokowany"],
+        },
+    )
+    assert strategy_review_response.status_code == 200
+    strategy_review = strategy_review_response.json()
+    assert strategy_review["status"] == "recorded"
+    assert strategy_review["audit_event"]["event_type"] == "human_review_approved_for_prepare"
+
+    final_response = client.get("/api/ads/diagnostics")
+    assert final_response.status_code == 200
+    final_payload = final_response.json()
+    final_business_context = final_payload["business_context_read_contract"]
+    assert final_business_context["missing_read_contracts"] == []
+    assert final_business_context["strategy_review_status"] == "approved_for_prepare"
+    assert final_business_context["strategy_reviewed_by"] == "operator_test"
+    assert (
+        f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}"
+        in final_business_context["configured_sources"]
+    )
+    assert final_business_context["target_interpretation"]["status"] == "ready"
+    assert "target_roas_review" in final_business_context["target_interpretation"]["allowed_uses"]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID not in final_payload["action_ids"]
+
+
 def large_ads_metric_fact_fillers(count: int = 2050) -> list[VendorMetricFact]:
     return [
         VendorMetricFact(

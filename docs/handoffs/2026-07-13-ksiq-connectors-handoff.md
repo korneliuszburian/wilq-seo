@@ -692,6 +692,9 @@
   jest teraz w `tests/api_contracts/test_ads_contracts.py`. Nowy i pełny
   action-object suite przechodzą; Ads API contract jest właściwym właścicielem
   tego behavior testu.
+- Jedenasta kontynuacja `50wa`: target guardrail confirmation/local-state
+  behavior jest teraz w `tests/api_contracts/test_ads_contracts.py`. Nowy i
+  pełny action-object suite przechodzą; nie wracać do tego testu w mega-teście.
 
 ## Następny krok
 
