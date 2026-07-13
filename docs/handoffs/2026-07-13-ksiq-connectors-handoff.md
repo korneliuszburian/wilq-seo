@@ -210,6 +210,11 @@
   `podgląd gotowy`. App + Actions focused 18/18, dashboard typecheck/lint i
   diff check przechodzą; `App.test.tsx` ma 9128 LOC. Następny seam: pozostające
   actions/diagnostic surfaces.
+- Dwunasty slice: Ads Doctor source/contract proof przeniesiony do
+  `AdsDoctorSurface.test.tsx`; zachowano evidence/action summaries, blocked
+  claims, typed panel fields i brak raw payloadów/legacy routes. Ads + App
+  focused 16/16, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 8914 LOC. Następny seam: Custom Segments diagnostic proof.
 
 ## Następny krok
 

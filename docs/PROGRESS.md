@@ -178,6 +178,11 @@ w git, Beads i `docs/progress/archive/`.
   zanim API zwróci readiness; po resolve pojawia się `podgląd gotowy`.
   App + Actions focused 18/18, typecheck/lint/diff check przechodzą;
   `App.test.tsx` ma 9128 LOC.
+- Dwunasty slice przeniósł Ads Doctor source/contract proof do
+  `AdsDoctorSurface.test.tsx`; zachowano asercje evidence/action summaries,
+  blocked claims, typed panel fields i brak surowych payloadów/legacy routes.
+  Ads + App focused 16/16, typecheck/lint/diff check przechodzą;
+  `App.test.tsx` ma 8914 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke
