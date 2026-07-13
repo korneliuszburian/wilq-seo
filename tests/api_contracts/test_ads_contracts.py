@@ -2085,6 +2085,74 @@ def assert_ads_recommendation_action_payload(action: dict[str, Any]) -> None:
     assert "human_confirm_before_apply" in payload["required_validation"]
 
 
+def assert_ads_custom_segment_action_payload(action: dict[str, Any]) -> None:
+    """Prove custom-segment payload is source-traced and forecast-blocked."""
+    payload = action["payload"]
+    assert payload["terms"] == ["bdo rejestracja", "odpady cena"]
+    assert payload["invented_terms"] is False
+    assert payload["preview_contract"] == "custom_segment_change_preview_v1"
+    preview = payload["payload_preview"][0]
+    assert preview["member_type"] == "KEYWORD"
+    assert preview["member_type_label"] == "słowa kluczowe"
+    assert preview["apply_allowed"] is False
+    assert "search-term evidence" not in preview["reason"]
+    assert "dowodów z wyszukiwanych haseł" in preview["reason"]
+    card = action["preview_cards"][0]
+    assert card["kind"] == "google_ads_custom_segment_review"
+    assert card["title_label"] == "Segment odbiorców do sprawdzenia"
+    rows = {row["label"]: row["value"] for row in card["rows"]}
+    assert rows["Nazwa"] == "Wyszukiwane hasła: Brand Search"
+    assert rows["Typ odbiorców"] == "słowa kluczowe"
+    assert rows["Kampania do sprawdzenia"] == "Brand Search"
+    assert "KEYWORD" not in str(card)
+    assert "101" not in str(card)
+    safety = preview["safety_review"]
+    assert safety["safety_contract"] == "custom_segment_apply_safety_v1"
+    assert safety["status"] == "blocked"
+    assert safety["status_label"] == "zablokowane"
+    assert safety["apply_allowed"] is False
+    assert safety["api_mutation_ready"] is False
+    assert safety["destructive"] is False
+    assert safety["audit_required"] is True
+    assert "forecast," not in safety["reason"]
+    assert "prognozy rozmiaru odbiorców" in safety["reason"]
+    assert "forecast_or_audience_size" in safety["missing_requirements"]
+    assert "google_ads_mutation_audit" in safety["missing_requirements"]
+    targeting = preview["targeting_preview"][0]
+    assert targeting["operation_type"] == "custom_segment_targeting_review"
+    assert targeting["apply_allowed"] is False
+    assert targeting["api_mutation_ready"] is False
+    assert payload["destructive"] is False
+
+
+def assert_ads_negative_keyword_action_payload(action: dict[str, Any]) -> None:
+    """Prove negative-keyword payload has safety evidence and no mutation."""
+    payload = action["payload"]
+    assert payload["terms"] == ["odpady cena"]
+    assert payload["preview_contract"] == "negative_keyword_change_preview_v1"
+    preview = payload["payload_preview"][0]
+    assert payload["api_mutation_ready"] is False
+    assert preview["match_type"] == "EXACT"
+    assert preview["apply_allowed"] is False
+    card = action["preview_cards"][0]
+    assert card["kind"] == "google_ads_negative_keyword_review"
+    assert card["title_label"] == "Wykluczenie słowa do sprawdzenia"
+    rows = {row["label"]: row["value"] for row in card["rows"]}
+    assert rows["Dopasowanie"] == "dopasowanie ścisłe"
+    assert rows["Poziom"] == "grupa reklam"
+    assert "EXACT" not in str(card)
+    assert "ad_group" not in str(card)
+    assert "101" not in str(card)
+    assert payload["keyword_match_context_available"] is True
+    context = payload["keyword_match_context"][0]
+    assert context["keyword_text"] == "odpady"
+    assert context["match_type"] == "BROAD"
+    assert "search_term_90d_clicks" in payload["source_metric_names"]
+    assert payload["apply_allowed"] is False
+    assert payload["destructive"] is False
+    assert "90_day_safety_check" in payload["required_validation"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4585,55 +4653,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         for action in actions_payload
         if action["id"] == "act_prepare_custom_segments_from_search_terms"
     )
-    assert custom_segment_action["payload"]["terms"] == [
-        "bdo rejestracja",
-        "odpady cena",
-    ]
-    assert custom_segment_action["payload"]["invented_terms"] is False
-    assert custom_segment_action["payload"]["preview_contract"] == (
-        "custom_segment_change_preview_v1"
-    )
-    assert custom_segment_action["payload"]["payload_preview"][0]["member_type"] == "KEYWORD"
-    assert custom_segment_action["payload"]["payload_preview"][0]["member_type_label"] == (
-        "słowa kluczowe"
-    )
-    assert custom_segment_action["payload"]["payload_preview"][0]["apply_allowed"] is False
-    custom_segment_reason = custom_segment_action["payload"]["payload_preview"][0]["reason"]
-    assert "search-term evidence" not in custom_segment_reason
-    assert "dowodów z wyszukiwanych haseł" in custom_segment_reason
-    assert custom_segment_action["preview_cards"]
-    custom_segment_preview_card = custom_segment_action["preview_cards"][0]
-    assert custom_segment_preview_card["kind"] == "google_ads_custom_segment_review"
-    assert custom_segment_preview_card["title_label"] == "Segment odbiorców do sprawdzenia"
-    custom_segment_preview_rows = {
-        row["label"]: row["value"] for row in custom_segment_preview_card["rows"]
-    }
-    assert custom_segment_preview_rows["Nazwa"] == "Wyszukiwane hasła: Brand Search"
-    assert custom_segment_preview_rows["Typ odbiorców"] == "słowa kluczowe"
-    assert custom_segment_preview_rows["Kampania do sprawdzenia"] == "Brand Search"
-    assert "KEYWORD" not in str(custom_segment_preview_card)
-    assert "101" not in str(custom_segment_preview_card)
-    custom_segment_safety_review = custom_segment_action["payload"]["payload_preview"][0][
-        "safety_review"
-    ]
-    assert custom_segment_safety_review["safety_contract"] == ("custom_segment_apply_safety_v1")
-    assert custom_segment_safety_review["status"] == "blocked"
-    assert custom_segment_safety_review["status_label"] == "zablokowane"
-    assert custom_segment_safety_review["apply_allowed"] is False
-    assert custom_segment_safety_review["api_mutation_ready"] is False
-    assert custom_segment_safety_review["destructive"] is False
-    assert custom_segment_safety_review["audit_required"] is True
-    assert "forecast," not in custom_segment_safety_review["reason"]
-    assert "prognozy rozmiaru odbiorców" in custom_segment_safety_review["reason"]
-    assert "forecast_or_audience_size" in custom_segment_safety_review["missing_requirements"]
-    assert "google_ads_mutation_audit" in custom_segment_safety_review["missing_requirements"]
-    custom_segment_targeting_preview = custom_segment_action["payload"]["payload_preview"][0][
-        "targeting_preview"
-    ][0]
-    assert custom_segment_targeting_preview["operation_type"] == ("custom_segment_targeting_review")
-    assert custom_segment_targeting_preview["apply_allowed"] is False
-    assert custom_segment_targeting_preview["api_mutation_ready"] is False
-    assert custom_segment_action["payload"]["destructive"] is False
+    assert_ads_custom_segment_action_payload(custom_segment_action)
     validation_response = client.post(
         "/api/actions/act_prepare_custom_segments_from_search_terms/validate",
         json={},
@@ -4645,34 +4665,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         for action in actions_payload
         if action["id"] == "act_prepare_negative_keyword_review_queue"
     )
-    assert negative_keyword_action["payload"]["terms"] == ["odpady cena"]
-    assert negative_keyword_action["payload"]["preview_contract"] == (
-        "negative_keyword_change_preview_v1"
-    )
-    assert negative_keyword_action["payload"]["api_mutation_ready"] is False
-    assert negative_keyword_action["payload"]["payload_preview"][0]["match_type"] == "EXACT"
-    assert negative_keyword_action["payload"]["payload_preview"][0]["apply_allowed"] is False
-    assert negative_keyword_action["preview_cards"]
-    negative_keyword_preview_card = negative_keyword_action["preview_cards"][0]
-    assert negative_keyword_preview_card["kind"] == "google_ads_negative_keyword_review"
-    assert negative_keyword_preview_card["title_label"] == "Wykluczenie słowa do sprawdzenia"
-    negative_keyword_preview_rows = {
-        row["label"]: row["value"] for row in negative_keyword_preview_card["rows"]
-    }
-    assert negative_keyword_preview_rows["Dopasowanie"] == "dopasowanie ścisłe"
-    assert negative_keyword_preview_rows["Poziom"] == "grupa reklam"
-    assert "EXACT" not in str(negative_keyword_preview_card)
-    assert "ad_group" not in str(negative_keyword_preview_card)
-    assert "101" not in str(negative_keyword_preview_card)
-    assert negative_keyword_action["payload"]["keyword_match_context_available"] is True
-    assert (
-        negative_keyword_action["payload"]["keyword_match_context"][0]["keyword_text"] == "odpady"
-    )
-    assert negative_keyword_action["payload"]["keyword_match_context"][0]["match_type"] == "BROAD"
-    assert "search_term_90d_clicks" in negative_keyword_action["payload"]["source_metric_names"]
-    assert negative_keyword_action["payload"]["apply_allowed"] is False
-    assert negative_keyword_action["payload"]["destructive"] is False
-    assert "90_day_safety_check" in negative_keyword_action["payload"]["required_validation"]
+    assert_ads_negative_keyword_action_payload(negative_keyword_action)
     negative_keyword_validation_response = client.post(
         "/api/actions/act_prepare_negative_keyword_review_queue/validate",
         json={},

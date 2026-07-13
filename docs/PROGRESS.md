@@ -2035,3 +2035,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   disclosure bez technicznych ID, preview contract i blokadę apply/destructive.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1093 linii i 12
   branchy. Następny seam: custom-segment/negative-keyword payloady i status tail.
+- Czterdziesty dziewiąty pod-slice c9h9.22: custom-segment i negative-keyword
+  ActionObject payloady wydzielone do `assert_ads_custom_segment_action_payload`
+  oraz `assert_ads_negative_keyword_action_payload`; zachowano source lineage,
+  forecast/90-day safety blockers, disclosure i `apply_allowed=false`.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1018 linii i 12
+  branchy. Następny seam: status-probe/context-pack tail.

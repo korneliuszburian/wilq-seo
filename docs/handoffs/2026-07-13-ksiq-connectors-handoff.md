@@ -522,6 +522,13 @@
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1093 linii i 12
   branchy. Następny krok: custom-segment/negative-keyword payloady i status
   tail.
+- Czterdziesty dziewiąty pod-slice zakończony: custom-segment i
+  negative-keyword ActionObject payloady są w
+  `assert_ads_custom_segment_action_payload` oraz
+  `assert_ads_negative_keyword_action_payload`; source lineage,
+  forecast/90-day safety blockers, disclosure i `apply_allowed=false` są
+  zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1018
+  linii i 12 branchy. Następny krok: status-probe/context-pack tail.
 
 ## Następny krok
 
