@@ -86,6 +86,9 @@ typed claim text, reasons and evidence IDs without classifying claim status.
 Workflow action controls now render through `ContentWorkflowControlButton.tsx`;
 disabled reasons and pending state remain supplied by the existing action
 orchestration, so the component does not validate or mutate actions.
+The full topic-enrichment panel is now `ContentOpportunityEnrichmentPanel.tsx`;
+it renders the existing enrichment/measurement contract and blockers without
+inferring service fit or replacing Service Profile decisions.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
