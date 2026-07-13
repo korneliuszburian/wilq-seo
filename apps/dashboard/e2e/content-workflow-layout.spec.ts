@@ -8,7 +8,7 @@ const proofRoot = process.env.WILQ_DASHBOARD_PROOF_DIR
   : path.join(repoRoot, ".local-lab/proof/dashboard-content-workflow");
 
 test.describe("WILQ content workflow layout proof", () => {
-  test("puts the current source blocker before authoring details", async ({ page }) => {
+  test("shows a decision, proof context and safe authoring next step", async ({ page }) => {
     const runDir = path.join(proofRoot, new Date().toISOString().replace(/[:.]/g, "-"));
     await fs.mkdir(runDir, { recursive: true });
     await page.setViewportSize({ width: 1536, height: 1024 });
@@ -22,16 +22,26 @@ test.describe("WILQ content workflow layout proof", () => {
     await queueResponse;
     expect(Date.now() - queueStartedAt).toBeLessThan(5_000);
 
+    await expect(page.getByRole("heading", { name: "Treści: praca nad stroną" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Strona główna ekologus.pl", exact: true }).first()
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "https://www.ekologus.pl/" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "odśwież istniejącą treść" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Aktualna strona" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sygnały i braki" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dev draft / ACF" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Przygotuj podgląd draftu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Źródła treści: dane treści wymagają odświeżenia" })
-    ).toBeVisible();
-    await expect(page.getByText("Gotowe do pracy: 0 z 2 tematów")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "WILQ blokuje pisanie tego tematu" })).toBeVisible();
-    await expect(
-      page.getByText("Uruchom odczyt danych dla wskazanych źródeł", { exact: false }).first()
-    ).toBeVisible();
+    ).toHaveCount(0);
+    await expect(page.getByText("Gotowe do pracy: 0 z 2 tematów")).toHaveCount(0);
     await expect(page.getByText("Ładowanie stanu WILQ")).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Treści: praca nad stroną" })).toHaveCount(0);
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+    );
+    expect(hasHorizontalOverflow).toBe(false);
 
     await page.screenshot({
       path: path.join(runDir, "content-workflow-freshness-blocker.png"),

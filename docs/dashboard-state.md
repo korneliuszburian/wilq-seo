@@ -65,6 +65,9 @@ selected work item, enrichment and WordPress readiness queries to the typed
 `contentWorkflowQueries.ts` seam. The route keeps state selection and
 presentation orchestration; the seam owns React Query keys/enabled gates.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
+The current Playwright proof also asserts the live marketer contract (decision,
+public URL, current/signals/dev sections, safe draft-preview CTA and no
+horizontal overflow) instead of historical freshness strings.
 
 The target content workbench must show:
 

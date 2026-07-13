@@ -1272,3 +1272,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
 - Follow-up seam completed in the same slice: `ActionDetailSurface` now uses
   `actionDetailQueries.ts` for action/readiness reads; architecture test covers
   both primary route boundaries. Focused ActionDetail suite is 20/20.
+- Replaced the stale `/content-workflow` Playwright assertions that expected a
+  refresh-only queue and `0 z 2` state. Current E2E now proves the live route's
+  decision, public URL, current page/signals/dev workspace, safe draft-preview
+  CTA, evidence section, no loader, and no horizontal overflow. Playwright
+  passes 1/1 in 19.1s with a refreshed screenshot proof.
