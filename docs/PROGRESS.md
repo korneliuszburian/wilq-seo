@@ -2610,3 +2610,12 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Ads contracts/action-cache tests, Ruff, mypy, complexity, API health,
   dashboard title and Playwright proof pass; frozen-growth risk remains clear,
   with only the pre-existing Ads monolith/function budgets reported.
+- `jnra` continuation 10 2026-07-13: mutation-readiness orchestration moved
+  into `wilq/actions/mutation_lifecycle.py`; `service.py` remains the public
+  compatibility facade and injects persistence, connector, WordPress and
+  payload-readiness seams. The response contract and fail-closed semantics are
+  unchanged: live API reports 21 actions, zero ready-to-apply actions and zero
+  possible vendor writes. Focused mutation-readiness tests (17 passed), Ruff,
+  mypy, complexity, API health, dashboard title and Playwright proof pass.
+  Complexity reports the expected frozen service-file budget warning while the
+  file shrank to 1201 LOC; this is not a new growth regression.

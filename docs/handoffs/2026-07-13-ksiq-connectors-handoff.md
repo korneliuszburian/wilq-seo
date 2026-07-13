@@ -1023,6 +1023,15 @@
   mypy, complexity, API health, dashboard route and Playwright proof pass. Do
   not repeat cache/freshness/campaign-row/derived-KPI work; next seam must be
   distinct and evidence-backed.
+- `jnra` continuation 10 2026-07-13: mutation-readiness orchestration now
+  lives in `wilq/actions/mutation_lifecycle.py`; the service facade preserves
+  persistence, connector, WordPress and payload callback seams. Live API proof:
+  21 actions, zero ready-to-apply, zero vendor-write-possible and the first
+  WordPress candidate remains blocked by explicit audit/readiness gates.
+  Focused mutation tests, Ruff, mypy, complexity, API health, dashboard route
+  and Playwright proof pass. Do not repeat apply/impact/confirmation or this
+  mutation-readiness seam; next work must be a fresh product or architecture
+  boundary.
 
 ## Następny krok
 

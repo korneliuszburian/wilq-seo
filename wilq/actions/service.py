@@ -162,6 +162,9 @@ from wilq.actions.mutation_contract import mutation_apply_contract as _mutation_
 from wilq.actions.mutation_contract import (
     supported_mutation_adapter as _supported_mutation_adapter_impl,
 )
+from wilq.actions.mutation_lifecycle import (
+    mutation_readiness_action as mutation_readiness_action_lifecycle,
+)
 from wilq.actions.mutation_plan import activation_next_step as _activation_next_step
 from wilq.actions.mutation_plan import activation_plan_steps as _activation_plan_steps
 from wilq.actions.mutation_plan import first_write_candidate as _first_write_candidate
@@ -1002,71 +1005,35 @@ def _wordpress_draft_apply_capability(
 
 
 def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessResponse:
-    action = _with_review_gate(
-        _with_persisted_validation_state(action),
-        _persisted_audit_events_for_action(action.id),
-        _persisted_mutation_audits_for_action(action.id),
-    )
-    connector = get_connector_status(action.connector)
-    mutation_adapter = _supported_mutation_adapter(action)
-    latest_preview = _latest_preview_event(action.audit_events)
-    latest_confirmation = _latest_action_confirmation_event(action.audit_events)
-    latest_impact_check = _latest_action_impact_check_event(action.audit_events)
-    latest_mutation_audit = _latest_mutation_audit(
-        _persisted_mutation_audits_for_action(action.id)
-    )
-    wordpress_draft_readiness = wordpress_draft_write_readiness(action)
-    wordpress_activation_packet = wordpress_draft_activation_packet(action)
-    requirements = base_mutation_readiness_requirements(
-        action=action,
-        connector_configured=connector is not None and connector.configured,
-        connector_evidence=connector.status.value if connector is not None else "missing",
-        mutation_adapter=mutation_adapter,
-        latest_preview=latest_preview,
-        latest_confirmation=latest_confirmation,
-        latest_impact_check=latest_impact_check,
+    return mutation_readiness_action_lifecycle(
+        action,
+        with_review_gate=lambda current, audits, mutation_audits: _with_review_gate(
+            _with_persisted_validation_state(current), audits, mutation_audits
+        ),
+        persisted_audit_events=_persisted_audit_events_for_action,
+        persisted_mutation_audits=_persisted_mutation_audits_for_action,
+        connector_status=get_connector_status,
+        mutation_adapter=_supported_mutation_adapter,
+        latest_preview_event=_latest_preview_event,
+        latest_confirmation_event=_latest_action_confirmation_event,
+        latest_impact_check_event=_latest_action_impact_check_event,
+        latest_mutation_audit=_latest_mutation_audit,
+        wordpress_draft_readiness=wordpress_draft_write_readiness,
+        wordpress_activation_packet=wordpress_draft_activation_packet,
+        base_requirements=base_mutation_readiness_requirements,
+        wordpress_execution_requirements=wordpress_draft_execution_readiness_requirements,
+        wordpress_target_requirements=wordpress_draft_target_content_readiness_requirements,
+        wordpress_write_requirements=wordpress_draft_write_readiness_requirements,
+        blockers=_mutation_readiness_blockers,
+        vendor_write_possible=_vendor_write_possible_impl,
+        apply_contract=_mutation_apply_contract,
+        target=mutation_readiness_target,
+        response=build_mutation_readiness_response,
+        operator_next_step=_mutation_readiness_next_step,
         payload_apply_allowed=_action_payload_apply_allowed,
         impact_status=_impact_status_from_event,
         evidence_label=evidence_count_label,
-    )
-    requirements.extend(
-        wordpress_draft_execution_readiness_requirements(
-            action,
-            activation_packet=wordpress_activation_packet,
-        )
-    )
-    requirements.extend(
-        wordpress_draft_target_content_readiness_requirements(
-            action,
-            activation_packet=wordpress_activation_packet,
-            preview_items=_payload_preview_items,
-        )
-    )
-    requirements.extend(
-        wordpress_draft_write_readiness_requirements(
-            action,
-            wordpress_draft_readiness=wordpress_draft_readiness,
-        )
-    )
-    blockers = _mutation_readiness_blockers(requirements)
-    vendor_write_possible = _vendor_write_possible_impl(action, mutation_adapter)
-    apply_contract = _mutation_apply_contract(action, mutation_adapter)
-    target = mutation_readiness_target(
-        action,
-        activation_packet=wordpress_activation_packet,
         preview_items=_payload_preview_items,
-    )
-    return build_mutation_readiness_response(
-        action=action,
-        mutation_adapter=mutation_adapter,
-        wordpress_draft_readiness=wordpress_draft_readiness,
-        requirements=requirements,
-        blockers=blockers,
-        vendor_write_possible=vendor_write_possible,
-        apply_contract=apply_contract,
-        target=target,
-        operator_next_step=_mutation_readiness_next_step(action, blockers),
-        latest_mutation_audit=latest_mutation_audit,
     )
 
 
