@@ -89,6 +89,9 @@ orchestration, so the component does not validate or mutate actions.
 The full topic-enrichment panel is now `ContentOpportunityEnrichmentPanel.tsx`;
 it renders the existing enrichment/measurement contract and blockers without
 inferring service fit or replacing Service Profile decisions.
+The Claim Ledger gate panel is now `ClaimLedgerGatePanel.tsx`; it preserves the
+existing typed ledger filtering and evidence rendering while the route only
+orchestrates its placement.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

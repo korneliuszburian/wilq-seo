@@ -63,6 +63,11 @@ w git, Beads i `docs/progress/archive/`.
   enrichment contract, measurement baseline and blockers; it does not infer
   service fit or replace the typed Service Profile decision. Focused route
   tests, Playwright proof, lint/typecheck/build and diff check pass.
+- `wilq-seo-ho41` continuation 10: extracted the Claim Ledger gate panel into
+  `ClaimLedgerGatePanel.tsx` (32 LOC). Existing ledger filtering, evidence IDs,
+  blocked copy and counts remain unchanged; the route only orchestrates the
+  panel. Focused route tests, Playwright proof, lint/typecheck/build and diff
+  check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i
