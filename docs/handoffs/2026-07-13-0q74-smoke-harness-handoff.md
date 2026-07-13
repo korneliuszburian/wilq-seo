@@ -196,6 +196,9 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
   report shaping. Live proof: `manual_required`, 8 gap records, 0 actions;
   freshness/evidence/blocked-claim gates remain explicit. Ruff, smoke and
   complexity pass.
+- Demand Gen smoke now delegates readiness/read-contract assertions to
+  `demand_gen_assertions.py`. Live proof: `blocked`, 18 evaluated campaigns,
+  one review action, apply/write disabled; Ruff, smoke and complexity pass.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

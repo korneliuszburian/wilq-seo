@@ -30,6 +30,10 @@ w git, Beads i `docs/progress/archive/`.
   i `ahrefs_report.py`. Live proof: `manual_required`, 8 gap records, 0 actions;
   freshness/evidence/blocked-claim gates zachowane. Ruff, smoke i complexity
   audit przechodzą bez wyjątku.
+- Demand Gen smoke został skondensowany przez `demand_gen_assertions.py`;
+  live proof zachowuje `blocked`, 18 ocenionych kampanii i 1 review action,
+  z `apply_allowed=false`/write disabled. Ruff, smoke i complexity audit
+  przechodzą bez wyjątku.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
