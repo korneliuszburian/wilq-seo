@@ -633,6 +633,12 @@
   nadal w helperach fasady przez callbacki. `ads_diagnostics.py` ma 6 863 linie
   fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff check zielone.
   Następny seam: contract-specific label hydration.
+- Dziesiąty slice wykonany: dodano `wilq/briefing/ads_contract_label_hydration.py`.
+  Orkiestracja labeli core/optimizer/budget/search jest poza fasadą przez
+  callbacki; konkretne polityki label i preview pozostają w dotychczasowych
+  helperach. `ads_diagnostics.py` ma 6 876 linii fizycznych; Ads contracts,
+  Ruff, mypy, complexity audit i diff check zielone. Następny seam: pozostałe
+  preview/payload label helpers, tylko jeśli mają wspólną bezpieczną granicę.
 
 ## Następny krok
 

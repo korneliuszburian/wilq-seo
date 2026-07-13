@@ -52,6 +52,7 @@ from wilq.briefing.ads_campaign_optimizer_contracts import (
     build_campaign_optimizer_contracts,
 )
 from wilq.briefing.ads_candidate_contracts import build_candidate_read_contracts
+from wilq.briefing.ads_contract_label_hydration import hydrate_contract_labels
 from wilq.briefing.ads_decision_queue import (
     build_block_write_actions_decision,
     build_business_context_decision,
@@ -5730,10 +5731,22 @@ def _hydrate_ads_contract_labels(
     response: AdsDiagnosticsResponse,
     currency_code: str | None,
 ) -> None:
-    _hydrate_ads_optimization_contract_labels(response)
-    _hydrate_ads_core_contract_labels(response)
-    _hydrate_ads_budget_performance_contract_labels(response, currency_code)
-    _hydrate_ads_search_contract_labels(response)
+    hydrate_contract_labels(
+        response,
+        currency_code,
+        custom_segments=_hydrate_custom_segments_marketer_labels,
+        business_context=_hydrate_business_context_marketer_labels,
+        campaign_triage=_hydrate_campaign_triage_marketer_labels,
+        optimizer_readiness=_hydrate_optimizer_readiness_marketer_labels,
+        change_impact=_hydrate_change_impact_marketer_labels,
+        budget_pacing=_hydrate_budget_pacing_marketer_labels,
+        recommendations=_hydrate_recommendations_marketer_labels,
+        impression_share=_hydrate_impression_share_marketer_labels,
+        change_history=_hydrate_change_history_marketer_labels,
+        negative_keywords=_hydrate_negative_keywords_marketer_labels,
+        keyword_match_context=_hydrate_keyword_match_context_marketer_labels,
+        unique=_unique,
+    )
 
 
 def _hydrate_ads_core_contract_labels(response: AdsDiagnosticsResponse) -> None:

@@ -2158,3 +2158,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `ads_diagnostics.py` ma 6 863 linie fizyczne. Ads contracts, Ruff, mypy,
   complexity audit i diff check przechodzą. Następny slice: contract-specific
   label hydration.
+- Dziesiąty slice `kgvy`: wydzielono `wilq/briefing/ads_contract_label_hydration.py`.
+  Orkiestracja etykiet core/optimizer/budget/search działa przez jawne callbacki;
+  reguły label i preview pozostają w istniejących helperach. Bez endpointu ani
+  zmiany payloadu; `ads_diagnostics.py` ma 6 876 linii fizycznych. Ads contracts,
+  Ruff, mypy, complexity audit i diff check przechodzą (dwa znane budżety).
+  Następny slice: sprawdzić, czy pozostałe preview/payload label helpers mają
+  jeszcze bezpieczną wspólną granicę.
