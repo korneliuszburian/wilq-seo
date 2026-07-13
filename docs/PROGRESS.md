@@ -50,6 +50,11 @@ w git, Beads i `docs/progress/archive/`.
   walidacja command center w `daily_command_assertions.py`. Live proof pozostaje
   `ok`, 2 blocker count i 4 daily decisions; complexity audit przechodzi bez
   wyjątku, bez zmiany rankingu ani API.
+- Ads account/business/budget readiness jest teraz w
+  `ads_account_readiness.py`; live smoke potwierdził trzy kontrakty `ready`,
+  6 walidacji actions i zachowane blokady safety. Ten slice używa jawnie
+  `--allow-budget-violations`, bo pozostały Ads `main` ma 511 LOC/81 branches;
+  dalszy split jest odrębnym zakresem, nie ukrytym sukcesem.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

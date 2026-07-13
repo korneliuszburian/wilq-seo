@@ -211,6 +211,10 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - Daily Command now delegates text guards and command-center validation to
   `daily_command_text_guards.py` and `daily_command_assertions.py`. Live proof:
   `ok`, two blockers, four daily decisions; complexity passes.
+- Ads account/business/budget readiness now lives in `ads_account_readiness.py`;
+  live proof: three contracts `ready`, six action validations, safety preserved.
+  The remaining Ads main is explicitly over budget (511 LOC/81 branches) and
+  was audited only with documented `--allow-budget-violations`; continue splitting.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

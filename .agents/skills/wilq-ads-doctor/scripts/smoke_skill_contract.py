@@ -9,6 +9,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from ads_account_readiness import validate_account_business_budget
 from ads_change_history_assertions import validate_change_history_contract
 from ads_change_impact_assertions import validate_change_impact_contract
 from ads_context_lineage import validate_context_lineage
@@ -142,110 +143,14 @@ def main() -> int:
             campaign_triage_read_contract.get("action_ids") or []
         ):
             raise SystemExit("Campaign triage contract must expose campaign review action")
-    if account_currency_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose account_currency_read_contract")
-    pack_currency_contract = (
-        pack.get("ads_diagnostics", {}).get("account_currency_read_contract") or {}
+    strategy_readiness_contract = validate_account_business_budget(
+        pack,
+        account_currency_read_contract,
+        business_context_read_contract,
+        budget_pacing_read_contract,
+        budget_decision,
+        pack_budget_decision,
     )
-    if pack_currency_contract.get("summary") != account_currency_read_contract.get("summary"):
-        raise SystemExit("Context pack account currency contract differs")
-    if account_currency_read_contract.get("status") == "ready":
-        currency_code = account_currency_read_contract.get("currency_code")
-        if not isinstance(currency_code, str) or len(currency_code) != 3:
-            raise SystemExit("Ready account currency contract must expose ISO currency code")
-    elif "account_currency" not in account_currency_read_contract.get(
-        "missing_read_contracts",
-        [],
-    ):
-        raise SystemExit("Blocked account currency contract must list missing account_currency")
-    if business_context_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose business_context_read_contract")
-    pack_business_context_contract = (
-        pack.get("ads_diagnostics", {}).get("business_context_read_contract") or {}
-    )
-    if pack_business_context_contract.get("summary") != business_context_read_contract.get(
-        "summary"
-    ):
-        raise SystemExit("Context pack business context contract differs")
-    strategy_readiness_contract = (
-        business_context_read_contract.get("strategy_review_readiness_contract") or {}
-    )
-    pack_strategy_readiness_contract = (
-        pack_business_context_contract.get("strategy_review_readiness_contract") or {}
-    )
-    if strategy_readiness_contract.get("id") != "ads_strategy_review_readiness_contract":
-        raise SystemExit("Business context must expose strategy review readiness contract")
-    if strategy_readiness_contract.get("apply_allowed") is not False:
-        raise SystemExit("Strategy review readiness must keep apply_allowed=false")
-    if "ocena opłacalności" not in strategy_readiness_contract.get(
-        "blocked_claims",
-        [],
-    ):
-        raise SystemExit("Strategy review readiness must block ocena opłacalności")
-    if pack_strategy_readiness_contract.get("id") != (strategy_readiness_contract.get("id")):
-        raise SystemExit("Context pack strategy review readiness ID differs")
-    if pack_strategy_readiness_contract.get("status") != (
-        strategy_readiness_contract.get("status")
-    ):
-        raise SystemExit("Context pack strategy review readiness status differs")
-    if pack_strategy_readiness_contract.get("apply_allowed") is not False:
-        raise SystemExit("Context pack strategy review readiness must keep apply blocked")
-    if "human_strategy_review" not in pack_strategy_readiness_contract.get(
-        "required_validation",
-        [],
-    ):
-        raise SystemExit("Context pack strategy review readiness must require review")
-    if "ocena opłacalności" not in pack_strategy_readiness_contract.get(
-        "blocked_claims",
-        [],
-    ):
-        raise SystemExit("Context pack strategy review readiness must block opłacalność")
-    if business_context_read_contract.get("status") == "blocked" and not (
-        business_context_read_contract.get("missing_read_contracts") or []
-    ):
-        raise SystemExit("Blocked business context contract must list missing contracts")
-    if budget_pacing_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose budget_pacing_read_contract")
-    if budget_pacing_read_contract.get("status") == "ready":
-        if not budget_pacing_read_contract.get("budget_rows"):
-            raise SystemExit("Ready budget pacing contract must expose budget rows")
-        pack_budget_contract = (
-            pack.get("ads_diagnostics", {}).get("budget_pacing_read_contract") or {}
-        )
-        if not pack_budget_contract.get("budget_rows"):
-            raise SystemExit("Context pack must include ready budget pacing rows")
-        shared_budget_rows = budget_pacing_read_contract.get("shared_budget_distribution_rows")
-        if shared_budget_rows is None:
-            raise SystemExit("Budget pacing contract must expose shared budget rows")
-        budget_rows = budget_pacing_read_contract.get("budget_rows") or []
-        if all(row.get("budget_id") for row in budget_rows) and (
-            "shared_budget_distribution"
-            in (budget_pacing_read_contract.get("missing_read_contracts") or [])
-        ):
-            raise SystemExit(
-                "Budget pacing contract must not miss shared budget distribution "
-                "when all budget rows expose budget_id"
-            )
-        if pack_budget_contract.get("shared_budget_distribution_rows") is None:
-            raise SystemExit("Context pack must include shared budget distribution rows")
-        if "zmiana budżetu" not in budget_pacing_read_contract.get("blocked_claims", []):
-            raise SystemExit("Budget pacing contract must keep zmiana budżetu blocked")
-        expected_budget_card = "card_google_ads_budget_review_playbook"
-        expected_budget_rules = {
-            "ads_scaling_candidates_v1",
-            "ads_recommendations_v1",
-            "ads_principles_v1",
-        }
-        if expected_budget_card not in budget_decision.get("knowledge_card_ids", []):
-            raise SystemExit("Budget decision must expose budget review knowledge card")
-        if not expected_budget_rules <= set(budget_decision.get("expert_rule_ids", [])):
-            raise SystemExit("Budget decision must expose budget review expert rules")
-        if pack_budget_decision.get("knowledge_card_ids") != budget_decision.get(
-            "knowledge_card_ids"
-        ):
-            raise SystemExit("Context pack budget decision knowledge cards differ")
-        if pack_budget_decision.get("expert_rule_ids") != budget_decision.get("expert_rule_ids"):
-            raise SystemExit("Context pack budget decision expert rules differ")
     recommendations_read_contract = validate_recommendations_contract(ads_diagnostics, pack)
     impression_share_read_contract = validate_impression_share_contract(ads_diagnostics, pack)
     change_history_read_contract = validate_change_history_contract(ads_diagnostics, pack)
