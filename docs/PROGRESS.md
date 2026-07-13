@@ -1733,3 +1733,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   bezpieczny link do `/ads-doctor`, blocker i brak registry dumpów. App + legacy
   focused 14/14, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 8874 LOC. Następny seam: workflow route proof.
+- Piętnasty slice: workflow route proof przeniesiony do
+  `WorkflowsSurface.test.tsx`; kontrolowany fixture API dowodzi decyzji procesu,
+  brakujących kontraktów, zablokowanych twierdzeń, persisted run oraz disclosure
+  evidence/action. App + workflow focused 13/13, dashboard typecheck/lint i diff
+  check przechodzą; `App.test.tsx` ma 8831 LOC. Następny seam: knowledge route.

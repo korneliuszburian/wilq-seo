@@ -8027,49 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("workflow route renders persisted workflow runs", async () => {
-    renderApp("/workflows");
-    await waitFor(() => expect(screen.getByText("Ostatnie uruchomienia")).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: "Procesy WILQ" })).toBeInTheDocument();
-    expect(screen.getByText("Procesy decyzyjne")).toBeInTheDocument();
-    expect(screen.getAllByText("Plan dnia WILQ").length).toBeGreaterThan(0);
-    expect(screen.getByText("gotowe")).toBeInTheDocument();
-    expect(screen.queryByText("status wymaga opisu")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Pokaż opis procesu" }).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/werdykt zwrotu z reklam/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Polecenie Codex: dostępne/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Brakujące dane:/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Granice wniosków:/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/obietnica wzrostu konwersji/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż wyniki procesów" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż powiązane akcje (1)" })).toBeInTheDocument();
-    expect(screen.queryByText("queued")).not.toBeInTheDocument();
-    expect(screen.queryByText("Dowody z procesów")).not.toBeInTheDocument();
-    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
-    expect(screen.queryByText("daily_command")).not.toBeInTheDocument();
-    expect(screen.queryByText("run_daily_command_test")).not.toBeInTheDocument();
-    expect(screen.queryByText("localo_visibility_review")).not.toBeInTheDocument();
-    expect(screen.queryByText("localo")).not.toBeInTheDocument();
-    expect(screen.queryByText(/wilq-daily-command/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
-    expect(screen.getByText("Wyniki procesów")).toBeInTheDocument();
-    expect(screen.queryByText("Rejestr workflowów")).not.toBeInTheDocument();
-    expect(screen.queryByText("Workflowy WILQ")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" }));
-    expect(await screen.findByText("w kolejce")).toBeInTheDocument();
-    expect(screen.queryByText("run_daily_command_test")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getAllByRole("button", { name: "Pokaż opis procesu" })[0]);
-    expect(screen.getAllByText(/Granice wniosków:/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/werdykt zwrotu z reklam/)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż wyniki procesów" }));
-    expect(screen.getByText("Dowody z procesów")).toBeInTheDocument();
-    expect(screen.getByText("Akcje z procesów")).toBeInTheDocument();
-  });
-
   it("knowledge route renders compiled cards and playbooks", async () => {
     renderApp("/knowledge");
     await waitFor(() =>
