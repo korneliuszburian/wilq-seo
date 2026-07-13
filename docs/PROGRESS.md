@@ -154,6 +154,10 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/ads_context_lineage.py`. Live smoke kończy się `exit 0`; `main` ma
   607 LOC/120 branches, helper 39 LOC/9 branches. Knowledge card i expert rule
   IDs muszą pozostać obecne w compact context.
+- Final report shaping helpers (`compact_blocked_handoff`, `unique_ids`) są teraz
+  w `scripts/ads_report_compaction.py`. Live smoke kończy się `exit 0`; `main`
+  pozostaje na 607 LOC/120 branches, a final output nadal nie zawiera surowych
+  vendor payloadów.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

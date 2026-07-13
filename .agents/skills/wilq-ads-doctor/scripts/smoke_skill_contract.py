@@ -19,7 +19,12 @@ from ads_keyword_planner_assertions import validate_keyword_planner_contract
 from ads_negative_keyword_assertions import validate_negative_keyword_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
-from ads_report_compaction import compact_ads_brief_items, compact_connector_statuses
+from ads_report_compaction import (
+    compact_ads_brief_items,
+    compact_blocked_handoff,
+    compact_connector_statuses,
+    unique_ids,
+)
 from ads_search_term_ngram_assertions import validate_search_term_ngram_contract
 from ads_search_term_review_assertions import validate_search_term_review_contract
 from ads_search_term_safety_assertions import validate_search_term_safety_contract
@@ -296,7 +301,7 @@ def main() -> int:
                 "api_base": args.api_base,
                 "health": health.get("status"),
                 "required_connectors": connector_results,
-                "knowledge_card_ids": _unique(
+                "knowledge_card_ids": unique_ids(
                     [
                         *[
                             card_id
@@ -310,7 +315,7 @@ def main() -> int:
                         ],
                     ]
                 ),
-                "expert_rule_ids": _unique(
+                "expert_rule_ids": unique_ids(
                     [
                         *[
                             rule_id
@@ -612,7 +617,7 @@ def main() -> int:
                         "blocked_claims": negative_keywords_read_contract.get("blocked_claims", []),
                         "action_ids": negative_keywords_read_contract.get("action_ids", []),
                     },
-                    "blocked_handoff": _blocked_handoff_summary(blocked_handoff),
+                    "blocked_handoff": compact_blocked_handoff(blocked_handoff),
                     "section_ids": [
                         section.get("id")
                         for section in ads_diagnostics.get("sections", [])
@@ -660,18 +665,6 @@ def main() -> int:
     return 0
 
 
-def _blocked_handoff_summary(blocked_handoff: dict[str, Any] | None) -> dict[str, Any] | None:
-    if blocked_handoff is None:
-        return None
-    return {
-        "status": blocked_handoff.get("status"),
-        "title": blocked_handoff.get("title"),
-        "source_connectors": blocked_handoff.get("source_connectors", []),
-        "evidence_ids": blocked_handoff.get("evidence_ids", []),
-        "action_ids": blocked_handoff.get("action_ids", []),
-    }
-
-
 def _find_decision(decisions: list[dict[str, Any]], decision_id: str) -> dict[str, Any]:
     for decision in decisions:
         if decision.get("id") == decision_id:
@@ -684,17 +677,6 @@ def _find_readiness_item(items: list[dict[str, Any]], item_id: str) -> dict[str,
         if item.get("id") == item_id:
             return item
     return {}
-
-
-def _unique(values: list[str | None]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        if not value or value in seen:
-            continue
-        seen.add(value)
-        result.append(value)
-    return result
 
 
 if __name__ == "__main__":

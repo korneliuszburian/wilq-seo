@@ -126,6 +126,9 @@
 - Context-pack lineage assertion jest w `scripts/ads_context_lineage.py`; live
   smoke przechodzi, a `main` ma 607 LOC/120 branches. Knowledge card/expert
   rule IDs są wymagane w compact context; następny seam to final report shaping.
+- Final report shaping helpers są w `scripts/ads_report_compaction.py`; live
+  smoke przechodzi, output pozostaje compact/operator-safe, a `main` ma 607
+  LOC/120 branches. Następny potwierdzony zakres: kolejny skill smoke hotspot.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

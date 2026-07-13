@@ -44,3 +44,28 @@ def compact_connector_statuses(
             }
         )
     return results
+
+
+def compact_blocked_handoff(
+    blocked_handoff: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if blocked_handoff is None:
+        return None
+    return {
+        "status": blocked_handoff.get("status"),
+        "title": blocked_handoff.get("title"),
+        "source_connectors": blocked_handoff.get("source_connectors", []),
+        "evidence_ids": blocked_handoff.get("evidence_ids", []),
+        "action_ids": blocked_handoff.get("action_ids", []),
+    }
+
+
+def unique_ids(values: list[str | None]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
