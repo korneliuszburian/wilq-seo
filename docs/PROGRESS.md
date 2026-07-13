@@ -2206,3 +2206,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   z istniejącą domeną walidacji. Mega-test zmniejszył się o kolejne 23 linie;
   nowy plik i pełny action-object test przechodzą, Ruff i diff check zielone.
   Complexity nadal raportuje te same historyczne hotspoty.
+- Szósta kontynuacja `50wa`: dwa context-pack behavior tests dla audytu preview
+  i wyniku human review przeniesiono do `tests/api_contracts/test_context_safety_contracts.py`.
+  Mega-test zmniejszył się o 76 linii; nowy plik i pełny action-object test
+  przechodzą, Ruff i diff check zielone. Pozostają historyczne hotspoty
+  complexity do kolejnych niezależnych splitów.

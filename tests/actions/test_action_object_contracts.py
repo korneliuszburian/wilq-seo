@@ -1744,40 +1744,6 @@ def test_action_detail_hides_legacy_apply_audit_summary(
     assert "Action mode must be apply before external execution" not in serialized
 
 
-def test_daily_context_pack_preserves_action_preview_audit(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
-    monkeypatch.setenv(
-        "WILQ_STATE_DB",
-        str(tmp_path / "preview_context_state.sqlite3"),
-    )
-    preview_response = client.post(
-        "/api/actions/act_review_merchant_feed_issues/preview",
-        json={"requested_by": "operator_test", "max_items": 2},
-    )
-    assert preview_response.status_code == 200
-
-    context_response = client.post(
-        "/api/codex/context-pack",
-        json={"skill": "wilq-daily-command"},
-    )
-
-    assert context_response.status_code == 200
-    payload = context_response.json()
-    actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
-    merchant_action = actions_by_id["act_review_merchant_feed_issues"]
-    latest_audit_event = merchant_action["latest_audit_event"]
-    assert latest_audit_event["event_type"] == "action_preview_generated"
-    assert (
-        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ"
-        in (latest_audit_event["summary"])
-    )
-    assert "details_keys" not in latest_audit_event
-    assert merchant_action["review_gate"]["apply_allowed"] is False
-
-
 def test_action_impact_check_records_pre_apply_sanity_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1852,48 +1818,6 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     action_payload = action_response.json()
     assert "Porównanie sprzed zmiany" in action_payload["review_gate"]["last_impact_check_summary"]
     assert "Okno przed zmianą" not in action_payload["review_gate"]["last_impact_check_summary"]
-
-
-def test_daily_context_pack_preserves_human_review_outcome(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setenv(
-        "WILQ_STATE_DB",
-        str(tmp_path / "human_review_context_state.sqlite3"),
-    )
-    review_response = client.post(
-        "/api/actions/act_review_merchant_feed_issues/review",
-        json={
-            "outcome": "needs_changes",
-            "reviewed_by": "operator_test",
-            "notes": "Brakuje podglądu zmian do zapisu.",
-            "checked_items": ["prepare_feed_fix_preview"],
-            "blockers": ["payload_apply_allowed_false"],
-        },
-    )
-    assert review_response.status_code == 200
-
-    context_response = client.post(
-        "/api/codex/context-pack",
-        json={"skill": "wilq-daily-command"},
-    )
-
-    assert context_response.status_code == 200
-    payload = context_response.json()
-    actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
-    merchant_action = actions_by_id["act_review_merchant_feed_issues"]
-    assert merchant_action["review_gate"]["last_review_outcome"] == "needs_changes"
-    assert merchant_action["review_gate"]["last_reviewed_by"] == "operator_test"
-    assert merchant_action["review_gate"]["apply_allowed"] is False
-    serialized = json.dumps(merchant_action, ensure_ascii=False)
-    assert "[REDACTED]" not in serialized
-    assert "Brakuje podglądu zmian" not in serialized
-    assert merchant_action["latest_audit_event"]["event_type"] == "human_review_needs_changes"
-    assert (
-        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ"
-        in (merchant_action["latest_audit_event"]["summary"])
-    )
 
 
 def test_google_ads_oauth_repair_action_is_explicit_and_redacted(

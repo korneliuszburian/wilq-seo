@@ -672,6 +672,10 @@
   teraz w `tests/actions/test_action_validation_contracts.py`. Nowy i pełny
   action-object test przechodzą; legacy plik zmniejszył się o 23 linie. Nadal
   pozostają historyczne hotspoty complexity do dalszego splitu.
+- Szósta kontynuacja `50wa`: preview-audit i human-review outcome context-pack
+  contracts są teraz w `tests/api_contracts/test_context_safety_contracts.py`.
+  Nowy i pełny action-object test przechodzą; legacy plik zmniejszył się o 76
+  linii. Następny agent może wybrać kolejny niezależny behavior test z mega-testu.
 
 ## Następny krok
 
