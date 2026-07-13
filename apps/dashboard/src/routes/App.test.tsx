@@ -5,7 +5,8 @@ import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ConnectorRefreshRun } from "../lib/api";
-import { App, createWilqQueryClient, createWilqRouter } from "./App";
+import { App, createWilqRouter } from "./App";
+import { createWilqQueryClient } from "../lib/queryClient";
 
 const connectors = [
   {
@@ -8020,23 +8021,6 @@ function mockWorkflowAndKnowledgeApi(url: string) {
 
 describe("WILQ dashboard", () => {
   let testQueryClient: QueryClient;
-
-  it("uses short server-state cache defaults without overriding test config", () => {
-    const client = createWilqQueryClient({
-      defaultOptions: {
-        queries: {
-          gcTime: Infinity,
-          retry: false
-        }
-      }
-    });
-
-    expect(client.getDefaultOptions().queries?.staleTime).toBe(30_000);
-    expect(client.getDefaultOptions().queries?.refetchOnWindowFocus).toBe(false);
-    expect(client.getDefaultOptions().queries?.gcTime).toBe(Infinity);
-    expect(client.getDefaultOptions().queries?.retry).toBe(false);
-    client.clear();
-  });
 
   beforeEach(() => {
     mockFetch();

@@ -5,6 +5,12 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
+  ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
+  do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
+  typecheck dashboarda przechodzą. App omnibus zmniejszył się o 18 linii;
+  następny seam pozostaje route-focused settings/source behavior.
+
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
   `AhrefsCrossSourceMatcher` raz na batch i zachowuje exact/weak/missing,

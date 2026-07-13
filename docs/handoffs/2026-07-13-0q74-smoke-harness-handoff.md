@@ -177,6 +177,9 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 
 ## Blokery
 
+- `wilq-seo-pidl`: query-client defaults extracted from `App.test.tsx` into
+  `queryClientDefaults.test.ts`; focused Vitest 31/31, dashboard lint and
+  typecheck pass. No API or UI behavior changed.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.
