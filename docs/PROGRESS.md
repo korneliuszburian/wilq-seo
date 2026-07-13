@@ -42,6 +42,10 @@ w git, Beads i `docs/progress/archive/`.
   kontrakt, korzystający z istniejących helperów freshness/decision/card/report.
   Live proof: 1 978 query/page facts, 2 decyzje, 1 action; Ruff, smoke i
   complexity audit przechodzą bez wyjątku.
+- Social smoke ma teraz `social_assertions.py` i krótszy runtime. Live proof:
+  history inventory `missing`, publikacja wyłączona, 2 review actions; publiczne
+  discovery seeds i metadata-only/privacy gates przechodzą. Ruff, smoke i
+  complexity audit przechodzą bez wyjątku.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

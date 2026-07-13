@@ -205,6 +205,9 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - GSC smoke now uses the existing freshness/decision/card/report helpers plus
   `gsc_runtime_assertions.py`. Live proof: 1,978 query/page facts, two
   decisions, one action; Ruff, smoke and complexity pass.
+- Social smoke now delegates history inventory/privacy assertions to
+  `social_assertions.py`. Live proof: inventory `missing`, publish disabled,
+  two review actions; public discovery seeds and metadata-only gates pass.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.
