@@ -104,6 +104,10 @@ w git, Beads i `docs/progress/archive/`.
   freshness, evidence counts and safe CTA remain API-owned inputs. Focused
   route tests (19), lint, typecheck, build and diff check pass. E2E reaches the
   app but still fails on the existing heading locator.
+- `wilq-seo-ho41` continuation 18: extracted `ContentWorkbenchHeader.tsx` for
+  the route title and refresh controls. It owns presentation only; no route,
+  API or decision semantics changed. Focused route tests (19), lint, typecheck,
+  build and diff check pass. E2E still fails at the existing heading locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

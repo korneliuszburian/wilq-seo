@@ -113,6 +113,8 @@ owners of safety classification.
 The mobile decision surface is now `MobileContentTriage.tsx`; it renders the
 API-owned candidate, blockers, freshness/evidence disclosure and review-only
 CTA without inventing decision logic.
+The workbench title and refresh controls are now `ContentWorkbenchHeader.tsx`;
+they remain presentation-only and do not own route or decision semantics.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
