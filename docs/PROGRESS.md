@@ -1879,3 +1879,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   do `assert_ads_campaign_read_contract_basics`; zachowano wszystkie listy
   allowed/missing metrics i blocked claims. Focused Ads/Ruff/mypy/diff check
   nadal zielone; row rendering pozostaje kolejnym seamem.
+- Trzeci pod-slice c9h9.22: campaign row rendering, evidence, blocked claims i
+  review gates wydzielone do `assert_ads_campaign_row_contract`. Focused Ads,
+  Ruff, mypy i diff check przechodzą; główny test spadł z 2912 do 2841 linii.
+  Następny seam: operator summary i decision queue.

@@ -384,6 +384,9 @@
 - Drugi pod-slice również zakończony: `assert_ads_campaign_read_contract_basics`
   przejął status/allowed/missing/blocked gates. Następny krok to wydzielenie
   campaign row rendering proofu bez zmiany evidence lineage.
+- Trzeci pod-slice zakończony: `assert_ads_campaign_row_contract` przejął
+  rendering, evidence, blocked claims i review gates kampanii. Test spadł do
+  2841 linii; następny handoff ma rozdzielić operator summary/decision queue.
 
 ## Następny krok
 

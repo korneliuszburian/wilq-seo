@@ -90,6 +90,71 @@ def assert_ads_campaign_read_contract_basics(payload: dict[str, Any]) -> None:
     assert "zwrot z reklam" in read_contract["blocked_claims"]
 
 
+def assert_ads_campaign_row_contract(
+    read_contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove the marketer-facing campaign row without mixing queue assertions."""
+    row = read_contract["campaign_rows"][0]
+    assert read_contract["campaign_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "campaign_status_label": "aktywna",
+            "advertising_channel_type": "SEARCH",
+            "advertising_channel_type_label": "sieć wyszukiwania",
+            "clicks": 9,
+            "clicks_label": "9",
+            "impressions": 90,
+            "impressions_label": "90",
+            "cost_micros": 12000000,
+            "cost_label": "12 jedn. konta",
+            "conversions": 2.5,
+            "conversions_label": "2,5",
+            "conversion_value": 450.75,
+            "conversion_value_label": "450,75",
+            "evidence_ids": [evidence_id],
+            "evidence_summary_label": "1 dowód źródłowy",
+            "metric_facts": row["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "koszt pozyskania celu",
+                "zwrot z reklam",
+                "marnowanie budżetu na zapytaniach",
+                "zmarnowany budżet",
+            ],
+            "blocked_claim_labels": [
+                "koszt pozyskania celu",
+                "werdykt zwrotu z reklam",
+                "werdykt marnowania budżetu na zapytaniach",
+                "zmarnowany budżet",
+            ],
+            "blocked_claim_summary_label": "4 zablokowane obietnice",
+            "target_status": "no_target",
+            "target_status_label": "brak celu",
+            "review_priority": "wysokie",
+            "review_score": 50,
+            "review_reason": row["review_reason"],
+            "human_review_gates": [
+                "review_campaign_goal",
+                "review_conversion_quality",
+                "review_budget_context",
+                "review_search_terms_before_budget_decision",
+                "human_strategy_review",
+            ],
+            "human_review_gate_labels": [
+                "sprawdzenie celu kampanii",
+                "sprawdzenie jakości konwersji",
+                "sprawdzenie kontekstu budżetu",
+                "wyszukiwane hasła przed decyzją budżetową",
+                "ocena strategii przez człowieka",
+            ],
+            "human_review_gate_summary_label": "5 wymaganych sprawdzeń",
+        }
+    ]
+    assert "Kolejność oceny kampanii" in row["review_reason"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2318,64 +2383,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_live_refresh_contract(payload)
     assert_ads_campaign_read_contract_basics(payload)
     read_contract = payload["campaign_read_contract"]
-    assert read_contract["campaign_rows"] == [
-        {
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_status": "ENABLED",
-            "campaign_status_label": "aktywna",
-            "advertising_channel_type": "SEARCH",
-            "advertising_channel_type_label": "sieć wyszukiwania",
-            "clicks": 9,
-            "clicks_label": "9",
-            "impressions": 90,
-            "impressions_label": "90",
-            "cost_micros": 12000000,
-            "cost_label": "12 jedn. konta",
-            "conversions": 2.5,
-            "conversions_label": "2,5",
-            "conversion_value": 450.75,
-            "conversion_value_label": "450,75",
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "evidence_summary_label": "1 dowód źródłowy",
-            "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "koszt pozyskania celu",
-                "zwrot z reklam",
-                "marnowanie budżetu na zapytaniach",
-                "zmarnowany budżet",
-            ],
-            "blocked_claim_labels": [
-                "koszt pozyskania celu",
-                "werdykt zwrotu z reklam",
-                "werdykt marnowania budżetu na zapytaniach",
-                "zmarnowany budżet",
-            ],
-            "blocked_claim_summary_label": "4 zablokowane obietnice",
-            "target_status": "no_target",
-            "target_status_label": "brak celu",
-            "review_priority": "wysokie",
-            "review_score": 50,
-            "review_reason": read_contract["campaign_rows"][0]["review_reason"],
-            "human_review_gates": [
-                "review_campaign_goal",
-                "review_conversion_quality",
-                "review_budget_context",
-                "review_search_terms_before_budget_decision",
-                "human_strategy_review",
-            ],
-            "human_review_gate_labels": [
-                "sprawdzenie celu kampanii",
-                "sprawdzenie jakości konwersji",
-                "sprawdzenie kontekstu budżetu",
-                "wyszukiwane hasła przed decyzją budżetową",
-                "ocena strategii przez człowieka",
-            ],
-            "human_review_gate_summary_label": "5 wymaganych sprawdzeń",
-        }
-    ]
-    assert "Kolejność oceny kampanii" in read_contract["campaign_rows"][0]["review_reason"]
+    assert_ads_campaign_row_contract(read_contract, refresh_response.json()["evidence_ids"][-1])
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "ads_operator_summary"
     assert operator_summary["title"] == "Co marketer ma sprawdzić teraz w Google Ads"
