@@ -1990,46 +1990,6 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert strategy_validate_response.json()["valid"] is True
 
 
-def test_google_ads_target_guardrail_confirmation_summary_uses_operator_labels(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    clear_google_ads_env(monkeypatch)
-    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
-    monkeypatch.setenv("WILQ_ADS_PROFIT_MARGIN", "0.35")
-    monkeypatch.setenv("WILQ_ADS_BUSINESS_GOAL", "lead quality review")
-    monkeypatch.setenv("WILQ_ADS_BUDGET_GOAL", "protect current monthly budget")
-    monkeypatch.delenv("WILQ_ADS_TARGET_ROAS", raising=False)
-    monkeypatch.delenv("WILQ_ADS_TARGET_CPA_MICROS", raising=False)
-
-    diagnostics_response = client.get("/api/ads/diagnostics")
-    assert diagnostics_response.status_code == 200
-    assert ADS_TARGET_CONFIRMATION_ACTION_ID in diagnostics_response.json()["action_ids"]
-
-    confirm_response = client.post(
-        f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/confirm",
-        json={
-            "confirmed_by": "operator_test",
-            "notes": "Brakuje wybranego celu Ads.",
-        },
-    )
-
-    assert confirm_response.status_code == 200
-    confirmation = confirm_response.json()
-    assert confirmation["confirmed"] is False
-    assert confirmation["status"] == "blocked"
-    assert confirmation["blockers"] == ["target_roas_or_cpa_required"]
-    assert confirmation["blocker_labels"] == [
-        "podaj docelowy zwrot z reklam albo koszt pozyskania celu"
-    ]
-    assert "target_roas_or_cpa_required" not in confirmation["audit_event"]["summary"]
-    assert "target_roas_or_cpa" not in confirmation["audit_event"]["summary"]
-    assert (
-        "podaj docelowy zwrot z reklam albo koszt pozyskania celu"
-        in confirmation["audit_event"]["summary"]
-    )
-
-
 def test_metric_backed_prepare_actions_are_evidence_grounded(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

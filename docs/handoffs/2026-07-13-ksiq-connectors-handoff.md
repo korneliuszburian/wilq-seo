@@ -698,6 +698,9 @@
 - Dwunasta kontynuacja `50wa`: Keyword Planner blocked-access action behavior
   jest teraz w `tests/api_contracts/test_ads_contracts.py`. Nowy i pełny suite
   przechodzą; zachowane są blokada claimów, redakcja błędu i review-only apply.
+- Trzynasta kontynuacja `50wa`: missing-target guardrail summary behavior jest
+  teraz w `tests/api_contracts/test_ads_contracts.py`. Test docelowy i pełny
+  action-object suite przechodzą; nie wracać do tego testu w mega-teście.
 
 ## Następny krok
 
