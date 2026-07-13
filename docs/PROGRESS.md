@@ -63,6 +63,11 @@ w git, Beads i `docs/progress/archive/`.
   (145 LOC); `index.ts` ma 1 308 LOC. Blokady braku rankingów i dowodów
   Localo pozostają bez zmian. Shared schema/dashboard lint, build, tests i
   typecheck przechodzą. Następny seam: Ahrefs diagnostic contracts.
+- Dziewiętnasty seam: `ahrefs_diagnostics.ts` zawiera Ahrefs sections, decision
+  items, gap records/read contract, operator summary i response (174 LOC);
+  `index.ts` ma 1 146 LOC. Cross-check GSC/WordPress i status `manual_required`
+  pozostają jawne. Shared schema/dashboard lint, build, tests i typecheck
+  przechodzą. Następny seam: Expert/knowledge contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

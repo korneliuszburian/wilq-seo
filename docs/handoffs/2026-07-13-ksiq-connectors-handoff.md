@@ -96,6 +96,11 @@
   operator summary i response (145 LOC); `index.ts` ma 1 308 LOC. Blokady
   braku rankingów/dowodów Localo bez zmian, focused gates przechodzą. Następny
   seam: Ahrefs diagnostic contracts.
+- Dziewiętnasty seam: `packages/shared-schemas/src/ahrefs_diagnostics.ts`
+  zawiera Ahrefs sections, decision items, gap records/read contract, operator
+  summary i response (174 LOC); `index.ts` ma 1 146 LOC. Cross-check
+  GSC/WordPress i status `manual_required` jawne, focused gates przechodzą.
+  Następny seam: Expert/knowledge contracts.
 
 ## Następny krok
 
