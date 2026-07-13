@@ -1846,3 +1846,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   technical disclosure pozostają dowiedzione w
   `MerchantDiagnosticSurface.test.tsx`; App + Merchant focused 7/7,
   typecheck/lint i diff check przechodzą. `App.test.tsx` ma 6717 LOC.
+- Trzydziesty trzeci slice: usunięto z `App.test.tsx` duplikat GA4 route proof;
+  decyzja pomiarowa, freshness, blocker konwersji i technical disclosure są
+  dowiedzione w `Ga4DiagnosticSurface.test.tsx`. App + GA4 focused 6/6,
+  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6616 LOC.
