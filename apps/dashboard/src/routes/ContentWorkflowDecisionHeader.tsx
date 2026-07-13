@@ -1,0 +1,24 @@
+import { WorkflowStepper } from "./WorkflowStepper";
+import type { WorkflowStep } from "./contentWorkflowRuntime";
+
+type ContentWorkflowDecisionHeaderProps = {
+  topic: string;
+  activeStepIndex: number;
+  steps: WorkflowStep[];
+};
+
+export function ContentWorkflowDecisionHeader({ topic, activeStepIndex, steps }: ContentWorkflowDecisionHeaderProps) {
+  return (
+    <div className="border-b border-line p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-action">Workflow treści: jeden aktywny krok</div>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">{topic}</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">Status: wymaga decyzji operatora. Publikacja i zapis WordPress pozostają zablokowane, dopóki plan, twierdzenia, review człowieka i audyt nie są domknięte.</p>
+        </div>
+        <div className="rounded-md border border-wait/30 bg-wait/10 px-3 py-2 text-sm font-semibold text-wait">Publikacja zablokowana</div>
+      </div>
+      <WorkflowStepper activeIndex={activeStepIndex} steps={steps} />
+    </div>
+  );
+}

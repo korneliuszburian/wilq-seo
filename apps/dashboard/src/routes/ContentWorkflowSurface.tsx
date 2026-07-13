@@ -44,7 +44,7 @@ import {
 import { normalizedPath, selectDevPage, type WordPressAuthoringDevPage } from "./contentWorkflowTarget";
 import { AcfCurrentVsProposedPanel } from "./AcfCurrentVsProposedPanel";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
-import { WorkflowStepper, workflowStepShortLabel } from "./WorkflowStepper";
+import { workflowStepShortLabel } from "./WorkflowStepper";
 import { WorkflowStepsList } from "./WorkflowStepsList";
 import {
   ContentFreshnessBanner,
@@ -71,6 +71,7 @@ import { ContentPublicInventoryPanel } from "./ContentPublicInventoryPanel";
 import { MobileDecisionCard } from "./MobileDecisionCard";
 import { ContentWorkflowPublicationBlockers } from "./ContentWorkflowPublicationBlockers";
 import { ContentWorkflowNextDecisionPanel } from "./ContentWorkflowNextDecisionPanel";
+import { ContentWorkflowDecisionHeader } from "./ContentWorkflowDecisionHeader";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import {
   activeWorkflowStepIndex,
@@ -840,26 +841,7 @@ function ContentWorkflowDecisionPanel({
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white">
-      <div className="border-b border-line p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-normal text-action">
-              Workflow treści: jeden aktywny krok
-            </div>
-            <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
-              {item.topic}
-            </h2>
-            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
-              Status: wymaga decyzji operatora. Publikacja i zapis WordPress pozostają
-              zablokowane, dopóki plan, twierdzenia, review człowieka i audyt nie są domknięte.
-            </p>
-          </div>
-          <div className="rounded-md border border-wait/30 bg-wait/10 px-3 py-2 text-sm font-semibold text-wait">
-            Publikacja zablokowana
-          </div>
-        </div>
-        <WorkflowStepper activeIndex={activeStepIndex} steps={steps} />
-      </div>
+      <ContentWorkflowDecisionHeader topic={item.topic} activeStepIndex={activeStepIndex} steps={steps} />
 
       <div className="grid gap-4 p-4 lg:grid-cols-[1.05fr_0.95fr]">
         <ContentWorkflowNextDecisionPanel

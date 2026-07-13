@@ -130,6 +130,12 @@ w git, Beads i `docs/progress/archive/`.
   as typed display inputs; no ranking or business rule moved into React.
   Focused route tests (19), lint, typecheck, build and diff check pass. E2E
   still fails at the existing heading locator.
+- `wilq-seo-ho41` continuation 23: extracted
+  `ContentWorkflowDecisionHeader.tsx` for workflow title, publication-blocked
+  state and typed stepper. It owns presentation only; active-step selection and
+  workflow semantics remain in the route/model. Focused route tests (19), lint,
+  typecheck, build and diff check pass. E2E still fails at the existing heading
+  locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

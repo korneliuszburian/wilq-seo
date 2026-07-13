@@ -127,6 +127,9 @@ forbidden-claim copy remains a typed presentation boundary.
 The decision panel's next-action card is now
 `ContentWorkflowNextDecisionPanel.tsx`; it renders typed decision, proof,
 claim-count and safe-next-step inputs without owning ranking logic.
+The decision panel header is now `ContentWorkflowDecisionHeader.tsx`; it renders
+typed topic, publication-blocked state and stepper inputs while route/model code
+retains workflow semantics.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
