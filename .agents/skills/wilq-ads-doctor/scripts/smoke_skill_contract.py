@@ -15,6 +15,7 @@ from ads_change_impact_assertions import validate_change_impact_contract
 from ads_impression_share_assertions import validate_impression_share_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
+from ads_search_term_review_assertions import validate_search_term_review_contract
 from ads_smoke_runtime import load_ads_context
 
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
@@ -237,23 +238,9 @@ def main() -> int:
     change_impact_readiness_contract = validate_change_impact_contract(
         ads_diagnostics, pack, change_history_read_contract
     )
-    if search_term_review_summary_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose search_term_review_summary_contract")
-    if search_term_review_summary_contract.get("status") == "ready":
-        pack_search_term_review_contract = (
-            pack.get("ads_diagnostics", {}).get("search_term_review_summary_contract") or {}
-        )
-        if pack_search_term_review_contract.get("summary") != (
-            search_term_review_summary_contract.get("summary")
-        ):
-            raise SystemExit("Context pack search-term review contract differs")
-        if not search_term_review_summary_contract.get("campaign_review_rows"):
-            raise SystemExit("Ready search-term review contract must expose campaign rows")
-        if "marnowanie budżetu na zapytaniach" not in search_term_review_summary_contract.get(
-            "blocked_claims",
-            [],
-        ):
-            raise SystemExit("Search-term review summary must keep waste claim blocked")
+    search_term_review_summary_contract = validate_search_term_review_contract(
+        ads_diagnostics, pack
+    )
     if search_term_safety_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose search_term_safety_read_contract")
     if not search_term_safety_read_contract.get("blocked_claims"):
