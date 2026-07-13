@@ -88,8 +88,14 @@ w git, Beads i `docs/progress/archive/`.
   Live GSC smoke/Ruff/diff przechodzą; wynik ma 1 978 query/page metric facts.
   `main` spadł do 434 LOC/122 branches. Ads pozostaje osobnym blockerem
   diagnostycznym: `/api/ads/diagnostics` zwraca 8,6 MB, zwykły Ads context-pack
-  213 KB, a full-context 11,2 MB; pełny smoke nie zwrócił proof i nie został
-  zapisany jako sukces.
+  213 KB, a full-context 11,2 MB; pierwsze krótkie uruchomienie przekroczyło
+  limit sesji, ale dłuższy live proof został później zaliczony.
+- Ads bootstrap smoke jest teraz w `scripts/ads_smoke_runtime.py`: health,
+  context-pack budget, baseline języka/evidence/action IDs i blocked handoff są
+  walidowane poza `main`. Live smoke zakończył się `exit 0` po około 73 s,
+  potwierdził 6 poprawnych walidacji actionów, 18 kampanii i
+  `apply_allowed=false`; `main` spadł do 970 LOC/274 branches. Duży payload
+  jest znanym kosztem live proof, nie błędem safety.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

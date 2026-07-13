@@ -10,6 +10,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from ads_smoke_runtime import load_ads_context
+
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
 
 SKILL_NAME = "wilq-ads-doctor"
@@ -38,53 +40,17 @@ def main() -> int:
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
     args = parser.parse_args()
 
-    health = request_json(args.api_base, "GET", "/api/health")
-    if health.get("status") != "ok":
-        raise SystemExit(f"WILQ API health is not ok: {health}")
-
-    pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
-    pack_bytes = len(json.dumps(pack, ensure_ascii=False).encode())
-    if pack_bytes >= MAX_CONTEXT_PACK_BYTES:
-        raise SystemExit(f"{SKILL_NAME} context-pack exceeds budget: {pack_bytes} bytes")
-    missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
-    if missing:
-        raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
-
-    ads_diagnostics = request_json(args.api_base, "GET", "/api/ads/diagnostics")
-    full_pack = request_json(
+    runtime = load_ads_context(
         args.api_base,
-        "POST",
-        "/api/codex/context-pack",
-        {"skill": SKILL_NAME, "full_context": True},
+        required_context_keys=REQUIRED_CONTEXT_KEYS,
+        max_context_pack_bytes=MAX_CONTEXT_PACK_BYTES,
     )
-    if ads_diagnostics.get("language") != "pl-PL":
-        raise SystemExit("Ads diagnostics language must be pl-PL")
-    if not isinstance(ads_diagnostics.get("sections"), list) or not ads_diagnostics["sections"]:
-        raise SystemExit("Ads diagnostics must expose sections")
-    if pack.get("ads_diagnostics", {}).get("evidence_ids") != ads_diagnostics.get("evidence_ids"):
-        raise SystemExit("Context pack ads_diagnostics evidence IDs differ from endpoint")
-    if pack.get("ads_diagnostics", {}).get("action_ids") != ads_diagnostics.get("action_ids"):
-        raise SystemExit("Context pack ads_diagnostics action IDs differ from endpoint")
-    blocked_handoff = ads_diagnostics.get("blocked_handoff")
-    if ads_diagnostics.get("live_data_available") is True:
-        if blocked_handoff is not None:
-            raise SystemExit("Live Ads diagnostics must not expose OAuth blocked_handoff")
-    else:
-        if not isinstance(blocked_handoff, dict):
-            raise SystemExit("Blocked Ads diagnostics must expose blocked_handoff")
-        if blocked_handoff.get("status") != "blocked":
-            raise SystemExit("Blocked Ads handoff must expose blocked status")
-        if "google_ads" not in blocked_handoff.get("source_connectors", []):
-            raise SystemExit("Ads blocked_handoff must include google_ads source connector")
-        if not blocked_handoff.get("evidence_ids"):
-            raise SystemExit("Ads blocked_handoff must include evidence IDs")
-        if not blocked_handoff.get("action_ids"):
-            raise SystemExit("Blocked Ads handoff must include action IDs")
-        blocked_claims = set(blocked_handoff.get("blocked_claims", []))
-        if not {"zwrot z reklam", "wyszukiwane hasła"} <= blocked_claims:
-            raise SystemExit(
-                "Blocked Ads handoff must list blocked zwrot z reklam and wyszukiwane hasła claims"
-            )
+    health = runtime["health"]
+    pack = runtime["pack"]
+    ads_diagnostics = runtime["ads_diagnostics"]
+    full_pack = runtime["full_pack"]
+    pack_bytes = runtime["pack_bytes"]
+    blocked_handoff = runtime["blocked_handoff"]
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
     campaign_triage_read_contract = ads_diagnostics.get("campaign_triage_read_contract") or {}
     optimizer_readiness_contract = ads_diagnostics.get("optimizer_readiness_contract") or {}

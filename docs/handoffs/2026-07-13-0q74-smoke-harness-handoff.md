@@ -65,9 +65,14 @@
   complexity i diff check przechodzą; nie zmieniono API ani write safety.
 - GSC refresh/Search Analytics contract jest w
   `scripts/gsc_refresh_contract.py`; live smoke przechodzi (1 978 query/page
-  metric facts), a main spadł do 434 LOC/122 branches. Ads nie został zmieniony:
-  aktualny endpoint ma 8,6 MB, full-context 11,2 MB, a pełny smoke kończy się
-  bez outputu przed proof; wymaga osobnej diagnostyki pamięci/raportu.
+  metric facts), a main spadł do 434 LOC/122 branches. Ads payload jest duży:
+  endpoint ma 8,6 MB, full-context 11,2 MB; pierwsze krótkie uruchomienie
+  przekroczyło limit sesji, ale dłuższy live proof został zaliczony.
+- Ads bootstrap jest wydzielony do `scripts/ads_smoke_runtime.py`. Długi live
+  smoke (około 73 s) kończy się `exit 0`, z 6 poprawnymi action validations,
+  18 kampaniami i `apply_allowed=false`; `main` ma 970 LOC/274 branches.
+  Następny Ads seam powinien wyjmować kontrakty readiness/decision queue, nie
+  zmieniać API ani zmniejszać zakresu safety.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
