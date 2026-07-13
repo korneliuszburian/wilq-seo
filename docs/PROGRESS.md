@@ -2131,3 +2131,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `ads_diagnostics.py` ma 7 044 linie fizyczne. Ads contracts, Ruff, mypy,
   complexity audit i diff check przechodzą. Następny slice: decision-queue
   orchestration.
+- Szósty slice `kgvy`: wydzielono `wilq/briefing/ads_decision_queue_contracts.py`.
+  Kolejka decyzji ma osobną granicę dla blocked handoff, decyzji per read
+  contract, safety decisions i evidence lineage; reguły pozostają w istniejących
+  helperach i `ads_decision_queue`. Bez nowego endpointu ani zmiany payloadu;
+  `ads_diagnostics.py` ma 6 973 linie fizyczne. Ads contracts, Ruff, mypy,
+  complexity audit i diff check przechodzą (dwa znane budżety monolitu).
+  Następny slice: response assembly/operator summary.

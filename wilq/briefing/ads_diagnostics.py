@@ -54,21 +54,13 @@ from wilq.briefing.ads_campaign_optimizer_contracts import (
 from wilq.briefing.ads_candidate_contracts import build_candidate_read_contracts
 from wilq.briefing.ads_decision_queue import (
     build_block_write_actions_decision,
-    build_budget_context_decision,
     build_business_context_decision,
     build_campaign_activity_decision,
     build_campaign_triage_decision,
-    build_change_history_decision,
-    build_custom_segments_decision,
     build_derived_kpi_decision,
-    build_impression_share_decision,
-    build_negative_keyword_safety_decision,
-    build_recommendations_decision,
-    build_search_term_ngram_decision,
-    build_search_term_safety_decision,
-    build_search_terms_decision,
     decision_priority,
 )
+from wilq.briefing.ads_decision_queue_contracts import build_decision_queue
 from wilq.briefing.ads_metric_tiles import (
     budget_context_metric_tiles,
     business_context_metric_tiles,
@@ -5463,84 +5455,21 @@ def _ads_decision_queue(
     action_ids: list[str],
     currency_code: str | None,
 ) -> list[AdsDecisionItem]:
-    if blocked_handoff is not None:
-        return _blocked_ads_decision_queue(blocked_handoff, currency_code)
-
-    decisions = _build_campaign_context_decisions(
-        campaign_read_contract,
-        business_context_read_contract,
-        derived_kpi_read_contract,
-        campaign_triage_read_contract,
-        action_ids=action_ids,
-        campaign_missing_read_contracts=_remove_available_contracts(
-            campaign_read_contract.missing_read_contracts,
-            budget_pacing_read_contract,
-            recommendations_read_contract,
-            impression_share_read_contract,
-            change_history_read_contract,
-        ),
-        derived_missing_read_contracts=_remove_available_contracts(
-            derived_kpi_read_contract.missing_read_contracts,
-            budget_pacing_read_contract,
-            recommendations_read_contract,
-            impression_share_read_contract,
-            change_history_read_contract,
-        ),
+    return build_decision_queue(
+        campaign_read_contract, business_context_read_contract,
+        derived_kpi_read_contract, budget_pacing_read_contract,
+        recommendations_read_contract, impression_share_read_contract,
+        campaign_triage_read_contract, change_history_read_contract,
+        search_terms_read_contract, search_term_ngram_read_contract,
+        search_term_safety_read_contract, keyword_match_context_read_contract,
+        keyword_planner_read_contract, custom_segments_read_contract,
+        negative_keywords_read_contract, sections, blocked_handoff, action_ids,
+        currency_code, campaign_context=_build_campaign_context_decisions,
+        blocked_queue=_blocked_ads_decision_queue,
+        safety_decisions=_build_ads_safety_decisions,
+        remove_available=_remove_available_contracts,
+        with_lineage=_with_ads_decision_lineage,
     )
-
-    if budget_pacing_read_contract.budget_rows:
-        decisions.append(
-            build_budget_context_decision(
-                budget_pacing_read_contract,
-                action_ids=action_ids,
-            )
-        )
-
-    if recommendations_read_contract.status == "ready":
-        decisions.append(
-            build_recommendations_decision(
-                recommendations_read_contract,
-                action_ids=action_ids,
-            )
-        )
-
-    if impression_share_read_contract.status == "ready":
-        decisions.append(
-            build_impression_share_decision(impression_share_read_contract)
-        )
-
-    if change_history_read_contract.status == "ready" or change_history_read_contract.evidence_ids:
-        decisions.append(build_change_history_decision(change_history_read_contract))
-
-    if search_terms_read_contract.search_term_rows:
-        decisions.append(
-            build_search_terms_decision(search_terms_read_contract, action_ids=action_ids)
-        )
-
-    if search_term_ngram_read_contract.ngram_rows:
-        decisions.append(
-            build_search_term_ngram_decision(search_term_ngram_read_contract)
-        )
-
-    if search_term_safety_read_contract.status == "ready":
-        decisions.append(build_search_term_safety_decision(search_term_safety_read_contract))
-
-    if negative_keywords_read_contract.candidates:
-        decisions.append(
-            build_negative_keyword_safety_decision(
-                negative_keywords_read_contract,
-                search_term_safety_read_contract,
-            )
-        )
-
-    if custom_segments_read_contract.candidates:
-        decisions.append(
-            build_custom_segments_decision(custom_segments_read_contract)
-        )
-
-    decisions.extend(_build_ads_safety_decisions(sections))
-
-    return [_with_ads_decision_lineage(decision, currency_code) for decision in decisions]
 
 
 def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:

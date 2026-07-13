@@ -613,6 +613,11 @@
   `ads_diagnostics.py` ma 7 044 linie fizyczne; 12 testów Ads, Ruff, mypy,
   complexity audit i diff check zielone. Następny seam: decision-queue
   orchestration.
+- Szósty slice wykonany: dodano `wilq/briefing/ads_decision_queue_contracts.py`.
+  Decision queue orchestration (blocked path, kontrakty, safety i lineage)
+  działa poza fasadą przez callbacki do istniejących reguł. `ads_diagnostics.py`
+  ma 6 973 linie fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff
+  check zielone. Następny seam: response assembly/operator summary.
 
 ## Następny krok
 
