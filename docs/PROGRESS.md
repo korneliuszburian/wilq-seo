@@ -56,6 +56,9 @@ w git, Beads i `docs/progress/archive/`.
 - `wilq-seo-0q74` rozszerzony o Custom Segments: jedenaście smoke’ów używa
   wspólnego transportu; live proof przechodzi z 1 kandydatem, blokadą Keyword
   Planner/forecast/audience size i `apply_allowed=false`.
+- `wilq-seo-0q74` rozszerzony o Content Operator: dwanaście smoke’ów używa
+  wspólnego transportu; live proof przechodzi z kolejką zablokowaną przy 2/3
+  kandydatów, dry-run WordPress i `publish_allowed=false`.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

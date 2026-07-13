@@ -13,8 +13,8 @@
 - Dodano `scripts/skill_smoke_harness.py` z `request_json` i wspólnym
   `has_polish_metric_source_guardrails`.
 - Ads, GSC, Content Strategist, Merchant, Localo, GA4, Demand Gen, Ahrefs,
-  Campaign Builder, Social i Custom Segments smoke importują wspólny transport;
-  wszystkie jedenaście live smoke przechodzą.
+  Campaign Builder, Social, Custom Segments i Content Operator smoke importują
+  wspólny transport; wszystkie dwanaście live smoke przechodzą.
 - GSC smoke assertion została poprawiona, aby porównywać
   `review_action_ids` z decyzją wskazaną przez `technical_decision_id`, a nie z
   globalną listą akcji. GSC smoke przechodzi po poprawce.
@@ -36,6 +36,8 @@
   przechodzi z brakującymi credentials i historią postów jawnie zablokowanymi.
 - Custom Segments smoke przechodzi z 1 kandydatem i jawnie zablokowanym
   Keyword Planner/forecast/audience size oraz `apply_allowed=false`.
+- Content Operator smoke przechodzi z kolejką `blocked` (2 kandydatów, 1
+  actionable przy minimum 3), dry-run WordPress i `publish_allowed=false`.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
@@ -46,7 +48,8 @@
 
 ## Następny slice
 
-Wybrać kolejny konkretny smoke do migracji (najlepiej Content Operator/GA4), a
+Wybrać kolejny konkretny smoke do migracji (najlepiej Content Strategist UAT
+packet albo kolejny shared assertion seam), a
 następnie wydzielić wspólne asercje evidence/source/action safety.
 Nie zmieniać product logic w harnessie. Największe funkcje `main` nadal są
 otwarte i wymagają osobnych, testowalnych modułów asercji.

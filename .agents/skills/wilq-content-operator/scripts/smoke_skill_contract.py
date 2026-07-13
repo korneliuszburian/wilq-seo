@@ -3,40 +3,19 @@ from __future__ import annotations
 
 import argparse
 import json
-import urllib.error
-import urllib.request
+import sys
 from datetime import date
+from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+
+from scripts.skill_smoke_harness import request_json
 
 SKILL_NAME = "wilq-content-operator"
 DEV_HOST = "ekologus.dev.proudsite.pl"
 MIN_SMOKE_ITEMS = 1
 MIN_UAT_ITEMS = 3
-
-
-def request_json(
-    api_base: str,
-    method: str,
-    path: str,
-    body: dict[str, Any] | None = None,
-    *,
-    timeout: int = 180,
-) -> Any:
-    data = None if body is None else json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(
-        f"{api_base.rstrip('/')}{path}",
-        data=data,
-        method=method,
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        message = exc.read().decode("utf-8", errors="replace")[:500]
-        raise SystemExit(f"HTTP {exc.code} from {path}: {message}") from exc
-    except urllib.error.URLError as exc:
-        raise SystemExit(f"Could not reach WILQ API at {api_base}: {exc.reason}") from exc
 
 
 def assert_false_everywhere(value: Any, forbidden_key: str, context: str) -> None:
