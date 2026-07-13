@@ -713,6 +713,9 @@
 - Siedemnasta kontynuacja `50wa`: WordPress draft handoff review-gate contract
   jest teraz w `tests/api_contracts/test_content_workflow_contracts.py`. Nowy i
   pełny suite przechodzą; payload jargon pozostaje ukryty przed operatorem.
+- Osiemnasta kontynuacja `50wa`: raw audit summary redaction contracts są teraz
+  w `tests/api_contracts/test_action_operator_language_contracts.py`. Nowy i
+  pełny suite przechodzą; nie wracać do tych pure label tests w mega-teście.
 
 ## Następny krok
 

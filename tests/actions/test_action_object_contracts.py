@@ -48,7 +48,6 @@ from wilq.actions.google_ads.demand_gen import demand_gen_contract_labels
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import (
     _ads_recommendation_type_label,
-    _operator_audit_summary_text,
     list_actions,
 )
 from wilq.briefing.ahrefs_diagnostics import (
@@ -1454,44 +1453,6 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "blocked_claims" not in draft_preview
     assert "gwarancja pozycji" in draft_preview["blocked_claim_labels"]
     assert content_action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
-
-
-def test_legacy_raw_audit_summary_is_not_rewritten_with_string_labels() -> None:
-    summary = (
-        "Blokady: payload_apply_allowed_false, wordpress_write_not_requested, "
-        "blocked_claim:ranking guarantee. Sprawdzone: "
-        "candidate:content_brief_gsc_bdo, source_type:gsc_query_page."
-    )
-
-    cleaned = _operator_audit_summary_text(summary)
-
-    assert cleaned == (
-        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
-    )
-    assert "payload_apply_allowed_false" not in cleaned
-    assert "candidate:" not in cleaned
-    assert "blocked_claim:" not in cleaned
-
-
-def test_operator_audit_summary_hides_raw_audit_identifiers() -> None:
-    summary = (
-        "Potwierdzenie podglądu zapisane. "
-        "Audyt podglądu: audit_act_review_merchant_feed_issues_preview_123abc. "
-        "Notatka: Operator potwierdza podgląd. Ten krok nie zapisuje zmian.. "
-        "Ten krok nie zapisuje zmian w zewnętrznych systemach."
-    )
-
-    cleaned = _operator_audit_summary_text(summary)
-
-    assert "Potwierdzenie podglądu zapisane" in cleaned
-    assert "Notatka: Operator potwierdza podgląd" in cleaned
-    assert "Audyt podglądu" not in cleaned
-    assert "audit_" not in cleaned
-    assert ".." not in cleaned
-    assert (
-        "Ten krok nie zapisuje zmian. Ten krok nie zapisuje zmian w zewnętrznych systemach."
-        not in cleaned
-    )
 
 
 def test_action_review_gate_hides_raw_legacy_review_summary(

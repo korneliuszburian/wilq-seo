@@ -2259,3 +2259,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
   Test docelowy i pełny action-object suite przechodzą; techniczny payload
   pozostaje poza kopią operatora.
+- Osiemnasta kontynuacja `50wa`: dwa pure audit-summary language contracts
+  przeniesiono do `tests/api_contracts/test_action_operator_language_contracts.py`.
+  Nowy plik i pełny action-object suite przechodzą; historyczne raw IDs i
+  implementation blockers pozostają ukryte.
