@@ -8027,27 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("secondary utility routes render compact blockers instead of generic registries", async () => {
-    renderApp("/google-sheets");
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Google Sheets" })).toBeInTheDocument());
-    expect(screen.getByText("Status widoku")).toBeInTheDocument();
-    expect(screen.getByText(/nie ma zatwierdzonego zakresu eksportu/i)).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/vendor_read/)).not.toBeInTheDocument();
-
-    cleanup();
-
-    renderApp("/security");
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Bezpieczeństwo" })).toBeInTheDocument());
-    expect(screen.getByText("Status widoku")).toBeInTheDocument();
-    expect(screen.getByText(/nie ma pełnego dashboardu bezpieczeństwa/i)).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
-    expect(screen.queryByText(/CONNECTOR_REFRESH_RUN/)).not.toBeInTheDocument();
-  });
-
   it("system route renders technical audit mode without leaking raw internals", async () => {
     renderApp("/system");
     await waitFor(() => expect(screen.getByRole("heading", { name: "System" })).toBeInTheDocument());

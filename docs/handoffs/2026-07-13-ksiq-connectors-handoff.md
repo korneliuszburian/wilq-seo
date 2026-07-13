@@ -188,6 +188,11 @@
   Każdy stan pokazuje API-owned next step i nie uruchamia retry/POST-u.
   App/settings focused 29/29, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 9243 LOC. Następny seam: pozostałe settings error paths.
+- Ósmy slice `wilq-seo-pidl`: secondary utility route behavior przeniesiony do
+  `GenericSurface.test.tsx`; `/google-sheets` i `/security` mają focused proof
+  compact blockerów bez registry/payload dumpów. App + GenericSurface focused
+  24/24, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
+  9222 LOC. Następny seam: system route technical disclosure.
 
 ## Następny krok
 

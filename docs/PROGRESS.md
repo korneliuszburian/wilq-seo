@@ -158,6 +158,11 @@ w git, Beads i `docs/progress/archive/`.
   widoczny z API-owned safe next step, bez automatycznego retry lub POST-u.
   App/settings focused 29/29, typecheck/lint/diff check przechodzą;
   `App.test.tsx` ma 9243 LOC.
+- Ósmy slice `wilq-seo-pidl` przeniósł secondary utility route behavior do
+  `GenericSurface.test.tsx`: `/google-sheets` i `/security` mają focused proof
+  compact blockerów oraz braku registry/payload dumpów. App + GenericSurface
+  focused 24/24, typecheck/lint/diff check przechodzą; `App.test.tsx` ma 9222
+  LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

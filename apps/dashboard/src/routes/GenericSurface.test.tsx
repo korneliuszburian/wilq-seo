@@ -34,6 +34,26 @@ describe("GenericSurface", () => {
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
   });
 
+  it("renders compact blockers for secondary utility routes", () => {
+    renderGenericSurface("/google-sheets");
+    expect(screen.getByRole("heading", { name: "Google Sheets" })).toBeInTheDocument();
+    expect(screen.getByText("Status widoku")).toBeInTheDocument();
+    expect(screen.getByText(/nie ma zatwierdzonego zakresu eksportu/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vendor_read/)).not.toBeInTheDocument();
+
+    cleanup();
+    renderGenericSurface("/security");
+    expect(screen.getByRole("heading", { name: "Bezpieczeństwo" })).toBeInTheDocument();
+    expect(screen.getByText("Status widoku")).toBeInTheDocument();
+    expect(screen.getByText(/nie ma pełnego dashboardu bezpieczeństwa/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText(/CONNECTOR_REFRESH_RUN/)).not.toBeInTheDocument();
+  });
+
   it("explains missing connector status as a readiness blocker", () => {
     const source = readFileSync("src/routes/GenericSurface.tsx", "utf8");
 
