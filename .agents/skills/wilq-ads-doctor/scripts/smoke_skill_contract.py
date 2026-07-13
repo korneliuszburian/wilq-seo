@@ -10,6 +10,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from ads_readiness_assertions import validate_optimizer_readiness
 from ads_smoke_runtime import load_ads_context
 
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
@@ -53,7 +54,6 @@ def main() -> int:
     blocked_handoff = runtime["blocked_handoff"]
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
     campaign_triage_read_contract = ads_diagnostics.get("campaign_triage_read_contract") or {}
-    optimizer_readiness_contract = ads_diagnostics.get("optimizer_readiness_contract") or {}
     account_currency_read_contract = ads_diagnostics.get("account_currency_read_contract") or {}
     business_context_read_contract = ads_diagnostics.get("business_context_read_contract") or {}
     budget_pacing_read_contract = ads_diagnostics.get("budget_pacing_read_contract") or {}
@@ -83,51 +83,16 @@ def main() -> int:
     if len(pack_decision_queue) > len(decision_queue):
         raise SystemExit("Default Ads context-pack decision_queue cannot exceed endpoint")
     validate_context_lineage(pack)
-    pack_optimizer_readiness_contract = (
-        pack.get("ads_diagnostics", {}).get("optimizer_readiness_contract") or {}
+    optimizer_readiness_contract, budget_decision, pack_budget_decision = (
+        validate_optimizer_readiness(
+            ads_diagnostics,
+            pack,
+            decision_queue,
+            pack_decision_queue,
+            _find_decision,
+            _find_readiness_item,
+        )
     )
-    if optimizer_readiness_contract.get("status") not in {"review_ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose optimizer_readiness_contract")
-    if optimizer_readiness_contract.get("mode") != "review_only":
-        raise SystemExit("Ads optimizer readiness must stay review_only")
-    if optimizer_readiness_contract.get("apply_allowed") is not False:
-        raise SystemExit("Ads optimizer readiness must keep apply_allowed=false")
-    if optimizer_readiness_contract.get("api_mutation_ready") is not False:
-        raise SystemExit("Ads optimizer readiness must keep api_mutation_ready=false")
-    if "zapis zmian kampanii" not in optimizer_readiness_contract.get("blocked_claims", []):
-        raise SystemExit("Ads optimizer readiness must block zapis zmian kampanii claims")
-    readiness_items = optimizer_readiness_contract.get("readiness_items") or []
-    if not readiness_items:
-        raise SystemExit("Ads optimizer readiness must expose readiness_items")
-    change_impact_item = _find_readiness_item(
-        readiness_items,
-        "change_history_impact_review",
-    )
-    if change_impact_item.get("status") != "blocked":
-        raise SystemExit("Ads optimizer readiness must block wpływ zmian review")
-    if "ads_change_history_read_contract" not in (
-        change_impact_item.get("source_contract_ids") or []
-    ):
-        raise SystemExit("Change impact readiness item must cite change history contract")
-    if "ads_change_impact_readiness_contract" not in (
-        change_impact_item.get("source_contract_ids") or []
-    ):
-        raise SystemExit("Change impact readiness item must cite readiness contract")
-    if "wpływ zmian" not in change_impact_item.get("blocked_claims", []):
-        raise SystemExit("Change impact readiness item must block wpływ zmian claim")
-    apply_item = _find_readiness_item(readiness_items, "ads_apply_safety_gate")
-    if apply_item.get("status") != "blocked":
-        raise SystemExit("Ads optimizer readiness must block apply safety gate")
-    if pack_optimizer_readiness_contract.get("summary") != (
-        optimizer_readiness_contract.get("summary")
-    ):
-        raise SystemExit("Context pack optimizer readiness contract differs")
-    if pack_optimizer_readiness_contract.get("mode") != "review_only":
-        raise SystemExit("Context pack optimizer readiness must stay review_only")
-    if pack_optimizer_readiness_contract.get("apply_allowed") is not False:
-        raise SystemExit("Context pack optimizer readiness must keep apply blocked")
-    budget_decision = _find_decision(decision_queue, "ads_review_budget_context")
-    pack_budget_decision = _find_decision(pack_decision_queue, "ads_review_budget_context")
     if (
         campaign_read_contract.get("status") == "ready"
         and campaign_read_contract.get("campaign_rows")

@@ -71,8 +71,10 @@
 - Ads bootstrap jest wydzielony do `scripts/ads_smoke_runtime.py`. Długi live
   smoke (około 73 s) kończy się `exit 0`, z 6 poprawnymi action validations,
   18 kampaniami i `apply_allowed=false`; `main` ma 970 LOC/274 branches.
-  Następny Ads seam powinien wyjmować kontrakty readiness/decision queue, nie
-  zmieniać API ani zmniejszać zakresu safety.
+- Ads readiness/budget assertion seam jest teraz w
+  `scripts/ads_readiness_assertions.py`; drugi długi live smoke kończy się
+  `exit 0`, a `main` ma 934 LOC/255 branches. Następny seam może wyjmować
+  pojedynczy kontrakt raportowania, bez zmiany API ani safety.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

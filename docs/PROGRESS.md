@@ -96,6 +96,10 @@ w git, Beads i `docs/progress/archive/`.
   potwierdził 6 poprawnych walidacji actionów, 18 kampanii i
   `apply_allowed=false`; `main` spadł do 970 LOC/274 branches. Duży payload
   jest znanym kosztem live proof, nie błędem safety.
+- Ads `optimizer_readiness_contract` i budżetowa decyzja są teraz walidowane
+  przez `scripts/ads_readiness_assertions.py`. Drugi live smoke kończy się
+  `exit 0`, zachowuje 6 poprawnych action validations i `apply_allowed=false`;
+  `main` spadł do 934 LOC/255 branches. Nowy moduł ma 48 LOC, 17 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
