@@ -108,6 +108,11 @@ w git, Beads i `docs/progress/archive/`.
   the route title and refresh controls. It owns presentation only; no route,
   API or decision semantics changed. Focused route tests (19), lint, typecheck,
   build and diff check pass. E2E still fails at the existing heading locator.
+- `wilq-seo-ho41` continuation 19: extracted `ContentPublicInventoryPanel.tsx`
+  from the writing workbench. Public URL/title, section inventory and honest
+  missing-inventory blocker remain typed inputs; no canonical or SEO logic moved
+  into React. Focused route tests (19), lint, typecheck, build and diff check
+  pass. E2E still fails at the existing heading locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

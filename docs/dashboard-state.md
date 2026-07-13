@@ -115,6 +115,9 @@ API-owned candidate, blockers, freshness/evidence disclosure and review-only
 CTA without inventing decision logic.
 The workbench title and refresh controls are now `ContentWorkbenchHeader.tsx`;
 they remain presentation-only and do not own route or decision semantics.
+The public inventory card is now `ContentPublicInventoryPanel.tsx`; it renders
+typed public title/URL/section state and the existing missing-inventory blocker
+without moving canonical or SEO logic into React.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
