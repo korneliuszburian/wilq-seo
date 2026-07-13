@@ -52,8 +52,9 @@ proof, blocker and dry-run next step without revealing IDs above the fold. The
 typed service context correctly remains blocked until public-card review, so it
 does not pretend that the writer is production-ready. Existing-draft duplication
 remains closed by removing the direct live/create path; a real dev draft write
-may return only through canonical ActionObject apply. The live queue is still
-1 actionable item of the required 3 and must not invent a third. `r564.5`,
+may return only through canonical ActionObject apply. The live queue currently
+has 0 actionable items of the required 3 (2 candidates total) and must not
+invent a third. `r564.5`,
 `r564.6`, `r564.3`, `c9h9.4`, `/ahrefs` slice `3bst.7` and the Ahrefs latency
 slice `c9h9.17` are closed. The current `/ahrefs` manual decision is above its
 cards and diagnostics render within the operating budget; the next Ahrefs

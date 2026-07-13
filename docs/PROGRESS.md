@@ -5,6 +5,12 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- Re-audyt live WILQ po `1834d25d`: `/api/content/work-items/queue` zwraca
+  `blocked`, 2 kandydatów, 0 actionable przy minimum 3; świeżość jest `stale`
+  dla `google_search_console` i `wordpress_ekologus`. Nie tworzyć sztucznego
+  tematu. `r564` nie ma nowej luki kodowej po zamknięciu dzieci; oczekuje na
+  zewnętrzne odświeżenie/evidence.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback

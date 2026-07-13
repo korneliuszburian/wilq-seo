@@ -170,15 +170,17 @@ nieuruchomienie pozostaje jawne.
 
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`.
 - Publiczny `ekologus.pl` jest SEO truth; Proudsite jest draft/dev workspace.
-- Live queue: `blocked`, 2 kandydatów, 1 actionable, minimum 3.
+- Live queue: `blocked`, 2 kandydatów, 0 actionable, minimum 3; GSC i publiczny
+  WordPress są stale w aktualnym odczycie API.
 - Managed runtime: 104 362 metric facts i 4 580 refresh runs; konektory
   12/9 configured/2 missing
   credentials/1 disabled.
 - Źródła contentowe są teraz świeże po read-only refreshu 2026-07-12. Queue i
   selected snapshot pokazują typed freshness `fresh`, a blockerem pozostaje
   `not_enough_actionable_candidates`.
-- Refresh zakończył się dla WordPress sklep, GA4 i Ahrefs; kolejka ma 2
-  kandydatów, 1 actionable i minimum 3. Nie twórz sztucznego trzeciego tematu.
+- Ostatni live odczyt kolejki ma 2 kandydatów, 0 actionable i minimum 3;
+  GSC/WordPress public wymagają odświeżenia. Nie twórz sztucznego trzeciego
+  tematu.
 - Queue-owned first decision renderuje przed snapshotem; cold queue po API
   prewarm ma budżet `<5 s`, a selected snapshot/enrichment mają lokalne stany
   (`c9h9.6` zamknięty).

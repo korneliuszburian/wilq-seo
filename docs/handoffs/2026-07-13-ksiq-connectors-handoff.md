@@ -765,6 +765,10 @@
   Explicit target selection, section inventory i draft-only wording pozostają
   bez zmian; brak write/matching logic w komponencie. Przed commitem wymagane
   focused lint/typecheck/tests oraz reload/browser proof.
+- `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
+  is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
+  3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent
+  a third topic or reopen a closed child; await external refresh/evidence.
 
 ## Następny krok
 
