@@ -67,6 +67,10 @@
   decision queue item i operator summary (165 LOC); `index.ts` ma 2 240 LOC.
   Diagnostyka nadal korzysta ze stabilnego barrel, payloady bez zmian, focused
   gates przechodzą. Następny seam: Ads freshness i diagnostics response.
+- Trzynasty seam: `packages/shared-schemas/src/ads_diagnostics.ts` zawiera Ads
+  freshness assessment i pełny diagnostics response (89 LOC); `index.ts` ma
+  2 161 LOC. Eksporty, endpointy i payloady bez zmian; focused gates przechodzą.
+  Następny seam: Merchant diagnostic sections/response.
 
 ## Następny krok
 

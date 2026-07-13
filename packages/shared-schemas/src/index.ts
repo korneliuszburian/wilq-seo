@@ -24,16 +24,10 @@ import {
 } from "./marketing";
 import {
   AdsAccountCurrencyReadContractSchema,
-  AdsBlockedHandoffSchema,
   AdsBudgetPacingReadContractSchema,
   AdsBudgetPacingRowSchema,
-  AdsBusinessContextReadContractSchema,
   AdsCampaignMetricRowSchema,
-  AdsCampaignReadContractSchema,
-  AdsCampaignTriageReadContractSchema,
-  AdsDerivedKpiReadContractSchema,
   AdsDiagnosticSectionSchema,
-  AdsOptimizerReadinessContractSchema,
   AdsSharedBudgetDistributionRowSchema,
 } from "./ads_campaigns";
 import {
@@ -41,35 +35,15 @@ import {
   AdsKeywordMatchContextReadContractSchema
 } from "./ads_keyword_contracts";
 import {
-  AdsKeywordPlannerReadContractSchema
-} from "./ads_keyword_planner_contracts";
-import {
   AdsCustomSegmentCandidateSchema,
   AdsCustomSegmentsReadContractSchema
 } from "./ads_custom_segments";
-import {
-  AdsImpressionShareReadContractSchema,
-  AdsRecommendationsReadContractSchema
-} from "./ads_review_contracts";
-import {
-  AdsSearchTermNgramReadContractSchema,
-  AdsSearchTermReviewSummaryContractSchema,
-  AdsSearchTermSafetyReadContractSchema,
-  AdsSearchTermsReadContractSchema
-} from "./ads_search_terms";
 import {
   AdsNegativeKeywordCandidateSchema,
   AdsNegativeKeywordPayloadPreviewSchema,
   AdsNegativeKeywordsReadContractSchema
 } from "./ads_negative_keywords";
-import {
-  AdsChangeHistoryReadContractSchema,
-  AdsChangeImpactReadinessContractSchema
-} from "./ads_change_history";
-import {
-  AdsDecisionItemSchema,
-  AdsOperatorSummarySchema
-} from "./ads_decisions";
+import { AdsDiagnosticsResponseSchema } from "./ads_diagnostics";
 
 export * from "./contentWorkflow";
 export * from "./connectors";
@@ -84,6 +58,7 @@ export * from "./ads_search_terms";
 export * from "./ads_negative_keywords";
 export * from "./ads_change_history";
 export * from "./ads_decisions";
+export * from "./ads_diagnostics";
 
 export const DecisionStateSchema = z.enum(["ready", "stale", "blocked", "missing", "unknown"]);
 
@@ -117,60 +92,6 @@ export const OpportunitySchema = z.object({
 
 
 
-export const AdsFreshnessAssessmentSchema = z.object({
-  state: z.enum(["fresh", "stale", "missing", "blocked"]),
-  state_label: z.string().default(""),
-  checked_at: z.string().nullable().optional(),
-  latest_refresh_id: z.string().nullable().optional(),
-  latest_refresh_completed_at: z.string().nullable().optional(),
-  age_hours: z.number().nullable().optional(),
-  stale_after_hours: z.number(),
-  requires_refresh: z.boolean(),
-  summary: z.string(),
-  next_step: z.string()
-});
-
-export const AdsDiagnosticsResponseSchema = z.object({
-  generated_at: z.string().nullable().optional(),
-  language: z.literal("pl-PL"),
-  strict_instruction: z.string(),
-  connector: ConnectorStatusSchema,
-  connector_status_label: z.string().default(""),
-  latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
-  latest_refresh_status_label: z.string().nullable().optional(),
-  live_data_status_label: z.string().default(""),
-  live_data_available: z.boolean(),
-  freshness_assessment: AdsFreshnessAssessmentSchema,
-  campaign_read_contract: AdsCampaignReadContractSchema,
-  account_currency_read_contract: AdsAccountCurrencyReadContractSchema,
-  business_context_read_contract: AdsBusinessContextReadContractSchema,
-  derived_kpi_read_contract: AdsDerivedKpiReadContractSchema,
-  budget_pacing_read_contract: AdsBudgetPacingReadContractSchema,
-  recommendations_read_contract: AdsRecommendationsReadContractSchema,
-  impression_share_read_contract: AdsImpressionShareReadContractSchema,
-  campaign_triage_read_contract: AdsCampaignTriageReadContractSchema,
-  optimizer_readiness_contract: AdsOptimizerReadinessContractSchema,
-  change_history_read_contract: AdsChangeHistoryReadContractSchema,
-  change_impact_readiness_contract: AdsChangeImpactReadinessContractSchema,
-  search_terms_read_contract: AdsSearchTermsReadContractSchema,
-  search_term_review_summary_contract: AdsSearchTermReviewSummaryContractSchema,
-  search_term_ngram_read_contract: AdsSearchTermNgramReadContractSchema,
-  search_term_safety_read_contract: AdsSearchTermSafetyReadContractSchema,
-  keyword_match_context_read_contract: AdsKeywordMatchContextReadContractSchema,
-  keyword_planner_read_contract: AdsKeywordPlannerReadContractSchema,
-  custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
-  negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,
-  operator_summary: AdsOperatorSummarySchema,
-  decision_queue: z.array(AdsDecisionItemSchema),
-  sections: z.array(AdsDiagnosticSectionSchema),
-  blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
-  evidence_ids: z.array(z.string()),
-  evidence_summary_label: z.string().default(""),
-  source_connector_labels: z.array(z.string()).default([]),
-  action_ids: z.array(z.string()),
-  action_summary_label: z.string().default(""),
-  blocker_count: z.number()
-});
 
 export const MerchantDiagnosticSectionSchema = z.object({
   id: z.string(),

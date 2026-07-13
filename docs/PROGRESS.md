@@ -31,6 +31,11 @@ w git, Beads i `docs/progress/archive/`.
   kontrakty przez stabilny barrel, bez zmiany payloadów. Shared schema/dashboard
   lint, build, tests i typecheck przechodzą. Następny seam: Ads freshness i
   diagnostics response.
+- Trzynasty seam: `ads_diagnostics.ts` zawiera Ads freshness assessment i
+  pełny diagnostics response (89 LOC); `index.ts` ma 2 161 LOC. Diagnostyka
+  nadal eksportuje ten sam kontrakt, bez zmiany endpointów ani payloadów.
+  Shared schema/dashboard lint, build, tests i typecheck przechodzą. Następny
+  seam: Merchant diagnostic sections/response.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
