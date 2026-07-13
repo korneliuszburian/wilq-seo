@@ -2536,3 +2536,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   both Service Profile actions, health is OK, and `/content-workflow` Playwright
   proof passes 1/1. `service.py` is now 1447 LOC; frozen monolith risk remains
   explicitly tracked, with no new write path or payload semantics.
+- `jnra` continuation 3 2026-07-13: static ActionObject inventory assembly
+  moved into `wilq/actions/registry_assembly.py`, including prepare actions,
+  OAuth repair, existing-draft action and injected Service Profile actions.
+  Repo-wide reference audit allowed removal of the dead `seed_core_prepare_actions`
+  path. Focused content/action-cache tests, Ruff, mypy, complexity, managed API
+  restart and action inventory smoke pass; service.py is now 1425 LOC.

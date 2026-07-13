@@ -83,7 +83,6 @@ from wilq.actions.content_refresh import (
     content_refresh_metric_candidate,
     post_publication_measurement_plan,
     post_publication_measurement_summary,
-    seed_content_refresh_action,
 )
 from wilq.actions.content_review_details import (
     content_url_review_details as _content_url_review_details_from_checked_items,
@@ -94,10 +93,7 @@ from wilq.actions.content_review_details import (
 from wilq.actions.content_review_details import (
     is_raw_content_review_audit_event as _is_raw_content_review_audit_event,
 )
-from wilq.actions.ga4.tracking_quality import (
-    ga4_tracking_quality_action_from_metric_facts,
-    seed_ga4_tracking_quality_action,
-)
+from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_action_from_metric_facts
 from wilq.actions.gate_labels import (
     action_gate_label as _action_gate_label,
 )
@@ -144,10 +140,8 @@ from wilq.actions.google_ads.keyword_planner import (
 from wilq.actions.google_ads.negative_keywords import (
     negative_keyword_action_from_metric_facts,
 )
-from wilq.actions.google_ads.oauth import oauth_repair_action
 from wilq.actions.google_ads.recommendations import (
     recommendation_review_action_from_metric_facts,
-    seed_recommendation_review_action,
 )
 from wilq.actions.google_ads.search_term_ngrams import (
     search_term_ngram_action_from_metric_facts,
@@ -160,7 +154,6 @@ from wilq.actions.localo.visibility import (
 from wilq.actions.merchant import (
     MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
     merchant_feed_issue_action_from_metric_facts,
-    seed_merchant_feed_issue_action,
 )
 from wilq.actions.metric_action_facts import load_action_metric_facts
 from wilq.actions.metric_utils import (
@@ -242,7 +235,10 @@ from wilq.actions.payload_readiness import (
 from wilq.actions.payloads import (
     validate_action_payload,
 )
-from wilq.actions.registry_assembly import assemble_action_registry
+from wilq.actions.registry_assembly import (
+    assemble_action_registry,
+    seed_static_actions,
+)
 from wilq.actions.review_gate import (
     action_operator_checklist as build_action_operator_checklist,
 )
@@ -281,7 +277,6 @@ from wilq.actions.social import social_draft_actions
 from wilq.actions.wordpress_draft import (
     draft_apply_action,
     draft_handoff_action,
-    existing_draft_update_action,
 )
 from wilq.actions.wordpress_mutation_requirements import (
     WordPressDraftApplyCapability,
@@ -350,34 +345,6 @@ class ActionListCacheEntry:
 _cached_action_list: ActionListCacheEntry | None = None
 
 
-def seed_static_actions() -> dict[str, ActionObject]:
-    actions = seed_core_prepare_actions()
-    action = oauth_repair_action()
-    actions[action.id] = action
-    return actions
-
-
-def seed_core_prepare_actions() -> dict[str, ActionObject]:
-    actions = [
-        seed_recommendation_review_action(),
-        seed_merchant_feed_issue_action(),
-        seed_ga4_tracking_quality_action(),
-        seed_content_refresh_action(),
-    ]
-    service_profile_action = _service_profile_knowledge_promotion_action()
-    if service_profile_action is not None:
-        actions.append(service_profile_action)
-    private_proposal_action = _service_profile_private_proposal_promotion_action()
-    if private_proposal_action is not None:
-        actions.append(private_proposal_action)
-    actions.append(_wordpress_existing_draft_update_action())
-    return {action.id: action for action in actions}
-
-
-def _wordpress_existing_draft_update_action() -> ActionObject:
-    return existing_draft_update_action()
-
-
 def _service_profile_knowledge_promotion_action() -> ActionObject | None:
     return service_profile_knowledge_promotion_action(profile=content_service_profile_response())
 
@@ -388,7 +355,12 @@ def _service_profile_private_proposal_promotion_action() -> ActionObject | None:
     )
 
 
-_STATIC_ACTIONS = seed_static_actions()
+_STATIC_ACTIONS = seed_static_actions(
+    additional_actions=(
+        _service_profile_knowledge_promotion_action(),
+        _service_profile_private_proposal_promotion_action(),
+    )
+)
 ACTION_METRIC_CONNECTORS = (
     "google_ads",
     "google_merchant_center",

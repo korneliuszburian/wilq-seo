@@ -958,6 +958,11 @@
   Playwright proof are green. The managed stack was restarted after the code
   change; `service.py` is 1447 LOC. Do not reopen closed c9h9.4 or repeat old
   WordPress safety slices.
+- `jnra` continuation 3 2026-07-13: static action inventory now belongs to
+  `registry_assembly.py`; Service Profile actions are explicit injected inputs,
+  preserving list/direct-lookup parity. Dead `seed_core_prepare_actions` was
+  removed only after repo-wide reference search. API restart confirms 21 actions
+  and both Service Profile IDs; focused tests, Ruff, mypy and diff check pass.
 
 ## Następny krok
 
