@@ -100,6 +100,12 @@ w git, Beads i `docs/progress/archive/`.
   review-only, blocked claims i `apply_allowed=false` zachowują te same typy.
   Shared schema 34 passed/10 skipped, lint/build oraz dashboard typecheck/lint
   przechodzą. Następny Ads seam pozostaje search-term contracts.
+- Siódmy `ksiq` seam wydzielił search terms, review summary, n-gramy i safety
+  do `packages/shared-schemas/src/ads_search_terms.ts` (175 LOC). `index.ts`
+  ma 2767 LOC; search-term safety/read-only contracts oraz eksporty są
+  niezmienione. Shared schema 34 passed/10 skipped, lint/build oraz dashboard
+  lint/typecheck przechodzą. Kolejny seam: keyword-match albo custom-segment
+  contracts.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

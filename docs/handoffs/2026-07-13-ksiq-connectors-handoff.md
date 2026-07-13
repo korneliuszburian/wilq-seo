@@ -39,6 +39,11 @@
   `ads_campaigns.ts` (516 LOC); `index.ts` ma 2 928 LOC. Review-only,
   blocked-claim i apply safety contracts pozostały bez zmian. Następny seam:
   search-term contracts.
+- Siódmy seam: `packages/shared-schemas/src/ads_search_terms.ts` zawiera
+  search-term metrics/review/n-gram/safety schemas (175 LOC); `index.ts` ma
+  2 767 LOC. Read-only/safety eksporty zachowane, shared schema/dashboard
+  lint, build, tests i typecheck przechodzą. Następny seam: keyword-match albo
+  custom-segment contracts.
 
 ## Następny krok
 
