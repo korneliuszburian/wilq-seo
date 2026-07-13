@@ -1774,3 +1774,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   summaries, evidence-first copy i brak legacy countów. Ahrefs + App focused
   9/9, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
   8653 LOC. Następny seam: Demand Gen.
+- Dwudziesty trzeci slice: Demand Gen source/contract proof przeniesiony do
+  `DemandGenDiagnosticSurface.test.tsx`; zachowano typed preview/evidence rows,
+  readiness labels, review-only constraints i brak raw payloadów/legacy
+  formatterów. Demand Gen + App focused 9/9, dashboard typecheck/lint i diff
+  check przechodzą; `App.test.tsx` ma 8621 LOC. Następny seam: Evidence detail.
