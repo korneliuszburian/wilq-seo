@@ -130,6 +130,10 @@ w git, Beads i `docs/progress/archive/`.
   a test sprawdza POST `vendor_read`, polling statusu i komunikat zakończenia
   bez uruchamiania omnibusu. `App.test.tsx` ma 9471 LOC; focused 2/2,
   dashboard typecheck/lint i `git diff --check` przechodzą.
+- Trzeci settings slice wydzielił fail-closed polling/error path do tego samego
+  testu domenowego: brak odczytu statusu zostawia blocker, przywraca CTA
+  retry i nie udaje świeżości. Focused SettingsSourceRefresh 2/2,
+  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 9446 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

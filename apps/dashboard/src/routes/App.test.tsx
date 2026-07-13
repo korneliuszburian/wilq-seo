@@ -8069,29 +8069,6 @@ describe("WILQ dashboard", () => {
     }
   });
 
-  it("shows a safe blocker and retry when refresh-run status cannot be read", async () => {
-    shouldFailGa4RefreshRunRead = true;
-    try {
-      renderApp("/settings");
-      const ga4Card = await screen.findByRole("heading", { name: "Google Analytics 4" });
-      const card = ga4Card.closest("article");
-      expect(card).not.toBeNull();
-      fireEvent.click(within(card as HTMLElement).getByRole("button", { name: "Odśwież dane" }));
-
-      expect(
-        await screen.findByText(/Stan pozostaje niepotwierdzony; sprawdź dostęp albo spróbuj ponownie/)
-      ).toBeInTheDocument();
-      expect(within(card as HTMLElement).getByRole("button", { name: "Odśwież dane" })).toBeEnabled();
-      expect(
-        vi.mocked(fetch).mock.calls.filter(([url]) =>
-          String(url).includes("/api/connectors/refresh-runs/")
-        )
-      ).toHaveLength(1);
-    } finally {
-      shouldFailGa4RefreshRunRead = false;
-    }
-  });
-
   it("starts one read-only refresh when the API marks a stale connector eligible", async () => {
     const ga4Connector = connectors[1];
     const previousRefreshState = ga4Connector.refresh_state;

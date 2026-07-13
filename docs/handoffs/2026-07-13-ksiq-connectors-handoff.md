@@ -158,6 +158,11 @@
   bez App omnibusu. `App.test.tsx` ma 9471 LOC; focused 2/2, dashboard
   typecheck/lint i `git diff --check` przechodzą. Następny seam: blocker/error
   path dla statusu refresh.
+- Trzeci settings slice: polling/error path jest teraz w
+  `SettingsSourceRefresh.test.tsx`; test dowodzi, że błąd odczytu statusu
+  pozostawia blocker i przywraca retry CTA zamiast udawać świeżość. Focused
+  2/2 w tym pliku, dashboard typecheck/lint i diff check przechodzą.
+  `App.test.tsx` ma 9446 LOC. Następny seam: automatyczny refresh eligibility.
 
 ## Następny krok
 
