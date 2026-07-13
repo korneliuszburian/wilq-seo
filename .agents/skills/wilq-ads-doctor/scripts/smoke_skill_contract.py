@@ -16,6 +16,7 @@ from ads_impression_share_assertions import validate_impression_share_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
 from ads_search_term_review_assertions import validate_search_term_review_contract
+from ads_search_term_safety_assertions import validate_search_term_safety_contract
 from ads_smoke_runtime import load_ads_context
 
 from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
@@ -241,26 +242,7 @@ def main() -> int:
     search_term_review_summary_contract = validate_search_term_review_contract(
         ads_diagnostics, pack
     )
-    if search_term_safety_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose search_term_safety_read_contract")
-    if not search_term_safety_read_contract.get("blocked_claims"):
-        raise SystemExit("Search-term safety contract must list zablokowane obietnice")
-    if search_term_safety_read_contract.get("status") == "ready":
-        pack_safety_contract = (
-            pack.get("ads_diagnostics", {}).get("search_term_safety_read_contract") or {}
-        )
-        if pack_safety_contract.get("summary") != search_term_safety_read_contract.get("summary"):
-            raise SystemExit("Context pack search-term safety contract differs")
-        if "dodanie wykluczających słów kluczowych" not in search_term_safety_read_contract.get(
-            "blocked_claims",
-            [],
-        ):
-            raise SystemExit("Search-term safety contract must keep apply blocked")
-    elif "search_term_90d_read" not in search_term_safety_read_contract.get(
-        "missing_read_contracts",
-        [],
-    ):
-        raise SystemExit("Blocked search-term safety contract must list missing 90d read")
+    search_term_safety_read_contract = validate_search_term_safety_contract(ads_diagnostics, pack)
     if keyword_match_context_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose keyword_match_context_read_contract")
     if not keyword_match_context_read_contract.get("blocked_claims"):

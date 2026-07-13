@@ -92,6 +92,9 @@
 - Search-term review summary jest w
   `scripts/ads_search_term_review_assertions.py`; live smoke przechodzi, a
   `main` ma 756 LOC/174 branches. Następny seam: search-term safety.
+- Search-term safety contract jest w
+  `scripts/ads_search_term_safety_assertions.py`; live smoke przechodzi, a
+  `main` ma 737 LOC/167 branches. Następny seam: keyword-match context.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

@@ -117,6 +117,9 @@ w git, Beads i `docs/progress/archive/`.
 - Ads search-term review summary jest teraz w
   `scripts/ads_search_term_review_assertions.py`. Live smoke kończy się
   `exit 0`; `main` ma 756 LOC/174 branches, helper 18 LOC/7 branches.
+- Ads search-term safety contract jest teraz w
+  `scripts/ads_search_term_safety_assertions.py`. Live smoke kończy się
+  `exit 0`; `main` ma 737 LOC/167 branches, helper 19 LOC/8 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
