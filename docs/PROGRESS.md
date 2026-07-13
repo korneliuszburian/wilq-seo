@@ -2295,3 +2295,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   contract przeniesiono 1:1 do `tests/api_contracts/test_ads_contracts.py`.
   Test docelowy, pełny action-object suite, Ruff i diff check są zielone; target
   pozostaje preliminary do czasu review strategii.
+- Dwudziesta siódma kontynuacja `50wa`: metric-backed prepare-actions evidence
+  contract przeniesiono 1:1 do `tests/actions/test_action_evidence_contracts.py`.
+  Test docelowy i pełny action-object suite przechodzą; każda akcja zachowuje
+  evidence IDs, review gate i blokadę apply bez dowodu.
