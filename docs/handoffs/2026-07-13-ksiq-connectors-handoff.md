@@ -413,6 +413,9 @@
 - Dwunasty pod-slice zakończony: `assert_ads_budget_contract_basics` przejął
   budget allowed/missing gates, Polish empty state i review-only action. Następny
   krok: budget preview oraz safety card.
+- Trzynasty/czternasty pod-slice zakończony: preview/safety i technical
+  preview-card są w helperach; wszystkie validation labels i fail-closed flags
+  zachowane. Następny krok: budget row evidence/metric semantics.
 
 ## Następny krok
 

@@ -1919,3 +1919,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `assert_ads_budget_contract_basics`, z zachowaniem allowed/missing metrics,
   Polish empty state i review-only action. Focused Ads/Ruff/mypy/diff check
   przechodzą; następny seam to budget preview/safety card.
+- Trzynasty/czternasty pod-slice c9h9.22: budget preview/safety oraz technical
+  preview-card assertions wydzielone. Zachowano validation labels i wszystkie
+  fail-closed flags (`apply_allowed`, `api_mutation_ready`, `destructive`).
+  Focused Ads/Ruff/mypy/diff check przechodzą; następny seam to budget row
+  evidence/metric semantics.

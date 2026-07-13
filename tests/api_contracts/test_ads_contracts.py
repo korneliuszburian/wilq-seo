@@ -451,6 +451,86 @@ def assert_ads_budget_contract_basics(payload: dict[str, Any]) -> None:
     assert contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
 
 
+def assert_ads_budget_preview_safety_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove budget preview is review-only and mutation-safe."""
+    assert len(contract["payload_preview"]) == 1
+    preview = contract["payload_preview"][0]
+    assert preview["id"] == "budget_apply_preview_101_701"
+    assert preview["campaign_id"] == "101"
+    assert preview["campaign_name"] == "Brand Search"
+    assert preview["campaign_budget_id"] == "701"
+    assert preview["campaign_budget_name"] == "Brand budget"
+    assert preview["operation_type"] == "CampaignBudgetOperation"
+    assert preview["operation_type_label"] == "zmiana budżetu kampanii"
+    assert preview["current_budget_amount_micros"] == 30000000
+    assert preview["proposed_budget_amount_micros"] == 42000000
+    assert preview["proposed_budget_delta_micros"] == 12000000
+    assert preview["evidence_ids"] == [evidence_id]
+    assert preview["required_validation"] == [
+        "review_campaign_activity",
+        "verify_account_currency",
+        "budget_pacing",
+        "impression_share",
+        "change_history",
+        "human_budget_goal",
+        "campaign_budget_apply_safety",
+        "campaign_budget_operation_preview",
+        "human_confirm_before_apply",
+    ]
+    assert preview["required_validation_labels"] == [
+        "sprawdzenie aktywności kampanii",
+        "sprawdzenie waluty konta",
+        "tempo wydawania budżetu",
+        "udział w wyświetleniach",
+        "historia zmian",
+        "cel budżetu od człowieka",
+        "bezpieczeństwo zmiany budżetu",
+        "sprawdzenie zapisu budżetu w Google Ads",
+        "potwierdzenie człowieka przed zapisem",
+    ]
+    assert preview["blocked_claims"] == [
+        "skalowanie budżetu",
+        "zmiana budżetu",
+        "wstrzymanie kampanii",
+        "zmarnowany budżet",
+        "opłacalność",
+        "werdykt kosztu pozyskania celu",
+        "werdykt zwrotu z reklam",
+        "zapis rekomendacji",
+    ]
+    assert preview["blocked_claim_labels"] == preview["blocked_claims"]
+    assert preview["api_mutation_ready"] is False
+    assert preview["apply_allowed"] is False
+    assert preview["destructive"] is False
+    safety = preview["safety_review"]
+    assert safety["safety_contract"] == "campaign_budget_apply_safety_v1"
+    assert safety["status"] == "blocked"
+    assert safety["status_label"] == "zablokowane"
+    assert safety["max_allowed_delta_percent"] == 0.3
+    assert safety["proposed_delta_percent"] == 0.4
+    assert "budget_delta_within_30_percent" in safety["missing_requirements"]
+    assert safety["api_mutation_ready"] is False
+    assert safety["apply_allowed"] is False
+    assert safety["destructive"] is False
+
+
+def assert_ads_budget_preview_card_contract(contract: dict[str, Any]) -> None:
+    """Prove technical IDs stay below the marketer-facing budget card."""
+    card = contract["budget_rows"][0]["preview_card"]
+    assert card["kind"] == "google_ads_budget_review"
+    assert card["title_label"] == "Budżet kampanii do sprawdzenia"
+    rows = {row["label"]: row["value"] for row in card["rows"]}
+    assert rows["Budżet teraz"] == "30 PLN"
+    assert rows["Propozycja do sprawdzenia"] == "42 PLN"
+    assert rows["Operacja"] == "zmiana budżetu kampanii"
+    assert rows["Powiązanie"] == "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+    assert "CampaignBudgetOperation" not in str(card)
+    assert "101" not in str(card)
+    assert "701" not in str(card)
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2718,78 +2798,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_diagnostic_section_contract(payload)
     assert_ads_budget_contract_basics(payload)
     budget_contract = payload["budget_pacing_read_contract"]
-    assert len(budget_contract["payload_preview"]) == 1
-    budget_preview = budget_contract["payload_preview"][0]
-    assert budget_preview["id"] == "budget_apply_preview_101_701"
-    assert budget_preview["campaign_id"] == "101"
-    assert budget_preview["campaign_name"] == "Brand Search"
-    assert budget_preview["campaign_budget_id"] == "701"
-    assert budget_preview["campaign_budget_name"] == "Brand budget"
-    assert budget_preview["operation_type"] == "CampaignBudgetOperation"
-    assert budget_preview["operation_type_label"] == "zmiana budżetu kampanii"
-    assert budget_preview["current_budget_amount_micros"] == 30000000
-    assert budget_preview["proposed_budget_amount_micros"] == 42000000
-    assert budget_preview["proposed_budget_delta_micros"] == 12000000
-    assert budget_preview["evidence_ids"] == [refresh_response.json()["evidence_ids"][-1]]
-    assert budget_preview["required_validation"] == [
-        "review_campaign_activity",
-        "verify_account_currency",
-        "budget_pacing",
-        "impression_share",
-        "change_history",
-        "human_budget_goal",
-        "campaign_budget_apply_safety",
-        "campaign_budget_operation_preview",
-        "human_confirm_before_apply",
-    ]
-    assert budget_preview["required_validation_labels"] == [
-        "sprawdzenie aktywności kampanii",
-        "sprawdzenie waluty konta",
-        "tempo wydawania budżetu",
-        "udział w wyświetleniach",
-        "historia zmian",
-        "cel budżetu od człowieka",
-        "bezpieczeństwo zmiany budżetu",
-        "sprawdzenie zapisu budżetu w Google Ads",
-        "potwierdzenie człowieka przed zapisem",
-    ]
-    assert budget_preview["blocked_claims"] == [
-        "skalowanie budżetu",
-        "zmiana budżetu",
-        "wstrzymanie kampanii",
-        "zmarnowany budżet",
-        "opłacalność",
-        "werdykt kosztu pozyskania celu",
-        "werdykt zwrotu z reklam",
-        "zapis rekomendacji",
-    ]
-    assert budget_preview["blocked_claim_labels"] == budget_preview["blocked_claims"]
-    assert budget_preview["api_mutation_ready"] is False
-    assert budget_preview["apply_allowed"] is False
-    assert budget_preview["destructive"] is False
-    budget_safety_review = budget_preview["safety_review"]
-    assert budget_safety_review["safety_contract"] == "campaign_budget_apply_safety_v1"
-    assert budget_safety_review["status"] == "blocked"
-    assert budget_safety_review["status_label"] == "zablokowane"
-    assert budget_safety_review["max_allowed_delta_percent"] == 0.3
-    assert budget_safety_review["proposed_delta_percent"] == 0.4
-    assert "budget_delta_within_30_percent" in budget_safety_review["missing_requirements"]
-    assert budget_safety_review["api_mutation_ready"] is False
-    assert budget_safety_review["apply_allowed"] is False
-    assert budget_safety_review["destructive"] is False
-    budget_preview_card = budget_contract["budget_rows"][0]["preview_card"]
-    assert budget_preview_card["kind"] == "google_ads_budget_review"
-    assert budget_preview_card["title_label"] == "Budżet kampanii do sprawdzenia"
-    budget_preview_rows = {row["label"]: row["value"] for row in budget_preview_card["rows"]}
-    assert budget_preview_rows["Budżet teraz"] == "30 PLN"
-    assert budget_preview_rows["Propozycja do sprawdzenia"] == "42 PLN"
-    assert budget_preview_rows["Operacja"] == "zmiana budżetu kampanii"
-    assert budget_preview_rows["Powiązanie"] == (
-        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+    assert_ads_budget_preview_safety_contract(
+        budget_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert "CampaignBudgetOperation" not in str(budget_preview_card)
-    assert "101" not in str(budget_preview_card)
-    assert "701" not in str(budget_preview_card)
+    budget_preview = budget_contract["payload_preview"][0]
+    assert_ads_budget_preview_card_contract(budget_contract)
     assert budget_contract["budget_rows"] == [
         {
             "campaign_id": "101",
