@@ -1909,7 +1909,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `assert_ads_derived_kpi_contract_basics`. Focused Ads/Ruff/mypy/diff check
   przechodzą; KPI row/evidence semantics pozostają następnym seamem.
 - Re-audit po trzydziestym czwartym pod-slice: `audit_complexity` raportuje 0
-  changed-code budget violations. Główny Ads test ma 1794 linii i 15 branchy;
+  changed-code budget violations. Główny Ads test miał wtedy 1794 linii i 15 branchy;
   branch budget jest zielony, ale line budget nadal wymaga ekstrakcji.
 - Dziesiąty i jedenasty pod-slice c9h9.22: derived KPI row/evidence/blocked
   claims oraz diagnostic section readiness wydzielone do nazwanych helperów.
@@ -1962,3 +1962,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   search-term safety basics/row/section proof wydzielone. Focused
   Ads/Ruff/mypy/diff check zielone; następny seam to keyword-match context i
   końcowy tail.
+- Trzydziesty piąty/szósty pod-slice c9h9.22: keyword-match context, planner,
+  custom-segment read contract oraz audience-forecast blocker wydzielone do
+  nazwanych helperów. Candidate lineage, source quality, human-review gates i
+  payload preview nadal jawnie dowodzą `apply_allowed=false`,
+  `api_mutation_ready=false` oraz braku prognozy/rozmiaru odbiorców. Focused
+  Ads/Ruff/mypy/diff check zielone; główny test ma 1628 linii i 13 branchy.
+  Następny seam: custom-segment candidate/payload safety i końcowy tail.

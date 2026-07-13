@@ -178,8 +178,12 @@ def assert_ads_operator_summary_contract(
     assert summary["total_cost_micros"] == 12000000
     assert summary["total_conversions"] == 2.5
     assert summary["total_conversion_value"] == 450.75
-    assert summary["ready_area_count"] == payload["optimizer_readiness_contract"]["ready_area_count"]
-    assert summary["blocked_area_count"] == payload["optimizer_readiness_contract"]["blocked_area_count"]
+    assert summary["ready_area_count"] == payload["optimizer_readiness_contract"][
+        "ready_area_count"
+    ]
+    assert summary["blocked_area_count"] == payload["optimizer_readiness_contract"][
+        "blocked_area_count"
+    ]
     assert "clicks" in summary["allowed_metrics"]
     assert "google_ads" in summary["source_connectors"]
     assert summary["source_connector_labels"] == ["Google Ads"]
@@ -428,7 +432,9 @@ def assert_ads_budget_contract_basics(payload: dict[str, Any]) -> None:
         "impression share",
         "review",
     ):
-        assert forbidden not in f"{contract['empty_state_message']} {contract['next_step']} {contract['summary']}"
+        assert forbidden not in (
+            f"{contract['empty_state_message']} {contract['next_step']} {contract['summary']}"
+        )
     assert contract["allowed_metrics"] == [
         "budget_amount_micros",
         "cost_micros_7d",
@@ -966,7 +972,9 @@ def assert_ads_optimizer_readiness_contract(payload: dict[str, Any]) -> None:
     items = {item["id"]: item for item in contract["readiness_items"]}
     assert items["campaign_review_queue"]["status"] == "ready"
     assert items["change_history_impact_review"]["status"] == "blocked"
-    assert "pre_change_performance_window" in items["change_history_impact_review"]["missing_read_contracts"]
+    assert "pre_change_performance_window" in items["change_history_impact_review"][
+        "missing_read_contracts"
+    ]
 
 
 def assert_ads_change_history_contract_basics(payload: dict[str, Any]) -> None:
@@ -1090,7 +1098,6 @@ def assert_ads_change_impact_row_contract(
     contract: dict[str, Any], evidence_id: str
 ) -> None:
     """Prove impact readiness row exposes current facts but blocks verdicts."""
-    row = contract["readiness_rows"][0]
     assert contract["readiness_rows"] == [
         {
             "change_event_id": "change-1",
@@ -1426,6 +1433,165 @@ def assert_ads_search_term_safety_section_contract(payload: dict[str, Any]) -> N
     ]
 
 
+def assert_ads_keyword_context_contract(payload: dict[str, Any]) -> None:
+    """Prove keyword match context is typed and intent-reviewed."""
+    contract = payload["keyword_match_context_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["allowed_metrics"] == [
+        "keyword_text",
+        "keyword_match_type",
+        "criterion_status",
+        "keyword_negative",
+        "campaign",
+        "ad_group",
+    ]
+    assert contract["missing_read_contracts"] == []
+    assert contract["operator_review_gates"] == ["human_intent_review"]
+    assert contract["context_rows"][0]["keyword_text"] == "odpady"
+    assert contract["context_rows"][0]["match_type"] == "BROAD"
+    assert contract["context_rows"][0]["negative"] is False
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_keyword_match_context"
+    )
+    assert section["status"] == "ready"
+    assert section["knowledge_card_ids"] == [
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_search_playbook",
+    ]
+
+
+def assert_ads_keyword_planner_contract(payload: dict[str, Any]) -> None:
+    """Prove planner facts exist while forecast/audience claims stay blocked."""
+    contract = payload["keyword_planner_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["missing_read_contracts"] == ["forecast_or_audience_size"]
+    assert contract["idea_rows"][0]["idea_text"] == "bdo szkolenie"
+    assert contract["idea_rows"][0]["avg_monthly_searches"] == 100
+    assert contract["idea_rows"][0]["competition"] == "MEDIUM"
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_keyword_planner"
+    )
+    assert section["status"] == "ready"
+
+
+def assert_ads_custom_segments_contract(payload: dict[str, Any]) -> None:
+    """Prove custom-segment proposal is source-backed and forecast-gated."""
+    contract = payload["custom_segments_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["title"] == "Segmenty z realnych wyszukiwanych haseł"
+    assert contract["action_ids"] == ["act_prepare_custom_segments_from_search_terms"]
+    assert contract["evidence_summary_label"] == "1 dowód źródłowy"
+    assert contract["action_summary_label"] == "1 akcja do sprawdzenia"
+    assert "keyword_planner_enrichment" not in contract["missing_read_contracts"]
+    assert "forecast_or_audience_size" in contract["missing_read_contracts"]
+    assert "prognoza albo rozmiar odbiorców" in contract["missing_read_contract_labels"]
+    assert contract["operator_review_gates"] == [
+        "review_source_terms",
+        "reject_brand_or_low_intent_terms",
+        "keyword_planner_enrichment",
+        "forecast_or_audience_size",
+        "human_confirm_before_apply",
+    ]
+    assert "custom_segment_change_preview" not in contract["missing_read_contracts"]
+    assert "rozmiar odbiorców" in contract["blocked_claims"]
+    assert "rozmiar odbiorców" in contract["blocked_claim_labels"]
+
+
+def assert_ads_audience_forecast_contract(
+    payload: dict[str, Any], custom_segments_contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove missing forecast blocks audience-size and outcome claims."""
+    contract = custom_segments_contract["audience_forecast_read_contract"]
+    assert contract["status"] == "blocked"
+    assert contract["evidence_summary_label"] == "1 dowód źródłowy"
+    assert contract["checked_candidate_count"] == 1
+    assert contract["forecast_row_count"] == 1
+    assert contract["missing_read_contracts"] == ["forecast_or_audience_size"]
+    assert contract["missing_read_contract_labels"] == ["prognoza albo rozmiar odbiorców"]
+    assert contract["operator_review_gates"] == [
+        "forecast_or_audience_size",
+        "human_confirm_before_apply",
+    ]
+    assert "rozmiar odbiorców" in contract["blocked_claims"]
+    assert "rozmiar odbiorców" in contract["blocked_claim_labels"]
+    row = contract["forecast_rows"][0]
+    assert row["candidate_id"] == custom_segments_contract["candidates"][0]["id"]
+    assert row["custom_segment_name"] == custom_segments_contract["candidates"][0]["name"]
+    assert row["status"] == "missing_forecast"
+    assert row["forecast_available"] is False
+    assert row["audience_size"] is None
+    assert row["source_terms"] == ["bdo rejestracja", "odpady cena"]
+    assert "prognozy albo rozmiaru odbiorców" in row["reason"]
+    assert "zwrot z reklam" in row["blocked_claim_labels"]
+    assert row["evidence_ids"] == [evidence_id]
+    assert row["evidence_summary_label"] == "1 dowód źródłowy"
+
+
+def assert_ads_custom_segment_candidate_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove candidate lineage, review gates and non-mutating payload preview."""
+    candidate = contract["candidates"][0]
+    assert candidate["source_terms"] == ["bdo rejestracja", "odpady cena"]
+    assert candidate["evidence_summary_label"] == "1 dowód źródłowy"
+    assert candidate["source_quality"] == {
+        "total_terms": 2,
+        "accepted_terms": 2,
+        "rejected_terms": 0,
+        "missing_metric_terms": 0,
+        "rejection_reasons": {},
+        "rejection_reason_labels": {},
+    }
+    assert candidate["review_priority"] == "pilne"
+    assert candidate["review_score"] == 85
+    assert candidate["confidence_label"] == "niska"
+    assert candidate["validation_status_label"] == "do sprawdzenia"
+    preview_card = candidate["preview_card"]
+    assert preview_card["kind"] == "google_ads_custom_segment_review"
+    assert preview_card["title_label"] == "Segment odbiorców do sprawdzenia"
+    assert preview_card["status_label"] == "zapis zmian zablokowany"
+    assert preview_card["rows"][0] == {"label": "Nazwa", "value": candidate["name"]}
+    assert "zapis zmian zablokowany" in preview_card["apply_state_label"]
+    assert "zwrot z reklam" in candidate["blocked_claim_labels"]
+    assert "kolejność oceny segmentu" in candidate["review_reason"]
+    assert "nie dowód rozmiaru odbiorców" in candidate["review_reason"]
+    assert candidate["human_review_gates"] == [
+        "sprawdź intencję haseł źródłowych",
+        "odrzuć brand, konkurencję i frazy o niskiej intencji",
+        "sprawdź wzbogacenie Keyword Planner",
+        "sprawdź prognozę albo rozmiar odbiorców",
+        "zatwierdź segment przed zapisem zmian",
+    ]
+    assert candidate["keyword_planner_ideas"][0]["idea_text"] == "bdo szkolenie"
+    payload_preview = contract["payload_preview"][0]
+    assert payload_preview == candidate["payload_preview"]
+    assert payload_preview["member_type"] == "KEYWORD"
+    assert payload_preview["apply_allowed"] is False
+    assert payload_preview["api_mutation_ready"] is False
+    assert payload_preview["destructive"] is False
+    assert "prognoza albo rozmiar odbiorców" in payload_preview["required_validation_labels"]
+    assert "zwrot z reklam" in payload_preview["blocked_claim_labels"]
+    assert "prognoza albo rozmiar odbiorców" in payload_preview["safety_review"][
+        "missing_requirement_labels"
+    ]
+    assert "sprawdzenie zapisu zmian w Google Ads" in payload_preview["safety_review"][
+        "required_validation_labels"
+    ]
+    targeting_preview = payload_preview["targeting_preview"][0]
+    assert "prognoza albo rozmiar odbiorców" in targeting_preview["required_validation_labels"]
+    assert targeting_preview["operation_type"] == "custom_segment_targeting_review"
+    assert targeting_preview["target_scope"] == "campaign_context_review"
+    assert targeting_preview["campaign_id"] == "101"
+    assert targeting_preview["campaign_name"] == "Brand Search"
+    assert targeting_preview["apply_allowed"] is False
+    assert targeting_preview["api_mutation_ready"] is False
+    assert targeting_preview["destructive"] is False
+    assert "forecast_or_audience_size" in targeting_preview["required_validation"]
+    assert candidate["confidence"] == "low"
+    assert candidate["validation_status"] == "pending_validation"
+    assert candidate["evidence_ids"] == [evidence_id]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1435,7 +1601,7 @@ def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     calls = 0
     sentinel = object()
 
-    def fake_build(*, view: str = "full"):
+    def fake_build(*, view: str = "full") -> object:
         nonlocal calls
         calls += 1
         assert view == "summary"
@@ -3699,7 +3865,6 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_budget_preview_safety_contract(
         budget_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    budget_preview = budget_contract["payload_preview"][0]
     assert_ads_budget_preview_card_contract(budget_contract)
     assert_ads_budget_row_contract(
         budget_contract, refresh_response.json()["evidence_ids"][-1]
@@ -3786,181 +3951,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         search_term_safety_contract, refresh_response.json()["evidence_ids"][-1]
     )
     assert_ads_search_term_safety_section_contract(payload)
-    keyword_context_contract = payload["keyword_match_context_read_contract"]
-    assert keyword_context_contract["status"] == "ready"
-    assert keyword_context_contract["allowed_metrics"] == [
-        "keyword_text",
-        "keyword_match_type",
-        "criterion_status",
-        "keyword_negative",
-        "campaign",
-        "ad_group",
-    ]
-    assert keyword_context_contract["missing_read_contracts"] == []
-    assert keyword_context_contract["operator_review_gates"] == ["human_intent_review"]
-    assert keyword_context_contract["context_rows"][0]["keyword_text"] == "odpady"
-    assert keyword_context_contract["context_rows"][0]["match_type"] == "BROAD"
-    assert keyword_context_contract["context_rows"][0]["negative"] is False
-    keyword_context_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_keyword_match_context"
-    )
-    assert keyword_context_section["status"] == "ready"
-    assert keyword_context_section["knowledge_card_ids"] == [
-        "card_google_ads_negative_keywords_playbook",
-        "card_google_ads_search_playbook",
-    ]
-    keyword_planner_contract = payload["keyword_planner_read_contract"]
-    assert keyword_planner_contract["status"] == "ready"
-    assert keyword_planner_contract["missing_read_contracts"] == ["forecast_or_audience_size"]
-    assert keyword_planner_contract["idea_rows"][0]["idea_text"] == "bdo szkolenie"
-    assert keyword_planner_contract["idea_rows"][0]["avg_monthly_searches"] == 100
-    assert keyword_planner_contract["idea_rows"][0]["competition"] == "MEDIUM"
-    keyword_planner_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_keyword_planner"
-    )
-    assert keyword_planner_section["status"] == "ready"
+    assert_ads_keyword_context_contract(payload)
+    assert_ads_keyword_planner_contract(payload)
+    assert_ads_custom_segments_contract(payload)
     custom_segments_contract = payload["custom_segments_read_contract"]
-    assert custom_segments_contract["status"] == "ready"
-    assert custom_segments_contract["title"] == "Segmenty z realnych wyszukiwanych haseł"
-    assert custom_segments_contract["action_ids"] == [
-        "act_prepare_custom_segments_from_search_terms"
-    ]
-    assert custom_segments_contract["evidence_summary_label"] == "1 dowód źródłowy"
-    assert custom_segments_contract["action_summary_label"] == "1 akcja do sprawdzenia"
-    assert "keyword_planner_enrichment" not in custom_segments_contract["missing_read_contracts"]
-    assert "forecast_or_audience_size" in custom_segments_contract["missing_read_contracts"]
-    assert (
-        "prognoza albo rozmiar odbiorców"
-        in custom_segments_contract["missing_read_contract_labels"]
+    assert_ads_audience_forecast_contract(
+        payload, custom_segments_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert custom_segments_contract["operator_review_gates"] == [
-        "review_source_terms",
-        "reject_brand_or_low_intent_terms",
-        "keyword_planner_enrichment",
-        "forecast_or_audience_size",
-        "human_confirm_before_apply",
-    ]
-    assert "custom_segment_change_preview" not in custom_segments_contract["missing_read_contracts"]
-    assert "rozmiar odbiorców" in custom_segments_contract["blocked_claims"]
-    assert "rozmiar odbiorców" in custom_segments_contract["blocked_claim_labels"]
-    audience_forecast_contract = custom_segments_contract["audience_forecast_read_contract"]
-    assert audience_forecast_contract["status"] == "blocked"
-    assert audience_forecast_contract["evidence_summary_label"] == "1 dowód źródłowy"
-    assert audience_forecast_contract["checked_candidate_count"] == 1
-    assert audience_forecast_contract["forecast_row_count"] == 1
-    assert audience_forecast_contract["missing_read_contracts"] == [
-        "forecast_or_audience_size",
-    ]
-    assert audience_forecast_contract["missing_read_contract_labels"] == [
-        "prognoza albo rozmiar odbiorców",
-    ]
-    assert audience_forecast_contract["operator_review_gates"] == [
-        "forecast_or_audience_size",
-        "human_confirm_before_apply",
-    ]
-    assert "rozmiar odbiorców" in audience_forecast_contract["blocked_claims"]
-    assert "rozmiar odbiorców" in audience_forecast_contract["blocked_claim_labels"]
-    forecast_row = audience_forecast_contract["forecast_rows"][0]
-    assert forecast_row["candidate_id"] == custom_segments_contract["candidates"][0]["id"]
-    assert (
-        forecast_row["custom_segment_name"] == (custom_segments_contract["candidates"][0]["name"])
+    assert_ads_custom_segment_candidate_contract(
+        custom_segments_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert forecast_row["status"] == "missing_forecast"
-    assert forecast_row["forecast_available"] is False
-    assert forecast_row["audience_size"] is None
-    assert forecast_row["source_terms"] == ["bdo rejestracja", "odpady cena"]
-    assert "prognozy albo rozmiaru odbiorców" in forecast_row["reason"]
-    assert "zwrot z reklam" in forecast_row["blocked_claim_labels"]
-    assert forecast_row["evidence_ids"] == [refresh_response.json()["evidence_ids"][-1]]
-    assert forecast_row["evidence_summary_label"] == "1 dowód źródłowy"
-    assert custom_segments_contract["candidates"][0]["source_terms"] == [
-        "bdo rejestracja",
-        "odpady cena",
-    ]
-    assert custom_segments_contract["candidates"][0]["evidence_summary_label"] == (
-        "1 dowód źródłowy"
-    )
-    assert custom_segments_contract["candidates"][0]["source_quality"] == {
-        "total_terms": 2,
-        "accepted_terms": 2,
-        "rejected_terms": 0,
-        "missing_metric_terms": 0,
-        "rejection_reasons": {},
-        "rejection_reason_labels": {},
-    }
-    assert custom_segments_contract["candidates"][0]["review_priority"] == "pilne"
-    assert custom_segments_contract["candidates"][0]["review_score"] == 85
-    assert custom_segments_contract["candidates"][0]["confidence_label"] == "niska"
-    assert custom_segments_contract["candidates"][0]["validation_status_label"] == (
-        "do sprawdzenia"
-    )
-    preview_card = custom_segments_contract["candidates"][0]["preview_card"]
-    assert preview_card["kind"] == "google_ads_custom_segment_review"
-    assert preview_card["title_label"] == "Segment odbiorców do sprawdzenia"
-    assert preview_card["status_label"] == "zapis zmian zablokowany"
-    assert preview_card["rows"][0] == {
-        "label": "Nazwa",
-        "value": custom_segments_contract["candidates"][0]["name"],
-    }
-    assert "zapis zmian zablokowany" in preview_card["apply_state_label"]
-    assert "zwrot z reklam" in custom_segments_contract["candidates"][0]["blocked_claim_labels"]
-    assert "kolejność oceny segmentu" in custom_segments_contract["candidates"][0]["review_reason"]
-    assert (
-        "nie dowód rozmiaru odbiorców" in custom_segments_contract["candidates"][0]["review_reason"]
-    )
-    assert custom_segments_contract["candidates"][0]["human_review_gates"] == [
-        "sprawdź intencję haseł źródłowych",
-        "odrzuć brand, konkurencję i frazy o niskiej intencji",
-        "sprawdź wzbogacenie Keyword Planner",
-        "sprawdź prognozę albo rozmiar odbiorców",
-        "zatwierdź segment przed zapisem zmian",
-    ]
-    assert (
-        custom_segments_contract["candidates"][0]["keyword_planner_ideas"][0]["idea_text"]
-        == "bdo szkolenie"
-    )
-    assert (
-        custom_segments_contract["payload_preview"][0]
-        == (custom_segments_contract["candidates"][0]["payload_preview"])
-    )
-    assert custom_segments_contract["payload_preview"][0]["member_type"] == "KEYWORD"
-    assert custom_segments_contract["payload_preview"][0]["apply_allowed"] is False
-    assert custom_segments_contract["payload_preview"][0]["api_mutation_ready"] is False
-    assert custom_segments_contract["payload_preview"][0]["destructive"] is False
-    assert (
-        "prognoza albo rozmiar odbiorców"
-        in custom_segments_contract["payload_preview"][0]["required_validation_labels"]
-    )
-    assert (
-        "zwrot z reklam" in custom_segments_contract["payload_preview"][0]["blocked_claim_labels"]
-    )
-    assert (
-        "prognoza albo rozmiar odbiorców"
-        in custom_segments_contract["payload_preview"][0]["safety_review"][
-            "missing_requirement_labels"
-        ]
-    )
-    assert (
-        "sprawdzenie zapisu zmian w Google Ads"
-        in custom_segments_contract["payload_preview"][0]["safety_review"][
-            "required_validation_labels"
-        ]
-    )
-    targeting_preview = custom_segments_contract["payload_preview"][0]["targeting_preview"][0]
-    assert "prognoza albo rozmiar odbiorców" in targeting_preview["required_validation_labels"]
-    assert targeting_preview["operation_type"] == "custom_segment_targeting_review"
-    assert targeting_preview["target_scope"] == "campaign_context_review"
-    assert targeting_preview["campaign_id"] == "101"
-    assert targeting_preview["campaign_name"] == "Brand Search"
-    assert targeting_preview["apply_allowed"] is False
-    assert targeting_preview["api_mutation_ready"] is False
-    assert targeting_preview["destructive"] is False
-    assert "forecast_or_audience_size" in targeting_preview["required_validation"]
-    assert custom_segments_contract["candidates"][0]["confidence"] == "low"
-    assert custom_segments_contract["candidates"][0]["validation_status"] == ("pending_validation")
-    assert custom_segments_contract["candidates"][0]["evidence_ids"] == [
-        refresh_response.json()["evidence_ids"][-1]
-    ]
     custom_segments_section = next(
         section for section in payload["sections"] if section["id"] == "ads_custom_segments"
     )

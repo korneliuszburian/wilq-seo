@@ -406,7 +406,7 @@
   przejął KPI gates i blocked profitability claim. Następny krok to pełny KPI
   row/evidence proof.
 - Re-audit po trzydziestym czwartym pod-slice: 0 changed-code budget violations;
-  główny test ma 1794 linii i 15 branchy. Branch budget jest zielony, line budget
+  główny test miał wtedy 1794 linii i 15 branchy. Branch budget był zielony, line budget
   pozostaje otwarty.
 - Dziesiąty/jedenasty pod-slice: KPI row/evidence/blocked claims oraz section
   readiness są w helperach. Następny handoff ma rozbić budget pacing contract.
@@ -446,6 +446,13 @@
 - Trzydziesty trzeci/czwarty pod-slice zakończony: n-gram decision oraz search
   term safety basics/row/section są w helperach. Następny krok: keyword-match
   context i końcowy diagnostic tail.
+- Trzydziesty piąty/szósty pod-slice zakończony: keyword-match context, planner,
+  custom-segment basics oraz audience-forecast blocker są w helperach.
+  Candidate lineage, source quality, human-review gates i payload preview
+  zachowują blokadę mutacji (`apply_allowed=false`, `api_mutation_ready=false`)
+  przy braku prognozy/rozmiaru odbiorców. Focused Ads/Ruff/mypy/diff check
+  zielone; główny test ma 1628 linii i 13 branchy. Następny krok:
+  custom-segment candidate/payload safety i końcowy diagnostic tail.
 
 ## Następny krok
 
