@@ -1943,3 +1943,6 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   pełny triage row metrics/evidence/review-gate proof wydzielone. Focused
   Ads/Ruff/mypy/diff check zielone; następny seam to optimizer readiness i
   change-history safety.
+- Dwudziesty piąty/szósty pod-slice c9h9.22: optimizer readiness review-only
+  contract oraz change-history basics/row evidence proof wydzielone. Focused
+  Ads/Ruff/mypy/diff check zielone; następny seam to change-impact readiness.

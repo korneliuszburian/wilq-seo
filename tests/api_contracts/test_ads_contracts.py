@@ -954,6 +954,96 @@ def assert_ads_campaign_triage_row_contract(
     ]
 
 
+def assert_ads_optimizer_readiness_contract(payload: dict[str, Any]) -> None:
+    """Prove optimizer remains review-only when change impact lacks windows."""
+    contract = payload["optimizer_readiness_contract"]
+    assert contract["status"] == "review_ready"
+    assert contract["mode"] == "review_only"
+    assert contract["apply_allowed"] is False
+    assert "zapis zmian kampanii" in contract["blocked_claims"]
+    assert "change_event_rows" not in contract["missing_read_contracts"]
+    assert "pre_change_performance_window" in contract["missing_read_contracts"]
+    items = {item["id"]: item for item in contract["readiness_items"]}
+    assert items["campaign_review_queue"]["status"] == "ready"
+    assert items["change_history_impact_review"]["status"] == "blocked"
+    assert "pre_change_performance_window" in items["change_history_impact_review"]["missing_read_contracts"]
+
+
+def assert_ads_change_history_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove change history is readable but impact verdicts remain blocked."""
+    contract = payload["change_history_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["status_label"] == "gotowe"
+    assert contract["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
+    assert contract["allowed_metrics"] == [
+        "change_event_available",
+        "change_event_changed_field_count",
+    ]
+    assert contract["allowed_metric_labels"] == [
+        "historia zmian dostępna",
+        "liczba zmienionych pól",
+    ]
+    assert "change_history" not in contract["missing_read_contracts"]
+    assert contract["missing_read_contract_labels"] == [
+        "wyniki sprzed zmiany",
+        "wyniki po zmianie",
+        "ręczna ocena wpływu zmian",
+        "podgląd zmian",
+    ]
+    assert "wpływ zmian" in contract["blocked_claims"]
+    assert contract["blocked_claim_labels"] == [
+        "wpływ zmian",
+        "obietnica poprawy wyniku",
+        "skalowanie budżetu",
+        "zmiana budżetu",
+        "zapis zmian kampanii",
+    ]
+    assert "CAMPAIGN" not in contract["summary"]
+    assert "UPDATE" not in contract["summary"]
+
+
+def assert_ads_change_history_row_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove change row is source-traced while impact remains unclaimed."""
+    row = contract["change_history_rows"][0]
+    assert contract["change_history_rows"] == [
+        {
+            "change_event_id": "change-1",
+            "change_date_time": "2026-06-18 12:30:00.000000",
+            "change_resource_id": "101",
+            "change_resource_type": "CAMPAIGN",
+            "change_resource_type_label": "kampania",
+            "change_resource_label": "zasób zmiany do sprawdzenia w szczegółach technicznych",
+            "resource_change_operation": "UPDATE",
+            "resource_change_operation_label": "zmiana",
+            "client_type": "GOOGLE_ADS_WEB_CLIENT",
+            "client_type_label": "panel Google Ads",
+            "campaign_id": "101",
+            "campaign_label": "kampania do sprawdzenia w szczegółach technicznych",
+            "changed_field_count": 2,
+            "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
+            "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
+            "changed_field_summary_label": "status kampanii, kwota budżetu kampanii",
+            "evidence_ids": [evidence_id],
+            "metric_facts": row["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "wpływ zmian",
+                "obietnica poprawy wyniku",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+            ],
+            "blocked_claim_labels": [
+                "wpływ zmian",
+                "obietnica poprawy wyniku",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+            ],
+        }
+    ]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3258,84 +3348,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert "Kolejność oceny kampanii" in campaign_triage_contract["triage_rows"][0]["review_reason"]
     assert "nie jest ocena zmarnowanego budżetu" in campaign_triage_contract["summary"]
+    assert_ads_optimizer_readiness_contract(payload)
     optimizer_contract = payload["optimizer_readiness_contract"]
-    assert optimizer_contract["status"] == "review_ready"
-    assert optimizer_contract["mode"] == "review_only"
-    assert optimizer_contract["apply_allowed"] is False
-    assert "zapis zmian kampanii" in optimizer_contract["blocked_claims"]
-    assert "change_event_rows" not in optimizer_contract["missing_read_contracts"]
-    assert "pre_change_performance_window" in optimizer_contract["missing_read_contracts"]
     optimizer_items_by_id = {item["id"]: item for item in optimizer_contract["readiness_items"]}
-    assert optimizer_items_by_id["campaign_review_queue"]["status"] == "ready"
-    assert optimizer_items_by_id["change_history_impact_review"]["status"] == "blocked"
-    assert (
-        "pre_change_performance_window"
-        in optimizer_items_by_id["change_history_impact_review"]["missing_read_contracts"]
-    )
+    assert_ads_change_history_contract_basics(payload)
     change_history_contract = payload["change_history_read_contract"]
-    assert change_history_contract["status"] == "ready"
-    assert change_history_contract["status_label"] == "gotowe"
-    assert change_history_contract["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
-    assert change_history_contract["allowed_metrics"] == [
-        "change_event_available",
-        "change_event_changed_field_count",
-    ]
-    assert change_history_contract["allowed_metric_labels"] == [
-        "historia zmian dostępna",
-        "liczba zmienionych pól",
-    ]
-    assert "change_history" not in change_history_contract["missing_read_contracts"]
-    assert change_history_contract["missing_read_contract_labels"] == [
-        "wyniki sprzed zmiany",
-        "wyniki po zmianie",
-        "ręczna ocena wpływu zmian",
-        "podgląd zmian",
-    ]
-    assert "wpływ zmian" in change_history_contract["blocked_claims"]
-    assert change_history_contract["blocked_claim_labels"] == [
-        "wpływ zmian",
-        "obietnica poprawy wyniku",
-        "skalowanie budżetu",
-        "zmiana budżetu",
-        "zapis zmian kampanii",
-    ]
-    assert "CAMPAIGN" not in change_history_contract["summary"]
-    assert "UPDATE" not in change_history_contract["summary"]
-    assert change_history_contract["change_history_rows"] == [
-        {
-            "change_event_id": "change-1",
-            "change_date_time": "2026-06-18 12:30:00.000000",
-            "change_resource_id": "101",
-            "change_resource_type": "CAMPAIGN",
-            "change_resource_type_label": "kampania",
-            "change_resource_label": ("zasób zmiany do sprawdzenia w szczegółach technicznych"),
-            "resource_change_operation": "UPDATE",
-            "resource_change_operation_label": "zmiana",
-            "client_type": "GOOGLE_ADS_WEB_CLIENT",
-            "client_type_label": "panel Google Ads",
-            "campaign_id": "101",
-            "campaign_label": "kampania do sprawdzenia w szczegółach technicznych",
-            "changed_field_count": 2,
-            "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
-            "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
-            "changed_field_summary_label": "status kampanii, kwota budżetu kampanii",
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "metric_facts": change_history_contract["change_history_rows"][0]["metric_facts"],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "wpływ zmian",
-                "obietnica poprawy wyniku",
-                "zmiana budżetu",
-                "zapis zmian kampanii",
-            ],
-            "blocked_claim_labels": [
-                "wpływ zmian",
-                "obietnica poprawy wyniku",
-                "zmiana budżetu",
-                "zapis zmian kampanii",
-            ],
-        }
-    ]
+    assert_ads_change_history_row_contract(
+        change_history_contract, refresh_response.json()["evidence_ids"][-1]
+    )
     change_impact_contract = payload["change_impact_readiness_contract"]
     assert change_impact_contract["id"] == "ads_change_impact_readiness_contract"
     assert change_impact_contract["status"] == "blocked"

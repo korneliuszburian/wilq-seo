@@ -432,6 +432,9 @@
 - Dwudziesty trzeci/czwarty pod-slice zakończony: campaign triage basics i row
   proof są w helperach. Następny krok: optimizer readiness oraz change-history
   safety contracts.
+- Dwudziesty piąty/szósty pod-slice zakończony: optimizer review-only i
+  change-history basics/row proof są w helperach. Następny krok: change-impact
+  readiness contract.
 
 ## Następny krok
 
