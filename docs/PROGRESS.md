@@ -80,6 +80,11 @@ w git, Beads i `docs/progress/archive/`.
   `index.ts` ma 719 LOC. Dowody, freshness, bezpieczny next step i blokady
   pozostają w kontrakcie. Shared schema/dashboard lint, build, tests i
   typecheck przechodzą. Następny seam: Workflow contracts.
+- Dwudziesty drugi seam: `workflow_contracts.ts` zawiera Workflow definition,
+  input/output i run schemas (68 LOC); `index.ts` ma 662 LOC. Social history
+  pozostaje osobnym kontraktem, a workflow status/evidence/action output bez
+  zmian. Shared schema/dashboard lint, build, tests i typecheck przechodzą.
+  Następny seam: Demand Gen readiness.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

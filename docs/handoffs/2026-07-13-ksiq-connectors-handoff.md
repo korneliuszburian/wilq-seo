@@ -113,6 +113,11 @@
   plan, DailyDecision, WorkOrder, DailyCheck i Command Center response
   (222 LOC); `index.ts` ma 719 LOC. Dowody, freshness, next step i blokady bez
   zmian, focused gates przechodzą. Następny seam: Workflow contracts.
+- Dwudziesty drugi seam: `packages/shared-schemas/src/workflow_contracts.ts`
+  zawiera Workflow definition, input/output i run schemas (68 LOC); `index.ts`
+  ma 662 LOC. Social history pozostaje osobnym kontraktem, status/evidence/
+  action output bez zmian, focused gates przechodzą. Następny seam: Demand Gen
+  readiness.
 
 ## Następny krok
 
