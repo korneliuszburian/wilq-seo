@@ -33,6 +33,9 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
-    setupFiles: ["./vitest.setup.ts"]
+    setupFiles: ["./vitest.setup.ts"],
+    // Heavy route fixtures contend for jsdom/query resources at host-level concurrency.
+    // Two workers preserve parallel coverage while keeping the full gate deterministic.
+    maxWorkers: 2
   }
 });

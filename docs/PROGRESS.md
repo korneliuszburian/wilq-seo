@@ -1836,3 +1836,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6903 LOC.
   Następny krok: ponowić serialny pełny gate po kolejnym seamie albo przejść
   do dedykowanej stabilizacji równoległości.
+- c9h9.20: po pomiarze contention ustawiono `test.maxWorkers=2` w
+  `apps/dashboard/vite.config.ts`. Dwa kolejne domyślne równoległe runy
+  przeszły 44/44 pliki i 164/164 testy, serialny run po zmianie także 44/44 i
+  164/164, a Merchant/App + ContentWorkflow focused 22/22. Typecheck, lint i
+  diff check przechodzą. Timeouty nie są maskowane zmianą globalnego timeoutu.
