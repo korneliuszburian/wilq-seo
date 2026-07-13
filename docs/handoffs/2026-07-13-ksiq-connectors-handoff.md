@@ -905,6 +905,12 @@
   ESLint, typecheck, 19 focused tests, build i diff check przechodzą. Browser
   proof nadal blokuje się na istniejącym heading locatorze przy live queue
   `blocked`; brak regresji przypisanej temu seamowi.
+- `ho41` continuation 31 2026-07-13: `ContentPageWorkbench.tsx` wydzielony
+  jako główna granica workbencha. Minimalny typed action interface ogranicza
+  się do dry-run; snapshot/query data, public/dev role i draft-only safety są
+  zachowane. Route ma 1038 LOC. ESLint, typecheck, 19 focused tests, build i
+  diff check przechodzą; browser proof nadal zatrzymuje się na istniejącym
+  heading locatorze przy live queue `blocked`.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

@@ -48,6 +48,13 @@ w git, Beads i `docs/progress/archive/`.
   Playwright nadal zatrzymuje się na istniejącym heading locatorze przy
   zablokowanej kolejce.
 
+- `ho41` continuation 31 2026-07-13: `ContentPageWorkbench.tsx` wydzielony
+  jako główna granica workbencha. Komponent dostaje minimalne typed query/data
+  inputs i jedną akcję dry-run; public/dev rendering, draft-only copy oraz
+  selector/edit state pozostają bez zmian. Route spadł do 1038 LOC. ESLint,
+  TypeScript, 19 focused Vitest, build i diff check przechodzą. Playwright
+  nadal blokuje się na istniejącym heading locatorze przy live queue `blocked`.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback
