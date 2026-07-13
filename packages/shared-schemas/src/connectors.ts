@@ -85,6 +85,26 @@ export const MetricStoreStatusSchema = z.object({
   refresh_run_count: z.number()
 });
 
+export const MetricFactSchema = z.object({
+  name: z.string(),
+  metric_label: z.string().default(""),
+  value: z.union([z.string(), z.number()]),
+  period: z.string(),
+  source_connector: z.string(),
+  evidence_id: z.string(),
+  dimensions: z.record(z.string(), z.string()).optional().default({}),
+  dimension_labels: z.record(z.string(), z.string()).optional().default({}),
+  dimension_value_labels: z.record(z.string(), z.string()).optional().default({}),
+  unit: z.string().nullable().optional(),
+  collected_at: z.string().nullable().optional(),
+  previous_value: z.union([z.string(), z.number()]).nullable().optional(),
+  delta: z.number().nullable().optional(),
+  delta_percent: z.number().nullable().optional(),
+  trend: z.enum(["up", "down", "flat", "unknown"]).optional(),
+  freshness_state: z.enum(["fresh", "stale", "unknown"]).optional(),
+  freshness_label: z.string().nullable().optional()
+});
+
 export const EvidenceSchema = z.object({
   id: z.string(),
   title_label: z.string().default(""),
@@ -130,6 +150,7 @@ export const ConnectorSummarySchema = z.object({
 });
 
 export type ConnectorStatus = z.infer<typeof ConnectorStatusSchema>;
+export type MetricFact = z.infer<typeof MetricFactSchema>;
 export type MetricStoreStatus = z.infer<typeof MetricStoreStatusSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;

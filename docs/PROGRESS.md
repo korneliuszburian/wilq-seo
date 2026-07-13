@@ -70,6 +70,13 @@ w git, Beads i `docs/progress/archive/`.
   dashboard lint/typecheck i focused Vitest (2/2) przechodzą; API i runtime
   zachowania nie zostały zmienione. Następny seam `ksiq` musi wydzielić kolejny
   rzeczywisty domain, nie kopiować typów do nowych fasad.
+- Drugi `ksiq` seam wydzielił wszystkie ActionObject/review/preview/mutation
+  schemas do `packages/shared-schemas/src/actions.ts`; `MetricFactSchema` jest
+  współdzielony przez moduł connector/metrics, a barrel zachowuje dotychczasowe
+  wartości i aliasy typów. `index.ts` ma teraz 3 638 linii, `actions.ts` 417,
+  `connectors.ts` 156. Shared schemas 34 passed/10 skipped, lint/build oraz
+  dashboard lint/typecheck przechodzą; focused tests potwierdzają brak zmiany
+  zachowania.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

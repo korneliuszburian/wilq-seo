@@ -16,6 +16,15 @@
 - Dashboard: focused Vitest 2/2, lint i typecheck.
 - `git diff --check` przechodzi.
 
+## Kolejny zakończony seam
+
+- `packages/shared-schemas/src/actions.ts` zawiera ActionObject, review,
+  preview, mutation readiness i audit schemas oraz ich aliasy typów.
+- `MetricFactSchema` został przeniesiony do współdzielonego modułu danych,
+  dzięki czemu ActionObject nie importuje product logic z barrel.
+- `index.ts` ma 3 638 linii; `actions.ts` 417, `connectors.ts` 156. Dashboard
+  typecheck/lint oraz shared schema test/build przechodzą.
+
 ## Następny krok
 
 - Po commit/push wybrać kolejny domain seam z `wilq-seo-ksiq` na podstawie
