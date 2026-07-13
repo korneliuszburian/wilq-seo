@@ -1825,6 +1825,42 @@ def assert_ads_recommendation_decision_contract(
     assert "zapis rekomendacji" in recommendation["blocked_claims"]
 
 
+def assert_ads_impression_share_and_change_history_decisions(
+    decisions_by_id: dict[str, Any]
+) -> None:
+    """Prove visibility-loss and change-history lanes stay review-only."""
+    impression = decisions_by_id["ads_review_impression_share"]
+    assert impression["status"] == "ready"
+    assert impression["priority"] == 60
+    assert impression["metric_tiles"] == {"kampanie": 1, "utrata przez budżet": 1}
+    assert impression["decision_type"] == "review_impression_share"
+    assert impression["impression_share_rows"][0]["campaign_name"] == "Brand Search"
+    assert impression["action_ids"] == []
+    assert impression["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert impression["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
+        "ads_principles_v1",
+    ]
+    assert "zmiana budżetu" in impression["blocked_claims"]
+    change_history = decisions_by_id["ads_review_change_history"]
+    assert change_history["status"] == "ready"
+    assert change_history["priority"] == 65
+    assert change_history["metric_tiles"] == {"zmiany": 1, "kampanie": 1}
+    assert change_history["decision_type"] == "review_change_history"
+    assert change_history["change_history_rows"][0]["change_resource_type"] == "CAMPAIGN"
+    assert change_history["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
+    assert change_history["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert change_history["expert_rule_ids"] == [
+        "ads_diagnostics_v1",
+        "ads_principles_v1",
+    ]
+    assert "wpływ zmian" in change_history["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4223,41 +4259,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_derived_kpi_and_budget_decisions(decisions_by_id)
     budget_decision = decisions_by_id["ads_review_budget_context"]
     assert_ads_recommendation_decision_contract(decisions_by_id)
-    impression_share_decision = decisions_by_id["ads_review_impression_share"]
-    assert impression_share_decision["status"] == "ready"
-    assert impression_share_decision["priority"] == 60
-    assert impression_share_decision["metric_tiles"] == {
-        "kampanie": 1,
-        "utrata przez budżet": 1,
-    }
-    assert impression_share_decision["decision_type"] == "review_impression_share"
-    assert impression_share_decision["impression_share_rows"][0]["campaign_name"] == (
-        "Brand Search"
-    )
-    assert impression_share_decision["action_ids"] == []
-    assert impression_share_decision["knowledge_card_ids"] == [
-        "card_google_ads_budget_review_playbook"
-    ]
-    assert impression_share_decision["expert_rule_ids"] == [
-        "ads_scaling_candidates_v1",
-        "ads_principles_v1",
-    ]
-    assert "zmiana budżetu" in impression_share_decision["blocked_claims"]
-    change_history_decision = decisions_by_id["ads_review_change_history"]
-    assert change_history_decision["status"] == "ready"
-    assert change_history_decision["priority"] == 65
-    assert change_history_decision["metric_tiles"] == {"zmiany": 1, "kampanie": 1}
-    assert change_history_decision["decision_type"] == "review_change_history"
-    assert change_history_decision["change_history_rows"][0]["change_resource_type"] == ("CAMPAIGN")
-    assert change_history_decision["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
-    assert change_history_decision["knowledge_card_ids"] == [
-        "card_google_ads_budget_review_playbook"
-    ]
-    assert change_history_decision["expert_rule_ids"] == [
-        "ads_diagnostics_v1",
-        "ads_principles_v1",
-    ]
-    assert "wpływ zmian" in change_history_decision["blocked_claims"]
+    assert_ads_impression_share_and_change_history_decisions(decisions_by_id)
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200

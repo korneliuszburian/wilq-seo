@@ -481,6 +481,12 @@
   review gates, evidence lineage i blokada zapisu rekomendacji są zachowane.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1397 linii i 12
   branchy. Następny krok: impression-share/change-history decisions.
+- Czterdziesty drugi pod-slice zakończony: impression-share i change-history
+  decision proof są w `assert_ads_impression_share_and_change_history_decisions`;
+  visibility-loss evidence, blocked budget/impact claims i review-only action
+  lineage są zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test
+  ma 1363 linii i 12 branchy. Następny krok: action payload validation i
+  końcowy tail.
 
 ## Następny krok
 

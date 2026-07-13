@@ -1997,3 +1997,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   impact/action preview, review gates, evidence lineage i blokadę zapisu
   rekomendacji. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1397
   linii i 12 branchy. Następny seam: impression-share/change-history decisions.
+- Czterdziesty drugi pod-slice c9h9.22: impression-share i change-history
+  decision proof wydzielone do `assert_ads_impression_share_and_change_history_decisions`;
+  zachowano visibility-loss evidence, blocked budget/impact claims oraz
+  review-only action lineage. Focused Ads/Ruff/mypy/diff check zielone; główny
+  test ma 1363 linii i 12 branchy. Następny seam: action payload validation i
+  końcowy tail.
