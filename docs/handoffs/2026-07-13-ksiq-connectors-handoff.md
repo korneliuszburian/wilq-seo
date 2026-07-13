@@ -373,8 +373,11 @@
   `tests/api_contracts/test_ads_contracts.py` (4998 LOC), z testem
   `test_ads_diagnostics_exposes_live_campaign_metric_facts` o 2919 linii i 29
   branchach. Utworzono `wilq-seo-c9h9.22`; nie ma duplikatu aktywnego Beada.
+- c9h9.22 jest przejęty. Potwierdzony seam: typed Ads vendor-read fixture/setup
+  kontra osobne behavior assertions. Kolejny slice ma wyciągnąć fixture bez
+  zmiany runtime API, a następnie rozdzielić kampanie/freshness/rekomendacje i
+  blocked claims na nazwane moduły.
 
 ## Następny krok
 
-- Po commit/push wybrać kolejny domain seam z `wilq-seo-ksiq` na podstawie
-  aktualnego import/use audit. Nie wracać do connector schemas.
+- Po commit/push kontynuować `wilq-seo-c9h9.22`; nie wracać do connector schemas.

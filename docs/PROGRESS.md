@@ -1867,3 +1867,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `tests/api_contracts/test_ads_contracts.py` (4998 LOC), z testem
   `test_ads_diagnostics_exposes_live_campaign_metric_facts` o 2919 linii i 29
   branchach. Utworzono `wilq-seo-c9h9.22`; nie ma duplikatu aktywnego Beada.
+- Slice c9h9.22 rozpoczęty: potwierdzono naturalny seam między typed vendor-read
+  fixture/setup a osobnymi zachowaniami diagnostyki (kampanie, freshness,
+  rekomendacje, blocked claims). Bead został przejęty i opisano kolejność
+  ekstrakcji; najpierw fixture bez zmiany runtime API, potem moduły assertions.
