@@ -70,6 +70,13 @@ w git, Beads i `docs/progress/archive/`.
   focused Vitest, build i diff check przechodzą. Playwright nadal zatrzymuje
   się na istniejącym heading locatorze przy live queue `blocked`.
 
+- `6rw.5` continuation 2026-07-13: `content-workflow-layout.spec.ts` nie
+  zakłada już fałszywie gotowego workbencha przy każdej odpowiedzi kolejki.
+  Gdy API zwraca `queue_status=blocked`, proof sprawdza nagłówek, freshness
+  blocker, polski safe next step i brak overflow; przy kolejce ready zachowuje
+  pełne asercje workbencha. Playwright 1/1 przechodzi na aktualnym live stanie,
+  ESLint i diff check przechodzą. To testuje zachowanie, nie historyczny copy.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback

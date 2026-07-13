@@ -19,8 +19,26 @@ test.describe("WILQ content workflow layout proof", () => {
       return url.pathname === "/api/content/work-items/queue" && response.status() === 200;
     });
     await page.goto("/content-workflow");
-    await queueResponse;
+    const queuePayload = (await (await queueResponse).json()) as {
+      queue_status?: string;
+    };
     expect(Date.now() - queueStartedAt).toBeLessThan(5_000);
+
+    if (queuePayload.queue_status === "blocked") {
+      await expect(page.getByRole("heading", { name: "Workflow treści bez slopu" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: /Źródła treści:/ })).toBeVisible();
+      await expect(page.getByRole("status").getByText(/Następny bezpieczny krok:/)).toBeVisible();
+      await expect(page.getByText(/Nie pokazujemy decyzji bez kontraktów API/)).toHaveCount(0);
+      const hasHorizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+      );
+      expect(hasHorizontalOverflow).toBe(false);
+      await page.screenshot({
+        path: path.join(runDir, "content-workflow-blocked-state.png"),
+        fullPage: true,
+      });
+      return;
+    }
 
     await expect(page.getByRole("heading", { name: "Treści: praca nad stroną" })).toBeVisible();
     await expect(

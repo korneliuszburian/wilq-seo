@@ -924,6 +924,11 @@
   semantics pozostają w istniejącym flow. ESLint, typecheck, 19 focused tests,
   build i diff check przechodzą; browser proof nadal blokuje się na istniejącym
   heading locatorze przy live queue `blocked`.
+- `6rw.5` continuation 2026-07-13: E2E content workflow ma teraz jawne dwie
+  gałęzie kontraktu: ready queue sprawdza workbench, blocked queue sprawdza
+  polski blocker/freshness/safe next step i overflow. Aktualny Playwright
+  przechodzi 1/1 z live `queue_status=blocked`; nie maskuje blokady ani nie
+  wymusza sztucznego tematu.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent
