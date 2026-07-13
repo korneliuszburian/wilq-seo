@@ -73,6 +73,10 @@ w git, Beads i `docs/progress/archive/`.
   live smoke/Ruff/diff przechodzą, a nowy moduł nie ma violationów. Pozostałe
   Content Strategist `main`/decision-queue/WordPress assertions są jawnie
   następnym zakresem.
+- Decision queue i WordPress draft handoff assertions są teraz w
+  `content_strategy_assertions.py`; live smoke/Ruff/diff przechodzą. Zmieniony
+  complexity audit zostawia wyłącznie `smoke_skill_contract.py::main`
+  (206 LOC/26 branches). Następny slice: rozdzielenie orkiestracji `main`.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

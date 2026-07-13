@@ -53,6 +53,12 @@
   budżecie. Pozostały w dotkniętym smoke file istniejące hotspoty: `main`
   199 LOC/26 branches, `validate_content_decision_queue` 26 branches i
   `validate_wordpress_draft_handoff_action_preview` 29 branches.
+- Drugi Content Strategist seam jest domknięty: asercje decision queue i
+  WordPress draft handoff są w `scripts/content_strategy_assertions.py`.
+  Live smoke, Ruff i `git diff --check` przechodzą. Re-audit zmienionego kodu
+  zostawia tylko `smoke_skill_contract.py::main` (206 LOC/26 branches); nowy
+  moduł assertion mieści się w budżecie. Następny slice powinien rozdzielić
+  orkiestrację `main`, zanim zaczniemy Ads.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
