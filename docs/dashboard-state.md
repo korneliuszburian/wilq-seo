@@ -107,6 +107,9 @@ continues to come from the route helper.
 The structured draft preview is now `StructuredDraftPreviewPanel.tsx`; it
 renders typed title, sections, evidence and human-review checklist while the
 route retains safety classification.
+The safety-panel composition is now `WorkflowSafetyPanels.tsx`; it receives
+typed display text and child payloads, while route helpers remain the only
+owners of safety classification.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

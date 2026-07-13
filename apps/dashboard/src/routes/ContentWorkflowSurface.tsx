@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
-  Clock3,
   ExternalLink,
   FileText,
   ShieldCheck,
@@ -62,15 +61,11 @@ import { ContentSignalColumn } from "./ContentSignalColumn";
 import { ContentDevTargetColumn } from "./ContentDevTargetColumn";
 import { ContentPublicPageColumn } from "./ContentPublicPageColumn";
 import { ContentWorkflowFactTile as FactTile } from "./ContentWorkflowFactTile";
-import { ContentSafetyPanel as SafetyPanel } from "./ContentSafetyPanel";
 import { ContentWorkflowControlButton as WorkflowControlButton } from "./ContentWorkflowControlButton";
 import { ContentOpportunityEnrichmentPanel } from "./ContentOpportunityEnrichmentPanel";
 import { ClaimLedgerGatePanel } from "./ClaimLedgerGatePanel";
-import { ContentQualityReviewPanel } from "./ContentQualityReviewPanel";
-import { ContentRevisionPlanPanel } from "./ContentRevisionPlanPanel";
-import { AcfPreviewPanel } from "./AcfPreviewPanel";
 import { AcfFieldPreviewList } from "./AcfPreviewPanel";
-import { StructuredDraftPreviewPanel } from "./StructuredDraftPreviewPanel";
+import { WorkflowSafetyPanels } from "./WorkflowSafetyPanels";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import {
   activeWorkflowStepIndex,
@@ -93,19 +88,6 @@ import {
   type WordPressDraftWriteReadinessQuery,
   type ContentWorkItemQueueCandidate
 } from "./contentWorkflowQueries";
-
-type WorkflowSafetyPanelsProps = {
-  data: ContentWorkflowSnapshot;
-  draft: ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
-  handoff: ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
-  window: ContentWorkflowSnapshot["measurementWindow"]["measurement_window_result"]["window"];
-  structuredRuntimeResult: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null;
-  structuredPreviewResult: ContentWorkItemStructuredDraftPreviewResponse["preview_result"] | null;
-  qualityReview: ContentWorkItemQualityReviewResponse["quality_review"] | null;
-  revisionPlan: ContentWorkItemRevisionPlanResponse["revision_plan"] | null;
-  acfPreviewResult: ContentWorkItemWordPressAuthoringPayloadPreviewResponse["preview_result"] | null;
-  executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
-};
 
 type ContentWorkflowActions = ReturnType<typeof useContentWorkflowActions>;
 type ContentWorkflowMutations = ReturnType<typeof useContentWorkflowMutations>;
@@ -395,16 +377,20 @@ function ContentWorkflowLoaded({
             <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
             <WorkflowStepsList steps={steps} />
             <WorkflowSafetyPanels
-              data={data}
-              draft={draft}
-              handoff={handoff}
-              window={window}
-              structuredRuntimeResult={actions.structuredRuntimeResult}
               structuredPreviewResult={actions.structuredPreviewResult}
+              draftSafetyText={draftSafetyText(draft?.publish_ready)}
+              structuredRuntimeSafetyText={structuredRuntimeSafetyText(actions.structuredRuntimeResult)}
+              structuredPreviewSafetyText={structuredPreviewSafetyText(actions.structuredPreviewResult)}
+              qualityReviewSafetyText={qualityReviewSafetyText(actions.qualityReview)}
+              revisionPlanSafetyText={revisionPlanSafetyText(actions.revisionPlan)}
+              acfPreviewSafetyText={acfPreviewSafetyText(actions.acfPreviewResult)}
+              handoffSafetyText={handoffSafetyText(handoff?.publish_allowed)}
+              executionSafetyText={wordpressExecutionSafetyText(actions.executionResult)}
+              measurementTitle={data.measurementWindow.outcome_blockers[0]?.label ?? "Nie wolno jeszcze oceniać efektu"}
+              measurementSafetyText={measurementSafetyText(window)}
               qualityReview={actions.qualityReview}
               revisionPlan={actions.revisionPlan}
               acfPreviewResult={actions.acfPreviewResult}
-              executionResult={actions.executionResult}
             />
           </div>
         ) : null}
@@ -2266,62 +2252,6 @@ function revisionPlanControlItem(actions: ContentWorkflowActions): WorkflowContr
     pending: actions.revisionPlanPending,
     onClick: actions.runRevisionPlan
   };
-}
-
-function WorkflowSafetyPanels({
-  data,
-  draft,
-  handoff,
-  window,
-  structuredRuntimeResult,
-  structuredPreviewResult,
-  qualityReview,
-  revisionPlan,
-  acfPreviewResult,
-  executionResult
-}: WorkflowSafetyPanelsProps) {
-  return (
-    <div className="mt-6 grid gap-4 lg:grid-cols-3">
-      <SafetyPanel
-        icon={<FileText aria-hidden="true" size={18} />}
-        title="Paczka szkicu"
-        text={draftSafetyText(draft?.publish_ready)}
-      />
-      <SafetyPanel
-        icon={<ShieldCheck aria-hidden="true" size={18} />}
-        title="Szkic treści"
-        text={structuredRuntimeSafetyText(structuredRuntimeResult)}
-      />
-      <StructuredDraftPreviewPanel
-        result={structuredPreviewResult}
-        safetyText={structuredPreviewSafetyText(structuredPreviewResult)}
-      />
-            <ContentQualityReviewPanel
-              review={qualityReview}
-              safetyText={qualityReviewSafetyText(qualityReview)}
-            />
-            <ContentRevisionPlanPanel
-              plan={revisionPlan}
-              safetyText={revisionPlanSafetyText(revisionPlan)}
-            />
-        <AcfPreviewPanel result={acfPreviewResult} safetyText={acfPreviewSafetyText(acfPreviewResult)} />
-      <SafetyPanel
-        icon={<ShieldCheck aria-hidden="true" size={18} />}
-        title="WordPress zostaje w trybie szkicu"
-        text={handoffSafetyText(handoff?.publish_allowed)}
-      />
-      <SafetyPanel
-        icon={<ShieldCheck aria-hidden="true" size={18} />}
-        title="Podgląd szkicu WordPress"
-        text={wordpressExecutionSafetyText(executionResult)}
-      />
-      <SafetyPanel
-        icon={<Clock3 aria-hidden="true" size={18} />}
-        title={data.measurementWindow.outcome_blockers[0]?.label ?? "Nie wolno jeszcze oceniać efektu"}
-        text={measurementSafetyText(window)}
-      />
-    </div>
-  );
 }
 
 function draftSafetyText(publishReady?: boolean) {

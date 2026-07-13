@@ -94,6 +94,11 @@ w git, Beads i `docs/progress/archive/`.
   as typed display input; title, sections, evidence IDs and human-review
   checklist remain unchanged. Focused route tests (19), lint, typecheck, build
   and diff check pass. E2E still fails on the pre-existing heading locator.
+- `wilq-seo-ho41` continuation 16: extracted `WorkflowSafetyPanels.tsx` as a
+  composition-only boundary. All safety classification remains in existing
+  route helpers and is passed as text; child panels and their typed payloads are
+  unchanged. Focused route tests (19), lint, typecheck, build and diff check
+  pass. E2E still reaches the app but fails on the existing heading locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i
