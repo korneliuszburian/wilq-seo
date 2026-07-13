@@ -12,8 +12,8 @@
 
 - Dodano `scripts/skill_smoke_harness.py` z `request_json` i wspólnym
   `has_polish_metric_source_guardrails`.
-- Ads, GSC, Content Strategist i Merchant smoke importują wspólny transport;
-  wszystkie cztery live smoke przechodzą.
+- Ads, GSC, Content Strategist, Merchant i Localo smoke importują wspólny
+  transport; wszystkie pięć live smoke przechodzą.
 - GSC smoke assertion została poprawiona, aby porównywać
   `review_action_ids` z decyzją wskazaną przez `technical_decision_id`, a nie z
   globalną listą akcji. GSC smoke przechodzi po poprawce.
@@ -21,6 +21,9 @@
   decyzji: brak akcji jest poprawny, a akcja nie może zostać zmyślona.
 - Merchant smoke przechodzi z tym samym timeout/transport seamem; blocked claims
   nadal obejmują reapproval, revenue i automatyczne zmiany feedu.
+- Localo smoke przechodzi bez refresh write (`access_ready`, 4 lokalizacje, 23
+  monitorowane frazy, action review-only), zachowując blokadę zmian GBP i
+  publikacji.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
@@ -31,7 +34,7 @@
 
 ## Następny slice
 
-Wybrać kolejny konkretny smoke do migracji (najlepiej Merchant/Localo), a
+Wybrać kolejny konkretny smoke do migracji (najlepiej GA4/Ads), a
 następnie wydzielić wspólne asercje evidence/source/action safety.
 Nie zmieniać product logic w harnessie. Największe funkcje `main` nadal są
 otwarte i wymagają osobnych, testowalnych modułów asercji.
