@@ -2081,3 +2081,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   report seams), deterministyczny smoke live przechodzi, a
   `audit_skill_eval_coverage.py --strict` raportuje 13/13 skills, 0 gaps i 0
   warnings. Nie powtarzamy wykonanej pracy.
+- Roadmap re-audit zamknął stale-open `wilq-seo-ksiq`: `packages/shared-schemas`
+  ma świadomy 31-liniowy barrel `index.ts` i domenowe entrypointy; testy
+  shared schemas przechodzą 34/34 non-skipped, `tsc --noEmit` i ESLint są
+  zielone. `contentWorkflow.ts` pozostaje modułem domeny content, nie
+  cross-domain barrel. Nie powtarzamy ukończonego splitu.

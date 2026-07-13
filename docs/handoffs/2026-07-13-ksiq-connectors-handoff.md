@@ -567,6 +567,11 @@
   modułowe runtime/orchestration/readiness/auxiliary/report seams,
   deterministyczny live smoke przechodzi, a strict skill coverage daje 13/13,
   0 gaps i 0 warnings. Nie wracać do tej ukończonej pracy.
+- Roadmap re-audit zamknął stale-open `wilq-seo-ksiq`: shared schemas mają
+  świadomy 31-liniowy barrel `index.ts` i domenowe entrypointy; 34/34
+  non-skipped tests, `tsc --noEmit` i ESLint przechodzą. `contentWorkflow.ts`
+  jest modułem domeny content, nie cross-domain barrel. Nie wracać do tego
+  ukończonego splitu.
 
 ## Następny krok
 
