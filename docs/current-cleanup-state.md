@@ -11,6 +11,11 @@ pozostaje potwierdzonym blockerem (`13.991204 s`, potem `2.733938 s` i
 `2.824721 s`). Nie udawaj ukończenia; kolejny wybór to jawna koordynacja
 prewarm/readiness albo typed `prewarm_in_progress`.
 
+`djly` ma pierwszy bounded seam: strategy-review readiness jest w
+`wilq/briefing/ads_business_context_contracts.py`, z zachowaniem prepare-only
+safety. Nie powtarzać tego projection seamu; następny krok wymaga parytetu
+pozostałej business-context assembly.
+
 `v9ab.13` ma świeży packet z 2026-07-13 19:31Z: Treści pokazują konkretną
 stronę główną z 22 zapytaniami i dopasowaniem GSC/WordPress, ale Ahrefs nadal
 blokuje temat bez canonicalu. To nadal materiał do realnego review, nie UAT.

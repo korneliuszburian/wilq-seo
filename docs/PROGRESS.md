@@ -12,6 +12,12 @@ w git, Beads i `docs/progress/archive/`.
   `13.991204 s`, followed by `2.733938 s` and `2.824721 s`; this is recorded as
   an unresolved startup latency blocker, not a false completion. Browser
   `/content-workflow` proof remains marketer-readable and draft-only.
+- `djly` continuation: wydzielono typed owner `wilq/briefing/ads_business_context_contracts.py`
+  dla strategy-review readiness projection (`operator state` + contract), a
+  `ads_diagnostics.py` pozostaje fasadą. API/action payloady, evidence IDs,
+  blocked claims, `apply_allowed=false` i `destructive=false` pozostają bez
+  zmian. Focused Ads/API tests, Ruff, mypy i diff check przechodzą; pełny
+  business-context assembly pozostaje otwarty do kolejnych bounded seamów.
 - `v9ab.13` recheck 2026-07-13 19:31Z: świeży packet UAT pokazuje 24 zadania
   Centrum pracy, 1330 zgłoszeń Merchant, 2 decyzje Treści oraz konkretną
   stronę główną `https://www.ekologus.pl/` z 22 zapytaniami i dopasowaniem
