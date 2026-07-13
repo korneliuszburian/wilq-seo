@@ -5,6 +5,11 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
+  context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i
+  zależności `MetricFact` zachowane. Shared schema lint/build/test oraz
+  dashboard typecheck/lint przechodzą; następny seam pozostaje custom-segment
+  contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

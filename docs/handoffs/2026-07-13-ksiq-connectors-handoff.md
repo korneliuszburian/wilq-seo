@@ -44,6 +44,10 @@
   2 767 LOC. Read-only/safety eksporty zachowane, shared schema/dashboard
   lint, build, tests i typecheck przechodzą. Następny seam: keyword-match albo
   custom-segment contracts.
+- Ósmy seam: `packages/shared-schemas/src/ads_keyword_contracts.ts` zawiera
+  keyword-match context row/read contract (40 LOC); `index.ts` ma 2 735 LOC.
+  Eksporty i zależność `MetricFact` zachowane. Shared schema/dashboard lint,
+  build, tests i typecheck przechodzą. Następny seam: custom-segment contracts.
 
 ## Następny krok
 
