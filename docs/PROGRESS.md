@@ -2560,3 +2560,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `mutation_allowed=false` semantics remain unchanged. Focused review,
   validation, content and cache tests (48 passed), Ruff, mypy, complexity, API
   health and content-workflow Playwright proof pass; service.py is now 1364 LOC.
+- `jnra` continuation 7 2026-07-13: confirmation lifecycle orchestration moved
+  into `wilq/actions/confirmation_lifecycle.py`; the facade injects preview
+  lookup, blocker/event/summary builders, Ads target policy, audit and Polish
+  projections. Confirmation audit and blocked/confirmed semantics remain
+  unchanged. Focused review/validation/Ads/content tests (51 passed), Ruff,
+  mypy, complexity and API health pass; service.py is now 1340 LOC. No
+  dashboard code changed; existing route/browser proof remains the UI evidence.

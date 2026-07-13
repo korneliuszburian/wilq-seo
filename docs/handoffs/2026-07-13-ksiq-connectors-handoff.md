@@ -980,6 +980,12 @@
   compatibility injection. API health, focused lifecycle/content tests, Ruff,
   mypy, complexity and Playwright proof pass; preview remains dry-run and does
   not imply external mutation. Next audit target is confirmation lifecycle.
+- `jnra` continuation 7 2026-07-13: confirmation lifecycle now lives in
+  `wilq/actions/confirmation_lifecycle.py`; typed safety and audit projections
+  remain owned by existing modules through facade injection. Focused Ads/content
+  lifecycle tests, Ruff, mypy, complexity and API health pass. No dashboard
+  files changed, so retain the existing content-workflow browser proof rather
+  than inventing a new UI claim. Next target: impact-check lifecycle.
 
 ## Następny krok
 

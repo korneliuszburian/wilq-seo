@@ -76,6 +76,7 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
+from wilq.actions.confirmation_lifecycle import confirm_action as confirm_action_lifecycle
 from wilq.actions.content_refresh import (
     content_contract_label,
     content_contract_labels,
@@ -944,48 +945,23 @@ def confirm_action(
     action: ActionObject,
     request: ActionConfirmRequest,
 ) -> ActionConfirmResult:
-    action.review_gate = _action_review_gate(action)
-    latest_preview = _latest_preview_event(action.audit_events)
-    blockers = action_confirmation_blockers(
+    return confirm_action_lifecycle(
         action,
         request,
-        latest_preview,
+        review_gate=_action_review_gate,
+        latest_preview=_latest_preview_event,
+        confirmation_blockers=action_confirmation_blockers,
+        confirmation_event_type=action_confirmation_event_type,
+        confirmation_summary=action_confirmation_summary,
         ads_target_blockers=_ads_target_confirmation_blockers,
-    )
-    confirmed = not blockers
-    event_type = action_confirmation_event_type(action, confirmed)
-    audit = build_confirmation_audit_event(
-        action=action,
-        actor=request.confirmed_by,
-        event_type=event_type,
-        summary=action_confirmation_summary(
-            action,
-            request,
-            blockers,
-            latest_preview,
-            ads_target_summary=(
-                lambda target_request, target_blockers: ads_target_confirmation_summary(
-                    target_request,
-                    target_blockers,
-                    gate_labels=_action_gate_labels,
-                    micros_money_label=_micros_money_label,
-                )
-            ),
-            gate_labels=_action_gate_labels,
-            operator_note=_operator_note_sentence,
-        ),
-    )
-    action.audit_events = [audit, *action.audit_events]
-    action.review_gate = _action_review_gate(action)
-    return ActionConfirmResult(
-        action_id=action.id,
-        confirmed=confirmed,
-        status="confirmed" if confirmed else "blocked",
-        status_label=_action_result_status_label("confirmed" if confirmed else "blocked"),
-        blockers=blockers,
-        blocker_labels=_action_gate_labels(blockers),
-        audit_event=_audit_event_with_operator_label(audit),
-        review_gate=_review_gate_with_operator_labels(action.review_gate),
+        ads_target_summary=ads_target_confirmation_summary,
+        gate_labels=_action_gate_labels,
+        money_label=_micros_money_label,
+        operator_note=_operator_note_sentence,
+        build_confirmation_audit=build_confirmation_audit_event,
+        status_label=_action_result_status_label,
+        audit_event_label=_audit_event_with_operator_label,
+        review_gate_labels=_review_gate_with_operator_labels,
     )
 
 
