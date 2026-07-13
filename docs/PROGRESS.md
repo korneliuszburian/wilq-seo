@@ -118,6 +118,12 @@ w git, Beads i `docs/progress/archive/`.
   queue inputs; no recommendation or business rule moved into the component.
   Focused route tests (19), lint, typecheck, build and diff check pass. E2E
   still fails at the existing heading locator.
+- `wilq-seo-ho41` continuation 21: extracted
+  `ContentWorkflowPublicationBlockers.tsx` from the decision panel. Human
+  review, draft-only WordPress and forbidden-claim copy remain unchanged; the
+  component receives typed workflow steps and owns presentation only. Focused
+  route tests (19), lint, typecheck, build and diff check pass. E2E still fails
+  at the existing heading locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

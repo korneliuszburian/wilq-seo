@@ -121,6 +121,9 @@ without moving canonical or SEO logic into React.
 The compact mobile decision is now `MobileDecisionCard.tsx`; it renders typed
 queue decision/blocker/freshness inputs and the review-only CTA without owning
 recommendation logic.
+The decision panel's publication blockers are now
+`ContentWorkflowPublicationBlockers.tsx`; human-review, draft-only and
+forbidden-claim copy remains a typed presentation boundary.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

@@ -69,6 +69,7 @@ import { MobileContentTriage } from "./MobileContentTriage";
 import { ContentWorkbenchHeader } from "./ContentWorkbenchHeader";
 import { ContentPublicInventoryPanel } from "./ContentPublicInventoryPanel";
 import { MobileDecisionCard } from "./MobileDecisionCard";
+import { ContentWorkflowPublicationBlockers } from "./ContentWorkflowPublicationBlockers";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import {
   activeWorkflowStepIndex,
@@ -896,36 +897,7 @@ function ContentWorkflowDecisionPanel({
           </div>
         </div>
 
-        <div className="rounded-md border border-line bg-white p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Co blokuje publikację
-          </h3>
-          <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-700">
-            <li>
-              <span className="font-semibold text-ink">Brak zatwierdzenia człowieka.</span>{" "}
-              Plan, twierdzenia i paczka szkicu muszą przejść review przed użyciem jako wiedza produkcyjna.
-            </li>
-            <li>
-              <span className="font-semibold text-ink">WordPress zostaje tylko szkicem.</span>{" "}
-              WILQ może przygotować podgląd, ale nie publikuje ani nie nadpisuje strony.
-            </li>
-            {blockedSteps.slice(0, 3).map((step) => (
-              <li key={step.id}>
-                <span className="font-semibold text-ink">{step.title}.</span>{" "}
-                {step.statusLabel}: {step.summary}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3">
-            <div className="text-sm font-semibold text-wait">Nie wolno jeszcze twierdzić</div>
-            <ul className="mt-2 grid gap-1 text-sm leading-6 text-slate-700 sm:grid-cols-2">
-              <li>- automatyczna publikacja</li>
-              <li>- wzrost ruchu bez okna pomiaru</li>
-              <li>- poprawa pozycji bez obserwacji</li>
-              <li>- pełna aktualność twierdzeń bez review</li>
-            </ul>
-          </div>
-        </div>
+        <ContentWorkflowPublicationBlockers steps={blockedSteps} />
       </div>
 
       <div className="border-t border-line p-4">
