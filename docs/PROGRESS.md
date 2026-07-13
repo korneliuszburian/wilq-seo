@@ -1841,3 +1841,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przeszły 44/44 pliki i 164/164 testy, serialny run po zmianie także 44/44 i
   164/164, a Merchant/App + ContentWorkflow focused 22/22. Typecheck, lint i
   diff check przechodzą. Timeouty nie są maskowane zmianą globalnego timeoutu.
+- Trzydziesty drugi slice: usunięto z `App.test.tsx` 186-liniowy duplikat
+  Merchant route proof. Pierwszy ekran, blocker, freshness, safe next step i
+  technical disclosure pozostają dowiedzione w
+  `MerchantDiagnosticSurface.test.tsx`; App + Merchant focused 7/7,
+  typecheck/lint i diff check przechodzą. `App.test.tsx` ma 6717 LOC.
