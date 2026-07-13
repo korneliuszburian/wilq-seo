@@ -9,6 +9,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from gsc_freshness_assertions import validate_freshness_and_gsc_contract
 from gsc_refresh_contract import read_latest_gsc_refresh_contract
 from gsc_report_compaction import compact_gsc_brief_items, compact_gsc_connector_statuses
 
@@ -55,77 +56,15 @@ def main() -> int:
     if not isinstance(decision_queue, list):
         raise SystemExit("Content diagnostics must expose decision_queue")
     api_gsc_contract = content_diagnostics.get("gsc_search_analytics_contract")
-    freshness_assessment = content_diagnostics.get("freshness_assessment")
-    if not isinstance(freshness_assessment, dict):
-        raise SystemExit("Content diagnostics must expose freshness_assessment")
-    if freshness_assessment.get("state") not in {"fresh", "stale", "missing", "blocked"}:
-        raise SystemExit("Content diagnostics freshness_assessment has invalid state")
-    if not str(freshness_assessment.get("state_label") or "").strip():
-        raise SystemExit("Content diagnostics freshness_assessment state_label is missing")
-    if not str(freshness_assessment.get("summary") or "").strip():
-        raise SystemExit("Content diagnostics freshness_assessment summary is missing")
-    if not str(freshness_assessment.get("next_step") or "").strip():
-        raise SystemExit("Content diagnostics freshness_assessment next_step is missing")
-    if freshness_assessment.get("requires_refresh") is True and not (
-        freshness_assessment.get("connector_labels_requiring_refresh") or []
-    ):
-        raise SystemExit(
-            "Content diagnostics freshness_assessment requires refresh but lists no connectors"
-        )
+    freshness_assessment, api_gsc_contract = validate_freshness_and_gsc_contract(
+        content_diagnostics
+    )
     packed_content = pack.get("content_diagnostics", {})
     packed_evidence_ids = packed_content.get("evidence_ids") or []
     endpoint_evidence_ids = content_diagnostics.get("evidence_ids") or []
     latest_gsc_refresh_summary, latest_gsc_refresh_evidence_id = read_latest_gsc_refresh_contract(
         args.api_base
     )
-    if content_diagnostics.get("live_data_available") is True:
-        if not isinstance(api_gsc_contract, dict):
-            raise SystemExit("Content diagnostics must expose GSC Search Analytics contract")
-        if api_gsc_contract.get("data_availability_checked") is not True:
-            raise SystemExit("Content diagnostics GSC contract must check date availability")
-        if api_gsc_contract.get("date_availability_status") != "available":
-            raise SystemExit("Content diagnostics GSC contract must record available status")
-        if api_gsc_contract.get("search_type") != "web":
-            raise SystemExit("Content diagnostics GSC contract must pin search_type=web")
-        if api_gsc_contract.get("detail_dimensions") != "query,page":
-            raise SystemExit("Content diagnostics GSC contract must expose query,page dimensions")
-        if api_gsc_contract.get("detail_data_completeness") != "partial_possible":
-            raise SystemExit(
-                "Content diagnostics GSC contract must expose partial_possible completeness"
-            )
-        if api_gsc_contract.get("aggregate_dimensions") != "country,device":
-            raise SystemExit("Content diagnostics GSC contract must expose aggregate dimensions")
-        if api_gsc_contract.get("aggregate_aggregation_type") != "byProperty":
-            raise SystemExit("Content diagnostics GSC contract must expose byProperty aggregate")
-        if (
-            api_gsc_contract.get("aggregate_data_completeness")
-            != "aggregate_without_query_page_dimensions"
-        ):
-            raise SystemExit(
-                "Content diagnostics GSC contract must distinguish aggregate completeness"
-            )
-        if not str(api_gsc_contract.get("aggregate_summary_label") or "").strip():
-            raise SystemExit("Content diagnostics GSC contract aggregate_summary_label is missing")
-        if api_gsc_contract.get("expected_data_delay_days_min") != 2:
-            raise SystemExit("Content diagnostics GSC contract must expose 2-day delay minimum")
-        if api_gsc_contract.get("expected_data_delay_days_max") != 3:
-            raise SystemExit("Content diagnostics GSC contract must expose 3-day delay maximum")
-        if api_gsc_contract.get("read_granularity") != "single_day_latest_available":
-            raise SystemExit("Content diagnostics GSC contract must expose single-day reads")
-        if api_gsc_contract.get("api_recommended_page_size") != 25000:
-            raise SystemExit("Content diagnostics GSC contract must expose official 25k page size")
-        if api_gsc_contract.get("api_daily_row_cap_per_search_type") != 50000:
-            raise SystemExit("Content diagnostics GSC contract must expose official 50k row cap")
-        if not str(api_gsc_contract.get("summary_label") or "").strip():
-            raise SystemExit("Content diagnostics GSC contract summary_label is missing")
-        if "nie pełną sumą całego ruchu" not in str(
-            api_gsc_contract.get("partial_detail_warning_label") or ""
-        ):
-            raise SystemExit("Content diagnostics GSC contract must warn about partial totals")
-        if "25 000 wierszy" not in str(api_gsc_contract.get("official_limits_label") or ""):
-            raise SystemExit("Content diagnostics GSC contract must explain official paging")
-        if "rowLimit=" not in str(api_gsc_contract.get("wilq_internal_cap_label") or ""):
-            raise SystemExit("Content diagnostics GSC contract must explain WILQ internal cap")
     gsc_refresh_evidence_ids = [
         str(evidence_id)
         for evidence_id in endpoint_evidence_ids

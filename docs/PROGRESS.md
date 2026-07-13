@@ -165,6 +165,9 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/gsc_report_compaction.py`; live smoke `ok` zweryfikował 4 brief items
   i 3 konektory. GSC `main` spadł do 398 LOC/118 branches, bez surowych
   payloadów vendorów.
+- GSC freshness i Search Analytics contract są teraz walidowane przez
+  `scripts/gsc_freshness_assertions.py`. Live smoke `ok` zweryfikował stan
+  `fresh`; GSC `main` spadł do 336 LOC/82 branches, helper 52 LOC/22 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

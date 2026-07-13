@@ -135,6 +135,9 @@
 - GSC brief/status compaction jest w `scripts/gsc_report_compaction.py`; live
   smoke przechodzi (4 brief items, 3 konektory), a `main` ma 398 LOC/118
   branches. Output pozostaje ograniczony do operatorowych fields.
+- GSC freshness/Search Analytics assertions są w
+  `scripts/gsc_freshness_assertions.py`; live smoke przechodzi ze stanem
+  `fresh`, a `main` ma 336 LOC/82 branches. Następny seam: decision parity.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
