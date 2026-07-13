@@ -43,6 +43,7 @@ from wilq.briefing.ads_business_context_contracts import (
     business_context_policy_ids,
     business_context_review_gates,
     business_context_summary_and_next_step,
+    business_target_interpretation,
     strategy_review_readiness_contract,
 )
 from wilq.briefing.ads_campaign_metrics import campaign_metric_rows
@@ -1930,7 +1931,7 @@ def _build_business_context_read_contract(
         configured_sources=configured_sources,
         business_policy_ids=business_policy_ids,
         operator_review_gates=operator_review_gates,
-        target_interpretation=_business_target_interpretation(
+        target_interpretation=business_target_interpretation(
             status=status,
             profit_margin=profit_margin,
             business_goal=business_goal,
@@ -2154,7 +2155,7 @@ def _preliminary_business_target_interpretation(
     )
 
 
-def _business_target_interpretation(
+def _business_target_interpretation_legacy(
     *,
     status: Literal["ready", "blocked"],
     profit_margin: float | None,

@@ -7,6 +7,7 @@ from wilq.briefing.ads_business_context_contracts import (
     business_context_policy_ids,
     business_context_review_gates,
     business_context_summary_and_next_step,
+    business_target_interpretation,
     strategy_review_readiness_contract,
 )
 
@@ -102,3 +103,49 @@ def test_business_context_policy_and_summary_keep_blockers_explicit() -> None:
     ]
     assert "nie ma kompletnego lokalnego kontekstu" in summary
     assert "WILQ_ADS_PROFIT_MARGIN" in next_step
+
+
+def test_business_target_interpretation_blocks_verdicts_without_context() -> None:
+    result = business_target_interpretation(
+        status="blocked",
+        profit_margin=None,
+        business_goal=None,
+        budget_goal=None,
+        target_roas=None,
+        target_cpa_micros=None,
+        target_missing=True,
+        strategy_review_status="missing",
+        strategy_review_approved=False,
+        business_policy_ids=["complete_business_context_before_ads_verdicts"],
+        evidence_ids=["ev_ads_context"],
+    )
+
+    assert result.status == "blocked"
+    assert "profitability_verdict" in result.blocked_uses
+    assert result.missing_requirements == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+
+
+def test_business_target_interpretation_keeps_confirmed_target_review_only() -> None:
+    result = business_target_interpretation(
+        status="ready",
+        profit_margin=0.2,
+        business_goal="pozyskanie zapytań",
+        budget_goal="utrzymać obecny budżet",
+        target_roas=3.0,
+        target_cpa_micros=None,
+        target_missing=False,
+        strategy_review_status="approved_for_prepare",
+        strategy_review_approved=True,
+        business_policy_ids=["compare_kpis_to_confirmed_target_in_review"],
+        evidence_ids=["ev_ads_context"],
+    )
+
+    assert result.status == "ready"
+    assert "target_roas_review" in result.allowed_uses
+    assert "automatic_scaling" in result.blocked_uses

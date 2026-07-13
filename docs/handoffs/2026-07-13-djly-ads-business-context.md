@@ -17,6 +17,13 @@ W kolejnym bounded seamie przeniesiono `business_context_policy_ids` oraz
 `business_context_summary_and_next_step`; fasada zachowuje te same policy IDs,
 polski summary i safe next step.
 
+Czwarty seam przeniósł faktyczne `business_target_interpretation` do tego
+samego typed ownera. Obsługiwane są blocked, preliminary i ready; target
+ROAS/CPA context pozostaje review-only, a blocked uses i missing requirements
+zachowują dotychczasową kolejność. Stare prywatne helpery fasady są tymczasowo
+pozostawione wyłącznie jako compatibility reference i nie są już ścieżką
+runtime; ich usunięcie jest kolejnym cleanup slice'em.
+
 ## Dowód
 
 - `tests/test_ads_business_context_contracts.py` potwierdza blocked,
@@ -30,12 +37,16 @@ polski summary i safe next step.
   3 safe next actions i 1 blocked recommendation.
 - Browser `/ads-doctor` pokazuje polskie blokady ROAS/przychodu/waste, kolejkę
   decyzji i review-only ActionObject.
+- Live target interpretation: `status=preliminary`, dozwolone są tylko
+  `campaign_review_context`, `budget_review_context`,
+  `human_strategy_review_context`, `margin_context`,
+  `business_goal_alignment`, `budget_goal_guardrail`; target verdict,
+  profitability i budget changes pozostają zablokowane.
 - Complexity audit: `ads_diagnostics.py` spadł do 5864 LOC, ale nadal jest
   ponad lokalnym budżetem; extraction-only violation jest jawnie zachowany.
 
 ## Nie powtarzać
 
 Nie przenosić ponownie strategy-review projection, contract state, review gates,
-policy IDs ani summary. Pozostałe kontrakty business-context (target
-interpretation i metric tiles) wymagają osobnych seamów z parytetem; nie scalać
-ich mechanicznie bez testu.
+policy IDs, summary ani target interpretation. Następny seam to usunięcie
+nieużywanych legacy helperów albo metric tiles — tylko z testem parytetu.
