@@ -1862,3 +1862,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   nie zawierał już żadnego testu; usunięto martwy omnibus i jego fixture.
   Pełny dashboard gate po usunięciu: 43/43 pliki, 158/158 testów, typecheck i
   lint przechodzą. Route behavior pozostaje w dedykowanych plikach domenowych.
+- Re-audit po zamknięciu `wilq-seo-pidl`: complexity audit skanuje 492 pliki /
+  139440 non-empty LOC; największy potwierdzony hotspot to
+  `tests/api_contracts/test_ads_contracts.py` (4998 LOC), z testem
+  `test_ads_diagnostics_exposes_live_campaign_metric_facts` o 2919 linii i 29
+  branchach. Utworzono `wilq-seo-c9h9.22`; nie ma duplikatu aktywnego Beada.
