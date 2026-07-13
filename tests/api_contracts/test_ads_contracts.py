@@ -1954,6 +1954,58 @@ def assert_ads_search_decision_contracts(decisions_by_id: dict[str, Any]) -> Non
     assert "marnowanie budżetu na zapytaniach" in negative["blocked_claims"]
 
 
+def assert_ads_custom_segment_decision_contract(
+    decisions_by_id: dict[str, Any]
+) -> None:
+    """Prove custom-segment preparation remains forecast-gated and review-only."""
+    decision = decisions_by_id["ads_prepare_custom_segments_from_search_terms"]
+    assert decision["status"] == "ready"
+    assert decision["priority"] == 55
+    assert decision["metric_tiles"] == {
+        "segmenty": 1,
+        "pilne": 1,
+        "wysokie": 0,
+        "podgląd akcji": 1,
+        "źródłowe zapytania": 2,
+        "KP ideas": 1,
+    }
+    assert decision["decision_type"] == "prepare_custom_segments"
+    assert decision["missing_read_contracts"] == ["forecast_or_audience_size"]
+    forecast = decision["custom_segment_audience_forecast_rows"][0]
+    assert forecast["status"] == "missing_forecast"
+    assert forecast["candidate_id"] == decision["custom_segment_candidates"][0]["id"]
+    assert forecast["audience_size"] is None
+    assert decision["operator_review_gates"] == [
+        "review_source_terms",
+        "reject_brand_or_low_intent_terms",
+        "keyword_planner_enrichment",
+        "forecast_or_audience_size",
+        "human_confirm_before_apply",
+    ]
+    candidate = decision["custom_segment_candidates"][0]
+    assert candidate["source_terms"] == ["bdo rejestracja", "odpady cena"]
+    assert candidate["source_quality"]["accepted_terms"] == 2
+    assert decision["keyword_planner_idea_rows"][0]["idea_text"] == "bdo szkolenie"
+    preview = decision["custom_segment_payload_preview"][0]
+    assert preview["custom_segment_name"] == "Wyszukiwane hasła: Brand Search"
+    assert preview["apply_allowed"] is False
+    assert preview["targeting_preview"][0]["apply_allowed"] is False
+    assert decision["action_ids"] == ["act_prepare_custom_segments_from_search_terms"]
+    assert "zwrot z reklam" in decision["blocked_claims"]
+
+
+def assert_ads_write_blocker_decision_contract(
+    decisions_by_id: dict[str, Any], payload: dict[str, Any]
+) -> None:
+    """Prove the global write blocker remains explicit in the Ads queue."""
+    decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
+    assert decision["status"] == "blocked"
+    assert decision["priority"] == 10
+    assert decision["metric_tiles"] == {"akcje do sprawdzenia": 10, "blokady": 3}
+    assert "campaign creation" in decision["blocked_claims"]
+    assert payload["blocker_count"] == 2
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4370,72 +4422,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert ngram_validate_response.status_code == 200
     assert ngram_validate_response.json()["valid"] is True
     assert_ads_search_decision_contracts(decisions_by_id)
-    custom_segments_decision = decisions_by_id["ads_prepare_custom_segments_from_search_terms"]
-    assert custom_segments_decision["status"] == "ready"
-    assert custom_segments_decision["priority"] == 55
-    assert custom_segments_decision["metric_tiles"] == {
-        "segmenty": 1,
-        "pilne": 1,
-        "wysokie": 0,
-        "podgląd akcji": 1,
-        "źródłowe zapytania": 2,
-        "KP ideas": 1,
-    }
-    assert custom_segments_decision["decision_type"] == "prepare_custom_segments"
-    assert custom_segments_decision["missing_read_contracts"] == [
-        "forecast_or_audience_size",
-    ]
-    assert (
-        custom_segments_decision["custom_segment_audience_forecast_rows"][0]["status"]
-        == "missing_forecast"
-    )
-    assert (
-        custom_segments_decision["custom_segment_audience_forecast_rows"][0]["candidate_id"]
-        == custom_segments_decision["custom_segment_candidates"][0]["id"]
-    )
-    assert (
-        custom_segments_decision["custom_segment_audience_forecast_rows"][0]["audience_size"]
-        is None
-    )
-    assert custom_segments_decision["operator_review_gates"] == [
-        "review_source_terms",
-        "reject_brand_or_low_intent_terms",
-        "keyword_planner_enrichment",
-        "forecast_or_audience_size",
-        "human_confirm_before_apply",
-    ]
-    assert custom_segments_decision["custom_segment_candidates"][0]["source_terms"] == [
-        "bdo rejestracja",
-        "odpady cena",
-    ]
-    assert (
-        custom_segments_decision["custom_segment_candidates"][0]["source_quality"]["accepted_terms"]
-        == 2
-    )
-    assert custom_segments_decision["keyword_planner_idea_rows"][0]["idea_text"] == (
-        "bdo szkolenie"
-    )
-    assert (
-        custom_segments_decision["custom_segment_payload_preview"][0]["custom_segment_name"]
-        == "Wyszukiwane hasła: Brand Search"
-    )
-    assert custom_segments_decision["custom_segment_payload_preview"][0]["apply_allowed"] is False
-    assert (
-        custom_segments_decision["custom_segment_payload_preview"][0]["targeting_preview"][0][
-            "apply_allowed"
-        ]
-        is False
-    )
-    assert custom_segments_decision["action_ids"] == [
-        "act_prepare_custom_segments_from_search_terms"
-    ]
-    assert "zwrot z reklam" in custom_segments_decision["blocked_claims"]
-    safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
-    assert safety_decision["status"] == "blocked"
-    assert safety_decision["priority"] == 10
-    assert safety_decision["metric_tiles"] == {"akcje do sprawdzenia": 10, "blokady": 3}
-    assert "campaign creation" in safety_decision["blocked_claims"]
-    assert payload["blocker_count"] == 2
+    assert_ads_custom_segment_decision_contract(decisions_by_id)
+    assert_ads_write_blocker_decision_contract(decisions_by_id, payload)
 
     status_probe_response = client.post(
         "/api/connectors/google_ads/refresh",

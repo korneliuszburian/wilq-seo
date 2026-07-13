@@ -504,6 +504,12 @@
   unsafe claims są zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny
   test ma 1265 linii i 12 branchy. Następny krok: custom-segment decision i
   finalny action tail.
+- Czterdziesty szósty pod-slice zakończony: custom-segment decision i globalny
+  write-blocker proof są w `assert_ads_custom_segment_decision_contract` oraz
+  `assert_ads_write_blocker_decision_contract`; forecast blocker, source-term
+  gates, payload preview i ActionObject safety są zachowane. Focused
+  Ads/Ruff/mypy/diff check zielone; główny test ma 1201 linii i 12 branchy.
+  Następny krok: pozostałe action payloady i finalny tail.
 
 ## Następny krok
 

@@ -2019,3 +2019,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   evidence, review gates, knowledge cards i blokady unsafe claims. Focused
   Ads/Ruff/mypy/diff check zielone; główny test ma 1265 linii i 12 branchy.
   Następny seam: custom-segment decision i finalny action tail.
+- Czterdziesty szósty pod-slice c9h9.22: custom-segment decision oraz globalny
+  write-blocker proof wydzielone do `assert_ads_custom_segment_decision_contract`
+  i `assert_ads_write_blocker_decision_contract`; zachowano forecast blocker,
+  source-term gates, payload preview i ActionObject safety. Focused
+  Ads/Ruff/mypy/diff check zielone; główny test ma 1201 linii i 12 branchy.
+  Następny seam: pozostałe action payloady i finalny tail.
