@@ -53,6 +53,11 @@ w git, Beads i `docs/progress/archive/`.
   wording remain supplied by the typed ledger entries; the boundary owns only
   rendering. Focused route tests, Playwright proof, lint/typecheck/build and
   diff check pass.
+- `wilq-seo-ho41` continuation 8: moved workflow control-button rendering into
+  `ContentWorkflowControlButton.tsx` (24 LOC). Disabled-state copy and pending
+  presentation remain caller-provided; no action validation or mutation path
+  moved into the component. Focused route tests, Playwright proof,
+  lint/typecheck/build and diff check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

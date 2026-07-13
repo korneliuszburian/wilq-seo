@@ -785,6 +785,11 @@
   evidence IDs i blocked copy pozostają w typed entries/callerach; komponent ma
   wyłącznie rendering. Focused route tests, Playwright proof, lint/typecheck/
   build i diff check przechodzą.
+- `ho41` continuation 8 2026-07-13: rendering przycisków workflow przeniesiony
+  do `apps/dashboard/src/routes/ContentWorkflowControlButton.tsx` (24 LOC).
+  Disabled reasons i pending state pozostają w orchestracji akcji; komponent
+  nie waliduje ani nie mutuje ActionObject. Focused route tests, Playwright
+  proof, lint/typecheck/build i diff check przechodzą.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent
