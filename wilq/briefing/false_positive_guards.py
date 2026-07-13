@@ -11,6 +11,7 @@ from wilq.schemas import (
     FreshnessState,
     Ga4ConversionReadinessContract,
 )
+from wilq.schemas.measurement import MetricSampleEvidence, SourceComparisonEvidence
 
 
 class FalsePositiveGuardResult(BaseModel):
@@ -150,6 +151,64 @@ def evaluate_content_measurement_baseline_guard(
             "Najpierw wybierz temat z metrykami GSC albo GA4 oraz dowodami WILQ; "
             "nie oceniaj efektu treści bez tej bazy."
         ),
+    )
+
+
+def evaluate_low_volume_guard(
+    contract: MetricSampleEvidence | None,
+) -> FalsePositiveGuardResult:
+    """Block sample-size conclusions unless the threshold is explicit and traced."""
+    if contract is None:
+        return _blocked(
+            "low_volume_contract_missing",
+            "Brakuje typowego kontraktu próby i minimalnego progu dla tej decyzji.",
+        )
+    if contract.sample_size < contract.minimum_sample_size:
+        return FalsePositiveGuardResult(
+            guard_id="low_volume",
+            status="blocked",
+            reason=(
+                f"Próba {contract.sample_size} jest mniejsza od potwierdzonego progu "
+                f"{contract.minimum_sample_size} dla metryki {contract.metric_name}."
+            ),
+            next_step=(
+                "Zbierz większą próbę w tym samym okresie albo oznacz wynik "
+                "jako nierozstrzygający."
+            ),
+        )
+    return FalsePositiveGuardResult(
+        guard_id="low_volume_ready",
+        status="pass",
+        reason="Próba spełnia jawny próg minimalny i ma źródło oraz dowód.",
+        next_step="Można przejść do ręcznego review w ramach wskazanego okresu.",
+    )
+
+
+def evaluate_source_conflict_guard(
+    contract: SourceComparisonEvidence | None,
+) -> FalsePositiveGuardResult:
+    """Block cross-source conclusions when traced values disagree."""
+    if contract is None:
+        return _blocked(
+            "source_conflict_contract_missing",
+            "Brakuje typowego porównania wartości z różnych źródeł.",
+        )
+    values = {str(item.value) for item in contract.values}
+    if len(values) > 1:
+        return FalsePositiveGuardResult(
+            guard_id="source_conflict",
+            status="blocked",
+            reason=(
+                f"Źródła pokazują różne wartości dla {contract.metric_name} "
+                f"w okresie {contract.period}; nie wybieraj jednej bez wyjaśnienia."
+            ),
+            next_step="Sprawdź definicję metryki, zakres i opóźnienie źródeł przed decyzją.",
+        )
+    return FalsePositiveGuardResult(
+        guard_id="source_conflict_clear",
+        status="pass",
+        reason="Porównywane źródła mają zgodną wartość dla tej samej metryki i okresu.",
+        next_step="Można przejść do ręcznego review z zachowaniem obu dowodów.",
     )
 
 
