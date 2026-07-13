@@ -38,7 +38,8 @@ human/owner gates, not missing API behavior.
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,
 WordPress draft-handoff oraz persisted validation/audit i review-gate state są
-wydzielone do typed modułów. `service.py` ma 1035 LOC; publiczne API, action IDs,
+wydzielone do typed modułów. Po usunięciu one-call `_facts_by_connector`
+`service.py` ma 1028 LOC; publiczne API, action IDs,
 audit ordering, fail-closed mutation readiness i callback injection pozostają
 bez zmian. Ostatni proof: 21 akcji, 0 vendor writes, API health i
 `/content-workflow` Playwright zielone. Nie powtarzaj tych seamów.
