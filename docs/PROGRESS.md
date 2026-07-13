@@ -83,6 +83,12 @@ w git, Beads i `docs/progress/archive/`.
   kompatybilny; schema tests 34/10, lint/build i dashboard lint/typecheck są
   zielone. `index.ts` ma teraz 3 532 linii, a marketing module 117; nie dodano
   endpointów ani zmieniono payloadów.
+- Czwarty `ksiq` seam wydzielił kampanie, konto, budżety i readiness Ads do
+  `packages/shared-schemas/src/ads_campaigns.ts` (384 LOC). Barrel zachowuje
+  eksporty i ActionObject preview references; `index.ts` ma 3 168 linii.
+  Shared schema 34 passed/10 skipped, lint/build oraz dashboard lint/typecheck
+  przechodzą. Następny Ads schema slice musi osobno objąć recommendations,
+  search terms albo custom segments — bez łączenia całego monolitu.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

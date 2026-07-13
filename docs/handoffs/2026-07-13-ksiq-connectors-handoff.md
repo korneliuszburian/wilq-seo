@@ -28,6 +28,10 @@
   MarketingBrief/TacticalQueue schemas i aliasy typów; `index.ts` ma 3 532
   linii. Zależności MetricFact i connector summary nadal są importowane z
   istniejącego modułu, bez duplikacji i bez zmiany payloadów.
+- Czwarty seam: `packages/shared-schemas/src/ads_campaigns.ts` zawiera Ads
+  campaign/account/business/budget/readiness schemas (384 LOC), importując
+  MetricFact i ActionPreview z istniejących domen. `index.ts` ma 3 168 LOC;
+  shared schema/dashboard lint, build, tests i typecheck przechodzą.
 
 ## Następny krok
 
