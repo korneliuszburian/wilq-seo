@@ -21,6 +21,7 @@ from wilq.content.workflow.queue import (
     build_content_work_item_queue_response,
 )
 from wilq.expert.rules import get_expert_rule
+from wilq.knowledge.workspace_dossier import build_workspace_dossier
 from wilq.schemas import (
     ActionRisk,
     ConnectorStatus,
@@ -92,6 +93,7 @@ def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
         safe_next_actions=safe_next_actions,
         do_not_touch=do_not_touch,
         freshness=_aggregate_freshness(connector_refs),
+        workspace_dossier=build_workspace_dossier(),
     )
 
 

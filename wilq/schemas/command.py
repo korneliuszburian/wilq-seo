@@ -25,6 +25,7 @@ from .core import (
     _unique_strings,
     utc_now,
 )
+from .knowledge import WorkspaceDossier
 from .marketing import ConnectorSummary, _marketing_risk_label
 
 
@@ -293,6 +294,7 @@ class DailyCheckResult(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     expert_rules_used: list[str] = Field(default_factory=list)
     freshness: FreshnessState = Field(default_factory=lambda: FreshnessState(state="unknown"))
+    workspace_dossier: WorkspaceDossier | None = None
 
     @model_validator(mode="after")
     def fill_trace_from_items(self) -> DailyCheckResult:

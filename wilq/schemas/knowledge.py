@@ -23,6 +23,30 @@ from wilq.operator_labels import (
 from .core import ActionRisk, KnowledgeTaxonomyType, utc_now
 
 
+class WorkspaceDossierEntry(BaseModel):
+    id: str
+    title: str
+    summary: str
+    source_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    status: Literal["reviewed", "review_required", "open", "known_trap"] = "reviewed"
+
+
+class WorkspaceDossier(BaseModel):
+    id: str
+    workspace_id: str
+    display_name: str
+    business_brief: str
+    exclusions: list[str] = Field(default_factory=list)
+    source_packs: list[WorkspaceDossierEntry] = Field(default_factory=list)
+    previous_checks: list[WorkspaceDossierEntry] = Field(default_factory=list)
+    reports: list[WorkspaceDossierEntry] = Field(default_factory=list)
+    recommendation_history: list[WorkspaceDossierEntry] = Field(default_factory=list)
+    client_truths: list[WorkspaceDossierEntry] = Field(default_factory=list)
+    known_false_positives: list[WorkspaceDossierEntry] = Field(default_factory=list)
+    open_blockers: list[WorkspaceDossierEntry] = Field(default_factory=list)
+
+
 class SourceDocument(BaseModel):
     id: str
     title: str

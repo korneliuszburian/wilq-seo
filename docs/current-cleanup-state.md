@@ -107,6 +107,9 @@ bez duplikowania reguł biznesowych w React.
 `wilq-seo-3bst.13` zamknięty: aktualny target visualization brief jest w
 `docs/roadmap/dashboard-target-visualization-2026-07-13.md` i odróżnia realne
 capabilities WILQ od propozycji designu.
+`wilq-seo-v9ab.11` zamknięty: `WorkspaceDossier` jest read-only/redacted,
+dołączony do DailyCheckResult i wskazuje aktualny known trap oraz open blockers;
+nie tworzy pamięci poza API ani nie omija ActionObject.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie

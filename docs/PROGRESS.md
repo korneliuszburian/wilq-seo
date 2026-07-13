@@ -115,6 +115,11 @@ w git, Beads i `docs/progress/archive/`.
   definiuje aktualny target brief dla design roastu, oparty wyłącznie na
   realnych WILQ routes/API, marketer-vs-audit IA, content workflow i ActionObject
   safety. Nie dodaje fikcyjnych możliwości ani endpointów.
+- `wilq-seo-v9ab.11` wykonany: read-only redacted `WorkspaceDossier` jest
+  API-owned w `wilq/knowledge/workspace_dossier.py` i dołączony do istniejącego
+  `/api/marketing/daily-check`. Live response ma dossier Ekologus, znany false
+  positive Ads account-scope oraz blockers candidate density i WordPress apply;
+  focused daily-check/contracts, Ruff, mypy, complexity i diff check przechodzą.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

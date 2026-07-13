@@ -16,6 +16,17 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
     assert payload["source_connectors"]
     assert payload["evidence_ids"]
     assert payload["safe_next_actions"] or payload["blocked_recommendations"]
+    dossier = payload["workspace_dossier"]
+    assert dossier["id"] == "workspace_dossier:ekologus"
+    assert dossier["workspace_id"] == "ekologus"
+    assert dossier["exclusions"]
+    assert dossier["known_false_positives"]
+    assert dossier["open_blockers"]
+    assert all("payload" not in entry["summary"].lower() for entry in dossier["open_blockers"])
+    assert any(
+        entry["id"] == "blocker:content_candidate_density"
+        for entry in dossier["open_blockers"]
+    )
     for item in [
         *payload["safe_next_actions"],
         *payload["blocked_recommendations"],
