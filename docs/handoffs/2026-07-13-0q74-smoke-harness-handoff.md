@@ -132,6 +132,9 @@
 - GSC content action validation używa wspólnego `validate_action_ids`; live
   smoke przechodzi z 1 walidacją `valid/status=valid`, a `main` ma 425 LOC/120
   branches. Następny GSC seam: compact brief/status.
+- GSC brief/status compaction jest w `scripts/gsc_report_compaction.py`; live
+  smoke przechodzi (4 brief items, 3 konektory), a `main` ma 398 LOC/118
+  branches. Output pozostaje ograniczony do operatorowych fields.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

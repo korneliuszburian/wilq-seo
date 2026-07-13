@@ -4,13 +4,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import urllib.parse
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from gsc_refresh_contract import read_latest_gsc_refresh_contract
+from gsc_report_compaction import compact_gsc_brief_items, compact_gsc_connector_statuses
 
 from scripts.skill_smoke_harness import (
     has_polish_metric_source_guardrails,
@@ -253,35 +253,8 @@ def main() -> int:
         label="GSC content",
     )
 
-    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = [
-        {
-            "id": item.get("id"),
-            "title": item.get("title"),
-            "kind": item.get("kind"),
-            "source_connectors": item.get("source_connectors", []),
-            "evidence_ids": item.get("evidence_ids", []),
-            "action_ids": item.get("action_ids", []),
-            "metric_facts": item.get("metric_facts", []),
-        }
-        for section in brief.get("sections", [])
-        for item in section.get("items", [])
-        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
-    ][:8]
-
-    connector_results = []
-    for connector in REQUIRED_CONNECTORS:
-        quoted = urllib.parse.quote(connector, safe="")
-        status = request_json(args.api_base, "GET", f"/api/connectors/{quoted}/status")
-        connector_results.append(
-            {
-                "id": status.get("id"),
-                "status": status.get("status"),
-                "configured": status.get("configured"),
-                "missing_credentials": status.get("missing_credentials", []),
-                "error": status.get("error"),
-            }
-        )
+    brief_items = compact_gsc_brief_items(args.api_base, REQUIRED_CONNECTORS)
+    connector_results = compact_gsc_connector_statuses(args.api_base, REQUIRED_CONNECTORS)
 
     instruction = str(pack.get("strict_instruction", ""))
     if not has_polish_metric_source_guardrails(instruction):

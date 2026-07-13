@@ -161,6 +161,10 @@ w git, Beads i `docs/progress/archive/`.
 - GSC content action validation korzysta teraz ze wspólnego
   `validate_action_ids` harnessu. Live smoke kończy się `ok`, 1 walidacja ma
   `valid/status=valid`; GSC `main` spadł do 425 LOC/120 branches.
+- GSC brief i connector status compaction są teraz w
+  `scripts/gsc_report_compaction.py`; live smoke `ok` zweryfikował 4 brief items
+  i 3 konektory. GSC `main` spadł do 398 LOC/118 branches, bez surowych
+  payloadów vendorów.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
