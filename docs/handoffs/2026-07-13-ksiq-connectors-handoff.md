@@ -118,6 +118,11 @@
   ma 662 LOC. Social history pozostaje osobnym kontraktem, status/evidence/
   action output bez zmian, focused gates przechodzą. Następny seam: Demand Gen
   readiness.
+- Dwudziesty trzeci seam: `packages/shared-schemas/src/demand_gen.ts` zawiera
+  Demand Gen readiness contract z kampaniami, assetami, landing quality, mode
+  review i safety gates (89 LOC); `index.ts` ma 580 LOC. Blokady claimów i
+  review-only apply bez zmian, focused gates przechodzą. Następny seam: Social
+  history contracts.
 
 ## Następny krok
 

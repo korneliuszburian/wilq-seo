@@ -85,6 +85,11 @@ w git, Beads i `docs/progress/archive/`.
   pozostaje osobnym kontraktem, a workflow status/evidence/action output bez
   zmian. Shared schema/dashboard lint, build, tests i typecheck przechodzą.
   Następny seam: Demand Gen readiness.
+- Dwudziesty trzeci seam: `demand_gen.ts` zawiera Demand Gen readiness contract
+  z kampaniami, assetami, landing quality, mode review i safety gates (89 LOC);
+  `index.ts` ma 580 LOC. Blokady claimów i review-only apply pozostają bez
+  zmian. Shared schema/dashboard lint, build, tests i typecheck przechodzą.
+  Następny seam: Social history contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
