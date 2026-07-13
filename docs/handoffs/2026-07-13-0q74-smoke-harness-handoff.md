@@ -146,6 +146,10 @@
   `scripts/gsc_marketer_card_assertions.py`; live smoke przechodzi z kartą
   `Karta decyzji dla Wilka`, review fields i selected action IDs. `main` ma 278
   LOC/59 branches. Następny re-audyt wybierze Merchant/Localo hotspot.
+- Merchant Feed context parity jest w
+  `scripts/merchant_context_parity.py`; live smoke przechodzi z 19 issue items,
+  evidence/action parity i price readiness parity. Merchant `main` ma 343
+  LOC/107 branches. Następny seam: product sample/performance readiness.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

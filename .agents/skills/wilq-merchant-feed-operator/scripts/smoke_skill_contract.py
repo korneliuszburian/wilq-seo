@@ -10,6 +10,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from merchant_context_parity import validate_merchant_context_parity
+
 from scripts.skill_smoke_harness import (
     has_polish_metric_source_guardrails,
     request_json,
@@ -60,31 +62,7 @@ def main() -> int:
     sections = merchant_diagnostics.get("sections")
     if not isinstance(sections, list) or not sections:
         raise SystemExit("Merchant diagnostics must expose sections")
-    packed_merchant = pack.get("merchant_diagnostics", {})
-    if packed_merchant.get("evidence_ids") != merchant_diagnostics.get("evidence_ids"):
-        raise SystemExit("Context pack merchant_diagnostics evidence IDs differ from endpoint")
-    if packed_merchant.get("action_ids") != merchant_diagnostics.get("action_ids"):
-        raise SystemExit("Context pack merchant_diagnostics action IDs differ from endpoint")
-    packed_price_impact = packed_merchant.get("price_impact_readiness")
-    endpoint_price_impact = merchant_diagnostics.get("price_impact_readiness")
-    if not isinstance(packed_price_impact, dict) or not isinstance(endpoint_price_impact, dict):
-        raise SystemExit("Context pack merchant price_impact_readiness must be an object")
-    for key in (
-        "status",
-        "evidence_ids",
-        "source_connectors",
-        "missing_read_contracts",
-        "blocked_claims",
-    ):
-        if packed_price_impact.get(key) != endpoint_price_impact.get(key):
-            raise SystemExit(
-                f"Context pack merchant price_impact_readiness differs on {key}"
-            )
-    endpoint_preview = endpoint_price_impact.get("change_preview")
-    if isinstance(endpoint_preview, list) and packed_price_impact.get(
-        "change_preview_total"
-    ) != len(endpoint_preview):
-        raise SystemExit("Context pack merchant price preview total differs from endpoint")
+    packed_merchant = validate_merchant_context_parity(merchant_diagnostics, pack)
     product_sample_readiness = merchant_diagnostics.get("product_sample_readiness")
     if not isinstance(product_sample_readiness, dict):
         raise SystemExit("Merchant diagnostics must expose product_sample_readiness")

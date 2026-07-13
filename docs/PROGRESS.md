@@ -176,6 +176,10 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/gsc_marketer_card_assertions.py`. Live smoke `ok` zweryfikował kartę
   `Karta decyzji dla Wilka`, review fields i selected action IDs; `main` spadł
   do 278 LOC/59 branches, helper 39 LOC/13 branches.
+- Merchant Feed context parity jest teraz w
+  `scripts/merchant_context_parity.py`; live smoke `ok` zweryfikował 19 issue
+  items, evidence/action parity i price readiness parity. Merchant `main` spadł
+  do 343 LOC/107 branches, helper 27 LOC/8 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
