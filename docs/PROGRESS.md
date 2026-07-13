@@ -10,6 +10,12 @@ w git, Beads i `docs/progress/archive/`.
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
   Bead `wilq-seo-uzqh` zamknięty po pure regression test, live API proof i
   browser proof.
+- `v9ab.8` i `v9ab.9` zamknięte 2026-07-13: supported false-positive guards
+  oraz slop-killing proof blokują rekomendacje bez evidence/ExpertRule, stale
+  source, brak konwersji, niepełne okno GSC, niepełny kontekst Merchant,
+  dev-only URL, brak multi-source evidence i brak baseline. Residual
+  low-volume/source-conflict jest osobnym `v9ab.8.3` do zaprojektowania typed
+  kontraktu; nie jest udawany jako gotowa funkcja.
 
 - Re-audyt live WILQ 2026-07-13 17:06Z: `/api/content/work-items/queue`
   zwraca `blocked`, 2 kandydatów, 1 actionable przy minimum 3; GSC i publiczny

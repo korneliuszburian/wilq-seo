@@ -23,8 +23,12 @@ z metrykami, connectorami i evidence; publiczny URL, zablokowany Ahrefs record,
 mismatch albo wyjątek nie mogą udawać bazy pomiaru. Jeden gotowy temat może być
 review-ready, ale daily output musi nadal nazwać queue density blocker (obecnie
 1 z 3), więc nie myli pojedynczego review z gotowym backlogiem.
-Pozostałe false-positive guards pozostają otwarte; nie zaczynaj od kolejnego
-wrappera Ads ani drugiego expert endpointu.
+Supported false-positive guard scope oraz slop-killing proof (`v9ab.9`) są
+zamknięte: brak evidence/ExpertRule, stale source, brak konwersji, niepełne
+okno GSC, niepełny kontekst Merchant, dev-only URL, brak multi-source evidence
+i brak baseline blokują nieudokumentowane rekomendacje. Low-volume/source-conflict
+pozostają jawnie wydzielone do `v9ab.8.3`, bo aktualny runtime nie ma typed
+threshold/baseline/conflict join; nie dodawaj heurystyki ani kolejnego endpointu.
 
 Live audit 2026-07-13 17:06Z: system status reports 107898 metric facts and 12
 connectors (9 configured, 2 missing credentials; secrets redacted). Content
