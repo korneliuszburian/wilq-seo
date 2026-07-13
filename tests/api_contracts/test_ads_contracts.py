@@ -1684,6 +1684,58 @@ def assert_ads_decision_queue_identity_contract(payload: dict[str, Any]) -> None
     }
 
 
+def assert_ads_campaign_decision_contract(decisions_by_id: dict[str, Any]) -> None:
+    """Prove campaign activity and triage decisions remain actionable and safe."""
+    campaign = decisions_by_id["ads_review_campaign_activity"]
+    assert campaign["status"] == "ready"
+    assert campaign["priority"] == 20
+    assert campaign["metric_tiles"] == {
+        "kampanie": 1,
+        "pilne": 0,
+        "wysokie": 1,
+        "kliknięcia": 9,
+        "wyświetlenia": 90,
+        "koszt": "12 PLN",
+        "konwersje": 2.5,
+    }
+    assert campaign["title"] == "Przejrzyj aktywność kampanii Google Ads"
+    assert campaign["campaign_rows"][0]["campaign_name"] == "Brand Search"
+    assert campaign["campaign_rows"][0]["review_priority"] == "wysokie"
+    assert campaign["campaign_rows"][0]["review_score"] == 50
+    assert campaign["search_term_rows"] == []
+    assert campaign["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert campaign["source_connector_labels"] == ["Google Ads"]
+    assert "dowód" in campaign["evidence_summary_label"]
+    assert "akcj" in campaign["action_summary_label"]
+    assert campaign["operator_review_gates"] == [
+        "review_campaign_goal",
+        "review_conversion_quality",
+        "review_budget_context",
+        "review_search_terms_before_budget_decision",
+        "human_strategy_review",
+    ]
+    triage = decisions_by_id["ads_review_campaign_triage"]
+    assert triage["status"] == "ready"
+    assert triage["priority"] == 18
+    assert triage["decision_type"] == "review_campaign_triage"
+    assert triage["title"] == "Ustal kolejność oceny kampanii Ads"
+    assert "Pilne=" not in triage["summary"]
+    assert "wysokie=" not in triage["summary"]
+    assert "0 pilnych kampanii" in triage["summary"]
+    assert "1 kampania o wysokim sygnale" in triage["summary"]
+    assert triage["campaign_triage_rows"][0]["campaign_name"] == "Brand Search"
+    assert triage["campaign_triage_rows"][0]["roas"] == 37.5625
+    assert triage["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert triage["metric_tiles"] == {
+        "kampanie": 1,
+        "pilne": 0,
+        "wysokie": 1,
+        "rekomendacje": 1,
+        "podglądy": 2,
+    }
+    assert "zmarnowany budżet" in triage["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4078,54 +4130,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_prepare_custom_segments_from_search_terms",
         "ads_block_write_actions_without_actionobject",
     }
-    campaign_decision = decisions_by_id["ads_review_campaign_activity"]
-    assert campaign_decision["status"] == "ready"
-    assert campaign_decision["priority"] == 20
-    assert campaign_decision["metric_tiles"] == {
-        "kampanie": 1,
-        "pilne": 0,
-        "wysokie": 1,
-        "kliknięcia": 9,
-        "wyświetlenia": 90,
-        "koszt": "12 PLN",
-        "konwersje": 2.5,
-    }
-    assert campaign_decision["title"] == "Przejrzyj aktywność kampanii Google Ads"
-    assert campaign_decision["campaign_rows"][0]["campaign_name"] == "Brand Search"
-    assert campaign_decision["campaign_rows"][0]["review_priority"] == "wysokie"
-    assert campaign_decision["campaign_rows"][0]["review_score"] == 50
-    assert campaign_decision["search_term_rows"] == []
-    assert campaign_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert campaign_decision["source_connector_labels"] == ["Google Ads"]
-    assert "dowód" in campaign_decision["evidence_summary_label"]
-    assert "akcj" in campaign_decision["action_summary_label"]
-    assert campaign_decision["operator_review_gates"] == [
-        "review_campaign_goal",
-        "review_conversion_quality",
-        "review_budget_context",
-        "review_search_terms_before_budget_decision",
-        "human_strategy_review",
-    ]
-    campaign_triage_decision = decisions_by_id["ads_review_campaign_triage"]
-    assert campaign_triage_decision["status"] == "ready"
-    assert campaign_triage_decision["priority"] == 18
-    assert campaign_triage_decision["decision_type"] == "review_campaign_triage"
-    assert campaign_triage_decision["title"] == "Ustal kolejność oceny kampanii Ads"
-    assert "Pilne=" not in campaign_triage_decision["summary"]
-    assert "wysokie=" not in campaign_triage_decision["summary"]
-    assert "0 pilnych kampanii" in campaign_triage_decision["summary"]
-    assert "1 kampania o wysokim sygnale" in campaign_triage_decision["summary"]
-    assert campaign_triage_decision["campaign_triage_rows"][0]["campaign_name"] == ("Brand Search")
-    assert campaign_triage_decision["campaign_triage_rows"][0]["roas"] == 37.5625
-    assert campaign_triage_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert campaign_triage_decision["metric_tiles"] == {
-        "kampanie": 1,
-        "pilne": 0,
-        "wysokie": 1,
-        "rekomendacje": 1,
-        "podglądy": 2,
-    }
-    assert "zmarnowany budżet" in campaign_triage_decision["blocked_claims"]
+    assert_ads_campaign_decision_contract(decisions_by_id)
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
     assert derived_kpi_decision["priority"] == 25

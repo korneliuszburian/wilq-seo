@@ -464,6 +464,12 @@
   custom-segment review i blocker ActionObject pozostają dowiedzione.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1529 linii i 12
   branchy. Następny krok: decyzje operatora i końcowy action tail.
+- Trzydziesty dziewiąty pod-slice zakończony: campaign activity i campaign
+  triage decision proof są w `assert_ads_campaign_decision_contract`.
+  Priorytety, metric tiles, evidence/source labels, review gates i blokada
+  claimu zmarnowanego budżetu są zachowane. Focused Ads/Ruff/mypy/diff check
+  zielone; główny test ma 1482 linii i 12 branchy. Następny krok:
+  derived KPI/budget decision proof.
 
 ## Następny krok
 

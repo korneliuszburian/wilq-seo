@@ -1980,3 +1980,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   zestaw review lanes, custom-segment review i jawny blocker ActionObject.
   Focused Ads suite, Ruff, mypy i diff check zielone; główny test ma 1529 linii
   i 12 branchy. Następny seam: decyzje operatora i końcowy action tail.
+- Trzydziesty dziewiąty pod-slice c9h9.22: campaign activity i campaign triage
+  decision proof wydzielone do `assert_ads_campaign_decision_contract`.
+  Zachowano priorytety, metric tiles, evidence/source labels, review gates oraz
+  blokadę claimu zmarnowanego budżetu. Focused Ads/Ruff/mypy/diff check zielone;
+  główny test ma 1482 linii i 12 branchy. Następny seam: derived KPI/budget
+  decision proof.
