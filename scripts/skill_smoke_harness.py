@@ -14,6 +14,8 @@ def request_json(
     method: str,
     path: str,
     body: dict[str, Any] | None = None,
+    *,
+    timeout_seconds: float = 60.0,
 ) -> Any:
     data = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(
@@ -23,7 +25,7 @@ def request_json(
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]

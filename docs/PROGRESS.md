@@ -31,6 +31,10 @@ w git, Beads i `docs/progress/archive/`.
   behavior został przeniesiony z `App.test.tsx` do
   `ConnectorRefreshRunList.test.tsx`. App omnibus zmniejszył się o jeden
   niezależny route/component contract; 32 testy obejmujące oba pliki przechodzą.
+- `wilq-seo-0q74` rozszerzony o Content Strategist: wspólny timeout-aware
+  `request_json` i Polish guardrail, a smoke poprawnie traktuje Ahrefs-only
+  decyzję bez akcji jako blocker review-only. Live Content Strategist smoke i
+  Ruff przechodzą.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

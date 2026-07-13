@@ -3,11 +3,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import unicodedata
-import urllib.error
+import sys
 import urllib.parse
-import urllib.request
+from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+
+from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
 
 SKILL_NAME = "wilq-content-strategist"
 REQUIRED_CONNECTORS = [
@@ -45,31 +48,6 @@ CURRENT_CONTENT_URL_KEYS = frozenset(
 MARKETER_FACING_JARGON = ("action",)
 
 
-def request_json(
-    api_base: str,
-    method: str,
-    path: str,
-    body: dict[str, Any] | None = None,
-    *,
-    timeout_seconds: float,
-) -> Any:
-    data = None if body is None else json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(
-        f"{api_base.rstrip('/')}{path}",
-        data=data,
-        method=method,
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout_seconds) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        message = exc.read().decode("utf-8", errors="replace")[:500]
-        raise SystemExit(f"HTTP {exc.code} from {path}: {message}") from exc
-    except urllib.error.URLError as exc:
-        raise SystemExit(f"Could not reach WILQ API at {api_base}: {exc.reason}") from exc
-
-
 def assert_current_content_url_keys(value: dict[str, Any], label: str) -> None:
     unexpected_url_keys = sorted(
         key
@@ -82,14 +60,6 @@ def assert_current_content_url_keys(value: dict[str, Any], label: str) -> None:
         )
 
 
-
-def has_polish_metric_source_guardrails(value: str) -> bool:
-    normalized = "".join(
-        char
-        for char in unicodedata.normalize("NFKD", value.lower())
-        if not unicodedata.combining(char)
-    ).replace("ł", "l")
-    return "metryk" in normalized and "dowod" in normalized and "zrodl" in normalized
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
@@ -323,10 +293,13 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
         if not decision.get("evidence_ids"):
             raise SystemExit("Content decision_queue item lacks evidence IDs")
         decision_action_ids = set(decision.get("action_ids") or [])
-        if not decision_action_ids:
+        if not decision_action_ids and decision.get("decision_type") != "review_ahrefs_gap_records":
             raise SystemExit("Content decision_queue item lacks action ID")
+        if decision.get("decision_type") == "review_ahrefs_gap_records" and decision_action_ids:
+            raise SystemExit("Ahrefs-only content decision must not invent an action ID")
         if (
             decision.get("decision_type") in CONTENT_ACTION_DECISION_TYPES
+            and decision.get("decision_type") != "review_ahrefs_gap_records"
             and CONTENT_ACTION_ID not in decision_action_ids
         ):
             raise SystemExit("Content planning decision lacks content action ID")
