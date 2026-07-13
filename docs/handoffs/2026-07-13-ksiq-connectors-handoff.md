@@ -409,6 +409,9 @@
   branchy. Branch budget jest zielony, line budget pozostaje otwarty.
 - Dziesiąty/jedenasty pod-slice: KPI row/evidence/blocked claims oraz section
   readiness są w helperach. Następny handoff ma rozbić budget pacing contract.
+- Dwunasty pod-slice zakończony: `assert_ads_budget_contract_basics` przejął
+  budget allowed/missing gates, Polish empty state i review-only action. Następny
+  krok: budget preview oraz safety card.
 
 ## Następny krok
 

@@ -1915,3 +1915,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   claims oraz diagnostic section readiness wydzielone do nazwanych helperów.
   Focused Ads/Ruff/mypy/diff check przechodzą; następny seam to budget pacing
   contract.
+- Dwunasty pod-slice c9h9.22: budget pacing contract basics wydzielone do
+  `assert_ads_budget_contract_basics`, z zachowaniem allowed/missing metrics,
+  Polish empty state i review-only action. Focused Ads/Ruff/mypy/diff check
+  przechodzą; następny seam to budget preview/safety card.

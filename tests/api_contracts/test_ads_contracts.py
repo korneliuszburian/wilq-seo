@@ -413,6 +413,44 @@ def assert_ads_diagnostic_section_contract(payload: dict[str, Any]) -> None:
     assert "rentowności" in kpi_section["diagnosis"]
 
 
+def assert_ads_budget_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove budget pacing is readable but remains review/apply gated."""
+    contract = payload["budget_pacing_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["empty_state_message"] == (
+        "Brak wierszy budżetu kampanii w tym widoku. Odśwież dane Google Ads, "
+        "żeby pokazać koszt względem budżetu dziennego."
+    )
+    for forbidden in (
+        "campaign_budget.amount_micros",
+        "budget_amount_micros",
+        "recommended budget",
+        "impression share",
+        "review",
+    ):
+        assert forbidden not in f"{contract['empty_state_message']} {contract['next_step']} {contract['summary']}"
+    assert contract["allowed_metrics"] == [
+        "budget_amount_micros",
+        "cost_micros_7d",
+        "seven_day_budget_micros",
+        "spend_to_budget_ratio_7d",
+        "shared_budget_distribution",
+        "budget_has_recommended_budget",
+        "budget_recommended_amount_micros",
+    ]
+    assert "skalowanie budżetu" in contract["blocked_claims"]
+    for available in (
+        "budget_pacing",
+        "recommendations",
+        "impression_share",
+        "change_history",
+        "budget_apply_preview",
+        "shared_budget_distribution",
+    ):
+        assert available not in contract["missing_read_contracts"]
+    assert contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2678,35 +2716,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         derived_kpi_contract, refresh_response.json()["evidence_ids"][-1]
     )
     assert_ads_diagnostic_section_contract(payload)
+    assert_ads_budget_contract_basics(payload)
     budget_contract = payload["budget_pacing_read_contract"]
-    assert budget_contract["status"] == "ready"
-    assert budget_contract["empty_state_message"] == (
-        "Brak wierszy budżetu kampanii w tym widoku. Odśwież dane Google Ads, "
-        "żeby pokazać koszt względem budżetu dziennego."
-    )
-    assert "campaign_budget.amount_micros" not in budget_contract["empty_state_message"]
-    assert "budget_amount_micros" not in budget_contract["next_step"]
-    assert "recommended budget" not in budget_contract["summary"]
-    assert "recommended budget" not in budget_contract["next_step"]
-    assert "impression share" not in budget_contract["next_step"]
-    assert "review" not in budget_contract["next_step"]
-    assert budget_contract["allowed_metrics"] == [
-        "budget_amount_micros",
-        "cost_micros_7d",
-        "seven_day_budget_micros",
-        "spend_to_budget_ratio_7d",
-        "shared_budget_distribution",
-        "budget_has_recommended_budget",
-        "budget_recommended_amount_micros",
-    ]
-    assert "skalowanie budżetu" in budget_contract["blocked_claims"]
-    assert "budget_pacing" not in budget_contract["missing_read_contracts"]
-    assert "recommendations" not in budget_contract["missing_read_contracts"]
-    assert "impression_share" not in budget_contract["missing_read_contracts"]
-    assert "change_history" not in budget_contract["missing_read_contracts"]
-    assert "budget_apply_preview" not in budget_contract["missing_read_contracts"]
-    assert "shared_budget_distribution" not in budget_contract["missing_read_contracts"]
-    assert budget_contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     assert len(budget_contract["payload_preview"]) == 1
     budget_preview = budget_contract["payload_preview"][0]
     assert budget_preview["id"] == "budget_apply_preview_101_701"
