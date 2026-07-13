@@ -2030,3 +2030,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   context, Polish disclosure, safety review i fail-closed mutation flags.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1122 linii i 12
   branchy. Następny seam: pozostałe ActionObject payloady i status/context tail.
+- Czterdziesty ósmy pod-slice c9h9.22: recommendation review ActionObject
+  payload wydzielony do `assert_ads_recommendation_action_payload`; zachowano
+  disclosure bez technicznych ID, preview contract i blokadę apply/destructive.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1093 linii i 12
+  branchy. Następny seam: custom-segment/negative-keyword payloady i status tail.

@@ -2062,6 +2062,29 @@ def assert_ads_campaign_review_action_payload(action: dict[str, Any]) -> None:
     assert "skalowanie budżetu" in payload["blocked_claims"]
 
 
+def assert_ads_recommendation_action_payload(action: dict[str, Any]) -> None:
+    """Prove recommendation preview hides IDs and blocks apply."""
+    payload = action["payload"]
+    assert payload["action_type"] == "google_ads_recommendation_review"
+    assert payload["preview_contract"] == "recommendation_apply_preview_v1"
+    preview = payload["payload_preview"][0]
+    assert preview["operation_type"] == "ApplyRecommendationOperation"
+    assert preview["apply_allowed"] is False
+    card = action["preview_cards"][0]
+    assert card["kind"] == "google_ads_recommendation_review"
+    assert card["title_label"] == "Rekomendacja Google Ads do sprawdzenia"
+    rows = {row["label"]: row["value"] for row in card["rows"]}
+    assert rows["Typ rekomendacji"] == "budżet kampanii"
+    assert rows["Kampania"] == "powiązana kampania do sprawdzenia"
+    assert rows["Budżet kampanii"] == "powiązany budżet do sprawdzenia"
+    assert "CAMPAIGN_BUDGET" not in str(card)
+    assert "101" not in str(card)
+    assert "701" not in str(card)
+    assert payload["apply_allowed"] is False
+    assert payload["destructive"] is False
+    assert "human_confirm_before_apply" in payload["required_validation"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4550,36 +4573,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         for action in actions_payload
         if action["id"] == "act_prepare_google_ads_recommendation_review_queue"
     )
-    assert recommendation_review_action["payload"]["action_type"] == (
-        "google_ads_recommendation_review"
-    )
-    assert recommendation_review_action["payload"]["preview_contract"] == (
-        "recommendation_apply_preview_v1"
-    )
-    assert (
-        recommendation_review_action["payload"]["payload_preview"][0]["operation_type"]
-        == "ApplyRecommendationOperation"
-    )
-    assert recommendation_review_action["payload"]["payload_preview"][0]["apply_allowed"] is False
-    assert recommendation_review_action["preview_cards"]
-    recommendation_preview_card = recommendation_review_action["preview_cards"][0]
-    assert recommendation_preview_card["kind"] == "google_ads_recommendation_review"
-    assert recommendation_preview_card["title_label"] == ("Rekomendacja Google Ads do sprawdzenia")
-    recommendation_preview_rows = {
-        row["label"]: row["value"] for row in recommendation_preview_card["rows"]
-    }
-    assert recommendation_preview_rows["Typ rekomendacji"] == "budżet kampanii"
-    assert recommendation_preview_rows["Kampania"] == "powiązana kampania do sprawdzenia"
-    assert recommendation_preview_rows["Budżet kampanii"] == ("powiązany budżet do sprawdzenia")
-    assert "CAMPAIGN_BUDGET" not in str(recommendation_preview_card)
-    assert "101" not in str(recommendation_preview_card)
-    assert "701" not in str(recommendation_preview_card)
-    assert recommendation_review_action["payload"]["apply_allowed"] is False
-    assert recommendation_review_action["payload"]["destructive"] is False
-    assert (
-        "human_confirm_before_apply"
-        in recommendation_review_action["payload"]["required_validation"]
-    )
+    assert_ads_recommendation_action_payload(recommendation_review_action)
     recommendation_review_validation_response = client.post(
         "/api/actions/act_prepare_google_ads_recommendation_review_queue/validate",
         json={},

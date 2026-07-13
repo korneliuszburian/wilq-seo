@@ -516,6 +516,12 @@
   Polish disclosure, safety review i fail-closed mutation flags są zachowane.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1122 linii i 12
   branchy. Następny krok: pozostałe ActionObject payloady i status/context tail.
+- Czterdziesty ósmy pod-slice zakończony: recommendation review ActionObject
+  payload jest w `assert_ads_recommendation_action_payload`; disclosure bez
+  technicznych ID, preview contract i blokady apply/destructive są zachowane.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1093 linii i 12
+  branchy. Następny krok: custom-segment/negative-keyword payloady i status
+  tail.
 
 ## Następny krok
 
