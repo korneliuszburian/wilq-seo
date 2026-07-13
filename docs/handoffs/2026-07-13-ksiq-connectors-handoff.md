@@ -162,7 +162,7 @@
   `SettingsSourceRefresh.test.tsx`; test dowodzi, że błąd odczytu statusu
   pozostawia blocker i przywraca retry CTA zamiast udawać świeżość. Focused
   2/2 w tym pliku, dashboard typecheck/lint i diff check przechodzą.
-  `App.test.tsx` ma 9446 LOC. Następny seam: automatyczny refresh eligibility.
+  `App.test.tsx` ma 9449 LOC. Następny seam: automatyczny refresh eligibility.
 
 ## Następny krok
 
