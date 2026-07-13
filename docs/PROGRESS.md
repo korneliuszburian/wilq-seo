@@ -168,6 +168,10 @@ w git, Beads i `docs/progress/archive/`.
 - GSC freshness i Search Analytics contract są teraz walidowane przez
   `scripts/gsc_freshness_assertions.py`. Live smoke `ok` zweryfikował stan
   `fresh`; GSC `main` spadł do 336 LOC/82 branches, helper 52 LOC/22 branches.
+- GSC decision parity jest teraz w `scripts/gsc_decision_parity.py`; live smoke
+  `ok` zweryfikował 1 scoped decision, endpoint-subset evidence/action IDs i
+  usunięcie Ahrefs scope. GSC `main` spadł do 315 LOC/72 branches, helper 51
+  LOC/12 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

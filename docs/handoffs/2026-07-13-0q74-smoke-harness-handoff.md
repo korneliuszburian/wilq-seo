@@ -138,6 +138,10 @@
 - GSC freshness/Search Analytics assertions są w
   `scripts/gsc_freshness_assertions.py`; live smoke przechodzi ze stanem
   `fresh`, a `main` ma 336 LOC/82 branches. Następny seam: decision parity.
+- GSC decision parity jest w `scripts/gsc_decision_parity.py`; live smoke
+  przechodzi z 1 scoped decision, evidence/action subset parity i blokadą
+  Ahrefs scope. `main` ma 315 LOC/72 branches. Następny seam: marketer card
+  parity.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
