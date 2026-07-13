@@ -305,6 +305,14 @@
   `App.test.tsx` ma 7955 LOC. API health działa; metric store raportuje 104362
   facts i 4580 refresh runs. Następny seam: Localo albo re-audit timeoutów.
 
+- Dwudziesty ósmy slice: fixture Localo diagnostics została wyciągnięta z
+  `App.test.tsx` do `localoDiagnostics.fixture.ts`, a
+  `LocaloDiagnosticSurface.test.tsx` dostał behavior proof stanu dostępu,
+  blokady rekomendacji bez ranking proof i bezpieczeństwa copy.
+  Localo + App focused 8/8, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 7670 LOC. Następny seam: re-audit pełnego runu albo kolejny
+  potwierdzony fixture route.
+
 ## Następny krok
 
 - Po commit/push wybrać kolejny domain seam z `wilq-seo-ksiq` na podstawie
