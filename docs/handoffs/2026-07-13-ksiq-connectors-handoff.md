@@ -660,6 +660,10 @@
   `tests/api_contracts/test_context_safety_contracts.py`. Nowy i pełny
   action-object test przechodzą; legacy plik zmniejszył się o 23 linie. Nadal
   pozostają historyczne hotspoty complexity.
+- Piąta kontynuacja `50wa`: unsupported payload action validation jest teraz w
+  `tests/actions/test_action_validation_contracts.py`. Nowy i pełny action-object
+  test przechodzą; legacy plik zmniejszył się o 19 linii. Pozostają historyczne
+  hotspoty complexity do dalszego splitu.
 - Druga kontynuacja `50wa`: typed preview-card contract jest w osobnym
   `tests/actions/test_action_preview_cards_contracts.py` z lokalnym helperem,
   bez zależności od mega-testu. Nowy i pełny action-object test przechodzą;

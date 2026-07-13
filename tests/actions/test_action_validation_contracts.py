@@ -6,6 +6,7 @@ import pytest
 
 from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
+from wilq.schemas import ActionMode, ActionObject, ActionRisk, ActionStatus, OpportunityDomain
 
 
 def test_metric_backed_prepare_actions_validate_without_apply(
@@ -33,6 +34,30 @@ def test_metric_backed_prepare_actions_validate_without_apply(
         assert apply_detail["status"] == "blocked"
         assert apply_detail["applied"] is False
         assert apply_detail["audit_event"]["event_type"] == "apply_confirmation_missing"
+
+
+def test_action_validation_rejects_unsupported_payload_action_type() -> None:
+    action = ActionObject(
+        id="bad_payload",
+        title="Bad payload",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_1"],
+        human_diagnosis="Invalid payload action should fail.",
+        recommended_reason="Unsupported connector action.",
+        payload={"action_type": "not_supported_by_google_ads", "connector": "google_ads"},
+        validation_status="not_validated",
+        created_by="test",
+    )
+
+    from wilq.actions.service import validate_action
+
+    result = validate_action(action)
+    assert not result.valid
+    assert "ten typ działania nie jest wspierany" in " ".join(result.errors)
 
 
 def test_validated_ready_action_copy_does_not_claim_human_review(

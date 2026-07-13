@@ -2197,6 +2197,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   gdzie pasuje do istniejącego kontraktu context-pack. Mega-test zmniejszył się
   o kolejne 23 linie; nowy i pełny action-object test przechodzą, Ruff i diff
   check zielone. Complexity nadal raportuje te same hotspoty.
+- Piąta kontynuacja `50wa`: unsupported payload action validation przeniesiono
+  do `tests/actions/test_action_validation_contracts.py`. Mega-test zmniejszył
+  się o kolejne 19 linii; nowy i pełny action-object test przechodzą, Ruff i
+  diff check zielone. Complexity nadal pokazuje historyczne hotspoty.
 - Trzecia kontynuacja `50wa`: prepare-only validation/apply-block behavior test
   przeniesiono do `tests/actions/test_action_validation_contracts.py`, zgodnie
   z istniejącą domeną walidacji. Mega-test zmniejszył się o kolejne 23 linie;

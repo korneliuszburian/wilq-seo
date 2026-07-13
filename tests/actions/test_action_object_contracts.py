@@ -116,10 +116,7 @@ from wilq.operator_labels import (
 )
 from wilq.opportunities.engine import _risk_label as _opportunity_risk_label
 from wilq.schemas import (
-    ActionMode,
-    ActionObject,
     ActionRisk,
-    ActionStatus,
     AuditEvent,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
@@ -130,7 +127,6 @@ from wilq.schemas import (
     KnowledgeCard,
     KnowledgeDecisionBinding,
     MetricFact,
-    OpportunityDomain,
     connector_refresh_has_live_data,
     connector_refresh_run_status_label,
 )
@@ -2835,30 +2831,6 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
     assert "disapproved_products=3" not in serialized
     assert "active_users=20" not in serialized
     assert "sessions=30" not in serialized
-
-
-def test_action_validation_rejects_unsupported_payload_action_type() -> None:
-    action = ActionObject(
-        id="bad_payload",
-        title="Bad payload",
-        domain=OpportunityDomain.google_ads,
-        connector="google_ads",
-        mode=ActionMode.prepare,
-        risk=ActionRisk.low,
-        status=ActionStatus.needs_validation,
-        evidence_ids=["ev_1"],
-        human_diagnosis="Invalid payload action should fail.",
-        recommended_reason="Unsupported connector action.",
-        payload={"action_type": "not_supported_by_google_ads", "connector": "google_ads"},
-        validation_status="not_validated",
-        created_by="test",
-    )
-
-    from wilq.actions.service import validate_action
-
-    result = validate_action(action)
-    assert not result.valid
-    assert "ten typ działania nie jest wspierany" in " ".join(result.errors)
 
 
 @pytest.mark.parametrize(
