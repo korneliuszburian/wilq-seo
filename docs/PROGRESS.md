@@ -34,6 +34,10 @@ w git, Beads i `docs/progress/archive/`.
   live proof zachowuje `blocked`, 18 ocenionych kampanii i 1 review action,
   z `apply_allowed=false`/write disabled. Ruff, smoke i complexity audit
   przechodzą bez wyjątku.
+- GA4 smoke ma teraz `ga4_assertions.py` i krótszy runtime contract. Live proof:
+  conversion readiness `ready`, 4 decyzje i 1 action; evidence/source trace oraz
+  blokady claimów pomiarowych są zachowane. Ruff, smoke i complexity audit
+  przechodzą bez wyjątku.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

@@ -199,6 +199,9 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - Demand Gen smoke now delegates readiness/read-contract assertions to
   `demand_gen_assertions.py`. Live proof: `blocked`, 18 evaluated campaigns,
   one review action, apply/write disabled; Ruff, smoke and complexity pass.
+- GA4 smoke now delegates route/context/readiness and decision assertions to
+  `ga4_assertions.py`. Live proof: conversion readiness `ready`, four
+  decisions, one action; evidence/source trace and measurement-claim gates pass.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

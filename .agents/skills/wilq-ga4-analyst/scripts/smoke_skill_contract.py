@@ -10,16 +10,16 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from ga4_assertions import validate_ga4_contract
+
 from scripts.skill_smoke_harness import (
     has_polish_metric_source_guardrails,
     request_json,
-    require_evidence_sources,
     require_polish_language,
 )
 
 SKILL_NAME = "wilq-ga4-analyst"
 GA4_CONNECTOR_ID = "google_analytics_4"
-REQUIRED_CONNECTORS = ["google_analytics_4"]
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
     "connector_status",
@@ -30,119 +30,8 @@ REQUIRED_CONTEXT_KEYS = {
 }
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
-    parser.add_argument("--api-base", default="http://127.0.0.1:8000")
-    args = parser.parse_args()
-
-    health = request_json(args.api_base, "GET", "/api/health")
-    if health.get("status") != "ok":
-        raise SystemExit(f"WILQ API health is not ok: {health}")
-
-    pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
-    missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
-    if missing:
-        raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
-
-    ga4_diagnostics = request_json(args.api_base, "GET", "/api/ga4/diagnostics")
-    require_polish_language(ga4_diagnostics, "GA4 diagnostics")
-    section_ids = [section.get("id") for section in ga4_diagnostics.get("sections", [])]
-    required_sections = {
-        "ga4_landing_behavior",
-        "ga4_tracking_readiness",
-        "ga4_action_safety",
-    }
-    missing_sections = sorted(required_sections - set(section_ids))
-    if missing_sections:
-        raise SystemExit(f"GA4 diagnostics missing sections: {', '.join(missing_sections)}")
-    context_ga4 = pack.get("ga4_diagnostics") or {}
-    if context_ga4.get("evidence_ids") != ga4_diagnostics.get("evidence_ids"):
-        raise SystemExit("Context-pack ga4_diagnostics evidence IDs differ from route")
-    if context_ga4.get("action_ids") != ga4_diagnostics.get("action_ids"):
-        raise SystemExit("Context-pack ga4_diagnostics action IDs differ from route")
-    readiness_contract = ga4_diagnostics.get("conversion_readiness_contract") or {}
-    if readiness_contract.get("id") != "ga4_conversion_readiness_contract":
-        raise SystemExit("GA4 diagnostics missing conversion readiness contract")
-    if context_ga4.get("conversion_readiness_contract") != readiness_contract:
-        raise SystemExit("Context-pack GA4 conversion readiness contract differs from route")
-    if readiness_contract.get("status") == "blocked":
-        missing_read_contracts = set(readiness_contract.get("missing_read_contracts", []))
-        if "conversion_or_key_event_mapping" not in missing_read_contracts:
-            raise SystemExit(
-                "Blocked GA4 conversion readiness must expose conversion/key-event mapping gap"
-            )
-        blocked_claims = set(readiness_contract.get("blocked_claims", []))
-        required_blocked_claims = {
-            "współczynnik konwersji",
-            "zwrot z reklam",
-            "przychód",
-            "opłacalność",
-        }
-        missing_claims = sorted(required_blocked_claims - blocked_claims)
-        if missing_claims:
-            raise SystemExit(
-                "Blocked GA4 conversion readiness lacks blocked claims: "
-                + ", ".join(missing_claims)
-            )
-    if _decision_trace(context_ga4.get("decision_queue", [])) != _decision_trace(
-        ga4_diagnostics.get("decision_queue", [])
-    ):
-        raise SystemExit("Context-pack ga4_diagnostics decision trace differs from route")
-
-    action_validations = []
-    for action_id in ga4_diagnostics.get("action_ids", []):
-        quoted_action = urllib.parse.quote(str(action_id), safe="")
-        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
-        action_validations.append(
-            {
-                "action_id": validation.get("action_id"),
-                "valid": validation.get("valid"),
-                "status": validation.get("status"),
-                "errors": validation.get("errors", []),
-            }
-        )
-        if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"GA4 action validation failed: {validation}")
-
-    decision_queue = ga4_diagnostics.get("decision_queue", [])
-    has_live_landing_groups = (
-        ga4_diagnostics.get("live_data_available")
-        and ga4_diagnostics.get("landing_group_count", 0) > 0
-    )
-    if has_live_landing_groups:
-        if not decision_queue:
-            raise SystemExit("Live GA4 diagnostics must expose decision_queue")
-        decision_types = {decision.get("decision_type") for decision in decision_queue}
-        allowed_decision_types = {
-            "fix_measurement",
-            "review_landing_mapping",
-            "review_traffic_quality",
-        }
-        unknown_decision_types = sorted(decision_types - allowed_decision_types)
-        if unknown_decision_types:
-            raise SystemExit(
-                "GA4 diagnostics expose unknown decision types: "
-                + ", ".join(str(item) for item in unknown_decision_types)
-            )
-        if not decision_types & allowed_decision_types:
-            raise SystemExit("GA4 diagnostics decision_queue has no useful decision types")
-        for decision in decision_queue:
-            require_evidence_sources(
-                decision, f"GA4 decision {decision.get('id')}", GA4_CONNECTOR_ID
-            )
-            if not decision.get("next_step"):
-                raise SystemExit(f"GA4 decision lacks next_step: {decision.get('id')}")
-        decision_action_ids = {
-            action_id for decision in decision_queue for action_id in decision.get("action_ids", [])
-        }
-        if (
-            "act_review_ga4_tracking_quality" in ga4_diagnostics.get("action_ids", [])
-            and "act_review_ga4_tracking_quality" not in decision_action_ids
-        ):
-            raise SystemExit("GA4 decision_queue must carry act_review_ga4_tracking_quality")
-
-    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief_items = [
+def compact_items(brief: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
         {
             "id": item.get("id"),
             "title": item.get("title"),
@@ -154,40 +43,100 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
+        if GA4_CONNECTOR_ID in item.get("source_connectors", [])
     ][:8]
 
-    connector_results = []
-    for connector in REQUIRED_CONNECTORS:
-        quoted = urllib.parse.quote(connector, safe="")
-        status = request_json(args.api_base, "GET", f"/api/connectors/{quoted}/status")
-        connector_results.append(
+
+def connector_status(api_base: str) -> list[dict[str, Any]]:
+    quoted = urllib.parse.quote(GA4_CONNECTOR_ID, safe="")
+    status = request_json(api_base, "GET", f"/api/connectors/{quoted}/status")
+    return [
+        {
+            "id": status.get("id"),
+            "status": status.get("status"),
+            "configured": status.get("configured"),
+            "missing_credentials": status.get("missing_credentials", []),
+            "error": status.get("error"),
+        }
+    ]
+
+
+def action_validations(api_base: str, action_ids: list[Any]) -> list[dict[str, Any]]:
+    results = []
+    for action_id in action_ids:
+        quoted = urllib.parse.quote(str(action_id), safe="")
+        validation = request_json(api_base, "POST", f"/api/actions/{quoted}/validate")
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"GA4 action validation failed: {validation}")
+        results.append(
             {
-                "id": status.get("id"),
-                "status": status.get("status"),
-                "configured": status.get("configured"),
-                "missing_credentials": status.get("missing_credentials", []),
-                "error": status.get("error"),
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
             }
         )
+    return results
 
-    instruction = str(pack.get("strict_instruction", ""))
-    if not has_polish_metric_source_guardrails(instruction):
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
+    parser.add_argument("--api-base", default="http://127.0.0.1:8000")
+    args = parser.parse_args()
+    health = request_json(args.api_base, "GET", "/api/health")
+    if health.get("status") != "ok":
+        raise SystemExit(f"WILQ API health is not ok: {health}")
+    pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
+    missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
+    if missing:
+        raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
+    diagnostics = request_json(args.api_base, "GET", "/api/ga4/diagnostics")
+    require_polish_language(diagnostics, "GA4 diagnostics")
+    readiness, decisions, context, section_ids = validate_ga4_contract(pack, diagnostics)
+    brief_items = compact_items(request_json(args.api_base, "GET", "/api/marketing/brief"))
+    if not has_polish_metric_source_guardrails(str(pack.get("strict_instruction", ""))):
         raise SystemExit(
             "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
         )
-
+    validations = action_validations(args.api_base, diagnostics.get("action_ids", []))
     print(
         json.dumps(
             {
                 "skill": SKILL_NAME,
                 "api_base": args.api_base,
                 "health": health.get("status"),
-                "required_connectors": connector_results,
+                "required_connectors": connector_status(args.api_base),
                 "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "action_validations": validations,
+                "ga4_diagnostics": {
+                    "live_data_available": diagnostics.get("live_data_available"),
+                    "landing_group_count": diagnostics.get("landing_group_count"),
+                    "low_engagement_count": diagnostics.get("low_engagement_count"),
+                    "wordpress_match_count": diagnostics.get("wordpress_match_count"),
+                    "blocker_count": diagnostics.get("blocker_count"),
+                    "conversion_readiness_contract": {
+                        "status": readiness.get("status"),
+                        "missing_read_contracts": readiness.get("missing_read_contracts", []),
+                        "conversion_like_metric_count": readiness.get(
+                            "conversion_like_metric_count"
+                        ),
+                    },
+                    "decision_count": len(decisions),
+                    "decision_ids": [item.get("id") for item in decisions if item.get("id")][:20],
+                    "decision_types": sorted(
+                        {
+                            item.get("decision_type")
+                            for item in decisions
+                            if item.get("decision_type")
+                        }
+                    ),
+                    "section_ids": section_ids,
+                    "evidence_ids": diagnostics.get("evidence_ids", [])[:20],
+                    "action_ids": diagnostics.get("action_ids", []),
+                },
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])
@@ -203,87 +152,12 @@ def main() -> int:
                     for item in (pack.get("active_action_objects") or [])
                     if item.get("id")
                 ][:20],
-                "action_validations": action_validations,
-                "ga4_diagnostics": {
-                    "live_data_available": ga4_diagnostics.get("live_data_available"),
-                    "landing_group_count": ga4_diagnostics.get("landing_group_count"),
-                    "low_engagement_count": ga4_diagnostics.get("low_engagement_count"),
-                    "wordpress_match_count": ga4_diagnostics.get("wordpress_match_count"),
-                    "blocker_count": ga4_diagnostics.get("blocker_count"),
-                    "conversion_readiness_contract": {
-                        "status": readiness_contract.get("status"),
-                        "missing_read_contracts": readiness_contract.get(
-                            "missing_read_contracts",
-                            [],
-                        ),
-                        "conversion_like_metric_count": readiness_contract.get(
-                            "conversion_like_metric_count",
-                        ),
-                    },
-                    "decision_count": len(decision_queue),
-                    "decision_ids": [
-                        decision.get("id") for decision in decision_queue if decision.get("id")
-                    ][:20],
-                    "decision_samples": _decision_samples(decision_queue),
-                    "decision_types": sorted(
-                        {
-                            decision.get("decision_type")
-                            for decision in decision_queue
-                            if decision.get("decision_type")
-                        }
-                    ),
-                    "section_ids": section_ids,
-                    "evidence_ids": ga4_diagnostics.get("evidence_ids", [])[:20],
-                    "action_ids": ga4_diagnostics.get("action_ids", []),
-                    "blocked_claims": sorted(
-                        {
-                            claim
-                            for section in ga4_diagnostics.get("sections", [])
-                            for claim in section.get("blocked_claims", [])
-                        }
-                    ),
-                },
             },
             indent=2,
             sort_keys=True,
         )
     )
     return 0
-
-
-def _decision_trace(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {
-            "id": decision.get("id"),
-            "decision_type": decision.get("decision_type"),
-            "source_connectors": decision.get("source_connectors", []),
-            "evidence_ids": decision.get("evidence_ids", []),
-            "action_ids": decision.get("action_ids", []),
-        }
-        for decision in decisions
-    ]
-
-
-def _decision_samples(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {
-            "id": decision.get("id"),
-            "title": decision.get("title"),
-            "decision_type": decision.get("decision_type"),
-            "status": decision.get("status"),
-            "next_step": decision.get("next_step"),
-            "metric_facts": [
-                {
-                    "name": fact.get("name"),
-                    "value": fact.get("value"),
-                    "dimensions": fact.get("dimensions", {}),
-                }
-                for fact in decision.get("metric_facts", [])
-                if fact.get("name") in {"active_users", "sessions", "engagement_rate"}
-            ][:5],
-        }
-        for decision in decisions[:6]
-    ]
 
 
 if __name__ == "__main__":
