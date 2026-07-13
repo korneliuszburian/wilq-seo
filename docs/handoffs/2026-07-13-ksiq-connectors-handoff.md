@@ -963,6 +963,12 @@
   preserving list/direct-lookup parity. Dead `seed_core_prepare_actions` was
   removed only after repo-wide reference search. API restart confirms 21 actions
   and both Service Profile IDs; focused tests, Ruff, mypy and diff check pass.
+- `jnra` continuation 4 2026-07-13: extracted ActionObject validation to
+  `wilq/actions/action_validation.py`, retaining the service facade as the
+  compatibility boundary and injecting review-gate/label dependencies. API
+  health and Service Profile action lookup pass after stack restart; focused
+  validation/knowledge tests, Playwright content-workflow proof, Ruff, mypy
+  and diff check are green. Do not reopen c9h9.4.
 
 ## Następny krok
 

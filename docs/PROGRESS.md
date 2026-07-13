@@ -2542,3 +2542,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Repo-wide reference audit allowed removal of the dead `seed_core_prepare_actions`
   path. Focused content/action-cache tests, Ruff, mypy, complexity, managed API
   restart and action inventory smoke pass; service.py is now 1425 LOC.
+- `jnra` continuation 4 2026-07-13: ActionObject validation moved into
+  `wilq/actions/action_validation.py`; the public service facade injects the
+  existing review-gate and operator-label owners. Evidence/connector/payload
+  checks, persisted validation state and Polish errors remain unchanged.
+  Focused validation/knowledge tests (50 passed), Ruff, mypy, complexity, API
+  smoke and content-workflow Playwright proof pass; service.py is now 1392 LOC.

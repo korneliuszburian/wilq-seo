@@ -24,6 +24,7 @@ from wilq.actions.action_blockers import (
     action_preview_summary as _action_preview_summary,
 )
 from wilq.actions.action_previews import action_preview_cards as build_action_preview_cards
+from wilq.actions.action_validation import validate_action as validate_action_lifecycle
 from wilq.actions.audit_store import (
     action_audit_summary_for_operator as _action_audit_summary_for_operator,
 )
@@ -232,9 +233,6 @@ from wilq.actions.payload_readiness import (
 from wilq.actions.payload_readiness import (
     system_readiness_label as _system_readiness_label,
 )
-from wilq.actions.payloads import (
-    validate_action_payload,
-)
 from wilq.actions.registry_assembly import (
     assemble_action_registry,
     seed_static_actions,
@@ -308,7 +306,6 @@ from wilq.schemas import (
     ActionConfirmResult,
     ActionImpactCheckRequest,
     ActionImpactCheckResult,
-    ActionMode,
     ActionMutationAuditRecord,
     ActionMutationReadinessBlocker,
     ActionMutationReadinessRequirement,
@@ -321,7 +318,6 @@ from wilq.schemas import (
     ActionReviewGate,
     ActionReviewRequest,
     ActionReviewResult,
-    ActionRisk,
     ActionStatus,
     ActionValidationResult,
     AuditEvent,
@@ -894,39 +890,10 @@ def _is_probe_only_fact(fact: MetricFact) -> bool:
 
 
 def validate_action(action: ActionObject) -> ActionValidationResult:
-    errors: list[str] = []
-    warnings: list[str] = []
-    connector = get_connector_status(action.connector)
-    if not action.evidence_ids:
-        errors.append("Akcja wymaga co najmniej jednego dowodu źródłowego.")
-    if connector is None:
-        errors.append(f"Nieznany łącznik danych: {action.connector}")
-    elif action.mode == ActionMode.apply and not connector.configured:
-        errors.append(f"Łącznik danych {action.connector} nie jest skonfigurowany.")
-    errors.extend(validate_action_payload(action.connector, action.payload))
-    if action.risk in {ActionRisk.high, ActionRisk.critical}:
-        warnings.append("Akcje o wysokim i krytycznym ryzyku wymagają osobnego wsparcia produktu.")
-    valid = not errors
-    action.validation_status = "valid" if valid else "invalid"
-    if not valid:
-        action.status = ActionStatus.validation_failed
-    elif action.mode == ActionMode.apply:
-        action.status = ActionStatus.ready_to_apply
-    else:
-        action.status = ActionStatus.ready
-    action.review_gate = _action_review_gate(action)
-    local_state_store().save_action_validation_state(
-        action_id=action.id,
-        status=action.status.value,
-        validation_status=action.validation_status,
-    )
-    return ActionValidationResult(
-        action_id=action.id,
-        valid=valid,
-        status="valid" if valid else "invalid",
-        status_label=_action_result_status_label("valid" if valid else "invalid"),
-        errors=errors,
-        warnings=warnings,
+    return validate_action_lifecycle(
+        action,
+        review_gate=_action_review_gate,
+        status_label=_action_result_status_label,
     )
 
 
