@@ -173,6 +173,11 @@ w git, Beads i `docs/progress/archive/`.
   marketer-facing kolejki, bezpiecznej akcji, lifecycle oraz ukrycia raw IDs i
   registry dumpów. App + Actions focused 18/18, typecheck/lint/diff check
   przechodzą; `App.test.tsx` ma 9152 LOC.
+- Jedenasty slice rozszerzył `ActionsSurface.test.tsx` o pending
+  mutation-readiness: marketer nadal widzi pierwszą akcję, blocker i CTA,
+  zanim API zwróci readiness; po resolve pojawia się `podgląd gotowy`.
+  App + Actions focused 18/18, typecheck/lint/diff check przechodzą;
+  `App.test.tsx` ma 9128 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

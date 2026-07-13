@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -92,13 +92,16 @@ const mockedReadiness = vi.hoisted(() => ({
   first_write_candidate_reason: "Najpierw sprawdź warunki i podgląd.",
   vendor_write_possible_count: 0
 }));
+const mockedReadinessState = vi.hoisted(() => ({
+  current: Promise.resolve(mockedReadiness)
+}));
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
     getActions: vi.fn().mockResolvedValue(mockedActions),
-    getActionsMutationReadiness: vi.fn().mockResolvedValue(mockedReadiness)
+    getActionsMutationReadiness: vi.fn().mockImplementation(() => mockedReadinessState.current)
   };
 });
 
@@ -146,5 +149,36 @@ describe("ActionsSurface", () => {
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Zobacz podgląd" }).length).toBeGreaterThan(0);
+  });
+
+  it("keeps the first action useful while mutation readiness is loading", async () => {
+    let resolveReadiness!: (value: typeof mockedReadiness) => void;
+    mockedReadinessState.current = new Promise((resolve) => {
+      resolveReadiness = resolve;
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    try {
+      render(
+        <QueryClientProvider client={queryClient}>
+          <ActionsSurface />
+        </QueryClientProvider>
+      );
+
+      await waitFor(() =>
+        expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument()
+      );
+      expect(screen.getByText("sprawdzam gotowość")).toBeInTheDocument();
+      expect(screen.getByText("zapis zablokowany do czasu sprawdzenia")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Otwórz akcję" })).toBeInTheDocument();
+      expect(screen.queryByText("podgląd gotowy")).not.toBeInTheDocument();
+
+      resolveReadiness(mockedReadiness);
+      await waitFor(() => expect(screen.getByText("podgląd gotowy")).toBeInTheDocument());
+    } finally {
+      mockedReadinessState.current = Promise.resolve(mockedReadiness);
+    }
   });
 });

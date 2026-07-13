@@ -204,6 +204,12 @@
   akcji, lifecycle oraz ukrycia raw IDs/registry dumpów. App + Actions focused
   18/18, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
   9152 LOC. Następny seam: mutation-readiness loading proof.
+- Jedenasty slice: `ActionsSurface.test.tsx` ma teraz kontrolowany pending
+  mutation-readiness promise; test dowodzi, że pierwsza akcja, blocker i CTA
+  pozostają użyteczne podczas ładowania, a po resolve pojawia się
+  `podgląd gotowy`. App + Actions focused 18/18, dashboard typecheck/lint i
+  diff check przechodzą; `App.test.tsx` ma 9128 LOC. Następny seam: pozostające
+  actions/diagnostic surfaces.
 
 ## Następny krok
 
