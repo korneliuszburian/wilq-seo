@@ -73,6 +73,11 @@ w git, Beads i `docs/progress/archive/`.
   reason, safe next step and typed candidate metrics remain unchanged; the
   route no longer owns this empty/blocked surface layout. Focused route tests,
   Playwright proof, lint/typecheck/build and diff check pass.
+- `wilq-seo-ho41` continuation 12: extracted `ContentQualityReviewPanel.tsx`
+  (33 LOC). Quality safety copy is computed by the existing route helper and
+  passed as typed display input; findings, dimensions and next steps remain
+  unchanged. Focused route tests, Playwright proof, lint/typecheck/build and
+  diff check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

@@ -95,6 +95,9 @@ orchestrates its placement.
 The blocked-candidate state is now `ContentWorkflowBlockedCandidate.tsx`; it
 renders the existing queue freshness, blocker, safe next step and candidate
 metrics without changing their API-owned meaning.
+The quality-review panel is now `ContentQualityReviewPanel.tsx`; the route/API
+still owns quality safety classification, while the component renders the
+typed safety text, findings, dimensions and next step.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
