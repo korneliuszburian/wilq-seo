@@ -588,6 +588,13 @@
   historyczne budżety (plik 6 559 LOC, builder 201 linii), więc `kgvy` nie jest
   zamknięty. Następny slice: kolejny read-contract seam, tylko po sprawdzeniu
   zależności importów i parytetu HTTP.
+- Drugi slice wykonany: dodano `wilq/briefing/ads_search_contracts.py` z
+  orchestration dla search-term read/review i keyword-planner contractów.
+  Granica używa typed callbacków do prywatnych builderów w fasadzie, więc nie
+  ma importu zwrotnego. Główny plik ma 7 068 linii fizycznych / 6 544 niepuste;
+  Ads contract suite (12 punktów), Ruff, mypy i diff check przechodzą.
+  Complexity nadal jawnie raportuje dwa historyczne budżety monolitu. Następny
+  krok: kolejny kontraktowy seam w `kgvy`, po ponownej kontroli parytetu HTTP.
 
 ## Następny krok
 

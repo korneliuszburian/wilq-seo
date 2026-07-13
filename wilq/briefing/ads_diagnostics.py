@@ -104,6 +104,10 @@ from wilq.briefing.ads_negative_keywords import build_negative_keywords_section
 from wilq.briefing.ads_optimizer import build_optimizer_readiness_contract
 from wilq.briefing.ads_primary_contracts import build_primary_read_contracts
 from wilq.briefing.ads_recommendations import build_recommendations_section
+from wilq.briefing.ads_search_contracts import (
+    build_search_term_read_contracts,
+    build_search_term_review_contracts,
+)
 from wilq.briefing.ads_search_terms import (
     build_keyword_match_context_section,
     build_search_term_ngram_section,
@@ -504,29 +508,14 @@ def _build_ads_search_term_read_contracts(
     AdsKeywordMatchContextReadContract,
     AdsKeywordPlannerReadContract,
 ]:
-    search_terms_read_contract = _search_terms_read_contract(
+    return build_search_term_read_contracts(
         trusted_metric_facts,
         latest_refresh,
         currency_code,
-    )
-    search_term_safety_read_contract = _search_term_safety_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-        currency_code,
-    )
-    keyword_match_context_read_contract = _keyword_match_context_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-    )
-    keyword_planner_read_contract = _keyword_planner_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-    )
-    return (
-        search_terms_read_contract,
-        search_term_safety_read_contract,
-        keyword_match_context_read_contract,
-        keyword_planner_read_contract,
+        search_terms=_search_terms_read_contract,
+        search_term_safety=_search_term_safety_read_contract,
+        keyword_match_context=_keyword_match_context_read_contract,
+        keyword_planner=_keyword_planner_read_contract,
     )
 
 
@@ -538,17 +527,13 @@ def _build_ads_search_term_review_contracts(
     AdsSearchTermReviewSummaryContract,
     AdsSearchTermNgramReadContract,
 ]:
-    search_term_review_summary_contract = _search_term_review_summary_contract(
+    return build_search_term_review_contracts(
         search_terms_read_contract,
         latest_refresh,
         currency_code,
+        review_summary=_search_term_review_summary_contract,
+        ngram=_search_term_ngram_read_contract,
     )
-    search_term_ngram_read_contract = _search_term_ngram_read_contract(
-        search_terms_read_contract,
-        latest_refresh,
-        currency_code,
-    )
-    return search_term_review_summary_contract, search_term_ngram_read_contract
 
 
 def _build_ads_candidate_read_contracts(

@@ -2102,3 +2102,12 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   budżetu tego monolitu (plik 6 559 LOC, `build_ads_diagnostics` 201 linii),
   dlatego `kgvy` pozostaje otwarty. Następny slice: przenieść kolejną grupę
   czystych kontraktów read bez importu zwrotnego.
+- Drugi slice `kgvy`: wydzielono `wilq/briefing/ads_search_contracts.py`.
+  Moduł obejmuje read i review kontraktów search-term/keyword planner przez
+  typed callbacki do istniejących builderów; brak nowego endpointu, cyklu
+  importów i zmiany payloadu. `ads_diagnostics.py` ma teraz 7 068 linii
+  fizycznych / 6 544 niepuste. Ads contract suite przechodzi (12 punktów),
+  Ruff, mypy i diff check zielone. Complexity nadal wykazuje dwa świadome
+  budżety monolitu (plik 6 544 LOC, builder 201 linii). Następny slice:
+  kolejny seam kontraktów lub zatrzymanie tylko przy potwierdzonym ryzyku
+  import/parytetu.
