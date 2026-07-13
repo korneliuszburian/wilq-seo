@@ -31,6 +31,11 @@ dotychczasowym payloadem.
 Cleanup usunął `_business_context_metric_tiles_legacy` oraz osierocone
 formatery z fasady. To nie zmienia payloadu; następny proof dotyczy parity/runtime.
 
+Kolejny cleanup usunął również nieużywane legacy target helpers (`_blocked_*`,
+`_preliminary_*`, `_business_target_missing_requirements` i
+`_business_target_interpretation_legacy`). Runtime ma teraz jedną ścieżkę przez
+typed ownera.
+
 ## Dowód
 
 - `tests/test_ads_business_context_contracts.py` potwierdza blocked,
