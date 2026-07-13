@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterable
-from contextlib import suppress
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any, Literal
@@ -21,6 +20,12 @@ from wilq.actions.action_blockers import (
     action_preview_summary as _action_preview_summary,
 )
 from wilq.actions.action_previews import action_preview_cards as build_action_preview_cards
+from wilq.actions.action_state import (
+    with_persisted_review_gates as with_persisted_review_gates_state,
+)
+from wilq.actions.action_state import (
+    with_persisted_validation_state as with_persisted_validation_state_state,
+)
 from wilq.actions.action_validation import validate_action as validate_action_lifecycle
 from wilq.actions.apply_lifecycle import apply_action as apply_action_lifecycle
 from wilq.actions.audit_store import (
@@ -330,7 +335,6 @@ from wilq.schemas import (
     ActionReviewGate,
     ActionReviewRequest,
     ActionReviewResult,
-    ActionStatus,
     ActionValidationResult,
     AuditEvent,
     ConnectorRefreshRun,
@@ -930,32 +934,20 @@ def _mutation_readiness_next_step(
 
 
 def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[ActionObject]:
-    action_list = list(actions)
-    action_ids = {action.id for action in action_list}
-    audit_events_by_action_id = _persisted_audit_events_by_action_id(action_ids)
-    mutation_audits_by_action_id = _persisted_mutation_audits_by_action_id(action_ids)
-    return [
-        _with_review_gate(
-            _with_persisted_validation_state(action),
-            audit_events_by_action_id.get(action.id, []),
-            mutation_audits_by_action_id.get(action.id, []),
-        )
-        for action in action_list
-    ]
+    return with_persisted_review_gates_state(
+        actions,
+        audit_events_by_action=_persisted_audit_events_by_action_id,
+        mutation_audits_by_action=_persisted_mutation_audits_by_action_id,
+        validation_state=_with_persisted_validation_state,
+        review_gate=_with_review_gate,
+    )
 
 
 def _with_persisted_validation_state(action: ActionObject) -> ActionObject:
-    state = local_state_store().get_action_validation_state(action.id)
-    if state is None:
-        return action
-    validation_status = state.get("validation_status")
-    status = state.get("status")
-    if validation_status in {"valid", "invalid", "not_validated"}:
-        action.validation_status = validation_status
-    if isinstance(status, str):
-        with suppress(ValueError):
-            action.status = ActionStatus(status)
-    return action
+    return with_persisted_validation_state_state(
+        action,
+        state_loader=local_state_store().get_action_validation_state,
+    )
 
 
 def _with_review_gate(

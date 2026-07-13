@@ -2667,3 +2667,12 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   no production alias or endpoint was added. Complexity reports zero changed
   Python budget/frozen-growth violations; API health/action inventory,
   fail-closed mutation readiness and content-workflow Playwright remain green.
+- `jnra` continuation 15 2026-07-13: persisted action validation/audit
+  hydration moved into `wilq/actions/action_state.py`; `service.py` keeps the
+  public facade and injects its review-gate callback. Validation statuses,
+  ActionStatus restoration, persisted audit ordering and review-gate output are
+  unchanged. Focused action/validation/content contract tests pass, Ruff,
+  mypy, complexity, API health/action inventory, fail-closed mutation smoke
+  and content-workflow Playwright pass. `service.py` is 1050 LOC; complexity
+  reports only the expected temporary frozen-file warning while the facade
+  shrinks.

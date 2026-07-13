@@ -1072,6 +1072,13 @@
   actual current seam. The stale test failure is resolved without a production
   alias or endpoint; WordPress suite, complexity, API health,
   mutation-readiness and Playwright proof pass. Do not recreate this issue.
+- `jnra` continuation 15 2026-07-13: persisted validation/audit hydration now
+  lives in `wilq/actions/action_state.py`; service remains the public facade
+  and injects the review-gate callback. Validation status restoration, audit
+  ordering and review-gate output are unchanged. Focused action/validation/
+  content tests, Ruff, mypy, complexity, API health/action inventory,
+  fail-closed mutation smoke and Playwright proof pass; service.py is 1050 LOC.
+  Do not repeat this action-state seam or closed WordPress/candidate slices.
 
 ## Następny krok
 
