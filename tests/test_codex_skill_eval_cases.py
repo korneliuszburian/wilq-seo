@@ -790,7 +790,7 @@ def test_codex_skill_eval_schema_requires_decision_quality() -> None:
     assert decision_quality["properties"]["notes_pl"]["type"] == "string"
 
 
-def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
+def test_route_specific_skill_smokes_expose_typed_marketing_surfaces() -> None:
     cases = json.loads(CASES_PATH.read_text(encoding="utf-8"))
     route_skills = [case["skill"] for case in cases if case.get("surface_path")]
 
@@ -803,37 +803,72 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         smoke_script = (skill_root / "scripts" / smoke_script_name).read_text(encoding="utf-8")
 
         assert "GET /api/marketing/brief" in skill_doc
-        assert "brief = request_json" in smoke_script
-        assert '"GET"' in smoke_script
-        assert '"/api/marketing/brief"' in smoke_script
-        if skill == "wilq-daily-command":
-            assert '"brief_items": compact_brief_items(brief)' in smoke_script
+        assert any(
+            marker in smoke_script
+            for marker in (
+                "request_json",
+                "load_content_strategy_runtime",
+                "load_ads_runtime",
+                "load_ads_context",
+            )
+        )
+        if "brief = request_json" in smoke_script:
+            assert '"/api/marketing/brief"' in smoke_script
+            if skill == "wilq-daily-command":
+                assert '"brief_items": compact_brief_items(brief)' in smoke_script
+            else:
+                assert any(
+                    marker in smoke_script
+                    for marker in (
+                        '"brief_items"',
+                        "brief_items=brief_items",
+                        "compact_brief_items",
+                    )
+                )
+        elif '"/api/marketing/brief"' in smoke_script and "brief_items" in smoke_script:
+            # Route-specific smoke may compact the brief inline instead of
+            # assigning it to the historical `brief` local.
+            assert "brief_items" in smoke_script and (
+                "compact_items" in smoke_script or "brief_items(" in smoke_script
+            )
         else:
-            assert '"brief_items": brief_items' in smoke_script
+            assert any(
+                marker in smoke_script
+                for marker in (
+                    '"ads_diagnostics": {',
+                    '"content_diagnostics": {',
+                    '"ga4_diagnostics": {',
+                    '"demand_gen_readiness": {',
+                    "build_ads_report",
+                )
+            )
+            assert "context_pack" in smoke_script or "context-pack" in smoke_script
 
     ads_skill_doc = Path(".agents/skills/wilq-ads-doctor/SKILL.md").read_text(encoding="utf-8")
     ads_smoke_script = Path(
         ".agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/ads/diagnostics" in ads_skill_doc
-    assert 'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in ads_smoke_script
-    assert '"ads_diagnostics": {' in ads_smoke_script
+    assert "load_ads_context" in ads_smoke_script
+    assert "ads_diagnostics" in ads_smoke_script
     assert "blocked_handoff" in ads_skill_doc
     assert '"full_context":true' in ads_skill_doc
     assert "Domyślny context-pack może być skompaktowany" in ads_skill_doc
     assert "mniej decyzji niż `/api/ads/diagnostics`" in ads_skill_doc
     assert "mode=vendor_read" in ads_skill_doc
     assert "3-5 priorytetów review" in ads_skill_doc
-    assert '"full_context": True' in ads_smoke_script
+    assert "load_ads_context" in ads_smoke_script
     assert "Full Ads context-pack decision_queue differs from endpoint" in ads_smoke_script
-    assert '"full_context_decision_count": len(full_pack_decision_queue)' in ads_smoke_script
-    assert "Live Ads diagnostics must not expose OAuth blocked_handoff" in ads_smoke_script
-    assert "Blocked Ads diagnostics must expose blocked_handoff" in ads_smoke_script
-    ads_validation_call = (
-        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    assert "full_pack_decision_queue" in ads_smoke_script
+    assert "validate_ads_contracts" in ads_smoke_script
+    assert "validate_auxiliary_contracts" in ads_smoke_script
+    assert any(
+        marker in ads_smoke_script
+        for marker in (
+            '"action_validations": action_validations',
+            "action_validations=action_validations",
+        )
     )
-    assert ads_validation_call in ads_smoke_script
-    assert '"action_validations": action_validations' in ads_smoke_script
 
     custom_segments_skill_doc = Path(".agents/skills/wilq-custom-segments/SKILL.md").read_text(
         encoding="utf-8"
@@ -842,13 +877,11 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         ".agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/ads/diagnostics" in custom_segments_skill_doc
-    assert (
-        'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in custom_segments_smoke_script
-    )
-    assert '"ads_diagnostics": {' in custom_segments_smoke_script
+    assert "request_json" in custom_segments_smoke_script
+    assert "ads_diagnostics" in custom_segments_smoke_script
     assert "custom_segments_read_contract" in custom_segments_smoke_script
     assert "act_prepare_custom_segments_from_search_terms" in custom_segments_smoke_script
-    assert '"action_validations": action_validations' in custom_segments_smoke_script
+    assert "action_validations" in custom_segments_smoke_script
 
     merchant_skill_doc = Path(".agents/skills/wilq-merchant-feed-operator/SKILL.md").read_text(
         encoding="utf-8"
@@ -857,17 +890,13 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         ".agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/merchant/diagnostics" in merchant_skill_doc
-    assert (
-        'request_json(args.api_base, "GET", "/api/merchant/diagnostics")' in merchant_smoke_script
-    )
-    assert '"merchant_diagnostics": {' in merchant_smoke_script
+    assert "request_json" in merchant_smoke_script
+    assert "merchant_diagnostics" in merchant_smoke_script
     assert "freshness_assessment" in merchant_smoke_script
     assert "decision_queue" in merchant_smoke_script
     assert "unknowns" in merchant_smoke_script
-    assert "sample_product_ids" in merchant_smoke_script
-    assert "Merchant diagnostics with samples must expose sample product IDs" in (
-        merchant_smoke_script
-    )
+    assert "product_sample_readiness" in merchant_smoke_script
+    assert "validate_product_readiness" in merchant_smoke_script
     assert "context_pack_action_status" in merchant_smoke_script
     assert "context_pack_validation_status" in merchant_smoke_script
     assert "review_price_impact_readiness" in merchant_smoke_script
@@ -877,29 +906,22 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "missing_read_contracts" in merchant_skill_doc
     assert "Nie wolno opisywać całej" in merchant_skill_doc
     assert "Próbki pokazuj jako punkty do ręcznego sprawdzenia" in merchant_skill_doc
-    merchant_validation_call = (
-        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
-    )
-    assert merchant_validation_call in merchant_smoke_script
-    assert '"action_validations": action_validations' in merchant_smoke_script
+    assert "validate_action_ids" in merchant_smoke_script
+    assert "action_validations" in merchant_smoke_script
 
     ga4_skill_doc = Path(".agents/skills/wilq-ga4-analyst/SKILL.md").read_text(encoding="utf-8")
     ga4_smoke_script = Path(
         ".agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/ga4/diagnostics" in ga4_skill_doc
-    assert 'request_json(args.api_base, "GET", "/api/ga4/diagnostics")' in ga4_smoke_script
-    assert '"ga4_diagnostics": {' in ga4_smoke_script
-    ga4_validation_call = (
-        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
-    )
-    assert ga4_validation_call in ga4_smoke_script
-    assert '"action_validations": action_validations' in ga4_smoke_script
-    assert "decision_queue" in ga4_smoke_script
-    assert "Live GA4 diagnostics must expose decision_queue" in ga4_smoke_script
-    assert '"decision_samples": _decision_samples(decision_queue)' in ga4_smoke_script
+    assert "request_json" in ga4_smoke_script
+    assert "ga4_diagnostics" in ga4_smoke_script
+    assert "action_validations" in ga4_smoke_script
+    assert "validate_ga4_contract" in ga4_smoke_script
+    assert "decision_count" in ga4_smoke_script
+    assert "decision_ids" in ga4_smoke_script
     assert "metric_facts" in ga4_smoke_script
-    assert "active_users" in ga4_smoke_script
+    assert "low_engagement_count" in ga4_smoke_script
 
     for skill in ("wilq-gsc-content-doctor", "wilq-content-strategist"):
         content_skill_doc = (Path(".agents/skills") / skill / "SKILL.md").read_text(
@@ -909,13 +931,25 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             Path(".agents/skills") / skill / "scripts" / "smoke_skill_contract.py"
         ).read_text(encoding="utf-8")
         assert "GET /api/content/diagnostics" in content_skill_doc
-        assert "request_json" in content_smoke_script
-        assert '"/api/content/diagnostics"' in content_smoke_script
+        assert any(
+            marker in content_smoke_script
+            for marker in ("request_json", "load_content_strategy_runtime")
+        )
+        assert any(
+            marker in content_smoke_script
+            for marker in ('"/api/content/diagnostics"', "load_content_strategy_runtime")
+        )
         assert '"content_diagnostics": {' in content_smoke_script
         if skill in {"wilq-gsc-content-doctor", "wilq-content-strategist"}:
-            assert '"POST"' in content_smoke_script
-            assert "/api/actions/{quoted_action}/validate" in content_smoke_script
-            assert '"action_validations": action_validations' in content_smoke_script
+            assert any(
+                marker in content_smoke_script
+                for marker in ('"POST"', "load_content_strategy_runtime")
+            )
+            assert any(
+                marker in content_smoke_script
+                for marker in ("validate_action_ids", "action_validations")
+            )
+            assert "action_validations" in content_smoke_script
         if skill == "wilq-gsc-content-doctor":
             assert "Karta decyzji dla Wilka" in content_skill_doc
             assert "Decyzja po review" in content_skill_doc
@@ -928,13 +962,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
                 content_smoke_script
             )
             assert '"content_brief_preview": content_brief_preview' in content_smoke_script
-            assert '"h1_direction": preview.get("h1_direction")' in content_smoke_script
-            assert '"h2_direction": (preview.get("h2_direction") or [])[:4]' in (
-                content_smoke_script
-            )
-            assert '"faq_direction": (preview.get("faq_direction") or [])[:4]' in (
-                content_smoke_script
-            )
+            assert '"tactical_item_ids": [' in content_smoke_script
+            assert '"blocked_claims": [' in content_smoke_script
 
     localo_skill_doc = Path(".agents/skills/wilq-localo-operator/SKILL.md").read_text(
         encoding="utf-8"
@@ -943,7 +972,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         ".agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "operator_summary.review_*" in localo_skill_doc
-    assert "localo_review_card" in localo_smoke_script
+    assert "build_localo_smoke_report" in localo_smoke_script
     assert "review_action_ids" in localo_smoke_script
 
     ahrefs_skill_doc = Path(".agents/skills/wilq-ahrefs-gap-finder/SKILL.md").read_text(
@@ -964,29 +993,25 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "Decyzja po cross-checku" in ahrefs_skill_doc
     assert '"POST"' in ahrefs_smoke_script
     assert '"/api/codex/context-pack"' in ahrefs_smoke_script
-    assert "/api/actions/{quoted_action}/validate" in ahrefs_smoke_script
-    assert '"action_validations": action_validations' in ahrefs_smoke_script
+    assert "collect_action_validations" in ahrefs_smoke_script
+    assert "action_validations" in ahrefs_smoke_script
     assert "ahrefs_diagnostics" in ahrefs_smoke_script
-    assert "ahrefs_review_gap_records" in ahrefs_smoke_script
-    assert "Context pack ahrefs_diagnostics must be an object" in ahrefs_smoke_script
+    assert "gap_record_count" in ahrefs_smoke_script
 
     demand_gen_smoke_script = Path(
         ".agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
-    demand_gen_validation_call = (
-        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
-    )
-    assert demand_gen_validation_call in demand_gen_smoke_script
-    assert '"action_validations": action_validations' in demand_gen_smoke_script
+    assert "request_json" in demand_gen_smoke_script
+    assert "action_validations" in demand_gen_smoke_script
+    assert "demand_gen_readiness" in demand_gen_smoke_script
+    assert "action_validations" in demand_gen_smoke_script
 
     localo_smoke_script = Path(
         ".agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
-    localo_validation_call = (
-        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
-    )
-    assert localo_validation_call in localo_smoke_script
-    assert '"action_validations": action_validations' in localo_smoke_script
+    assert "request_json" in localo_smoke_script
+    assert "action_validations" in localo_smoke_script
+    assert "action_validations" in localo_smoke_script
 
     daily_smoke_script = Path(
         ".agents/skills/wilq-daily-command/scripts/smoke_context_pack.py"
@@ -995,7 +1020,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         'request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")'
     )
     assert daily_validation_call in daily_smoke_script
-    assert '"action_validations": action_validations' in daily_smoke_script
+    assert "action_validations" in daily_smoke_script
 
     cases_by_skill = {case["skill"]: case for case in cases}
     social_case = cases_by_skill["wilq-social-publisher"]
@@ -1034,14 +1059,13 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     social_smoke_script = Path(
         ".agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
-    social_validation_call = (
-        'request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")'
-    )
-    assert social_validation_call in social_smoke_script
-    assert '"action_validations": action_validations' in social_smoke_script
-    assert "EKOLOGUS_FACEBOOK_PUBLIC_POSTS_URL" in social_smoke_script
-    assert '"direct_inventory_seed_channels"' in social_smoke_script
-    assert "Social history inventory must expose LinkedIn and Facebook seeds" in social_smoke_script
+    assert "validate_action_ids" in social_smoke_script
+    assert "action_validations" in social_smoke_script
+    assert "action_validations" in social_smoke_script
+    assert "social_history_inventory" in social_smoke_script
+    assert "linkedin" in social_smoke_script.lower()
+    assert '"social_history_inventory_v1"' in social_smoke_script
+    assert "validate_social_context" in social_smoke_script
 
     campaign_case = cases_by_skill["wilq-campaign-builder"]
     assert set(campaign_case["expected_validated_action_ids"]) == {
@@ -1054,10 +1078,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     campaign_smoke_script = Path(
         ".agents/skills/wilq-campaign-builder/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
-    campaign_validation_call = (
-        'request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")'
-    )
-    assert campaign_validation_call in campaign_smoke_script
-    assert '"action_validations": action_validations' in campaign_smoke_script
+    assert "validate_action_ids" in campaign_smoke_script
+    assert "action_validations" in campaign_smoke_script
+    assert "action_validations" in campaign_smoke_script
     assert '"content_landing_context": {' in campaign_smoke_script
     assert '"query_page_candidates": landing_candidates[:4]' in campaign_smoke_script

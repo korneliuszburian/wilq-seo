@@ -7,8 +7,7 @@ w git, Beads i `docs/progress/archive/`.
 
 - `c9h9.4` jest już zamknięty w aktualnym grafie: route-level ActionObject
   apply dla dev-only WordPress draft ma typed capability, exact ID/actor bind,
-  audit i adapter proof. Nie powtarzam tego slice'a. Następny gotowy zakres to
-  `v9ab.8.3`.
+  audit i adapter proof. Nie powtarzam tego slice'a.
 - `v9ab.8.3` slice 2026-07-13: dodano API-owned kontrakty
   `MetricSampleEvidence` i `SourceComparisonEvidence`, fail-closed guards
   `low_volume`/`source_conflict` oraz typed wiring opcjonalnych kontraktów z
@@ -25,6 +24,12 @@ w git, Beads i `docs/progress/archive/`.
   coverage, focused contract tests i shell syntax przechodzą. Próba z bieżącym
   Codex runtime nadal nie dała świeżego `result.json` (context/turn runtime),
   więc nie liczę jej jako passing eval.
+- `v9ab.14` slice 2026-07-13: test route skill smoke został przestawiony z
+  kruchych literalnych nazw lokalnych i bezpośrednich wywołań na aktualne
+  typed projekcje diagnostyk/context-packów oraz zachowanie evidence/action.
+  Focused pytest, Ruff, strict coverage i `git diff --check` przechodzą; Bead
+  zamknięty. Następny aktywny zakres pozostaje `v9ab.10`, zablokowany wyłącznie
+  przez brak świeżego `result.json` w bieżącym runtime Codex.
 - Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
   najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
