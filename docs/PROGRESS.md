@@ -10,6 +10,12 @@ w git, Beads i `docs/progress/archive/`.
   zależności `MetricFact` zachowane. Shared schema lint/build/test oraz
   dashboard typecheck/lint przechodzą; następny seam pozostaje custom-segment
   contracts.
+- Dziewiąty seam: custom-segment preview/safety/forecast/candidate/read
+  contracts są w `ads_custom_segments.ts` (177 LOC), a zależny Keyword Planner
+  read contract w `ads_keyword_planner_contracts.ts` (34 LOC); `index.ts` ma
+  2 548 LOC. Payloady i eksporty zachowane; shared schema/dashboard lint,
+  build, tests i typecheck przechodzą. Następny seam: negative-keyword
+  contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

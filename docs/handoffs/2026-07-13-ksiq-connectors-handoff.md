@@ -48,6 +48,12 @@
   keyword-match context row/read contract (40 LOC); `index.ts` ma 2 735 LOC.
   Eksporty i zależność `MetricFact` zachowane. Shared schema/dashboard lint,
   build, tests i typecheck przechodzą. Następny seam: custom-segment contracts.
+- Dziewiąty seam: custom-segment preview/safety/forecast/candidate/read
+  contracts są w `packages/shared-schemas/src/ads_custom_segments.ts` (177 LOC),
+  a zależny Keyword Planner read contract w
+  `packages/shared-schemas/src/ads_keyword_planner_contracts.ts` (34 LOC);
+  `index.ts` ma 2 548 LOC. Payloady/eksporty zachowane, wszystkie focused gates
+  przechodzą. Następny seam: negative-keyword contracts.
 
 ## Następny krok
 
