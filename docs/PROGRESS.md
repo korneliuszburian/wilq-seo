@@ -2003,3 +2003,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   review-only action lineage. Focused Ads/Ruff/mypy/diff check zielone; główny
   test ma 1363 linii i 12 branchy. Następny seam: action payload validation i
   końcowy tail.
+- Czterdziesty trzeci pod-slice c9h9.22: change-history ActionObject payload
+  validation wydzielona do `assert_ads_change_history_action_payload`;
+  preview contract, missing performance window i wszystkie fail-closed flags
+  są zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1347
+  linii i 12 branchy. Następny seam: n-gram action payload i decyzje search.

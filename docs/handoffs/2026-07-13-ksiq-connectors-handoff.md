@@ -487,6 +487,11 @@
   lineage są zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test
   ma 1363 linii i 12 branchy. Następny krok: action payload validation i
   końcowy tail.
+- Czterdziesty trzeci pod-slice zakończony: change-history ActionObject payload
+  validation jest w `assert_ads_change_history_action_payload`; preview
+  contract, brak performance window i fail-closed flags są zachowane.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1347 linii i 12
+  branchy. Następny krok: n-gram action payload i decyzje search.
 
 ## Następny krok
 

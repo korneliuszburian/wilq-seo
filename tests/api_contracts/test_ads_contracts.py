@@ -1861,6 +1861,18 @@ def assert_ads_impression_share_and_change_history_decisions(
     assert "wpływ zmian" in change_history["blocked_claims"]
 
 
+def assert_ads_change_history_action_payload(action: dict[str, Any]) -> None:
+    """Prove change-history ActionObject preview cannot mutate Ads."""
+    payload = action["payload"]
+    assert payload["action_type"] == "google_ads_change_history_impact_review"
+    assert payload["preview_contract"] == "change_history_impact_review_v1"
+    assert payload["change_history_preview"][0]["change_event_id"] == "change-1"
+    assert payload["apply_allowed"] is False
+    assert payload["destructive"] is False
+    assert payload["api_mutation_ready"] is False
+    assert "pre_change_performance_window" in payload["missing_read_contracts"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4266,23 +4278,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     actions = {action["id"]: action for action in actions_response.json()}
     assert CHANGE_HISTORY_IMPACT_ACTION_ID in actions
     change_history_action = actions[CHANGE_HISTORY_IMPACT_ACTION_ID]
-    assert change_history_action["payload"]["action_type"] == (
-        "google_ads_change_history_impact_review"
-    )
-    assert change_history_action["payload"]["preview_contract"] == (
-        "change_history_impact_review_v1"
-    )
-    assert (
-        change_history_action["payload"]["change_history_preview"][0]["change_event_id"]
-        == "change-1"
-    )
-    assert change_history_action["payload"]["apply_allowed"] is False
-    assert change_history_action["payload"]["destructive"] is False
-    assert change_history_action["payload"]["api_mutation_ready"] is False
-    assert (
-        "pre_change_performance_window"
-        in change_history_action["payload"]["missing_read_contracts"]
-    )
+    assert_ads_change_history_action_payload(change_history_action)
     validate_response = client.post(f"/api/actions/{CHANGE_HISTORY_IMPACT_ACTION_ID}/validate")
     assert validate_response.status_code == 200
     assert validate_response.json()["valid"] is True
