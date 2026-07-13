@@ -107,6 +107,12 @@
   sources, cards, playbooks, compiler result, bindings i operating map
   (166 LOC); `index.ts` ma 961 LOC. Lifecycle/source lineage jawne, focused
   gates przechodzą. Następny seam: Command Center contracts.
+- Dwudziesty pierwszy seam: `packages/shared-schemas/src/core_contracts.ts`
+  zawiera `DecisionState` i `Opportunity` (45 LOC), a
+  `packages/shared-schemas/src/command_center.ts` zawiera brief/demo/action
+  plan, DailyDecision, WorkOrder, DailyCheck i Command Center response
+  (222 LOC); `index.ts` ma 719 LOC. Dowody, freshness, next step i blokady bez
+  zmian, focused gates przechodzą. Następny seam: Workflow contracts.
 
 ## Następny krok
 

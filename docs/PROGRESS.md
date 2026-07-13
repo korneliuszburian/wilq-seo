@@ -74,6 +74,12 @@ w git, Beads i `docs/progress/archive/`.
   961 LOC. Lifecycle i source lineage pozostają jawne. Shared schema/dashboard
   lint, build, tests i typecheck przechodzą. Następny seam: Command Center
   contracts.
+- Dwudziesty pierwszy seam: `core_contracts.ts` zawiera `DecisionState` i
+  `Opportunity` (45 LOC), a `command_center.ts` zawiera brief/demo/action plan,
+  DailyDecision, WorkOrder, DailyCheck i Command Center response (222 LOC);
+  `index.ts` ma 719 LOC. Dowody, freshness, bezpieczny next step i blokady
+  pozostają w kontrakcie. Shared schema/dashboard lint, build, tests i
+  typecheck przechodzą. Następny seam: Workflow contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
