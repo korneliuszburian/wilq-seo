@@ -775,6 +775,11 @@
   posiada już tej powtarzalnej prymitywy prezentacyjnej; etykiety/liczniki
   pozostają w istniejących call sites. Focused route tests, Playwright proof,
   lint/typecheck/build i diff check przechodzą.
+- `ho41` continuation 6 2026-07-13: powtarzalny layout safety card przeniesiony
+  do `apps/dashboard/src/routes/ContentSafetyPanel.tsx` (22 LOC). Copy safety
+  i blocked-claim meaning pozostają w istniejących panelach/API; nowy boundary
+  ma wyłącznie layout. Focused route tests, Playwright proof, lint/typecheck/
+  build i diff check przechodzą.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

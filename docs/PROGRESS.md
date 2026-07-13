@@ -43,6 +43,11 @@ w git, Beads i `docs/progress/archive/`.
   repeated presentation primitive. All existing labels/counts remain typed at
   their call sites; no API or decision semantics changed. Focused route tests,
   Playwright layout proof, lint/typecheck/build and diff check pass.
+- `wilq-seo-ho41` continuation 6: moved the repeated safety card primitive into
+  `ContentSafetyPanel.tsx` (22 LOC). Safety copy remains supplied by the
+  existing workflow panels; the new boundary owns layout only and does not
+  alter blocked claims or ActionObject behavior. Focused route tests,
+  Playwright proof, lint/typecheck/build and diff check pass.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

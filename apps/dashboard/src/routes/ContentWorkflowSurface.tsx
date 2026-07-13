@@ -2,13 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   Clock3,
-  Code2,
   ExternalLink,
   FileText,
   ShieldCheck,
   Stamp
 } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
@@ -57,13 +56,14 @@ import {
 } from "./ContentWorkflowBoundaryStates";
 import { WordPressDraftReadbackStatus, WordPressDraftExecutionStatus, wordpressDraftExecutionStatusText } from "./WordPressDraftStatus";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
-import { ContentMapColumn, ContentMapConnectors, ContentSectionRow } from "./ContentMapPrimitives";
+import { ContentMapConnectors } from "./ContentMapPrimitives";
 import { ContentWorkflowHeader } from "./ContentWorkflowHeader";
 import { ContentPageIdentityCard } from "./ContentPageIdentityCard";
 import { ContentSignalColumn } from "./ContentSignalColumn";
 import { ContentDevTargetColumn } from "./ContentDevTargetColumn";
 import { ContentPublicPageColumn } from "./ContentPublicPageColumn";
 import { ContentWorkflowFactTile as FactTile } from "./ContentWorkflowFactTile";
+import { ContentSafetyPanel as SafetyPanel } from "./ContentSafetyPanel";
 import {
   activeWorkflowStepIndex,
   blockedWorkflowSteps,
@@ -2834,20 +2834,6 @@ function StructuredDraftPreviewPanel({
               ) : null}
             </div>
           ) : null}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SafetyPanel({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
-  return (
-    <section className="rounded-md border border-line bg-white p-4">
-      <div className="flex items-start gap-3">
-        <div className="rounded-md border border-line bg-surface p-2 text-action">{icon}</div>
-        <div>
-          <h2 className="text-sm font-semibold text-ink">{title}</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
         </div>
       </div>
     </section>
