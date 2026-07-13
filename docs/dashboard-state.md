@@ -133,6 +133,9 @@ retains workflow semantics.
 The decision panel's claim summary is now `ContentWorkflowClaimSummary.tsx`; it
 renders typed claim counts and review/brief/WordPress links while claim-gate
 semantics remain API/model-owned.
+The decision workflow composition is now `ContentWorkflowDecisionPanel.tsx`;
+it assembles typed child panels while candidate/step/claim semantics remain
+owned by the API-facing model layer.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

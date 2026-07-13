@@ -141,6 +141,12 @@ w git, Beads i `docs/progress/archive/`.
   review/brief/WordPress links remain typed display inputs; claim-gate semantics
   stay API/model-owned. Focused route tests (19), lint, typecheck, build and
   diff check pass. E2E still fails at the existing heading locator.
+- `wilq-seo-ho41` continuation 25: moved the remaining decision-panel
+  composition into `ContentWorkflowDecisionPanel.tsx`. It computes the same
+  API/model-owned candidate, step and claim summaries, then composes typed
+  child panels; no business rule or endpoint moved into React. Focused route
+  tests (19), lint, typecheck, build and diff check pass. E2E still fails at the
+  existing heading locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i
