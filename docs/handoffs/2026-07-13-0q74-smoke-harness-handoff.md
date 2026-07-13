@@ -85,6 +85,10 @@
 - Change-history read contract jest w
   `scripts/ads_change_history_assertions.py`; live smoke przechodzi, a
   `main` ma 794 LOC/196 branches. Następny seam: change-impact readiness.
+- Change-impact readiness jest w
+  `scripts/ads_change_impact_assertions.py`; live smoke przechodzi, a
+  `main` ma 770 LOC/180 branches. Blokady pre/post performance window,
+  human review i `apply_allowed=false` są nadal jawne.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

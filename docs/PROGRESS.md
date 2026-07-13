@@ -110,6 +110,10 @@ w git, Beads i `docs/progress/archive/`.
 - Ads change-history read contract jest teraz w
   `scripts/ads_change_history_assertions.py`. Live smoke kończy się `exit 0`;
   `main` spadł do 794 LOC/196 branches, helper ma 25 LOC/12 branches.
+- Ads change-impact readiness jest teraz w
+  `scripts/ads_change_impact_assertions.py`. Live smoke kończy się `exit 0`;
+  `main` ma 770 LOC/180 branches, helper 29 LOC/16 branches; blokady okien
+  pre/post i human review pozostają aktywne.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
