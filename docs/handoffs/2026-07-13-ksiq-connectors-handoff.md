@@ -684,6 +684,10 @@
   teraz w `tests/api_contracts/test_merchant_contracts.py`. Test docelowy oraz
   pełny action-object suite przechodzą; import został dopasowany do aktualnego
   `build_merchant_diagnostics` API po pierwszym kontrolowanym błędzie kolekcji.
+- Dziewiąta kontynuacja `50wa`: Google Ads OAuth repair/redaction contract jest
+  teraz w `tests/actions/test_action_evidence_contracts.py`. Nowy i pełny
+  action-object suite przechodzą; następny slice może kontynuować pozostałe
+  Ads/action behavior tests, bez wracania do tego kontraktu.
 
 ## Następny krok
 

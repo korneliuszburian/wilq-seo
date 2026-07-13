@@ -2223,3 +2223,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Ruff oraz diff check pozostają zielone. Pierwsza próba ujawniła brak importu
   `build_merchant_diagnostics` w docelowym pliku; został uzupełniony zgodnie z
   aktualnym API, bez zmiany produktu.
+- Dziewiąta kontynuacja `50wa`: Google Ads OAuth repair redaction contract
+  przeniesiono do `tests/actions/test_action_evidence_contracts.py`, obok
+  istniejących kontraktów audytu i blokowania apply. Nowy plik oraz pełny
+  action-object test przechodzą; usunięto osierocony import z mega-testu.

@@ -9,7 +9,6 @@ from typing import Any
 
 import pytest
 
-import wilq.actions.service as action_service
 from apps.api.wilq_api.context_compaction import (
     compact_audit_event_for_daily_context,
     compact_audit_event_for_skill_context,
@@ -1738,37 +1737,6 @@ def test_action_detail_hides_legacy_apply_audit_summary(
     assert "Explicit apply confirmation is required" not in serialized
     assert "Action must be validated before apply" not in serialized
     assert "Action mode must be apply before external execution" not in serialized
-
-
-def test_google_ads_oauth_repair_action_is_explicit_and_redacted(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(action_service, "_google_ads_live_data_available", lambda: False)
-    actions_response = client.get("/api/actions")
-    assert actions_response.status_code == 200
-    assert "act_configure_google_ads_env" in {
-        action["id"] for action in actions_response.json()
-    }
-    response = client.get("/api/actions/act_configure_google_ads_env")
-    assert response.status_code == 200
-    action = response.json()
-    serialized = json.dumps(action)
-
-    assert action["title"] == "Odnow dostęp Google Ads"
-    assert action["payload"]["action_type"] == "repair_google_ads_oauth"
-    assert action["payload"]["oauth_scope"] == "https://www.googleapis.com/auth/adwords"
-    assert "token odświeżania" in action["human_diagnosis"]
-    assert "oauth_error=invalid_grant" not in action["human_diagnosis"]
-    assert "credentials" not in action["human_diagnosis"]
-    assert "refresh token" not in action["human_diagnosis"]
-    assert "$WILQ_GOOGLE_ADS_CLIENT_SECRET_FILE" in action["payload"]["oauth_client_json_path"]
-    assert "GOOGLE_ADS_REFRESH_TOKEN" in action["payload"]["required_env"]
-    assert "/home/" not in serialized
-    assert "marketing@rekurencja.com" not in serialized
-    assert "client_secret_504856024095" not in serialized
-    assert "ya29." not in serialized
-    assert "refresh-token" not in serialized.lower()
-    assert "client-secret-test" not in serialized
 
 
 def test_google_ads_business_context_action_is_review_only(
