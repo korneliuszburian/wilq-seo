@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ConnectorRefreshRun } from "../lib/api";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
-import { ConnectorRefreshRunList } from "./RegistryPanels";
 
 const connectors = [
   {
@@ -8508,30 +8507,6 @@ describe("WILQ dashboard", () => {
 
     resolveReadiness(Response.json(actionMutationReadinessSummary));
     await waitFor(() => expect(screen.getByText("podgląd gotowy")).toBeInTheDocument());
-  });
-
-  it("connector refresh run cards summarize evidence instead of printing raw IDs", () => {
-    render(
-      <ConnectorRefreshRunList
-        runs={[
-          {
-            ...connectorRefreshRuns[0],
-            metric_summary: {
-              clicks: 12,
-              impressions: 120,
-              api: "google_ads_probe"
-            }
-          }
-        ]}
-      />
-    );
-
-    expect(screen.getByText("Dowody: 2 dowody źródłowe")).toBeInTheDocument();
-    expect(screen.getByText("Metryki: 3 wartości")).toBeInTheDocument();
-    expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
-    expect(screen.queryByText("ev_refresh_refresh_google_ads_test")).not.toBeInTheDocument();
-    expect(screen.queryByText("vendor_read")).not.toBeInTheDocument();
-    expect(screen.queryByText(/"clicks"/)).not.toBeInTheDocument();
   });
 
   it("ads doctor route renders live metric-backed diagnostics", () => {

@@ -27,6 +27,10 @@ w git, Beads i `docs/progress/archive/`.
   marketer review card była już API-owned; poprawiono wyłącznie GSC smoke, aby
   wiązał action IDs z wybraną decyzją, nie z globalną listą akcji. Handoff:
   `docs/handoffs/2026-07-13-0q74-smoke-harness-handoff.md`.
+- `wilq-seo-pidl` pierwszy test seam: `ConnectorRefreshRunList` evidence/redaction
+  behavior został przeniesiony z `App.test.tsx` do
+  `ConnectorRefreshRunList.test.tsx`. App omnibus zmniejszył się o jeden
+  niezależny route/component contract; 32 testy obejmujące oba pliki przechodzą.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
