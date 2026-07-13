@@ -16,7 +16,15 @@ w git, Beads i `docs/progress/archive/`.
   Brak kontraktu nadal nie wpływa na decyzję, która nie deklaruje takiego
   wymagania; nie dodano heurystyki, endpointu ani UI. Focused 27 tests, Ruff,
   mypy, complexity, API smoke i Playwright `/content-workflow` 1/1 przechodzą.
-  Bead pozostaje otwarty do powiązania tych pól z właściwymi expert rules.
+  Bead `wilq-seo-v9ab.8.3` zamknięty po tym proofie; bieżące expert rules nie
+  wymagają tych opcjonalnych kontraktów, więc istniejące decyzje nie są sztucznie
+  blokowane.
+- `v9ab.10` continuation: harness ma pure-output instruction (bez dodatkowych
+  komend/API/lektury repo) oraz opcjonalny izolowany runtime
+  `CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG=1` / `CODEX_SKILL_EVAL_PROFILE`. Strict
+  coverage, focused contract tests i shell syntax przechodzą. Próba z bieżącym
+  Codex runtime nadal nie dała świeżego `result.json` (context/turn runtime),
+  więc nie liczę jej jako passing eval.
 - Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
   najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.

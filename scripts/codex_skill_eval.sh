@@ -11,6 +11,8 @@ out_root="${CODEX_SKILL_EVAL_OUT:-.local-lab/evals/codex-skill/$(date -u +%Y%m%d
 timeout_s="${CODEX_SKILL_EVAL_TIMEOUT:-300}"
 network_access="${CODEX_SKILL_EVAL_NETWORK_ACCESS:-true}"
 ignore_user_config="${CODEX_SKILL_EVAL_IGNORE_USER_CONFIG:-0}"
+clear_skill_config="${CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG:-0}"
+profile="${CODEX_SKILL_EVAL_PROFILE:-}"
 
 usage() {
   cat <<'EOF'
@@ -27,6 +29,9 @@ Environment:
                                   true to allow localhost/API access in workspace-write, default true.
   CODEX_SKILL_EVAL_IGNORE_USER_CONFIG
                                   1 to pass --ignore-user-config, default 0.
+  CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG
+                                  1 to pass skills.config=[] for isolated eval runtime.
+  CODEX_SKILL_EVAL_PROFILE       Optional Codex config profile (for example openai).
   CODEX_SKILL_EVAL_OUT          Output directory, default .local-lab/evals/codex-skill/<utc>.
 EOF
 }
@@ -430,11 +435,12 @@ Oczekiwane connector surfaces: {connectors}
   `operator_usefulness_score` najwyżej 3 i jasno opisz problem w `notes` albo
   `blocked_reason`.
 - Smoke script został już wykonany deterministycznie przez harness przed tym
-  promptem. Nie uruchamiaj go ponownie. Możesz przeczytać SKILL.md albo
-  output-contract, jeśli potrzebujesz kontraktu językowego, ale finalny JSON ma
-  korzystać z danych w `<smoke_output>`.
-- Nie używaj raw `curl`, `jq` ani dodatkowych requestów, jeżeli `<smoke_output>`
-  zawiera potrzebne dane.
+  promptem. Nie uruchamiaj go ponownie.
+- Ten eval jest pure-output: nie uruchamiaj shell/tool/API, nie czytaj plików
+  repozytorium ani SKILL.md/output-contract. Wszystkie dane i wymagania potrzebne
+  do odpowiedzi są w tym promptcie, `<daily_check_result>` i `<smoke_output>`.
+- Nie używaj raw `curl`, `jq` ani dodatkowych requestów. Zwróć finalny JSON od
+  razu po interpretacji dostarczonych danych.
 </rules>
 
 <smoke_command>
@@ -499,6 +505,12 @@ PY
   fi
   if [ "$ignore_user_config" = "1" ]; then
     codex_args+=(--ignore-user-config)
+  fi
+  if [ "$clear_skill_config" = "1" ]; then
+    codex_args+=(-c 'skills.config=[]')
+  fi
+  if [ -n "$profile" ]; then
+    codex_args+=(--profile "$profile")
   fi
 
   echo "Running Codex skill eval: $skill"

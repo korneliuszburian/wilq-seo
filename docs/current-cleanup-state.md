@@ -56,10 +56,12 @@ reads the API-owned `/api/marketing/daily-check` for daily-command, content,
 GA4 and Ads skill runs, compacts status/freshness/evidence/source/rule IDs and
 typed blockers, and `codex_skill_eval.sh` injects that contract into the eval
 prompt and requires a `daily_check` object in the result. Deterministic helper
-test, strict coverage, skill hygiene and live checks pass. The first fresh
-Codex run reached the harness but returned only a skills-context-budget error
-and no `result.json`; this is an external eval-runtime blocker, not a passing
-skill proof.
+test, strict coverage, skill hygiene and live checks pass. The harness now
+forbids extra shell/API/file reads during the pure-output turn and exposes
+optional isolated runtime flags `CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG=1` and
+`CODEX_SKILL_EVAL_PROFILE`. Fresh runs still do not consistently produce
+`result.json` (context/turn runtime), so this remains an external blocker, not
+a passing skill proof.
 
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,
