@@ -58,6 +58,11 @@ w git, Beads i `docs/progress/archive/`.
   pozostaje w istniejących polach kontraktu. Shared schema/dashboard lint,
   build, tests i typecheck przechodzą. Następny seam: Localo diagnostic
   contracts.
+- Osiemnasty seam: `localo_diagnostics.ts` zawiera access probe, diagnostic
+  sections, read-contract status, decision queue, operator summary i response
+  (145 LOC); `index.ts` ma 1 308 LOC. Blokady braku rankingów i dowodów
+  Localo pozostają bez zmian. Shared schema/dashboard lint, build, tests i
+  typecheck przechodzą. Następny seam: Ahrefs diagnostic contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

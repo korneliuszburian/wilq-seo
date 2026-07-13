@@ -91,6 +91,11 @@
   operator summary i response (152 LOC); `index.ts` ma 1 440 LOC. Rozdział
   jakości ruchu od braków pomiaru bez zmian, focused gates przechodzą. Następny
   seam: Localo diagnostic contracts.
+- Osiemnasty seam: `packages/shared-schemas/src/localo_diagnostics.ts` zawiera
+  access probe, diagnostic sections, read-contract status, decision queue,
+  operator summary i response (145 LOC); `index.ts` ma 1 308 LOC. Blokady
+  braku rankingów/dowodów Localo bez zmian, focused gates przechodzą. Następny
+  seam: Ahrefs diagnostic contracts.
 
 ## Następny krok
 
