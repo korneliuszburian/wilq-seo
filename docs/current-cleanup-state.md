@@ -5,6 +5,12 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`iux3` jest wykonany: usefulness audit nie może już nazywać powierzchni
+`demo_ready`, gdy typed API raportuje blokadę albo review-required readiness.
+To jest audyt jakości, nie zmiana API/dashboardu. Live proof: 11
+demo-ready, 2 review-ready, 1 blocked, pass pozostaje `true` dla produkcyjnych
+surface'ów bez błędów.
+
 `c9h9.4` jest zamknięty i nie wymaga ponownego wykonania: aktualny Bead ma
 route-level ActionObject apply proof dla dev-only WordPress draft. `v9ab.8.3`
 również jest zamknięty: jego pierwszy zakres dodał

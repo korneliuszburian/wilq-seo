@@ -5,6 +5,12 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `iux3` slice: dashboard usefulness audit respektuje teraz API-owned semantic
+  readiness. Live `Service Profile` z `ready_for_daily_content=false` jest
+  `review_ready`, a jawny `status/queue_status=blocked` jest `blocked`, nawet
+  gdy strukturalny score evidence/decisions wynosi 10. Focused tests, Ruff,
+  mypy i live audit przechodzą; raport zmienił się z 12 demo-ready/0 blocked
+  na 11 demo-ready/1 blocked/2 review-ready. Nie zmieniono API ani dashboardu.
 - `kgvy` continuation: live Ads business-context/target/strategy ActionObject
   assembly przeniesiono do istniejącego `wilq/actions/google_ads/business_context.py`.
   `service.py` pozostaje fasadą registry i przekazuje jeden typed refresh run

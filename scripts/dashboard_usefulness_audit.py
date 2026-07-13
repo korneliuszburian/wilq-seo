@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -374,6 +374,11 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
     score = min(score, 10)
 
     readiness = _readiness(spec.status, score, errors)
+    semantic_readiness = _semantic_readiness(payload)
+    if semantic_readiness == "blocked":
+        readiness = "blocked"
+    elif semantic_readiness == "review_ready" and readiness == "demo_ready":
+        readiness = "review_ready"
     return {
         "surface_id": spec.surface_id,
         "path": spec.path,
@@ -383,6 +388,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         "endpoint": spec.endpoint,
         "demo_priority": spec.demo_priority,
         "readiness": readiness,
+        "semantic_readiness": semantic_readiness,
         "usefulness_score": score,
         "decision_count": decision_count,
         "record_count": record_count,
@@ -735,11 +741,23 @@ def _wordpress_authoring_profile_check(
             "summary": "Brak profilu authoringu WordPress/ACF.",
             "errors": ["missing wordpress authoring profile"],
         }
-    acf = payload.get("acf") if isinstance(payload.get("acf"), dict) else {}
-    rest_api = payload.get("rest_api") if isinstance(payload.get("rest_api"), dict) else {}
-    wp_cli = payload.get("wp_cli") if isinstance(payload.get("wp_cli"), dict) else {}
+    acf = (
+        cast(dict[str, Any], payload.get("acf"))
+        if isinstance(payload.get("acf"), dict)
+        else {}
+    )
+    rest_api = (
+        cast(dict[str, Any], payload.get("rest_api"))
+        if isinstance(payload.get("rest_api"), dict)
+        else {}
+    )
+    wp_cli = (
+        cast(dict[str, Any], payload.get("wp_cli"))
+        if isinstance(payload.get("wp_cli"), dict)
+        else {}
+    )
     write_boundary = (
-        payload.get("write_boundary")
+        cast(dict[str, Any], payload.get("write_boundary"))
         if isinstance(payload.get("write_boundary"), dict)
         else {}
     )
@@ -795,6 +813,21 @@ def _readiness(status: SurfaceStatus, score: int, errors: list[str]) -> str:
     if score >= 8:
         return "demo_ready"
     return "review_ready"
+
+
+def _semantic_readiness(payload: Any) -> Literal["blocked", "review_ready"] | None:
+    """Respect API-owned readiness without replacing structural usefulness checks."""
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("status") == "blocked" or payload.get("queue_status") == "blocked":
+        return "blocked"
+    production_depth = payload.get("production_depth_readiness")
+    if isinstance(production_depth, dict):
+        if production_depth.get("ready_for_daily_content") is False:
+            return "review_ready"
+        if production_depth.get("status") in {"review_required", "source_backed_review_required"}:
+            return "review_ready"
+    return None
 
 
 def _dedupe(values: list[str]) -> list[str]:
