@@ -441,6 +441,8 @@
 - Dwudziesty dziewiąty/trzydziesty pod-slice zakończony: optimizer linkage,
   campaign metric facts i search-term basics są w helperach. Następny krok:
   search-term row/safety oraz końcowy diagnostic tail.
+- Trzydziesty pierwszy/drugi pod-slice zakończony: search-term rows i aggregate
+  review contract są w helperach. Następny krok: n-gram safety/decision i tail.
 
 ## Następny krok
 

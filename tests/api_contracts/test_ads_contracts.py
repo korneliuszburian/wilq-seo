@@ -1207,6 +1207,101 @@ def assert_ads_search_terms_contract_basics(payload: dict[str, Any]) -> None:
     assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
 
 
+def assert_ads_search_term_rows_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove both search-term rows preserve metrics, lineage and safety claims."""
+    rows = contract["search_term_rows"]
+    expected_blocked = [
+        "koszt pozyskania celu",
+        "zwrot z reklam",
+        "dodanie wykluczających słów kluczowych",
+        "zmarnowany budżet",
+    ]
+    assert rows == [
+        {
+            "search_term": "bdo rejestracja",
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
+            "ad_group_id": "201",
+            "ad_group_name": "BDO",
+            "ad_group_label": "BDO",
+            "search_term_status": "ADDED",
+            "clicks": 4,
+            "impressions": 40,
+            "cost_micros": 7000000,
+            "conversions": 1.0,
+            "conversion_value": 120.0,
+            "evidence_ids": [evidence_id],
+            "evidence_summary_label": "1 dowód źródłowy",
+            "metric_facts": rows[0]["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": expected_blocked,
+        },
+        {
+            "search_term": "odpady cena",
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
+            "ad_group_id": "202",
+            "ad_group_name": "Odpady",
+            "ad_group_label": "Odpady",
+            "search_term_status": "NONE",
+            "clicks": 6,
+            "impressions": 60,
+            "cost_micros": 5000000,
+            "conversions": 0.0,
+            "conversion_value": 0.0,
+            "evidence_ids": [evidence_id],
+            "evidence_summary_label": "1 dowód źródłowy",
+            "metric_facts": rows[1]["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": expected_blocked,
+        },
+    ]
+
+
+def assert_ads_search_term_review_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove aggregate search-term review totals and claim blockers."""
+    assert contract["status"] == "ready"
+    assert contract["total_search_term_count"] == 2
+    assert contract["zero_conversion_search_term_count"] == 1
+    assert contract["total_clicks"] == 10
+    assert contract["total_impressions"] == 100
+    assert contract["total_cost_micros"] == 12000000
+    assert contract["total_conversions"] == 1.0
+    assert contract["top_cost_search_terms"][0]["search_term"] == "bdo rejestracja"
+    assert contract["campaign_review_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
+            "search_term_count": 2,
+            "zero_conversion_search_term_count": 1,
+            "clicks": 10,
+            "impressions": 100,
+            "cost_micros": 12000000,
+            "conversions": 1.0,
+            "evidence_ids": [evidence_id],
+            "evidence_summary_label": "1 dowód źródłowy",
+            "blocked_claims": [
+                "marnowanie budżetu na zapytaniach",
+                "dodanie wykluczających słów kluczowych",
+                "koszt pozyskania celu",
+                "zwrot z reklam",
+            ],
+        }
+    ]
+    assert "marnowanie budżetu na zapytaniach" in contract["blocked_claims"]
+    assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
+    assert contract["missing_read_contract_summary_label"]
+    assert contract["operator_review_gate_summary_label"]
+    assert contract["blocked_claim_summary_label"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3530,95 +3625,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "act_configure_google_ads_env" not in payload["action_ids"]
     assert_ads_search_terms_contract_basics(payload)
     search_terms_contract = payload["search_terms_read_contract"]
-    assert search_terms_contract["search_term_rows"] == [
-        {
-            "search_term": "bdo rejestracja",
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_label": "Brand Search",
-            "ad_group_id": "201",
-            "ad_group_name": "BDO",
-            "ad_group_label": "BDO",
-            "search_term_status": "ADDED",
-            "clicks": 4,
-            "impressions": 40,
-            "cost_micros": 7000000,
-            "conversions": 1.0,
-            "conversion_value": 120.0,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "evidence_summary_label": "1 dowód źródłowy",
-            "metric_facts": search_terms_contract["search_term_rows"][0]["metric_facts"],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "koszt pozyskania celu",
-                "zwrot z reklam",
-                "dodanie wykluczających słów kluczowych",
-                "zmarnowany budżet",
-            ],
-        },
-        {
-            "search_term": "odpady cena",
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_label": "Brand Search",
-            "ad_group_id": "202",
-            "ad_group_name": "Odpady",
-            "ad_group_label": "Odpady",
-            "search_term_status": "NONE",
-            "clicks": 6,
-            "impressions": 60,
-            "cost_micros": 5000000,
-            "conversions": 0.0,
-            "conversion_value": 0.0,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "evidence_summary_label": "1 dowód źródłowy",
-            "metric_facts": search_terms_contract["search_term_rows"][1]["metric_facts"],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "koszt pozyskania celu",
-                "zwrot z reklam",
-                "dodanie wykluczających słów kluczowych",
-                "zmarnowany budżet",
-            ],
-        },
-    ]
-    search_term_review_contract = payload["search_term_review_summary_contract"]
-    assert search_term_review_contract["status"] == "ready"
-    assert search_term_review_contract["total_search_term_count"] == 2
-    assert search_term_review_contract["zero_conversion_search_term_count"] == 1
-    assert search_term_review_contract["total_clicks"] == 10
-    assert search_term_review_contract["total_impressions"] == 100
-    assert search_term_review_contract["total_cost_micros"] == 12000000
-    assert search_term_review_contract["total_conversions"] == 1.0
-    assert search_term_review_contract["top_cost_search_terms"][0]["search_term"] == (
-        "bdo rejestracja"
+    assert_ads_search_term_rows_contract(
+        search_terms_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert search_term_review_contract["campaign_review_rows"] == [
-        {
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_label": "Brand Search",
-            "search_term_count": 2,
-            "zero_conversion_search_term_count": 1,
-            "clicks": 10,
-            "impressions": 100,
-            "cost_micros": 12000000,
-            "conversions": 1.0,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "evidence_summary_label": "1 dowód źródłowy",
-            "blocked_claims": [
-                "marnowanie budżetu na zapytaniach",
-                "dodanie wykluczających słów kluczowych",
-                "koszt pozyskania celu",
-                "zwrot z reklam",
-            ],
-        }
-    ]
-    assert "marnowanie budżetu na zapytaniach" in search_term_review_contract["blocked_claims"]
-    assert "dodanie wykluczających słów kluczowych" in search_term_review_contract["blocked_claims"]
-    assert search_term_review_contract["missing_read_contract_summary_label"]
-    assert search_term_review_contract["operator_review_gate_summary_label"]
-    assert search_term_review_contract["blocked_claim_summary_label"]
+    search_term_review_contract = payload["search_term_review_summary_contract"]
+    assert_ads_search_term_review_contract(
+        search_term_review_contract, refresh_response.json()["evidence_ids"][-1]
+    )
     search_terms_section = next(
         section for section in payload["sections"] if section["id"] == "ads_search_terms"
     )

@@ -1954,3 +1954,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   contracts, campaign metric facts oraz search-term contract basics wydzielone.
   Focused Ads/Ruff/mypy/diff check zielone; następny seam to search-term row,
   safety i pozostały diagnostic tail.
+- Trzydziesty pierwszy/drugi pod-slice c9h9.22: search-term rows i agregat
+  review contract wydzielone, z zachowaniem evidence oraz blokad negative
+  keyword. Focused Ads/Ruff/mypy/diff check zielone; następny seam to n-gram
+  safety/decision i końcowy tail.
