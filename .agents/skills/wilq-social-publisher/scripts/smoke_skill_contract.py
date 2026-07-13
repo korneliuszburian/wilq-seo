@@ -10,7 +10,11 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
+from scripts.skill_smoke_harness import (
+    has_polish_metric_source_guardrails,
+    request_json,
+    validate_action_ids,
+)
 
 SKILL_NAME = "wilq-social-publisher"
 REQUIRED_CONNECTORS = ["linkedin", "facebook"]
@@ -252,22 +256,8 @@ def main() -> int:
 
 def validate_core_social_actions(api_base: str, pack: dict[str, Any]) -> list[dict[str, Any]]:
     pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
-    action_validations = []
     available_action_ids = sorted(CORE_SOCIAL_ACTION_IDS & pack_action_ids)
-    for action_id in available_action_ids:
-        quoted_action = urllib.parse.quote(action_id, safe="")
-        validation = request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")
-        action_validations.append(
-            {
-                "action_id": validation.get("action_id"),
-                "valid": validation.get("valid"),
-                "status": validation.get("status"),
-                "errors": validation.get("errors", []),
-            }
-        )
-        if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Social action validation failed: {validation}")
-    return action_validations
+    return validate_action_ids(api_base, available_action_ids, label="Social")
 
 
 def _assert_public_discovery_seed(inventory: dict[str, Any]) -> None:

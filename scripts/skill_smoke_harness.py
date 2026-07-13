@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import unicodedata
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -60,3 +61,23 @@ def require_evidence_sources(
         raise SystemExit(f"{label} lacks source connectors")
     if required_connector is not None and required_connector not in connectors:
         raise SystemExit(f"{label} lacks source connector {required_connector}")
+
+
+def validate_action_ids(
+    api_base: str, action_ids: list[str], *, label: str
+) -> list[dict[str, Any]]:
+    validations: list[dict[str, Any]] = []
+    for action_id in action_ids:
+        quoted_action = urllib.parse.quote(action_id, safe="")
+        validation = request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"{label} action validation failed: {validation}")
+    return validations

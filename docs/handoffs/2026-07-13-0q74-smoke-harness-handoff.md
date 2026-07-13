@@ -41,6 +41,8 @@
 - Pierwszy shared assertion seam dodany do harnessu: `require_polish_language`
   oraz `require_evidence_sources`; GA4, Merchant i GSC używają tych samych
   guardrails. Ich live smoke przechodzą po migracji.
+- Drugi assertion seam: `validate_action_ids` centralizuje validate → status
+  valid → błędy dla Campaign Builder i Social; oba live smoke nadal przechodzą.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
