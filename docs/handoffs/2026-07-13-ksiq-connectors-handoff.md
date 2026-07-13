@@ -443,6 +443,9 @@
   search-term row/safety oraz końcowy diagnostic tail.
 - Trzydziesty pierwszy/drugi pod-slice zakończony: search-term rows i aggregate
   review contract są w helperach. Następny krok: n-gram safety/decision i tail.
+- Trzydziesty trzeci/czwarty pod-slice zakończony: n-gram decision oraz search
+  term safety basics/row/section są w helperach. Następny krok: keyword-match
+  context i końcowy diagnostic tail.
 
 ## Następny krok
 

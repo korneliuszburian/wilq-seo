@@ -1958,3 +1958,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   review contract wydzielone, z zachowaniem evidence oraz blokad negative
   keyword. Focused Ads/Ruff/mypy/diff check zielone; następny seam to n-gram
   safety/decision i końcowy tail.
+- Trzydziesty trzeci/czwarty pod-slice c9h9.22: n-gram basics/decision oraz
+  search-term safety basics/row/section proof wydzielone. Focused
+  Ads/Ruff/mypy/diff check zielone; następny seam to keyword-match context i
+  końcowy tail.

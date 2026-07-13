@@ -1302,6 +1302,130 @@ def assert_ads_search_term_review_contract(
     assert contract["blocked_claim_summary_label"]
 
 
+def assert_ads_ngram_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove n-gram review is evidence-backed and negative-keyword gated."""
+    contract = payload["search_term_ngram_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["allowed_metrics"] == [
+        "ngram",
+        "ngram_size",
+        "source_search_term_count",
+        "sample_search_terms",
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+    ]
+    assert contract["missing_read_contracts"] == [
+        "human_intent_review",
+        "ngram_to_negative_keyword_change_preview",
+    ]
+    assert "negative_keyword_change_preview" not in contract["missing_read_contracts"]
+    assert contract["operator_review_gates"] == [
+        "human_intent_review",
+        "negative_keyword_action_validation",
+    ]
+    assert contract["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
+    assert "marnowanie budżetu na zapytaniach" in contract["blocked_claims"]
+    assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
+    assert contract["ngram_rows"]
+
+
+def assert_ads_ngram_decision_contract(payload: dict[str, Any]) -> None:
+    """Prove n-gram decision card exposes counts and only review action."""
+    contract = payload["search_term_ngram_read_contract"]
+    decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_search_term_ngrams"
+    )
+    assert decision["decision_type"] == "review_search_term_ngrams"
+    assert decision["priority"] == 42
+    assert decision["metric_tiles"]["n-gramy"] == len(contract["ngram_rows"])
+    assert decision["metric_tiles"]["pokazane"] == len(decision["search_term_ngram_rows"])
+    assert decision["metric_tiles"]["max query/temat"] >= 1
+    assert decision["metric_tiles"]["top kliknięcia"] >= 4
+    assert "top koszt" in decision["metric_tiles"]
+    assert decision["search_term_ngram_rows"]
+    assert decision["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
+    assert "ngram_to_negative_keyword_change_preview" in decision["missing_read_contracts"]
+    assert "negative_keyword_change_preview" not in decision["missing_read_contracts"]
+    assert "card_google_ads_search_playbook" in decision["knowledge_card_ids"]
+
+
+def assert_ads_search_term_safety_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove 90-day safety context is available but intent review remains required."""
+    contract = payload["search_term_safety_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["allowed_metrics"] == [
+        "search_term",
+        "campaign",
+        "ad_group",
+        "status",
+        "search_term_90d_clicks",
+        "search_term_90d_impressions",
+        "search_term_90d_cost_micros",
+        "search_term_90d_conversions",
+        "search_term_90d_conversion_value",
+    ]
+    for available in (
+        "90_day_safety_check",
+        "negative_keyword_change_preview",
+        "keyword match context",
+        "human_intent_review",
+    ):
+        assert available not in contract["missing_read_contracts"]
+    assert contract["operator_review_gates"] == ["human_intent_review"]
+    assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
+
+
+def assert_ads_search_term_safety_row_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove 90-day safety row retains source facts and blocked claims."""
+    rows = contract["safety_rows"]
+    assert rows == [
+        {
+            "search_term": "odpady cena",
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
+            "ad_group_id": "202",
+            "ad_group_name": "Odpady",
+            "ad_group_label": "Odpady",
+            "search_term_status": "NONE",
+            "clicks_90d": 10,
+            "impressions_90d": 120,
+            "cost_micros_90d": 8000000,
+            "conversions_90d": 0.0,
+            "conversion_value_90d": 0.0,
+            "evidence_ids": [evidence_id],
+            "evidence_summary_label": "1 dowód źródłowy",
+            "metric_facts": rows[0]["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "koszt pozyskania celu",
+                "zwrot z reklam",
+                "dodanie wykluczających słów kluczowych",
+                "zmarnowany budżet",
+            ],
+        }
+    ]
+
+
+def assert_ads_search_term_safety_section_contract(payload: dict[str, Any]) -> None:
+    """Prove safety section uses both negative-keyword and search playbooks."""
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_search_term_safety"
+    )
+    assert section["status"] == "ready"
+    assert section["knowledge_card_ids"] == [
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_search_playbook",
+    ]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3637,32 +3761,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert search_terms_section["status"] == "ready"
     assert search_terms_section["title"] == "Zapytania użytkowników Google Ads"
+    assert_ads_ngram_contract_basics(payload)
+    assert_ads_ngram_decision_contract(payload)
     ngram_contract = payload["search_term_ngram_read_contract"]
-    assert ngram_contract["status"] == "ready"
-    assert ngram_contract["allowed_metrics"] == [
-        "ngram",
-        "ngram_size",
-        "source_search_term_count",
-        "sample_search_terms",
-        "clicks",
-        "impressions",
-        "cost_micros",
-        "conversions",
-        "conversion_value",
-    ]
-    assert ngram_contract["missing_read_contracts"] == [
-        "human_intent_review",
-        "ngram_to_negative_keyword_change_preview",
-    ]
-    assert "negative_keyword_change_preview" not in ngram_contract["missing_read_contracts"]
-    assert ngram_contract["operator_review_gates"] == [
-        "human_intent_review",
-        "negative_keyword_action_validation",
-    ]
-    assert ngram_contract["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
-    assert "marnowanie budżetu na zapytaniach" in ngram_contract["blocked_claims"]
-    assert "dodanie wykluczających słów kluczowych" in ngram_contract["blocked_claims"]
-    assert ngram_contract["ngram_rows"]
     ngrams_by_name = {row["ngram"]: row for row in ngram_contract["ngram_rows"]}
     assert ngrams_by_name["bdo"]["source_search_term_count"] == 1
     assert ngrams_by_name["bdo"]["clicks"] == 4
@@ -3679,82 +3780,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert ngram_section["status"] == "ready"
     assert ngram_section["title"] == "N-gramy zapytań Google Ads"
     assert ngram_section["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
-    ngram_decision = next(
-        decision
-        for decision in payload["decision_queue"]
-        if decision["id"] == "ads_review_search_term_ngrams"
-    )
-    assert ngram_decision["decision_type"] == "review_search_term_ngrams"
-    assert ngram_decision["priority"] == 42
-    assert ngram_decision["metric_tiles"]["n-gramy"] == len(ngram_contract["ngram_rows"])
-    assert ngram_decision["metric_tiles"]["pokazane"] == len(
-        ngram_decision["search_term_ngram_rows"]
-    )
-    assert ngram_decision["metric_tiles"]["max query/temat"] >= 1
-    assert ngram_decision["metric_tiles"]["top kliknięcia"] >= 4
-    assert "top koszt" in ngram_decision["metric_tiles"]
-    assert ngram_decision["search_term_ngram_rows"]
-    assert ngram_decision["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
-    assert "ngram_to_negative_keyword_change_preview" in ngram_decision["missing_read_contracts"]
-    assert "negative_keyword_change_preview" not in ngram_decision["missing_read_contracts"]
-    assert "card_google_ads_search_playbook" in ngram_decision["knowledge_card_ids"]
+    assert_ads_search_term_safety_contract_basics(payload)
     search_term_safety_contract = payload["search_term_safety_read_contract"]
-    assert search_term_safety_contract["status"] == "ready"
-    assert search_term_safety_contract["allowed_metrics"] == [
-        "search_term",
-        "campaign",
-        "ad_group",
-        "status",
-        "search_term_90d_clicks",
-        "search_term_90d_impressions",
-        "search_term_90d_cost_micros",
-        "search_term_90d_conversions",
-        "search_term_90d_conversion_value",
-    ]
-    assert "90_day_safety_check" not in search_term_safety_contract["missing_read_contracts"]
-    assert (
-        "negative_keyword_change_preview"
-        not in search_term_safety_contract["missing_read_contracts"]
+    assert_ads_search_term_safety_row_contract(
+        search_term_safety_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert "keyword match context" not in search_term_safety_contract["missing_read_contracts"]
-    assert "human_intent_review" not in search_term_safety_contract["missing_read_contracts"]
-    assert search_term_safety_contract["operator_review_gates"] == ["human_intent_review"]
-    assert "dodanie wykluczających słów kluczowych" in search_term_safety_contract["blocked_claims"]
-    assert search_term_safety_contract["safety_rows"] == [
-        {
-            "search_term": "odpady cena",
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_label": "Brand Search",
-            "ad_group_id": "202",
-            "ad_group_name": "Odpady",
-            "ad_group_label": "Odpady",
-            "search_term_status": "NONE",
-            "clicks_90d": 10,
-            "impressions_90d": 120,
-            "cost_micros_90d": 8000000,
-            "conversions_90d": 0.0,
-            "conversion_value_90d": 0.0,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "evidence_summary_label": "1 dowód źródłowy",
-            "metric_facts": search_term_safety_contract["safety_rows"][0]["metric_facts"],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "koszt pozyskania celu",
-                "zwrot z reklam",
-                "dodanie wykluczających słów kluczowych",
-                "zmarnowany budżet",
-            ],
-        }
-    ]
-    search_term_safety_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_search_term_safety"
-    )
-    assert search_term_safety_section["status"] == "ready"
-    assert search_term_safety_section["knowledge_card_ids"] == [
-        "card_google_ads_negative_keywords_playbook",
-        "card_google_ads_search_playbook",
-    ]
+    assert_ads_search_term_safety_section_contract(payload)
     keyword_context_contract = payload["keyword_match_context_read_contract"]
     assert keyword_context_contract["status"] == "ready"
     assert keyword_context_contract["allowed_metrics"] == [
