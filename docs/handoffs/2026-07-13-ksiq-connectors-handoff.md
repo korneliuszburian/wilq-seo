@@ -676,6 +676,10 @@
   contracts są teraz w `tests/api_contracts/test_context_safety_contracts.py`.
   Nowy i pełny action-object test przechodzą; legacy plik zmniejszył się o 76
   linii. Następny agent może wybrać kolejny niezależny behavior test z mega-testu.
+- Siódma kontynuacja `50wa`: pre-apply impact-check contract jest teraz w
+  `tests/actions/test_action_confirmation_contracts.py`, obok blokady impact
+  bez confirm. Nowy i pełny action-object test przechodzą; pozostały legacy
+  mega-test nadal ma historyczne hotspoty i kwalifikuje się do dalszych splitów.
 
 ## Następny krok
 

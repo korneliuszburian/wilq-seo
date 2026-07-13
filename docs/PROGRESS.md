@@ -2211,3 +2211,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Mega-test zmniejszył się o 76 linii; nowy plik i pełny action-object test
   przechodzą, Ruff i diff check zielone. Pozostają historyczne hotspoty
   complexity do kolejnych niezależnych splitów.
+- Siódma kontynuacja `50wa`: impact-check behavior test przeniesiono do
+  `tests/actions/test_action_confirmation_contracts.py`, obok testu blokady bez
+  wcześniejszego potwierdzenia. Nowy plik i pełny action-object test przechodzą;
+  Ruff oraz diff check są zielone. API health pozostaje `ok`, a context-pack
+  zwrócił 8 aktywnych connectorów skonfigurowanych; summary systemowe 12/9/2
+  traktuję jako odrębny zakres diagnostyczny, nie jako dowód live endpointu.
