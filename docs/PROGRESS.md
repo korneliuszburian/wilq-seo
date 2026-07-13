@@ -2056,3 +2056,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   knowledge-card/rule lineage między pełnym Ads diagnostics i context-packiem.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 989 linii i 12
   branchy. Następny seam: końcowy audit completion criteria.
+- Pięćdziesiąty trzeci pod-slice c9h9.22: business-ready Ads contract
+  wydzielony do `assert_ads_business_ready_contract`; zachowano preliminary
+  target interpretation, strategy-review blocker i KPI-vs-target evidence.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 936 linii i 12
+  branchy. Następny seam: końcowy audit completion criteria.

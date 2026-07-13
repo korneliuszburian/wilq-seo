@@ -544,6 +544,11 @@
   knowledge-card/rule lineage między pełnym Ads diagnostics i context-packiem
   są zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 989
   linii i 12 branchy. Następny krok: końcowy audit completion criteria.
+- Pięćdziesiąty trzeci pod-slice zakończony: business-ready Ads contract jest
+  w `assert_ads_business_ready_contract`; preliminary target interpretation,
+  strategy-review blocker i KPI-vs-target evidence są zachowane. Focused
+  Ads/Ruff/mypy/diff check zielone; główny test ma 936 linii i 12 branchy.
+  Następny krok: końcowy audit completion criteria.
 
 ## Następny krok
 

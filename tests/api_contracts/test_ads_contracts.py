@@ -2201,6 +2201,56 @@ def assert_ads_context_pack_parity(
     assert "ads_recommendations_v1" in rule_ids
 
 
+def assert_ads_business_ready_contract(payload: dict[str, Any]) -> None:
+    """Prove configured business context unlocks only preliminary target review."""
+    contract = payload["business_context_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["profit_margin"] == 0.35
+    assert contract["business_goal"] == "lead quality review"
+    assert contract["budget_goal"] == "protect current monthly budget"
+    assert contract["target_roas"] == 5.0
+    assert contract["missing_read_contracts"] == ["human_strategy_review"]
+    assert contract["allowed_metrics"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas",
+    ]
+    assert contract["business_policy_ids"] == [
+        "use_margin_as_context_not_profitability_verdict",
+        "align_campaign_review_to_business_goal",
+        "honor_human_budget_goal_before_budget_changes",
+        "compare_kpis_to_confirmed_target_in_review",
+        "block_target_verdict_until_strategy_review_approved",
+    ]
+    interpretation = contract["target_interpretation"]
+    assert interpretation["status"] == "preliminary"
+    assert "target_roas_review_context" in interpretation["allowed_uses"]
+    assert "target_roas_or_cpa" not in interpretation["missing_requirements"]
+    assert "human_strategy_review" in interpretation["missing_requirements"]
+    assert interpretation["apply_allowed"] is False
+    assert interpretation["action_ids"] == [ADS_STRATEGY_REVIEW_ACTION_ID]
+    assert contract["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "review_target_fit",
+    ]
+    campaign = payload["campaign_read_contract"]["campaign_rows"][0]
+    assert campaign["target_status"] == "within_target"
+    assert campaign["target_status_label"] == "zwrot z reklam w granicy celu"
+    assert "cel: zwrot z reklam w granicy celu" in campaign["review_reason"]
+    assert "review_target_context" in campaign["human_review_gates"]
+    derived = payload["derived_kpi_read_contract"]
+    assert "profit_margin" not in derived["missing_read_contracts"]
+    assert "target_roas" in derived["allowed_metrics"]
+    assert "roas_vs_target" in derived["allowed_metrics"]
+    assert derived["kpi_rows"][0]["target_roas"] == 5.0
+    assert derived["kpi_rows"][0]["roas_vs_target"] == 32.5625
+    assert derived["kpi_rows"][0]["target_cpa_micros"] is None
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4699,62 +4749,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     business_ready_response = client.get("/api/ads/diagnostics")
     assert business_ready_response.status_code == 200
     business_ready_payload = business_ready_response.json()
+    assert_ads_business_ready_contract(business_ready_payload)
     business_ready_contract = business_ready_payload["business_context_read_contract"]
-    assert business_ready_contract["status"] == "ready"
-    assert business_ready_contract["profit_margin"] == 0.35
-    assert business_ready_contract["business_goal"] == "lead quality review"
-    assert business_ready_contract["budget_goal"] == "protect current monthly budget"
-    assert business_ready_contract["target_roas"] == 5.0
-    assert business_ready_contract["missing_read_contracts"] == ["human_strategy_review"]
-    assert business_ready_contract["allowed_metrics"] == [
-        "profit_margin",
-        "business_goal",
-        "human_budget_goal",
-        "target_roas",
-    ]
-    assert business_ready_contract["business_policy_ids"] == [
-        "use_margin_as_context_not_profitability_verdict",
-        "align_campaign_review_to_business_goal",
-        "honor_human_budget_goal_before_budget_changes",
-        "compare_kpis_to_confirmed_target_in_review",
-        "block_target_verdict_until_strategy_review_approved",
-    ]
-    assert business_ready_contract["target_interpretation"]["status"] == "preliminary"
-    assert (
-        "target_roas_review_context"
-        in business_ready_contract["target_interpretation"]["allowed_uses"]
-    )
-    assert (
-        "target_roas_or_cpa"
-        not in business_ready_contract["target_interpretation"]["missing_requirements"]
-    )
-    assert (
-        "human_strategy_review"
-        in business_ready_contract["target_interpretation"]["missing_requirements"]
-    )
-    assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
-    assert business_ready_contract["target_interpretation"]["action_ids"] == [
-        ADS_STRATEGY_REVIEW_ACTION_ID,
-    ]
-    assert business_ready_contract["operator_review_gates"] == [
-        "human_strategy_review",
-        "review_profit_margin_model",
-        "review_business_goal",
-        "review_human_budget_goal",
-        "review_target_fit",
-    ]
     derived_ready_contract = business_ready_payload["derived_kpi_read_contract"]
-    campaign_ready_row = business_ready_payload["campaign_read_contract"]["campaign_rows"][0]
-    assert campaign_ready_row["target_status"] == "within_target"
-    assert campaign_ready_row["target_status_label"] == "zwrot z reklam w granicy celu"
-    assert "cel: zwrot z reklam w granicy celu" in campaign_ready_row["review_reason"]
-    assert "review_target_context" in campaign_ready_row["human_review_gates"]
-    assert "profit_margin" not in derived_ready_contract["missing_read_contracts"]
-    assert "target_roas" in derived_ready_contract["allowed_metrics"]
-    assert "roas_vs_target" in derived_ready_contract["allowed_metrics"]
-    assert derived_ready_contract["kpi_rows"][0]["target_roas"] == 5.0
-    assert derived_ready_contract["kpi_rows"][0]["roas_vs_target"] == 32.5625
-    assert derived_ready_contract["kpi_rows"][0]["target_cpa_micros"] is None
     assert derived_ready_contract["kpi_rows"][0]["cpa_vs_target_micros"] is None
     assert derived_ready_contract["kpi_rows"][0]["target_status"] == "within_target"
     assert derived_ready_contract["kpi_rows"][0]["target_status_label"] == (
