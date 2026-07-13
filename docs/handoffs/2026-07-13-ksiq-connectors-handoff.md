@@ -381,6 +381,9 @@
   freshness/live-data assertions. Ads contract pytest, Ruff, mypy i diff check
   są zielone; główny test nadal ma 2912 linii, więc następny handoff musi
   przenieść campaign read-contract assertions.
+- Drugi pod-slice również zakończony: `assert_ads_campaign_read_contract_basics`
+  przejął status/allowed/missing/blocked gates. Następny krok to wydzielenie
+  campaign row rendering proofu bez zmiany evidence lineage.
 
 ## Następny krok
 

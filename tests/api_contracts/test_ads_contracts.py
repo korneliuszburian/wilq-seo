@@ -72,6 +72,24 @@ def assert_ads_live_refresh_contract(payload: dict[str, Any]) -> None:
     assert payload["blocked_handoff"] is None
 
 
+def assert_ads_campaign_read_contract_basics(payload: dict[str, Any]) -> None:
+    """Keep campaign read-contract gates separate from row rendering proof."""
+    read_contract = payload["campaign_read_contract"]
+    assert read_contract["status"] == "ready"
+    assert read_contract["allowed_metrics"] == [
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+    ]
+    for metric in ("conversions", "conversion_value", "recommendations"):
+        assert metric not in read_contract["missing_read_contracts"]
+    for contract in ("impression_share", "change_history", "search_term_view"):
+        assert contract not in read_contract["missing_read_contracts"]
+    assert "zwrot z reklam" in read_contract["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2298,22 +2316,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert response.status_code == 200
     payload = response.json()
     assert_ads_live_refresh_contract(payload)
+    assert_ads_campaign_read_contract_basics(payload)
     read_contract = payload["campaign_read_contract"]
-    assert read_contract["status"] == "ready"
-    assert read_contract["allowed_metrics"] == [
-        "clicks",
-        "impressions",
-        "cost_micros",
-        "conversions",
-        "conversion_value",
-    ]
-    assert "conversions" not in read_contract["missing_read_contracts"]
-    assert "conversion_value" not in read_contract["missing_read_contracts"]
-    assert "recommendations" not in read_contract["missing_read_contracts"]
-    assert "impression_share" not in read_contract["missing_read_contracts"]
-    assert "change_history" not in read_contract["missing_read_contracts"]
-    assert "zwrot z reklam" in read_contract["blocked_claims"]
-    assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
         {
             "campaign_id": "101",

@@ -1875,3 +1875,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   wydzielone do `assert_ads_live_refresh_contract`. Focused Ads contracts,
   Ruff, mypy i diff check przechodzą; complexity nadal potwierdza główny test
   2912 linii, więc zadanie pozostaje otwarte.
+- Drugi pod-slice c9h9.22: podstawowe gates `campaign_read_contract` wydzielone
+  do `assert_ads_campaign_read_contract_basics`; zachowano wszystkie listy
+  allowed/missing metrics i blocked claims. Focused Ads/Ruff/mypy/diff check
+  nadal zielone; row rendering pozostaje kolejnym seamem.
