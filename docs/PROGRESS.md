@@ -21,7 +21,8 @@ w git, Beads i `docs/progress/archive/`.
   a prompt i grader wymagają zachowania statusu, freshness, evidence IDs,
   source connectors, expert rule IDs, blockerów i safe next step z
   `/api/marketing/daily-check`. Helper test, live API checks, Ruff/mypy i
-  shell syntax przechodzą; pełny Codex eval jest kolejnym proofem.
+  shell syntax przechodzą. Pierwszy świeży Codex run zatrzymał się na błędzie
+  skills-context budget bez `result.json`; nie liczę tego jako passing eval.
 
 - Re-audyt live WILQ 2026-07-13 17:06Z: `/api/content/work-items/queue`
   zwraca `blocked`, 2 kandydatów, 1 actionable przy minimum 3; GSC i publiczny
