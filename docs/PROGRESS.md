@@ -1253,3 +1253,19 @@ tests, dashboard typecheck/Vitest oraz screenshots w
 
 `docs/audits/2026-07-10-cleanup-rebaseline.md` zawiera bieżącą mapę statusów i
 ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
+# 2026-07-13 — d380 React dashboard boundary
+
+- Confirmed `wilq-seo-d380` is still open and its current requirement is a
+  documented React standard plus a real route seam, not a blind LOC split.
+- Added `docs/architecture/dashboard-react-standards.md` covering route shell,
+  domain query hook, typed API-owned view-models, presentational components and
+  technical disclosure rules.
+- Extracted `apps/dashboard/src/routes/contentWorkflowQueries.ts`; the primary
+  content route now delegates queue/work-item/enrichment/WordPress readiness
+  query orchestration to that typed hook.
+- Added `contentWorkflowArchitecture.test.ts` so reintroducing the primary
+  route's queue query boundary fails a focused test.
+- Verification: focused dashboard suite 18/18, ESLint and TypeScript passed;
+  no endpoint or business rule changed.
+- Remaining d380 scope: apply the same boundary review to ActionDetailSurface
+  and replace stale route-string E2E assertions with behavior/fixture proof.

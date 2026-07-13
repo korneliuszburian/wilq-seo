@@ -60,6 +60,12 @@ cards and diagnostics render within the operating budget; the next Ahrefs
 maintenance seam is the separately tracked tactical-queue extraction `c9h9.18`,
 not another React matching rule. The deleted legacy planner must not return.
 
+Architecture proof (2026-07-13): `ContentWorkflowSurface` now delegates queue,
+selected work item, enrichment and WordPress readiness queries to the typed
+`contentWorkflowQueries.ts` seam. The route keeps state selection and
+presentation orchestration; the seam owns React Query keys/enabled gates.
+`docs/architecture/dashboard-react-standards.md` is the review contract.
+
 The target content workbench must show:
 
 - current public WordPress pages/posts and their role,
