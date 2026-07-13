@@ -208,6 +208,9 @@ otwarte i wymagają osobnych, testowalnych modułów asercji.
 - Social smoke now delegates history inventory/privacy assertions to
   `social_assertions.py`. Live proof: inventory `missing`, publish disabled,
   two review actions; public discovery seeds and metadata-only gates pass.
+- Daily Command now delegates text guards and command-center validation to
+  `daily_command_text_guards.py` and `daily_command_assertions.py`. Live proof:
+  `ok`, two blockers, four daily decisions; complexity passes.
 - Goal 005 nadal wymaga realnego Wilku UAT albo owner defer z residual risk.
 - LinkedIn/Facebook credentials pozostają brakujące; nie traktować social jako
   gotowego workflow.

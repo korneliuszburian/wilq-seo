@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
+
+from daily_command_text_guards import has_metric_evidence_guardrails, scan_strings
 
 REQUIRED_KEYS = {
     "strict_instruction",
@@ -29,7 +30,6 @@ REQUIRED_BRIEF_SECTIONS = {
     "safe_next_actions",
     "recommended_focus",
 }
-FORBIDDEN_MARKERS = ("fake_metric", "mock_metric", "seed_metric")
 MAX_CONTEXT_PACK_BYTES = 180_000
 CORE_DAILY_ACTION_IDS = {
     "act_prepare_content_refresh_queue",
@@ -72,33 +72,6 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         raise SystemExit(f"Could not reach WILQ API at {api_base}: {exc.reason}") from exc
 
 
-def scan_strings(value: Any) -> list[str]:
-    hits: list[str] = []
-    if isinstance(value, str):
-        lowered = value.lower()
-        hits.extend(marker for marker in FORBIDDEN_MARKERS if marker in lowered)
-    elif isinstance(value, dict):
-        for nested in value.values():
-            hits.extend(scan_strings(nested))
-    elif isinstance(value, list):
-        for nested in value:
-            hits.extend(scan_strings(nested))
-    return hits
-
-
-def normalize_for_marker_check(value: str) -> str:
-    return "".join(
-        char
-        for char in unicodedata.normalize("NFKD", value.lower())
-        if not unicodedata.combining(char)
-    ).replace("ł", "l")
-
-
-def has_metric_evidence_guardrails(value: str) -> bool:
-    normalized = normalize_for_marker_check(value)
-    return "metryk" in normalized and "dowod" in normalized and "zrodl" in normalized
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke test wilq-daily-command against WILQ API")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
@@ -126,9 +99,7 @@ def main() -> int:
 
     instruction = str(pack.get("strict_instruction", "")).lower()
     if not has_metric_evidence_guardrails(instruction):
-        raise SystemExit(
-            "Instrukcja context-packa nie zawiera zasad metryk i dowodów z WILQ API"
-        )
+        raise SystemExit("Instrukcja context-packa nie zawiera zasad metryk i dowodów z WILQ API")
 
     marker_hits = sorted(set(scan_strings(pack)))
     if marker_hits:
@@ -194,140 +165,15 @@ def main() -> int:
 
 
 def validate_command_center(command_center: Any, *, compact: bool = False) -> None:
-    if not isinstance(command_center, dict):
-        raise SystemExit("Command center is not an object")
-    instruction = str(command_center.get("strict_instruction", ""))
-    if not has_metric_evidence_guardrails(instruction):
-        raise SystemExit(
-            "Instrukcja Centrum pracy nie zawiera zasad metryk i dowodów źródłowych"
-        )
-    operator_brief = command_center.get("operator_brief") or []
-    if not compact:
-        if not isinstance(operator_brief, list) or not operator_brief:
-            raise SystemExit("Command center has no operator_brief")
-        item_ids = {str(item.get("id")) for item in operator_brief if isinstance(item, dict)}
-        missing_ids = sorted(CORE_OPERATOR_ITEM_IDS - item_ids)
-        if missing_ids:
-            raise SystemExit(f"Command center missing operator items: {', '.join(missing_ids)}")
-        ready_forbidden_ids = sorted(
-            str(item.get("id"))
-            for item in operator_brief
-            if isinstance(item, dict)
-            and item.get("id") in FORBIDDEN_READY_OPERATOR_ITEM_IDS
-            and item.get("status") == "ready"
-        )
-        if ready_forbidden_ids:
-            raise SystemExit(
-                "Command center promotes readiness-only Localo item as primary: "
-                + ", ".join(ready_forbidden_ids)
-            )
-    if not isinstance(command_center.get("blocker_count"), int):
-        raise SystemExit("Command center blocker_count is missing or not numeric")
-    if not isinstance(command_center.get("tactical_item_count"), int):
-        raise SystemExit("Command center tactical_item_count is missing or not numeric")
-    if not command_center.get("primary_next_step"):
-        raise SystemExit("Command center primary_next_step is missing")
-    demo_script = command_center.get("demo_script") or []
-    if not isinstance(demo_script, list):
-        raise SystemExit("Command center demo_script must be a list")
-    action_plan = command_center.get("action_plan") or []
-    if not compact and (not isinstance(action_plan, list) or len(action_plan) < 4):
-        raise SystemExit("Command center action_plan is missing or too small")
-    daily_decisions = command_center.get("daily_decisions") or []
-    if not isinstance(daily_decisions, list) or len(daily_decisions) < 4:
-        raise SystemExit("Command center daily_decisions is missing or too small")
-    if len(daily_decisions) > 4:
-        raise SystemExit("Command center daily_decisions must stay focused on core daily work")
-    required_plan_ids = {
-        "plan_review_merchant_feed_issues",
-        "plan_prepare_content_refresh_queue",
-        "plan_review_ga4_landing_quality",
-    }
-    if compact:
-        ads_live_ready = any(
-            item.get("id") == "decision_review_ads_campaign_metrics"
-            and item.get("status") == "ready"
-            for item in daily_decisions
-            if isinstance(item, dict)
-        )
-    else:
-        ads_live_ready = any(
-            item.get("id") == "daily_ads_status" and item.get("status") == "ready"
-            for item in operator_brief
-            if isinstance(item, dict)
-        )
-    if ads_live_ready:
-        required_plan_ids.add("plan_review_ads_campaign_metrics")
-    else:
-        required_plan_ids.add("plan_fix_ads_oauth_before_spend_analysis")
-    if not compact:
-        plan_ids = {item.get("id") for item in action_plan if isinstance(item, dict)}
-        missing_plan_ids = sorted(required_plan_ids - plan_ids)
-        if missing_plan_ids:
-            raise SystemExit(
-                f"Command center missing action_plan items: {', '.join(missing_plan_ids)}"
-            )
-    decision_ids = {item.get("id") for item in daily_decisions if isinstance(item, dict)}
-    forbidden_decision_ids = {
-        "decision_review_localo_visibility_facts",
-        "decision_finish_localo_access_before_local_visibility",
-    }
-    leaked_decision_ids = sorted(forbidden_decision_ids & decision_ids)
-    if leaked_decision_ids:
-        raise SystemExit(
-            "Command center promoted non-core daily decisions: " + ", ".join(leaked_decision_ids)
-        )
-    expected_decision_ids = {
-        plan_id.replace("plan_", "decision_", 1) for plan_id in required_plan_ids
-    }
-    missing_decision_ids = sorted(expected_decision_ids - decision_ids)
-    if missing_decision_ids:
-        raise SystemExit(
-            f"Command center missing daily_decisions: {', '.join(missing_decision_ids)}"
-        )
-    if not compact:
-        for item in operator_brief:
-            if not isinstance(item, dict):
-                continue
-            if not item.get("source_connectors"):
-                raise SystemExit(f"Command center item lacks source connectors: {item.get('id')}")
-            if not item.get("evidence_ids"):
-                raise SystemExit(f"Command center item lacks evidence IDs: {item.get('id')}")
-        for item in action_plan:
-            if not isinstance(item, dict):
-                continue
-            if not item.get("source_connectors"):
-                raise SystemExit(
-                    f"Command center action_plan item lacks source connectors: {item.get('id')}"
-                )
-            if not item.get("evidence_ids"):
-                raise SystemExit(
-                    f"Command center action_plan item lacks evidence IDs: {item.get('id')}"
-                )
-            if (
-                item.get("status") == "ready"
-                and not item.get("action_ids")
-                and not item.get("blocked_claims")
-            ):
-                raise SystemExit(
-                    f"Ready action_plan item lacks action IDs or blocked claims: {item.get('id')}"
-                )
-    for item in daily_decisions:
-        if not isinstance(item, dict):
-            continue
-        for key in (
-            "co_widzimy",
-            "dlaczego_to_ma_znaczenie",
-            "bezpieczny_next_step",
-            "source_connectors",
-            "evidence_ids",
-            "blocked_claims",
-            "route",
-            "skill_id",
-            "codex_prompt",
-        ):
-            if not item.get(key):
-                raise SystemExit(f"DailyDecision lacks {key}: {item.get('id')}")
+    from daily_command_assertions import validate_command_center as _validate
+
+    _validate(
+        command_center,
+        compact=compact,
+        guardrail=has_metric_evidence_guardrails,
+        core_operator_ids=CORE_OPERATOR_ITEM_IDS,
+        forbidden_ready_ids=FORBIDDEN_READY_OPERATOR_ITEM_IDS,
+    )
 
 
 def validate_marketing_brief(brief: Any) -> None:

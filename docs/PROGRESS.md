@@ -46,6 +46,10 @@ w git, Beads i `docs/progress/archive/`.
   history inventory `missing`, publikacja wyłączona, 2 review actions; publiczne
   discovery seeds i metadata-only/privacy gates przechodzą. Ruff, smoke i
   complexity audit przechodzą bez wyjątku.
+- Daily Command tekstowe guardy są w `daily_command_text_guards.py`, a pełna
+  walidacja command center w `daily_command_assertions.py`. Live proof pozostaje
+  `ok`, 2 blocker count i 4 daily decisions; complexity audit przechodzi bez
+  wyjątku, bez zmiany rankingu ani API.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje
