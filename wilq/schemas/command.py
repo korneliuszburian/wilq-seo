@@ -278,6 +278,31 @@ class DailyCheckItem(BaseModel):
         return self
 
 
+class RecommendationLogRecord(BaseModel):
+    id: str
+    workspace_id: str
+    recommendation_id: str
+    status: Literal["made", "accepted", "rejected", "deferred"]
+    reason: str
+    follow_up: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    outcome_summary: str | None = None
+    recorded_by: str
+    recorded_at: datetime = Field(default_factory=utc_now)
+    redacted: bool = True
+
+    @model_validator(mode="after")
+    def require_trace_for_recommendation(self) -> RecommendationLogRecord:
+        if self.status in {"made", "accepted"} and (
+            not self.evidence_ids or not self.source_connectors
+        ):
+            raise ValueError("Recommendation log requires evidence_ids and source_connectors.")
+        return self
+
+
 class DailyCheckResult(BaseModel):
     workspace_id: str
     date: date
@@ -295,6 +320,7 @@ class DailyCheckResult(BaseModel):
     expert_rules_used: list[str] = Field(default_factory=list)
     freshness: FreshnessState = Field(default_factory=lambda: FreshnessState(state="unknown"))
     workspace_dossier: WorkspaceDossier | None = None
+    recommendation_history: list[RecommendationLogRecord] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def fill_trace_from_items(self) -> DailyCheckResult:

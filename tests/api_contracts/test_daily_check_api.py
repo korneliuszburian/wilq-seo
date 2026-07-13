@@ -98,3 +98,29 @@ def test_daily_check_returns_traceable_operator_queue() -> None:
                 )
     if payload["do_not_touch"]:
         assert all(item["status"] == "blocked" for item in payload["do_not_touch"])
+
+
+def test_daily_check_recommendation_log_is_redacted_and_read_back() -> None:
+    record = {
+        "id": "recommendation_test_daily_check_content",
+        "workspace_id": "ekologus",
+        "recommendation_id": "daily_check_decision_prepare_content_refresh_queue",
+        "status": "made",
+        "reason": "Kolejka wymaga review źródeł.",
+        "follow_up": "Odśwież źródła i wróć do kolejki.",
+        "evidence_ids": ["ev_test_daily_check"],
+        "source_connectors": ["google_search_console"],
+        "expert_rule_ids": ["gsc_platform_traps_v1"],
+        "action_ids": [],
+        "recorded_by": "operator_test",
+    }
+    response = client.post("/api/marketing/daily-check/recommendations", json=record)
+    assert response.status_code == 200
+    assert response.json()["redacted"] is True
+
+    daily_check = client.get("/api/marketing/daily-check")
+    assert daily_check.status_code == 200
+    history = daily_check.json()["recommendation_history"]
+    saved = next(item for item in history if item["id"] == record["id"])
+    assert saved["evidence_ids"] == ["ev_test_daily_check"]
+    assert "payload" not in saved["reason"].lower()

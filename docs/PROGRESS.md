@@ -120,6 +120,12 @@ w git, Beads i `docs/progress/archive/`.
   `/api/marketing/daily-check`. Live response ma dossier Ekologus, znany false
   positive Ads account-scope oraz blockers candidate density i WordPress apply;
   focused daily-check/contracts, Ruff, mypy, complexity i diff check przechodzą.
+- `wilq-seo-v9ab.12` wykonany: `RecommendationLogRecord` i istniejąca granica
+  `AuditEvent` tworzą redacted ledger rekomendacji; `POST
+  /api/marketing/daily-check/recommendations` zapisuje made/accepted/rejected/
+  deferred, a GET daily-check zwraca ostatnią historię. Live POST/GET zachowuje
+  evidence IDs i `redacted=true`, bez vendor mutation; focused tests, Ruff,
+  mypy, complexity i diff check przechodzą.
 
 - `wilq-seo-v9ab.4` platform-trap pack jest wykonany: typed
   `PlatformTrapContract` i pięć source-backed rule packs obejmują Google Ads,

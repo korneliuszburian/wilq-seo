@@ -15,6 +15,7 @@ from wilq.briefing.false_positive_guards import (
     evaluate_source_trace_guard,
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
+from wilq.briefing.recommendation_log import list_recommendation_logs
 from wilq.content.enrichment.opportunity import build_content_opportunity_enrichment
 from wilq.content.workflow.queue import (
     ContentWorkItemQueueResponse,
@@ -94,6 +95,7 @@ def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
         do_not_touch=do_not_touch,
         freshness=_aggregate_freshness(connector_refs),
         workspace_dossier=build_workspace_dossier(),
+        recommendation_history=list_recommendation_logs(WORKSPACE_ID)[:20],
     )
 
 

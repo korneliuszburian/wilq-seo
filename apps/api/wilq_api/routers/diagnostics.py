@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from wilq.briefing.ads_diagnostics import (
     build_ads_diagnostics,
@@ -19,6 +19,7 @@ from wilq.briefing.daily_runtime import (
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.localo_diagnostics import build_localo_diagnostics
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics_cached
+from wilq.briefing.recommendation_log import save_recommendation_log
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.schemas import (
     AdsDiagnosticsResponse,
@@ -31,6 +32,7 @@ from wilq.schemas import (
     LocaloDiagnosticsResponse,
     MarketingBrief,
     MerchantDiagnosticsResponse,
+    RecommendationLogRecord,
     TacticalQueueResponse,
 )
 
@@ -50,6 +52,19 @@ def marketing_brief() -> MarketingBrief:
 @router.get("/api/marketing/daily-check", response_model=DailyCheckResult)
 def marketing_daily_check() -> DailyCheckResult:
     return build_daily_check()
+
+
+@router.post(
+    "/api/marketing/daily-check/recommendations",
+    response_model=RecommendationLogRecord,
+)
+def log_daily_recommendation(record: RecommendationLogRecord) -> RecommendationLogRecord:
+    if record.workspace_id != "ekologus":
+        raise HTTPException(
+            status_code=400,
+            detail="Recommendation log workspace is outside the active WILQ workspace.",
+        )
+    return save_recommendation_log(record)
 
 
 @router.get("/api/marketing/tactical-queue", response_model=TacticalQueueResponse)

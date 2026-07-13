@@ -110,6 +110,9 @@ capabilities WILQ od propozycji designu.
 `wilq-seo-v9ab.11` zamknięty: `WorkspaceDossier` jest read-only/redacted,
 dołączony do DailyCheckResult i wskazuje aktualny known trap oraz open blockers;
 nie tworzy pamięci poza API ani nie omija ActionObject.
+`wilq-seo-v9ab.12` zamknięty: recommendation ledger korzysta z istniejącego
+AuditEvent storage, jest redacted i wraca w DailyCheckResult; lokalny log nie
+jest vendor write ani substytutem ActionObject.
 `_build_ads_action_enriched_contracts` w `ads_diagnostics.py`. Reconciliation i search-term assembly są teraz
 domknięte; custom-segments/negative-keywords, campaign-triage/optimizer
 readiness, sections, blocked-handoff, decision_queue, response model i wszystkie
