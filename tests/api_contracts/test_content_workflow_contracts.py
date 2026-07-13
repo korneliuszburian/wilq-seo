@@ -16,6 +16,7 @@ from wilq.briefing.content_diagnostics import build_content_diagnostics, build_c
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.schemas import (
     ActionRisk,
+    AuditEvent,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -24,6 +25,120 @@ from wilq.schemas import (
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+
+
+def test_actions_api_drops_legacy_content_review_audit_terms(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "legacy_content_review.sqlite3"))
+
+    local_state_store().save_audit_event(
+        AuditEvent(
+            id="audit_legacy_content_url_review",
+            action_id="act_prepare_content_refresh_queue",
+            event_type="human_review_approved_for_prepare",
+            actor="operator_legacy_review",
+            summary=(
+                "Wynik review: zatwierdzone. Sprawdzone: "
+                "mapping_outcome:confirm_alternative_candidate, "
+                "selected_target_url:[stored in audit details], "
+                "mapping_notes:target wybrany tylko do review staging handoff. "
+                "Blokady: payload_apply_allowed_false, wordpress_write_not_requested, "
+                "blocked_claim:ranking guarantee. "
+                "Sprawdzone: source_type:gsc_query_page, mode:refresh."
+            ),
+            evidence_ids=["ev_refresh_wordpress_content_contract_test"],
+            details={
+                "review_outcome": "approved_for_prepare",
+                "reviewed_by": "operator_legacy_review",
+                "checked_items": [
+                    "candidate:content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca",
+                    "mapping_outcome:confirm_alternative_candidate",
+                    "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
+                    "mapping_notes:target wybrany tylko do review staging handoff",
+                    "draft_readiness_outcome:needs_duplicate_resolution",
+                    "source_type:gsc_query_page",
+                    "mode:refresh",
+                ],
+                "blockers": [
+                    "payload_apply_allowed_false",
+                    "wordpress_write_not_requested",
+                    "blocked_claim:ranking guarantee",
+                ],
+                "target_site_mapping_review": {
+                    "candidate": "content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca",
+                    "mapping_outcome": "confirm_alternative_candidate",
+                    "mapping_notes": "target wybrany tylko do review staging handoff",
+                    "selected_target_url": "https://ekologus.dev.proudsite.pl/bdo/",
+                },
+                "content_draft_readiness_review": {
+                    "draft_readiness_notes": "staging handoff pozostaje zablokowany",
+                },
+            },
+        )
+    )
+
+    response = client.get("/api/actions")
+
+    assert response.status_code == 200
+    actions = response.json()
+    content_action = next(
+        action for action in actions if action["id"] == "act_prepare_content_refresh_queue"
+    )
+    visible_content_copy = "\n".join(
+        [
+            content_action["human_diagnosis"],
+            content_action["recommended_reason"],
+            *[
+                item["content_gate_summary"]
+                for item in content_action["payload"]["content_brief_preview"]
+            ],
+            *[
+                fact
+                for item in content_action["payload"]["content_brief_preview"]
+                for fact in item["source_facts"]
+            ],
+        ]
+    )
+    for stale_term in (
+        "URL/query evidence",
+        "GSC query/page",
+        "query/page facts",
+        "WordPress inventory facts",
+        "WordPress inventory",
+        "core workflow",
+        "clean runtime",
+    ):
+        assert stale_term not in visible_content_copy
+    serialized = json.dumps(content_action["audit_events"], ensure_ascii=False)
+    for stale_term in (
+        "target_site",
+        "mapping_review",
+        "mapping_outcome",
+        "selected_target_url",
+        "staging handoff",
+        "ekologus.dev.proudsite.pl",
+        "source_type:gsc_query_page",
+        "mode:refresh",
+    ):
+        assert stale_term not in serialized
+    legacy_event = next(
+        event
+        for event in content_action["audit_events"]
+        if event["id"] == "audit_legacy_content_url_review"
+    )
+    assert legacy_event["summary"] == (
+        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
+    )
+    assert legacy_event["details"]["checked_items"]
+    assert "content_draft_readiness_review" not in legacy_event["details"]
+    assert "blockers" in legacy_event["details"]
+    assert content_action["review_gate"]["last_review_outcome"] is None
+    service_source = Path("wilq/actions/service.py").read_text(encoding="utf-8")
+    assert "_is_obsolete_content_review_event" not in service_source
+    assert '"target", "site", "mapping", "review"' not in service_source
 
 
 def test_content_refresh_empty_state_uses_operator_source_language(

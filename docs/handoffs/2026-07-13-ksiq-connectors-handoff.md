@@ -725,6 +725,9 @@
 - Dwudziesta pierwsza kontynuacja `50wa`: parametrized validation error language
   contract jest teraz w `tests/actions/test_action_validation_contracts.py`.
   Nowy i pełny suite przechodzą; nie wracać do tego testu w mega-teście.
+- Dwudziesta druga kontynuacja `50wa`: legacy content review audit redaction
+  contract jest teraz w `tests/api_contracts/test_content_workflow_contracts.py`.
+  Nowy i pełny suite przechodzą; nie powtarzać tego content splitu.
 
 ## Następny krok
 

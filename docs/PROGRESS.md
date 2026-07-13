@@ -2274,3 +2274,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   language contract przeniesiono do `tests/actions/test_action_validation_contracts.py`.
   Wszystkie przypadki Ads/GA4/Localo i pełny action-object suite przechodzą;
   błędy pozostają operator-readable bez payload jargon.
+- Dwudziesta druga kontynuacja `50wa`: legacy content review audit redaction
+  test przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
+  Nowy i pełny action-object suite przechodzą; dev URL, mapping terms i raw
+  review payload pozostają poza widocznym outputem.
