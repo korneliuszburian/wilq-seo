@@ -73,6 +73,9 @@ def test_codex_skill_eval_schema_requires_openai_style_hard_gates() -> None:
     assert daily_check["additionalProperties"] is False
     assert "status" in daily_check["required"]
     assert "daily_check" in required
+    assert "oneOf" not in daily_check
+    assert daily_check["properties"]["freshness"]["additionalProperties"] is False
+    assert daily_check["properties"]["items"]["items"]["additionalProperties"] is False
 
 
 def test_codex_skill_eval_harness_validates_hard_gates_independently_of_score() -> None:

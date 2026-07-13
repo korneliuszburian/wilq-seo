@@ -57,20 +57,16 @@ GA4 and Ads skill runs, compacts status/freshness/evidence/source/rule IDs and
 typed blockers, and `codex_skill_eval.sh` injects that contract into the eval
 prompt and requires a `daily_check` object in the result. Deterministic helper
 test, strict coverage, skill hygiene and live checks pass. The harness now
-forbids extra shell/API/file reads during the pure-output turn and exposes
-optional isolated runtime flags `CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG=1` and
-`CODEX_SKILL_EVAL_PROFILE`. Fresh runs still do not consistently produce
-`result.json` (context/turn runtime), so this remains an external blocker, not
-a passing skill proof.
+forbids extra shell/API/file reads during the pure-output turn, does not trigger
+the skill itself, and uses a Codex-compatible schema (`additionalProperties=false`
+and no `oneOf`). Fresh evals pass for daily-command, content-strategist, GA4 and
+Ads with API usage, evidence/freshness, blockers and safe next steps preserved.
 
 Recheck 2026-07-13 po ostatnim pushu: API `health=ok`, runtime raportuje
-107900 metric facts i 12 connectorów. Po naprawie schema evala świeży
-`wilq-daily-command` harness zapisał `fresh-20260713e/.../result.json` z
-`api_used=true`, score 10, wszystkimi hard gates i pustym `failure_tags`.
-Drugi świeży przebieg `wilq-content-strategist` (`fresh-20260713g`) również
-przeszedł z score 10 i zachowanym `daily_check.status=blocked`. Pozostałe
-skill evale wymagają osobnego świeżego przebiegu; zadanie `v9ab.10` pozostaje
-otwarte.
+107900 metric facts i 12 connectorów. Po naprawie schema evala świeże wyniki
+znajdują się w `schema-fix5-20260713`/`schema-fix6-20260713`; cztery wymagane
+workflowy przechodzą, a `daily_check.status=blocked` pozostaje wiernym stanem
+API. Zadanie `v9ab.10` spełnia acceptance proof i może zostać zamknięte.
 
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,

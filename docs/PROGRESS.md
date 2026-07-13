@@ -19,27 +19,24 @@ w git, Beads i `docs/progress/archive/`.
   wymagają tych opcjonalnych kontraktów, więc istniejące decyzje nie są sztucznie
   blokowane.
 - `v9ab.10` continuation: harness ma pure-output instruction (bez dodatkowych
-  komend/API/lektury repo) oraz opcjonalny izolowany runtime
-  `CODEX_SKILL_EVAL_CLEAR_SKILL_CONFIG=1` / `CODEX_SKILL_EVAL_PROFILE`. Strict
-  coverage, focused contract tests i shell syntax przechodzą. Próba z bieżącym
-  Codex runtime nadal nie dała świeżego `result.json` (context/turn runtime),
-  więc nie liczę jej jako passing eval.
+  komend/API/lektury repo), nie wywołuje skilla przez trigger `$skill`, a schema
+  evala jest kompatybilne z aktualnym Codex Structured Outputs (jawne
+  `additionalProperties=false`, bez `oneOf`). Świeże evale przechodzą dla
+  `wilq-daily-command` (9/10), `wilq-content-strategist`, `wilq-ga4-analyst` i
+  `wilq-ads-doctor`; każdy zachowuje API usage, evidence/freshness, blocker i
+  bezpieczny następny krok.
 - `v9ab.14` slice 2026-07-13: test route skill smoke został przestawiony z
   kruchych literalnych nazw lokalnych i bezpośrednich wywołań na aktualne
   typed projekcje diagnostyk/context-packów oraz zachowanie evidence/action.
   Focused pytest, Ruff, strict coverage i `git diff --check` przechodzą; Bead
-  zamknięty. Następny aktywny zakres pozostaje `v9ab.10`, zablokowany wyłącznie
-  przez brak świeżego `result.json` w bieżącym runtime Codex.
+  zamknięty. `v9ab.10` ma teraz świeży proof czterech wymaganych workflowów.
 - `v9ab.10` recheck 2026-07-13: WILQ API pozostaje osiągalne (`health=ok`,
   `metric_fact_count=107900`, 12 connectorów w kontrakcie runtime), a
-  `daily-check` odpowiada jako `blocked` z zachowaną świeżością. Po naprawie
-  schema evala `daily_check` świeży harness zapisuje i waliduje
-  `fresh-20260713e/wilq-daily-command/result.json`: `api_used=true`, wynik po
-  polsku, `operator_usefulness_score=10`, wszystkie hard gates true,
-  `failure_tags=[]`. Drugi świeży przebieg `fresh-20260713g` dla
-  `wilq-content-strategist` również przeszedł z score 10 i zachowanym
-  `daily_check.status=blocked`. Pozostałe skill evale wymagają osobnego
-  świeżego przebiegu; `v9ab.10` pozostaje otwarty.
+  `daily-check` odpowiada jako `blocked` z zachowaną świeżością. Pierwsze
+  próby ujawniły niekompatybilny schema (`oneOf`/`additionalProperties=true`),
+  który został poprawiony i pokryty testem; po poprawce świeże przebiegi w
+  `schema-fix5-20260713`/`schema-fix6-20260713` przechodzą dla wszystkich
+  czterech wymaganych skillów.
 - Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
   najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
