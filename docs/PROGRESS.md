@@ -2118,3 +2118,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   Ads contracts, Ruff, mypy i diff check przechodzą. Complexity nadal pokazuje
   dwa znane budżety monolitu. Następny slice: campaign/optimizer orchestration
   po sprawdzeniu zależności.
+- Czwarty slice `kgvy`: wydzielono `wilq/briefing/ads_campaign_optimizer_contracts.py`.
+  Moduł spina campaign triage i optimizer readiness przez istniejący typed
+  builder, bez endpointu, cyklu importów i zmiany payloadu. `ads_diagnostics.py`
+  ma 7 062 linie fizyczne; Ads contracts, Ruff, mypy i diff check przechodzą.
+  Complexity nadal raportuje dwa znane budżety monolitu. Następny slice:
+  ocena sections/blocked-handoff orchestration albo kolejny czysty seam.

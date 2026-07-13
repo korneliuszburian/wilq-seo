@@ -601,6 +601,12 @@
   ma 7 066 linii fizycznych; Ads contracts, Ruff, mypy i diff check zielone.
   `kgvy` pozostaje otwarty z powodu dwóch jawnych budżetów complexity. Następny
   seam: campaign/optimizer orchestration.
+- Czwarty slice wykonany: dodano `wilq/briefing/ads_campaign_optimizer_contracts.py`.
+  Triage i optimizer readiness są składane przez osobny moduł z istniejącym
+  builderem i callbackiem triage; brak importu zwrotnego, endpointu i zmiany
+  kontraktu. `ads_diagnostics.py` ma 7 062 linie fizyczne; 12 testów Ads,
+  Ruff, mypy i diff check zielone. Następny seam: sections/blocked-handoff,
+  jeśli kontrola zależności potwierdzi brak ryzyka.
 
 ## Następny krok
 

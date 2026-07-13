@@ -49,6 +49,9 @@ from wilq.actions.google_ads.recommendations import (
 )
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.briefing.ads_budget_pacing import build_budget_pacing_section
+from wilq.briefing.ads_campaign_optimizer_contracts import (
+    build_campaign_optimizer_contracts,
+)
 from wilq.briefing.ads_campaigns import (
     build_business_context_section,
     build_campaign_overview_section,
@@ -102,7 +105,6 @@ from wilq.briefing.ads_metric_utils import (
     round_metric as _round_metric,
 )
 from wilq.briefing.ads_negative_keywords import build_negative_keywords_section
-from wilq.briefing.ads_optimizer import build_optimizer_readiness_contract
 from wilq.briefing.ads_primary_contracts import build_primary_read_contracts
 from wilq.briefing.ads_recommendations import build_recommendations_section
 from wilq.briefing.ads_search_contracts import (
@@ -573,7 +575,7 @@ def _build_ads_campaign_optimizer_contracts(
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
 ) -> tuple[AdsCampaignTriageReadContract, AdsOptimizerReadinessContract]:
-    campaign_triage_read_contract = _campaign_triage_read_contract(
+    return build_campaign_optimizer_contracts(
         campaign_read_contract,
         business_context_read_contract,
         derived_kpi_read_contract,
@@ -581,12 +583,6 @@ def _build_ads_campaign_optimizer_contracts(
         recommendations_read_contract,
         impression_share_read_contract,
         action_ids,
-    )
-    optimizer_readiness_contract = build_optimizer_readiness_contract(
-        campaign_triage_read_contract,
-        budget_pacing_read_contract,
-        recommendations_read_contract,
-        impression_share_read_contract,
         change_history_read_contract,
         change_impact_readiness_contract,
         search_term_review_summary_contract,
@@ -596,8 +592,8 @@ def _build_ads_campaign_optimizer_contracts(
         keyword_planner_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
+        campaign_triage=_campaign_triage_read_contract,
     )
-    return campaign_triage_read_contract, optimizer_readiness_contract
 
 
 def _build_ads_sections_and_blocked_handoff(
