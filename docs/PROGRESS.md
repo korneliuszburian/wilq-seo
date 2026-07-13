@@ -2227,3 +2227,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przeniesiono do `tests/actions/test_action_evidence_contracts.py`, obok
   istniejących kontraktów audytu i blokowania apply. Nowy plik oraz pełny
   action-object test przechodzą; usunięto osierocony import z mega-testu.
+- Dziesiąta kontynuacja `50wa`: Google Ads business-context review-only action
+  contract przeniesiono do `tests/api_contracts/test_ads_contracts.py`, obok
+  istniejących diagnostyk Ads. Nowy test i pełny action-object test przechodzą;
+  Ruff oraz diff check są zielone.

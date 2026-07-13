@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 import pytest
 
+from tests._contract_support.ads_review_seed import seed_google_ads_live_review_metric_facts
 from tests._contract_support.api_client import client
 from tests._contract_support.env import GOOGLE_ADS_TEST_ENV, clear_google_ads_env
 from wilq.actions.google_ads.business_context import (
@@ -41,6 +42,61 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     MetricFact,
 )
+
+
+def test_google_ads_business_context_action_is_review_only(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_google_ads_env(monkeypatch)
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    actions = {action["id"]: action for action in actions_response.json()}
+    assert ADS_BUSINESS_CONTEXT_ACTION_ID in actions
+    assert "act_configure_google_ads_env" not in actions
+    legacy_action_response = client.get("/api/actions/act_configure_google_ads_env")
+    assert legacy_action_response.status_code == 404
+
+    action_response = client.get(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    serialized = json.dumps(action)
+    assert action["title"] == "Uzupełnij kontekst biznesowy Google Ads"
+    assert action["mode"] == "prepare"
+    assert action["risk"] == "low"
+    assert action["payload"]["action_type"] == "configure_ads_business_context"
+    assert action["payload"]["mode"] == "prepare_only"
+    assert action["payload"]["apply_allowed"] is False
+    assert action["payload"]["destructive"] is False
+    assert action["payload"]["missing_read_contracts"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert "WILQ_ADS_PROFIT_MARGIN" in action["payload"]["required_env"]
+    assert "WILQ_ADS_TARGET_ROAS" in action["payload"]["alternative_env"]["target_roas_or_cpa"]
+    assert (
+        "WILQ_ADS_TARGET_CPA_MICROS" in action["payload"]["alternative_env"]["target_roas_or_cpa"]
+    )
+    assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
+    assert "client_secret" not in serialized
+
+    validate_response = client.post(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}/validate")
+    assert validate_response.status_code == 200
+    validation = validate_response.json()
+    assert validation["valid"] is True
+    assert validation["errors"] == []
+
+    apply_response = client.post(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}/apply")
+    assert apply_response.status_code == 409
+    apply_detail = apply_response.json()["detail"]
+    assert apply_detail["status"] == "blocked"
+    assert apply_detail["applied"] is False
+    assert apply_detail["audit_event"]["event_type"] == "apply_confirmation_missing"
 
 
 def large_ads_metric_fact_fillers(count: int = 2050) -> list[VendorMetricFact]:
