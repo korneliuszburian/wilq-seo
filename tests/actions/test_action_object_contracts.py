@@ -45,7 +45,6 @@ from wilq.actions.google_ads.business_context import (
 )
 from wilq.actions.google_ads.campaign_triage import _campaign_channel_label
 from wilq.actions.google_ads.demand_gen import demand_gen_contract_labels
-from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import (
     _ads_recommendation_type_label,
@@ -2029,126 +2028,6 @@ def test_google_ads_target_guardrail_confirmation_summary_uses_operator_labels(
         "podaj docelowy zwrot z reklam albo koszt pozyskania celu"
         in confirmation["audit_event"]["summary"]
     )
-
-
-def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
-    blocked_run = ConnectorRefreshRun(
-        id="refresh_google_ads_keyword_planner_blocked",
-        connector_id="google_ads",
-        mode=ConnectorRefreshMode.vendor_read,
-        status=ConnectorRefreshStatus.completed,
-        completed_at=datetime.now(UTC) + timedelta(seconds=1),
-        evidence_ids=["ev_refresh_refresh_google_ads_keyword_planner_blocked"],
-        external_call_attempted=True,
-        vendor_data_collected=True,
-        metric_summary={
-            "campaign_row_count": 1,
-            "search_term_row_count": 1,
-            "keyword_planner_status": "blocked",
-            "keyword_planner_http_status": 403,
-            "keyword_planner_blocker": (
-                "api_code=403, api_status=PERMISSION_DENIED, "
-                "ads_error=authorizationError.DEVELOPER_TOKEN_NOT_APPROVED"
-            ),
-            "keyword_planner_seed_term_count": 1,
-            "keyword_planner_idea_count": 0,
-        },
-        summary="Google Ads Keyword Planner access blocked seed.",
-    )
-    local_state_store().save_connector_refresh_run(blocked_run)
-
-    actions_response = client.get("/api/actions")
-    assert actions_response.status_code == 200
-    actions = {action["id"]: action for action in actions_response.json()}
-    assert KEYWORD_PLANNER_ACCESS_ACTION_ID in actions
-    action = actions[KEYWORD_PLANNER_ACCESS_ACTION_ID]
-    serialized = json.dumps(action)
-
-    assert action["title"] == "Odblokuj Keyword Planner dla Google Ads"
-    assert action["mode"] == "prepare"
-    assert action["risk"] == "low"
-    assert action["payload"]["action_type"] == "configure_google_ads_keyword_planner_access"
-    assert action["payload"]["blocked_api"] == "Keyword Planner"
-    assert action["payload"]["blocked_reason"] == (
-        "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
-    )
-    assert action["payload"]["apply_allowed"] is False
-    assert action["payload"]["destructive"] is False
-    assert "rozmiar odbiorców" in action["payload"]["blocked_claims"]
-    assert action["preview_cards"]
-    preview_card = action["preview_cards"][0]
-    assert preview_card["kind"] == "google_ads_keyword_planner_access_review"
-    assert preview_card["title_label"] == "Dostęp do Keyword Plannera do odblokowania"
-    preview_rows = {row["label"]: row["value"] for row in preview_card["rows"]}
-    assert preview_rows["Powód"] == (
-        "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
-    )
-    assert "api_code=403" not in str(preview_card)
-    assert "DEVELOPER_TOKEN_NOT_APPROVED" not in str(preview_card)
-    assert "PERMISSION_DENIED" not in serialized
-    assert "DEVELOPER_TOKEN_NOT_APPROVED" not in serialized
-    assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
-    assert "client_secret" not in serialized
-
-    context_response = client.post(
-        "/api/codex/context-pack",
-        json={"skill": "wilq-ads-doctor"},
-    )
-    assert context_response.status_code == 200
-    keyword_planner_context_action = next(
-        action
-        for action in context_response.json()["active_action_objects"]
-        if action["id"] == KEYWORD_PLANNER_ACCESS_ACTION_ID
-    )
-    context_text = json.dumps(keyword_planner_context_action, ensure_ascii=False)
-    assert KEYWORD_PLANNER_ACCESS_ACTION_ID in context_text
-    assert "PERMISSION_DENIED" not in context_text
-    assert "DEVELOPER_TOKEN_NOT_APPROVED" not in context_text
-    assert "developer token" not in context_text
-    assert "forecast" not in context_text
-    assert "audience size" not in context_text
-    assert "Keyword Planner claims" not in context_text
-    assert "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera" in context_text
-
-    validate_response = client.post(f"/api/actions/{KEYWORD_PLANNER_ACCESS_ACTION_ID}/validate")
-    assert validate_response.status_code == 200
-    validation = validate_response.json()
-    assert validation["valid"] is True
-    assert validation["errors"] == []
-
-    diagnostics_response = client.get("/api/ads/diagnostics")
-    assert diagnostics_response.status_code == 200
-    diagnostics = diagnostics_response.json()
-    keyword_planner_contract = diagnostics["keyword_planner_read_contract"]
-    assert keyword_planner_contract["status"] == "blocked"
-    assert "keyword_planner_enrichment" in keyword_planner_contract["missing_read_contracts"]
-    keyword_planner_section = next(
-        section for section in diagnostics["sections"] if section["id"] == "ads_keyword_planner"
-    )
-    assert keyword_planner_section["status"] == "blocked"
-    assert keyword_planner_section["action_ids"] == [KEYWORD_PLANNER_ACCESS_ACTION_ID]
-    assert KEYWORD_PLANNER_ACCESS_ACTION_ID in diagnostics["action_ids"]
-    sections_by_id = {section["id"]: section for section in diagnostics["sections"]}
-    assert sections_by_id["ads_live_data_status"]["action_ids"] == []
-    assert sections_by_id["ads_campaign_overview"]["action_ids"] == [
-        "act_prepare_ads_campaign_review_queue"
-    ]
-    assert sections_by_id["ads_search_terms"]["action_ids"] == [
-        "act_prepare_custom_segments_from_search_terms",
-        "act_prepare_negative_keyword_review_queue",
-    ]
-    assert (
-        KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id["ads_live_data_status"]["action_ids"]
-    )
-    assert (
-        KEYWORD_PLANNER_ACCESS_ACTION_ID
-        not in sections_by_id["ads_campaign_overview"]["action_ids"]
-    )
-    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id["ads_search_terms"]["action_ids"]
 
 
 def test_metric_backed_prepare_actions_are_evidence_grounded(

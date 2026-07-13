@@ -2235,3 +2235,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   i lokalnego stanu przeniesiono do `tests/api_contracts/test_ads_contracts.py`.
   Test docelowy oraz pełny action-object suite przechodzą; kontrakt zachowuje
   blokadę użycia targetu do apply bez review strategii.
+- Dwunasta kontynuacja `50wa`: Keyword Planner blocked-access action contract
+  przeniesiono do `tests/api_contracts/test_ads_contracts.py`. Test docelowy i
+  pełny action-object suite przechodzą; redakcja błędu vendora oraz review-only
+  ActionObject pozostają pokryte bez ujawniania technicznego payloadu.
