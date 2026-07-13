@@ -1873,6 +1873,35 @@ def assert_ads_change_history_action_payload(action: dict[str, Any]) -> None:
     assert "pre_change_performance_window" in payload["missing_read_contracts"]
 
 
+def assert_ads_ngram_action_payload(action: dict[str, Any]) -> None:
+    """Prove n-gram review preview is operator-readable and non-mutating."""
+    payload = action["payload"]
+    assert payload["action_type"] == "google_ads_search_term_ngram_review"
+    assert payload["preview_contract"] == "search_term_ngram_review_v1"
+    preview = payload["ngram_preview"][0]
+    assert preview["ngram"]
+    assert preview["sample_search_terms"]
+    assert preview["apply_allowed"] is False
+    assert preview["destructive"] is False
+    assert preview["api_mutation_ready"] is False
+    assert payload["apply_allowed"] is False
+    assert payload["destructive"] is False
+    assert payload["api_mutation_ready"] is False
+    operator_text = "\n".join([action["human_diagnosis"], action["recommended_reason"]])
+    assert "negative keyword queue" not in operator_text
+    assert "search-term evidence" not in operator_text
+    assert "kolejki sprawdzenia wykluczeń" in operator_text
+    preview_card = action["preview_cards"][0]
+    assert preview_card["kind"] == "google_ads_search_term_ngram_review"
+    assert preview_card["title_label"] == "Temat zapytań do sprawdzenia"
+    rows = {row["label"]: row["value"] for row in preview_card["rows"]}
+    assert rows["Temat"]
+    assert rows["Przykłady"]
+    assert "SearchTermNgramReview" not in str(preview_card)
+    assert "search_term_ngram_review_v1" not in str(preview_card)
+    assert "ngram_to_negative_keyword_change_preview" not in str(preview_card)
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4284,35 +4313,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert validate_response.json()["valid"] is True
     assert SEARCH_TERM_NGRAM_ACTION_ID in actions
     ngram_action = actions[SEARCH_TERM_NGRAM_ACTION_ID]
-    assert ngram_action["payload"]["action_type"] == ("google_ads_search_term_ngram_review")
-    assert ngram_action["payload"]["preview_contract"] == "search_term_ngram_review_v1"
-    assert ngram_action["payload"]["ngram_preview"][0]["ngram"]
-    assert ngram_action["payload"]["ngram_preview"][0]["sample_search_terms"]
-    assert ngram_action["payload"]["ngram_preview"][0]["apply_allowed"] is False
-    assert ngram_action["payload"]["ngram_preview"][0]["destructive"] is False
-    assert ngram_action["payload"]["ngram_preview"][0]["api_mutation_ready"] is False
-    assert ngram_action["payload"]["apply_allowed"] is False
-    assert ngram_action["payload"]["destructive"] is False
-    assert ngram_action["payload"]["api_mutation_ready"] is False
-    ngram_operator_text = "\n".join(
-        [
-            ngram_action["human_diagnosis"],
-            ngram_action["recommended_reason"],
-        ]
-    )
-    assert "negative keyword queue" not in ngram_operator_text
-    assert "search-term evidence" not in ngram_operator_text
-    assert "kolejki sprawdzenia wykluczeń" in ngram_operator_text
-    assert ngram_action["preview_cards"]
-    ngram_preview_card = ngram_action["preview_cards"][0]
-    assert ngram_preview_card["kind"] == "google_ads_search_term_ngram_review"
-    assert ngram_preview_card["title_label"] == "Temat zapytań do sprawdzenia"
-    ngram_preview_rows = {row["label"]: row["value"] for row in ngram_preview_card["rows"]}
-    assert ngram_preview_rows["Temat"]
-    assert ngram_preview_rows["Przykłady"]
-    assert "SearchTermNgramReview" not in str(ngram_preview_card)
-    assert "search_term_ngram_review_v1" not in str(ngram_preview_card)
-    assert "ngram_to_negative_keyword_change_preview" not in str(ngram_preview_card)
+    assert_ads_ngram_action_payload(ngram_action)
     ngram_validate_response = client.post(f"/api/actions/{SEARCH_TERM_NGRAM_ACTION_ID}/validate")
     assert ngram_validate_response.status_code == 200
     assert ngram_validate_response.json()["valid"] is True

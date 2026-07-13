@@ -492,6 +492,11 @@
   contract, brak performance window i fail-closed flags są zachowane.
   Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1347 linii i 12
   branchy. Następny krok: n-gram action payload i decyzje search.
+- Czterdziesty czwarty pod-slice zakończony: n-gram ActionObject payload jest
+  w `assert_ads_ngram_action_payload`; operator copy, preview-card disclosure
+  i fail-closed flags są zachowane. Focused Ads/Ruff/mypy/diff check zielone;
+  główny test ma 1319 linii i 12 branchy. Następny krok:
+  search-term/safety/negative-keyword decisions.
 
 ## Następny krok
 

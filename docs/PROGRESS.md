@@ -2008,3 +2008,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   preview contract, missing performance window i wszystkie fail-closed flags
   są zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1347
   linii i 12 branchy. Następny seam: n-gram action payload i decyzje search.
+- Czterdziesty czwarty pod-slice c9h9.22: n-gram ActionObject payload
+  wydzielony do `assert_ads_ngram_action_payload`; zachowano operator copy,
+  preview-card disclosure i wszystkie fail-closed flags. Focused
+  Ads/Ruff/mypy/diff check zielone; główny test ma 1319 linii i 12 branchy.
+  Następny seam: search-term/safety/negative-keyword decisions.
