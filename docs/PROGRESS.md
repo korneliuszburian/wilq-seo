@@ -26,6 +26,11 @@ w git, Beads i `docs/progress/archive/`.
   Read-only evidence i apply safety pozostają bez zmian. Shared schema/dashboard
   lint, build, tests i typecheck przechodzą. Następny seam: Ads decision/summary
   contracts.
+- Dwunasty seam: `ads_decisions.ts` zawiera Ads decision queue item i operator
+  summary (165 LOC); `index.ts` ma 2 240 LOC. Diagnostyka nadal składa te
+  kontrakty przez stabilny barrel, bez zmiany payloadów. Shared schema/dashboard
+  lint, build, tests i typecheck przechodzą. Następny seam: Ads freshness i
+  diagnostics response.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

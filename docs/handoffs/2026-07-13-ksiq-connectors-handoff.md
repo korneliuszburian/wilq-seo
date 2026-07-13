@@ -63,6 +63,10 @@
   change-history row/read oraz impact-readiness row/read contracts (99 LOC);
   `index.ts` ma 2 377 LOC. Read-only evidence/apply safety bez zmian, focused
   gates przechodzą. Następny seam: Ads decision/summary contracts.
+- Dwunasty seam: `packages/shared-schemas/src/ads_decisions.ts` zawiera Ads
+  decision queue item i operator summary (165 LOC); `index.ts` ma 2 240 LOC.
+  Diagnostyka nadal korzysta ze stabilnego barrel, payloady bez zmian, focused
+  gates przechodzą. Następny seam: Ads freshness i diagnostics response.
 
 ## Następny krok
 
