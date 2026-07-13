@@ -48,19 +48,13 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_ACTION_ID,
 )
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
-from wilq.briefing.ads_budget_pacing import (
-    build_budget_pacing_read_contract,
-    build_budget_pacing_section,
-)
+from wilq.briefing.ads_budget_pacing import build_budget_pacing_section
 from wilq.briefing.ads_campaigns import (
     build_business_context_section,
     build_campaign_overview_section,
     build_derived_kpi_section,
 )
-from wilq.briefing.ads_change_history import (
-    build_change_history_read_contract,
-    build_change_history_section,
-)
+from wilq.briefing.ads_change_history import build_change_history_section
 from wilq.briefing.ads_custom_segments import build_custom_segments_section
 from wilq.briefing.ads_decision_queue import (
     build_block_write_actions_decision,
@@ -79,10 +73,7 @@ from wilq.briefing.ads_decision_queue import (
     build_search_terms_decision,
     decision_priority,
 )
-from wilq.briefing.ads_impression_share import (
-    build_impression_share_read_contract,
-    build_impression_share_section,
-)
+from wilq.briefing.ads_impression_share import build_impression_share_section
 from wilq.briefing.ads_keyword_planner import build_keyword_planner_section
 from wilq.briefing.ads_metric_tiles import (
     budget_context_metric_tiles,
@@ -111,10 +102,8 @@ from wilq.briefing.ads_metric_utils import (
 )
 from wilq.briefing.ads_negative_keywords import build_negative_keywords_section
 from wilq.briefing.ads_optimizer import build_optimizer_readiness_contract
-from wilq.briefing.ads_recommendations import (
-    build_recommendations_read_contract,
-    build_recommendations_section,
-)
+from wilq.briefing.ads_primary_contracts import build_primary_read_contracts
+from wilq.briefing.ads_recommendations import build_recommendations_section
 from wilq.briefing.ads_search_terms import (
     build_keyword_match_context_section,
     build_search_term_ngram_section,
@@ -806,61 +795,15 @@ def _build_ads_primary_read_contracts(
     AdsImpressionShareReadContract,
     AdsChangeHistoryReadContract,
 ]:
-    account_currency_read_contract = _account_currency_read_contract(
+    return build_primary_read_contracts(
         trusted_metric_facts,
         latest_refresh,
-    )
-    business_context_read_contract = _business_context_read_contract(latest_refresh)
-    campaign_read_contract = _campaign_read_contract(
-        trusted_metric_facts,
-        latest_refresh,
-        business_context_read_contract,
-        account_currency_read_contract.currency_code,
-    )
-    derived_kpi_read_contract = _derived_kpi_read_contract(
-        campaign_read_contract,
-        account_currency_read_contract,
-        business_context_read_contract,
-    )
-    fallback_evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
-    budget_pacing_read_contract = build_budget_pacing_read_contract(
-        trusted_metric_facts,
-        campaign_read_contract,
-        fallback_evidence_ids=fallback_evidence_ids,
-    )
-    recommendations_read_contract = build_recommendations_read_contract(
-        trusted_metric_facts,
-        read_attempted=_latest_refresh_has_summary_metric(
-            latest_refresh,
-            "recommendation_row_count",
-        ),
-        fallback_evidence_ids=fallback_evidence_ids,
-    )
-    impression_share_read_contract = build_impression_share_read_contract(
-        trusted_metric_facts,
-        read_attempted=_latest_refresh_has_summary_metric(
-            latest_refresh,
-            "impression_share_row_count",
-        ),
-        fallback_evidence_ids=fallback_evidence_ids,
-    )
-    change_history_read_contract = build_change_history_read_contract(
-        trusted_metric_facts,
-        read_attempted=_latest_refresh_has_summary_metric(
-            latest_refresh,
-            "change_event_row_count",
-        ),
-        fallback_evidence_ids=fallback_evidence_ids,
-    )
-    return (
-        account_currency_read_contract,
-        business_context_read_contract,
-        campaign_read_contract,
-        derived_kpi_read_contract,
-        budget_pacing_read_contract,
-        recommendations_read_contract,
-        impression_share_read_contract,
-        change_history_read_contract,
+        account_currency=_account_currency_read_contract,
+        business_context=_business_context_read_contract,
+        campaign=_campaign_read_contract,
+        derived_kpi=_derived_kpi_read_contract,
+        fallback_evidence_ids=_refresh_or_connector_evidence_ids,
+        latest_refresh_has_summary_metric=_latest_refresh_has_summary_metric,
     )
 
 

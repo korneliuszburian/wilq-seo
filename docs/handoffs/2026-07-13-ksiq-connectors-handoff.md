@@ -579,6 +579,15 @@
   impression share i optimizer. `build_ads_diagnostics` ma 201 linii / 4
   branchy. Następny krok: import boundary dla primary read-contract
   orchestration, bez cykli i bez zmiany runtime.
+- Slice wykonany po rebaseline: dodano `wilq/briefing/ads_primary_contracts.py`
+  jako import boundary dla podstawowych Ads read-contractów. Granica przyjmuje
+  typed callbacki (`account_currency`, `business_context`, `campaign`,
+  `derived_kpi`) i używa istniejących domenowych builderów; `ads_diagnostics.py`
+  nie importuje się zwrotnie. 11 testów Ads, Ruff, mypy i diff check zielone;
+  plik główny zmniejszony o 69 linii. Complexity nadal jawnie pokazuje dwa
+  historyczne budżety (plik 6 559 LOC, builder 201 linii), więc `kgvy` nie jest
+  zamknięty. Następny slice: kolejny read-contract seam, tylko po sprawdzeniu
+  zależności importów i parytetu HTTP.
 
 ## Następny krok
 

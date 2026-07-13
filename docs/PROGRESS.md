@@ -2094,3 +2094,11 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `build_ads_diagnostics` (201 linii / 4 branchy). Następny slice wymaga
   zaprojektowania import boundary dla primary read-contract orchestration,
   bez cykli i bez zmiany runtime.
+- Pierwszy slice `kgvy`: wydzielono `wilq/briefing/ads_primary_contracts.py`.
+  Moduł składa podstawowe read-contracty przez jawne callbacki do lokalnych
+  builderów, więc nie tworzy cyklu importów ani nowego endpointu. `ads_diagnostics.py`
+  zmniejszył się o 69 linii (7 083 fizyczne), a kontrakt Ads (11 testów), Ruff,
+  mypy i diff check przechodzą. Complexity nadal raportuje dwa znane naruszenia
+  budżetu tego monolitu (plik 6 559 LOC, `build_ads_diagnostics` 201 linii),
+  dlatego `kgvy` pozostaje otwarty. Następny slice: przenieść kolejną grupę
+  czystych kontraktów read bez importu zwrotnego.
