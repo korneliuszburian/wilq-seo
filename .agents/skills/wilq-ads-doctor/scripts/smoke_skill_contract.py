@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from ads_change_history_assertions import validate_change_history_contract
 from ads_change_impact_assertions import validate_change_impact_contract
+from ads_context_lineage import validate_context_lineage
 from ads_custom_segments_assertions import validate_custom_segments_contract
 from ads_impression_share_assertions import validate_impression_share_contract
 from ads_keyword_match_assertions import validate_keyword_match_context_contract
@@ -683,45 +684,6 @@ def _find_readiness_item(items: list[dict[str, Any]], item_id: str) -> dict[str,
         if item.get("id") == item_id:
             return item
     return {}
-
-
-def validate_context_lineage(pack: dict[str, Any]) -> None:
-    decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
-    referenced_knowledge_card_ids = {
-        card_id
-        for decision in decision_queue
-        if isinstance(decision, dict)
-        for card_id in decision.get("knowledge_card_ids", [])
-    }
-    referenced_expert_rule_ids = {
-        rule_id
-        for decision in decision_queue
-        if isinstance(decision, dict)
-        for rule_id in decision.get("expert_rule_ids", [])
-    }
-    if not referenced_knowledge_card_ids:
-        raise SystemExit("Ads context-pack decisions must expose knowledge card IDs")
-    if not referenced_expert_rule_ids:
-        raise SystemExit("Ads context-pack decisions must expose expert rule IDs")
-    context_knowledge_card_ids = {
-        card.get("id")
-        for card in pack.get("knowledge_card_summaries", [])
-        if isinstance(card, dict)
-    }
-    context_expert_rule_ids = {
-        rule.get("id") for rule in pack.get("expert_rule_summaries", []) if isinstance(rule, dict)
-    }
-    missing_cards = referenced_knowledge_card_ids - context_knowledge_card_ids
-    missing_rules = referenced_expert_rule_ids - context_expert_rule_ids
-    if missing_cards:
-        raise SystemExit(
-            "Ads context-pack lacks knowledge card summaries for: "
-            + ", ".join(sorted(missing_cards))
-        )
-    if missing_rules:
-        raise SystemExit(
-            "Ads context-pack lacks expert rule summaries for: " + ", ".join(sorted(missing_rules))
-        )
 
 
 def _unique(values: list[str | None]) -> list[str]:

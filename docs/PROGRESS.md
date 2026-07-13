@@ -150,6 +150,10 @@ w git, Beads i `docs/progress/archive/`.
 - Connector status compaction korzysta z tego samego helpera i przekazuje tylko
   id/status/configured/missing credentials/error. Live smoke kończy się `exit 0`;
   `main` ma 607 LOC/120 branches, bez zmiany API ani redaction.
+- Ads context-pack lineage assertion jest teraz w
+  `scripts/ads_context_lineage.py`. Live smoke kończy się `exit 0`; `main` ma
+  607 LOC/120 branches, helper 39 LOC/9 branches. Knowledge card i expert rule
+  IDs muszą pozostać obecne w compact context.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

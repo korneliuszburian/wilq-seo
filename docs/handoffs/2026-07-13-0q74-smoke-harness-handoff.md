@@ -123,6 +123,9 @@
 - Connector status compaction używa tego samego modułu; live smoke przechodzi,
   a `main` ma 607 LOC/120 branches. Statusy są ograniczone do pól potrzebnych
   do freshness/blocker decyzji, bez zmiany API.
+- Context-pack lineage assertion jest w `scripts/ads_context_lineage.py`; live
+  smoke przechodzi, a `main` ma 607 LOC/120 branches. Knowledge card/expert
+  rule IDs są wymagane w compact context; następny seam to final report shaping.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
