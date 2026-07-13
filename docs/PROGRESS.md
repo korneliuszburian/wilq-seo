@@ -120,6 +120,11 @@ w git, Beads i `docs/progress/archive/`.
   `connectorRefreshRun.fixture.ts` między App i `ConnectorRefreshRunList`;
   focused Vitest wzrósł do 32 testów, lint/typecheck nadal przechodzą, a
   omnibus nie duplikuje już danych testowych.
+- Kolejny slice `wilq-seo-pidl`: podstawowy widok `/settings` ma teraz
+  niezależny `SettingsSurface.test.tsx` i współdzieloną typed fixture źródeł;
+  test dowodzi decyzji, blockerów, freshness oraz ukrycia technicznych
+  payloadów bez uruchamiania całego `App.test.tsx`. Usunięto 47 linii z
+  omnibusu; focused test, dashboard typecheck/lint i diff check przechodzą.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

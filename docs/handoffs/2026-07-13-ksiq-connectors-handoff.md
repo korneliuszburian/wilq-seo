@@ -146,6 +146,12 @@
   map. Publiczne nazwy pozostają kompatybilne; build/test shared-schemas,
   dashboard typecheck/lint oraz `git diff --check` przechodzą. Następny krok:
   świeży import/use audit i wybór kolejnego potwierdzonego seama.
+- `wilq-seo-pidl` continuation: podstawowe zachowanie `/settings` zostało
+  przeniesione do `apps/dashboard/src/routes/SettingsSurface.test.tsx` z
+  `settingsSurface.fixture.ts`. Test bez App omnibusu sprawdza zdrowie źródeł,
+  freshness, blokery decyzji i techniczne disclosure. App.test.tsx zmalał do
+  9522 LOC; focused test 1/1, dashboard typecheck/lint i `git diff --check`
+  przechodzą. Następny seam: pozostałe settings/source refresh behaviors.
 
 ## Następny krok
 

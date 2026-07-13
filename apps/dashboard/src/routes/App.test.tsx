@@ -8027,53 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("connector status renders", async () => {
-    renderApp("/settings");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Źródła" })).toBeInTheDocument()
-    );
-    expect(
-      screen.getByText("Zdrowie źródeł, aktualność danych i dostęp wpływają na jakość decyzji.")
-    ).toBeInTheDocument();
-    expect(screen.getByText("źródeł")).toBeInTheDocument();
-    expect(screen.getByText("gotowe dziennie")).toBeInTheDocument();
-    expect(screen.getByText("brak dostępu")).toBeInTheDocument();
-    expect(screen.getByText("wymagają odświeżenia")).toBeInTheDocument();
-    expect(screen.getByText("Co blokuje pracę")).toBeInTheDocument();
-    expect(screen.getByText(/Brakuje dostępu do Google Ads/)).toBeInTheDocument();
-    expect(screen.getByText(/1 źródło wymaga odświeżenia przed oceną wyników/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Dostęp do źródeł" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Wpływ braków na decyzje" })).toBeInTheDocument();
-    expect(screen.getByText("Blokada pełnej oceny Ads i zmian kampanii")).toBeInTheDocument();
-    expect(screen.getByText("Aktualna ocena jakości ruchu i pomiaru")).toBeInTheDocument();
-    expect(screen.getByText("Odśwież źródło przed decyzją")).toBeInTheDocument();
-    expect(screen.getByText("Uzupełnij dostęp Ads i odśwież źródło")).toBeInTheDocument();
-    expect(screen.getByText("Do odświeżenia")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Eksport i pakiety" })).toBeInTheDocument();
-    expect(screen.getByText("Eksport zablokowany")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Otwórz Google Sheets" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
-    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż szczegóły techniczne źródeł" })).toBeInTheDocument();
-    expect(screen.queryByText("Missing credentials")).not.toBeInTheDocument();
-    expect(screen.queryByText("Configured")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Source:/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
-    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-    expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
-    expect(
-      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/refresh"))
-    ).toHaveLength(0);
-
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne źródeł" }));
-    expect(screen.getAllByText("Google Ads").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Źródło danych sprawdzane przez WILQ.").length).toBeGreaterThan(0);
-    expect(screen.getByText("Brakujące ustawienia dostępu")).toBeInTheDocument();
-    expect(screen.getByText("1 pole")).toBeInTheDocument();
-    expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
-    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-  });
-
   it("refreshes stale source data from the sources view", async () => {
     renderApp("/settings");
     await waitFor(() =>
