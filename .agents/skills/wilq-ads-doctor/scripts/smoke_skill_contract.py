@@ -10,6 +10,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from ads_change_history_assertions import validate_change_history_contract
 from ads_impression_share_assertions import validate_impression_share_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
@@ -231,33 +232,7 @@ def main() -> int:
             raise SystemExit("Context pack budget decision expert rules differ")
     recommendations_read_contract = validate_recommendations_contract(ads_diagnostics, pack)
     impression_share_read_contract = validate_impression_share_contract(ads_diagnostics, pack)
-    if change_history_read_contract.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads diagnostics must expose change_history_read_contract")
-    if not change_history_read_contract.get("blocked_claims"):
-        raise SystemExit("Change history contract must list zablokowane obietnice")
-    if change_history_read_contract.get("status") == "ready":
-        pack_change_history_contract = (
-            pack.get("ads_diagnostics", {}).get("change_history_read_contract") or {}
-        )
-        if pack_change_history_contract.get("summary") != change_history_read_contract.get(
-            "summary"
-        ):
-            raise SystemExit("Context pack change history contract differs")
-        if "wpływ zmian" not in change_history_read_contract.get("blocked_claims", []):
-            raise SystemExit("Change history contract must keep wpływ zmian blocked")
-    else:
-        missing_change_history_contracts = set(
-            change_history_read_contract.get("missing_read_contracts") or []
-        )
-        change_history_rows = change_history_read_contract.get("change_history_rows") or []
-        if "change_history" not in missing_change_history_contracts and not (
-            "change_event_rows" in missing_change_history_contracts
-            and len(change_history_rows) == 0
-        ):
-            raise SystemExit(
-                "Blocked change history contract must list missing change_history "
-                "or empty change_event_rows"
-            )
+    change_history_read_contract = validate_change_history_contract(ads_diagnostics, pack)
     if change_impact_readiness_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose change_impact_readiness_contract")
     if change_impact_readiness_contract.get("apply_allowed") is not False:

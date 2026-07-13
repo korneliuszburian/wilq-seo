@@ -82,6 +82,9 @@
 - Impression-share read contract jest w
   `scripts/ads_impression_share_assertions.py`; live smoke przechodzi, a
   `main` ma 820 LOC/207 branches. Następny seam: change-history/readiness.
+- Change-history read contract jest w
+  `scripts/ads_change_history_assertions.py`; live smoke przechodzi, a
+  `main` ma 794 LOC/196 branches. Następny seam: change-impact readiness.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

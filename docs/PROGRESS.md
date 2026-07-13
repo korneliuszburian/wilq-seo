@@ -107,6 +107,9 @@ w git, Beads i `docs/progress/archive/`.
 - Ads impression-share contract jest teraz w
   `scripts/ads_impression_share_assertions.py`. Live smoke po zmianie kończy
   się `exit 0`; `main` ma 820 LOC/207 branches, nowy helper 19 LOC/8 branches.
+- Ads change-history read contract jest teraz w
+  `scripts/ads_change_history_assertions.py`. Live smoke kończy się `exit 0`;
+  `main` spadł do 794 LOC/196 branches, helper ma 25 LOC/12 branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
