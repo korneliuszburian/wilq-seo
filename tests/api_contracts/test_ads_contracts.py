@@ -47,6 +47,256 @@ from wilq.schemas import (
 from wilq.storage.local_state import local_state_store
 
 
+def test_google_ads_business_context_allows_empty_preliminary_targets(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_google_ads_env(monkeypatch)
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_ADS_PROFIT_MARGIN", "0.35")
+    monkeypatch.setenv("WILQ_ADS_BUSINESS_GOAL", "lead quality review")
+    monkeypatch.setenv("WILQ_ADS_BUDGET_GOAL", "protect current monthly budget")
+    monkeypatch.setenv("WILQ_ADS_TARGET_ROAS", "")
+    monkeypatch.setenv("WILQ_ADS_TARGET_CPA_MICROS", "")
+
+    response = client.get("/api/ads/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    business_context_contract = payload["business_context_read_contract"]
+    assert business_context_contract["status"] == "ready"
+    assert business_context_contract["status_label"] == "wstępny"
+    assert business_context_contract["profit_margin"] == 0.35
+    assert business_context_contract["business_goal"] == "lead quality review"
+    assert business_context_contract["budget_goal"] == "protect current monthly budget"
+    assert business_context_contract["target_roas"] is None
+    assert business_context_contract["target_cpa_micros"] is None
+    assert business_context_contract["allowed_metrics"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+    ]
+    assert business_context_contract["business_policy_ids"] == [
+        "use_margin_as_context_not_profitability_verdict",
+        "align_campaign_review_to_business_goal",
+        "honor_human_budget_goal_before_budget_changes",
+        "block_target_verdict_until_roas_or_cpa_confirmed",
+        "block_target_verdict_until_strategy_review_approved",
+    ]
+    assert (
+        business_context_contract["target_interpretation"]["interpretation_contract"]
+        == "ads_business_target_interpretation_v1"
+    )
+    assert business_context_contract["target_interpretation"]["status"] == "preliminary"
+    assert business_context_contract["target_interpretation"]["status_label"] == "wstępne"
+    assert (
+        "campaign_review_context"
+        in business_context_contract["target_interpretation"]["allowed_uses"]
+    )
+    assert (
+        "kontekst oceny kampanii"
+        in business_context_contract["target_interpretation"]["allowed_use_labels"]
+    )
+    assert (
+        "target_kpi_verdict" in business_context_contract["target_interpretation"]["blocked_uses"]
+    )
+    assert (
+        "ocena wskaźników względem celu"
+        in business_context_contract["target_interpretation"]["blocked_use_labels"]
+    )
+    assert business_context_contract["target_interpretation"]["missing_requirements"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert business_context_contract["target_interpretation"]["missing_requirement_labels"] == [
+        "docelowy zwrot z reklam albo koszt pozyskania celu",
+        "ocena strategii przez człowieka",
+    ]
+    assert (
+        "ocena strategii przez człowieka"
+        in business_context_contract["target_interpretation"]["required_validation_labels"]
+    )
+    assert business_context_contract["target_interpretation"]["action_ids"] == [
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
+    assert business_context_contract["target_interpretation"]["apply_allowed"] is False
+    assert business_context_contract["target_interpretation"]["destructive"] is False
+    strategy_readiness = business_context_contract["strategy_review_readiness_contract"]
+    assert strategy_readiness["id"] == "ads_strategy_review_readiness_contract"
+    assert strategy_readiness["status"] == "blocked"
+    assert strategy_readiness["status_label"] == "zablokowane"
+    assert strategy_readiness["latest_review_status"] == "missing"
+    assert strategy_readiness["latest_review_status_label"] == ("ocena strategii niepotwierdzona")
+    assert strategy_readiness["latest_review_outcome"] is None
+    assert strategy_readiness["apply_allowed"] is False
+    assert strategy_readiness["action_ids"] == [ADS_STRATEGY_REVIEW_ACTION_ID]
+    assert strategy_readiness["current_context"]["profit_margin"] == 0.35
+    assert strategy_readiness["current_context"]["business_goal"] == "lead quality review"
+    assert strategy_readiness["current_context"]["budget_goal"] == (
+        "protect current monthly budget"
+    )
+    assert strategy_readiness["current_context"]["target_roas"] is None
+    assert strategy_readiness["current_context"]["target_cpa_micros"] is None
+    assert strategy_readiness["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert strategy_readiness["missing_read_contract_labels"] == [
+        "docelowy zwrot z reklam albo koszt pozyskania celu",
+        "ocena strategii przez człowieka",
+    ]
+    assert "human_strategy_review" in strategy_readiness["required_validation"]
+    assert "ocena strategii przez człowieka" in strategy_readiness["required_validation_labels"]
+    assert "ocena opłacalności" in strategy_readiness["blocked_claims"]
+    assert "ocena opłacalności" in strategy_readiness["blocked_claim_labels"]
+    assert business_context_contract["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+    ]
+    assert business_context_contract["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert "wstępny lokalny kontekst" in business_context_contract["summary"]
+    assert "ocena celu pozostaje zablokowana" in business_context_contract["next_step"]
+
+    business_context_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_business_context"
+    )
+    assert business_context_section["status"] == "ready"
+    assert business_context_section["action_ids"] == [
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
+
+    business_context_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_business_context"
+    )
+    assert business_context_decision["status"] == "ready"
+    assert business_context_decision["start_here_summary"]
+    assert business_context_decision["measurement_plan"]
+    assert "opłacalnym" in business_context_decision["start_here_summary"]
+    assert "okna pomiarowego" in business_context_decision["measurement_plan"]
+    assert business_context_decision["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert business_context_decision["metric_tiles"] == {
+        "braki": 2,
+        "blokady": 6,
+        "ustawione pola": 3,
+        "warunki sprawdzenia": 5,
+        "polityki": 5,
+    }
+    assert (
+        business_context_decision["operator_review_gates"]
+        == (business_context_contract["operator_review_gates"])
+    )
+    assert business_context_decision["action_ids"] == [
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    actions = {action["id"]: action for action in actions_response.json()}
+    assert ADS_BUSINESS_CONTEXT_ACTION_ID not in actions
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID in actions
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in actions
+
+    action_response = client.get(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    assert action["title"] == "Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads"
+    assert action["mode"] == "prepare"
+    assert action["payload"]["action_type"] == "confirm_ads_target_guardrails"
+    assert action["payload"]["mode"] == "prepare_only"
+    assert action["payload"]["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert action["payload"]["current_context"]["profit_margin"] == 0.35
+    assert action["payload"]["current_context"]["business_goal"] == "lead quality review"
+    assert action["payload"]["current_context"]["budget_goal"] == "protect current monthly budget"
+    assert action["payload"]["current_context"]["target_roas"] is None
+    assert action["payload"]["current_context"]["target_cpa_micros"] is None
+    assert action["payload"]["target_env_options"]["target_roas_or_cpa"] == [
+        "WILQ_ADS_TARGET_ROAS",
+        "WILQ_ADS_TARGET_CPA_MICROS",
+    ]
+    assert action["payload"]["target_env_options"]["target_roas_or_cpa_labels"] == [
+        "docelowy zwrot z reklam",
+        "docelowy koszt pozyskania celu",
+    ]
+    assert action["payload"]["apply_allowed"] is False
+    assert action["payload"]["destructive"] is False
+    assert action["preview_cards"]
+    target_preview_card = action["preview_cards"][0]
+    assert target_preview_card["kind"] == "google_ads_target_guardrail_review"
+    assert target_preview_card["title_label"] == "Cel Ads do potwierdzenia"
+    target_preview_rows = {row["label"]: row["value"] for row in target_preview_card["rows"]}
+    assert target_preview_rows["Marża"] == "35%"
+    assert target_preview_rows["Cel biznesowy"] == "lead quality review"
+    assert target_preview_rows["Cel budżetu"] == "protect current monthly budget"
+    assert (
+        target_preview_rows["Docelowy zwrot z reklam"]
+        == "nie ustawiono; WILQ nie ocenia opłacalności Ads"
+    )
+    assert (
+        target_preview_rows["Docelowy koszt pozyskania celu"]
+        == "nie ustawiono; WILQ nie ocenia kosztu celu"
+    )
+    assert target_preview_rows["Ustawione pola"] == "3 pola ustawione lokalnie"
+    target_marketer_card_text = str(
+        {
+            key: target_preview_card[key]
+            for key in ("title_label", "subtitle_label", "status_label", "rows")
+        }
+    )
+    assert "confirm_ads_target_guardrails" not in target_marketer_card_text
+    assert "target_roas_or_cpa" not in target_marketer_card_text
+    assert "WILQ_ADS_TARGET_ROAS" not in target_marketer_card_text
+    assert "WILQ_ADS_TARGET_CPA_MICROS" not in target_marketer_card_text
+
+    validate_response = client.post(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/validate")
+    assert validate_response.status_code == 200
+    assert validate_response.json()["valid"] is True
+
+    strategy_response = client.get(f"/api/actions/{ADS_STRATEGY_REVIEW_ACTION_ID}")
+    assert strategy_response.status_code == 200
+    strategy_action = strategy_response.json()
+    assert strategy_action["payload"]["action_type"] == "record_ads_strategy_review"
+    assert strategy_action["payload"]["apply_allowed"] is False
+    assert strategy_action["payload"]["destructive"] is False
+    assert strategy_action["preview_cards"]
+    strategy_preview_card = strategy_action["preview_cards"][0]
+    assert strategy_preview_card["kind"] == "google_ads_strategy_review"
+    assert strategy_preview_card["title_label"] == "Ocena strategii Ads do zapisania"
+    strategy_preview_rows = {row["label"]: row["value"] for row in strategy_preview_card["rows"]}
+    assert strategy_preview_rows["Marża"] == "35%"
+    assert strategy_preview_rows["Ostatni przegląd strategii"] == (
+        "przegląd strategii nie jest zapisany"
+    )
+    strategy_marketer_card_text = str(
+        {
+            key: strategy_preview_card[key]
+            for key in ("title_label", "subtitle_label", "status_label", "rows")
+        }
+    )
+    assert "record_ads_strategy_review" not in strategy_marketer_card_text
+    assert "human_strategy_review" not in strategy_marketer_card_text
+    assert "WILQ_ADS_PROFIT_MARGIN" not in strategy_marketer_card_text
+    strategy_validate_response = client.post(
+        f"/api/actions/{ADS_STRATEGY_REVIEW_ACTION_ID}/validate"
+    )
+    assert strategy_validate_response.status_code == 200
+    assert strategy_validate_response.json()["valid"] is True
 def test_google_ads_business_context_action_is_review_only(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

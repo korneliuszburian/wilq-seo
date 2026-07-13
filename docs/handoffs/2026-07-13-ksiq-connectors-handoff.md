@@ -738,6 +738,9 @@
 - Dwudziesta piąta kontynuacja `50wa`: content-strategist context-pack reviewed
   draft preview contract jest teraz 1:1 w `tests/api_contracts/test_content_workflow_contracts.py`.
   Nowy i pełny suite przechodzą; raw payload pozostaje ukryty.
+- Dwudziesta szósta kontynuacja `50wa`: Ads business-context preliminary-target
+  contract jest teraz 1:1 w `tests/api_contracts/test_ads_contracts.py`. Nowy
+  i pełny suite przechodzą; target nie odblokowuje apply bez strategii review.
 
 ## Następny krok
 

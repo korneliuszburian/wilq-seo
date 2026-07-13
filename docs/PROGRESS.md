@@ -2291,3 +2291,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   draft preview test przeniesiono 1:1 do `tests/api_contracts/test_content_workflow_contracts.py`.
   Test docelowy, pełny action-object suite, Ruff i diff check są zielone; typed
   action plan nadal ukrywa raw payload i blokuje nieudowodnione claimy.
+- Dwudziesta szósta kontynuacja `50wa`: Ads business-context preliminary-target
+  contract przeniesiono 1:1 do `tests/api_contracts/test_ads_contracts.py`.
+  Test docelowy, pełny action-object suite, Ruff i diff check są zielone; target
+  pozostaje preliminary do czasu review strategii.
