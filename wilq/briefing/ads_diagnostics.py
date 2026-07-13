@@ -54,6 +54,7 @@ from wilq.briefing.ads_campaigns import (
     build_campaign_overview_section,
     build_derived_kpi_section,
 )
+from wilq.briefing.ads_candidate_contracts import build_candidate_read_contracts
 from wilq.briefing.ads_change_history import build_change_history_section
 from wilq.briefing.ads_custom_segments import build_custom_segments_section
 from wilq.briefing.ads_decision_queue import (
@@ -543,18 +544,15 @@ def _build_ads_candidate_read_contracts(
     keyword_planner_read_contract: AdsKeywordPlannerReadContract,
     action_ids: list[str],
 ) -> tuple[AdsCustomSegmentsReadContract, AdsNegativeKeywordsReadContract]:
-    custom_segments_read_contract = _custom_segments_read_contract(
-        search_terms_read_contract,
-        keyword_planner_read_contract,
-        action_ids,
-    )
-    negative_keywords_read_contract = _negative_keywords_read_contract(
+    return build_candidate_read_contracts(
         search_terms_read_contract,
         search_term_safety_read_contract,
         keyword_match_context_read_contract,
+        keyword_planner_read_contract,
         action_ids,
+        custom_segments=_custom_segments_read_contract,
+        negative_keywords=_negative_keywords_read_contract,
     )
-    return custom_segments_read_contract, negative_keywords_read_contract
 
 
 def _build_ads_campaign_optimizer_contracts(

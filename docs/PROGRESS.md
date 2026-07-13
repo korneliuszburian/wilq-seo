@@ -2111,3 +2111,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   budżety monolitu (plik 6 544 LOC, builder 201 linii). Następny slice:
   kolejny seam kontraktów lub zatrzymanie tylko przy potwierdzonym ryzyku
   import/parytetu.
+- Trzeci slice `kgvy`: wydzielono `wilq/briefing/ads_candidate_contracts.py`
+  dla custom-segment i negative-keyword read contracts. Moduł ma jedną jawną
+  granicę callbacków do istniejących builderów; brak nowego endpointu, cyklu
+  importów i zmiany payloadu. `ads_diagnostics.py` ma 7 066 linii fizycznych;
+  Ads contracts, Ruff, mypy i diff check przechodzą. Complexity nadal pokazuje
+  dwa znane budżety monolitu. Następny slice: campaign/optimizer orchestration
+  po sprawdzeniu zależności.

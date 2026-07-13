@@ -595,6 +595,12 @@
   Ads contract suite (12 punktów), Ruff, mypy i diff check przechodzą.
   Complexity nadal jawnie raportuje dwa historyczne budżety monolitu. Następny
   krok: kolejny kontraktowy seam w `kgvy`, po ponownej kontroli parytetu HTTP.
+- Trzeci slice wykonany: dodano `wilq/briefing/ads_candidate_contracts.py` dla
+  custom-segment i negative-keyword read contracts. Typed callbacki wskazują
+  istniejące buildery, bez importu zwrotnego i bez zmiany API. `ads_diagnostics.py`
+  ma 7 066 linii fizycznych; Ads contracts, Ruff, mypy i diff check zielone.
+  `kgvy` pozostaje otwarty z powodu dwóch jawnych budżetów complexity. Następny
+  seam: campaign/optimizer orchestration.
 
 ## Następny krok
 
