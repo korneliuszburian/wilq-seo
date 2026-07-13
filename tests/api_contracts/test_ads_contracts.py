@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -56,6 +57,19 @@ def large_ads_metric_fact_fillers(count: int = 2050) -> list[VendorMetricFact]:
         )
         for index in range(count)
     ]
+
+
+def assert_ads_live_refresh_contract(payload: dict[str, Any]) -> None:
+    """Keep freshness/live-data behavior separate from Ads row assertions."""
+    assert payload["live_data_available"] is True
+    assert payload["latest_refresh"]["status"] == "completed"
+    freshness = payload["freshness_assessment"]
+    assert freshness["state"] == "fresh"
+    assert freshness["state_label"] == "dane świeże"
+    assert freshness["requires_refresh"] is False
+    assert freshness["stale_after_hours"] == 48
+    assert "Google Ads" in freshness["summary"]
+    assert payload["blocked_handoff"] is None
 
 
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
@@ -2283,14 +2297,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["live_data_available"] is True
-    assert payload["latest_refresh"]["status"] == "completed"
-    assert payload["freshness_assessment"]["state"] == "fresh"
-    assert payload["freshness_assessment"]["state_label"] == "dane świeże"
-    assert payload["freshness_assessment"]["requires_refresh"] is False
-    assert payload["freshness_assessment"]["stale_after_hours"] == 48
-    assert "Google Ads" in payload["freshness_assessment"]["summary"]
-    assert payload["blocked_handoff"] is None
+    assert_ads_live_refresh_contract(payload)
     read_contract = payload["campaign_read_contract"]
     assert read_contract["status"] == "ready"
     assert read_contract["allowed_metrics"] == [

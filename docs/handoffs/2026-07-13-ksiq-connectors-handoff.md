@@ -377,6 +377,10 @@
   kontra osobne behavior assertions. Kolejny slice ma wyciągnąć fixture bez
   zmiany runtime API, a następnie rozdzielić kampanie/freshness/rekomendacje i
   blocked claims na nazwane moduły.
+- Wykonany pierwszy pod-slice: `assert_ads_live_refresh_contract` przejął
+  freshness/live-data assertions. Ads contract pytest, Ruff, mypy i diff check
+  są zielone; główny test nadal ma 2912 linii, więc następny handoff musi
+  przenieść campaign read-contract assertions.
 
 ## Następny krok
 

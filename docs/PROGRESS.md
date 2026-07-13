@@ -1871,3 +1871,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   fixture/setup a osobnymi zachowaniami diagnostyki (kampanie, freshness,
   rekomendacje, blocked claims). Bead został przejęty i opisano kolejność
   ekstrakcji; najpierw fixture bez zmiany runtime API, potem moduły assertions.
+- Pierwszy implementacyjny pod-slice c9h9.22: freshness/live-data assertions
+  wydzielone do `assert_ads_live_refresh_contract`. Focused Ads contracts,
+  Ruff, mypy i diff check przechodzą; complexity nadal potwierdza główny test
+  2912 linii, więc zadanie pozostaje otwarte.
