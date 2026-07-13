@@ -1,9 +1,11 @@
 import pytest
 
+from wilq.briefing.daily_check import _daily_item
 from wilq.briefing.false_positive_guards import (
     evaluate_low_volume_guard,
     evaluate_source_conflict_guard,
 )
+from wilq.schemas import DailyDecision, FreshnessState
 from wilq.schemas.measurement import (
     MetricSampleEvidence,
     SourceComparisonEvidence,
@@ -75,3 +77,49 @@ def test_source_conflict_guard_blocks_disagreement_and_requires_distinct_sources
     )
     assert result.status == "blocked"
     assert result.guard_id == "source_conflict"
+
+
+def test_daily_check_item_carries_typed_measurement_guards_and_lineage() -> None:
+    decision = DailyDecision(
+        id="decision_measurement_contract",
+        title="Sprawdź próbę i zgodność źródeł",
+        domain="content",
+        status="ready",
+        priority=1,
+        route="/content-workflow",
+        co_widzimy="Porównanie wymaga kontroli.",
+        dlaczego_to_ma_znaczenie="Bez tego nie ma bezpiecznej decyzji.",
+        bezpieczny_next_step="Zweryfikuj dane.",
+        why_it_matters="Bez tego nie ma bezpiecznej decyzji.",
+        operator_action="review",
+        freshness=FreshnessState(state="fresh"),
+        source_connectors=["google_search_console"],
+        evidence_ids=["ev_decision"],
+        sample_evidence=MetricSampleEvidence(
+            metric_name="clicks",
+            period="2026-07-01/2026-07-07",
+            sample_size=3,
+            minimum_sample_size=10,
+            source_connector="google_search_console",
+            evidence_ids=["ev_sample"],
+        ),
+        source_comparison_evidence=SourceComparisonEvidence(
+            metric_name="clicks",
+            period="2026-07-01/2026-07-07",
+            values=[
+                SourceComparisonValue(
+                    source_connector="google_search_console", value=3, evidence_ids=["ev_gsc"]
+                ),
+                SourceComparisonValue(
+                    source_connector="google_analytics", value=4, evidence_ids=["ev_ga4"]
+                ),
+            ],
+        ),
+    )
+
+    item = _daily_item(decision)
+
+    assert item.status == "blocked"
+    assert {"low_volume", "source_conflict"}.issubset(item.false_positive_guards)
+    assert {"ev_sample", "ev_gsc", "ev_ga4"}.issubset(item.evidence_ids)
+    assert "google_analytics" in item.source_connectors

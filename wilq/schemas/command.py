@@ -27,6 +27,7 @@ from .core import (
 )
 from .knowledge import WorkspaceDossier
 from .marketing import ConnectorSummary, _marketing_risk_label
+from .measurement import MetricSampleEvidence, SourceComparisonEvidence
 
 
 class CommandCenterBriefItem(BaseModel):
@@ -93,6 +94,8 @@ class DailyDecision(BaseModel):
     priority_label: str = ""
     metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    sample_evidence: MetricSampleEvidence | None = None
+    source_comparison_evidence: SourceComparisonEvidence | None = None
     co_widzimy: str
     dlaczego_to_ma_znaczenie: str
     bezpieczny_next_step: str

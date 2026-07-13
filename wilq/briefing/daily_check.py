@@ -11,7 +11,9 @@ from wilq.briefing.false_positive_guards import (
     evaluate_content_measurement_baseline_guard,
     evaluate_conversion_readiness_guard,
     evaluate_gsc_date_window_guard,
+    evaluate_low_volume_guard,
     evaluate_multi_source_required_guard,
+    evaluate_source_conflict_guard,
     evaluate_source_trace_guard,
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
@@ -145,6 +147,10 @@ def _daily_item(
         guards.append(ga4_guard)
     if decision.domain == "content" and content_guard is not None:
         guards.append(content_guard)
+    measurement_guards, measurement_evidence, measurement_sources = _measurement_guards(decision)
+    guards.extend(measurement_guards)
+    evidence_ids = list(dict.fromkeys([*evidence_ids, *measurement_evidence]))
+    source_connectors = list(dict.fromkeys([*source_connectors, *measurement_sources]))
     if decision.id == _CONTENT_QUEUE_DECISION_ID and content_measurement_guard is not None:
         guards.append(content_measurement_guard.guard)
         evidence_ids = list(
@@ -200,6 +206,26 @@ def _daily_item(
         false_positive_guards=[item.guard_id for item in guards],
         risk=decision.risk,
     )
+
+
+def _measurement_guards(
+    decision: DailyDecision,
+) -> tuple[list[FalsePositiveGuardResult], list[str], list[str]]:
+    guards: list[FalsePositiveGuardResult] = []
+    evidence_ids: list[str] = []
+    source_connectors: list[str] = []
+    if decision.sample_evidence is not None:
+        sample = decision.sample_evidence
+        guards.append(evaluate_low_volume_guard(sample))
+        evidence_ids.extend(sample.evidence_ids)
+        source_connectors.append(sample.source_connector)
+    if decision.source_comparison_evidence is not None:
+        comparison = decision.source_comparison_evidence
+        guards.append(evaluate_source_conflict_guard(comparison))
+        for value in comparison.values:
+            evidence_ids.extend(value.evidence_ids)
+            source_connectors.append(value.source_connector)
+    return guards, evidence_ids, source_connectors
 
 
 def _multi_source_required_guard(

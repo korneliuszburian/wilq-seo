@@ -9,9 +9,11 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 route-level ActionObject apply proof dla dev-only WordPress draft. Najbliższy
 aktywny slice to `v9ab.8.3`; jego pierwszy zakres dodał
 `wilq/schemas/measurement.py` z `MetricSampleEvidence` i
-`SourceComparisonEvidence` oraz fail-closed guards, ale nie udaje jeszcze
-integracji z live DailyCheck. Następny krok to typed wiring do istniejącego
-DailyCheck output i live proof, bez nowego endpointu ani heurystyki.
+`SourceComparisonEvidence`, fail-closed guards oraz opcjonalne typed wiring do
+`DailyDecision`/`DailyCheckItem`. Live bieżące decyzje nie deklarują jeszcze
+tych kontraktów, więc nie są sztucznie blokowane. Następny krok to powiązanie
+konkretnych expert rules z wymaganiem tych pól i live proof, bez nowego
+endpointu ani heurystyki.
 
 `wilq-seo-v9ab.4`, `v9ab.5` i pierwszy zakres `v9ab.7` są domknięte jako osobne
 produktowe slice'y: platform traps mają typed kontrakt, source lineage i safe

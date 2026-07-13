@@ -10,11 +10,13 @@ w git, Beads i `docs/progress/archive/`.
   audit i adapter proof. Nie powtarzam tego slice'a. Następny gotowy zakres to
   `v9ab.8.3`.
 - `v9ab.8.3` slice 2026-07-13: dodano API-owned kontrakty
-  `MetricSampleEvidence` i `SourceComparisonEvidence` oraz fail-closed guards
-  `low_volume`/`source_conflict`. Kontrakty wymagają jawnego okresu, progu,
-  connectorów i evidence IDs; nie są jeszcze podłączone do live DailyCheck,
-  więc Bead pozostaje otwarty do wiring + runtime proof. Focused tests, Ruff,
-  mypy i complexity przechodzą; nie zmieniono endpointu ani UI.
+  `MetricSampleEvidence` i `SourceComparisonEvidence`, fail-closed guards
+  `low_volume`/`source_conflict` oraz typed wiring opcjonalnych kontraktów z
+  `DailyDecision` do `DailyCheckItem` (guard + evidence/source lineage).
+  Brak kontraktu nadal nie wpływa na decyzję, która nie deklaruje takiego
+  wymagania; nie dodano heurystyki, endpointu ani UI. Focused 27 tests, Ruff,
+  mypy, complexity, API smoke i Playwright `/content-workflow` 1/1 przechodzą.
+  Bead pozostaje otwarty do powiązania tych pól z właściwymi expert rules.
 - Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
   najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
