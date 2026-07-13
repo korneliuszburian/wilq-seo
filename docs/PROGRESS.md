@@ -1858,3 +1858,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   proof; rozdział autorytetu/luk i cross-check GSC/WordPress są dowiedzione w
   `AhrefsDiagnosticSurface.test.tsx`. App + Ahrefs focused 3/3,
   typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6419 LOC.
+- Trzydziesty szósty slice: po migracji ostatniego Demand Gen proofu `App.test.tsx`
+  nie zawierał już żadnego testu; usunięto martwy omnibus i jego fixture.
+  Pełny dashboard gate po usunięciu: 43/43 pliki, 158/158 testów, typecheck i
+  lint przechodzą. Route behavior pozostaje w dedykowanych plikach domenowych.
