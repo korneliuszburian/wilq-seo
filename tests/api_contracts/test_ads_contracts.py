@@ -1779,6 +1779,52 @@ def assert_ads_derived_kpi_and_budget_decisions(
     assert "zmiana budżetu" in budget["blocked_claims"]
 
 
+def assert_ads_recommendation_decision_contract(
+    decisions_by_id: dict[str, Any]
+) -> None:
+    """Prove recommendation review has impact evidence but cannot apply."""
+    recommendation = decisions_by_id["ads_review_recommendations"]
+    assert recommendation["status"] == "ready"
+    assert recommendation["priority"] == 35
+    assert recommendation["metric_tiles"] == {
+        "rekomendacje": 1,
+        "pilne": 1,
+        "wysokie": 0,
+        "podgląd wpływu": 1,
+        "podgląd akcji": 1,
+    }
+    assert recommendation["decision_type"] == "review_recommendations"
+    row = recommendation["recommendation_rows"][0]
+    assert row["recommendation_type"] == "CAMPAIGN_BUDGET"
+    assert row["review_priority"] == "pilne"
+    assert row["review_score"] == 70
+    preview = recommendation["recommendation_apply_preview"][0]
+    assert preview["operation_type"] == "ApplyRecommendationOperation"
+    assert preview["apply_allowed"] is False
+    assert recommendation["action_ids"] == [
+        "act_prepare_google_ads_recommendation_review_queue"
+    ]
+    assert recommendation["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert recommendation["expert_rule_ids"] == [
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
+    assert recommendation["missing_read_contracts"] == []
+    assert recommendation["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_recommendation_type",
+        "review_impact_metrics",
+        "review_change_history",
+        "review_business_goal",
+        "recommendation_apply_preview",
+        "google_ads_rmf_compliance_review",
+        "human_confirm_before_apply",
+    ]
+    assert "zapis rekomendacji" in recommendation["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4176,56 +4222,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_campaign_decision_contract(decisions_by_id)
     assert_ads_derived_kpi_and_budget_decisions(decisions_by_id)
     budget_decision = decisions_by_id["ads_review_budget_context"]
-    recommendations_decision = decisions_by_id["ads_review_recommendations"]
-    assert recommendations_decision["status"] == "ready"
-    assert recommendations_decision["priority"] == 35
-    assert recommendations_decision["metric_tiles"] == {
-        "rekomendacje": 1,
-        "pilne": 1,
-        "wysokie": 0,
-        "podgląd wpływu": 1,
-        "podgląd akcji": 1,
-    }
-    assert recommendations_decision["decision_type"] == "review_recommendations"
-    assert recommendations_decision["recommendation_rows"][0]["recommendation_type"] == (
-        "CAMPAIGN_BUDGET"
-    )
-    assert recommendations_decision["recommendation_rows"][0]["review_priority"] == "pilne"
-    assert recommendations_decision["recommendation_rows"][0]["review_score"] == 70
-    assert recommendations_decision["metric_tiles"] == {
-        "rekomendacje": 1,
-        "pilne": 1,
-        "wysokie": 0,
-        "podgląd wpływu": 1,
-        "podgląd akcji": 1,
-    }
-    assert (
-        recommendations_decision["recommendation_apply_preview"][0]["operation_type"]
-        == "ApplyRecommendationOperation"
-    )
-    assert recommendations_decision["recommendation_apply_preview"][0]["apply_allowed"] is False
-    assert recommendations_decision["action_ids"] == [
-        "act_prepare_google_ads_recommendation_review_queue"
-    ]
-    assert recommendations_decision["knowledge_card_ids"] == [
-        "card_google_ads_budget_review_playbook"
-    ]
-    assert recommendations_decision["expert_rule_ids"] == [
-        "ads_recommendations_v1",
-        "ads_principles_v1",
-    ]
-    assert recommendations_decision["missing_read_contracts"] == []
-    assert recommendations_decision["operator_review_gates"] == [
-        "human_strategy_review",
-        "review_recommendation_type",
-        "review_impact_metrics",
-        "review_change_history",
-        "review_business_goal",
-        "recommendation_apply_preview",
-        "google_ads_rmf_compliance_review",
-        "human_confirm_before_apply",
-    ]
-    assert "zapis rekomendacji" in recommendations_decision["blocked_claims"]
+    assert_ads_recommendation_decision_contract(decisions_by_id)
     impression_share_decision = decisions_by_id["ads_review_impression_share"]
     assert impression_share_decision["status"] == "ready"
     assert impression_share_decision["priority"] == 60

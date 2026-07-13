@@ -1992,3 +1992,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `apply_allowed=false` dla preview budżetu. Focused Ads/Ruff/mypy/diff check
   zielone; główny test ma 1446 linii i 12 branchy. Następny seam:
   recommendation decision proof i końcowy action tail.
+- Czterdziesty pierwszy pod-slice c9h9.22: recommendation decision proof
+  wydzielony do `assert_ads_recommendation_decision_contract`; zachowano
+  impact/action preview, review gates, evidence lineage i blokadę zapisu
+  rekomendacji. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1397
+  linii i 12 branchy. Następny seam: impression-share/change-history decisions.

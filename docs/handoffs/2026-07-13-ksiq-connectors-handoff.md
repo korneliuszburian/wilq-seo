@@ -476,6 +476,11 @@
   zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1446
   linii i 12 branchy. Następny krok: recommendation decision proof i końcowy
   action tail.
+- Czterdziesty pierwszy pod-slice zakończony: recommendation decision proof
+  jest w `assert_ads_recommendation_decision_contract`; impact/action preview,
+  review gates, evidence lineage i blokada zapisu rekomendacji są zachowane.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 1397 linii i 12
+  branchy. Następny krok: impression-share/change-history decisions.
 
 ## Następny krok
 
