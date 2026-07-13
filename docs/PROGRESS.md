@@ -2263,3 +2263,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przeniesiono do `tests/api_contracts/test_action_operator_language_contracts.py`.
   Nowy plik i pełny action-object suite przechodzą; historyczne raw IDs i
   implementation blockers pozostają ukryte.
+- Dziewiętnasta kontynuacja `50wa`: action review-gate legacy summary redaction
+  przeniesiono do `tests/actions/test_action_review_contracts.py`, obok
+  istniejących review contracts. Test docelowy i pełny action-object suite
+  przechodzą; surowe candidate/source/blocker terms nadal są ukryte.

@@ -6,6 +6,49 @@ from pathlib import Path
 import pytest
 
 from tests._contract_support.api_client import client
+from wilq.schemas import AuditEvent
+from wilq.storage.local_state import local_state_store
+
+
+def test_action_review_gate_hides_raw_legacy_review_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "raw_review_summary.sqlite3"))
+
+    local_state_store().save_audit_event(
+        AuditEvent(
+            id="audit_raw_review_summary",
+            action_id="act_review_merchant_feed_issues",
+            event_type="human_review_approved_for_prepare",
+            actor="operator_test",
+            summary=(
+                "Wynik review: zatwierdzone. Sprawdzone: "
+                "candidate:merchant_feed_issue, source_type:merchant_center. "
+                "Blockery: payload_apply_allowed_false, blocked_claim:ranking guarantee."
+            ),
+            evidence_ids=["ev_merchant_issue"],
+            details={
+                "review_outcome": "approved_for_prepare",
+                "reviewed_by": "operator_test",
+            },
+        )
+    )
+
+    response = client.get("/api/actions/act_review_merchant_feed_issues")
+    assert response.status_code == 200
+
+    summary = response.json()["review_gate"]["last_review_summary"]
+
+    assert summary == (
+        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
+    )
+    assert "Wynik review" not in summary
+    assert "Blockery" not in summary
+    assert "candidate:" not in summary
+    assert "source_type:" not in summary
+    assert "payload_apply_allowed_false" not in summary
+    assert "blocked_claim:" not in summary
 
 
 def test_content_review_details_keep_allowed_fields_and_ignore_unknown_values() -> None:

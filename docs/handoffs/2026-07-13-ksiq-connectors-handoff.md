@@ -716,6 +716,9 @@
 - Osiemnasta kontynuacja `50wa`: raw audit summary redaction contracts są teraz
   w `tests/api_contracts/test_action_operator_language_contracts.py`. Nowy i
   pełny suite przechodzą; nie wracać do tych pure label tests w mega-teście.
+- Dziewiętnasta kontynuacja `50wa`: legacy action review-gate summary contract
+  jest teraz w `tests/actions/test_action_review_contracts.py`. Nowy i pełny
+  suite przechodzą; nie powtarzać tego review splitu.
 
 ## Następny krok
 
