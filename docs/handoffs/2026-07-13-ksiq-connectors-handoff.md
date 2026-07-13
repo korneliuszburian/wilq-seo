@@ -247,6 +247,11 @@
   conversion-readiness blockers, review-only copy i brak payload preview/legacy
   formatterów. GA4 + App focused 12/12, dashboard typecheck/lint i diff check
   przechodzą; `App.test.tsx` ma 8749 LOC. Następny seam: content route.
+- Dziewiętnasty slice: dwa content workflow contract proofs przeniesione do
+  `ContentWorkflowDiagnosticSurface.test.tsx`; zachowano API-owned workbench,
+  public/dev rozdział, draft-only publication gate, Polish review copy i brak
+  legacy formatterów. Content + App focused 11/11, dashboard typecheck/lint i
+  diff check przechodzą; `App.test.tsx` ma 8711 LOC. Następny seam: Localo.
 
 ## Następny krok
 
