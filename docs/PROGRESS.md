@@ -147,6 +147,12 @@ w git, Beads i `docs/progress/archive/`.
   child panels; no business rule or endpoint moved into React. Focused route
   tests (19), lint, typecheck, build and diff check pass. E2E still fails at the
   existing heading locator.
+- `wilq-seo-ho41` continuation 26: extracted `WordPressDraftWorkPanel.tsx`.
+  Dev-only readiness, draft-preview CTA, canonical apply-review link and
+  draft/readback status continue to consume the same typed query/action inputs;
+  write safety and public/dev roles are unchanged. Focused route tests (19),
+  lint, typecheck, build and diff check pass. E2E still fails at the existing
+  heading locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

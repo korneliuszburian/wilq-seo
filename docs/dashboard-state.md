@@ -136,6 +136,9 @@ semantics remain API/model-owned.
 The decision workflow composition is now `ContentWorkflowDecisionPanel.tsx`;
 it assembles typed child panels while candidate/step/claim semantics remain
 owned by the API-facing model layer.
+The dev WordPress readiness/workbench panel is now
+`WordPressDraftWorkPanel.tsx`; it consumes the existing typed query/action
+inputs and preserves draft-only, canonical apply-review and public/dev safety.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
