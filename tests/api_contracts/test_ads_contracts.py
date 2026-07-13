@@ -531,6 +531,78 @@ def assert_ads_budget_preview_card_contract(contract: dict[str, Any]) -> None:
     assert "701" not in str(card)
 
 
+def assert_ads_budget_row_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove budget metrics, evidence and blocked claims stay aligned."""
+    row = contract["budget_rows"][0]
+    assert contract["budget_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "campaign_status_label": "aktywna",
+            "advertising_channel_type": "SEARCH",
+            "advertising_channel_type_label": "sieć wyszukiwania",
+            "budget_id": "701",
+            "budget_name": "Brand budget",
+            "budget_period": "DAILY",
+            "budget_period_label": "dzienny",
+            "budget_status": "ENABLED",
+            "budget_status_label": "aktywna",
+            "budget_amount_micros": 30000000,
+            "cost_micros_7d": 12000000,
+            "seven_day_budget_micros": 210000000,
+            "spend_to_budget_ratio_7d": 0.057143,
+            "has_recommended_budget": True,
+            "recommended_budget_amount_micros": 42000000,
+            "recommended_budget_delta_micros": 12000000,
+            "evidence_ids": [evidence_id],
+            "metric_facts": row["metric_facts"],
+            "payload_preview": contract["payload_preview"][0],
+            "preview_card": row["preview_card"],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "wstrzymanie kampanii",
+                "zmarnowany budżet",
+                "opłacalność",
+                "werdykt kosztu pozyskania celu",
+                "werdykt zwrotu z reklam",
+                "zapis rekomendacji",
+            ],
+            "blocked_claim_labels": [
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "wstrzymanie kampanii",
+                "zmarnowany budżet",
+                "opłacalność",
+                "werdykt kosztu pozyskania celu",
+                "werdykt zwrotu z reklam",
+                "zapis rekomendacji",
+            ],
+            "blocked_claim_summary_label": "8 zablokowanych obietnic",
+        }
+    ]
+    assert contract["shared_budget_distribution_rows"] == []
+
+
+def assert_ads_budget_section_contract(payload: dict[str, Any]) -> None:
+    """Prove budget section is ready, knowledge-backed and still review-led."""
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_budget_pacing"
+    )
+    assert section["status"] == "ready"
+    assert "skalowania" in section["diagnosis"]
+    assert section["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
+    assert section["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2803,67 +2875,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     budget_preview = budget_contract["payload_preview"][0]
     assert_ads_budget_preview_card_contract(budget_contract)
-    assert budget_contract["budget_rows"] == [
-        {
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_status": "ENABLED",
-            "campaign_status_label": "aktywna",
-            "advertising_channel_type": "SEARCH",
-            "advertising_channel_type_label": "sieć wyszukiwania",
-            "budget_id": "701",
-            "budget_name": "Brand budget",
-            "budget_period": "DAILY",
-            "budget_period_label": "dzienny",
-            "budget_status": "ENABLED",
-            "budget_status_label": "aktywna",
-            "budget_amount_micros": 30000000,
-            "cost_micros_7d": 12000000,
-            "seven_day_budget_micros": 210000000,
-            "spend_to_budget_ratio_7d": 0.057143,
-            "has_recommended_budget": True,
-            "recommended_budget_amount_micros": 42000000,
-            "recommended_budget_delta_micros": 12000000,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "metric_facts": budget_contract["budget_rows"][0]["metric_facts"],
-            "payload_preview": budget_contract["payload_preview"][0],
-            "preview_card": budget_contract["budget_rows"][0]["preview_card"],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "skalowanie budżetu",
-                "zmiana budżetu",
-                "wstrzymanie kampanii",
-                "zmarnowany budżet",
-                "opłacalność",
-                "werdykt kosztu pozyskania celu",
-                "werdykt zwrotu z reklam",
-                "zapis rekomendacji",
-            ],
-            "blocked_claim_labels": [
-                "skalowanie budżetu",
-                "zmiana budżetu",
-                "wstrzymanie kampanii",
-                "zmarnowany budżet",
-                "opłacalność",
-                "werdykt kosztu pozyskania celu",
-                "werdykt zwrotu z reklam",
-                "zapis rekomendacji",
-            ],
-            "blocked_claim_summary_label": "8 zablokowanych obietnic",
-        }
-    ]
-    assert budget_contract["shared_budget_distribution_rows"] == []
-    budget_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_budget_pacing"
+    assert_ads_budget_row_contract(
+        budget_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert budget_section["status"] == "ready"
-    assert "skalowania" in budget_section["diagnosis"]
-    assert budget_section["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
-    assert budget_section["expert_rule_ids"] == [
-        "ads_scaling_candidates_v1",
-        "ads_recommendations_v1",
-        "ads_principles_v1",
-    ]
+    assert_ads_budget_section_contract(payload)
     recommendations_contract = payload["recommendations_read_contract"]
     assert recommendations_contract["status"] == "ready"
     assert recommendations_contract["allowed_metrics"] == [

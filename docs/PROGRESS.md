@@ -1924,3 +1924,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   fail-closed flags (`apply_allowed`, `api_mutation_ready`, `destructive`).
   Focused Ads/Ruff/mypy/diff check przechodzą; następny seam to budget row
   evidence/metric semantics.
+- Piętnasty/szesnasty pod-slice c9h9.22: budget row metric/evidence/blocked
+  claims oraz budget section knowledge/rule proof wydzielone. Focused
+  Ads/Ruff/mypy/diff check zielone; następny seam to recommendations read
+  contract.

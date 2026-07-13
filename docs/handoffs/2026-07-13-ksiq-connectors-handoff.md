@@ -416,6 +416,9 @@
 - Trzynasty/czternasty pod-slice zakończony: preview/safety i technical
   preview-card są w helperach; wszystkie validation labels i fail-closed flags
   zachowane. Następny krok: budget row evidence/metric semantics.
+- Piętnasty/szesnasty pod-slice zakończony: budget row i budget section proof
+  są w helperach. Następny krok: recommendations read contract i jego safety
+  gates.
 
 ## Następny krok
 
