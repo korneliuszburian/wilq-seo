@@ -248,6 +248,81 @@ def assert_ads_business_context_missing_values(payload: dict[str, Any]) -> None:
     assert contract["configured_sources"] == []
 
 
+def assert_ads_business_context_policy_contract(payload: dict[str, Any]) -> list[str]:
+    """Prove policy, review-gate and ActionObject requirements for blocked context."""
+    contract = payload["business_context_read_contract"]
+    assert contract["business_policy_ids"] == [
+        "complete_business_context_before_ads_verdicts",
+        "block_target_verdict_until_roas_or_cpa_confirmed",
+        "block_target_verdict_until_strategy_review_approved",
+    ]
+    gates = [
+        "human_strategy_review",
+        "configure_profit_margin_or_value_model",
+        "configure_business_goal",
+        "configure_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+    ]
+    assert contract["operator_review_gates"] == gates
+    assert contract["operator_review_gate_labels"] == [
+        "ocena strategii przez człowieka",
+        "uzupełnienie marży albo modelu wartości",
+        "uzupełnienie celu biznesowego",
+        "uzupełnienie celu budżetu",
+        "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
+    ]
+    assert contract["allowed_metrics"] == []
+    assert contract["missing_read_contracts"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    return [
+        ADS_BUSINESS_CONTEXT_ACTION_ID,
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
+
+
+def assert_ads_business_context_decision_contract(
+    payload: dict[str, Any],
+    contract: dict[str, Any],
+    expected_actions: list[str],
+    operator_summary: dict[str, Any],
+) -> None:
+    """Prove blocked decision card mirrors the API business-context contract."""
+    section = next(
+        section for section in payload["sections"] if section["id"] == "ads_business_context"
+    )
+    assert section["status"] == "blocked"
+    assert section["action_ids"] == expected_actions
+    decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_business_context"
+    )
+    assert decision["status"] == "blocked"
+    assert decision["decision_type"] == "review_business_context"
+    assert decision["missing_read_contracts"] == contract["missing_read_contracts"]
+    assert decision["metric_tiles"] == {
+        "braki": 5,
+        "blokady": 6,
+        "ustawione pola": 0,
+        "warunki sprawdzenia": 5,
+        "polityki": 3,
+    }
+    assert decision["operator_review_gates"] == contract["operator_review_gates"]
+    assert decision["operator_review_gate_labels"] == contract["operator_review_gate_labels"]
+    assert decision["missing_read_contract_summary_label"]
+    assert decision["operator_review_gate_summary_label"]
+    assert decision["blocked_claim_summary_label"]
+    assert operator_summary["operator_review_gate_labels"]
+    assert "human_strategy_review" not in operator_summary["operator_review_gate_labels"]
+    assert decision["action_ids"] == expected_actions
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2485,33 +2560,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_account_currency_contract(payload)
     assert_ads_business_context_missing_values(payload)
     business_context_contract = payload["business_context_read_contract"]
-    assert business_context_contract["business_policy_ids"] == [
-        "complete_business_context_before_ads_verdicts",
-        "block_target_verdict_until_roas_or_cpa_confirmed",
-        "block_target_verdict_until_strategy_review_approved",
-    ]
-    assert business_context_contract["operator_review_gates"] == [
-        "human_strategy_review",
-        "configure_profit_margin_or_value_model",
-        "configure_business_goal",
-        "configure_human_budget_goal",
-        "confirm_target_roas_or_cpa",
-    ]
-    assert business_context_contract["operator_review_gate_labels"] == [
-        "ocena strategii przez człowieka",
-        "uzupełnienie marży albo modelu wartości",
-        "uzupełnienie celu biznesowego",
-        "uzupełnienie celu budżetu",
-        "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
-    ]
-    assert business_context_contract["allowed_metrics"] == []
-    assert business_context_contract["missing_read_contracts"] == [
-        "profit_margin",
-        "business_goal",
-        "human_budget_goal",
-        "target_roas_or_cpa",
-        "human_strategy_review",
-    ]
+    expected_business_context_actions = assert_ads_business_context_policy_contract(payload)
     assert business_context_contract["target_interpretation"]["status"] == "blocked"
     assert business_context_contract["target_interpretation"]["allowed_uses"] == []
     assert business_context_contract["target_interpretation"]["missing_requirements"] == [
@@ -2521,57 +2570,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "target_roas_or_cpa",
         "human_strategy_review",
     ]
-    expected_business_context_actions = [
-        ADS_BUSINESS_CONTEXT_ACTION_ID,
-        ADS_TARGET_CONFIRMATION_ACTION_ID,
-        ADS_STRATEGY_REVIEW_ACTION_ID,
-    ]
     assert business_context_contract["target_interpretation"]["action_ids"] == [
         *expected_business_context_actions
     ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert "skalowanie budżetu" in business_context_contract["blocked_claims"]
     assert business_context_contract["metric_tiles"]["marża"] == "marża niepodana"
-    business_context_section = next(
-        section for section in payload["sections"] if section["id"] == "ads_business_context"
+    assert_ads_business_context_decision_contract(
+        payload,
+        business_context_contract,
+        expected_business_context_actions,
+        operator_summary,
     )
-    assert business_context_section["status"] == "blocked"
-    assert business_context_section["action_ids"] == expected_business_context_actions
-    business_context_decision = next(
-        decision
-        for decision in payload["decision_queue"]
-        if decision["id"] == "ads_review_business_context"
-    )
-    assert business_context_decision["status"] == "blocked"
-    assert business_context_decision["decision_type"] == "review_business_context"
-    assert business_context_decision["missing_read_contracts"] == [
-        "profit_margin",
-        "business_goal",
-        "human_budget_goal",
-        "target_roas_or_cpa",
-        "human_strategy_review",
-    ]
-    assert business_context_decision["metric_tiles"] == {
-        "braki": 5,
-        "blokady": 6,
-        "ustawione pola": 0,
-        "warunki sprawdzenia": 5,
-        "polityki": 3,
-    }
-    assert (
-        business_context_decision["operator_review_gates"]
-        == (business_context_contract["operator_review_gates"])
-    )
-    assert (
-        business_context_decision["operator_review_gate_labels"]
-        == (business_context_contract["operator_review_gate_labels"])
-    )
-    assert business_context_decision["missing_read_contract_summary_label"]
-    assert business_context_decision["operator_review_gate_summary_label"]
-    assert business_context_decision["blocked_claim_summary_label"]
-    assert operator_summary["operator_review_gate_labels"]
-    assert "human_strategy_review" not in operator_summary["operator_review_gate_labels"]
-    assert business_context_decision["action_ids"] == expected_business_context_actions
     derived_kpi_contract = payload["derived_kpi_read_contract"]
     assert derived_kpi_contract["status"] == "ready"
     assert derived_kpi_contract["allowed_metrics"] == [

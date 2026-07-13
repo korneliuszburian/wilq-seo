@@ -399,6 +399,9 @@
 - Siódmy pod-slice zakończony: `assert_ads_business_context_missing_values`
   przejął status i brakujące wartości. Następny krok rozdziela policy IDs,
   review gates oraz ActionObject safety dla zablokowanego kontekstu.
+- Ósmy pod-slice zakończony: policy IDs, review gates, ActionObject IDs i
+  blocked decision card są w nazwanych helperach. Następny krok: derived KPI
+  contract oraz jego blocked-claim semantics.
 
 ## Następny krok
 

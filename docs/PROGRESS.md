@@ -1900,6 +1900,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   wydzielone do `assert_ads_business_context_missing_values`; blokada targetów
   i rentowności pozostaje dowiedziona. Focused Ads/Ruff/mypy/diff check zielone;
   następny seam to policy/gates/actions tego kontraktu.
+- Ósmy pod-slice c9h9.22: policy IDs, review gates, ActionObject IDs i blocked
+  business-context decision card wydzielone do nazwanych helperów. Focused
+  Ads/Ruff/mypy/diff check zielone; następny seam to derived KPI contract i
+  blocked claim semantics.
 - Re-audit po siódmym pod-slice: `audit_complexity` raportuje 0 changed-code
   budget violations. Główny Ads test ma nadal 2768 linii i 26 branchy, więc
   `c9h9.22` pozostaje otwarty; nie uznaję samego zielonego audytu za ukończenie.
