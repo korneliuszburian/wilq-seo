@@ -101,6 +101,12 @@
   summary i response (174 LOC); `index.ts` ma 1 146 LOC. Cross-check
   GSC/WordPress i status `manual_required` jawne, focused gates przechodzą.
   Następny seam: Expert/knowledge contracts.
+- Dwudziesty seam: `packages/shared-schemas/src/expert_contracts.ts` zawiera
+  ExpertRule/Summary/Capability (43 LOC), a
+  `packages/shared-schemas/src/knowledge_contracts.ts` zawiera taxonomy,
+  sources, cards, playbooks, compiler result, bindings i operating map
+  (166 LOC); `index.ts` ma 961 LOC. Lifecycle/source lineage jawne, focused
+  gates przechodzą. Następny seam: Command Center contracts.
 
 ## Następny krok
 

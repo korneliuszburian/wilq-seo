@@ -68,6 +68,12 @@ w git, Beads i `docs/progress/archive/`.
   `index.ts` ma 1 146 LOC. Cross-check GSC/WordPress i status `manual_required`
   pozostają jawne. Shared schema/dashboard lint, build, tests i typecheck
   przechodzą. Następny seam: Expert/knowledge contracts.
+- Dwudziesty seam: `expert_contracts.ts` zawiera ExpertRule/Summary/Capability
+  (43 LOC), a `knowledge_contracts.ts` zawiera taxonomy, sources, cards,
+  playbooks, compiler result, bindings i operating map (166 LOC); `index.ts` ma
+  961 LOC. Lifecycle i source lineage pozostają jawne. Shared schema/dashboard
+  lint, build, tests i typecheck przechodzą. Następny seam: Command Center
+  contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i
