@@ -15,8 +15,6 @@ from wilq.actions.action_blockers import (
     action_confirmation_blockers,
     action_confirmation_event_type,
     action_confirmation_summary,
-    action_impact_check_blockers,
-    action_impact_check_summary,
     action_preview_blockers,
     ads_target_confirmation_summary,
 )
@@ -43,7 +41,6 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     build_apply_audit_event,
     build_confirmation_audit_event,
-    build_impact_check_audit_event,
     build_preview_audit_event,
 )
 from wilq.actions.audit_store import (
@@ -147,6 +144,7 @@ from wilq.actions.google_ads.recommendations import (
 from wilq.actions.google_ads.search_term_ngrams import (
     search_term_ngram_action_from_metric_facts,
 )
+from wilq.actions.impact_lifecycle import impact_check_action as impact_check_action_lifecycle
 from wilq.actions.localo.visibility import (
     localo_action_metric_facts,
     localo_visibility_review_action_from_metric_facts,
@@ -969,56 +967,17 @@ def impact_check_action(
     action: ActionObject,
     request: ActionImpactCheckRequest,
 ) -> ActionImpactCheckResult:
-    action.review_gate = _action_review_gate(action)
-    latest_confirmation = _latest_action_confirmation_event(action.audit_events)
-    blockers = action_impact_check_blockers(action, latest_confirmation)
-    status: Literal["checked", "blocked"] = "blocked" if blockers else "checked"
-    evidence_ids = unique_values(
-        [*action.evidence_ids, *(fact.evidence_id for fact in action.metrics)]
-    )
-    source_connectors = unique_values(
-        [fact.source_connector for fact in action.metrics if fact.source_connector]
-    )
-    if not source_connectors:
-        source_connectors = [action.connector]
-    event_type = (
-        "action_impact_check_completed"
-        if status == "checked"
-        else "action_impact_check_blocked"
-    )
-    audit = build_impact_check_audit_event(
-        action=action,
-        actor=request.checked_by,
-        event_type=event_type,
-        summary=action_impact_check_summary(
-            request=request,
-            status=status,
-            metric_fact_count=len(action.metrics),
-            source_connectors=source_connectors,
-            blockers=blockers,
-            status_label=_action_result_status_label,
-            connector_labels=_source_connector_labels,
-            gate_labels=_action_gate_labels,
-        ),
-        evidence_ids=evidence_ids,
-    )
-    action.audit_events = [audit, *action.audit_events]
-    action.review_gate = _action_review_gate(action)
-    return ActionImpactCheckResult(
-        action_id=action.id,
-        status=status,
-        status_label=_action_result_status_label(status),
-        pre_window_days=request.pre_window_days,
-        post_window_days=request.post_window_days,
-        metric_fact_count=len(action.metrics),
-        source_connectors=source_connectors,
-        source_connector_labels=source_connector_labels(source_connectors),
-        evidence_ids=evidence_ids,
-        evidence_summary_label=evidence_count_label(evidence_ids),
-        blockers=blockers,
-        blocker_labels=_action_gate_labels(blockers),
-        audit_event=_audit_event_with_operator_label(audit),
-        review_gate=_review_gate_with_operator_labels(action.review_gate),
+    return impact_check_action_lifecycle(
+        action,
+        request,
+        review_gate=_action_review_gate,
+        latest_confirmation=_latest_action_confirmation_event,
+        status_label=_action_result_status_label,
+        connector_labels=source_connector_labels,
+        gate_labels=_action_gate_labels,
+        evidence_summary_label=evidence_count_label,
+        audit_event_label=_audit_event_with_operator_label,
+        review_gate_labels=_review_gate_with_operator_labels,
     )
 
 

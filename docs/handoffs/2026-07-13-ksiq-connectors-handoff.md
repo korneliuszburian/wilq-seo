@@ -987,6 +987,13 @@
   files changed, so retain the existing content-workflow browser proof rather
   than inventing a new UI claim. Next target: impact-check lifecycle.
 
+- `jnra` continuation 8 2026-07-13: impact-check lifecycle now lives in
+  `wilq/actions/impact_lifecycle.py`. A regression test preserved the exact
+  operator connector label mapping after extraction. Focused impact/review/
+  mutation-readiness tests, Ruff, mypy, API health, dashboard route and
+  Playwright proof pass. Next target: apply preflight/mutation lifecycle;
+  do not reopen earlier preview/confirmation seams.
+
 ## Następny krok
 
 - Po commit/push kontynuować kolejny świeży seam `jnra` w lifecycle

@@ -2567,3 +2567,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   unchanged. Focused review/validation/Ads/content tests (51 passed), Ruff,
   mypy, complexity and API health pass; service.py is now 1340 LOC. No
   dashboard code changed; existing route/browser proof remains the UI evidence.
+- `jnra` continuation 8 2026-07-13: impact-check lifecycle moved into
+  `wilq/actions/impact_lifecycle.py`; the facade injects confirmation lookup
+  and typed Polish/audit projections. A focused regression caught a connector
+  label alias mismatch and restored the prior `Merchant Center` output.
+  Impact/review/mutation-readiness tests (35 passed), Ruff, mypy, complexity,
+  API health, dashboard title and Playwright proof pass; service.py is now
+  1299 LOC.
