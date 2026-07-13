@@ -438,6 +438,9 @@
 - Dwudziesty siódmy/ósmy pod-slice zakończony: change-impact basics, readiness
   row evidence/blocked claims i change-history section proof są w helperach.
   Następny krok: optimizer linkage i pozostały diagnostic tail.
+- Dwudziesty dziewiąty/trzydziesty pod-slice zakończony: optimizer linkage,
+  campaign metric facts i search-term basics są w helperach. Następny krok:
+  search-term row/safety oraz końcowy diagnostic tail.
 
 ## Następny krok
 

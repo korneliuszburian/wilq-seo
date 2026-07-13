@@ -1156,6 +1156,57 @@ def assert_ads_change_history_section_contract(payload: dict[str, Any]) -> None:
     ]
 
 
+def assert_ads_optimizer_linkage_contract(
+    optimizer_items_by_id: dict[str, Any]
+) -> None:
+    """Prove optimizer change-impact item names both source contracts."""
+    item = optimizer_items_by_id["change_history_impact_review"]
+    assert item["source_contract_ids"] == [
+        "ads_change_history_read_contract",
+        "ads_change_impact_readiness_contract",
+    ]
+    assert "current_campaign_snapshot" not in item["missing_read_contracts"]
+
+
+def assert_ads_campaign_metric_fact_contract(campaign_section: dict[str, Any]) -> None:
+    """Prove campaign section retains typed facts for the operator view."""
+    facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
+    assert facts_by_name["clicks"]["value"] == 9
+    assert facts_by_name["conversions"]["value"] == 2.5
+    assert facts_by_name["conversion_value"]["value"] == 450.75
+    assert any(
+        fact["name"] == "cost_micros"
+        and fact["dimensions"].get("campaign_name") == "Brand Search"
+        for fact in campaign_section["metric_facts"]
+    )
+
+
+def assert_ads_search_terms_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove search terms are readable while negative-keyword writes stay gated."""
+    contract = payload["search_terms_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["allowed_metrics"] == [
+        "search_term",
+        "campaign",
+        "ad_group",
+        "status",
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+    ]
+    for available in (
+        "conversions",
+        "conversion_value",
+        "90_day_safety_check",
+        "negative_keyword_action_validation",
+    ):
+        assert available not in contract["missing_read_contracts"]
+    assert contract["operator_review_gates"] == ["negative_keyword_action_validation"]
+    assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3473,45 +3524,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert_ads_change_impact_row_contract(
         change_impact_contract, refresh_response.json()["evidence_ids"][-1]
     )
-    assert optimizer_items_by_id["change_history_impact_review"]["source_contract_ids"] == [
-        "ads_change_history_read_contract",
-        "ads_change_impact_readiness_contract",
-    ]
-    assert (
-        "current_campaign_snapshot"
-        not in optimizer_items_by_id["change_history_impact_review"]["missing_read_contracts"]
-    )
+    assert_ads_optimizer_linkage_contract(optimizer_items_by_id)
     assert_ads_change_history_section_contract(payload)
-    facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
-    assert facts_by_name["clicks"]["value"] == 9
-    assert facts_by_name["conversions"]["value"] == 2.5
-    assert facts_by_name["conversion_value"]["value"] == 450.75
-    assert any(
-        fact["name"] == "cost_micros" and fact["dimensions"].get("campaign_name") == "Brand Search"
-        for fact in campaign_section["metric_facts"]
-    )
+    assert_ads_campaign_metric_fact_contract(campaign_section)
     assert "act_configure_google_ads_env" not in payload["action_ids"]
+    assert_ads_search_terms_contract_basics(payload)
     search_terms_contract = payload["search_terms_read_contract"]
-    assert search_terms_contract["status"] == "ready"
-    assert search_terms_contract["allowed_metrics"] == [
-        "search_term",
-        "campaign",
-        "ad_group",
-        "status",
-        "clicks",
-        "impressions",
-        "cost_micros",
-        "conversions",
-        "conversion_value",
-    ]
-    assert "conversions" not in search_terms_contract["missing_read_contracts"]
-    assert "conversion_value" not in search_terms_contract["missing_read_contracts"]
-    assert "90_day_safety_check" not in search_terms_contract["missing_read_contracts"]
-    assert (
-        "negative_keyword_action_validation" not in search_terms_contract["missing_read_contracts"]
-    )
-    assert search_terms_contract["operator_review_gates"] == ["negative_keyword_action_validation"]
-    assert "dodanie wykluczających słów kluczowych" in search_terms_contract["blocked_claims"]
     assert search_terms_contract["search_term_rows"] == [
         {
             "search_term": "bdo rejestracja",

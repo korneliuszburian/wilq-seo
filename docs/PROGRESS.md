@@ -1950,3 +1950,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   row evidence/blocked claims oraz change-history section proof wydzielone.
   Focused Ads/Ruff/mypy/diff check zielone; następny seam to optimizer linkage
   i pozostały diagnostic tail.
+- Dwudziesty dziewiąty/trzydziesty pod-slice c9h9.22: optimizer linkage/source
+  contracts, campaign metric facts oraz search-term contract basics wydzielone.
+  Focused Ads/Ruff/mypy/diff check zielone; następny seam to search-term row,
+  safety i pozostały diagnostic tail.
