@@ -139,3 +139,26 @@ export const activeSettingsConnectors: ConnectorStatus[] = settingsConnectors.ma
       }
     : connector
 );
+
+export const freshSettingsConnectors: ConnectorStatus[] = settingsConnectors.map((connector) =>
+  connector.id === "google_analytics_4"
+    ? {
+        ...connector,
+        freshness: { state: "fresh" },
+        refresh_state: {
+          ...connector.refresh_state,
+          state: "ready",
+          state_label: "odświeżone",
+          refresh_allowed: true,
+          safe_next_step: "Użyj ostatniego odczytu zgodnie ze świeżością.",
+          automatic_refresh: {
+            ...connector.refresh_state.automatic_refresh,
+            eligible: false,
+            reason: "not_stale",
+            reason_label: "Źródło nie wymaga automatycznego odczytu",
+            safe_next_step: "Użyj ostatniego odczytu zgodnie ze świeżością."
+          }
+        }
+      }
+    : connector
+);

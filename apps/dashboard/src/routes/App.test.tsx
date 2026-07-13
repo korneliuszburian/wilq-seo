@@ -8027,48 +8027,6 @@ describe("WILQ dashboard", () => {
     );
   }
 
-  it("clears the stale source warning when the API returns a fresh terminal state", async () => {
-    const ga4Connector = connectors[1];
-    const previousFreshness = ga4Connector.freshness;
-    const previousFreshnessLabel = ga4Connector.freshness_label;
-    const previousRefreshState = ga4Connector.refresh_state;
-    ga4Connector.freshness = { state: "fresh" };
-    ga4Connector.freshness_label = "dane odświeżone";
-    ga4Connector.refresh_state = {
-      state: "ready",
-      state_label: "odświeżone",
-      refresh_allowed: true,
-      safe_next_step: "Użyj ostatniego odczytu zgodnie ze świeżością.",
-      affected_decisions: ["ga4_diagnostics", "command_center"],
-      automatic_refresh: {
-        eligible: false,
-        reason: "not_stale",
-        reason_label: "Źródło nie wymaga automatycznego odczytu",
-        safe_next_step: "Użyj ostatniego odczytu zgodnie ze świeżością.",
-        cooldown_seconds: 900
-      }
-    };
-
-    try {
-      renderApp("/settings");
-      await screen.findByRole("heading", { name: "Dostęp do źródeł" });
-      expect(screen.queryByText(/1 źródło wymaga odświeżenia przed oceną wyników/)).toBeNull();
-      expect(screen.queryByText("Do odświeżenia")).toBeNull();
-      const ga4Card = screen.getByRole("heading", { name: "Google Analytics 4" }).closest("article");
-      expect(ga4Card).not.toBeNull();
-      expect(within(ga4Card as HTMLElement).getByText("Aktywny")).toBeInTheDocument();
-      expect(
-        vi.mocked(fetch).mock.calls.filter(([url]) =>
-          String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-        )
-      ).toHaveLength(0);
-    } finally {
-      ga4Connector.freshness = previousFreshness;
-      ga4Connector.freshness_label = previousFreshnessLabel;
-      ga4Connector.refresh_state = previousRefreshState;
-    }
-  });
-
   it.each([
     {
       state: "partial",

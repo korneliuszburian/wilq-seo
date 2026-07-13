@@ -7,6 +7,7 @@ import {
   activeSettingsConnectors,
   completedSettingsRefreshRun,
   eligibleSettingsConnectors,
+  freshSettingsConnectors,
   queuedSettingsRefreshRun,
   settingsConnectors
 } from "./settingsSurface.fixture";
@@ -163,6 +164,43 @@ describe("SettingsSourceRefresh", () => {
     expect(card).not.toBeNull();
     expect(within(card as HTMLElement).queryByRole("button", { name: "Odśwież dane" })).toBeNull();
     expect(within(card as HTMLElement).getByText(/Odczyt jest w kolejce/)).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith("/api/connectors/google_analytics_4/refresh")
+      )
+    ).toHaveLength(0);
+  });
+
+  it("removes the stale blocker when the API returns a fresh terminal state", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/api/connectors") && !init?.method) {
+        return Promise.resolve(Response.json(freshSettingsConnectors));
+      }
+      if (url.endsWith("/api/connectors/google_analytics_4/refresh")) {
+        return Promise.reject(new Error("fresh source must not refresh automatically"));
+      }
+      return Promise.reject(new Error(`Unexpected settings request: ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GenericSurface routeName="/settings" />
+      </QueryClientProvider>
+    );
+
+    await screen.findByRole("heading", { name: "Dostęp do źródeł" });
+    expect(screen.queryByText(/1 źródło wymaga odświeżenia przed oceną wyników/)).toBeNull();
+    expect(screen.queryByText("Do odświeżenia")).toBeNull();
+    const card = (await screen.findByRole("heading", { name: "Google Analytics 4" })).closest(
+      "article"
+    );
+    expect(card).not.toBeNull();
+    expect(within(card as HTMLElement).getByText("Aktywny")).toBeInTheDocument();
     expect(
       fetchMock.mock.calls.filter(([input]) =>
         String(input).endsWith("/api/connectors/google_analytics_4/refresh")

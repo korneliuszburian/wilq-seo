@@ -149,6 +149,10 @@ w git, Beads i `docs/progress/archive/`.
   `active_run`, CTA nie wykonuje POST-u, pokazuje stan kolejki i pozostaje
   zgodne z kontraktem API. App/settings focused 29/29, typecheck/lint/diff check
   przechodzą; `App.test.tsx` ma 9354 LOC.
+- Szósty settings slice wydzielił terminal-state freshness do
+  `SettingsSourceRefresh.test.tsx`: świeży odczyt usuwa blocker, przywraca
+  status Aktywny i nie uruchamia kolejnego refreshu. App/settings focused
+  29/29, typecheck/lint/diff check przechodzą; `App.test.tsx` ma 9312 LOC.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

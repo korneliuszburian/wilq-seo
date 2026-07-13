@@ -178,6 +178,11 @@
   `active_run` CTA nie wykonuje POST-u, a operator widzi kolejkę. App/settings
   focused 29/29, dashboard typecheck/lint i diff check przechodzą;
   `App.test.tsx` ma 9354 LOC. Następny seam: API terminal-state freshness.
+- Szósty settings slice: terminal-state freshness jest teraz pokryte w
+  `SettingsSourceRefresh.test.tsx`; świeży odczyt usuwa blocker, pokazuje
+  status Aktywny i nie wykonuje kolejnego refreshu. App/settings focused 29/29,
+  dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma 9312 LOC.
+  Następny seam: pozostałe partial/failed/unknown state matrix.
 
 ## Następny krok
 
