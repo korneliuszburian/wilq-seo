@@ -932,6 +932,10 @@
 - Re-audyt Beads 2026-07-13: zamknięto `ho41` (route 655 LOC, typed
   boundaries, ready/blocked proof) oraz `6rw.5` (blocked-state E2E guardrail).
   Nie powtarzać tych slice'ów bez nowej sprzeczności runtime lub kontraktu.
+- Re-audyt dashboardu 2026-07-13: usefulness audit zwrócił 14 surfaces,
+  12 `demo_ready`, 2 `review_ready`, 0 blocked i `pass=true`; istniejące
+  route/browser proof nie ujawniają nowej luki `6rw.2`. Bead zamknięty jako
+  wykonany; wynik audytu nie jest substytutem realnego Wilku UAT.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

@@ -82,6 +82,12 @@ w git, Beads i `docs/progress/archive/`.
   po naprawie E2E blocked-state guardrail. Nie wracać do tych zakresów bez
   nowej sprzeczności runtime/kontraktu.
 
+- Re-audyt dashboardu 2026-07-13: `scripts/dashboard_usefulness_audit.py`
+  objął 14 ekranów: 12 `demo_ready`, 2 `review_ready`, 0 blocked, `pass=true`.
+  Wspólnie z istniejącymi route-specific testami/browser proof nie potwierdza
+  nowej luki w `6rw.2`; Bead zamknięty jako wykonany. Deterministyczny raport
+  pozostaje sygnałem pomocniczym, nie zastępuje neutralnego UAT.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback
