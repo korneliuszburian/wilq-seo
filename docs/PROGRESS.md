@@ -2138,3 +2138,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `ads_diagnostics.py` ma 6 973 linie fizyczne. Ads contracts, Ruff, mypy,
   complexity audit i diff check przechodzą (dwa znane budżety monolitu).
   Następny slice: response assembly/operator summary.
+- Siódmy slice `kgvy`: wydzielono `wilq/briefing/ads_response_assembly.py`.
+  Typed `AdsDiagnosticsResponse` jest składany poza fasadą; freshness, labels,
+  operator summary i unique lineage są jawnie przekazane callbackami. Bez
+  nowego endpointu ani zmiany payloadu; `ads_diagnostics.py` ma 6 963 linie
+  fizyczne. Ads contracts, Ruff, mypy, complexity audit i diff check przechodzą
+  (dwa znane budżety monolitu). Następny slice: ocena label hydration jako
+  osobnej granicy.

@@ -618,6 +618,11 @@
   działa poza fasadą przez callbacki do istniejących reguł. `ads_diagnostics.py`
   ma 6 973 linie fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff
   check zielone. Następny seam: response assembly/operator summary.
+- Siódmy slice wykonany: dodano `wilq/briefing/ads_response_assembly.py`.
+  Składanie `AdsDiagnosticsResponse` działa poza fasadą przez callbacki dla
+  freshness, labels, operator summary i evidence/action lineage. `ads_diagnostics.py`
+  ma 6 963 linie fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff
+  check zielone. Następny seam: label hydration.
 
 ## Następny krok
 

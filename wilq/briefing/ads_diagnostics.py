@@ -87,6 +87,7 @@ from wilq.briefing.ads_metric_utils import (
     round_metric as _round_metric,
 )
 from wilq.briefing.ads_primary_contracts import build_primary_read_contracts
+from wilq.briefing.ads_response_assembly import build_diagnostics_response
 from wilq.briefing.ads_search_contracts import (
     build_search_term_read_contracts,
     build_search_term_review_contracts,
@@ -688,19 +689,12 @@ def _build_ads_diagnostics_response(
     sections: list[AdsDiagnosticSection],
     blocked_handoff: AdsBlockedHandoff | None,
 ) -> AdsDiagnosticsResponse:
-    return AdsDiagnosticsResponse(
-        strict_instruction=STRICT_BRIEF_INSTRUCTION,
+    return build_diagnostics_response(
         connector=connector,
-        connector_status_label=_ads_connector_status_label(str(connector.status)),
         latest_refresh=latest_refresh,
-        latest_refresh_status_label=_ads_refresh_status_label(latest_refresh)
-        if latest_refresh
-        else None,
-        live_data_status_label=_ads_live_data_status_label(live_data_available),
         live_data_available=live_data_available,
-        freshness_assessment=_ads_freshness_assessment(latest_refresh),
-        campaign_read_contract=campaign_read_contract,
         account_currency_read_contract=account_currency_read_contract,
+        campaign_read_contract=campaign_read_contract,
         business_context_read_contract=business_context_read_contract,
         derived_kpi_read_contract=derived_kpi_read_contract,
         budget_pacing_read_contract=budget_pacing_read_contract,
@@ -718,20 +712,16 @@ def _build_ads_diagnostics_response(
         keyword_planner_read_contract=keyword_planner_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
-        operator_summary=_operator_summary(
-            decision_queue,
-            campaign_read_contract,
-            search_terms_read_contract,
-            optimizer_readiness_contract,
-        ),
         decision_queue=decision_queue,
         sections=sections,
         blocked_handoff=blocked_handoff,
-        evidence_ids=_unique(
-            evidence_id for section in sections for evidence_id in section.evidence_ids
-        ),
-        action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
-        blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
+        strict_instruction=STRICT_BRIEF_INSTRUCTION,
+        connector_status_label=_ads_connector_status_label,
+        refresh_status_label=_ads_refresh_status_label,
+        live_data_status_label=_ads_live_data_status_label,
+        freshness_assessment=_ads_freshness_assessment,
+        operator_summary=_operator_summary,
+        unique=_unique,
     )
 
 
