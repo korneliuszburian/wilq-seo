@@ -760,6 +760,11 @@
   zawiera rankingu ani reguł evidence. Focused dashboard lint/typecheck,
   route tests i build przechodzą. Kolejka nadal stale/blocked (2 kandydatów,
   0 actionable/3), więc nie traktować renderu jako gotowości treści.
+- `ho41` continuation 3 2026-07-13: dev-only WordPress/ACF target column
+  wydzielona do `apps/dashboard/src/routes/ContentDevTargetColumn.tsx` (82 LOC).
+  Explicit target selection, section inventory i draft-only wording pozostają
+  bez zmian; brak write/matching logic w komponencie. Przed commitem wymagane
+  focused lint/typecheck/tests oraz reload/browser proof.
 
 ## Następny krok
 

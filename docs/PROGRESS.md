@@ -17,6 +17,11 @@ w git, Beads i `docs/progress/archive/`.
   already typed query chips, metric tiles and signal rows; ranking/evidence
   logic remains in the route/API view-model. Focused dashboard lint, typecheck,
   route tests and build remain green.
+- `wilq-seo-ho41` continuation 3: extracted the dev-only WordPress/ACF target
+  column into `ContentDevTargetColumn.tsx` (82 LOC). Explicit target selection,
+  current ACF section rendering and draft-only copy remain unchanged; the
+  component owns no write or matching logic. Focused dashboard lint, typecheck,
+  route tests and browser reload proof are required before commit.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

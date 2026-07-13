@@ -69,6 +69,9 @@ page identity/decision card is now a separate presentational
 renders the existing Service Profile projection without owning API logic. The
 existing GSC/Ahrefs/brief column is now `ContentSignalColumn.tsx`; it renders
 only the route's typed signal rows and does not rank or invent evidence.
+The dev-only WordPress/ACF target column is now `ContentDevTargetColumn.tsx`; it
+keeps explicit target selection and draft-only wording in a separate boundary
+without adding a write path or client-specific ACF assumptions.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
