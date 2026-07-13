@@ -131,6 +131,10 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/ads_custom_segments_assertions.py`. Live smoke kończy się `exit 0`;
   `main` ma 675 LOC/140 branches, helper 29 LOC/13 branches. Audience-size,
   skuteczność i zapis kierowania nadal pozostają zablokowane.
+- Ads search-term n-gram contract jest teraz w
+  `scripts/ads_search_term_ngram_assertions.py`. Live smoke kończy się `exit 0`;
+  `main` ma 664 LOC/135 branches, helper 17 LOC/5 branches. N-gram-specific
+  change-preview blocker pozostaje jawny.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

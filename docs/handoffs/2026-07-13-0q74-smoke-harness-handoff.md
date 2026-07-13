@@ -106,6 +106,10 @@
   `scripts/ads_custom_segments_assertions.py`; live smoke przechodzi, a
   `main` ma 675 LOC/140 branches. Audience-size, skuteczność i zapis kierowania
   pozostają jawnie zablokowane.
+- Search-term n-gram contract jest w
+  `scripts/ads_search_term_ngram_assertions.py`; live smoke przechodzi, a
+  `main` ma 664 LOC/135 branches. N-gram-specific change-preview blocker
+  pozostaje jawny; następny seam to negative-keyword contract.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

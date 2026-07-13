@@ -18,6 +18,7 @@ from ads_keyword_match_assertions import validate_keyword_match_context_contract
 from ads_keyword_planner_assertions import validate_keyword_planner_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
+from ads_search_term_ngram_assertions import validate_search_term_ngram_contract
 from ads_search_term_review_assertions import validate_search_term_review_contract
 from ads_search_term_safety_assertions import validate_search_term_safety_contract
 from ads_smoke_runtime import load_ads_context
@@ -74,7 +75,6 @@ def main() -> int:
     search_term_review_summary_contract = (
         ads_diagnostics.get("search_term_review_summary_contract") or {}
     )
-    search_term_ngram_read_contract = ads_diagnostics.get("search_term_ngram_read_contract") or {}
     search_term_safety_read_contract = ads_diagnostics.get("search_term_safety_read_contract") or {}
     keyword_match_context_read_contract = (
         ads_diagnostics.get("keyword_match_context_read_contract") or {}
@@ -257,17 +257,7 @@ def main() -> int:
         len(candidate.get("keyword_planner_ideas") or [])
         for candidate in custom_segments_read_contract.get("candidates") or []
     )
-    if search_term_ngram_read_contract.get("status") == "ready":
-        ngram_missing = set(search_term_ngram_read_contract.get("missing_read_contracts") or [])
-        if "negative_keyword_change_preview" in ngram_missing:
-            raise SystemExit(
-                "Search-term n-gram contract must not use the generic negative "
-                "keyword change preview blocker"
-            )
-        if "ngram_to_negative_keyword_change_preview" not in ngram_missing:
-            raise SystemExit(
-                "Search-term n-gram contract must list the n-gram-specific change preview blocker"
-            )
+    validate_search_term_ngram_contract(ads_diagnostics)
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
