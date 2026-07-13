@@ -89,6 +89,11 @@ w git, Beads i `docs/progress/archive/`.
   tests (19), lint, typecheck and build pass; live E2E reached the app but
   failed on the pre-existing heading locator, so it is not attributed to this
   seam.
+- `wilq-seo-ho41` continuation 15: extracted `StructuredDraftPreviewPanel.tsx`.
+  Preview safety remains classified by the existing route helper and is passed
+  as typed display input; title, sections, evidence IDs and human-review
+  checklist remain unchanged. Focused route tests (19), lint, typecheck, build
+  and diff check pass. E2E still fails on the pre-existing heading locator.
 
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i

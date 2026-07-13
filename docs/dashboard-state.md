@@ -104,6 +104,9 @@ blockers, instructions and required evidence.
 The ACF authoring preview is now `AcfPreviewPanel.tsx`; its recursive field
 renderer is shared with the existing authoring readback while ACF safety text
 continues to come from the route helper.
+The structured draft preview is now `StructuredDraftPreviewPanel.tsx`; it
+renders typed title, sections, evidence and human-review checklist while the
+route retains safety classification.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no
