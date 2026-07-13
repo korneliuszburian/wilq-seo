@@ -11,20 +11,21 @@ również jest zamknięty: jego pierwszy zakres dodał
 `wilq/schemas/measurement.py` z `MetricSampleEvidence` i
 `SourceComparisonEvidence`, fail-closed guards oraz opcjonalne typed wiring do
 `DailyDecision`/`DailyCheckItem`. Live bieżące decyzje nie deklarują jeszcze
-tych kontraktów, więc nie są sztucznie blokowane. Następny aktywny slice to
-`v9ab.10` oraz `v9ab.13` mają aktualny proof przygotowania/eval; nie powtarzaj
-tych slice'ów. Bieżący kodowy slice `kgvy` przenosi live Ads business-context
+tych kontraktów, więc nie są sztucznie blokowane. `v9ab.10` oraz `v9ab.13` mają
+aktualny proof przygotowania/eval; nie powtarzaj tych slice'ów. Bieżący kodowy
+slice `jnra` przeniósł live Ads business-context
 action assembly do istniejącego `wilq/actions/google_ads/business_context.py`;
 registry, ActionObject safety i payload pozostają bez zmian. `lt1`, `jst` i
 `r564` nadal wymagają odpowiednio review kart albo realnego Wilku/operatora i
 nie mogą być zamykane syntetycznym testem.
 
-Recheck `kgvy` 2026-07-13: helper `live_business_context_actions` przejął
+Recheck `jnra` 2026-07-13: helper `live_business_context_actions` przejął
 business-context/target/strategy action construction z fasady `service.py`.
 Focused Ads/action contracts, Ruff, mypy, managed API health, 21-action
 registry, `/api/ads/diagnostics` i `/content-workflow` HTTP proof przechodzą;
-`vendor_write_possible_count=0`. Zmiana pozostaje gotowa do świadomego
-commit/push po finalnym diff check.
+`vendor_write_possible_count=0`. Zmiana została świadomie zacommitowana i
+wypchnięta na `origin/main` jako `3eb9fc9e`; handoff jest w
+`docs/handoffs/2026-07-13-kgvy-ads-business-context.md`.
 
 `wilq-seo-v9ab.4`, `v9ab.5` i pierwszy zakres `v9ab.7` są domknięte jako osobne
 produktowe slice'y: platform traps mają typed kontrakt, source lineage i safe

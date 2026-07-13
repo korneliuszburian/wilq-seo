@@ -1,4 +1,4 @@
-# Handoff — `kgvy` Ads business-context action seam
+# Handoff — `jnra` Ads business-context action seam
 
 Data: 2026-07-13 Europe/Warsaw
 
@@ -36,4 +36,3 @@ istniejącym ownerze.
 - Service Profile: 12 kart, 0 approved production-depth.
 - `v9ab.13`/`jst`: packet UAT jest gotowy, ale brak realnego review Wilku albo
   jawnego owner deferu.
-
