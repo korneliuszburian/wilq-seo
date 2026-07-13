@@ -607,6 +607,12 @@
   kontraktu. `ads_diagnostics.py` ma 7 062 linie fizyczne; 12 testów Ads,
   Ruff, mypy i diff check zielone. Następny seam: sections/blocked-handoff,
   jeśli kontrola zależności potwierdzi brak ryzyka.
+- Piąty slice wykonany: dodano `wilq/briefing/ads_section_contracts.py`.
+  Sekcje Ads są składane poza fasadą przez istniejące domain builders; OAuth,
+  evidence fallback, safe action i lineage są jawnie przekazane callbackami.
+  `ads_diagnostics.py` ma 7 044 linie fizyczne; 12 testów Ads, Ruff, mypy,
+  complexity audit i diff check zielone. Następny seam: decision-queue
+  orchestration.
 
 ## Następny krok
 

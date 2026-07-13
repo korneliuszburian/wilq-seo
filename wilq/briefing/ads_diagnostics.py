@@ -48,18 +48,10 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_ACTION_ID,
 )
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
-from wilq.briefing.ads_budget_pacing import build_budget_pacing_section
 from wilq.briefing.ads_campaign_optimizer_contracts import (
     build_campaign_optimizer_contracts,
 )
-from wilq.briefing.ads_campaigns import (
-    build_business_context_section,
-    build_campaign_overview_section,
-    build_derived_kpi_section,
-)
 from wilq.briefing.ads_candidate_contracts import build_candidate_read_contracts
-from wilq.briefing.ads_change_history import build_change_history_section
-from wilq.briefing.ads_custom_segments import build_custom_segments_section
 from wilq.briefing.ads_decision_queue import (
     build_block_write_actions_decision,
     build_budget_context_decision,
@@ -77,8 +69,6 @@ from wilq.briefing.ads_decision_queue import (
     build_search_terms_decision,
     decision_priority,
 )
-from wilq.briefing.ads_impression_share import build_impression_share_section
-from wilq.briefing.ads_keyword_planner import build_keyword_planner_section
 from wilq.briefing.ads_metric_tiles import (
     budget_context_metric_tiles,
     business_context_metric_tiles,
@@ -104,19 +94,12 @@ from wilq.briefing.ads_metric_utils import (
 from wilq.briefing.ads_metric_utils import (
     round_metric as _round_metric,
 )
-from wilq.briefing.ads_negative_keywords import build_negative_keywords_section
 from wilq.briefing.ads_primary_contracts import build_primary_read_contracts
-from wilq.briefing.ads_recommendations import build_recommendations_section
 from wilq.briefing.ads_search_contracts import (
     build_search_term_read_contracts,
     build_search_term_review_contracts,
 )
-from wilq.briefing.ads_search_terms import (
-    build_keyword_match_context_section,
-    build_search_term_ngram_section,
-    build_search_term_safety_section,
-    build_search_terms_section,
-)
+from wilq.briefing.ads_section_contracts import build_diagnostic_sections
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -472,33 +455,32 @@ def _build_ads_diagnostic_sections(
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
 ) -> list[AdsDiagnosticSection]:
-    sections = [
-        _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
-        build_campaign_overview_section(
-            action_ids,
-            campaign_read_contract,
-            fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+    return build_diagnostic_sections(
+        action_ids=action_ids,
+        latest_refresh=latest_refresh,
+        trusted_metric_facts=trusted_metric_facts,
+        live_data_available=live_data_available,
+        campaign_read_contract=campaign_read_contract,
+        business_context_read_contract=business_context_read_contract,
+        derived_kpi_read_contract=derived_kpi_read_contract,
+        budget_pacing_read_contract=budget_pacing_read_contract,
+        recommendations_read_contract=recommendations_read_contract,
+        impression_share_read_contract=impression_share_read_contract,
+        change_history_read_contract=change_history_read_contract,
+        search_terms_read_contract=search_terms_read_contract,
+        search_term_ngram_read_contract=search_term_ngram_read_contract,
+        search_term_safety_read_contract=search_term_safety_read_contract,
+        keyword_match_context_read_contract=keyword_match_context_read_contract,
+        keyword_planner_read_contract=keyword_planner_read_contract,
+        custom_segments_read_contract=custom_segments_read_contract,
+        negative_keywords_read_contract=negative_keywords_read_contract,
+        oauth_or_live=_oauth_or_live_section,
+        fallback_evidence_ids=_refresh_or_connector_evidence_ids,
+        safe_action=lambda ids, refresh, live: _safe_action_section(
+            ids, refresh, live_data_available=live
         ),
-        build_business_context_section(business_context_read_contract),
-        build_derived_kpi_section(derived_kpi_read_contract),
-        build_budget_pacing_section(budget_pacing_read_contract),
-        build_recommendations_section(recommendations_read_contract),
-        build_impression_share_section(impression_share_read_contract),
-        build_change_history_section(change_history_read_contract),
-        build_search_terms_section(search_terms_read_contract, action_ids),
-        build_search_term_ngram_section(search_term_ngram_read_contract),
-        build_search_term_safety_section(search_term_safety_read_contract),
-        build_keyword_match_context_section(keyword_match_context_read_contract),
-        build_keyword_planner_section(keyword_planner_read_contract, action_ids),
-        build_custom_segments_section(custom_segments_read_contract),
-        build_negative_keywords_section(negative_keywords_read_contract),
-        _safe_action_section(
-            action_ids,
-            latest_refresh,
-            live_data_available=live_data_available,
-        ),
-    ]
-    return [_with_ads_section_lineage(section) for section in sections]
+        with_lineage=_with_ads_section_lineage,
+    )
 
 
 def _build_ads_search_term_read_contracts(

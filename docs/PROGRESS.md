@@ -2124,3 +2124,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   ma 7 062 linie fizyczne; Ads contracts, Ruff, mypy i diff check przechodzą.
   Complexity nadal raportuje dwa znane budżety monolitu. Następny slice:
   ocena sections/blocked-handoff orchestration albo kolejny czysty seam.
+- Piąty slice `kgvy`: wydzielono `wilq/briefing/ads_section_contracts.py`.
+  Składanie sekcji diagnostycznych i safe-action section jest osobną granicą
+  z typed danymi oraz callbackami dla OAuth, evidence lineage i ActionObject
+  safety. Bez nowego endpointu, cyklu importów i zmiany payloadu;
+  `ads_diagnostics.py` ma 7 044 linie fizyczne. Ads contracts, Ruff, mypy,
+  complexity audit i diff check przechodzą. Następny slice: decision-queue
+  orchestration.
