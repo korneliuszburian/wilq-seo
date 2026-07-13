@@ -623,6 +623,11 @@
   freshness, labels, operator summary i evidence/action lineage. `ads_diagnostics.py`
   ma 6 963 linie fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff
   check zielone. Następny seam: label hydration.
+- Ósmy slice wykonany: dodano `wilq/briefing/ads_label_hydration.py`.
+  Review-gate i operator-summary labels są mapowane poza fasadą, a polityki
+  label pozostają w dotychczasowych helperach. `ads_diagnostics.py` ma 6 902
+  linie fizyczne; 12 testów Ads, Ruff, mypy, complexity audit i diff check
+  zielone. Następny seam: decision/surface label hydration.
 
 ## Następny krok
 

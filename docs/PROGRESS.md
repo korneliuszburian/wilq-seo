@@ -2145,3 +2145,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   fizyczne. Ads contracts, Ruff, mypy, complexity audit i diff check przechodzą
   (dwa znane budżety monolitu). Następny slice: ocena label hydration jako
   osobnej granicy.
+- Ósmy slice `kgvy`: wydzielono `wilq/briefing/ads_label_hydration.py`.
+  Review-gate i operator-summary label hydration działa poza fasadą; polityki
+  etykiet pozostają w istniejących helperach, przekazywanych callbackami. Bez
+  nowego endpointu ani zmiany payloadu; `ads_diagnostics.py` ma 6 902 linie
+  fizyczne. Ads contracts, Ruff, mypy, complexity audit i diff check przechodzą
+  (dwa znane budżety monolitu). Następny slice: decision/surface label hydration.

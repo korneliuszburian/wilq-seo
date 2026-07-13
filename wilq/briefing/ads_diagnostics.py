@@ -61,6 +61,10 @@ from wilq.briefing.ads_decision_queue import (
     decision_priority,
 )
 from wilq.briefing.ads_decision_queue_contracts import build_decision_queue
+from wilq.briefing.ads_label_hydration import (
+    hydrate_review_gate_labels,
+    hydrate_summary_labels,
+)
 from wilq.briefing.ads_metric_tiles import (
     budget_context_metric_tiles,
     business_context_metric_tiles,
@@ -5682,80 +5686,15 @@ def _metric_sentence(facts: list[MetricFact]) -> str:
 
 
 def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
-    operator_gate_owners: list[Any] = [
-        response.business_context_read_contract,
-        response.recommendations_read_contract,
-        response.optimizer_readiness_contract,
-        *response.optimizer_readiness_contract.readiness_items,
-        response.search_terms_read_contract,
-        response.search_term_review_summary_contract,
-        response.search_term_ngram_read_contract,
-        response.search_term_safety_read_contract,
-        response.keyword_match_context_read_contract,
-        response.keyword_planner_read_contract,
-        response.custom_segments_read_contract,
-        response.custom_segments_read_contract.audience_forecast_read_contract,
-        response.operator_summary,
-        *response.decision_queue,
-    ]
-    for owner in operator_gate_owners:
-        owner.operator_review_gate_labels = _ads_review_gate_labels(owner.operator_review_gates)
-        if hasattr(owner, "operator_review_gate_summary_label"):
-            owner.operator_review_gate_summary_label = required_validation_count_label(
-                owner.operator_review_gate_labels or owner.operator_review_gates
-            )
-
-    human_gate_owners: list[Any] = [
-        *response.campaign_read_contract.campaign_rows,
-        *response.recommendations_read_contract.recommendation_rows,
-        *response.campaign_triage_read_contract.triage_rows,
-        *response.custom_segments_read_contract.candidates,
-        *response.negative_keywords_read_contract.candidates,
-    ]
-    for owner in human_gate_owners:
-        owner.human_review_gate_labels = _ads_review_gate_labels(owner.human_review_gates)
-        if hasattr(owner, "human_review_gate_summary_label"):
-            owner.human_review_gate_summary_label = required_validation_count_label(
-                owner.human_review_gate_labels or owner.human_review_gates
-            )
+    hydrate_review_gate_labels(response, review_gate_labels=_ads_review_gate_labels)
 
 
 def _hydrate_ads_summary_labels(response: AdsDiagnosticsResponse) -> None:
-    response.evidence_summary_label = evidence_count_label(response.evidence_ids)
-    response.source_connector_labels = source_connector_labels(
-        response.operator_summary.source_connectors
-    )
-    response.action_summary_label = action_count_label(response.action_ids)
-    response.operator_summary.source_connector_labels = source_connector_labels(
-        response.operator_summary.source_connectors
-    )
-    response.operator_summary.evidence_summary_label = evidence_count_label(
-        response.operator_summary.evidence_ids
-    )
-    response.operator_summary.action_summary_label = action_count_label(
-        response.operator_summary.action_ids
-    )
-    response.operator_summary.missing_read_contract_labels = _ads_missing_read_contract_labels(
-        response.operator_summary.missing_read_contracts
-    )
-    response.operator_summary.missing_read_contract_summary_label = missing_contract_count_label(
-        response.operator_summary.missing_read_contracts
-    )
-    response.operator_summary.allowed_metric_labels = _ads_allowed_metric_labels(
-        response.operator_summary.allowed_metrics
-    )
-    response.operator_summary.blocked_claim_labels = _unique(
-        response.operator_summary.blocked_claims
-    )
-    response.operator_summary.blocked_claim_summary_label = blocked_claim_count_label(
-        response.operator_summary.blocked_claim_labels or response.operator_summary.blocked_claims
-    )
-    response.operator_summary.top_blocked_claim_labels = _unique(
-        response.operator_summary.top_blocked_claim_labels
-        or response.operator_summary.blocked_claim_labels
-    )[:5]
-    response.operator_summary.top_blocked_claim_summary_label = blocked_claim_count_label(
-        response.operator_summary.top_blocked_claim_labels
+    hydrate_summary_labels(
+        response,
+        missing_contract_labels=_ads_missing_read_contract_labels,
+        allowed_metric_labels=_ads_allowed_metric_labels,
+        unique=_unique,
     )
 
 
