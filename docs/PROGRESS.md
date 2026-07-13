@@ -35,6 +35,9 @@ w git, Beads i `docs/progress/archive/`.
   `request_json` i Polish guardrail, a smoke poprawnie traktuje Ahrefs-only
   decyzję bez akcji jako blocker review-only. Live Content Strategist smoke i
   Ruff przechodzą.
+- `wilq-seo-0q74` rozszerzony o Merchant Feed: czwarty smoke używa wspólnego
+  harnessu; live Merchant proof przechodzi (1 action, 7 decyzji, blocked claims
+  dla reapproval/revenue/feed write), Ruff przechodzi.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
