@@ -572,6 +572,13 @@
   non-skipped tests, `tsc --noEmit` i ESLint przechodzą. `contentWorkflow.ts`
   jest modułem domeny content, nie cross-domain barrel. Nie wracać do tego
   ukończonego splitu.
+- Następny aktywny zakres: `wilq-seo-kgvy` (Ads diagnostics monster).
+  Rebaseline: 7 140 linii fizycznych / 6 616 niepustych w
+  `wilq/briefing/ads_diagnostics.py`; domenowe moduły istnieją już dla
+  campaign, budget, recommendations, search, custom segments, change history,
+  impression share i optimizer. `build_ads_diagnostics` ma 201 linii / 4
+  branchy. Następny krok: import boundary dla primary read-contract
+  orchestration, bez cykli i bez zmiany runtime.
 
 ## Następny krok
 

@@ -2086,3 +2086,11 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   shared schemas przechodzą 34/34 non-skipped, `tsc --noEmit` i ESLint są
   zielone. `contentWorkflow.ts` pozostaje modułem domeny content, nie
   cross-domain barrel. Nie powtarzamy ukończonego splitu.
+- Następny aktywny zakres roadmapy: `wilq-seo-kgvy` (Ads diagnostics monster).
+  Aktualny rebaseline: `wilq/briefing/ads_diagnostics.py` ma 7 140 linii
+  fizycznych / 6 616 niepustych; istnieją już domenowe moduły campaign,
+  budget, recommendations, search, custom segments, change history,
+  impression share i optimizer. Największy aktualny builder to
+  `build_ads_diagnostics` (201 linii / 4 branchy). Następny slice wymaga
+  zaprojektowania import boundary dla primary read-contract orchestration,
+  bez cykli i bez zmiany runtime.
