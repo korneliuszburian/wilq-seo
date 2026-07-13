@@ -2270,3 +2270,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
 - Dwudziesta kontynuacja `50wa`: action detail legacy apply-audit summary test
   przeniesiono do `tests/actions/test_action_review_contracts.py`. Nowy i pełny
   action-object suite przechodzą; stare apply errors nie trafiają do operatora.
+- Dwudziesta pierwsza kontynuacja `50wa`: parametrized payload validation
+  language contract przeniesiono do `tests/actions/test_action_validation_contracts.py`.
+  Wszystkie przypadki Ads/GA4/Localo i pełny action-object suite przechodzą;
+  błędy pozostają operator-readable bez payload jargon.

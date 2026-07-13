@@ -45,7 +45,6 @@ from wilq.actions.google_ads.business_context import (
 )
 from wilq.actions.google_ads.campaign_triage import _campaign_channel_label
 from wilq.actions.google_ads.demand_gen import demand_gen_contract_labels
-from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import (
     _ads_recommendation_type_label,
     list_actions,
@@ -2019,99 +2018,3 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
     assert "disapproved_products=3" not in serialized
     assert "active_users=20" not in serialized
     assert "sessions=30" not in serialized
-
-
-@pytest.mark.parametrize(
-    ("connector_id", "payload"),
-    [
-        (
-            "google_ads",
-            {"action_type": "google_ads_recommendation_review", "connector": "google_ads"},
-        ),
-        ("google_ads", {"action_type": "campaign_change_review", "connector": "google_ads"}),
-        (
-            "google_ads",
-            {"action_type": "negative_keyword_candidate", "connector": "google_ads"},
-        ),
-        (
-            "google_ads",
-            {
-                "action_type": "custom_segment_candidate",
-                "connector": "google_ads",
-                "invented_terms": True,
-            },
-        ),
-        (
-            "google_ads",
-            {
-                "action_type": "google_ads_change_history_impact_review",
-                "connector": "google_ads",
-            },
-        ),
-        (
-            "google_ads",
-            {
-                "action_type": "google_ads_search_term_ngram_review",
-                "connector": "google_ads",
-            },
-        ),
-        (
-            "google_ads",
-            {
-                "action_type": "google_ads_demand_gen_readiness_review",
-                "connector": "google_ads",
-            },
-        ),
-        (
-            "google_ads",
-            {
-                "action_type": "configure_google_ads_keyword_planner_access",
-                "connector": "google_ads",
-            },
-        ),
-        (
-            "google_ads",
-            {"action_type": "configure_ads_business_context", "connector": "google_ads"},
-        ),
-        (
-            "google_ads",
-            {"action_type": "confirm_ads_target_guardrails", "connector": "google_ads"},
-        ),
-        (
-            "google_ads",
-            {"action_type": "record_ads_strategy_review", "connector": "google_ads"},
-        ),
-        (
-            "google_analytics_4",
-            {"action_type": "ga4_tracking_gap", "connector": "google_analytics_4"},
-        ),
-        ("localo", {"action_type": "local_visibility_task", "connector": "localo"}),
-    ],
-)
-def test_action_payload_validation_errors_are_operator_readable(
-    connector_id: str,
-    payload: dict[str, Any],
-) -> None:
-    errors = validate_action_payload(connector_id, payload)
-    assert errors
-    joined = " ".join(errors)
-    forbidden_fragments = [
-        "payload",
-        "requires",
-        "must ",
-        "connector=",
-        "mode=",
-        "apply_allowed",
-        "api_mutation_ready",
-        "destructive=false",
-        "payload_preview",
-        "evidence IDs",
-        "required_validation",
-        "source_connectors",
-        "missing_read_contracts",
-        "not supported",
-        "is only valid",
-        "non-destructive",
-    ]
-    for fragment in forbidden_fragments:
-        assert fragment not in joined

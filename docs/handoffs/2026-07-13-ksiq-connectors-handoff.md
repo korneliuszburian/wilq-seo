@@ -722,6 +722,9 @@
 - Dwudziesta kontynuacja `50wa`: action detail legacy apply-audit contract jest
   teraz w `tests/actions/test_action_review_contracts.py`. Nowy i pełny suite
   przechodzą; techniczne apply errors pozostają zredagowane.
+- Dwudziesta pierwsza kontynuacja `50wa`: parametrized validation error language
+  contract jest teraz w `tests/actions/test_action_validation_contracts.py`.
+  Nowy i pełny suite przechodzą; nie wracać do tego testu w mega-teście.
 
 ## Następny krok
 
