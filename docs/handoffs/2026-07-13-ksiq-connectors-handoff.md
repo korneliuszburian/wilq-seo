@@ -899,6 +899,12 @@
   renderuje temat, draft-only copy i przyciski. Route ma 1614 LOC. ESLint,
   typecheck, 19 focused tests, build i diff check przechodzą; Playwright nadal
   blokuje się na istniejącym heading locatorze przy live queue `blocked`.
+- `ho41` continuation 30 2026-07-13: `contentPageWorkbenchModel.ts`
+  przejął czyste helpery projekcji workbencha (environment labels, metrics,
+  signals, chips, claim/evidence rows i connector labels). Route ma 1467 LOC;
+  ESLint, typecheck, 19 focused tests, build i diff check przechodzą. Browser
+  proof nadal blokuje się na istniejącym heading locatorze przy live queue
+  `blocked`; brak regresji przypisanej temu seamowi.
 - `r564` re-audit 2026-07-13: all child seams remain closed and no new code gap
   is confirmed. Live queue is now `blocked` with 2 candidates, 0 actionable of
   3; `google_search_console` and `wordpress_ekologus` are stale. Do not invent

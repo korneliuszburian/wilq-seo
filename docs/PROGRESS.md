@@ -40,6 +40,14 @@ w git, Beads i `docs/progress/archive/`.
   ponownie potwierdził istniejącą blokadę heading locatora przy live queue
   `blocked`.
 
+- `ho41` continuation 30 2026-07-13: `contentPageWorkbenchModel.ts`
+  przejął czyste helpery modelu widoku: etykietowanie środowiska, tile metrics,
+  sygnały, query chips, claim/evidence rows i connector labels. Route nadal
+  składa UI, a API-owned semantics pozostają bez zmian. Route spadł do 1467
+  LOC. ESLint, TypeScript, 19 focused Vitest, build i diff check przechodzą;
+  Playwright nadal zatrzymuje się na istniejącym heading locatorze przy
+  zablokowanej kolejce.
+
 - `wilq-seo-ho41` continuation: extracted the page identity/decision card from
   `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
   route remains an orchestration surface; public URL, decision label, fallback
