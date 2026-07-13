@@ -1939,3 +1939,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
 - Dwudziesty pierwszy/drugi pod-slice c9h9.22: impression-share basics, row
   evidence/blocked claims oraz section knowledge/rule proof wydzielone.
   Focused Ads/Ruff/mypy/diff check zielone; następny seam to campaign triage.
+- Dwudziesty trzeci/czwarty pod-slice c9h9.22: campaign triage basics oraz
+  pełny triage row metrics/evidence/review-gate proof wydzielone. Focused
+  Ads/Ruff/mypy/diff check zielone; następny seam to optimizer readiness i
+  change-history safety.

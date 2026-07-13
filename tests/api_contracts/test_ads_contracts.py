@@ -844,6 +844,116 @@ def assert_ads_impression_share_section_contract(payload: dict[str, Any]) -> Non
     ]
 
 
+def assert_ads_campaign_triage_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove campaign triage ranks from typed metrics and remains review-only."""
+    contract = payload["campaign_triage_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["title"] == "Kolejność oceny kampanii Ads"
+    assert contract["allowed_metrics"] == [
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+        "ctr",
+        "average_cpc_micros",
+        "conversion_rate",
+        "cost_per_conversion_micros",
+        "roas",
+        "spend_to_budget_ratio_7d",
+        "search_budget_lost_impression_share",
+        "recommendation_count",
+    ]
+    assert contract["missing_read_contracts"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert "zmarnowany budżet" in contract["blocked_claims"]
+
+
+def assert_ads_campaign_triage_row_contract(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove ranked campaign row metrics, lineage and operator safety fields."""
+    row = contract["triage_rows"][0]
+    assert contract["triage_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "campaign_status_label": "aktywna",
+            "advertising_channel_type": "SEARCH",
+            "advertising_channel_type_label": "sieć wyszukiwania",
+            "review_priority": "wysokie",
+            "review_score": row["review_score"],
+            "review_reason": row["review_reason"],
+            "next_step": row["next_step"],
+            "target_status": "no_target",
+            "target_status_label": "brak celu",
+            "clicks": 9,
+            "impressions": 90,
+            "cost_micros": 12000000,
+            "conversions": 2.5,
+            "conversion_value": 450.75,
+            "ctr": 0.1,
+            "average_cpc_micros": 1333333.333333,
+            "conversion_rate": 0.277778,
+            "cost_per_conversion_micros": 4800000,
+            "roas": 37.5625,
+            "spend_to_budget_ratio_7d": 0.057143,
+            "search_budget_lost_impression_share": 0.18,
+            "recommendation_count": 1,
+            "recommendation_types": ["CAMPAIGN_BUDGET"],
+            "has_budget_apply_preview": True,
+            "has_recommendation_apply_preview": True,
+            "evidence_ids": [evidence_id],
+            "evidence_summary_label": "1 dowód źródłowy",
+            "action_ids": ["act_prepare_ads_campaign_review_queue"],
+            "action_summary_label": "1 akcja do sprawdzenia",
+            "source_metric_names": row["source_metric_names"],
+            "missing_read_contracts": [
+                "profit_margin",
+                "business_goal",
+                "human_budget_goal",
+                "target_roas_or_cpa",
+                "human_strategy_review",
+            ],
+            "missing_read_contract_labels": [
+                "marża albo model rentowności",
+                "cel biznesowy",
+                "cel budżetu od człowieka",
+                "docelowy zwrot z reklam albo koszt pozyskania celu",
+                "ocena strategii przez człowieka",
+            ],
+            "missing_read_contract_summary_label": "2 brakujące zakresy danych",
+            "blocked_claims": [
+                "zmarnowany budżet",
+                "opłacalność",
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "zapis rekomendacji",
+                "zapis zmian kampanii",
+            ],
+            "blocked_claim_labels": [
+                "zmarnowany budżet",
+                "opłacalność",
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "zapis rekomendacji",
+                "zapis zmian kampanii",
+            ],
+            "blocked_claim_summary_label": "6 zablokowanych obietnic",
+            "human_review_gates": row["human_review_gates"],
+            "human_review_gate_labels": row["human_review_gate_labels"],
+            "human_review_gate_summary_label": "10 wymaganych sprawdzeń",
+        }
+    ]
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3141,129 +3251,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         impression_share_contract, refresh_response.json()["evidence_ids"][-1]
     )
     assert_ads_impression_share_section_contract(payload)
+    assert_ads_campaign_triage_contract_basics(payload)
     campaign_triage_contract = payload["campaign_triage_read_contract"]
-    assert campaign_triage_contract["status"] == "ready"
-    assert campaign_triage_contract["title"] == "Kolejność oceny kampanii Ads"
-    assert campaign_triage_contract["allowed_metrics"] == [
-        "clicks",
-        "impressions",
-        "cost_micros",
-        "conversions",
-        "conversion_value",
-        "ctr",
-        "average_cpc_micros",
-        "conversion_rate",
-        "cost_per_conversion_micros",
-        "roas",
-        "spend_to_budget_ratio_7d",
-        "search_budget_lost_impression_share",
-        "recommendation_count",
-    ]
-    assert campaign_triage_contract["missing_read_contracts"] == [
-        "profit_margin",
-        "business_goal",
-        "human_budget_goal",
-        "target_roas_or_cpa",
-        "human_strategy_review",
-    ]
-    assert campaign_triage_contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert "zmarnowany budżet" in campaign_triage_contract["blocked_claims"]
-    assert campaign_triage_contract["triage_rows"] == [
-        {
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_status": "ENABLED",
-            "campaign_status_label": "aktywna",
-            "advertising_channel_type": "SEARCH",
-            "advertising_channel_type_label": "sieć wyszukiwania",
-            "review_priority": "wysokie",
-            "review_score": campaign_triage_contract["triage_rows"][0]["review_score"],
-            "review_reason": campaign_triage_contract["triage_rows"][0]["review_reason"],
-            "next_step": campaign_triage_contract["triage_rows"][0]["next_step"],
-            "target_status": "no_target",
-            "target_status_label": "brak celu",
-            "clicks": 9,
-            "impressions": 90,
-            "cost_micros": 12000000,
-            "conversions": 2.5,
-            "conversion_value": 450.75,
-            "ctr": 0.1,
-            "average_cpc_micros": 1333333.333333,
-            "conversion_rate": 0.277778,
-            "cost_per_conversion_micros": 4800000,
-            "roas": 37.5625,
-            "spend_to_budget_ratio_7d": 0.057143,
-            "search_budget_lost_impression_share": 0.18,
-            "recommendation_count": 1,
-            "recommendation_types": ["CAMPAIGN_BUDGET"],
-            "has_budget_apply_preview": True,
-            "has_recommendation_apply_preview": True,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "evidence_summary_label": "1 dowód źródłowy",
-            "action_ids": ["act_prepare_ads_campaign_review_queue"],
-            "action_summary_label": "1 akcja do sprawdzenia",
-            "source_metric_names": campaign_triage_contract["triage_rows"][0][
-                "source_metric_names"
-            ],
-            "missing_read_contracts": [
-                "profit_margin",
-                "business_goal",
-                "human_budget_goal",
-                "target_roas_or_cpa",
-                "human_strategy_review",
-            ],
-            "missing_read_contract_labels": [
-                "marża albo model rentowności",
-                "cel biznesowy",
-                "cel budżetu od człowieka",
-                "docelowy zwrot z reklam albo koszt pozyskania celu",
-                "ocena strategii przez człowieka",
-            ],
-            "missing_read_contract_summary_label": "2 brakujące zakresy danych",
-            "blocked_claims": [
-                "zmarnowany budżet",
-                "opłacalność",
-                "skalowanie budżetu",
-                "zmiana budżetu",
-                "zapis rekomendacji",
-                "zapis zmian kampanii",
-            ],
-            "blocked_claim_labels": [
-                "zmarnowany budżet",
-                "opłacalność",
-                "skalowanie budżetu",
-                "zmiana budżetu",
-                "zapis rekomendacji",
-                "zapis zmian kampanii",
-            ],
-            "blocked_claim_summary_label": "6 zablokowanych obietnic",
-            "human_review_gates": [
-                "review_campaign_goal",
-                "review_conversion_quality",
-                "review_budget_context",
-                "review_search_terms_before_budget_decision",
-                "human_strategy_review",
-                "review_recommendation_type",
-                "review_impact_metrics",
-                "review_change_history",
-                "review_business_goal",
-                "campaign_budget_apply_safety",
-            ],
-            "human_review_gate_labels": [
-                "sprawdzenie celu kampanii",
-                "sprawdzenie jakości konwersji",
-                "sprawdzenie kontekstu budżetu",
-                "wyszukiwane hasła przed decyzją budżetową",
-                "ocena strategii przez człowieka",
-                "sprawdzenie typu rekomendacji",
-                "sprawdzenie wpływu rekomendacji",
-                "sprawdzenie historii zmian",
-                "sprawdzenie celu biznesowego",
-                "bezpieczeństwo zmiany budżetu",
-            ],
-            "human_review_gate_summary_label": "10 wymaganych sprawdzeń",
-        }
-    ]
+    assert_ads_campaign_triage_row_contract(
+        campaign_triage_contract, refresh_response.json()["evidence_ids"][-1]
+    )
     assert "Kolejność oceny kampanii" in campaign_triage_contract["triage_rows"][0]["review_reason"]
     assert "nie jest ocena zmarnowanego budżetu" in campaign_triage_contract["summary"]
     optimizer_contract = payload["optimizer_readiness_contract"]

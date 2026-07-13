@@ -429,6 +429,9 @@
 - Dwudziesty pierwszy/drugi pod-slice zakończony: impression-share basics, row
   evidence/blocked claims i section proof są w helperach. Następny krok:
   campaign triage contract.
+- Dwudziesty trzeci/czwarty pod-slice zakończony: campaign triage basics i row
+  proof są w helperach. Następny krok: optimizer readiness oraz change-history
+  safety contracts.
 
 ## Następny krok
 
