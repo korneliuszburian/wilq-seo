@@ -63,7 +63,10 @@ not another React matching rule. The deleted legacy planner must not return.
 Architecture proof (2026-07-13): `ContentWorkflowSurface` now delegates queue,
 selected work item, enrichment and WordPress readiness queries to the typed
 `contentWorkflowQueries.ts` seam. The route keeps state selection and
-presentation orchestration; the seam owns React Query keys/enabled gates.
+presentation orchestration; the seam owns React Query keys/enabled gates. The
+page identity/decision card is now a separate presentational
+`ContentPageIdentityCard.tsx` boundary; it receives typed display values and
+renders the existing Service Profile projection without owning API logic.
 `docs/architecture/dashboard-react-standards.md` is the review contract.
 The current Playwright proof also asserts the live marketer contract (decision,
 public URL, current/signals/dev sections, safe draft-preview CTA and no

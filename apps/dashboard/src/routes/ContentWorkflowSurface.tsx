@@ -61,6 +61,7 @@ import { WordPressDraftReadbackStatus, WordPressDraftExecutionStatus, wordpressD
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
 import { ContentMapColumn, ContentMapConnectors, ContentSectionRow } from "./ContentMapPrimitives";
 import { ContentWorkflowHeader } from "./ContentWorkflowHeader";
+import { ContentPageIdentityCard } from "./ContentPageIdentityCard";
 import {
   activeWorkflowStepIndex,
   blockedWorkflowSteps,
@@ -593,45 +594,19 @@ function ContentPageWorkbench({
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-3">
-          <div className="rounded-md border border-line bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="flex min-w-0 gap-4">
-                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-full bg-action/10 text-action sm:flex">
-                  <FileText aria-hidden="true" size={22} />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-semibold tracking-normal text-ink">
-                    {pageTitle}
-                  </h2>
-                  {publicUrl ? (
-                    <a
-                      href={publicUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex max-w-full items-center gap-2 truncate rounded-md bg-action/10 px-2 py-1 text-sm font-semibold text-action"
-                    >
-                      {publicUrl}
-                      <ExternalLink aria-hidden="true" size={14} />
-                    </a>
-                  ) : null}
-                  <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
-                    {sourceSummary ||
-                      activeCandidate?.reason ||
-                      "Porównaj publiczną stronę, sygnały i aktualny dev draft."}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-action/35 bg-white px-3 text-sm font-semibold text-action"
-              >
-                {activeCandidate?.recommended_mode_label ??
-                  data.preflight.preflight_verdict.recommended_mode}
-                <ArrowRight aria-hidden="true" size={15} />
-              </button>
-            </div>
+          <ContentPageIdentityCard
+            pageTitle={pageTitle}
+            publicUrl={publicUrl}
+            sourceSummary={sourceSummary}
+            recommendedModeLabel={
+              activeCandidate?.recommended_mode_label ?? data.preflight.preflight_verdict.recommended_mode
+            }
+            fallbackDescription={
+              activeCandidate?.reason ?? "Porównaj publiczną stronę, sygnały i aktualny dev draft."
+            }
+          >
             <ServiceProfileDecisionStrip context={data.serviceProfileContext} />
-          </div>
+          </ContentPageIdentityCard>
 
           <div className="relative grid gap-3 lg:grid-cols-3">
             <ContentMapConnectors />

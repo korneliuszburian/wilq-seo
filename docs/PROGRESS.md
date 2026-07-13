@@ -5,6 +5,14 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `wilq-seo-ho41` continuation: extracted the page identity/decision card from
+  `ContentWorkflowSurface` into `ContentPageIdentityCard.tsx` (57 LOC). The
+  route remains an orchestration surface; public URL, decision label, fallback
+  copy and Service Profile projection are unchanged. Dashboard ESLint,
+  TypeScript and focused ContentWorkflow tests pass. Live WILQ queue is
+  currently `blocked`: 2 candidates, 0 actionable of 3 required; GSC and
+  public WordPress are stale, so this refactor does not claim content readiness.
+
 - Ósmy seam shared schemas: `ads_keyword_contracts.ts` zawiera keyword-match
   context row/read contract (40 LOC); `index.ts` ma 2 735 LOC. Eksporty i
   zależności `MetricFact` zachowane. Shared schema lint/build/test oraz

@@ -745,6 +745,16 @@
   contract jest teraz 1:1 w `tests/actions/test_action_evidence_contracts.py`.
   Nowy i pełny suite przechodzą; nie wracać do tego testu w mega-teście.
 
+- `50wa` zamknięty 2026-07-13: zaplanowany zakres mega-test splitów zakończony
+  27 focused slices; nie wracać do tego Beada bez nowego potwierdzonego zakresu.
+- `ho41` continuation 2026-07-13: page identity/decision card wydzielony do
+  `apps/dashboard/src/routes/ContentPageIdentityCard.tsx` (57 LOC), bez zmiany
+  API, copy safety ani ActionObject. ESLint, TypeScript i focused route tests
+  przechodzą. Live queue z `/api/content/work-items/queue` jest stale/blocked:
+  2 kandydatów, 0 actionable, minimum 3; GSC i WordPress public są stale.
+  Następny seam `ho41`: kolejny duży blok presentacyjny tylko po sprawdzeniu
+  aktualnej architektury, bez odblokowywania write/publish.
+
 ## Następny krok
 
 - Po commit/push kontynuować `wilq-seo-c9h9.22`; nie wracać do connector schemas.
