@@ -35,7 +35,7 @@ def preview_action(
     system_readiness_label: Callable[[Any], str],
     preview_contract_label: Callable[[str | None], str],
 ) -> ActionPreviewResult:
-    """Build a dry-run preview and audit it without allowing mutation."""
+    """Build and audit a preview without allowing mutation."""
     preview_request = request or ActionPreviewRequest()
     action.review_gate = review_gate(action)
     raw_preview_items = payload_preview_items(action.payload)

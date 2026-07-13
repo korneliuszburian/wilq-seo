@@ -65,7 +65,7 @@ def evaluate_conversion_readiness_guard(
         reason="Brakuje potwierdzonych metryk konwersji albo zdarzeń kluczowych w GA4.",
         next_step=(
             contract.next_step
-            or "Najpierw potwierdź mapowanie konwersji i zdarzeń kluczowych w GA4."
+            or "Najpierw potwierdź powiązanie konwersji i zdarzeń kluczowych w GA4."
         ),
     )
 

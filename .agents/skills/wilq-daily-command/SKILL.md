@@ -29,7 +29,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 <workflow>
 
 1. Wywołaj najpierw `GET /api/dashboard/command-center`. To jest kanoniczny first-screen view model operatora dla polskiego marketera.
-2. Pobierz także `GET /api/marketing/daily-check`; jego typed status, freshness, blokady, evidence IDs, source connectors, expert rule IDs i safe next steps są API-owned źródłem znaczenia rekomendacji.
+2. Pobierz także `GET /api/marketing/daily-check`; jego jawny status, świeżość, blokady, identyfikatory dowodów, źródła danych, identyfikatory reguł eksperckich i bezpieczne kolejne kroki są źródłem znaczenia rekomendacji należącym do API.
 3. Jeśli potrzebujesz krótkiego tła metryk, pobierz `GET /api/marketing/brief`; nie zastępuj nim kolejki dnia.
 3. Odpowiedz jak poranny operator: co zrobić najpierw, dlaczego teraz, jakie są dowody, co jest zablokowane i jaki jest następny bezpieczny krok.
 4. `POST /api/codex/context-pack` pobieraj tylko wtedy, gdy te dwa endpointy nie wystarczają albo użytkownik pyta o wiele powierzchni naraz.

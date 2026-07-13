@@ -23,7 +23,7 @@ describe("AhrefsDiagnosticSurface", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Ahrefs" })).toBeInTheDocument());
     expect(screen.getByText("Status Ahrefs i dowody SEO")).toBeInTheDocument();
-    expect(screen.getByText("sprawdzenie GSC/WordPress ma dopasowania z API")).toBeInTheDocument();
+    expect(screen.getByText("sprawdzenie GSC i WordPress ma dopasowania z API")).toBeInTheDocument();
     expect(screen.getByText(/Status danych Ahrefs/)).toBeInTheDocument();
     expect(screen.getByText("Luki SEO z Ahrefs")).toBeInTheDocument();
     expect(screen.queryByText("ahrefs")).not.toBeInTheDocument();

@@ -159,7 +159,7 @@ export const ga4Diagnostics = {
       rationale:
         "GA4 nie zwraca strony wejścia, więc ten wiersz jest problemem pomiaru.",
       next_step:
-        "Sprawdź landing page, źródło/medium, UTM-y i konfigurację raportu przed oceną kampanii albo strony.",
+        "Sprawdź stronę wejścia, źródło i medium, UTM-y oraz konfigurację raportu przed oceną kampanii albo strony.",
       risk: "high",
       risk_label: "wysokie ryzyko"
     },

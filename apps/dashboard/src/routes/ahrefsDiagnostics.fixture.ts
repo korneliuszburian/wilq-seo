@@ -249,11 +249,11 @@ export const ahrefsDiagnostics = {
     ],
     gap_record_count: 6,
     cross_check_status: "api_backed",
-    cross_check_status_label: "sprawdzenie GSC/WordPress ma dopasowania z API",
+    cross_check_status_label: "sprawdzenie GSC i WordPress ma dopasowania z API",
     cross_check_summary:
-      "WILQ znalazł 1 kandydata Ahrefs do walidacji: 1 ma dopasowanie w GSC, a 1 ma dopasowanie w spisie WordPress.",
+      "WILQ znalazł 1 propozycję Ahrefs do sprawdzenia: 1 ma dopasowanie w GSC, a 1 ma dopasowanie w spisie WordPress.",
     cross_check_next_step:
-      "Otwórz kandydatów z dopasowaniem GSC/WordPress i zdecyduj: brief, scalenie, obserwacja albo blokada tematu.",
+      "Otwórz propozycje z dopasowaniem w GSC i WordPress i zdecyduj: brief, scalenie, obserwacja albo blokada tematu.",
     cross_check_gsc_match_count: 1,
     cross_check_wordpress_match_count: 1,
     cross_check_source_connectors: ["google_search_console", "wordpress_ekologus"],

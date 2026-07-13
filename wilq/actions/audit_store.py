@@ -281,7 +281,7 @@ def build_preview_audit_event(
     actor: str,
     summary: str,
 ) -> AuditEvent:
-    """Build the dry-run preview event without implying an external write."""
+    """Build the preview audit event without implying an external write."""
     return AuditEvent(
         id=f"audit_{action.id}_preview_{uuid4().hex[:12]}",
         action_id=action.id,

@@ -43,7 +43,7 @@ def build_workspace_dossier() -> WorkspaceDossier:
                 title="Gęstość kolejki treści",
                 summary=(
                     "Ostatni daily-check potwierdza, że kolejka ma za mało "
-                    "actionable kandydatów."
+                    "propozycji gotowych do działania."
                 ),
                 source_ids=["content_work_item_queue"],
                 status="open",

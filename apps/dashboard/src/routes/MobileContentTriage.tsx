@@ -25,7 +25,7 @@ export function MobileContentTriage({ data, onOpenDetails }: MobileContentTriage
         </button>
       </article>
       <div className="rounded-md border border-wait/30 bg-wait/10 p-4">
-        <h2 className="text-sm font-semibold text-ink">Dwa najważniejsze blokery</h2>
+        <h2 className="text-sm font-semibold text-ink">Dwie najważniejsze blokady</h2>
         {blockers.length ? (
           <ul className="mt-3 space-y-3">
             {blockers.map((blocker) => (
@@ -35,7 +35,7 @@ export function MobileContentTriage({ data, onOpenDetails }: MobileContentTriage
               </li>
             ))}
           </ul>
-        ) : <p className="mt-2 text-sm leading-6 text-slate-700">Brak dodatkowych blockerów dla tej decyzji.</p>}
+        ) : <p className="mt-2 text-sm leading-6 text-slate-700">Brak dodatkowych blokad dla tej decyzji.</p>}
       </div>
       <details className="rounded-md border border-line bg-white px-3 py-2 text-sm">
         <summary className="cursor-pointer font-semibold text-action">Pokaż dowody i świeżość</summary>
