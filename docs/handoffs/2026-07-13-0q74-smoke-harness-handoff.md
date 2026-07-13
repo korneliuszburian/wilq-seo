@@ -43,6 +43,11 @@
   guardrails. Ich live smoke przechodzą po migracji.
 - Drugi assertion seam: `validate_action_ids` centralizuje validate → status
   valid → błędy dla Campaign Builder i Social; oba live smoke nadal przechodzą.
+- Complexity re-audit po tych zmianach: 443 Python files / 139381 non-empty LOC,
+  changed files 0, changed-code violations 0. Pozostają potwierdzone hotspoty:
+  Ads `main` 1006 LOC/290 branches, GSC `main` 499/132, Merchant 367/115,
+  Localo 302/92 i Content Strategist `validate_content_action_preview`
+  171/67.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
@@ -53,8 +58,9 @@
 
 ## Następny slice
 
-Wybrać kolejny konkretny smoke do migracji (najlepiej Content Strategist UAT
-packet albo kolejny shared assertion seam), a
+Następny slice: wydzielić Content Strategist `validate_content_action_preview`
+do nazwanego modułu/harness helperów, zachowując dokładnie ten sam live smoke;
+dopiero potem wejść w największy Ads `main`.
 następnie wydzielić wspólne asercje evidence/source/action safety.
 Nie zmieniać product logic w harnessie. Największe funkcje `main` nadal są
 otwarte i wymagają osobnych, testowalnych modułów asercji.

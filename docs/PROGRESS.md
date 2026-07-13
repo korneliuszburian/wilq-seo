@@ -64,6 +64,10 @@ w git, Beads i `docs/progress/archive/`.
   zmiany API/product logic. Live smoke i Ruff przechodzą.
 - Dodano drugi seam harnessu: `validate_action_ids` dla Campaign Builder i
   Social; ich live smoke, Ruff i diff check przechodzą bez zmiany safety gates.
+- Complexity re-audit po `f1da411`: 443 Python files / 139381 non-empty LOC,
+  changed files 0 i zero changed-code violations. Następny potwierdzony hotspot
+  do wydzielenia to Content Strategist `validate_content_action_preview`
+  (171 LOC / 67 branches), przed Ads `main` (1006/290).
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
