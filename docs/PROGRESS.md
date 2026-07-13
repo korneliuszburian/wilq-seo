@@ -89,6 +89,12 @@ w git, Beads i `docs/progress/archive/`.
   Shared schema 34 passed/10 skipped, lint/build oraz dashboard lint/typecheck
   przechodzą. Następny Ads schema slice musi osobno objąć recommendations,
   search terms albo custom segments — bez łączenia całego monolitu.
+- Piąty `ksiq` seam wydzielił Ads recommendations i impression-share read
+  contracts do `packages/shared-schemas/src/ads_review_contracts.ts` (124 LOC).
+  `index.ts` ma 3 057 linii; eksporty, MetricFact i ActionPreview pozostają
+  kompatybilne. Shared schema 34 passed/10 skipped, lint/build oraz dashboard
+  lint/typecheck przechodzą. Następny Ads seam: campaign triage/readiness albo
+  search-term contracts, osobno i z aktualnym proofem.
 
 - `wilq-seo-c9h9.18` jest w realizacji: Ahrefs tactical queue ma osobny typed
   moduł `wilq/briefing/tactical_ahrefs.py`, który kompiluje

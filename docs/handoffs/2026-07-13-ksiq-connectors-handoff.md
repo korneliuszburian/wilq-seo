@@ -32,6 +32,9 @@
   campaign/account/business/budget/readiness schemas (384 LOC), importując
   MetricFact i ActionPreview z istniejących domen. `index.ts` ma 3 168 LOC;
   shared schema/dashboard lint, build, tests i typecheck przechodzą.
+- Piąty seam: `packages/shared-schemas/src/ads_review_contracts.ts` zawiera
+  recommendations oraz impression-share schemas (124 LOC). `index.ts` ma
+  3 057 LOC; shared schema/dashboard lint, build, tests i typecheck przechodzą.
 
 ## Następny krok
 
