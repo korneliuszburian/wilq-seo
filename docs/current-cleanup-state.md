@@ -30,7 +30,9 @@ Live audit 2026-07-13 17:06Z: system status reports 107898 metric facts and 12
 connectors (9 configured, 2 missing credentials; secrets redacted). Content
 queue is fresh but density-blocked at 1 actionable of 3. Daily-check is live
 and blocked only on a typed GA4 quality/measurement review item with evidence,
-rule IDs and safe next steps. Service Profile has
+rule IDs and safe next steps. Its aggregate freshness now preserves the
+oldest checked connector `last_success_at` (fixed and proven in `uzqh`).
+Service Profile has
 12 knowledge cards (3 seeded contract proof, 9 source-backed review-required,
 0 approved production-depth), so reviewed-card work and real Wilku UAT remain
 human/owner gates, not missing API behavior.

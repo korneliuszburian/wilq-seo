@@ -5,6 +5,12 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
+  najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
+  zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
+  Bead `wilq-seo-uzqh` zamknięty po pure regression test, live API proof i
+  browser proof.
+
 - Re-audyt live WILQ 2026-07-13 17:06Z: `/api/content/work-items/queue`
   zwraca `blocked`, 2 kandydatów, 1 actionable przy minimum 3; GSC i publiczny
   WordPress są teraz `fresh`. Pozostały blocker to wyłącznie

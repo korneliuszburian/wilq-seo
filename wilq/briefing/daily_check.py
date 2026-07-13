@@ -384,14 +384,22 @@ def _result_status(
 
 
 def _aggregate_freshness(refs: list[DailyCheckConnectorRef]) -> FreshnessState:
-    states = {ref.freshness.state for ref in refs if ref.status == "checked"}
+    checked_refs = [ref for ref in refs if ref.status == "checked"]
+    states = {ref.freshness.state for ref in checked_refs}
+    last_success_values = [
+        ref.freshness.last_success_at
+        for ref in checked_refs
+        if ref.freshness.last_success_at is not None
+    ]
+    aggregate_last_success_at = min(last_success_values) if last_success_values else None
     if "stale" in states:
         return FreshnessState(
             state="stale",
+            last_success_at=aggregate_last_success_at,
             notes="co najmniej jedno sprawdzone źródło wymaga odświeżenia",
         )
     if "fresh" in states:
-        return FreshnessState(state="fresh")
+        return FreshnessState(state="fresh", last_success_at=aggregate_last_success_at)
     if "missing" in states:
-        return FreshnessState(state="missing")
+        return FreshnessState(state="missing", last_success_at=aggregate_last_success_at)
     return FreshnessState(state="unknown", notes="brak potwierdzonego odczytu")
