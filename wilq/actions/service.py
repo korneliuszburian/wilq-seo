@@ -232,6 +232,7 @@ from wilq.actions.payload_readiness import (
 from wilq.actions.payload_readiness import (
     system_readiness_label as _system_readiness_label,
 )
+from wilq.actions.preview_lifecycle import preview_action as preview_action_lifecycle
 from wilq.actions.registry_assembly import (
     assemble_action_registry,
     seed_static_actions,
@@ -917,48 +918,25 @@ def preview_action(
     action: ActionObject,
     request: ActionPreviewRequest | None = None,
 ) -> ActionPreviewResult:
-    preview_request = request or ActionPreviewRequest()
-    action.review_gate = _action_review_gate(action)
-    raw_preview_items = _payload_preview_items(action.payload)
-    included_items = raw_preview_items[: preview_request.max_items]
-    preview_cards = _action_preview_cards(action)
-    preview_items = action_preview_item_view_models(
-        action=action,
-        raw_items=raw_preview_items,
-        preview_cards=preview_cards,
-        max_items=preview_request.max_items,
+    return preview_action_lifecycle(
+        action,
+        request,
+        review_gate=_action_review_gate,
+        payload_preview_items=_payload_preview_items,
+        preview_cards=_action_preview_cards,
+        preview_item_view_models=action_preview_item_view_models,
+        preview_blockers=action_preview_blockers,
+        preview_summary=_action_preview_summary,
+        build_preview_audit=build_preview_audit_event,
+        preview_contract=_preview_contract,
+        status_label=_action_result_status_label,
+        gate_labels=_action_gate_labels,
+        audit_event_label=_audit_event_with_operator_label,
+        review_gate_labels=_review_gate_with_operator_labels,
         preview_row=_preview_row,
         apply_state_label=_apply_state_label,
         system_readiness_label=_system_readiness_label,
         preview_contract_label=_preview_contract_label,
-    )
-    blockers = action_preview_blockers(action, raw_preview_items)
-    status: Literal["preview_ready", "blocked"] = "blocked" if blockers else "preview_ready"
-    audit = build_preview_audit_event(
-        action=action,
-        actor=preview_request.requested_by or "wilq_api",
-        summary=_action_preview_summary(
-            status=status,
-            included_items=len(included_items),
-            preview_items=len(raw_preview_items),
-        ),
-    )
-    action.audit_events = [audit, *action.audit_events]
-    return ActionPreviewResult(
-        action_id=action.id,
-        status=status,
-        status_label=_action_result_status_label(status),
-        dry_run=True,
-        mutation_allowed=False,
-        preview_contract=_preview_contract(action.payload, raw_preview_items),
-        preview_items=preview_items,
-        preview_cards=preview_cards,
-        preview_items_total=len(raw_preview_items),
-        omitted_items=max(len(raw_preview_items) - len(included_items), 0),
-        blockers=blockers,
-        blocker_labels=_action_gate_labels(blockers),
-        audit_event=_audit_event_with_operator_label(audit),
-        review_gate=_review_gate_with_operator_labels(action.review_gate),
     )
 
 

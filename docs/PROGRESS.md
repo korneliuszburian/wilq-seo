@@ -2554,3 +2554,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   review-gate output remain unchanged. Focused review/validation/content API
   tests, Ruff, mypy, complexity, API health and content-workflow Playwright
   proof pass; service.py is now 1386 LOC.
+- `jnra` continuation 6 2026-07-13: preview lifecycle orchestration moved into
+  `wilq/actions/preview_lifecycle.py`; the facade injects typed preview-item,
+  card, blocker, audit, contract and Polish projection owners. `dry_run` and
+  `mutation_allowed=false` semantics remain unchanged. Focused review,
+  validation, content and cache tests (48 passed), Ruff, mypy, complexity, API
+  health and content-workflow Playwright proof pass; service.py is now 1364 LOC.

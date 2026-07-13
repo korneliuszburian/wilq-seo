@@ -975,6 +975,11 @@
   health, focused review/content tests, Ruff, mypy and Playwright proof pass.
   Next candidate is preview lifecycle; do not repeat validation or WordPress
   safety slices already recorded above.
+- `jnra` continuation 6 2026-07-13: preview lifecycle now lives in
+  `wilq/actions/preview_lifecycle.py`, with the service facade retaining typed
+  compatibility injection. API health, focused lifecycle/content tests, Ruff,
+  mypy, complexity and Playwright proof pass; preview remains dry-run and does
+  not imply external mutation. Next audit target is confirmation lifecycle.
 
 ## Następny krok
 
