@@ -2589,3 +2589,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   tests (17 passed), Ruff, mypy, complexity, API health, dashboard title and
   Playwright proof pass. Complexity now reports no frozen-growth file; only the
   pre-existing Ads monolith/function budgets remain.
+- `kgvy` continuation 2 2026-07-13: Ads freshness assessment and latest
+  vendor-read selection moved into `wilq/briefing/ads_freshness.py`.
+  `ads_diagnostics.py` retains compatibility wrappers, including the
+  monkeypatchable latest-refresh seam. Missing/blocked/stale/fresh states,
+  Polish summaries and the 48h threshold are unchanged. Ads/action-cache tests
+  (17 passed), Ruff, mypy, complexity, API health, dashboard title and
+  Playwright proof pass; remaining Ads size/function warnings are pre-existing.

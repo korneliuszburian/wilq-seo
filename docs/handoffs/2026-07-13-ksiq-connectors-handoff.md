@@ -1006,6 +1006,11 @@
   API health, dashboard route and Playwright proof pass. No frozen-growth
   violation remains for this change; next review should choose another
   confirmed Ads domain seam, not generic mechanical splitting.
+- `kgvy` continuation 2 2026-07-13: Ads freshness/latest vendor-read logic now
+  lives in `wilq/briefing/ads_freshness.py`; compatibility wrappers preserve
+  test/runtime injection. Ads contracts, Ruff, mypy, complexity, API health,
+  dashboard route and Playwright proof pass. Do not recreate cache/freshness
+  work; next seam must be a distinct confirmed Ads domain boundary.
 
 ## Następny krok
 
