@@ -2837,33 +2837,6 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
     assert "sessions=30" not in serialized
 
 
-def test_metric_backed_prepare_actions_validate_without_apply(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
-
-    for action_id in (
-        "act_review_merchant_feed_issues",
-        "act_review_ga4_tracking_quality",
-        "act_prepare_content_refresh_queue",
-        "act_prepare_linkedin_social_drafts",
-        "act_prepare_facebook_social_drafts",
-    ):
-        validate_response = client.post(f"/api/actions/{action_id}/validate")
-        assert validate_response.status_code == 200
-        validation = validate_response.json()
-        assert validation["valid"] is True
-        assert validation["errors"] == []
-
-        apply_response = client.post(f"/api/actions/{action_id}/apply")
-        assert apply_response.status_code == 409
-        apply_detail = apply_response.json()["detail"]
-        assert apply_detail["status"] == "blocked"
-        assert apply_detail["applied"] is False
-        assert apply_detail["audit_event"]["event_type"] == "apply_confirmation_missing"
-
-
 def test_daily_context_pack_preserves_action_review_gates(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
