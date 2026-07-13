@@ -2051,3 +2051,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   i obecność tylko review/action IDs potrzebnych dla Ads. Focused
   Ads/Ruff/mypy/diff check zielone; główny test ma 1002 linie i 12 branchy.
   Następny seam: context-pack parity i finalny tail.
+- Pięćdziesiąty drugi pod-slice c9h9.22: context-pack parity wydzielone do
+  `assert_ads_context_pack_parity`; zachowano priorytet, metric tiles,
+  knowledge-card/rule lineage między pełnym Ads diagnostics i context-packiem.
+  Focused Ads/Ruff/mypy/diff check zielone; główny test ma 989 linii i 12
+  branchy. Następny seam: końcowy audit completion criteria.

@@ -2181,6 +2181,26 @@ def assert_ads_action_inventory(action_payload: list[dict[str, Any]]) -> None:
     assert "act_prepare_negative_keyword_review_queue" in action_ids
 
 
+def assert_ads_context_pack_parity(
+    context_payload: dict[str, Any], budget_decision: dict[str, Any]
+) -> None:
+    """Prove Ads context-pack preserves API-owned decision lineage."""
+    context_decisions = {
+        decision["id"]: decision
+        for decision in context_payload["ads_diagnostics"]["decision_queue"]
+    }
+    context_budget = context_decisions["ads_review_budget_context"]
+    assert context_budget["priority"] == budget_decision["priority"]
+    assert context_budget["metric_tiles"] == budget_decision["metric_tiles"]
+    assert context_budget["knowledge_card_ids"] == budget_decision["knowledge_card_ids"]
+    assert context_budget["expert_rule_ids"] == budget_decision["expert_rule_ids"]
+    card_ids = {card["id"] for card in context_payload["knowledge_card_summaries"]}
+    assert "card_google_ads_budget_review_playbook" in card_ids
+    rule_ids = {rule["id"] for rule in context_payload["expert_rule_summaries"]}
+    assert "ads_scaling_candidates_v1" in rule_ids
+    assert "ads_recommendations_v1" in rule_ids
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4617,20 +4637,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert context_response.status_code == 200
     context_payload = context_response.json()
-    context_decisions = {
-        decision["id"]: decision
-        for decision in context_payload["ads_diagnostics"]["decision_queue"]
-    }
-    context_budget_decision = context_decisions["ads_review_budget_context"]
-    assert context_budget_decision["priority"] == budget_decision["priority"]
-    assert context_budget_decision["metric_tiles"] == budget_decision["metric_tiles"]
-    assert context_budget_decision["knowledge_card_ids"] == budget_decision["knowledge_card_ids"]
-    assert context_budget_decision["expert_rule_ids"] == budget_decision["expert_rule_ids"]
-    context_card_ids = {card["id"] for card in context_payload["knowledge_card_summaries"]}
-    assert "card_google_ads_budget_review_playbook" in context_card_ids
-    context_rule_ids = {rule["id"] for rule in context_payload["expert_rule_summaries"]}
-    assert "ads_scaling_candidates_v1" in context_rule_ids
-    assert "ads_recommendations_v1" in context_rule_ids
+    assert_ads_context_pack_parity(context_payload, budget_decision)
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200

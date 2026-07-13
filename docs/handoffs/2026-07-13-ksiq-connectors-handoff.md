@@ -539,6 +539,11 @@
   potrzebnych review/action IDs są zachowane. Focused Ads/Ruff/mypy/diff check
   zielone; główny test ma 1002 linie i 12 branchy. Następny krok:
   context-pack parity i finalny tail.
+- Pięćdziesiąty drugi pod-slice zakończony: context-pack parity jest w
+  `assert_ads_context_pack_parity`; priorytet, metric tiles i
+  knowledge-card/rule lineage między pełnym Ads diagnostics i context-packiem
+  są zachowane. Focused Ads/Ruff/mypy/diff check zielone; główny test ma 989
+  linii i 12 branchy. Następny krok: końcowy audit completion criteria.
 
 ## Następny krok
 
