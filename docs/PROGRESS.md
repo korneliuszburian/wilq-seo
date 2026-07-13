@@ -2175,3 +2175,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   check zielone. Complexity oznacza kontrolowany frozen-file risk `service.py`;
   szeroki action-object test ma niezwiązany błąd kolekcji `_merchant_feed_items`
   w `tactical_queue`.
+- Slice `50wa`: naprawiono potwierdzony stale import w
+  `tests/actions/test_action_object_contracts.py`: `_merchant_feed_items` jest
+  importowany z aktualnego `tactical_merchant.build_merchant_feed_items`, a
+  wywołanie używa bieżącego keyword-only API. Cały test action-object przechodzi;
+  complexity nadal pokazuje historyczne hotspoty mega-testu, niezwiązane z tą
+  dwuliniową naprawą. Następny zakres `50wa`: dalszy behavior split, nie powrót
+  do nieistniejącego helpera w `tactical_queue`.

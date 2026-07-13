@@ -647,6 +647,10 @@
   4/4, Ruff/mypy/diff zielone. Complexity pokazuje kontrolowany frozen-file risk
   `service.py`; szeroki action-object test ma niezwiązany import error
   `_merchant_feed_items` z `tactical_queue`.
+- Slice `50wa`: stale import `_merchant_feed_items` został naprawiony zgodnie z
+  aktualnym API `tactical_merchant.build_merchant_feed_items` (keyword-only
+  `facts` i `action_ids`). `tests/actions/test_action_object_contracts.py`
+  przechodzi; pozostałe complexity hotspoty są zakresem dalszego mega-test splitu.
 
 ## Następny krok
 

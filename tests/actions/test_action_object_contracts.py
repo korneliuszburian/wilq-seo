@@ -99,7 +99,8 @@ from wilq.briefing.merchant_labels import (
     merchant_resolution_label,
     merchant_severity_label,
 )
-from wilq.briefing.tactical_queue import _merchant_dimension_label, _merchant_feed_items
+from wilq.briefing.tactical_merchant import build_merchant_feed_items as _merchant_feed_items
+from wilq.briefing.tactical_queue import _merchant_dimension_label
 from wilq.connectors.vendor import VendorMetricFact
 from wilq.content.preflight.marketer_view import content_marketer_blocked_claims
 from wilq.operator_labels import (
@@ -542,7 +543,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     )
 
     merchant_items = _merchant_feed_items(
-        [
+        facts=[
             MetricFact(
                 name="issue_product_count",
                 value=3,
@@ -557,7 +558,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
                 },
             )
         ],
-        {"google_merchant_center": ["act_unknown_merchant_issue"]},
+        action_ids={"google_merchant_center": ["act_unknown_merchant_issue"]},
     )
     assert merchant_items
     assert merchant_items[0].dimension_value_labels["severity"] == "wartość do sprawdzenia"
