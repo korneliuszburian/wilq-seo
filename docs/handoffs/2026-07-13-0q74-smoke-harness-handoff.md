@@ -12,8 +12,8 @@
 
 - Dodano `scripts/skill_smoke_harness.py` z `request_json` i wspólnym
   `has_polish_metric_source_guardrails`.
-- Ads, GSC, Content Strategist, Merchant, Localo, GA4 i Demand Gen smoke
-  importują wspólny transport; wszystkie siedem live smoke przechodzą.
+- Ads, GSC, Content Strategist, Merchant, Localo, GA4, Demand Gen i Ahrefs
+  smoke importują wspólny transport; wszystkie osiem live smoke przechodzą.
 - GSC smoke assertion została poprawiona, aby porównywać
   `review_action_ids` z decyzją wskazaną przez `technical_decision_id`, a nie z
   globalną listą akcji. GSC smoke przechodzi po poprawce.
@@ -28,6 +28,9 @@
   `(not set)` pozostaje problemem pomiaru, a ROAS/przychód są blokowane.
 - Demand Gen smoke przechodzi: 18 kampanii bazowych, 0 kampanii Demand Gen,
   status `blocked`, action review-only; nie powstaje rekomendacja uruchomienia.
+- Ahrefs smoke przechodzi: 338 gap facts, 2 authority facts, 6 manual
+  cross-check candidates i zero action IDs; słabe podobieństwo nie odblokowuje
+  briefu ani publikacji.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
