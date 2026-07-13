@@ -139,6 +139,10 @@ w git, Beads i `docs/progress/archive/`.
   `scripts/ads_negative_keyword_assertions.py`. Live smoke kończy się `exit 0`;
   `main` ma 644 LOC/125 branches, helper 22 LOC/9 branches. Payload preview,
   action ID i brak automatycznego wykluczenia pozostają jawne.
+- Ads review action validation korzysta teraz bezpośrednio ze wspólnego
+  `validate_action_ids` w `scripts/skill_smoke_harness.py`. Live smoke kończy
+  się `exit 0`, 6 walidacji ma `valid/status=valid`; Ads `main` ma 633 LOC/122
+  branches.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

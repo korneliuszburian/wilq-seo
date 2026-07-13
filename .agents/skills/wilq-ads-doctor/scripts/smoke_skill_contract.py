@@ -24,7 +24,11 @@ from ads_search_term_review_assertions import validate_search_term_review_contra
 from ads_search_term_safety_assertions import validate_search_term_safety_contract
 from ads_smoke_runtime import load_ads_context
 
-from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
+from scripts.skill_smoke_harness import (
+    has_polish_metric_source_guardrails,
+    request_json,
+    validate_action_ids,
+)
 
 SKILL_NAME = "wilq-ads-doctor"
 REQUIRED_CONNECTORS = ["google_ads"]
@@ -269,22 +273,11 @@ def main() -> int:
                 "Live Ads diagnostics must expose review actions for validation: "
                 + ", ".join(missing_validated_actions)
             )
-    action_validations = []
-    for action_id in VALIDATED_ACTION_IDS:
-        if action_id not in action_ids:
-            continue
-        quoted_action = urllib.parse.quote(str(action_id), safe="")
-        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
-        action_validations.append(
-            {
-                "action_id": validation.get("action_id"),
-                "valid": validation.get("valid"),
-                "status": validation.get("status"),
-                "errors": validation.get("errors", []),
-            }
-        )
-        if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Ads action validation failed: {validation}")
+    action_validations = validate_action_ids(
+        args.api_base,
+        [action_id for action_id in VALIDATED_ACTION_IDS if action_id in action_ids],
+        label="Ads",
+    )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
