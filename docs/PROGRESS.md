@@ -1749,3 +1749,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   readiness blockers, bezpieczne disclosure i brak legacy formatterów/raw
   payloadów. Merchant + App focused 12/12, dashboard typecheck/lint i diff check
   przechodzą; `App.test.tsx` ma 8763 LOC. Następny seam: GA4 route.
+- Osiemnasty slice: GA4 source/contract proof przeniesiony do
+  `Ga4DiagnosticSurface.test.tsx`; zachowano evidence/action summaries,
+  conversion-readiness blockers, review-only copy i brak payload preview/legacy
+  formatterów. GA4 + App focused 12/12, dashboard typecheck/lint i diff check
+  przechodzą; `App.test.tsx` ma 8749 LOC. Następny seam: content route.
