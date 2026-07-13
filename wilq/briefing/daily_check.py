@@ -5,7 +5,10 @@ from datetime import date
 from typing import Literal
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-from wilq.briefing.daily_runtime import build_daily_check_runtime
+from wilq.briefing.daily_runtime import (
+    build_daily_check_runtime,
+    daily_check_prewarm_in_progress,
+)
 from wilq.briefing.false_positive_guards import (
     FalsePositiveGuardResult,
     evaluate_content_measurement_baseline_guard,
@@ -60,6 +63,8 @@ class _ContentMeasurementGuardContext:
 
 def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
     """Compile the existing daily decision queue into a traceable operator result."""
+    if daily_check_prewarm_in_progress():
+        return _daily_check_prewarm_blocker()
     runtime = build_daily_check_runtime(use_cache=use_cache)
     connector_refs = _connector_refs(runtime.connectors)
     ga4_guard = _ga4_conversion_guard(runtime.command_center.daily_decisions)
@@ -98,6 +103,33 @@ def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
         freshness=_aggregate_freshness(connector_refs),
         workspace_dossier=build_workspace_dossier(),
         recommendation_history=list_recommendation_logs(WORKSPACE_ID)[:20],
+    )
+
+
+def _daily_check_prewarm_blocker() -> DailyCheckResult:
+    return DailyCheckResult(
+        workspace_id=WORKSPACE_ID,
+        date=date.today(),
+        status="blocked",
+        blocked_recommendations=[
+            DailyCheckItem(
+                id="daily_check_runtime_prewarm",
+                category="blocked_recommendation",
+                title="WILQ przygotowuje bieżący przegląd",
+                status="blocked",
+                priority=1,
+                summary=(
+                    "Źródła i kolejka decyzji są właśnie przygotowywane po uruchomieniu API. "
+                    "WILQ nie pokazuje jeszcze rekomendacji bez gotowego dowodu."
+                ),
+                next_step=(
+                    "Odśwież przegląd za chwilę. Nie podejmuj decyzji na podstawie niegotowego "
+                    "przebiegu i nie uruchamiaj żadnego zapisu."
+                ),
+                blocked_claims=["rekomendacja bez gotowego przebiegu źródeł"],
+                risk=ActionRisk.low,
+            )
+        ],
     )
 
 

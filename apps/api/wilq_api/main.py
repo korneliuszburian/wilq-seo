@@ -47,6 +47,8 @@ from wilq.briefing.content_diagnostics import (
 from wilq.briefing.daily_runtime import (
     build_daily_check_runtime,
     clear_daily_runtime_cache,
+    finish_daily_check_prewarm,
+    start_daily_check_prewarm,
 )
 from wilq.briefing.merchant_diagnostics import (
     build_merchant_diagnostics_cached,
@@ -90,6 +92,7 @@ async def wilq_lifespan(_: FastAPI) -> AsyncIterator[None]:
         with suppress(Exception):
             list_actions_cached()
         knowledge_prewarm_task = asyncio.create_task(_prewarm_knowledge_map())
+        start_daily_check_prewarm()
         daily_runtime_prewarm_task = asyncio.create_task(_prewarm_daily_runtime())
     try:
         yield
@@ -110,8 +113,11 @@ async def _prewarm_knowledge_map() -> None:
 
 async def _prewarm_daily_runtime() -> None:
     """Warm the daily operator view after readiness without blocking startup."""
-    with suppress(Exception):
-        await asyncio.to_thread(build_daily_check_runtime)
+    try:
+        with suppress(Exception):
+            await asyncio.to_thread(build_daily_check_runtime)
+    finally:
+        finish_daily_check_prewarm()
 
 
 app = FastAPI(title="WILQ Marketing API", version="0.1.0", lifespan=wilq_lifespan)

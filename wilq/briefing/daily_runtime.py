@@ -31,6 +31,8 @@ _cached_base: DailyRuntimeBaseCacheEntry | None = None
 _cached_command_center: DailyCommandCenterCacheEntry | None = None
 _cached_marketing_brief: DailyMarketingBriefCacheEntry | None = None
 _daily_runtime_build_lock = Lock()
+_daily_check_prewarm_state_lock = Lock()
+_daily_check_prewarm_in_progress = False
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,25 @@ def build_daily_check_runtime(use_cache: bool = True) -> DailyCheckRuntime:
         connectors=base.connectors,
         command_center=command_center,
     )
+
+
+def start_daily_check_prewarm() -> None:
+    """Mark the post-readiness daily-check build as an honest in-progress state."""
+    global _daily_check_prewarm_in_progress
+    with _daily_check_prewarm_state_lock:
+        _daily_check_prewarm_in_progress = True
+
+
+def finish_daily_check_prewarm() -> None:
+    """Clear the post-readiness prewarm state, including after a failed build."""
+    global _daily_check_prewarm_in_progress
+    with _daily_check_prewarm_state_lock:
+        _daily_check_prewarm_in_progress = False
+
+
+def daily_check_prewarm_in_progress() -> bool:
+    with _daily_check_prewarm_state_lock:
+        return _daily_check_prewarm_in_progress
 
 
 def build_daily_runtime_base(use_cache: bool = True) -> DailyRuntimeBase:

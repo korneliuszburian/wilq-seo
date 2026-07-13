@@ -12,6 +12,13 @@ w git, Beads i `docs/progress/archive/`.
   `13.991204 s`, followed by `2.733938 s` and `2.824721 s`; this is recorded as
   an unresolved startup latency blocker, not a false completion. Browser
   `/content-workflow` proof remains marketer-readable and draft-only.
+- `inoz` continuation 2: readiness race ma teraz jawny typed blocker
+  `daily_check_runtime_prewarm`; pierwszy request po restarcie nie czeka
+  bezczynnie ani nie udaje rekomendacji bez dowodu. Live restart zwrócił ten
+  blocker w `0.353572 s`, a po zakończeniu prewarmu daily-check zachował
+  `blocked`, 23 evidence IDs, świeżość i 3 safe next actions. Późniejsze odczyty
+  są nadal zależne od kosztu/TTL cache (`5.507935 s`, `3.318508 s`, `3.607515 s`),
+  więc Bead pozostaje otwarty.
 - `djly` continuation: wydzielono typed owner `wilq/briefing/ads_business_context_contracts.py`
   dla strategy-review readiness projection (`operator state` + contract), a
   `ads_diagnostics.py` pozostaje fasadą. API/action payloady, evidence IDs,

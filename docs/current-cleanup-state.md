@@ -6,10 +6,12 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 ## Najbliższa instrukcja
 
 `wilq-seo-inoz` pozostaje otwarty: narrow daily-check runtime i serializacja
-base-cache usuwają duplicate concurrent builds, ale cold first read po readiness
-pozostaje potwierdzonym blockerem (`13.991204 s`, potem `2.733938 s` i
-`2.824721 s`). Nie udawaj ukończenia; kolejny wybór to jawna koordynacja
-prewarm/readiness albo typed `prewarm_in_progress`.
+base-cache usuwają duplicate concurrent builds, a pierwszy request podczas
+prewarmu zwraca typed `daily_check_runtime_prewarm` zamiast czekać lub zmyślać.
+Live proof tego blockera to `0.353572 s`; po prewarmie odczyty zachowują
+`blocked`, freshness i 23 evidence IDs, ale koszt/TTL nadal daje `5.507935 s`,
+`3.318508 s`, `3.607515 s`. Następny krok to stabilizacja cache/readiness,
+nie zmiana metryk.
 
 `djly` ma pierwszy bounded seam: strategy-review readiness jest w
 `wilq/briefing/ads_business_context_contracts.py`, z zachowaniem prepare-only

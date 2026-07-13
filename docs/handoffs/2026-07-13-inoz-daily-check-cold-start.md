@@ -24,8 +24,20 @@ requestu po readiness.
   screenshot zapisany przez agent-browser jako
   `/home/krn/.agent-browser/tmp/screenshots/screenshot-1783971875381.png`.
 
+## Continuation 2
+
+Po restarcie readiness race jest teraz jawny: lifespan oznacza prewarm jako
+trwający, a `/api/marketing/daily-check` zwraca typed blocked item
+`daily_check_runtime_prewarm` z bezpiecznym retry. Nie ma w nim evidence ani
+rekomendacji, więc brak gotowego dowodu pozostaje blockerem. Live proof po
+restarcie: pierwszy odczyt `0.353572 s` z tym blockerem; po zakończeniu prewarmu
+daily-check ma 23 evidence IDs, świeżość i 3 safe next actions. Odczyty po
+prewarmie wyniosły `5.507935 s`, `3.318508 s`, `3.607515 s`, dlatego Bead nadal
+nie jest zamknięty.
+
 ## Następny krok
 
-Zdecydować, czy gotowość API ma czekać na ukończenie prewarmu, czy daily-check
-ma dostać jawny typed stan `prewarm_in_progress` z bezpiecznym retry. Nie
-zmieniać metryk, evidence ani safety tylko po to, by ukryć cold latency.
+Nie powtarzać typed blockera ani narrow runtime. Następny slice ma zmierzyć i
+stabilizować koszt cache/readiness po prewarmie (bez zmiany metryk, evidence,
+freshness ani safety); zamknięcie wymaga trzech kolejnych odczytów w budżecie
+albo udokumentowanego zewnętrznego kosztu.

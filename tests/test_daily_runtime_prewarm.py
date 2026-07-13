@@ -19,6 +19,21 @@ def test_daily_runtime_prewarm_builds_the_daily_check_runtime(
     assert calls == [True]
 
 
+def test_daily_runtime_prewarm_clears_in_progress_state_on_failure(monkeypatch) -> None:
+    calls: list[str] = []
+
+    monkeypatch.setattr(
+        main,
+        "build_daily_check_runtime",
+        lambda: (_ for _ in ()).throw(RuntimeError()),
+    )
+    monkeypatch.setattr(main, "finish_daily_check_prewarm", lambda: calls.append("finished"))
+
+    asyncio.run(main._prewarm_daily_runtime())
+
+    assert calls == ["finished"]
+
+
 def test_lifespan_schedules_daily_runtime_prewarm_after_readiness(monkeypatch) -> None:
     calls: list[str] = []
 
@@ -32,6 +47,7 @@ def test_lifespan_schedules_daily_runtime_prewarm_after_readiness(monkeypatch) -
 
     async def fake_daily_prewarm() -> None:
         calls.append("daily")
+        main.finish_daily_check_prewarm()
 
     monkeypatch.setattr(main, "_prewarm_knowledge_map", fake_knowledge_prewarm)
     monkeypatch.setattr(main, "_prewarm_daily_runtime", fake_daily_prewarm)
