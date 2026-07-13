@@ -120,6 +120,9 @@
 - Ads brief compaction jest w `scripts/ads_report_compaction.py`; live smoke
   przechodzi, a `main` ma 619 LOC/121 branches. Output pozostaje ograniczony do
   operatorowych evidence/action fields, bez vendor payloadów.
+- Connector status compaction używa tego samego modułu; live smoke przechodzi,
+  a `main` ma 607 LOC/120 branches. Statusy są ograniczone do pól potrzebnych
+  do freshness/blocker decyzji, bez zmiany API.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 

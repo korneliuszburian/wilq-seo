@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +18,7 @@ from ads_keyword_planner_assertions import validate_keyword_planner_contract
 from ads_negative_keyword_assertions import validate_negative_keyword_contract
 from ads_readiness_assertions import validate_optimizer_readiness
 from ads_recommendation_assertions import validate_recommendations_contract
-from ads_report_compaction import compact_ads_brief_items
+from ads_report_compaction import compact_ads_brief_items, compact_connector_statuses
 from ads_search_term_ngram_assertions import validate_search_term_ngram_contract
 from ads_search_term_review_assertions import validate_search_term_review_contract
 from ads_search_term_safety_assertions import validate_search_term_safety_contract
@@ -27,7 +26,6 @@ from ads_smoke_runtime import load_ads_context
 
 from scripts.skill_smoke_harness import (
     has_polish_metric_source_guardrails,
-    request_json,
     validate_action_ids,
 )
 
@@ -282,19 +280,7 @@ def main() -> int:
 
     brief_items = compact_ads_brief_items(args.api_base, REQUIRED_CONNECTORS)
 
-    connector_results = []
-    for connector in REQUIRED_CONNECTORS:
-        quoted = urllib.parse.quote(connector, safe="")
-        status = request_json(args.api_base, "GET", f"/api/connectors/{quoted}/status")
-        connector_results.append(
-            {
-                "id": status.get("id"),
-                "status": status.get("status"),
-                "configured": status.get("configured"),
-                "missing_credentials": status.get("missing_credentials", []),
-                "error": status.get("error"),
-            }
-        )
+    connector_results = compact_connector_statuses(args.api_base, REQUIRED_CONNECTORS)
 
     instruction = str(pack.get("strict_instruction", ""))
     if not has_polish_metric_source_guardrails(instruction):

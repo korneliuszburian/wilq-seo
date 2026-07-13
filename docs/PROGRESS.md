@@ -147,6 +147,9 @@ w git, Beads i `docs/progress/archive/`.
   przepuszcza wyłącznie tytuł, kind, source connectors, evidence/action IDs
   oraz metric facts. Live smoke kończy się `exit 0`; `main` ma 619 LOC/121
   branches, helper 19 LOC.
+- Connector status compaction korzysta z tego samego helpera i przekazuje tylko
+  id/status/configured/missing credentials/error. Live smoke kończy się `exit 0`;
+  `main` ma 607 LOC/120 branches, bez zmiany API ani redaction.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.
