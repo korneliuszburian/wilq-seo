@@ -12,7 +12,9 @@ w git, Beads i `docs/progress/archive/`.
   2.127347 s`; po zmianie, po prewarmie: GA4 `0.003595/0.090934 s`,
   daily-check `0.073996/0.077939/0.054049 s`. Status, evidence/freshness i
   no-write safety pozostają bez zmian. Bead pozostaje otwarty do parity
-  concurrency/TTL i pełnego live proof.
+  concurrency/TTL i pełnego live proof. Po dodaniu locka live restart dał
+  `10.038843/0.003666/0.005881 s`; cold build jest serializowany, a kolejne
+  odczyty są cache hitami.
 - `inoz` continuation: daily-check now uses a narrow cached runtime that omits
   the marketing brief, and concurrent base-cache builds are serialized with a
   re-check to prevent duplicate cold work. Focused tests, Ruff, mypy and

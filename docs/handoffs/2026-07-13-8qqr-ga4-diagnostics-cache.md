@@ -18,9 +18,12 @@ Data: 2026-07-13 Europe/Warsaw
 - Focused tests cache/prewarm/daily-check, Ruff, mypy i diff check przechodzą.
 - Browser `/content-workflow` 1/1 przechodzi.
 - Mutation readiness pozostaje `21` akcji, `0` vendor writes.
+- Po dodaniu locka live restart: GA4 `10.038843/0.003666/0.005881 s`; jeden
+  cold build, potem cache hits. Contract live: `live_data_available=true`,
+  `4` decyzje, `8` evidence IDs.
 
 ## Nie powtarzać
 
-Nie dodawać kolejnego endpointu ani cache w React/skillu. Pozostały proofy:
-concurrent cache miss, TTL expiry na runtime i invalidacja po live connector
-refreshu; dopiero potem można zamknąć Bead.
+Nie dodawać kolejnego endpointu ani cache w React/skillu. Pozostał proof TTL
+expiry i invalidacji po live connector refreshu; dopiero potem można zamknąć
+Bead.

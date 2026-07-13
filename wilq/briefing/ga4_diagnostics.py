@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass
+from threading import Lock
 from time import monotonic
 from typing import Literal
 
@@ -38,6 +39,7 @@ GA4_METRIC_FACT_LIMIT = 2000
 GA4_STALE_AFTER_HOURS = 48
 DEFAULT_GA4_DIAGNOSTICS_CACHE_SECONDS = 60.0
 _cached_ga4_diagnostics: Ga4DiagnosticsCacheEntry | None = None
+_ga4_diagnostics_cache_lock = Lock()
 GA4_CONVERSION_METRIC_NAMES = {
     "conversions",
     "ecommerce_purchases",
@@ -209,14 +211,19 @@ def build_ga4_diagnostics_cached() -> Ga4DiagnosticsResponse:
     cached = _read_ga4_diagnostics_cache()
     if cached is not None:
         return cached
-    diagnostics = build_ga4_diagnostics()
-    _write_ga4_diagnostics_cache(diagnostics)
-    return diagnostics
+    with _ga4_diagnostics_cache_lock:
+        cached = _read_ga4_diagnostics_cache()
+        if cached is not None:
+            return cached
+        diagnostics = build_ga4_diagnostics()
+        _write_ga4_diagnostics_cache(diagnostics)
+        return diagnostics
 
 
 def clear_ga4_diagnostics_cache() -> None:
     global _cached_ga4_diagnostics
-    _cached_ga4_diagnostics = None
+    with _ga4_diagnostics_cache_lock:
+        _cached_ga4_diagnostics = None
 
 
 def _read_ga4_diagnostics_cache() -> Ga4DiagnosticsResponse | None:
