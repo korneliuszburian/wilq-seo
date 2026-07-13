@@ -4,9 +4,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ConnectorRefreshRun } from "../lib/api";
-import { App, createWilqRouter } from "./App";
 import { createWilqQueryClient } from "../lib/queryClient";
+import { App, createWilqRouter } from "./App";
+import { connectorRefreshRun } from "./connectorRefreshRun.fixture";
 
 const connectors = [
   {
@@ -901,29 +901,7 @@ const evidence = [
   }
 ];
 
-const connectorRefreshRuns = [
-  {
-    id: "refresh_google_ads_test",
-    connector_id: "google_ads",
-    connector_label: "Google Ads",
-    mode: "status_probe",
-    status: "completed",
-    status_label: "zakończony",
-    started_at: "2026-06-17T10:00:00Z",
-    completed_at: "2026-06-17T10:00:01Z",
-    evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
-    evidence_summary_label: "2 dowody źródłowe",
-    missing_credentials: [],
-    checked_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
-    external_call_attempted: false,
-    vendor_data_collected: false,
-    metrics_persisted: true,
-    metric_summary: {},
-    summary: "Connector google_ads status probe completed.",
-    errors: [],
-    redacted: true
-  }
-] satisfies ConnectorRefreshRun[];
+const connectorRefreshRuns = [connectorRefreshRun];
 
 const adsDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
