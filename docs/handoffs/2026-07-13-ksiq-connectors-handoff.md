@@ -651,6 +651,11 @@
   aktualnym API `tactical_merchant.build_merchant_feed_items` (keyword-only
   `facts` i `action_ids`). `tests/actions/test_action_object_contracts.py`
   przechodzi; pozostałe complexity hotspoty są zakresem dalszego mega-test splitu.
+- Kontynuacja `50wa`: test latest-batch metric read jest w osobnym
+  `tests/actions/test_action_metric_facts_contracts.py` z minimalnymi zależnościami,
+  bez importowania mega-testu. Nowy test i pełny action-object test przechodzą;
+  legacy plik zmniejszył się o 40 linii. Pozostało 12 historycznych hotspotów
+  complexity do dalszych niezależnych behavior splitów.
 
 ## Następny krok
 

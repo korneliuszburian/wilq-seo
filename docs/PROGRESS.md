@@ -2182,3 +2182,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   complexity nadal pokazuje historyczne hotspoty mega-testu, niezwiązane z tą
   dwuliniową naprawą. Następny zakres `50wa`: dalszy behavior split, nie powrót
   do nieistniejącego helpera w `tactical_queue`.
+- Kontynuacja `50wa`: behavior test latest-batch metric read przeniesiono do
+  `tests/actions/test_action_metric_facts_contracts.py`; mega-test nie jest
+  importowany jako biblioteka, a nowy plik ma minimalne zależności. Stary
+  `test_action_object_contracts.py` zmniejszył się o 40 linii; oba testy,
+  Ruff i diff check zielone. Pozostało 12 historycznych hotspotów complexity.
