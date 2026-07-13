@@ -49,6 +49,8 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 
 <allowed_endpoints>
 
+- `GET /api/marketing/daily-check` jako API-owned daily context; zachowaj jego blokady, freshness i lineage.
+
 - `GET /api/health`
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
