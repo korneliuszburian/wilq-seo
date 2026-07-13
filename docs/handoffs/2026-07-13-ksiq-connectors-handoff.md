@@ -719,6 +719,9 @@
 - Dziewiętnasta kontynuacja `50wa`: legacy action review-gate summary contract
   jest teraz w `tests/actions/test_action_review_contracts.py`. Nowy i pełny
   suite przechodzą; nie powtarzać tego review splitu.
+- Dwudziesta kontynuacja `50wa`: action detail legacy apply-audit contract jest
+  teraz w `tests/actions/test_action_review_contracts.py`. Nowy i pełny suite
+  przechodzą; techniczne apply errors pozostają zredagowane.
 
 ## Następny krok
 

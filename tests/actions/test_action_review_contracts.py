@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -49,6 +50,41 @@ def test_action_review_gate_hides_raw_legacy_review_summary(
     assert "source_type:" not in summary
     assert "payload_apply_allowed_false" not in summary
     assert "blocked_claim:" not in summary
+
+
+def test_action_detail_hides_legacy_apply_audit_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "legacy_apply_audit.sqlite3"))
+
+    local_state_store().save_audit_event(
+        AuditEvent(
+            id="audit_legacy_apply_summary",
+            action_id="act_review_ga4_tracking_quality",
+            event_type="apply_confirmation_missing",
+            actor="wilq_api",
+            summary=(
+                "Explicit apply confirmation is required.; "
+                "Action must be validated before apply.; "
+                "Action mode must be apply before external execution."
+            ),
+            evidence_ids=["ev_refresh_refresh_google_analytics_4_action_test"],
+        )
+    )
+
+    response = client.get("/api/actions/act_review_ga4_tracking_quality")
+    assert response.status_code == 200
+
+    serialized = json.dumps(response.json(), ensure_ascii=False)
+    assert (
+        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
+        in serialized
+    )
+    assert "Zapis zmian zablokowany" in serialized
+    assert "Explicit apply confirmation is required" not in serialized
+    assert "Action must be validated before apply" not in serialized
+    assert "Action mode must be apply before external execution" not in serialized
 
 
 def test_content_review_details_keep_allowed_fields_and_ignore_unknown_values() -> None:

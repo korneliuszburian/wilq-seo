@@ -2267,3 +2267,6 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przeniesiono do `tests/actions/test_action_review_contracts.py`, obok
   istniejących review contracts. Test docelowy i pełny action-object suite
   przechodzą; surowe candidate/source/blocker terms nadal są ukryte.
+- Dwudziesta kontynuacja `50wa`: action detail legacy apply-audit summary test
+  przeniesiono do `tests/actions/test_action_review_contracts.py`. Nowy i pełny
+  action-object suite przechodzą; stare apply errors nie trafiają do operatora.
