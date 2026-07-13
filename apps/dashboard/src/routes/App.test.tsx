@@ -8487,15 +8487,6 @@ describe("WILQ dashboard", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
-    const routeSource = readFileSync("src/routes/AhrefsDiagnosticSurface.tsx", "utf8");
-    expect(routeSource).toContain("contract.missing_read_contract_summary_label");
-    expect(routeSource).toContain("contract.blocked_claim_summary_label");
-    expect(routeSource).not.toContain('empty="brak"');
-    expect(routeSource).not.toContain(
-      'Ahrefs / {decision.decision_type_label || "decyzja"} / {decision.priority_label}'
-    );
-    expect(routeSource).not.toContain("contract.missing_read_contracts.length");
-    expect(routeSource).not.toContain("contract.blocked_claims.length");
   });
 
   it("ahrefs route puts the API-owned manual cross-check before ready cards", async () => {

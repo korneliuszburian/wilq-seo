@@ -262,6 +262,11 @@
   historii/dedupe, metadata-only discovery i brak technicznych ID w operator
   copy. Social + App focused 9/9, dashboard typecheck/lint i diff check
   przechodzą; `App.test.tsx` ma 8662 LOC. Następny seam: Ahrefs.
+- Dwudziesty drugi slice: Ahrefs authority/gap source proof przeniesiony do
+  `AhrefsDiagnosticSurface.test.tsx`; zachowano missing-read/blocked-claim
+  summaries, evidence-first copy i brak legacy countów. Ahrefs + App focused
+  9/9, dashboard typecheck/lint i diff check przechodzą; `App.test.tsx` ma
+  8653 LOC. Następny seam: Demand Gen.
 
 ## Następny krok
 
