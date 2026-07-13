@@ -1000,6 +1000,12 @@
   complexity, API health, dashboard route and Playwright proof pass. Next
   target: mutation readiness projection only if a fresh code gap is confirmed;
   do not reopen closed WordPress safety scope.
+- `kgvy` continuation 2026-07-13: Ads summary cache moved to
+  `wilq/briefing/ads_summary_cache.py`; `ads_diagnostics.py` keeps the public
+  clear-cache compatibility facade. Ads contracts, Ruff, mypy, complexity,
+  API health, dashboard route and Playwright proof pass. No frozen-growth
+  violation remains for this change; next review should choose another
+  confirmed Ads domain seam, not generic mechanical splitting.
 
 ## Następny krok
 

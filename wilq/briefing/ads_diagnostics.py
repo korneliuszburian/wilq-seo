@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import re
 from collections.abc import Iterable
-from dataclasses import dataclass
 from datetime import UTC, datetime
-from time import monotonic
 from typing import Any, Literal, cast
 
 from wilq.actions.google_ads.business_context import (
@@ -100,6 +97,13 @@ from wilq.briefing.ads_search_contracts import (
     build_search_term_review_contracts,
 )
 from wilq.briefing.ads_section_contracts import build_diagnostic_sections
+from wilq.briefing.ads_summary_cache import (
+    clear_ads_summary_cache as _clear_ads_summary_cache,
+)
+from wilq.briefing.ads_summary_cache import (
+    read_ads_summary_cache,
+    write_ads_summary_cache,
+)
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -191,7 +195,6 @@ ADS_METRIC_FACT_LIMIT = 2500
 ADS_SUMMARY_METRIC_FACT_LIMIT = 500
 ADS_SUMMARY_VIEW_ROW_LIMIT = 5
 ADS_STALE_AFTER_HOURS = 48
-DEFAULT_ADS_SUMMARY_CACHE_SECONDS = 15.0
 GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID = "act_configure_google_ads_env"
 GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS = [
     GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID,
@@ -213,13 +216,6 @@ CARD_ADS_NEGATIVE_KEYWORDS = "card_google_ads_negative_keywords_playbook"
 CARD_ADS_CUSTOM_SEGMENTS = "card_google_ads_custom_segments_playbook"
 
 
-@dataclass(frozen=True)
-class AdsSummaryCacheEntry:
-    created_at: float
-    diagnostics: AdsDiagnosticsResponse
-
-
-_cached_ads_summary: AdsSummaryCacheEntry | None = None
 ADS_RECOMMENDATION_HUMAN_REVIEW_GATE = "human_strategy_review"
 CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES = [
     "review_source_terms",
@@ -1254,48 +1250,17 @@ def build_ads_diagnostics(
 
 def build_ads_diagnostics_summary_cached() -> AdsDiagnosticsResponse:
     """Reuse one summary build across the initial Ads dashboard reads."""
-    cached = _read_ads_summary_cache()
+    cached = read_ads_summary_cache()
     if cached is not None:
         return cached
     diagnostics = build_ads_diagnostics(view="summary")
-    _write_ads_summary_cache(diagnostics)
+    write_ads_summary_cache(diagnostics)
     return diagnostics
 
 
 def clear_ads_summary_cache() -> None:
-    global _cached_ads_summary
-    _cached_ads_summary = None
-
-
-def _read_ads_summary_cache() -> AdsDiagnosticsResponse | None:
-    cache_seconds = _ads_summary_cache_seconds()
-    if cache_seconds <= 0 or _cached_ads_summary is None:
-        return None
-    if monotonic() - _cached_ads_summary.created_at > cache_seconds:
-        return None
-    return _cached_ads_summary.diagnostics
-
-
-def _write_ads_summary_cache(diagnostics: AdsDiagnosticsResponse) -> None:
-    global _cached_ads_summary
-    if _ads_summary_cache_seconds() <= 0:
-        return
-    _cached_ads_summary = AdsSummaryCacheEntry(
-        created_at=monotonic(),
-        diagnostics=diagnostics,
-    )
-
-
-def _ads_summary_cache_seconds() -> float:
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return 0.0
-    configured = os.getenv("WILQ_ADS_SUMMARY_CACHE_SECONDS")
-    if configured is None:
-        return DEFAULT_ADS_SUMMARY_CACHE_SECONDS
-    try:
-        return max(0.0, float(configured))
-    except ValueError:
-        return DEFAULT_ADS_SUMMARY_CACHE_SECONDS
+    """Compatibility facade for callers that reset the Ads summary cache."""
+    _clear_ads_summary_cache()
 
 
 def _prepare_ads_summary_compaction(

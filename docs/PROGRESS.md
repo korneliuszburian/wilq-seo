@@ -2581,3 +2581,11 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   direct dependency bypass and was fixed before commit. Safety suite (39
   passed), Ruff, mypy, complexity, API health/dashboard title and Playwright
   proof pass; service.py is now 1234 LOC.
+- `kgvy` continuation 2026-07-13: Ads summary cache state and TTL policy moved
+  from `wilq/briefing/ads_diagnostics.py` into
+  `wilq/briefing/ads_summary_cache.py`. The existing
+  `clear_ads_summary_cache` import remains a compatibility facade; cache
+  response, TTL and pytest-disable behavior are unchanged. Ads/action-cache
+  tests (17 passed), Ruff, mypy, complexity, API health, dashboard title and
+  Playwright proof pass. Complexity now reports no frozen-growth file; only the
+  pre-existing Ads monolith/function budgets remain.
