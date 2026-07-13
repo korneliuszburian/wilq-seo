@@ -353,6 +353,11 @@
   dowiedzione w `Ga4DiagnosticSurface.test.tsx`. App + GA4 focused 6/6,
   typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6616 LOC.
 
+- Trzydziesty czwarty slice: usunięto z `App.test.tsx` duplikat Localo route
+  proof; stan dostępu, blokada rekomendacji bez ranking proof i safety copy są
+  dowiedzione w `LocaloDiagnosticSurface.test.tsx`. App + Localo focused 5/5,
+  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 6547 LOC.
+
 ## Następny krok
 
 - Po commit/push wybrać kolejny domain seam z `wilq-seo-ksiq` na podstawie
