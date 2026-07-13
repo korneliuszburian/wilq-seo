@@ -1790,3 +1790,8 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przez `KnowledgeSurface.test.tsx`. Knowledge + App focused 8/8, dashboard
   typecheck/lint i diff check przechodzą; `App.test.tsx` ma 8567 LOC. Pozostałe
   route proofs: Merchant, GA4, Localo, Ahrefs (2) i Demand Gen.
+- Re-audit bramki po 25 slice’ach: pełny równoległy dashboard run zakończył się
+  157/159, z timeoutem Merchant/App i `ContentWorkflowSurface` przy 10 s;
+  powtórzony focused run tych samych plików przechodzi 22/22. Traktuję to jako
+  niestabilność zakresu/full-run, nie jako dowód regresji slice’ów; przed claimem
+  pełnego green gate trzeba powtórzyć lub odseparować timeouty.
