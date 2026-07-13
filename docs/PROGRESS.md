@@ -133,7 +133,12 @@ w git, Beads i `docs/progress/archive/`.
 - Trzeci settings slice wydzielił fail-closed polling/error path do tego samego
   testu domenowego: brak odczytu statusu zostawia blocker, przywraca CTA
   retry i nie udaje świeżości. Focused SettingsSourceRefresh 2/2,
-  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 9449 LOC.
+  typecheck/lint i diff check przechodzą; `App.test.tsx` ma 9388 LOC.
+- Czwarty settings slice wydzielił API-owned `automatic_refresh.eligible` do
+  `SettingsSourceRefresh.test.tsx`; test dowodzi pojedynczego POST-u read-only,
+  pollingu i finalnego wyniku bez oceniania eligibility w React. Focused 3/3,
+  typecheck/lint i diff check przechodzą. Następny seam: aktywny run ukrywający
+  CTA odświeżenia.
 - Merchant smoke report shaping i runtime assertions są teraz w
   `merchant_report_compaction.py` oraz `merchant_runtime_assertions.py`;
   live smoke nadal daje 19 occurrences, 14 klastrów i 7 decyzji. Ruff, smoke

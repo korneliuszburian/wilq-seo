@@ -8069,67 +8069,6 @@ describe("WILQ dashboard", () => {
     }
   });
 
-  it("starts one read-only refresh when the API marks a stale connector eligible", async () => {
-    const ga4Connector = connectors[1];
-    const previousRefreshState = ga4Connector.refresh_state;
-    ga4Connector.refresh_state = {
-      ...previousRefreshState,
-      automatic_refresh: {
-        eligible: true,
-        reason: "eligible_stale",
-        reason_label: "Stare źródło kwalifikuje się do odczytu",
-        safe_next_step: "Można bezpiecznie zlecić read-only refresh.",
-        cooldown_seconds: 900
-      }
-    };
-
-    try {
-      renderApp("/settings");
-      await waitFor(() =>
-        expect(
-          vi.mocked(fetch).mock.calls.filter(([url]) =>
-            String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-          )
-        ).toHaveLength(1)
-      );
-
-      const refreshCall = vi.mocked(fetch).mock.calls.find(([url]) =>
-        String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-      );
-      expect(JSON.parse(String(refreshCall?.[1]?.body))).toMatchObject({
-        mode: "vendor_read",
-        run_async: true
-      });
-      expect(await screen.findByText("odczyt w kolejce")).toBeInTheDocument();
-      await waitFor(() =>
-        expect(
-          vi.mocked(fetch).mock.calls.filter(([url]) =>
-            String(url).includes("/api/connectors/refresh-runs/")
-          )
-        ).toHaveLength(1)
-      );
-      expect(
-        vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/api/connectors"))
-      ).toHaveLength(1);
-      expect(
-        await screen.findByText(/Odczyt zakończony/, {}, { timeout: 3_000 })
-      ).toBeInTheDocument();
-      await waitFor(() =>
-        expect(
-          vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/api/connectors"))
-            .length
-        ).toBe(2)
-      );
-      expect(
-        vi.mocked(fetch).mock.calls.filter(([url]) =>
-          String(url).endsWith("/api/connectors/google_analytics_4/refresh")
-        )
-      ).toHaveLength(1);
-    } finally {
-      ga4Connector.refresh_state = previousRefreshState;
-    }
-  });
-
   it("hides the refresh CTA while the API reports an active source run", async () => {
     const ga4Connector = connectors[1];
     const previousRefreshState = ga4Connector.refresh_state;

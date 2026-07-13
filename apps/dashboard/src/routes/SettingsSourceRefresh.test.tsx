@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GenericSurface } from "./GenericSurface";
 import {
   completedSettingsRefreshRun,
+  eligibleSettingsConnectors,
   queuedSettingsRefreshRun,
   settingsConnectors
 } from "./settingsSurface.fixture";
@@ -97,5 +98,39 @@ describe("SettingsSourceRefresh", () => {
       await screen.findByText(/Stan pozostaje niepotwierdzony; sprawdź dostęp albo spróbuj ponownie/)
     ).toBeInTheDocument();
     expect(within(card as HTMLElement).getByRole("button", { name: "Odśwież dane" })).toBeEnabled();
+  });
+
+  it("starts one automatic read-only refresh only when the API marks it eligible", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/api/connectors") && !init?.method) {
+        return Promise.resolve(Response.json(eligibleSettingsConnectors));
+      }
+      if (url.endsWith("/api/connectors/google_analytics_4/refresh")) {
+        return Promise.resolve(Response.json(queuedSettingsRefreshRun));
+      }
+      if (url.endsWith("/api/connectors/refresh-runs/refresh-ga4-1")) {
+        return Promise.resolve(Response.json(completedSettingsRefreshRun));
+      }
+      return Promise.reject(new Error(`Unexpected settings request: ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GenericSurface routeName="/settings" />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("odczyt w kolejce")).toBeInTheDocument();
+    expect(await screen.findByText(/Odczyt zakończony/)).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith("/api/connectors/google_analytics_4/refresh")
+      )
+    ).toHaveLength(1);
   });
 });

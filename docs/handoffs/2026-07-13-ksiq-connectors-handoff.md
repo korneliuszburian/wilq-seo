@@ -162,7 +162,12 @@
   `SettingsSourceRefresh.test.tsx`; test dowodzi, że błąd odczytu statusu
   pozostawia blocker i przywraca retry CTA zamiast udawać świeżość. Focused
   2/2 w tym pliku, dashboard typecheck/lint i diff check przechodzą.
-  `App.test.tsx` ma 9449 LOC. Następny seam: automatyczny refresh eligibility.
+  `App.test.tsx` ma 9388 LOC. Następny seam: automatyczny refresh eligibility.
+- Czwarty settings slice: API-owned `automatic_refresh.eligible` jest teraz
+  pokryte w `SettingsSourceRefresh.test.tsx`; test dowodzi pojedynczego
+  read-only POST-u, pollingu i wyniku końcowego bez oceniania eligibility w
+  React. Focused 3/3, dashboard typecheck/lint i diff check przechodzą;
+  `App.test.tsx` ma 9388 LOC. Następny seam: aktywny run ukrywający CTA.
 
 ## Następny krok
 

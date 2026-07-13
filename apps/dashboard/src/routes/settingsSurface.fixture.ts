@@ -99,3 +99,21 @@ export const completedSettingsRefreshRun: ConnectorRefreshRun = {
   metrics_persisted: true,
   summary: "Odczyt źródła zakończony.",
 };
+
+export const eligibleSettingsConnectors: ConnectorStatus[] = settingsConnectors.map((connector) =>
+  connector.id === "google_analytics_4"
+    ? {
+        ...connector,
+        refresh_state: {
+          ...connector.refresh_state,
+          automatic_refresh: {
+            ...connector.refresh_state.automatic_refresh,
+            eligible: true,
+            reason: "eligible_stale",
+            reason_label: "Stare źródło kwalifikuje się do odczytu",
+            safe_next_step: "Można bezpiecznie zlecić read-only refresh."
+          }
+        }
+      }
+    : connector
+);
