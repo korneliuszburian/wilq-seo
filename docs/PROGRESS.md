@@ -5,6 +5,13 @@ w git, Beads i `docs/progress/archive/`.
 
 ## Stan bieżący — 2026-07-13
 
+- `kgvy` continuation: live Ads business-context/target/strategy ActionObject
+  assembly przeniesiono do istniejącego `wilq/actions/google_ads/business_context.py`.
+  `service.py` pozostaje fasadą registry i przekazuje jeden typed refresh run
+  oraz evidence lineage; payloady, action IDs, review-only safety i brak vendor
+  writes pozostają bez zmian. Focused Ads/action contracts, Ruff, mypy,
+  complexity, managed API health, 21-action registry, `/api/ads/diagnostics`
+  i `/content-workflow` HTTP proof przechodzą.
 - `c9h9.4` jest już zamknięty w aktualnym grafie: route-level ActionObject
   apply dla dev-only WordPress draft ma typed capability, exact ID/actor bind,
   audit i adapter proof. Nie powtarzam tego slice'a.

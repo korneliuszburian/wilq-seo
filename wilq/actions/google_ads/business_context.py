@@ -104,6 +104,44 @@ def latest_google_ads_metric_facts(
     ]
 
 
+def live_business_context_actions(
+    run: ConnectorRefreshRun | None,
+    *,
+    evidence_ids: list[str],
+) -> list[ActionObject]:
+    """Build the live-read Ads context actions owned by this domain module."""
+    if (
+        run is None
+        or run.status != ConnectorRefreshStatus.completed
+        or not run.vendor_data_collected
+    ):
+        return []
+
+    actions: list[ActionObject] = []
+    missing_read_contracts = ads_business_context_missing_read_contracts()
+    if not ads_business_context_configured():
+        actions.append(
+            business_context_action(
+                missing_read_contracts=missing_read_contracts,
+                evidence_ids=evidence_ids,
+            )
+        )
+    if ads_business_context_configured() and "target_roas_or_cpa" in missing_read_contracts:
+        actions.append(
+            target_confirmation_action(
+                missing_read_contracts=missing_read_contracts,
+                evidence_ids=evidence_ids,
+            )
+        )
+    latest_review = ads_strategy_review_state()
+    if not ads_business_context_configured() or (
+        latest_review is not None and latest_review.outcome == "approved_for_prepare"
+    ):
+        return actions
+    actions.append(strategy_review_action(evidence_ids=evidence_ids))
+    return actions
+
+
 def business_context_action(
     *,
     missing_read_contracts: Iterable[str],

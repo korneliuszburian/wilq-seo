@@ -108,15 +108,10 @@ from wilq.actions.google_ads.action_candidates import (
     seed_metric_actions as seed_google_ads_metric_actions,
 )
 from wilq.actions.google_ads.business_context import (
-    ads_business_context_configured,
-    ads_business_context_missing_read_contracts,
-    ads_strategy_review_state,
     ads_strategy_review_summary,
-    business_context_action,
     latest_google_ads_metric_facts,
     latest_google_ads_vendor_read,
-    strategy_review_action,
-    target_confirmation_action,
+    live_business_context_actions,
 )
 from wilq.actions.google_ads.business_context import (
     connector_refresh_recency_key as ads_connector_refresh_recency_key,
@@ -461,16 +456,23 @@ def _action_list_cache_seconds() -> float:
 
 
 def _action_registry() -> dict[str, ActionObject]:
+    latest_google_ads_run = _latest_google_ads_vendor_read()
     return assemble_action_registry(
         _STATIC_ACTIONS,
         seed_metric_action_candidates(),
         live_data_available=_google_ads_live_data_available(),
         configure_action_id="act_configure_google_ads_env",
         live_actions=(
-            _google_ads_business_context_action(),
-            _google_ads_target_confirmation_action(),
-            _google_ads_strategy_review_action(),
-            keyword_planner_access_action_from_vendor_read(_latest_google_ads_vendor_read()),
+            *live_business_context_actions(
+                latest_google_ads_run,
+                evidence_ids=unique_values(
+                    [
+                        connector_evidence_id("google_ads"),
+                        *(latest_google_ads_run.evidence_ids if latest_google_ads_run else []),
+                    ]
+                ),
+            ),
+            keyword_planner_access_action_from_vendor_read(latest_google_ads_run),
         ),
     )
 
@@ -520,61 +522,6 @@ def _latest_google_ads_vendor_read() -> ConnectorRefreshRun | None:
 
 def _connector_refresh_recency_key(run: ConnectorRefreshRun) -> tuple[str, str]:
     return ads_connector_refresh_recency_key(run)
-
-
-def _google_ads_business_context_action() -> ActionObject | None:
-    latest_run = _latest_google_ads_vendor_read()
-    if (
-        latest_run is None
-        or latest_run.status != ConnectorRefreshStatus.completed
-        or not latest_run.vendor_data_collected
-        or ads_business_context_configured()
-    ):
-        return None
-    missing_read_contracts = ads_business_context_missing_read_contracts()
-    return business_context_action(
-        missing_read_contracts=missing_read_contracts,
-        evidence_ids=unique_values(
-            [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
-        ),
-    )
-
-
-def _google_ads_target_confirmation_action() -> ActionObject | None:
-    latest_run = _latest_google_ads_vendor_read()
-    missing_read_contracts = ads_business_context_missing_read_contracts()
-    if (
-        latest_run is None
-        or latest_run.status != ConnectorRefreshStatus.completed
-        or not latest_run.vendor_data_collected
-        or not ads_business_context_configured()
-        or "target_roas_or_cpa" not in missing_read_contracts
-    ):
-        return None
-    return target_confirmation_action(
-        missing_read_contracts=missing_read_contracts,
-        evidence_ids=unique_values(
-            [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
-        ),
-    )
-
-
-def _google_ads_strategy_review_action() -> ActionObject | None:
-    latest_run = _latest_google_ads_vendor_read()
-    latest_review = ads_strategy_review_state()
-    if (
-        latest_run is None
-        or latest_run.status != ConnectorRefreshStatus.completed
-        or not latest_run.vendor_data_collected
-        or not ads_business_context_configured()
-        or (latest_review is not None and latest_review.outcome == "approved_for_prepare")
-    ):
-        return None
-    return strategy_review_action(
-        evidence_ids=unique_values(
-            [connector_evidence_id("google_ads"), *latest_run.evidence_ids]
-        ),
-    )
 
 
 def seed_metric_action_candidates() -> dict[str, ActionObject]:
