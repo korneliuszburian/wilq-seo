@@ -701,6 +701,9 @@
 - Trzynasta kontynuacja `50wa`: missing-target guardrail summary behavior jest
   teraz w `tests/api_contracts/test_ads_contracts.py`. Test docelowy i pełny
   action-object suite przechodzą; nie wracać do tego testu w mega-teście.
+- Czternasta kontynuacja `50wa`: homepage content candidate ID traceability jest
+  teraz w `tests/api_contracts/test_content_workflow_contracts.py`. Nowy i pełny
+  suite przechodzą; nie powtarzać tego splitu w action mega-teście.
 
 ## Następny krok
 

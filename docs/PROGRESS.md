@@ -2243,3 +2243,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   przeniesiono do `tests/api_contracts/test_ads_contracts.py`. Nowy test i pełny
   action-object suite przechodzą; operator dostaje polski blocker, a surowe
   enumy pozostają ukryte.
+- Czternasta kontynuacja `50wa`: homepage content-brief candidate ID
+  traceability test przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
+  Test docelowy i pełny action-object suite przechodzą; canonical public URL
+  pozostaje właścicielem identyfikatora kandydata.

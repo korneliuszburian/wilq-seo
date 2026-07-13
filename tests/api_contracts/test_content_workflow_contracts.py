@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from tests._contract_support.action_candidate_seed import seed_action_candidate_metric_facts
 from tests._contract_support.api_client import client
 from tests._contract_support.assertions import assert_operator_context_strings_clean
 from tests._contract_support.env import clear_google_service_env, clear_wordpress_env
@@ -23,6 +24,83 @@ from wilq.schemas import (
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+
+
+def test_content_brief_preview_homepage_candidate_id_is_traceable(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    homepage = "https://www.ekologus.pl/"
+    homepage_gsc_run = ConnectorRefreshRun(
+        id="refresh_gsc_homepage_candidate_id_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_gsc_homepage_candidate_id_test"],
+        metric_summary={"query_page_rows": 1},
+        summary="Homepage GSC fact for content candidate ID regression.",
+    )
+    homepage_wordpress_run = ConnectorRefreshRun(
+        id="refresh_wp_homepage_candidate_id_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wp_homepage_candidate_id_test"],
+        metric_summary={"content_object_count": 1},
+        summary="Homepage WordPress inventory fact for content candidate ID regression.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        homepage_gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=6,
+                dimensions={"query": "ekologus", "page": homepage},
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=80,
+                dimensions={"query": "ekologus", "page": homepage},
+            ),
+            VendorMetricFact(
+                name="ctr",
+                value=0.075,
+                dimensions={"query": "ekologus", "page": homepage},
+            ),
+            VendorMetricFact(
+                name="average_position",
+                value=1.01,
+                dimensions={"query": "ekologus", "page": homepage},
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        homepage_wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "pages",
+                    "content_url": homepage,
+                    "status": "publish",
+                },
+            )
+        ],
+    )
+
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+
+    assert action_response.status_code == 200
+    action = action_response.json()
+    previews = action["payload"].get("content_brief_preview") or []
+    homepage_preview = next(
+        item for item in previews if item.get("final_canonical_url") == homepage
+    )
+    assert homepage_preview["candidate_id"] == "content_brief_gsc_www_ekologus_pl"
+    assert not homepage_preview["candidate_id"].endswith("_")
 
 
 def test_marketing_tactical_queue_rejects_dev_preview_sitemap_match(
