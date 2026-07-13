@@ -43,7 +43,6 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     build_apply_audit_event,
     build_confirmation_audit_event,
-    build_human_review_audit_event,
     build_impact_check_audit_event,
     build_preview_audit_event,
 )
@@ -267,6 +266,7 @@ from wilq.actions.review_gate import (
 from wilq.actions.review_gate import (
     review_summary_item as build_review_summary_item,
 )
+from wilq.actions.review_lifecycle import record_action_review as record_action_review_lifecycle
 from wilq.actions.service_profile import (
     service_profile_knowledge_promotion_action,
     service_profile_private_proposal_promotion_action,
@@ -901,21 +901,15 @@ def record_action_review(
     action: ActionObject,
     request: ActionReviewRequest,
 ) -> ActionReviewResult:
-    audit = build_human_review_audit_event(
-        action=action,
-        reviewed_by=request.reviewed_by,
-        outcome=request.outcome,
-        summary=_action_review_summary(request),
-        details=_action_review_details(request),
-    )
-    action.audit_events = [audit, *action.audit_events]
-    action.review_gate = _action_review_gate(action)
-    return ActionReviewResult(
-        action_id=action.id,
-        status="recorded",
-        status_label=_action_result_status_label("recorded"),
-        audit_event=_audit_event_with_operator_label(audit),
-        review_gate=_review_gate_with_operator_labels(action.review_gate),
+    return record_action_review_lifecycle(
+        action,
+        request,
+        review_summary=_action_review_summary,
+        review_details=_action_review_details,
+        review_gate=_action_review_gate,
+        status_label=_action_result_status_label,
+        audit_event_label=_audit_event_with_operator_label,
+        review_gate_labels=_review_gate_with_operator_labels,
     )
 
 

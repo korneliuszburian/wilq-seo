@@ -969,6 +969,12 @@
   health and Service Profile action lookup pass after stack restart; focused
   validation/knowledge tests, Playwright content-workflow proof, Ruff, mypy
   and diff check are green. Do not reopen c9h9.4.
+- `jnra` continuation 5 2026-07-13: extracted human-review event persistence
+  to `wilq/actions/review_lifecycle.py`. The public service facade still owns
+  compatibility and injects existing typed review/gate/label projections. API
+  health, focused review/content tests, Ruff, mypy and Playwright proof pass.
+  Next candidate is preview lifecycle; do not repeat validation or WordPress
+  safety slices already recorded above.
 
 ## Następny krok
 

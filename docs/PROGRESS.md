@@ -2548,3 +2548,9 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   checks, persisted validation state and Polish errors remain unchanged.
   Focused validation/knowledge tests (50 passed), Ruff, mypy, complexity, API
   smoke and content-workflow Playwright proof pass; service.py is now 1392 LOC.
+- `jnra` continuation 5 2026-07-13: human-review event persistence moved into
+  `wilq/actions/review_lifecycle.py`; the service facade injects existing
+  review summary/details, gate and Polish label owners. Audit payloads and typed
+  review-gate output remain unchanged. Focused review/validation/content API
+  tests, Ruff, mypy, complexity, API health and content-workflow Playwright
+  proof pass; service.py is now 1386 LOC.
