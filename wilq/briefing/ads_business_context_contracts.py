@@ -185,6 +185,74 @@ def business_context_review_gates(
     return _unique(gates)
 
 
+def business_context_policy_ids(
+    *,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_missing: bool,
+    strategy_review_approved: bool,
+    status: Literal["ready", "blocked"],
+) -> list[str]:
+    """Return the policy lineage that explains the Ads context verdict."""
+    policy_ids: list[str] = []
+    if status == "blocked":
+        policy_ids.append("complete_business_context_before_ads_verdicts")
+    if profit_margin is not None:
+        policy_ids.append("use_margin_as_context_not_profitability_verdict")
+    if business_goal:
+        policy_ids.append("align_campaign_review_to_business_goal")
+    if budget_goal:
+        policy_ids.append("honor_human_budget_goal_before_budget_changes")
+    if target_missing:
+        policy_ids.append("block_target_verdict_until_roas_or_cpa_confirmed")
+    else:
+        policy_ids.append("compare_kpis_to_confirmed_target_in_review")
+    if strategy_review_approved:
+        policy_ids.append("use_approved_strategy_review_before_target_verdict")
+    else:
+        policy_ids.append("block_target_verdict_until_strategy_review_approved")
+    return _unique(policy_ids)
+
+
+def business_context_summary_and_next_step(
+    *,
+    status: Literal["ready", "blocked"],
+    target_missing: bool,
+) -> tuple[str, str]:
+    """Keep operator-facing context rationale and next step API-owned."""
+    if status == "ready" and target_missing:
+        return (
+            "WILQ ma wstępny lokalny kontekst biznesowy Ads: marżę, cel "
+            "biznesowy i cel budżetu. Docelowy zwrot z reklam albo koszt pozyskania "
+            "celu jest celowo pusty, więc wskaźniki względem celu pozostają bez oceny "
+            "i nie odblokowują skalowania ani zapisu zmian.",
+            "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Jeśli operator "
+            "potwierdzi docelowy zwrot z reklam albo koszt pozyskania celu przez "
+            "sprawdzoną akcję, WILQ zapisze go w lokalnym stanie; do tego czasu ocena "
+            "celu pozostaje zablokowana.",
+        )
+    if status == "ready":
+        return (
+            "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel "
+            "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu. To "
+            "pozwala interpretować wskaźniki ostrożniej, ale nadal nie odblokowuje "
+            "automatycznych zmian.",
+            "Użyj potwierdzonego celu jako kontekstu oceny kampanii i budżetu. Zapis "
+            "zmian nadal wymaga akcji do sprawdzenia w WILQ, podglądu zmian, "
+            "potwierdzenia i audytu.",
+        )
+    return (
+        "WILQ ma aktualne metryki Google Ads, ale nie ma kompletnego lokalnego "
+        "kontekstu biznesowego: marży, celu biznesowego, celu budżetu albo "
+        "docelowego zwrotu z reklam lub kosztu pozyskania celu. Bez tego wskaźniki "
+        "są tylko wstępnym przeglądem, nie oceną.",
+        "Uzupełnij nie-sekretne wartości w repo-local .env: "
+        "WILQ_ADS_PROFIT_MARGIN, WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL "
+        "oraz WILQ_ADS_TARGET_ROAS albo WILQ_ADS_TARGET_CPA_MICROS.",
+    )
+
+
 def _unique(values: Iterable[str]) -> list[str]:
     result: list[str] = []
     for value in values:

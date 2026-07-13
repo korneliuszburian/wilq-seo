@@ -15,7 +15,9 @@ prewarm/readiness albo typed `prewarm_in_progress`.
 `wilq/briefing/ads_business_context_contracts.py`, z zachowaniem prepare-only
 safety. Drugi seam przeniósł tam również missing-contract state i review gates;
 nie powtarzać tych projection seamów. Następny krok wymaga parytetu target
-interpretation/policy/summary/metric-tile assembly.
+interpretation/metric-tile assembly; policy i summary są już w typed ownerze.
+Nie powtarzać tych seamów; następny krok wymaga parytetu target interpretation
+i metric tiles.
 
 `v9ab.13` ma świeży packet z 2026-07-13 19:31Z: Treści pokazują konkretną
 stronę główną z 22 zapytaniami i dopasowaniem GSC/WordPress, ale Ahrefs nadal

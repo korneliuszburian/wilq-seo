@@ -13,6 +13,10 @@ Następnie wydzielono do tego ownera `business_context_contract_state` oraz
 `business_context_review_gates`. Kolejność brakujących kontraktów, status
 fail-closed i nazwy bramek review pozostają bez zmian.
 
+W kolejnym bounded seamie przeniesiono `business_context_policy_ids` oraz
+`business_context_summary_and_next_step`; fasada zachowuje te same policy IDs,
+polski summary i safe next step.
+
 ## Dowód
 
 - `tests/test_ads_business_context_contracts.py` potwierdza blocked,
@@ -26,10 +30,12 @@ fail-closed i nazwy bramek review pozostają bez zmian.
   3 safe next actions i 1 blocked recommendation.
 - Browser `/ads-doctor` pokazuje polskie blokady ROAS/przychodu/waste, kolejkę
   decyzji i review-only ActionObject.
+- Complexity audit: `ads_diagnostics.py` spadł do 5864 LOC, ale nadal jest
+  ponad lokalnym budżetem; extraction-only violation jest jawnie zachowany.
 
 ## Nie powtarzać
 
-Nie przenosić ponownie strategy-review projection, contract state ani review
-gates. Pozostałe kontrakty business-context (target interpretation, policy,
-summary i metric tiles) wymagają osobnych seamów z parytetem; nie scalać ich
-mechanicznie bez testu.
+Nie przenosić ponownie strategy-review projection, contract state, review gates,
+policy IDs ani summary. Pozostałe kontrakty business-context (target
+interpretation i metric tiles) wymagają osobnych seamów z parytetem; nie scalać
+ich mechanicznie bez testu.

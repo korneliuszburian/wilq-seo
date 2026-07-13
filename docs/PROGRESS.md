@@ -24,7 +24,9 @@ w git, Beads i `docs/progress/archive/`.
   `live_data_available=true`; `daily-check` pozostaje `blocked` z 23 evidence
   IDs, świeżością i 3 safe next actions. Browser `/ads-doctor` potwierdza
   blokadę ROAS/przychodu/waste i review-only następne kroki. Pozostała target
-  interpretation, policy, summary i metric-tile assembly.
+  interpretation i metric-tile assembly; policy oraz summary są teraz również
+  wydzielone i mają testy parytetu fasady. `ads_diagnostics.py` zmniejszył się
+  do 5864 LOC; znane budżety monolitu pozostają jawne.
 - `v9ab.13` recheck 2026-07-13 19:31Z: świeży packet UAT pokazuje 24 zadania
   Centrum pracy, 1330 zgłoszeń Merchant, 2 decyzje Treści oraz konkretną
   stronę główną `https://www.ekologus.pl/` z 22 zapytaniami i dopasowaniem

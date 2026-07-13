@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from wilq.briefing.ads_business_context_contracts import (
     business_context_contract_state,
+    business_context_policy_ids,
     business_context_review_gates,
+    business_context_summary_and_next_step,
     strategy_review_readiness_contract,
 )
 
@@ -77,3 +79,26 @@ def test_business_context_review_gates_remain_operator_readable() -> None:
         "configure_human_budget_goal",
         "confirm_target_roas_or_cpa",
     ]
+
+
+def test_business_context_policy_and_summary_keep_blockers_explicit() -> None:
+    policy_ids = business_context_policy_ids(
+        profit_margin=None,
+        business_goal=None,
+        budget_goal=None,
+        target_missing=True,
+        strategy_review_approved=False,
+        status="blocked",
+    )
+    summary, next_step = business_context_summary_and_next_step(
+        status="blocked",
+        target_missing=True,
+    )
+
+    assert policy_ids == [
+        "complete_business_context_before_ads_verdicts",
+        "block_target_verdict_until_roas_or_cpa_confirmed",
+        "block_target_verdict_until_strategy_review_approved",
+    ]
+    assert "nie ma kompletnego lokalnego kontekstu" in summary
+    assert "WILQ_ADS_PROFIT_MARGIN" in next_step
