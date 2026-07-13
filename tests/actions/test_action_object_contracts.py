@@ -1260,35 +1260,6 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
     assert '"target", "site", "mapping", "review"' not in service_source
 
 
-def test_wordpress_handoff_review_gate_avoids_payload_jargon(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
-    monkeypatch.setenv(
-        "WILQ_STATE_DB",
-        str(tmp_path / "wordpress_handoff_review_gate_language.sqlite3"),
-    )
-
-    response = client.get("/api/actions/act_prepare_wordpress_draft_handoff")
-
-    assert response.status_code == 200
-    action = response.json()
-    review_gate_copy = "\n".join(
-        [
-            *action["review_gate"]["required_checks"],
-            *action["review_gate"]["required_check_labels"],
-            *action["review_gate"]["operator_checklist"],
-            *action["review_gate"]["operator_checklist_labels"],
-        ]
-    )
-
-    assert "wordpress_draft_payload_preview" not in review_gate_copy
-    assert "payload" not in review_gate_copy
-    assert "wordpress_draft_preview_review" in action["review_gate"]["required_checks"]
-    assert "podgląd wpisu WordPress" in action["review_gate"]["required_check_labels"]
-
-
 def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

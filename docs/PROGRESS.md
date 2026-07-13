@@ -2255,3 +2255,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   test przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
   Nowy i pełny action-object suite przechodzą; operator widzi polską instrukcję,
   a query/topic nie wraca do widocznej kopii.
+- Siedemnasta kontynuacja `50wa`: WordPress draft handoff review-gate test
+  przeniesiono do `tests/api_contracts/test_content_workflow_contracts.py`.
+  Test docelowy i pełny action-object suite przechodzą; techniczny payload
+  pozostaje poza kopią operatora.

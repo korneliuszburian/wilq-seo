@@ -88,6 +88,35 @@ def test_content_refresh_review_gates_use_polish_operator_language(
     assert "query" + "/topic" not in review_gate_copy
 
 
+def test_wordpress_handoff_review_gate_avoids_payload_jargon(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "wordpress_handoff_review_gate_language.sqlite3"),
+    )
+
+    response = client.get("/api/actions/act_prepare_wordpress_draft_handoff")
+
+    assert response.status_code == 200
+    action = response.json()
+    review_gate_copy = "\n".join(
+        [
+            *action["review_gate"]["required_checks"],
+            *action["review_gate"]["required_check_labels"],
+            *action["review_gate"]["operator_checklist"],
+            *action["review_gate"]["operator_checklist_labels"],
+        ]
+    )
+
+    assert "wordpress_draft_payload_preview" not in review_gate_copy
+    assert "payload" not in review_gate_copy
+    assert "wordpress_draft_preview_review" in action["review_gate"]["required_checks"]
+    assert "podgląd wpisu WordPress" in action["review_gate"]["required_check_labels"]
+
+
 def test_content_brief_preview_homepage_candidate_id_is_traceable(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
