@@ -396,6 +396,9 @@
 - Szósty pod-slice zakończony: `assert_ads_account_currency_contract` przejął
   PLN context i blocked budget-change claim. Następny handoff powinien rozbić
   business-context blocked contract na mniejsze behavior assertions.
+- Siódmy pod-slice zakończony: `assert_ads_business_context_missing_values`
+  przejął status i brakujące wartości. Następny krok rozdziela policy IDs,
+  review gates oraz ActionObject safety dla zablokowanego kontekstu.
 
 ## Następny krok
 

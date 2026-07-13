@@ -1896,3 +1896,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   `assert_ads_account_currency_contract`, z zachowaniem PLN i blokady zmiany
   budżetu. Focused Ads/Ruff/mypy/diff check przechodzą; następny jest duży
   zablokowany business-context contract.
+- Siódmy pod-slice c9h9.22: status i brakujące wartości business context
+  wydzielone do `assert_ads_business_context_missing_values`; blokada targetów
+  i rentowności pozostaje dowiedziona. Focused Ads/Ruff/mypy/diff check zielone;
+  następny seam to policy/gates/actions tego kontraktu.

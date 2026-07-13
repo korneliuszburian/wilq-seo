@@ -233,6 +233,21 @@ def assert_ads_account_currency_contract(payload: dict[str, Any]) -> None:
     assert "zmiana budżetu" in currency_contract["blocked_claims"]
 
 
+def assert_ads_business_context_missing_values(payload: dict[str, Any]) -> None:
+    """Prove missing business context blocks target and profitability claims."""
+    contract = payload["business_context_read_contract"]
+    assert contract["status"] == "blocked"
+    for field in (
+        "profit_margin",
+        "business_goal",
+        "budget_goal",
+        "target_roas",
+        "target_cpa_micros",
+    ):
+        assert contract[field] is None
+    assert contract["configured_sources"] == []
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2468,14 +2483,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     operator_summary = payload["operator_summary"]
     assert_ads_marketer_copy_and_tiles(payload)
     assert_ads_account_currency_contract(payload)
+    assert_ads_business_context_missing_values(payload)
     business_context_contract = payload["business_context_read_contract"]
-    assert business_context_contract["status"] == "blocked"
-    assert business_context_contract["profit_margin"] is None
-    assert business_context_contract["business_goal"] is None
-    assert business_context_contract["budget_goal"] is None
-    assert business_context_contract["target_roas"] is None
-    assert business_context_contract["target_cpa_micros"] is None
-    assert business_context_contract["configured_sources"] == []
     assert business_context_contract["business_policy_ids"] == [
         "complete_business_context_before_ads_verdicts",
         "block_target_verdict_until_roas_or_cpa_confirmed",
