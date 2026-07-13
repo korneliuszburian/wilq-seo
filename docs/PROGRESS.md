@@ -18,6 +18,13 @@ w git, Beads i `docs/progress/archive/`.
   blocked claims, `apply_allowed=false` i `destructive=false` pozostają bez
   zmian. Focused Ads/API tests, Ruff, mypy i diff check przechodzą; pełny
   business-context assembly pozostaje otwarty do kolejnych bounded seamów.
+- `djly` continuation 2: do tego samego typed ownera przeniesiono stan
+  brakujących kontraktów/dozwolonych metryk oraz review gates. Live Ads po
+  restarcie zachowuje 16 sekcji, 9 action IDs, 1 blocker, 2 evidence IDs i
+  `live_data_available=true`; `daily-check` pozostaje `blocked` z 23 evidence
+  IDs, świeżością i 3 safe next actions. Browser `/ads-doctor` potwierdza
+  blokadę ROAS/przychodu/waste i review-only następne kroki. Pozostała target
+  interpretation, policy, summary i metric-tile assembly.
 - `v9ab.13` recheck 2026-07-13 19:31Z: świeży packet UAT pokazuje 24 zadania
   Centrum pracy, 1330 zgłoszeń Merchant, 2 decyzje Treści oraz konkretną
   stronę główną `https://www.ekologus.pl/` z 22 zapytaniami i dopasowaniem
