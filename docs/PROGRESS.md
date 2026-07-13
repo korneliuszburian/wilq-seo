@@ -77,6 +77,12 @@ w git, Beads i `docs/progress/archive/`.
   `content_strategy_assertions.py`; live smoke/Ruff/diff przechodzą. Zmieniony
   complexity audit zostawia wyłącznie `smoke_skill_contract.py::main`
   (206 LOC/26 branches). Następny slice: rozdzielenie orkiestracji `main`.
+- Orkiestracja Content Strategist smoke jest teraz w
+  `content_strategy_runtime.py`; główny skrypt spadł do 94 LOC/11 branches.
+  Runtime pobiera health/context-pack/content diagnostics, waliduje actiony,
+  brief i statusy konektorów, bez zmiany API ani safety gates. Live smoke
+  zweryfikował `ok`, 6 action validations i 9 query/page rows; runtime ma 52 LOC
+  i 3 branches w głównym loaderze.
 - `wilq-seo-ipps` domyka kolejny seam: Merchant tactical queue jest teraz w
   `wilq/briefing/tactical_merchant.py`. Zachowano grupowanie issue/status,
   polskie etykiety, evidence/source connectors, blocked claims i ActionObject IDs.

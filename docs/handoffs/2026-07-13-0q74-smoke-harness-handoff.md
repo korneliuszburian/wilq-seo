@@ -59,6 +59,10 @@
   zostawia tylko `smoke_skill_contract.py::main` (206 LOC/26 branches); nowy
   moduł assertion mieści się w budżecie. Następny slice powinien rozdzielić
   orkiestrację `main`, zanim zaczniemy Ads.
+- Orkiestracja została wydzielona do `scripts/content_strategy_runtime.py`.
+  Smoke main ma teraz 94 LOC/11 branches, runtime zachowuje walidację health,
+  context-pack, diagnostics, actionów, briefu i konektorów. Live smoke, Ruff,
+  complexity i diff check przechodzą; nie zmieniono API ani write safety.
 - `wilq-seo-c9h9.19` zamknięty jako redundantny: marketer review card była już
   w API; pierwszy `null` był cold/prewarm artefaktem.
 
