@@ -1928,3 +1928,7 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   claims oraz budget section knowledge/rule proof wydzielone. Focused
   Ads/Ruff/mypy/diff check zielone; następny seam to recommendations read
   contract.
+- Siedemnasty/osiemnasty pod-slice c9h9.22: recommendations basics oraz row
+  identity/impact/evidence/blocked claims i review-copy wydzielone do helperów.
+  Focused Ads/Ruff/mypy/diff check zielone; naprawiono też jawnie odtworzoną
+  lokalną referencję sekcji ujawnioną przez test po ekstrakcji.

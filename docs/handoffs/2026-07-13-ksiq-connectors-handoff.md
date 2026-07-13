@@ -419,6 +419,10 @@
 - Piętnasty/szesnasty pod-slice zakończony: budget row i budget section proof
   są w helperach. Następny krok: recommendations read contract i jego safety
   gates.
+- Siedemnasty/osiemnasty pod-slice zakończony: recommendations basics, row
+  identity/impact/evidence/blocked claims i review-copy są w helperach. Test
+  ujawnił brak lokalnej referencji sekcji po ekstrakcji; referencję przywrócono
+  jawnie i pełny focused gate jest zielony.
 
 ## Następny krok
 

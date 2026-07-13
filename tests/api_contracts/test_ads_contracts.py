@@ -603,6 +603,107 @@ def assert_ads_budget_section_contract(payload: dict[str, Any]) -> None:
     ]
 
 
+def assert_ads_recommendations_contract_basics(payload: dict[str, Any]) -> None:
+    """Prove recommendation metrics and review gates are available, not applied."""
+    contract = payload["recommendations_read_contract"]
+    assert contract["status"] == "ready"
+    assert contract["allowed_metrics"] == [
+        "recommendation_available",
+        "recommendation_campaign_count",
+        "recommendation_impact_base_clicks",
+        "recommendation_impact_potential_clicks",
+        "recommendation_impact_base_impressions",
+        "recommendation_impact_potential_impressions",
+        "recommendation_impact_base_cost_micros",
+        "recommendation_impact_potential_cost_micros",
+        "recommendation_impact_base_conversions",
+        "recommendation_impact_potential_conversions",
+        "recommendation_impact_base_conversion_value",
+        "recommendation_impact_potential_conversion_value",
+    ]
+    for available in (
+        "recommendations",
+        "recommendation_impact_preview",
+        "recommendation_apply_preview",
+        "impression_share",
+        "change_history",
+        "human_strategy_review",
+    ):
+        assert available not in contract["missing_read_contracts"]
+    assert contract["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_recommendation_type",
+        "review_impact_metrics",
+        "review_change_history",
+        "review_business_goal",
+        "recommendation_apply_preview",
+        "google_ads_rmf_compliance_review",
+        "human_confirm_before_apply",
+    ]
+    assert contract["action_ids"] == [
+        "act_prepare_google_ads_recommendation_review_queue"
+    ]
+    assert "zapis rekomendacji" in contract["blocked_claims"]
+
+
+def assert_ads_recommendation_row_basics(
+    contract: dict[str, Any], evidence_id: str
+) -> None:
+    """Prove recommendation identity, impact facts and evidence lineage."""
+    row = contract["recommendation_rows"][0]
+    assert row["recommendation_id"] == "rec-1"
+    assert row["recommendation_type"] == "CAMPAIGN_BUDGET"
+    assert row["recommendation_type_label"] == "budżet kampanii"
+    assert row["review_priority"] == "pilne"
+    assert row["review_score"] == 70
+    assert row["dismissed"] is False
+    assert row["campaign_id"] == "101"
+    assert row["campaign_budget_id"] == "701"
+    assert row["campaign_count"] == 1
+    assert row["impact_available"] is True
+    assert row["delta_clicks"] == 5
+    assert row["delta_impressions"] == 60
+    assert row["delta_cost_micros"] == 2000000
+    assert row["evidence_ids"] == [evidence_id]
+    assert row["missing_metrics"] == []
+    assert row["blocked_claims"] == [
+        "zapis rekomendacji",
+        "automatyczne przyjęcie rekomendacji",
+        "zmiana budżetu",
+        "zapis zmian kampanii",
+    ]
+    assert row["blocked_claim_labels"] == row["blocked_claims"]
+
+
+def assert_ads_recommendation_review_copy(
+    contract: dict[str, Any], row: dict[str, Any]
+) -> None:
+    """Prove recommendation copy hides vendor IDs and explains review order."""
+    card = row["preview_card"]
+    assert card["kind"] == "google_ads_recommendation_review"
+    assert "101" not in str(card)
+    assert "701" not in str(card)
+    assert "CAMPAIGN_BUDGET" not in str(card)
+    assert "ApplyRecommendationOperation" not in str(card)
+    reason = row["review_reason"]
+    assert "budżet kampanii" in reason
+    assert "podgląd wpływu" in reason
+    assert "CAMPAIGN_BUDGET" not in reason
+    assert "impact preview" not in reason
+    assert "kolejność przeglądu rekomendacji" in reason
+    assert "nie zgoda na zapis zmian" in reason
+    preview = contract["recommendation_rows"][0]["preview_card"]
+    assert preview["title_label"] == "Rekomendacja Google Ads do sprawdzenia"
+    values = {entry["label"]: entry["value"] for entry in preview["rows"]}
+    assert values["Rekomendacja"] == "budżet kampanii"
+    assert values["Operacja"] == "zastosowanie rekomendacji Google Ads"
+    assert values["Powiązanie"] == "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+    assert "ApplyRecommendationOperation" not in str(preview)
+    assert "CAMPAIGN_BUDGET" not in str(preview)
+    assert "101" not in str(preview)
+    assert "701" not in str(preview)
+
+
 def test_ads_summary_cache_reuses_one_build_outside_test_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2868,6 +2969,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         derived_kpi_contract, refresh_response.json()["evidence_ids"][-1]
     )
     assert_ads_diagnostic_section_contract(payload)
+    campaign_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
+    )
     assert_ads_budget_contract_basics(payload)
     budget_contract = payload["budget_pacing_read_contract"]
     assert_ads_budget_preview_safety_contract(
@@ -2879,102 +2983,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         budget_contract, refresh_response.json()["evidence_ids"][-1]
     )
     assert_ads_budget_section_contract(payload)
+    assert_ads_recommendations_contract_basics(payload)
     recommendations_contract = payload["recommendations_read_contract"]
-    assert recommendations_contract["status"] == "ready"
-    assert recommendations_contract["allowed_metrics"] == [
-        "recommendation_available",
-        "recommendation_campaign_count",
-        "recommendation_impact_base_clicks",
-        "recommendation_impact_potential_clicks",
-        "recommendation_impact_base_impressions",
-        "recommendation_impact_potential_impressions",
-        "recommendation_impact_base_cost_micros",
-        "recommendation_impact_potential_cost_micros",
-        "recommendation_impact_base_conversions",
-        "recommendation_impact_potential_conversions",
-        "recommendation_impact_base_conversion_value",
-        "recommendation_impact_potential_conversion_value",
-    ]
-    assert "recommendations" not in recommendations_contract["missing_read_contracts"]
-    assert "recommendation_impact_preview" not in recommendations_contract["missing_read_contracts"]
-    assert "recommendation_apply_preview" not in recommendations_contract["missing_read_contracts"]
-    assert "impression_share" not in recommendations_contract["missing_read_contracts"]
-    assert "change_history" not in recommendations_contract["missing_read_contracts"]
-    assert "human_strategy_review" not in recommendations_contract["missing_read_contracts"]
-    assert recommendations_contract["operator_review_gates"] == [
-        "human_strategy_review",
-        "review_recommendation_type",
-        "review_impact_metrics",
-        "review_change_history",
-        "review_business_goal",
-        "recommendation_apply_preview",
-        "google_ads_rmf_compliance_review",
-        "human_confirm_before_apply",
-    ]
-    assert recommendations_contract["action_ids"] == [
-        "act_prepare_google_ads_recommendation_review_queue"
-    ]
-    assert "zapis rekomendacji" in recommendations_contract["blocked_claims"]
+    assert_ads_recommendation_row_basics(
+        recommendations_contract, refresh_response.json()["evidence_ids"][-1]
+    )
     recommendation_row = recommendations_contract["recommendation_rows"][0]
-    assert recommendation_row["recommendation_id"] == "rec-1"
-    assert recommendation_row["recommendation_type"] == "CAMPAIGN_BUDGET"
-    assert recommendation_row["recommendation_type_label"] == "budżet kampanii"
-    assert recommendation_row["review_priority"] == "pilne"
-    assert recommendation_row["review_score"] == 70
-    assert recommendation_row["dismissed"] is False
-    assert recommendation_row["campaign_id"] == "101"
-    assert recommendation_row["campaign_budget_id"] == "701"
-    assert recommendation_row["campaign_count"] == 1
-    assert recommendation_row["impact_available"] is True
-    assert recommendation_row["delta_clicks"] == 5
-    assert recommendation_row["delta_impressions"] == 60
-    assert recommendation_row["delta_cost_micros"] == 2000000
-    assert recommendation_row["evidence_ids"] == [refresh_response.json()["evidence_ids"][-1]]
-    assert recommendation_row["missing_metrics"] == []
-    assert recommendation_row["blocked_claims"] == [
-        "zapis rekomendacji",
-        "automatyczne przyjęcie rekomendacji",
-        "zmiana budżetu",
-        "zapis zmian kampanii",
-    ]
-    assert recommendation_row["blocked_claim_labels"] == recommendation_row["blocked_claims"]
     assert recommendation_row["payload_preview"] == recommendations_contract["payload_preview"][0]
-    assert recommendation_row["preview_card"]["kind"] == "google_ads_recommendation_review"
-    assert "101" not in str(recommendation_row["preview_card"])
-    assert "701" not in str(recommendation_row["preview_card"])
-    assert "CAMPAIGN_BUDGET" not in str(recommendation_row["preview_card"])
-    assert "ApplyRecommendationOperation" not in str(recommendation_row["preview_card"])
-    assert "budżet kampanii" in recommendations_contract["recommendation_rows"][0]["review_reason"]
-    assert "podgląd wpływu" in recommendations_contract["recommendation_rows"][0]["review_reason"]
-    assert (
-        "CAMPAIGN_BUDGET" not in recommendations_contract["recommendation_rows"][0]["review_reason"]
-    )
-    assert (
-        "impact preview" not in recommendations_contract["recommendation_rows"][0]["review_reason"]
-    )
-    assert (
-        "kolejność przeglądu rekomendacji"
-        in recommendations_contract["recommendation_rows"][0]["review_reason"]
-    )
-    assert (
-        "nie zgoda na zapis zmian"
-        in recommendations_contract["recommendation_rows"][0]["review_reason"]
-    )
-    recommendation_preview_card = recommendations_contract["recommendation_rows"][0]["preview_card"]
-    assert recommendation_preview_card["kind"] == "google_ads_recommendation_review"
-    assert recommendation_preview_card["title_label"] == ("Rekomendacja Google Ads do sprawdzenia")
-    recommendation_preview_rows = {
-        row["label"]: row["value"] for row in recommendation_preview_card["rows"]
-    }
-    assert recommendation_preview_rows["Rekomendacja"] == "budżet kampanii"
-    assert recommendation_preview_rows["Operacja"] == ("zastosowanie rekomendacji Google Ads")
-    assert recommendation_preview_rows["Powiązanie"] == (
-        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
-    )
-    assert "ApplyRecommendationOperation" not in str(recommendation_preview_card)
-    assert "CAMPAIGN_BUDGET" not in str(recommendation_preview_card)
-    assert "101" not in str(recommendation_preview_card)
-    assert "701" not in str(recommendation_preview_card)
+    assert_ads_recommendation_review_copy(recommendations_contract, recommendation_row)
     assert recommendations_contract["payload_preview"] == [
         {
             "id": "recommendation_apply_preview_rec-1",
