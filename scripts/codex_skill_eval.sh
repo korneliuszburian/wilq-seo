@@ -230,7 +230,8 @@ required_decision_terms_instruction = (
     "\n<required_decision_terms>\nTe markery muszą pojawić się w części decyzyjnej "
     "wyniku: `operator_next_step`, `blocked_reason`, rekomendacjach albo "
     "`action_candidates`. To powinny być słowa, które marketer może zrozumieć "
-    "bez tłumaczenia surowych pól API. Nie wystarczy wrzucić ich wyłącznie do `notes`: "
+    "bez tłumaczenia surowych pól API. Użyj każdego markera dosłownie, bez odmiany "
+    "gramatycznej ani synonimu. Nie wystarczy wrzucić ich wyłącznie do `notes`: "
     f"{', '.join(required_decision_terms)}.\n</required_decision_terms>\n"
     if required_decision_terms
     else ""

@@ -67,8 +67,10 @@ Recheck 2026-07-13 po ostatnim pushu: API `health=ok`, runtime raportuje
 107900 metric facts i 12 connectorów. Po naprawie schema evala świeży
 `wilq-daily-command` harness zapisał `fresh-20260713e/.../result.json` z
 `api_used=true`, score 10, wszystkimi hard gates i pustym `failure_tags`.
-Pozostałe skill evale wymagają osobnego świeżego przebiegu; zadanie `v9ab.10`
-pozostaje otwarte.
+Drugi świeży przebieg `wilq-content-strategist` (`fresh-20260713g`) również
+przeszedł z score 10 i zachowanym `daily_check.status=blocked`. Pozostałe
+skill evale wymagają osobnego świeżego przebiegu; zadanie `v9ab.10` pozostaje
+otwarte.
 
 Po domknięciu tactical queue seamów najnowsze wykonane slice’y `jnra` dotyczą
 fasady ActionObject: Google Ads/content/non-Ads candidate assembly,

@@ -43,6 +43,10 @@ blockers.
   returned `api_used=true`, Polish output, usefulness `10`, all hard gates true
   and empty `failure_tags`. This is one fresh skill proof, not a 13/13 claim;
   remaining skills need their own current run.
+- A second fresh canonical run for `wilq-content-strategist` at
+  `.local-lab/evals/codex-skill/fresh-20260713g/wilq-content-strategist/result.json`
+  also passed with usefulness `10`, all hard gates true and the API-owned
+  `daily_check.status=blocked` preserved.
 
 For each skill:
 

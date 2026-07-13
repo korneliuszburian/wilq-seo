@@ -36,8 +36,10 @@ w git, Beads i `docs/progress/archive/`.
   schema evala `daily_check` świeży harness zapisuje i waliduje
   `fresh-20260713e/wilq-daily-command/result.json`: `api_used=true`, wynik po
   polsku, `operator_usefulness_score=10`, wszystkie hard gates true,
-  `failure_tags=[]`. Pozostałe skill evale wymagają osobnego świeżego przebiegu;
-  `v9ab.10` pozostaje otwarty.
+  `failure_tags=[]`. Drugi świeży przebieg `fresh-20260713g` dla
+  `wilq-content-strategist` również przeszedł z score 10 i zachowanym
+  `daily_check.status=blocked`. Pozostałe skill evale wymagają osobnego
+  świeżego przebiegu; `v9ab.10` pozostaje otwarty.
 - Daily-check freshness fix 2026-07-13 17:19Z: aggregate `freshness` zachowuje
   najstarszy `last_success_at` spośród sprawdzonych connectorów zamiast
   zwracać `null`; pomija źródła skipped i nie zmyśla timestampu bez dowodu.
