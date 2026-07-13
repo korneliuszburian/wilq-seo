@@ -95,6 +95,12 @@ w git, Beads i `docs/progress/archive/`.
   ma 511 LOC. Duplicate-free i publish claims pozostają zablokowane do review,
   a raw post bodies nadal są zabronione. Shared schema/dashboard lint, build,
   tests i typecheck przechodzą. Następny seam: WordPress authoring contracts.
+- Dwudziesty piąty seam: `wordpress_authoring.ts` zawiera readiness/discovery,
+  dev workspace profile, write boundary oraz draft payload preview/request/
+  response (236 LOC); `index.ts` ma 287 LOC. Draft-only, publish=false,
+  destructive-update=false i ActionObject gate pozostają wymuszone. Shared
+  schema/dashboard lint, build, tests i typecheck przechodzą. Następny seam:
+  Social publisher/context-pack contracts.
 - `wilq-seo-pidl` rozpoczęty bez zmiany zachowania: kontrakt domyślnych
   ustawień `createWilqQueryClient` przeniesiono z omnibusowego `App.test.tsx`
   do `queryClientDefaults.test.ts`. Focused Vitest: 31 testów, lint i

@@ -128,6 +128,12 @@
   audit (79 LOC); `index.ts` ma 511 LOC. Duplicate-free/publish claims nadal
   zablokowane do review, raw post bodies zabronione, focused gates przechodzą.
   Następny seam: WordPress authoring contracts.
+- Dwudziesty piąty seam: `packages/shared-schemas/src/wordpress_authoring.ts`
+  zawiera readiness/discovery, dev workspace profile, write boundary oraz
+  draft payload preview/request/response (236 LOC); `index.ts` ma 287 LOC.
+  Draft-only, publish=false, destructive-update=false i ActionObject gate
+  pozostają wymuszone, focused gates przechodzą. Następny seam: Social
+  publisher/context-pack contracts.
 
 ## Następny krok
 
