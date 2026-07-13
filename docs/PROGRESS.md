@@ -2603,3 +2603,10 @@ ryzyk. Pełne specyfikacje pozostają wyłącznie w Beads.
   unchanged. Ads/action-cache tests (17 passed), Ruff, mypy, complexity, API
   health, dashboard title and Playwright proof pass; Ads monolith is now 6139
   LOC with only pre-existing budget warnings.
+- `kgvy` continuation 4 2026-07-13: derived KPI row construction and target
+  triage moved into `wilq/briefing/ads_derived_kpis.py`; the diagnostics facade
+  keeps callback injection and compatibility wrappers. CPA/ROAS target policy,
+  evidence IDs, blocked claims and Polish operator labels remain unchanged.
+  Ads contracts/action-cache tests, Ruff, mypy, complexity, API health,
+  dashboard title and Playwright proof pass; frozen-growth risk remains clear,
+  with only the pre-existing Ads monolith/function budgets reported.

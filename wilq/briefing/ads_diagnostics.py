@@ -53,6 +53,7 @@ from wilq.briefing.ads_decision_queue import (
     decision_priority,
 )
 from wilq.briefing.ads_decision_queue_contracts import build_decision_queue
+from wilq.briefing.ads_derived_kpis import derived_kpi_row, target_triage
 from wilq.briefing.ads_freshness import (
     ads_freshness_assessment,
     as_utc,
@@ -2642,54 +2643,13 @@ def _derived_kpi_row(
     row: AdsCampaignMetricRow,
     business_context_read_contract: AdsBusinessContextReadContract,
 ) -> AdsDerivedKpiRow:
-    source_metric_names = [fact.name for fact in row.metric_facts]
-    missing_metrics = list(row.missing_metrics)
-    if not row.impressions:
-        missing_metrics.append("nonzero_impressions")
-    if not row.clicks:
-        missing_metrics.extend(["nonzero_clicks_for_cpc", "nonzero_clicks_for_conversion_rate"])
-    if not row.conversions:
-        missing_metrics.extend(
-            ["nonzero_conversions_for_cpa", "nonzero_conversions_for_value_per_conversion"]
-        )
-    if not row.cost_micros:
-        missing_metrics.append("nonzero_cost_for_roas")
-    cost_per_conversion_micros = _ratio(row.cost_micros, row.conversions)
-    roas = _ratio(row.conversion_value, _micros_to_account_units(row.cost_micros))
-    target_roas = business_context_read_contract.target_roas
-    target_cpa_micros = business_context_read_contract.target_cpa_micros
-    target_status, target_status_label, target_review_priority = _target_triage(
-        row=row,
-        cost_per_conversion_micros=cost_per_conversion_micros,
-        roas=roas,
-        target_cpa_micros=target_cpa_micros,
-        target_roas=target_roas,
-    )
-    return AdsDerivedKpiRow(
-        campaign_id=row.campaign_id,
-        campaign_name=row.campaign_name,
-        ctr=_ratio(row.clicks, row.impressions),
-        average_cpc_micros=_ratio(row.cost_micros, row.clicks),
-        conversion_rate=_ratio(row.conversions, row.clicks),
-        cost_per_conversion_micros=cost_per_conversion_micros,
-        roas=roas,
-        value_per_conversion=_ratio(row.conversion_value, row.conversions),
-        target_roas=target_roas,
-        roas_vs_target=_difference(roas, target_roas),
-        target_cpa_micros=target_cpa_micros,
-        cpa_vs_target_micros=_difference(cost_per_conversion_micros, target_cpa_micros),
-        target_status=target_status,
-        target_status_label=target_status_label,
-        target_review_priority=target_review_priority,
-        evidence_ids=row.evidence_ids,
-        source_metric_names=_unique(source_metric_names),
-        missing_metrics=_unique(missing_metrics),
-        blocked_claims=[
-            "opłacalność",
-            "skalowanie budżetu",
-            "zmarnowany budżet",
-            "zapis rekomendacji",
-        ],
+    return derived_kpi_row(
+        row,
+        business_context_read_contract,
+        ratio=_ratio,
+        difference=_difference,
+        micros_to_account_units=_micros_to_account_units,
+        unique=_unique,
     )
 
 
@@ -2701,25 +2661,13 @@ def _target_triage(
     target_cpa_micros: int | None,
     target_roas: float | None,
 ) -> tuple[AdsTargetStatus, str, int]:
-    if target_cpa_micros is not None:
-        if cost_per_conversion_micros is not None:
-            if cost_per_conversion_micros <= target_cpa_micros:
-                return "within_target", "koszt pozyskania celu w granicy celu", 40
-            return "outside_target", "koszt pozyskania celu powyżej celu", 20
-        if (row.cost_micros or 0) > 0 and not row.conversions:
-            return "spend_without_conversions", "koszt bez konwersji", 15
-        return "insufficient_data", "brak kosztu pozyskania celu do porównania", 70
-
-    if target_roas is not None:
-        if roas is not None:
-            if roas >= target_roas:
-                return "within_target", "zwrot z reklam w granicy celu", 40
-            return "outside_target", "zwrot z reklam poniżej celu", 20
-        if (row.cost_micros or 0) > 0 and not row.conversion_value:
-            return "spend_without_conversions", "koszt bez wartości konwersji", 15
-        return "insufficient_data", "brak zwrotu z reklam do porównania", 70
-
-    return "no_target", "brak celu", 90
+    return target_triage(
+        row=row,
+        cost_per_conversion_micros=cost_per_conversion_micros,
+        roas=roas,
+        target_cpa_micros=target_cpa_micros,
+        target_roas=target_roas,
+    )
 
 
 def _latest_refresh_has_summary_metric(

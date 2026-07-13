@@ -1017,6 +1017,12 @@
   mypy, complexity, API health, dashboard route and Playwright proof pass. Do
   not repeat cache/freshness/campaign-row work; next seam must be distinct and
   evidence-backed.
+- `kgvy` continuation 4 2026-07-13: derived KPI row construction and target
+  triage now live in `wilq/briefing/ads_derived_kpis.py`; the facade preserves
+  callback injection and public output. Ads contracts/action-cache tests, Ruff,
+  mypy, complexity, API health, dashboard route and Playwright proof pass. Do
+  not repeat cache/freshness/campaign-row/derived-KPI work; next seam must be
+  distinct and evidence-backed.
 
 ## Następny krok
 
