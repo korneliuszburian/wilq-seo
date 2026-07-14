@@ -1,9 +1,20 @@
-# Current Cleanup State — 2026-07-13
+# Current Cleanup State — 2026-07-14
 
 Przeczytaj przed cleanupem, refaktorem dashboardu albo zmianą kontraktu API.
 Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
+
+Po domknięciu bieżącego verify/commit/push rozpocznij P0 `wilq-seo-r564.7`.
+`/content-workflow` jest jedyną aktywną powierzchnią „Treści i SEO”, ale nadal
+pokazuje za dużo naraz. Najmniejszy kolejny slice ma wykorzystać istniejący
+API-owned workflow i wystawić pięć jawnych kroków `scope -> section_map ->
+draft -> review -> dev_draft`, task mapę oraz jeden aktywny workspace. Nie
+podłączaj jeszcze Codex app-server: najpierw potrzebny jest revision-bound
+kontrakt zapisu, ponieważ obecny human review dotyczy `draft_package`, a nie
+niezmiennej wersji tekstu. Measurement pozostaje etapem po handoffie, nie krokiem
+authoringu. Po tym slice ponownie sprawdź `bd ready`, zrób świadomy commit/push
+i przejdź do następnego potwierdzonego zadania.
 
 `wilq-seo-8qqr` jest zamknięty. GA4 diagnostics cache jest używany przez router,
 daily-check i post-readiness prewarm; testy chronią TTL, explicit clear i jeden
@@ -11,8 +22,8 @@ build przy concurrent cold miss. Read-only live refresh na tym samym PID
 potwierdził invalidację: warm hit `0.003541 s` przed refreshem, cold rebuild
 `4.580455 s` po nim i kolejny hit `0.004964 s`. Pozostały 4 decyzje, 8 evidence
 IDs oraz readiness `ready`; mutation audit delta wynosi 0, a vendor-write
-possible/attempt counts wynoszą 0. Nie powtarzać tego cache seamu. Następny
-pomiar cold readiness należy do `inoz`.
+possible/attempt counts wynoszą 0. Nie powtarzać tego cache seamu. Koordynację
+wygasania kilku cache'ów śledzi osobno `wilq-seo-3bnt`.
 
 `c9h9.24` usuwa martwy `ContentWorkflowDiagnosticSurface.test.tsx`; nie
 przywracać tego source-string testu. Query/wiring i extracted-owner seam mają
@@ -21,13 +32,23 @@ zachowanie w renderowanym `ContentWorkflowSurface.test.tsx`. Full dashboard,
 typecheck, lint
 i live `/content-workflow` proof przechodzą bez zmiany runtime code.
 
-`wilq-seo-inoz` pozostaje otwarty: narrow daily-check runtime i serializacja
-base-cache usuwają duplicate concurrent builds, a pierwszy request podczas
-prewarmu zwraca typed `daily_check_runtime_prewarm` zamiast czekać lub zmyślać.
-Live proof tego blockera to `0.353572 s`; po prewarmie odczyty zachowują
-`blocked`, freshness i 23 evidence IDs, ale koszt/TTL nadal daje `5.507935 s`,
-`3.318508 s`, `3.607515 s`. Następny krok to stabilizacja cache/readiness,
-nie zmiana metryk.
+`wilq-seo-inoz` jest gotowy do domknięcia: pierwszy request podczas prewarmu szybko zwraca
+typed `daily_check_runtime_prewarm`, a po prewarmie trzy pełne odczyty mają
+`0.031437/0.014504/0.016272 s`. Narrow runtime nie może wrócić do pełnego
+`build_daily_runtime_base`; bierze Command Center z istniejącej lekkiej ścieżki
+i connector list z `connector_health`. Lekka i pełna ścieżka korzystają z tego
+samego kanonicznego action inventory; warm cache zachowuje latency, a
+`use_cache=false` wymusza świeży registry. Test kolejności chroni wspólny cache
+przed action stubami. Jeden reentrant lock serializuje pełną
+kompozycję, lekki cold build i `clear()`: dwa missy wykonują jeden build, a
+invalidacja podczas builda usuwa wynik po jego zakończeniu zamiast dopuścić
+późny zapis starego cache. Semantyka pozostaje `blocked`, fresh,
+23 evidence IDs, 7 source connectors i 3 safe next actions; vendor-write counts
+pozostają 0. Nie powtarzać startup/prewarm slice'a. `wilq-seo-3bnt` śledzi
+odrębny potwierdzony problem: przy skumulowanym wygaśnięciu 30/60 s cache'ów
+odczyty wyniosły `12.973748/4.546343/2.714065 s` przed warm hitami około
+`0.015 s`; następny ruch ma najpierw ustalić deterministyczną kolejność wieku
+cache, bez ślepego podnoszenia TTL.
 
 `djly` ma pierwszy bounded seam: strategy-review readiness jest w
 `wilq/briefing/ads_business_context_contracts.py`, z zachowaniem prepare-only

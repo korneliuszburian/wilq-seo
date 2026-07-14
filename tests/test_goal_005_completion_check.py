@@ -928,7 +928,12 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "Co trzyma skille poniżej 10/10" in markdown
     assert "Packet do testu:" in markdown
     assert "scripts/skill_tuning_packet.py --skill" in markdown
-    assert "wilq-ads-doctor" in markdown
+    tuning_rows = report["pre_demo_audits"]["latest_skill_eval_results"][
+        "top_wilku_ready_blockers"
+    ]
+    assert tuning_rows
+    assert all(row["score"] < 10 for row in tuning_rows)
+    assert tuning_rows[0]["skill"] in markdown
     assert "ready / review-only" not in markdown
     assert "command_center.primary_next_step" not in markdown
     assert "not_configured" not in markdown

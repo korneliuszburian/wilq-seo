@@ -110,24 +110,41 @@ def test_build_report_uses_latest_passing_result(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(audit, "CASES_PATH", cases_path)
 
     eval_root = tmp_path / "evals"
+    first_result = eval_root / "20260702T010000Z/wilq-example/result.json"
     write_result(
-        eval_root / "20260702T010000Z/wilq-example/result.json",
+        first_result,
         skill="wilq-example",
         score=4,
         blocked=True,
     )
+    second_result = eval_root / "20260702T020000Z/wilq-example/result.json"
     write_result(
-        eval_root / "20260702T020000Z/wilq-example/result.json",
+        second_result,
         skill="wilq-example",
         score=5,
         blocked=False,
     )
+    latest_result = eval_root / "20260702T030000Z/wilq-example/result.json"
     write_result(
-        eval_root / "20260702T030000Z/wilq-example/result.json",
+        latest_result,
         skill="wilq-example",
         score=8,
         blocked=False,
     )
+    lexically_later_result = (
+        eval_root / "schema-fix5-older/wilq-example/result.json"
+    )
+    write_result(
+        lexically_later_result,
+        skill="wilq-example",
+        score=10,
+        blocked=False,
+    )
+    old = 1_700_000_000
+    os.utime(first_result, (old, old))
+    os.utime(second_result, (old + 20, old + 20))
+    os.utime(lexically_later_result, (old + 40, old + 40))
+    os.utime(latest_result, (old + 60, old + 60))
 
     report = audit.build_report(eval_root)
 

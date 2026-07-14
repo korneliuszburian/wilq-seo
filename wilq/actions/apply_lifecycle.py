@@ -11,14 +11,10 @@ from wilq.actions.audit_store import (
     latest_action_impact_check_event,
     latest_preview_event,
 )
-from wilq.actions.mutation_contract import supported_mutation_adapter
 from wilq.actions.payload_readiness import (
     payload_api_mutation_ready,
     payload_apply_allowed,
     payload_preview_items,
-)
-from wilq.actions.wordpress_mutation_requirements import (
-    execute_supported_wordpress_mutation_adapter,
 )
 from wilq.schemas import (
     ActionApplyRequest,
@@ -36,6 +32,11 @@ def apply_action(
     *,
     review_gate: Callable[[ActionObject], ActionReviewGate],
     wordpress_apply_capability: Callable[..., tuple[Any, list[str]]],
+    mutation_adapter: Callable[[ActionObject], str | None],
+    execute_mutation_adapter: Callable[
+        [ActionObject, str, ActionApplyRequest | None, Any],
+        tuple[dict[str, Any] | None, list[str]],
+    ],
     connector_status: Callable[[str], Any],
     impact_status: Callable[[Any], str | None],
     status_label: Callable[[str], str],
@@ -55,7 +56,7 @@ def apply_action(
     preview = latest_preview_event(action.audit_events)
     confirmation = latest_action_confirmation_event(action.audit_events)
     impact_check = latest_action_impact_check_event(action.audit_events)
-    mutation_adapter = supported_mutation_adapter(action)
+    adapter = mutation_adapter(action)
     errors.extend(
         action_apply_preflight_blockers(
             action=action,
@@ -64,17 +65,18 @@ def apply_action(
             preview_present=preview is not None,
             confirmation_present=confirmation is not None,
             impact_checked=impact_status(impact_check) == "checked",
-            mutation_adapter=mutation_adapter,
+            mutation_adapter=adapter,
             wordpress_capability_present=wordpress_capability is not None,
             payload_apply_allowed=action_payload_apply_allowed,
             payload_api_mutation_ready=action_payload_api_mutation_ready,
         )
     )
     adapter_result: dict[str, Any] | None = None
-    if not errors and mutation_adapter is not None:
-        adapter_result, adapter_errors = execute_supported_wordpress_mutation_adapter(
+    if not errors and adapter is not None:
+        adapter_result, adapter_errors = execute_mutation_adapter(
             action,
-            mutation_adapter,
+            adapter,
+            request,
             wordpress_capability,
         )
         errors.extend(adapter_errors)
@@ -91,7 +93,7 @@ def apply_action(
         audit_event=audit,
         actor=actor,
         errors=errors,
-        mutation_adapter=mutation_adapter,
+        mutation_adapter=adapter,
         adapter_result=adapter_result,
     )
     action.audit_events.append(audit)

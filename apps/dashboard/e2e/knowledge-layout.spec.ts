@@ -19,7 +19,7 @@ test.describe("WILQ knowledge layout proof", () => {
     await page.goto("/knowledge");
     await operatingMapResponse;
 
-    await expect(page.getByRole("heading", { name: "Wiedza" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Wiedza", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co blokuje produkcję treści" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kolejka sprawdzania wiedzy" })).toBeVisible();

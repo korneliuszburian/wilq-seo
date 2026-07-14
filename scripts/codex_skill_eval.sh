@@ -138,6 +138,8 @@ for skill in "${skills[@]}"; do
 import json
 import sys
 
+from scripts.skill_smoke_harness import smoke_action_contract
+
 cases_path, skill, api_base, smoke_output_path, daily_check_path = sys.argv[1:]
 cases = {case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())}
 case = cases[skill]
@@ -145,8 +147,20 @@ connectors = ", ".join(f"`{connector}`" for connector in case["expected_connecto
 surface_path = case.get("surface_path")
 expected_terms = case.get("expected_terms_pl", [])
 required_decision_terms = case.get("required_decision_terms_pl", [])
-expected_action_ids = case.get("expected_action_ids", [])
-expected_validated_action_ids = case.get("expected_validated_action_ids", [])
+smoke_output = open(smoke_output_path, encoding="utf-8").read()
+smoke_action_ids, smoke_validated_action_ids = smoke_action_contract(
+    json.loads(smoke_output)
+)
+expected_action_ids = [
+    action_id
+    for action_id in case.get("expected_action_ids", [])
+    if action_id in smoke_action_ids
+]
+expected_validated_action_ids = [
+    action_id
+    for action_id in case.get("expected_validated_action_ids", [])
+    if action_id in smoke_validated_action_ids
+]
 action_candidates_only_with_action_id = bool(case.get("action_candidates_only_with_action_id"))
 expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
 expected_expert_rule_ids = case.get("expected_expert_rule_ids", [])
@@ -164,7 +178,6 @@ if not task_pl:
 is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
-smoke_output = open(smoke_output_path, encoding="utf-8").read()
 daily_check_output = open(daily_check_path, encoding="utf-8").read()
 api_instruction = (
     "Smoke script został już wykonany przez harness. Zinterpretuj przekazane dane "
@@ -539,16 +552,24 @@ PY
     exit 1
   fi
 
-  uv run python - "$result_file" "$skill" "$api_base" "$cases_file" <<'PY'
+  uv run python - "$result_file" "$skill" "$api_base" "$cases_file" "$smoke_output_file" <<'PY'
 import json
 import re
 import sys
 
-path, expected_skill, api_base, cases_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+from scripts.skill_smoke_harness import (
+    skill_eval_action_state_errors,
+    smoke_action_contract,
+)
+
+path, expected_skill, api_base, cases_path, smoke_path = sys.argv[1:]
 data = json.loads(open(path, encoding="utf-8").read())
 case = {
     case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())
 }[expected_skill]
+smoke_action_ids, smoke_validated_action_ids = smoke_action_contract(
+    json.loads(open(smoke_path, encoding="utf-8").read())
+)
 minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 5))
 errors = []
 
@@ -920,7 +941,7 @@ if case.get("expected_no_action_ids"):
 for action_id in case.get("forbidden_action_ids", []):
     if action_id in action_ids:
         errors.append(f"forbidden action_id present in action_candidates: {action_id}")
-for action_id in case.get("expected_action_ids", []):
+for action_id in set(case.get("expected_action_ids", [])) & smoke_action_ids:
     if action_id not in action_ids:
         errors.append(f"expected action_id missing from action_candidates: {action_id}")
 validated_action_ids = {
@@ -928,9 +949,16 @@ validated_action_ids = {
     for action in data.get("action_candidates", [])
     if action.get("validation_state") == "validated"
 }
-for action_id in case.get("expected_validated_action_ids", []):
+for action_id in set(case.get("expected_validated_action_ids", [])) & smoke_validated_action_ids:
     if action_id not in validated_action_ids:
         errors.append(f"expected validated action_id missing from action_candidates: {action_id}")
+errors.extend(
+    skill_eval_action_state_errors(
+        data.get("action_candidates", []),
+        smoke_action_ids,
+        smoke_validated_action_ids,
+    )
+)
 
 knowledge_card_ids = set(data.get("knowledge_card_ids", []))
 for card_id in case.get("expected_knowledge_card_ids", []):

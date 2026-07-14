@@ -157,7 +157,7 @@ def test_command_center_endpoint_uses_daily_runtime_cache(
     assert calls == {"command_center": 1}
 
 
-def test_daily_command_center_does_not_build_full_action_payloads(
+def test_daily_command_center_uses_canonical_actions_without_full_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from wilq.briefing import daily_runtime
@@ -176,8 +176,13 @@ def test_daily_command_center_does_not_build_full_action_payloads(
         items=[],
     )
 
-    def fail_list_actions() -> list[ActionObject]:
-        raise AssertionError("Command Center first-screen path must not build full actions")
+    canonical_actions: list[ActionObject] = []
+    action_registry_calls = 0
+
+    def fake_list_actions() -> list[ActionObject]:
+        nonlocal action_registry_calls
+        action_registry_calls += 1
+        return canonical_actions
 
     shared_facts: dict[str, list[MetricFact]] = {"google_merchant_center": []}
     seen: dict[str, Any] = {}
@@ -206,10 +211,12 @@ def test_daily_command_center_does_not_build_full_action_payloads(
     ) -> CommandCenterResponse:
         seen["response_facts"] = facts_by_connector
         seen["response_refresh_runs"] = refresh_runs
+        seen["response_actions"] = actions
         return command
 
-    monkeypatch.setattr(daily_runtime, "list_actions", fail_list_actions)
+    monkeypatch.setattr(daily_runtime, "list_actions", fake_list_actions)
     monkeypatch.setattr(daily_runtime, "list_connector_statuses", lambda: [])
+    monkeypatch.setattr(daily_runtime, "list_connector_refresh_runs", lambda: [])
     monkeypatch.setattr(daily_runtime, "metric_store", lambda: FakeMetricStore())
     monkeypatch.setattr(daily_runtime, "build_tactical_queue", fake_tactical_queue)
     monkeypatch.setattr(
@@ -221,6 +228,8 @@ def test_daily_command_center_does_not_build_full_action_payloads(
     assert daily_runtime.build_daily_command_center(use_cache=False) == command
     assert seen["tactical_facts"] is shared_facts
     assert seen["response_facts"] is shared_facts
+    assert seen["response_actions"] is canonical_actions
+    assert action_registry_calls == 1
     assert "google_merchant_center" in seen["metric_limits"]
 
 

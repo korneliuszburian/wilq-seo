@@ -17,6 +17,14 @@ async function gotoAndWaitForApi(page: Page, route: string, apiPath: string) {
   await apiResponse;
 }
 
+async function expectNoVisibleTechnicalIds(page: Page) {
+  const matches = page.getByText(/\b(?:act|ev)_[a-z0-9_]+\b/);
+  const matchCount = await matches.count();
+  for (let index = 0; index < matchCount; index += 1) {
+    await expect(matches.nth(index)).toBeHidden();
+  }
+}
+
 test.describe("WILQ dashboard marketer demo proof", () => {
   test("captures API-backed demo path with action plan and blockers", async ({ page }) => {
     test.setTimeout(90000);
@@ -43,10 +51,10 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     });
 
     await gotoAndWaitForApi(page, "/merchant", "/api/merchant/diagnostics");
-    await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
-    await expect(page.getByText("Merchant: co dziś zrobić")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kolejność pracy" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Czego nie obiecywać" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Produkty", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Najważniejsza praca teraz" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co blokuje decyzję" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Nie wolno dziś twierdzić" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }).click();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma zrobić teraz z plikiem produktowym" }).first()
@@ -64,22 +72,26 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       fullPage: true,
     });
 
-    await gotoAndWaitForApi(page, "/content-workflow", "/api/content/diagnostics");
-    await expect(page.getByRole("heading", { name: "Treści", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();
-    const selectedDecisionBox = await page
-      .getByRole("heading", { name: "Adresy i podgląd" })
+    await gotoAndWaitForApi(page, "/content-workflow", "/api/content/work-items/queue");
+    await expect(page.getByRole("heading", { name: "Treści: praca nad stroną", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Aktualna strona" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sygnały i braki" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dev draft / ACF" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Podgląd na devie", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
+    const previewButton = page.getByRole("button", { name: "Przygotuj podgląd draftu" });
+    const previewButtonBox = await previewButton.boundingBox();
+    const evidenceBox = await page
+      .getByRole("heading", { name: "Źródła i twierdzenia" })
       .boundingBox();
-    const dataStatusBox = await page
-      .getByRole("heading", { name: "Stan danych treści" })
-      .boundingBox();
-    expect(selectedDecisionBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(
-      dataStatusBox?.y ?? Number.POSITIVE_INFINITY
+    expect(previewButtonBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(
+      evidenceBox?.y ?? Number.POSITIVE_INFINITY
     );
-    await expect(page.getByText("Treści: co dziś zrobić")).toHaveCount(0);
-    await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
-    await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
+    await expect(previewButton).toBeVisible();
+    await expect(
+      page.getByText("Ten krok przygotowuje wyłącznie podgląd. Zapis wymaga osobnego zatwierdzenia.")
+    ).toBeVisible();
+    await expectNoVisibleTechnicalIds(page);
     await page.screenshot({
       path: path.join(runDir, "03-content-workflow-workbench.png"),
       fullPage: true,
@@ -100,18 +112,16 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     });
 
     await gotoAndWaitForApi(page, "/ads-doctor", "/api/ads/diagnostics");
-    await expect(page.getByRole("heading", { name: "Google Ads", exact: true })).toBeVisible();
-    await expect(page.getByText("Google Ads: co dziś zrobić")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kolejność pracy" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pokaż pełny przegląd Ads" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Pokaż pełny przegląd Ads" }).click();
+    await expect(page.getByRole("heading", { name: "Reklamy i pomiar", exact: true })).toBeVisible();
+    await expect(page.getByText("Najpierw pomiar", { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
+      page.getByRole("heading", {
+        name: "ROAS, przychód, waste i konwersje są zablokowane do czasu potwierdzenia danych."
+      })
     ).toBeVisible();
-    await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejka diagnostyczna" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bezpieczne tryby pracy" })).toBeVisible();
+    await expectNoVisibleTechnicalIds(page);
     await page.screenshot({
       path: path.join(runDir, "05-ads-live-campaign-metrics.png"),
       fullPage: true,

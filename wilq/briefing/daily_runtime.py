@@ -3,10 +3,10 @@ from __future__ import annotations
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from threading import Lock
+from threading import Lock, RLock
 from time import monotonic
 
-from wilq.actions.service import list_actions
+from wilq.actions.service import list_actions, list_actions_cached
 from wilq.briefing.command_center import (
     build_command_center_response,
     command_center_metric_fact_limits,
@@ -30,7 +30,7 @@ DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 30.0
 _cached_base: DailyRuntimeBaseCacheEntry | None = None
 _cached_command_center: DailyCommandCenterCacheEntry | None = None
 _cached_marketing_brief: DailyMarketingBriefCacheEntry | None = None
-_daily_runtime_build_lock = Lock()
+_daily_runtime_build_lock = RLock()
 _daily_check_prewarm_state_lock = Lock()
 _daily_check_prewarm_in_progress = False
 
@@ -82,29 +82,29 @@ class DailyMarketingBriefCacheEntry:
 
 def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
     """Build both daily marketer views for API and Codex surfaces."""
-    base = build_daily_runtime_base(use_cache=use_cache)
-    command = build_daily_command_center(use_cache=use_cache, base=base)
-    brief = build_daily_marketing_brief(
-        use_cache=use_cache,
-        base=base,
-        command_center=command,
-    )
-    return DailyRuntime(
-        connectors=base.connectors,
-        actions=base.actions,
-        refresh_runs=base.refresh_runs,
-        core_actions=core_brief_actions(base.actions),
-        command_center=command,
-        marketing_brief=brief,
-    )
+    with _daily_runtime_build_lock:
+        base = build_daily_runtime_base(use_cache=use_cache)
+        command = build_daily_command_center(use_cache=use_cache, base=base)
+        brief = build_daily_marketing_brief(
+            use_cache=use_cache,
+            base=base,
+            command_center=command,
+        )
+        return DailyRuntime(
+            connectors=base.connectors,
+            actions=base.actions,
+            refresh_runs=base.refresh_runs,
+            core_actions=core_brief_actions(base.actions),
+            command_center=command,
+            marketing_brief=brief,
+        )
 
 
 def build_daily_check_runtime(use_cache: bool = True) -> DailyCheckRuntime:
     """Build only the connector and command-center views used by daily-check."""
-    base = build_daily_runtime_base(use_cache=use_cache)
-    command_center = build_daily_command_center(use_cache=use_cache, base=base)
+    command_center = build_daily_command_center(use_cache=use_cache)
     return DailyCheckRuntime(
-        connectors=base.connectors,
+        connectors=command_center.connector_health,
         command_center=command_center,
     )
 
@@ -140,7 +140,9 @@ def build_daily_runtime_base(use_cache: bool = True) -> DailyRuntimeBase:
                 return cached_base
         with ThreadPoolExecutor(max_workers=4) as executor:
             connectors_future = executor.submit(list_connector_statuses)
-            actions_future = executor.submit(list_actions)
+            actions_future = executor.submit(
+                list_actions_cached if use_cache else list_actions
+            )
             refresh_runs_future = executor.submit(list_connector_refresh_runs)
             command_facts_future = executor.submit(
                 metric_store().list_latest_metric_facts_by_connector_limits,
@@ -174,40 +176,47 @@ def build_daily_command_center(
         cached_command = _read_daily_command_center_cache()
         if cached_command is not None:
             return cached_command
-    if base is None:
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            connectors_future = executor.submit(list_connector_statuses)
-            refresh_runs_future = executor.submit(list_connector_refresh_runs)
-            command_facts_future = executor.submit(
-                metric_store().list_latest_metric_facts_by_connector_limits,
-                command_center_metric_fact_limits(),
+    with _daily_runtime_build_lock:
+        if use_cache:
+            cached_command = _read_daily_command_center_cache()
+            if cached_command is not None:
+                return cached_command
+        if base is None:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                connectors_future = executor.submit(list_connector_statuses)
+                actions_future = executor.submit(
+                    list_actions_cached if use_cache else list_actions
+                )
+                refresh_runs_future = executor.submit(list_connector_refresh_runs)
+                command_facts_future = executor.submit(
+                    metric_store().list_latest_metric_facts_by_connector_limits,
+                    command_center_metric_fact_limits(),
+                )
+                connectors = connectors_future.result()
+                actions = actions_future.result()
+                refresh_runs = refresh_runs_future.result()
+                command_center_facts_by_connector = command_facts_future.result()
+                tactical_queue = build_tactical_queue(
+                    facts_by_connector=command_center_facts_by_connector
+                )
+            command = build_command_center_response(
+                connectors=connectors,
+                tactical_queue=tactical_queue,
+                actions=actions,
+                facts_by_connector=command_center_facts_by_connector,
+                refresh_runs=refresh_runs,
             )
-            connectors = connectors_future.result()
-            refresh_runs = refresh_runs_future.result()
-            command_center_facts_by_connector = command_facts_future.result()
-            tactical_queue = build_tactical_queue(
-                facts_by_connector=command_center_facts_by_connector
+        else:
+            command = build_command_center_response(
+                connectors=base.connectors,
+                tactical_queue=base.tactical_queue,
+                actions=base.actions,
+                facts_by_connector=base.command_center_facts_by_connector,
+                refresh_runs=base.refresh_runs,
             )
-        command = build_command_center_response(
-            connectors=connectors,
-            tactical_queue=tactical_queue,
-            actions=None,
-            facts_by_connector=command_center_facts_by_connector,
-            refresh_runs=refresh_runs,
-        )
         if use_cache:
             _write_daily_command_center_cache(command)
         return command
-    command = build_command_center_response(
-        connectors=base.connectors,
-        tactical_queue=base.tactical_queue,
-        actions=base.actions,
-        facts_by_connector=base.command_center_facts_by_connector,
-        refresh_runs=base.refresh_runs,
-    )
-    if use_cache:
-        _write_daily_command_center_cache(command)
-    return command
 
 
 def build_daily_marketing_brief(
@@ -215,36 +224,38 @@ def build_daily_marketing_brief(
     base: DailyRuntimeBase | None = None,
     command_center: CommandCenterResponse | None = None,
 ) -> MarketingBrief:
-    if use_cache:
-        cached_brief = _read_daily_marketing_brief_cache()
-        if cached_brief is not None:
-            return cached_brief
-    base = base if base is not None else build_daily_runtime_base(use_cache=use_cache)
-    command_center = (
-        command_center
-        if command_center is not None
-        else build_daily_command_center(
-            use_cache=use_cache,
-            base=base,
+    with _daily_runtime_build_lock:
+        if use_cache:
+            cached_brief = _read_daily_marketing_brief_cache()
+            if cached_brief is not None:
+                return cached_brief
+        base = base if base is not None else build_daily_runtime_base(use_cache=use_cache)
+        command_center = (
+            command_center
+            if command_center is not None
+            else build_daily_command_center(
+                use_cache=use_cache,
+                base=base,
+            )
         )
-    )
-    brief = build_marketing_brief(
-        connectors=base.connectors,
-        refresh_runs=base.refresh_runs,
-        actions=base.actions,
-        command_center=command_center,
-        metric_facts_by_connector=base.command_center_facts_by_connector,
-    )
-    if use_cache:
-        _write_daily_marketing_brief_cache(brief)
-    return brief
+        brief = build_marketing_brief(
+            connectors=base.connectors,
+            refresh_runs=base.refresh_runs,
+            actions=base.actions,
+            command_center=command_center,
+            metric_facts_by_connector=base.command_center_facts_by_connector,
+        )
+        if use_cache:
+            _write_daily_marketing_brief_cache(brief)
+        return brief
 
 
 def clear_daily_runtime_cache() -> None:
     global _cached_base, _cached_command_center, _cached_marketing_brief
-    _cached_base = None
-    _cached_command_center = None
-    _cached_marketing_brief = None
+    with _daily_runtime_build_lock:
+        _cached_base = None
+        _cached_command_center = None
+        _cached_marketing_brief = None
 
 
 def _read_daily_runtime_base_cache() -> DailyRuntimeBase | None:

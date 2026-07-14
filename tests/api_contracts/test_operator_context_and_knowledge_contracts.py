@@ -872,7 +872,8 @@ def test_demand_gen_zero_campaign_next_step_is_operator_specific() -> None:
     assert contract.metric_tiles["kampanie Demand Gen"] == 0
     assert "nie oceniaj jeszcze jakości kreacji ani ruchu" in contract.next_step.lower()
     assert "0 kampanii Demand Gen/Discovery" in contract.next_step
-    assert "act_review_demand_gen_readiness" in contract.next_step
+    assert contract.action_ids == ["act_review_demand_gen_readiness"]
+    assert "act_" not in contract.next_step
 
 
 def test_demand_gen_review_action_is_validate_only_and_scoped() -> None:

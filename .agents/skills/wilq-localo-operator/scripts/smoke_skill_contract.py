@@ -7,14 +7,16 @@ import sys
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from localo_refresh_assertions import (
+from localo_refresh_assertions import (  # noqa: E402 - executable script bootstrap
     validate_localo_diagnostics_contract,
     validate_localo_refresh_contract,
 )
-from localo_report_compaction import build_localo_smoke_report
-from localo_runtime_assertions import (
+from localo_report_compaction import build_localo_smoke_report  # noqa: E402
+from localo_runtime_assertions import (  # noqa: E402 - executable script bootstrap
     collect_connector_results,
     compact_brief_items,
     validate_localo_brief_blockers,
@@ -23,7 +25,10 @@ from localo_runtime_assertions import (
     validate_review_action_linkage,
 )
 
-from scripts.skill_smoke_harness import has_polish_metric_source_guardrails, request_json
+from scripts.skill_smoke_harness import (  # noqa: E402 - executable script bootstrap
+    has_polish_metric_source_guardrails,
+    request_json,
+)
 
 SKILL_NAME = "wilq-localo-operator"
 REQUIRED_CONNECTORS = ["localo"]

@@ -783,6 +783,8 @@ def apply_action(
         request,
         review_gate=_action_review_gate,
         wordpress_apply_capability=_wordpress_draft_apply_capability,
+        mutation_adapter=_supported_mutation_adapter,
+        execute_mutation_adapter=_execute_supported_mutation_adapter,
         connector_status=get_connector_status,
         impact_status=_impact_status_from_event,
         status_label=_action_result_status_label,

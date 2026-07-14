@@ -192,7 +192,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Aktualna strona", { exact: true })).toBeVisible();
     await expect(page.getByText("Sygnały i braki", { exact: true })).toBeVisible();
     await expect(page.getByText("Dev draft / ACF", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Praca na devie" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Podgląd na devie", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
     await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
     await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);

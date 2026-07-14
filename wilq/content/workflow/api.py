@@ -55,30 +55,78 @@ from wilq.content.review.human import (
 )
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.contracts import (
-    ContentWordPressDraftActivationPacketResponse,
+    ContentWordPressDraftActivationPacketResponse as ContentWordPressDraftActivationPacketResponse,
+)
+from wilq.content.workflow.contracts import (
     ContentWordPressDraftReadback,
     ContentWordPressDraftWriteReadinessBlocker,
-    ContentWordPressDraftWriteReadinessResponse,
     ContentWorkItemBlockedSnapshotResponse,
-    ContentWorkItemHumanReviewResponse,
     ContentWorkItemQualityReviewRequest,
-    ContentWorkItemQualityReviewResponse,
     ContentWorkItemRevisionApplyRequest,
-    ContentWorkItemRevisionApplyResponse,
     ContentWorkItemRevisionPlanRequest,
-    ContentWorkItemRevisionPlanResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemStructuredDraftPreviewRequest,
-    ContentWorkItemStructuredDraftPreviewResponse,
     ContentWorkItemStructuredDraftRuntimeRequest,
-    ContentWorkItemStructuredDraftRuntimeResponse,
     ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
-    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
-    ContentWorkItemWordPressDraftExecutionResponse,
-    ContentWorkItemWordPressDraftHandoffResponse,
-    ContentWorkItemWorkflowSnapshotResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWordPressDraftWriteReadinessResponse as ContentWordPressDraftWriteReadinessResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWordPressExistingDraftUpdateReadinessResponse as ContentWordPressExistingDraftUpdateReadinessResponse,  # noqa: E501
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemDraftPackageResponse as ContentWorkItemDraftPackageResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemDraftVariantsResponse as ContentWorkItemDraftVariantsResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemHumanReviewResponse as ContentWorkItemHumanReviewResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemMeasurementOutcomeResponse as ContentWorkItemMeasurementOutcomeResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemMeasurementWindowResponse as ContentWorkItemMeasurementWindowResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemPreflightResponse as ContentWorkItemPreflightResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemQualityReviewResponse as ContentWorkItemQualityReviewResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemRevisionApplyResponse as ContentWorkItemRevisionApplyResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemRevisionPlanResponse as ContentWorkItemRevisionPlanResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemSalesBriefResponse as ContentWorkItemSalesBriefResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemStructuredDraftGenerationResponse as ContentWorkItemStructuredDraftGenerationResponse,  # noqa: E501
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemStructuredDraftPreviewResponse as ContentWorkItemStructuredDraftPreviewResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemStructuredDraftRuntimeResponse as ContentWorkItemStructuredDraftRuntimeResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemWordPressAuthoringPayloadPreviewResponse as ContentWorkItemWordPressAuthoringPayloadPreviewResponse,  # noqa: E501
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemWordPressDraftExecutionResponse as ContentWorkItemWordPressDraftExecutionResponse,  # noqa: E501
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemWordPressDraftHandoffResponse as ContentWorkItemWordPressDraftHandoffResponse,
+)
+from wilq.content.workflow.contracts import (
+    ContentWorkItemWorkflowSnapshotResponse as ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.decision_mapping import (
     content_claim_ledger_from_work_item,
@@ -397,9 +445,7 @@ def _wordpress_draft_write_next_step(
 def build_content_work_item_wordpress_authoring_payload_preview_response(
     request: ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
 ) -> ContentWorkItemWordPressAuthoringPayloadPreviewResponse:
-    profile = request.authoring_profile or build_wordpress_authoring_profile(
-        "wordpress_ekologus"
-    )
+    profile = request.authoring_profile or build_wordpress_authoring_profile("wordpress_ekologus")
     return ContentWorkItemWordPressAuthoringPayloadPreviewResponse(
         authoring_profile=profile,
         preview_result=build_content_wordpress_authoring_payload_preview(
@@ -582,9 +628,7 @@ def _build_content_work_item_snapshot_response(
             ),
             human_review=partial(snapshot_human_review, callbacks=stage_callbacks),
             wordpress_handoff=partial(snapshot_wordpress_handoff, callbacks=stage_callbacks),
-            measurement_window=partial(
-                snapshot_measurement_window, callbacks=stage_callbacks
-            ),
+            measurement_window=partial(snapshot_measurement_window, callbacks=stage_callbacks),
             operator_steps=workflow_steps.content_workflow_operator_steps,
         ),
         human_review_record=human_review_record,

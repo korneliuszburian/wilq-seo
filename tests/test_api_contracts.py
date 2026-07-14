@@ -475,7 +475,7 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     seen: dict[str, object] = {}
 
     monkeypatch.setattr(daily_runtime, "list_connector_statuses", lambda: [connector])
-    monkeypatch.setattr(daily_runtime, "list_actions", lambda: [action])
+    monkeypatch.setattr(daily_runtime, "list_actions_cached", lambda: [action])
     monkeypatch.setattr(daily_runtime, "list_connector_refresh_runs", lambda: [refresh_run])
     monkeypatch.setattr(
         daily_runtime,

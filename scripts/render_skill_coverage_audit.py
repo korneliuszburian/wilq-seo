@@ -61,7 +61,10 @@ def _load_latest_passing_result(
             candidates.append((path, result))
     if not candidates:
         return None, None
-    return candidates[-1]
+    return max(
+        candidates,
+        key=lambda candidate: (candidate[0].stat().st_mtime_ns, str(candidate[0])),
+    )
 
 
 def _skill_source_paths(skill_root: Path, skill: str) -> list[Path]:

@@ -3,7 +3,7 @@
 Krótki recovery ledger, nie append-only changelog. Historyczne proof pozostaje
 w git, Beads i `docs/progress/archive/`.
 
-## Stan bieżący — 2026-07-13
+## Stan bieżący — 2026-07-14
 
 - `wilq-seo-8qqr` zamknięty: istniejący boundary GA4 ma typed TTL cache używany
   przez router, daily-check i prewarm; lock serializuje concurrent cold build,
@@ -15,8 +15,8 @@ w git, Beads i `docs/progress/archive/`.
   8 evidence IDs i conversion readiness `ready`. Mutation audit delta wynosi 0,
   a readiness 21 akcji/0 możliwych i 0 planowanych vendor writes. Focused 40
   testów, Ruff, mypy i identyfikowalny `/ga4` browser proof przechodzą. Nie
-  dodawać cache w React ani drugiego endpointu; dalszy cold-read problem należy
-  do `inoz`.
+  dodawać cache w React ani drugiego endpointu; osobny expiry-spike proof należy
+  do `wilq-seo-3bnt`.
 - `c9h9.24` cleanup: fresh recheck znalazł dwa czerwone source-string assertions
   po podziale `/content-workflow`. Repo-wide reference i coverage check
   potwierdził, że cały `ContentWorkflowDiagnosticSurface.test.tsx` dublował
@@ -27,20 +27,35 @@ w git, Beads i `docs/progress/archive/`.
   architektury nadal pilnuje extracted first-screen/draft owners. Focused 20/20,
   pełny dashboard 157/157, typecheck, lint, browser `/content-workflow` i diff
   check przechodzą; runtime code nie zmienił się.
-- `inoz` continuation: daily-check now uses a narrow cached runtime that omits
-  the marketing brief, and concurrent base-cache builds are serialized with a
-  re-check to prevent duplicate cold work. Focused tests, Ruff, mypy and
-  `git diff --check` pass. Managed restart still measured a cold first read of
-  `13.991204 s`, followed by `2.733938 s` and `2.824721 s`; this is recorded as
-  an unresolved startup latency blocker, not a false completion. Browser
-  `/content-workflow` proof remains marketer-readable and draft-only.
-- `inoz` continuation 2: readiness race ma teraz jawny typed blocker
-  `daily_check_runtime_prewarm`; pierwszy request po restarcie nie czeka
-  bezczynnie ani nie udaje rekomendacji bez dowodu. Live restart zwrócił ten
-  blocker w `0.353572 s`, a po zakończeniu prewarmu daily-check zachował
-  `blocked`, 23 evidence IDs, świeżość i 3 safe next actions. Późniejsze odczyty
-  są nadal zależne od kosztu/TTL cache (`5.507935 s`, `3.318508 s`, `3.607515 s`),
-  więc Bead pozostaje otwarty.
+- `inoz` gotowy do zamknięcia: readiness race ma jawny typed blocker
+  `daily_check_runtime_prewarm`, a narrow runtime nie składa pełnego
+  `DailyRuntimeBase` ani marketing brief. Command Center korzysta z tego samego
+  kanonicznego inventory akcji co pełny runtime: rozgrzanego
+  `list_actions_cached()` dla normalnych odczytów i świeżego `list_actions()`
+  przy `use_cache=false`. Test kolejności chroni przed ponownym zatruciem
+  wspólnego cache'u sztucznymi action stubami. Reentrant lock i cache re-check gwarantują jeden
+  build przy równoległych cold missach oraz invalidację wygrywającą z buildem
+  w toku. Po managed restart trzy natychmiastowe odczyty blockera
+  trwały `0.016174/0.049694/0.059211 s`; po prewarmie pełne odczyty trwały
+  `0.031437/0.014504/0.016272 s` i zachowały `blocked`, freshness, 23 evidence
+  IDs, 7 source connectors oraz 3 safe next actions. Po finalnym managed restart
+  warm HTTP wyniósł `0.022014 s` dla daily-check i `0.004116 s` dla Command
+  Center. Focused testy, Ruff, mypy,
+  API/skill proof, Command Center browser proof i mutation readiness 21 akcji / 0
+  możliwych lub planowanych vendor writes przechodzą. Osobny kontrolowany proof
+  wykrył po bezczynności kaskadę `12.973748/4.546343/2.714065 s`; nie ukrywamy
+  jej pod zamknięciem startup race — śledzi ją `wilq-seo-3bnt`.
+- Finalna bramka cleanupu naprawia wyłącznie wykryte regresje: apply lifecycle
+  zachowuje wstrzyknięty adapter audytu, workflow API ma jawny publiczny facade,
+  coverage audit wybiera najnowszy wynik po mtime, Localo smoke daje się
+  importować, a eval ActionObject fail-closed odrzuca nieudowodnione stany inne
+  niż `missing/blocked` i wymaga `valid=true` razem z `status=valid`. Świeży eval
+  `wilq-ahrefs-gap-finder` przechodzi po obu zaostrzeniach bramki. Pełne
+  `scripts/verify.sh` kończy się zielono: 929 backend tests + 2 skips, 157
+  dashboard tests, 34 shared-schema tests + 10 skips, API/skill smokes, 19/19
+  Playwright i production build. Jawne ograniczenia proofu: Starlette/httpx ma
+  warning deprecjacji, lokalny pakiet nie jest audytowalny przez PyPI, a semgrep
+  jest niedostępny.
 - `djly` continuation: wydzielono typed owner `wilq/briefing/ads_business_context_contracts.py`
   dla strategy-review readiness projection (`operator state` + contract), a
   `ads_diagnostics.py` pozostaje fasadą. API/action payloady, evidence IDs,

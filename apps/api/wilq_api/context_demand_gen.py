@@ -330,7 +330,7 @@ def _is_demand_gen_channel(channel: Any) -> bool:
 def _demand_gen_next_step(*, demand_gen_campaign_count: int) -> str:
     if demand_gen_campaign_count == 0:
         return (
-            "Najpierw otwórz act_review_demand_gen_readiness i potwierdź, że WILQ "
+            "Najpierw otwórz widok gotowości Demand Gen w WILQ i potwierdź, że system "
             "widzi 0 kampanii Demand Gen/Discovery. Nie oceniaj jeszcze jakości kreacji "
             "ani ruchu, bo nie ma kampanii Demand Gen do porównania; traktuj to jako "
             "sprawdzenie gotowości i brakujących kontraktów odczytu."
