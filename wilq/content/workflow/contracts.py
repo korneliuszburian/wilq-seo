@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.briefs.sales import (
@@ -441,9 +441,18 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     human_review: ContentWorkItemHumanReviewResponse
     wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
     measurement_window: ContentWorkItemMeasurementWindowResponse
-    operator_steps: list[workflow_steps.ContentWorkflowOperatorStep] = Field(
-        default_factory=list
-    )
+    current_step_id: workflow_steps.ContentWorkflowOperatorStepId
+    operator_steps: workflow_steps.ContentWorkflowOperatorSteps
+
+    @model_validator(mode="after")
+    def require_canonical_operator_steps(
+        self,
+    ) -> ContentWorkItemWorkflowSnapshotResponse:
+        workflow_steps.validate_content_workflow_operator_steps(
+            current_step_id=self.current_step_id,
+            steps=self.operator_steps,
+        )
+        return self
 
 
 class ContentWorkItemBlockedSnapshotResponse(BaseModel):

@@ -21,10 +21,7 @@ import {
   type ContentOpportunityEnrichment,
   type WordPressAuthoringProfile
 } from "../lib/api";
-import {
-  buildWorkflowSteps,
-  type ContentWorkflowSnapshot
-} from "./contentWorkflowRuntime";
+import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
 import { ContentCandidateQueuePanel } from "./ContentCandidateQueuePanel";
 import { WorkflowStepsList } from "./WorkflowStepsList";
 import {
@@ -35,7 +32,6 @@ import {
 import { ContentOpportunityEnrichmentPanel } from "./ContentOpportunityEnrichmentPanel";
 import { ClaimLedgerGatePanel } from "./ClaimLedgerGatePanel";
 import { WorkflowSafetyPanels } from "./WorkflowSafetyPanels";
-import { MobileContentTriage } from "./MobileContentTriage";
 import { ContentWorkflowDecisionPanel } from "./ContentWorkflowDecisionPanel";
 import { WordPressDraftWorkPanel as WordPressDraftWorkPanelView } from "./WordPressDraftWorkPanel";
 import { ContentSectionWritingWorkbench as ContentSectionWritingWorkbenchView } from "./ContentSectionWritingWorkbench";
@@ -45,6 +41,8 @@ import {
 } from "./WorkflowOperatorControls";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageWorkbench";
+import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
+import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
 import {
   acfPreviewResultFrom,
   acfPreviewRequest,
@@ -285,22 +283,18 @@ function ContentWorkflowLoaded({
     selectedWorkItemId,
     authoringProfile.data ?? null
   );
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"marketer" | "technical">("marketer");
   const draft = data.draftPackage.draft_package_result.draft_package;
   const handoff = data.wordpressHandoff.handoff_result.handoff;
   const window = data.measurementWindow.measurement_window_result.window;
-  const steps = buildWorkflowSteps(data);
+  const steps = data.operatorSteps;
 
   return (
-    <main className="w-full px-4 py-5 lg:px-7 2xl:px-8">
-      <div className="lg:hidden">
-        <MobileContentTriage data={data} onOpenDetails={() => setDetailsOpen(true)} />
-      </div>
-      <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-white px-4 py-3">
+    <main className="w-full px-4 py-3 sm:py-5 lg:px-7 2xl:px-8">
+      <section className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-white px-3 py-2 sm:mb-4 sm:px-4 sm:py-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">Widok pracy</p>
-          <p className="mt-1 text-sm text-slate-700">
+          <p className="mt-1 hidden text-sm text-slate-700 sm:block">
             {viewMode === "marketer"
               ? "Decyzja, blocker i następny bezpieczny krok."
               : "Dowody, audyt i kontrakty do sprawdzenia technicznego."}
@@ -310,10 +304,7 @@ function ContentWorkflowLoaded({
           <button
             type="button"
             aria-pressed={viewMode === "marketer"}
-            onClick={() => {
-              setViewMode("marketer");
-              setDetailsOpen(false);
-            }}
+            onClick={() => setViewMode("marketer")}
             className={`rounded px-3 py-2 text-sm font-semibold ${
               viewMode === "marketer" ? "bg-white text-action shadow-sm" : "text-slate-600"
             }`}
@@ -323,10 +314,7 @@ function ContentWorkflowLoaded({
           <button
             type="button"
             aria-pressed={viewMode === "technical"}
-            onClick={() => {
-              setViewMode("technical");
-              setDetailsOpen(true);
-            }}
+            onClick={() => setViewMode("technical")}
             className={`rounded px-3 py-2 text-sm font-semibold ${
               viewMode === "technical" ? "bg-white text-action shadow-sm" : "text-slate-600"
             }`}
@@ -335,74 +323,113 @@ function ContentWorkflowLoaded({
           </button>
         </div>
       </section>
-          <ContentPageWorkbenchView
+
+      {viewMode === "marketer" ? (
+        <ContentWorkflowMarketerJourney
+          key={`${selectedWorkItemId}:${data.currentStepId}`}
+          actions={actions}
+          authoringProfile={authoringProfile}
+          data={data}
+          draftActivationPacket={draftActivationPacket}
+          enrichment={enrichment}
+          queue={queue}
+        />
+      ) : (
+        <section
+          id="content-workflow-details"
+          aria-label="Audyt techniczny workflow treści"
+          className="mb-6 rounded-md border border-line bg-white p-4"
+          data-testid="content-workflow-technical-audit"
+        >
+          <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
+          <WordPressDraftWorkPanelView
+            actions={actions}
+            authoringProfile={authoringProfile}
+            draftActivationPacket={draftActivationPacket}
+            draftWriteReadiness={draftWriteReadiness}
+          />
+          <ContentSectionWritingWorkbenchView
             actions={actions}
             authoringProfile={authoringProfile}
             data={data}
             draftActivationPacket={draftActivationPacket}
-            enrichment={enrichment}
-            queue={queue}
-            onOpenDetails={() => setDetailsOpen(true)}
           />
-      <details
-        id="content-workflow-details"
-        className="mb-6 rounded-md border border-line bg-white"
-        open={detailsOpen}
-        onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
-      >
-        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-ink">
-          {viewMode === "technical"
-            ? "Audyt techniczny: workflow, kolejka i ślad działania"
-            : "Szczegóły workflow, kolejka i audyt techniczny"}
-        </summary>
-        {detailsOpen ? (
-          <div className="border-t border-line p-4">
-            <ContentWorkflowDecisionPanel data={data} queue={queue} steps={steps} />
-            <WordPressDraftWorkPanelView
-              actions={actions}
-              authoringProfile={authoringProfile}
-              draftActivationPacket={draftActivationPacket}
-              draftWriteReadiness={draftWriteReadiness}
-            />
-            <ContentSectionWritingWorkbenchView
-              actions={actions}
-              authoringProfile={authoringProfile}
-              data={data}
-              draftActivationPacket={draftActivationPacket}
-            />
-            <ContentCandidateQueuePanel
-              queue={queue}
-              selectedWorkItemId={selectedWorkItemId}
-              onSelectWorkItem={onSelectWorkItem}
-            />
-            <WorkflowOperatorControlsView
-              controls={workflowControlItems(data, actions)}
-              topic={data.preflight.item.topic}
-            />
-            <WorkflowProofSummary data={data} />
-            <ClaimLedgerGatePanel data={data} />
-            <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
-            <WorkflowStepsList steps={steps} />
-            <WorkflowSafetyPanels
-              structuredPreviewResult={actions.structuredPreviewResult}
-              draftSafetyText={draftSafetyText(draft?.publish_ready)}
-              structuredRuntimeSafetyText={structuredRuntimeSafetyText(actions.structuredRuntimeResult)}
-              structuredPreviewSafetyText={structuredPreviewSafetyText(actions.structuredPreviewResult)}
-              qualityReviewSafetyText={qualityReviewSafetyText(actions.qualityReview)}
-              revisionPlanSafetyText={revisionPlanSafetyText(actions.revisionPlan)}
-              acfPreviewSafetyText={acfPreviewSafetyText(actions.acfPreviewResult)}
-              handoffSafetyText={handoffSafetyText(handoff?.publish_allowed)}
-              executionSafetyText={wordpressExecutionSafetyText(actions.executionResult)}
-              measurementTitle={data.measurementWindow.outcome_blockers[0]?.label ?? "Nie wolno jeszcze oceniać efektu"}
-              measurementSafetyText={measurementSafetyText(window)}
-              qualityReview={actions.qualityReview}
-              revisionPlan={actions.revisionPlan}
-              acfPreviewResult={actions.acfPreviewResult}
-            />
-          </div>
-        ) : null}
-      </details>
+          <ContentCandidateQueuePanel
+            queue={queue}
+            selectedWorkItemId={selectedWorkItemId}
+            onSelectWorkItem={onSelectWorkItem}
+          />
+          <WorkflowOperatorControlsView
+            controls={workflowControlItems(data, actions)}
+            topic={data.preflight.item.topic}
+          />
+          <WorkflowProofSummary data={data} />
+          <ClaimLedgerGatePanel data={data} />
+          <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
+          <WorkflowStepsList steps={steps} />
+          <WorkflowSafetyPanels
+            structuredPreviewResult={actions.structuredPreviewResult}
+            draftSafetyText={draftSafetyText(draft?.publish_ready)}
+            structuredRuntimeSafetyText={structuredRuntimeSafetyText(actions.structuredRuntimeResult)}
+            structuredPreviewSafetyText={structuredPreviewSafetyText(actions.structuredPreviewResult)}
+            qualityReviewSafetyText={qualityReviewSafetyText(actions.qualityReview)}
+            revisionPlanSafetyText={revisionPlanSafetyText(actions.revisionPlan)}
+            acfPreviewSafetyText={acfPreviewSafetyText(actions.acfPreviewResult)}
+            handoffSafetyText={handoffSafetyText(handoff?.publish_allowed)}
+            executionSafetyText={wordpressExecutionSafetyText(actions.executionResult)}
+            measurementTitle={data.measurementWindow.outcome_blockers[0]?.label ?? "Nie wolno jeszcze oceniać efektu"}
+            measurementSafetyText={measurementSafetyText(window)}
+            qualityReview={actions.qualityReview}
+            revisionPlan={actions.revisionPlan}
+            acfPreviewResult={actions.acfPreviewResult}
+          />
+        </section>
+      )}
     </main>
+  );
+}
+
+function ContentWorkflowMarketerJourney({
+  actions,
+  authoringProfile,
+  data,
+  draftActivationPacket,
+  enrichment,
+  queue
+}: {
+  actions: ContentWorkflowActions;
+  authoringProfile: WordPressAuthoringProfileQuery;
+  data: ContentWorkflowSnapshot;
+  draftActivationPacket: WordPressDraftActivationPacketQuery;
+  enrichment: ContentOpportunityEnrichment | null;
+  queue: ContentWorkItemQueueResponse;
+}) {
+  const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(data.currentStepId);
+  const selectStep = (stepId: WorkflowStepId) => {
+    if (data.operatorSteps.some((step) => step.id === stepId && step.canOpen)) {
+      setSelectedStepId(stepId);
+    }
+  };
+
+  return (
+    <div data-testid="content-workflow-marketer-journey">
+      <ContentWorkflowJourneyContext data={data} queue={queue} />
+      <ContentWorkflowTaskMap
+        currentStepId={data.currentStepId}
+        selectedStepId={selectedStepId}
+        steps={data.operatorSteps}
+        onSelectStep={selectStep}
+      />
+      <ContentPageWorkbenchView
+        actions={actions}
+        authoringProfile={authoringProfile}
+        data={data}
+        draftActivationPacket={draftActivationPacket}
+        enrichment={enrichment}
+        queue={queue}
+        activeStepId={selectedStepId}
+      />
+    </div>
   );
 }
 
@@ -492,6 +519,7 @@ function contentWorkflowActions(
     revisionPlan: revisionPlanFrom(mutations.revisionPlanMutation.data),
     acfPreviewResult: acfPreviewResultFrom(mutations.acfPreviewMutation.data),
     executionResult: executionResultFrom(mutations.executionMutation.data),
+    executionError: mutations.executionMutation.error,
     runStructuredRuntime: () =>
       submitIfReady(structuredRuntimeDryRunRequest(data), mutations.structuredRuntimeMutation.mutate),
     runStructuredPreview: () =>

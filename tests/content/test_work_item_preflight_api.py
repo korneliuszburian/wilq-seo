@@ -722,30 +722,69 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
 
     operator_steps = data["operator_steps"]
     assert [step["id"] for step in operator_steps] == [
-        "content_preflight",
-        "sales_brief",
-        "draft_package",
-        "structured_draft",
-        "human_review",
-        "wordpress_handoff",
-        "measurement_window",
+        "scope",
+        "section_map",
+        "draft",
+        "review",
+        "dev_draft",
     ]
     assert [step["title"] for step in operator_steps] == [
-        "Sprawdzenie pisania",
-        "Plan sprzedażowy",
-        "Paczka szkicu",
+        "Zakres i cel",
+        "Plan sekcji",
         "Szkic treści",
-        "Sprawdzenie człowieka",
-        "Szkic w WordPress",
-        "Okno pomiaru",
+        "Sprawdzenie treści",
+        "Szkic na devie",
     ]
-    assert operator_steps[0]["status_label"] == "można planować"
-    assert operator_steps[3]["status_label"] in {"gotowy do próby", "zablokowany"}
-    assert operator_steps[4]["status_label"] == "wymaga decyzji"
-    assert operator_steps[5]["status_label"] == "zablokowany"
-    assert operator_steps[6]["status_label"] == "zaplanowane"
+    current_steps = [step for step in operator_steps if step["phase"] == "current"]
+    assert len(current_steps) == 1
+    assert current_steps[0]["id"] == data["current_step_id"]
+    assert all(
+        {
+            "id",
+            "title",
+            "phase",
+            "readiness",
+            "status_label",
+            "summary",
+            "can_open",
+            "can_submit",
+            "blocker",
+            "safe_next_step",
+        }.issubset(step)
+        for step in operator_steps
+    )
+    draft_package = data["draft_package"]["draft_package_result"]["draft_package"]
+    if brief is None or brief["signal_quality"]["status"] == "thin":
+        assert data["current_step_id"] == "scope"
+    elif draft_package is None:
+        assert data["current_step_id"] == "section_map"
+    else:
+        assert data["current_step_id"] == "draft"
+        draft_step = current_steps[0]
+        assert draft_step["can_open"] is True
+        assert draft_step["can_submit"] is False
+        assert draft_step["readiness"] == "review_required"
+        assert draft_step["blocker"]["code"] == "missing_revision_bound_draft"
+        assert [step["phase"] for step in operator_steps[:2]] == [
+            "complete",
+            "complete",
+        ]
+        assert all(step["can_open"] is True for step in operator_steps[:3])
+        assert all(step["phase"] == "pending" for step in operator_steps[3:])
+        assert all(step["can_open"] is False for step in operator_steps[3:])
     operator_text = " ".join(
-        f"{step['title']} {step['status_label']} {step['summary']}" for step in operator_steps
+        " ".join(
+            value
+            for value in (
+                step["title"],
+                step["status_label"],
+                step["summary"],
+                step["safe_next_step"],
+                "" if step["blocker"] is None else step["blocker"]["reason"],
+            )
+            if value
+        )
+        for step in operator_steps
     )
     assert "/api/content" not in operator_text
     assert "ContentWorkItem" not in operator_text
@@ -803,6 +842,11 @@ def test_content_work_item_snapshot_persists_real_human_review(
     handoff_result = persisted["wordpress_handoff"]["handoff_result"]
     assert handoff_result["handoff"] is None
     assert [blocker["code"] for blocker in handoff_result["blockers"]] == ["missing_audit"]
+    assert persisted["current_step_id"] == "draft"
+    journey = {step["id"]: step for step in persisted["operator_steps"]}
+    assert journey["draft"]["phase"] == "current"
+    assert journey["review"]["phase"] == "pending"
+    assert journey["review"]["can_submit"] is False
 
 
 def test_content_work_item_snapshot_does_not_persist_wrong_work_item_review(
@@ -884,9 +928,18 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
     window = persisted["measurement_window"]["measurement_window_result"]["window"]
     assert window["handoff_id"] == handoff["id"]
     assert window["success_claim_allowed"] is False
+    assert persisted["current_step_id"] == "draft"
     operator_steps = {step["id"]: step for step in persisted["operator_steps"]}
-    assert operator_steps["human_review"]["status_label"] == "zatwierdzone"
-    assert operator_steps["wordpress_handoff"]["status_label"] == "szkic"
+    assert operator_steps["draft"]["phase"] == "current"
+    assert operator_steps["draft"]["blocker"]["code"] == (
+        "missing_revision_bound_draft"
+    )
+    assert operator_steps["review"]["phase"] == "pending"
+    assert operator_steps["review"]["blocker"]["code"] == (
+        "missing_revision_bound_draft"
+    )
+    assert operator_steps["dev_draft"]["phase"] == "pending"
+    assert operator_steps["dev_draft"]["can_submit"] is False
 
 
 def test_content_work_item_snapshot_does_not_persist_mismatched_audit(

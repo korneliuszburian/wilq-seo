@@ -22,9 +22,14 @@ describe("ContentWorkflow architecture boundary", () => {
   });
 
   it("keeps first-screen and draft presentation in extracted owners", () => {
+    expect(routeSource).toContain("<ContentWorkflowJourneyContext");
+    expect(routeSource).toContain("<ContentWorkflowTaskMap");
     expect(routeSource).toContain("<ContentPageWorkbenchView");
     expect(routeSource).toContain("<WordPressDraftWorkPanelView");
     expect(routeSource).toContain("<WorkflowStepsList");
+    expect(routeSource).toContain('viewMode === "marketer"');
+    expect(routeSource).not.toContain("<details");
+    expect(routeSource).not.toContain("MobileContentTriage");
     expect(routeSource).not.toContain("Treści: praca nad stroną");
     expect(routeSource).not.toContain('<FactTile label="Publikacja"');
   });

@@ -67,6 +67,17 @@ This is not a new writing-flow goal. Do not add autopublishing, social
 publishing, broad RAG/vector DB, multi-client SaaS, workspace admin, outcome
 claims before measurement, or direct Codex/OpenAI/WordPress bypasses.
 
+Current transition, 2026-07-14: the active content product path is now one
+API-owned five-step marketer journey (`scope -> section_map -> draft -> review ->
+dev_draft`), not the former all-panels-at-once cockpit. The immediate next
+contract is immutable, revision-bound draft persistence and exact-version human
+acceptance. Only after that seam is proven may WILQ add a server-side Codex
+app-server/SDK adapter using the operator's existing ChatGPT login. WILQ API
+continues to own work-item state, evidence, revisions, approvals, ActionObjects
+and audit; Codex may propose a child revision but may not advance workflow or
+write WordPress directly. OpenAI API-key-only Agents SDK, Ollama and alternate
+model fallbacks are not dependencies of this plan.
+
 ## Product Thesis
 
 WILQ's hardest anti-slop problem after Goal 004 is no longer "can the system

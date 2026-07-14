@@ -24,7 +24,11 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.models import ContentWorkItem
-from wilq.content.workflow.operator_steps import ContentWorkflowOperatorStep
+from wilq.content.workflow.operator_steps import (
+    ContentWorkflowOperatorBlocker,
+    ContentWorkflowOperatorFacts,
+    build_content_workflow_operator_journey,
+)
 from wilq.content.workflow.queue import ContentWorkItemQueueCandidate
 from wilq.schemas import ContentFreshnessAssessment
 
@@ -40,9 +44,6 @@ class SnapshotAssemblyCallbacks:
     human_review: Callable[..., ContentWorkItemHumanReviewResponse]
     wordpress_handoff: Callable[..., ContentWorkItemWordPressDraftHandoffResponse]
     measurement_window: Callable[..., ContentWorkItemMeasurementWindowResponse]
-    operator_steps: Callable[
-        [ContentWorkItemWorkflowSnapshotResponse], list[ContentWorkflowOperatorStep]
-    ]
 
 
 def assemble_content_work_item_snapshot(
@@ -116,7 +117,78 @@ def assemble_content_work_item_snapshot(
         draft,
         human_review,
     )
-    snapshot = ContentWorkItemWorkflowSnapshotResponse(
+    sales_brief_blocker = sales_brief.sales_brief_result.blockers[0:1]
+    section_map_blocker = draft_package.draft_package_result.blockers[0:1]
+    structured_contract_blocker = (
+        structured_generation.structured_generation_result.blockers[0:1]
+    )
+    signal_quality = None if brief is None else brief.signal_quality
+    journey = build_content_workflow_operator_journey(
+        ContentWorkflowOperatorFacts(
+            sales_brief_present=brief is not None,
+            sales_brief_signal_status=(
+                None if signal_quality is None else signal_quality.status
+            ),
+            sales_brief_signal_reason=(
+                None if signal_quality is None else signal_quality.reason
+            ),
+            sales_brief_safe_next_step=(
+                signal_quality.safe_next_step
+                if signal_quality is not None
+                else (
+                    sales_brief_blocker[0].next_step
+                    if sales_brief_blocker
+                    else "Uzupełnij zakres, źródła i bezpieczny brief treści."
+                )
+            ),
+            sales_brief_blocker=(
+                None
+                if not sales_brief_blocker
+                else ContentWorkflowOperatorBlocker(
+                    code=sales_brief_blocker[0].code,
+                    label=sales_brief_blocker[0].label,
+                    reason=sales_brief_blocker[0].reason,
+                )
+            ),
+            section_map_present=draft is not None,
+            section_map_blocker=(
+                None
+                if not section_map_blocker
+                else ContentWorkflowOperatorBlocker(
+                    code=section_map_blocker[0].code,
+                    label=section_map_blocker[0].label,
+                    reason=section_map_blocker[0].reason,
+                )
+            ),
+            section_map_safe_next_step=(
+                "Sprawdź kolejność sekcji, ich cele i przypisane dowody."
+                if draft is not None
+                else (
+                    section_map_blocker[0].next_step
+                    if section_map_blocker
+                    else "Najpierw przygotuj bezpieczny plan sekcji."
+                )
+            ),
+            structured_contract_present=(
+                structured_generation.structured_generation_result.contract is not None
+            ),
+            structured_contract_blocker=(
+                None
+                if not structured_contract_blocker
+                else ContentWorkflowOperatorBlocker(
+                    code=structured_contract_blocker[0].code,
+                    label=structured_contract_blocker[0].label,
+                    reason=structured_contract_blocker[0].reason,
+                )
+            ),
+            structured_contract_safe_next_step=(
+                structured_contract_blocker[0].next_step
+                if structured_contract_blocker
+                else "Najpierw przygotuj kontrakt roboczego szkicu."
+            ),
+        )
+    )
+    return ContentWorkItemWorkflowSnapshotResponse(
         freshness_assessment=freshness_assessment,
         candidate=candidate,
         service_profile_context=service_profile_context,
@@ -128,6 +200,6 @@ def assemble_content_work_item_snapshot(
         human_review=human_review,
         wordpress_handoff=wordpress_handoff,
         measurement_window=measurement_window,
+        current_step_id=journey.current_step_id,
+        operator_steps=journey.steps,
     )
-    snapshot.operator_steps = callbacks.operator_steps(snapshot)
-    return snapshot

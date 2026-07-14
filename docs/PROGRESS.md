@@ -17,16 +17,29 @@ w git, Beads i `docs/progress/archive/`.
   testów, Ruff, mypy i identyfikowalny `/ga4` browser proof przechodzą. Nie
   dodawać cache w React ani drugiego endpointu; osobny expiry-spike proof należy
   do `wilq-seo-3bnt`.
-- `c9h9.24` cleanup: fresh recheck znalazł dwa czerwone source-string assertions
-  po podziale `/content-workflow`. Repo-wide reference i coverage check
-  potwierdził, że cały `ContentWorkflowDiagnosticSurface.test.tsx` dublował
-  aktualne testy: `contentWorkflowArchitecture.test.ts` chroni query/wiring
-  seam, a renderowany `ContentWorkflowSurface.test.tsx` chroni polskie copy,
-  draft-only payload, brak live CTA i canonical review link. Martwy test-theater
-  artefakt usunięto zamiast przywracać stringi do route monolitu. Mały test
-  architektury nadal pilnuje extracted first-screen/draft owners. Focused 20/20,
-  pełny dashboard 157/157, typecheck, lint, browser `/content-workflow` i diff
-  check przechodzą; runtime code nie zmienił się.
+- `r564.7` slice: snapshot i shared schema mają jeden typed pięcioetapowy
+  journey `scope → section_map → draft → review → dev_draft` z dokładnie jednym
+  `current_step_id`, readiness, blockerem i nawigacją. Marketer mode pokazuje
+  stronę/usługę/decyzję, task map i jeden aktywny workspace; dziewięć paneli
+  technicznych montuje się wyłącznie w `Audyt techniczny`. Ukończone kroki są
+  read-only revisitable, a React nie parsuje status copy ani nie zgaduje kroku
+  po indeksie. Python i Zod odrzucają reorder, duplikaty, wiele current i
+  mismatch `current_step_id`. Edytor jawnie pokazuje `Niezapisany szkic
+  roboczy`, a dry-run daje marketerowi typed feedback bez zapisu. Live proof
+  pozostaje uczciwie na `draft`: stare review/audit nie zatwierdza konkretnego
+  tekstu. Read-only Ahrefs i `wordpress_sklep` refresh
+  przywróciły freshness, ale queue density nadal blokuje pełną kolejkę (1/3).
+  Focused backend/shared/dashboard tests, Ruff, mypy, typecheck, lint i browser
+  proof 1440×900/390×844 (także pięć zakładek bieżącego szkicu) przechodzą bez
+  write requestów i bez overflow.
+  Finalne `scripts/verify.sh` przechodzi: 943 backend (2 skip), 158 dashboard,
+  34 shared (10 skip), security/API/skill smoke, 20/20 Playwright i build.
+  Managed stack po bramce wrócił zdrowy; live queue pozostaje 2/1/3 bez
+  wymaganego refreshu, a snapshot ma `current_step_id=draft` i zero
+  submitowalnych kroków. Potwierdzone bezreferencyjne duplikaty mobile/header
+  usunięto. Następny seam:
+  immutable revision persistence i exact-version acceptance przed adapterem
+  Codex app-server/SDK.
 - `inoz` gotowy do zamknięcia: readiness race ma jawny typed blocker
   `daily_check_runtime_prewarm`, a narrow runtime nie składa pełnego
   `DailyRuntimeBase` ani marketing brief. Command Center korzysta z tego samego

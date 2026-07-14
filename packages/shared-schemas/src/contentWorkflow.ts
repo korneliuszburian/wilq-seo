@@ -1640,11 +1640,47 @@ export const ContentWorkItemMeasurementOutcomeResponseSchema = z.object({
   outcome: ContentMeasurementOutcomeInterpretationSchema
 });
 
+const CONTENT_WORKFLOW_OPERATOR_STEP_ORDER = [
+  "scope",
+  "section_map",
+  "draft",
+  "review",
+  "dev_draft"
+] as const;
+
+export const ContentWorkflowOperatorStepIdSchema = z.enum(
+  CONTENT_WORKFLOW_OPERATOR_STEP_ORDER
+);
+
+export const ContentWorkflowOperatorStepPhaseSchema = z.enum([
+  "complete",
+  "current",
+  "pending"
+]);
+
+export const ContentWorkflowOperatorStepReadinessSchema = z.enum([
+  "ready",
+  "review_required",
+  "blocked"
+]);
+
+export const ContentWorkflowOperatorStepBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string()
+});
+
 export const ContentWorkflowOperatorStepSchema = z.object({
-  id: z.string(),
+  id: ContentWorkflowOperatorStepIdSchema,
   title: z.string(),
+  phase: ContentWorkflowOperatorStepPhaseSchema,
+  readiness: ContentWorkflowOperatorStepReadinessSchema,
   status_label: z.string(),
-  summary: z.string()
+  summary: z.string(),
+  can_open: z.boolean(),
+  can_submit: z.boolean(),
+  blocker: ContentWorkflowOperatorStepBlockerSchema.nullable(),
+  safe_next_step: z.string()
 });
 
 export const ContentWorkItemServiceProfileBindingStatusSchema = z.enum([
@@ -1724,7 +1760,39 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   human_review: ContentWorkItemHumanReviewResponseSchema,
   wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponseSchema,
   measurement_window: ContentWorkItemMeasurementWindowResponseSchema,
-  operator_steps: z.array(ContentWorkflowOperatorStepSchema).default([])
+  current_step_id: ContentWorkflowOperatorStepIdSchema,
+  operator_steps: z.array(ContentWorkflowOperatorStepSchema).length(5)
+}).superRefine((snapshot, context) => {
+  const stepIds = snapshot.operator_steps.map((step) => step.id);
+  if (new Set(stepIds).size !== stepIds.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["operator_steps"],
+      message: "operator_steps must contain five unique step IDs"
+    });
+  }
+  if (
+    stepIds.some(
+      (stepId, index) => stepId !== CONTENT_WORKFLOW_OPERATOR_STEP_ORDER[index]
+    )
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["operator_steps"],
+      message: "operator_steps must use the canonical five-step order"
+    });
+  }
+  const currentSteps = snapshot.operator_steps.filter((step) => step.phase === "current");
+  if (
+    currentSteps.length !== 1 ||
+    currentSteps[0]?.id !== snapshot.current_step_id
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["current_step_id"],
+      message: "current_step_id must identify the single current operator step"
+    });
+  }
 });
 
 export const ContentWorkItemBlockedSnapshotResponseSchema = z.object({

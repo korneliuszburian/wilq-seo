@@ -73,12 +73,22 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     });
 
     await gotoAndWaitForApi(page, "/content-workflow", "/api/content/work-items/queue");
-    await expect(page.getByRole("heading", { name: "Treści: praca nad stroną", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Aktualna strona" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sygnały i braki" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dev draft / ACF" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Od decyzji do szkicu na devie", exact: true })
+    ).toBeVisible();
+    await expect(page.getByLabel("Kontekst zadania treściowego")).toBeVisible();
+    const contentTaskMap = page.getByTestId("content-workflow-task-map");
+    await expect(contentTaskMap.getByRole("button")).toHaveCount(5);
+    await expect(contentTaskMap.getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
+      "aria-current",
+      "step"
+    );
+    await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toBeVisible();
+    await expect(page.getByText("Niezapisany szkic roboczy")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd na devie", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Aktualna strona" })).toHaveCount(0);
+    await expect(page.getByTestId("content-workflow-technical-audit")).toHaveCount(0);
     const previewButton = page.getByRole("button", { name: "Przygotuj podgląd draftu" });
     const previewButtonBox = await previewButton.boundingBox();
     const evidenceBox = await page

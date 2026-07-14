@@ -16,6 +16,21 @@ read-only Service Profile/review path, run or explicitly defer the first real
 Wilku UAT, and audit whether Sales Brief v2 signals are strong enough to avoid
 generic SEO content.
 
+## Execution continuity
+
+- Continue roadmap-driven cleanup without stopping after one bounded slice:
+  choose the highest-value confirmed task from `bd ready`, make the smallest
+  safe change, verify API/dashboard/browser proof, update current docs and
+  Beads, commit deliberately, push `origin/main`, then recheck the roadmap.
+- The original continuation starting at `wilq-seo-c9h9.4` is already complete;
+  do not repeat it. Current sequence is the five-step Content Workflow journey,
+  revision-bound draft persistence and only then the server-side Codex
+  app-server/SDK handshake.
+- Before compaction, replace the durable handoff in
+  `docs/current-cleanup-state.md` so completed work is not repeated.
+- Existing ChatGPT/Codex login is the available model authority. Do not make an
+  OpenAI API key, Agents SDK, Ollama or a second model path a product dependency.
+
 ## Baseline
 
 Goal 004 is complete and verified. It proves:

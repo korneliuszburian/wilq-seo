@@ -5,18 +5,16 @@ import { useMemo, useState } from "react";
 import {
   getContentWordPressExistingDraftUpdateReadiness,
   type ContentOpportunityEnrichment,
-  type ContentWorkItemQueueResponse
+  type ContentWorkItemQueueResponse,
+  type ContentWorkItemWordPressDraftExecutionResponse
 } from "../lib/api";
 import { AcfCurrentVsProposedPanel } from "./AcfCurrentVsProposedPanel";
 import { ContentDevTargetColumn } from "./ContentDevTargetColumn";
 import { ContentFreshnessBanner } from "./ContentWorkflowBoundaryStates";
 import { ContentMapConnectors } from "./ContentMapPrimitives";
-import { ContentPageIdentityCard } from "./ContentPageIdentityCard";
 import { ContentPublicPageColumn } from "./ContentPublicPageColumn";
 import { ContentSignalColumn } from "./ContentSignalColumn";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
-import { ContentWorkbenchHeader } from "./ContentWorkbenchHeader";
-import { MobileDecisionCard } from "./MobileDecisionCard";
 import { ServiceProfileDecisionStrip } from "./ServiceProfileDecisionStrip";
 import {
   blockedClaimsForWorkbench,
@@ -31,7 +29,7 @@ import {
   sectionOverrideKey,
   shortSectionTabLabel
 } from "./contentWorkflowDraftSectionModel";
-import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
+import type { ContentWorkflowSnapshot, WorkflowStepId } from "./contentWorkflowRuntime";
 import { normalizedPath, selectDevPage } from "./contentWorkflowTarget";
 import type {
   WordPressAuthoringProfileQuery,
@@ -40,8 +38,12 @@ import type {
 
 type ContentPageWorkbenchActions = {
   executionPending: boolean;
+  executionError: Error | null;
+  executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
   runExecutionDryRunWithSections: (sections: Array<{ heading: string; body_markdown: string; evidence_ids: string[] }>) => void;
 };
+
+type DraftPreviewTrigger = "editor" | "preview";
 
 function unique(values: string[]) {
   return [...new Set(values)];
@@ -54,7 +56,7 @@ export function ContentPageWorkbench({
   draftActivationPacket,
   enrichment,
   queue,
-  onOpenDetails
+  activeStepId
 }: {
   actions: ContentPageWorkbenchActions;
   authoringProfile: WordPressAuthoringProfileQuery;
@@ -62,7 +64,7 @@ export function ContentPageWorkbench({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
-  onOpenDetails: () => void;
+  activeStepId: WorkflowStepId;
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
@@ -77,6 +79,7 @@ export function ContentPageWorkbench({
   const existingDraftUpdateReadiness = useQuery({
     queryKey: ["content-workflow", "existing-draft-update-readiness", item.id],
     queryFn: () => getContentWordPressExistingDraftUpdateReadiness(item.id),
+    enabled: activeStepId === "draft"
   });
   const activeCandidate = queue.candidates.find(
     (candidate) => candidate.work_item_id === item.id
@@ -102,6 +105,7 @@ export function ContentPageWorkbench({
     texts: Record<string, string>;
   }>({ draftId: null, texts: {} });
   const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
+  const [draftPreviewTrigger, setDraftPreviewTrigger] = useState<DraftPreviewTrigger | null>(null);
   const draftEditorId = draft?.id ?? null;
   const sectionTexts =
     sectionEditorState.draftId === draftEditorId
@@ -133,81 +137,79 @@ export function ContentPageWorkbench({
     : sourceTitle || item.topic;
   const queryChips = queryChipsForWorkbench(data, enrichment, activeCandidate);
   const metricTiles = contentMetricTilesForWorkbench(item, devPage);
-  const sourceSummary = [
-    publicSections.length ? `${publicSections.length} sekcji publicznych` : null,
-    devSections.length ? `${devSections.length} sekcji na devie` : null,
-    item.source_connectors.includes("google_search_console") ? "GSC" : null,
-    item.source_connectors.includes("ahrefs") ? "Ahrefs" : null
-  ].filter(Boolean).join(" · ");
-
+  const runDraftPreview = (trigger: DraftPreviewTrigger) => {
+    setDraftPreviewTrigger(trigger);
+    actions.runExecutionDryRunWithSections(sectionOverrides);
+  };
   return (
-    <section className="mb-5">
-      <ContentWorkbenchHeader />
-
+    <section className="mb-5" data-active-workspace={activeStepId}>
       <ContentFreshnessBanner assessment={queue.freshness_assessment} />
-      <ContentSourceStatusBar data={data} devPage={devPage} profile={profile} />
-      <MobileDecisionCard
-        candidate={activeCandidate ?? null}
-        publicUrl={publicUrl}
-        topic={pageTitle}
-        queue={queue}
-        onOpenDetails={onOpenDetails}
-      />
+      <div className="hidden sm:block">
+        <ContentSourceStatusBar data={data} devPage={devPage} profile={profile} />
+      </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className={`grid gap-4 ${activeStepId === "draft" ? "xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid-cols-1"}`}>
         <div className="min-w-0 space-y-3">
-          <ContentPageIdentityCard
-            pageTitle={pageTitle}
-            publicUrl={publicUrl}
-            sourceSummary={sourceSummary}
-            recommendedModeLabel={
-              activeCandidate?.recommended_mode_label ?? data.preflight.preflight_verdict.recommended_mode
-            }
-            fallbackDescription={
-              activeCandidate?.reason ?? "Porównaj publiczną stronę, sygnały i aktualny dev draft."
-            }
-          >
-            <ServiceProfileDecisionStrip context={data.serviceProfileContext} />
-          </ContentPageIdentityCard>
+          {activeStepId === "scope" ? (
+            <section className="rounded-md border border-line bg-white p-4 shadow-sm" aria-labelledby="scope-workspace-title">
+              <h2 id="scope-workspace-title" className="text-base font-semibold text-ink">
+                Zakres strony i usługi
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                Sprawdź, czy wybrana strona, intencja i profil usługi opisują właściwe zadanie przed mapowaniem sekcji.
+              </p>
+              <div className="mt-3">
+                <ServiceProfileDecisionStrip context={data.serviceProfileContext} />
+              </div>
+            </section>
+          ) : null}
 
-          <div className="relative grid gap-3 lg:grid-cols-3">
-            <ContentMapConnectors />
-            <ContentPublicPageColumn
-              publicUrl={publicUrl}
-              publicSections={publicSections}
-              environmentLabel={publicUrl ? environmentLabel(publicUrl) : "publiczna treść"}
-            />
+          {activeStepId === "section_map" ? (
+            <>
+              <div className="relative grid gap-3 lg:grid-cols-3">
+                <ContentMapConnectors />
+                <ContentPublicPageColumn
+                  publicUrl={publicUrl}
+                  publicSections={publicSections}
+                  environmentLabel={publicUrl ? environmentLabel(publicUrl) : "publiczna treść"}
+                />
 
-            <ContentSignalColumn
-              queryChips={queryChips}
-              metricTiles={metricTiles}
-              signalRows={signalRows}
-            />
+                <ContentSignalColumn
+                  queryChips={queryChips}
+                  metricTiles={metricTiles}
+                  signalRows={signalRows}
+                />
 
-            <ContentDevTargetColumn
-              profile={profile}
-              devPage={devPage}
-              devSections={devSections}
-              onSelectDevPage={setSelectedDevPageLink}
-            />
-          </div>
+                <ContentDevTargetColumn
+                  profile={profile}
+                  devPage={devPage}
+                  devSections={devSections}
+                  onSelectDevPage={setSelectedDevPageLink}
+                />
+              </div>
 
-          <AcfCurrentVsProposedPanel devSections={devSections} draftSections={draftSections} />
+              <AcfCurrentVsProposedPanel devSections={devSections} draftSections={draftSections} />
+            </>
+          ) : null}
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
+          {activeStepId === "draft" ? (
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="rounded-md border border-line bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-semibold text-ink">Tekst sekcji do szkicu</h2>
                 </div>
                 <span className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-600">
-                  Wersja 1
+                  Niezapisany szkic roboczy
                 </span>
               </div>
 
               {draftSections.length ? (
                 <div className="mt-4">
-                  <div className="flex gap-5 border-b border-line">
+                  <div
+                    className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 border-b border-line sm:flex sm:flex-wrap sm:gap-x-5"
+                    data-testid="draft-section-tabs"
+                  >
                     {draftSections.map((section) => {
                       const key = sectionOverrideKey(section.heading);
                       const active = key === selectedSectionEditorKey;
@@ -216,7 +218,7 @@ export function ContentPageWorkbench({
                           key={key}
                           type="button"
                           onClick={() => setSelectedSectionKey(key)}
-                          className={`border-b-2 px-1 pb-3 text-sm font-semibold ${
+                          className={`min-w-0 break-words border-b-2 px-1 pb-3 text-left text-sm font-semibold ${
                             active
                               ? "border-action text-action"
                               : "border-transparent text-slate-600"
@@ -268,11 +270,14 @@ export function ContentPageWorkbench({
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button
                       type="button"
-                      onClick={() => actions.runExecutionDryRunWithSections(sectionOverrides)}
+                      onClick={() => runDraftPreview("editor")}
                       disabled={!sectionOverrides.length || !dryRunReady || actions.executionPending}
+                      aria-controls="draft-preview-feedback"
                       className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Sprawdź tekst szkicu
+                      {actions.executionPending && draftPreviewTrigger === "editor"
+                        ? "Sprawdzam tekst..."
+                        : "Sprawdź tekst szkicu"}
                     </button>
                     <button
                       type="button"
@@ -287,6 +292,9 @@ export function ContentPageWorkbench({
                       Przywróć brief
                     </button>
                   </div>
+                  {draftPreviewTrigger === "editor" ? (
+                    <DraftPreviewFeedback actions={actions} />
+                  ) : null}
                 </div>
               ) : (
                 <p className="mt-4 rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
@@ -352,10 +360,34 @@ export function ContentPageWorkbench({
                 </a>
               ) : null}
             </div>
-          </div>
+            </div>
+          ) : null}
+
+          {activeStepId === "review" ? (
+            <section className="rounded-md border border-wait/30 bg-wait/10 p-4" aria-labelledby="review-workspace-title">
+              <h2 id="review-workspace-title" className="text-base font-semibold text-ink">
+                Review konkretnej wersji szkicu
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                Ten krok pozostaje zamknięty, dopóki szkic nie ma zapisanej, niezmiennej wersji powiązanej z review.
+              </p>
+            </section>
+          ) : null}
+
+          {activeStepId === "dev_draft" ? (
+            <section className="rounded-md border border-wait/30 bg-wait/10 p-4" aria-labelledby="dev-draft-workspace-title">
+              <h2 id="dev-draft-workspace-title" className="text-base font-semibold text-ink">
+                Szkic na devie
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                Przekazanie do WordPress pozostaje draft-only i wymaga akceptacji dokładnej wersji oraz śladu audytowego.
+              </p>
+            </section>
+          ) : null}
         </div>
 
-        <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
+        {activeStepId === "draft" ? (
+          <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
           <div className="rounded-md border border-line bg-white p-4 shadow-sm">
             <h2 className="text-base font-semibold text-ink">Podgląd na devie</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -363,19 +395,19 @@ export function ContentPageWorkbench({
             </p>
             <button
               type="button"
-              onClick={() => actions.runExecutionDryRunWithSections(sectionOverrides)}
+              onClick={() => runDraftPreview("preview")}
               disabled={!sectionOverrides.length || !dryRunReady || actions.executionPending}
+              aria-controls="draft-preview-feedback"
               className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Przygotuj podgląd draftu
+              {actions.executionPending && draftPreviewTrigger === "preview"
+                ? "Przygotowuję podgląd..."
+                : "Przygotuj podgląd draftu"}
               <ArrowRight aria-hidden="true" size={16} />
             </button>
-            <a
-              href="#content-workflow-details"
-              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-md border border-action/40 bg-white px-4 text-sm font-semibold text-action"
-            >
-              Pokaż kontekst
-            </a>
+            {draftPreviewTrigger === "preview" ? (
+              <DraftPreviewFeedback actions={actions} />
+            ) : null}
             <p className="mt-3 text-xs leading-5 text-slate-500">
               Ten krok przygotowuje wyłącznie podgląd. Zapis wymaga osobnego zatwierdzenia.
             </p>
@@ -445,8 +477,72 @@ export function ContentPageWorkbench({
               </div>
             </details>
           </div>
-        </aside>
+          </aside>
+        ) : null}
       </div>
     </section>
+  );
+}
+
+function DraftPreviewFeedback({ actions }: { actions: ContentPageWorkbenchActions }) {
+  if (actions.executionPending) {
+    return (
+      <div
+        id="draft-preview-feedback"
+        data-testid="draft-preview-feedback"
+        role="status"
+        className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm leading-6 text-slate-700"
+      >
+        WILQ sprawdza podgląd w trybie bez zapisu.
+      </div>
+    );
+  }
+  if (actions.executionError) {
+    return (
+      <div
+        id="draft-preview-feedback"
+        data-testid="draft-preview-feedback"
+        role="alert"
+        className="mt-3 rounded-md border border-danger/30 bg-danger/10 p-3 text-sm leading-6 text-slate-700"
+      >
+        <p className="font-semibold text-danger">Nie udało się sprawdzić podglądu</p>
+        <p className="mt-1">Spróbuj ponownie. WILQ nie zapisał nic w WordPressie.</p>
+      </div>
+    );
+  }
+
+  const result = actions.executionResult;
+  if (!result) return null;
+  if (result.status === "dry_run_ready" && !result.external_write_attempted) {
+    return (
+      <div
+        id="draft-preview-feedback"
+        data-testid="draft-preview-feedback"
+        role="status"
+        className="mt-3 rounded-md border border-success/30 bg-success/10 p-3 text-sm leading-6 text-slate-700"
+      >
+        <p className="font-semibold text-success">Podgląd szkicu jest gotowy</p>
+        <p className="mt-1">WILQ sprawdził propozycję bez wykonywania zapisu. Nic nie zapisano w WordPressie.</p>
+      </div>
+    );
+  }
+
+  const blocker = result.blockers[0];
+  return (
+    <div
+      id="draft-preview-feedback"
+      data-testid="draft-preview-feedback"
+      role="alert"
+      className="mt-3 rounded-md border border-danger/30 bg-danger/10 p-3 text-sm leading-6 text-slate-700"
+    >
+      <p className="font-semibold text-danger">
+        {blocker?.label ?? "Podgląd wymaga sprawdzenia technicznego"}
+      </p>
+      <p className="mt-1">
+        {blocker?.reason ??
+          "WILQ nie potwierdził bezpiecznego wyniku sprawdzenia. Nie przechodź do zapisu."}
+      </p>
+      {blocker?.next_step ? <p className="mt-1">Następny krok: {blocker.next_step}</p> : null}
+    </div>
   );
 }

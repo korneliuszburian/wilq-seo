@@ -2545,18 +2545,79 @@ describe("Content work item workflow schemas", () => {
           measurement_window_result: { window: measurementWindow, blockers: [] },
           outcome_blockers: [blocker]
         },
+        current_step_id: "draft",
         operator_steps: [
           {
-            id: "content_preflight",
-            title: "Sprawdzenie pisania",
+            id: "scope",
+            title: "Zakres",
+            phase: "complete",
+            readiness: "ready",
             status_label: "można planować",
-            summary: "Zatwierdź preserve-first plan."
+            summary: "Zakres jest gotowy.",
+            can_open: true,
+            can_submit: false,
+            blocker: null,
+            safe_next_step: "Sprawdź mapę sekcji."
           },
           {
-            id: "sales_brief",
-            title: "Plan sprzedażowy",
-            status_label: "gotowy do sprawdzenia",
-            summary: "nie wie, jak podejść do BDO"
+            id: "section_map",
+            title: "Mapa sekcji",
+            phase: "complete",
+            readiness: "ready",
+            status_label: "mapa gotowa",
+            summary: "Sekcje są zmapowane.",
+            can_open: true,
+            can_submit: false,
+            blocker: null,
+            safe_next_step: "Przejdź do szkicu."
+          },
+          {
+            id: "draft",
+            title: "Szkic",
+            phase: "current",
+            readiness: "review_required",
+            status_label: "wymaga zapisanej wersji",
+            summary: "Szkic wymaga pracy.",
+            can_open: true,
+            can_submit: false,
+            blocker: {
+              code: "missing_revision_bound_draft",
+              label: "Brakuje wersji szkicu",
+              reason: "Review nie jest powiązane z wersją."
+            },
+            safe_next_step: "Zapisz niezmienną wersję."
+          },
+          {
+            id: "review",
+            title: "Review",
+            phase: "pending",
+            readiness: "blocked",
+            status_label: "zablokowane",
+            summary: "Review czeka na wersję.",
+            can_open: false,
+            can_submit: false,
+            blocker: {
+              code: "missing_revision_bound_draft",
+              label: "Brakuje wersji",
+              reason: "Nie ma wersji do review."
+            },
+            safe_next_step: "Najpierw zapisz szkic."
+          },
+          {
+            id: "dev_draft",
+            title: "Szkic dev",
+            phase: "pending",
+            readiness: "blocked",
+            status_label: "zablokowane",
+            summary: "Dev czeka na review.",
+            can_open: false,
+            can_submit: false,
+            blocker: {
+              code: "missing_revision_acceptance",
+              label: "Brakuje akceptacji",
+              reason: "Dokładna wersja nie została zaakceptowana."
+            },
+            safe_next_step: "Zakończ review."
           }
         ]
     });
@@ -2564,6 +2625,55 @@ describe("Content work item workflow schemas", () => {
     expect(snapshot.service_profile_context.binding_status).toBe("not_evaluated");
     expect(snapshot.service_profile_context.decision_status).toBe("not_evaluated");
     expect(snapshot.service_profile_context.service_card_id).toBeUndefined();
+    expect(snapshot.operator_steps.map((step) => step.id)).toEqual([
+      "scope",
+      "section_map",
+      "draft",
+      "review",
+      "dev_draft"
+    ]);
+
+    const reorderedSteps = [...snapshot.operator_steps];
+    [reorderedSteps[0], reorderedSteps[1]] = [reorderedSteps[1], reorderedSteps[0]];
+    expect(
+      ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+        ...snapshot,
+        operator_steps: reorderedSteps
+      }).success
+    ).toBe(false);
+
+    const duplicateSteps = snapshot.operator_steps.map((step, index) =>
+      index === 1 ? { ...step, id: "scope" } : step
+    );
+    expect(
+      ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+        ...snapshot,
+        operator_steps: duplicateSteps
+      }).success
+    ).toBe(false);
+
+    const multipleCurrentSteps = snapshot.operator_steps.map((step, index) =>
+      index === 3 ? { ...step, phase: "current" } : step
+    );
+    expect(
+      ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+        ...snapshot,
+        operator_steps: multipleCurrentSteps
+      }).success
+    ).toBe(false);
+
+    expect(
+      ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+        ...snapshot,
+        current_step_id: "review"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
+        ...snapshot,
+        operator_steps: snapshot.operator_steps.slice(0, 4)
+      }).success
+    ).toBe(false);
   });
 
   it("accepts a typed blocked content workflow snapshot", () => {

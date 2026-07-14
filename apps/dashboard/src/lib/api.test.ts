@@ -668,7 +668,64 @@ function workflowSnapshot() {
     structured_generation: responseByPath["/api/content/work-items/structured-draft-generation"],
     human_review: responseByPath["/api/content/work-items/human-review"],
     wordpress_handoff: responseByPath["/api/content/work-items/wordpress-draft-handoff"],
-    measurement_window: responseByPath["/api/content/work-items/measurement-window"]
+    measurement_window: responseByPath["/api/content/work-items/measurement-window"],
+    current_step_id: "draft",
+    operator_steps: workflowOperatorSteps()
+  };
+}
+
+function workflowOperatorSteps() {
+  return [
+    operatorStep("scope", "Zakres i cel", "complete", "ready", true, null),
+    operatorStep("section_map", "Plan sekcji", "complete", "ready", true, null),
+    operatorStep(
+      "draft",
+      "Szkic treści",
+      "current",
+      "review_required",
+      true,
+      "missing_revision_bound_draft"
+    ),
+    operatorStep(
+      "review",
+      "Sprawdzenie treści",
+      "pending",
+      "blocked",
+      false,
+      "missing_revision_bound_draft"
+    ),
+    operatorStep(
+      "dev_draft",
+      "Szkic na devie",
+      "pending",
+      "blocked",
+      false,
+      "missing_revision_bound_review"
+    )
+  ];
+}
+
+function operatorStep(
+  id: string,
+  title: string,
+  phase: string,
+  readiness: string,
+  canOpen: boolean,
+  blockerCode: string | null
+) {
+  return {
+    id,
+    title,
+    phase,
+    readiness,
+    status_label: readiness === "ready" ? "gotowe" : "wymaga pracy",
+    summary: `${title}: stan API`,
+    can_open: canOpen,
+    can_submit: false,
+    blocker: blockerCode
+      ? { code: blockerCode, label: "Brakuje wersji", reason: "Wymagana jest konkretna wersja." }
+      : null,
+    safe_next_step: "Wykonaj następny bezpieczny krok."
   };
 }
 

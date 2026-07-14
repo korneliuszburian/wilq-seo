@@ -188,12 +188,21 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("seo and content routes expose dedicated Content Workflow", async ({ page }) => {
     await page.goto("/content-workflow");
 
-    await expectApiBackedRouteHeading(page, "Treści: praca nad stroną", { exact: true });
-    await expect(page.getByText("Aktualna strona", { exact: true })).toBeVisible();
-    await expect(page.getByText("Sygnały i braki", { exact: true })).toBeVisible();
-    await expect(page.getByText("Dev draft / ACF", { exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Od decyzji do szkicu na devie", { exact: true });
+    await expect(page.getByLabel("Kontekst zadania treściowego")).toBeVisible();
+    const taskMap = page.getByTestId("content-workflow-task-map");
+    await expect(taskMap.getByRole("button")).toHaveCount(5);
+    await expect(taskMap.locator('[aria-current="step"]')).toHaveCount(1);
+    await expect(taskMap.getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
+      "aria-current",
+      "step"
+    );
+    await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toBeVisible();
+    await expect(page.getByText("Niezapisany szkic roboczy")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd na devie", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Aktualna strona" })).toHaveCount(0);
+    await expect(page.getByTestId("content-workflow-technical-audit")).toHaveCount(0);
     await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
     await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);
     await expectNoForbiddenVisibleCopy(page);
@@ -261,7 +270,16 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   });
 
   test("knowledge route maps source knowledge to decisions", async ({ page }) => {
+    test.setTimeout(60_000);
+    const operatingMapResponse = page.waitForResponse(
+      (response) => {
+        const url = new URL(response.url());
+        return url.pathname === "/api/knowledge/operating-map" && response.status() === 200;
+      },
+      { timeout: 60_000 }
+    );
     await page.goto("/knowledge");
+    await operatingMapResponse;
 
     await expectApiBackedRouteHeading(page, "Wiedza", { exact: true });
     await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();

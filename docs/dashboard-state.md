@@ -36,150 +36,62 @@ work across the whole dashboard.
 
 Target: `/content-workflow`.
 
-`/content-workflow` is the primary "Treści i SEO" marketer workspace. The
-current desktop render shows a concrete public page, public WordPress sections,
-GSC signals, generic dev WordPress REST/ACF readback, editable draft text and a
-typed current-vs-proposed preview. Direct create/live CTA is removed: the route
-can only prepare a dry-run preview. Canonical ActionObject apply exists for a
-dev-only draft, but the UI remains review-only until current review/audit and
-operator readiness are confirmed. The dev reader stays generic: it detects
-flexible rows by `acf_fc_layout` and nested text candidates, never by a fixed
-client-specific ACF key.
+`/content-workflow` is the primary "Treści i SEO" marketer workspace. Its
+snapshot owns one five-step journey: `scope → section_map → draft → review →
+dev_draft`. Every step carries typed phase/readiness, open/submit permissions,
+a blocker and the next safe step; React no longer parses Polish status copy.
+Marketer mode renders one compact page/service/decision context, the task map
+and exactly one selected workspace. The former queue/action/proof wall mounts
+only after an explicit switch to `Audyt techniczny`.
 
-The current reviewer estimate is 6/10. Method: marketer/operator review of the
-live snapshot, a 1440×900 render and a 390×844 render. Desktop and mobile now
-answer page, public/dev context, decision direction, service/claim policy,
-proof, blocker and dry-run next step without revealing IDs above the fold. The
-typed service context correctly remains blocked until public-card review, so it
-does not pretend that the writer is production-ready. Existing-draft duplication
-remains closed by removing the direct live/create path; a real dev draft write
-may return only through canonical ActionObject apply. The live queue currently
-has 1 actionable item of the required 3 (2 candidates total); sources are fresh
-after successful read-only GSC and WordPress refreshes, but density still
-blocks a full queue and WILQ must not invent a third topic. `r564.5`,
-`r564.6`, `r564.3`, `c9h9.4`, `/ahrefs` slice `3bst.7` and the Ahrefs latency
-slice `c9h9.17` are closed. The current `/ahrefs` manual decision is above its
-cards and diagnostics render within the operating budget; the next Ahrefs
-maintenance seam is the separately tracked tactical-queue extraction `c9h9.18`,
-not another React matching rule. The deleted legacy planner must not return.
+The current reviewer estimate is 7/10. Method: marketer/operator plus content
+strategist review of the live API snapshot and browser proof at 1440×900 and
+390×844. In both viewports the first screen identifies the page, service,
+decision, current step, blocker and safe next action; the page has no horizontal
+overflow. Completed steps can be revisited without changing the API-owned
+current marker or sending a write request. Live state honestly remains
+`current_step_id=draft`: a generation contract and legacy package review do
+not equal acceptance of exact text. `review` and `dev_draft` remain closed,
+draft-only and fail-closed until immutable revision persistence and exact-version
+human acceptance exist.
 
-Architecture proof (2026-07-13): `ContentWorkflowSurface` now delegates queue,
-selected work item, enrichment and WordPress readiness queries to the typed
-`contentWorkflowQueries.ts` seam. The route keeps state selection and
-presentation orchestration; the seam owns React Query keys/enabled gates. The
-page identity/decision card is now a separate presentational
-`ContentPageIdentityCard.tsx` boundary; it receives typed display values and
-renders the existing Service Profile projection without owning API logic. The
-existing GSC/Ahrefs/brief column is now `ContentSignalColumn.tsx`; it renders
-only the route's typed signal rows and does not rank or invent evidence.
-The dev-only WordPress/ACF target column is now `ContentDevTargetColumn.tsx`; it
-keeps explicit target selection and draft-only wording in a separate boundary
-without adding a write path or client-specific ACF assumptions.
-The public WordPress page/section column is now `ContentPublicPageColumn.tsx`;
-it renders only the selected URL and section headings and does not infer SEO
-decisions, canonical matches or evidence.
-The shared marketer fact tile is now `ContentWorkflowFactTile.tsx`; it is a
-presentation-only primitive used by existing panels and does not own metric
-meaning or business rules.
-The repeated safety card layout is now `ContentSafetyPanel.tsx`; its callers
-continue to provide API-owned safety copy and blocked-claim meaning.
-The three-use Claim Ledger list layout is now `ContentClaimList.tsx`; it renders
-typed claim text, reasons and evidence IDs without classifying claim status.
-Workflow action controls now render through `ContentWorkflowControlButton.tsx`;
-disabled reasons and pending state remain supplied by the existing action
-orchestration, so the component does not validate or mutate actions.
-The full topic-enrichment panel is now `ContentOpportunityEnrichmentPanel.tsx`;
-it renders the existing enrichment/measurement contract and blockers without
-inferring service fit or replacing Service Profile decisions.
-The Claim Ledger gate panel is now `ClaimLedgerGatePanel.tsx`; it preserves the
-existing typed ledger filtering and evidence rendering while the route only
-orchestrates its placement.
-The blocked-candidate state is now `ContentWorkflowBlockedCandidate.tsx`; it
-renders the existing queue freshness, blocker, safe next step and candidate
-metrics without changing their API-owned meaning.
-The quality-review panel is now `ContentQualityReviewPanel.tsx`; the route/API
-still owns quality safety classification, while the component renders the
-typed safety text, findings, dimensions and next step.
-The revision-plan panel is now `ContentRevisionPlanPanel.tsx`; revision safety
-classification remains in the route helper while the component renders typed
-blockers, instructions and required evidence.
-The ACF authoring preview is now `AcfPreviewPanel.tsx`; its recursive field
-renderer is shared with the existing authoring readback while ACF safety text
-continues to come from the route helper.
-The structured draft preview is now `StructuredDraftPreviewPanel.tsx`; it
-renders typed title, sections, evidence and human-review checklist while the
-route retains safety classification.
-The safety-panel composition is now `WorkflowSafetyPanels.tsx`; it receives
-typed display text and child payloads, while route helpers remain the only
-owners of safety classification.
-The mobile decision surface is now `MobileContentTriage.tsx`; it renders the
-API-owned candidate, blockers, freshness/evidence disclosure and review-only
-CTA without inventing decision logic.
-The workbench title and refresh controls are now `ContentWorkbenchHeader.tsx`;
-they remain presentation-only and do not own route or decision semantics.
-The public inventory card is now `ContentPublicInventoryPanel.tsx`; it renders
-typed public title/URL/section state and the existing missing-inventory blocker
-without moving canonical or SEO logic into React.
-The compact mobile decision is now `MobileDecisionCard.tsx`; it renders typed
-queue decision/blocker/freshness inputs and the review-only CTA without owning
-recommendation logic.
-The decision panel's publication blockers are now
-`ContentWorkflowPublicationBlockers.tsx`; human-review, draft-only and
-forbidden-claim copy remains a typed presentation boundary.
-The decision panel's next-action card is now
-`ContentWorkflowNextDecisionPanel.tsx`; it renders typed decision, proof,
-claim-count and safe-next-step inputs without owning ranking logic.
-The decision panel header is now `ContentWorkflowDecisionHeader.tsx`; it renders
-typed topic, publication-blocked state and stepper inputs while route/model code
-retains workflow semantics.
-The decision panel's claim summary is now `ContentWorkflowClaimSummary.tsx`; it
-renders typed claim counts and review/brief/WordPress links while claim-gate
-semantics remain API/model-owned.
-The decision workflow composition is now `ContentWorkflowDecisionPanel.tsx`;
-it assembles typed child panels while candidate/step/claim semantics remain
-owned by the API-facing model layer.
-The dev WordPress readiness/workbench panel is now
-`WordPressDraftWorkPanel.tsx`; it consumes the existing typed query/action
-inputs and preserves draft-only, canonical apply-review and public/dev safety.
-The section-writing/ACF workbench is now `ContentSectionWritingWorkbench.tsx`;
-it owns only local editor state and composes typed public inventory, draft-only
-dry-run and ACF preview inputs. Route orchestration and business semantics stay
-outside the component.
-The Service Profile decision block is now `ServiceProfileDecisionStrip.tsx`;
-it renders typed service status, claim counts, blockers and technical
-disclosure without owning Service Profile or claim-policy semantics.
-Operator review/audit controls are now rendered by
-`WorkflowOperatorControls.tsx`; the route still owns the typed control list and
-disabled-reason/safety decisions, while the component owns layout only.
-`contentPageWorkbenchModel.ts` owns the pure typed projections used by the
-main workbench (environment labels, metrics, signals, chips and evidence/claim
-rows); it does not introduce route-level business rules.
-The main public/dev authoring surface is now `ContentPageWorkbench.tsx`; it
-receives typed snapshot/query inputs and a minimal dry-run action interface,
-while route orchestration retains workflow semantics.
-`contentWorkflowActionModel.ts` owns typed request construction and response
-projection for the existing review/draft/ACF paths; it does not perform vendor
-writes or bypass ActionObject gates.
-`contentWorkflowSafetyModel.ts` owns only Polish safety explanations and
-disabled-reason projections; it does not decide readiness or mutate vendors.
-`docs/architecture/dashboard-react-standards.md` is the review contract.
-The current Playwright proof also asserts the live marketer contract (decision,
-public URL, current/signals/dev sections, safe draft-preview CTA and no
-horizontal overflow) instead of historical freshness strings.
+Read-only Ahrefs and `wordpress_sklep` refreshes on 2026-07-14 restored source
+freshness. The queue still has only 1 actionable item from 2 candidates and
+remains density-blocked; WILQ must not invent a third topic. Proof is under
+`.local-lab/proof/dashboard-content-workflow/2026-07-14T02-17-53-121Z/`;
+the latest E2E also captures current-step and completed-step revisit states.
+The separate deterministic 390px five-tab contract proof is under
+`.local-lab/proof/dashboard-content-workflow/2026-07-14T02-33-15-013Z/`; it
+expands only the typed draft sections and is not presented as live evidence.
+The next product target is revision-bound content persistence, then a
+server-side Codex app-server/SDK adapter using existing ChatGPT login—not an
+API-key-only Agents SDK dependency.
 
-The target content workbench must show:
+Architecture proof (2026-07-14):
 
-- current public WordPress pages/posts and their role,
-- dev WordPress target state when available,
-- current page sections/components/ACF blocks in marketer-readable language,
-- GSC queries/pages and visible opportunity metrics,
-- Ahrefs gaps as supporting signals, not standalone proof,
-- service/claim status from WILQ knowledge,
-- clear work decision: keep, refresh, merge, create, block,
-- next action that can be handed to Codex or opened as a safe ActionObject,
-- no generic "refresh ekologus" task without URL, page title, query group,
-  current content, missing sections and reason.
-
+- `ContentWorkflowSurface` still delegates remote reads to
+  `contentWorkflowQueries.ts`, but now branches explicitly between
+  `ContentWorkflowMarketerJourney` and the technical audit. The nine technical
+  panels are absent from marketer-mode DOM.
+- `ContentWorkflowJourneyContext` owns the compact page/service/decision
+  summary. `ContentWorkflowTaskMap` owns read-only selection and preserves the
+  API `aria-current` marker when an earlier step is revisited.
+- `ContentPageWorkbench` renders only the selected `scope`, `section_map`,
+  `draft`, `review` or `dev_draft` workspace. Existing action builders and
+  safety gates remain unchanged and available in technical audit.
+- Shared Zod and Python contracts require the exact five-step order, unique IDs,
+  exactly one current step matching `current_step_id` and explicit
+  readiness/navigation fields. The dashboard maps them through
+  `contentWorkflowRuntime.ts`; no `includes("zablok")` or index-based stage
+  guessing remains.
+- The editor labels its state `Niezapisany szkic roboczy`; it does not invent a
+  revision number. Both dry-run CTAs expose marketer-safe pending, success,
+  blocker or failure feedback while preserving `write_authorization=null`.
+- Confirmed unreferenced duplicates `MobileContentTriage`,
+  `MobileDecisionCard`, `ContentWorkbenchHeader` and
+  `ContentPageIdentityCard` were deleted after repo-wide reference checks.
+- No endpoint, vendor-write path, fallback runtime or Codex dependency was
+  added in this slice.
 ## Surface State
 
 Readiness is a product/usefulness estimate, not a test pass rate.
@@ -188,7 +100,7 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 | --- | ---: | --- | --- | --- | --- | --- |
 | `/command-center` | 70% | Good IA direction: daily priority, blockers and source freshness. Still too easy to become summary-of-everything. | `GET /api/dashboard/command-center`, `getCommandCenter()` | Daily queue, blocked claims, source freshness. | Needs stronger routing into one concrete work item. | Keep as cockpit; do not add more cards. Route into content workbench once content view is ready. |
 | `/opportunities` | 50% | Useful as registry but overlaps with Command Center and Actions. | `GET /api/opportunities`, `getOpportunities()` | Opportunity list with evidence/action links. | Duplicates "Kolejka" mental model. | Eventually merge into one decision/action queue; avoid new UI work here now. |
-| `/content-workflow` | 6/10 | Primary "Treści i SEO" workspace. Live queue has 2 total candidates, 1 actionable, and requires a minimum of 3; GSC and public WordPress are fresh after successful read-only refreshes, while the queue remains density-blocked. Queue and selected snapshot carry typed freshness; selected snapshot also owns a compact per-item Service Profile decision: typed service binding, approval and policy for that card (full Claim Ledger stays separate), source/freshness/evidence, first blocker and safe next step. IDs remain in disclosure; mobile retains a compact decision card before heavy detail and has no horizontal page overflow at 390 px. Ahrefs supporting rows distinguish exact proof from weak manual similarity. Browser proof now branches on the actual freshness contract: stale queues assert the Polish source blocker, while fresh-but-density-blocked queues assert the concrete workbench. | Existing queue and existing snapshot plus enrichment, authoring-profile, activation/readiness and action endpoints in `api.ts`; no new endpoint. UI execution is dry-run only: React forces `mode=dry_run` and null authorization. Backend canonical ActionObject apply exists for dev-only draft creation, but remains outside UI until current review/audit and operator readiness are confirmed. | Concrete public page selection; public/dev role split; fresh source status; service/claim context next to current page; evidence lineage; queue decision and safe next step; no duplicate-create/direct-live CTA; publish/destructive false. | Service Profile is honestly review-blocked; live queue remains blocked at 1 of 3 actionable candidates and must not invent a third topic. Production-depth and final draft remain unavailable until human review. | `r564.5` and `r564.6` are closed. Preserve the snapshot-owned context and the closed mobile viewport `r564.3`; do not infer service from enrichment or restore a live path. |
+| `/content-workflow` | 7/10 | Primary five-step "Treści i SEO" journey. Marketer mode shows compact page/service/decision context, five API-owned tasks and one selected workspace; technical panels require an explicit audit-mode switch. Live current step is `draft`, while completed `scope`/`section_map` remain revisitable without moving `aria-current` or issuing writes. Desktop 1440×900 and mobile 390×844 expose the blocker and safe next action in the first viewport with no page overflow. | Existing queue/snapshot, enrichment, authoring-profile, activation/readiness and action endpoints; snapshot adds typed `current_step_id` and five required operator steps. No new endpoint. Shared schema rejects missing/duplicate/mismatched current steps. | Wilku can identify the concrete page, service, decision and current task in seconds; only one work surface is mounted; dry-run and ActionObject safety remain unchanged; confirmed duplicate mobile/header components are deleted. | Exact text is still local editor state. Legacy package review/audit is not revision acceptance, so `review` and `dev_draft` remain blocked. Queue remains density-blocked at 1 actionable of 3 and Service Profile remains review-required. | Build immutable revision persistence with digest/base revision and exact-version acceptance; then add a server-side Codex app-server/SDK adapter. Do not restore the wall or add an API-key-only Agents SDK dependency. |
 | `/content-inventory` | 20% | Hidden technical placeholder. Inventory remains an input to `/content-workflow`, not a separate writing cockpit. | currently generic/compact route; check `surfaceRegistry.ts` before adding code | Concept is needed inside content workbench. | Not a real marketer view yet. | Do not build separate cockpit; expose inventory inside content workbench. |
 | `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. Its selected-card policy is now projected into the existing content work-item snapshot. | `GET /api/content/service-profile` is the source assembly; `GET /api/content/work-items/{id}/snapshot` projects its compact typed context; no frontend join. | Services, claim policy, source status and review-required data. | Not enough approved-current production depth; can overwhelm writer. | Keep owner review here; preserve the compact work-item projection instead of duplicating a second content view. |
 | `/knowledge` | 65% | Admin/review support surface with current "Wiedza" IA. Operating-map remains the only initial read; cards/playbooks defer until disclosure. `list_workflows()` now uses only command-center decisions; standalone map core is `4.878 s`. Managed runtime starts a non-blocking map prewarm after readiness; first/second warmed HTTP reads measured `0.003550 s` / `0.003175 s`. First decision/blockers render in the browser proof; focused current Playwright passes 1/1 in 2.7 s. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map`; `build_knowledge_operating_map_cached()` and existing disclosure controls | Source lineage and claim review. | Prewarm stability must be checked on subsequent restarts; live knowledge/source freshness remains separate from cache latency. | Keep prewarm fail-open and non-blocking; do not re-enable concurrent subordinate reads. |

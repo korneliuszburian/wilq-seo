@@ -1,22 +1,15 @@
-import type { ContentWorkflowSnapshot, WorkflowStep } from "./contentWorkflowRuntime";
+import type {
+  ContentWorkflowSnapshot,
+  WorkflowStep,
+  WorkflowStepId
+} from "./contentWorkflowRuntime";
 
-export function activeWorkflowStepIndex(steps: WorkflowStep[]) {
-  const blockedIndex = steps.findIndex((step) =>
-    step.statusLabel.toLowerCase().includes("zablok")
-  );
-  if (blockedIndex >= 0) return blockedIndex;
-
-  const reviewIndex = steps.findIndex((step) =>
-    step.statusLabel.toLowerCase().includes("wymaga")
-  );
-  return reviewIndex >= 0 ? reviewIndex : Math.min(steps.length - 1, 1);
+export function activeWorkflowStepIndex(steps: WorkflowStep[], currentStepId: WorkflowStepId) {
+  return steps.findIndex((step) => step.id === currentStepId);
 }
 
 export function blockedWorkflowSteps(steps: WorkflowStep[]) {
-  return steps.filter((step) => {
-    const status = step.statusLabel.toLowerCase();
-    return status.includes("zablok") || status.includes("brakuje") || status.includes("wymaga");
-  });
+  return steps.filter((step) => step.readiness !== "ready");
 }
 
 export function claimLedgerSummary(data: ContentWorkflowSnapshot) {

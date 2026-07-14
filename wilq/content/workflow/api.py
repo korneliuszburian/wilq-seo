@@ -53,7 +53,6 @@ from wilq.content.quality.revision_apply import apply_content_revision_plan
 from wilq.content.review.human import (
     ContentHumanReview,
 )
-from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse as ContentWordPressDraftActivationPacketResponse,
 )
@@ -629,7 +628,6 @@ def _build_content_work_item_snapshot_response(
             human_review=partial(snapshot_human_review, callbacks=stage_callbacks),
             wordpress_handoff=partial(snapshot_wordpress_handoff, callbacks=stage_callbacks),
             measurement_window=partial(snapshot_measurement_window, callbacks=stage_callbacks),
-            operator_steps=workflow_steps.content_workflow_operator_steps,
         ),
         human_review_record=human_review_record,
         audit=audit,
