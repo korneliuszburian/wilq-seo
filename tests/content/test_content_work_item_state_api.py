@@ -181,15 +181,15 @@ def test_selected_content_work_item_output_and_quality_state_is_isolated(
     assert preview_response.json()["preview_result"]["blockers"] == []
 
     store = content_workflow_store()
-    assert store.latest_structured_output(first["work_item_id"]) is not None
-    assert store.latest_structured_output(second["work_item_id"]) is None
+    assert store.load_draft_revision_state(first["work_item_id"]).status == "empty"
+    assert store.load_draft_revision_state(second["work_item_id"]).status == "empty"
 
     wrong_preview_response = client.post(
         f"/api/content/work-items/{second['work_item_id']}/structured-draft-preview",
         json={"contract": contract, "output": output},
     )
     assert wrong_preview_response.status_code == 400
-    assert store.latest_structured_output(second["work_item_id"]) is None
+    assert store.load_draft_revision_state(second["work_item_id"]).status == "empty"
 
     item = first_snapshot["structured_generation"]["item"]
     quality_response = client.post(

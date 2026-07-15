@@ -139,6 +139,7 @@ from wilq.content.workflow.queue import (
     build_content_work_item_queue_candidate,
     build_content_work_item_queue_response,
 )
+from wilq.content.workflow.revisions import ContentDraftRevisionState
 from wilq.content.workflow.snapshot_assembly import (
     SnapshotAssemblyCallbacks,
     assemble_content_work_item_snapshot,
@@ -459,6 +460,7 @@ def build_content_work_item_diagnostics_snapshot_response(
     diagnostics: ContentDiagnosticsResponse,
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     decision = _select_content_work_item_decision(diagnostics.decision_queue)
     candidate = _queue_candidate_for_decision(diagnostics, decision.id)
@@ -468,6 +470,7 @@ def build_content_work_item_diagnostics_snapshot_response(
         candidate=candidate,
         human_review=human_review,
         audit=audit,
+        revision_state=revision_state,
     )
 
 
@@ -476,6 +479,7 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
     work_item_id: str,
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse | None:
     decision = _select_content_work_item_decision_for_work_item(
         diagnostics.decision_queue,
@@ -490,6 +494,7 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
         candidate=candidate,
         human_review=human_review,
         audit=audit,
+        revision_state=revision_state,
     )
 
 
@@ -500,6 +505,7 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
     candidate: ContentWorkItemQueueCandidate,
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     item = content_work_item_from_decision(decision)
     inventory_record = content_inventory_record_from_decision(decision)
@@ -515,6 +521,7 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
         candidate=candidate,
         human_review_record=human_review,
         audit=audit,
+        revision_state=revision_state,
     )
 
 
@@ -592,6 +599,7 @@ def _build_content_work_item_snapshot_response(
     candidate: ContentWorkItemQueueCandidate,
     human_review_record: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     knowledge_match = match_content_knowledge_cards(item)
     service_profile_context = build_content_work_item_service_profile_context(
@@ -631,6 +639,7 @@ def _build_content_work_item_snapshot_response(
         ),
         human_review_record=human_review_record,
         audit=audit,
+        revision_state=revision_state,
     )
 
 

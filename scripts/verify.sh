@@ -146,7 +146,7 @@ if [ -d apps/dashboard/node_modules ]; then
   dashboard_dev_log="${TMPDIR:-/tmp}/wilq-dashboard-vite.log"
   uv run uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$dashboard_api_port" >"$dashboard_api_log" 2>&1 &
   dashboard_api_pid="$!"
-  for _ in $(seq 1 30); do
+  for _ in $(seq 1 80); do
     if curl -fsS --max-time 2 "$dashboard_api_base/api/health" >/dev/null 2>&1; then
       break
     fi

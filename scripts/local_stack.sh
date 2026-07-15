@@ -105,7 +105,7 @@ wait_port_free() {
 wait_url() {
   local url="$1"
   local log="$2"
-  for _ in $(seq 1 80); do
+  for _ in $(seq 1 160); do
     if curl -fsS --max-time 2 "$url" >/dev/null 2>&1; then
       return 0
     fi

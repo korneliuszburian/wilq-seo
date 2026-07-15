@@ -1,6 +1,6 @@
 # Dashboard State
 
-Last updated: 2026-07-13
+Last updated: 2026-07-15
 
 This is the living state file for WILQ dashboard work. Read it before changing
 any dashboard route, dashboard API view-model, dashboard copy, dashboard test or
@@ -44,54 +44,41 @@ Marketer mode renders one compact page/service/decision context, the task map
 and exactly one selected workspace. The former queue/action/proof wall mounts
 only after an explicit switch to `Audyt techniczny`.
 
-The current reviewer estimate is 7/10. Method: marketer/operator plus content
-strategist review of the live API snapshot and browser proof at 1440×900 and
-390×844. In both viewports the first screen identifies the page, service,
-decision, current step, blocker and safe next action; the page has no horizontal
-overflow. Completed steps can be revisited without changing the API-owned
-current marker or sending a write request. Live state honestly remains
-`current_step_id=draft`: a generation contract and legacy package review do
-not equal acceptance of exact text. `review` and `dev_draft` remain closed,
-draft-only and fail-closed until immutable revision persistence and exact-version
-human acceptance exist.
+The current reviewer estimate remains 7/10. Immutable revisions improve
+reproducibility and exact-version review, but do not prove the full WordPress
+workflow or real Wilku UAT. Stateful browser proof at 1440×900 and 390×844
+shows save, refetch/reload, exact-version review, acceptance and fail-closed
+`dev_draft`, without horizontal overflow. Each viewport sends exactly two
+POSTs—revision save and review—and zero Codex, ActionObject or WordPress
+requests.
 
 Read-only Ahrefs and `wordpress_sklep` refreshes on 2026-07-14 restored source
-freshness. The queue still has only 1 actionable item from 2 candidates and
-remains density-blocked; WILQ must not invent a third topic. Proof is under
-`.local-lab/proof/dashboard-content-workflow/2026-07-14T02-17-53-121Z/`;
-the latest E2E also captures current-step and completed-step revisit states.
-The separate deterministic 390px five-tab contract proof is under
-`.local-lab/proof/dashboard-content-workflow/2026-07-14T02-33-15-013Z/`; it
-expands only the typed draft sections and is not presented as live evidence.
-The next product target is revision-bound content persistence, then a
-server-side Codex app-server/SDK adapter using existing ChatGPT login—not an
-API-key-only Agents SDK dependency.
+freshness. The live snapshot honestly remains on `draft`: the revision workspace
+is empty, the first version can be saved, and `review` plus `dev_draft` are
+closed. The queue still has only 1 actionable item from 2 candidates and
+remains density-blocked; WILQ must not invent a third topic. Service Profile
+remains review-required. Stateful proof is under
+`.local-lab/proof/dashboard-content-workflow/2026-07-14T05-09-46-343Z/`.
+The next P0 is a revision-bound WordPress handoff: legacy human review/audit
+must not authorize apply for revision-enabled work items, and the handoff plus
+ActionObject must name the exact revision and digests. A server-side Codex
+app-server/SDK adapter using existing ChatGPT login follows that seam; it must
+not introduce an API-key-only Agents SDK dependency.
 
 Architecture proof (2026-07-14):
 
-- `ContentWorkflowSurface` still delegates remote reads to
-  `contentWorkflowQueries.ts`, but now branches explicitly between
-  `ContentWorkflowMarketerJourney` and the technical audit. The nine technical
-  panels are absent from marketer-mode DOM.
-- `ContentWorkflowJourneyContext` owns the compact page/service/decision
-  summary. `ContentWorkflowTaskMap` owns read-only selection and preserves the
-  API `aria-current` marker when an earlier step is revisited.
-- `ContentPageWorkbench` renders only the selected `scope`, `section_map`,
-  `draft`, `review` or `dev_draft` workspace. Existing action builders and
-  safety gates remain unchanged and available in technical audit.
-- Shared Zod and Python contracts require the exact five-step order, unique IDs,
-  exactly one current step matching `current_step_id` and explicit
-  readiness/navigation fields. The dashboard maps them through
-  `contentWorkflowRuntime.ts`; no `includes("zablok")` or index-based stage
-  guessing remains.
-- The editor labels its state `Niezapisany szkic roboczy`; it does not invent a
-  revision number. Both dry-run CTAs expose marketer-safe pending, success,
-  blocker or failure feedback while preserving `write_authorization=null`.
-- Confirmed unreferenced duplicates `MobileContentTriage`,
-  `MobileDecisionCard`, `ContentWorkbenchHeader` and
-  `ContentPageIdentityCard` were deleted after repo-wide reference checks.
-- No endpoint, vendor-write path, fallback runtime or Codex dependency was
-  added in this slice.
+- The API/store keeps append-only revisions with a server-owned number,
+  `base_revision_id`, content digest and full draft-package digest.
+- The dashboard saves and restores the exact version after reload. A stale-base
+  conflict preserves local edits instead of overwriting newer work.
+- Review renders the exact revision content and evidence. Approval requires
+  explicit confirmation that both were checked.
+- A changed package, canonical URL or evidence set invalidates review and
+  rebases the editor onto the current context.
+- `dev_draft` remains fail-closed until a revision-bound handoff and
+  ActionObject exist.
+- This slice calls no Codex, ActionObject or WordPress endpoint and adds no
+  fallback runtime.
 ## Surface State
 
 Readiness is a product/usefulness estimate, not a test pass rate.
@@ -100,7 +87,7 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 | --- | ---: | --- | --- | --- | --- | --- |
 | `/command-center` | 70% | Good IA direction: daily priority, blockers and source freshness. Still too easy to become summary-of-everything. | `GET /api/dashboard/command-center`, `getCommandCenter()` | Daily queue, blocked claims, source freshness. | Needs stronger routing into one concrete work item. | Keep as cockpit; do not add more cards. Route into content workbench once content view is ready. |
 | `/opportunities` | 50% | Useful as registry but overlaps with Command Center and Actions. | `GET /api/opportunities`, `getOpportunities()` | Opportunity list with evidence/action links. | Duplicates "Kolejka" mental model. | Eventually merge into one decision/action queue; avoid new UI work here now. |
-| `/content-workflow` | 7/10 | Primary five-step "Treści i SEO" journey. Marketer mode shows compact page/service/decision context, five API-owned tasks and one selected workspace; technical panels require an explicit audit-mode switch. Live current step is `draft`, while completed `scope`/`section_map` remain revisitable without moving `aria-current` or issuing writes. Desktop 1440×900 and mobile 390×844 expose the blocker and safe next action in the first viewport with no page overflow. | Existing queue/snapshot, enrichment, authoring-profile, activation/readiness and action endpoints; snapshot adds typed `current_step_id` and five required operator steps. No new endpoint. Shared schema rejects missing/duplicate/mismatched current steps. | Wilku can identify the concrete page, service, decision and current task in seconds; only one work surface is mounted; dry-run and ActionObject safety remain unchanged; confirmed duplicate mobile/header components are deleted. | Exact text is still local editor state. Legacy package review/audit is not revision acceptance, so `review` and `dev_draft` remain blocked. Queue remains density-blocked at 1 actionable of 3 and Service Profile remains review-required. | Build immutable revision persistence with digest/base revision and exact-version acceptance; then add a server-side Codex app-server/SDK adapter. Do not restore the wall or add an API-key-only Agents SDK dependency. |
+| `/content-workflow` | 7/10 | Primary five-step "Treści i SEO" journey with persisted exact revisions, reload/resume/conflict and exact review. Live workspace is empty on `draft`; synthetic approved flow still ends at fail-closed `dev_draft`. Desktop 1440×900 and mobile 390×844 show the current decision without overflow. | Existing queue/snapshot and journey reads plus `POST /api/content/work-items/{id}/draft-revisions` and `POST /api/content/work-items/{id}/draft-revisions/{revision_id}/review`; shared/Python schemas own the state machine. | Wilku can return to a saved text and knows exactly which version and evidence set is being reviewed. Only one workspace is mounted; technical detail remains behind audit mode. | Legacy WordPress handoff/apply still accepts older human-review authority and carries no revision ID/content/package digests. Owner-reviewed Service Profile, queue density and real UAT remain open. | Bind WordPress handoff and ActionObject to the approved exact revision and fail-close legacy authority; then add the Codex app-server/SDK seam. |
 | `/content-inventory` | 20% | Hidden technical placeholder. Inventory remains an input to `/content-workflow`, not a separate writing cockpit. | currently generic/compact route; check `surfaceRegistry.ts` before adding code | Concept is needed inside content workbench. | Not a real marketer view yet. | Do not build separate cockpit; expose inventory inside content workbench. |
 | `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. Its selected-card policy is now projected into the existing content work-item snapshot. | `GET /api/content/service-profile` is the source assembly; `GET /api/content/work-items/{id}/snapshot` projects its compact typed context; no frontend join. | Services, claim policy, source status and review-required data. | Not enough approved-current production depth; can overwhelm writer. | Keep owner review here; preserve the compact work-item projection instead of duplicating a second content view. |
 | `/knowledge` | 65% | Admin/review support surface with current "Wiedza" IA. Operating-map remains the only initial read; cards/playbooks defer until disclosure. `list_workflows()` now uses only command-center decisions; standalone map core is `4.878 s`. Managed runtime starts a non-blocking map prewarm after readiness; first/second warmed HTTP reads measured `0.003550 s` / `0.003175 s`. First decision/blockers render in the browser proof; focused current Playwright passes 1/1 in 2.7 s. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map`; `build_knowledge_operating_map_cached()` and existing disclosure controls | Source lineage and claim review. | Prewarm stability must be checked on subsequent restarts; live knowledge/source freshness remains separate from cache latency. | Keep prewarm fail-open and non-blocking; do not re-enable concurrent subordinate reads. |
@@ -176,6 +163,8 @@ Use these before adding endpoints:
 - Content queue: `GET /api/content/work-items/queue`
 - Content work item snapshot/enrichment: see `getContentWorkItemSnapshot()` and
   `getContentWorkItemEnrichment()` in `apps/dashboard/src/lib/api.ts`
+- Content revisions: `POST /api/content/work-items/{id}/draft-revisions`,
+  `POST /api/content/work-items/{id}/draft-revisions/{revision_id}/review`
 - WordPress authoring profile: `GET /api/content/wordpress/authoring-profile`
 - WordPress draft readiness/activation packet: `getContentWordPressDraftWriteReadiness()`,
   `getContentWordPressDraftActivationPacket()`

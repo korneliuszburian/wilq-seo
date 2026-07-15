@@ -9,10 +9,12 @@ import {
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
-  saveContentWorkItemSnapshotAudit,
-  saveContentWorkItemSnapshotHumanReview,
-  type ContentWorkItemSnapshotAuditRequest,
-  type ContentWorkItemSnapshotHumanReviewRequest,
+  saveContentWorkItemDraftRevision,
+  saveContentWorkItemDraftRevisionReview,
+  type ContentDraftRevisionDecision,
+  type ContentDraftRevisionReviewRequest,
+  type ContentDraftRevisionSaveRequest,
+  type ContentDraftRevisionSection,
   type ContentWorkItemQualityReviewRequest,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemRevisionPlanRequest,
@@ -46,9 +48,7 @@ import { ContentWorkflowTaskMap } from "./ContentWorkflowTaskMap";
 import {
   acfPreviewResultFrom,
   acfPreviewRequest,
-  auditRequest,
   executionResultFrom,
-  humanReviewRequest,
   previewResultFrom,
   qualityReviewFrom,
   qualityReviewRequest,
@@ -63,7 +63,6 @@ import {
 import {
   acfPreviewSafetyText,
   acfPreviewControlDisabledReason,
-  auditControlDisabledReason,
   draftSafetyText,
   executionControlDisabledReason,
   handoffSafetyText,
@@ -72,7 +71,6 @@ import {
   qualityReviewSafetyText,
   revisionPlanControlDisabledReason,
   revisionPlanSafetyText,
-  reviewControlDisabledReason,
   structuredPreviewControlDisabledReason,
   structuredPreviewSafetyText,
   structuredRuntimeControlDisabledReason,
@@ -444,26 +442,28 @@ function useContentWorkflowActions(
 
 function useContentWorkflowMutations(selectedWorkItemId: string) {
   const queryClient = useQueryClient();
-  const refreshWorkflow = () => {
+  const refreshRevisionWorkspace = () =>
     queryClient.invalidateQueries({
       queryKey: ["content-workflow", "work-item", selectedWorkItemId]
     });
-    queryClient.invalidateQueries({
-      queryKey: ["content-workflow", "wordpress-draft-activation-packet", selectedWorkItemId]
-    });
-    queryClient.invalidateQueries({
-      queryKey: ["content-workflow", "wordpress-draft-write-readiness"]
-    });
-  };
-  const reviewMutation = useMutation({
-    mutationFn: (request: ContentWorkItemSnapshotHumanReviewRequest) =>
-      saveContentWorkItemSnapshotHumanReview(request, selectedWorkItemId),
-    onSuccess: refreshWorkflow
+  const revisionSaveMutation = useMutation({
+    mutationFn: (request: ContentDraftRevisionSaveRequest) =>
+      saveContentWorkItemDraftRevision(request, selectedWorkItemId),
+    onSuccess: (result) => {
+      if (result.status !== "conflict") void refreshRevisionWorkspace();
+    }
   });
-  const auditMutation = useMutation({
-    mutationFn: (request: ContentWorkItemSnapshotAuditRequest) =>
-      saveContentWorkItemSnapshotAudit(request, selectedWorkItemId),
-    onSuccess: refreshWorkflow
+  const revisionReviewMutation = useMutation({
+    mutationFn: ({
+      request,
+      revisionId
+    }: {
+      request: ContentDraftRevisionReviewRequest;
+      revisionId: string;
+    }) => saveContentWorkItemDraftRevisionReview(request, selectedWorkItemId, revisionId),
+    onSuccess: (result) => {
+      if (result.status !== "conflict") void refreshRevisionWorkspace();
+    }
   });
   const structuredRuntimeMutation = useMutation({
     mutationFn: postContentWorkItemStructuredDraftRuntime
@@ -485,8 +485,8 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
   });
   const executionMutation = useMutation({ mutationFn: postContentWorkItemWordPressDraftExecution });
   return {
-    reviewMutation,
-    auditMutation,
+    revisionSaveMutation,
+    revisionReviewMutation,
     structuredRuntimeMutation,
     structuredPreviewMutation,
     qualityReviewMutation,
@@ -503,9 +503,23 @@ function contentWorkflowActions(
 ) {
   const structuredRuntimeResult = runtimeResultFrom(mutations.structuredRuntimeMutation.data);
   const qualityReview = qualityReviewFrom(mutations.qualityReviewMutation.data);
+  const latestRevision = data.revisionWorkspace.latest_revision;
+  const revisionEvidenceIds = latestRevision
+    ? [...new Set(latestRevision.sections.flatMap((section) => section.evidence_ids))]
+    : [];
   return {
-    reviewPending: mutations.reviewMutation.isPending,
-    auditPending: mutations.auditMutation.isPending,
+    revisionSavePending: mutations.revisionSaveMutation.isPending,
+    revisionSaveConflict:
+      mutations.revisionSaveMutation.data?.status === "conflict"
+        ? mutations.revisionSaveMutation.data
+        : null,
+    revisionSaveError: mutations.revisionSaveMutation.error,
+    revisionReviewPending: mutations.revisionReviewMutation.isPending,
+    revisionReviewConflict:
+      mutations.revisionReviewMutation.data?.status === "conflict"
+        ? mutations.revisionReviewMutation.data
+        : null,
+    revisionReviewError: mutations.revisionReviewMutation.error,
     structuredRuntimePending: mutations.structuredRuntimeMutation.isPending,
     structuredPreviewPending: mutations.structuredPreviewMutation.isPending,
     qualityReviewPending: mutations.qualityReviewMutation.isPending,
@@ -534,12 +548,38 @@ function contentWorkflowActions(
       ),
     runRevisionPlan: () =>
       submitIfReady(revisionPlanRequest(data, qualityReview), mutations.revisionPlanMutation.mutate),
-    saveReview: () =>
-      submitIfReady(
-        humanReviewRequest(data, data.draftPackage.draft_package_result.draft_package),
-        mutations.reviewMutation.mutate
-      ),
-    saveAudit: () => submitIfReady(auditRequest(data), mutations.auditMutation.mutate),
+    saveDraftRevision: (title: string, sections: ContentDraftRevisionSection[]) =>
+      mutations.revisionSaveMutation.mutate({
+        base_revision_id: latestRevision?.revision_id ?? null,
+        title,
+        sections,
+        created_by: "wilku"
+      }),
+    saveRevisionReview: (
+      decision: ContentDraftRevisionDecision,
+      notes: string,
+      checkedItems: string[]
+    ) => {
+      if (
+        !latestRevision ||
+        (decision === "approved" &&
+          (revisionEvidenceIds.length === 0 || checkedItems.length < 2)) ||
+        (decision !== "approved" && notes.trim().length === 0)
+      ) {
+        return;
+      }
+      mutations.revisionReviewMutation.mutate({
+        revisionId: latestRevision.revision_id,
+        request: {
+          expected_revision_digest: latestRevision.content_digest,
+          reviewed_by: "wilku",
+          decision,
+          notes,
+          checked_items: checkedItems,
+          evidence_ids: revisionEvidenceIds
+        }
+      });
+    },
     runAcfPreview: () =>
       submitIfReady(
         acfPreviewRequest(
@@ -578,21 +618,8 @@ function workflowControlItems(
   actions: ContentWorkflowActions
 ): WorkflowControlItem[] {
   const draft = data.draftPackage.draft_package_result.draft_package;
-  const review = data.humanReview.review;
   const handoff = data.wordpressHandoff.handoff_result.handoff;
   return [
-    {
-      label: review ? "Sprawdzenie zapisane" : "Zatwierdź sprawdzenie",
-      disabledReason: reviewControlDisabledReason(data, Boolean(draft), actions.reviewPending),
-      pending: actions.reviewPending,
-      onClick: actions.saveReview
-    },
-    {
-      label: handoff ? "Audyt zapisany" : "Zapisz audyt przekazania",
-      disabledReason: auditControlDisabledReason(data, actions.auditPending),
-      pending: actions.auditPending,
-      onClick: actions.saveAudit
-    },
     structuredRuntimeControlItem(data, actions),
     structuredPreviewControlItem(data, actions),
     qualityReviewControlItem(actions),

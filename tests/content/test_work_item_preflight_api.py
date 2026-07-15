@@ -762,7 +762,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
         assert data["current_step_id"] == "draft"
         draft_step = current_steps[0]
         assert draft_step["can_open"] is True
-        assert draft_step["can_submit"] is False
+        assert draft_step["can_submit"] is True
         assert draft_step["readiness"] == "review_required"
         assert draft_step["blocker"]["code"] == "missing_revision_bound_draft"
         assert [step["phase"] for step in operator_steps[:2]] == [

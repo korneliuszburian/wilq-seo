@@ -67,7 +67,24 @@ from wilq.content.review.human import ContentHumanReview, ContentHumanReviewBloc
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.queue import ContentWorkItemQueueBlocker, ContentWorkItemQueueCandidate
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionDecision,
+    ContentDraftRevisionReview,
+    ContentDraftRevisionSection,
+    ContentDraftRevisionStateStatus,
+)
 from wilq.schemas import ContentFreshnessAssessment
+
+ContentDraftRevisionPublicConflictCode = Literal[
+    "workspace_not_saveable",
+    "revision_not_reviewable",
+    "stale_base",
+    "revision_not_found",
+    "stale_revision",
+    "stale_review",
+    "digest_mismatch",
+]
 
 
 class ContentWorkItemPreflightRequest(BaseModel):
@@ -426,6 +443,119 @@ class ContentWorkItemMeasurementOutcomeResponse(BaseModel):
     outcome: ContentMeasurementOutcomeInterpretation
 
 
+class ContentDraftRevisionWorkspace(BaseModel):
+    status: ContentDraftRevisionStateStatus
+    latest_revision: ContentDraftRevision | None = None
+    latest_review: ContentDraftRevisionReview | None = None
+    revision_count: int = Field(ge=0)
+    context_current: bool
+    editor_title: str
+    editor_sections: list[ContentDraftRevisionSection] = Field(default_factory=list)
+    can_save: bool
+    can_review: bool
+    safe_next_step: str
+
+    @model_validator(mode="after")
+    def require_consistent_revision_state(self) -> ContentDraftRevisionWorkspace:
+        if self.can_save and self.can_review:
+            raise ValueError("Revision workspace cannot save and review at the same time.")
+        if self.can_review and (
+            self.status not in {"unreviewed", "deferred"} or not self.context_current
+        ):
+            raise ValueError("Only an unreviewed or deferred revision can be reviewed.")
+        if self.status == "empty":
+            if self.latest_revision is not None or self.latest_review is not None:
+                raise ValueError("Empty revision workspace cannot expose a revision or review.")
+            if self.revision_count != 0:
+                raise ValueError("Empty revision workspace must have revision_count=0.")
+            if not self.context_current:
+                raise ValueError("Empty revision workspace has no stale persisted context.")
+            return self
+        if self.latest_revision is None or self.revision_count < 1:
+            raise ValueError("Non-empty revision workspace requires a latest revision.")
+        if self.context_current:
+            if self.editor_title != self.latest_revision.title:
+                raise ValueError("Revision workspace editor title must resume the latest revision.")
+            if self.editor_sections != self.latest_revision.sections:
+                raise ValueError(
+                    "Revision workspace editor sections must resume the latest revision."
+                )
+        if self.status == "unreviewed":
+            if self.latest_review is not None:
+                raise ValueError("Unreviewed revision workspace cannot expose a review.")
+            return self
+        if self.latest_review is None:
+            raise ValueError("Reviewed revision workspace requires the latest review.")
+        if self.latest_review.revision_id != self.latest_revision.revision_id:
+            raise ValueError("Revision review must target the latest revision.")
+        if self.latest_review.revision_digest != self.latest_revision.content_digest:
+            raise ValueError("Revision review digest must match the latest revision.")
+        if self.latest_review.decision != self.status:
+            raise ValueError("Revision workspace status must match its latest review decision.")
+        return self
+
+
+class ContentDraftRevisionSaveRequest(BaseModel):
+    base_revision_id: str | None = None
+    title: str = Field(min_length=1)
+    sections: list[ContentDraftRevisionSection] = Field(min_length=1)
+    created_by: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_visible_draft_fields(self) -> ContentDraftRevisionSaveRequest:
+        if not self.title.strip():
+            raise ValueError("Draft revision requires a visible title.")
+        if not self.created_by.strip():
+            raise ValueError("Draft revision requires a visible creator identifier.")
+        return self
+
+
+class ContentDraftRevisionReviewRequest(BaseModel):
+    expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    reviewed_by: str = Field(min_length=1)
+    decision: ContentDraftRevisionDecision
+    notes: str = ""
+    checked_items: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_review_evidence(self) -> ContentDraftRevisionReviewRequest:
+        if not self.reviewed_by.strip():
+            raise ValueError("Revision review requires a visible reviewer identifier.")
+        if any(not item.strip() for item in self.checked_items):
+            raise ValueError("Revision review checked_items cannot contain blank values.")
+        if any(not evidence_id.strip() for evidence_id in self.evidence_ids):
+            raise ValueError("Revision review evidence_ids cannot contain blank values.")
+        if self.decision == "approved":
+            if not any(item.strip() for item in self.checked_items):
+                raise ValueError("Approved revision review requires checked_items.")
+            if not any(evidence_id.strip() for evidence_id in self.evidence_ids):
+                raise ValueError("Approved revision review requires evidence_ids.")
+        elif not self.notes.strip():
+            raise ValueError(f"{self.decision} revision review requires notes.")
+        return self
+
+
+class ContentDraftRevisionSaveResponse(BaseModel):
+    status: Literal["created", "idempotent"]
+    revision: ContentDraftRevision
+    workspace: ContentDraftRevisionWorkspace
+
+
+class ContentDraftRevisionReviewResponse(BaseModel):
+    status: Literal["recorded", "idempotent"]
+    review: ContentDraftRevisionReview
+    workspace: ContentDraftRevisionWorkspace
+
+
+class ContentDraftRevisionConflictResponse(BaseModel):
+    status: Literal["conflict"] = "conflict"
+    code: ContentDraftRevisionPublicConflictCode
+    current_revision_id: str | None = None
+    current_digest: str | None = Field(default=None, min_length=64, max_length=64)
+    safe_next_step: str
+
+
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     response_type: Literal["workflow_snapshot"] = "workflow_snapshot"
     freshness_assessment: ContentFreshnessAssessment
@@ -441,6 +571,7 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     human_review: ContentWorkItemHumanReviewResponse
     wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
     measurement_window: ContentWorkItemMeasurementWindowResponse
+    revision_workspace: ContentDraftRevisionWorkspace
     current_step_id: workflow_steps.ContentWorkflowOperatorStepId
     operator_steps: workflow_steps.ContentWorkflowOperatorSteps
 

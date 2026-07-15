@@ -198,7 +198,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
       "step"
     );
     await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toBeVisible();
-    await expect(page.getByText("Niezapisany szkic roboczy")).toBeVisible();
+    await expect(page.getByText("Szkic nie ma jeszcze zapisanej wersji")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd na devie", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Źródła i twierdzenia" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Aktualna strona" })).toHaveCount(0);

@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 
 import {
   getContentWordPressExistingDraftUpdateReadiness,
+  type ContentDraftRevisionConflict,
+  type ContentDraftRevisionDecision,
+  type ContentDraftRevisionSection,
   type ContentOpportunityEnrichment,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressDraftExecutionResponse
@@ -25,7 +28,6 @@ import {
   queryChipsForWorkbench
 } from "./contentPageWorkbenchModel";
 import {
-  defaultSectionBody,
   sectionOverrideKey,
   shortSectionTabLabel
 } from "./contentWorkflowDraftSectionModel";
@@ -37,6 +39,18 @@ import type {
 } from "./contentWorkflowQueries";
 
 type ContentPageWorkbenchActions = {
+  revisionSavePending: boolean;
+  revisionSaveConflict: ContentDraftRevisionConflict | null;
+  revisionSaveError: Error | null;
+  revisionReviewPending: boolean;
+  revisionReviewConflict: ContentDraftRevisionConflict | null;
+  revisionReviewError: Error | null;
+  saveDraftRevision: (title: string, sections: ContentDraftRevisionSection[]) => void;
+  saveRevisionReview: (
+    decision: ContentDraftRevisionDecision,
+    notes: string,
+    checkedItems: string[]
+  ) => void;
   executionPending: boolean;
   executionError: Error | null;
   executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
@@ -90,45 +104,68 @@ export function ContentPageWorkbench({
   const publicSections = item.wordpress_section_headings ?? [];
   const devSections = devPage?.sections ?? [];
   const draftSections = useMemo(() => draft?.sections.slice(0, 5) ?? [], [draft]);
+  const revisionWorkspace = data.revisionWorkspace;
+  const revisionSections = revisionWorkspace.editor_sections;
   const sectionDraftDefaults = useMemo(
     () =>
       Object.fromEntries(
-        draftSections.map((section) => [
+        revisionSections.map((section) => [
           sectionOverrideKey(section.heading),
-          defaultSectionBody(section)
+          section.body_markdown
         ])
       ),
-    [draftSections]
+    [revisionSections]
   );
   const [sectionEditorState, setSectionEditorState] = useState<{
-    draftId: string | null;
+    sourceId: string | null;
     texts: Record<string, string>;
-  }>({ draftId: null, texts: {} });
+  }>({ sourceId: null, texts: {} });
   const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
   const [draftPreviewTrigger, setDraftPreviewTrigger] = useState<DraftPreviewTrigger | null>(null);
-  const draftEditorId = draft?.id ?? null;
+  const [reviewDecision, setReviewDecision] = useState<ContentDraftRevisionDecision>(
+    "needs_changes"
+  );
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [reviewChecks, setReviewChecks] = useState({
+    exactContentRead: false,
+    evidenceChecked: false
+  });
+  const draftEditorId = revisionWorkspace.latest_revision?.revision_id ?? "seed";
   const sectionTexts =
-    sectionEditorState.draftId === draftEditorId
+    sectionEditorState.sourceId === draftEditorId
       ? sectionEditorState.texts
       : sectionDraftDefaults;
   const selectedSection =
-    draftSections.find((section) => sectionOverrideKey(section.heading) === selectedSectionKey) ??
-    draftSections[0] ??
+    revisionSections.find((section) => sectionOverrideKey(section.heading) === selectedSectionKey) ??
+    revisionSections[0] ??
     null;
   const selectedSectionEditorKey = selectedSection
     ? sectionOverrideKey(selectedSection.heading)
     : "";
   const selectedSectionText = selectedSection
-    ? sectionTexts[selectedSectionEditorKey] ?? defaultSectionBody(selectedSection)
+    ? sectionTexts[selectedSectionEditorKey] ?? selectedSection.body_markdown
     : "";
-  const sectionOverrides = draftSections
+  const sectionOverrides = revisionSections
     .map((section) => ({
       heading: section.heading,
       body_markdown:
-        sectionTexts[sectionOverrideKey(section.heading)] ?? defaultSectionBody(section),
+        sectionTexts[sectionOverrideKey(section.heading)] ?? section.body_markdown,
       evidence_ids: unique(section.evidence_ids)
-    }))
-    .filter((section) => section.body_markdown.trim().length > 0);
+    }));
+  const hasEmptyRevisionSection = sectionOverrides.some(
+    (section) => section.body_markdown.trim().length === 0
+  );
+  const reviewCheckedItems = [
+    reviewChecks.exactContentRead ? "Przeczytano dokładną treść tej wersji." : null,
+    reviewChecks.evidenceChecked ? "Sprawdzono dowody przypisane do tej wersji." : null
+  ].filter((item): item is string => item !== null);
+  const latestRevision = revisionWorkspace.latest_revision;
+  const revisionEvidenceCount = latestRevision
+    ? unique(latestRevision.sections.flatMap((section) => section.evidence_ids)).length
+    : 0;
+  const revisionStatusLabel = latestRevision
+    ? `Wersja ${latestRevision.revision_number} · treść ${latestRevision.content_digest.slice(0, 10)}`
+    : "Szkic nie ma jeszcze zapisanej wersji";
   const signalRows = contentSignalRows(data, enrichment, activeCandidate);
   const blockedClaims = blockedClaimsForWorkbench(data);
   const evidenceRows = evidenceRowsForWorkbench(data, enrichment);
@@ -200,17 +237,17 @@ export function ContentPageWorkbench({
                   <h2 className="text-base font-semibold text-ink">Tekst sekcji do szkicu</h2>
                 </div>
                 <span className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-slate-600">
-                  Niezapisany szkic roboczy
+                  {revisionStatusLabel}
                 </span>
               </div>
 
-              {draftSections.length ? (
+              {revisionSections.length ? (
                 <div className="mt-4">
                   <div
                     className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 border-b border-line sm:flex sm:flex-wrap sm:gap-x-5"
                     data-testid="draft-section-tabs"
                   >
-                    {draftSections.map((section) => {
+                    {revisionSections.map((section) => {
                       const key = sectionOverrideKey(section.heading);
                       const active = key === selectedSectionEditorKey;
                       return (
@@ -256,7 +293,7 @@ export function ContentPageWorkbench({
                         value={selectedSectionText}
                         onChange={(event) =>
                           setSectionEditorState({
-                            draftId: draftEditorId,
+                            sourceId: draftEditorId,
                             texts: {
                               ...sectionTexts,
                               [selectedSectionEditorKey]: event.target.value
@@ -267,11 +304,39 @@ export function ContentPageWorkbench({
                       />
                     </label>
                   ) : null}
+                  {hasEmptyRevisionSection ? (
+                    <p className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700">
+                      Każda zaplanowana sekcja musi zachować treść. Uzupełnij pustą sekcję przed
+                      zapisem lub podglądem — jej opróżnienie nie usunie jej z wersji.
+                    </p>
+                  ) : null}
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button
                       type="button"
+                      onClick={() =>
+                        actions.saveDraftRevision(revisionWorkspace.editor_title, sectionOverrides)
+                      }
+                      disabled={
+                        !revisionWorkspace.can_save ||
+                        !sectionOverrides.length ||
+                        hasEmptyRevisionSection ||
+                        actions.revisionSavePending
+                      }
+                      className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actions.revisionSavePending
+                        ? "Zapisuję wersję..."
+                        : "Zapisz wersję do review"}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => runDraftPreview("editor")}
-                      disabled={!sectionOverrides.length || !dryRunReady || actions.executionPending}
+                      disabled={
+                        !sectionOverrides.length ||
+                        hasEmptyRevisionSection ||
+                        !dryRunReady ||
+                        actions.executionPending
+                      }
                       aria-controls="draft-preview-feedback"
                       className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -283,15 +348,20 @@ export function ContentPageWorkbench({
                       type="button"
                       onClick={() =>
                         setSectionEditorState({
-                          draftId: draftEditorId,
+                          sourceId: draftEditorId,
                           texts: sectionDraftDefaults
                         })
                       }
                       className="inline-flex h-10 items-center rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink"
                     >
-                      Przywróć brief
+                      {latestRevision ? "Przywróć zapisaną wersję" : "Przywróć brief"}
                     </button>
                   </div>
+                  <RevisionMutationFeedback
+                    conflict={actions.revisionSaveConflict}
+                    error={actions.revisionSaveError}
+                    kind="save"
+                  />
                   {draftPreviewTrigger === "editor" ? (
                     <DraftPreviewFeedback actions={actions} />
                   ) : null}
@@ -364,13 +434,157 @@ export function ContentPageWorkbench({
           ) : null}
 
           {activeStepId === "review" ? (
-            <section className="rounded-md border border-wait/30 bg-wait/10 p-4" aria-labelledby="review-workspace-title">
+            <section className="rounded-md border border-line bg-white p-4 shadow-sm" aria-labelledby="review-workspace-title">
               <h2 id="review-workspace-title" className="text-base font-semibold text-ink">
                 Review konkretnej wersji szkicu
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
-                Ten krok pozostaje zamknięty, dopóki szkic nie ma zapisanej, niezmiennej wersji powiązanej z review.
-              </p>
+              {latestRevision ? (
+                <div className="mt-3 space-y-4">
+                  <div className="rounded-md border border-line bg-surface p-3 text-sm leading-6 text-slate-700">
+                    <p className="font-semibold text-ink">
+                      Wersja {latestRevision.revision_number}: {latestRevision.title}
+                    </p>
+                    <p className="mt-1 break-all text-xs text-slate-500">
+                      Identyfikator treści: {latestRevision.content_digest}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      {latestRevision.sections.length} sekcji · {revisionEvidenceCount} dowodów
+                    </p>
+                  </div>
+
+                  <div className="space-y-3" data-testid="immutable-revision-content">
+                    {latestRevision.sections.map((section) => (
+                      <article
+                        key={section.heading}
+                        className="rounded-md border border-line bg-white p-3"
+                      >
+                        <h3 className="text-sm font-semibold text-ink">{section.heading}</h3>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                          {section.body_markdown}
+                        </p>
+                        <p className="mt-2 break-all text-xs leading-5 text-slate-500">
+                          Dowody: {section.evidence_ids.length
+                            ? section.evidence_ids.join(", ")
+                            : "brak przypisanych dowodów"}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+
+                  <label className="block text-sm font-semibold text-ink">
+                    Decyzja
+                    <select
+                      aria-label="Decyzja dla wersji szkicu"
+                      value={reviewDecision}
+                      onChange={(event) =>
+                        setReviewDecision(event.target.value as ContentDraftRevisionDecision)
+                      }
+                      className="mt-2 h-11 w-full rounded-md border border-line bg-white px-3 text-sm font-normal text-ink"
+                    >
+                      <option value="needs_changes">Wymaga zmian</option>
+                      <option value="approved">Akceptuję tę wersję</option>
+                      <option value="rejected">Odrzucam tę wersję</option>
+                      <option value="deferred">Odkładam decyzję</option>
+                    </select>
+                  </label>
+
+                  <label className="block text-sm font-semibold text-ink">
+                    Notatka do decyzji
+                    <textarea
+                      aria-label="Notatka do decyzji"
+                      value={reviewNotes}
+                      onChange={(event) => setReviewNotes(event.target.value)}
+                      className="mt-2 min-h-24 w-full resize-y rounded-md border border-line bg-white p-3 text-sm font-normal leading-6 text-ink"
+                      placeholder="Co zaakceptowano albo co trzeba poprawić?"
+                    />
+                  </label>
+
+                  <fieldset className="rounded-md border border-line bg-surface p-3">
+                    <legend className="px-1 text-sm font-semibold text-ink">
+                      Potwierdzenie review
+                    </legend>
+                    <label className="mt-2 flex items-start gap-2 text-sm leading-6 text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={reviewChecks.exactContentRead}
+                        onChange={(event) =>
+                          setReviewChecks((current) => ({
+                            ...current,
+                            exactContentRead: event.target.checked
+                          }))
+                        }
+                        className="mt-1"
+                      />
+                      Przeczytano dokładną treść tej wersji.
+                    </label>
+                    <label className="mt-2 flex items-start gap-2 text-sm leading-6 text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={reviewChecks.evidenceChecked}
+                        onChange={(event) =>
+                          setReviewChecks((current) => ({
+                            ...current,
+                            evidenceChecked: event.target.checked
+                          }))
+                        }
+                        className="mt-1"
+                      />
+                      Sprawdzono dowody przypisane do tej wersji.
+                    </label>
+                  </fieldset>
+
+                  {reviewDecision === "approved" && revisionEvidenceCount === 0 ? (
+                    <p className="rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700">
+                      Nie można zaakceptować wersji bez przypisanych dowodów.
+                    </p>
+                  ) : null}
+                  {reviewDecision === "approved" &&
+                  revisionEvidenceCount > 0 &&
+                  reviewCheckedItems.length < 2 ? (
+                    <p className="text-sm text-slate-600">
+                      Przed akceptacją zaznacz oba potwierdzenia review.
+                    </p>
+                  ) : null}
+                  {reviewDecision !== "approved" && reviewNotes.trim().length === 0 ? (
+                    <p className="text-sm text-slate-600">
+                      Dodaj krótką notatkę: co trzeba poprawić albo dlaczego decyzja jest odłożona.
+                    </p>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      actions.saveRevisionReview(
+                        reviewDecision,
+                        reviewNotes,
+                        reviewCheckedItems
+                      )
+                    }
+                    disabled={
+                      !revisionWorkspace.can_review ||
+                      actions.revisionReviewPending ||
+                      (reviewDecision === "approved" &&
+                        (revisionEvidenceCount === 0 || reviewCheckedItems.length < 2)) ||
+                      (reviewDecision !== "approved" && reviewNotes.trim().length === 0)
+                    }
+                    className="inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actions.revisionReviewPending
+                      ? "Zapisuję decyzję..."
+                      : `Zapisz decyzję dla wersji ${latestRevision.revision_number}`}
+                  </button>
+                  <RevisionMutationFeedback
+                    conflict={actions.revisionReviewConflict}
+                    error={actions.revisionReviewError}
+                    kind="review"
+                  />
+                </div>
+              ) : (
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  Najpierw zapisz niezmienną wersję szkicu. Review nie może dotyczyć samej paczki
+                  outline.
+                </p>
+              )}
             </section>
           ) : null}
 
@@ -379,9 +593,22 @@ export function ContentPageWorkbench({
               <h2 id="dev-draft-workspace-title" className="text-base font-semibold text-ink">
                 Szkic na devie
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
-                Przekazanie do WordPress pozostaje draft-only i wymaga akceptacji dokładnej wersji oraz śladu audytowego.
-              </p>
+              {revisionWorkspace.status === "approved" && latestRevision ? (
+                <div className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="font-semibold text-success">
+                    Wersja {latestRevision.revision_number} została zaakceptowana.
+                  </p>
+                  <p className="mt-1">
+                    Zapis na dev pozostaje zablokowany do osobnego podglądu i zatwierdzenia
+                    zapisu tej samej wersji wyłącznie jako szkic.
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  Przekazanie do WordPress pozostaje draft-only i wymaga akceptacji dokładnej
+                  wersji oraz śladu audytowego.
+                </p>
+              )}
             </section>
           ) : null}
         </div>
@@ -396,7 +623,12 @@ export function ContentPageWorkbench({
             <button
               type="button"
               onClick={() => runDraftPreview("preview")}
-              disabled={!sectionOverrides.length || !dryRunReady || actions.executionPending}
+              disabled={
+                !sectionOverrides.length ||
+                hasEmptyRevisionSection ||
+                !dryRunReady ||
+                actions.executionPending
+              }
               aria-controls="draft-preview-feedback"
               className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -481,6 +713,50 @@ export function ContentPageWorkbench({
         ) : null}
       </div>
     </section>
+  );
+}
+
+function RevisionMutationFeedback({
+  conflict,
+  error,
+  kind
+}: {
+  conflict: ContentDraftRevisionConflict | null;
+  error: Error | null;
+  kind: "save" | "review";
+}) {
+  if (conflict) {
+    return (
+      <div
+        role="alert"
+        data-testid={`${kind}-revision-conflict`}
+        className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700"
+      >
+        <p className="font-semibold text-wait">Wersja na serwerze zmieniła się</p>
+        <p className="mt-1">
+          {kind === "save"
+            ? "Twój tekst pozostał w edytorze i nie został nadpisany."
+            : "Wybrana decyzja i notatka pozostały w formularzu."}
+        </p>
+        <p className="mt-1 break-all text-xs text-slate-600">
+          Aktualna wersja: {conflict.current_revision_id ?? "brak zapisanej wersji"} · treść{" "}
+          {conflict.current_digest ?? "brak aktualnego skrótu"}
+        </p>
+        <p className="mt-1">Następny krok: {conflict.safe_next_step}</p>
+      </div>
+    );
+  }
+  if (!error) return null;
+  return (
+    <div
+      role="alert"
+      className="mt-3 rounded-md border border-danger/30 bg-danger/10 p-3 text-sm leading-6 text-slate-700"
+    >
+      <p className="font-semibold text-danger">
+        {kind === "save" ? "Nie udało się zapisać wersji" : "Nie udało się zapisać decyzji"}
+      </p>
+      <p className="mt-1">Spróbuj ponownie. WILQ nie zmienił zapisanej wersji.</p>
+    </div>
   );
 }
 

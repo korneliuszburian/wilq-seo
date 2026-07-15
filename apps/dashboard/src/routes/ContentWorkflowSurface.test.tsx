@@ -15,6 +15,8 @@ import {
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
+  saveContentWorkItemDraftRevision,
+  saveContentWorkItemDraftRevisionReview,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   type ContentWorkItemQualityReviewResponse,
@@ -51,6 +53,8 @@ vi.mock("../lib/api", async (importOriginal) => {
     postContentWorkItemStructuredDraftRuntime: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
+    saveContentWorkItemDraftRevision: vi.fn(),
+    saveContentWorkItemDraftRevisionReview: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
     saveContentWorkItemSnapshotAudit: vi.fn()
   };
@@ -91,6 +95,19 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
       wordpressDraftExecutionResponse()
     );
+    const revision = savedDraftRevision();
+    const workspace = savedRevisionWorkspace(revision);
+    vi.mocked(saveContentWorkItemDraftRevision).mockResolvedValue({
+      status: "created",
+      revision,
+      workspace
+    });
+    const review = savedDraftRevisionReview(revision);
+    vi.mocked(saveContentWorkItemDraftRevisionReview).mockResolvedValue({
+      status: "recorded",
+      review,
+      workspace: { ...workspace, status: "approved", latest_review: review, can_review: false }
+    });
   });
 
   afterEach(() => {
@@ -109,7 +126,11 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const taskMap = await screen.findByTestId("content-workflow-task-map");
+    const taskMap = await screen.findByTestId(
+      "content-workflow-task-map",
+      {},
+      { timeout: 3_000 }
+    );
     const marketerJourney = screen.getByTestId("content-workflow-marketer-journey");
     expect(within(taskMap).getAllByRole("button")).toHaveLength(5);
     expect(within(taskMap).getAllByRole("button").filter(
@@ -135,7 +156,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByText("Decyzje operatora")).not.toBeInTheDocument();
     expect(document.querySelector('[data-active-workspace="draft"]')).toBeInTheDocument();
     expect(screen.getByText("Tekst sekcji do szkicu")).toBeInTheDocument();
-    expect(screen.getByText("Niezapisany szkic roboczy")).toBeInTheDocument();
+    expect(screen.getByText("Szkic nie ma jeszcze zapisanej wersji")).toBeInTheDocument();
     expect(screen.queryByText("Wersja 1")).not.toBeInTheDocument();
     expect(within(screen.getByTestId("draft-section-tabs")).getAllByRole("button"))
       .toHaveLength(5);
@@ -159,7 +180,184 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
     expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
+    expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
   });
+
+  it("hydrates a saved revision and creates a child from the exact base", async () => {
+    const revision = savedDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ workspace: needsChangesRevisionWorkspace(revision) })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const sectionInput = await screen.findByLabelText("Tekst sekcji Kogo dotyczy BDO");
+    expect(sectionInput).toHaveValue("Zapisana treść pierwszej wersji o obowiązkach BDO.");
+    const editedBody = "Poprawiona treść drugiej wersji zachowana przez workspace.";
+    fireEvent.change(sectionInput, { target: { value: editedBody } });
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz wersję do review" }));
+
+    await waitFor(() => expect(saveContentWorkItemDraftRevision).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(saveContentWorkItemDraftRevision).mock.calls[0]).toEqual([
+      expect.objectContaining({
+        base_revision_id: revision.revision_id,
+        title: revision.title,
+        created_by: "wilku",
+        sections: expect.arrayContaining([
+          expect.objectContaining({
+            heading: "Kogo dotyczy BDO",
+            body_markdown: editedBody,
+            evidence_ids: ["ev_gsc_bdo"]
+          })
+        ])
+      }),
+      revision.work_item_id
+    ]);
+    await waitFor(() => expect(getContentWorkItemSnapshot).toHaveBeenCalledTimes(2));
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressAuthoringPayloadPreview).not.toHaveBeenCalled();
+    expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
+  });
+
+  it("preserves unsaved text when the server rejects a stale base", async () => {
+    const revision = savedDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ workspace: needsChangesRevisionWorkspace(revision) })
+    );
+    vi.mocked(saveContentWorkItemDraftRevision).mockResolvedValue({
+      status: "conflict",
+      code: "stale_base",
+      current_revision_id: "content_revision_bdo_2",
+      current_digest: "b".repeat(64),
+      safe_next_step: "Porównaj wersję 2 i scal zmiany ręcznie."
+    });
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const sectionInput = await screen.findByLabelText("Tekst sekcji Kogo dotyczy BDO");
+    const localText = "Moje lokalne poprawki nie mogą zniknąć po konflikcie.";
+    fireEvent.change(sectionInput, { target: { value: localText } });
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz wersję do review" }));
+
+    const conflict = await screen.findByTestId("save-revision-conflict");
+    expect(conflict).toHaveTextContent("Twój tekst pozostał w edytorze");
+    expect(conflict).toHaveTextContent("Porównaj wersję 2 i scal zmiany ręcznie");
+    expect(sectionInput).toHaveValue(localText);
+    expect(getContentWorkItemSnapshot).toHaveBeenCalledTimes(1);
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
+  });
+
+  it("blocks save instead of dropping an emptied planned section", async () => {
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const sectionInput = await screen.findByLabelText("Tekst sekcji Kogo dotyczy BDO");
+    fireEvent.change(sectionInput, { target: { value: "" } });
+
+    expect(screen.getByText(/Każda zaplanowana sekcja musi zachować treść/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zapisz wersję do review" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sprawdź tekst szkicu" })).toBeDisabled();
+    expect(within(screen.getByTestId("draft-section-tabs")).getAllByRole("button"))
+      .toHaveLength(5);
+    expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("records an approved decision for the exact revision ID and digest", async () => {
+    const revision = savedDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        workspace: savedRevisionWorkspace(revision),
+        currentStepId: "review",
+        steps: operatorStepsAtReview()
+      })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByText(`Wersja ${revision.revision_number}: ${revision.title}`))
+      .toBeInTheDocument();
+    const immutableContent = screen.getByTestId("immutable-revision-content");
+    expect(within(immutableContent).getByText(revision.sections[0]?.body_markdown ?? ""))
+      .toBeInTheDocument();
+    expect(within(immutableContent).getAllByText(/ev_gsc_bdo/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("button", {
+        name: `Zapisz decyzję dla wersji ${revision.revision_number}`
+      })
+    ).toBeDisabled();
+    expect(screen.getByText(/Dodaj krótką notatkę/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Decyzja dla wersji szkicu"), {
+      target: { value: "approved" }
+    });
+    const approveButton = screen.getByRole("button", {
+      name: `Zapisz decyzję dla wersji ${revision.revision_number}`
+    });
+    expect(approveButton).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Przeczytano dokładną treść tej wersji." }));
+    expect(approveButton).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Sprawdzono dowody przypisane do tej wersji."
+      })
+    );
+    expect(approveButton).toBeEnabled();
+    fireEvent.click(approveButton);
+
+    await waitFor(() =>
+      expect(saveContentWorkItemDraftRevisionReview).toHaveBeenCalledTimes(1)
+    );
+    expect(vi.mocked(saveContentWorkItemDraftRevisionReview).mock.calls[0]).toEqual([
+      {
+        expected_revision_digest: revision.content_digest,
+        reviewed_by: "wilku",
+        decision: "approved",
+        notes: "",
+        checked_items: [
+          "Przeczytano dokładną treść tej wersji.",
+          "Sprawdzono dowody przypisane do tej wersji."
+        ],
+        evidence_ids: uniqueTestEvidence(revision)
+      },
+      revision.work_item_id,
+      revision.revision_id
+    ]);
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressAuthoringPayloadPreview).not.toHaveBeenCalled();
+    expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
+  });
+
   it("switches between marketer mode and technical audit mode", async () => {
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
@@ -217,7 +415,7 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByTestId("content-workflow-task-map")).toBeInTheDocument();
   });
 
-  it("submits a snapshot human review from the current API snapshot", async () => {
+  it("does not expose the legacy draft-package approval control", async () => {
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
     });
@@ -229,34 +427,16 @@ describe("ContentWorkflowSurface", () => {
     );
 
     await openWorkflowDetails();
-    await screen.findByRole("button", { name: "Zatwierdź sprawdzenie" });
-    fireEvent.click(screen.getByRole("button", { name: "Zatwierdź sprawdzenie" }));
-
-    await waitFor(() => {
-      expect(saveContentWorkItemSnapshotHumanReview).toHaveBeenCalled();
-    });
-    await waitFor(() => {
-      expect(getContentWordPressDraftActivationPacket).toHaveBeenCalledTimes(2);
-      expect(getContentWordPressDraftWriteReadiness).toHaveBeenCalledTimes(2);
-    });
-    expect(vi.mocked(saveContentWorkItemSnapshotHumanReview).mock.calls[0]?.[0]).toEqual({
-        review: expect.objectContaining({
-          id: "human_review_content_work_item_bdo",
-          work_item_id: "content_work_item_bdo",
-          stage: "draft_package",
-          reviewed_by: "wilku",
-          decision: "approved",
-          draft_package_id: "draft_package_content_work_item_bdo",
-          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"]
-        })
-      });
+    expect(screen.queryByRole("button", { name: "Zatwierdź sprawdzenie" }))
+      .not.toBeInTheDocument();
     expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
+    expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
     expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
     expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
-  it("submits a matching audit only after WILQ exposes an approved human review", async () => {
+  it("does not expose the legacy package-bound audit control", async () => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ review: humanReview() }));
     const client = createWilqQueryClient({
       defaultOptions: { queries: { retry: false } }
@@ -269,26 +449,8 @@ describe("ContentWorkflowSurface", () => {
     );
 
     await openWorkflowDetails();
-    await screen.findByRole("button", { name: "Zapisz audyt przekazania" });
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz audyt przekazania" }));
-
-    await waitFor(() => {
-      expect(saveContentWorkItemSnapshotAudit).toHaveBeenCalled();
-    });
-    await waitFor(() => {
-      expect(getContentWordPressDraftActivationPacket).toHaveBeenCalledTimes(2);
-      expect(getContentWordPressDraftWriteReadiness).toHaveBeenCalledTimes(2);
-    });
-    expect(vi.mocked(saveContentWorkItemSnapshotAudit).mock.calls[0]?.[0]).toEqual({
-        audit: {
-          audit_id: "audit_content_work_item_bdo",
-          actor: "wilku",
-          reason:
-            "Operator zatwierdził przekazanie wyłącznie w trybie szkicu. WordPress może dostać wyłącznie szkic.",
-          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-          human_review_id: "human_review_content_work_item_bdo"
-        }
-    });
+    expect(screen.queryByRole("button", { name: "Zapisz audyt przekazania" }))
+      .not.toBeInTheDocument();
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
     expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
     expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
@@ -504,9 +666,10 @@ describe("ContentWorkflowSurface", () => {
     );
 
     await openWorkflowDetails();
-    expect(await screen.findByRole("button", { name: "Sprawdzenie zapisane" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Audyt zapisany" })).toBeDisabled();
-    expect(screen.getByText(/przekazanie do WordPress pozostaje przygotowane tylko jako szkic/))
+    expect(screen.queryByRole("button", { name: "Sprawdzenie zapisane" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Audyt zapisany" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Handoff przygotowuje tylko szkic/))
       .toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" }));
@@ -1260,10 +1423,16 @@ function draftPackage() {
 
 function workflowSnapshot({
   review = null,
-  handoff = null
+  handoff = null,
+  workspace = revisionWorkspace(),
+  currentStepId = "draft",
+  steps = operatorSteps()
 }: {
   review?: ReturnType<typeof humanReview> | null;
   handoff?: ReturnType<typeof wordpressHandoff> | null;
+  workspace?: ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
+  currentStepId?: ContentWorkItemWorkflowSnapshotResponse["current_step_id"];
+  steps?: ContentWorkItemWorkflowSnapshotResponse["operator_steps"];
 } = {}): ContentWorkItemWorkflowSnapshotResponse {
   const reviewedItem = review
     ? workItem({ human_review_status: "approved", human_review_id: review.id })
@@ -1353,9 +1522,138 @@ function workflowSnapshot({
         }
       ]
     },
-    current_step_id: "draft",
-    operator_steps: operatorSteps()
+    revision_workspace: workspace,
+    current_step_id: currentStepId,
+    operator_steps: steps
   };
+}
+
+function revisionWorkspace(): ContentWorkItemWorkflowSnapshotResponse["revision_workspace"] {
+  const source = draftPackage();
+  return {
+    status: "empty",
+    latest_revision: null,
+    latest_review: null,
+    revision_count: 0,
+    context_current: true,
+    editor_title: source.title,
+    editor_sections: source.sections.map((section) => ({
+      heading: section.heading,
+      body_markdown: [section.purpose, ...section.draft_notes.map((note) => `- ${note}`)].join(
+        "\n\n"
+      ),
+      evidence_ids: [...section.evidence_ids]
+    })),
+    can_save: true,
+    can_review: false,
+    safe_next_step: "Edytuj tekst i zapisz pierwszą wersję do review."
+  };
+}
+
+function savedDraftRevision(): NonNullable<
+  ContentWorkItemWorkflowSnapshotResponse["revision_workspace"]["latest_revision"]
+> {
+  const workspace = revisionWorkspace();
+  return {
+    revision_id: "content_revision_bdo_1",
+    work_item_id: "content_work_item_bdo",
+    revision_number: 1,
+    base_revision_id: null,
+    content_digest: "a".repeat(64),
+    draft_package_id: "draft_package_content_work_item_bdo",
+    draft_package_digest: "d".repeat(64),
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    title: workspace.editor_title,
+    sections: workspace.editor_sections.map((section, index) => ({
+      ...section,
+      body_markdown:
+        index === 0 ? "Zapisana treść pierwszej wersji o obowiązkach BDO." : section.body_markdown
+    })),
+    publish_ready: false,
+    created_by: "wilku",
+    created_at: "2026-07-14T04:00:00Z"
+  };
+}
+
+function savedDraftRevisionReview(
+  revision: ReturnType<typeof savedDraftRevision>,
+  decision: "approved" | "needs_changes" | "rejected" | "deferred" = "approved"
+): NonNullable<ContentWorkItemWorkflowSnapshotResponse["revision_workspace"]["latest_review"]> {
+  return {
+    decision_id: `content_revision_decision_${revision.revision_id}_1`,
+    decision_number: 1,
+    work_item_id: revision.work_item_id,
+    revision_id: revision.revision_id,
+    revision_digest: revision.content_digest,
+    decision,
+    reviewed_by: "wilku",
+    notes: decision === "approved" ? "" : "Ta wersja wymaga opisanych poprawek.",
+    checked_items: ["Sprawdzono dokładną wersję."],
+    evidence_ids: uniqueTestEvidence(revision),
+    created_at: "2026-07-14T04:05:00Z"
+  };
+}
+
+function savedRevisionWorkspace(
+  revision: ReturnType<typeof savedDraftRevision>
+): ContentWorkItemWorkflowSnapshotResponse["revision_workspace"] {
+  return {
+    status: "unreviewed",
+    latest_revision: revision,
+    latest_review: null,
+    revision_count: revision.revision_number,
+    context_current: true,
+    editor_title: revision.title,
+    editor_sections: revision.sections,
+    can_save: false,
+    can_review: true,
+    safe_next_step: `Sprawdź dokładną treść wersji ${revision.revision_number}.`
+  };
+}
+
+function needsChangesRevisionWorkspace(
+  revision: ReturnType<typeof savedDraftRevision>
+): ContentWorkItemWorkflowSnapshotResponse["revision_workspace"] {
+  return {
+    ...savedRevisionWorkspace(revision),
+    status: "needs_changes",
+    latest_review: savedDraftRevisionReview(revision, "needs_changes"),
+    can_save: true,
+    can_review: false,
+    safe_next_step: "Wprowadź poprawki i zapisz kolejną wersję."
+  };
+}
+
+function operatorStepsAtReview(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
+  return operatorSteps().map((step) => {
+    if (step.id === "draft") {
+      return {
+        ...step,
+        phase: "complete",
+        readiness: "ready",
+        status_label: "wersja zapisana",
+        blocker: null,
+        safe_next_step: "Sprawdź zapisaną wersję."
+      };
+    }
+    if (step.id === "review") {
+      return {
+        ...step,
+        phase: "current",
+        readiness: "review_required",
+        status_label: "wymaga decyzji",
+        can_open: true,
+        can_submit: true,
+        blocker: null,
+        safe_next_step: "Zapisz decyzję dla dokładnej wersji."
+      };
+    }
+    return step;
+  });
+}
+
+function uniqueTestEvidence(revision: ReturnType<typeof savedDraftRevision>) {
+  return [...new Set(revision.sections.flatMap((section) => section.evidence_ids))];
 }
 
 function serviceProfileContext() {

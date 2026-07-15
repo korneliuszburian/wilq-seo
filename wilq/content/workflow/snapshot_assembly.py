@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from wilq.content.briefs.sales import ContentSalesBriefSeed
 from wilq.content.claims.ledger import ContentClaimLedger
+from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichment
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.inventory.records import ContentInventoryRecord
@@ -14,6 +15,7 @@ from wilq.content.knowledge.work_item_service_profile import (
 )
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.contracts import (
+    ContentDraftRevisionWorkspace,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementWindowResponse,
@@ -30,6 +32,12 @@ from wilq.content.workflow.operator_steps import (
     build_content_workflow_operator_journey,
 )
 from wilq.content.workflow.queue import ContentWorkItemQueueCandidate
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionSection,
+    ContentDraftRevisionState,
+    content_draft_package_digest,
+)
 from wilq.schemas import ContentFreshnessAssessment
 
 
@@ -61,6 +69,7 @@ def assemble_content_work_item_snapshot(
     callbacks: SnapshotAssemblyCallbacks,
     human_review_record: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     """Assemble the API-owned snapshot while keeping stage policy in callbacks."""
     preflight = callbacks.preflight(item, inventory_records)
@@ -94,6 +103,14 @@ def assemble_content_work_item_snapshot(
         brief,
         draft,
     )
+    revision_workspace = build_content_draft_revision_workspace(
+        item=item,
+        draft_package=draft,
+        state=revision_state,
+        structured_contract_present=(
+            structured_generation.structured_generation_result.contract is not None
+        ),
+    )
     human_review = callbacks.human_review(
         item,
         claim_ledger,
@@ -119,19 +136,13 @@ def assemble_content_work_item_snapshot(
     )
     sales_brief_blocker = sales_brief.sales_brief_result.blockers[0:1]
     section_map_blocker = draft_package.draft_package_result.blockers[0:1]
-    structured_contract_blocker = (
-        structured_generation.structured_generation_result.blockers[0:1]
-    )
+    structured_contract_blocker = structured_generation.structured_generation_result.blockers[0:1]
     signal_quality = None if brief is None else brief.signal_quality
     journey = build_content_workflow_operator_journey(
         ContentWorkflowOperatorFacts(
             sales_brief_present=brief is not None,
-            sales_brief_signal_status=(
-                None if signal_quality is None else signal_quality.status
-            ),
-            sales_brief_signal_reason=(
-                None if signal_quality is None else signal_quality.reason
-            ),
+            sales_brief_signal_status=(None if signal_quality is None else signal_quality.status),
+            sales_brief_signal_reason=(None if signal_quality is None else signal_quality.reason),
             sales_brief_safe_next_step=(
                 signal_quality.safe_next_step
                 if signal_quality is not None
@@ -186,6 +197,12 @@ def assemble_content_work_item_snapshot(
                 if structured_contract_blocker
                 else "Najpierw przygotuj kontrakt roboczego szkicu."
             ),
+            revision_workspace_status=revision_workspace.status,
+            revision_context_current=_revision_context_is_current(
+                item=item,
+                draft_package=draft,
+                state=revision_state,
+            ),
         )
     )
     return ContentWorkItemWorkflowSnapshotResponse(
@@ -200,6 +217,152 @@ def assemble_content_work_item_snapshot(
         human_review=human_review,
         wordpress_handoff=wordpress_handoff,
         measurement_window=measurement_window,
+        revision_workspace=revision_workspace,
         current_step_id=journey.current_step_id,
         operator_steps=journey.steps,
     )
+
+
+def build_content_draft_revision_workspace(
+    *,
+    item: ContentWorkItem,
+    draft_package: ContentDraftPackage | None,
+    state: ContentDraftRevisionState | None,
+    structured_contract_present: bool,
+) -> ContentDraftRevisionWorkspace:
+    current_state = state or ContentDraftRevisionState(
+        status="empty",
+        revision_count=0,
+    )
+    latest_revision = current_state.latest_revision
+    context_current = _revision_context_is_current(
+        item=item,
+        draft_package=draft_package,
+        state=current_state,
+    )
+    if latest_revision is not None and (context_current or draft_package is None):
+        editor_title = latest_revision.title
+        editor_sections = latest_revision.sections
+    elif draft_package is not None:
+        editor_title = (
+            draft_package.title if latest_revision is None else latest_revision.title
+        )
+        editor_sections = _revision_editor_sections(
+            draft_package,
+            latest_revision=latest_revision,
+        )
+    else:
+        editor_title = item.wordpress_title_or_h1 or item.topic
+        editor_sections = []
+
+    status = current_state.status
+    canonical_url = item.final_canonical_url or item.intended_final_url
+    current_context_ready = bool(
+        draft_package is not None and canonical_url and structured_contract_present
+    )
+    return ContentDraftRevisionWorkspace(
+        status=status,
+        latest_revision=latest_revision,
+        latest_review=current_state.latest_review,
+        revision_count=current_state.revision_count,
+        context_current=context_current,
+        editor_title=editor_title,
+        editor_sections=editor_sections,
+        can_save=bool(
+            current_context_ready
+            and (
+                status in {"empty", "needs_changes", "rejected"}
+                or not context_current
+            )
+        ),
+        can_review=bool(
+            latest_revision is not None
+            and status in {"unreviewed", "deferred"}
+            and current_context_ready
+            and context_current
+        ),
+        safe_next_step=_revision_workspace_safe_next_step(
+            status,
+            structured_contract_present=structured_contract_present,
+            context_current=context_current,
+        ),
+    )
+
+
+def _revision_editor_sections(
+    draft_package: ContentDraftPackage,
+    *,
+    latest_revision: ContentDraftRevision | None,
+) -> list[ContentDraftRevisionSection]:
+    prior_text_by_heading = (
+        {}
+        if latest_revision is None
+        else {
+            section.heading: section.body_markdown
+            for section in latest_revision.sections
+        }
+    )
+    return [
+        ContentDraftRevisionSection(
+            heading=section.heading,
+            body_markdown=prior_text_by_heading.get(section.heading)
+            or "\n\n".join(
+                value
+                for value in (
+                    section.purpose,
+                    *(f"- {note}" for note in section.draft_notes),
+                )
+                if value
+            ),
+            evidence_ids=section.evidence_ids,
+        )
+        for section in draft_package.sections
+    ]
+
+
+def _revision_context_is_current(
+    *,
+    item: ContentWorkItem,
+    draft_package: ContentDraftPackage | None,
+    state: ContentDraftRevisionState | None,
+) -> bool:
+    if state is None or state.latest_revision is None:
+        return True
+    canonical_url = item.final_canonical_url or item.intended_final_url
+    revision = state.latest_revision
+    return bool(
+        draft_package is not None
+        and canonical_url
+        and revision.draft_package_id == draft_package.id
+        and revision.draft_package_digest == content_draft_package_digest(draft_package)
+        and revision.final_canonical_url == canonical_url
+    )
+
+
+def _revision_workspace_safe_next_step(
+    status: str,
+    *,
+    structured_contract_present: bool,
+    context_current: bool,
+) -> str:
+    if not structured_contract_present:
+        return "Najpierw odtwórz bezpieczny plan i kontrakt przygotowania szkicu."
+    if not context_current:
+        return (
+            "Plan sekcji albo adres strony zmienił się. Zapisz nową wersję "
+            "powiązaną z aktualnym planem przed sprawdzeniem."
+        )
+    next_steps = {
+        "empty": "Uzupełnij tekst i zapisz pierwszą wersję do sprawdzenia.",
+        "unreviewed": "Sprawdź dokładną zapisaną wersję i zapisz decyzję człowieka.",
+        "needs_changes": "Wprowadź wskazane poprawki i zapisz kolejną wersję.",
+        "approved": (
+            "Nie zapisuj jeszcze do WordPress; brakuje powiązania tej wersji "
+            "z bezpiecznym podglądem draft-only."
+        ),
+        "rejected": "Nie przekazuj tej wersji dalej; przygotuj i zapisz nową wersję.",
+        "deferred": (
+            "Wróć do tej samej wersji i zapisz decyzję, gdy sprawdzenie będzie możliwe."
+        ),
+    }
+    return next_steps[status]

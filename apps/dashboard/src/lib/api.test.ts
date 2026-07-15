@@ -22,6 +22,8 @@ import {
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   postContentWorkItemWordPressDraftHandoff,
+  saveContentWorkItemDraftRevision,
+  saveContentWorkItemDraftRevisionReview,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   type ContentWorkItemStructuredDraftRuntimeRequest
@@ -423,6 +425,109 @@ describe("content workflow API helpers", () => {
     ]);
   });
 
+  it("saves a child revision and reviews its exact digest through encoded typed paths", async () => {
+    const revision = draftRevision();
+    const workspace = revisionWorkspaceWithRevision(revision);
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      void init;
+      const path = new URL(String(url)).pathname;
+      if (path.endsWith("/review")) {
+        const review = draftRevisionReview(revision);
+        return new Response(
+          JSON.stringify({
+            status: "recorded",
+            review,
+            workspace: {
+              ...workspace,
+              status: "approved",
+              latest_review: review,
+              can_review: false
+            }
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(JSON.stringify({ status: "created", revision, workspace }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const sections = revision.sections;
+    const saved = await saveContentWorkItemDraftRevision(
+      {
+        base_revision_id: "content_revision_bdo_1",
+        title: revision.title,
+        sections,
+        created_by: "wilku"
+      },
+      "content/work item"
+    );
+    const reviewed = await saveContentWorkItemDraftRevisionReview(
+      {
+        expected_revision_digest: revision.content_digest,
+        reviewed_by: "wilku",
+        decision: "approved",
+        notes: "",
+        checked_items: ["Sprawdzono dokładną wersję."],
+        evidence_ids: ["ev_gsc_bdo"]
+      },
+      "content/work item",
+      "revision/2"
+    );
+
+    expect(saved.status).toBe("created");
+    expect(reviewed.status).toBe("recorded");
+    expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+      "/api/content/work-items/content%2Fwork%20item/draft-revisions",
+      "/api/content/work-items/content%2Fwork%20item/draft-revisions/revision%2F2/review"
+    ]);
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      base_revision_id: "content_revision_bdo_1",
+      title: revision.title,
+      sections,
+      created_by: "wilku"
+    });
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
+      expected_revision_digest: revision.content_digest,
+      reviewed_by: "wilku",
+      decision: "approved",
+      notes: "",
+      checked_items: ["Sprawdzono dokładną wersję."],
+      evidence_ids: ["ev_gsc_bdo"]
+    });
+  });
+
+  it("returns a typed 409 revision conflict without hiding the current version", async () => {
+    const conflict = {
+      status: "conflict",
+      code: "stale_base",
+      current_revision_id: "content_revision_bdo_2",
+      current_digest: "b".repeat(64),
+      safe_next_step: "Porównaj swój tekst z aktualną wersją i scal zmiany ręcznie."
+    } as const;
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify(conflict), {
+        status: 409,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await saveContentWorkItemDraftRevision(
+      {
+        base_revision_id: "content_revision_bdo_1",
+        title: "BDO dla firm",
+        sections: draftRevision().sections,
+        created_by: "wilku"
+      },
+      "content_work_item_bdo"
+    );
+
+    expect(result).toEqual(conflict);
+  });
+
   it("uses every API-owned Goal 004 content workflow endpoint through typed helpers", async () => {
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
       const path = new URL(String(url)).pathname;
@@ -669,8 +774,87 @@ function workflowSnapshot() {
     human_review: responseByPath["/api/content/work-items/human-review"],
     wordpress_handoff: responseByPath["/api/content/work-items/wordpress-draft-handoff"],
     measurement_window: responseByPath["/api/content/work-items/measurement-window"],
+    revision_workspace: revisionWorkspace(),
     current_step_id: "draft",
     operator_steps: workflowOperatorSteps()
+  };
+}
+
+function revisionWorkspace() {
+  const source = draftPackage();
+  const editorSections = [
+    {
+      heading: "Kogo dotyczy BDO",
+      body_markdown: "Zakres obowiązków BDO wymaga sprawdzenia.",
+      evidence_ids: ["ev_wp_bdo"]
+    }
+  ];
+  return {
+    status: "empty",
+    latest_revision: null,
+    latest_review: null,
+    revision_count: 0,
+    context_current: true,
+    editor_title: source.title,
+    editor_sections: editorSections,
+    can_save: true,
+    can_review: false,
+    safe_next_step: "Zapisz pierwszą wersję szkicu."
+  };
+}
+
+function draftRevision() {
+  return {
+    revision_id: "content_revision_bdo_2",
+    work_item_id: "content_work_item_bdo",
+    revision_number: 2,
+    base_revision_id: "content_revision_bdo_1",
+    content_digest: "b".repeat(64),
+    draft_package_id: "draft_package_content_work_item_bdo",
+    draft_package_digest: "d".repeat(64),
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    title: "BDO dla firm",
+    sections: [
+      {
+        heading: "Kogo dotyczy BDO",
+        body_markdown: "Treść zapisanej drugiej wersji.",
+        evidence_ids: ["ev_gsc_bdo"]
+      }
+    ],
+    publish_ready: false as const,
+    created_by: "wilku",
+    created_at: "2026-07-14T04:00:00Z"
+  };
+}
+
+function draftRevisionReview(revision: ReturnType<typeof draftRevision>) {
+  return {
+    decision_id: "content_revision_decision_bdo_1",
+    decision_number: 1,
+    work_item_id: revision.work_item_id,
+    revision_id: revision.revision_id,
+    revision_digest: revision.content_digest,
+    decision: "approved" as const,
+    reviewed_by: "wilku",
+    notes: "",
+    checked_items: ["Sprawdzono dokładną wersję."],
+    evidence_ids: ["ev_gsc_bdo"],
+    created_at: "2026-07-14T04:05:00Z"
+  };
+}
+
+function revisionWorkspaceWithRevision(revision: ReturnType<typeof draftRevision>) {
+  return {
+    status: "unreviewed" as const,
+    latest_revision: revision,
+    latest_review: null,
+    revision_count: revision.revision_number,
+    context_current: true,
+    editor_title: revision.title,
+    editor_sections: revision.sections,
+    can_save: false,
+    can_review: true,
+    safe_next_step: `Sprawdź wersję ${revision.revision_number}.`
   };
 }
 

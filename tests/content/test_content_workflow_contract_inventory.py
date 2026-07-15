@@ -29,7 +29,11 @@ from wilq.content.workflow.api import (
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.contracts import ContentWorkItemSnapshotResponse
+from wilq.content.workflow.contracts import (
+    ContentDraftRevisionReviewResponse,
+    ContentDraftRevisionSaveResponse,
+    ContentWorkItemSnapshotResponse,
+)
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
@@ -58,6 +62,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/work-items/{work_item_id}/enrichment",
     ): ContentOpportunityEnrichmentResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions",
+    ): ContentDraftRevisionSaveResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review",
+    ): ContentDraftRevisionReviewResponse,
     (
         "POST",
         "/api/content/work-items/snapshot/human-review",

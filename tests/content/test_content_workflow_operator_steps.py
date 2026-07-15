@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -8,6 +9,7 @@ from pydantic import ValidationError
 
 from wilq.content.workflow.operator_steps import (
     CONTENT_WORKFLOW_OPERATOR_STEP_ORDER,
+    ContentDraftRevisionWorkspaceStatus,
     ContentWorkflowOperatorFacts,
     ContentWorkflowOperatorJourney,
     ContentWorkflowOperatorStepId,
@@ -131,6 +133,73 @@ def test_operator_journey_blocks_draft_until_section_map_is_complete() -> None:
     assert steps["draft"].blocker is not None
     assert steps["draft"].blocker.code == "blocked_by_section_map"
     assert steps["draft"].safe_next_step == facts.section_map_safe_next_step
+
+
+@pytest.mark.parametrize(
+    (
+        "revision_status",
+        "current_step_id",
+        "current_can_submit",
+        "dev_blocker_code",
+    ),
+    [
+        ("empty", "draft", True, "missing_revision_bound_draft"),
+        ("unreviewed", "review", True, "missing_revision_bound_review"),
+        ("needs_changes", "draft", True, "missing_revision_bound_draft"),
+        ("approved", "dev_draft", False, "missing_revision_bound_wordpress_seam"),
+        ("rejected", "draft", True, "missing_revision_bound_draft"),
+        ("deferred", "review", True, "missing_revision_bound_review"),
+    ],
+)
+def test_operator_journey_uses_only_exact_revision_state_for_later_steps(
+    revision_status: ContentDraftRevisionWorkspaceStatus,
+    current_step_id: ContentWorkflowOperatorStepId,
+    current_can_submit: bool,
+    dev_blocker_code: str,
+) -> None:
+    facts = _facts(
+        sales_brief_present=True,
+        sales_brief_signal_status="strong",
+        section_map_present=True,
+        structured_contract_present=True,
+    )
+    facts = replace(facts, revision_workspace_status=revision_status)
+
+    journey = build_content_workflow_operator_journey(facts)
+    steps = {step.id: step for step in journey.steps}
+
+    assert journey.current_step_id == current_step_id
+    assert steps[current_step_id].can_submit is current_can_submit
+    assert steps["dev_draft"].readiness == "blocked"
+    assert steps["dev_draft"].can_submit is False
+    assert steps["dev_draft"].blocker is not None
+    assert steps["dev_draft"].blocker.code == dev_blocker_code
+
+
+def test_operator_journey_returns_to_draft_when_revision_context_changed() -> None:
+    facts = replace(
+        _facts(
+            sales_brief_present=True,
+            sales_brief_signal_status="strong",
+            section_map_present=True,
+            structured_contract_present=True,
+        ),
+        revision_workspace_status="approved",
+        revision_context_current=False,
+    )
+
+    journey = build_content_workflow_operator_journey(facts)
+    steps = {step.id: step for step in journey.steps}
+
+    assert journey.current_step_id == "draft"
+    assert steps["draft"].can_submit is True
+    assert steps["draft"].blocker is not None
+    assert steps["draft"].blocker.code == "revision_context_changed"
+    assert steps["review"].blocker is not None
+    assert steps["review"].blocker.code == "revision_context_changed"
+    assert steps["dev_draft"].blocker is not None
+    assert steps["dev_draft"].blocker.code == "revision_context_changed"
+    assert steps["dev_draft"].can_submit is False
 
 
 def test_operator_journey_rejects_reordered_steps() -> None:

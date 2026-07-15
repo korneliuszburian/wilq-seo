@@ -24,6 +24,10 @@ import {
   ContentClaimLedgerSchema,
   ContentClaimReferenceSchema,
   ContentDraftPackageSchema,
+  ContentDraftRevisionConflictSchema,
+  ContentDraftRevisionReviewRequestSchema,
+  ContentDraftRevisionSaveRequestSchema,
+  ContentDraftRevisionWorkspaceSchema,
   ContentKnowledgeConstraintTypeSchema,
   ContentRecommendedModeSchema,
   ContentGscSearchAnalyticsContractSchema,
@@ -2545,6 +2549,24 @@ describe("Content work item workflow schemas", () => {
           measurement_window_result: { window: measurementWindow, blockers: [] },
           outcome_blockers: [blocker]
         },
+        revision_workspace: {
+          status: "empty",
+          latest_revision: null,
+          latest_review: null,
+          revision_count: 0,
+          context_current: true,
+          editor_title: draftPackage.title,
+          editor_sections: [
+            {
+              heading: "Kogo dotyczy BDO",
+              body_markdown: "Zakres obowiązków wymaga sprawdzenia dla konkretnej firmy.",
+              evidence_ids: ["ev_wp_bdo"]
+            }
+          ],
+          can_save: true,
+          can_review: false,
+          safe_next_step: "Zapisz pierwszą wersję szkicu."
+        },
         current_step_id: "draft",
         operator_steps: [
           {
@@ -2672,6 +2694,164 @@ describe("Content work item workflow schemas", () => {
       ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
         ...snapshot,
         operator_steps: snapshot.operator_steps.slice(0, 4)
+      }).success
+    ).toBe(false);
+  });
+
+  it("binds revision workspace review to the exact immutable revision", () => {
+    const revision = {
+      revision_id: "content_revision_bdo_2",
+      work_item_id: "content_work_item_bdo",
+      revision_number: 2,
+      base_revision_id: "content_revision_bdo_1",
+      content_digest: "a".repeat(64),
+      draft_package_id: "draft_package_content_work_item_bdo",
+      draft_package_digest: "d".repeat(64),
+      final_canonical_url: "https://ekologus.pl/bdo/",
+      title: "BDO dla firm",
+      sections: [
+        {
+          heading: "Kogo dotyczy BDO",
+          body_markdown: "Treść drugiej wersji.",
+          evidence_ids: ["ev_gsc_bdo"]
+        }
+      ],
+      publish_ready: false as const,
+      created_by: "wilku",
+      created_at: "2026-07-14T04:00:00Z"
+    };
+    const review = {
+      decision_id: "content_revision_decision_bdo_1",
+      decision_number: 1,
+      work_item_id: revision.work_item_id,
+      revision_id: revision.revision_id,
+      revision_digest: revision.content_digest,
+      reviewed_by: "wilku",
+      decision: "approved" as const,
+      notes: "",
+      checked_items: ["Sprawdzono dokładną wersję."],
+      evidence_ids: ["ev_gsc_bdo"],
+      created_at: "2026-07-14T04:05:00Z"
+    };
+    const workspace = ContentDraftRevisionWorkspaceSchema.parse({
+      status: "approved",
+      latest_revision: revision,
+      latest_review: review,
+      revision_count: 2,
+      context_current: true,
+      editor_title: revision.title,
+      editor_sections: revision.sections,
+      can_save: false,
+      can_review: false,
+      safe_next_step: "Akceptacja dotyczy wyłącznie wersji 2."
+    });
+
+    expect(workspace.latest_review?.revision_digest).toBe(revision.content_digest);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        latest_review: { ...review, revision_digest: "b".repeat(64) }
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        latest_review: { ...review, checked_items: [] }
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        latest_review: { ...review, reviewed_by: " " }
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        latest_review: { ...review, checked_items: [" "] }
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        status: "unreviewed",
+        latest_review: null,
+        context_current: false,
+        can_save: true,
+        can_review: false,
+        safe_next_step: "Zapisz wersję powiązaną z aktualnym planem sekcji."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        latest_review: null
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        status: "empty",
+        latest_revision: null,
+        revision_count: 0
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionWorkspaceSchema.safeParse({
+        ...workspace,
+        status: "unreviewed",
+        latest_review: null,
+        can_save: true,
+        can_review: true
+      }).success
+    ).toBe(false);
+  });
+
+  it("guards revision save, review and conflict inputs at the shared seam", () => {
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: null,
+        title: " ",
+        sections: [],
+        created_by: "wilku"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionReviewRequestSchema.safeParse({
+        expected_revision_digest: "a".repeat(64),
+        reviewed_by: "wilku",
+        decision: "approved",
+        notes: "",
+        checked_items: [],
+        evidence_ids: []
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionReviewRequestSchema.safeParse({
+        expected_revision_digest: "a".repeat(64),
+        reviewed_by: "wilku",
+        decision: "needs_changes",
+        notes: "",
+        checked_items: ["Sprawdzono wersję."],
+        evidence_ids: []
+      }).success
+    ).toBe(false);
+    expect(
+      ContentDraftRevisionConflictSchema.safeParse({
+        status: "conflict",
+        code: "stale_review",
+        current_revision_id: "content_revision_bdo_2",
+        current_digest: "a".repeat(64),
+        safe_next_step: "Porównaj wersje."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentDraftRevisionConflictSchema.safeParse({
+        status: "conflict",
+        code: "unknown_conflict",
+        current_revision_id: "content_revision_bdo_2",
+        current_digest: "a".repeat(64),
+        safe_next_step: "Porównaj wersje."
       }).success
     ).toBe(false);
   });

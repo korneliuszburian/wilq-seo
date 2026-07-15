@@ -1,22 +1,15 @@
-# Current Cleanup State — 2026-07-14
+# Current Cleanup State — 2026-07-15
 
 Przeczytaj przed cleanupem, refaktorem dashboardu albo zmianą kontraktu API.
 Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-Zacommituj i pushuj zamknięty P0 `wilq-seo-r564.7`. Snapshot ma
-kanoniczne pięć API-owned kroków `scope → section_map → draft → review →
-dev_draft`; marketer mode pokazuje task mapę, jeden aktywny workspace i
-marketer-facing wynik sprawdzenia bez zapisu. Technical wall montuje się
-wyłącznie w `Audyt techniczny`. Nie przywracaj usuniętych duplikatów,
-parsowania polskiego status copy ani lokalnego numeru wersji.
-
-Po pushu utwórz i rozpocznij P0 child `wilq-seo-r564` dla immutable,
-revision-bound persistence: server-owned `revision_id`, digest,
-`base_revision_id`, trwałe sekcje, optimistic conflict i human decision
-powiązana z dokładną wersją. Ten seam nie może jeszcze wywoływać Codexa,
-ActionObjectu ani WordPressa.
+`wilq-seo-r564.8` jest zamknięty z kompletnym revision workspace,
+exact-review proof oraz pełnym browser/build proof. Następny P0 child
+`wilq-seo-r564` ma związać WordPress handoff i ActionObject z dokładnie
+zaakceptowaną rewizją oraz fail-close legacy review/audit dla revision-enabled
+work itemów.
 
 Dopiero po udowodnieniu rewizji projektuj server-side handshake WILQ API →
 Codex app-server/SDK korzystający z istniejącego `codex login` przez ChatGPT.
@@ -45,10 +38,11 @@ kontynuuj najwyższy bezpieczny task.
 - Service Profile dla wybranego work itemu jest związany z usługą, ale jego
   publiczne karty nadal wymagają review; WILQ nie przedstawia tego jako
   zatwierdzonej polityki twierdzeń.
-- Tekst edytora jest nadal lokalnym, niezapisanym szkicem roboczym. Legacy
-  package review/audit nie zatwierdza konkretnego tekstu, dlatego `review` i
-  `dev_draft` pozostają zamknięte do czasu immutable revision persistence i
-  exact-version human acceptance.
+- Zapisane wersje są append-only i wracają po reloadzie. Niezapisane edycje są
+  wyłącznie lokalnym stanem formularza. Review dotyczy dokładnego
+  `revision_id`, digestu treści i digestu paczki planu; zmiana kontekstu
+  unieważnia review. `dev_draft` pozostaje zablokowany, bo legacy WordPress
+  handoff/apply nie jest jeszcze revision-bound.
 - Nawigacja nie wywołuje write requestów. Preview pozostaje dry-run, a każdy
   przyszły zapis WordPress musi przejść przez exact ActionObject, confirmation i
   audit; publish/update/delete pozostają poza tym journey.
@@ -67,44 +61,45 @@ kontynuuj najwyższy bezpieczny task.
 - React ma wyłącznie builder `mode=dry_run`, `write_authorization=null`; UI nie
   utrwala już niemożliwego direct live contractu.
 - Existing draft jest otwierany/podglądany; brak create/duplicate CTA.
-- Create należy do zamkniętego `c9h9.4`: canonical apply buduje typed capability
-  wewnątrz `apply_action` i wiąże exact action, work item, handoff, draft package,
-  dev host, operatora i mutation audit. Publish, update i delete pozostają poza
-  zakresem.
+- Existing create/apply zachowuje ActionObject review/confirm/audit, ale używa
+  legacy handoff/package acceptance i nie jest autorytetem dla nowego revision
+  workspace. Dlatego journey nie może jeszcze uruchomić `dev_draft`. Publish,
+  update i delete pozostają poza zakresem.
 
 ## Bieżący graf
 
-- `wilq-seo-r564.7` jest zamknięty po pełnym proof i czeka wyłącznie na
-  świadomy commit/push.
+- `wilq-seo-r564.7` jest zamknięty i wypchnięty w `b23e413a`.
+- `wilq-seo-r564.8` jest zamknięty: append-only draft revisions i human
+  decisions są związane z dokładną wersją i digestami.
 - Parent `wilq-seo-r564` pozostaje otwarty. Queue density jest zewnętrznie
-  niepełna (1 actionable z wymaganych 3), ale nie blokuje repo-local kontraktu
-  trwałych rewizji.
-- Po zamknięciu `r564.7` utwórz P0 child dla immutable revision persistence;
-  aktualne wyszukiwanie Beads nie znalazło istniejącego zadania o tym zakresie.
+  niepełna (1 actionable z wymaganych 3), a Service Profile i Wilku UAT nadal
+  wymagają ownera. Nie blokuje to repo-local kontraktu revision-bound WordPress
+  handoff, który jest następnym P0.
 - Nie kopiuj tutaj pełnej listy Beads ani historii zamkniętych seamów. Po każdym
   pushu odczytaj `bd ready --json` i `bd list --status=open --json`.
 
 ## Verification checkpoint
 
-- Focused backend: canonical journey builder/response invariants i snapshot API.
-- Focused shared: exact five-step Zod order/current contract.
-- Focused dashboard: jeden workspace, pięć zakładek fixture, uczciwa etykieta
-  szkicu, typed feedback sprawdzenia bez zapisu i brak mutation requestów.
-- Browser: live 1440×900/390×844 current/revisit proof w
-  `.local-lab/proof/dashboard-content-workflow/2026-07-14T02-17-53-121Z/`;
-  osobny deterministyczny 390px contract proof ma chronić dokładnie pięć
-  zakładek przed overflow i jest w
-  `.local-lab/proof/dashboard-content-workflow/2026-07-14T02-33-15-013Z/`.
-- Finalne `scripts/verify.sh`: 943 backend (2 skip), 158 dashboard, 34 shared
-  (10 skip), security/API/skill smoke, 20/20 Playwright i build. Managed stack
-  po bramce jest zdrowy na API `:8000` i dashboardzie `:5173`.
+- Focused backend/shared/dashboard chronią append-only persistence,
+  idempotency, stale-base conflict, exact review, context drift i typed journey.
+- Browser proof: save → refetch/reload → exact review → approved revision →
+  fail-closed `dev_draft`, 1440×900 i 390×844; dwa POST-y na viewport, zero
+  Codex/ActionObject/WordPress. Proof:
+  `.local-lab/proof/dashboard-content-workflow/2026-07-14T05-09-46-343Z/`.
+- Szeroki gate potwierdził 977 backend testów (2 skip), 36 shared i 164
+  dashboard testy oraz security/API/skill smokes. Pierwszy downstream start
+  ujawnił tylko zbyt krótki 15-sekundowy wait; po podniesieniu go do 40 sekund
+  pełny Playwright przechodzi 21/21, a dashboard build przechodzi.
+- Kanoniczny `local_stack.sh restart` po wyrównaniu cold-start wait do 40 sekund
+  kończy się zdrowym API `:8000` i dashboardem `:5173`.
 - Pełny verify uruchamiaj przy zatrzymanym managed stacku: dashboard E2E czyta
   aktualny local evidence store, a równoległy API trzyma lock DuckDB.
 
 ## Resume
 
-1. Sprawdź finalny diff/status, commituj zamknięty `wilq-seo-r564.7` i pushuj
-   `origin/main`.
-2. Ponownie odczytaj roadmapę. Utwórz/rozpocznij revision-persistence P0 tylko
-   jeśli nadal nie istnieje lepszy pokrywający Bead, i kontynuuj bez powtarzania
-   ukończonej pracy.
+1. Commituj i pushuj zamknięty `r564.8`.
+2. Utwórz i uruchom P0 revision-bound WordPress handoff.
+3. Przenieś exact revision/digests/decision do handoff i ActionObject oraz
+   fail-close legacy authority dla revision-enabled work itemów.
+4. Zrób syntetyczny/staging draft-only proof, bez publikacji.
+5. Ponownie odczytaj roadmapę; Codex adapter jest kolejnym seamem.

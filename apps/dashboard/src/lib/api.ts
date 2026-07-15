@@ -13,6 +13,11 @@ import {
   AhrefsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
+  ContentDraftRevisionConflictSchema,
+  ContentDraftRevisionReviewRequestSchema,
+  ContentDraftRevisionReviewResponseSchema,
+  ContentDraftRevisionSaveRequestSchema,
+  ContentDraftRevisionSaveResponseSchema,
   ContentKnowledgeCardsResponseSchema,
   ContentServiceProfileResponseSchema,
   ContentPreflightResponseSchema,
@@ -86,6 +91,13 @@ import {
   type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
+  type ContentDraftRevisionConflict,
+  type ContentDraftRevisionDecision,
+  type ContentDraftRevisionReviewRequest,
+  type ContentDraftRevisionReviewResponse,
+  type ContentDraftRevisionSaveRequest,
+  type ContentDraftRevisionSaveResponse,
+  type ContentDraftRevisionSection,
   type ContentFreshnessAssessment,
   type ContentClaimLedger,
   type ContentKnowledgeCardsResponse,
@@ -221,6 +233,29 @@ async function apiPost<T extends z.ZodTypeAny>(
   return schema.parse(await response.json());
 }
 
+async function apiPostWithConflict<
+  TSuccess extends z.ZodTypeAny,
+  TConflict extends z.ZodTypeAny
+>(
+  path: string,
+  successSchema: ApiSchema<TSuccess>,
+  conflictSchema: ApiSchema<TConflict>,
+  body: unknown
+): Promise<z.infer<TSuccess> | z.infer<TConflict>> {
+  const response = await apiFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (response.status === 409) {
+    return conflictSchema.parse(await response.json());
+  }
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, path));
+  }
+  return successSchema.parse(await response.json());
+}
+
 export function getCommandCenter(): Promise<CommandCenterResponse> {
   return apiGet("/api/dashboard/command-center", CommandCenterResponseSchema);
 }
@@ -342,6 +377,33 @@ export function getContentWorkItemSnapshot(
   return apiGet(
     path,
     ContentWorkItemSnapshotResponseSchema
+  );
+}
+
+export function saveContentWorkItemDraftRevision(
+  request: ContentDraftRevisionSaveRequest,
+  workItemId: string
+): Promise<ContentDraftRevisionSaveResponse | ContentDraftRevisionConflict> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions`;
+  return apiPostWithConflict(
+    path,
+    ContentDraftRevisionSaveResponseSchema,
+    ContentDraftRevisionConflictSchema,
+    ContentDraftRevisionSaveRequestSchema.parse(request)
+  );
+}
+
+export function saveContentWorkItemDraftRevisionReview(
+  request: ContentDraftRevisionReviewRequest,
+  workItemId: string,
+  revisionId: string
+): Promise<ContentDraftRevisionReviewResponse | ContentDraftRevisionConflict> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/review`;
+  return apiPostWithConflict(
+    path,
+    ContentDraftRevisionReviewResponseSchema,
+    ContentDraftRevisionConflictSchema,
+    ContentDraftRevisionReviewRequestSchema.parse(request)
   );
 }
 
@@ -662,6 +724,13 @@ export type {
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
+  ContentDraftRevisionConflict,
+  ContentDraftRevisionDecision,
+  ContentDraftRevisionReviewRequest,
+  ContentDraftRevisionReviewResponse,
+  ContentDraftRevisionSaveRequest,
+  ContentDraftRevisionSaveResponse,
+  ContentDraftRevisionSection,
   ContentFreshnessAssessment,
   ContentClaimLedger,
   ContentKnowledgeCardsResponse,

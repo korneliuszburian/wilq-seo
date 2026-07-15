@@ -1648,6 +1648,282 @@ const CONTENT_WORKFLOW_OPERATOR_STEP_ORDER = [
   "dev_draft"
 ] as const;
 
+export const ContentDraftRevisionSectionSchema = z.object({
+  heading: z.string().refine((value) => value.trim().length > 0),
+  body_markdown: z.string().refine((value) => value.trim().length > 0),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentDraftRevisionSchema = z.object({
+  revision_id: z.string(),
+  work_item_id: z.string(),
+  revision_number: z.number().int().positive(),
+  base_revision_id: z.string().nullable(),
+  content_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  draft_package_id: z.string(),
+  draft_package_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  final_canonical_url: z.string(),
+  title: z.string().refine((value) => value.trim().length > 0),
+  sections: z.array(ContentDraftRevisionSectionSchema).min(1),
+  publish_ready: z.literal(false),
+  created_by: z.string().refine((value) => value.trim().length > 0),
+  created_at: z.string()
+});
+
+export const ContentDraftRevisionDecisionSchema = z.enum([
+  "approved",
+  "needs_changes",
+  "rejected",
+  "deferred"
+]);
+
+export const ContentDraftRevisionReviewSchema = z
+  .object({
+    decision_id: z.string(),
+    decision_number: z.number().int().positive(),
+    work_item_id: z.string(),
+    revision_id: z.string(),
+    revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    reviewed_by: z.string().refine((value) => value.trim().length > 0),
+    decision: ContentDraftRevisionDecisionSchema,
+    notes: z.string(),
+    checked_items: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([]),
+    evidence_ids: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([]),
+    created_at: z.string()
+  })
+  .superRefine((review, context) => {
+    if (
+      review.decision === "approved" &&
+      (review.checked_items.length === 0 || review.evidence_ids.length === 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: review.checked_items.length === 0 ? ["checked_items"] : ["evidence_ids"],
+        message: "approved persisted review requires checked items and evidence IDs"
+      });
+    }
+    if (review.decision !== "approved" && review.notes.trim().length === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["notes"],
+        message: "non-approved persisted review requires notes"
+      });
+    }
+  });
+
+export const ContentDraftRevisionWorkspaceStatusSchema = z.enum([
+  "empty",
+  "unreviewed",
+  "needs_changes",
+  "approved",
+  "rejected",
+  "deferred"
+]);
+
+export const ContentDraftRevisionWorkspaceSchema = z
+  .object({
+    status: ContentDraftRevisionWorkspaceStatusSchema,
+    latest_revision: ContentDraftRevisionSchema.nullable(),
+    latest_review: ContentDraftRevisionReviewSchema.nullable(),
+    revision_count: z.number().int().nonnegative(),
+    context_current: z.boolean(),
+    editor_title: z.string(),
+    editor_sections: z.array(ContentDraftRevisionSectionSchema),
+    can_save: z.boolean(),
+    can_review: z.boolean(),
+    safe_next_step: z.string()
+  })
+  .superRefine((workspace, context) => {
+    if (workspace.status === "empty" && workspace.latest_revision !== null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["latest_revision"],
+        message: "empty revision workspace cannot expose a latest revision"
+      });
+    }
+    if (workspace.status === "empty" && workspace.latest_review !== null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["latest_review"],
+        message: "empty revision workspace cannot expose a latest review"
+      });
+    }
+    if (workspace.status === "empty" && workspace.revision_count !== 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["revision_count"],
+        message: "empty revision workspace must have revision_count=0"
+      });
+    }
+    if (workspace.status === "empty" && !workspace.context_current) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["context_current"],
+        message: "empty revision workspace cannot have stale persisted context"
+      });
+    }
+    if (
+      workspace.status !== "empty" &&
+      (workspace.latest_revision === null || workspace.revision_count < 1)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["latest_revision"],
+        message: "non-empty revision workspace must expose a latest revision"
+      });
+    }
+    if (workspace.status === "unreviewed" && workspace.latest_review !== null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["latest_review"],
+        message: "unreviewed revision workspace cannot expose a latest review"
+      });
+    }
+    if (
+      ["needs_changes", "approved", "rejected", "deferred"].includes(workspace.status) &&
+      workspace.latest_review === null
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["latest_review"],
+        message: "reviewed revision workspace must expose the latest review"
+      });
+    }
+    const latestRevision = workspace.latest_revision;
+    const latestReview = workspace.latest_review;
+    if (latestRevision && latestReview) {
+      if (
+        latestReview.revision_id !== latestRevision.revision_id ||
+        latestReview.revision_digest !== latestRevision.content_digest
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["latest_review"],
+          message: "latest review must be bound to the exact latest revision and digest"
+        });
+      }
+      if (workspace.status !== latestReview.decision) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["status"],
+          message: "reviewed workspace status must match the latest review decision"
+        });
+      }
+    }
+    if (
+      latestRevision &&
+      workspace.context_current &&
+      (workspace.editor_title !== latestRevision.title ||
+        JSON.stringify(workspace.editor_sections) !== JSON.stringify(latestRevision.sections))
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["editor_sections"],
+        message: "editor state must hydrate the exact latest revision"
+      });
+    }
+    if (
+      workspace.can_review &&
+      ((workspace.status !== "unreviewed" && workspace.status !== "deferred") ||
+        !workspace.context_current)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["can_review"],
+        message: "only unreviewed or deferred revisions can be reviewed"
+      });
+    }
+    if (workspace.can_save && workspace.can_review) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["can_review"],
+        message: "revision workspace cannot save and review at the same time"
+      });
+    }
+    if (
+      workspace.can_save &&
+      (workspace.editor_title.trim().length === 0 || workspace.editor_sections.length === 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["can_save"],
+        message: "saveable workspace requires a title and at least one editor section"
+      });
+    }
+  });
+
+export const ContentDraftRevisionSaveRequestSchema = z.object({
+  base_revision_id: z.string().nullable(),
+  title: z.string().refine((value) => value.trim().length > 0),
+  sections: z.array(ContentDraftRevisionSectionSchema).min(1),
+  created_by: z.string().refine((value) => value.trim().length > 0)
+});
+
+export const ContentDraftRevisionSaveResponseSchema = z.object({
+  status: z.enum(["created", "idempotent"]),
+  revision: ContentDraftRevisionSchema,
+  workspace: ContentDraftRevisionWorkspaceSchema
+});
+
+export const ContentDraftRevisionReviewRequestSchema = z
+  .object({
+    expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    reviewed_by: z.string().refine((value) => value.trim().length > 0),
+    decision: ContentDraftRevisionDecisionSchema,
+    notes: z.string(),
+    checked_items: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([]),
+    evidence_ids: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([])
+  })
+  .superRefine((review, context) => {
+    if (
+      review.decision === "approved" &&
+      (review.checked_items.length === 0 || review.evidence_ids.length === 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: review.checked_items.length === 0 ? ["checked_items"] : ["evidence_ids"],
+        message: "approved review requires checked items and evidence IDs"
+      });
+    }
+    if (review.decision !== "approved" && review.notes.trim().length === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["notes"],
+        message: "non-approved review requires notes"
+      });
+    }
+  });
+
+export const ContentDraftRevisionReviewResponseSchema = z.object({
+  status: z.enum(["recorded", "idempotent"]),
+  review: ContentDraftRevisionReviewSchema,
+  workspace: ContentDraftRevisionWorkspaceSchema
+});
+
+export const ContentDraftRevisionConflictSchema = z.object({
+  status: z.literal("conflict"),
+  code: z.enum([
+    "workspace_not_saveable",
+    "revision_not_reviewable",
+    "stale_base",
+    "revision_not_found",
+    "stale_revision",
+    "stale_review",
+    "digest_mismatch"
+  ]),
+  current_revision_id: z.string().nullable(),
+  current_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  safe_next_step: z.string()
+});
+
 export const ContentWorkflowOperatorStepIdSchema = z.enum(
   CONTENT_WORKFLOW_OPERATOR_STEP_ORDER
 );
@@ -1760,6 +2036,7 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   human_review: ContentWorkItemHumanReviewResponseSchema,
   wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponseSchema,
   measurement_window: ContentWorkItemMeasurementWindowResponseSchema,
+  revision_workspace: ContentDraftRevisionWorkspaceSchema,
   current_step_id: ContentWorkflowOperatorStepIdSchema,
   operator_steps: z.array(ContentWorkflowOperatorStepSchema).length(5)
 }).superRefine((snapshot, context) => {
@@ -2009,6 +2286,26 @@ export type ContentWorkItemMeasurementOutcomeRequest = z.input<
 >;
 export type ContentWorkItemMeasurementOutcomeResponse = z.infer<
   typeof ContentWorkItemMeasurementOutcomeResponseSchema
+>;
+export type ContentDraftRevisionSection = z.infer<typeof ContentDraftRevisionSectionSchema>;
+export type ContentDraftRevision = z.infer<typeof ContentDraftRevisionSchema>;
+export type ContentDraftRevisionDecision = z.infer<typeof ContentDraftRevisionDecisionSchema>;
+export type ContentDraftRevisionReview = z.infer<typeof ContentDraftRevisionReviewSchema>;
+export type ContentDraftRevisionWorkspace = z.infer<typeof ContentDraftRevisionWorkspaceSchema>;
+export type ContentDraftRevisionSaveRequest = z.input<
+  typeof ContentDraftRevisionSaveRequestSchema
+>;
+export type ContentDraftRevisionSaveResponse = z.infer<
+  typeof ContentDraftRevisionSaveResponseSchema
+>;
+export type ContentDraftRevisionReviewRequest = z.input<
+  typeof ContentDraftRevisionReviewRequestSchema
+>;
+export type ContentDraftRevisionReviewResponse = z.infer<
+  typeof ContentDraftRevisionReviewResponseSchema
+>;
+export type ContentDraftRevisionConflict = z.infer<
+  typeof ContentDraftRevisionConflictSchema
 >;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentWorkItemServiceProfileContext = z.infer<

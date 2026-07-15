@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.connectors.wordpress.authoring import (
@@ -38,6 +39,12 @@ from wilq.content.workflow.api import (
     build_content_work_item_wordpress_draft_execution_response,
 )
 from wilq.content.workflow.contracts import (
+    ContentDraftRevisionConflictResponse,
+    ContentDraftRevisionPublicConflictCode,
+    ContentDraftRevisionReviewRequest,
+    ContentDraftRevisionReviewResponse,
+    ContentDraftRevisionSaveRequest,
+    ContentDraftRevisionSaveResponse,
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
     ContentWordPressExistingDraftUpdateReadinessResponse,
@@ -81,6 +88,12 @@ from wilq.content.workflow.contracts import (
 from wilq.content.workflow.queue import (
     ContentWorkItemQueueResponse,
     build_content_work_item_queue_response,
+)
+from wilq.content.workflow.revisions import (
+    ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionConflict,
+    ContentDraftRevisionReviewCommand,
+    content_draft_package_digest,
 )
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
@@ -208,14 +221,15 @@ def content_work_item_queue() -> ContentWorkItemQueueResponse:
 def content_work_item_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
     diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
-    review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
-    if review is None:
-        return snapshot
-    audit = content_workflow_store().latest_audit_for_review(review.id)
+    work_item_id = snapshot.preflight.item.id
+    store = content_workflow_store()
+    review = store.latest_human_review(work_item_id)
+    audit = None if review is None else store.latest_audit_for_review(review.id)
     return build_content_work_item_diagnostics_snapshot_response(
         diagnostics,
         human_review=review,
         audit=audit,
+        revision_state=store.load_draft_revision_state(work_item_id),
     )
 
 
@@ -241,6 +255,123 @@ def content_work_item_enrichment(
         diagnostics,
         work_item_id,
         queue=build_content_work_item_queue_response(diagnostics),
+    )
+
+
+@router.post(
+    "/api/content/work-items/{work_item_id}/draft-revisions",
+    response_model=ContentDraftRevisionSaveResponse,
+    responses={409: {"model": ContentDraftRevisionConflictResponse}},
+)
+def content_work_item_draft_revision_save(
+    work_item_id: str,
+    request: ContentDraftRevisionSaveRequest,
+) -> ContentDraftRevisionSaveResponse | JSONResponse:
+    snapshot = _snapshot_for_work_item_or_404(work_item_id)
+    draft_package = snapshot.draft_package.draft_package_result.draft_package
+    item = snapshot.preflight.item
+    final_canonical_url = item.final_canonical_url or item.intended_final_url
+    workspace = snapshot.revision_workspace
+    latest_revision = workspace.latest_revision
+    request_would_create_child = (
+        latest_revision is not None
+        and request.base_revision_id == latest_revision.revision_id
+    )
+    if (
+        draft_package is None
+        or not final_canonical_url
+        or (latest_revision is None and not workspace.can_save)
+        or (not workspace.can_save and request_would_create_child)
+    ):
+        return _workspace_conflict_response(
+            code="workspace_not_saveable",
+            snapshot=snapshot,
+            safe_next_step=workspace.safe_next_step,
+        )
+    _validate_revision_sections(request, snapshot)
+
+    result = content_workflow_store().append_draft_revision(
+        ContentDraftRevisionAppendCommand(
+            work_item_id=work_item_id,
+            base_revision_id=request.base_revision_id,
+            draft_package_id=draft_package.id,
+            draft_package_digest=content_draft_package_digest(draft_package),
+            final_canonical_url=final_canonical_url,
+            title=request.title,
+            sections=request.sections,
+            created_by=request.created_by,
+        )
+    )
+    if result.status == "conflict":
+        if result.conflict is None:
+            raise RuntimeError("Revision append conflict is missing conflict details.")
+        return _revision_conflict_response(result.conflict)
+    if result.revision is None:
+        raise RuntimeError("Successful revision append is missing the saved revision.")
+
+    refreshed = _snapshot_for_work_item_or_404(work_item_id)
+    return ContentDraftRevisionSaveResponse(
+        status=result.status,
+        revision=result.revision,
+        workspace=refreshed.revision_workspace,
+    )
+
+
+@router.post(
+    "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review",
+    response_model=ContentDraftRevisionReviewResponse,
+    responses={409: {"model": ContentDraftRevisionConflictResponse}},
+)
+def content_work_item_draft_revision_review(
+    work_item_id: str,
+    revision_id: str,
+    request: ContentDraftRevisionReviewRequest,
+) -> ContentDraftRevisionReviewResponse | JSONResponse:
+    snapshot = _snapshot_for_work_item_or_404(work_item_id)
+    workspace = snapshot.revision_workspace
+    latest_revision = workspace.latest_revision
+    idempotent_retry = _review_request_matches_latest(
+        request=request,
+        revision_id=revision_id,
+        snapshot=snapshot,
+    )
+    if latest_revision is None or (not workspace.can_review and not idempotent_retry):
+        return _workspace_conflict_response(
+            code="revision_not_reviewable",
+            snapshot=snapshot,
+            safe_next_step=workspace.safe_next_step,
+        )
+    _validate_review_evidence(request, snapshot)
+
+    result = content_workflow_store().review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+            revision_digest=request.expected_revision_digest,
+            base_decision_id=(
+                None
+                if workspace.latest_review is None
+                else workspace.latest_review.decision_id
+            ),
+            reviewed_by=request.reviewed_by,
+            decision=request.decision,
+            notes=request.notes,
+            checked_items=request.checked_items,
+            evidence_ids=request.evidence_ids,
+        )
+    )
+    if result.status == "conflict":
+        if result.conflict is None:
+            raise RuntimeError("Revision review conflict is missing conflict details.")
+        return _revision_conflict_response(result.conflict)
+    if result.review is None:
+        raise RuntimeError("Successful revision review is missing the saved decision.")
+
+    refreshed = _snapshot_for_work_item_or_404(work_item_id)
+    return ContentDraftRevisionReviewResponse(
+        status="recorded" if result.status == "created" else "idempotent",
+        review=result.review,
+        workspace=refreshed.revision_workspace,
     )
 
 
@@ -396,10 +527,7 @@ def content_work_item_structured_draft_preview_for_selected_item(
 ) -> ContentWorkItemStructuredDraftPreviewResponse:
     _snapshot_for_work_item_or_404(work_item_id)
     _ensure_contract_matches_work_item(work_item_id, request)
-    response = build_content_work_item_structured_draft_preview_response(request)
-    if response.preview_result.preview is not None and request.output is not None:
-        content_workflow_store().save_structured_output(work_item_id, request.output)
-    return response
+    return build_content_work_item_structured_draft_preview_response(request)
 
 
 @router.post(
@@ -562,25 +690,29 @@ def _snapshot_for_work_item_or_404(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     diagnostics = build_content_diagnostics_cached()
+    store = content_workflow_store()
+    revision_state = store.load_draft_revision_state(work_item_id)
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
         human_review=human_review,
         audit=audit,
+        revision_state=revision_state,
     )
     if snapshot is None:
         raise HTTPException(
             status_code=404,
             detail="Content work item is not available for the gated workflow.",
         )
-    review = content_workflow_store().latest_human_review(work_item_id)
+    review = store.latest_human_review(work_item_id)
     if human_review is None and review is not None:
-        audit_record = content_workflow_store().latest_audit_for_review(review.id)
+        audit_record = store.latest_audit_for_review(review.id)
         snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
             diagnostics,
             work_item_id,
             human_review=review,
             audit=audit_record,
+            revision_state=revision_state,
         )
         if snapshot is None:
             raise HTTPException(
@@ -594,20 +726,24 @@ def _snapshot_for_work_item_or_blocked_or_404(
     work_item_id: str,
 ) -> ContentWorkItemSnapshotResponse:
     diagnostics = build_content_diagnostics_cached()
+    store = content_workflow_store()
+    revision_state = store.load_draft_revision_state(work_item_id)
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
+        revision_state=revision_state,
     )
     if snapshot is not None:
-        review = content_workflow_store().latest_human_review(work_item_id)
+        review = store.latest_human_review(work_item_id)
         if review is None:
             return snapshot
-        audit_record = content_workflow_store().latest_audit_for_review(review.id)
+        audit_record = store.latest_audit_for_review(review.id)
         reviewed_snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
             diagnostics,
             work_item_id,
             human_review=review,
             audit=audit_record,
+            revision_state=revision_state,
         )
         return snapshot if reviewed_snapshot is None else reviewed_snapshot
     blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(
@@ -620,6 +756,132 @@ def _snapshot_for_work_item_or_blocked_or_404(
         status_code=404,
         detail="Content work item is not available for the gated workflow.",
     )
+
+
+def _validate_revision_sections(
+    request: ContentDraftRevisionSaveRequest,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> None:
+    draft_package = snapshot.draft_package.draft_package_result.draft_package
+    if draft_package is None:
+        raise HTTPException(status_code=422, detail="Brakuje pakietu sekcji do zapisu wersji.")
+    request_headings = [section.heading for section in request.sections]
+    expected_headings = [section.heading for section in draft_package.sections]
+    if request_headings != expected_headings:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Zapisywana wersja musi zawierać dokładnie wszystkie sekcje "
+                "zatwierdzonego planu, w tej samej kolejności."
+            ),
+        )
+    for section, expected_section in zip(
+        request.sections,
+        draft_package.sections,
+        strict=True,
+    ):
+        if section.evidence_ids != expected_section.evidence_ids:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "Dowody sekcji muszą dokładnie odpowiadać zatwierdzonemu planowi: "
+                    + section.heading
+                ),
+            )
+
+
+def _validate_review_evidence(
+    request: ContentDraftRevisionReviewRequest,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> None:
+    latest_revision = snapshot.revision_workspace.latest_revision
+    if latest_revision is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Brakuje zapisanej wersji, której dowody można sprawdzić.",
+        )
+    allowed_evidence = {
+        evidence_id for section in latest_revision.sections for evidence_id in section.evidence_ids
+    }
+    unknown_evidence = sorted(set(request.evidence_ids).difference(allowed_evidence))
+    if unknown_evidence:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Decyzja zawiera dowody spoza snapshotu tego zadania: "
+                + ", ".join(unknown_evidence)
+            ),
+        )
+
+
+def _review_request_matches_latest(
+    *,
+    request: ContentDraftRevisionReviewRequest,
+    revision_id: str,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> bool:
+    review = snapshot.revision_workspace.latest_review
+    if review is None:
+        return False
+    return (
+        review.revision_id == revision_id
+        and review.revision_digest == request.expected_revision_digest
+        and review.reviewed_by == request.reviewed_by
+        and review.decision == request.decision
+        and review.notes == request.notes
+        and review.checked_items == request.checked_items
+        and review.evidence_ids == request.evidence_ids
+    )
+
+
+def _workspace_conflict_response(
+    *,
+    code: ContentDraftRevisionPublicConflictCode,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    safe_next_step: str,
+) -> JSONResponse:
+    latest_revision = snapshot.revision_workspace.latest_revision
+    payload = ContentDraftRevisionConflictResponse(
+        code=code,
+        current_revision_id=(None if latest_revision is None else latest_revision.revision_id),
+        current_digest=(None if latest_revision is None else latest_revision.content_digest),
+        safe_next_step=safe_next_step,
+    )
+    return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
+
+
+def _revision_conflict_response(conflict: ContentDraftRevisionConflict) -> JSONResponse:
+    payload = ContentDraftRevisionConflictResponse(
+        code=conflict.code,
+        current_revision_id=conflict.current_revision_id,
+        current_digest=conflict.current_revision_digest,
+        safe_next_step=_revision_conflict_next_step(conflict.code),
+    )
+    return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
+
+
+def _revision_conflict_next_step(code: str) -> str:
+    if code == "stale_base":
+        return (
+            "Na serwerze jest nowsza wersja. Zachowaj swój tekst, porównaj zmiany "
+            "i dopiero potem zapisz kolejną wersję na aktualnej bazie."
+        )
+    if code == "stale_revision":
+        return (
+            "Ta wersja nie jest już najnowsza. Odśwież snapshot i sprawdź aktualną "
+            "wersję bez przenoszenia starej decyzji."
+        )
+    if code == "stale_review":
+        return (
+            "Ktoś zapisał decyzję dla tej wersji wcześniej. Odśwież snapshot, "
+            "przeczytaj aktualną decyzję i dopiero potem zdecyduj ponownie."
+        )
+    if code == "digest_mismatch":
+        return (
+            "Identyfikator treści nie pasuje do zapisanej wersji. Odśwież snapshot "
+            "i sprawdź dokładny tekst przed decyzją."
+        )
+    return "Odśwież snapshot zadania i wybierz istniejącą zapisaną wersję."
 
 
 def _ensure_contract_matches_work_item(
