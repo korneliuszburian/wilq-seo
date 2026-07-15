@@ -20,6 +20,7 @@ import {
   reviewAction,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
+  saveContentWorkItemPlanningReview,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   validateAction,
@@ -63,6 +64,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     reviewAction: vi.fn(),
     saveContentWorkItemDraftRevision: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
+    saveContentWorkItemPlanningReview: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
     saveContentWorkItemSnapshotAudit: vi.fn(),
     validateAction: vi.fn()
@@ -111,6 +113,12 @@ describe("ContentWorkflowSurface", () => {
       status: "recorded",
       review,
       workspace: { ...workspace, status: "approved", latest_review: review, can_review: false }
+    });
+    const planning = planningWorkspace();
+    vi.mocked(saveContentWorkItemPlanningReview).mockResolvedValue({
+      status: "recorded",
+      decision: planning.scope_decision!,
+      planning_workspace: planning
     });
   });
 
@@ -169,9 +177,9 @@ describe("ContentWorkflowSurface", () => {
     fireEvent.click(within(taskMap).getByRole("button", { name: /Plan sekcji/ }));
 
     expect(document.querySelector('[data-active-workspace="section_map"]')).toBeInTheDocument();
-    expect(screen.getByText("Aktualna strona")).toBeInTheDocument();
-    expect(screen.getByText("Sygnały i braki")).toBeInTheDocument();
-    expect(screen.getByText("Dev draft / ACF")).toBeInTheDocument();
+    expect(screen.getByText("Zatwierdź plan sekcji")).toBeInTheDocument();
+    expect(screen.getByText("Kogo dotyczy BDO")).toBeInTheDocument();
+    expect(screen.queryByText("Sygnały i braki")).not.toBeInTheDocument();
     expect(screen.queryByText("Tekst sekcji do szkicu")).not.toBeInTheDocument();
     expect(within(taskMap).getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
       "aria-current",
@@ -184,6 +192,103 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
+    expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
+  });
+
+  it("records scope review and resumes on the section map without a wall of panels", async () => {
+    const initialPlanning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
+    const reviewedPlanning = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false });
+    vi.mocked(getContentWorkItemSnapshot)
+      .mockResolvedValueOnce(
+        workflowSnapshot({
+          planning: initialPlanning,
+          workspace: { ...revisionWorkspace(), can_save: false },
+          currentStepId: "scope",
+          steps: operatorStepsAtScope()
+        })
+      )
+      .mockResolvedValue(
+        workflowSnapshot({
+          planning: reviewedPlanning,
+          workspace: { ...revisionWorkspace(), can_save: false },
+          currentStepId: "section_map",
+          steps: operatorStepsAtSectionMap()
+        })
+      );
+    vi.mocked(saveContentWorkItemPlanningReview).mockResolvedValue({
+      status: "recorded",
+      decision: reviewedPlanning.scope_decision!,
+      planning_workspace: reviewedPlanning
+    });
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByText("Zatwierdź zakres treści")).toBeInTheDocument();
+    expect(screen.getByText("właściciel firmy")).toBeInTheDocument();
+    expect(screen.getByText("Skontaktuj się z Ekologus.")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByLabelText("Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA.")
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz decyzję i przejdź dalej" }));
+
+    await waitFor(() => expect(saveContentWorkItemPlanningReview).toHaveBeenCalledTimes(1));
+    expect(saveContentWorkItemPlanningReview).toHaveBeenCalledWith(
+      {
+        stage: "scope",
+        expected_planning_digest: initialPlanning.proposal.planning_digest,
+        decision: "approved",
+        reviewed_by: "wilku",
+        checked_items: ["zakres i CTA"],
+        notes: ""
+      },
+      "content_work_item_bdo"
+    );
+    expect(await screen.findByText("Zatwierdź plan sekcji")).toBeInTheDocument();
+    expect(screen.queryByText("Aktualna strona")).not.toBeInTheDocument();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("keeps the planning note after a stale conflict and offers an explicit refresh", async () => {
+    const planning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        planning,
+        workspace: { ...revisionWorkspace(), can_save: false },
+        currentStepId: "scope",
+        steps: operatorStepsAtScope()
+      })
+    );
+    vi.mocked(saveContentWorkItemPlanningReview).mockResolvedValue({
+      detail: "Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."
+    });
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByText("Zatwierdź zakres treści");
+    fireEvent.change(screen.getByLabelText("Decyzja planistyczna"), {
+      target: { value: "needs_changes" }
+    });
+    const note = "CTA powinno prowadzić do formularza dla usługi BDO.";
+    fireEvent.change(screen.getByLabelText("Notatka do planu"), {
+      target: { value: note }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz uwagi do poprawy" }));
+
+    expect(await screen.findByText("Plan zmienił się na serwerze")).toBeInTheDocument();
+    expect(screen.getByLabelText("Notatka do planu")).toHaveValue(note);
+    fireEvent.click(screen.getByRole("button", { name: "Odśwież aktualny plan" }));
+    await waitFor(() => expect(getContentWorkItemSnapshot).toHaveBeenCalledTimes(2));
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
   it("hydrates a saved revision and creates a child from the exact base", async () => {
@@ -1404,12 +1509,14 @@ function workflowSnapshot({
   review = null,
   handoff = null,
   workspace = revisionWorkspace(),
+  planning = planningWorkspace(),
   currentStepId = "draft",
   steps = operatorSteps()
 }: {
   review?: ReturnType<typeof humanReview> | null;
   handoff?: ReturnType<typeof wordpressHandoff> | null;
   workspace?: ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
+  planning?: ContentWorkItemWorkflowSnapshotResponse["planning_workspace"];
   currentStepId?: ContentWorkItemWorkflowSnapshotResponse["current_step_id"];
   steps?: ContentWorkItemWorkflowSnapshotResponse["operator_steps"];
 } = {}): ContentWorkItemWorkflowSnapshotResponse {
@@ -1502,8 +1609,57 @@ function workflowSnapshot({
       ]
     },
     revision_workspace: workspace,
+    planning_workspace: planning,
     current_step_id: currentStepId,
     operator_steps: steps
+  };
+}
+
+function planningWorkspace({
+  scopeCurrent = true,
+  sectionMapCurrent = true
+}: {
+  scopeCurrent?: boolean;
+  sectionMapCurrent?: boolean;
+} = {}): NonNullable<ContentWorkItemWorkflowSnapshotResponse["planning_workspace"]> {
+  const proposal = {
+    work_item_id: "content_work_item_bdo",
+    planning_digest: "a".repeat(64),
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    service_card_id: "service_bdo",
+    service_label: "BDO i sprawozdawczość środowiskowa",
+    target_reader: "właściciel firmy",
+    buyer_problem: "Firma nie wie, które obowiązki BDO jej dotyczą.",
+    buyer_trigger: "Zbliża się termin sprawozdania.",
+    search_intent: "sprawdzenie obowiązków i wybór wsparcia",
+    cta_direction: "Skontaktuj się z Ekologus.",
+    internal_link_directions: ["Kontakt", "Oferta BDO"],
+    sections: draftPackage().sections.map((section) => ({
+      heading: section.heading,
+      purpose: section.purpose,
+      evidence_ids: section.evidence_ids
+    })),
+    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+    source_connectors: ["google_search_console", "wordpress_ekologus"]
+  };
+  const decision = (stage: "scope" | "section_map") => ({
+    decision_id: `planning_${stage}`,
+    decision_number: 1,
+    work_item_id: proposal.work_item_id,
+    stage,
+    planning_digest: proposal.planning_digest,
+    decision: "approved" as const,
+    reviewed_by: "wilku",
+    checked_items: [stage === "scope" ? "zakres i CTA" : "kolejność, cel i dowody"],
+    notes: "Sprawdzono plan.",
+    created_at: "2026-07-16T00:00:00Z"
+  });
+  return {
+    proposal,
+    scope_decision: scopeCurrent ? decision("scope") : null,
+    section_map_decision: sectionMapCurrent ? decision("section_map") : null,
+    scope_current: scopeCurrent,
+    section_map_current: sectionMapCurrent
   };
 }
 
@@ -2513,4 +2669,42 @@ function operatorSteps(): ContentWorkItemWorkflowSnapshotResponse["operator_step
       safe_next_step: "Zakończ review konkretnej wersji szkicu."
     }
   ];
+}
+
+function operatorStepsAtScope(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
+  return operatorSteps().map((step, index) => ({
+    ...step,
+    phase: index === 0 ? "current" : "pending",
+    readiness: index === 0 ? "review_required" : "blocked",
+    can_open: index === 0,
+    can_submit: index === 0,
+    blocker:
+      index === 0
+        ? {
+            code: "scope_review_missing",
+            label: "Zakres wymaga decyzji marketera",
+            reason: "Zakres nie został jeszcze zatwierdzony."
+          }
+        : step.blocker
+  }));
+}
+
+function operatorStepsAtSectionMap(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
+  return operatorSteps().map((step, index) => ({
+    ...step,
+    phase: index === 0 ? "complete" : index === 1 ? "current" : "pending",
+    readiness: index === 0 ? "ready" : index === 1 ? "review_required" : "blocked",
+    can_open: index <= 1,
+    can_submit: index === 1,
+    blocker:
+      index === 1
+        ? {
+            code: "section_map_review_missing",
+            label: "Plan sekcji wymaga decyzji marketera",
+            reason: "Plan sekcji nie został jeszcze zatwierdzony."
+          }
+        : index === 0
+          ? null
+          : step.blocker
+  }));
 }

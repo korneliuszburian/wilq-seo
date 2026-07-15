@@ -42,7 +42,7 @@ type CodexProposalBrowserProof = {
 const revisionProofEvidenceId = "ev_content_revision_browser_proof";
 
 test.describe("WILQ content workflow layout proof", () => {
-  test("keeps one API-owned authoring step useful on desktop and mobile", async ({ page }) => {
+  test("keeps the API-owned planning step useful on desktop and mobile", async ({ page }) => {
     const runDir = path.join(proofRoot, new Date().toISOString().replace(/[:.]/g, "-"));
     await fs.mkdir(runDir, { recursive: true });
     let readyViewportCount = 0;
@@ -93,25 +93,28 @@ test.describe("WILQ content workflow layout proof", () => {
       await expect(taskMap.getByRole("button")).toHaveCount(5);
       await expect(taskMap.locator('[aria-current="step"]')).toHaveCount(1);
       await expect(
-        taskMap.getByRole("button", { name: /Szkic treści/ })
+        taskMap.getByRole("button", { name: /Zakres i cel/ })
       ).toHaveAttribute("aria-current", "step");
-      await expect(taskMap.getByText("Brakuje zapisanej wersji szkicu")).toBeVisible();
+      await expect(taskMap.getByTestId("selected-step-blocker")).toHaveText(
+        "Zakres wymaga review"
+      );
       await expect(taskMap.getByText("Następny bezpieczny krok")).toBeVisible();
+      await expect(taskMap.getByRole("button", { name: /Plan sekcji/ })).toBeDisabled();
+      await expect(taskMap.getByRole("button", { name: /Szkic treści/ })).toBeDisabled();
       await expect(taskMap.getByRole("button", { name: /Sprawdzenie treści/ })).toBeDisabled();
       await expect(taskMap.getByRole("button", { name: /Szkic na devie/ })).toBeDisabled();
 
       await expect(page.getByTestId("content-workflow-technical-audit")).toHaveCount(0);
-      await expect(page.locator('[data-active-workspace="draft"]')).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toBeVisible();
-      await expect(page.getByText("Szkic nie ma jeszcze zapisanej wersji")).toBeVisible();
+      await expect(page.locator('[data-active-workspace="scope"]')).toBeVisible();
+      const planningPanel = page.getByTestId("planning-review-scope");
+      await expect(planningPanel.getByRole("heading", { name: "Zatwierdź zakres treści" })).toBeVisible();
+      await expect(planningPanel.getByText("Strona", { exact: true })).toBeVisible();
+      await expect(planningPanel.getByText("Intencja", { exact: true })).toBeVisible();
+      await expect(planningPanel.getByText("CTA", { exact: true })).toBeVisible();
+      await expect(planningPanel.getByRole("button", { name: "Zapisz decyzję i przejdź dalej" })).toBeDisabled();
       await expect(page.getByRole("heading", { name: "Aktualna strona" })).toHaveCount(0);
-      const sectionTabs = page.getByTestId("draft-section-tabs");
-      await expect(sectionTabs).toBeVisible();
-      expect(await sectionTabs.getByRole("button").count()).toBeGreaterThan(0);
-      const sectionTabsOverflow = await sectionTabs.evaluate(
-        (element) => element.scrollWidth > element.clientWidth
-      );
-      expect(sectionTabsOverflow).toBe(false);
+      await expect(page.getByRole("heading", { name: "Sygnały i braki" })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Dev draft / ACF" })).toHaveCount(0);
 
       if (viewport.label === "mobile") {
         const safeStepBox = await taskMap.getByTestId("selected-step-safe-next-step").boundingBox();
@@ -126,23 +129,6 @@ test.describe("WILQ content workflow layout proof", () => {
         fullPage: true
       });
 
-      const writesBeforeRevisit = contentWriteRequests.length;
-      await taskMap.getByRole("button", { name: /Plan sekcji/ }).click();
-      await expect(page.locator('[data-active-workspace="section_map"]')).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Aktualna strona" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Sygnały i braki" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Dev draft / ACF" })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Tekst sekcji do szkicu" })).toHaveCount(0);
-      await expect(
-        taskMap.getByRole("button", { name: /Szkic treści/ })
-      ).toHaveAttribute("aria-current", "step");
-      expect(contentWriteRequests).toHaveLength(writesBeforeRevisit);
-
-      await expectNoHorizontalPageOverflow(page);
-      await page.screenshot({
-        path: path.join(runDir, `content-workflow-${viewport.label}-revisit.png`),
-        fullPage: true
-      });
     }
 
     expect(readyViewportCount).toBe(viewports.length);

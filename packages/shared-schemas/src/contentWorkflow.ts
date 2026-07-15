@@ -2060,6 +2060,25 @@ export const ContentPlanningWorkspaceSchema = z.object({
   section_map_current: z.boolean()
 });
 
+export const ContentPlanningReviewRequestSchema = z.object({
+  stage: z.enum(["scope", "section_map"]),
+  expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  decision: z.enum(["approved", "needs_changes"]),
+  reviewed_by: z.string().min(1),
+  checked_items: z.array(z.string()),
+  notes: z.string()
+});
+
+export const ContentPlanningReviewResponseSchema = z.object({
+  status: z.enum(["recorded", "idempotent"]),
+  decision: ContentPlanningDecisionSchema,
+  planning_workspace: ContentPlanningWorkspaceSchema
+});
+
+export const ContentPlanningReviewConflictSchema = z.object({
+  detail: z.string().min(1)
+});
+
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   response_type: z.literal("workflow_snapshot").default("workflow_snapshot"),
   freshness_assessment: ContentFreshnessAssessmentSchema,
@@ -2345,6 +2364,10 @@ export type ContentCodexSectionProposalResponse = z.infer<
   typeof ContentCodexSectionProposalResponseSchema
 >;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
+export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSchema>;
+export type ContentPlanningReviewRequest = z.input<typeof ContentPlanningReviewRequestSchema>;
+export type ContentPlanningReviewResponse = z.infer<typeof ContentPlanningReviewResponseSchema>;
+export type ContentPlanningReviewConflict = z.infer<typeof ContentPlanningReviewConflictSchema>;
 export type ContentWorkItemServiceProfileContext = z.infer<
   typeof ContentWorkItemServiceProfileContextSchema
 >;

@@ -22,6 +22,9 @@ import {
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionSaveResponseSchema,
   ContentKnowledgeCardsResponseSchema,
+  ContentPlanningReviewConflictSchema,
+  ContentPlanningReviewRequestSchema,
+  ContentPlanningReviewResponseSchema,
   ContentServiceProfileResponseSchema,
   ContentPreflightResponseSchema,
   ContentOpportunityEnrichmentResponseSchema,
@@ -103,6 +106,10 @@ import {
   type ContentFreshnessAssessment,
   type ContentClaimLedger,
   type ContentKnowledgeCardsResponse,
+  type ContentPlanningReviewConflict,
+  type ContentPlanningReviewRequest,
+  type ContentPlanningReviewResponse,
+  type ContentPlanningWorkspace,
   type ContentServiceProfileResponse,
   type ContentPreflightResponse,
   type ContentOpportunityEnrichment,
@@ -417,6 +424,19 @@ export function saveContentWorkItemDraftRevision(
     ContentDraftRevisionSaveResponseSchema,
     ContentDraftRevisionConflictSchema,
     ContentDraftRevisionSaveRequestSchema.parse(request)
+  );
+}
+
+export function saveContentWorkItemPlanningReview(
+  request: ContentPlanningReviewRequest,
+  workItemId: string
+): Promise<ContentPlanningReviewResponse | ContentPlanningReviewConflict> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/planning-review`;
+  return apiPostWithConflict(
+    path,
+    ContentPlanningReviewResponseSchema,
+    ContentPlanningReviewConflictSchema,
+    ContentPlanningReviewRequestSchema.parse(request)
   );
 }
 
@@ -754,6 +774,10 @@ export type {
   ContentFreshnessAssessment,
   ContentClaimLedger,
   ContentKnowledgeCardsResponse,
+  ContentPlanningReviewConflict,
+  ContentPlanningReviewRequest,
+  ContentPlanningReviewResponse,
+  ContentPlanningWorkspace,
   ContentServiceProfileResponse,
   ContentPreflightResponse,
   ContentOpportunityEnrichment,

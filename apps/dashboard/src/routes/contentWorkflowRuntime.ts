@@ -26,6 +26,7 @@ export type ContentWorkflowSnapshot = {
   wordpressHandoff: ContentWorkItemWordPressDraftHandoffResponse;
   measurementWindow: ContentWorkItemMeasurementWindowResponse;
   revisionWorkspace: ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
+  planningWorkspace: ContentWorkItemWorkflowSnapshotResponse["planning_workspace"];
   currentStepId: WorkflowStepId;
   operatorSteps: WorkflowStep[];
 };
@@ -71,6 +72,7 @@ function workflowSnapshotFromApi(
     wordpressHandoff: snapshot.wordpress_handoff,
     measurementWindow: snapshot.measurement_window,
     revisionWorkspace: snapshot.revision_workspace,
+    planningWorkspace: snapshot.planning_workspace,
     currentStepId: snapshot.current_step_id,
     operatorSteps: snapshot.operator_steps.map((step) => ({
       id: step.id,

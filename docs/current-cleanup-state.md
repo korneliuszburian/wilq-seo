@@ -56,6 +56,10 @@ kontynuuj najwyższy bezpieczny task.
   typed proposal, exact digest i append-only decyzje, lecz w realnym stanie nie
   zostały jeszcze zatwierdzone. Pierwszy zapis rewizji pozostaje zablokowany do
   dwóch aktualnych approvals.
+- Aktywny `scope` i `section_map` używają jednego zwartego panelu decyzji.
+  Marketer nie ogląda już trzykolumnowej mapy public/signals/dev ani ACF wall:
+  najpierw zatwierdza zakres, potem kolejność, cel i dowody sekcji. Konflikt
+  zachowuje lokalną notatkę i wymaga jawnego odświeżenia.
 - Ocena 8/10 dotyczy wyłącznie bezpieczeństwa exact handoffu. Operator workflow
   ma obecnie około 6/10, ale jakość realnego tekstu pozostaje około 5/10:
   sekcję można już poprawić przez grounded Codex proposal i porównać wynik,
@@ -117,7 +121,8 @@ kontynuuj najwyższy bezpieczny task.
 - Canonical production-pilot graph jest w `wilq-seo-amj2`. Jego pierwsze dwa
   P0 to prawdziwa readiness kroku `dev_draft` (`amj2.2`, domknięta) oraz
   persisted review scope/section map (`amj2.1`). Backend/store tego review jest
-  domknięty w `amj2.1.1`; następny slice podłącza formularze i browser proof.
+  domknięty w `amj2.1.1`, a formularze/reload/conflict i browser proof w
+  `amj2.1.2`.
   Snapshot wiąże
   `dev_draft.can_submit` z istniejącym exact revision-bound handoffem; brak
   rewizji lub zmiana kontekstu pozostają zablokowane. Typed demand evidence

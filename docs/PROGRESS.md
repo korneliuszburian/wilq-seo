@@ -123,6 +123,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `scope` i `section_map`. Review jest idempotentne, stary digest i próba
   zatwierdzenia mapy przed zakresem kończą się typed `409`. Pierwszej rewizji
   nie można zapisać, dopóki obie decyzje nie są aktualne i `approved`.
+- `wilq-seo-amj2.1.2` podłącza ten kontrakt do jednego aktywnego workspace'u.
+  `scope` pokazuje stronę, usługę, intencję, odbiorcę, problem, moment decyzji,
+  CTA i linkowanie; `section_map` pokazuje tylko uporządkowane sekcje, ich cel
+  i liczbę dowodów. Dawna trzykolumnowa ściana w tym kroku została usunięta.
+  Typed `409` zachowuje notatkę i daje jawny reload; zapis odświeża API-owned
+  krok. Nie dodano promptu, Codex call ani WordPress write.
 
 ## Bieżący proof
 
@@ -151,6 +157,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   save → reload → exact review → inline ActionObject na desktop/mobile 1/1, bez
   realnego WordPress write. Live item bez rewizji poprawnie pozostaje
   `missing_revision_bound_draft`.
+- Planning UI proof: focused React 2/2, pełny dashboard 163/163, TypeScript,
+  ESLint i shared schemas 37/37 są zielone. Live desktop/mobile browser 1/1
+  pokazuje `scope`, zablokowany submit bez review i brak dawnych paneli, bez
+  żadnego content POST. Proof: `.local-lab/proof/dashboard-content-workflow/2026-07-15T23-08-03-347Z/`.
 - Review użyteczności marketera/operatora daje 6/10 dla samego workflow, lecz
   utrzymuje 5/10 dla jakości realnego tekstu: poprzedni 38-słowny output nadal
   był generyczny i `needs_changes`; Service Profile i realny Wilku UAT są otwarte.
@@ -212,15 +222,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 Fixed-point review jest zapisany w Beads jako epic `wilq-seo-amj2`. Kolejność
 pilota nie jest już luźną listą pomysłów:
 
-1. Podłączyć API-owned review zakresu i mapy sekcji do aktywnego workspace'u
-   oraz sprawdzić reload/conflict w browserze (`wilq-seo-amj2.1`).
-2. Dopiero do zaakceptowanego scope dołączyć typed GSC/Ads/keyword evidence
+1. Dopiero do zaakceptowanego scope dołączyć typed GSC/Ads/keyword evidence
    mapowane do strony i sekcji (`wilq-seo-amj2.3`), następnie wyrównać skill z
    tą samą ścieżką API (`wilq-seo-amj2.4`).
-3. Równolegle domknąć lokalną granicę pilota: bezwarunkowy loopback, server-owned
+2. Równolegle domknąć lokalną granicę pilota: bezwarunkowy loopback, server-owned
    local audit identity, prywatne filesystem modes i wersjonowany recovery proof
    (`wilq-seo-amj2.5`–`.8`).
-4. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
+3. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
    potwierdzonym publication event i persisted metric evidence; klient nie może
    zadeklarować sukcesu.
 

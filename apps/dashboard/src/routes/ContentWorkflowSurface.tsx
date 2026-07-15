@@ -8,11 +8,13 @@ import {
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
+  saveContentWorkItemPlanningReview,
   type ContentDraftRevision,
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionReviewRequest,
   type ContentDraftRevisionSaveRequest,
   type ContentDraftRevisionSection,
+  type ContentPlanningReviewRequest,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentOpportunityEnrichment,
@@ -400,6 +402,13 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
       if (result.status !== "conflict") void refreshRevisionWorkspace();
     }
   });
+  const planningReviewMutation = useMutation({
+    mutationFn: (request: ContentPlanningReviewRequest) =>
+      saveContentWorkItemPlanningReview(request, selectedWorkItemId),
+    onSuccess: (result) => {
+      if (!("detail" in result)) void refreshRevisionWorkspace();
+    }
+  });
   const revisionReviewMutation = useMutation({
     mutationFn: ({
       request,
@@ -432,6 +441,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
   });
   const executionMutation = useMutation({ mutationFn: postContentWorkItemWordPressDraftExecution });
   return {
+    planningReviewMutation,
     revisionSaveMutation,
     revisionReviewMutation,
     codexProposalMutation,
@@ -451,6 +461,34 @@ function contentWorkflowActions(
     ? [...new Set(latestRevision.sections.flatMap((section) => section.evidence_ids))]
     : [];
   return {
+    planningReviewPending: mutations.planningReviewMutation.isPending,
+    planningReviewConflict:
+      mutations.planningReviewMutation.data && "detail" in mutations.planningReviewMutation.data
+        ? mutations.planningReviewMutation.data
+        : null,
+    planningReviewError: mutations.planningReviewMutation.error,
+    refreshPlanningWorkspace: () => {
+      void mutations
+        .refreshRevisionWorkspace()
+        .finally(() => mutations.planningReviewMutation.reset());
+    },
+    savePlanningReview: (
+      stage: "scope" | "section_map",
+      decision: "approved" | "needs_changes",
+      notes: string,
+      checkedItems: string[]
+    ) => {
+      const planning = data.planningWorkspace;
+      if (!planning) return;
+      mutations.planningReviewMutation.mutate({
+        stage,
+        expected_planning_digest: planning.proposal.planning_digest,
+        decision,
+        reviewed_by: "wilku",
+        checked_items: checkedItems,
+        notes
+      });
+    },
     revisionSavePending: mutations.revisionSaveMutation.isPending,
     revisionSaveConflict:
       mutations.revisionSaveMutation.data?.status === "conflict"

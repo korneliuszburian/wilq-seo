@@ -8,25 +8,18 @@ import {
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionSection,
   type ContentOpportunityEnrichment,
+  type ContentPlanningReviewConflict,
   type ContentWorkItemQueueResponse
 } from "../lib/api";
-import { AcfCurrentVsProposedPanel } from "./AcfCurrentVsProposedPanel";
-import { ContentDevTargetColumn } from "./ContentDevTargetColumn";
 import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
 import { ContentFreshnessBanner } from "./ContentWorkflowBoundaryStates";
-import { ContentMapConnectors } from "./ContentMapPrimitives";
-import { ContentPublicPageColumn } from "./ContentPublicPageColumn";
-import { ContentSignalColumn } from "./ContentSignalColumn";
+import { ContentPlanningReviewPanel } from "./ContentPlanningReviewPanel";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
 import { ContentWordPressDraftActionWizard } from "./ContentWordPressDraftActionWizard";
-import { ServiceProfileDecisionStrip } from "./ServiceProfileDecisionStrip";
 import {
   blockedClaimsForWorkbench,
-  contentMetricTilesForWorkbench,
-  contentSignalRows,
   environmentLabel,
-  evidenceRowsForWorkbench,
-  queryChipsForWorkbench
+  evidenceRowsForWorkbench
 } from "./contentPageWorkbenchModel";
 import {
   sectionOverrideKey,
@@ -40,6 +33,16 @@ import type {
 } from "./contentWorkflowQueries";
 
 type ContentPageWorkbenchActions = {
+  planningReviewPending: boolean;
+  planningReviewConflict: ContentPlanningReviewConflict | null;
+  planningReviewError: Error | null;
+  refreshPlanningWorkspace: () => void;
+  savePlanningReview: (
+    stage: "scope" | "section_map",
+    decision: "approved" | "needs_changes",
+    notes: string,
+    checkedItems: string[]
+  ) => void;
   revisionSavePending: boolean;
   revisionSaveConflict: ContentDraftRevisionConflict | null;
   revisionSaveError: Error | null;
@@ -86,18 +89,11 @@ export function ContentPageWorkbench({
   const wordpressHandoff = data.wordpressHandoff.handoff_result.handoff;
   const revisionBinding = wordpressHandoff?.revision_binding ?? null;
   const profile = authoringProfile.data ?? null;
-  const [selectedDevPageLink, setSelectedDevPageLink] = useState<string | null>(null);
-  const devPage = selectDevPage(profile, item, selectedDevPageLink);
+  const devPage = selectDevPage(profile, item, null);
   const draftReadback = draftActivationPacket.data?.draft_readback ?? null;
-  const activeCandidate = queue.candidates.find(
-    (candidate) => candidate.work_item_id === item.id
-  );
   const publicUrl =
     item.source_public_url ?? item.final_canonical_url ?? item.intended_final_url ?? "";
   const sourceTitle = item.wordpress_title_or_h1 ?? draft?.title ?? item.topic;
-  const publicSections = item.wordpress_section_headings ?? [];
-  const devSections = devPage?.sections ?? [];
-  const draftSections = useMemo(() => draft?.sections.slice(0, 5) ?? [], [draft]);
   const revisionWorkspace = data.revisionWorkspace;
   const revisionSections = revisionWorkspace.editor_sections;
   const sectionDraftDefaults = useMemo(
@@ -163,14 +159,11 @@ export function ContentPageWorkbench({
   const revisionStatusLabel = latestRevision
     ? `Wersja ${latestRevision.revision_number} · treść ${latestRevision.content_digest.slice(0, 10)}`
     : "Szkic nie ma jeszcze zapisanej wersji";
-  const signalRows = contentSignalRows(data, enrichment, activeCandidate);
   const blockedClaims = blockedClaimsForWorkbench(data);
   const evidenceRows = evidenceRowsForWorkbench(data, enrichment);
   const pageTitle = publicUrl && normalizedPath(publicUrl) === "/"
     ? `Strona główna ${environmentLabel(publicUrl)}`
     : sourceTitle || item.topic;
-  const queryChips = queryChipsForWorkbench(data, enrichment, activeCandidate);
-  const metricTiles = contentMetricTilesForWorkbench(item, devPage);
   const proposalCommittedForLatest = Boolean(
     latestRevision &&
       actions.codexProposalResult?.revision?.base_revision_id === latestRevision.revision_id &&
@@ -185,46 +178,19 @@ export function ContentPageWorkbench({
 
       <div className={`grid gap-4 ${activeStepId === "draft" ? "xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_300px]" : "grid-cols-1"}`}>
         <div className="min-w-0 space-y-3">
-          {activeStepId === "scope" ? (
-            <section className="rounded-md border border-line bg-white p-4 shadow-sm" aria-labelledby="scope-workspace-title">
-              <h2 id="scope-workspace-title" className="text-base font-semibold text-ink">
-                Zakres strony i usługi
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
-                Sprawdź, czy wybrana strona, intencja i profil usługi opisują właściwe zadanie przed mapowaniem sekcji.
-              </p>
-              <div className="mt-3">
-                <ServiceProfileDecisionStrip context={data.serviceProfileContext} />
-              </div>
-            </section>
-          ) : null}
-
-          {activeStepId === "section_map" ? (
-            <>
-              <div className="relative grid gap-3 lg:grid-cols-3">
-                <ContentMapConnectors />
-                <ContentPublicPageColumn
-                  publicUrl={publicUrl}
-                  publicSections={publicSections}
-                  environmentLabel={publicUrl ? environmentLabel(publicUrl) : "publiczna treść"}
-                />
-
-                <ContentSignalColumn
-                  queryChips={queryChips}
-                  metricTiles={metricTiles}
-                  signalRows={signalRows}
-                />
-
-                <ContentDevTargetColumn
-                  profile={profile}
-                  devPage={devPage}
-                  devSections={devSections}
-                  onSelectDevPage={setSelectedDevPageLink}
-                />
-              </div>
-
-              <AcfCurrentVsProposedPanel devSections={devSections} draftSections={draftSections} />
-            </>
+          {(activeStepId === "scope" || activeStepId === "section_map") &&
+          data.planningWorkspace ? (
+            <ContentPlanningReviewPanel
+              actions={{
+                conflict: actions.planningReviewConflict,
+                error: actions.planningReviewError,
+                pending: actions.planningReviewPending,
+                refresh: actions.refreshPlanningWorkspace,
+                save: actions.savePlanningReview
+              }}
+              planning={data.planningWorkspace}
+              stage={activeStepId}
+            />
           ) : null}
 
           {activeStepId === "draft" ? (
