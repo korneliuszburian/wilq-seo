@@ -317,8 +317,12 @@ describe("content workflow API helpers", () => {
         wordpress_draft: {
           work_item_id: "content_work_item_bdo",
           handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+          revision_id: "content_revision_bdo_1",
+          content_digest: "a".repeat(64),
           draft_package_id: "draft_package_content_work_item_bdo",
-          target_url: "https://ekologus.pl/bdo/"
+          draft_package_digest: "b".repeat(64),
+          approval_decision_id: "content_revision_decision_bdo_1",
+          final_canonical_url: "https://ekologus.pl/bdo/"
         }
       });
       return {
@@ -366,8 +370,12 @@ describe("content workflow API helpers", () => {
       wordpress_draft: {
         work_item_id: "content_work_item_bdo",
         handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+        revision_id: "content_revision_bdo_1",
+        content_digest: "a".repeat(64),
         draft_package_id: "draft_package_content_work_item_bdo",
-        target_url: "https://ekologus.pl/bdo/"
+        draft_package_digest: "b".repeat(64),
+        approval_decision_id: "content_revision_decision_bdo_1",
+        final_canonical_url: "https://ekologus.pl/bdo/"
       }
     });
 

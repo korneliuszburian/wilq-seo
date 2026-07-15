@@ -309,6 +309,7 @@ from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.content.knowledge.service_profile import content_service_profile_response
+from wilq.content.workflow.store import content_workflow_store as action_content_workflow_store
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
     blocker_count_label,
@@ -335,6 +336,7 @@ from wilq.schemas import (
     ActionReviewRequest,
     ActionReviewResult,
     ActionValidationResult,
+    ActionWordPressDraftApplyBlocker,
     AuditEvent,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -778,6 +780,7 @@ def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
 ) -> ActionApplyResult:
+    workflow_store = action_content_workflow_store()
     return apply_action_lifecycle(
         action,
         request,
@@ -787,6 +790,8 @@ def apply_action(
         execute_mutation_adapter=_execute_supported_mutation_adapter,
         connector_status=get_connector_status,
         impact_status=_impact_status_from_event,
+        wordpress_apply_claim=workflow_store.claim_wordpress_revision_apply,
+        finish_wordpress_apply_claim=workflow_store.finish_wordpress_revision_apply_claim,
         status_label=_action_result_status_label,
         audit_event_label=_audit_event_with_operator_label,
     )
@@ -795,7 +800,9 @@ def apply_action(
 def _wordpress_draft_apply_capability(
     action: ActionObject,
     request: ActionApplyRequest | None,
-) -> tuple[WordPressDraftApplyCapability | None, list[str]]:
+) -> tuple[
+    WordPressDraftApplyCapability | None, list[ActionWordPressDraftApplyBlocker]
+]:
     """Compatibility seam for callers/tests while ownership lives in WordPress requirements."""
     return wordpress_draft_apply_capability(action, request)
 

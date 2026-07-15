@@ -26,6 +26,7 @@ SAFE_IDENTIFIER_KEYS = {
     "action_ids",
     "audit_event_id",
     "audit_event_ids",
+    "approval_decision_id",
     "available_credential_sources",
     "available_read_contracts",
     "blocked_claims",
@@ -50,6 +51,7 @@ SAFE_IDENTIFIER_KEYS = {
     "revision_digest",
     "draft_package_id",
     "draft_package_digest",
+    "handoff_id",
     "decision_type",
     "decision_types",
     "evidence_id",
@@ -68,6 +70,7 @@ SAFE_IDENTIFIER_KEYS = {
     "landing_page",
     "metric_name",
     "metric_names",
+    "work_item_id",
     "human_review_gates",
     "interpretation_contract",
     "name",
@@ -124,6 +127,12 @@ SAFE_SECRET_TELEMETRY_KEYS = {
     "refresh_token_received",
     "secrets_redacted",
 }
+SAFE_DIGEST_IDENTIFIER_KEYS = {
+    "content_digest",
+    "draft_package_digest",
+    "revision_digest",
+}
+SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def is_secret_key(key: str) -> bool:
@@ -179,12 +188,26 @@ def _looks_like_public_url_text(value: str) -> bool:
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:
     redacted: dict[str, Any] = {}
     for key, value in data.items():
-        if key in SAFE_IDENTIFIER_KEYS or (
-            key in SAFE_SECRET_TELEMETRY_KEYS and isinstance(value, bool | int)
-        ):
+        if key in SAFE_IDENTIFIER_KEYS:
+            redacted[key] = _redact_safe_identifier_value(key, value)
+        elif key in SAFE_SECRET_TELEMETRY_KEYS and isinstance(value, bool | int):
             redacted[key] = value
         elif is_secret_key(key):
             redacted[key] = "[REDACTED]" if value else value
         else:
             redacted[key] = redact_value(value)
     return redacted
+
+
+def _redact_safe_identifier_value(key: str, value: Any) -> Any:
+    if isinstance(value, list):
+        return [_redact_safe_identifier_value(key, item) for item in value]
+    if isinstance(value, Mapping):
+        return redact_mapping(value)
+    if (
+        key in SAFE_DIGEST_IDENTIFIER_KEYS
+        and isinstance(value, str)
+        and SAFE_HEX_DIGEST_RE.fullmatch(value)
+    ):
+        return value
+    return redact_value(value)

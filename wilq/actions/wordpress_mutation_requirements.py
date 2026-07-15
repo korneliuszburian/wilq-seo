@@ -3,12 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlparse
 
-from wilq.actions.audit_store import latest_action_confirmation_event, latest_preview_event
 from wilq.connectors.wordpress.client import create_wordpress_draft_post
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftSectionOverride,
     ContentWordPressDraftWriteAuthorization,
     execute_content_wordpress_draft_handoff,
     wordpress_draft_execution_errors,
@@ -17,14 +18,22 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
 )
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.stage_write_readiness import (
+    wordpress_draft_binding_from_audit_event,
+    wordpress_draft_write_authorization_verified,
+)
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMutationReadinessRequirement,
     ActionObject,
+    ActionWordPressDraftApplyBlocker,
+    AuditEvent,
 )
 
 PreviewItems = Callable[[dict[str, Any]], list[dict[str, Any]]]
+WordPressDraftActionChain = tuple[AuditEvent, AuditEvent, AuditEvent, AuditEvent]
 
 
 @dataclass(frozen=True)
@@ -32,21 +41,37 @@ class WordPressDraftApplyCapability:
     handoff: ContentWordPressDraftHandoff
     draft_package: ContentDraftPackage
     write_authorization: ContentWordPressDraftWriteAuthorization
+    section_overrides: list[ContentWordPressDraftSectionOverride]
 
 
 def wordpress_draft_apply_capability(
     action: ActionObject,
     request: ActionApplyRequest | None,
-) -> tuple[WordPressDraftApplyCapability | None, list[str]]:
+) -> tuple[
+    WordPressDraftApplyCapability | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
     if action.id != "act_apply_wordpress_draft_handoff":
         return None, []
-    input_contract = request.wordpress_draft if request is not None else None
-    if input_contract is None:
+    binding = request.wordpress_draft if request is not None else None
+    if binding is None:
         return None, [
-            "Apply szkicu WordPress wymaga typed work item, handoff, draft package i target URL."
+            _apply_blocker(
+                "wordpress_revision_binding_required",
+                "Brakuje dokładnej wersji treści",
+                "Apply WordPress wymaga identyfikatorów zapisanej wersji, paczki i decyzji.",
+                "Wróć do zatwierdzonej wersji w Treści i SEO i ponów podgląd akcji.",
+            )
         ]
     if request is None or not request.confirmed_by:
-        return None, ["Apply szkicu WordPress wymaga potwierdzonego aktora operatora."]
+        return None, [
+            _apply_blocker(
+                "wordpress_action_actor_required",
+                "Brakuje operatora potwierdzającego",
+                "Apply szkicu wymaga jawnego aktora zgodnego z audytem confirm.",
+                "Potwierdź podgląd jako zalogowany operator.",
+            )
+        ]
 
     from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
     from wilq.content.workflow.api import (
@@ -56,57 +81,239 @@ def wordpress_draft_apply_capability(
 
     diagnostics = build_content_diagnostics_cached()
     workflow_store = content_workflow_store()
-    review = workflow_store.latest_human_review(input_contract.work_item_id)
-    if review is None:
-        return None, ["Brakuje zapisanego review człowieka dla wskazanego work itemu."]
-    audit = workflow_store.latest_audit_for_review(review.id)
+    revision_state = workflow_store.load_draft_revision_state(binding.work_item_id)
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
-        input_contract.work_item_id,
-        human_review=review,
-        audit=audit,
+        binding.work_item_id,
+        revision_state=revision_state,
     )
     if snapshot is None:
-        return None, ["Wskazany work item nie istnieje w aktualnej kolejce WILQ."]
+        return None, [
+            _apply_blocker(
+                "wordpress_revision_not_current",
+                "Wersja nie należy do aktualnej kolejki",
+                "Wskazany work item nie istnieje w bieżącym workflow WILQ.",
+                "Odśwież Treści i SEO i wybierz aktualny work item.",
+            )
+        ]
     draft_package = snapshot.draft_package.draft_package_result.draft_package
-    handoff = snapshot.wordpress_handoff.handoff_result.handoff
+    handoff_result = snapshot.wordpress_handoff.handoff_result
+    handoff = handoff_result.handoff
     if draft_package is None or handoff is None:
-        return None, ["Brakuje kompletnej paczki szkicu albo handoffu WordPress."]
-    if handoff.id != input_contract.handoff_id:
-        return None, ["Handoff WordPress nie pasuje do wskazanego ActionObject apply."]
-    if draft_package.id != input_contract.draft_package_id:
-        return None, ["Paczka szkicu nie pasuje do wskazanego ActionObject apply."]
-    if handoff.work_item_id != input_contract.work_item_id:
-        return None, ["Handoff nie pasuje do wskazanego work itemu."]
-    if handoff.final_canonical_url != input_contract.target_url:
-        return None, ["Canonical URL nie pasuje do zatwierdzonego handoffu."]
-    from urllib.parse import urlparse
-
-    target_host = (urlparse(input_contract.target_url).hostname or "").lower()
+        if handoff_result.blockers:
+            return None, [
+                _apply_blocker(
+                    blocker.code,
+                    blocker.label,
+                    blocker.reason,
+                    blocker.next_step,
+                )
+                for blocker in handoff_result.blockers
+            ]
+        return None, [
+            _apply_blocker(
+                "wordpress_revision_not_current",
+                "Brakuje aktualnego handoffu wersji",
+                "Nie udało się odtworzyć paczki i handoffu dla zatwierdzonej wersji.",
+                "Odśwież workflow i zapisz nową wersję dla aktualnego planu sekcji.",
+            )
+        ]
+    if handoff.revision_binding is None or handoff.revision_binding != binding:
+        return None, [
+            _apply_blocker(
+                "wordpress_revision_binding_mismatch",
+                "Wersja akcji nie pasuje do bieżącego handoffu",
+                "Co najmniej jeden identyfikator wersji, paczki, decyzji albo adresu się zmienił.",
+                "Wygeneruj nowy podgląd dla aktualnej zatwierdzonej wersji.",
+            )
+        ]
+    target_host = (urlparse(binding.final_canonical_url).hostname or "").lower()
     if target_host not in {"ekologus.pl", "www.ekologus.pl"}:
-        return None, ["Apply szkicu wymaga publicznego canonical URL Ekologus."]
+        return None, [
+            _apply_blocker(
+                "wordpress_revision_canonical_invalid",
+                "Canonical nie prowadzi do Ekologus",
+                "Apply szkicu wymaga publicznego canonical URL Ekologus.",
+                "Ustaw aktualny publiczny adres Ekologus i zapisz nową wersję.",
+            )
+        ]
     if handoff.publish_allowed or handoff.destructive_update_allowed:
-        return None, ["Handoff WordPress nie jest draft-only."]
+        return None, [
+            _apply_blocker(
+                "wordpress_handoff_not_draft_only",
+                "Handoff nie jest draft-only",
+                "Ta ścieżka nie może publikować ani aktualizować istniejącej treści.",
+                "Wróć do bezpiecznego handoffu create-draft-only.",
+            )
+        ]
 
-    confirmation = latest_action_confirmation_event(action.audit_events)
-    if confirmation is None or confirmation.actor != request.confirmed_by:
-        return None, ["Aktor confirm nie pasuje do zapisanego audytu ActionObject."]
-    preview = latest_preview_event(action.audit_events)
-    if preview is None:
-        return None, ["Brakuje audytu preview ActionObject."]
+    chain, chain_blockers = _revision_bound_action_chain(
+        action.audit_events,
+        binding=binding,
+        confirmed_by=request.confirmed_by,
+    )
+    if chain is None:
+        return None, chain_blockers
+    preview, review, confirmation, impact = chain
+    section_overrides = [
+        ContentWordPressDraftSectionOverride(
+            heading=section.heading,
+            body_markdown=section.body_markdown,
+            evidence_ids=section.evidence_ids,
+        )
+        for section in handoff.revision_sections
+    ]
+    authorization = ContentWordPressDraftWriteAuthorization(
+        action_id=action.id,
+        preview_audit_id=preview.id,
+        review_audit_id=review.id,
+        confirmation_audit_id=confirmation.id,
+        impact_audit_id=impact.id,
+        confirmed_by=request.confirmed_by,
+        wordpress_draft_binding=binding,
+    )
+    if not wordpress_draft_write_authorization_verified(authorization):
+        return None, [
+            _apply_blocker(
+                "wordpress_write_authorization_invalid",
+                "Ślad akcji nie zgadza się z zapisanym audytem",
+                "Preview, review, confirm i impact muszą istnieć w audycie dla jednej wersji.",
+                "Ponów kroki ActionObject dla aktualnego handoffu.",
+            )
+        ]
     return (
         WordPressDraftApplyCapability(
             handoff=handoff,
             draft_package=draft_package,
-            write_authorization=ContentWordPressDraftWriteAuthorization(
-                action_id=action.id,
-                preview_audit_id=preview.id,
-                review_audit_id=review.id,
-                confirmation_audit_id=confirmation.id,
-                confirmed_by=request.confirmed_by,
-            ),
+            write_authorization=authorization,
+            section_overrides=section_overrides,
         ),
         [],
+    )
+
+
+def _revision_bound_action_chain(
+    events: list[AuditEvent],
+    *,
+    binding: ContentDraftRevisionBinding,
+    confirmed_by: str,
+) -> tuple[
+    WordPressDraftActionChain | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
+    latest_events = sorted(events, key=lambda event: event.created_at, reverse=True)
+    preview = _latest_event(latest_events, {"action_preview_generated"})
+    review = next(
+        (event for event in latest_events if event.event_type.startswith("human_review_")),
+        None,
+    )
+    confirmation = _latest_event(
+        latest_events,
+        {
+            "action_apply_confirmed",
+            "action_confirmation_blocked",
+            "action_apply_confirmation_blocked",
+        },
+    )
+    impact = _latest_event(
+        latest_events,
+        {"action_impact_check_completed", "action_impact_check_blocked"},
+    )
+    chain_events = [preview, review, confirmation, impact]
+    if any(event is None for event in chain_events):
+        return None, [
+            _apply_blocker(
+                "wordpress_action_chain_incomplete",
+                "Brakuje pełnego śladu akcji",
+                "Apply wymaga preview, approved review, confirm i impact dla tej wersji.",
+                "Przejdź po kolei przez cztery kroki ActionObject.",
+            )
+        ]
+    resolved_events = [event for event in chain_events if event is not None]
+    if any(
+        wordpress_draft_binding_from_audit_event(event) != binding
+        for event in resolved_events
+    ):
+        return None, [
+            _apply_blocker(
+                "wordpress_action_chain_binding_mismatch",
+                "Ślad akcji dotyczy innej wersji",
+                "Najnowsze preview, review, confirm i impact muszą mieć identyczny binding.",
+                "Ponów cały łańcuch ActionObject dla aktualnej zatwierdzonej wersji.",
+            )
+        ]
+    if review is None or review.event_type != "human_review_approved_for_prepare":
+        return None, [
+            _apply_blocker(
+                "wordpress_action_review_not_approved",
+                "Review ActionObject nie zatwierdza wersji",
+                "Najnowsza decyzja ActionObject dla tej wersji nie jest approved_for_prepare.",
+                "Sprawdź wersję i zapisz zatwierdzające review ActionObject.",
+            )
+        ]
+    if confirmation is None or confirmation.event_type != "action_apply_confirmed":
+        return None, [
+            _apply_blocker(
+                "wordpress_action_confirmation_invalid",
+                "Brakuje ważnego potwierdzenia",
+                "Najnowsze potwierdzenie tej wersji jest zablokowane albo nie istnieje.",
+                "Potwierdź aktualny podgląd jako operator.",
+            )
+        ]
+    if impact is None or impact.event_type != "action_impact_check_completed":
+        return None, [
+            _apply_blocker(
+                "wordpress_action_impact_invalid",
+                "Sprawdzenie efektu jest zablokowane",
+                "Apply wymaga zakończonego impact check dla tej samej wersji.",
+                "Uzupełnij dowody i ponów impact check.",
+            )
+        ]
+    if confirmation.actor != confirmed_by:
+        return None, [
+            _apply_blocker(
+                "wordpress_action_actor_mismatch",
+                "Operator nie pasuje do potwierdzenia",
+                "Osoba wywołująca apply musi być osobą, która potwierdziła podgląd.",
+                "Wykonaj apply jako operator zapisany w confirm.",
+            )
+        ]
+    if preview is None:
+        raise RuntimeError("Preview disappeared after complete ActionObject chain check.")
+    if not (
+        preview.created_at <= review.created_at
+        <= confirmation.created_at
+        <= impact.created_at
+    ):
+        return None, [
+            _apply_blocker(
+                "wordpress_action_chain_order_invalid",
+                "Kroki akcji są nieaktualne",
+                "Preview, review, confirm i impact nie zostały wykonane w wymaganej kolejności.",
+                "Ponów cały łańcuch ActionObject od podglądu.",
+            )
+        ]
+    return (preview, review, confirmation, impact), []
+
+
+def _latest_event(
+    events: list[AuditEvent],
+    event_types: set[str],
+) -> AuditEvent | None:
+    return next((event for event in events if event.event_type in event_types), None)
+
+
+def _apply_blocker(
+    code: str,
+    label: str,
+    reason: str,
+    next_step: str,
+) -> ActionWordPressDraftApplyBlocker:
+    return ActionWordPressDraftApplyBlocker(
+        code=code,
+        label=label,
+        reason=reason,
+        next_step=next_step,
     )
 
 
@@ -135,7 +342,11 @@ def execute_supported_wordpress_mutation_adapter(
             create_draft=create_wordpress_draft_post,
             action_apply_authorized=True,
             write_authorization=wordpress_capability.write_authorization,
-            write_authorization_verified=True,
+            write_authorization_verified=wordpress_draft_write_authorization_verified(
+                wordpress_capability.write_authorization
+            ),
+            section_overrides=wordpress_capability.section_overrides,
+            require_exact_section_overrides=True,
         )
     else:
         execution = execute_content_wordpress_draft_handoff(

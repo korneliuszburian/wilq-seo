@@ -11,6 +11,7 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftWriteReadinessRequirement,
     ContentWordPressDraftWriteReadinessResponse,
 )
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.schemas import AuditEvent
 from wilq.storage.local_state import local_state_store
 
@@ -45,19 +46,23 @@ def wordpress_draft_write_authorization_verified(
     }
     required = {
         authorization.preview_audit_id: "action_preview_generated",
-        authorization.review_audit_id: "human_review_",
+        authorization.review_audit_id: "human_review_approved_for_prepare",
         authorization.confirmation_audit_id: "action_apply_confirmed",
     }
+    if authorization.impact_audit_id:
+        required[authorization.impact_audit_id] = "action_impact_check_completed"
     if authorization.apply_audit_id:
         required[authorization.apply_audit_id] = "apply_succeeded"
     for event_id, expected_type in required.items():
         event = events.get(event_id)
         if event is None or event.action_id != authorization.action_id:
             return False
-        if expected_type.endswith("_"):
-            if not event.event_type.startswith(expected_type):
-                return False
-        elif event.event_type != expected_type:
+        if event.event_type != expected_type:
+            return False
+        if authorization.wordpress_draft_binding is not None and (
+            _wordpress_draft_binding_from_event(event)
+            != authorization.wordpress_draft_binding
+        ):
             return False
     confirmation_event = events.get(authorization.confirmation_audit_id)
     apply_event = (
@@ -73,8 +78,37 @@ def wordpress_draft_write_authorization_verified(
     ):
         return False
     if authorization.apply_audit_id is None:
-        return True
-    return bool(apply_event is not None and apply_event.actor == confirmed_by)
+        return bool(
+            authorization.wordpress_draft_binding is None
+            or authorization.impact_audit_id is not None
+        )
+    return bool(
+        apply_event is not None
+        and apply_event.actor == confirmed_by
+        and (
+            authorization.wordpress_draft_binding is None
+            or _wordpress_draft_binding_from_event(apply_event)
+            == authorization.wordpress_draft_binding
+        )
+    )
+
+
+def wordpress_draft_binding_from_audit_event(
+    event: AuditEvent,
+) -> ContentDraftRevisionBinding | None:
+    return _wordpress_draft_binding_from_event(event)
+
+
+def _wordpress_draft_binding_from_event(
+    event: AuditEvent,
+) -> ContentDraftRevisionBinding | None:
+    raw_binding = event.details.get("wordpress_draft_binding")
+    if raw_binding is None:
+        return None
+    try:
+        return ContentDraftRevisionBinding.model_validate(raw_binding)
+    except (TypeError, ValueError):
+        return None
 
 
 def wordpress_draft_write_audit_readiness(

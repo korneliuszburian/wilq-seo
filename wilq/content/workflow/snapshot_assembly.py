@@ -7,6 +7,9 @@ from wilq.content.briefs.sales import ContentSalesBriefSeed
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichment
+from wilq.content.handoff.revision_wordpress import (
+    build_revision_bound_wordpress_draft_handoff,
+)
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.inventory.records import ContentInventoryRecord
 from wilq.content.knowledge.cards import ContentKnowledgeCardMatch
@@ -119,12 +122,22 @@ def assemble_content_work_item_snapshot(
         draft,
         human_review_record,
     )
-    wordpress_handoff = callbacks.wordpress_handoff(
-        human_review.reviewed_item,
-        draft,
-        human_review.review,
-        audit,
-    )
+    if revision_state is not None and revision_state.revision_count > 0:
+        wordpress_handoff = ContentWorkItemWordPressDraftHandoffResponse(
+            item=item,
+            handoff_result=build_revision_bound_wordpress_draft_handoff(
+                item=item,
+                draft_package=draft,
+                revision_state=revision_state,
+            ),
+        )
+    else:
+        wordpress_handoff = callbacks.wordpress_handoff(
+            human_review.reviewed_item,
+            draft,
+            human_review.review,
+            audit,
+        )
     measurement_window = callbacks.measurement_window(
         item,
         claim_ledger,

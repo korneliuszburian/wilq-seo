@@ -56,6 +56,7 @@ def preview_action(
     audit = build_preview_audit(
         action=action,
         actor=preview_request.requested_by or "wilq_api",
+        wordpress_draft_binding=preview_request.wordpress_draft,
         summary=preview_summary(
             status=status,
             included_items=len(included_items),

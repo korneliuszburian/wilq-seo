@@ -3,7 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from wilq.actions.audit_store import build_human_review_audit_event
+from wilq.actions.audit_store import (
+    build_human_review_audit_event,
+    wordpress_draft_audit_details,
+)
 from wilq.schemas import (
     ActionObject,
     ActionReviewGate,
@@ -30,7 +33,10 @@ def record_action_review(
         reviewed_by=request.reviewed_by,
         outcome=request.outcome,
         summary=review_summary(request),
-        details=review_details(request),
+        details=wordpress_draft_audit_details(
+            request.wordpress_draft,
+            details=review_details(request),
+        ),
     )
     action.audit_events = [audit, *action.audit_events]
     action.review_gate = review_gate(action)

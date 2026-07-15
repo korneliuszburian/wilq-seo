@@ -12,9 +12,19 @@ from apps.api.wilq_api.routers import content_workflow as content_workflow_route
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
 )
 from wilq.content.workflow.store import content_workflow_store
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    AuditEvent,
+    MetricFact,
+    OpportunityDomain,
+)
 
 
 def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(
@@ -198,6 +208,358 @@ def test_exact_revision_decision_drives_the_five_step_journey(
     assert retried.status_code == 200
     assert retried.json()["status"] == "idempotent"
     assert retried.json()["review"]["decision_id"] == body["review"]["decision_id"]
+
+
+def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_review(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
+    save_payload = _save_payload(snapshot)
+    save_payload["title"] = f"{save_payload['title']} — zatwierdzona wersja"
+    save_payload["sections"] = [
+        {
+            **section,
+            "body_markdown": f"Treść zatwierdzonej sekcji {index + 1}.",
+        }
+        for index, section in enumerate(save_payload["sections"])
+    ]
+    revision = client.post(_save_path(work_item_id), json=save_payload).json()[
+        "revision"
+    ]
+
+    approval_response = client.post(
+        _review_path(work_item_id, revision["revision_id"]),
+        json=_review_payload(revision, "approved"),
+    )
+
+    assert approval_response.status_code == 200
+    approval = approval_response.json()["review"]
+    reloaded = _selected_snapshot(client, work_item_id)
+    assert reloaded["human_review"]["review"] is None
+    handoff = reloaded["wordpress_handoff"]["handoff_result"]["handoff"]
+    assert handoff is not None
+    assert handoff["revision_binding"] == {
+        "work_item_id": work_item_id,
+        "handoff_id": handoff["id"],
+        "revision_id": revision["revision_id"],
+        "content_digest": revision["content_digest"],
+        "draft_package_id": revision["draft_package_id"],
+        "draft_package_digest": revision["draft_package_digest"],
+        "approval_decision_id": approval["decision_id"],
+        "final_canonical_url": revision["final_canonical_url"],
+    }
+    assert handoff["title"] == revision["title"]
+    assert handoff["revision_sections"] == revision["sections"]
+    assert handoff["human_review_id"] is None
+    assert handoff["audit_id"] is None
+    assert handoff["evidence_ids"] == list(
+        dict.fromkeys(
+            evidence_id
+            for section in revision["sections"]
+            for evidence_id in section["evidence_ids"]
+        )
+    )
+    assert handoff["post_status"] == "draft"
+    assert handoff["publish_allowed"] is False
+    assert handoff["destructive_update_allowed"] is False
+
+    package = ContentDraftPackage.model_validate(
+        snapshot["draft_package"]["draft_package_result"]["draft_package"]
+    )
+    mismatched = content_workflow_store().append_draft_revision(
+        ContentDraftRevisionAppendCommand(
+            work_item_id=work_item_id,
+            base_revision_id=revision["revision_id"],
+            draft_package_id=package.id,
+            draft_package_digest=content_draft_package_digest(package),
+            final_canonical_url=revision["final_canonical_url"],
+            title=revision["title"],
+            sections=[
+                {
+                    **section,
+                    "heading": f"Nieaktualna sekcja {index + 1}",
+                }
+                for index, section in enumerate(revision["sections"])
+            ],
+            created_by="direct-store-corruption-proof",
+        )
+    )
+    assert mismatched.revision is not None
+    mismatched_review = content_workflow_store().review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=work_item_id,
+            revision_id=mismatched.revision.revision_id,
+            revision_digest=mismatched.revision.content_digest,
+            decision="approved",
+            reviewed_by="wilku",
+            checked_items=["tekst", "dowody"],
+            evidence_ids=list(
+                dict.fromkeys(
+                    evidence_id
+                    for section in mismatched.revision.sections
+                    for evidence_id in section.evidence_ids
+                )
+            ),
+        )
+    )
+    assert mismatched_review.review is not None
+    blocked_handoff = _selected_snapshot(client, work_item_id)["wordpress_handoff"][
+        "handoff_result"
+    ]
+    assert blocked_handoff["handoff"] is None
+    assert "revision_context_changed" in {
+        blocker["code"] for blocker in blocked_handoff["blockers"]
+    }
+
+
+def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    save_payload = _save_payload(snapshot)
+    save_payload["title"] = f"{save_payload['title']} — wersja v1"
+    save_payload["sections"] = [
+        {
+            **section,
+            "body_markdown": f"Zatwierdzona treść v1, sekcja {index + 1}.",
+        }
+        for index, section in enumerate(save_payload["sections"])
+    ]
+    revision = client.post(_save_path(work_item_id), json=save_payload).json()[
+        "revision"
+    ]
+    approval_response = client.post(
+        _review_path(work_item_id, revision["revision_id"]),
+        json=_review_payload(revision, "approved"),
+    )
+    assert approval_response.status_code == 200
+    approved_snapshot = _selected_snapshot(client, work_item_id)
+    handoff = approved_snapshot["wordpress_handoff"]["handoff_result"]["handoff"]
+    binding = cast(dict[str, Any], handoff["revision_binding"])
+    operator = "operator_revision_v1"
+    action = ActionObject(
+        id="act_apply_wordpress_draft_handoff",
+        title="Utwórz dokładnie zatwierdzony szkic WordPress",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.medium,
+        status=ActionStatus.ready,
+        evidence_ids=["ev_wordpress_revision_apply"],
+        metrics=[
+            MetricFact(
+                name="revision_apply_proof",
+                value=1,
+                period="synthetic_test",
+                source_connector="wordpress_ekologus",
+                evidence_id="ev_wordpress_revision_apply",
+            )
+        ],
+        human_diagnosis="Syntetyczny proof dokładnej wersji szkicu.",
+        recommended_reason="Chroni przed wysłaniem innej wersji niż zatwierdzona.",
+        payload={
+            "action_type": "wordpress_draft_handoff",
+            "allowed_operation": "create_wordpress_draft",
+            "payload_preview": [{"id": "preview_revision_v1"}],
+            "apply_allowed": False,
+            "api_mutation_ready": False,
+            "destructive": False,
+        },
+        validation_status="valid",
+        created_by="test",
+    )
+    selected_action = {"value": action}
+    monkeypatch.setattr(
+        actions_router,
+        "get_action",
+        lambda _action_id: selected_action["value"],
+    )
+    monkeypatch.setattr(
+        "wilq.actions.service.get_connector_status",
+        lambda _connector_id: type(
+            "Connector", (), {"configured": True, "label": "WordPress"}
+        )(),
+    )
+    adapter_payloads: list[Any] = []
+
+    def capture_draft(payload: Any) -> str:
+        adapter_payloads.append(payload)
+        return "synthetic-wordpress-draft-1"
+
+    monkeypatch.setattr(
+        "wilq.actions.wordpress_mutation_requirements.create_wordpress_draft_post",
+        capture_draft,
+    )
+
+    stage_requests = [
+        (
+            "preview",
+            {
+                "requested_by": operator,
+                "wordpress_draft": binding,
+            },
+        ),
+        (
+            "review",
+            {
+                "outcome": "approved_for_prepare",
+                "reviewed_by": operator,
+                "notes": "Sprawdzono dokładną wersję v1.",
+                "checked_items": ["tekst", "dowody", "draft-only"],
+                "blockers": [],
+                "wordpress_draft": binding,
+            },
+        ),
+        (
+            "confirm",
+            {
+                "confirmed_by": operator,
+                "notes": "Potwierdzam dokładną wersję v1.",
+                "preview_acknowledged": True,
+                "wordpress_draft": binding,
+            },
+        ),
+        (
+            "impact-check",
+            {
+                "checked_by": operator,
+                "notes": "Syntetyczny impact check bez claimu wyniku.",
+                "wordpress_draft": binding,
+            },
+        ),
+    ]
+    for stage, payload in stage_requests:
+        response = client.post(
+            f"/api/actions/act_apply_wordpress_draft_handoff/{stage}",
+            json=payload,
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["audit_event"]["details"][
+            "wordpress_draft_binding"
+        ] == binding
+
+    apply_payload = {
+        "confirm": True,
+        "confirmed_by": operator,
+        "wordpress_draft": binding,
+    }
+    apply_response = client.post(
+        "/api/actions/act_apply_wordpress_draft_handoff/apply",
+        json=apply_payload,
+    )
+    assert apply_response.status_code == 200, apply_response.text
+    applied = apply_response.json()
+    assert applied["wordpress_revision_blockers"] == []
+    assert applied["audit_event"]["details"]["wordpress_draft_binding"] == binding
+    assert applied["mutation_audit"]["wordpress_draft_binding"] == binding
+    assert applied["mutation_audit"]["adapter_reached"] is True
+    assert applied["mutation_audit"]["external_write_attempted"] is True
+    assert len(adapter_payloads) == 1
+    created_payload = adapter_payloads[0]
+    expected_markdown = "\n\n".join(
+        [f"# {revision['title']}"]
+        + [
+            chunk
+            for section in revision["sections"]
+            for chunk in [f"## {section['heading']}", section["body_markdown"]]
+        ]
+    )
+    assert created_payload.title == revision["title"]
+    assert created_payload.content_markdown == expected_markdown
+    assert created_payload.post_status == "draft"
+    assert created_payload.publish_allowed is False
+    assert created_payload.destructive_update_allowed is False
+
+    for field, changed_value in {
+        "handoff_id": f"{binding['handoff_id']}_other",
+        "revision_id": f"{binding['revision_id']}_other",
+        "content_digest": "f" * 64,
+        "draft_package_id": f"{binding['draft_package_id']}_other",
+        "draft_package_digest": "e" * 64,
+        "approval_decision_id": f"{binding['approval_decision_id']}_other",
+        "final_canonical_url": "https://ekologus.pl/inny-testowy-adres/",
+    }.items():
+        tampered = {**binding, field: changed_value}
+        response = client.post(
+            "/api/actions/act_apply_wordpress_draft_handoff/apply",
+            json={**apply_payload, "wordpress_draft": tampered},
+        )
+        assert response.status_code == 409, (field, response.text)
+        detail = response.json()["detail"]
+        assert detail["wordpress_revision_blockers"][0]["code"] == (
+            "wordpress_revision_binding_mismatch"
+        )
+        assert detail["mutation_audit"]["adapter_reached"] is False
+        assert detail["mutation_audit"]["external_write_attempted"] is False
+    assert len(adapter_payloads) == 1
+
+    selected_action["value"] = action.model_copy(
+        deep=True,
+        update={
+            "audit_events": [
+                AuditEvent(
+                    id=f"audit_legacy_{event_type}",
+                    action_id=action.id,
+                    event_type=event_type,
+                    actor=operator,
+                    summary="Historyczny event bez bindingu.",
+                )
+                for event_type in [
+                    "action_preview_generated",
+                    "human_review_approved_for_prepare",
+                    "action_apply_confirmed",
+                    "action_impact_check_completed",
+                ]
+            ]
+        },
+    )
+    legacy_response = client.post(
+        "/api/actions/act_apply_wordpress_draft_handoff/apply",
+        json=apply_payload,
+    )
+    assert legacy_response.status_code == 409
+    legacy_detail = legacy_response.json()["detail"]
+    assert legacy_detail["wordpress_revision_blockers"][0]["code"] == (
+        "wordpress_action_chain_binding_mismatch"
+    )
+    assert legacy_detail["mutation_audit"]["adapter_reached"] is False
+    assert len(adapter_payloads) == 1
+
+    package = ContentDraftPackage.model_validate(
+        approved_snapshot["draft_package"]["draft_package_result"]["draft_package"]
+    )
+    v2 = content_workflow_store().append_draft_revision(
+        ContentDraftRevisionAppendCommand(
+            work_item_id=work_item_id,
+            base_revision_id=revision["revision_id"],
+            draft_package_id=package.id,
+            draft_package_digest=content_draft_package_digest(package),
+            final_canonical_url=revision["final_canonical_url"],
+            title=revision["title"],
+            sections=[
+                {**section, "body_markdown": f"Treść v2: {section['body_markdown']}"}
+                for section in revision["sections"]
+            ],
+            created_by="operator_revision_v2",
+        )
+    )
+    assert v2.revision is not None
+    selected_action["value"] = action
+    stale_response = client.post(
+        "/api/actions/act_apply_wordpress_draft_handoff/apply",
+        json=apply_payload,
+    )
+    assert stale_response.status_code == 409
+    stale_detail = stale_response.json()["detail"]
+    assert stale_detail["wordpress_revision_blockers"][0]["code"] == (
+        "revision_not_approved"
+    )
+    assert stale_detail["mutation_audit"]["adapter_reached"] is False
+    assert stale_detail["mutation_audit"]["external_write_attempted"] is False
+    assert len(adapter_payloads) == 1
 
 
 def test_revision_review_rejects_wrong_digest_revision_and_unbound_evidence(

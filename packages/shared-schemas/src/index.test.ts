@@ -4,6 +4,7 @@ import {
   ActionMutationReadinessResponseSchema,
   ActionApplyRequestSchema,
   ActionObjectSchema,
+  AuditEventSchema,
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementOutcomeResponseSchema,
@@ -39,6 +40,7 @@ import {
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
+  ContentWordPressDraftHandoffSchema,
   ContentWordPressAuthoringPayloadPreviewResultSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
@@ -120,6 +122,77 @@ describe("ActionObjectSchema", () => {
   });
 });
 
+describe("AuditEventSchema", () => {
+  it("preserves exact WordPress revision binding details", () => {
+    const binding = {
+      work_item_id: "content_work_item_bdo",
+      handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+      revision_id: "content_revision_bdo_1",
+      content_digest: "a".repeat(64),
+      draft_package_id: "draft_package_content_work_item_bdo",
+      draft_package_digest: "b".repeat(64),
+      approval_decision_id: "content_revision_decision_bdo_1",
+      final_canonical_url: "https://ekologus.pl/bdo/"
+    };
+    const event = AuditEventSchema.parse({
+      id: "audit_content_revision_bdo_1",
+      action_id: "act_apply_wordpress_draft_handoff",
+      event_type: "action_preview_generated",
+      actor: "operator_local_dashboard",
+      created_at: "2026-07-15T10:00:00Z",
+      summary: "Podgląd przygotowany.",
+      evidence_ids: ["ev_content_revision_bdo_1"],
+      details: { wordpress_draft_binding: binding },
+      redacted: true
+    });
+
+    expect(event.details.wordpress_draft_binding).toEqual(binding);
+  });
+});
+
+describe("ContentWordPressDraftHandoffSchema", () => {
+  it("preserves the immutable revision authority and allows null legacy lineage", () => {
+    const binding = {
+      work_item_id: "content_work_item_bdo",
+      handoff_id: "wordpress_draft_handoff_content_work_item_bdo_revision_1",
+      revision_id: "content_revision_bdo_1",
+      content_digest: "a".repeat(64),
+      draft_package_id: "draft_package_content_work_item_bdo",
+      draft_package_digest: "b".repeat(64),
+      approval_decision_id: "content_revision_decision_bdo_1",
+      final_canonical_url: "https://ekologus.pl/bdo/"
+    };
+    const handoff = ContentWordPressDraftHandoffSchema.parse({
+      id: binding.handoff_id,
+      work_item_id: binding.work_item_id,
+      draft_package_id: binding.draft_package_id,
+      human_review_id: null,
+      audit_id: null,
+      connector: "wordpress_ekologus",
+      operation_type: "create_wordpress_draft",
+      status: "prepared",
+      post_status: "draft",
+      title: "BDO — zatwierdzona wersja",
+      final_canonical_url: binding.final_canonical_url,
+      evidence_ids: ["ev_bdo_revision"],
+      revision_binding: binding,
+      revision_sections: [
+        {
+          heading: "Kogo dotyczy BDO",
+          body_markdown: "Dokładnie zatwierdzona treść.",
+          evidence_ids: ["ev_bdo_revision"]
+        }
+      ],
+      publish_allowed: false,
+      destructive_update_allowed: false
+    });
+
+    expect(handoff.revision_binding).toEqual(binding);
+    expect(handoff.revision_sections[0]?.body_markdown).toBe("Dokładnie zatwierdzona treść.");
+    expect(handoff.audit_id).toBeNull();
+  });
+});
+
 describe("ConnectorRefreshStateSchema", () => {
   it("requires the API-owned automatic refresh policy", () => {
     const parsed = ConnectorRefreshStateSchema.parse({
@@ -155,19 +228,30 @@ describe("ActionApplyRequestSchema", () => {
       wordpress_draft: {
         work_item_id: "content_work_item_bdo",
         handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+        revision_id: "content_revision_bdo_1",
+        content_digest: "a".repeat(64),
         draft_package_id: "draft_package_content_work_item_bdo",
-        target_url: "https://ekologus.pl/bdo/"
+        draft_package_digest: "b".repeat(64),
+        approval_decision_id: "content_revision_decision_bdo_1",
+        final_canonical_url: "https://ekologus.pl/bdo/"
       }
     });
 
-    expect(parsed.wordpress_draft?.target_url).toBe("https://ekologus.pl/bdo/");
+    expect(parsed.wordpress_draft?.revision_id).toBe("content_revision_bdo_1");
+    expect(parsed.wordpress_draft?.final_canonical_url).toBe("https://ekologus.pl/bdo/");
+    expect(
+      ActionApplyRequestSchema.safeParse({
+        ...parsed,
+        wordpress_draft: { ...parsed.wordpress_draft, target_url: "https://ekologus.pl/bdo/" }
+      }).success
+    ).toBe(false);
     expect(
       ActionApplyRequestSchema.safeParse({
         confirm: true,
         confirmed_by: "operator_local_dashboard",
         wordpress_draft: {
           work_item_id: "content_work_item_bdo",
-          handoff_id: "",
+          handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
           draft_package_id: "draft_package_content_work_item_bdo",
           target_url: "https://ekologus.pl/bdo/"
         }

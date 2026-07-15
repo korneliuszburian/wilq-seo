@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.operator_labels import blocker_count_label, impact_comparison_summary_label
 
 from .core import ActionMode, ActionRisk, ActionStatus, MetricFact, OpportunityDomain, utc_now
@@ -23,6 +24,15 @@ class AuditEvent(BaseModel):
     redacted: bool = True
 
 
+class ActionWordPressDraftApplyBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    next_step: str = Field(min_length=1)
+
+
 class ActionMutationAuditRecord(BaseModel):
     id: str
     action_id: str
@@ -39,6 +49,10 @@ class ActionMutationAuditRecord(BaseModel):
     audit_event_id: str
     evidence_ids: list[str] = Field(default_factory=list)
     blockers: list[str] = Field(default_factory=list)
+    wordpress_draft_binding: ContentDraftRevisionBinding | None = None
+    wordpress_revision_blockers: list[ActionWordPressDraftApplyBlocker] = Field(
+        default_factory=list
+    )
     summary: str
     redacted: bool = True
 
@@ -152,6 +166,7 @@ class ActionReviewRequest(BaseModel):
     notes: str = Field(min_length=1, max_length=2000)
     checked_items: list[str] = Field(default_factory=list)
     blockers: list[str] = Field(default_factory=list)
+    wordpress_draft: ContentDraftRevisionBinding | None = None
 
     @field_validator("checked_items", "blockers")
     @classmethod
@@ -308,12 +323,16 @@ class ActionApplyResult(BaseModel):
     audit_event: AuditEvent
     mutation_audit: ActionMutationAuditRecord
     errors: list[str] = Field(default_factory=list)
+    wordpress_revision_blockers: list[ActionWordPressDraftApplyBlocker] = Field(
+        default_factory=list
+    )
     adapter_result: dict[str, Any] | None = None
 
 
 class ActionPreviewRequest(BaseModel):
     requested_by: str | None = None
     max_items: int = Field(default=8, ge=1, le=50)
+    wordpress_draft: ContentDraftRevisionBinding | None = None
 
 
 class ActionPreviewResult(BaseModel):
@@ -347,6 +366,7 @@ class ActionConfirmRequest(BaseModel):
     preview_acknowledged: bool = False
     target_roas: float | None = Field(default=None, gt=0)
     target_cpa_micros: int | None = Field(default=None, gt=0)
+    wordpress_draft: ContentDraftRevisionBinding | None = None
 
 
 class ActionConfirmResult(BaseModel):
@@ -399,6 +419,7 @@ class ActionImpactCheckRequest(BaseModel):
     notes: str = Field(min_length=1, max_length=2000)
     pre_window_days: int = Field(default=7, ge=1, le=90)
     post_window_days: int = Field(default=7, ge=1, le=90)
+    wordpress_draft: ContentDraftRevisionBinding | None = None
 
 
 class ActionImpactCheckResult(BaseModel):
@@ -418,11 +439,7 @@ class ActionImpactCheckResult(BaseModel):
     review_gate: ActionReviewGate
 
 
-class ActionWordPressDraftApplyInput(BaseModel):
-    work_item_id: str = Field(min_length=1)
-    handoff_id: str = Field(min_length=1)
-    draft_package_id: str = Field(min_length=1)
-    target_url: str = Field(min_length=1)
+ActionWordPressDraftApplyInput = ContentDraftRevisionBinding
 
 
 class ActionApplyRequest(BaseModel):

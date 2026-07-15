@@ -861,6 +861,11 @@ def _revision_conflict_response(conflict: ContentDraftRevisionConflict) -> JSONR
 
 
 def _revision_conflict_next_step(code: str) -> str:
+    if code == "apply_in_progress":
+        return (
+            "Trwa zapis dokładnie zatwierdzonej wersji do WordPress. Poczekaj na wynik "
+            "tej próby, odśwież snapshot i dopiero potem zapisz lub oceń nową wersję."
+        )
     if code == "stale_base":
         return (
             "Na serwerze jest nowsza wersja. Zachowaj swój tekst, porównaj zmiany "

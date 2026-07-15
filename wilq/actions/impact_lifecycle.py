@@ -61,6 +61,7 @@ def impact_check_action(
             gate_labels=gate_labels,
         ),
         evidence_ids=evidence_ids,
+        wordpress_draft_binding=request.wordpress_draft,
     )
     action.audit_events = [audit, *action.audit_events]
     action.review_gate = review_gate(action)

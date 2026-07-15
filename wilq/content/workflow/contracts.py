@@ -79,6 +79,7 @@ from wilq.schemas import ContentFreshnessAssessment
 ContentDraftRevisionPublicConflictCode = Literal[
     "workspace_not_saveable",
     "revision_not_reviewable",
+    "apply_in_progress",
     "stale_base",
     "revision_not_found",
     "stale_revision",

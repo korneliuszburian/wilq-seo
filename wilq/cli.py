@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import typer
 
@@ -19,6 +19,11 @@ from wilq.connectors.localo.oauth import (
 )
 from wilq.connectors.refresh import run_connector_refresh
 from wilq.connectors.registry import list_connector_statuses
+from wilq.connectors.wordpress.client import WordPressDraftReadError, read_wordpress_draft_post
+from wilq.content.workflow.store import (
+    WordPressRevisionApplyClaimFinalStatus,
+    content_workflow_store,
+)
 from wilq.credentials.runtime import credential_runtime_status
 from wilq.jobs.models import JobRunRequest
 from wilq.jobs.registry import list_jobs
@@ -33,11 +38,13 @@ metrics_app = typer.Typer(help="DuckDB analytics metric store commands.")
 jobs_app = typer.Typer(help="Local job orchestration commands.")
 google_ads_app = typer.Typer(help="Google Ads OAuth and operator setup commands.")
 localo_app = typer.Typer(help="Localo MCP OAuth setup commands.")
+wordpress_apply_app = typer.Typer(help="Recovery of interrupted WordPress draft applies.")
 app.add_typer(connectors_app, name="connectors")
 app.add_typer(metrics_app, name="metrics")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(google_ads_app, name="google-ads")
 app.add_typer(localo_app, name="localo")
+app.add_typer(wordpress_apply_app, name="wordpress-apply")
 
 
 @app.command()
@@ -226,6 +233,82 @@ def localo_oauth_exchange(
             code_verifier=code_verifier,
             write_env=write_env,
         )
+    )
+
+
+@wordpress_apply_app.command("reconcile")
+def wordpress_apply_reconcile(
+    work_item_id: Annotated[
+        str,
+        typer.Option("--work-item-id", help="Work item with one unresolved apply claim."),
+    ],
+    outcome: Annotated[
+        str,
+        typer.Option("--outcome", help="Explicit result: applied or failed."),
+    ],
+    confirmed_by: Annotated[
+        str,
+        typer.Option("--confirmed-by", help="Local operator attribution."),
+    ],
+    notes: Annotated[
+        str,
+        typer.Option("--notes", help="What was checked in WordPress."),
+    ],
+    wordpress_post_id: Annotated[
+        str | None,
+        typer.Option("--wordpress-post-id", help="Required for an applied draft."),
+    ] = None,
+    confirm_inspection: Annotated[
+        bool,
+        typer.Option(
+            "--confirm-inspection",
+            help="Confirm that WordPress was inspected and no write should be retried.",
+        ),
+    ] = False,
+) -> None:
+    """Resolve a crashed apply after WordPress inspection, without retrying the write."""
+    normalized_outcome = outcome.strip().lower()
+    if normalized_outcome not in {"applied", "failed"}:
+        raise typer.BadParameter("--outcome musi mieć wartość applied albo failed.")
+    if not confirmed_by.strip() or not notes.strip():
+        raise typer.BadParameter("Wymagane są --confirmed-by i niepusta --notes.")
+    if not confirm_inspection:
+        raise typer.BadParameter(
+            "Wymagane jest --confirm-inspection po ręcznym sprawdzeniu WordPress."
+        )
+    if normalized_outcome == "applied":
+        if not wordpress_post_id:
+            raise typer.BadParameter("Applied wymaga --wordpress-post-id.")
+        try:
+            readback = read_wordpress_draft_post(wordpress_post_id)
+        except WordPressDraftReadError as exc:
+            raise typer.BadParameter(str(exc)) from exc
+        if readback.status != "draft":
+            raise typer.BadParameter("Wskazany wpis WordPress nie ma statusu draft.")
+    elif wordpress_post_id is not None:
+        raise typer.BadParameter("Failed nie może wskazywać WordPress post ID.")
+
+    resolved_outcome = cast(WordPressRevisionApplyClaimFinalStatus, normalized_outcome)
+    try:
+        audit = content_workflow_store().reconcile_wordpress_revision_apply_claim(
+            work_item_id=work_item_id,
+            outcome=resolved_outcome,
+            reconciled_by=confirmed_by.strip(),
+            notes=notes.strip(),
+            wordpress_post_id=wordpress_post_id,
+        )
+    except (RuntimeError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    _print_json(
+        {
+            "status": "reconciled",
+            "work_item_id": work_item_id,
+            "outcome": normalized_outcome,
+            "wordpress_post_id": wordpress_post_id,
+            "audit_event_id": audit.id,
+            "external_write_retried": False,
+            "actor_contract": "local_operator_attribution_only",
+        }
     )
 
 

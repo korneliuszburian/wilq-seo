@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from hashlib import sha256
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import (
     BaseModel,
@@ -13,7 +13,12 @@ from pydantic import (
     model_validator,
 )
 
-from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.workflow.revision_binding import (
+    ContentDraftRevisionBinding as ContentDraftRevisionBinding,
+)
+
+if TYPE_CHECKING:
+    from wilq.content.drafts.package import ContentDraftPackage
 
 ContentDraftRevisionDecision = Literal[
     "approved",
@@ -31,6 +36,7 @@ ContentDraftRevisionStateStatus = Literal[
 ]
 ContentDraftRevisionWriteStatus = Literal["created", "idempotent", "conflict"]
 ContentDraftRevisionConflictCode = Literal[
+    "apply_in_progress",
     "stale_base",
     "revision_not_found",
     "stale_revision",

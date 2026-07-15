@@ -1780,6 +1780,7 @@ function wordpressHandoff() {
     intended_final_url: "https://ekologus.pl/bdo/",
     preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+    revision_sections: [],
     publish_allowed: false,
     destructive_update_allowed: false
   };

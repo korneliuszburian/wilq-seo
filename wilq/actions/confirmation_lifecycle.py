@@ -46,6 +46,7 @@ def confirm_action(
         action=action,
         actor=request.confirmed_by,
         event_type=event_type,
+        wordpress_draft_binding=request.wordpress_draft,
         summary=confirmation_summary(
             action,
             request,

@@ -1,27 +1,43 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, Lock
 from types import SimpleNamespace
 from typing import Any, cast
 
 from fastapi.testclient import TestClient
+from typer.testing import CliRunner
 
 import wilq.actions.service as action_service
 from apps.api.wilq_api.main import app
 from wilq.actions.service import apply_action
 from wilq.actions.wordpress_mutation_requirements import WordPressDraftApplyCapability
+from wilq.cli import app as cli_app
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
-from wilq.content.handoff.wordpress_execution import ContentWordPressDraftWriteAuthorization
+from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftExecutionBoundary,
+    ContentWordPressDraftExecutionResult,
+    ContentWordPressDraftWriteAuthorization,
+)
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.revisions import (
+    ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionReviewCommand,
+    ContentDraftRevisionSection,
+)
+from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMode,
+    ActionMutationAuditRecord,
     ActionObject,
     ActionRisk,
     ActionStatus,
-    ActionWordPressDraftApplyInput,
     AuditEvent,
     OpportunityDomain,
 )
+from wilq.storage.local_state import local_state_store
 
 
 def _get_mutation_readiness(action_id: str) -> dict[str, Any]:
@@ -40,6 +56,242 @@ def _get_mutation_readiness_summary() -> dict[str, Any]:
     data = cast(dict[str, Any], response.json())
     assert data["response_type"] == "action_mutation_readiness_summary"
     return data
+
+
+def _seed_approved_revision_binding(
+    *,
+    work_item_id: str,
+    draft_package_id: str,
+    final_canonical_url: str,
+) -> ContentDraftRevisionBinding:
+    store = content_workflow_store()
+    created = store.append_draft_revision(
+        ContentDraftRevisionAppendCommand(
+            work_item_id=work_item_id,
+            draft_package_id=draft_package_id,
+            draft_package_digest="b" * 64,
+            final_canonical_url=final_canonical_url,
+            title="Zatwierdzona treść",
+            sections=[
+                ContentDraftRevisionSection(
+                    heading="Zakres usługi",
+                    body_markdown="Dokładna treść zatwierdzonej wersji.",
+                    evidence_ids=["ev_wordpress_draft_apply_boundary"],
+                )
+            ],
+            created_by="operator_test",
+        )
+    )
+    assert created.revision is not None
+    revision = created.revision
+    reviewed = store.review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=work_item_id,
+            revision_id=revision.revision_id,
+            revision_digest=revision.content_digest,
+            decision="approved",
+            reviewed_by="operator_test",
+            checked_items=["tekst", "dowody"],
+            evidence_ids=["ev_wordpress_draft_apply_boundary"],
+        )
+    )
+    assert reviewed.review is not None
+    return ContentDraftRevisionBinding(
+        work_item_id=work_item_id,
+        handoff_id=f"wordpress_draft_handoff_{work_item_id}_{revision.revision_id}",
+        revision_id=revision.revision_id,
+        content_digest=revision.content_digest,
+        draft_package_id=revision.draft_package_id,
+        draft_package_digest=revision.draft_package_digest,
+        approval_decision_id=reviewed.review.decision_id,
+        final_canonical_url=revision.final_canonical_url,
+    )
+
+
+def test_failed_wordpress_apply_claim_consumes_binding_and_releases_revision_lock(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "failed_apply_claim.sqlite3"))
+    binding = _seed_approved_revision_binding(
+        work_item_id="work_item_failed_claim",
+        draft_package_id="draft_package_failed_claim",
+        final_canonical_url="https://ekologus.pl/failed-claim/",
+    )
+    store = content_workflow_store()
+
+    assert (
+        store.claim_wordpress_revision_apply(
+            binding,
+            action_id="act_apply_wordpress_draft_handoff",
+            claimed_by="operator_test",
+        )
+        == "acquired"
+    )
+    outcome_audit = AuditEvent(
+        id="audit_failed_claim_outcome",
+        action_id="act_apply_wordpress_draft_handoff",
+        event_type="apply_blocked",
+        actor="operator_test",
+        summary="Adapter zwrócił niepewny wynik.",
+        details={"wordpress_draft_binding": binding.model_dump(mode="json")},
+    )
+    mutation_audit = ActionMutationAuditRecord(
+        id="mutation_failed_claim_outcome",
+        action_id="act_apply_wordpress_draft_handoff",
+        connector="wordpress_ekologus",
+        status="blocked",
+        actor="operator_test",
+        audit_event_id=outcome_audit.id,
+        summary="Niepewny wynik adaptera został zapisany atomowo.",
+        wordpress_draft_binding=binding,
+    )
+    blocked_execution = ContentWordPressDraftExecutionResult(
+        status="blocked",
+        mode="live",
+        boundary=ContentWordPressDraftExecutionBoundary(
+            live_write_enabled=True,
+            live_adapter_configured=True,
+        ),
+        external_write_attempted=True,
+    )
+    store.finish_wordpress_revision_apply_claim(
+        binding,
+        status="failed",
+        audit_event=outcome_audit,
+        mutation_audit=mutation_audit,
+        adapter_result={
+            "execution_result": blocked_execution.model_dump(mode="json")
+        },
+    )
+    assert (
+        store.claim_wordpress_revision_apply(
+            binding,
+            action_id="act_apply_wordpress_draft_handoff",
+            claimed_by="operator_test",
+        )
+        == "failed"
+    )
+    assert local_state_store().list_audit_events(action_id=outcome_audit.action_id)[0].id == (
+        outcome_audit.id
+    )
+    assert local_state_store().list_action_mutation_audits(
+        action_id=outcome_audit.action_id
+    )[0].id == mutation_audit.id
+    assert store.latest_wordpress_draft_execution(binding.work_item_id) == blocked_execution
+
+    next_revision = store.append_draft_revision(
+        ContentDraftRevisionAppendCommand(
+            work_item_id=binding.work_item_id,
+            base_revision_id=binding.revision_id,
+            draft_package_id=binding.draft_package_id,
+            draft_package_digest=binding.draft_package_digest,
+            final_canonical_url=binding.final_canonical_url,
+            title="Nowa wersja po nieudanym apply",
+            sections=[
+                ContentDraftRevisionSection(
+                    heading="Zakres usługi",
+                    body_markdown="Jawnie nowa wersja wymaga nowego review.",
+                    evidence_ids=["ev_wordpress_draft_apply_boundary"],
+                )
+            ],
+            created_by="operator_test",
+        )
+    )
+    assert next_revision.status == "created"
+    assert (
+        store.claim_wordpress_revision_apply(
+            binding,
+            action_id="act_apply_wordpress_draft_handoff",
+            claimed_by="operator_test",
+        )
+        == "not_current"
+    )
+
+
+def test_wordpress_apply_reconciliation_reads_draft_and_never_retries_write(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "reconcile_apply_claim.sqlite3"))
+    binding = _seed_approved_revision_binding(
+        work_item_id="work_item_reconcile_claim",
+        draft_package_id="draft_package_reconcile_claim",
+        final_canonical_url="https://ekologus.pl/reconcile-claim/",
+    )
+    store = content_workflow_store()
+    assert (
+        store.claim_wordpress_revision_apply(
+            binding,
+            action_id="act_apply_wordpress_draft_handoff",
+            claimed_by="operator_before_crash",
+        )
+        == "acquired"
+    )
+    readback_ids: list[str] = []
+    write_attempts: list[str] = []
+
+    def draft_readback(post_id: str):
+        readback_ids.append(post_id)
+        return SimpleNamespace(status="draft")
+
+    def forbidden_write(*_args, **_kwargs):
+        write_attempts.append("unexpected")
+        raise AssertionError("Reconciliation retried the WordPress write.")
+
+    monkeypatch.setattr("wilq.cli.read_wordpress_draft_post", draft_readback)
+    monkeypatch.setattr(
+        "wilq.connectors.wordpress.client.create_wordpress_draft_post",
+        forbidden_write,
+    )
+
+    cli_args = [
+        "wordpress-apply",
+        "reconcile",
+        "--work-item-id",
+        binding.work_item_id,
+        "--outcome",
+        "applied",
+        "--confirmed-by",
+        "operator_recovery",
+        "--notes",
+        "Sprawdzono istniejący szkic na devie po przerwanym procesie.",
+        "--wordpress-post-id",
+        "1275",
+        "--confirm-inspection",
+    ]
+    active_claim = CliRunner().invoke(cli_app, cli_args)
+    assert active_claim.exit_code != 0
+    assert readback_ids == ["1275"]
+    assert write_attempts == []
+
+    monkeypatch.setattr(
+        "wilq.content.workflow.store.WORDPRESS_APPLY_RECONCILIATION_MIN_AGE_SECONDS",
+        0,
+    )
+    result = CliRunner().invoke(cli_app, cli_args)
+
+    assert result.exit_code == 0, result.output
+    assert readback_ids == ["1275", "1275"]
+    assert write_attempts == []
+    assert "local_operator_attribution_only" in result.output
+    reconciled_execution = store.latest_wordpress_draft_execution(binding.work_item_id)
+    assert reconciled_execution is not None
+    assert reconciled_execution.wordpress_post_id == "1275"
+    assert (
+        store.claim_wordpress_revision_apply(
+            binding,
+            action_id="act_apply_wordpress_draft_handoff",
+            claimed_by="operator_replay",
+        )
+        == "applied"
+    )
+    assert any(
+        event.event_type == "action_apply_reconciled"
+        for event in local_state_store().list_audit_events(
+            action_id="act_apply_wordpress_draft_handoff"
+        )
+    )
 
 
 def test_action_mutation_readiness_blocks_prepare_only_action(monkeypatch, tmp_path) -> None:
@@ -236,8 +488,12 @@ def test_wordpress_apply_audit_separates_adapter_boundary_from_vendor_write(
     assert result.applied is False
     assert result.status == "blocked"
     assert result.adapter_result is None
+    assert [blocker.code for blocker in result.wordpress_revision_blockers] == [
+        "wordpress_revision_binding_required"
+    ]
     assert result.errors == [
-        "Apply szkicu WordPress wymaga typed work item, handoff, draft package i target URL."
+        "Brakuje dokładnej wersji treści: Apply WordPress wymaga "
+        "identyfikatorów zapisanej wersji, paczki i decyzji."
     ]
     assert result.mutation_audit.adapter_reached is False
     assert result.mutation_audit.external_write_attempted is False
@@ -245,7 +501,11 @@ def test_wordpress_apply_audit_separates_adapter_boundary_from_vendor_write(
     assert "Mutation blocked before any vendor API call" in result.mutation_audit.summary
 
 
-def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> None:
+def test_wordpress_apply_uses_typed_capability_and_dev_adapter(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "adapter_apply.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
     monkeypatch.setattr(
         "wilq.actions.service.get_connector_status",
@@ -296,9 +556,14 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
             ),
         ],
     )
+    binding = _seed_approved_revision_binding(
+        work_item_id="content_work_item_bdo",
+        draft_package_id="draft_package_content_work_item_bdo",
+        final_canonical_url="https://ekologus.pl/bdo/",
+    )
     handoff = ContentWordPressDraftHandoff.model_validate(
         {
-            "id": "wordpress_draft_handoff_content_work_item_bdo",
+            "id": binding.handoff_id,
             "work_item_id": "content_work_item_bdo",
             "draft_package_id": "draft_package_content_work_item_bdo",
             "human_review_id": "human_review_bdo",
@@ -308,6 +573,7 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
             "intended_final_url": "https://ekologus.pl/bdo/",
             "preview_url": "https://ekologus.dev.proudsite.pl/bdo/",
             "evidence_ids": ["ev_wordpress_draft_apply_boundary"],
+            "revision_binding": binding.model_dump(mode="json"),
         }
     )
     draft_package = ContentDraftPackage.model_validate(
@@ -329,14 +595,17 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
     capability = WordPressDraftApplyCapability(
         handoff=handoff,
         draft_package=draft_package,
-        write_authorization=ContentWordPressDraftWriteAuthorization(
-            action_id=action.id,
-            preview_audit_id="audit_preview_test",
-            review_audit_id="audit_review_test",
-            confirmation_audit_id="audit_confirm_test",
-            confirmed_by="operator_test",
-        ),
-    )
+            write_authorization=ContentWordPressDraftWriteAuthorization(
+                action_id=action.id,
+                preview_audit_id="audit_preview_test",
+                review_audit_id="audit_review_test",
+                confirmation_audit_id="audit_confirm_test",
+                impact_audit_id="audit_impact_test",
+                confirmed_by="operator_test",
+                wordpress_draft_binding=binding,
+            ),
+            section_overrides=[],
+        )
     monkeypatch.setattr(
         action_service,
         "_wordpress_draft_apply_capability",
@@ -346,18 +615,17 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
         "wilq.actions.wordpress_mutation_requirements.create_wordpress_draft_post",
         lambda _payload: "321",
     )
+    monkeypatch.setattr(
+        "wilq.actions.wordpress_mutation_requirements.wordpress_draft_write_authorization_verified",
+        lambda _authorization: True,
+    )
 
     result = apply_action(
         action,
         ActionApplyRequest(
             confirm=True,
             confirmed_by="operator_test",
-            wordpress_draft=ActionWordPressDraftApplyInput(
-                work_item_id="content_work_item_bdo",
-                handoff_id=handoff.id,
-                draft_package_id=draft_package.id,
-                target_url=handoff.final_canonical_url,
-            ),
+            wordpress_draft=binding,
         ),
     )
 
@@ -372,6 +640,17 @@ def test_wordpress_apply_uses_typed_capability_and_dev_adapter(monkeypatch) -> N
 
 
 def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) -> None:
+    binding = ContentDraftRevisionBinding(
+        work_item_id="content_work_item_bdo",
+        handoff_id="wordpress_draft_handoff_content_work_item_bdo",
+        revision_id="content_revision_bdo_v1",
+        content_digest="a" * 64,
+        draft_package_id="draft_package_content_work_item_bdo",
+        draft_package_digest="b" * 64,
+        approval_decision_id="content_revision_decision_bdo_v1",
+        final_canonical_url="https://ekologus.pl/bdo/",
+    )
+    binding_details = {"wordpress_draft_binding": binding.model_dump(mode="json")}
     action = ActionObject(
         id="act_apply_wordpress_draft_handoff",
         title="Aktywuj zapis szkicu WordPress draft-only",
@@ -389,29 +668,46 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         audit_events=[
             AuditEvent(
                 id="audit_preview_builder",
-                action_id=action_id,
+                action_id="act_apply_wordpress_draft_handoff",
                 event_type="action_preview_generated",
                 actor="operator_test",
                 summary="Podgląd zapisany.",
-            )
-            for action_id in ["act_apply_wordpress_draft_handoff"]
-        ]
-        + [
+                details=binding_details,
+            ),
+            AuditEvent(
+                id="audit_review_builder",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="human_review_approved_for_prepare",
+                actor="operator_test",
+                summary="Review zapisane.",
+                details=binding_details,
+            ),
             AuditEvent(
                 id="audit_confirm_builder",
                 action_id="act_apply_wordpress_draft_handoff",
                 event_type="action_apply_confirmed",
                 actor="operator_test",
                 summary="Potwierdzenie zapisane.",
-            )
+                details=binding_details,
+            ),
+            AuditEvent(
+                id="audit_impact_builder",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="action_impact_check_completed",
+                actor="operator_test",
+                summary="Impact zapisany.",
+                details=binding_details,
+            ),
         ],
     )
     handoff = SimpleNamespace(
-        id="wordpress_draft_handoff_content_work_item_bdo",
+        id=binding.handoff_id,
         work_item_id="content_work_item_bdo",
         final_canonical_url="https://ekologus.pl/bdo/",
         publish_allowed=False,
         destructive_update_allowed=False,
+        revision_binding=binding,
+        revision_sections=[],
     )
     draft_package = SimpleNamespace(id="draft_package_content_work_item_bdo")
     snapshot = SimpleNamespace(
@@ -419,11 +715,9 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
             draft_package_result=SimpleNamespace(draft_package=draft_package)
         ),
         wordpress_handoff=SimpleNamespace(
-            handoff_result=SimpleNamespace(handoff=handoff)
+            handoff_result=SimpleNamespace(handoff=handoff, blockers=[])
         ),
     )
-    review = SimpleNamespace(id="human_review_content_work_item_bdo")
-    audit = SimpleNamespace(id="audit_content_work_item_bdo")
     monkeypatch.setattr(
         "wilq.briefing.content_diagnostics.build_content_diagnostics_cached",
         lambda: SimpleNamespace(),
@@ -431,13 +725,16 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
     monkeypatch.setattr(
         "wilq.content.workflow.store.content_workflow_store",
         lambda: SimpleNamespace(
-            latest_human_review=lambda _work_item_id: review,
-            latest_audit_for_review=lambda _review_id: audit,
+            load_draft_revision_state=lambda _work_item_id: SimpleNamespace(),
         ),
     )
     monkeypatch.setattr(
         "wilq.content.workflow.api.build_content_work_item_diagnostics_snapshot_response_for_work_item",
-        lambda _diagnostics, _work_item_id, *, human_review, audit: snapshot,
+        lambda _diagnostics, _work_item_id, **_kwargs: snapshot,
+    )
+    monkeypatch.setattr(
+        "wilq.actions.wordpress_mutation_requirements.wordpress_draft_write_authorization_verified",
+        lambda _authorization: True,
     )
 
     capability, errors = action_service._wordpress_draft_apply_capability(
@@ -445,18 +742,13 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         ActionApplyRequest(
             confirm=True,
             confirmed_by="operator_test",
-            wordpress_draft=ActionWordPressDraftApplyInput(
-                work_item_id="content_work_item_bdo",
-                handoff_id=handoff.id,
-                draft_package_id=draft_package.id,
-                target_url=handoff.final_canonical_url,
-            ),
+            wordpress_draft=binding,
         ),
     )
 
     assert errors == []
     assert capability is not None
-    assert capability.write_authorization.review_audit_id == review.id
+    assert capability.write_authorization.review_audit_id == "audit_review_builder"
     assert capability.write_authorization.confirmation_audit_id == "audit_confirm_builder"
 
     mismatch, mismatch_errors = action_service._wordpress_draft_apply_capability(
@@ -464,16 +756,15 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         ActionApplyRequest(
             confirm=True,
             confirmed_by="operator_test",
-            wordpress_draft=ActionWordPressDraftApplyInput(
-                work_item_id="content_work_item_bdo",
-                handoff_id=handoff.id,
-                draft_package_id=draft_package.id,
-                target_url="https://ekologus.pl/inny-adres/",
+            wordpress_draft=binding.model_copy(
+                update={"final_canonical_url": "https://ekologus.pl/inny-adres/"}
             ),
         ),
     )
     assert mismatch is None
-    assert mismatch_errors == ["Canonical URL nie pasuje do zatwierdzonego handoffu."]
+    assert [blocker.code for blocker in mismatch_errors] == [
+        "wordpress_revision_binding_mismatch"
+    ]
 
 
 def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_binding(
@@ -482,6 +773,12 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "route_apply.sqlite3"))
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    binding = _seed_approved_revision_binding(
+        work_item_id="work_item_route",
+        draft_package_id="draft_package_route",
+        final_canonical_url="https://ekologus.pl/route/",
+    )
+    binding_details = {"wordpress_draft_binding": binding.model_dump(mode="json")}
     action = ActionObject(
         id="act_apply_wordpress_draft_handoff",
         title="Aktywuj zapis szkicu WordPress draft-only",
@@ -503,6 +800,15 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 event_type="action_preview_generated",
                 actor="operator_route",
                 summary="Podgląd.",
+                details=binding_details,
+            ),
+            AuditEvent(
+                id="audit_review_route",
+                action_id="act_apply_wordpress_draft_handoff",
+                event_type="human_review_approved_for_prepare",
+                actor="operator_route",
+                summary="Review.",
+                details=binding_details,
             ),
             AuditEvent(
                 id="audit_confirm_route",
@@ -510,6 +816,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 event_type="action_apply_confirmed",
                 actor="operator_route",
                 summary="Potwierdzenie.",
+                details=binding_details,
             ),
             AuditEvent(
                 id="audit_impact_route",
@@ -517,15 +824,18 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 event_type="action_impact_check_completed",
                 actor="operator_route",
                 summary="Impact check.",
+                details=binding_details,
             ),
         ],
     )
     handoff = SimpleNamespace(
-        id="handoff_route",
+        id=binding.handoff_id,
         work_item_id="work_item_route",
         final_canonical_url="https://ekologus.pl/route/",
         publish_allowed=False,
         destructive_update_allowed=False,
+        revision_binding=binding,
+        revision_sections=[],
     )
     draft_package = SimpleNamespace(id="draft_package_route")
     snapshot = SimpleNamespace(
@@ -533,14 +843,13 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
             draft_package_result=SimpleNamespace(draft_package=draft_package)
         ),
         wordpress_handoff=SimpleNamespace(
-            handoff_result=SimpleNamespace(handoff=handoff)
+            handoff_result=SimpleNamespace(handoff=handoff, blockers=[])
         ),
     )
-    review = SimpleNamespace(id="review_route")
     monkeypatch.setattr("apps.api.wilq_api.routers.actions.get_action", lambda _id: action)
     monkeypatch.setattr(
         "wilq.actions.service.get_connector_status",
-        lambda _id: SimpleNamespace(configured=True),
+        lambda _id: SimpleNamespace(configured=True, label="WordPress"),
     )
     monkeypatch.setattr(
         "wilq.briefing.content_diagnostics.build_content_diagnostics_cached",
@@ -549,8 +858,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
     monkeypatch.setattr(
         "wilq.content.workflow.store.content_workflow_store",
         lambda: SimpleNamespace(
-            latest_human_review=lambda _id: review,
-            latest_audit_for_review=lambda _id: SimpleNamespace(id="audit_content_route"),
+            load_draft_revision_state=lambda _id: SimpleNamespace(),
         ),
     )
     monkeypatch.setattr(
@@ -558,51 +866,124 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
         lambda *_args, **_kwargs: snapshot,
     )
     monkeypatch.setattr(
-        "wilq.actions.wordpress_mutation_requirements.execute_content_wordpress_draft_handoff",
-        lambda **_kwargs: SimpleNamespace(
+        "wilq.actions.wordpress_mutation_requirements.wordpress_draft_write_authorization_verified",
+        lambda _authorization: True,
+    )
+    adapter_started = Event()
+    release_adapter = Event()
+    adapter_call_lock = Lock()
+    adapter_call_count = 0
+
+    def execute_wordpress_draft(**_kwargs):
+        nonlocal adapter_call_count
+        with adapter_call_lock:
+            adapter_call_count += 1
+        adapter_started.set()
+        assert release_adapter.wait(timeout=5)
+        return ContentWordPressDraftExecutionResult(
             status="created",
             mode="live",
             external_write_attempted=True,
             wordpress_post_id="42",
-            blockers=[],
-            boundary=SimpleNamespace(
-                allowed_operation="create_wordpress_draft",
-                dry_run_default=True,
+            boundary=ContentWordPressDraftExecutionBoundary(
                 live_write_enabled=True,
                 live_adapter_configured=True,
-                publish_allowed=False,
-                destructive_update_allowed=False,
             ),
-            payload={},
-            model_dump=lambda **_kwargs: {
-                "status": "created",
-                "mode": "live",
-                "external_write_attempted": True,
-                "wordpress_post_id": "42",
-                "blockers": [],
-            },
-        ),
+        )
+
+    monkeypatch.setattr(
+        "wilq.actions.wordpress_mutation_requirements.execute_content_wordpress_draft_handoff",
+        execute_wordpress_draft,
     )
 
-    response = TestClient(app).post(
+    apply_payload = {
+        "confirm": True,
+        "confirmed_by": "operator_route",
+        "wordpress_draft": binding.model_dump(mode="json"),
+    }
+
+    def request_apply():
+        return TestClient(app).post(
+            "/api/actions/act_apply_wordpress_draft_handoff/apply",
+            json=apply_payload,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first_future = executor.submit(request_apply)
+        assert adapter_started.wait(timeout=5)
+        second_response = executor.submit(request_apply).result(timeout=5)
+
+        append_during_apply = content_workflow_store().append_draft_revision(
+            ContentDraftRevisionAppendCommand(
+                work_item_id=binding.work_item_id,
+                base_revision_id=binding.revision_id,
+                draft_package_id=binding.draft_package_id,
+                draft_package_digest=binding.draft_package_digest,
+                final_canonical_url=binding.final_canonical_url,
+                title="Nowsza wersja podczas apply",
+                sections=[
+                    ContentDraftRevisionSection(
+                        heading="Zakres usługi",
+                        body_markdown="Treść, która nie może wyprzedzić trwającego apply.",
+                        evidence_ids=["ev_wordpress_draft_apply_boundary"],
+                    )
+                ],
+                created_by="operator_route",
+            )
+        )
+        assert append_during_apply.conflict is not None
+        assert append_during_apply.conflict.code == "apply_in_progress"
+
+        release_adapter.set()
+        first_response = first_future.result(timeout=5)
+
+    assert first_response.status_code == 200, first_response.text
+    first_data = first_response.json()
+    assert first_data["applied"] is True
+    assert first_data["adapter_result"]["external_write_attempted"] is True
+    assert first_data["mutation_audit"]["adapter_reached"] is True
+
+    assert second_response.status_code == 409, second_response.text
+    second_detail = second_response.json()["detail"]
+    assert [
+        blocker["code"] for blocker in second_detail["wordpress_revision_blockers"]
+    ] == ["wordpress_revision_apply_in_progress"]
+    assert second_detail["adapter_result"] is None
+    assert second_detail["mutation_audit"]["adapter_reached"] is False
+    assert second_detail["mutation_audit"]["external_write_attempted"] is False
+
+    replay_response = TestClient(app).post(
         "/api/actions/act_apply_wordpress_draft_handoff/apply",
-        json={
-            "confirm": True,
-            "confirmed_by": "operator_route",
-            "wordpress_draft": {
-                "work_item_id": handoff.work_item_id,
-                "handoff_id": handoff.id,
-                "draft_package_id": draft_package.id,
-                "target_url": handoff.final_canonical_url,
-            },
-        },
+        json=apply_payload,
     )
+    assert replay_response.status_code == 409, replay_response.text
+    replay_detail = replay_response.json()["detail"]
+    assert [
+        blocker["code"] for blocker in replay_detail["wordpress_revision_blockers"]
+    ] == ["wordpress_revision_already_applied"]
+    assert replay_detail["mutation_audit"]["adapter_reached"] is False
+    assert replay_detail["mutation_audit"]["external_write_attempted"] is False
+    assert adapter_call_count == 1
 
-    assert response.status_code == 200, response.text
-    data = response.json()
-    assert data["applied"] is True
-    assert data["adapter_result"]["external_write_attempted"] is True
-    assert data["mutation_audit"]["adapter_reached"] is True
+    append_after_apply = content_workflow_store().append_draft_revision(
+        ContentDraftRevisionAppendCommand(
+            work_item_id=binding.work_item_id,
+            base_revision_id=binding.revision_id,
+            draft_package_id=binding.draft_package_id,
+            draft_package_digest=binding.draft_package_digest,
+            final_canonical_url=binding.final_canonical_url,
+            title="Nowsza wersja po apply",
+            sections=[
+                ContentDraftRevisionSection(
+                    heading="Zakres usługi",
+                    body_markdown="Nowa wersja jest dozwolona po finalizacji claimu.",
+                    evidence_ids=["ev_wordpress_draft_apply_boundary"],
+                )
+            ],
+            created_by="operator_route",
+        )
+    )
+    assert append_after_apply.status == "created"
 
 
 def test_action_mutation_readiness_summary_reports_no_vendor_writes(

@@ -5,14 +5,20 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-`wilq-seo-r564.8` jest zamknięty z kompletnym revision workspace,
-exact-review proof oraz pełnym browser/build proof. Następny P0 child
-`wilq-seo-r564` ma związać WordPress handoff i ActionObject z dokładnie
-zaakceptowaną rewizją oraz fail-close legacy review/audit dla revision-enabled
-work itemów.
+`wilq-seo-r564.9` domknął API seam exact revision → WordPress draft:
+immutable handoff, ten sam binding w preview/review/confirm/impact/apply,
+typed blocker i fail-close legacy review/audit. Syntetyczny adapter dostał
+dokładnie zatwierdzony tekst; v2, manipulacje, równoległy apply i replay
+zatrzymały się przed adapterem. Jednorazowa zgoda jest atomowo konsumowana, a
+sekretopodobne wartości w lineage są redagowane przed audytem. Durable start i
+atomowy outcome chronią crash window; przerwany claim ma lokalne, readbackowe
+reconciliation bez ponowienia write.
+Następny P0 ma udostępnić ten sam kontrakt człowiekowi jako zwarty inline
+multi-step w `/content-workflow` zamiast ogólnego linku do akcji bez kontekstu.
 
-Dopiero po udowodnieniu rewizji projektuj server-side handshake WILQ API →
-Codex app-server/SDK korzystający z istniejącego `codex login` przez ChatGPT.
+Po udowodnieniu rewizji następny bounded research/prototype to server-side
+handshake WILQ API → Codex app-server korzystający z istniejącego `codex login`
+przez ChatGPT.
 Browser nie rozmawia z Codex bezpośrednio; Codex nie jest właścicielem workflow,
 dowodów, approval ani ActionObject. Nie dodawaj wymogu `OPENAI_API_KEY`,
 Agents SDK, Ollamy, fallbacku modelu ani alternatywnego runtime’u.
@@ -41,8 +47,9 @@ kontynuuj najwyższy bezpieczny task.
 - Zapisane wersje są append-only i wracają po reloadzie. Niezapisane edycje są
   wyłącznie lokalnym stanem formularza. Review dotyczy dokładnego
   `revision_id`, digestu treści i digestu paczki planu; zmiana kontekstu
-  unieważnia review. `dev_draft` pozostaje zablokowany, bo legacy WordPress
-  handoff/apply nie jest jeszcze revision-bound.
+  unieważnia review. WordPress handoff/apply jest revision-bound i wysyła body
+  immutable rewizji, ale `dev_draft` w UI pozostaje zablokowany, dopóki
+  dashboard nie przeprowadzi exact ActionObject chain dla wybranej wersji.
 - Nawigacja nie wywołuje write requestów. Preview pozostaje dry-run, a każdy
   przyszły zapis WordPress musi przejść przez exact ActionObject, confirmation i
   audit; publish/update/delete pozostają poza tym journey.
@@ -61,27 +68,37 @@ kontynuuj najwyższy bezpieczny task.
 - React ma wyłącznie builder `mode=dry_run`, `write_authorization=null`; UI nie
   utrwala już niemożliwego direct live contractu.
 - Existing draft jest otwierany/podglądany; brak create/duplicate CTA.
-- Existing create/apply zachowuje ActionObject review/confirm/audit, ale używa
-  legacy handoff/package acceptance i nie jest autorytetem dla nowego revision
-  workspace. Dlatego journey nie może jeszcze uruchomić `dev_draft`. Publish,
-  update i delete pozostają poza zakresem.
+- Create/apply akceptuje wyłącznie aktualny approved revision binding i
+  najnowszy uporządkowany ślad preview/review/confirm/impact z tym samym
+  bindingiem. Atomowy claim serializuje apply z append/re-review; drugi request
+  i replay starej zgody kończą się przed adapterem. Legacy eventy są czytelne,
+  ale nie autoryzują adaptera. Journey nie uruchamia jeszcze `dev_draft`, bo
+  dashboard nie przekazuje bindingu do tych kroków. Publish, update i delete
+  pozostają poza zakresem.
+- Claim zapisuje `action_apply_started` przed vendor call. Outcome, mutation
+  audit i execution/post ID są finalizowane w jednej transakcji. Po crashu
+  lokalne `wilq wordpress-apply reconcile` czeka 300 sekund, wymaga jawnej
+  inspekcji, sprawdza status draft dla `applied` i nie ponawia vendor write.
 
 ## Bieżący graf
 
 - `wilq-seo-r564.7` jest zamknięty i wypchnięty w `b23e413a`.
 - `wilq-seo-r564.8` jest zamknięty: append-only draft revisions i human
   decisions są związane z dokładną wersją i digestami.
+- `wilq-seo-r564.9` jest zweryfikowany: exact revision handoff, ActionObject i
+  draft-only adapter używają jednej wersji; legacy/v2/tamper są fail-closed.
 - Parent `wilq-seo-r564` pozostaje otwarty. Queue density jest zewnętrznie
   niepełna (1 actionable z wymaganych 3), a Service Profile i Wilku UAT nadal
-  wymagają ownera. Nie blokuje to repo-local kontraktu revision-bound WordPress
-  handoff, który jest następnym P0.
+  wymagają ownera. Nie blokuje to repo-local inline ActionObject UX ani
+  ograniczonego lab-testu Codex app-server.
 - Nie kopiuj tutaj pełnej listy Beads ani historii zamkniętych seamów. Po każdym
   pushu odczytaj `bd ready --json` i `bd list --status=open --json`.
 
 ## Verification checkpoint
 
 - Focused backend/shared/dashboard chronią append-only persistence,
-  idempotency, stale-base conflict, exact review, context drift i typed journey.
+  idempotency, stale-base conflict, exact review, context drift, atomową
+  konsumpcję zgody, redakcję bindingu i typed journey.
 - Browser proof: save → refetch/reload → exact review → approved revision →
   fail-closed `dev_draft`, 1440×900 i 390×844; dwa POST-y na viewport, zero
   Codex/ActionObject/WordPress. Proof:
@@ -97,9 +114,10 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Resume
 
-1. Commituj i pushuj zamknięty `r564.8`.
-2. Utwórz i uruchom P0 revision-bound WordPress handoff.
-3. Przenieś exact revision/digests/decision do handoff i ActionObject oraz
-   fail-close legacy authority dla revision-enabled work itemów.
-4. Zrób syntetyczny/staging draft-only proof, bez publikacji.
-5. Ponownie odczytaj roadmapę; Codex adapter jest kolejnym seamem.
+1. Commituj i pushuj zamknięty `r564.9`.
+2. Ponownie odczytaj roadmapę i rozpocznij P0 inline ActionObject dla
+   `dev_draft` wybranej rewizji.
+3. Zweryfikuj desktop/mobile oraz API: exact version, jeden CTA na krok,
+   typed blocker i zero zapisu przed finalnym apply.
+4. Następnie wykonaj bounded lab-test `codex app-server` po stronie serwera;
+   browser nie może rozmawiać z Codex bezpośrednio.

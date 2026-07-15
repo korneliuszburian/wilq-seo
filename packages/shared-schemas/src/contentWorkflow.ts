@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ContentDraftRevisionBindingSchema } from "./actions";
+
 export const ContentInventoryStatusSchema = z.enum(["missing", "resolved", "blocked"]);
 export const ContentCanonicalStatusSchema = z.enum(["missing", "resolved", "blocked"]);
 export const ContentDuplicateStatusSchema = z.enum([
@@ -1318,12 +1320,18 @@ export const ContentWorkItemSnapshotAuditRequestSchema = z.object({
   audit: ContentWordPressDraftAuditEnvelopeSchema
 });
 
+export const ContentDraftRevisionSectionSchema = z.object({
+  heading: z.string().refine((value) => value.trim().length > 0),
+  body_markdown: z.string().refine((value) => value.trim().length > 0),
+  evidence_ids: z.array(z.string()).default([])
+});
+
 export const ContentWordPressDraftHandoffSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
   draft_package_id: z.string(),
-  human_review_id: z.string(),
-  audit_id: z.string(),
+  human_review_id: z.string().nullable().optional(),
+  audit_id: z.string().nullable().optional(),
   connector: z.literal("wordpress_ekologus"),
   operation_type: z.literal("create_wordpress_draft"),
   status: z.literal("prepared"),
@@ -1333,6 +1341,8 @@ export const ContentWordPressDraftHandoffSchema = z.object({
   intended_final_url: z.string().nullable().optional(),
   preview_url: z.string().nullable().optional(),
   evidence_ids: z.array(z.string()).default([]),
+  revision_binding: ContentDraftRevisionBindingSchema.nullable().optional(),
+  revision_sections: z.array(ContentDraftRevisionSectionSchema).default([]),
   publish_allowed: z.boolean(),
   destructive_update_allowed: z.boolean()
 });
@@ -1387,8 +1397,10 @@ export const ContentWordPressDraftWriteAuthorizationSchema = z.object({
   preview_audit_id: z.string(),
   review_audit_id: z.string(),
   confirmation_audit_id: z.string(),
+  impact_audit_id: z.string().nullable().optional(),
   apply_audit_id: z.string().nullable().optional(),
-  confirmed_by: z.string()
+  confirmed_by: z.string(),
+  wordpress_draft_binding: ContentDraftRevisionBindingSchema.nullable().optional()
 });
 
 export const ContentWordPressDraftSectionOverrideSchema = z.object({
@@ -1647,12 +1659,6 @@ const CONTENT_WORKFLOW_OPERATOR_STEP_ORDER = [
   "review",
   "dev_draft"
 ] as const;
-
-export const ContentDraftRevisionSectionSchema = z.object({
-  heading: z.string().refine((value) => value.trim().length > 0),
-  body_markdown: z.string().refine((value) => value.trim().length > 0),
-  evidence_ids: z.array(z.string()).default([])
-});
 
 export const ContentDraftRevisionSchema = z.object({
   revision_id: z.string(),
@@ -1913,6 +1919,7 @@ export const ContentDraftRevisionConflictSchema = z.object({
   code: z.enum([
     "workspace_not_saveable",
     "revision_not_reviewable",
+    "apply_in_progress",
     "stale_base",
     "revision_not_found",
     "stale_revision",

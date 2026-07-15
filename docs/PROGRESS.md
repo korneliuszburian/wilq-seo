@@ -33,6 +33,26 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   zgodnych nagłówków.
 - Dashboard zapisuje, odtwarza po reloadzie i pokazuje dokładną treść wersji
   przed decyzją. Konflikt zachowuje lokalny tekst i podaje polski następny krok.
+- `wilq-seo-r564.9` wiąże handoff WordPress i cały ActionObject z jednym
+  immutable bindingiem: work item, handoff, revision, digest treści, paczka i
+  jej digest, decyzja approval oraz canonical. Legacy review/audit bez tego
+  bindingu nie może autoryzować apply.
+- Adapter dostaje tytuł i body sekcji wyłącznie z zatwierdzonej rewizji. Apply
+  ponownie sprawdza aktualny snapshot i zapisany ślad preview → approved review
+  → confirm → impact; publish, update i delete pozostają wyłączone.
+- Zgoda exact bindingu jest atomowo konsumowana w kanonicznym SQLite przed
+  adapterem. Równoległy drugi apply nie dociera do adaptera, a append/re-review
+  nie może wyprzedzić trwającego zapisu. Nieudana lub niepewna próba zużywa
+  starą zgodę i wymaga nowej wersji oraz review.
+- Przed HTTP zapisywany jest durable `action_apply_started`; po odpowiedzi jedna
+  transakcja utrwala claim status, apply audit, mutation audit i execution/post
+  ID. Przerwany proces pozostawia jawny stan unknown/claimed. Po 300 sekundach
+  lokalna komenda `wilq wordpress-apply reconcile` wymaga inspekcji i dla
+  `applied` potwierdza draft przez readback; nigdy nie ponawia write i nie udaje
+  uwierzytelnionego aktora.
+- Identyfikatory lineage zachowują traceability, ale nie omijają redakcji:
+  sekretopodobna wartość w zagnieżdżonym bindingu jest redagowana przed zapisem
+  audytu.
 - Stary mutable zapis structured output został usunięty po potwierdzeniu braku
   referencji. Istniejąca tabela w lokalnej bazie nie została usunięta ani
   migrowana.
@@ -57,21 +77,25 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   density-blocked: 2 pozycje, 1 wykonalna przy wymaganych 3.
 - Live snapshot pozostaje uczciwie na `draft`: workspace jest pusty, zapis
   pierwszej wersji jest dostępny, review i `dev_draft` są zamknięte.
+- Syntetyczny publiczny proof ActionObject utworzył dokładnie jeden draft przez
+  spy-adapter. Siedem manipulacji bindingiem, eventy legacy, późniejsza v2,
+  równoległy drugi apply i replay tej samej zgody zwróciły typed `409` z
+  `adapter_reached=false` i `external_write_attempted=false`. Focused claim,
+  crash recovery, action/audit i redaction proof przechodzi 27/27, a osobny
+  publiczny exact-revision apply 1/1.
 
 ## Następny bezpieczny zakres
 
-Po pushu slice'a `r564.8` utworzyć i rozpocząć P0 child `r564` dla
-revision-bound WordPress handoff:
+Po pushu `r564.9` domknąć brakującą ergonomię człowieka w jednym workspace:
 
-1. handoff i ActionObject muszą zawierać dokładne `revision_id`, digest treści,
-   digest paczki planu i zaakceptowaną decyzję;
-2. legacy human-review/audit nie może być alternatywną zgodą dla work itemu,
-   który ma revision workspace;
-3. podgląd pozostaje draft-only, a realny zapis wymaga osobnego review,
-   potwierdzenia i audytu;
-4. dopiero po tym seamie projektować adapter Codex app-server/SDK, który może
-   zaproponować child revision, ale nie może zatwierdzić jej ani zapisać
-   WordPress bez człowieka.
+1. `/content-workflow` ma przekazać binding wybranej rewizji do inline kroków
+   preview → review → confirm → apply, zamiast wysyłać marketera na ogólną
+   stronę akcji bez kontekstu;
+2. każdy krok ma pokazać dokładną wersję, blocker i następny bezpieczny ruch;
+   apply pozostaje draft-only i wymaga jawnego operatora;
+3. potem wykonać ograniczony lab-test server-side `codex app-server` nad
+   istniejącym `codex login`: propozycja child revision i stream statusu, bez
+   approval oraz bez vendor write.
 
 ## Jawne blokery i ograniczenia
 
@@ -83,7 +107,7 @@ revision-bound WordPress handoff:
   trzeciej propozycji.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
-- Revision-bound WordPress handoff jest nadal pracą techniczną, nie blockerem
-  właściciela. Do jego domknięcia `dev_draft` pozostaje fail-closed.
+- Dashboard nie przekazuje jeszcze revision bindingu do ActionObject, więc
+  `dev_draft` pozostaje uczciwie fail-closed mimo gotowego API seam.
 - Goal 005, produkcyjna gotowość i pełna użyteczność dla marketera nie są
   zakończone.

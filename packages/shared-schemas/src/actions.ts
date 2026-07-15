@@ -2,6 +2,26 @@ import { z } from "zod";
 
 import { MetricFactSchema } from "./connectors";
 
+export const ContentDraftRevisionBindingSchema = z
+  .object({
+    work_item_id: z.string().min(1),
+    handoff_id: z.string().min(1),
+    revision_id: z.string().min(1),
+    content_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    draft_package_id: z.string().min(1),
+    draft_package_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    approval_decision_id: z.string().min(1),
+    final_canonical_url: z.string().min(1)
+  })
+  .strict();
+
+export const ActionWordPressDraftApplyBlockerSchema = z.object({
+  code: z.string().min(1),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1)
+});
+
 export const AuditEventSchema = z.object({
   id: z.string(),
   action_id: z.string().nullable().optional(),
@@ -11,6 +31,7 @@ export const AuditEventSchema = z.object({
   created_at: z.string(),
   summary: z.string(),
   evidence_ids: z.array(z.string()),
+  details: z.record(z.string(), z.unknown()).default({}),
   redacted: z.boolean()
 });
 
@@ -26,7 +47,8 @@ export const ActionReviewRequestSchema = z.object({
   reviewed_by: z.string().min(1),
   notes: z.string().min(1).max(2000),
   checked_items: z.array(z.string()).default([]),
-  blockers: z.array(z.string()).default([])
+  blockers: z.array(z.string()).default([]),
+  wordpress_draft: ContentDraftRevisionBindingSchema.nullable().optional()
 });
 
 export const ActionReviewGateSchema = z.object({
@@ -204,6 +226,8 @@ export const ActionMutationAuditRecordSchema = z.object({
   audit_event_id: z.string(),
   evidence_ids: z.array(z.string()),
   blockers: z.array(z.string()),
+  wordpress_draft_binding: ContentDraftRevisionBindingSchema.nullable().optional(),
+  wordpress_revision_blockers: z.array(ActionWordPressDraftApplyBlockerSchema).default([]),
   summary: z.string(),
   redacted: z.boolean()
 });
@@ -307,19 +331,16 @@ export const ActionApplyResultSchema = z.object({
   audit_event: AuditEventSchema,
   mutation_audit: ActionMutationAuditRecordSchema,
   errors: z.array(z.string()),
+  wordpress_revision_blockers: z.array(ActionWordPressDraftApplyBlockerSchema).default([]),
   adapter_result: z.record(z.string(), z.unknown()).nullable().optional()
 });
 
-export const ActionWordPressDraftApplyInputSchema = z.object({
-  work_item_id: z.string().min(1),
-  handoff_id: z.string().min(1),
-  draft_package_id: z.string().min(1),
-  target_url: z.string().min(1)
-});
+export const ActionWordPressDraftApplyInputSchema = ContentDraftRevisionBindingSchema;
 
 export const ActionPreviewRequestSchema = z.object({
   requested_by: z.string().min(1).nullable().optional(),
-  max_items: z.number().int().min(1).max(50).optional()
+  max_items: z.number().int().min(1).max(50).optional(),
+  wordpress_draft: ContentDraftRevisionBindingSchema.nullable().optional()
 });
 
 export const ActionPreviewResultSchema = z.object({
@@ -352,7 +373,8 @@ export const ActionConfirmRequestSchema = z.object({
   notes: z.string().min(1).max(2000),
   preview_acknowledged: z.boolean().default(false),
   target_roas: z.number().positive().nullable().optional(),
-  target_cpa_micros: z.number().int().positive().nullable().optional()
+  target_cpa_micros: z.number().int().positive().nullable().optional(),
+  wordpress_draft: ContentDraftRevisionBindingSchema.nullable().optional()
 });
 
 export const ActionConfirmResultSchema = z.object({
@@ -370,7 +392,8 @@ export const ActionImpactCheckRequestSchema = z.object({
   checked_by: z.string().min(1),
   notes: z.string().min(1).max(2000),
   pre_window_days: z.number().int().min(1).max(90).optional(),
-  post_window_days: z.number().int().min(1).max(90).optional()
+  post_window_days: z.number().int().min(1).max(90).optional(),
+  wordpress_draft: ContentDraftRevisionBindingSchema.nullable().optional()
 });
 
 export const ActionImpactCheckResultSchema = z.object({
@@ -405,6 +428,10 @@ export type ActionMutationReadinessSummaryResponse = z.infer<
   typeof ActionMutationReadinessSummaryResponseSchema
 >;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
+export type ContentDraftRevisionBinding = z.infer<typeof ContentDraftRevisionBindingSchema>;
+export type ActionWordPressDraftApplyBlocker = z.infer<
+  typeof ActionWordPressDraftApplyBlockerSchema
+>;
 export type ActionWordPressDraftApplyInput = z.infer<typeof ActionWordPressDraftApplyInputSchema>;
 export type ActionPreviewRequest = z.infer<typeof ActionPreviewRequestSchema>;
 export type ActionPreviewResult = z.infer<typeof ActionPreviewResultSchema>;

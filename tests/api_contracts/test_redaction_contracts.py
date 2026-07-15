@@ -19,6 +19,37 @@ def test_redaction_hides_token_like_values() -> None:
     assert redacted["safe_env_name"] == "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID"
 
 
+def test_redaction_checks_nested_wordpress_binding_identifier_shapes() -> None:
+    secret_like_handoff_id = "sk-" + "x" * 40  # pragma: allowlist secret
+
+    redacted = redact_mapping(
+        {
+            "details": {
+                "wordpress_draft_binding": {
+                    "work_item_id": "content_work_item_bdo",
+                    "handoff_id": secret_like_handoff_id,
+                    "revision_id": "content_revision_bdo_1",
+                    "content_digest": "0" * 64,
+                    "draft_package_id": "draft_package_content_work_item_bdo",
+                    "draft_package_digest": "1" * 64,
+                    "approval_decision_id": "content_revision_decision_bdo_1",
+                    "final_canonical_url": "https://ekologus.pl/bdo/",
+                }
+            }
+        }
+    )
+
+    binding = redacted["details"]["wordpress_draft_binding"]
+    assert binding["handoff_id"] == "[REDACTED]"
+    assert binding["work_item_id"] == "content_work_item_bdo"
+    assert binding["revision_id"] == "content_revision_bdo_1"
+    assert binding["content_digest"] == "0" * 64
+    assert binding["draft_package_id"] == "draft_package_content_work_item_bdo"
+    assert binding["draft_package_digest"] == "1" * 64
+    assert binding["approval_decision_id"] == "content_revision_decision_bdo_1"
+    assert binding["final_canonical_url"] == "https://ekologus.pl/bdo/"
+
+
 def test_redaction_preserves_operator_contract_metadata() -> None:
     redacted = redact_mapping(
         {

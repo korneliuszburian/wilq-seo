@@ -49,6 +49,28 @@ Codex może w przyszłości przygotować propozycję child revision. Nie może
 samodzielnie zmienić kroku workflow, zatwierdzić tekstu, wykonać ActionObjectu
 ani zapisać WordPress.
 
+## Kontrakt jakości Treści i SEO 10/10
+
+Ocena 10/10 nie wynika z liczby funkcji ani zielonych testów. Może zostać
+nadana dopiero po realnym UAT Wilka, gdy jeden workspace pozwala bez pomocy
+developera:
+
+- w 30 sekund zrozumieć decyzję, dowody, freshness, blocker i następny krok;
+- wybrać stronę, usługę, intencję, CTA i zakres, a następnie zobaczyć mapę
+  sekcji odzwierciedlającą stronę;
+- przejść krótki wizard plan → draft/Codex → exact review → draft WordPress,
+  bez rozwijania ściany paneli i bez utraty kontekstu;
+- zapisywać, wznawiać, porównywać i poprawiać dokładne wersje treści wraz z
+  lineage dowodów;
+- wysłać do WordPress wyłącznie przeczytaną i zatwierdzoną wersję, jako draft,
+  z pełnym ActionObject/auditem i bez możliwości cichego replayu starej zgody;
+- wrócić do biblioteki treści, historii decyzji i późniejszego pomiaru, zamiast
+  szukać wyniku w logach lub technicznych payloadach.
+
+Desktop, mobile i syntetyczny browser proof chronią kontrakt techniczny.
+Końcową ocenę użyteczności 10/10 potwierdza dopiero marketer w realnym zadaniu;
+do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny cel.
+
 ## Stan produktu
 
 - `/content-workflow` jest głównym workspace `Treści i SEO`.
@@ -63,8 +85,13 @@ ani zapisać WordPress.
 - Zmiana planu/evidence unieważnia stare review i rebasuje edytor do bieżącego
   kontekstu. Równoległa inna decyzja review nie może nadpisać wcześniejszej bez
   odświeżenia.
-- `dev_draft` pozostaje zablokowany, ponieważ istniejący legacy handoff i apply
-  nie są jeszcze związane z exact revision.
+- Handoff i apply są związane z exact revision; wysyłają wyłącznie immutable
+  title/sections i odrzucają legacy/v2/tamper przed adapterem. Zgoda bindingu
+  jest atomowo jednorazowa, więc równoległy apply i replay nie tworzą drugiego
+  draftu. Durable start, atomowy outcome i lokalne readback reconciliation
+  domykają przerwany proces bez retry write. `dev_draft` pozostaje zablokowany
+  w dashboardzie, bo UI nie prowadzi jeszcze exact ActionObject chain w
+  kontekście wybranej rewizji.
 - Live content queue jest świeża, ale ma 2 pozycje i 1 wykonalną przy minimum 3.
   Service Profile pozostaje `source_backed_review_required`.
 
@@ -73,14 +100,13 @@ ani zapisać WordPress.
 1. `wilq-seo-r564.8` jest zamknięty: append-only revisions, exact review,
    stateful browser proof i poprawiony timeout startu dashboardowego API są
    zweryfikowane.
-2. Utworzyć P0 child `wilq-seo-r564` dla revision-bound WordPress handoff.
-   Legacy human-review/audit ma fail-close dla revision-enabled work itemów;
-   handoff i ActionObject muszą wskazywać dokładną zaakceptowaną wersję.
-3. Udowodnić preview oraz draft-only apply na materiale syntetycznym/stagingowym
-   bez publikacji i bez omijania review/confirm/audit.
-4. Dopiero wtedy zaprojektować jeden server-side adapter WILQ API → Codex
-   app-server/SDK. Pierwszy zakres: propozycja child revision i strumień statusu,
-   bez automatycznej akceptacji i bez vendor write.
+2. `wilq-seo-r564.9` jest zweryfikowany: revision-bound handoff, exact
+   ActionObject chain i syntetyczny draft-only apply bez publikacji.
+3. Zbudować w `/content-workflow` zwarty inline multi-step dla wybranej rewizji:
+   preview → review → confirm → apply, z jednym CTA i typed blockerem na krok.
+4. Następnie wykonać jeden bounded server-side lab WILQ API → Codex app-server.
+   Pierwszy zakres: propozycja child revision i strumień statusu, bez
+   automatycznej akceptacji i bez vendor write.
 5. Kontynuować usefulness-first rozwój treści: wybór strony/usługi, mapowanie
    sekcji, dostęp do wersji, odzwierciedlenie strony i realny Wilku UAT.
 6. Po każdym slice ponownie odczytać `bd ready --json` i
@@ -105,6 +131,11 @@ ani zapisać WordPress.
 - Nie traktować dev/staging WordPress jako kanonicznego dowodu SEO.
 - Nie kasować starych danych storage bez osobnego manifestu i zgody.
 - Nie przedstawiać stałej etykiety aktora jako uwierzytelnienia użytkownika.
+- Dla osadzonego executora testować `codex app-server` przez lokalny
+  stdio/Unix transport. Oficjalny manual wskazuje app-server dla rich clients
+  z historią, approval i streamem eventów, a SDK dla automatyzacji/jobów.
+  Decyzja pozostaje `lab-test`, bo lokalny CLI 0.144.4 oznacza app-server jako
+  experimental. Browser nie łączy się z nim bezpośrednio; nie dodajemy API keya.
 - Nie kończyć Goal 005 bez realnego Wilku UAT albo jawnego owner defer.
 
 ## Otwarte blokery
@@ -113,8 +144,8 @@ ani zapisać WordPress.
 - Owner/Wilku: realna sesja UAT albo jawne odroczenie z ryzykiem.
 - Dane: za mała gęstość bezpiecznej kolejki treści.
 - Kontrakt zewnętrzny: uwierzytelniony actor/tenant przed produkcyjnym użyciem.
-- Techniczne, nadal wykonywalne repo-local: revision-bound WordPress seam,
-  następnie adapter Codex app-server/SDK.
+- Techniczne, nadal wykonywalne repo-local: inline revision-bound ActionObject
+  UX, następnie ograniczony adapter Codex app-server.
 
 ## Outcome
 

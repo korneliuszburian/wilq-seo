@@ -13,6 +13,8 @@ from wilq.content.review.human import (
     content_human_review_blockers,
 )
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.revisions import ContentDraftRevisionSection
 
 ContentWordPressDraftActor = Literal["wilku", "system", "codex"]
 ContentWordPressDraftHandoffStatus = Literal["prepared"]
@@ -28,6 +30,10 @@ ContentWordPressDraftHandoffBlockerCode = Literal[
     "audit_human_review_mismatch",
     "missing_audit_evidence",
     "audit_evidence_mismatch",
+    "missing_revision",
+    "revision_not_approved",
+    "revision_context_changed",
+    "revision_approval_mismatch",
 ]
 
 
@@ -43,8 +49,8 @@ class ContentWordPressDraftHandoff(BaseModel):
     id: str
     work_item_id: str
     draft_package_id: str
-    human_review_id: str
-    audit_id: str
+    human_review_id: str | None = None
+    audit_id: str | None = None
     connector: Literal["wordpress_ekologus"] = "wordpress_ekologus"
     operation_type: Literal["create_wordpress_draft"] = "create_wordpress_draft"
     status: ContentWordPressDraftHandoffStatus = "prepared"
@@ -54,6 +60,8 @@ class ContentWordPressDraftHandoff(BaseModel):
     intended_final_url: str | None = None
     preview_url: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    revision_binding: ContentDraftRevisionBinding | None = None
+    revision_sections: list[ContentDraftRevisionSection] = Field(default_factory=list)
     publish_allowed: bool = False
     destructive_update_allowed: bool = False
 

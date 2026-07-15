@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 
 ContentWordPressDraftExecutionMode = Literal["dry_run", "live"]
 ContentWordPressDraftExecutionStatus = Literal["dry_run_ready", "created", "blocked"]
@@ -21,6 +22,7 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
     "missing_live_adapter",
     "missing_write_authorization",
     "invalid_write_authorization",
+    "revision_section_overrides_mismatch",
     "live_adapter_failed",
 ]
 
@@ -74,8 +76,10 @@ class ContentWordPressDraftWriteAuthorization(BaseModel):
     preview_audit_id: str
     review_audit_id: str
     confirmation_audit_id: str
+    impact_audit_id: str | None = None
     apply_audit_id: str | None = None
     confirmed_by: str
+    wordpress_draft_binding: ContentDraftRevisionBinding | None = None
 
 
 class ContentWordPressDraftExecutionResult(BaseModel):
@@ -112,6 +116,7 @@ def execute_content_wordpress_draft_handoff(
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
     write_authorization_verified: bool = False,
     section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
+    require_exact_section_overrides: bool = False,
 ) -> ContentWordPressDraftExecutionResult:
     blockers = content_wordpress_draft_execution_blockers(
         handoff=handoff,
@@ -122,6 +127,8 @@ def execute_content_wordpress_draft_handoff(
         action_apply_authorized=action_apply_authorized,
         write_authorization=write_authorization,
         write_authorization_verified=write_authorization_verified,
+        section_overrides=section_overrides,
+        require_exact_section_overrides=require_exact_section_overrides,
     )
     if blockers:
         return ContentWordPressDraftExecutionResult(
@@ -204,6 +211,8 @@ def content_wordpress_draft_execution_blockers(
     action_apply_authorized: bool = False,
     write_authorization: ContentWordPressDraftWriteAuthorization | None = None,
     write_authorization_verified: bool = False,
+    section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
+    require_exact_section_overrides: bool = False,
 ) -> list[ContentWordPressDraftExecutionBlocker]:
     blockers: list[ContentWordPressDraftExecutionBlocker] = []
     if handoff is None:
@@ -226,6 +235,13 @@ def content_wordpress_draft_execution_blockers(
         )
     if handoff is not None and draft_package is not None:
         blockers.extend(_handoff_payload_blockers(handoff, draft_package))
+        if require_exact_section_overrides:
+            blockers.extend(
+                _exact_section_override_blockers(
+                    draft_package,
+                    section_overrides or [],
+                )
+            )
     if mode == "live":
         blockers.extend(
             _live_write_blockers(
@@ -249,6 +265,7 @@ def content_wordpress_draft_payload(
         title=handoff.title,
         content_markdown=_content_markdown_from_draft_package(
             draft_package,
+            title=handoff.title,
             section_overrides=section_overrides,
         ),
         final_canonical_url=handoff.final_canonical_url,
@@ -293,6 +310,31 @@ def _handoff_payload_blockers(
             )
         )
     return blockers
+
+
+def _exact_section_override_blockers(
+    draft_package: ContentDraftPackage,
+    section_overrides: list[ContentWordPressDraftSectionOverride],
+) -> list[ContentWordPressDraftExecutionBlocker]:
+    expected_headings = [_section_key(section.heading) for section in draft_package.sections]
+    override_headings = [_section_key(section.heading) for section in section_overrides]
+    if (
+        override_headings == expected_headings
+        and len(set(override_headings)) == len(override_headings)
+        and all(section.body_markdown.strip() for section in section_overrides)
+    ):
+        return []
+    return [
+        _blocker(
+            "revision_section_overrides_mismatch",
+            "Treść wersji nie pasuje do planu sekcji",
+            (
+                "Zapis wersji wymaga dokładnie wszystkich sekcji w zatwierdzonej "
+                "kolejności i bez pustej treści."
+            ),
+            "Wróć do aktualnej zatwierdzonej wersji i ponów podgląd ActionObject.",
+        )
+    ]
 
 
 def _live_write_blockers(
@@ -409,10 +451,11 @@ def _adapter_error_reason(exc: Exception) -> str:
 def _content_markdown_from_draft_package(
     draft_package: ContentDraftPackage,
     *,
+    title: str | None = None,
     section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
 ) -> str:
     overrides = _section_override_map(section_overrides or [])
-    chunks = [f"# {draft_package.title}"]
+    chunks = [f"# {title or draft_package.title}"]
     for section in draft_package.sections:
         chunks.append(f"## {section.heading}")
         override = overrides.get(_section_key(section.heading))

@@ -6,7 +6,13 @@ from types import SimpleNamespace
 import pytest
 
 from wilq.actions import audit_store
-from wilq.schemas import ActionMutationAuditRecord, ActionObject, AuditEvent
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
+from wilq.schemas import (
+    ActionMutationAuditRecord,
+    ActionObject,
+    ActionWordPressDraftApplyBlocker,
+    AuditEvent,
+)
 
 
 class _FakeAuditStore:
@@ -285,3 +291,82 @@ def test_build_impact_check_audit_event_keeps_measurement_evidence() -> None:
     assert event.actor == "operator"
     assert event.summary == "Sprawdzenie efektu zablokowane."
     assert event.evidence_ids == ["ev_impact_builder", "ev_metric_builder"]
+
+
+def test_wordpress_revision_binding_stays_typed_across_action_audits() -> None:
+    action = ActionObject.model_construct(
+        id="act_apply_wordpress_draft_handoff",
+        connector="wordpress_ekologus",
+        payload={"action_type": "create_wordpress_draft"},
+        evidence_ids=["ev_revision_binding"],
+    )
+    binding = ContentDraftRevisionBinding(
+        work_item_id="content_work_item_bdo",
+        handoff_id="wordpress_draft_handoff_content_work_item_bdo_revision_1",
+        revision_id="content_revision_bdo_1",
+        content_digest="a" * 64,
+        draft_package_id="draft_package_content_work_item_bdo",
+        draft_package_digest="b" * 64,
+        approval_decision_id="content_revision_decision_bdo_1",
+        final_canonical_url="https://ekologus.pl/bdo/",
+    )
+    expected = binding.model_dump(mode="json")
+    events = [
+        audit_store.build_preview_audit_event(
+            action=action,
+            actor="operator",
+            summary="Podgląd przygotowany.",
+            wordpress_draft_binding=binding,
+        ),
+        audit_store.build_human_review_audit_event(
+            action=action,
+            reviewed_by="operator",
+            outcome="approved_for_prepare",
+            summary="Review zaakceptowany.",
+            details=audit_store.wordpress_draft_audit_details(binding),
+        ),
+        audit_store.build_confirmation_audit_event(
+            action=action,
+            actor="operator",
+            event_type="action_apply_confirmed",
+            summary="Potwierdzono podgląd.",
+            wordpress_draft_binding=binding,
+        ),
+        audit_store.build_impact_check_audit_event(
+            action=action,
+            actor="operator",
+            event_type="action_impact_check_completed",
+            summary="Sprawdzenie efektu zapisane.",
+            evidence_ids=["ev_revision_binding"],
+            wordpress_draft_binding=binding,
+        ),
+        audit_store.build_apply_audit_event(
+            action=action,
+            audit_id="audit_apply_revision_1",
+            actor="operator",
+            errors=[],
+            wordpress_draft_binding=binding,
+        ),
+    ]
+
+    assert all(event.details["wordpress_draft_binding"] == expected for event in events)
+
+    blocker = ActionWordPressDraftApplyBlocker(
+        code="revision_binding_mismatch",
+        label="Wersja treści nie zgadza się z akceptacją",
+        reason="Żądanie dotyczy innej wersji niż review.",
+        next_step="Wróć do zaakceptowanej wersji albo wykonaj nowe review.",
+    )
+    mutation_audit = audit_store.action_mutation_audit_record(
+        action=action,
+        audit_event=events[-1],
+        actor="operator",
+        errors=[blocker.reason],
+        mutation_adapter="wordpress_draft_execution_boundary",
+        adapter_result=None,
+        wordpress_draft_binding=binding,
+        wordpress_revision_blockers=[blocker],
+    )
+
+    assert mutation_audit.wordpress_draft_binding == binding
+    assert mutation_audit.wordpress_revision_blockers == [blocker]

@@ -8,8 +8,14 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from wilq.actions.operator_labels import action_mutation_audit_status_label
+from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.operator_labels import impact_comparison_summary_label
-from wilq.schemas import ActionMutationAuditRecord, ActionObject, AuditEvent
+from wilq.schemas import (
+    ActionMutationAuditRecord,
+    ActionObject,
+    ActionWordPressDraftApplyBlocker,
+    AuditEvent,
+)
 from wilq.storage.local_state import local_state_store
 
 _MAX_EVENTS_PER_ACTION = 10
@@ -156,6 +162,8 @@ def action_mutation_audit_record(
     errors: list[str],
     mutation_adapter: str | None,
     adapter_result: dict[str, Any] | None,
+    wordpress_draft_binding: ContentDraftRevisionBinding | None = None,
+    wordpress_revision_blockers: list[ActionWordPressDraftApplyBlocker] | None = None,
 ) -> ActionMutationAuditRecord:
     status: Literal["blocked", "applied"] = "blocked" if errors else "applied"
     action_type = action.payload.get("action_type")
@@ -180,6 +188,8 @@ def action_mutation_audit_record(
         audit_event_id=audit_event.id,
         evidence_ids=action.evidence_ids,
         blockers=errors,
+        wordpress_draft_binding=wordpress_draft_binding,
+        wordpress_revision_blockers=wordpress_revision_blockers or [],
         summary=mutation_audit_summary(
             errors,
             mutation_adapter,
@@ -235,6 +245,7 @@ def build_apply_audit_event(
     audit_id: str,
     actor: str,
     errors: list[str],
+    wordpress_draft_binding: ContentDraftRevisionBinding | None = None,
 ) -> AuditEvent:
     """Build the redacted apply audit event with one canonical event-type map."""
     event_type = apply_audit_event_type(errors)
@@ -250,6 +261,7 @@ def build_apply_audit_event(
             else "Zmiany zapisane przez sprawdzoną ścieżkę API."
         ),
         evidence_ids=action.evidence_ids,
+        details=wordpress_draft_audit_details(wordpress_draft_binding),
     )
 
 
@@ -280,6 +292,7 @@ def build_preview_audit_event(
     action: ActionObject,
     actor: str,
     summary: str,
+    wordpress_draft_binding: ContentDraftRevisionBinding | None = None,
 ) -> AuditEvent:
     """Build the preview audit event without implying an external write."""
     return AuditEvent(
@@ -290,6 +303,7 @@ def build_preview_audit_event(
         actor=actor,
         summary=summary,
         evidence_ids=action.evidence_ids,
+        details=wordpress_draft_audit_details(wordpress_draft_binding),
     )
 
 
@@ -299,6 +313,7 @@ def build_confirmation_audit_event(
     actor: str,
     event_type: str,
     summary: str,
+    wordpress_draft_binding: ContentDraftRevisionBinding | None = None,
 ) -> AuditEvent:
     """Build the review confirmation event without performing a mutation."""
     return AuditEvent(
@@ -309,6 +324,7 @@ def build_confirmation_audit_event(
         actor=actor,
         summary=summary,
         evidence_ids=action.evidence_ids,
+        details=wordpress_draft_audit_details(wordpress_draft_binding),
     )
 
 
@@ -319,6 +335,7 @@ def build_impact_check_audit_event(
     event_type: str,
     summary: str,
     evidence_ids: list[str],
+    wordpress_draft_binding: ContentDraftRevisionBinding | None = None,
 ) -> AuditEvent:
     """Build the measurement impact-check event with explicit evidence lineage."""
     return AuditEvent(
@@ -329,7 +346,19 @@ def build_impact_check_audit_event(
         actor=actor,
         summary=summary,
         evidence_ids=evidence_ids,
+        details=wordpress_draft_audit_details(wordpress_draft_binding),
     )
+
+
+def wordpress_draft_audit_details(
+    binding: ContentDraftRevisionBinding | None,
+    *,
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    audit_details = dict(details or {})
+    if binding is not None:
+        audit_details["wordpress_draft_binding"] = binding.model_dump(mode="json")
+    return audit_details
 
 
 def _audit_detail_value_for_operator(value: Any) -> Any:
