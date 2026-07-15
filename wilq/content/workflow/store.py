@@ -120,6 +120,7 @@ class ContentWorkflowStore:
                 content_digest=content_digest,
                 draft_package_id=redacted_command.draft_package_id,
                 draft_package_digest=redacted_command.draft_package_digest,
+                planning_digest=redacted_command.planning_digest,
                 final_canonical_url=redacted_command.final_canonical_url,
                 title=redacted_command.title,
                 sections=redacted_command.sections,
@@ -1070,6 +1071,7 @@ def _draft_revision_content_digest(command: ContentDraftRevisionAppendCommand) -
         "work_item_id": command.work_item_id,
         "draft_package_id": command.draft_package_id,
         "draft_package_digest": command.draft_package_digest,
+        "planning_digest": command.planning_digest,
         "final_canonical_url": command.final_canonical_url,
         "title": command.title,
         "sections": [section.model_dump(mode="json") for section in command.sections],
@@ -1111,6 +1113,7 @@ def _binding_is_current_and_approved(
         and latest_revision.content_digest == binding.content_digest
         and latest_revision.draft_package_id == binding.draft_package_id
         and latest_revision.draft_package_digest == binding.draft_package_digest
+        and latest_revision.planning_digest == binding.planning_digest
         and latest_revision.final_canonical_url == binding.final_canonical_url
         and latest_review.work_item_id == binding.work_item_id
         and latest_review.revision_id == binding.revision_id

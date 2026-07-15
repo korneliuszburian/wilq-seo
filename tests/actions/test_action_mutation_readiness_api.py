@@ -70,6 +70,7 @@ def _seed_approved_revision_binding(
             work_item_id=work_item_id,
             draft_package_id=draft_package_id,
             draft_package_digest="b" * 64,
+            planning_digest="c" * 64,
             final_canonical_url=final_canonical_url,
             title="Zatwierdzona treść",
             sections=[
@@ -103,6 +104,7 @@ def _seed_approved_revision_binding(
         content_digest=revision.content_digest,
         draft_package_id=revision.draft_package_id,
         draft_package_digest=revision.draft_package_digest,
+        planning_digest=revision.planning_digest,
         approval_decision_id=reviewed.review.decision_id,
         final_canonical_url=revision.final_canonical_url,
     )
@@ -186,6 +188,7 @@ def test_failed_wordpress_apply_claim_consumes_binding_and_releases_revision_loc
             base_revision_id=binding.revision_id,
             draft_package_id=binding.draft_package_id,
             draft_package_digest=binding.draft_package_digest,
+            planning_digest=binding.planning_digest,
             final_canonical_url=binding.final_canonical_url,
             title="Nowa wersja po nieudanym apply",
             sections=[
@@ -647,6 +650,7 @@ def test_wordpress_apply_capability_builder_binds_current_snapshot(monkeypatch) 
         content_digest="a" * 64,
         draft_package_id="draft_package_content_work_item_bdo",
         draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
         approval_decision_id="content_revision_decision_bdo_v1",
         final_canonical_url="https://ekologus.pl/bdo/",
     )
@@ -919,6 +923,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
                 base_revision_id=binding.revision_id,
                 draft_package_id=binding.draft_package_id,
                 draft_package_digest=binding.draft_package_digest,
+                planning_digest=binding.planning_digest,
                 final_canonical_url=binding.final_canonical_url,
                 title="Nowsza wersja podczas apply",
                 sections=[
@@ -971,6 +976,7 @@ def test_wordpress_apply_route_reaches_adapter_only_after_real_capability_bindin
             base_revision_id=binding.revision_id,
             draft_package_id=binding.draft_package_id,
             draft_package_digest=binding.draft_package_digest,
+            planning_digest=binding.planning_digest,
             final_canonical_url=binding.final_canonical_url,
             title="Nowsza wersja po apply",
             sections=[

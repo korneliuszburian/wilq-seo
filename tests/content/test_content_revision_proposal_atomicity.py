@@ -84,6 +84,7 @@ def _append_command(
         base_revision_id=base_id,
         draft_package_id="draft_package_atomic",
         draft_package_digest="d" * 64,
+        planning_digest="c" * 64,
         final_canonical_url="https://ekologus.pl/test-atomiczny/",
         title="Test atomowego szkicu",
         sections=[

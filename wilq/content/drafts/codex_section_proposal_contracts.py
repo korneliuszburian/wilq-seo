@@ -15,6 +15,7 @@ ContentCodexSectionProposalStatus = Literal[
     "conflict",
 ]
 ContentCodexSectionProposalBlockerCode = Literal[
+    "missing_planning_binding",
     "missing_base_revision",
     "stale_base_revision",
     "revision_not_ready_for_proposal",

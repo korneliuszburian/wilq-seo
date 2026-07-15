@@ -318,6 +318,7 @@ def content_work_item_draft_revision_save(
     item = snapshot.preflight.item
     final_canonical_url = item.final_canonical_url or item.intended_final_url
     workspace = snapshot.revision_workspace
+    planning = snapshot.planning_workspace
     latest_revision = workspace.latest_revision
     request_would_create_child = (
         latest_revision is not None
@@ -326,6 +327,9 @@ def content_work_item_draft_revision_save(
     if (
         draft_package is None
         or not final_canonical_url
+        or planning is None
+        or not planning.scope_current
+        or not planning.section_map_current
         or (latest_revision is None and not workspace.can_save)
         or (not workspace.can_save and request_would_create_child)
     ):
@@ -342,6 +346,7 @@ def content_work_item_draft_revision_save(
             base_revision_id=request.base_revision_id,
             draft_package_id=draft_package.id,
             draft_package_digest=content_draft_package_digest(draft_package),
+            planning_digest=planning.proposal.planning_digest,
             final_canonical_url=final_canonical_url,
             title=request.title,
             sections=request.sections,

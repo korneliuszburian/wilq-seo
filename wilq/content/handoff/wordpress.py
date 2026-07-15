@@ -19,6 +19,7 @@ from wilq.content.workflow.revisions import ContentDraftRevisionSection
 ContentWordPressDraftActor = Literal["wilku", "system", "codex"]
 ContentWordPressDraftHandoffStatus = Literal["prepared"]
 ContentWordPressDraftHandoffBlockerCode = Literal[
+    "missing_planning_binding",
     "missing_final_canonical",
     "invalid_final_canonical",
     "missing_draft_package",

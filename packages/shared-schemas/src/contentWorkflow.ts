@@ -1546,6 +1546,7 @@ export const ContentDraftRevisionSchema = z.object({
   content_digest: z.string().regex(/^[0-9a-f]{64}$/),
   draft_package_id: z.string(),
   draft_package_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   final_canonical_url: z.string(),
   title: z.string().refine((value) => value.trim().length > 0),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
@@ -1830,6 +1831,7 @@ export const ContentCodexSectionProposalRequestSchema = z
   });
 
 export const ContentCodexSectionProposalBlockerCodeSchema = z.enum([
+  "missing_planning_binding",
   "missing_base_revision",
   "stale_base_revision",
   "revision_not_ready_for_proposal",

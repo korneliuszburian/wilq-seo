@@ -60,6 +60,10 @@ kontynuuj najwyższy bezpieczny task.
   Marketer nie ogląda już trzykolumnowej mapy public/signals/dev ani ACF wall:
   najpierw zatwierdza zakres, potem kolejność, cel i dowody sekcji. Konflikt
   zachowuje lokalną notatkę i wymaga jawnego odświeżenia.
+- Nowa rewizja przechowuje exact `planning_digest`; ten sam digest przechodzi
+  do child revision Codexa i WordPress ActionObject bindingu. Cofnięcie decyzji
+  planistycznej lub zmiana proposal unieważnia review/handoff bez kasowania
+  zapisanej wersji. Rewizje sprzed bindingu są czytelne, ale jawnie stale.
 - Ocena 8/10 dotyczy wyłącznie bezpieczeństwa exact handoffu. Operator workflow
   ma obecnie około 6/10, ale jakość realnego tekstu pozostaje około 5/10:
   sekcję można już poprawić przez grounded Codex proposal i porównać wynik,
@@ -121,8 +125,8 @@ kontynuuj najwyższy bezpieczny task.
 - Canonical production-pilot graph jest w `wilq-seo-amj2`. Jego pierwsze dwa
   P0 to prawdziwa readiness kroku `dev_draft` (`amj2.2`, domknięta) oraz
   persisted review scope/section map (`amj2.1`). Backend/store tego review jest
-  domknięty w `amj2.1.1`, a formularze/reload/conflict i browser proof w
-  `amj2.1.2`.
+  domknięty w `amj2.1.1`, formularze/reload/conflict i browser proof w
+  `amj2.1.2`, a downstream planning binding w `amj2.1.3`.
   Snapshot wiąże
   `dev_draft.can_submit` z istniejącym exact revision-bound handoffem; brak
   rewizji lub zmiana kontekstu pozostają zablokowane. Typed demand evidence

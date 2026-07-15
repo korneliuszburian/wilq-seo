@@ -108,6 +108,7 @@ class ContentDraftRevision(BaseModel):
     content_digest: str = Field(min_length=64, max_length=64)
     draft_package_id: str = Field(min_length=1)
     draft_package_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    planning_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     final_canonical_url: str = Field(min_length=1)
     title: str
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
@@ -160,6 +161,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     base_revision_id: str | None = None
     draft_package_id: str = Field(min_length=1)
     draft_package_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     final_canonical_url: str = Field(min_length=1)
     title: str
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)

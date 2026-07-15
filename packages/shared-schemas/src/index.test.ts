@@ -128,6 +128,7 @@ describe("AuditEventSchema", () => {
       content_digest: "a".repeat(64),
       draft_package_id: "draft_package_content_work_item_bdo",
       draft_package_digest: "b".repeat(64),
+      planning_digest: "c".repeat(64),
       approval_decision_id: "content_revision_decision_bdo_1",
       final_canonical_url: "https://ekologus.pl/bdo/"
     };
@@ -156,6 +157,7 @@ describe("ContentWordPressDraftHandoffSchema", () => {
       content_digest: "a".repeat(64),
       draft_package_id: "draft_package_content_work_item_bdo",
       draft_package_digest: "b".repeat(64),
+      planning_digest: "c".repeat(64),
       approval_decision_id: "content_revision_decision_bdo_1",
       final_canonical_url: "https://ekologus.pl/bdo/"
     };
@@ -229,6 +231,7 @@ describe("ActionApplyRequestSchema", () => {
         content_digest: "a".repeat(64),
         draft_package_id: "draft_package_content_work_item_bdo",
         draft_package_digest: "b".repeat(64),
+        planning_digest: "c".repeat(64),
         approval_decision_id: "content_revision_decision_bdo_1",
         final_canonical_url: "https://ekologus.pl/bdo/"
       }

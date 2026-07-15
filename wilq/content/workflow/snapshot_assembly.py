@@ -104,6 +104,25 @@ def assemble_content_work_item_snapshot(
         brief,
     )
     draft = draft_package.draft_package_result.draft_package
+    planning_workspace = (
+        None
+        if brief is None or draft is None
+        else build_content_planning_workspace(
+            build_content_planning_proposal(
+                brief=brief,
+                draft=draft,
+                service_profile=service_profile_context,
+            ),
+            planning_decisions or [],
+        )
+    )
+    approved_planning_digest = (
+        planning_workspace.proposal.planning_digest
+        if planning_workspace is not None
+        and planning_workspace.scope_current
+        and planning_workspace.section_map_current
+        else None
+    )
     structured_generation = callbacks.structured_generation(
         item,
         claim_ledger,
@@ -119,6 +138,7 @@ def assemble_content_work_item_snapshot(
         structured_contract_present=(
             structured_generation.structured_generation_result.contract is not None
         ),
+        planning_digest=approved_planning_digest,
     )
     human_review = callbacks.human_review(
         item,
@@ -135,6 +155,7 @@ def assemble_content_work_item_snapshot(
                 item=item,
                 draft_package=draft,
                 revision_state=revision_state,
+                planning_digest=approved_planning_digest,
             ),
         )
     else:
@@ -157,18 +178,6 @@ def assemble_content_work_item_snapshot(
     section_map_blocker = draft_package.draft_package_result.blockers[0:1]
     structured_contract_blocker = structured_generation.structured_generation_result.blockers[0:1]
     signal_quality = None if brief is None else brief.signal_quality
-    planning_workspace = (
-        None
-        if brief is None or draft is None
-        else build_content_planning_workspace(
-            build_content_planning_proposal(
-                brief=brief,
-                draft=draft,
-                service_profile=service_profile_context,
-            ),
-            planning_decisions or [],
-        )
-    )
     if (
         revision_workspace.latest_revision is None
         and planning_workspace is not None
@@ -249,6 +258,7 @@ def assemble_content_work_item_snapshot(
                 item=item,
                 draft_package=draft,
                 state=revision_state,
+                planning_digest=approved_planning_digest,
             ),
             revision_bound_wordpress_handoff_ready=(
                 wordpress_handoff.handoff_result.handoff is not None
@@ -287,6 +297,7 @@ def build_content_draft_revision_workspace(
     draft_package: ContentDraftPackage | None,
     state: ContentDraftRevisionState | None,
     structured_contract_present: bool,
+    planning_digest: str | None,
 ) -> ContentDraftRevisionWorkspace:
     current_state = state or ContentDraftRevisionState(
         status="empty",
@@ -297,6 +308,7 @@ def build_content_draft_revision_workspace(
         item=item,
         draft_package=draft_package,
         state=current_state,
+        planning_digest=planning_digest,
     )
     if latest_revision is not None and (context_current or draft_package is None):
         editor_title = latest_revision.title
@@ -383,6 +395,7 @@ def _revision_context_is_current(
     item: ContentWorkItem,
     draft_package: ContentDraftPackage | None,
     state: ContentDraftRevisionState | None,
+    planning_digest: str | None,
 ) -> bool:
     if state is None or state.latest_revision is None:
         return True
@@ -393,6 +406,8 @@ def _revision_context_is_current(
         and canonical_url
         and revision.draft_package_id == draft_package.id
         and revision.draft_package_digest == content_draft_package_digest(draft_package)
+        and revision.planning_digest is not None
+        and revision.planning_digest == planning_digest
         and revision.final_canonical_url == canonical_url
     )
 

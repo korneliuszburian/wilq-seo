@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import sqlite3
 from pathlib import Path
 from typing import Any, cast
 
@@ -169,6 +171,9 @@ def test_revision_save_is_reloadable_idempotent_and_returns_raw_stale_conflict(
         snapshot["draft_package"]["draft_package_result"]["draft_package"]
     )
     assert revision["draft_package_digest"] == content_draft_package_digest(package)
+    assert revision["planning_digest"] == snapshot["planning_workspace"]["proposal"][
+        "planning_digest"
+    ]
     assert content_draft_package_digest(
         package.model_copy(update={"title": f"{package.title} — zmieniony plan"})
     ) != content_draft_package_digest(package)
@@ -312,6 +317,7 @@ def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_rev
         "content_digest": revision["content_digest"],
         "draft_package_id": revision["draft_package_id"],
         "draft_package_digest": revision["draft_package_digest"],
+        "planning_digest": revision["planning_digest"],
         "approval_decision_id": approval["decision_id"],
         "final_canonical_url": revision["final_canonical_url"],
     }
@@ -339,6 +345,7 @@ def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_rev
             base_revision_id=revision["revision_id"],
             draft_package_id=package.id,
             draft_package_digest=content_draft_package_digest(package),
+            planning_digest=revision["planning_digest"],
             final_canonical_url=revision["final_canonical_url"],
             title=revision["title"],
             sections=[
@@ -376,6 +383,86 @@ def test_approved_revision_builds_the_exact_wordpress_handoff_without_legacy_rev
     assert blocked_handoff["handoff"] is None
     assert "revision_context_changed" in {
         blocker["code"] for blocker in blocked_handoff["blockers"]
+    }
+
+
+def test_planning_needs_changes_invalidates_approved_revision_handoff_without_deleting_history(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
+    revision = client.post(_save_path(work_item_id), json=_save_payload(snapshot)).json()[
+        "revision"
+    ]
+    approval = client.post(
+        _review_path(work_item_id, revision["revision_id"]),
+        json=_review_payload(revision, "approved"),
+    )
+    assert approval.status_code == 200
+    ready = _selected_snapshot(client, work_item_id)
+    assert ready["current_step_id"] == "dev_draft"
+    assert ready["wordpress_handoff"]["handoff_result"]["handoff"] is not None
+
+    planning_digest = ready["planning_workspace"]["proposal"]["planning_digest"]
+    review = client.post(
+        _planning_review_path(work_item_id),
+        json={
+            "stage": "scope",
+            "expected_planning_digest": planning_digest,
+            "decision": "needs_changes",
+            "reviewed_by": "wilku",
+            "checked_items": [],
+            "notes": "CTA wymaga zmiany przed dalszym review.",
+        },
+    )
+    assert review.status_code == 200
+
+    invalidated = _selected_snapshot(client, work_item_id)
+    assert invalidated["current_step_id"] == "scope"
+    assert invalidated["planning_workspace"]["scope_current"] is False
+    assert invalidated["revision_workspace"]["context_current"] is False
+    assert invalidated["revision_workspace"]["latest_revision"]["revision_id"] == revision[
+        "revision_id"
+    ]
+    assert invalidated["wordpress_handoff"]["handoff_result"]["handoff"] is None
+    assert "revision_context_changed" in {
+        blocker["code"]
+        for blocker in invalidated["wordpress_handoff"]["handoff_result"]["blockers"]
+    }
+
+
+def test_legacy_revision_without_planning_digest_remains_readable_but_blocked(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
+    revision = client.post(_save_path(work_item_id), json=_save_payload(snapshot)).json()[
+        "revision"
+    ]
+    database = tmp_path / "wilq.sqlite3"
+    with sqlite3.connect(database) as connection:
+        row = connection.execute(
+            "SELECT payload_json FROM content_draft_revisions WHERE revision_id = ?",
+            (revision["revision_id"],),
+        ).fetchone()
+        assert row is not None
+        payload = json.loads(cast(str, row[0]))
+        payload.pop("planning_digest")
+        connection.execute(
+            "UPDATE content_draft_revisions SET payload_json = ? WHERE revision_id = ?",
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")), revision["revision_id"]),
+        )
+
+    legacy = _selected_snapshot(client, work_item_id)
+    assert legacy["revision_workspace"]["latest_revision"]["revision_id"] == revision[
+        "revision_id"
+    ]
+    assert legacy["revision_workspace"]["latest_revision"]["planning_digest"] is None
+    assert legacy["revision_workspace"]["context_current"] is False
+    assert legacy["wordpress_handoff"]["handoff_result"]["handoff"] is None
+    assert "missing_planning_binding" in {
+        blocker["code"]
+        for blocker in legacy["wordpress_handoff"]["handoff_result"]["blockers"]
     }
 
 
@@ -603,6 +690,7 @@ def test_action_apply_sends_only_the_exact_approved_revision_and_blocks_replay(
             base_revision_id=revision["revision_id"],
             draft_package_id=package.id,
             draft_package_digest=content_draft_package_digest(package),
+            planning_digest=revision["planning_digest"],
             final_canonical_url=revision["final_canonical_url"],
             title=revision["title"],
             sections=[
@@ -697,6 +785,7 @@ def test_approval_of_v1_never_approves_a_new_v2(
             base_revision_id=v1["revision_id"],
             draft_package_id=v1["draft_package_id"],
             draft_package_digest="0" * 64,
+            planning_digest=v1["planning_digest"],
             final_canonical_url=v1["final_canonical_url"],
             title=f"{v1['title']} — wersja 2",
             sections=[

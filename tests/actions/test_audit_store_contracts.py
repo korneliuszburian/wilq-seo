@@ -307,6 +307,7 @@ def test_wordpress_revision_binding_stays_typed_across_action_audits() -> None:
         content_digest="a" * 64,
         draft_package_id="draft_package_content_work_item_bdo",
         draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
         approval_decision_id="content_revision_decision_bdo_1",
         final_canonical_url="https://ekologus.pl/bdo/",
     )

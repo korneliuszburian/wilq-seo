@@ -129,6 +129,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   i liczbę dowodów. Dawna trzykolumnowa ściana w tym kroku została usunięta.
   Typed `409` zachowuje notatkę i daje jawny reload; zapis odświeża API-owned
   krok. Nie dodano promptu, Codex call ani WordPress write.
+- `wilq-seo-amj2.1.3` wiąże każdą nową rewizję i exact WordPress binding z
+  digestem aktualnie zatwierdzonego planu. Digest wchodzi do content digestu i
+  child revision Codexa. `needs_changes`, zmiana proposal albo brak legacy
+  bindingu ustawia revision context jako stale, blokuje review/Codex/handoff i
+  ActionObject bez usuwania historii.
 
 ## Bieżący proof
 
@@ -161,6 +166,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   ESLint i shared schemas 37/37 są zielone. Live desktop/mobile browser 1/1
   pokazuje `scope`, zablokowany submit bez review i brak dawnych paneli, bez
   żadnego content POST. Proof: `.local-lab/proof/dashboard-content-workflow/2026-07-15T23-08-03-347Z/`.
+- Planning-to-revision proof: zatwierdzony plan tworzy rewizję i handoff z tym
+  samym digestem; późniejsze `scope=needs_changes` cofa workflow do `scope`,
+  zachowuje revision ID, ale ustawia `context_current=false` i usuwa handoff.
+  Focused public API 2/2, store/revision 19/19, ActionObject binding 1/1, Ruff,
+  mypy, TypeScript i ESLint są zielone.
 - Review użyteczności marketera/operatora daje 6/10 dla samego workflow, lecz
   utrzymuje 5/10 dla jakości realnego tekstu: poprzedni 38-słowny output nadal
   był generyczny i `needs_changes`; Service Profile i realny Wilku UAT są otwarte.

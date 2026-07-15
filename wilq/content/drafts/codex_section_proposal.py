@@ -363,6 +363,27 @@ def _persist_proposal(
     run_store: LocalStateStore,
 ) -> ContentCodexSectionProposalResponse:
     base_revision = inputs.base_revision
+    if base_revision.planning_digest is None:
+        blocker = _blocker(
+            "missing_planning_binding",
+            "Wersja nie jest powiązana z zatwierdzonym planem",
+            "Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
+            "Zapisz nową wersję po zatwierdzeniu aktualnego planu.",
+        )
+        return _blocked_response(
+            snapshot=snapshot,
+            base_revision_id=base_revision.revision_id,
+            selected_headings=inputs.selected_headings,
+            run=_finish_run(
+                run_store,
+                runtime.run,
+                status="blocked",
+                error=blocker.code,
+            ),
+            runtime=runtime.trace,
+            blockers=[blocker],
+            quality_review=quality_review,
+        )
     revision_sections = _merge_selected_sections(
         base_revision,
         runtime.output,
@@ -375,6 +396,7 @@ def _persist_proposal(
             base_revision_id=base_revision.revision_id,
             draft_package_id=base_revision.draft_package_id,
             draft_package_digest=base_revision.draft_package_digest,
+            planning_digest=base_revision.planning_digest,
             final_canonical_url=base_revision.final_canonical_url,
             title=base_revision.title,
             sections=revision_sections,

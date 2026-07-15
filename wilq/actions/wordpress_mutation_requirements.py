@@ -86,6 +86,7 @@ def wordpress_draft_apply_capability(
         diagnostics,
         binding.work_item_id,
         revision_state=revision_state,
+        planning_decisions=workflow_store.load_planning_decisions(binding.work_item_id),
     )
     if snapshot is None:
         return None, [
@@ -388,9 +389,17 @@ def wordpress_draft_activation_packet(
         build_content_wordpress_draft_activation_packet_response,
         build_content_work_item_diagnostics_snapshot_response,
     )
+    from wilq.content.workflow.store import content_workflow_store
 
     diagnostics = build_content_diagnostics_cached()
-    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
+    initial_snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
+    work_item_id = initial_snapshot.preflight.item.id
+    workflow_store = content_workflow_store()
+    snapshot = build_content_work_item_diagnostics_snapshot_response(
+        diagnostics,
+        revision_state=workflow_store.load_draft_revision_state(work_item_id),
+        planning_decisions=workflow_store.load_planning_decisions(work_item_id),
+    )
     return build_content_wordpress_draft_activation_packet_response(
         snapshot,
         action_id=action.id,

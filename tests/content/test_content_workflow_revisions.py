@@ -307,6 +307,7 @@ def test_revision_content_rejects_blank_or_duplicate_sections() -> None:
             work_item_id="content_work_item_bdo",
             draft_package_id="draft_package_bdo",
             draft_package_digest="d" * 64,
+            planning_digest="c" * 64,
             final_canonical_url="https://ekologus.pl/bdo/",
             title="BDO",
             sections=[],
@@ -431,6 +432,7 @@ def _append_command(
         base_revision_id=base_revision_id,
         draft_package_id=draft_package_id,
         draft_package_digest=draft_package_digest,
+        planning_digest="c" * 64,
         final_canonical_url=final_canonical_url,
         title=title,
         sections=(

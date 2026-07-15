@@ -22,19 +22,26 @@ def build_revision_bound_wordpress_draft_handoff(
     item: ContentWorkItem,
     draft_package: ContentDraftPackage | None,
     revision_state: ContentDraftRevisionState,
+    planning_digest: str | None,
 ) -> ContentWordPressDraftHandoffResult:
     """Prepare a draft-only handoff from one exact approved immutable revision."""
     blockers = revision_bound_wordpress_draft_handoff_blockers(
         item=item,
         draft_package=draft_package,
         revision_state=revision_state,
+        planning_digest=planning_digest,
     )
     if blockers:
         return ContentWordPressDraftHandoffResult(blockers=blockers)
 
     revision = revision_state.latest_revision
     approval = revision_state.latest_review
-    if revision is None or approval is None or draft_package is None:
+    if (
+        revision is None
+        or approval is None
+        or draft_package is None
+        or revision.planning_digest is None
+    ):
         raise RuntimeError("Approved revision handoff passed blockers without exact inputs.")
 
     handoff_id = f"wordpress_draft_handoff_{item.id}_{revision.revision_id}"
@@ -45,6 +52,7 @@ def build_revision_bound_wordpress_draft_handoff(
         content_digest=revision.content_digest,
         draft_package_id=revision.draft_package_id,
         draft_package_digest=revision.draft_package_digest,
+        planning_digest=revision.planning_digest,
         approval_decision_id=approval.decision_id,
         final_canonical_url=revision.final_canonical_url,
     )
@@ -74,6 +82,7 @@ def revision_bound_wordpress_draft_handoff_blockers(
     item: ContentWorkItem,
     draft_package: ContentDraftPackage | None,
     revision_state: ContentDraftRevisionState,
+    planning_digest: str | None,
 ) -> list[ContentWordPressDraftHandoffBlocker]:
     blockers: list[ContentWordPressDraftHandoffBlocker] = []
     revision = revision_state.latest_revision
@@ -95,6 +104,16 @@ def revision_bound_wordpress_draft_handoff_blockers(
                 "Wersja nie jest zatwierdzona",
                 "Przekazanie wymaga decyzji zatwierdzającej dokładnie tę wersję tekstu.",
                 "Sprawdź zapisaną wersję i zapisz decyzję człowieka.",
+            )
+        )
+
+    if revision.planning_digest is None:
+        blockers.append(
+            _blocker(
+                "missing_planning_binding",
+                "Wersja nie jest powiązana z zatwierdzonym planem",
+                "Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
+                "Zapisz nową wersję po zatwierdzeniu aktualnego zakresu i planu sekcji.",
             )
         )
 
@@ -143,6 +162,7 @@ def revision_bound_wordpress_draft_handoff_blockers(
         and draft_package.work_item_id == item.id
         and revision.draft_package_id == draft_package.id
         and revision.draft_package_digest == content_draft_package_digest(draft_package)
+        and revision.planning_digest == planning_digest
         and revision.final_canonical_url == item.final_canonical_url
         and [
             (section.heading, section.evidence_ids) for section in revision.sections

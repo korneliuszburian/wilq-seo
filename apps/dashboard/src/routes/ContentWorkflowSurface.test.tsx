@@ -1697,6 +1697,7 @@ function savedDraftRevision(): NonNullable<
     content_digest: "a".repeat(64),
     draft_package_id: "draft_package_content_work_item_bdo",
     draft_package_digest: "d".repeat(64),
+    planning_digest: "a".repeat(64),
     final_canonical_url: "https://ekologus.pl/bdo/",
     title: workspace.editor_title,
     sections: workspace.editor_sections.map((section, index) => ({
@@ -1812,6 +1813,7 @@ function draftRevisionBinding(
     content_digest: revision.content_digest,
     draft_package_id: revision.draft_package_id,
     draft_package_digest: revision.draft_package_digest,
+    planning_digest: revision.planning_digest!,
     approval_decision_id: review.decision_id,
     final_canonical_url: revision.final_canonical_url
   };
