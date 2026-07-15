@@ -20,6 +20,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.5` zamyka lokalną granicę sieciową pilota: API autoryzuje
+  rzeczywisty peer socket zamiast nagłówka `Host`, dawny
+  `WILQ_ALLOW_REMOTE_API` nie omija ochrony, a kanoniczny manager odrzuca bind
+  API lub dashboardu inny niż `127.0.0.1`/`localhost` przed utworzeniem plików
+  runtime. README wskazuje wyłącznie `local_stack.sh`; po restarcie oba serwisy
+  są zdrowe na loopback.
 - `wilq-seo-r564.7` jest zamknięty i wypchnięty w `b23e413a`. Widok marketera
   pokazuje task mapę i tylko jeden aktywny workspace; rozbudowane szczegóły są
   dostępne wyłącznie w trybie `Audyt techniczny`.
@@ -259,10 +265,10 @@ zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie
   path, ale status jest mylący i wymaga osobnego typed login-readiness slice.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
-- Obecny runtime jest lokalny, ale przed pilotem trzeba usunąć zaufanie do
-  nagłówka `Host`, prywatnie ustawić prawa state/logów i dodać syntetyczny,
-  niedestrukcyjny storage recovery proof. Remote deployment nadal wymaga
-  osobnego auth/TLS/owner contractu.
+- Obecny runtime jest wymuszony jako loopback-only. Przed pilotem nadal trzeba
+  prywatnie ustawić prawa state/logów i dodać syntetyczny, niedestrukcyjny
+  storage recovery proof. Remote deployment wymaga osobnego auth/TLS/owner
+  contractu; bieżący runtime nie ma zdalnego bypassu.
 - PostgreSQL/HA, monitoring i alerting, retencja/legal hold, realny restore
   drill, rotacja credentials oraz publiczny reverse proxy pozostają decyzjami
   ownera/IOD albo pracą wymagającą maintenance window. Nie są dowodem lokalnego

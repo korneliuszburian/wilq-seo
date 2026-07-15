@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
@@ -146,7 +147,7 @@ app.include_router(social_router)
 app.include_router(system_router)
 app.include_router(workflows_router)
 
-LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
+ASGI_TEST_PEERS = {"testclient", "testserver"}
 
 CONTEXT_PRODUCT_RULES = [
     "Brak dowodu w WILQ -> brak rekomendacji.",
@@ -162,15 +163,31 @@ CONTEXT_STRICT_INSTRUCTION = (
 
 @app.middleware("http")
 async def require_local_api_access(request: Request, call_next: Any) -> Any:
-    if os.getenv("WILQ_ALLOW_REMOTE_API") == "true":
-        return await call_next(request)
-    host = request.url.hostname
-    if host not in LOCAL_HOSTS:
+    peer_host = request.client.host if request.client is not None else None
+    if not _is_loopback_peer(peer_host):
         return JSONResponse(
             status_code=403,
-            content={"detail": "WILQ API is local-only by default."},
+            content={
+                "detail": "WILQ API przyjmuje połączenia wyłącznie z interfejsu loopback."
+            },
         )
     return await call_next(request)
+
+
+def _is_loopback_peer(peer_host: str | None) -> bool:
+    if peer_host in ASGI_TEST_PEERS:
+        return True
+    if peer_host is None:
+        return False
+    try:
+        address = ipaddress.ip_address(peer_host)
+    except ValueError:
+        return False
+    if address.is_loopback:
+        return True
+    if isinstance(address, ipaddress.IPv6Address):
+        return bool(address.ipv4_mapped and address.ipv4_mapped.is_loopback)
+    return False
 
 
 def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:

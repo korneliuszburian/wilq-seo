@@ -38,6 +38,34 @@ def test_local_stack_help_documents_operator_commands() -> None:
     assert "http://127.0.0.1:5173/command-center" in result.stdout
 
 
+def test_local_stack_rejects_non_loopback_bind_before_running_command(tmp_path: Path) -> None:
+    for index, host_overrides in enumerate(
+        (
+            {"WILQ_API_HOST": "0.0.0.0", "WILQ_DASHBOARD_HOST": "127.0.0.1"},
+            {"WILQ_API_HOST": "127.0.0.1", "WILQ_DASHBOARD_HOST": "0.0.0.0"},
+        )
+    ):
+        runtime_dir = tmp_path / f"runtime-{index}"
+        environment = {
+            **os.environ,
+            "WILQ_RUNTIME_DIR": str(runtime_dir),
+            **host_overrides,
+        }
+
+        result = subprocess.run(
+            [str(STACK_SCRIPT), "status"],
+            cwd=ROOT,
+            env=environment,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 2
+        assert "refusing non-loopback bind" in result.stderr
+        assert not runtime_dir.exists()
+
+
 def test_operator_docs_point_to_local_stack_manager() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     context = (ROOT / "docs" / "CONTEXT.md").read_text(encoding="utf-8")

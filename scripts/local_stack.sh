@@ -8,6 +8,22 @@ API_PORT="${WILQ_API_PORT:-8000}"
 DASHBOARD_HOST="${WILQ_DASHBOARD_HOST:-127.0.0.1}"
 DASHBOARD_PORT="${WILQ_DASHBOARD_PORT:-5173}"
 
+require_supported_loopback_host() {
+  local variable="$1"
+  local host="$2"
+  case "$host" in
+    127.0.0.1|localhost)
+      ;;
+    *)
+      echo "${variable} must be 127.0.0.1 or localhost; refusing non-loopback bind: ${host}" >&2
+      exit 2
+      ;;
+  esac
+}
+
+require_supported_loopback_host "WILQ_API_HOST" "$API_HOST"
+require_supported_loopback_host "WILQ_DASHBOARD_HOST" "$DASHBOARD_HOST"
+
 API_URL="http://${API_HOST}:${API_PORT}"
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 

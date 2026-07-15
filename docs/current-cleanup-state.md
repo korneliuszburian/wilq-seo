@@ -1,4 +1,4 @@
-# Current Cleanup State — 2026-07-15
+# Current Cleanup State — 2026-07-16
 
 Przeczytaj przed cleanupem, refaktorem dashboardu albo zmianą kontraktu API.
 Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
@@ -48,6 +48,11 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Prawda produktu
 
+- Kanoniczny pilot jest bezwarunkowo loopback-only: manager stosu odrzuca
+  non-loopback bind przed zmianą runtime, middleware sprawdza peer socket i nie
+  ufa `Host`, a dawny env bypass nie działa. README nie promuje ręcznie
+  uruchamianego Uvicorna/Vite. To nie jest dowód auth, TLS ani gotowości do
+  zdalnego deploymentu.
 - `/content-workflow` jest jedynym głównym workspace’em `Treści i SEO`;
   publiczny `ekologus.pl` pozostaje SEO truth, a Proudsite jest wyłącznie
   draft/dev workspace.
@@ -132,8 +137,8 @@ kontynuuj najwyższy bezpieczny task.
   rewizji lub zmiana kontekstu pozostają zablokowane. Typed demand evidence
   (`amj2.3`) zależy od scope, a content skill (`amj2.4`) od obu decyzji i exact
   dev readiness.
-- Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`) → local
-  audit identity (`amj2.6`) oraz filesystem modes (`amj2.7`) → storage recovery
+- Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`, domknięty)
+  → local audit identity (`amj2.6`) oraz filesystem modes (`amj2.7`) → storage recovery
   (`amj2.8`). Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają
   publication-bound i nie mogą przyjmować sukcesu zadeklarowanego przez klienta.
 - `wilq-seo-c9h9.27` usuwa historyczny `CODEX_API_KEY` z connector readiness i

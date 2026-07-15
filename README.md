@@ -12,16 +12,16 @@ pnpm install
 scripts/verify.sh
 ```
 
-Run the API:
+Run the canonical local API and dashboard stack:
 
 ```bash
-uv run uvicorn apps.api.wilq_api.main:app --reload
+scripts/local_stack.sh start
 ```
 
-Run the dashboard:
+Inspect its managed processes and readiness:
 
 ```bash
-pnpm --filter @wilq/dashboard dev
+scripts/local_stack.sh status
 ```
 
 The known Ekologus access pack is expected at:
@@ -31,4 +31,3 @@ The known Ekologus access pack is expected at:
 ```
 
 Do not copy secrets from the access pack into committed files.
-
