@@ -36,6 +36,84 @@ def test_daily_check_runtime_uses_only_the_lightweight_command_center(monkeypatc
     assert runtime.command_center is command_center
 
 
+def test_daily_check_expired_dependencies_rebuild_concurrently(monkeypatch) -> None:
+    from wilq.briefing import daily_check
+
+    all_builds_started = Barrier(3)
+    calls: list[str] = []
+    runtime = SimpleNamespace(connectors=[], command_center=SimpleNamespace(daily_decisions=[]))
+    ga4 = SimpleNamespace()
+    content = SimpleNamespace()
+
+    def build(name: str, value: object) -> object:
+        calls.append(name)
+        all_builds_started.wait(timeout=2)
+        return value
+
+    monkeypatch.setattr(
+        daily_check,
+        "build_daily_check_runtime",
+        lambda **_: build("runtime", runtime),
+    )
+    monkeypatch.setattr(
+        daily_check,
+        "build_ga4_diagnostics_cached",
+        lambda: build("ga4", ga4),
+    )
+    monkeypatch.setattr(
+        daily_check,
+        "build_content_diagnostics_cached",
+        lambda: build("content", content),
+    )
+
+    dependencies = daily_check._build_daily_check_dependencies(use_cache=True)
+
+    assert set(calls) == {"runtime", "ga4", "content"}
+    assert dependencies.runtime is runtime
+    assert dependencies.ga4 is ga4
+    assert dependencies.content is content
+
+
+def test_daily_check_expiry_returns_blocker_and_starts_one_background_rebuild(
+    monkeypatch,
+) -> None:
+    from wilq.briefing import daily_check
+
+    daily_runtime.finish_daily_check_prewarm()
+    targets: list[object] = []
+    builds: list[str] = []
+
+    class DeferredThread:
+        def __init__(self, *, target, **_kwargs) -> None:
+            targets.append(target)
+
+        def start(self) -> None:
+            return None
+
+    monkeypatch.setattr(daily_check, "Thread", DeferredThread)
+    monkeypatch.setattr(daily_check, "_daily_check_dependencies_cached", lambda: False)
+    monkeypatch.setattr(
+        daily_check,
+        "_build_daily_check_dependencies",
+        lambda **_: builds.append("build"),
+    )
+
+    first = daily_check.build_daily_check()
+    second = daily_check.build_daily_check()
+
+    assert first.blocked_recommendations[0].id == "daily_check_runtime_prewarm"
+    assert second.blocked_recommendations[0].id == "daily_check_runtime_prewarm"
+    assert len(targets) == 1
+    assert builds == []
+
+    target = targets[0]
+    assert callable(target)
+    target()
+
+    assert builds == ["build"]
+    assert daily_runtime.daily_check_prewarm_in_progress() is False
+
+
 def test_daily_check_runtime_deduplicates_concurrent_cold_builds(monkeypatch) -> None:
     daily_runtime.clear_daily_runtime_cache()
     original_cache_read = daily_runtime._read_daily_command_center_cache

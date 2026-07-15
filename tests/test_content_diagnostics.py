@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from time import sleep
 
 import wilq.briefing.content_diagnostics as content_diagnostics_module
 from wilq.briefing.content_diagnostics import (
@@ -58,6 +60,38 @@ def test_content_diagnostics_default_cache_survives_startup_waterfall(
     assert first is sentinel
     assert second is sentinel
     assert calls == 1
+    content_diagnostics_module.clear_content_diagnostics_cache()
+
+
+def test_content_diagnostics_cache_serializes_concurrent_cold_builds(monkeypatch) -> None:
+    calls: list[str] = []
+    sentinel = ContentDiagnosticsResponse.model_construct()
+
+    monkeypatch.setattr(
+        content_diagnostics_module,
+        "_content_diagnostics_cache_seconds",
+        lambda: 60.0,
+    )
+    monkeypatch.setattr(content_diagnostics_module, "monotonic", lambda: 0.0)
+
+    def fake_build() -> ContentDiagnosticsResponse:
+        calls.append("build")
+        sleep(0.05)
+        return sentinel
+
+    monkeypatch.setattr(content_diagnostics_module, "build_content_diagnostics", fake_build)
+    content_diagnostics_module.clear_content_diagnostics_cache()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(
+            executor.map(
+                lambda _: content_diagnostics_module.build_content_diagnostics_cached(),
+                [1, 2],
+            )
+        )
+
+    assert results == [sentinel, sentinel]
+    assert calls == ["build"]
     content_diagnostics_module.clear_content_diagnostics_cache()
 
 

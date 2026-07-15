@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from threading import Lock
 from time import monotonic
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -109,6 +110,7 @@ class ContentDiagnosticsCacheEntry:
 
 
 _cached_content_diagnostics: ContentDiagnosticsCacheEntry | None = None
+_content_diagnostics_cache_lock = Lock()
 
 
 def build_content_diagnostics(
@@ -238,14 +240,26 @@ def build_content_diagnostics_cached() -> ContentDiagnosticsResponse:
     cached = _read_content_diagnostics_cache()
     if cached is not None:
         return cached
-    diagnostics = build_content_diagnostics()
-    _write_content_diagnostics_cache(diagnostics)
-    return diagnostics
+    with _content_diagnostics_cache_lock:
+        cached = _read_content_diagnostics_cache()
+        if cached is not None:
+            return cached
+        diagnostics = build_content_diagnostics()
+        _write_content_diagnostics_cache(diagnostics)
+        return diagnostics
 
 
 def clear_content_diagnostics_cache() -> None:
     global _cached_content_diagnostics
-    _cached_content_diagnostics = None
+    with _content_diagnostics_cache_lock:
+        _cached_content_diagnostics = None
+
+
+def content_diagnostics_cache_ready() -> bool:
+    return (
+        _content_diagnostics_cache_seconds() <= 0
+        or _read_content_diagnostics_cache() is not None
+    )
 
 
 def _read_content_diagnostics_cache() -> ContentDiagnosticsResponse | None:

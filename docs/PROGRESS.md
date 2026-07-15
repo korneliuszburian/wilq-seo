@@ -108,9 +108,19 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   pasującym dowodem 90 dni dla dokładnego terminu, kampanii i grupy reklam.
   Sam dowód 30 dni pozostawia kandydata jako `needs_90_day_review`, bez preview
   i bez action ID. Poprawny dowód nadal tworzy wyłącznie review z `apply=false`.
+- `wilq-seo-3bnt` usuwa oczekiwanie operatora na sumę cold buildów po expiry.
+  Daily-check rozpoznaje nieaktualny Command Center/GA4/content cache, atomowo
+  uruchamia jeden background prewarm i natychmiast zwraca istniejący typed
+  `daily_check_runtime_prewarm`. TTL, freshness, endpointy i invalidacja po
+  connector/action/job pozostają bez zmian; content cold miss ma single-flight.
 
 ## Bieżący proof
 
+- Realny expiry proof po 31 s zwrócił typed blocker w 0,003 s. Po background
+  rebuildzie pełne odczyty trwały 0,018/0,020/0,018 s i zachowały ten sam hash
+  statusu, freshness, 23 evidence IDs, 7 source connectors, 8 action IDs oraz
+  blocked claims. Focused expiry/concurrency/guard testy 44/44, Ruff i mypy są
+  zielone; świeży browser Command Center przechodzi 1/1 w 3,2 s.
 - Po managed restarcie live Ads summary ma 5 kandydatów, 5 pasujących preview
   90 dni i jeden review-only action; wszystkie preview mają `apply=false`.
   Focused public API/validator 3/3, shared schemas 37/37, Ruff i mypy są zielone.

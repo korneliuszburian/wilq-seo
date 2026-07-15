@@ -1,13 +1,23 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import date
+from threading import Thread
 from typing import Literal
 
-from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from wilq.briefing.content_diagnostics import (
+    build_content_diagnostics_cached,
+    content_diagnostics_cache_ready,
+)
 from wilq.briefing.daily_runtime import (
+    DailyCheckRuntime,
     build_daily_check_runtime,
     daily_check_prewarm_in_progress,
+    daily_check_runtime_cache_ready,
+    finish_daily_check_prewarm,
+    try_start_daily_check_prewarm,
 )
 from wilq.briefing.false_positive_guards import (
     FalsePositiveGuardResult,
@@ -19,7 +29,10 @@ from wilq.briefing.false_positive_guards import (
     evaluate_source_conflict_guard,
     evaluate_source_trace_guard,
 )
-from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics_cached
+from wilq.briefing.ga4_diagnostics import (
+    build_ga4_diagnostics_cached,
+    ga4_diagnostics_cache_ready,
+)
 from wilq.briefing.recommendation_log import list_recommendation_logs
 from wilq.content.enrichment.opportunity import build_content_opportunity_enrichment
 from wilq.content.workflow.queue import (
@@ -31,11 +44,13 @@ from wilq.knowledge.workspace_dossier import build_workspace_dossier
 from wilq.schemas import (
     ActionRisk,
     ConnectorStatus,
+    ContentDiagnosticsResponse,
     DailyCheckConnectorRef,
     DailyCheckItem,
     DailyCheckResult,
     DailyDecision,
     FreshnessState,
+    Ga4DiagnosticsResponse,
 )
 
 WORKSPACE_ID = "ekologus"
@@ -61,16 +76,39 @@ class _ContentMeasurementGuardContext:
     queue_density_next_step: str | None = None
 
 
+@dataclass(frozen=True)
+class _DailyCheckDependencies:
+    runtime: DailyCheckRuntime
+    ga4: Ga4DiagnosticsResponse
+    content: ContentDiagnosticsResponse
+
+
 def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
     """Compile the existing daily decision queue into a traceable operator result."""
     if daily_check_prewarm_in_progress():
         return _daily_check_prewarm_blocker()
-    runtime = build_daily_check_runtime(use_cache=use_cache)
+    if use_cache and not _daily_check_dependencies_cached():
+        if try_start_daily_check_prewarm():
+            Thread(
+                target=_prewarm_expired_daily_check_dependencies,
+                name="wilq-daily-check-expiry-prewarm",
+                daemon=True,
+            ).start()
+        return _daily_check_prewarm_blocker()
+    dependencies = _build_daily_check_dependencies(use_cache=use_cache)
+    runtime = dependencies.runtime
     connector_refs = _connector_refs(runtime.connectors)
-    ga4_guard = _ga4_conversion_guard(runtime.command_center.daily_decisions)
-    content_guard = _content_date_window_guard(runtime.command_center.daily_decisions)
+    ga4_guard = _ga4_conversion_guard(
+        runtime.command_center.daily_decisions,
+        dependencies.ga4,
+    )
+    content_guard = _content_date_window_guard(
+        runtime.command_center.daily_decisions,
+        dependencies.content,
+    )
     content_measurement_guard = _content_measurement_baseline_guard(
-        runtime.command_center.daily_decisions
+        runtime.command_center.daily_decisions,
+        dependencies.content,
     )
     items = [
         _daily_item(
@@ -106,6 +144,35 @@ def build_daily_check(*, use_cache: bool = True) -> DailyCheckResult:
     )
 
 
+def _build_daily_check_dependencies(*, use_cache: bool) -> _DailyCheckDependencies:
+    """Resolve independent read models together so one request does not pay their sum."""
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        runtime_future = executor.submit(build_daily_check_runtime, use_cache=use_cache)
+        ga4_future = executor.submit(build_ga4_diagnostics_cached)
+        content_future = executor.submit(build_content_diagnostics_cached)
+        return _DailyCheckDependencies(
+            runtime=runtime_future.result(),
+            ga4=ga4_future.result(),
+            content=content_future.result(),
+        )
+
+
+def _daily_check_dependencies_cached() -> bool:
+    return (
+        daily_check_runtime_cache_ready()
+        and ga4_diagnostics_cache_ready()
+        and content_diagnostics_cache_ready()
+    )
+
+
+def _prewarm_expired_daily_check_dependencies() -> None:
+    try:
+        with suppress(Exception):
+            _build_daily_check_dependencies(use_cache=True)
+    finally:
+        finish_daily_check_prewarm()
+
+
 def _daily_check_prewarm_blocker() -> DailyCheckResult:
     return DailyCheckResult(
         workspace_id=WORKSPACE_ID,
@@ -119,8 +186,8 @@ def _daily_check_prewarm_blocker() -> DailyCheckResult:
                 status="blocked",
                 priority=1,
                 summary=(
-                    "Źródła i kolejka decyzji są właśnie przygotowywane po uruchomieniu API. "
-                    "WILQ nie pokazuje jeszcze rekomendacji bez gotowego dowodu."
+                    "WILQ odświeża lokalny przegląd źródeł i kolejki decyzji. Nie pokazuje "
+                    "jeszcze rekomendacji bez gotowego dowodu."
                 ),
                 next_step=(
                     "Odśwież przegląd za chwilę. Nie podejmuj decyzji na podstawie niegotowego "
@@ -297,12 +364,13 @@ def _multi_source_required_guard(
 
 def _content_measurement_baseline_guard(
     decisions: list[DailyDecision],
+    diagnostics: ContentDiagnosticsResponse | None = None,
 ) -> _ContentMeasurementGuardContext | None:
     if not any(decision.id == _CONTENT_QUEUE_DECISION_ID for decision in decisions):
         return None
     queue: ContentWorkItemQueueResponse | None = None
     try:
-        diagnostics = build_content_diagnostics_cached()
+        diagnostics = diagnostics or build_content_diagnostics_cached()
         queue = build_content_work_item_queue_response(diagnostics)
         decisions_by_id = {decision.id: decision for decision in diagnostics.decision_queue}
         baselines = []
@@ -385,11 +453,13 @@ def _content_queue_density_note(
 
 def _ga4_conversion_guard(
     decisions: list[DailyDecision],
+    diagnostics: Ga4DiagnosticsResponse | None = None,
 ) -> FalsePositiveGuardResult | None:
     if not any(decision.domain == "ga4" for decision in decisions):
         return None
     try:
-        contract = build_ga4_diagnostics_cached().conversion_readiness_contract
+        diagnostics = diagnostics or build_ga4_diagnostics_cached()
+        contract = diagnostics.conversion_readiness_contract
     except Exception:
         return FalsePositiveGuardResult(
             guard_id="missing_conversion",
@@ -402,11 +472,13 @@ def _ga4_conversion_guard(
 
 def _content_date_window_guard(
     decisions: list[DailyDecision],
+    diagnostics: ContentDiagnosticsResponse | None = None,
 ) -> FalsePositiveGuardResult | None:
     if not any(decision.domain == "content" for decision in decisions):
         return None
     try:
-        contract = build_content_diagnostics_cached().gsc_search_analytics_contract
+        diagnostics = diagnostics or build_content_diagnostics_cached()
+        contract = diagnostics.gsc_search_analytics_contract
     except Exception:
         contract = None
     return evaluate_gsc_date_window_guard(contract)

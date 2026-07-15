@@ -226,6 +226,13 @@ def clear_ga4_diagnostics_cache() -> None:
         _cached_ga4_diagnostics = None
 
 
+def ga4_diagnostics_cache_ready() -> bool:
+    return (
+        _ga4_diagnostics_cache_seconds() <= 0
+        or _read_ga4_diagnostics_cache() is not None
+    )
+
+
 def _read_ga4_diagnostics_cache() -> Ga4DiagnosticsResponse | None:
     cache_seconds = _ga4_diagnostics_cache_seconds()
     if cache_seconds <= 0 or _cached_ga4_diagnostics is None:

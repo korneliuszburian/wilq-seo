@@ -111,9 +111,17 @@ def build_daily_check_runtime(use_cache: bool = True) -> DailyCheckRuntime:
 
 def start_daily_check_prewarm() -> None:
     """Mark the post-readiness daily-check build as an honest in-progress state."""
+    try_start_daily_check_prewarm()
+
+
+def try_start_daily_check_prewarm() -> bool:
+    """Claim one prewarm so concurrent expired reads cannot duplicate it."""
     global _daily_check_prewarm_in_progress
     with _daily_check_prewarm_state_lock:
+        if _daily_check_prewarm_in_progress:
+            return False
         _daily_check_prewarm_in_progress = True
+        return True
 
 
 def finish_daily_check_prewarm() -> None:
@@ -126,6 +134,11 @@ def finish_daily_check_prewarm() -> None:
 def daily_check_prewarm_in_progress() -> bool:
     with _daily_check_prewarm_state_lock:
         return _daily_check_prewarm_in_progress
+
+
+def daily_check_runtime_cache_ready() -> bool:
+    """Report whether the narrow command-center dependency is still current."""
+    return _cache_seconds() <= 0 or _read_daily_command_center_cache() is not None
 
 
 def build_daily_runtime_base(use_cache: bool = True) -> DailyRuntimeBase:
