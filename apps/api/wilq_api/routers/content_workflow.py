@@ -3,6 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
+from apps.api.wilq_api.routers.content_codex_proposal import (
+    register_content_codex_proposal_route,
+)
+from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringProfile,
@@ -855,38 +859,9 @@ def _revision_conflict_response(conflict: ContentDraftRevisionConflict) -> JSONR
         code=conflict.code,
         current_revision_id=conflict.current_revision_id,
         current_digest=conflict.current_revision_digest,
-        safe_next_step=_revision_conflict_next_step(conflict.code),
+        safe_next_step=revision_conflict_next_step(conflict.code),
     )
     return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
-
-
-def _revision_conflict_next_step(code: str) -> str:
-    if code == "apply_in_progress":
-        return (
-            "Trwa zapis dokładnie zatwierdzonej wersji do WordPress. Poczekaj na wynik "
-            "tej próby, odśwież snapshot i dopiero potem zapisz lub oceń nową wersję."
-        )
-    if code == "stale_base":
-        return (
-            "Na serwerze jest nowsza wersja. Zachowaj swój tekst, porównaj zmiany "
-            "i dopiero potem zapisz kolejną wersję na aktualnej bazie."
-        )
-    if code == "stale_revision":
-        return (
-            "Ta wersja nie jest już najnowsza. Odśwież snapshot i sprawdź aktualną "
-            "wersję bez przenoszenia starej decyzji."
-        )
-    if code == "stale_review":
-        return (
-            "Ktoś zapisał decyzję dla tej wersji wcześniej. Odśwież snapshot, "
-            "przeczytaj aktualną decyzję i dopiero potem zdecyduj ponownie."
-        )
-    if code == "digest_mismatch":
-        return (
-            "Identyfikator treści nie pasuje do zapisanej wersji. Odśwież snapshot "
-            "i sprawdź dokładny tekst przed decyzją."
-        )
-    return "Odśwież snapshot zadania i wybierz istniejącą zapisaną wersję."
 
 
 def _ensure_contract_matches_work_item(
@@ -901,3 +876,9 @@ def _ensure_contract_matches_work_item(
         status_code=400,
         detail="Structured draft contract does not match the selected work item.",
     )
+
+
+register_content_codex_proposal_route(
+    router,
+    snapshot_loader=_snapshot_for_work_item_or_404,
+)

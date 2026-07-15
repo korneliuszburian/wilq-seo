@@ -15,6 +15,11 @@ from wilq.content.handoff.wordpress_execution import (
 )
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
+from wilq.content.workflow.codex_revision_commit import (
+    codex_completion_state,
+    persist_codex_completion,
+    prepare_codex_completion,
+)
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -26,7 +31,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionState,
     ContentDraftRevisionWriteResult,
 )
-from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent
+from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent, CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import state_db_path
@@ -53,13 +58,23 @@ class ContentWorkflowStore:
     def append_draft_revision(
         self,
         command: ContentDraftRevisionAppendCommand,
+        *,
+        completed_codex_run: CodexRun | None = None,
     ) -> ContentDraftRevisionWriteResult:
         redacted_command = ContentDraftRevisionAppendCommand.model_validate(
             redact_mapping(command.model_dump(mode="json"))
         )
+        redacted_completion = prepare_codex_completion(
+            redacted_command,
+            completed_codex_run,
+        )
         content_digest = _draft_revision_content_digest(redacted_command)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            completion_state = codex_completion_state(
+                connection,
+                redacted_completion,
+            )
             latest = _latest_draft_revision(connection, redacted_command.work_item_id)
             if _wordpress_revision_apply_in_progress(
                 connection, redacted_command.work_item_id
@@ -72,10 +87,18 @@ class ContentWorkflowStore:
                 latest.base_revision_id == redacted_command.base_revision_id
                 and latest.content_digest == content_digest
                 and latest.created_by == redacted_command.created_by
+                and latest.proposal_metadata == redacted_command.proposal_metadata
             ):
+                if completion_state == "started":
+                    persist_codex_completion(connection, redacted_completion)
                 return ContentDraftRevisionWriteResult(
                     status="idempotent",
                     revision=latest,
+                )
+
+            if completion_state == "completed":
+                raise ValueError(
+                    "Completed Codex run does not match an idempotent draft revision."
                 )
 
             current_revision_id = None if latest is None else latest.revision_id
@@ -96,6 +119,7 @@ class ContentWorkflowStore:
                 final_canonical_url=redacted_command.final_canonical_url,
                 title=redacted_command.title,
                 sections=redacted_command.sections,
+                proposal_metadata=redacted_command.proposal_metadata,
                 created_by=redacted_command.created_by,
                 created_at=utc_now(),
             )
@@ -125,6 +149,7 @@ class ContentWorkflowStore:
                     _model_json(redacted_revision),
                 ),
             )
+            persist_codex_completion(connection, redacted_completion)
         return ContentDraftRevisionWriteResult(
             status="created",
             revision=redacted_revision,

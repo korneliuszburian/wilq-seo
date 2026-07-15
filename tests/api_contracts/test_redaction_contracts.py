@@ -4,12 +4,14 @@ from wilq.security.redaction import redact_mapping
 
 
 def test_redaction_hides_token_like_values() -> None:
+    secret_path = "/sk-" + "x" * 40  # pragma: allowlist secret
     redacted = redact_mapping(
         {
             "summary": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "api_key": "sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "safe_env_name": "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID",
+            "normalized_page_path": secret_path,
         }
     )
 
@@ -17,6 +19,28 @@ def test_redaction_hides_token_like_values() -> None:
     assert redacted["error"] == "[REDACTED]"
     assert redacted["api_key"] == "[REDACTED]"
     assert redacted["safe_env_name"] == "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID"
+    assert redacted["normalized_page_path"] == "[REDACTED]"
+
+
+def test_redaction_rejects_noncanonical_normalized_page_paths() -> None:
+    unsafe_values = [
+        "/../admin",
+        "//admin",
+        "relative/path",
+        "/bad?query",
+        "/%2e%2e/admin",
+        "/bad%2",
+        "/" + "x" * 32 + "-a-b",
+        "/" + "x" * 31 + "-a-b",
+        ["/safe"],
+        {"value": "/../admin"},
+    ]
+
+    assert all(
+        redact_mapping({"normalized_page_path": value})["normalized_page_path"]
+        == "[REDACTED]"
+        for value in unsafe_values
+    )
 
 
 def test_redaction_checks_nested_wordpress_binding_identifier_shapes() -> None:
@@ -162,6 +186,9 @@ def test_redaction_preserves_safe_marketing_context_values() -> None:
         "search_term_safety_read_contract",
     ]
     assert redacted["blocked_claims"] == ["rekomendacja uruchomienia Demand Gen"]
+    assert redacted["normalized_page_path"] == (
+        "/europejski-zielony-lad-co-to-takiego"
+    )
     assert redacted["cluster_id"] == (
         "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
     )

@@ -133,6 +133,13 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "revision_digest",
 }
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
+SAFE_NORMALIZED_PAGE_PATH_RE = re.compile(
+    r"^/(?:[A-Za-z0-9._~-]+/?)*$"
+)
+SAFE_NORMALIZED_PAGE_PATH_ATOM_RE = re.compile(r"^[A-Za-z0-9._~]{1,24}$")
+KNOWN_SECRET_PATH_RE = re.compile(
+    r"(?:^|/)(?:gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+)"
+)
 
 
 def is_secret_key(key: str) -> bool:
@@ -200,6 +207,10 @@ def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _redact_safe_identifier_value(key: str, value: Any) -> Any:
+    if key == "normalized_page_path":
+        if value is None:
+            return None
+        return value if _looks_like_normalized_page_path(value) else "[REDACTED]"
     if isinstance(value, list):
         return [_redact_safe_identifier_value(key, item) for item in value]
     if isinstance(value, Mapping):
@@ -211,3 +222,38 @@ def _redact_safe_identifier_value(key: str, value: Any) -> Any:
     ):
         return value
     return redact_value(value)
+
+
+def _looks_like_normalized_page_path(value: Any) -> bool:
+    if (
+        not isinstance(value, str)
+        or len(value) > 2048
+        or not SAFE_NORMALIZED_PAGE_PATH_RE.fullmatch(value)
+    ):
+        return False
+    lowered = value.casefold()
+    if (
+        "//" in value
+        or any(part in {".", ".."} for part in value.split("/"))
+        or KNOWN_SECRET_PATH_RE.search(value)
+        or any(
+            fragment in lowered
+            for fragment in (
+                "access_token",
+                "api-key",
+                "api_key",
+                "client_secret",
+                "credential",
+                "password",
+                "refresh_token",
+                "secret",
+                "token",
+            )
+        )
+    ):
+        return False
+    return all(
+        all(SAFE_NORMALIZED_PAGE_PATH_ATOM_RE.fullmatch(atom) for atom in part.split("-"))
+        for part in value.split("/")
+        if part
+    )

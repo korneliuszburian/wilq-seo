@@ -14,9 +14,9 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 - WILQ API jest właścicielem stanu, dowodów, wersji, decyzji, ActionObjectów
   i audytu. React renderuje typed view-model i przechowuje tylko niezapisane
   edycje formularza.
-- Docelowy executor ma działać po stronie serwera przez Codex app-server/SDK
-  i istniejący `codex login`. OpenAI API key, Agents SDK, Ollama ani drugi model
-  nie są zależnościami produktu.
+- Ograniczony executor działa po stronie serwera przez Codex app-server i
+  istniejący `codex login`. OpenAI API key, Agents SDK, Ollama ani drugi model
+  nie są zależnościami produktu. Browser nie łączy się z Codex bezpośrednio.
 
 ## Ostatnie domknięte zakresy
 
@@ -64,6 +64,28 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   binding, nieudany etap albo typed `409` zatrzymuje przebieg bez retry. Po
   syntetycznym sukcesie odświeżane są akcja, snapshot, activation/readback i
   readiness.
+- `wilq-seo-r564.11` dodaje jeden API-owned seam propozycji poprawki wybranych
+  sekcji. Endpoint sam pobiera dokładną najnowszą wersję `needs_changes` albo
+  `rejected`, pełny generation input, brief, Claim Ledger, source facts,
+  constraints i poprzedni review. Dynamiczne pola pozostają w kontekście
+  `untrusted`; zwykła instrukcja jest statyczna. App-server działa
+  ephemeral/read-only na izolowanym profilu bez user configu, MCP i sekretów
+  środowiska oraz bez fallbacku.
+- Znane capabilities narzędziowe są wyłączone, a każda zaobserwowana próba tool
+  lub server request unieważnia wynik. Stockowy app-server nie udostępnia jednak
+  ogólnej, twardej gwarancji wyłączenia każdego przyszłego built-inu; nie wolno
+  opisywać tego runtime'u jako bezwarunkowo `tool-free`.
+- Wynik może utworzyć wyłącznie niezatwierdzoną child revision. Tytuł,
+  nieedytowane sekcje i evidence mapping są kopiowane z bazy. Obcy identyfikator
+  claimu/dowodu, literalny znany blocked claim oraz wąski zestaw niezadeklarowanych
+  obietnic efektu lub zgodności zatrzymują zapis. To nie jest pełny detektor
+  semantyczny: rewizja utrwala run ID, wybrane sekcje i evidence/claim IDs, a
+  człowiek nadal musi sprawdzić znaczenie tekstu. Review ma zakres
+  `persisted_selected_sections_and_declared_lineage`; modelowe CTA, linki,
+  meta i FAQ, których child revision nie przechowuje, nie podnoszą jego oceny.
+- Zapis child revision i terminalnego `CodexRun` jest jedną transakcją SQLite.
+  Inny run/provenance nie może dostać idempotentnej rewizji poprzedniego runu;
+  błąd finalizacji wycofuje child revision.
 
 ## Bieżący proof
 
@@ -96,17 +118,38 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `adapter_reached=false` i `external_write_attempted=false`. Focused claim,
   crash recovery, action/audit i redaction proof przechodzi 27/27, a osobny
   publiczny exact-revision apply 1/1.
+- Focused falsifier propozycji Codex przechodzi: pełny API-owned `model_input`
+  dociera do adaptera; obcy claim ID, known blocked phrase i niezadeklarowany
+  high-risk promise kończą się `proposal_contract_blocked` bez child revision,
+  a zgodny wynik tworzy v2 i pozostawia workspace `unreviewed`. Transport proof
+  sprawdza izolację profilu i fail-closed tool
+  attempt, a dwa testy trwałości chronią provenance i atomowy rollback. Focused
+  zestaw proposal/store/preview ma 29 zielonych testów; Ruff i mypy są zielone.
+  Complexity audit nie wykrywa naruszeń w nowych modułach; raportuje cztery
+  starsze limity `workflow/store.py`, dotkniętego przez konieczny atomowy seam.
+- Finalny realny proof po trust split i izolacji profilu utworzył v2 dla jednej
+  sekcji: 38 słów, dwa evidence IDs z `google_search_console` i
+  `wordpress_ekologus`, `item_types=userMessage/reasoning/agentMessage`,
+  `external_call_attempted=false`, zero mutation auditów, `publish_ready=false`.
+  Verdict to uczciwe `needs_changes`: brak trwałego typed CTA i linkowania
+  wewnętrznego, review-required brief oraz brak measurement window. Wcześniejszy
+  wynik z obcymi referencjami został zablokowany; nie dodano fallbacku ani
+  luźniejszej ścieżki.
+- Szeroki `scripts/verify.sh` ujawnił niezależną regresję context-packu:
+  bezpieczny `normalized_page_path` był redagowany jako token. `wilq-seo-r564.12`
+  zachowuje teraz wyłącznie zwalidowaną absolutną ścieżkę treści; tokenowe,
+  sekretowe, traversalowe i malformed wartości nadal kończą jako `[REDACTED]`.
+  Focused redaction przechodzi 5/5, a pierwotny publiczny context-pack repro 1/1.
 
 ## Następny bezpieczny zakres
 
-1. Wykonać ograniczony lab-test server-side `codex app-server` nad istniejącym
-   `codex login`: propozycja child revision i stream statusu, bez approval oraz
-   bez vendor write. Browser nie może łączyć się z Codex bezpośrednio. Request
-   musi przekazać pełny API-owned `model_input`: wybrane sekcje, source facts,
-   claim markers, blokady i signal quality.
-2. Po decyzji z labu rozwijać najważniejszą wartość treściową: jawny wybór
-   strony/usługi/intencji/CTA, porównanie wersji, bibliotekę/historię treści i
-   realny Wilku UAT. Nie nadawać oceny 10/10 przed tym dowodem.
+1. Podłączyć API-owned propozycję do aktywnego kroku `draft`: jawny wybór
+   sekcji, jedno CTA generowania, status runu, porównanie z bazą i czytelne
+   quality findings. Nie wystawiać browserowi generic runtime ani promptu.
+2. Następnie rozwijać najważniejszą wartość treściową: jawny wybór
+   strony/usługi/intencji/CTA, bibliotekę/historię treści, typed keyword/Ads
+   signals tylko z dowodami i realny Wilku UAT. Nie nadawać oceny 10/10 przed
+   tym dowodem.
 
 ## Jawne blokery i ograniczenia
 
@@ -116,11 +159,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   rezydualnym.
 - Queue nie ma wymaganych trzech wykonalnych pozycji; WILQ nie tworzy sztucznej
   trzeciej propozycji.
-- Obecny marketer CTA `Sprawdź tekst szkicu` uruchamia WordPress dry-run, a nie
-  content quality review. Istniejący request Structured Outputs przekazuje
-  instrukcje i schema, ale pomija zbudowany `model_input`, więc nie jest dowodem
-  grounded copy. To wykonywalna luka repo-local i najbliższy P0, nie blocker
-  zewnętrzny.
+- Obecny marketer CTA `Sprawdź tekst szkicu` nadal uruchamia WordPress dry-run,
+  a nowy grounded proposal seam nie jest jeszcze dostępny w dashboardzie.
+  Legacy technical Structured Outputs runtime nadal pomija `model_input` i nie
+  może być traktowany jako aktywna alternatywa; po sprawdzeniu referencji trzeba
+  go usunąć albo wycofać wraz z przepięciem CTA.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
 - Goal 005, produkcyjna gotowość i pełna użyteczność dla marketera nie są

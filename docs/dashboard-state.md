@@ -47,11 +47,13 @@ only after an explicit switch to `Audyt techniczny`.
 The current reviewer estimate is 5/10 for real content creation and 8/10 only
 for exact-version handoff safety. Immutable revisions and the inline
 exact-binding wizard prove the controlled technical path through a draft-only
-readback, but the marketer-facing writing step does not yet expose real quality
-review and there is no proof that generated copy is grounded or useful. Stateful
-browser proof at 1440×900 and 390×844 shows save, reload, exact review and the
-five compact ActionObject stages without horizontal overflow. Action POSTs are
-intercepted; no request reaches WordPress.
+readback. A server-side Codex lab now proves full input delivery and
+declared-lineage-grounded child-revision generation,
+but the marketer-facing writing step does not expose it and the real output was
+still generic and `needs_changes`. Stateful browser proof at 1440×900 and
+390×844 shows save, reload, exact review and the five compact ActionObject stages
+without horizontal overflow. Action POSTs are intercepted; no request reaches
+WordPress.
 
 Read-only Ahrefs and `wordpress_sklep` refreshes on 2026-07-14 restored source
 freshness. The live snapshot honestly remains on `draft`: the revision workspace
@@ -60,14 +62,12 @@ closed. The queue still has only 1 actionable item from 2 candidates and
 remains density-blocked; WILQ must not invent a third topic. Service Profile
 remains review-required. Stateful proof is under
 `.local-lab/proof/dashboard-content-workflow/2026-07-15T11-50-52-058Z/`.
-The next bounded P0 is a server-side Codex app-server lab using the existing
-ChatGPT login to propose a child revision without approval or vendor write. It
-must receive the full API-owned model input: selected service/page/sections,
-source facts, claim markers, blocked constraints and current signal quality.
-The existing OpenAI request builder currently sends only instructions and drops
-that model input; it is not evidence of grounded generation and must not become
-an alternate runtime. The lab must not introduce an API-key-only Agents SDK
-dependency.
+The server-side Codex app-server lab uses the existing ChatGPT login and full
+API-owned model input to create an unreviewed child revision without approval or
+vendor write. The next bounded P0 is to expose section selection, run status,
+base-vs-child diff and quality findings in the active `draft` step. The existing
+OpenAI request builder still drops model input and must not become an alternate
+runtime; remove it only after proving no required reference remains.
 
 Architecture proof (2026-07-15):
 
@@ -96,7 +96,7 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 | --- | ---: | --- | --- | --- | --- | --- |
 | `/command-center` | 70% | Good IA direction: daily priority, blockers and source freshness. Still too easy to become summary-of-everything. | `GET /api/dashboard/command-center`, `getCommandCenter()` | Daily queue, blocked claims, source freshness. | Needs stronger routing into one concrete work item. | Keep as cockpit; do not add more cards. Route into content workbench once content view is ready. |
 | `/opportunities` | 50% | Useful as registry but overlaps with Command Center and Actions. | `GET /api/opportunities`, `getOpportunities()` | Opportunity list with evidence/action links. | Duplicates "Kolejka" mental model. | Eventually merge into one decision/action queue; avoid new UI work here now. |
-| `/content-workflow` | 5/10 content usefulness; 8/10 handoff safety | Primary five-step "Treści i SEO" journey with persisted exact revisions, reload/resume/conflict and exact review. `dev_draft` embeds one compact five-stage wizard for the selected API-owned binding: validate+preview, review, confirm, safety check and apply. Only the active stage expands; resume follows the newest ordered audit events for the same binding, and typed apply conflicts stop without retry. Live workspace remains honestly empty on `draft`. | Existing queue/snapshot and journey reads, revision save/review endpoints, activation/readiness/readback, and the canonical ActionObject preview/review/confirm/impact/apply endpoints; no new endpoint or alternate runtime. | Wilku no longer leaves the content workspace or reconstructs technical context. Every bound request carries the same immutable revision; publish/update/delete stay blocked. Synthetic desktop/mobile proof completes the inline flow through an intercepted apply and shows a draft-only readback with zero real WordPress write. | The marketer CTA `Sprawdź tekst szkicu` currently runs a WordPress dry-run, while actual quality review remains technical. The existing model request drops API-owned sections, facts and claim markers, so grounded copy is not yet proven. Owner-reviewed Service Profile, queue density, actor/tenant and real Wilku UAT also remain open. | Run a bounded server-side Codex app-server child-revision proposal with full model input and automatic quality review. Then expose section-level diff/issues, improve page/service selection and run real UAT; do not call the screen 10/10 before that evidence. |
+| `/content-workflow` | 5/10 content usefulness; 8/10 handoff safety | Primary five-step "Treści i SEO" journey with persisted exact revisions, reload/resume/conflict and exact review. `dev_draft` embeds one compact five-stage wizard for the selected API-owned binding. A new server-side Codex proposal endpoint accepts only exact base digest and selected headings, loads full API-owned context and can atomically persist an unreviewed child revision with run/evidence/claim lineage. It is not exposed in marketer mode yet. | Existing queue/snapshot and journey reads, revision save/review endpoints, `POST /api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal`, activation/readiness/readback, canonical ActionObject endpoints, and local Codex app-server through WILQ API. Browser has no runtime/prompt seam. | Exact input, static-instruction/untrusted-data split and fail-closed typed lineage are proven. Known blocked phrases and a narrow set of undeclared promise/compliance language are rejected from persisted body; arbitrary semantic grounding is not claimed and still requires human review. Quality scores only persisted selected sections, never model-only CTA/meta/link fields. Known tool capabilities are disabled and no tool or write occurred in real proof; any observed tool request invalidates output. Stock app-server still has no general hard `tool-free` guarantee. Final post-hardening proof produced a 38-word GSC/WordPress section and remained honestly `needs_changes`; exact-version handoff safety is unchanged. | The marketer CTA still runs a WordPress dry-run, so Wilku cannot select sections, start Codex, compare the child or understand findings in the normal journey. The earlier inspected section was coherent but generic; Service Profile remains review-required, typed Ads/keyword evidence was absent, measurement/internal links remain missing, and semantic claims still need human review. | Wire the proposal into the active draft step with compact section selection, status, base-vs-child diff and findings; remove the misleading dry-run/legacy runtime only after reference proof. Then improve service/intent/CTA and run a real text-pack UAT; do not call the screen 10/10 before that evidence. |
 | `/content-inventory` | 20% | Hidden technical placeholder. Inventory remains an input to `/content-workflow`, not a separate writing cockpit. | currently generic/compact route; check `surfaceRegistry.ts` before adding code | Concept is needed inside content workbench. | Not a real marketer view yet. | Do not build separate cockpit; expose inventory inside content workbench. |
 | `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. Its selected-card policy is now projected into the existing content work-item snapshot. | `GET /api/content/service-profile` is the source assembly; `GET /api/content/work-items/{id}/snapshot` projects its compact typed context; no frontend join. | Services, claim policy, source status and review-required data. | Not enough approved-current production depth; can overwhelm writer. | Keep owner review here; preserve the compact work-item projection instead of duplicating a second content view. |
 | `/knowledge` | 65% | Admin/review support surface with current "Wiedza" IA. Operating-map remains the only initial read; cards/playbooks defer until disclosure. `list_workflows()` now uses only command-center decisions; standalone map core is `4.878 s`. Managed runtime starts a non-blocking map prewarm after readiness; first/second warmed HTTP reads measured `0.003550 s` / `0.003175 s`. First decision/blockers render in the browser proof; focused current Playwright passes 1/1 in 2.7 s. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map`; `build_knowledge_operating_map_cached()` and existing disclosure controls | Source lineage and claim review. | Prewarm stability must be checked on subsequent restarts; live knowledge/source freshness remains separate from cache latency. | Keep prewarm fail-open and non-blocking; do not re-enable concurrent subordinate reads. |

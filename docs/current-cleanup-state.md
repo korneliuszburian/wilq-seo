@@ -12,17 +12,29 @@ rozwinięty. Resume czyta najnowsze uporządkowane eventy tej wersji, a typed
 konflikt lub terminalny blocker zatrzymuje przebieg bez retry. Syntetyczny
 browser proof przechodzi cały flow bez połączenia z WordPressem.
 
-Następny bounded P0 to server-side handshake WILQ API → Codex app-server
-korzystający z istniejącego `codex login` przez ChatGPT. Pierwszy wynik ma być
-propozycją child revision dla wybranej usługi i sekcji, ze statusem przebiegu,
-lineage dowodów i bez samodzielnego review lub zapisu WordPress. Obecny builder
-Structured Outputs tworzy pełny `model_input`, ale wysyła modelowi tylko dwie
-instrukcje; `claim_markers`, source facts i sekcje nie docierają do runtime'u.
-Nie traktuj tej ścieżki jako grounded generation ani nie utrwalaj jej jako
-fallback. Nowy lab musi przenieść cały typed input i przejść quality review.
-Browser nie rozmawia z Codex bezpośrednio; Codex nie jest właścicielem workflow,
-dowodów, approval ani ActionObject. Nie dodawaj wymogu `OPENAI_API_KEY`,
-Agents SDK, Ollamy, fallbacku modelu ani alternatywnego runtime’u.
+`wilq-seo-r564.11` domknął server-side handshake WILQ API → Codex app-server
+przez istniejący `codex login`. API pobiera pełny typed model input oraz exact
+base/review, a dynamiczne pola trafiają wyłącznie do `untrusted` context.
+App-server działa ephemeral/read-only na izolowanym profilu, wyłącza znane
+capabilities i unieważnia wynik po zaobserwowanej próbie tool/server request;
+stockowy protokół nie daje jednak twardej gwarancji `tool-free`. Wynik może
+  utworzyć tylko `unreviewed` child revision, a rewizja i terminalny run zapisują
+  się atomowo z trwałym evidence/claim lineage. Quality dotyczy wyłącznie
+  utrwalanych wybranych sekcji; obcy identifier, literalny known blocked claim i
+  wąski high-risk promise guard są fail-closed, lecz pełna semantyka nadal wymaga
+  człowieka. Finalny proof po hardeningu
+utworzył 38-słowną poprawkę sekcji na dwóch dowodach GSC/WP bez zaobserwowanej
+próby tool call, ale quality uczciwie zwróciło
+`needs_changes`; nie jest to dowód finalnej jakości tekstu. Browser nadal nie
+rozmawia z Codex bezpośrednio, a Codex nie jest właścicielem workflow, approval
+ani ActionObject.
+
+Następny bounded P0 to przepięcie aktywnego kroku `draft` na ten API-owned seam:
+wybór sekcji, jeden status/CTA, diff z bazą i czytelne findings. Marketer CTA
+nie może dalej udawać content review przez WordPress dry-run. Legacy technical
+runtime, który pomija `model_input`, nie jest fallbackiem; usuń go dopiero po
+potwierdzeniu braku referencji. Nie dodawaj `OPENAI_API_KEY`, Agents SDK,
+Ollamy ani alternatywnej ścieżki modelu.
 
 `c9h9.4` jest zamknięty i nie wolno go powtarzać. Po każdym slice uruchom
 `bd ready --json`, zaktualizuj ten handoff, zrób świadomy commit/push i
@@ -98,18 +110,26 @@ kontynuuj najwyższy bezpieczny task.
   preview do apply, wznawia wyłącznie zgodny ordered audit i zatrzymuje typed
   konflikt bez retry. Desktop/mobile proof jest syntetyczny i nie dotyka
   WordPressa.
+- `wilq-seo-r564.11` jest zamknięty i zweryfikowany: full grounded input przechodzi przez
+  lokalny app-server, obcy lineage jest fail-closed, a poprawny wynik tworzy
+  niezatwierdzoną child revision z run/evidence/claim trace. Realny output ma
+  verdict `needs_changes`, więc usefulness tworzenia treści pozostaje 5/10.
+- `wilq-seo-r564.12` jest zamknięty: zwalidowany
+  `normalized_page_path` zachowuje exact publiczną ścieżkę w context-packu,
+  natomiast tokenowe, sekretowe i malformed ścieżki pozostają redagowane.
 - Parent `wilq-seo-r564` pozostaje otwarty. Queue density jest zewnętrznie
   niepełna (1 actionable z wymaganych 3), a Service Profile i Wilku UAT nadal
-  wymagają ownera. Nie blokuje to ograniczonego lab-testu Codex app-server ani
-  evidence-backed propozycji tekstu dla konkretnej usługi i sekcji.
+  wymagają ownera. Nie blokuje to podłączenia zweryfikowanego proposal seam do
+  aktywnego kroku dashboardu ani evidence-backed propozycji konkretnej sekcji.
 - Nie kopiuj tutaj pełnej listy Beads ani historii zamkniętych seamów. Po każdym
   pushu odczytaj `bd ready --json` i `bd list --status=open --json`.
 
 ## Verification checkpoint
 
-- Focused backend/shared/dashboard chronią append-only persistence,
-  idempotency, stale-base conflict, exact review, context drift, atomową
-  konsumpcję zgody, redakcję bindingu i typed journey.
+- Focused proposal/store/preview chronią pełny grounded input, body-only claim
+  leakage, brak quality credit z model-only delivery fields, atomowość child
+  revision z CodexRun i fail-closed tool attempt; 29/29 przechodzi. Focused
+  redaction przechodzi 5/5, a pierwotny context-pack repro 1/1.
 - Browser proof: save → refetch/reload → exact review → preview → review akcji
   → confirm → impact → syntetyczny apply → draft-only readback, 1440×900 i
   390×844. Endpointy ActionObjectu są przechwycone; zero realnego WordPress
@@ -118,24 +138,23 @@ kontynuuj najwyższy bezpieczny task.
 - Focused API/UI przechodzą 32/32, TypeScript i ESLint są zielone, focused
   Playwright przechodzi 1/1, a niezależny Standards+Spec review nie znalazł
   uchybień. Syntetyczny proof nie zastępuje Wilku UAT.
-- Szeroki gate potwierdził 977 backend testów (2 skip), 36 shared i 164
-  dashboard testy oraz security/API/skill smokes. Pierwszy downstream start
-  ujawnił tylko zbyt krótki 15-sekundowy wait; po podniesieniu go do 40 sekund
-  pełny Playwright przechodzi 21/21, a dashboard build przechodzi.
-- Kanoniczny `local_stack.sh restart` po wyrównaniu cold-start wait do 40 sekund
-  kończy się zdrowym API `:8000` i dashboardem `:5173`.
+- Aktualny szeroki `scripts/verify.sh` doszedł do 986 backend testów (2 skip) i
+  ujawnił jeden błąd redakcji; po naprawie jego pierwotny publiczny repro jest
+  zielony. Umbrella nie był powtarzany dla już zielonych testów. Aktualne
+  `security.sh`, Ruff, mypy, oba content skill smokes oraz niezależny
+  Standards/Spec/security review są zielone.
+- Kanoniczny `local_stack.sh restart` kończy się zdrowym API `:8000` i
+  dashboardem `:5173`; health, metrics, content queue i `/content-workflow`
+  zwracają 200.
 - Pełny verify uruchamiaj przy zatrzymanym managed stacku: dashboard E2E czyta
   aktualny local evidence store, a równoległy API trzyma lock DuckDB.
 
 ## Resume
 
-1. Zamknij `r564.10`, zrób świadomy commit/push i ponownie odczytaj roadmapę.
-2. Rozpocznij bounded lab-test `codex app-server` po stronie serwera; browser
-   nie może rozmawiać z Codex bezpośrednio.
-3. Propozycja ma tworzyć child revision dla jawnie wybranej usługi, strony i
-   sekcji oraz zachowywać evidence/claim lineage. GSC, GA4, Ahrefs, Ads,
-   Keyword Planner i inventory są używane tylko, gdy istnieje aktualny typed
-   dowód; brak lub stale źródło jest blockerem, nie wymyśloną metryką.
-4. Potem przetestuj wynik na syntetycznym/approved materiale i przygotuj
-   review-ready paczkę tekstów; jakości 10/10 nie claimuj przed realnym Wilku
+1. Podepnij propozycję sekcji do aktywnego kroku `draft` z API-owned wyborem,
+   statusem, diffem i findings; usuń mylący WordPress dry-run CTA.
+2. GSC, GA4, Ahrefs, Ads, Keyword Planner i inventory używaj tylko, gdy istnieje
+   aktualny typed dowód; brak lub stale źródło jest blockerem, nie wymyśloną
+   metryką ani wolumenem słowa kluczowego.
+3. Potem przygotuj review-ready paczkę tekstów; jakości 10/10 nie claimuj przed realnym Wilku
    UAT i owner-reviewed Service Profile.

@@ -4,6 +4,9 @@ from fastapi.routing import APIRoute
 
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
+from wilq.content.drafts.codex_section_proposal import (
+    ContentCodexSectionProposalResponse,
+)
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
@@ -66,6 +69,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions",
     ): ContentDraftRevisionSaveResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
+    ): ContentCodexSectionProposalResponse,
     (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review",

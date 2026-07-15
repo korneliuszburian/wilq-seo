@@ -45,9 +45,9 @@ wybór strony, usługi, sekcji, intencji i CTA
 → learning proposal
 ```
 
-Codex może w przyszłości przygotować propozycję child revision. Nie może
-samodzielnie zmienić kroku workflow, zatwierdzić tekstu, wykonać ActionObjectu
-ani zapisać WordPress.
+Codex może przygotować propozycję child revision przez jeden API-owned seam.
+Nie może samodzielnie zmienić kroku workflow, zatwierdzić tekstu, wykonać
+ActionObjectu ani zapisać WordPress.
 
 ## Kontrakt jakości Treści i SEO 10/10
 
@@ -102,7 +102,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
   8/10 dotyczy wyłącznie bezpieczeństwa exact-version handoffu. CTA marketera
   uruchamia jeszcze WordPress dry-run zamiast content quality review, a obecny
   builder Structured Outputs nie serializuje bogatego `model_input` do requestu
-  modelu. Nie ma więc dowodu grounded copy.
+  modelu. Nowy lab app-server przekazuje pełny input i utworzył child revision
+  ugruntowaną na poziomie deklarowanego lineage, ale nie jest jeszcze dostępny
+  w dashboardzie, a wynik nadal wymaga zmian i semantycznego review.
 - Live content queue jest świeża, ale ma 2 pozycje i 1 wykonalną przy minimum 3.
   Service Profile pozostaje `source_backed_review_required`.
 
@@ -116,14 +118,20 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 3. `wilq-seo-r564.10` jest zweryfikowany: zwarty inline multi-step prowadzi
    exact revision przez preview → review → confirm → impact → apply, z jednym
    aktywnym CTA i typed blockerem bez retry.
-4. Wykonać jeden bounded server-side lab WILQ API → Codex app-server.
-   Pierwszy zakres: propozycja child revision i strumień statusu, bez
-   automatycznej akceptacji i bez vendor write. Propozycja ma być związana z
-   wybraną usługą/sekcją, przekazać pełny API-owned model input, zachować
-   evidence/claim lineage i przejść automatyczne quality review.
-5. Kontynuować usefulness-first rozwój treści: jawny wybór strony/usługi/
-   sekcji/intencji/CTA, metryki i słowa kluczowe tylko z aktualnych typed
-   źródeł, porównanie wersji, bibliotekę treści oraz realny Wilku UAT.
+4. `wilq-seo-r564.11` jest zamknięty: bounded WILQ API → Codex app-server lab.
+   Realny login ChatGPT utworzył `unreviewed` child revision z pełnym inputem i
+   trwałym lineage, bez vendor write. Quality ocenia wyłącznie utrwalane wybrane
+   sekcje i deklarowane lineage, wymaga semantycznego review i zwróciło
+   `needs_changes`; model-only CTA/meta/linki nie poprawiają oceny child revision.
+   Odkryty w broad gate błąd `normalized_page_path` jest zamknięty w
+   `wilq-seo-r564.12`: canonical path przechodzi, pozostałe kształty są
+   fail-closed.
+5. Podłączyć ten seam do aktywnego kroku `draft`: wybór sekcji, status, diff i
+   findings; wycofać mylący WordPress dry-run CTA oraz niegrounded legacy runtime
+   po potwierdzeniu braku referencji. Potem kontynuować usefulness-first rozwój:
+   jawny wybór strony/usługi/sekcji/intencji/CTA, metryki i słowa kluczowe tylko
+   z aktualnych typed źródeł, porównanie wersji, bibliotekę treści oraz realny
+   Wilku UAT.
 6. Po każdym slice ponownie odczytać `bd ready --json` i
    `bd list --status=open --json`; nie wracać do ukończonych zakresów bez nowego
    dowodu regresji.
@@ -159,9 +167,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 - Owner/Wilku: realna sesja UAT albo jawne odroczenie z ryzykiem.
 - Dane: za mała gęstość bezpiecznej kolejki treści.
 - Kontrakt zewnętrzny: uwierzytelniony actor/tenant przed produkcyjnym użyciem.
-- Techniczne, nadal wykonywalne repo-local: ograniczony adapter Codex
-  app-server, potem evidence-backed child revision dla wybranej usługi/sekcji
-  i użytecznościowy proof paczki tekstów.
+- Techniczne, nadal wykonywalne repo-local: dashboardowy wybór sekcji +
+  diff/findings dla app-server proposal, wycofanie legacy runtime po audycie
+  referencji oraz użytecznościowy proof paczki tekstów.
 
 ## Outcome
 

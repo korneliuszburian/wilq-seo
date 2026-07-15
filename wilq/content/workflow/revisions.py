@@ -45,6 +45,44 @@ ContentDraftRevisionConflictCode = Literal[
 ]
 
 
+class ContentDraftRevisionProposalSectionLineage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    heading: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(default_factory=list)
+    claim_ids: list[str] = Field(default_factory=list)
+
+
+class ContentDraftRevisionProposalMetadata(BaseModel):
+    """Compact, durable provenance for an API-owned Codex child revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal["codex_app_server"] = "codex_app_server"
+    codex_run_id: str = Field(min_length=1)
+    selected_section_headings: list[str] = Field(min_length=1)
+    section_lineage: list[ContentDraftRevisionProposalSectionLineage] = Field(min_length=1)
+    quality_verdict: Literal[
+        "needs_changes",
+        "reviewable",
+        "ready_for_human_review",
+    ]
+    quality_finding_codes: list[str] = Field(default_factory=list)
+    review_scope: Literal["persisted_selected_sections_and_declared_lineage"] = (
+        "persisted_selected_sections_and_declared_lineage"
+    )
+    semantic_review_required: Literal[True] = True
+
+    @model_validator(mode="after")
+    def require_selected_lineage(self) -> ContentDraftRevisionProposalMetadata:
+        headings = [heading.strip() for heading in self.selected_section_headings]
+        lineage_headings = [lineage.heading.strip() for lineage in self.section_lineage]
+        if headings != lineage_headings or len(headings) != len(set(headings)):
+            raise ValueError("Proposal lineage must match the unique selected headings.")
+        self.selected_section_headings = headings
+        return self
+
+
 class ContentDraftRevisionSection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -73,6 +111,7 @@ class ContentDraftRevision(BaseModel):
     final_canonical_url: str = Field(min_length=1)
     title: str
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
+    proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)
     created_at: datetime
@@ -124,6 +163,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     final_canonical_url: str = Field(min_length=1)
     title: str
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
+    proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)
 

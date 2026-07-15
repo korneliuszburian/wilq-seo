@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
@@ -17,6 +18,8 @@ StructuredDraftPreviewBlockerCode = Literal[
     "section_missing_evidence",
     "unknown_evidence_reference",
     "unknown_claim_reference",
+    "known_blocked_claim_text_present",
+    "undeclared_high_risk_claim_language",
     "claim_missing_required_evidence",
     "required_claim_missing",
     "missing_forbidden_claim_acknowledgement",
@@ -164,9 +167,38 @@ def structured_draft_preview_blockers(
             )
         )
 
-    allowed_claims = set(contract.model_input.claims_allowed)
+    blockers.extend(_claim_contract_blockers(output, contract))
+    return blockers
+
+
+def _contract_evidence_ids(contract: StructuredDraftGenerationContract) -> set[str]:
+    values = {fact.evidence_id for fact in contract.model_input.source_facts}
+    for section in contract.model_input.sections:
+        values.update(section.evidence_ids)
+    return {value for value in values if value}
+
+
+def _output_evidence_ids(output: StructuredDraftOutput) -> set[str]:
+    values = set(output.source_facts_used)
+    for section in output.sections:
+        values.update(section.evidence_ids)
+    return {value for value in values if value}
+
+
+def _output_claims(output: StructuredDraftOutput) -> set[str]:
+    values: set[str] = set()
+    for section in output.sections:
+        values.update(section.claims_used)
+    return {value for value in values if value}
+
+
+def _claim_contract_blockers(
+    output: StructuredDraftOutput,
+    contract: StructuredDraftGenerationContract,
+) -> list[StructuredDraftPreviewBlocker]:
+    blockers: list[StructuredDraftPreviewBlocker] = []
     used_claims = _output_claims(output)
-    unknown_claims = sorted(used_claims.difference(allowed_claims))
+    unknown_claims = sorted(used_claims.difference(contract.model_input.claims_allowed))
     if unknown_claims:
         blockers.append(
             _blocker(
@@ -176,6 +208,7 @@ def structured_draft_preview_blockers(
                 "Usuń obce twierdzenia ze szkicu: " + "; ".join(unknown_claims),
             )
         )
+    blockers.extend(_generated_claim_blockers(output, contract))
     missing_required_claims = sorted(
         marker.claim_text
         for marker in contract.model_input.claim_markers
@@ -210,25 +243,31 @@ def structured_draft_preview_blockers(
     return blockers
 
 
-def _contract_evidence_ids(contract: StructuredDraftGenerationContract) -> set[str]:
-    values = {fact.evidence_id for fact in contract.model_input.source_facts}
-    for section in contract.model_input.sections:
-        values.update(section.evidence_ids)
-    return {value for value in values if value}
-
-
-def _output_evidence_ids(output: StructuredDraftOutput) -> set[str]:
-    values = set(output.source_facts_used)
-    for section in output.sections:
-        values.update(section.evidence_ids)
-    return {value for value in values if value}
-
-
-def _output_claims(output: StructuredDraftOutput) -> set[str]:
-    values: set[str] = set()
-    for section in output.sections:
-        values.update(section.claims_used)
-    return {value for value in values if value}
+def _generated_claim_blockers(
+    output: StructuredDraftOutput,
+    contract: StructuredDraftGenerationContract,
+) -> list[StructuredDraftPreviewBlocker]:
+    issues = generated_claim_safety_issues(output, contract)
+    if not issues:
+        return []
+    issue = issues[0]
+    labels = {
+        "known_blocked_claim_text_present": "Zablokowany claim trafił do tekstu",
+        "undeclared_high_risk_claim_language": (
+            "Tekst zawiera niezadeklarowaną obietnicę albo claim prawny"
+        ),
+    }
+    return [
+        _blocker(
+            issue.code,
+            labels[issue.code],
+            "Treść sekcji nie zgadza się z deklarowanym, dozwolonym lineage claimów.",
+            (
+                f'Popraw sekcję "{issue.heading}" i wygeneruj ją ponownie; '
+                "WILQ nie zapisze tego tekstu bez semantycznego review."
+            ),
+        )
+    ]
 
 
 def _claim_marker_evidence_blockers(
