@@ -1143,6 +1143,39 @@ export const ContentWorkItemStructuredDraftGenerationResponseSchema = z.object({
   structured_generation_result: StructuredDraftGenerationResultSchema
 });
 
+export const ContentStructuredGenerationBrowserReadinessSchema = z
+  .object({
+    status: z.enum(["ready", "blocked"]),
+    editable_section_headings: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([]),
+    blockers: z.array(ContentWorkflowBlockerSchema).default([]),
+    safe_next_step: z.string(),
+    publish_ready: z.literal(false)
+  })
+  .superRefine((readiness, context) => {
+    if (
+      readiness.status === "ready" &&
+      (readiness.editable_section_headings.length === 0 || readiness.blockers.length > 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "ready browser generation state requires headings and no blockers"
+      });
+    }
+    if (
+      readiness.status === "blocked" &&
+      (readiness.editable_section_headings.length > 0 || readiness.blockers.length === 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "blocked browser generation state requires blockers and no headings"
+      });
+    }
+  });
+
 export const ContentWorkItemStructuredDraftRuntimeRequestSchema = z.object({
   contract: StructuredDraftGenerationContractSchema.nullable().optional(),
   model: z.string().nullable().optional(),
@@ -1660,6 +1693,41 @@ const CONTENT_WORKFLOW_OPERATOR_STEP_ORDER = [
   "dev_draft"
 ] as const;
 
+export const ContentDraftRevisionProposalSectionLineageSchema = z.object({
+  heading: z.string().refine((value) => value.trim().length > 0),
+  evidence_ids: z.array(z.string()).default([]),
+  claim_ids: z.array(z.string()).default([])
+});
+
+export const ContentDraftRevisionProposalMetadataSchema = z
+  .object({
+    source: z.literal("codex_app_server"),
+    codex_run_id: z.string().refine((value) => value.trim().length > 0),
+    selected_section_headings: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .min(1),
+    section_lineage: z.array(ContentDraftRevisionProposalSectionLineageSchema).min(1),
+    quality_verdict: z.enum(["needs_changes", "reviewable", "ready_for_human_review"]),
+    quality_finding_codes: z.array(z.string()).default([]),
+    review_scope: z.literal("persisted_selected_sections_and_declared_lineage"),
+    semantic_review_required: z.literal(true)
+  })
+  .superRefine((metadata, context) => {
+    const headings = metadata.selected_section_headings;
+    const lineageHeadings = metadata.section_lineage.map((lineage) => lineage.heading);
+    if (
+      new Set(headings).size !== headings.length ||
+      headings.length !== lineageHeadings.length ||
+      headings.some((heading, index) => heading !== lineageHeadings[index])
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["section_lineage"],
+        message: "proposal lineage must match unique selected headings in order"
+      });
+    }
+  });
+
 export const ContentDraftRevisionSchema = z.object({
   revision_id: z.string(),
   work_item_id: z.string(),
@@ -1671,6 +1739,7 @@ export const ContentDraftRevisionSchema = z.object({
   final_canonical_url: z.string(),
   title: z.string().refine((value) => value.trim().length > 0),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
+  proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
@@ -1931,6 +2000,119 @@ export const ContentDraftRevisionConflictSchema = z.object({
   safe_next_step: z.string()
 });
 
+export const ContentCodexSectionProposalRequestSchema = z
+  .object({
+    expected_base_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    selected_section_headings: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .min(1),
+    requested_by: z.string().refine((value) => value.trim().length > 0)
+  })
+  .strict()
+  .superRefine((request, context) => {
+    if (new Set(request.selected_section_headings).size !== request.selected_section_headings.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_section_headings"],
+        message: "selected section headings must be unique"
+      });
+    }
+  });
+
+export const ContentCodexSectionProposalBlockerCodeSchema = z.enum([
+  "missing_base_revision",
+  "stale_base_revision",
+  "revision_not_ready_for_proposal",
+  "stale_content_context",
+  "missing_generation_contract",
+  "unknown_selected_section",
+  "ambiguous_claim_marker",
+  "runtime_blocked",
+  "runtime_failed",
+  "invalid_structured_output",
+  "section_scope_mismatch",
+  "proposal_contract_blocked",
+  "quality_blocked",
+  "revision_conflict"
+]);
+
+export const ContentCodexSectionProposalBlockerSchema = z.object({
+  code: ContentCodexSectionProposalBlockerCodeSchema,
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string(),
+  source_codes: z.array(z.string()).default([])
+});
+
+export const ContentCodexRuntimeTraceSchema = z.object({
+  status: z.enum(["not_started", "completed", "blocked", "failed"]),
+  thread_id: z.string().nullable(),
+  turn_id: z.string().nullable(),
+  event_methods: z.array(z.string()).default([]),
+  item_types: z.array(z.string()).default([]),
+  external_call_attempted: z.boolean()
+});
+
+export const ContentCodexSectionProposalResponseSchema = z
+  .object({
+    status: z.enum(["created", "idempotent", "blocked", "failed", "conflict"]),
+    run_id: z.string().nullable(),
+    work_item_id: z.string(),
+    base_revision_id: z.string(),
+    selected_section_headings: z.array(z.string()),
+    revision: ContentDraftRevisionSchema.nullable(),
+    quality_review: ContentQualityReviewSchema.nullable(),
+    quality_review_scope: z.literal("persisted_selected_sections_and_declared_lineage"),
+    semantic_review_required: z.literal(true),
+    runtime: ContentCodexRuntimeTraceSchema,
+    evidence_ids: z.array(z.string()).default([]),
+    source_connectors: z.array(z.string()).default([]),
+    blockers: z.array(ContentCodexSectionProposalBlockerSchema).default([]),
+    safe_next_step: z.string(),
+    publish_ready: z.literal(false)
+  })
+  .superRefine((response, context) => {
+    const created = response.status === "created" || response.status === "idempotent";
+    if (
+      created &&
+      (response.run_id === null ||
+        response.revision === null ||
+        response.quality_review === null ||
+        response.quality_review.verdict === "blocked" ||
+        response.runtime.status !== "completed" ||
+        response.runtime.external_call_attempted ||
+        response.blockers.length > 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "created proposal requires an unblocked reviewable revision"
+      });
+    }
+    const metadata = response.revision?.proposal_metadata;
+    if (
+      created &&
+      (!metadata ||
+        metadata.codex_run_id !== response.run_id ||
+        response.revision?.base_revision_id !== response.base_revision_id ||
+        JSON.stringify(metadata.selected_section_headings) !==
+          JSON.stringify(response.selected_section_headings))
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["revision", "proposal_metadata"],
+        message: "created proposal revision must match the exact run, base and selected sections"
+      });
+    }
+    if (!created && (response.revision !== null || response.blockers.length === 0)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "non-created proposal requires blockers and no revision"
+      });
+    }
+  });
+
 export const ContentWorkflowOperatorStepIdSchema = z.enum(
   CONTENT_WORKFLOW_OPERATOR_STEP_ORDER
 );
@@ -2039,7 +2221,7 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   preflight: ContentWorkItemPreflightResponseSchema,
   sales_brief: ContentWorkItemSalesBriefResponseSchema,
   draft_package: ContentWorkItemDraftPackageResponseSchema,
-  structured_generation: ContentWorkItemStructuredDraftGenerationResponseSchema,
+  structured_generation_readiness: ContentStructuredGenerationBrowserReadinessSchema,
   human_review: ContentWorkItemHumanReviewResponseSchema,
   wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponseSchema,
   measurement_window: ContentWorkItemMeasurementWindowResponseSchema,
@@ -2217,6 +2399,9 @@ export type ContentWorkItemStructuredDraftGenerationRequest = z.input<
 export type ContentWorkItemStructuredDraftGenerationResponse = z.infer<
   typeof ContentWorkItemStructuredDraftGenerationResponseSchema
 >;
+export type ContentStructuredGenerationBrowserReadiness = z.infer<
+  typeof ContentStructuredGenerationBrowserReadinessSchema
+>;
 export type ContentWorkItemStructuredDraftRuntimeRequest = z.input<
   typeof ContentWorkItemStructuredDraftRuntimeRequestSchema
 >;
@@ -2295,6 +2480,12 @@ export type ContentWorkItemMeasurementOutcomeResponse = z.infer<
   typeof ContentWorkItemMeasurementOutcomeResponseSchema
 >;
 export type ContentDraftRevisionSection = z.infer<typeof ContentDraftRevisionSectionSchema>;
+export type ContentDraftRevisionProposalSectionLineage = z.infer<
+  typeof ContentDraftRevisionProposalSectionLineageSchema
+>;
+export type ContentDraftRevisionProposalMetadata = z.infer<
+  typeof ContentDraftRevisionProposalMetadataSchema
+>;
 export type ContentDraftRevision = z.infer<typeof ContentDraftRevisionSchema>;
 export type ContentDraftRevisionDecision = z.infer<typeof ContentDraftRevisionDecisionSchema>;
 export type ContentDraftRevisionReview = z.infer<typeof ContentDraftRevisionReviewSchema>;
@@ -2313,6 +2504,12 @@ export type ContentDraftRevisionReviewResponse = z.infer<
 >;
 export type ContentDraftRevisionConflict = z.infer<
   typeof ContentDraftRevisionConflictSchema
+>;
+export type ContentCodexSectionProposalRequest = z.input<
+  typeof ContentCodexSectionProposalRequestSchema
+>;
+export type ContentCodexSectionProposalResponse = z.infer<
+  typeof ContentCodexSectionProposalResponseSchema
 >;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentWorkItemServiceProfileContext = z.infer<

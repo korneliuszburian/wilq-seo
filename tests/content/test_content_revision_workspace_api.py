@@ -63,9 +63,7 @@ def test_structured_preview_does_not_create_a_mutable_saved_draft(
     tmp_path: Path,
 ) -> None:
     client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
-    contract = snapshot["structured_generation"]["structured_generation_result"][
-        "contract"
-    ]
+    contract = _structured_generation_from_snapshot(client, snapshot)["contract"]
 
     response = client.post(
         f"/api/content/work-items/{work_item_id}/structured-draft-preview",
@@ -820,6 +818,25 @@ def _save_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
         "sections": workspace["editor_sections"],
         "created_by": "wilku",
     }
+
+
+def _structured_generation_from_snapshot(
+    client: TestClient,
+    snapshot: dict[str, Any],
+) -> dict[str, Any]:
+    response = client.post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": snapshot["human_review"]["item"],
+            "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
+            "claim_ledger": snapshot["claim_ledger"],
+            "draft_package": snapshot["draft_package"]["draft_package_result"][
+                "draft_package"
+            ],
+        },
+    )
+    assert response.status_code == 200
+    return cast(dict[str, Any], response.json()["structured_generation_result"])
 
 
 def _structured_output_from_contract(contract: dict[str, Any]) -> dict[str, Any]:

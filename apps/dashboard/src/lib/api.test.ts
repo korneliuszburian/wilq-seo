@@ -11,6 +11,7 @@ import {
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
   postContentWorkItemDraftPackage,
+  postContentWorkItemCodexSectionProposal,
   postContentWorkItemHumanReview,
   postContentWorkItemMeasurementWindow,
   postContentWorkItemPreflight,
@@ -585,6 +586,70 @@ describe("content workflow API helpers", () => {
     expect(result).toEqual(conflict);
   });
 
+  it("posts an exact encoded Codex section proposal and preserves a typed blocker", async () => {
+    const blocked = {
+      status: "conflict",
+      run_id: null,
+      work_item_id: "content/work item",
+      base_revision_id: "revision/1?stale",
+      selected_section_headings: ["Kogo dotyczy BDO"],
+      revision: null,
+      quality_review: null,
+      quality_review_scope: "persisted_selected_sections_and_declared_lineage",
+      semantic_review_required: true,
+      runtime: {
+        status: "not_started",
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      evidence_ids: ["ev_gsc_bdo"],
+      source_connectors: ["google_search_console"],
+      blockers: [
+        {
+          code: "stale_base_revision",
+          label: "Wersja bazowa nie jest już aktualna",
+          reason: "W workspace istnieje nowsza wersja.",
+          next_step: "Odśwież workspace i wybierz sekcje aktualnej wersji.",
+          source_codes: ["stale_base"]
+        }
+      ],
+      safe_next_step: "Odśwież workspace i wybierz sekcje aktualnej wersji.",
+      publish_ready: false
+    } as const;
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      void url;
+      void init;
+      return new Response(JSON.stringify(blocked), {
+        status: 409,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await postContentWorkItemCodexSectionProposal(
+      {
+        expected_base_digest: "a".repeat(64),
+        selected_section_headings: ["Kogo dotyczy BDO"],
+        requested_by: "wilku"
+      },
+      "content/work item",
+      "revision/1?stale"
+    );
+
+    expect(result).toEqual(blocked);
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).pathname).toBe(
+      "/api/content/work-items/content%2Fwork%20item/draft-revisions/revision%2F1%3Fstale/codex-proposal"
+    );
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      expected_base_digest: "a".repeat(64),
+      selected_section_headings: ["Kogo dotyczy BDO"],
+      requested_by: "wilku"
+    });
+  });
+
   it("uses every API-owned Goal 004 content workflow endpoint through typed helpers", async () => {
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
       const path = new URL(String(url)).pathname;
@@ -827,7 +892,13 @@ function workflowSnapshot() {
     preflight: responseByPath["/api/content/work-items/preflight"],
     sales_brief: responseByPath["/api/content/work-items/sales-brief"],
     draft_package: responseByPath["/api/content/work-items/draft-package"],
-    structured_generation: responseByPath["/api/content/work-items/structured-draft-generation"],
+    structured_generation_readiness: {
+      status: "ready",
+      editable_section_headings: ["Kogo dotyczy BDO"],
+      blockers: [],
+      safe_next_step: "Wybierz sekcje zapisanej wersji do poprawy z Codexem.",
+      publish_ready: false
+    },
     human_review: responseByPath["/api/content/work-items/human-review"],
     wordpress_handoff: responseByPath["/api/content/work-items/wordpress-draft-handoff"],
     measurement_window: responseByPath["/api/content/work-items/measurement-window"],

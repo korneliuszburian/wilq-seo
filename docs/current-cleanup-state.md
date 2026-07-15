@@ -29,12 +29,18 @@ próby tool call, ale quality uczciwie zwróciło
 rozmawia z Codex bezpośrednio, a Codex nie jest właścicielem workflow, approval
 ani ActionObject.
 
-Następny bounded P0 to przepięcie aktywnego kroku `draft` na ten API-owned seam:
-wybór sekcji, jeden status/CTA, diff z bazą i czytelne findings. Marketer CTA
-nie może dalej udawać content review przez WordPress dry-run. Legacy technical
-runtime, który pomija `model_input`, nie jest fallbackiem; usuń go dopiero po
-potwierdzeniu braku referencji. Nie dodawaj `OPENAI_API_KEY`, Agents SDK,
-Ollamy ani alternatywnej ścieżki modelu.
+`wilq-seo-r564.13` podłączył proposal do aktywnego kroku `draft`: Wilku wybiera
+API-approved sekcje exact reviewed revision, widzi pending, diff baza/child,
+lineage, findings i semantyczną bramkę review. Browser-safe snapshot nie zawiera
+promptu ani model inputu. Marketerowy WordPress dry-run udający content review i
+osierocone panele zostały usunięte. Desktop/mobile proof nie dotyka Codexa ani
+WordPressa; exact proposal POST jest syntetycznie przechwycony.
+
+Następny bounded P0 to `wilq-seo-r564.14`: po migracji skilla i testów usunąć
+cztery publiczne Structured Outputs generation/runtime/preview routes oraz ich
+API-key runtime. Zachowaj wewnętrzny structured contract/output i preview
+blockers używane przez kanoniczny Codex proposal. Nie dodawaj `OPENAI_API_KEY`,
+Agents SDK, Ollamy ani alternatywnej ścieżki modelu.
 
 `c9h9.4` jest zamknięty i nie wolno go powtarzać. Po każdym slice uruchom
 `bd ready --json`, zaktualizuj ten handoff, zrób świadomy commit/push i
@@ -48,11 +54,11 @@ kontynuuj najwyższy bezpieczny task.
 - Snapshot ma jeden kanoniczny journey `scope → section_map → draft → review →
   dev_draft`. Live krok to `draft`; ukończone `scope` i `section_map`
   można tylko przeglądać ponownie bez przesuwania API-owned current step.
-- Ocena 8/10 dotyczy wyłącznie bezpieczeństwa exact handoffu. Realna
-  użyteczność tworzenia treści jest obecnie około 5/10: marketer-facing
-  `Sprawdź tekst szkicu` uruchamia WordPress dry-run, a właściwe quality review
-  pozostaje w audycie technicznym. Nie claimuj jakości tekstów przed naprawą
-  grounded input i testem paczki na konkretnej usłudze/sekcji.
+- Ocena 8/10 dotyczy wyłącznie bezpieczeństwa exact handoffu. Operator workflow
+  ma obecnie około 6/10, ale jakość realnego tekstu pozostaje około 5/10:
+  sekcję można już poprawić przez grounded Codex proposal i porównać wynik,
+  lecz realny proof był generyczny i `needs_changes`. Nie claimuj jakości przed
+  owner-reviewed Service Profile i testem paczki na konkretnej usłudze/sekcji.
 - Marketer widzi stronę, usługę, decyzję, pięć zadań i jeden aktywny workspace.
   Dziewięć paneli technicznych nie istnieje w marketer-mode DOM i wymaga
   jawnego przejścia do `Audyt techniczny`.
@@ -117,6 +123,13 @@ kontynuuj najwyższy bezpieczny task.
 - `wilq-seo-r564.12` jest zamknięty: zwalidowany
   `normalized_page_path` zachowuje exact publiczną ścieżkę w context-packu,
   natomiast tokenowe, sekretowe i malformed ścieżki pozostają redagowane.
+- `wilq-seo-r564.13` jest zweryfikowany: marketer wybiera exact sekcje i widzi
+  pending/diff/findings bez promptu w browserze, approval ani WordPress write.
+  Cross-work-item result i brak wybranej sekcji są fail-closed. Proof 1440×900 i
+  390×844: `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
+- `wilq-seo-r564.14` jest otwartym P0 dla usunięcia publicznego alternatywnego
+  OpenAI Structured Outputs runtime. Internal generation contract pozostaje
+  wymagany przez kanoniczny proposal i nie jest martwym artefaktem.
 - Parent `wilq-seo-r564` pozostaje otwarty. Queue density jest zewnętrznie
   niepełna (1 actionable z wymaganych 3), a Service Profile i Wilku UAT nadal
   wymagają ownera. Nie blokuje to podłączenia zweryfikowanego proposal seam do
@@ -130,7 +143,11 @@ kontynuuj najwyższy bezpieczny task.
   leakage, brak quality credit z model-only delivery fields, atomowość child
   revision z CodexRun i fail-closed tool attempt; 29/29 przechodzi. Focused
   redaction przechodzi 5/5, a pierwotny context-pack repro 1/1.
-- Browser proof: save → refetch/reload → exact review → preview → review akcji
+- Browser proof proposal: exact needs-changes base → wybór sekcji → pending →
+  baza/child → findings → semantic review, 1440×900 i 390×844, bez overflow i
+  bez requestu WordPress. Proof:
+  `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
+- Osobny browser proof handoff: save → refetch/reload → exact review → preview → review akcji
   → confirm → impact → syntetyczny apply → draft-only readback, 1440×900 i
   390×844. Endpointy ActionObjectu są przechwycone; zero realnego WordPress
   write. Proof:
@@ -151,8 +168,9 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Resume
 
-1. Podepnij propozycję sekcji do aktywnego kroku `draft` z API-owned wyborem,
-   statusem, diffem i findings; usuń mylący WordPress dry-run CTA.
+1. Wykonaj `wilq-seo-r564.14`: przez `$skill-creator` przepnij content operatora
+   na readiness/exact proposal, usuń cztery alternate public routes i API-key
+   runtime, lecz zachowaj internal generation contract używany przez proposal.
 2. GSC, GA4, Ahrefs, Ads, Keyword Planner i inventory używaj tylko, gdy istnieje
    aktualny typed dowód; brak lub stale źródło jest blockerem, nie wymyśloną
    metryką ani wolumenem słowa kluczowego.

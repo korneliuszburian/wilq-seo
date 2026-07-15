@@ -4,9 +4,12 @@ import path from "node:path";
 
 import type {
   ActionObject,
+  ContentCodexSectionProposalRequest,
+  ContentCodexSectionProposalResponse,
   ContentDraftRevisionBinding,
   ContentDraftRevisionReviewRequest,
   ContentDraftRevisionSaveRequest,
+  ContentWorkItemQueueResponse,
   ContentWorkItemWorkflowSnapshotResponse,
   ContentWordPressDraftActivationPacketResponse
 } from "../src/lib/api";
@@ -25,6 +28,16 @@ type RevisionProofState = "empty" | "unreviewed" | "approved";
 type RevisionWorkspace = ContentWorkItemWorkflowSnapshotResponse["revision_workspace"];
 type SavedRevision = NonNullable<RevisionWorkspace["latest_revision"]>;
 type SavedRevisionReview = NonNullable<RevisionWorkspace["latest_review"]>;
+type CodexProposalBrowserProof = {
+  snapshot: ContentWorkItemWorkflowSnapshotResponse;
+  baseRevision: SavedRevision;
+  review: SavedRevisionReview;
+  selectedHeading: string;
+  baseBody: string;
+  childBody: string;
+  endpointPath: string;
+  response: ContentCodexSectionProposalResponse;
+};
 
 const revisionProofEvidenceId = "ev_content_revision_browser_proof";
 
@@ -226,6 +239,188 @@ test.describe("WILQ content workflow layout proof", () => {
       path: path.join(runDir, "content-workflow-mobile-synthetic-contract-five-tabs.png"),
       fullPage: true
     });
+  });
+
+  test("synthetic Codex proof: revises one reviewed section without publish or WordPress", async ({
+    page
+  }) => {
+    test.setTimeout(60_000);
+    const runDir = path.join(proofRoot, new Date().toISOString().replace(/[:.]/g, "-"));
+    await fs.mkdir(runDir, { recursive: true });
+
+    let currentViewportLabel: (typeof viewports)[number]["label"] = "desktop";
+    let activeProof: CodexProposalBrowserProof | null = null;
+    const proposalRequests: Array<{
+      viewport: string;
+      pathname: string;
+      payload: ContentCodexSectionProposalRequest;
+    }> = [];
+    const proposalReleases: Array<() => void> = [];
+    const contentWriteRequests: string[] = [];
+    const apiPort = process.env.WILQ_E2E_API_PORT ?? "8875";
+    const liveSnapshotResponse = await page.request.get(
+      `http://127.0.0.1:${apiPort}/api/content/work-items/snapshot`
+    );
+    expect(liveSnapshotResponse.ok()).toBe(true);
+    const liveSnapshot =
+      (await liveSnapshotResponse.json()) as ContentWorkItemWorkflowSnapshotResponse;
+    expect(liveSnapshot.response_type).toBe("workflow_snapshot");
+    const liveWorkItemId = liveSnapshot.preflight.item.id;
+
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (
+        url.pathname.startsWith("/api/content/") &&
+        !["GET", "HEAD", "OPTIONS"].includes(request.method())
+      ) {
+        contentWriteRequests.push(`${request.method()} ${url.pathname}`);
+      }
+    });
+
+    await page.route("**/api/content/work-items/queue", async (route) => {
+      const response = await route.fetch();
+      if (response.status() !== 200) {
+        await route.fulfill({ response });
+        return;
+      }
+      const queue = (await response.json()) as ContentWorkItemQueueResponse;
+      const liveCandidate = queue.candidates.find(
+        (candidate) => candidate.work_item_id === liveWorkItemId
+      );
+      if (!liveCandidate) throw new Error("Live typed snapshot is not represented in the queue");
+      liveCandidate.recommended_mode = "refresh";
+      liveCandidate.recommended_mode_label = "odśwież istniejącą treść";
+      liveCandidate.status_label = "syntetyczny browser proof poprawki po review";
+      await route.fulfill({ response, json: queue });
+    });
+
+    await page.route("**/api/content/work-items/*/snapshot", async (route) => {
+      const requestUrl = new URL(route.request().url());
+      const workItemId = decodeURIComponent(requestUrl.pathname.split("/")[4] ?? "");
+      if (workItemId !== liveWorkItemId) {
+        await route.continue();
+        return;
+      }
+      activeProof = codexProposalBrowserProof(liveSnapshot, currentViewportLabel, workItemId);
+      await route.fulfill({
+        status: 200,
+        headers: proofResponseHeaders(),
+        json: activeProof.snapshot
+      });
+    });
+
+    await page.route(
+      /\/api\/content\/work-items\/[^/]+\/draft-revisions\/[^/]+\/codex-proposal$/,
+      async (route) => {
+        const request = route.request();
+        const proof = activeProof;
+        if (request.method() !== "POST" || proof === null) {
+          await route.fulfill({ status: 405, body: "Missing synthetic Codex proof state" });
+          return;
+        }
+        proposalRequests.push({
+          viewport: currentViewportLabel,
+          pathname: new URL(request.url()).pathname,
+          payload: request.postDataJSON() as ContentCodexSectionProposalRequest
+        });
+        await new Promise<void>((resolve) => proposalReleases.push(resolve));
+        await route.fulfill({
+          status: 200,
+          headers: proofResponseHeaders(),
+          json: proof.response
+        });
+      }
+    );
+
+    for (const viewport of viewports) {
+      currentViewportLabel = viewport.label;
+      activeProof = null;
+      const requestCountBefore = proposalRequests.length;
+      const writeCountBefore = contentWriteRequests.length;
+
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/content-workflow");
+      await expect.poll(() => activeProof !== null).toBe(true);
+      const proof = activeProof;
+      if (proof === null) throw new Error("Live workflow snapshot did not produce Codex proof state");
+
+      const taskMap = page.getByTestId("content-workflow-task-map");
+      await expect(taskMap.getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
+        "aria-current",
+        "step"
+      );
+      const panel = page.locator('section[aria-labelledby="codex-section-proposal-title"]');
+      await expect(panel.getByRole("heading", { name: "Popraw wersję 1 z Codexem" }))
+        .toBeVisible();
+      await expect(panel.getByText(`Uwagi z review: „${proof.review.notes}”`)).toBeVisible();
+
+      const sectionCheckboxes = panel.getByRole("checkbox");
+      await expect(sectionCheckboxes).toHaveCount(1);
+      await expect(sectionCheckboxes.first()).not.toBeChecked();
+      await sectionCheckboxes.first().check();
+      await expect(panel.locator('input[type="checkbox"]:checked')).toHaveCount(1);
+
+      await panel.getByRole("button", { name: "Popraw 1 sekcję z Codexem" }).click();
+      await expect.poll(() => proposalRequests.length).toBe(requestCountBefore + 1);
+      const proposalRequest = proposalRequests.at(-1);
+      expect(proposalRequest).toEqual({
+        viewport: viewport.label,
+        pathname: proof.endpointPath,
+        payload: {
+          expected_base_digest: proof.baseRevision.content_digest,
+          selected_section_headings: [proof.selectedHeading],
+          requested_by: "wilku"
+        }
+      });
+      await expect(panel.getByRole("status")).toContainText(
+        "Codex poprawia 1 sekcję i sprawdza przypisane dowody"
+      );
+      expect(contentWriteRequests.slice(writeCountBefore)).toEqual([
+        `POST ${proof.endpointPath}`
+      ]);
+      await expectNoHorizontalPageOverflow(page);
+      await page.screenshot({
+        path: path.join(runDir, `content-workflow-${viewport.label}-codex-pending.png`),
+        fullPage: true
+      });
+
+      const releaseProposal = proposalReleases.shift();
+      if (!releaseProposal) throw new Error("Synthetic Codex response gate was not registered");
+      releaseProposal();
+
+      const result = page.getByTestId("codex-proposal-result");
+      await expect(result).toBeVisible();
+      await expect(result.getByText("Baza", { exact: true })).toBeVisible();
+      await expect(result.getByText(proof.baseBody, { exact: true })).toBeVisible();
+      await expect(result.getByText("Propozycja Codexa", { exact: true })).toBeVisible();
+      await expect(result.getByText(proof.childBody, { exact: true })).toBeVisible();
+      expect(proof.response.quality_review?.findings[0]?.code).toBe("weak_cta");
+      await expect(result.getByText("Wzmocnij CTA:", { exact: true })).toBeVisible();
+      await expect(
+        result.getByText("Semantyka nadal wymaga sprawdzenia człowieka", { exact: true })
+      ).toBeVisible();
+      expect(proof.response.semantic_review_required).toBe(true);
+      expect(proof.response.publish_ready).toBe(false);
+      await expect(result.getByText("Szkic nie jest gotowy do publikacji", { exact: true }))
+        .toBeVisible();
+
+      const runId = proof.response.run_id;
+      if (!runId) throw new Error("Synthetic created response must expose a run ID");
+      await expect(result.getByText(new RegExp(runId))).toBeHidden();
+      await result.getByText("Pokaż identyfikatory dowodów i twierdzeń", { exact: true }).click();
+      await expect(result.getByText(new RegExp(runId))).toBeVisible();
+      await expectNoHorizontalPageOverflow(page);
+      await page.screenshot({
+        path: path.join(runDir, `content-workflow-${viewport.label}-codex-result.png`),
+        fullPage: true
+      });
+    }
+
+    expect(proposalRequests).toHaveLength(viewports.length);
+    expect(contentWriteRequests).toHaveLength(viewports.length);
+    expect(
+      contentWriteRequests.filter((request) => /wordpress/i.test(request))
+    ).toEqual([]);
   });
 
   test("synthetic revision proof: save, reopen, exact review and inline draft wizard", async ({
@@ -845,6 +1040,207 @@ function revisionProofSnapshot(
     };
   }
   return snapshot;
+}
+
+function codexProposalBrowserProof(
+  source: ContentWorkItemWorkflowSnapshotResponse,
+  viewportLabel: (typeof viewports)[number]["label"],
+  workItemId: string
+): CodexProposalBrowserProof {
+  const snapshot = cloneValue(source);
+  const editorSections = revisionProofWorkspace(snapshot, "empty", null, null).editor_sections;
+  const firstSection = editorSections[0];
+  if (!firstSection) throw new Error("Live workflow snapshot has no editable draft section");
+
+  const selectedHeading = firstSection.heading;
+  const baseBody = `Wersja bazowa po review — ${viewportLabel}. CTA pozostaje ogólne.`;
+  const childBody =
+    `Propozycja Codexa — ${viewportLabel}. ` +
+    "Sprawdź zakres obowiązków na dokumentach firmy i umów konsultację z Ekologus.";
+  const evidenceIds = [...new Set([...firstSection.evidence_ids, revisionProofEvidenceId])];
+  const sections = editorSections.map((section, index) => ({
+    ...section,
+    body_markdown: index === 0 ? baseBody : section.body_markdown,
+    evidence_ids: index === 0 ? evidenceIds : [...section.evidence_ids]
+  }));
+  const baseDigest = (viewportLabel === "desktop" ? "e" : "f").repeat(64);
+  const childDigest = (viewportLabel === "desktop" ? "a" : "b").repeat(64);
+  const draftPackage = snapshot.draft_package.draft_package_result.draft_package;
+  const baseRevision: SavedRevision = {
+    revision_id: `content_revision_codex_browser_${viewportLabel}_1`,
+    work_item_id: workItemId,
+    revision_number: 1,
+    base_revision_id: null,
+    content_digest: baseDigest,
+    draft_package_id: draftPackage?.id ?? `draft_package_codex_browser_${viewportLabel}`,
+    draft_package_digest: "d".repeat(64),
+    final_canonical_url:
+      snapshot.preflight.item.final_canonical_url ??
+      snapshot.preflight.item.intended_final_url ??
+      "https://ekologus.pl/browser-codex-proof/",
+    title:
+      snapshot.revision_workspace.editor_title || draftPackage?.title || "Szkic treści Ekologus",
+    sections,
+    publish_ready: false,
+    created_by: "wilku",
+    created_at: "2026-07-15T12:00:00Z"
+  };
+  const review: SavedRevisionReview = {
+    decision_id: `content_revision_decision_codex_browser_${viewportLabel}_1`,
+    decision_number: 1,
+    work_item_id: workItemId,
+    revision_id: baseRevision.revision_id,
+    revision_digest: baseRevision.content_digest,
+    reviewed_by: "wilku",
+    decision: "needs_changes",
+    notes: "CTA jest zbyt ogólne — dodaj konkretny następny krok.",
+    checked_items: ["Przeczytano dokładną treść tej wersji."],
+    evidence_ids: evidenceIds,
+    created_at: "2026-07-15T12:05:00Z"
+  };
+  snapshot.revision_workspace = {
+    status: "needs_changes",
+    latest_revision: cloneValue(baseRevision),
+    latest_review: cloneValue(review),
+    revision_count: 1,
+    context_current: true,
+    editor_title: baseRevision.title,
+    editor_sections: cloneValue(baseRevision.sections),
+    can_save: true,
+    can_review: false,
+    safe_next_step: "Wybierz sekcję wskazaną w review i przygotuj poprawkę do ponownej oceny."
+  };
+  snapshot.structured_generation_readiness = {
+    status: "ready",
+    editable_section_headings: [selectedHeading],
+    blockers: [],
+    safe_next_step: "Wybierz dokładną sekcję i uruchom propozycję Codexa.",
+    publish_ready: false
+  };
+  snapshot.current_step_id = "draft";
+  snapshot.operator_steps = snapshot.operator_steps.map((step, index) => ({
+    ...step,
+    phase: index < 2 ? "complete" : index === 2 ? "current" : "pending",
+    readiness: index <= 2 ? (index === 2 ? "review_required" : "ready") : step.readiness,
+    status_label:
+      index === 2 ? "review wskazał sekcję wymagającą poprawy" : step.status_label,
+    can_open: index <= 2,
+    can_submit: index === 2,
+    blocker: index <= 2 ? null : step.blocker,
+    safe_next_step:
+      index === 2
+        ? "Popraw wybraną sekcję na podstawie uwagi z review."
+        : step.safe_next_step
+  }));
+
+  const runId = `codex_section_run_browser_${viewportLabel}_1`;
+  const claimId = `claim_codex_browser_${viewportLabel}_1`;
+  const childRevision: SavedRevision = {
+    ...cloneValue(baseRevision),
+    revision_id: `content_revision_codex_browser_${viewportLabel}_2`,
+    revision_number: 2,
+    base_revision_id: baseRevision.revision_id,
+    content_digest: childDigest,
+    sections: baseRevision.sections.map((section, index) => ({
+      ...section,
+      body_markdown: index === 0 ? childBody : section.body_markdown,
+      evidence_ids: [...section.evidence_ids]
+    })),
+    proposal_metadata: {
+      source: "codex_app_server",
+      codex_run_id: runId,
+      selected_section_headings: [selectedHeading],
+      section_lineage: [
+        {
+          heading: selectedHeading,
+          evidence_ids: evidenceIds,
+          claim_ids: [claimId]
+        }
+      ],
+      quality_verdict: "needs_changes",
+      quality_finding_codes: ["weak_cta"],
+      review_scope: "persisted_selected_sections_and_declared_lineage",
+      semantic_review_required: true
+    },
+    created_by: "codex_app_server",
+    created_at: "2026-07-15T12:10:00Z"
+  };
+  const dimension = (label: string, status: "pass" | "needs_changes" = "pass") => ({
+    status,
+    label,
+    reason: status === "pass" ? "WILQ nie wykrył problemu." : "Ten obszar wymaga poprawy."
+  });
+  const response: ContentCodexSectionProposalResponse = {
+    status: "created",
+    run_id: runId,
+    work_item_id: workItemId,
+    base_revision_id: baseRevision.revision_id,
+    selected_section_headings: [selectedHeading],
+    revision: childRevision,
+    quality_review: {
+      review_id: `quality_review_codex_browser_${viewportLabel}_2`,
+      work_item_id: workItemId,
+      draft_package_id: baseRevision.draft_package_id,
+      verdict: "needs_changes",
+      evidence_coverage: dimension("Pokrycie dowodami"),
+      claim_safety: dimension("Bezpieczeństwo twierdzeń"),
+      duplicate_risk: dimension("Ryzyko duplikacji"),
+      usefulness: dimension("Użyteczność", "needs_changes"),
+      service_fit: dimension("Dopasowanie do usługi"),
+      search_intent_fit: dimension("Dopasowanie do intencji"),
+      buyer_problem_fit: dimension("Problem kupującego"),
+      cta_quality: dimension("Jakość CTA", "needs_changes"),
+      factual_precision: dimension("Precyzja faktów"),
+      polish_language_quality: dimension("Język polski"),
+      internal_link_fit: dimension("Linkowanie wewnętrzne"),
+      measurement_readiness: dimension("Gotowość pomiaru"),
+      blockers: [],
+      findings: [
+        {
+          code: "weak_cta",
+          severity: "needs_changes",
+          label: "Wzmocnij CTA",
+          reason: "CTA nadal nie mówi wystarczająco jasno, jaki jest następny krok.",
+          next_step: "Doprecyzuj zakres konsultacji.",
+          affected_section: selectedHeading,
+          evidence_ids: evidenceIds,
+          source_connectors: ["content_revision_browser_proof"]
+        }
+      ],
+      revision_instructions: [],
+      evidence_ids: evidenceIds,
+      source_connectors: ["content_revision_browser_proof"],
+      safe_next_step: "Przeczytaj child revision i wykonaj review człowieka."
+    },
+    quality_review_scope: "persisted_selected_sections_and_declared_lineage",
+    semantic_review_required: true,
+    runtime: {
+      status: "completed",
+      thread_id: `thread_codex_browser_${viewportLabel}`,
+      turn_id: `turn_codex_browser_${viewportLabel}`,
+      event_methods: ["thread/started", "turn/completed"],
+      item_types: ["agent_message"],
+      external_call_attempted: false
+    },
+    evidence_ids: evidenceIds,
+    source_connectors: ["content_revision_browser_proof"],
+    blockers: [],
+    safe_next_step: "Przejdź do review dokładnej wersji 2.",
+    publish_ready: false
+  };
+
+  return {
+    snapshot,
+    baseRevision,
+    review,
+    selectedHeading,
+    baseBody,
+    childBody,
+    endpointPath:
+      `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/` +
+      `${encodeURIComponent(baseRevision.revision_id)}/codex-proposal`,
+    response
+  };
 }
 
 function proofBlocker(code: string, label: string, reason: string) {

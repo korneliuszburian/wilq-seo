@@ -665,7 +665,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
     assert preflight["final_canonical_url"] == source_decision["final_canonical_url"]
     assert preflight["source_connectors"] == source_decision["source_connectors"]
 
-    structured = data["structured_generation"]["structured_generation_result"]
+    generation_readiness = data["structured_generation_readiness"]
     brief_result = data["sales_brief"]["sales_brief_result"]
     brief = brief_result["brief"]
     if brief is None:
@@ -673,22 +673,24 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
             "missing_required_knowledge_card",
             "missing_required_knowledge_card",
         ]
-        assert structured["contract"] is None
         assert {
             "missing_sales_brief",
             "missing_draft_package",
-        }.issubset({blocker["code"] for blocker in structured["blockers"]})
+        }.issubset(
+            {blocker["code"] for blocker in generation_readiness["blockers"]}
+        )
+        assert generation_readiness["status"] == "blocked"
+        assert generation_readiness["editable_section_headings"] == []
     else:
         assert brief["work_item_id"] == item["id"]
         assert brief["final_canonical_url"] == source_decision["final_canonical_url"]
-        assert structured["blockers"] == []
-        assert structured["contract"]["schema_name"] == "wilq_content_structured_draft_v1"
-        assert structured["contract"]["publish_ready"] is False
-        assert structured["contract"]["model_input"]["work_item_id"] == item["id"]
-        assert (
-            structured["contract"]["model_input"]["final_canonical_url"]
-            == item["final_canonical_url"]
-        )
+        assert generation_readiness["status"] == "ready"
+        assert generation_readiness["blockers"] == []
+        assert generation_readiness["publish_ready"] is False
+        draft = data["draft_package"]["draft_package_result"]["draft_package"]
+        assert generation_readiness["editable_section_headings"] == [
+            section["heading"] for section in draft["sections"]
+        ]
 
     human_review = data["human_review"]
     assert human_review["review"] is None
@@ -794,14 +796,15 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
 def _snapshot_blocks_draft_on_missing_knowledge(snapshot: dict[str, Any]) -> bool:
     brief_result = snapshot["sales_brief"]["sales_brief_result"]
     draft_result = snapshot["draft_package"]["draft_package_result"]
-    structured_result = snapshot["structured_generation"]["structured_generation_result"]
+    generation_readiness = snapshot["structured_generation_readiness"]
     return (
         brief_result["brief"] is None
         and [blocker["code"] for blocker in brief_result["blockers"]]
         == ["missing_required_knowledge_card", "missing_required_knowledge_card"]
         and draft_result["draft_package"] is None
         and "missing_sales_brief" in {blocker["code"] for blocker in draft_result["blockers"]}
-        and structured_result["contract"] is None
+        and generation_readiness["status"] == "blocked"
+        and generation_readiness["editable_section_headings"] == []
     )
 
 

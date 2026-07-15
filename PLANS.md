@@ -98,13 +98,14 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
   inline ActionObject chain w kontekście exact revision; typed konflikt
   zatrzymuje apply bez retry, a syntetyczny browser proof nie wykonuje realnego
   WordPress write.
-- Realna użyteczność tworzenia treści jest obecnie oceniona na około 5/10;
-  8/10 dotyczy wyłącznie bezpieczeństwa exact-version handoffu. CTA marketera
-  uruchamia jeszcze WordPress dry-run zamiast content quality review, a obecny
-  builder Structured Outputs nie serializuje bogatego `model_input` do requestu
-  modelu. Nowy lab app-server przekazuje pełny input i utworzył child revision
-  ugruntowaną na poziomie deklarowanego lineage, ale nie jest jeszcze dostępny
-  w dashboardzie, a wynik nadal wymaga zmian i semantycznego review.
+- Operator workflow tworzenia treści jest obecnie oceniony na około 6/10,
+  jakość realnego wygenerowanego tekstu na około 5/10, a 8/10 dotyczy wyłącznie
+  bezpieczeństwa exact-version handoffu. Marketer może już wybrać sekcje
+  reviewed base revision, uruchomić grounded Codex proposal i zobaczyć
+  base-vs-child diff, findings oraz semantyczną bramkę review. Realny output
+  nadal był generyczny i `needs_changes`, więc nie jest to dowód jakości 10/10.
+  Cztery stare publiczne Structured Outputs routes nadal tworzą alternatywny
+  API-key entrypoint poza dashboardem; usuwa je `wilq-seo-r564.14`.
 - Live content queue jest świeża, ale ma 2 pozycje i 1 wykonalną przy minimum 3.
   Service Profile pozostaje `source_backed_review_required`.
 
@@ -126,9 +127,13 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
    Odkryty w broad gate błąd `normalized_page_path` jest zamknięty w
    `wilq-seo-r564.12`: canonical path przechodzi, pozostałe kształty są
    fail-closed.
-5. Podłączyć ten seam do aktywnego kroku `draft`: wybór sekcji, status, diff i
-   findings; wycofać mylący WordPress dry-run CTA oraz niegrounded legacy runtime
-   po potwierdzeniu braku referencji. Potem kontynuować usefulness-first rozwój:
+5. `wilq-seo-r564.13` podłącza seam do aktywnego kroku `draft`: typed wybór
+   sekcji, pending, diff, lineage i findings; mylący marketerowy WordPress
+   dry-run i osierocone panele są usunięte. Cross-work-item wynik i brak sekcji
+   są fail-closed, a browser proof desktop/mobile nie dotyka WordPressa.
+6. `wilq-seo-r564.14` usuwa niegrounded legacy public runtime po migracji
+   skilla/testów, bez usuwania internal contractów używanych przez Codex
+   proposal. Potem kontynuować usefulness-first rozwój:
    jawny wybór strony/usługi/sekcji/intencji/CTA, metryki i słowa kluczowe tylko
    z aktualnych typed źródeł, porównanie wersji, bibliotekę treści oraz realny
    Wilku UAT.

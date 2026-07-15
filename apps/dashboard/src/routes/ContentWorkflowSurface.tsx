@@ -3,22 +3,17 @@ import { useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
-  postContentWorkItemQualityReview,
-  postContentWorkItemRevisionPlan,
-  postContentWorkItemStructuredDraftPreview,
-  postContentWorkItemStructuredDraftRuntime,
+  postContentWorkItemCodexSectionProposal,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
+  type ContentDraftRevision,
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionReviewRequest,
   type ContentDraftRevisionSaveRequest,
   type ContentDraftRevisionSection,
-  type ContentWorkItemQualityReviewRequest,
   type ContentWorkItemQueueResponse,
-  type ContentWorkItemRevisionPlanRequest,
-  type ContentWorkItemStructuredDraftPreviewRequest,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentOpportunityEnrichment,
   type WordPressAuthoringProfile
@@ -33,14 +28,9 @@ import {
 } from "./ContentWorkflowBoundaryStates";
 import { ContentOpportunityEnrichmentPanel } from "./ContentOpportunityEnrichmentPanel";
 import { ClaimLedgerGatePanel } from "./ClaimLedgerGatePanel";
-import { WorkflowSafetyPanels } from "./WorkflowSafetyPanels";
 import { ContentWorkflowDecisionPanel } from "./ContentWorkflowDecisionPanel";
 import { WordPressDraftWorkPanel as WordPressDraftWorkPanelView } from "./WordPressDraftWorkPanel";
 import { ContentSectionWritingWorkbench as ContentSectionWritingWorkbenchView } from "./ContentSectionWritingWorkbench";
-import {
-  WorkflowOperatorControls as WorkflowOperatorControlsView,
-  type WorkflowControlItem
-} from "./WorkflowOperatorControls";
 import { ContentWorkflowBlockedCandidate } from "./ContentWorkflowBlockedCandidate";
 import { ContentPageWorkbench as ContentPageWorkbenchView } from "./ContentPageWorkbench";
 import { ContentWorkflowJourneyContext } from "./ContentWorkflowJourneyContext";
@@ -49,34 +39,9 @@ import {
   acfPreviewResultFrom,
   acfPreviewRequest,
   executionResultFrom,
-  previewResultFrom,
-  qualityReviewFrom,
-  qualityReviewRequest,
-  revisionPlanFrom,
-  revisionPlanRequest,
-  runtimeResultFrom,
-  structuredPreviewRequest,
-  structuredRuntimeDryRunRequest,
   submitIfReady,
   wordpressExecutionRequest
 } from "./contentWorkflowActionModel";
-import {
-  acfPreviewSafetyText,
-  acfPreviewControlDisabledReason,
-  draftSafetyText,
-  executionControlDisabledReason,
-  handoffSafetyText,
-  measurementSafetyText,
-  qualityReviewControlDisabledReason,
-  qualityReviewSafetyText,
-  revisionPlanControlDisabledReason,
-  revisionPlanSafetyText,
-  structuredPreviewControlDisabledReason,
-  structuredPreviewSafetyText,
-  structuredRuntimeControlDisabledReason,
-  structuredRuntimeSafetyText,
-  wordpressExecutionSafetyText
-} from "./contentWorkflowSafetyModel";
 import { WorkflowProofSummary } from "./WorkflowProofSummary";
 import {
   useContentWorkflowQueries,
@@ -91,6 +56,10 @@ import {
 
 type ContentWorkflowActions = ReturnType<typeof useContentWorkflowActions>;
 type ContentWorkflowMutations = ReturnType<typeof useContentWorkflowMutations>;
+type CodexProposalMutationInput = {
+  baseRevision: ContentDraftRevision;
+  selectedSectionHeadings: string[];
+};
 export function ContentWorkflowSurface() {
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | null>(null);
   const {
@@ -245,6 +214,7 @@ function ContentWorkflowSelectedReady({
   }
   return (
     <ContentWorkflowLoaded
+      key={activeWorkItemId}
       data={workflow.data}
       authoringProfile={authoringProfile}
       draftActivationPacket={draftActivationPacket}
@@ -282,9 +252,6 @@ function ContentWorkflowLoaded({
     authoringProfile.data ?? null
   );
   const [viewMode, setViewMode] = useState<"marketer" | "technical">("marketer");
-  const draft = data.draftPackage.draft_package_result.draft_package;
-  const handoff = data.wordpressHandoff.handoff_result.handoff;
-  const window = data.measurementWindow.measurement_window_result.window;
   const steps = data.operatorSteps;
 
   return (
@@ -357,30 +324,10 @@ function ContentWorkflowLoaded({
             selectedWorkItemId={selectedWorkItemId}
             onSelectWorkItem={onSelectWorkItem}
           />
-          <WorkflowOperatorControlsView
-            controls={workflowControlItems(data, actions)}
-            topic={data.preflight.item.topic}
-          />
           <WorkflowProofSummary data={data} />
           <ClaimLedgerGatePanel data={data} />
           <ContentOpportunityEnrichmentPanel enrichment={enrichment} />
           <WorkflowStepsList steps={steps} />
-          <WorkflowSafetyPanels
-            structuredPreviewResult={actions.structuredPreviewResult}
-            draftSafetyText={draftSafetyText(draft?.publish_ready)}
-            structuredRuntimeSafetyText={structuredRuntimeSafetyText(actions.structuredRuntimeResult)}
-            structuredPreviewSafetyText={structuredPreviewSafetyText(actions.structuredPreviewResult)}
-            qualityReviewSafetyText={qualityReviewSafetyText(actions.qualityReview)}
-            revisionPlanSafetyText={revisionPlanSafetyText(actions.revisionPlan)}
-            acfPreviewSafetyText={acfPreviewSafetyText(actions.acfPreviewResult)}
-            handoffSafetyText={handoffSafetyText(handoff?.publish_allowed)}
-            executionSafetyText={wordpressExecutionSafetyText(actions.executionResult)}
-            measurementTitle={data.measurementWindow.outcome_blockers[0]?.label ?? "Nie wolno jeszcze oceniać efektu"}
-            measurementSafetyText={measurementSafetyText(window)}
-            qualityReview={actions.qualityReview}
-            revisionPlan={actions.revisionPlan}
-            acfPreviewResult={actions.acfPreviewResult}
-          />
         </section>
       )}
     </main>
@@ -465,20 +412,20 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
       if (result.status !== "conflict") void refreshRevisionWorkspace();
     }
   });
-  const structuredRuntimeMutation = useMutation({
-    mutationFn: postContentWorkItemStructuredDraftRuntime
-  });
-  const structuredPreviewMutation = useMutation({
-    mutationFn: (request: ContentWorkItemStructuredDraftPreviewRequest) =>
-      postContentWorkItemStructuredDraftPreview(request, selectedWorkItemId)
-  });
-  const qualityReviewMutation = useMutation({
-    mutationFn: (request: ContentWorkItemQualityReviewRequest) =>
-      postContentWorkItemQualityReview(request, selectedWorkItemId)
-  });
-  const revisionPlanMutation = useMutation({
-    mutationFn: (request: ContentWorkItemRevisionPlanRequest) =>
-      postContentWorkItemRevisionPlan(request, selectedWorkItemId)
+  const codexProposalMutation = useMutation({
+    mutationFn: ({
+      baseRevision,
+      selectedSectionHeadings
+    }: CodexProposalMutationInput) =>
+      postContentWorkItemCodexSectionProposal(
+        {
+          expected_base_digest: baseRevision.content_digest,
+          selected_section_headings: selectedSectionHeadings,
+          requested_by: "wilku"
+        },
+        selectedWorkItemId,
+        baseRevision.revision_id
+      )
   });
   const acfPreviewMutation = useMutation({
     mutationFn: postContentWorkItemWordPressAuthoringPayloadPreview
@@ -487,12 +434,10 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
   return {
     revisionSaveMutation,
     revisionReviewMutation,
-    structuredRuntimeMutation,
-    structuredPreviewMutation,
-    qualityReviewMutation,
-    revisionPlanMutation,
+    codexProposalMutation,
     acfPreviewMutation,
-    executionMutation
+    executionMutation,
+    refreshRevisionWorkspace
   };
 }
 
@@ -501,8 +446,6 @@ function contentWorkflowActions(
   mutations: ContentWorkflowMutations,
   authoringProfile: WordPressAuthoringProfile | null
 ) {
-  const structuredRuntimeResult = runtimeResultFrom(mutations.structuredRuntimeMutation.data);
-  const qualityReview = qualityReviewFrom(mutations.qualityReviewMutation.data);
   const latestRevision = data.revisionWorkspace.latest_revision;
   const revisionEvidenceIds = latestRevision
     ? [...new Set(latestRevision.sections.flatMap((section) => section.evidence_ids))]
@@ -520,34 +463,29 @@ function contentWorkflowActions(
         ? mutations.revisionReviewMutation.data
         : null,
     revisionReviewError: mutations.revisionReviewMutation.error,
-    structuredRuntimePending: mutations.structuredRuntimeMutation.isPending,
-    structuredPreviewPending: mutations.structuredPreviewMutation.isPending,
-    qualityReviewPending: mutations.qualityReviewMutation.isPending,
-    revisionPlanPending: mutations.revisionPlanMutation.isPending,
+    codexProposalPending: mutations.codexProposalMutation.isPending,
+    codexProposalError: mutations.codexProposalMutation.error,
+    codexProposalResult: mutations.codexProposalMutation.data ?? null,
+    codexProposalBaseRevision:
+      mutations.codexProposalMutation.variables?.baseRevision ?? null,
     acfPreviewPending: mutations.acfPreviewMutation.isPending,
     executionPending: mutations.executionMutation.isPending,
     authoringProfileReady: Boolean(authoringProfile),
-    structuredRuntimeResult,
-    structuredPreviewResult: previewResultFrom(mutations.structuredPreviewMutation.data),
-    qualityReview,
-    revisionPlan: revisionPlanFrom(mutations.revisionPlanMutation.data),
     acfPreviewResult: acfPreviewResultFrom(mutations.acfPreviewMutation.data),
     executionResult: executionResultFrom(mutations.executionMutation.data),
     executionError: mutations.executionMutation.error,
-    runStructuredRuntime: () =>
-      submitIfReady(structuredRuntimeDryRunRequest(data), mutations.structuredRuntimeMutation.mutate),
-    runStructuredPreview: () =>
-      submitIfReady(
-        structuredPreviewRequest(data, structuredRuntimeResult),
-        mutations.structuredPreviewMutation.mutate
-      ),
-    runQualityReview: () =>
-      submitIfReady(
-        qualityReviewRequest(data, structuredRuntimeResult),
-        mutations.qualityReviewMutation.mutate
-      ),
-    runRevisionPlan: () =>
-      submitIfReady(revisionPlanRequest(data, qualityReview), mutations.revisionPlanMutation.mutate),
+    runCodexSectionProposal: (selectedSectionHeadings: string[]) => {
+      if (!latestRevision || selectedSectionHeadings.length === 0) return;
+      mutations.codexProposalMutation.mutate({
+        baseRevision: latestRevision,
+        selectedSectionHeadings
+      });
+    },
+    refreshCodexProposalWorkspace: () => {
+      void mutations
+        .refreshRevisionWorkspace()
+        .finally(() => mutations.codexProposalMutation.reset());
+    },
     saveDraftRevision: (title: string, sections: ContentDraftRevisionSection[]) =>
       mutations.revisionSaveMutation.mutate({
         base_revision_id: latestRevision?.revision_id ?? null,
@@ -612,99 +550,3 @@ function contentWorkflowActions(
 type WordPressDraftSectionOverride = NonNullable<
   ContentWorkItemWordPressDraftExecutionRequest["section_overrides"]
 >[number];
-
-function workflowControlItems(
-  data: ContentWorkflowSnapshot,
-  actions: ContentWorkflowActions
-): WorkflowControlItem[] {
-  const draft = data.draftPackage.draft_package_result.draft_package;
-  const handoff = data.wordpressHandoff.handoff_result.handoff;
-  return [
-    structuredRuntimeControlItem(data, actions),
-    structuredPreviewControlItem(data, actions),
-    qualityReviewControlItem(actions),
-    revisionPlanControlItem(actions),
-    {
-      label: actions.acfPreviewResult ? "Mapowanie ACF gotowe" : "Pokaż mapowanie ACF",
-      disabledReason: acfPreviewControlDisabledReason(
-        Boolean(draft),
-        Boolean(handoff),
-        actions.authoringProfileReady,
-        actions.acfPreviewPending,
-        actions.acfPreviewResult
-      ),
-      pending: actions.acfPreviewPending,
-      onClick: actions.runAcfPreview
-    },
-    {
-      label: actions.executionResult ? "Podgląd szkicu gotowy" : "Sprawdź podgląd szkicu",
-      disabledReason: executionControlDisabledReason(
-        Boolean(draft),
-        Boolean(handoff),
-        actions.executionPending,
-        actions.executionResult
-      ),
-      pending: actions.executionPending,
-      onClick: actions.runExecutionDryRun
-    }
-  ];
-}
-
-function structuredRuntimeControlItem(
-  data: ContentWorkflowSnapshot,
-  actions: ContentWorkflowActions
-): WorkflowControlItem {
-  return {
-    label: actions.structuredRuntimeResult ? "Próba szkicu gotowa" : "Sprawdź gotowość szkicu",
-    disabledReason: structuredRuntimeControlDisabledReason(
-      data,
-      actions.structuredRuntimePending,
-      actions.structuredRuntimeResult
-    ),
-    pending: actions.structuredRuntimePending,
-    onClick: actions.runStructuredRuntime
-  };
-}
-
-function structuredPreviewControlItem(
-  data: ContentWorkflowSnapshot,
-  actions: ContentWorkflowActions
-): WorkflowControlItem {
-  return {
-    label: actions.structuredPreviewResult ? "Podgląd treści gotowy" : "Pokaż podgląd treści",
-    disabledReason: structuredPreviewControlDisabledReason(
-      data,
-      actions.structuredPreviewPending,
-      actions.structuredPreviewResult,
-      actions.structuredRuntimeResult
-    ),
-    pending: actions.structuredPreviewPending,
-    onClick: actions.runStructuredPreview
-  };
-}
-
-function qualityReviewControlItem(actions: ContentWorkflowActions): WorkflowControlItem {
-  return {
-    label: actions.qualityReview ? "Ocena jakości gotowa" : "Sprawdź jakość szkicu",
-    disabledReason: qualityReviewControlDisabledReason(
-      actions.qualityReviewPending,
-      actions.qualityReview,
-      actions.structuredRuntimeResult
-    ),
-    pending: actions.qualityReviewPending,
-    onClick: actions.runQualityReview
-  };
-}
-
-function revisionPlanControlItem(actions: ContentWorkflowActions): WorkflowControlItem {
-  return {
-    label: actions.revisionPlan ? "Plan poprawki gotowy" : "Pokaż plan poprawki",
-    disabledReason: revisionPlanControlDisabledReason(
-      actions.revisionPlanPending,
-      actions.revisionPlan,
-      actions.qualityReview
-    ),
-    pending: actions.revisionPlanPending,
-    onClick: actions.runRevisionPlan
-  };
-}

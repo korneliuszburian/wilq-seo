@@ -86,9 +86,30 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 - Zapis child revision i terminalnego `CodexRun` jest jedną transakcją SQLite.
   Inny run/provenance nie może dostać idempotentnej rewizji poprzedniego runu;
   błąd finalizacji wycofuje child revision.
+- `wilq-seo-r564.13` podłącza ten exact proposal seam do aktywnego kroku
+  `draft`. Browser dostaje tylko typed readiness i nagłówki, a nie prompt,
+  `model_input` ani konfigurację runtime. Wilku wybiera sekcje, widzi pending,
+  dokładny diff baza/child, lineage, findings i bramkę semantycznego review.
+  Wynik nie może zatwierdzić treści ani dotknąć WordPressa. Zmiana work itemu,
+  obcy work item albo brak wybranej sekcji unieważnia porównanie.
+- Marketerowy WordPress dry-run udający ocenę tekstu i pięć osieroconych paneli
+  zostały usunięte po pełnym reference proof. Techniczny payload dry-run nadal
+  istnieje wyłącznie w audycie technicznym.
 
 ## Bieżący proof
 
+- Publiczny live snapshot po managed restarcie zwraca wyłącznie
+  `structured_generation_readiness`; rekursywny smoke dla obu kandydatów nie
+  znalazł `structured_generation`, promptów, `model_input` ani output schema.
+- Focused backend content API doszedł do 100%; Ruff i mypy są zielone. Shared
+  schema 38/38, focused dashboard 29/29, TypeScript, ESLint i build są zielone.
+- Browser proposal proof przechodzi 1/1 dla 1440×900 i 390×844: dokładny POST,
+  pending, baza/child, `weak_cta`, semantic review, `publish_ready=false`, run ID
+  w disclosure, zero WordPress requestów i zero horizontal overflow. Proof:
+  `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
+- Review użyteczności marketera/operatora daje 6/10 dla samego workflow, lecz
+  utrzymuje 5/10 dla jakości realnego tekstu: poprzedni 38-słowny output nadal
+  był generyczny i `needs_changes`; Service Profile i realny Wilku UAT są otwarte.
 - Focused backend, shared schema, dashboard tests, Ruff, mypy, TypeScript,
   ESLint i diff check przechodzą. Szeroki code gate potwierdził 977 backend
   testów (2 skip), 36 shared i 164 dashboard testy oraz security/API/skill
@@ -143,9 +164,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Następny bezpieczny zakres
 
-1. Podłączyć API-owned propozycję do aktywnego kroku `draft`: jawny wybór
-   sekcji, jedno CTA generowania, status runu, porównanie z bazą i czytelne
-   quality findings. Nie wystawiać browserowi generic runtime ani promptu.
+1. Wykonać `wilq-seo-r564.14`: migrować `wilq-content-operator` i testy na
+   readiness plus exact `codex-proposal`, a następnie usunąć cztery publiczne
+   legacy generation/runtime/preview routes, API-key runtime, zależność i martwe
+   frontend/shared kontrakty. Zachować internal contract/output i preview
+   blockers używane przez kanoniczny Codex proposal.
 2. Następnie rozwijać najważniejszą wartość treściową: jawny wybór
    strony/usługi/intencji/CTA, bibliotekę/historię treści, typed keyword/Ads
    signals tylko z dowodami i realny Wilku UAT. Nie nadawać oceny 10/10 przed
@@ -159,11 +182,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   rezydualnym.
 - Queue nie ma wymaganych trzech wykonalnych pozycji; WILQ nie tworzy sztucznej
   trzeciej propozycji.
-- Obecny marketer CTA `Sprawdź tekst szkicu` nadal uruchamia WordPress dry-run,
-  a nowy grounded proposal seam nie jest jeszcze dostępny w dashboardzie.
-  Legacy technical Structured Outputs runtime nadal pomija `model_input` i nie
-  może być traktowany jako aktywna alternatywa; po sprawdzeniu referencji trzeba
-  go usunąć albo wycofać wraz z przepięciem CTA.
+- Dashboard ma jedną ścieżkę Codex proposal, ale OpenAPI nadal wystawia cztery
+  stare Structured Outputs generation/runtime/preview routes. Jedna z nich może
+  ponownie ujawnić pełny execution contract, a live runtime zależy od API keya i
+  nie przesyła bogatego `model_input`. `wilq-seo-r564.14` jest otwartym P0;
+  dopóki nie jest zamknięty, nie wolno claimować jednego entrypointu capability.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
 - Goal 005, produkcyjna gotowość i pełna użyteczność dla marketera nie są

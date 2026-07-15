@@ -30,12 +30,12 @@ from wilq.content.workflow.api import (
     ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffResponse,
-    ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveResponse,
-    ContentWorkItemSnapshotResponse,
+    ContentWorkItemBrowserSnapshotResponse,
+    ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 
@@ -56,11 +56,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/wordpress/existing-draft-update-readiness",
     ): ContentWordPressExistingDraftUpdateReadinessResponse,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
-    ("GET", "/api/content/work-items/snapshot"): ContentWorkItemWorkflowSnapshotResponse,
+    (
+        "GET",
+        "/api/content/work-items/snapshot",
+    ): ContentWorkItemBrowserWorkflowSnapshotResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/snapshot",
-    ): ContentWorkItemSnapshotResponse,
+    ): ContentWorkItemBrowserSnapshotResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/enrichment",

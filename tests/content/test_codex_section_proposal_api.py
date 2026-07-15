@@ -17,6 +17,7 @@ from tests.content.test_content_revision_workspace_api import (
     _save_path,
     _save_payload,
     _selected_snapshot,
+    _structured_generation_from_snapshot,
     _structured_output_from_contract,
 )
 from wilq.codex.app_server import (
@@ -105,9 +106,10 @@ def _proposal_case(
         json=_review_payload(base_revision, "needs_changes"),
     )
     assert reviewed.status_code == 200
-    contract = _selected_snapshot(client, work_item_id)["structured_generation"][
-        "structured_generation_result"
-    ]["contract"]
+    contract = _structured_generation_from_snapshot(
+        client,
+        _selected_snapshot(client, work_item_id),
+    )["contract"]
     selected_heading = base_revision["sections"][0]["heading"]
     valid_output = _structured_output_from_contract(contract)
     assert valid_output["sections"][0]["heading"] == selected_heading

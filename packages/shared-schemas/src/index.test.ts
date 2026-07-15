@@ -26,6 +26,7 @@ import {
   ContentClaimReferenceSchema,
   ContentDraftPackageSchema,
   ContentDraftRevisionConflictSchema,
+  ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionWorkspaceSchema,
@@ -2473,48 +2474,6 @@ describe("Content work item workflow schemas", () => {
       handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
       success_claim_allowed: false
     };
-    const structuredContract = {
-      schema_name: "wilq_content_structured_draft_v1",
-      strict_schema: true,
-      model_input: {
-        work_item_id: "content_work_item_bdo",
-        language: "pl-PL",
-        draft_kind: "section_draft",
-        title: "BDO dla firm",
-        final_canonical_url: "https://ekologus.pl/bdo/",
-        source_public_url: "https://ekologus.pl/bdo/",
-        preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
-        target_reader: "właściciel firmy",
-        buyer_problem: "nie wie, jak podejść do BDO",
-        buyer_trigger: "zbliża się kontrola",
-        search_intent: "informacyjno-usługowy",
-        service_fit: "obsługa środowiskowa",
-        cta_direction: "Skontaktuj się z Ekologus.",
-        sections: [],
-        source_facts: [],
-        knowledge_constraints: [],
-        sales_brief_signal_quality: {
-          status: "thin",
-          status_label: "sygnał cienki - tylko analiza/review",
-          reason: "Brief nie ma pełnego śladu dowodowego.",
-          evidence_id_count: 0,
-          source_connector_count: 0,
-          source_fact_count: 0,
-          missing_evidence_count: 0,
-          knowledge_constraint_count: 0,
-          review_required_knowledge_card_count: 0,
-          measurement_baseline_ready: false,
-          safe_next_step: "Uzupełnij dowody przed szkicem."
-        },
-        claims_allowed: [],
-        claims_removed_or_blocked: [],
-        human_review_questions: ["Czy to brzmi jak Ekologus?"]
-      },
-      output_schema: { type: "object", additionalProperties: false },
-      system_instruction: "Pisz wyłącznie z przekazanych faktów.",
-      user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
-      publish_ready: false
-    };
     const claimLedger = {
       id: "claim_ledger_bdo",
       work_item_id: "content_work_item_bdo",
@@ -2612,9 +2571,12 @@ describe("Content work item workflow schemas", () => {
           sales_brief_result: { brief, blockers: [] },
           draft_package_result: { draft_package: draftPackage, blockers: [] }
         },
-        structured_generation: {
-          item,
-          structured_generation_result: { contract: structuredContract, blockers: [] }
+        structured_generation_readiness: {
+          status: "ready",
+          editable_section_headings: ["Kogo dotyczy BDO"],
+          blockers: [],
+          safe_next_step: "Wybierz sekcje zapisanej wersji do poprawy z Codexem.",
+          publish_ready: false
         },
         human_review: {
           item,
@@ -2891,7 +2853,7 @@ describe("Content work item workflow schemas", () => {
     ).toBe(false);
   });
 
-  it("guards revision save, review and conflict inputs at the shared seam", () => {
+  it("guards revision, proposal and conflict inputs at the shared seam", () => {
     expect(
       ContentDraftRevisionSaveRequestSchema.safeParse({
         base_revision_id: null,
@@ -2936,6 +2898,21 @@ describe("Content work item workflow schemas", () => {
         current_revision_id: "content_revision_bdo_2",
         current_digest: "a".repeat(64),
         safe_next_step: "Porównaj wersje."
+      }).success
+    ).toBe(false);
+    expect(
+      ContentCodexSectionProposalRequestSchema.safeParse({
+        expected_base_digest: "a".repeat(64),
+        selected_section_headings: ["Kogo dotyczy BDO", "Kogo dotyczy BDO"],
+        requested_by: "wilku"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentCodexSectionProposalRequestSchema.safeParse({
+        expected_base_digest: "a".repeat(64),
+        selected_section_headings: ["Kogo dotyczy BDO"],
+        requested_by: "wilku",
+        system_prompt: "Nie wolno wysyłać promptu z przeglądarki."
       }).success
     ).toBe(false);
   });

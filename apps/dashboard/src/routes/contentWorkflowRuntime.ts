@@ -8,7 +8,6 @@ import {
   type ContentWorkItemMeasurementWindowResponse,
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemSalesBriefResponse,
-  type ContentWorkItemStructuredDraftGenerationResponse,
   type ContentWorkItemWordPressDraftHandoffResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type ContentWorkItemSnapshotResponse
@@ -22,7 +21,7 @@ export type ContentWorkflowSnapshot = {
   preflight: ContentWorkItemPreflightResponse;
   salesBrief: ContentWorkItemSalesBriefResponse;
   draftPackage: ContentWorkItemDraftPackageResponse;
-  structuredGeneration: ContentWorkItemStructuredDraftGenerationResponse;
+  structuredGenerationReadiness: ContentWorkItemWorkflowSnapshotResponse["structured_generation_readiness"];
   humanReview: ContentWorkItemHumanReviewResponse;
   wordpressHandoff: ContentWorkItemWordPressDraftHandoffResponse;
   measurementWindow: ContentWorkItemMeasurementWindowResponse;
@@ -67,7 +66,7 @@ function workflowSnapshotFromApi(
     preflight: snapshot.preflight,
     salesBrief: snapshot.sales_brief,
     draftPackage: snapshot.draft_package,
-    structuredGeneration: snapshot.structured_generation,
+    structuredGenerationReadiness: snapshot.structured_generation_readiness,
     humanReview: snapshot.human_review,
     wordpressHandoff: snapshot.wordpress_handoff,
     measurementWindow: snapshot.measurement_window,

@@ -13,10 +13,7 @@ import {
   getContentWordPressExistingDraftUpdateReadiness,
   getWordPressAuthoringProfile,
   impactCheckAction,
-  postContentWorkItemQualityReview,
-  postContentWorkItemRevisionPlan,
-  postContentWorkItemStructuredDraftPreview,
-  postContentWorkItemStructuredDraftRuntime,
+  postContentWorkItemCodexSectionProposal,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   previewAction,
@@ -28,13 +25,10 @@ import {
   validateAction,
   type ActionApplyResult,
   type ActionObject,
+  type ContentCodexSectionProposalResponse,
   type ContentDraftRevisionBinding,
-  type ContentWorkItemQualityReviewResponse,
   type ContentOpportunityEnrichmentResponse,
   type ContentWorkItemQueueResponse,
-  type ContentWorkItemRevisionPlanResponse,
-  type ContentWorkItemStructuredDraftPreviewResponse,
-  type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
@@ -45,6 +39,7 @@ import {
 } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
+import { ContentCodexSectionProposalResult } from "./ContentCodexSectionProposalResult";
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
@@ -61,10 +56,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWordPressExistingDraftUpdateReadiness: vi.fn(),
     getWordPressAuthoringProfile: vi.fn(),
     impactCheckAction: vi.fn(),
-    postContentWorkItemQualityReview: vi.fn(),
-    postContentWorkItemRevisionPlan: vi.fn(),
-    postContentWorkItemStructuredDraftPreview: vi.fn(),
-    postContentWorkItemStructuredDraftRuntime: vi.fn(),
+    postContentWorkItemCodexSectionProposal: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     previewAction: vi.fn(),
@@ -92,19 +84,14 @@ describe("ContentWorkflowSurface", () => {
       existingDraftUpdateReadiness()
     );
     vi.mocked(getWordPressAuthoringProfile).mockResolvedValue(wordpressAuthoringProfile());
-    vi.mocked(postContentWorkItemQualityReview).mockResolvedValue(qualityReviewResponse());
-    vi.mocked(postContentWorkItemRevisionPlan).mockResolvedValue(revisionPlanResponse());
     vi.mocked(saveContentWorkItemSnapshotHumanReview).mockResolvedValue(
       workflowSnapshot({ review: humanReview() }).human_review
     );
     vi.mocked(saveContentWorkItemSnapshotAudit).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() }).wordpress_handoff
     );
-    vi.mocked(postContentWorkItemStructuredDraftRuntime).mockResolvedValue(
-      structuredDraftRuntimeResponse()
-    );
-    vi.mocked(postContentWorkItemStructuredDraftPreview).mockResolvedValue(
-      structuredDraftPreviewResponse()
+    vi.mocked(postContentWorkItemCodexSectionProposal).mockResolvedValue(
+      codexSectionProposalResponse()
     );
     vi.mocked(postContentWorkItemWordPressAuthoringPayloadPreview).mockResolvedValue(
       wordpressAuthoringPayloadPreviewResponse()
@@ -194,8 +181,6 @@ describe("ContentWorkflowSurface", () => {
 
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
-    expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
-    expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
@@ -297,7 +282,7 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText(/Każda zaplanowana sekcja musi zachować treść/))
       .toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Zapisz wersję do review" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Sprawdź tekst szkicu" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Sprawdź tekst szkicu" })).not.toBeInTheDocument();
     expect(within(screen.getByTestId("draft-section-tabs")).getAllByRole("button"))
       .toHaveLength(5);
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
@@ -648,8 +633,6 @@ describe("ContentWorkflowSurface", () => {
       .not.toBeInTheDocument();
     expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
-    expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
-    expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -669,14 +652,25 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByRole("button", { name: "Zapisz audyt przekazania" }))
       .not.toBeInTheDocument();
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
-    expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
-    expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
-  it("checks structured draft readiness without live generation or raw payload display", async () => {
+  it("lets Wilku revise one reviewed section and keeps the Codex child draft-only", async () => {
+    const revision = savedDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ workspace: needsChangesRevisionWorkspace(revision) })
+    );
+    let resolveProposal:
+      | ((response: ContentCodexSectionProposalResponse) => void)
+      | undefined;
+    vi.mocked(postContentWorkItemCodexSectionProposal).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProposal = resolve;
+        })
+    );
     const client = createWilqQueryClient({
-      defaultOptions: { queries: { retry: false } }
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
     });
     render(
       <App
@@ -685,67 +679,77 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    await openWorkflowDetails();
-    await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
-
-    await waitFor(() => {
-      expect(postContentWorkItemStructuredDraftRuntime).toHaveBeenCalled();
-    });
-    expect(vi.mocked(postContentWorkItemStructuredDraftRuntime).mock.calls[0]?.[0]).toEqual({
-      contract: structuredDraftGenerationContract(),
-      model: "gpt-5",
-      mode: "dry_run"
-    });
-    expect(await screen.findByRole("button", { name: "Próba szkicu gotowa" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeDisabled();
-    expect(screen.getByText(/Sama próba gotowości nie tworzy treści/)).toBeInTheDocument();
-    expect(screen.getByText(/Próba gotowa/)).toBeInTheDocument();
-    expect(screen.getByText(/nie wygenerował treści na żywo/)).toBeInTheDocument();
-    expect(screen.queryByText("json_schema")).not.toBeInTheDocument();
-    expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
-    expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
-    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
-  });
-
-  it("shows a structured draft preview only after generated text exists", async () => {
-    vi.mocked(postContentWorkItemStructuredDraftRuntime).mockResolvedValue(
-      structuredDraftRuntimeResponse({ output: structuredDraftOutput(), status: "generated" })
-    );
-    const client = createWilqQueryClient({
-      defaultOptions: { queries: { retry: false } }
-    });
-    render(
-      <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
-        client={client}
-      />
-    );
-
-    await openWorkflowDetails();
-    await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
-
-    await screen.findByRole("button", { name: "Próba szkicu gotowa" });
-    expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż podgląd treści" }));
-
-    await waitFor(() => {
-      expect(postContentWorkItemStructuredDraftPreview).toHaveBeenCalled();
-    });
-    expect(vi.mocked(postContentWorkItemStructuredDraftPreview).mock.calls[0]?.[0]).toEqual({
-      contract: structuredDraftGenerationContract(),
-      output: structuredDraftOutput()
-    });
-    expect(await screen.findByRole("button", { name: "Podgląd treści gotowy" })).toBeDisabled();
-    expect(screen.getByText("BDO dla firm - szkic do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getAllByText("Kogo dotyczy BDO").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Sprawdź z ekspertem, czy opis obowiązku BDO jest aktualny/))
+    expect(await screen.findByText("Popraw wersję 1 z Codexem")).toBeInTheDocument();
+    expect(screen.getByText(/Uwagi z review: „Ta wersja wymaga opisanych poprawek/))
       .toBeInTheDocument();
-    expect(screen.getByText(/WordPress i publikacja nadal są zablokowane/)).toBeInTheDocument();
-    expect(screen.queryByText("json_schema")).not.toBeInTheDocument();
-    expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
+    const proposalButton = screen.getByRole("button", {
+      name: "Popraw 0 sekcji z Codexem"
+    });
+    expect(proposalButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Kogo dotyczy BDO" }));
+    expect(proposalButton).toBeEnabled();
+    fireEvent.click(proposalButton);
+
+    await waitFor(() =>
+      expect(postContentWorkItemCodexSectionProposal).toHaveBeenCalledWith(
+        {
+          expected_base_digest: revision.content_digest,
+          selected_section_headings: ["Kogo dotyczy BDO"],
+          requested_by: "wilku"
+        },
+        revision.work_item_id,
+        revision.revision_id
+      )
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Codex poprawia 1 sekcję i sprawdza przypisane dowody"
+    );
+
+    resolveProposal?.(codexSectionProposalResponse());
+    const result = await screen.findByTestId("codex-proposal-result");
+    expect(result).toHaveTextContent("Wersja 2 utworzona · wymaga review człowieka");
+    expect(result).toHaveTextContent("Zapisana treść pierwszej wersji o obowiązkach BDO.");
+    expect(result).toHaveTextContent(
+      "Sprawdź, czy zakres działalności firmy tworzy obowiązki BDO"
+    );
+    expect(result).toHaveTextContent("Wzmocnij CTA");
+    expect(result).toHaveTextContent("Semantyka nadal wymaga sprawdzenia człowieka");
+    expect(result).toHaveTextContent("Szkic nie jest gotowy do publikacji");
+    expect(screen.getByText(/Run Codex: codex_section_run_bdo_1/)).not.toBeVisible();
+    expect(screen.queryByRole("button", { name: "Sprawdź gotowość szkicu" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Przygotuj podgląd draftu" }))
+      .not.toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressAuthoringPayloadPreview).not.toHaveBeenCalled();
+
+    await openWorkflowDetails();
+    fireEvent.click(screen.getByRole("button", { name: /Zielony Ład dla firm/ }));
+    await waitFor(() =>
+      expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_green_deal")
+    );
+    expect(screen.queryByTestId("codex-proposal-result")).not.toBeInTheDocument();
+  });
+
+  it("fails closed when the Codex child omits a selected section", () => {
+    const baseRevision = savedDraftRevision();
+    const response = codexSectionProposalResponse();
+    if (!response.revision) throw new Error("Expected a created proposal fixture");
+
+    render(
+      <ContentCodexSectionProposalResult
+        expectedWorkItemId={baseRevision.work_item_id}
+        baseRevision={baseRevision}
+        result={{ ...response, revision: { ...response.revision, sections: [] } }}
+        onRefresh={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Nie można potwierdzić porównania wersji"
+    );
+    expect(screen.queryByTestId("codex-proposal-result")).not.toBeInTheDocument();
   });
 
   it("shows API-owned blockers when a queue candidate cannot enter the gated workflow", async () => {
@@ -771,55 +775,6 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("pomiar zablokowany")).toBeInTheDocument();
   });
 
-  it("runs quality review and a bounded revision plan after generated content exists", async () => {
-    vi.mocked(postContentWorkItemStructuredDraftRuntime).mockResolvedValue(
-      structuredDraftRuntimeResponse({ output: structuredDraftOutput(), status: "generated" })
-    );
-    const client = createWilqQueryClient({
-      defaultOptions: { queries: { retry: false } }
-    });
-    render(
-      <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
-        client={client}
-      />
-    );
-
-    await openWorkflowDetails();
-    await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
-    expect(await screen.findByRole("button", { name: "Sprawdź jakość szkicu" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź jakość szkicu" }));
-
-    await waitFor(() => {
-      expect(postContentWorkItemQualityReview).toHaveBeenCalled();
-    });
-    expect(vi.mocked(postContentWorkItemQualityReview).mock.calls[0]?.[0]).toEqual({
-      item: workItem(),
-      draft_package: draftPackage(),
-      structured_output: structuredDraftOutput(),
-      claim_ledger: claimLedger(),
-      sales_brief: salesBrief(),
-      duplicate_risk: "clear"
-    });
-    expect(await screen.findByRole("button", { name: "Ocena jakości gotowa" })).toBeDisabled();
-    expect(screen.getByText("Wzmocnij CTA")).toBeInTheDocument();
-    expect(screen.getByText(/Szkic mówi, co zrobić dalej/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż plan poprawki" })).toBeEnabled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż plan poprawki" }));
-    await waitFor(() => {
-      expect(postContentWorkItemRevisionPlan).toHaveBeenCalled();
-    });
-    expect(vi.mocked(postContentWorkItemRevisionPlan).mock.calls[0]?.[0]).toEqual({
-      item: workItem(),
-      quality_review: qualityReviewResponse().quality_review
-    });
-    expect(await screen.findByRole("button", { name: "Plan poprawki gotowy" })).toBeDisabled();
-    expect(screen.getByText("Dopisz konkretny następny krok dla klienta")).toBeInTheDocument();
-    expect(screen.getByText(/Połącz CTA z usługą Ekologus/)).toBeInTheDocument();
-  });
-
   it("shows dry-run ACF field mapping after the WordPress handoff exists", async () => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
@@ -835,8 +790,8 @@ describe("ContentWorkflowSurface", () => {
     );
 
     await openWorkflowDetails();
-    await screen.findByRole("button", { name: "Pokaż mapowanie ACF" });
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż mapowanie ACF" }));
+    await screen.findByRole("button", { name: "Przygotuj mapowanie sekcji ACF" });
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj mapowanie sekcji ACF" }));
 
     await waitFor(() => {
       expect(postContentWorkItemWordPressAuthoringPayloadPreview).toHaveBeenCalled();
@@ -847,206 +802,15 @@ describe("ContentWorkflowSurface", () => {
         draft_package: draftPackage(),
         authoring_profile: wordpressAuthoringProfile()
       });
-    expect(await screen.findByRole("button", { name: "Mapowanie ACF gotowe" })).toBeDisabled();
-    expect(screen.getByText(/layoutu Podstrona/)).toBeInTheDocument();
-    expect(screen.getAllByText("Wybrany layout").length).toBeGreaterThan(0);
+    expect(await screen.findAllByText("Wybrany layout")).not.toHaveLength(0);
     expect(screen.getAllByText("Podstrona (podstrona)").length).toBeGreaterThan(0);
-    expect(screen.getByText("Mapowanie pól ACF")).toBeInTheDocument();
     expect(screen.getAllByText("Tytuł (tytul)").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Główny opis (glowny_opis)").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Lead (lead)").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Elementy (elementy)").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Kandydat wiersza ACF/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Wiersz do ręcznego przeglądu: Kogo dotyczy BDO/).length)
-      .toBeGreaterThan(0);
-    expect(screen.getAllByText(/Dowody: ev_gsc_bdo/).length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText(/wybór layoutu\/wierszy wymaga osobnego ręcznego przeglądu/).length
-    ).toBeGreaterThan(0);
-    expect(screen.getByText(/Publikacja i nadpisywanie pozostają zablokowane/))
-      .toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
-  it("prepares a draft-only WordPress dry-run after handoff", async () => {
-    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
-      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
-    );
-    const client = createWilqQueryClient({
-      defaultOptions: { queries: { retry: false } }
-    });
-    render(
-      <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
-        client={client}
-      />
-    );
-
-    await openWorkflowDetails();
-    expect(screen.queryByRole("button", { name: "Sprawdzenie zapisane" }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Audyt zapisany" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Handoff przygotowuje tylko szkic/))
-      .toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" }));
-
-    await waitFor(() => {
-      expect(postContentWorkItemWordPressDraftExecution).toHaveBeenCalled();
-    });
-    expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0]).toEqual({
-      handoff: wordpressHandoff(),
-      draft_package: draftPackage(),
-      mode: "dry_run",
-      write_authorization: null
-    });
-    expect(await screen.findByRole("button", { name: "Podgląd szkicu gotowy" })).toBeDisabled();
-    expect(screen.getByText(/WordPress dostałby status draft/)).toBeInTheDocument();
-    expect(screen.getByText(/Publikacja: zablokowana/)).toBeInTheDocument();
-    expect(screen.getByText(/Nadpisywanie treści: zablokowane/)).toBeInTheDocument();
-  });
-
-  it("keeps the direct WordPress endpoint dry-run when readiness claims a write is available", async () => {
-    const authorization = {
-      action_id: "act_prepare_wordpress_draft_handoff",
-      preview_audit_id: "audit_preview_wordpress_draft",
-      review_audit_id: "audit_review_wordpress_draft",
-      confirmation_audit_id: "audit_confirm_wordpress_draft",
-      confirmed_by: "operator_local_dashboard"
-    };
-    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
-      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
-    );
-    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue({
-      ...wordpressDraftActivationPacket(),
-      human_review_ready: true,
-      audit_ready: true,
-      handoff_ready: true,
-      dry_run_ready: true,
-      handoff_blockers: [],
-      execution_blockers: [],
-      activation_missing_readiness_labels: []
-    });
-    vi.mocked(getContentWordPressDraftWriteReadiness).mockResolvedValue({
-      ...wordpressDraftWriteReadiness(),
-      ready: true,
-      live_write_enabled_by_env: true,
-      write_authorization_status: "available",
-      suggested_write_authorization: authorization,
-      blockers: [],
-      missing_audit_event_types: [],
-      required_audit_events: [
-        {
-          event_type: "action_preview_generated",
-          label: "Podgląd akcji wygenerowany",
-          satisfied: true,
-          audit_event_id: authorization.preview_audit_id,
-          actor: "operator_local_dashboard"
-        },
-        {
-          event_type: "human_review_*",
-          label: "Review człowieka zapisane",
-          satisfied: true,
-          audit_event_id: authorization.review_audit_id,
-          actor: "operator_local_dashboard"
-        },
-        {
-          event_type: "action_apply_confirmed",
-          label: "Potwierdzenie operatora zapisane",
-          satisfied: true,
-          audit_event_id: authorization.confirmation_audit_id,
-          actor: "operator_local_dashboard"
-        }
-      ]
-    });
-    const client = createWilqQueryClient({
-      defaultOptions: { queries: { retry: false } }
-    });
-    render(
-      <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
-        client={client}
-      />
-    );
-
-    const previewButton = await screen.findByRole("button", {
-      name: "Przygotuj podgląd draftu"
-    });
-    await waitFor(() => expect(previewButton).toBeEnabled());
-    fireEvent.click(previewButton);
-
-    await waitFor(() => {
-      expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0]).toEqual({
-        handoff: wordpressHandoff(),
-        draft_package: draftPackage(),
-        mode: "dry_run",
-        write_authorization: null,
-        section_overrides: expect.any(Array)
-      });
-    });
-    expect(await screen.findByTestId("draft-preview-feedback")).toHaveTextContent(
-      "Podgląd szkicu jest gotowy"
-    );
-    expect(screen.getByTestId("draft-preview-feedback")).toHaveTextContent(
-      "Nic nie zapisano w WordPressie"
-    );
-    expect(screen.getAllByText(/Ten krok przygotowuje wyłącznie podgląd/).length)
-      .toBeGreaterThan(0);
-    await openWorkflowDetails();
-    expect(screen.queryByRole("link", { name: "Otwórz kanoniczną akcję do review" }))
-      .not.toBeInTheDocument();
-    expect(screen.getByText(/Pełny zapis dokładnej wersji wykonasz w widoku Marketer/))
-      .toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", {
-        name: /Utwórz (?:(?:szkic|draft).*dev|.*dev.*(?:szkic|draft))/i
-      })
-    ).not.toBeInTheDocument();
-  });
-
-  it("shows marketer-safe failure feedback when the dry-run request fails", async () => {
-    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
-      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
-    );
-    vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue({
-      ...wordpressDraftActivationPacket(),
-      human_review_ready: true,
-      audit_ready: true,
-      handoff_ready: true,
-      dry_run_ready: true,
-      handoff_blockers: [],
-      execution_blockers: [],
-      activation_missing_readiness_labels: []
-    });
-    vi.mocked(postContentWorkItemWordPressDraftExecution).mockRejectedValue(
-      new Error("transport failure with technical details")
-    );
-    const client = createWilqQueryClient({
-      defaultOptions: { queries: { retry: false } }
-    });
-    render(
-      <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
-        client={client}
-      />
-    );
-
-    const previewButton = await screen.findByRole("button", {
-      name: "Przygotuj podgląd draftu"
-    });
-    await waitFor(() => expect(previewButton).toBeEnabled());
-    fireEvent.click(previewButton);
-
-    const feedback = await screen.findByTestId("draft-preview-feedback");
-    expect(feedback).toHaveAttribute("role", "alert");
-    expect(feedback).toHaveTextContent("Nie udało się sprawdzić podglądu");
-    expect(feedback).toHaveTextContent("WILQ nie zapisał nic w WordPressie");
-    expect(feedback).not.toHaveTextContent("transport failure");
-    expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0])
-      .toEqual(expect.objectContaining({ mode: "dry_run", write_authorization: null }));
-  });
-
-  it("disables the primary draft preview when API dry-run readiness is blocked", async () => {
+  it("disables technical WordPress dry-runs when API readiness is blocked", async () => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
     );
@@ -1067,14 +831,13 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(
-      await screen.findByRole("button", { name: "Przygotuj podgląd draftu" })
-    ).toBeDisabled();
     await openWorkflowDetails();
     expect(screen.getByRole("button", { name: "Sprawdź podgląd draftu" })).toBeDisabled();
-    for (const button of screen.getAllByRole("button", { name: "Sprawdź tekst szkicu" })) {
-      expect(button).toBeDisabled();
-    }
+    expect(
+      screen.getByRole("button", { name: "Sprawdź payload WordPress bez zapisu" })
+    ).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Przygotuj podgląd draftu" }))
+      .not.toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -1108,9 +871,9 @@ describe("ContentWorkflowSurface", () => {
     const [sectionInput] = await screen.findAllByLabelText("Tekst sekcji Kogo dotyczy BDO");
     fireEvent.change(sectionInput, { target: { value: editedBody } });
     fireEvent.click(
-      screen.getAllByRole("button", {
-        name: "Sprawdź tekst szkicu"
-      })[0]
+      screen.getByRole("button", {
+        name: "Sprawdź payload WordPress bez zapisu"
+      })
     );
 
     await waitFor(() => {
@@ -1227,7 +990,7 @@ describe("ContentWorkflowSurface", () => {
 
 async function openWorkflowDetails() {
   fireEvent.click(await screen.findByRole("button", { name: "Audyt techniczny" }));
-  await screen.findByText("Decyzje operatora");
+  await screen.findByTestId("content-workflow-technical-audit");
 }
 
 function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
@@ -1677,12 +1440,12 @@ function workflowSnapshot({
       sales_brief_result: { brief: salesBrief(), blockers: [] },
       draft_package_result: { draft_package: draftPackage(), blockers: [] }
     },
-    structured_generation: {
-      item: workItem(),
-      structured_generation_result: {
-        contract: structuredDraftGenerationContract(),
-        blockers: []
-      }
+    structured_generation_readiness: {
+      status: "ready",
+      editable_section_headings: ["Kogo dotyczy BDO"],
+      blockers: [],
+      safe_next_step: "Wybierz sekcje zapisanej wersji do poprawy z Codexem.",
+      publish_ready: false
     },
     human_review: {
       item: workItem(),
@@ -2119,294 +1882,107 @@ function wordpressHandoff(): NonNullable<
   };
 }
 
-function structuredDraftGenerationContract() {
-  return {
-    schema_name: "wilq_content_structured_draft_v1" as const,
-    strict_schema: true as const,
-    model_input: {
-      work_item_id: "content_work_item_bdo",
-      language: "pl-PL" as const,
-      draft_kind: "section_draft" as const,
-      title: "BDO dla firm",
-      final_canonical_url: "https://ekologus.pl/bdo/",
-      source_public_url: "https://ekologus.pl/bdo/",
-      preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
-      target_reader: "właściciel firmy",
-      buyer_problem: "nie wie, jak podejść do BDO",
-      buyer_trigger: "zbliża się kontrola",
-      search_intent: "informacyjno-usługowy",
-      service_fit: "obsługa środowiskowa",
-      cta_direction: "Skontaktuj się z Ekologus.",
-      sections: [
+function codexSectionProposalResponse(): ContentCodexSectionProposalResponse {
+  const base = savedDraftRevision();
+  const heading = base.sections[0]?.heading ?? "Kogo dotyczy BDO";
+  const runId = "codex_section_run_bdo_1";
+  const child = {
+    ...base,
+    revision_id: "content_revision_bdo_2",
+    revision_number: 2,
+    base_revision_id: base.revision_id,
+    content_digest: "b".repeat(64),
+    sections: base.sections.map((section, index) =>
+      index === 0
+        ? {
+            ...section,
+            body_markdown:
+              "Sprawdź, czy zakres działalności firmy tworzy obowiązki BDO, a następnie umów konsultację z Ekologus na podstawie dokumentów firmy."
+          }
+        : section
+    ),
+    proposal_metadata: {
+      source: "codex_app_server" as const,
+      codex_run_id: runId,
+      selected_section_headings: [heading],
+      section_lineage: [
         {
-          heading: "Kogo dotyczy BDO",
-          purpose: "Wyjaśnić, kiedy firma powinna sprawdzić obowiązki BDO.",
+          heading,
           evidence_ids: ["ev_gsc_bdo"],
-          draft_notes: ["Nie obiecuj pełnej zgodności bez sprawdzenia przypadku."]
+          claim_ids: ["claim_general_bdo"]
         }
       ],
-      source_facts: [
-        {
-          evidence_id: "ev_gsc_bdo",
-          source_connector: "google_search_console",
-          summary: "GSC pokazuje popyt na temat BDO."
-        }
-      ],
-      knowledge_constraints: [
-        {
-          card_id: "ekologus_evidence_live_connector_requirement",
-          constraint_type: "evidence_requirement" as const,
-          label: "Live evidence i source connector są wymagane",
-          reason: "Brak evidence ID oznacza brak rekomendacji.",
-          evidence_ids: ["ev_content_service_profile_source_facts"]
-        }
-      ],
-      sales_brief_signal_quality: salesBriefSignalQuality(),
-      claims_allowed: [],
-      claim_markers: [],
-      removed_or_blocked_claim_markers: [],
-      claims_removed_or_blocked: [],
-      human_review_questions: ["Czy to brzmi jak Ekologus?"]
+      quality_verdict: "needs_changes" as const,
+      quality_finding_codes: ["weak_cta"],
+      review_scope: "persisted_selected_sections_and_declared_lineage" as const,
+      semantic_review_required: true as const
     },
-    output_schema: {
-      type: "object",
-      additionalProperties: false
-    },
-    system_instruction: "Pisz wyłącznie z przekazanych faktów.",
-    user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
-    publish_ready: false as const
+    created_by: "codex_app_server",
+    created_at: "2026-07-15T18:00:00Z"
   };
-}
+  const dimension = (label: string, status: "pass" | "needs_changes" = "pass") => ({
+    status,
+    label,
+    reason: status === "pass" ? "WILQ nie wykrył problemu." : "Ten obszar wymaga poprawy."
+  });
 
-function salesBriefSignalQuality() {
   return {
-    status: "review_required" as const,
-    status_label: "sygnał użyteczny, ale wymaga review",
-    reason: "Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji człowieka.",
-    evidence_id_count: 2,
-    source_connector_count: 2,
-    source_fact_count: 1,
-    missing_evidence_count: 0,
-    knowledge_constraint_count: 1,
-    review_required_knowledge_card_count: 1,
-    measurement_baseline_ready: true,
-    safe_next_step: "Pokaż brief Wilkowi z ograniczeniami wiedzy."
-  };
-}
-
-function structuredDraftRuntimeResponse({
-  output = null,
-  status = output ? "generated" : "dry_run_ready",
-  externalCallAttempted = Boolean(output)
-}: {
-  output?: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"]["output"];
-  status?: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"]["status"];
-  externalCallAttempted?: boolean;
-} = {}): ContentWorkItemStructuredDraftRuntimeResponse {
-  return {
-    runtime_result: {
-      status,
-      request_payload: {
-        model: "gpt-5",
-        input: [
-          {
-            role: "system",
-            content: "Pisz wyłącznie z przekazanych faktów."
-          },
-          {
-            role: "user",
-            content: "Przygotuj ustrukturyzowany szkic treści dla WILQ."
-          }
-        ],
-        text: {
-          format: {
-            type: "json_schema",
-            name: "wilq_content_structured_draft_v1",
-            strict: true,
-            schema: {
-              type: "object",
-              additionalProperties: false
-            }
-          }
-        },
-        temperature: 0.2,
-        max_output_tokens: 4000
-      },
-      output,
-      external_call_attempted: externalCallAttempted,
-      blockers: []
-    }
-  };
-}
-
-function structuredDraftOutput() {
-  return {
-    draft_kind: "section_draft" as const,
-    language: "pl-PL" as const,
-    title: "BDO dla firm - szkic do sprawdzenia",
-    meta_title: "BDO dla firm - szkic",
-    meta_description: "Wyjaśnienie obowiązków BDO dla firm na podstawie sprawdzonych źródeł.",
-    h1: "BDO dla firm",
-    sections: [
-      {
-        heading: "Kogo dotyczy BDO",
-        body_markdown:
-          "BDO może dotyczyć firm, które wytwarzają odpady albo wprowadzają produkty w opakowaniach. WILQ wskazuje ten fragment jako szkic do sprawdzenia, nie poradę prawną.",
-        evidence_ids: ["ev_gsc_bdo"],
-        claims_used: []
-      }
-    ],
-    faq: ["Czy każda firma musi mieć BDO?"],
-    cta: "Skontaktuj się z Ekologus i sprawdź obowiązki dla swojej firmy.",
-    internal_links: ["https://ekologus.pl/kontakt/"],
-    source_facts_used: ["ev_gsc_bdo"],
-    claims_needing_review: [],
-    forbidden_claims_avoided: ["gwarancja pełnej zgodności z przepisami"],
-    human_review_checklist: [
-      "Sprawdź z ekspertem, czy opis obowiązku BDO jest aktualny.",
-      "Sprawdź, czy CTA pasuje do procesu sprzedaży Ekologus."
-    ],
-    publish_ready: false as const
-  };
-}
-
-function structuredDraftPreviewResponse(): ContentWorkItemStructuredDraftPreviewResponse {
-  const output = structuredDraftOutput();
-  return {
-    preview_result: {
-      preview: {
-        title: output.title,
-        meta_title: output.meta_title,
-        meta_description: output.meta_description,
-        h1: output.h1,
-        sections: output.sections,
-        faq: output.faq,
-        cta: output.cta,
-        internal_links: output.internal_links,
-        source_facts_used: output.source_facts_used,
-        forbidden_claims_avoided: output.forbidden_claims_avoided,
-        human_review_checklist: output.human_review_checklist,
-        publish_ready: false
-      },
-      blockers: []
-    }
-  };
-}
-
-function qualityReviewResponse(): ContentWorkItemQualityReviewResponse {
-  return {
-    item: workItem(),
+    status: "created",
+    run_id: runId,
+    work_item_id: base.work_item_id,
+    base_revision_id: base.revision_id,
+    selected_section_headings: [heading],
+    revision: child,
     quality_review: {
-      review_id: "quality_review_content_work_item_bdo",
-      work_item_id: "content_work_item_bdo",
-      draft_package_id: "draft_package_content_work_item_bdo",
+      review_id: "quality_review_content_revision_bdo_2",
+      work_item_id: base.work_item_id,
+      draft_package_id: base.draft_package_id,
       verdict: "needs_changes",
-      evidence_coverage: {
-        status: "pass",
-        label: "Pokrycie dowodami",
-        reason: "Sekcje wskazują dowody WILQ."
-      },
-      claim_safety: {
-        status: "pass",
-        label: "Bezpieczeństwo twierdzeń",
-        reason: "Szkic nie używa zablokowanych claimów."
-      },
-      duplicate_risk: {
-        status: "pass",
-        label: "Ryzyko duplikacji",
-        reason: "Wybrany temat odświeża istniejący adres."
-      },
-      usefulness: {
-        status: "needs_changes",
-        label: "Użyteczność dla czytelnika",
-        reason: "Szkic mówi, co zrobić dalej, ale CTA wymaga doprecyzowania."
-      },
-      service_fit: {
-        status: "pass",
-        label: "Dopasowanie do usługi",
-        reason: "Treść prowadzi do obsługi środowiskowej Ekologus."
-      },
-      search_intent_fit: {
-        status: "pass",
-        label: "Dopasowanie do intencji",
-        reason: "Szkic odpowiada na pytanie informacyjno-usługowe."
-      },
-      buyer_problem_fit: {
-        status: "pass",
-        label: "Problem kupującego",
-        reason: "Szkic odnosi się do niepewności firmy wokół BDO."
-      },
-      cta_quality: {
-        status: "needs_changes",
-        label: "Jakość CTA",
-        reason: "CTA jest zbyt ogólne i powinno wskazać konkretny następny krok."
-      },
-      factual_precision: {
-        status: "pass",
-        label: "Precyzja faktów",
-        reason: "Szkic używa tylko przekazanych dowodów."
-      },
-      polish_language_quality: {
-        status: "pass",
-        label: "Język polski",
-        reason: "Tekst jest po polsku i czytelny."
-      },
-      internal_link_fit: {
-        status: "pass",
-        label: "Linkowanie wewnętrzne",
-        reason: "Szkic ma link do kontaktu."
-      },
-      measurement_readiness: {
-        status: "pass",
-        label: "Gotowość pomiaru",
-        reason: "Okno pomiaru jest zaplanowane."
-      },
+      evidence_coverage: dimension("Pokrycie dowodami"),
+      claim_safety: dimension("Bezpieczeństwo twierdzeń"),
+      duplicate_risk: dimension("Ryzyko duplikacji"),
+      usefulness: dimension("Użyteczność", "needs_changes"),
+      service_fit: dimension("Dopasowanie do usługi"),
+      search_intent_fit: dimension("Dopasowanie do intencji"),
+      buyer_problem_fit: dimension("Problem kupującego"),
+      cta_quality: dimension("Jakość CTA", "needs_changes"),
+      factual_precision: dimension("Precyzja faktów"),
+      polish_language_quality: dimension("Język polski"),
+      internal_link_fit: dimension("Linkowanie wewnętrzne"),
+      measurement_readiness: dimension("Gotowość pomiaru"),
       blockers: [],
       findings: [
         {
           code: "weak_cta",
           severity: "needs_changes",
           label: "Wzmocnij CTA",
-          reason: "Szkic mówi, co zrobić dalej, ale wezwanie do kontaktu jest za ogólne.",
-          next_step: "Dopisz konkretny następny krok dla klienta.",
-          affected_section: "CTA",
+          reason: "Wezwanie do kontaktu nadal wymaga wskazania konkretnego następnego kroku.",
+          next_step: "Doprecyzuj zakres konsultacji.",
+          affected_section: heading,
           evidence_ids: ["ev_gsc_bdo"],
           source_connectors: ["google_search_console"]
         }
       ],
-      revision_instructions: [
-        {
-          id: "revision_instruction_cta",
-          affected_section: "CTA",
-          change: "Dopisz konkretny następny krok dla klienta",
-          reason: "Połącz CTA z usługą Ekologus i problemem BDO.",
-          required_evidence_ids: ["ev_gsc_bdo"],
-          forbidden_claims_to_avoid: ["gwarancja pełnej zgodności z przepisami"],
-          human_review_checklist_additions: ["Sprawdź, czy CTA pasuje do sprzedaży Ekologus."]
-        }
-      ],
-      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-      source_connectors: ["google_search_console", "wordpress_ekologus"],
-      safe_next_step: "Popraw tylko wskazane CTA i uruchom ocenę jakości ponownie."
-    }
-  };
-}
-
-function revisionPlanResponse(): ContentWorkItemRevisionPlanResponse {
-  return {
-    item: workItem(),
-    revision_plan: {
-      id: "revision_plan_content_work_item_bdo",
-      work_item_id: "content_work_item_bdo",
-      quality_review_id: "quality_review_content_work_item_bdo",
-      status: "ready",
-      draft_revision_allowed: true,
-      instructions: qualityReviewResponse().quality_review.revision_instructions,
-      blockers: [],
-      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-      source_connectors: ["google_search_console", "wordpress_ekologus"],
-      safe_next_step: "Wykonaj tylko wskazane poprawki i uruchom ocenę jakości ponownie."
-    }
+      revision_instructions: [],
+      evidence_ids: ["ev_gsc_bdo"],
+      source_connectors: ["google_search_console"],
+      safe_next_step: "Przeczytaj child revision i wykonaj review człowieka."
+    },
+    quality_review_scope: "persisted_selected_sections_and_declared_lineage",
+    semantic_review_required: true,
+    runtime: {
+      status: "completed",
+      thread_id: "thread_bdo_1",
+      turn_id: "turn_bdo_1",
+      event_methods: ["thread/started", "turn/completed"],
+      item_types: ["agent_message"],
+      external_call_attempted: false
+    },
+    evidence_ids: ["ev_gsc_bdo"],
+    source_connectors: ["google_search_console"],
+    blockers: [],
+    safe_next_step: "Przejdź do review dokładnej wersji 2.",
+    publish_ready: false
   };
 }
 

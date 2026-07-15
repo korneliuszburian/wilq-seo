@@ -21,7 +21,7 @@ def test_diagnostics_derived_content_item_reaches_draft_dry_run_without_publish(
     preflight = snapshot["preflight"]["preflight_verdict"]
     brief = snapshot["sales_brief"]["sales_brief_result"]["brief"]
     draft = snapshot["draft_package"]["draft_package_result"]["draft_package"]
-    contract = snapshot["structured_generation"]["structured_generation_result"]["contract"]
+    contract = _structured_generation_from_snapshot(client, snapshot)["contract"]
 
     _assert_initial_content_gates(item=item, inventory=inventory, preflight=preflight)
     if draft is None:
@@ -189,7 +189,7 @@ def _assert_workflow_build_gates(*, snapshot: dict[str, Any]) -> None:
     assert draft_item["claim_ledger_status"] == "approved"
     assert draft_item["draft_package_status"] == "missing"
 
-    structured_item = snapshot["structured_generation"]["item"]
+    structured_item = snapshot["human_review"]["item"]
     assert structured_item["draft_package_status"] == "ready"
     assert structured_item["human_review_status"] == "missing"
     assert structured_item["audit_status"] == "missing"
@@ -222,7 +222,7 @@ def _assert_claim_ledger(*, snapshot: dict[str, Any]) -> None:
 def _assert_missing_knowledge_blocks_draft(*, snapshot: dict[str, Any]) -> None:
     brief_result = snapshot["sales_brief"]["sales_brief_result"]
     draft_result = snapshot["draft_package"]["draft_package_result"]
-    structured_result = snapshot["structured_generation"]["structured_generation_result"]
+    generation_readiness = snapshot["structured_generation_readiness"]
 
     assert brief_result["brief"] is None
     assert [blocker["code"] for blocker in brief_result["blockers"]] == [
@@ -234,11 +234,12 @@ def _assert_missing_knowledge_blocks_draft(*, snapshot: dict[str, Any]) -> None:
         "preflight_not_draft_allowed",
         "missing_sales_brief",
     }.issubset({blocker["code"] for blocker in draft_result["blockers"]})
-    assert structured_result["contract"] is None
+    assert generation_readiness["status"] == "blocked"
+    assert generation_readiness["editable_section_headings"] == []
     assert {
         "missing_sales_brief",
         "missing_draft_package",
-    }.issubset({blocker["code"] for blocker in structured_result["blockers"]})
+    }.issubset({blocker["code"] for blocker in generation_readiness["blockers"]})
 
 
 def _assert_sales_brief(*, brief: dict[str, Any], item: dict[str, Any]) -> None:
@@ -306,6 +307,25 @@ def _get_snapshot(client: TestClient) -> dict[str, Any]:
     response = client.get("/api/content/work-items/snapshot")
     assert response.status_code == 200
     return cast(dict[str, Any], response.json())
+
+
+def _structured_generation_from_snapshot(
+    client: TestClient,
+    snapshot: dict[str, Any],
+) -> dict[str, Any]:
+    response = _post_json(
+        client,
+        "/api/content/work-items/structured-draft-generation",
+        {
+            "item": snapshot["human_review"]["item"],
+            "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
+            "claim_ledger": snapshot["claim_ledger"],
+            "draft_package": snapshot["draft_package"]["draft_package_result"][
+                "draft_package"
+            ],
+        },
+    )
+    return cast(dict[str, Any], response["structured_generation_result"])
 
 
 def _post_json(client: TestClient, path: str, payload: dict[str, Any]) -> dict[str, Any]:

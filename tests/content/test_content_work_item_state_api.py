@@ -7,6 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from tests.content.test_content_revision_workspace_api import (
+    _structured_generation_from_snapshot,
+)
 from wilq.content.workflow.store import content_workflow_store
 
 
@@ -147,9 +150,14 @@ def test_homepage_work_item_builds_review_required_public_brief_without_publish(
         "knowledge_card_ids"
     ]
 
-    structured = snapshot["structured_generation"]["structured_generation_result"]
-    if structured["contract"] is not None:
-        assert structured["contract"]["publish_ready"] is False
+    generation_readiness = snapshot["structured_generation_readiness"]
+    assert generation_readiness["publish_ready"] is False
+    if generation_readiness["status"] == "ready":
+        assert generation_readiness["editable_section_headings"]
+        assert generation_readiness["blockers"] == []
+    else:
+        assert generation_readiness["editable_section_headings"] == []
+        assert generation_readiness["blockers"]
     handoff = snapshot["wordpress_handoff"]["handoff_result"]
     assert handoff["handoff"] is None
     assert "missing_human_review" in {blocker["code"] for blocker in handoff["blockers"]}
@@ -169,9 +177,7 @@ def test_selected_content_work_item_output_and_quality_state_is_isolated(
     first, second = _first_two_actionable_queue_items(client)
     first_snapshot = _get_selected_snapshot(client, first["work_item_id"])
 
-    contract = first_snapshot["structured_generation"]["structured_generation_result"][
-        "contract"
-    ]
+    contract = _structured_generation_from_snapshot(client, first_snapshot)["contract"]
     output = _structured_output_from_contract(contract)
     preview_response = client.post(
         f"/api/content/work-items/{first['work_item_id']}/structured-draft-preview",
@@ -191,7 +197,7 @@ def test_selected_content_work_item_output_and_quality_state_is_isolated(
     assert wrong_preview_response.status_code == 400
     assert store.load_draft_revision_state(second["work_item_id"]).status == "empty"
 
-    item = first_snapshot["structured_generation"]["item"]
+    item = first_snapshot["human_review"]["item"]
     quality_response = client.post(
         f"/api/content/work-items/{first['work_item_id']}/quality-review",
         json={

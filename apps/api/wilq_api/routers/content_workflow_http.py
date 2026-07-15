@@ -1,5 +1,102 @@
 from __future__ import annotations
 
+from wilq.content.workflow.contracts import (
+    ContentStructuredGenerationReadiness,
+    ContentStructuredGenerationReadinessBlocker,
+    ContentWorkItemBrowserWorkflowSnapshotResponse,
+    ContentWorkItemWorkflowSnapshotResponse,
+)
+
+
+def project_content_work_item_browser_snapshot(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentWorkItemBrowserWorkflowSnapshotResponse:
+    """Expose browser-safe readiness without leaking the server execution contract."""
+
+    generation_result = snapshot.structured_generation.structured_generation_result
+    blockers = [
+        ContentStructuredGenerationReadinessBlocker.model_validate(
+            blocker.model_dump(mode="python")
+        )
+        for blocker in generation_result.blockers
+    ]
+    contract = generation_result.contract
+    if blockers:
+        readiness = ContentStructuredGenerationReadiness(
+            status="blocked",
+            blockers=blockers,
+            safe_next_step=blockers[0].next_step,
+        )
+    elif contract is None:
+        blocker = ContentStructuredGenerationReadinessBlocker(
+            code="missing_structured_draft_contract",
+            label="Brakuje bezpiecznego kontraktu szkicu",
+            reason=(
+                "WILQ nie zbudował jeszcze zamkniętego kontraktu dla sekcji tego "
+                "zadania."
+            ),
+            next_step=(
+                "Uzupełnij brakujące dane wskazane w etapach zakresu i mapy sekcji, "
+                "a potem odśwież zadanie."
+            ),
+        )
+        readiness = ContentStructuredGenerationReadiness(
+            status="blocked",
+            blockers=[blocker],
+            safe_next_step=blocker.next_step,
+        )
+    else:
+        headings = [section.heading for section in contract.model_input.sections]
+        normalized_headings = [heading.strip() for heading in headings]
+        headings_are_editable = (
+            bool(headings)
+            and all(normalized_headings)
+            and len(set(normalized_headings)) == len(normalized_headings)
+        )
+        if headings_are_editable:
+            readiness = ContentStructuredGenerationReadiness(
+                status="ready",
+                editable_section_headings=headings,
+                safe_next_step=(
+                    "Wybierz zapisane sekcje, które Codex ma poprawić, i sprawdź "
+                    "propozycję przed decyzją człowieka."
+                ),
+            )
+        else:
+            blocker = ContentStructuredGenerationReadinessBlocker(
+                code="invalid_editable_sections",
+                label="Mapa sekcji wymaga poprawy",
+                reason=(
+                    "Zapisana mapa nie zawiera jednoznacznych, unikalnych nagłówków "
+                    "sekcji do poprawy."
+                ),
+                next_step=(
+                    "Popraw i zapisz mapę sekcji, a następnie odśwież zadanie."
+                ),
+            )
+            readiness = ContentStructuredGenerationReadiness(
+                status="blocked",
+                blockers=[blocker],
+                safe_next_step=blocker.next_step,
+            )
+
+    return ContentWorkItemBrowserWorkflowSnapshotResponse(
+        freshness_assessment=snapshot.freshness_assessment,
+        candidate=snapshot.candidate,
+        service_profile_context=snapshot.service_profile_context,
+        claim_ledger=snapshot.claim_ledger,
+        preflight=snapshot.preflight,
+        sales_brief=snapshot.sales_brief,
+        draft_package=snapshot.draft_package,
+        structured_generation_readiness=readiness,
+        human_review=snapshot.human_review,
+        wordpress_handoff=snapshot.wordpress_handoff,
+        measurement_window=snapshot.measurement_window,
+        revision_workspace=snapshot.revision_workspace,
+        current_step_id=snapshot.current_step_id,
+        operator_steps=snapshot.operator_steps,
+    )
+
 
 def revision_conflict_next_step(code: str) -> str:
     if code == "apply_in_progress":
@@ -30,4 +127,7 @@ def revision_conflict_next_step(code: str) -> str:
     return "Odśwież snapshot zadania i wybierz istniejącą zapisaną wersję."
 
 
-__all__ = ["revision_conflict_next_step"]
+__all__ = [
+    "project_content_work_item_browser_snapshot",
+    "revision_conflict_next_step",
+]

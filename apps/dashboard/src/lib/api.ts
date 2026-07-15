@@ -13,6 +13,8 @@ import {
   AdsDiagnosticsResponseSchema,
   AhrefsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
+  ContentCodexSectionProposalRequestSchema,
+  ContentCodexSectionProposalResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -92,7 +94,10 @@ import {
   type AdsDiagnosticsResponse,
   type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
+  type ContentCodexSectionProposalRequest,
+  type ContentCodexSectionProposalResponse,
   type ContentDiagnosticsResponse,
+  type ContentDraftRevision,
   type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
   type ContentDraftRevisionDecision,
@@ -171,15 +176,20 @@ import { z } from "zod";
 
 const API_BASE = import.meta.env.VITE_WILQ_API_BASE_URL ?? "http://127.0.0.1:8000";
 const API_TIMEOUT_MS = 30_000;
+const CODEX_PROPOSAL_TIMEOUT_MS = 135_000;
 
 type ApiSchema<T extends z.ZodTypeAny> = T;
 
-async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+async function apiFetch(
+  path: string,
+  init?: RequestInit,
+  timeoutMs: number = API_TIMEOUT_MS
+): Promise<Response> {
   if (typeof AbortController === "undefined") {
     return fetch(`${API_BASE}${path}`, init);
   }
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(`${API_BASE}${path}`, {
       ...init,
@@ -264,13 +274,18 @@ async function apiPostWithConflict<
   path: string,
   successSchema: ApiSchema<TSuccess>,
   conflictSchema: ApiSchema<TConflict>,
-  body: unknown
+  body: unknown,
+  timeoutMs: number = API_TIMEOUT_MS
 ): Promise<z.infer<TSuccess> | z.infer<TConflict>> {
-  const response = await apiFetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
+  const response = await apiFetch(
+    path,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    },
+    timeoutMs
+  );
   if (response.status === 409) {
     return conflictSchema.parse(await response.json());
   }
@@ -428,6 +443,22 @@ export function saveContentWorkItemDraftRevisionReview(
     ContentDraftRevisionReviewResponseSchema,
     ContentDraftRevisionConflictSchema,
     ContentDraftRevisionReviewRequestSchema.parse(request)
+  );
+}
+
+export function postContentWorkItemCodexSectionProposal(
+  request: ContentCodexSectionProposalRequest,
+  workItemId: string,
+  baseRevisionId: string
+): Promise<ContentCodexSectionProposalResponse> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(baseRevisionId)}/codex-proposal`;
+  const parsedRequest = ContentCodexSectionProposalRequestSchema.parse(request);
+  return apiPostWithConflict(
+    path,
+    ContentCodexSectionProposalResponseSchema,
+    ContentCodexSectionProposalResponseSchema,
+    parsedRequest,
+    CODEX_PROPOSAL_TIMEOUT_MS
   );
 }
 
@@ -756,6 +787,9 @@ export type {
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
+  ContentCodexSectionProposalRequest,
+  ContentCodexSectionProposalResponse,
+  ContentDraftRevision,
   ContentDraftRevisionBinding,
   ContentDraftRevisionConflict,
   ContentDraftRevisionDecision,

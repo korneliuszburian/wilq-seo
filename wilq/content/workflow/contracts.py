@@ -557,6 +557,41 @@ class ContentDraftRevisionConflictResponse(BaseModel):
     safe_next_step: str
 
 
+class ContentStructuredGenerationReadinessBlocker(BaseModel):
+    code: str
+    label: str
+    reason: str
+    next_step: str
+
+
+class ContentStructuredGenerationReadiness(BaseModel):
+    status: Literal["ready", "blocked"]
+    editable_section_headings: list[str] = Field(default_factory=list)
+    blockers: list[ContentStructuredGenerationReadinessBlocker] = Field(
+        default_factory=list
+    )
+    safe_next_step: str
+    publish_ready: Literal[False] = False
+
+    @model_validator(mode="after")
+    def require_fail_closed_state(self) -> ContentStructuredGenerationReadiness:
+        headings = [heading.strip() for heading in self.editable_section_headings]
+        if any(not heading for heading in headings):
+            raise ValueError("Editable section headings cannot contain blank values.")
+        if len(set(headings)) != len(headings):
+            raise ValueError("Editable section headings must be unique.")
+        if self.status == "ready":
+            if not headings or self.blockers:
+                raise ValueError(
+                    "Ready structured generation requires headings and no blockers."
+                )
+        elif headings or not self.blockers:
+            raise ValueError(
+                "Blocked structured generation requires blockers and no headings."
+            )
+        return self
+
+
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     response_type: Literal["workflow_snapshot"] = "workflow_snapshot"
     freshness_assessment: ContentFreshnessAssessment
@@ -587,6 +622,36 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
         return self
 
 
+class ContentWorkItemBrowserWorkflowSnapshotResponse(BaseModel):
+    response_type: Literal["workflow_snapshot"] = "workflow_snapshot"
+    freshness_assessment: ContentFreshnessAssessment
+    candidate: ContentWorkItemQueueCandidate
+    service_profile_context: ContentWorkItemServiceProfileContext = Field(
+        default_factory=ContentWorkItemServiceProfileContext.not_evaluated
+    )
+    claim_ledger: ContentClaimLedger
+    preflight: ContentWorkItemPreflightResponse
+    sales_brief: ContentWorkItemSalesBriefResponse
+    draft_package: ContentWorkItemDraftPackageResponse
+    structured_generation_readiness: ContentStructuredGenerationReadiness
+    human_review: ContentWorkItemHumanReviewResponse
+    wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
+    measurement_window: ContentWorkItemMeasurementWindowResponse
+    revision_workspace: ContentDraftRevisionWorkspace
+    current_step_id: workflow_steps.ContentWorkflowOperatorStepId
+    operator_steps: workflow_steps.ContentWorkflowOperatorSteps
+
+    @model_validator(mode="after")
+    def require_canonical_operator_steps(
+        self,
+    ) -> ContentWorkItemBrowserWorkflowSnapshotResponse:
+        workflow_steps.validate_content_workflow_operator_steps(
+            current_step_id=self.current_step_id,
+            steps=self.operator_steps,
+        )
+        return self
+
+
 class ContentWorkItemBlockedSnapshotResponse(BaseModel):
     response_type: Literal["blocked_snapshot"] = "blocked_snapshot"
     freshness_assessment: ContentFreshnessAssessment
@@ -610,6 +675,9 @@ class ContentWorkItemBlockedSnapshotResponse(BaseModel):
 
 ContentWorkItemSnapshotResponse = (
     ContentWorkItemWorkflowSnapshotResponse | ContentWorkItemBlockedSnapshotResponse
+)
+ContentWorkItemBrowserSnapshotResponse = (
+    ContentWorkItemBrowserWorkflowSnapshotResponse | ContentWorkItemBlockedSnapshotResponse
 )
 
 

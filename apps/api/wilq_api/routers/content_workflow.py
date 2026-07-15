@@ -6,7 +6,10 @@ from fastapi.responses import JSONResponse
 from apps.api.wilq_api.routers.content_codex_proposal import (
     register_content_codex_proposal_route,
 )
-from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
+from apps.api.wilq_api.routers.content_workflow_http import (
+    project_content_work_item_browser_snapshot,
+    revision_conflict_next_step,
+)
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringProfile,
@@ -52,6 +55,9 @@ from wilq.content.workflow.contracts import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
     ContentWordPressExistingDraftUpdateReadinessResponse,
+    ContentWorkItemBlockedSnapshotResponse,
+    ContentWorkItemBrowserSnapshotResponse,
+    ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsRequest,
@@ -220,31 +226,36 @@ def content_work_item_queue() -> ContentWorkItemQueueResponse:
 
 @router.get(
     "/api/content/work-items/snapshot",
-    response_model=ContentWorkItemWorkflowSnapshotResponse,
+    response_model=ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
-def content_work_item_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
+def content_work_item_snapshot() -> ContentWorkItemBrowserWorkflowSnapshotResponse:
     diagnostics = build_content_diagnostics_cached()
     snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
     work_item_id = snapshot.preflight.item.id
     store = content_workflow_store()
     review = store.latest_human_review(work_item_id)
     audit = None if review is None else store.latest_audit_for_review(review.id)
-    return build_content_work_item_diagnostics_snapshot_response(
-        diagnostics,
-        human_review=review,
-        audit=audit,
-        revision_state=store.load_draft_revision_state(work_item_id),
+    return project_content_work_item_browser_snapshot(
+        build_content_work_item_diagnostics_snapshot_response(
+            diagnostics,
+            human_review=review,
+            audit=audit,
+            revision_state=store.load_draft_revision_state(work_item_id),
+        )
     )
 
 
 @router.get(
     "/api/content/work-items/{work_item_id}/snapshot",
-    response_model=ContentWorkItemSnapshotResponse,
+    response_model=ContentWorkItemBrowserSnapshotResponse,
 )
 def content_work_item_snapshot_for_selected_item(
     work_item_id: str,
-) -> ContentWorkItemSnapshotResponse:
-    return _snapshot_for_work_item_or_blocked_or_404(work_item_id)
+) -> ContentWorkItemBrowserSnapshotResponse:
+    snapshot = _snapshot_for_work_item_or_blocked_or_404(work_item_id)
+    if isinstance(snapshot, ContentWorkItemBlockedSnapshotResponse):
+        return snapshot
+    return project_content_work_item_browser_snapshot(snapshot)
 
 
 @router.get(

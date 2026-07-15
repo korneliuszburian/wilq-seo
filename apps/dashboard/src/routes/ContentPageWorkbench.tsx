@@ -1,18 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
-  getContentWordPressExistingDraftUpdateReadiness,
+  type ContentCodexSectionProposalResponse,
+  type ContentDraftRevision,
   type ContentDraftRevisionConflict,
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionSection,
   type ContentOpportunityEnrichment,
-  type ContentWorkItemQueueResponse,
-  type ContentWorkItemWordPressDraftExecutionResponse
+  type ContentWorkItemQueueResponse
 } from "../lib/api";
 import { AcfCurrentVsProposedPanel } from "./AcfCurrentVsProposedPanel";
 import { ContentDevTargetColumn } from "./ContentDevTargetColumn";
+import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
 import { ContentFreshnessBanner } from "./ContentWorkflowBoundaryStates";
 import { ContentMapConnectors } from "./ContentMapPrimitives";
 import { ContentPublicPageColumn } from "./ContentPublicPageColumn";
@@ -52,13 +52,13 @@ type ContentPageWorkbenchActions = {
     notes: string,
     checkedItems: string[]
   ) => void;
-  executionPending: boolean;
-  executionError: Error | null;
-  executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
-  runExecutionDryRunWithSections: (sections: Array<{ heading: string; body_markdown: string; evidence_ids: string[] }>) => void;
+  codexProposalPending: boolean;
+  codexProposalError: Error | null;
+  codexProposalResult: ContentCodexSectionProposalResponse | null;
+  codexProposalBaseRevision: ContentDraftRevision | null;
+  runCodexSectionProposal: (selectedSectionHeadings: string[]) => void;
+  refreshCodexProposalWorkspace: () => void;
 };
-
-type DraftPreviewTrigger = "editor" | "preview";
 
 function unique(values: string[]) {
   return [...new Set(values)];
@@ -89,15 +89,6 @@ export function ContentPageWorkbench({
   const [selectedDevPageLink, setSelectedDevPageLink] = useState<string | null>(null);
   const devPage = selectDevPage(profile, item, selectedDevPageLink);
   const draftReadback = draftActivationPacket.data?.draft_readback ?? null;
-  const dryRunReady = Boolean(
-    draftActivationPacket.data?.dry_run_ready &&
-      draftActivationPacket.data.execution_blockers.length === 0
-  );
-  const existingDraftUpdateReadiness = useQuery({
-    queryKey: ["content-workflow", "existing-draft-update-readiness", item.id],
-    queryFn: () => getContentWordPressExistingDraftUpdateReadiness(item.id),
-    enabled: activeStepId === "draft"
-  });
   const activeCandidate = queue.candidates.find(
     (candidate) => candidate.work_item_id === item.id
   );
@@ -124,7 +115,6 @@ export function ContentPageWorkbench({
     texts: Record<string, string>;
   }>({ sourceId: null, texts: {} });
   const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
-  const [draftPreviewTrigger, setDraftPreviewTrigger] = useState<DraftPreviewTrigger | null>(null);
   const [reviewDecision, setReviewDecision] = useState<ContentDraftRevisionDecision>(
     "needs_changes"
   );
@@ -158,6 +148,10 @@ export function ContentPageWorkbench({
   const hasEmptyRevisionSection = sectionOverrides.some(
     (section) => section.body_markdown.trim().length === 0
   );
+  const hasUnsavedRevisionChanges = revisionSections.some((section) => {
+    const currentText = sectionTexts[sectionOverrideKey(section.heading)] ?? section.body_markdown;
+    return currentText !== section.body_markdown;
+  });
   const reviewCheckedItems = [
     reviewChecks.exactContentRead ? "Przeczytano dokładną treść tej wersji." : null,
     reviewChecks.evidenceChecked ? "Sprawdzono dowody przypisane do tej wersji." : null
@@ -177,10 +171,11 @@ export function ContentPageWorkbench({
     : sourceTitle || item.topic;
   const queryChips = queryChipsForWorkbench(data, enrichment, activeCandidate);
   const metricTiles = contentMetricTilesForWorkbench(item, devPage);
-  const runDraftPreview = (trigger: DraftPreviewTrigger) => {
-    setDraftPreviewTrigger(trigger);
-    actions.runExecutionDryRunWithSections(sectionOverrides);
-  };
+  const proposalCommittedForLatest = Boolean(
+    latestRevision &&
+      actions.codexProposalResult?.revision?.base_revision_id === latestRevision.revision_id &&
+      ["created", "idempotent"].includes(actions.codexProposalResult.status)
+  );
   return (
     <section className="mb-5" data-active-workspace={activeStepId}>
       <ContentFreshnessBanner assessment={queue.freshness_assessment} />
@@ -323,29 +318,15 @@ export function ContentPageWorkbench({
                         !revisionWorkspace.can_save ||
                         !sectionOverrides.length ||
                         hasEmptyRevisionSection ||
-                        actions.revisionSavePending
+                        actions.revisionSavePending ||
+                        actions.codexProposalPending ||
+                        proposalCommittedForLatest
                       }
                       className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {actions.revisionSavePending
                         ? "Zapisuję wersję..."
                         : "Zapisz wersję do review"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => runDraftPreview("editor")}
-                      disabled={
-                        !sectionOverrides.length ||
-                        hasEmptyRevisionSection ||
-                        !dryRunReady ||
-                        actions.executionPending
-                      }
-                      aria-controls="draft-preview-feedback"
-                      className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-white px-4 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {actions.executionPending && draftPreviewTrigger === "editor"
-                        ? "Sprawdzam tekst..."
-                        : "Sprawdź tekst szkicu"}
                     </button>
                     <button
                       type="button"
@@ -365,9 +346,18 @@ export function ContentPageWorkbench({
                     error={actions.revisionSaveError}
                     kind="save"
                   />
-                  {draftPreviewTrigger === "editor" ? (
-                    <DraftPreviewFeedback actions={actions} />
-                  ) : null}
+                  <ContentCodexSectionProposalPanel
+                    workItemId={item.id}
+                    workspace={revisionWorkspace}
+                    generationReadiness={data.structuredGenerationReadiness}
+                    hasUnsavedChanges={hasUnsavedRevisionChanges}
+                    pending={actions.codexProposalPending}
+                    error={actions.codexProposalError}
+                    result={actions.codexProposalResult}
+                    submittedBaseRevision={actions.codexProposalBaseRevision}
+                    onSubmit={actions.runCodexSectionProposal}
+                    onRefresh={actions.refreshCodexProposalWorkspace}
+                  />
                 </div>
               ) : (
                 <p className="mt-4 rounded-md border border-wait/25 bg-wait/10 p-3 text-sm leading-6 text-slate-700">
@@ -606,60 +596,6 @@ export function ContentPageWorkbench({
         {activeStepId === "draft" ? (
           <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
           <div className="rounded-md border border-line bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-ink">Podgląd na devie</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Sprawdź propozycję na stronie roboczej i popraw sekcje przed review. Nic nie zostanie opublikowane.
-            </p>
-            <button
-              type="button"
-              onClick={() => runDraftPreview("preview")}
-              disabled={
-                !sectionOverrides.length ||
-                hasEmptyRevisionSection ||
-                !dryRunReady ||
-                actions.executionPending
-              }
-              aria-controls="draft-preview-feedback"
-              className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {actions.executionPending && draftPreviewTrigger === "preview"
-                ? "Przygotowuję podgląd..."
-                : "Przygotuj podgląd draftu"}
-              <ArrowRight aria-hidden="true" size={16} />
-            </button>
-            {draftPreviewTrigger === "preview" ? (
-              <DraftPreviewFeedback actions={actions} />
-            ) : null}
-            <p className="mt-3 text-xs leading-5 text-slate-500">
-              Ten krok przygotowuje wyłącznie podgląd. Zapis wymaga osobnego zatwierdzenia.
-            </p>
-            {existingDraftUpdateReadiness.data ? (
-              <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-slate-700">
-                <div className="font-semibold text-wait">Aktualizacja istniejącego draftu</div>
-                <p className="mt-1">
-                  {existingDraftUpdateReadiness.data.blockers[0]?.label ??
-                    "Przygotowanie aktualizacji wymaga osobnego review."}
-                </p>
-                {existingDraftUpdateReadiness.data.section_diff_preview.length ? (
-                  <div className="mt-2 space-y-2">
-                    {existingDraftUpdateReadiness.data.section_diff_preview.map((row) => (
-                      <div key={row.heading} className="rounded border border-wait/20 bg-white p-2">
-                        <div className="font-semibold text-ink">{row.heading}</div>
-                        <div className="mt-1 text-slate-500">
-                          Aktualne: {row.current_summary || "brak sekcji na devie"}
-                        </div>
-                        <div className="text-slate-700">
-                          Proponowane: {row.proposed_summary || "brak propozycji"}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="rounded-md border border-line bg-white p-4 shadow-sm">
             <h2 className="text-base font-semibold text-ink">Źródła i twierdzenia</h2>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-md border border-line bg-surface p-3">
@@ -746,69 +682,6 @@ function RevisionMutationFeedback({
         {kind === "save" ? "Nie udało się zapisać wersji" : "Nie udało się zapisać decyzji"}
       </p>
       <p className="mt-1">Spróbuj ponownie. WILQ nie zmienił zapisanej wersji.</p>
-    </div>
-  );
-}
-
-function DraftPreviewFeedback({ actions }: { actions: ContentPageWorkbenchActions }) {
-  if (actions.executionPending) {
-    return (
-      <div
-        id="draft-preview-feedback"
-        data-testid="draft-preview-feedback"
-        role="status"
-        className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm leading-6 text-slate-700"
-      >
-        WILQ sprawdza podgląd w trybie bez zapisu.
-      </div>
-    );
-  }
-  if (actions.executionError) {
-    return (
-      <div
-        id="draft-preview-feedback"
-        data-testid="draft-preview-feedback"
-        role="alert"
-        className="mt-3 rounded-md border border-danger/30 bg-danger/10 p-3 text-sm leading-6 text-slate-700"
-      >
-        <p className="font-semibold text-danger">Nie udało się sprawdzić podglądu</p>
-        <p className="mt-1">Spróbuj ponownie. WILQ nie zapisał nic w WordPressie.</p>
-      </div>
-    );
-  }
-
-  const result = actions.executionResult;
-  if (!result) return null;
-  if (result.status === "dry_run_ready" && !result.external_write_attempted) {
-    return (
-      <div
-        id="draft-preview-feedback"
-        data-testid="draft-preview-feedback"
-        role="status"
-        className="mt-3 rounded-md border border-success/30 bg-success/10 p-3 text-sm leading-6 text-slate-700"
-      >
-        <p className="font-semibold text-success">Podgląd szkicu jest gotowy</p>
-        <p className="mt-1">WILQ sprawdził propozycję bez wykonywania zapisu. Nic nie zapisano w WordPressie.</p>
-      </div>
-    );
-  }
-
-  const blocker = result.blockers[0];
-  return (
-    <div
-      id="draft-preview-feedback"
-      data-testid="draft-preview-feedback"
-      role="alert"
-      className="mt-3 rounded-md border border-danger/30 bg-danger/10 p-3 text-sm leading-6 text-slate-700"
-    >
-      <p className="font-semibold text-danger">
-        {blocker?.label ?? "Podgląd wymaga sprawdzenia technicznego"}
-      </p>
-      <p className="mt-1">
-        {blocker?.reason ??
-          "WILQ nie potwierdził bezpiecznego wyniku sprawdzenia. Nie przechodź do zapisu."}
-      </p>
-      {blocker?.next_step ? <p className="mt-1">Następny krok: {blocker.next_step}</p> : null}
     </div>
   );
 }
