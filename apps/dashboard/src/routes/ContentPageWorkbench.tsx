@@ -18,6 +18,7 @@ import { ContentMapConnectors } from "./ContentMapPrimitives";
 import { ContentPublicPageColumn } from "./ContentPublicPageColumn";
 import { ContentSignalColumn } from "./ContentSignalColumn";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
+import { ContentWordPressDraftActionWizard } from "./ContentWordPressDraftActionWizard";
 import { ServiceProfileDecisionStrip } from "./ServiceProfileDecisionStrip";
 import {
   blockedClaimsForWorkbench,
@@ -82,6 +83,8 @@ export function ContentPageWorkbench({
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
+  const wordpressHandoff = data.wordpressHandoff.handoff_result.handoff;
+  const revisionBinding = wordpressHandoff?.revision_binding ?? null;
   const profile = authoringProfile.data ?? null;
   const [selectedDevPageLink, setSelectedDevPageLink] = useState<string | null>(null);
   const devPage = selectDevPage(profile, item, selectedDevPageLink);
@@ -589,27 +592,14 @@ export function ContentPageWorkbench({
           ) : null}
 
           {activeStepId === "dev_draft" ? (
-            <section className="rounded-md border border-wait/30 bg-wait/10 p-4" aria-labelledby="dev-draft-workspace-title">
-              <h2 id="dev-draft-workspace-title" className="text-base font-semibold text-ink">
-                Szkic na devie
-              </h2>
-              {revisionWorkspace.status === "approved" && latestRevision ? (
-                <div className="mt-2 text-sm leading-6 text-slate-700">
-                  <p className="font-semibold text-success">
-                    Wersja {latestRevision.revision_number} została zaakceptowana.
-                  </p>
-                  <p className="mt-1">
-                    Zapis na dev pozostaje zablokowany do osobnego podglądu i zatwierdzenia
-                    zapisu tej samej wersji wyłącznie jako szkic.
-                  </p>
-                </div>
-              ) : (
-                <p className="mt-2 text-sm leading-6 text-slate-700">
-                  Przekazanie do WordPress pozostaje draft-only i wymaga akceptacji dokładnej
-                  wersji oraz śladu audytowego.
-                </p>
-              )}
-            </section>
+            <ContentWordPressDraftActionWizard
+              key={`${revisionBinding?.work_item_id ?? item.id}:${revisionBinding?.revision_id ?? "missing"}:${revisionBinding?.content_digest ?? "missing"}`}
+              actionId={draftActivationPacket.data?.action_id ?? null}
+              binding={revisionBinding}
+              draftReadback={draftReadback}
+              handoffBlocker={data.wordpressHandoff.handoff_result.blockers[0] ?? null}
+              revisionNumber={latestRevision?.revision_number ?? null}
+            />
           ) : null}
         </div>
 

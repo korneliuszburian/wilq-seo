@@ -33,9 +33,9 @@ treści niż ta, którą przeczytał człowiek.
 ## Kanoniczny przebieg treści
 
 ```text
-wybór strony i usługi
-→ zakres i cel
-→ plan sekcji + dowody
+wybór strony, usługi, sekcji, intencji i CTA
+→ zakres, cel i evidence-backed opportunity
+→ plan sekcji + claim ledger + dowody
 → zapisana immutable revision
 → exact-version human review
 → revision-bound podgląd draftu WordPress
@@ -58,6 +58,11 @@ developera:
 - w 30 sekund zrozumieć decyzję, dowody, freshness, blocker i następny krok;
 - wybrać stronę, usługę, intencję, CTA i zakres, a następnie zobaczyć mapę
   sekcji odzwierciedlającą stronę;
+- zobaczyć tylko metryki, zapytania i keyword/Ads signals, które mają aktualne
+  source connectors, evidence IDs i freshness; brak danych ma blokować wniosek,
+  a nie tworzyć fikcyjny wolumen lub „SEO score”;
+- rozumieć, dlaczego każda ważna teza, nagłówek i CTA znalazły się w tekście,
+  z rozdzieleniem approved facts, review-required claims i pomysłów;
 - przejść krótki wizard plan → draft/Codex → exact review → draft WordPress,
   bez rozwijania ściany paneli i bez utraty kontekstu;
 - zapisywać, wznawiać, porównywać i poprawiać dokładne wersje treści wraz z
@@ -89,9 +94,15 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
   title/sections i odrzucają legacy/v2/tamper przed adapterem. Zgoda bindingu
   jest atomowo jednorazowa, więc równoległy apply i replay nie tworzą drugiego
   draftu. Durable start, atomowy outcome i lokalne readback reconciliation
-  domykają przerwany proces bez retry write. `dev_draft` pozostaje zablokowany
-  w dashboardzie, bo UI nie prowadzi jeszcze exact ActionObject chain w
-  kontekście wybranej rewizji.
+  domykają przerwany proces bez retry write. `dev_draft` prowadzi teraz zwarty
+  inline ActionObject chain w kontekście exact revision; typed konflikt
+  zatrzymuje apply bez retry, a syntetyczny browser proof nie wykonuje realnego
+  WordPress write.
+- Realna użyteczność tworzenia treści jest obecnie oceniona na około 5/10;
+  8/10 dotyczy wyłącznie bezpieczeństwa exact-version handoffu. CTA marketera
+  uruchamia jeszcze WordPress dry-run zamiast content quality review, a obecny
+  builder Structured Outputs nie serializuje bogatego `model_input` do requestu
+  modelu. Nie ma więc dowodu grounded copy.
 - Live content queue jest świeża, ale ma 2 pozycje i 1 wykonalną przy minimum 3.
   Service Profile pozostaje `source_backed_review_required`.
 
@@ -102,13 +113,17 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
    zweryfikowane.
 2. `wilq-seo-r564.9` jest zweryfikowany: revision-bound handoff, exact
    ActionObject chain i syntetyczny draft-only apply bez publikacji.
-3. Zbudować w `/content-workflow` zwarty inline multi-step dla wybranej rewizji:
-   preview → review → confirm → apply, z jednym CTA i typed blockerem na krok.
-4. Następnie wykonać jeden bounded server-side lab WILQ API → Codex app-server.
+3. `wilq-seo-r564.10` jest zweryfikowany: zwarty inline multi-step prowadzi
+   exact revision przez preview → review → confirm → impact → apply, z jednym
+   aktywnym CTA i typed blockerem bez retry.
+4. Wykonać jeden bounded server-side lab WILQ API → Codex app-server.
    Pierwszy zakres: propozycja child revision i strumień statusu, bez
-   automatycznej akceptacji i bez vendor write.
-5. Kontynuować usefulness-first rozwój treści: wybór strony/usługi, mapowanie
-   sekcji, dostęp do wersji, odzwierciedlenie strony i realny Wilku UAT.
+   automatycznej akceptacji i bez vendor write. Propozycja ma być związana z
+   wybraną usługą/sekcją, przekazać pełny API-owned model input, zachować
+   evidence/claim lineage i przejść automatyczne quality review.
+5. Kontynuować usefulness-first rozwój treści: jawny wybór strony/usługi/
+   sekcji/intencji/CTA, metryki i słowa kluczowe tylko z aktualnych typed
+   źródeł, porównanie wersji, bibliotekę treści oraz realny Wilku UAT.
 6. Po każdym slice ponownie odczytać `bd ready --json` i
    `bd list --status=open --json`; nie wracać do ukończonych zakresów bez nowego
    dowodu regresji.
@@ -144,8 +159,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 - Owner/Wilku: realna sesja UAT albo jawne odroczenie z ryzykiem.
 - Dane: za mała gęstość bezpiecznej kolejki treści.
 - Kontrakt zewnętrzny: uwierzytelniony actor/tenant przed produkcyjnym użyciem.
-- Techniczne, nadal wykonywalne repo-local: inline revision-bound ActionObject
-  UX, następnie ograniczony adapter Codex app-server.
+- Techniczne, nadal wykonywalne repo-local: ograniczony adapter Codex
+  app-server, potem evidence-backed child revision dla wybranej usługi/sekcji
+  i użytecznościowy proof paczki tekstów.
 
 ## Outcome
 

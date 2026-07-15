@@ -22,6 +22,7 @@ import {
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   postContentWorkItemWordPressDraftHandoff,
+  previewAction,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
   saveContentWorkItemSnapshotAudit,
@@ -305,82 +306,130 @@ describe("content workflow API helpers", () => {
     ]);
   });
 
-  it("posts typed WordPress apply bindings through the canonical action route", async () => {
+  it("keeps the exact WordPress binding in preview and parses a typed apply conflict", async () => {
+    const binding = {
+      work_item_id: "content_work_item_bdo",
+      handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+      revision_id: "content_revision_bdo_1",
+      content_digest: "a".repeat(64),
+      draft_package_id: "draft_package_content_work_item_bdo",
+      draft_package_digest: "b".repeat(64),
+      approval_decision_id: "content_revision_decision_bdo_1",
+      final_canonical_url: "https://ekologus.pl/bdo/"
+    };
     const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-      expect(new URL(String(url)).pathname).toBe(
-        "/api/actions/act_apply_wordpress_draft_handoff/apply"
-      );
+      const path = new URL(String(url)).pathname;
       expect(init?.method).toBe("POST");
+      if (path.endsWith("/preview")) {
+        expect(JSON.parse(String(init?.body))).toEqual({
+          requested_by: "operator_local_dashboard",
+          max_items: 8,
+          wordpress_draft: binding
+        });
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            action_id: "act_apply_wordpress_draft_handoff",
+            status: "preview_ready",
+            dry_run: true,
+            mutation_allowed: false,
+            preview_items: [],
+            preview_items_total: 0,
+            omitted_items: 0,
+            blockers: [],
+            audit_event: {
+              id: "audit_preview_exact_revision",
+              action_id: "act_apply_wordpress_draft_handoff",
+              event_type: "action_preview_generated",
+              actor: "operator_local_dashboard",
+              summary: "Podgląd dokładnej wersji.",
+              created_at: "2026-07-11T00:00:00Z",
+              evidence_ids: [],
+              details: { wordpress_draft_binding: binding },
+              redacted: true
+            },
+            review_gate: {}
+          })
+        } as Response;
+      }
+      expect(path).toBe("/api/actions/act_apply_wordpress_draft_handoff/apply");
       expect(JSON.parse(String(init?.body))).toEqual({
         confirm: true,
         confirmed_by: "operator_local_dashboard",
-        wordpress_draft: {
-          work_item_id: "content_work_item_bdo",
-          handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
-          revision_id: "content_revision_bdo_1",
-          content_digest: "a".repeat(64),
-          draft_package_id: "draft_package_content_work_item_bdo",
-          draft_package_digest: "b".repeat(64),
-          approval_decision_id: "content_revision_decision_bdo_1",
-          final_canonical_url: "https://ekologus.pl/bdo/"
-        }
+        wordpress_draft: binding
       });
+      const blocker = {
+        code: "wordpress_revision_binding_mismatch",
+        label: "Wersja szkicu zmieniła się",
+        reason: "Binding nie wskazuje aktualnie zaakceptowanej wersji.",
+        next_step: "Wróć do review aktualnej wersji."
+      };
       return {
-        ok: true,
+        ok: false,
+        status: 409,
         json: async () => ({
-          action_id: "act_apply_wordpress_draft_handoff",
-          applied: false,
-          status: "blocked",
-          audit_event: {
-            id: "audit_apply_blocked",
+          detail: {
             action_id: "act_apply_wordpress_draft_handoff",
-            event_type: "action_apply_blocked",
-            actor: "operator_local_dashboard",
-            summary: "Apply zablokowany przed zapisem.",
-            created_at: "2026-07-11T00:00:00Z",
-            evidence_ids: [],
-            redacted: true
-          },
-          mutation_audit: {
-            id: "mutation_audit_blocked",
-            action_id: "act_apply_wordpress_draft_handoff",
-            connector: "wordpress_ekologus",
-            mutation_adapter: "wordpress_draft_execution_boundary",
+            applied: false,
             status: "blocked",
-            summary: "Blokada przed adapterem.",
-            mutation_attempted: false,
-            adapter_reached: false,
-            external_write_attempted: false,
-            actor: "operator_local_dashboard",
-            created_at: "2026-07-11T00:00:00Z",
-            audit_event_id: "audit_apply_blocked",
-            evidence_ids: [],
-            blockers: [],
-            redacted: true
+            audit_event: {
+              id: "audit_apply_blocked",
+              action_id: "act_apply_wordpress_draft_handoff",
+              event_type: "action_apply_blocked",
+              actor: "operator_local_dashboard",
+              summary: "Apply zablokowany przed zapisem.",
+              created_at: "2026-07-11T00:00:01Z",
+              evidence_ids: [],
+              details: {
+                wordpress_draft_binding: binding,
+                wordpress_revision_blockers: [blocker]
+              },
+              redacted: true
+            },
+            mutation_audit: {
+              id: "mutation_audit_blocked",
+              action_id: "act_apply_wordpress_draft_handoff",
+              connector: "wordpress_ekologus",
+              mutation_adapter: "wordpress_draft_execution_boundary",
+              status: "blocked",
+              summary: "Blokada przed adapterem.",
+              mutation_attempted: false,
+              adapter_reached: false,
+              external_write_attempted: false,
+              actor: "operator_local_dashboard",
+              created_at: "2026-07-11T00:00:01Z",
+              audit_event_id: "audit_apply_blocked",
+              evidence_ids: [],
+              blockers: [blocker.code],
+              wordpress_draft_binding: binding,
+              wordpress_revision_blockers: [blocker],
+              redacted: true
+            },
+            errors: [blocker.reason],
+            wordpress_revision_blockers: [blocker]
           },
-          errors: ["Brakuje potwierdzenia ActionObject."]
         })
       } as Response;
     });
     vi.stubGlobal("fetch", fetchMock);
 
+    await previewAction("act_apply_wordpress_draft_handoff", {
+      requested_by: "operator_local_dashboard",
+      max_items: 8,
+      wordpress_draft: binding
+    });
     const result = await applyAction("act_apply_wordpress_draft_handoff", {
       confirm: true,
       confirmed_by: "operator_local_dashboard",
-      wordpress_draft: {
-        work_item_id: "content_work_item_bdo",
-        handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
-        revision_id: "content_revision_bdo_1",
-        content_digest: "a".repeat(64),
-        draft_package_id: "draft_package_content_work_item_bdo",
-        draft_package_digest: "b".repeat(64),
-        approval_decision_id: "content_revision_decision_bdo_1",
-        final_canonical_url: "https://ekologus.pl/bdo/"
-      }
+      wordpress_draft: binding
     });
 
     expect(result.status).toBe("blocked");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.wordpress_revision_blockers[0]?.code).toBe(
+      "wordpress_revision_binding_mismatch"
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("gets the action mutation readiness summary through a typed helper", async () => {

@@ -5,20 +5,21 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-`wilq-seo-r564.9` domknął API seam exact revision → WordPress draft:
-immutable handoff, ten sam binding w preview/review/confirm/impact/apply,
-typed blocker i fail-close legacy review/audit. Syntetyczny adapter dostał
-dokładnie zatwierdzony tekst; v2, manipulacje, równoległy apply i replay
-zatrzymały się przed adapterem. Jednorazowa zgoda jest atomowo konsumowana, a
-sekretopodobne wartości w lineage są redagowane przed audytem. Durable start i
-atomowy outcome chronią crash window; przerwany claim ma lokalne, readbackowe
-reconciliation bez ponowienia write.
-Następny P0 ma udostępnić ten sam kontrakt człowiekowi jako zwarty inline
-multi-step w `/content-workflow` zamiast ogólnego linku do akcji bez kontekstu.
+`wilq-seo-r564.10` domknął zwarty exact-revision flow człowieka w
+`/content-workflow`: podgląd, review, potwierdzenie, kontrola bezpieczeństwa i
+draft-only apply używają jednego API-owned bindingu. Tylko aktywny etap jest
+rozwinięty. Resume czyta najnowsze uporządkowane eventy tej wersji, a typed
+konflikt lub terminalny blocker zatrzymuje przebieg bez retry. Syntetyczny
+browser proof przechodzi cały flow bez połączenia z WordPressem.
 
-Po udowodnieniu rewizji następny bounded research/prototype to server-side
-handshake WILQ API → Codex app-server korzystający z istniejącego `codex login`
-przez ChatGPT.
+Następny bounded P0 to server-side handshake WILQ API → Codex app-server
+korzystający z istniejącego `codex login` przez ChatGPT. Pierwszy wynik ma być
+propozycją child revision dla wybranej usługi i sekcji, ze statusem przebiegu,
+lineage dowodów i bez samodzielnego review lub zapisu WordPress. Obecny builder
+Structured Outputs tworzy pełny `model_input`, ale wysyła modelowi tylko dwie
+instrukcje; `claim_markers`, source facts i sekcje nie docierają do runtime'u.
+Nie traktuj tej ścieżki jako grounded generation ani nie utrwalaj jej jako
+fallback. Nowy lab musi przenieść cały typed input i przejść quality review.
 Browser nie rozmawia z Codex bezpośrednio; Codex nie jest właścicielem workflow,
 dowodów, approval ani ActionObject. Nie dodawaj wymogu `OPENAI_API_KEY`,
 Agents SDK, Ollamy, fallbacku modelu ani alternatywnego runtime’u.
@@ -35,6 +36,11 @@ kontynuuj najwyższy bezpieczny task.
 - Snapshot ma jeden kanoniczny journey `scope → section_map → draft → review →
   dev_draft`. Live krok to `draft`; ukończone `scope` i `section_map`
   można tylko przeglądać ponownie bez przesuwania API-owned current step.
+- Ocena 8/10 dotyczy wyłącznie bezpieczeństwa exact handoffu. Realna
+  użyteczność tworzenia treści jest obecnie około 5/10: marketer-facing
+  `Sprawdź tekst szkicu` uruchamia WordPress dry-run, a właściwe quality review
+  pozostaje w audycie technicznym. Nie claimuj jakości tekstów przed naprawą
+  grounded input i testem paczki na konkretnej usłudze/sekcji.
 - Marketer widzi stronę, usługę, decyzję, pięć zadań i jeden aktywny workspace.
   Dziewięć paneli technicznych nie istnieje w marketer-mode DOM i wymaga
   jawnego przejścia do `Audyt techniczny`.
@@ -48,8 +54,9 @@ kontynuuj najwyższy bezpieczny task.
   wyłącznie lokalnym stanem formularza. Review dotyczy dokładnego
   `revision_id`, digestu treści i digestu paczki planu; zmiana kontekstu
   unieważnia review. WordPress handoff/apply jest revision-bound i wysyła body
-  immutable rewizji, ale `dev_draft` w UI pozostaje zablokowany, dopóki
-  dashboard nie przeprowadzi exact ActionObject chain dla wybranej wersji.
+  immutable rewizji. `dev_draft` prowadzi ten sam binding przez cały inline
+  ActionObject chain i po sukcesie odświeża snapshot, readiness i readback.
+  Obecny dowód jest syntetyczny; nie wykonano realnego write do WordPressa.
 - Nawigacja nie wywołuje write requestów. Preview pozostaje dry-run, a każdy
   przyszły zapis WordPress musi przejść przez exact ActionObject, confirmation i
   audit; publish/update/delete pozostają poza tym journey.
@@ -72,9 +79,9 @@ kontynuuj najwyższy bezpieczny task.
   najnowszy uporządkowany ślad preview/review/confirm/impact z tym samym
   bindingiem. Atomowy claim serializuje apply z append/re-review; drugi request
   i replay starej zgody kończą się przed adapterem. Legacy eventy są czytelne,
-  ale nie autoryzują adaptera. Journey nie uruchamia jeszcze `dev_draft`, bo
-  dashboard nie przekazuje bindingu do tych kroków. Publish, update i delete
-  pozostają poza zakresem.
+  ale nie autoryzują adaptera. Dashboard przekazuje exact binding we wszystkich
+  binding-capable requestach i nie ponawia apply po typed `409`; nowszy binding
+  resetuje lokalne akceptacje. Publish, update i delete pozostają poza zakresem.
 - Claim zapisuje `action_apply_started` przed vendor call. Outcome, mutation
   audit i execution/post ID są finalizowane w jednej transakcji. Po crashu
   lokalne `wilq wordpress-apply reconcile` czeka 300 sekund, wymaga jawnej
@@ -87,10 +94,14 @@ kontynuuj najwyższy bezpieczny task.
   decisions są związane z dokładną wersją i digestami.
 - `wilq-seo-r564.9` jest zweryfikowany: exact revision handoff, ActionObject i
   draft-only adapter używają jednej wersji; legacy/v2/tamper są fail-closed.
+- `wilq-seo-r564.10` jest zweryfikowany: inline wizard utrzymuje ten binding od
+  preview do apply, wznawia wyłącznie zgodny ordered audit i zatrzymuje typed
+  konflikt bez retry. Desktop/mobile proof jest syntetyczny i nie dotyka
+  WordPressa.
 - Parent `wilq-seo-r564` pozostaje otwarty. Queue density jest zewnętrznie
   niepełna (1 actionable z wymaganych 3), a Service Profile i Wilku UAT nadal
-  wymagają ownera. Nie blokuje to repo-local inline ActionObject UX ani
-  ograniczonego lab-testu Codex app-server.
+  wymagają ownera. Nie blokuje to ograniczonego lab-testu Codex app-server ani
+  evidence-backed propozycji tekstu dla konkretnej usługi i sekcji.
 - Nie kopiuj tutaj pełnej listy Beads ani historii zamkniętych seamów. Po każdym
   pushu odczytaj `bd ready --json` i `bd list --status=open --json`.
 
@@ -99,10 +110,14 @@ kontynuuj najwyższy bezpieczny task.
 - Focused backend/shared/dashboard chronią append-only persistence,
   idempotency, stale-base conflict, exact review, context drift, atomową
   konsumpcję zgody, redakcję bindingu i typed journey.
-- Browser proof: save → refetch/reload → exact review → approved revision →
-  fail-closed `dev_draft`, 1440×900 i 390×844; dwa POST-y na viewport, zero
-  Codex/ActionObject/WordPress. Proof:
-  `.local-lab/proof/dashboard-content-workflow/2026-07-14T05-09-46-343Z/`.
+- Browser proof: save → refetch/reload → exact review → preview → review akcji
+  → confirm → impact → syntetyczny apply → draft-only readback, 1440×900 i
+  390×844. Endpointy ActionObjectu są przechwycone; zero realnego WordPress
+  write. Proof:
+  `.local-lab/proof/dashboard-content-workflow/2026-07-15T11-50-52-058Z/`.
+- Focused API/UI przechodzą 32/32, TypeScript i ESLint są zielone, focused
+  Playwright przechodzi 1/1, a niezależny Standards+Spec review nie znalazł
+  uchybień. Syntetyczny proof nie zastępuje Wilku UAT.
 - Szeroki gate potwierdził 977 backend testów (2 skip), 36 shared i 164
   dashboard testy oraz security/API/skill smokes. Pierwszy downstream start
   ujawnił tylko zbyt krótki 15-sekundowy wait; po podniesieniu go do 40 sekund
@@ -114,10 +129,13 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Resume
 
-1. Commituj i pushuj zamknięty `r564.9`.
-2. Ponownie odczytaj roadmapę i rozpocznij P0 inline ActionObject dla
-   `dev_draft` wybranej rewizji.
-3. Zweryfikuj desktop/mobile oraz API: exact version, jeden CTA na krok,
-   typed blocker i zero zapisu przed finalnym apply.
-4. Następnie wykonaj bounded lab-test `codex app-server` po stronie serwera;
-   browser nie może rozmawiać z Codex bezpośrednio.
+1. Zamknij `r564.10`, zrób świadomy commit/push i ponownie odczytaj roadmapę.
+2. Rozpocznij bounded lab-test `codex app-server` po stronie serwera; browser
+   nie może rozmawiać z Codex bezpośrednio.
+3. Propozycja ma tworzyć child revision dla jawnie wybranej usługi, strony i
+   sekcji oraz zachowywać evidence/claim lineage. GSC, GA4, Ahrefs, Ads,
+   Keyword Planner i inventory są używane tylko, gdy istnieje aktualny typed
+   dowód; brak lub stale źródło jest blockerem, nie wymyśloną metryką.
+4. Potem przetestuj wynik na syntetycznym/approved materiale i przygotuj
+   review-ready paczkę tekstów; jakości 10/10 nie claimuj przed realnym Wilku
+   UAT i owner-reviewed Service Profile.

@@ -56,6 +56,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 - Stary mutable zapis structured output został usunięty po potwierdzeniu braku
   referencji. Istniejąca tabela w lokalnej bazie nie została usunięta ani
   migrowana.
+- `wilq-seo-r564.10` osadza exact-binding ActionObject bezpośrednio w kroku
+  `dev_draft`. Marketer widzi tylko aktywny etap: podgląd, review,
+  potwierdzenie, kontrolę bezpieczeństwa albo zapis draftu; nie przechodzi na
+  ogólny ekran akcji i nie rekonstruuje bindingu w React.
+- Resume używa najnowszych uporządkowanych eventów tej samej rewizji. Nowszy
+  binding, nieudany etap albo typed `409` zatrzymuje przebieg bez retry. Po
+  syntetycznym sukcesie odświeżane są akcja, snapshot, activation/readback i
+  readiness.
 
 ## Bieżący proof
 
@@ -64,10 +72,15 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   testów (2 skip), 36 shared i 164 dashboard testy oraz security/API/skill
   smokes.
 - Stateful browser proof przechodzi dla 1440×900 i 390×844:
-  zapis → refetch → reopen/reload → exact review → zaakceptowana wersja →
-  zablokowany `dev_draft`.
-- Ten proof wykonuje dokładnie dwa POST-y na viewport: zapis wersji i review.
-  Nie wywołuje Codexa, ActionObjectu ani WordPressa.
+  zapis → reload → exact review → preview → review akcji → confirm → impact →
+  syntetyczny apply → draft-only readback, bez horizontal overflow.
+- Proof wykonuje osiem kontrolowanych POST-ów na viewport. Sześć endpointów
+  ActionObjectu jest przechwyconych przez Playwright; żaden request nie dociera
+  do WordPressa, a publish/update/delete nie istnieją w przebiegu. Zrzuty są w
+  `.local-lab/proof/dashboard-content-workflow/2026-07-15T11-50-52-058Z/`.
+- Focused API/UI testy przechodzą 32/32, TypeScript i ESLint są zielone, a
+  niezależny Standards+Spec review nie znalazł uchybień. Browser proof
+  przechodzi 1/1.
 - Po usunięciu zbyt krótkiego 15-sekundowego timeoutu startowego pełny browser
   gate przechodzi 21/21, a dashboard build przechodzi. Nie zmieniono runtime'u
   produktu ani ścieżki danych.
@@ -86,16 +99,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Następny bezpieczny zakres
 
-Po pushu `r564.9` domknąć brakującą ergonomię człowieka w jednym workspace:
-
-1. `/content-workflow` ma przekazać binding wybranej rewizji do inline kroków
-   preview → review → confirm → apply, zamiast wysyłać marketera na ogólną
-   stronę akcji bez kontekstu;
-2. każdy krok ma pokazać dokładną wersję, blocker i następny bezpieczny ruch;
-   apply pozostaje draft-only i wymaga jawnego operatora;
-3. potem wykonać ograniczony lab-test server-side `codex app-server` nad
-   istniejącym `codex login`: propozycja child revision i stream statusu, bez
-   approval oraz bez vendor write.
+1. Wykonać ograniczony lab-test server-side `codex app-server` nad istniejącym
+   `codex login`: propozycja child revision i stream statusu, bez approval oraz
+   bez vendor write. Browser nie może łączyć się z Codex bezpośrednio. Request
+   musi przekazać pełny API-owned `model_input`: wybrane sekcje, source facts,
+   claim markers, blokady i signal quality.
+2. Po decyzji z labu rozwijać najważniejszą wartość treściową: jawny wybór
+   strony/usługi/intencji/CTA, porównanie wersji, bibliotekę/historię treści i
+   realny Wilku UAT. Nie nadawać oceny 10/10 przed tym dowodem.
 
 ## Jawne blokery i ograniczenia
 
@@ -105,9 +116,12 @@ Po pushu `r564.9` domknąć brakującą ergonomię człowieka w jednym workspace
   rezydualnym.
 - Queue nie ma wymaganych trzech wykonalnych pozycji; WILQ nie tworzy sztucznej
   trzeciej propozycji.
+- Obecny marketer CTA `Sprawdź tekst szkicu` uruchamia WordPress dry-run, a nie
+  content quality review. Istniejący request Structured Outputs przekazuje
+  instrukcje i schema, ale pomija zbudowany `model_input`, więc nie jest dowodem
+  grounded copy. To wykonywalna luka repo-local i najbliższy P0, nie blocker
+  zewnętrzny.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
-- Dashboard nie przekazuje jeszcze revision bindingu do ActionObject, więc
-  `dev_draft` pozostaje uczciwie fail-closed mimo gotowego API seam.
 - Goal 005, produkcyjna gotowość i pełna użyteczność dla marketera nie są
   zakończone.

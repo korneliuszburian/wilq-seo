@@ -2,6 +2,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  applyAction,
+  confirmAction,
+  getAction,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
@@ -9,16 +12,23 @@ import {
   getContentWordPressDraftWriteReadiness,
   getContentWordPressExistingDraftUpdateReadiness,
   getWordPressAuthoringProfile,
+  impactCheckAction,
   postContentWorkItemQualityReview,
   postContentWorkItemRevisionPlan,
   postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
+  previewAction,
+  reviewAction,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
+  validateAction,
+  type ActionApplyResult,
+  type ActionObject,
+  type ContentDraftRevisionBinding,
   type ContentWorkItemQualityReviewResponse,
   type ContentOpportunityEnrichmentResponse,
   type ContentWorkItemQueueResponse,
@@ -40,6 +50,9 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
+    applyAction: vi.fn(),
+    confirmAction: vi.fn(),
+    getAction: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
@@ -47,16 +60,20 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWordPressDraftWriteReadiness: vi.fn(),
     getContentWordPressExistingDraftUpdateReadiness: vi.fn(),
     getWordPressAuthoringProfile: vi.fn(),
+    impactCheckAction: vi.fn(),
     postContentWorkItemQualityReview: vi.fn(),
     postContentWorkItemRevisionPlan: vi.fn(),
     postContentWorkItemStructuredDraftPreview: vi.fn(),
     postContentWorkItemStructuredDraftRuntime: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
+    previewAction: vi.fn(),
+    reviewAction: vi.fn(),
     saveContentWorkItemDraftRevision: vi.fn(),
     saveContentWorkItemDraftRevisionReview: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
-    saveContentWorkItemSnapshotAudit: vi.fn()
+    saveContentWorkItemSnapshotAudit: vi.fn(),
+    validateAction: vi.fn()
   };
 });
 
@@ -356,6 +373,206 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressAuthoringPayloadPreview).not.toHaveBeenCalled();
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
+  });
+
+  it("runs the exact revision ActionObject inline and stops a typed apply blocker without retry", async () => {
+    const revision = savedDraftRevision();
+    const revisionReview = savedDraftRevisionReview(revision);
+    const binding = draftRevisionBinding(revision, revisionReview);
+    const handoff = {
+      ...wordpressHandoff(),
+      revision_binding: binding,
+      revision_sections: revision.sections
+    };
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        review: humanReview(),
+        handoff,
+        workspace: approvedRevisionWorkspace(revision, revisionReview),
+        currentStepId: "dev_draft",
+        steps: operatorStepsAtDevDraft()
+      })
+    );
+
+    let actionState = wordpressDraftAction();
+    let eventSequence = 0;
+    const appendEvent = (eventType: string, blockers: unknown[] = []) => {
+      eventSequence += 1;
+      const event = actionAuditEvent(eventType, binding, eventSequence, blockers);
+      actionState = { ...actionState, audit_events: [...actionState.audit_events, event] };
+      return event;
+    };
+    vi.mocked(getAction).mockImplementation(async () => ({
+      ...actionState,
+      audit_events: [...actionState.audit_events]
+    }));
+    vi.mocked(validateAction).mockResolvedValue({
+      action_id: actionState.id,
+      valid: true,
+      status: "valid",
+      status_label: "Akcja poprawna",
+      errors: [],
+      warnings: [],
+      checked_at: "2026-07-15T10:00:00Z"
+    });
+    vi.mocked(previewAction).mockImplementation(async () => ({
+      action_id: actionState.id,
+      status: "preview_ready",
+      status_label: "Podgląd gotowy",
+      dry_run: true,
+      mutation_allowed: false,
+      preview_contract: "wordpress_draft_handoff_preview_v1",
+      preview_items: [],
+      preview_cards: [],
+      preview_items_total: 0,
+      omitted_items: 0,
+      blockers: [],
+      blocker_labels: [],
+      audit_event: appendEvent("action_preview_generated"),
+      review_gate: actionState.review_gate
+    }));
+    vi.mocked(reviewAction).mockImplementation(async () => ({
+      action_id: actionState.id,
+      status: "recorded",
+      status_label: "Review zapisane",
+      audit_event: appendEvent("human_review_approved_for_prepare"),
+      review_gate: actionState.review_gate
+    }));
+    vi.mocked(confirmAction).mockImplementation(async () => ({
+      action_id: actionState.id,
+      confirmed: true,
+      status: "confirmed",
+      status_label: "Potwierdzenie zapisane",
+      blockers: [],
+      blocker_labels: [],
+      audit_event: appendEvent("action_apply_confirmed"),
+      review_gate: actionState.review_gate
+    }));
+    vi.mocked(impactCheckAction).mockImplementation(async () => ({
+      action_id: actionState.id,
+      status: "checked",
+      status_label: "Gotowość sprawdzona",
+      pre_window_days: 7,
+      post_window_days: 7,
+      metric_fact_count: 0,
+      source_connectors: ["wordpress_ekologus"],
+      source_connector_labels: ["WordPress Ekologus"],
+      evidence_ids: ["ev_wp_bdo"],
+      evidence_summary_label: "1 dowód",
+      blockers: [],
+      blocker_labels: [],
+      audit_event: appendEvent("action_impact_check_completed"),
+      review_gate: actionState.review_gate
+    }));
+    const applyBlocker = {
+      code: "wordpress_revision_binding_mismatch",
+      label: "Wersja szkicu zmieniła się",
+      reason: "Zaakceptowana wersja nie odpowiada już przekazaniu.",
+      next_step: "Wróć do review aktualnej wersji."
+    };
+    vi.mocked(applyAction).mockImplementation(async () => {
+      const auditEvent = appendEvent("action_apply_blocked", [applyBlocker]);
+      return {
+        action_id: actionState.id,
+        applied: false,
+        status: "blocked",
+        status_label: "Zapis zablokowany",
+        audit_event: auditEvent,
+        mutation_audit: {
+          id: "mutation_audit_exact_revision_blocked",
+          action_id: actionState.id,
+          connector: "wordpress_ekologus",
+          action_type: "wordpress_draft_handoff",
+          status: "blocked",
+          status_label: "Zapis zablokowany",
+          adapter_reached: false,
+          external_write_attempted: false,
+          mutation_attempted: false,
+          mutation_adapter: "wordpress_draft_execution_boundary",
+          actor: "operator_local_dashboard",
+          created_at: "2026-07-15T10:00:06Z",
+          audit_event_id: auditEvent.id,
+          evidence_ids: ["ev_wp_bdo"],
+          blockers: [applyBlocker.code],
+          wordpress_draft_binding: binding,
+          wordpress_revision_blockers: [applyBlocker],
+          summary: "Adapter nie został wywołany.",
+          redacted: true
+        },
+        errors: [applyBlocker.reason],
+        wordpress_revision_blockers: [applyBlocker]
+      } satisfies ActionApplyResult;
+    });
+
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await waitFor(() => expect(getAction).toHaveBeenCalledWith("act_apply_wordpress_draft_handoff"));
+    await screen.findByText("Wersja 1 → szkic na devie");
+    const wizard = screen.getByTestId("content-wordpress-draft-action-wizard");
+    expect(within(wizard).getByText("Wersja 1 → szkic na devie")).toBeInTheDocument();
+    expect(within(wizard).getByText(/bez publikacji · bez aktualizacji/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /kanoniczną akcję/ })).not.toBeInTheDocument();
+    expect(within(wizard).queryByRole("button", { name: "Utwórz szkic na devie" }))
+      .not.toBeInTheDocument();
+
+    fireEvent.click(within(wizard).getByRole("button", { name: "Sprawdź wersję i podgląd" }));
+    await waitFor(() => expect(previewAction).toHaveBeenCalledTimes(1));
+    expect(validateAction).toHaveBeenCalledTimes(1);
+    expect(previewAction).toHaveBeenCalledWith(
+      "act_apply_wordpress_draft_handoff",
+      expect.objectContaining({ wordpress_draft: binding })
+    );
+
+    const reviewCheckbox = await within(wizard).findByRole("checkbox", {
+      name: /Sprawdziłem podgląd tej wersji/
+    });
+    expect(within(wizard).getByRole("button", { name: "Zapisz review akcji" })).toBeDisabled();
+    fireEvent.click(reviewCheckbox);
+    fireEvent.click(within(wizard).getByRole("button", { name: "Zapisz review akcji" }));
+    await waitFor(() => expect(reviewAction).toHaveBeenCalledTimes(1));
+    expect(reviewAction).toHaveBeenCalledWith(
+      "act_apply_wordpress_draft_handoff",
+      expect.objectContaining({ wordpress_draft: binding })
+    );
+
+    const confirmCheckbox = await within(wizard).findByRole("checkbox", {
+      name: /Potwierdzam zamiar utworzenia wyłącznie draftu/
+    });
+    expect(within(wizard).getByRole("button", { name: "Potwierdź draft-only" })).toBeDisabled();
+    fireEvent.click(confirmCheckbox);
+    fireEvent.click(within(wizard).getByRole("button", { name: "Potwierdź draft-only" }));
+    await waitFor(() => expect(confirmAction).toHaveBeenCalledTimes(1));
+    expect(confirmAction).toHaveBeenCalledWith(
+      "act_apply_wordpress_draft_handoff",
+      expect.objectContaining({ wordpress_draft: binding })
+    );
+
+    fireEvent.click(await within(wizard).findByRole("button", { name: "Sprawdź gotowość zapisu" }));
+    await waitFor(() => expect(impactCheckAction).toHaveBeenCalledTimes(1));
+    expect(impactCheckAction).toHaveBeenCalledWith(
+      "act_apply_wordpress_draft_handoff",
+      expect.objectContaining({ wordpress_draft: binding })
+    );
+
+    fireEvent.click(await within(wizard).findByRole("button", { name: "Utwórz szkic na devie" }));
+    await waitFor(() => expect(applyAction).toHaveBeenCalledTimes(1));
+    expect(applyAction).toHaveBeenCalledWith("act_apply_wordpress_draft_handoff", {
+      confirm: true,
+      confirmed_by: "operator_local_dashboard",
+      wordpress_draft: binding
+    });
+    expect(await within(wizard).findByText("Wersja szkicu zmieniła się")).toBeInTheDocument();
+    expect(within(wizard).getByText(/Wróć do review aktualnej wersji/)).toBeInTheDocument();
+    expect(within(wizard).getByRole("button", { name: "Utwórz szkic na devie" })).toBeDisabled();
+    expect(applyAction).toHaveBeenCalledTimes(1);
   });
 
   it("switches between marketer mode and technical audit mode", async () => {
@@ -776,11 +993,10 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText(/Ten krok przygotowuje wyłącznie podgląd/).length)
       .toBeGreaterThan(0);
     await openWorkflowDetails();
-    expect(screen.getByRole("link", { name: "Otwórz kanoniczną akcję do review" })).toHaveAttribute(
-      "href",
-      "/actions/act_apply_wordpress_draft_handoff"
-    );
-    expect(screen.getByText(/Nie wykonuje zapisu ani publikacji/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Otwórz kanoniczną akcję do review" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByText(/Pełny zapis dokładnej wersji wykonasz w widoku Marketer/))
+      .toBeInTheDocument();
     expect(
       screen.queryByRole("button", {
         name: /Utwórz (?:(?:szkic|draft).*dev|.*dev.*(?:szkic|draft))/i
@@ -1652,6 +1868,121 @@ function operatorStepsAtReview(): ContentWorkItemWorkflowSnapshotResponse["opera
   });
 }
 
+function approvedRevisionWorkspace(
+  revision: ReturnType<typeof savedDraftRevision>,
+  review: ReturnType<typeof savedDraftRevisionReview>
+): ContentWorkItemWorkflowSnapshotResponse["revision_workspace"] {
+  return {
+    ...savedRevisionWorkspace(revision),
+    status: "approved",
+    latest_review: review,
+    can_save: false,
+    can_review: false,
+    safe_next_step: "Przekaż dokładną wersję do WordPress jako nowy szkic."
+  };
+}
+
+function draftRevisionBinding(
+  revision: ReturnType<typeof savedDraftRevision>,
+  review: ReturnType<typeof savedDraftRevisionReview>
+): ContentDraftRevisionBinding {
+  return {
+    work_item_id: revision.work_item_id,
+    handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+    revision_id: revision.revision_id,
+    content_digest: revision.content_digest,
+    draft_package_id: revision.draft_package_id,
+    draft_package_digest: revision.draft_package_digest,
+    approval_decision_id: review.decision_id,
+    final_canonical_url: revision.final_canonical_url
+  };
+}
+
+function operatorStepsAtDevDraft(): ContentWorkItemWorkflowSnapshotResponse["operator_steps"] {
+  return operatorSteps().map((step) => ({
+    ...step,
+    phase: step.id === "dev_draft" ? "current" : "complete",
+    readiness: "ready",
+    status_label: step.id === "dev_draft" ? "gotowe do bezpiecznego przekazania" : "gotowe",
+    can_open: true,
+    can_submit: step.id === "dev_draft",
+    blocker: null,
+    safe_next_step:
+      step.id === "dev_draft"
+        ? "Przejdź przez podgląd, review, potwierdzenie i kontrolę zapisu."
+        : step.safe_next_step
+  }));
+}
+
+function wordpressDraftAction(): ActionObject {
+  return {
+    id: "act_apply_wordpress_draft_handoff",
+    title: "Utwórz szkic WordPress",
+    domain: "wordpress",
+    connector: "wordpress_ekologus",
+    connector_label: "WordPress Ekologus",
+    mode: "apply",
+    mode_label: "zapis",
+    risk: "high",
+    risk_label: "wysokie",
+    status: "ready",
+    status_label: "gotowe do review",
+    evidence_ids: ["ev_wp_bdo"],
+    evidence_summary_label: "1 dowód",
+    metrics: [],
+    human_diagnosis: "Dokładna wersja wymaga kontrolowanego handoffu.",
+    recommended_reason: "Utwórz wyłącznie nowy szkic.",
+    validation_status: "valid",
+    validation_status_label: "poprawna",
+    review_gate: {
+      status: "validated_prepare_only",
+      status_label: "wymaga review",
+      summary: "Zapis wymaga pełnego śladu.",
+      required_checks: [],
+      required_check_labels: [],
+      operator_checklist: [],
+      operator_checklist_labels: [],
+      apply_blockers: [],
+      apply_blocker_labels: [],
+      apply_blocker_summary_label: "",
+      confirmation_required: true,
+      apply_allowed: false,
+      last_mutation_blockers: [],
+      last_mutation_blocker_labels: [],
+      last_mutation_blocker_summary_label: ""
+    },
+    preview_cards: [],
+    payload: {
+      action_type: "wordpress_draft_handoff",
+      allowed_operation: "create_wordpress_draft"
+    },
+    audit_events: []
+  };
+}
+
+function actionAuditEvent(
+  eventType: string,
+  binding: ContentDraftRevisionBinding,
+  sequence: number,
+  wordpressRevisionBlockers: unknown[] = []
+): ActionObject["audit_events"][number] {
+  return {
+    id: `audit_exact_revision_${sequence}`,
+    action_id: "act_apply_wordpress_draft_handoff",
+    event_type: eventType,
+    event_type_label: eventType,
+    actor: "operator_local_dashboard",
+    created_at: `2026-07-15T10:00:0${sequence}Z`,
+    summary: eventType,
+    evidence_ids: ["ev_wp_bdo"],
+    details: {
+      wordpress_draft_binding: binding,
+      wordpress_revision_blockers: wordpressRevisionBlockers
+    },
+    redacted: true
+  };
+}
+
 function uniqueTestEvidence(revision: ReturnType<typeof savedDraftRevision>) {
   return [...new Set(revision.sections.flatMap((section) => section.evidence_ids))];
 }
@@ -1764,7 +2095,9 @@ function humanReview() {
   };
 }
 
-function wordpressHandoff() {
+function wordpressHandoff(): NonNullable<
+  ContentWorkItemWorkflowSnapshotResponse["wordpress_handoff"]["handoff_result"]["handoff"]
+> {
   return {
     id: "wordpress_draft_handoff_content_work_item_bdo",
     work_item_id: "content_work_item_bdo",

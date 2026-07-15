@@ -3,9 +3,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type {
+  ActionObject,
+  ContentDraftRevisionBinding,
   ContentDraftRevisionReviewRequest,
   ContentDraftRevisionSaveRequest,
-  ContentWorkItemWorkflowSnapshotResponse
+  ContentWorkItemWorkflowSnapshotResponse,
+  ContentWordPressDraftActivationPacketResponse
 } from "../src/lib/api";
 
 const repoRoot = path.resolve(process.cwd(), "../..");
@@ -225,7 +228,7 @@ test.describe("WILQ content workflow layout proof", () => {
     });
   });
 
-  test("synthetic revision proof: save, reopen, exact review and blocked dev handoff", async ({
+  test("synthetic revision proof: save, reopen, exact review and inline draft wizard", async ({
     page
   }) => {
     test.setTimeout(90_000);
@@ -240,6 +243,14 @@ test.describe("WILQ content workflow layout proof", () => {
     const saveRequests: ContentDraftRevisionSaveRequest[] = [];
     const reviewRequests: ContentDraftRevisionReviewRequest[] = [];
     const postRequests: string[] = [];
+    const actionStageRequests: Array<{
+      viewport: string;
+      stage: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    let actionAuditEvents: ActionObject["audit_events"] = [];
+    let actionEventSequence = 0;
+    let syntheticApplyCompleted = false;
 
     page.on("request", (request) => {
       if (request.method() !== "POST") return;
@@ -358,14 +369,238 @@ test.describe("WILQ content workflow layout proof", () => {
       }
     );
 
+    await page.route(
+      /\/api\/actions\/act_apply_wordpress_draft_handoff(?:\/(?:validate|preview|review|confirm|impact-check|apply))?$/,
+      async (route) => {
+        const request = route.request();
+        if (request.method() === "OPTIONS") {
+          await route.continue();
+          return;
+        }
+        const requestUrl = new URL(request.url());
+        if (request.method() === "GET") {
+          await route.fulfill({
+            status: 200,
+            headers: proofResponseHeaders(),
+            json: {
+              id: "act_apply_wordpress_draft_handoff",
+              title: "Utwórz szkic WordPress",
+              domain: "wordpress",
+              connector: "wordpress_ekologus",
+              mode: "apply",
+              risk: "high",
+              status: "ready",
+              evidence_ids: [revisionProofEvidenceId],
+              metrics: [],
+              human_diagnosis: "Dokładna wersja wymaga kontrolowanego handoffu.",
+              recommended_reason: "Utwórz wyłącznie nowy szkic.",
+              validation_status: "valid",
+              payload: {
+                action_type: "wordpress_draft_handoff",
+                allowed_operation: "create_wordpress_draft"
+              },
+              audit_events: actionAuditEvents
+            }
+          });
+          return;
+        }
+        if (request.method() !== "POST") {
+          await route.fulfill({ status: 405, body: "Method not allowed" });
+          return;
+        }
+        const stage = requestUrl.pathname.split("/").at(-1) ?? "";
+        const payload = (request.postDataJSON() ?? {}) as Record<string, unknown>;
+        actionStageRequests.push({ viewport: currentViewportLabel, stage, payload });
+        const binding =
+          savedRevision && savedReview
+            ? revisionProofBinding(savedRevision, savedReview)
+            : null;
+        if (stage === "validate") {
+          await route.fulfill({
+            status: 200,
+            headers: proofResponseHeaders(),
+            json: {
+              action_id: "act_apply_wordpress_draft_handoff",
+              valid: true,
+              status: "valid",
+              errors: [],
+              warnings: [],
+              checked_at: "2026-07-15T10:00:00Z"
+            }
+          });
+          return;
+        }
+        if (!binding) {
+          await route.fulfill({ status: 409, body: "Missing synthetic revision binding" });
+          return;
+        }
+        const eventTypeByStage: Record<string, string> = {
+          preview: "action_preview_generated",
+          review: "human_review_approved_for_prepare",
+          confirm: "action_apply_confirmed",
+          "impact-check": "action_impact_check_completed",
+          apply: "action_apply_completed"
+        };
+        const eventType = eventTypeByStage[stage];
+        if (!eventType) {
+          await route.fulfill({ status: 404, body: "Unknown synthetic action stage" });
+          return;
+        }
+        actionEventSequence += 1;
+        const auditEvent: ActionObject["audit_events"][number] = {
+          id: `audit_browser_${currentViewportLabel}_${actionEventSequence}`,
+          action_id: "act_apply_wordpress_draft_handoff",
+          event_type: eventType,
+          event_type_label: eventType,
+          actor: "operator_local_dashboard",
+          created_at: `2026-07-15T10:00:0${actionEventSequence}Z`,
+          summary: eventType,
+          evidence_ids: [revisionProofEvidenceId],
+          details: { wordpress_draft_binding: binding },
+          redacted: true
+        };
+        actionAuditEvents = [...actionAuditEvents, auditEvent];
+        const common = {
+          action_id: "act_apply_wordpress_draft_handoff",
+          audit_event: auditEvent,
+          review_gate: {}
+        };
+        if (stage === "preview") {
+          await route.fulfill({
+            status: 200,
+            headers: proofResponseHeaders(),
+            json: {
+              ...common,
+              status: "preview_ready",
+              dry_run: true,
+              mutation_allowed: false,
+              preview_items: [],
+              preview_items_total: 0,
+              omitted_items: 0,
+              blockers: []
+            }
+          });
+          return;
+        }
+        if (stage === "review") {
+          await route.fulfill({
+            status: 200,
+            headers: proofResponseHeaders(),
+            json: { ...common, status: "recorded" }
+          });
+          return;
+        }
+        if (stage === "confirm") {
+          await route.fulfill({
+            status: 200,
+            headers: proofResponseHeaders(),
+            json: { ...common, confirmed: true, status: "confirmed", blockers: [] }
+          });
+          return;
+        }
+        if (stage === "impact-check") {
+          await route.fulfill({
+            status: 200,
+            headers: proofResponseHeaders(),
+            json: {
+              ...common,
+              status: "checked",
+              pre_window_days: 7,
+              post_window_days: 7,
+              metric_fact_count: 0,
+              source_connectors: ["wordpress_ekologus"],
+              evidence_ids: [revisionProofEvidenceId],
+              blockers: []
+            }
+          });
+          return;
+        }
+        syntheticApplyCompleted = true;
+        await route.fulfill({
+          status: 200,
+          headers: proofResponseHeaders(),
+          json: {
+            action_id: "act_apply_wordpress_draft_handoff",
+            applied: true,
+            status: "applied",
+            audit_event: auditEvent,
+            mutation_audit: {
+              id: `mutation_audit_browser_${currentViewportLabel}`,
+              action_id: "act_apply_wordpress_draft_handoff",
+              connector: "wordpress_ekologus",
+              action_type: "wordpress_draft_handoff",
+              status: "applied",
+              adapter_reached: true,
+              external_write_attempted: true,
+              mutation_attempted: true,
+              mutation_adapter: "synthetic_browser_interceptor",
+              actor: "operator_local_dashboard",
+              created_at: auditEvent.created_at,
+              audit_event_id: auditEvent.id,
+              evidence_ids: [revisionProofEvidenceId],
+              blockers: [],
+              wordpress_draft_binding: binding,
+              wordpress_revision_blockers: [],
+              summary: "Syntetyczny draft utworzony bez połączenia z WordPressem.",
+              redacted: true
+            },
+            errors: [],
+            wordpress_revision_blockers: [],
+            adapter_result: { wordpress_post_id: `browser-${currentViewportLabel}-1` }
+          }
+        });
+      }
+    );
+
+    await page.route("**/api/content/wordpress/draft-activation-packet**", async (route) => {
+      const response = await route.fetch();
+      if (response.status() !== 200) {
+        await route.fulfill({ response });
+        return;
+      }
+      const packet = (await response.json()) as ContentWordPressDraftActivationPacketResponse;
+      if (proofState === "approved" && savedRevision && savedReview) {
+        const binding = revisionProofBinding(savedRevision, savedReview);
+        packet.action_id = "act_apply_wordpress_draft_handoff";
+        packet.work_item_id = savedRevision.work_item_id;
+        packet.handoff_ready = true;
+        packet.handoff_id = binding.handoff_id;
+        packet.handoff_blockers = [];
+        packet.activation_missing_step = "ready";
+        packet.activation_missing_step_label = "gotowe do kontrolowanego zapisu";
+        packet.operator_next_step = "Przejdź przez kontrolowany wizard dokładnej wersji.";
+        if (syntheticApplyCompleted) {
+          packet.draft_readback = {
+            status: "available",
+            connector: "wordpress_ekologus",
+            wordpress_post_id: `browser-${currentViewportLabel}-1`,
+            post_status: "draft",
+            title: savedRevision.title,
+            link: `https://ekologus.dev.proudsite.pl/browser-${currentViewportLabel}-1/`,
+            modified_gmt: "2026-07-15T10:00:06Z",
+            content_summary: "Syntetyczny readback dokładnej wersji.",
+            content_word_count: 42,
+            acf_field_count: 0,
+            acf_field_names: [],
+            blockers: []
+          };
+        }
+      }
+      await route.fulfill({ response, json: packet });
+    });
+
     for (const viewport of viewports) {
       currentViewportLabel = viewport.label;
       proofState = "empty";
       savedRevision = null;
       savedReview = null;
+      actionAuditEvents = [];
+      actionEventSequence = 0;
+      syntheticApplyCompleted = false;
       const saveCountBefore = saveRequests.length;
       const reviewCountBefore = reviewRequests.length;
       const postCountBefore = postRequests.length;
+      const actionCountBefore = actionStageRequests.length;
       const exactText = `Dokładna treść wersji do review — ${viewport.label}.`;
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -382,11 +617,11 @@ test.describe("WILQ content workflow layout proof", () => {
       await sectionEditor.fill(exactText);
       await page.getByRole("button", { name: "Zapisz wersję do review" }).click();
 
+      await expect.poll(() => saveRequests.length).toBe(saveCountBefore + 1);
       await expect(taskMap.getByRole("button", { name: /Sprawdzenie treści/ })).toHaveAttribute(
         "aria-current",
         "step"
       );
-      await expect.poll(() => saveRequests.length).toBe(saveCountBefore + 1);
       expect(saveRequests.at(-1)?.base_revision_id).toBeNull();
       expect(saveRequests.at(-1)?.sections[0]?.body_markdown).toBe(exactText);
       expect(saveRequests.at(-1)?.created_by).toBe("wilku");
@@ -433,16 +668,10 @@ test.describe("WILQ content workflow layout proof", () => {
         "aria-current",
         "step"
       );
-      await expect(
-        page
-          .locator('[data-active-workspace="dev_draft"]')
-          .getByRole("heading", { name: "Szkic na devie" })
-      ).toBeVisible();
-      await expect(page.getByText("Wersja 1 została zaakceptowana.")).toBeVisible();
-      await expect(page.getByText(/Zapis na dev pozostaje zablokowany/)).toBeVisible();
-      await expect(
-        reloadedTaskMap.getByTestId("selected-step-blocker")
-      ).toHaveText("Brakuje bezpiecznego przekazania zatwierdzonej wersji");
+      const wizard = page.getByTestId("content-wordpress-draft-action-wizard");
+      await expect(wizard.getByRole("heading", { name: "Wersja 1 → szkic na devie" }))
+        .toBeVisible();
+      await expect(wizard.getByText(/bez publikacji · bez aktualizacji/)).toBeVisible();
       await expect.poll(() => reviewRequests.length).toBe(reviewCountBefore + 1);
       expect(reviewRequests.at(-1)?.expected_revision_digest).toBe(
         (currentViewportLabel === "desktop" ? "b" : "c").repeat(64)
@@ -453,10 +682,49 @@ test.describe("WILQ content workflow layout proof", () => {
         "Sprawdzono dowody przypisane do tej wersji."
       ]);
       expect(reviewRequests.at(-1)?.evidence_ids).toContain(revisionProofEvidenceId);
+
+      await wizard.getByRole("button", { name: "Sprawdź wersję i podgląd" }).click();
+      const actionReviewCheckbox = wizard.getByRole("checkbox", {
+        name: /Sprawdziłem podgląd tej wersji/
+      });
+      await expect(actionReviewCheckbox).toBeVisible();
+      await actionReviewCheckbox.check();
+      await wizard.getByRole("button", { name: "Zapisz review akcji" }).click();
+      const actionConfirmCheckbox = wizard.getByRole("checkbox", {
+        name: /Potwierdzam zamiar utworzenia wyłącznie draftu/
+      });
+      await expect(actionConfirmCheckbox).toBeVisible();
+      await actionConfirmCheckbox.check();
+      await wizard.getByRole("button", { name: "Potwierdź draft-only" }).click();
+      await wizard.getByRole("button", { name: "Sprawdź gotowość zapisu" }).click();
+      await wizard.getByRole("button", { name: "Utwórz szkic na devie" }).click();
+
+      await expect(wizard.getByText("Nowy szkic został zapisany jako draft")).toBeVisible();
+      await expect(
+        wizard.getByRole("link", { name: "Otwórz odczytany szkic na devie" })
+      ).toHaveAttribute(
+        "href",
+        `https://ekologus.dev.proudsite.pl/browser-${currentViewportLabel}-1/`
+      );
+      const actionRequestsForViewport = actionStageRequests.slice(actionCountBefore);
+      expect(actionRequestsForViewport.map((request) => request.stage)).toEqual([
+        "validate",
+        "preview",
+        "review",
+        "confirm",
+        "impact-check",
+        "apply"
+      ]);
+      const expectedBinding = revisionProofBinding(savedRevision, savedReview);
+      for (const request of actionRequestsForViewport.filter(
+        (candidate) => candidate.stage !== "validate"
+      )) {
+        expect(request.payload.wordpress_draft).toEqual(expectedBinding);
+      }
       await expectNoHorizontalPageOverflow(page);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({
-        path: path.join(runDir, `content-workflow-${viewport.label}-approved-dev-blocked.png`),
+        path: path.join(runDir, `content-workflow-${viewport.label}-inline-draft-complete.png`),
         fullPage: true
       });
 
@@ -464,15 +732,21 @@ test.describe("WILQ content workflow layout proof", () => {
         expect.stringMatching(/^POST \/api\/content\/work-items\/[^/]+\/draft-revisions$/),
         expect.stringMatching(
           /^POST \/api\/content\/work-items\/[^/]+\/draft-revisions\/[^/]+\/review$/
-        )
+        ),
+        "POST /api/actions/act_apply_wordpress_draft_handoff/validate",
+        "POST /api/actions/act_apply_wordpress_draft_handoff/preview",
+        "POST /api/actions/act_apply_wordpress_draft_handoff/review",
+        "POST /api/actions/act_apply_wordpress_draft_handoff/confirm",
+        "POST /api/actions/act_apply_wordpress_draft_handoff/impact-check",
+        "POST /api/actions/act_apply_wordpress_draft_handoff/apply"
       ]);
     }
 
     const forbiddenPostRequests = postRequests.filter((entry) =>
-      /\/api\/(?:codex(?:\/|$)|actions(?:\/|$)|[^ ]*wordpress)/i.test(entry)
+      /\/api\/(?:codex(?:\/|$)|content\/[^ ]*wordpress)/i.test(entry)
     );
     expect(forbiddenPostRequests).toEqual([]);
-    expect(postRequests).toHaveLength(viewports.length * 2);
+    expect(postRequests).toHaveLength(viewports.length * 8);
   });
 });
 
@@ -496,7 +770,8 @@ function revisionProofSnapshot(
       can_open: index <= currentStepIndex,
       can_submit:
         (state === "empty" && step.id === "draft") ||
-        (state === "unreviewed" && step.id === "review")
+        (state === "unreviewed" && step.id === "review") ||
+        (state === "approved" && step.id === "dev_draft")
     };
   });
   const draftStep = snapshot.operator_steps.find((step) => step.id === "draft");
@@ -529,20 +804,45 @@ function revisionProofSnapshot(
         : null;
   }
   if (devDraftStep) {
-    devDraftStep.readiness = "blocked";
+    devDraftStep.readiness = state === "approved" ? "ready" : "blocked";
     devDraftStep.status_label =
       state === "approved"
         ? "zatwierdzona wersja czeka na bezpieczne przekazanie"
         : "czeka na sprawdzenie wersji";
     if (state === "approved") {
-      devDraftStep.blocker = proofBlocker(
-        "missing_revision_bound_wordpress_seam",
-        "Brakuje bezpiecznego przekazania zatwierdzonej wersji",
-        "Zatwierdzenie konkretnej wersji nie jest jeszcze zgodą na zapis do WordPress."
-      );
+      devDraftStep.blocker = null;
       devDraftStep.safe_next_step =
-        "Zatrzymaj zapis do WordPress. Najpierw przygotuj podgląd tej samej wersji i jawnie zatwierdź zapis wyłącznie jako szkic.";
+        "Przejdź przez podgląd, review, potwierdzenie i kontrolę tej samej wersji.";
     }
+  }
+  if (state === "approved" && revision && review) {
+    const binding = revisionProofBinding(revision, review);
+    snapshot.wordpress_handoff = {
+      item: snapshot.wordpress_handoff.item,
+      handoff_result: {
+        handoff: {
+          id: binding.handoff_id,
+          work_item_id: revision.work_item_id,
+          draft_package_id: revision.draft_package_id,
+          human_review_id: review.decision_id,
+          audit_id: `audit_browser_handoff_${revision.revision_id}`,
+          connector: "wordpress_ekologus",
+          operation_type: "create_wordpress_draft",
+          status: "prepared",
+          post_status: "draft",
+          title: revision.title,
+          final_canonical_url: revision.final_canonical_url,
+          intended_final_url: revision.final_canonical_url,
+          preview_url: `https://ekologus.dev.proudsite.pl/${revision.revision_id}/`,
+          evidence_ids: [...new Set(revision.sections.flatMap((section) => section.evidence_ids))],
+          revision_binding: binding,
+          revision_sections: cloneValue(revision.sections),
+          publish_allowed: false,
+          destructive_update_allowed: false
+        },
+        blockers: []
+      }
+    };
   }
   return snapshot;
 }
@@ -601,7 +901,30 @@ function revisionProofWorkspace(
     safe_next_step:
       state === "unreviewed"
         ? `Sprawdź dokładną treść wersji ${revision.revision_number}.`
-        : "Zatrzymaj zapis do WordPress do czasu osobnego kontraktu tej samej wersji."
+        : "Przejdź do kontrolowanego zapisu tej dokładnej wersji jako nowy draft."
+  };
+}
+
+function revisionProofBinding(
+  revision: SavedRevision,
+  review: SavedRevisionReview
+): ContentDraftRevisionBinding {
+  return {
+    work_item_id: revision.work_item_id,
+    handoff_id: `wordpress_draft_handoff_${revision.revision_id}`,
+    revision_id: revision.revision_id,
+    content_digest: revision.content_digest,
+    draft_package_id: revision.draft_package_id,
+    draft_package_digest: revision.draft_package_digest,
+    approval_decision_id: review.decision_id,
+    final_canonical_url: revision.final_canonical_url
+  };
+}
+
+function proofResponseHeaders() {
+  return {
+    "access-control-allow-origin": "*",
+    "content-type": "application/json"
   };
 }
 

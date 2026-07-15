@@ -6,6 +6,7 @@ import {
   ActionApplyRequestSchema,
   ActionMutationReadinessResponseSchema,
   ActionMutationReadinessSummaryResponseSchema,
+  ActionPreviewRequestSchema,
   ActionPreviewResultSchema,
   ActionReviewResultSchema,
   ActionValidationResultSchema,
@@ -82,6 +83,7 @@ import {
   type ActionApplyResult,
   type ActionMutationReadinessResponse,
   type ActionMutationReadinessSummaryResponse,
+  type ActionPreviewRequest,
   type ActionPreviewCardViewModel,
   type ActionPreviewResult,
   type ActionReviewRequest,
@@ -91,6 +93,7 @@ import {
   type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
+  type ContentDraftRevisionBinding,
   type ContentDraftRevisionConflict,
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionReviewRequest,
@@ -227,6 +230,27 @@ async function apiPost<T extends z.ZodTypeAny>(
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body)
   });
+  if (!response.ok) {
+    throw new Error(await apiErrorMessage(response, path));
+  }
+  return schema.parse(await response.json());
+}
+
+async function apiPostWithDetailConflict<T extends z.ZodTypeAny>(
+  path: string,
+  schema: ApiSchema<T>,
+  body: unknown
+): Promise<z.infer<T>> {
+  const response = await apiFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (response.status === 409) {
+    const payload: unknown = await response.json();
+    const detail = z.object({ detail: z.unknown() }).parse(payload).detail;
+    return schema.parse(detail);
+  }
   if (!response.ok) {
     throw new Error(await apiErrorMessage(response, path));
   }
@@ -642,11 +666,18 @@ export function validateAction(actionId: string): Promise<ActionValidationResult
   return apiPost(actionApiPath(actionId, "/validate"), ActionValidationResultSchema);
 }
 
-export function previewAction(actionId: string): Promise<ActionPreviewResult> {
-  return apiPost(actionApiPath(actionId, "/preview"), ActionPreviewResultSchema, {
+export function previewAction(
+  actionId: string,
+  request: ActionPreviewRequest = {
     requested_by: "operator_local_dashboard",
     max_items: 8
-  });
+  }
+): Promise<ActionPreviewResult> {
+  return apiPost(
+    actionApiPath(actionId, "/preview"),
+    ActionPreviewResultSchema,
+    ActionPreviewRequestSchema.parse(request)
+  );
 }
 
 export function reviewAction(
@@ -674,7 +705,7 @@ export function applyAction(
   actionId: string,
   request: ActionApplyRequest
 ): Promise<ActionApplyResult> {
-  return apiPost(
+  return apiPostWithDetailConflict(
     actionApiPath(actionId, "/apply"),
     ActionApplyResultSchema,
     ActionApplyRequestSchema.parse(request)
@@ -716,6 +747,7 @@ export type {
   ActionApplyResult,
   ActionImpactCheckResult,
   ActionPreviewCardViewModel,
+  ActionPreviewRequest,
   ActionPreviewResult,
   ActionReviewRequest,
   ActionReviewResult,
@@ -724,6 +756,7 @@ export type {
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
+  ContentDraftRevisionBinding,
   ContentDraftRevisionConflict,
   ContentDraftRevisionDecision,
   ContentDraftRevisionReviewRequest,
