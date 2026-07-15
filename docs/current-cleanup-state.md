@@ -107,6 +107,22 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Bieżący graf
 
+- Fixed-point `wilq-seo-c9h9.26` rozdzielił pracę od historycznych ticketów.
+  `wilq-seo-jnra`, `wilq-seo-djly` i `wilq-seo-kgvy` są zamknięte po świeżych
+  testach parity, Ruff/mypy i live proof z 21 akcjami oraz 0 możliwych vendor
+  writes. Nie wracaj do mechanicznego splitu bez nowego błędu lub kosztu
+  produktu.
+- Canonical production-pilot graph jest w `wilq-seo-amj2`. Jego pierwsze dwa
+  P0 to prawdziwa readiness kroku `dev_draft` (`amj2.2`) oraz persisted review
+  scope/section map (`amj2.1`). Typed demand evidence (`amj2.3`) zależy od
+  scope, a content skill (`amj2.4`) od obu decyzji i exact dev readiness.
+- Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`) → local
+  audit identity (`amj2.6`) oraz filesystem modes (`amj2.7`) → storage recovery
+  (`amj2.8`). Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają
+  publication-bound i nie mogą przyjmować sukcesu zadeklarowanego przez klienta.
+- `wilq-seo-c9h9.27` usuwa historyczny `CODEX_API_KEY` z connector readiness i
+  ma raportować wyłącznie typed lokalną gotowość CLI/login bez odczytu sekretu.
+
 - `wilq-seo-r564.7` jest zamknięty i wypchnięty w `b23e413a`.
 - `wilq-seo-r564.8` jest zamknięty: append-only draft revisions i human
   decisions są związane z dokładną wersją i digestami.

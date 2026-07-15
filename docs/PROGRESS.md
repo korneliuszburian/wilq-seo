@@ -192,10 +192,27 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Następny bezpieczny zakres
 
-1. Rozwijać najważniejszą wartość treściową: jawny wybór
-   strony/usługi/intencji/CTA, bibliotekę/historię treści, typed keyword/Ads
-   signals tylko z dowodami i realny Wilku UAT. Nie nadawać oceny 10/10 przed
-   tym dowodem.
+Fixed-point review jest zapisany w Beads jako epic `wilq-seo-amj2`. Kolejność
+pilota nie jest już luźną listą pomysłów:
+
+1. Naprawić `wilq-seo-amj2.2`: krok `dev_draft` ma czytać prawdziwą gotowość
+   exact ActionObject, a nie historyczny `missing_revision_bound_wordpress_seam`.
+2. Utrwalać jawne decyzje marketera o stronie, usłudze, intencji, CTA i planie
+   sekcji (`wilq-seo-amj2.1`), zamiast oznaczać automatyczną projekcję jako
+   ukończony multi-step.
+3. Dopiero do zaakceptowanego scope dołączyć typed GSC/Ads/keyword evidence
+   mapowane do strony i sekcji (`wilq-seo-amj2.3`), następnie wyrównać skill z
+   tą samą ścieżką API (`wilq-seo-amj2.4`).
+4. Równolegle domknąć lokalną granicę pilota: bezwarunkowy loopback, server-owned
+   local audit identity, prywatne filesystem modes i wersjonowany recovery proof
+   (`wilq-seo-amj2.5`–`.8`).
+5. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
+   potwierdzonym publication event i persisted metric evidence; klient nie może
+   zadeklarować sukcesu.
+
+Architektoniczne tickety `wilq-seo-jnra`, `wilq-seo-djly` i `wilq-seo-kgvy`
+zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie
+`service.py` lub Ads bez konkretnego ryzyka produktu jest poza roadmapą.
 
 ## Jawne blokery i ograniczenia
 
@@ -210,5 +227,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   path, ale status jest mylący i wymaga osobnego typed login-readiness slice.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
+- Obecny runtime jest lokalny, ale przed pilotem trzeba usunąć zaufanie do
+  nagłówka `Host`, prywatnie ustawić prawa state/logów i dodać syntetyczny,
+  niedestrukcyjny storage recovery proof. Remote deployment nadal wymaga
+  osobnego auth/TLS/owner contractu.
+- PostgreSQL/HA, monitoring i alerting, retencja/legal hold, realny restore
+  drill, rotacja credentials oraz publiczny reverse proxy pozostają decyzjami
+  ownera/IOD albo pracą wymagającą maintenance window. Nie są dowodem lokalnego
+  pilota i nie są zamknięte.
 - Goal 005, produkcyjna gotowość i pełna użyteczność dla marketera nie są
   zakończone.
