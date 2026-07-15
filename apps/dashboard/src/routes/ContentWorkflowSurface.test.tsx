@@ -231,6 +231,9 @@ describe("ContentWorkflowSurface", () => {
     expect(await screen.findByText("Zatwierdź zakres treści")).toBeInTheDocument();
     expect(screen.getByText("właściciel firmy")).toBeInTheDocument();
     expect(screen.getByText("Skontaktuj się z Ekologus.")).toBeInTheDocument();
+    expect(screen.getByText("bdo odpady")).toBeInTheDocument();
+    expect(screen.getByText(/120 wyśw. · 12 klik. · CTR 10.0%/)).toBeInTheDocument();
+    expect(screen.getByText(/brak ścisłego mapowania do strony i usługi/)).toBeInTheDocument();
     fireEvent.click(
       screen.getByLabelText("Sprawdziłem stronę, usługę, intencję, odbiorcę i CTA.")
     );
@@ -1639,6 +1642,32 @@ function planningWorkspace({
       purpose: section.purpose,
       evidence_ids: section.evidence_ids
     })),
+    search_demand: {
+      status: "available" as const,
+      gsc_query_rows: [{
+        source_kind: "gsc_query" as const,
+        source_connector: "google_search_console" as const,
+        term: "bdo odpady",
+        page: "https://ekologus.pl/bdo/",
+        service_card_id: "service_bdo",
+        section_headings: ["Kogo dotyczy BDO"],
+        period: "last_28_days",
+        freshness: "fresh" as const,
+        collected_at: "2026-07-15T12:00:00Z",
+        evidence_ids: ["ev_gsc_bdo"],
+        impressions: 120,
+        clicks: 12,
+        ctr: 0.1,
+        average_position: 6.4,
+        average_monthly_searches: null
+      }],
+      ads_term_rows: [],
+      keyword_planner_rows: [],
+      source_connectors: ["google_search_console"],
+      evidence_ids: ["ev_gsc_bdo"],
+      optional_ads_status: "not_exactly_mapped" as const,
+      safe_next_step: "Sprawdź zapytania GSC przypisane do strony i sekcji."
+    },
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"]
   };

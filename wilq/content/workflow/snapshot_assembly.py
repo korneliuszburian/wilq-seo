@@ -28,6 +28,7 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.demand_evidence import build_content_search_demand_evidence
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.operator_steps import (
     ContentWorkflowOperatorBlocker,
@@ -46,7 +47,7 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionState,
     content_draft_package_digest,
 )
-from wilq.schemas import ContentFreshnessAssessment
+from wilq.schemas import ContentFreshnessAssessment, MetricFact
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,8 @@ def assemble_content_work_item_snapshot(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
     revision_state: ContentDraftRevisionState | None = None,
     planning_decisions: list[ContentPlanningDecision] | None = None,
+    demand_metric_facts: list[MetricFact] | None = None,
+    demand_source_page: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     """Assemble the API-owned snapshot while keeping stage policy in callbacks."""
     preflight = callbacks.preflight(item, inventory_records)
@@ -112,6 +115,14 @@ def assemble_content_work_item_snapshot(
                 brief=brief,
                 draft=draft,
                 service_profile=service_profile_context,
+                search_demand=build_content_search_demand_evidence(
+                    metric_facts=demand_metric_facts or [],
+                    source_page=demand_source_page,
+                    final_canonical_url=brief.final_canonical_url,
+                    service_card_id=service_profile_context.service_card_id,
+                    draft=draft,
+                    freshness=freshness_assessment,
+                ),
             ),
             planning_decisions or [],
         )

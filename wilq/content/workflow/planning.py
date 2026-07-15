@@ -12,6 +12,7 @@ from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
+from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 
 ContentPlanningStage = Literal["scope", "section_map"]
 ContentPlanningDecisionValue = Literal["approved", "needs_changes"]
@@ -40,6 +41,7 @@ class ContentPlanningProposal(BaseModel):
     cta_direction: str = Field(min_length=1)
     internal_link_directions: list[str] = Field(default_factory=list)
     sections: list[ContentPlanningSection] = Field(min_length=1)
+    search_demand: ContentSearchDemandEvidence
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
 
@@ -99,6 +101,7 @@ def build_content_planning_proposal(
     brief: ContentSalesBrief,
     draft: ContentDraftPackage,
     service_profile: ContentWorkItemServiceProfileContext,
+    search_demand: ContentSearchDemandEvidence,
 ) -> ContentPlanningProposal:
     payload = {
         "work_item_id": brief.work_item_id,
@@ -119,6 +122,7 @@ def build_content_planning_proposal(
             }
             for section in draft.sections
         ],
+        "search_demand": search_demand.model_dump(mode="json"),
         "evidence_ids": list(
             dict.fromkeys(
                 [

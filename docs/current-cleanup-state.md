@@ -65,6 +65,10 @@ kontynuuj najwyższy bezpieczny task.
   Marketer nie ogląda już trzykolumnowej mapy public/signals/dev ani ACF wall:
   najpierw zatwierdza zakres, potem kolejność, cel i dowody sekcji. Konflikt
   zachowuje lokalną notatkę i wymaga jawnego odświeżenia.
+- Scope pokazuje typed zapytania GSC z metrykami, okresem, freshness i
+  przypisaniem do sekcji przez exact page/evidence. Ads i Keyword Planner nie
+  są zgadywane: pojawiają się tylko przy exact term+page+service; bieżący live
+  stan ma 2 wiersze GSC i 0 ściśle mapowanych wierszy Ads/Planner.
 - Nowa rewizja przechowuje exact `planning_digest`; ten sam digest przechodzi
   do child revision Codexa i WordPress ActionObject bindingu. Cofnięcie decyzji
   planistycznej lub zmiana proposal unieważnia review/handoff bez kasowania

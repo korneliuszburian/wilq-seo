@@ -2035,6 +2035,24 @@ export const ContentPlanningDecisionSchema = z.object({
   created_at: z.string()
 });
 
+const ContentSearchDemandRowSchema = z.object({
+  source_kind: z.enum(["gsc_query", "ads_search_term", "keyword_planner"]),
+  source_connector: z.enum(["google_search_console", "google_ads"]),
+  term: z.string().min(1),
+  page: z.string().min(1),
+  service_card_id: z.string().nullable(),
+  section_headings: z.array(z.string()).min(1),
+  period: z.string().min(1),
+  freshness: z.enum(["fresh", "stale", "missing", "blocked"]),
+  collected_at: z.string().nullable(),
+  evidence_ids: z.array(z.string()).min(1),
+  impressions: z.number().int().nullable(),
+  clicks: z.number().int().nullable(),
+  ctr: z.number().nullable(),
+  average_position: z.number().nullable(),
+  average_monthly_searches: z.number().int().nullable()
+});
+
 export const ContentPlanningWorkspaceSchema = z.object({
   proposal: z.object({
     work_item_id: z.string().min(1),
@@ -2053,6 +2071,16 @@ export const ContentPlanningWorkspaceSchema = z.object({
       purpose: z.string().min(1),
       evidence_ids: z.array(z.string())
     })).min(1),
+    search_demand: z.object({
+      status: z.enum(["available", "missing"]),
+      gsc_query_rows: z.array(ContentSearchDemandRowSchema),
+      ads_term_rows: z.array(ContentSearchDemandRowSchema),
+      keyword_planner_rows: z.array(ContentSearchDemandRowSchema),
+      source_connectors: z.array(z.string()),
+      evidence_ids: z.array(z.string()),
+      optional_ads_status: z.enum(["exact_rows_available", "not_exactly_mapped"]),
+      safe_next_step: z.string().min(1)
+    }),
     evidence_ids: z.array(z.string()),
     source_connectors: z.array(z.string())
   }),

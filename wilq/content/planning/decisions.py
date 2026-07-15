@@ -8,6 +8,7 @@ from urllib.parse import unquote, urlparse
 
 from wilq.content.canonical.urls import content_decision_url_semantics
 from wilq.content.inventory.gates import content_inventory_gate_status
+from wilq.content.workflow.demand_evidence import content_query_is_planning_signal
 from wilq.schemas import (
     ActionRisk,
     ContentDecisionItem,
@@ -234,7 +235,12 @@ def gsc_content_decisions(
                 evidence_ids=_unique(
                     evidence_id for item in page_items for evidence_id in item.evidence_ids
                 ),
-                metric_facts=metric_facts[:8],
+                metric_facts=sorted(
+                    metric_facts,
+                    key=lambda fact: not content_query_is_planning_signal(
+                        fact.dimensions.get("query", "")
+                    ),
+                )[:8],
                 action_ids=_unique(
                     action_id
                     for item in page_items

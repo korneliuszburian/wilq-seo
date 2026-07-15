@@ -183,6 +183,7 @@ from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticsResponse,
     ContentFreshnessAssessment,
+    MetricFact,
 )
 
 
@@ -469,6 +470,8 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
         audit=audit,
         revision_state=revision_state,
         planning_decisions=planning_decisions,
+        demand_metric_facts=decision.metric_facts,
+        demand_source_page=decision.page,
     )
 
 
@@ -548,6 +551,8 @@ def _build_content_work_item_snapshot_response(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
     revision_state: ContentDraftRevisionState | None = None,
     planning_decisions: list[ContentPlanningDecision] | None = None,
+    demand_metric_facts: list[MetricFact] | None = None,
+    demand_source_page: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     knowledge_match = match_content_knowledge_cards(item)
     service_profile_context = build_content_work_item_service_profile_context(
@@ -589,6 +594,8 @@ def _build_content_work_item_snapshot_response(
         audit=audit,
         revision_state=revision_state,
         planning_decisions=planning_decisions,
+        demand_metric_facts=demand_metric_facts,
+        demand_source_page=demand_source_page,
     )
 
 

@@ -20,6 +20,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.3` projektuje typed popyt bez nowego endpointu: live scope ma
+  2 świeże wiersze GSC powiązane exact page i evidence ID z 3 sekcjami.
+  Operatorowe zapytania z wieloma `-site:` nie wypierają zwykłych fraz z
+  limitu faktów. Ads/Planner pozostają opcjonalne i obecnie pokazują 0, bo brak
+  exact term+page+service mappingu; WILQ nie dopowiada słów. Desktop/mobile
+  proof 1/1, zero content POST:
+  `.local-lab/proof/dashboard-content-workflow/2026-07-15T23-53-12-663Z/`.
 - `wilq-seo-amj2.5` zamyka lokalną granicę sieciową pilota: API autoryzuje
   rzeczywisty peer socket zamiast nagłówka `Host`, dawny
   `WILQ_ALLOW_REMOTE_API` nie omija ochrony, a kanoniczny manager odrzuca bind
