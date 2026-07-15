@@ -1643,6 +1643,7 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
     ad_group_label: str = ""
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
+    safety_evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
     required_validation_labels: list[str] = Field(default_factory=list)

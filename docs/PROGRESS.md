@@ -104,9 +104,18 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   runner odkrywa aktualne pliki `test_*.py` i dzieli je deterministycznie na
   rozłączne shardy. `AGENTS.md` wymaga focused-first, jednego kosztownego procesu
   naraz, braku duplikatów pytest i niepowtarzania zielonych etapów bez zmiany kodu.
+- `wilq-seo-v9ab.15` wiąże podgląd wykluczającego słowa i review ActionObject z
+  pasującym dowodem 90 dni dla dokładnego terminu, kampanii i grupy reklam.
+  Sam dowód 30 dni pozostawia kandydata jako `needs_90_day_review`, bez preview
+  i bez action ID. Poprawny dowód nadal tworzy wyłącznie review z `apply=false`.
 
 ## Bieżący proof
 
+- Po managed restarcie live Ads summary ma 5 kandydatów, 5 pasujących preview
+  90 dni i jeden review-only action; wszystkie preview mają `apply=false`.
+  Focused public API/validator 3/3, shared schemas 37/37, Ruff i mypy są zielone.
+  Browser `/ads-doctor` zachowuje evidence-first pierwszy ekran; heading pojawił
+  się po 1,432 s, bez technicznych ID nad foldem.
 - Publiczny live snapshot po managed restarcie zwraca wyłącznie
   `structured_generation_readiness`; rekursywny smoke dla obu kandydatów nie
   znalazł `structured_generation`, promptów, `model_input` ani output schema.

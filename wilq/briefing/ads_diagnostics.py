@@ -4172,9 +4172,12 @@ def _negative_keywords_read_contract(
         search_term_safety_read_contract.safety_rows,
         keyword_match_context_read_contract.context_rows,
     )
-    negative_keyword_action_ids = [
-        action_id for action_id in action_ids if action_id == NEGATIVE_KEYWORD_ACTION_ID
-    ]
+    has_safe_preview = any(candidate.payload_preview is not None for candidate in candidates)
+    negative_keyword_action_ids = (
+        [action_id for action_id in action_ids if action_id == NEGATIVE_KEYWORD_ACTION_ID]
+        if has_safe_preview
+        else []
+    )
     if not candidates:
         return _negative_keywords_no_candidates_contract(
             search_terms_read_contract,
@@ -4316,7 +4319,11 @@ def _negative_keyword_candidates(
             (row.campaign_id, row.ad_group_id),
             [],
         )[:8]
-        payload_preview = _negative_keyword_change_preview(row, safety_row)
+        payload_preview = (
+            _negative_keyword_change_preview(row, safety_row)
+            if safety_row is not None
+            else None
+        )
         review_score = _negative_keyword_review_score(
             row,
             safety_row,
@@ -4472,11 +4479,11 @@ def _negative_keyword_review_reason(
 
 def _negative_keyword_change_preview(
     row: AdsSearchTermMetricRow,
-    safety_row: AdsSearchTermSafetyRow | None,
+    safety_row: AdsSearchTermSafetyRow,
 ) -> AdsNegativeKeywordPayloadPreview:
-    safety_evidence_ids = safety_row.evidence_ids if safety_row else []
+    safety_evidence_ids = safety_row.evidence_ids
     evidence_ids = _unique([*row.evidence_ids, *safety_evidence_ids])
-    safety_metric_names = [fact.name for fact in safety_row.metric_facts] if safety_row else []
+    safety_metric_names = [fact.name for fact in safety_row.metric_facts]
     source_metric_names = _unique([*(fact.name for fact in row.metric_facts), *safety_metric_names])
     level: Literal["ad_group", "campaign_review_required"] = (
         "ad_group" if row.ad_group_id else "campaign_review_required"
@@ -4507,6 +4514,7 @@ def _negative_keyword_change_preview(
         ad_group_name=row.ad_group_name,
         reason=reason,
         evidence_ids=evidence_ids,
+        safety_evidence_ids=safety_evidence_ids,
         source_metric_names=source_metric_names,
         required_validation=[
             "review_search_term_context",

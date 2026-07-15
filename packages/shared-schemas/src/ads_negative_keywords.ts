@@ -20,6 +20,7 @@ export const AdsNegativeKeywordPayloadPreviewSchema = z.object({
   ad_group_label: z.string().optional().default(""),
   reason: z.string(),
   evidence_ids: z.array(z.string()),
+  safety_evidence_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   required_validation: z.array(z.string()),
   required_validation_labels: z.array(z.string()).optional().default([]),
@@ -91,5 +92,4 @@ export const AdsNegativeKeywordsReadContractSchema = z.object({
   action_ids: z.array(z.string()),
   next_step: z.string()
 });
-
 

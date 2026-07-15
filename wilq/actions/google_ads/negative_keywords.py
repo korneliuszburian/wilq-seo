@@ -179,13 +179,25 @@ def validate_negative_keyword_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(no_destructive_change(item_subject))
         if item.get("api_mutation_ready") is not False:
             errors.append(no_api_write(item_subject))
-        if not item.get("evidence_ids"):
+        evidence_ids = item.get("evidence_ids")
+        if not isinstance(evidence_ids, list) or not evidence_ids:
             errors.append(missing_evidence(item_subject))
+        safety_evidence_ids = item.get("safety_evidence_ids")
+        if not isinstance(safety_evidence_ids, list) or not safety_evidence_ids:
+            errors.append(missing(item_subject, "pasującego dowodu z ostatnich 90 dni"))
+        elif not isinstance(evidence_ids, list) or not set(safety_evidence_ids).issubset(
+            evidence_ids
+        ):
+            errors.append(wrong(item_subject, "dowód 90-dniowy nie należy do tej pozycji"))
     return errors
 
 
 def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[str, Any] | None:
-    candidate_groups = _candidate_fact_groups(facts)
+    candidate_groups = [
+        group
+        for group in _candidate_fact_groups(facts)
+        if any(fact.name.startswith("search_term_90d_") for fact in group)
+    ]
     candidate_facts = [fact for group in candidate_groups for fact in group]
     terms = _unique(
         fact.dimensions["search_term"]
@@ -353,6 +365,11 @@ def _payload_preview_items(groups: list[list[MetricFact]]) -> list[dict[str, Any
         evidence_ids = _unique(fact.evidence_id for fact in group)
         if not evidence_ids:
             continue
+        safety_evidence_ids = _unique(
+            fact.evidence_id for fact in group if fact.name.startswith("search_term_90d_")
+        )
+        if not safety_evidence_ids:
+            continue
         preview_id_parts = [
             "negative_keyword_preview",
             campaign_id or "campaign",
@@ -382,6 +399,7 @@ def _payload_preview_items(groups: list[list[MetricFact]]) -> list[dict[str, Any
                 "ad_group_name": dimensions.get("ad_group_name"),
                 "reason": reason,
                 "evidence_ids": evidence_ids,
+                "safety_evidence_ids": safety_evidence_ids,
                 "source_metric_names": _unique(fact.name for fact in group),
                 "required_validation": [
                     "review_search_term_context",
