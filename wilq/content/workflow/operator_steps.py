@@ -107,6 +107,7 @@ class ContentWorkflowOperatorFacts:
     structured_contract_safe_next_step: str
     revision_workspace_status: ContentDraftRevisionWorkspaceStatus = "empty"
     revision_context_current: bool = True
+    revision_bound_wordpress_handoff_ready: bool = False
 
 
 def build_content_workflow_operator_journey(
@@ -271,7 +272,11 @@ def build_content_workflow_operator_journey(
                 id="dev_draft",
                 title="Szkic na devie",
                 phase=dev_draft_phase,
-                readiness="blocked",
+                readiness=(
+                    "ready"
+                    if facts.revision_bound_wordpress_handoff_ready
+                    else "blocked"
+                ),
                 status_label=(
                     "zatwierdzona wersja czeka na bezpieczne przekazanie"
                     if facts.revision_workspace_status == "approved"
@@ -283,7 +288,10 @@ def build_content_workflow_operator_journey(
                     "sprawdzenia ani audytu."
                 ),
                 can_open=dev_draft_phase == "current",
-                can_submit=False,
+                can_submit=(
+                    dev_draft_phase == "current"
+                    and facts.revision_bound_wordpress_handoff_ready
+                ),
                 blocker=dev_draft_blocker,
                 safe_next_step=_dev_draft_safe_next_step(facts),
             ),
@@ -562,7 +570,7 @@ def _review_safe_next_step(facts: ContentWorkflowOperatorFacts) -> str:
 
 def _dev_draft_blocker(
     facts: ContentWorkflowOperatorFacts,
-) -> ContentWorkflowOperatorBlocker:
+) -> ContentWorkflowOperatorBlocker | None:
     status = facts.revision_workspace_status
     if not facts.structured_contract_present:
         return ContentWorkflowOperatorBlocker(
@@ -576,6 +584,8 @@ def _dev_draft_blocker(
             label="Zatwierdzenie dotyczy wcześniejszego kontekstu",
             reason="Zmiana planu albo adresu wymaga zapisania i sprawdzenia nowej wersji.",
         )
+    if status == "approved" and facts.revision_bound_wordpress_handoff_ready:
+        return None
     if status == "approved":
         return ContentWorkflowOperatorBlocker(
             code="missing_revision_bound_wordpress_seam",
@@ -605,6 +615,11 @@ def _dev_draft_safe_next_step(facts: ContentWorkflowOperatorFacts) -> str:
     if not facts.revision_context_current:
         return "Zapisz i sprawdź nową wersję powiązaną z aktualnym planem strony."
     if status == "approved":
+        if facts.revision_bound_wordpress_handoff_ready:
+            return (
+                "Przejdź przez podgląd, review, potwierdzenie i kontrolę bezpieczeństwa "
+                "tej samej wersji; zapis pozostaje wyłącznie szkicem."
+            )
         return (
             "Zatrzymaj zapis do WordPress. Najpierw przygotuj podgląd tej samej wersji "
             "i jawnie zatwierdź zapis wyłącznie jako szkic."

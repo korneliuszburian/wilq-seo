@@ -134,7 +134,7 @@ def test_revision_save_is_reloadable_idempotent_and_returns_raw_stale_conflict(
         "expected_can_review",
     ),
     [
-        ("approved", "dev_draft", False, False, False),
+        ("approved", "dev_draft", True, False, False),
         ("needs_changes", "draft", True, True, False),
         ("rejected", "draft", True, True, False),
         ("deferred", "review", True, False, True),
@@ -174,12 +174,13 @@ def test_exact_revision_decision_drives_the_five_step_journey(
     steps = {step["id"]: step for step in persisted["operator_steps"]}
     assert persisted["current_step_id"] == expected_step
     assert steps[expected_step]["can_submit"] is expected_can_submit
-    assert steps["dev_draft"]["readiness"] == "blocked"
-    assert steps["dev_draft"]["can_submit"] is False
     if decision == "approved":
-        assert steps["dev_draft"]["blocker"]["code"] == (
-            "missing_revision_bound_wordpress_seam"
-        )
+        assert steps["dev_draft"]["readiness"] == "ready"
+        assert steps["dev_draft"]["can_submit"] is True
+        assert steps["dev_draft"]["blocker"] is None
+    else:
+        assert steps["dev_draft"]["readiness"] == "blocked"
+        assert steps["dev_draft"]["can_submit"] is False
 
     retried = client.post(
         _review_path(work_item_id, revision["revision_id"]),
@@ -592,11 +593,6 @@ def test_approval_of_v1_never_approves_a_new_v2(
     monkeypatch.setattr(
         content_workflow_router,
         "build_content_work_item_wordpress_draft_execution_response",
-        reject_external_call,
-    )
-    monkeypatch.setattr(
-        content_workflow_router,
-        "build_content_work_item_structured_draft_runtime_response",
         reject_external_call,
     )
     monkeypatch.setattr(actions_router, "apply_action", reject_external_call)

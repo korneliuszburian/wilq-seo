@@ -113,9 +113,12 @@ kontynuuj najwyższy bezpieczny task.
   writes. Nie wracaj do mechanicznego splitu bez nowego błędu lub kosztu
   produktu.
 - Canonical production-pilot graph jest w `wilq-seo-amj2`. Jego pierwsze dwa
-  P0 to prawdziwa readiness kroku `dev_draft` (`amj2.2`) oraz persisted review
-  scope/section map (`amj2.1`). Typed demand evidence (`amj2.3`) zależy od
-  scope, a content skill (`amj2.4`) od obu decyzji i exact dev readiness.
+  P0 to prawdziwa readiness kroku `dev_draft` (`amj2.2`, domknięta) oraz
+  persisted review scope/section map (`amj2.1`, następna). Snapshot wiąże
+  `dev_draft.can_submit` z istniejącym exact revision-bound handoffem; brak
+  rewizji lub zmiana kontekstu pozostają zablokowane. Typed demand evidence
+  (`amj2.3`) zależy od scope, a content skill (`amj2.4`) od obu decyzji i exact
+  dev readiness.
 - Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`) → local
   audit identity (`amj2.6`) oraz filesystem modes (`amj2.7`) → storage recovery
   (`amj2.8`). Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają

@@ -216,6 +216,10 @@ def assemble_content_work_item_snapshot(
                 draft_package=draft,
                 state=revision_state,
             ),
+            revision_bound_wordpress_handoff_ready=(
+                wordpress_handoff.handoff_result.handoff is not None
+                and wordpress_handoff.handoff_result.handoff.revision_binding is not None
+            ),
         )
     )
     return ContentWorkItemWorkflowSnapshotResponse(

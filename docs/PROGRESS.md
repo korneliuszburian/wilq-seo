@@ -113,6 +113,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   uruchamia jeden background prewarm i natychmiast zwraca istniejący typed
   `daily_check_runtime_prewarm`. TTL, freshness, endpointy i invalidacja po
   connector/action/job pozostają bez zmian; content cold miss ma single-flight.
+- `wilq-seo-amj2.2` usuwa historyczny fałszywy blocker kroku `dev_draft`.
+  Snapshot wylicza gotowość z tego samego exact revision-bound handoffu, który
+  zasila ActionObject. Aktualna zatwierdzona rewizja ma `ready/can_submit=true`;
+  brak handoffu, zmieniony kontekst i obcy binding nadal pozostają fail-closed.
+  Nie odblokowuje to publikacji ani zapisu poza preview/review/confirm/impact.
 
 ## Bieżący proof
 
@@ -135,6 +140,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   pending, baza/child, `weak_cta`, semantic review, `publish_ready=false`, run ID
   w disclosure, zero WordPress requestów i zero horizontal overflow. Proof:
   `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
+- Exact dev-draft proof: 13 focused wariantów API/operator journey przechodzi,
+  w tym aktualny approved binding oraz stale-context blocker; focused React
+  1/1, TypeScript, Ruff i mypy są zielone. Playwright przeszedł pełny syntetyczny
+  save → reload → exact review → inline ActionObject na desktop/mobile 1/1, bez
+  realnego WordPress write. Live item bez rewizji poprawnie pozostaje
+  `missing_revision_bound_draft`.
 - Review użyteczności marketera/operatora daje 6/10 dla samego workflow, lecz
   utrzymuje 5/10 dla jakości realnego tekstu: poprzedni 38-słowny output nadal
   był generyczny i `needs_changes`; Service Profile i realny Wilku UAT są otwarte.
