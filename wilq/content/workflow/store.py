@@ -20,6 +20,10 @@ from wilq.content.workflow.codex_revision_commit import (
     persist_codex_completion,
     prepare_codex_completion,
 )
+from wilq.content.workflow.planning import (
+    ContentPlanningDecision,
+    ContentPlanningReviewRequest,
+)
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -154,6 +158,71 @@ class ContentWorkflowStore:
             status="created",
             revision=redacted_revision,
         )
+
+    def record_planning_review(
+        self,
+        work_item_id: str,
+        request: ContentPlanningReviewRequest,
+    ) -> tuple[Literal["created", "idempotent"], ContentPlanningDecision]:
+        redacted = ContentPlanningReviewRequest.model_validate(
+            redact_mapping(request.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            latest = _latest_planning_decision(connection, work_item_id, redacted.stage)
+            if latest is not None and all(
+                (
+                    latest.planning_digest == redacted.expected_planning_digest,
+                    latest.decision == redacted.decision,
+                    latest.reviewed_by == redacted.reviewed_by,
+                    latest.checked_items == redacted.checked_items,
+                    latest.notes == redacted.notes,
+                )
+            ):
+                return "idempotent", latest
+            decision = ContentPlanningDecision(
+                decision_id=f"content_planning_review_{uuid4().hex}",
+                decision_number=1 if latest is None else latest.decision_number + 1,
+                work_item_id=work_item_id,
+                stage=redacted.stage,
+                planning_digest=redacted.expected_planning_digest,
+                decision=redacted.decision,
+                reviewed_by=redacted.reviewed_by,
+                checked_items=redacted.checked_items,
+                notes=redacted.notes,
+                created_at=utc_now(),
+            )
+            safe = ContentPlanningDecision.model_validate(
+                redact_mapping(decision.model_dump(mode="json"))
+            )
+            connection.execute(
+                """
+                INSERT INTO content_planning_reviews (
+                  decision_id, work_item_id, stage, decision_number,
+                  planning_digest, decision, created_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    safe.decision_id,
+                    safe.work_item_id,
+                    safe.stage,
+                    safe.decision_number,
+                    safe.planning_digest,
+                    safe.decision,
+                    safe.created_at.isoformat(),
+                    _model_json(safe),
+                ),
+            )
+        return "created", safe
+
+    def load_planning_decisions(self, work_item_id: str) -> list[ContentPlanningDecision]:
+        with self._connect() as connection:
+            return [
+                decision
+                for stage in ("scope", "section_map")
+                if (decision := _latest_planning_decision(connection, work_item_id, stage))
+                is not None
+            ]
 
     def review_draft_revision(
         self,
@@ -733,6 +802,21 @@ class ContentWorkflowStore:
         )
         connection.execute(
             """
+            CREATE TABLE IF NOT EXISTS content_planning_reviews (
+              decision_id TEXT PRIMARY KEY,
+              work_item_id TEXT NOT NULL,
+              stage TEXT NOT NULL,
+              decision_number INTEGER NOT NULL CHECK (decision_number >= 1),
+              planning_digest TEXT NOT NULL,
+              decision TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL,
+              UNIQUE (work_item_id, stage, decision_number)
+            )
+            """
+        )
+        connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS content_draft_revisions (
               revision_id TEXT PRIMARY KEY,
               work_item_id TEXT NOT NULL,
@@ -812,6 +896,7 @@ def _model_json(
         | ContentWordPressDraftExecutionResult
         | ContentDraftRevision
         | ContentDraftRevisionReview
+        | ContentPlanningDecision
         | AuditEvent
         | ActionMutationAuditRecord
     ),
@@ -954,6 +1039,28 @@ def _latest_draft_revision_review(
     if row is None:
         return None
     return ContentDraftRevisionReview.model_validate(
+        json.loads(cast(str, row["payload_json"]))
+    )
+
+
+def _latest_planning_decision(
+    connection: sqlite3.Connection,
+    work_item_id: str,
+    stage: str,
+) -> ContentPlanningDecision | None:
+    row = connection.execute(
+        """
+        SELECT payload_json
+        FROM content_planning_reviews
+        WHERE work_item_id = ? AND stage = ?
+        ORDER BY decision_number DESC
+        LIMIT 1
+        """,
+        (work_item_id, stage),
+    ).fetchone()
+    if row is None:
+        return None
+    return ContentPlanningDecision.model_validate(
         json.loads(cast(str, row["payload_json"]))
     )
 

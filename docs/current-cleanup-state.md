@@ -52,8 +52,10 @@ kontynuuj najwyższy bezpieczny task.
   publiczny `ekologus.pl` pozostaje SEO truth, a Proudsite jest wyłącznie
   draft/dev workspace.
 - Snapshot ma jeden kanoniczny journey `scope → section_map → draft → review →
-  dev_draft`. Live krok to `draft`; ukończone `scope` i `section_map`
-  można tylko przeglądać ponownie bez przesuwania API-owned current step.
+  dev_draft`. Live krok to teraz uczciwie `scope`: zakres i mapa sekcji mają
+  typed proposal, exact digest i append-only decyzje, lecz w realnym stanie nie
+  zostały jeszcze zatwierdzone. Pierwszy zapis rewizji pozostaje zablokowany do
+  dwóch aktualnych approvals.
 - Ocena 8/10 dotyczy wyłącznie bezpieczeństwa exact handoffu. Operator workflow
   ma obecnie około 6/10, ale jakość realnego tekstu pozostaje około 5/10:
   sekcję można już poprawić przez grounded Codex proposal i porównać wynik,
@@ -114,7 +116,9 @@ kontynuuj najwyższy bezpieczny task.
   produktu.
 - Canonical production-pilot graph jest w `wilq-seo-amj2`. Jego pierwsze dwa
   P0 to prawdziwa readiness kroku `dev_draft` (`amj2.2`, domknięta) oraz
-  persisted review scope/section map (`amj2.1`, następna). Snapshot wiąże
+  persisted review scope/section map (`amj2.1`). Backend/store tego review jest
+  domknięty w `amj2.1.1`; następny slice podłącza formularze i browser proof.
+  Snapshot wiąże
   `dev_draft.can_submit` z istniejącym exact revision-bound handoffem; brak
   rewizji lub zmiana kontekstu pozostają zablokowane. Typed demand evidence
   (`amj2.3`) zależy od scope, a content skill (`amj2.4`) od obu decyzji i exact

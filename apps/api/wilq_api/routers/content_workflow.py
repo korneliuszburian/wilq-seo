@@ -85,6 +85,10 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.planning import (
+    ContentPlanningReviewRequest,
+    ContentPlanningReviewResponse,
+)
 from wilq.content.workflow.queue import (
     ContentWorkItemQueueResponse,
     build_content_work_item_queue_response,
@@ -229,6 +233,7 @@ def content_work_item_snapshot() -> ContentWorkItemBrowserWorkflowSnapshotRespon
             human_review=review,
             audit=audit,
             revision_state=store.load_draft_revision_state(work_item_id),
+            planning_decisions=store.load_planning_decisions(work_item_id),
         )
     )
 
@@ -258,6 +263,44 @@ def content_work_item_enrichment(
         diagnostics,
         work_item_id,
         queue=build_content_work_item_queue_response(diagnostics),
+    )
+
+
+@router.post(
+    "/api/content/work-items/{work_item_id}/planning-review",
+    response_model=ContentPlanningReviewResponse,
+)
+def content_work_item_planning_review(
+    work_item_id: str,
+    request: ContentPlanningReviewRequest,
+) -> ContentPlanningReviewResponse:
+    snapshot = _snapshot_for_work_item_or_404(work_item_id)
+    workspace = snapshot.planning_workspace
+    if workspace is None or (
+        request.expected_planning_digest != workspace.proposal.planning_digest
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."
+            ),
+        )
+    if request.stage == "section_map" and not workspace.scope_current:
+        raise HTTPException(
+            status_code=409,
+            detail="Najpierw zatwierdź aktualny zakres treści.",
+        )
+    status, decision = content_workflow_store().record_planning_review(
+        work_item_id,
+        request,
+    )
+    refreshed = _snapshot_for_work_item_or_404(work_item_id)
+    if refreshed.planning_workspace is None:
+        raise RuntimeError("Planning review succeeded without a planning workspace.")
+    return ContentPlanningReviewResponse(
+        status="recorded" if status == "created" else "idempotent",
+        decision=decision,
+        planning_workspace=refreshed.planning_workspace,
     )
 
 
@@ -648,6 +691,7 @@ def _snapshot_for_work_item_or_404(
         human_review=human_review,
         audit=audit,
         revision_state=revision_state,
+        planning_decisions=store.load_planning_decisions(work_item_id),
     )
     if snapshot is None:
         raise HTTPException(
@@ -663,6 +707,7 @@ def _snapshot_for_work_item_or_404(
             human_review=review,
             audit=audit_record,
             revision_state=revision_state,
+            planning_decisions=store.load_planning_decisions(work_item_id),
         )
         if snapshot is None:
             raise HTTPException(
@@ -682,6 +727,7 @@ def _snapshot_for_work_item_or_blocked_or_404(
         diagnostics,
         work_item_id,
         revision_state=revision_state,
+        planning_decisions=store.load_planning_decisions(work_item_id),
     )
     if snapshot is not None:
         review = store.latest_human_review(work_item_id)
@@ -694,6 +740,7 @@ def _snapshot_for_work_item_or_blocked_or_404(
             human_review=review,
             audit=audit_record,
             revision_state=revision_state,
+            planning_decisions=store.load_planning_decisions(work_item_id),
         )
         return snapshot if reviewed_snapshot is None else reviewed_snapshot
     blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(

@@ -34,6 +34,11 @@ from wilq.content.workflow.operator_steps import (
     ContentWorkflowOperatorFacts,
     build_content_workflow_operator_journey,
 )
+from wilq.content.workflow.planning import (
+    ContentPlanningDecision,
+    build_content_planning_proposal,
+    build_content_planning_workspace,
+)
 from wilq.content.workflow.queue import ContentWorkItemQueueCandidate
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -73,6 +78,7 @@ def assemble_content_work_item_snapshot(
     human_review_record: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
     revision_state: ContentDraftRevisionState | None = None,
+    planning_decisions: list[ContentPlanningDecision] | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     """Assemble the API-owned snapshot while keeping stage policy in callbacks."""
     preflight = callbacks.preflight(item, inventory_records)
@@ -151,6 +157,34 @@ def assemble_content_work_item_snapshot(
     section_map_blocker = draft_package.draft_package_result.blockers[0:1]
     structured_contract_blocker = structured_generation.structured_generation_result.blockers[0:1]
     signal_quality = None if brief is None else brief.signal_quality
+    planning_workspace = (
+        None
+        if brief is None or draft is None
+        else build_content_planning_workspace(
+            build_content_planning_proposal(
+                brief=brief,
+                draft=draft,
+                service_profile=service_profile_context,
+            ),
+            planning_decisions or [],
+        )
+    )
+    if (
+        revision_workspace.latest_revision is None
+        and planning_workspace is not None
+        and not (
+            planning_workspace.scope_current
+            and planning_workspace.section_map_current
+        )
+    ):
+        revision_workspace = revision_workspace.model_copy(
+            update={
+                "can_save": False,
+                "safe_next_step": (
+                    "Najpierw zatwierdź aktualny zakres i plan sekcji."
+                ),
+            }
+        )
     journey = build_content_workflow_operator_journey(
         ContentWorkflowOperatorFacts(
             sales_brief_present=brief is not None,
@@ -220,6 +254,12 @@ def assemble_content_work_item_snapshot(
                 wordpress_handoff.handoff_result.handoff is not None
                 and wordpress_handoff.handoff_result.handoff.revision_binding is not None
             ),
+            scope_review_current=bool(
+                planning_workspace and planning_workspace.scope_current
+            ),
+            section_map_review_current=bool(
+                planning_workspace and planning_workspace.section_map_current
+            ),
         )
     )
     return ContentWorkItemWorkflowSnapshotResponse(
@@ -235,6 +275,7 @@ def assemble_content_work_item_snapshot(
         wordpress_handoff=wordpress_handoff,
         measurement_window=measurement_window,
         revision_workspace=revision_workspace,
+        planning_workspace=planning_workspace,
         current_step_id=journey.current_step_id,
         operator_steps=journey.steps,
     )

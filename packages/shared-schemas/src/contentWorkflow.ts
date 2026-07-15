@@ -2020,6 +2020,46 @@ const ContentWorkItemServiceProfileContextDefault = {
   knowledge_card_ids: []
 };
 
+export const ContentPlanningDecisionSchema = z.object({
+  decision_id: z.string().min(1),
+  decision_number: z.number().int().positive(),
+  work_item_id: z.string().min(1),
+  stage: z.enum(["scope", "section_map"]),
+  planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  decision: z.enum(["approved", "needs_changes"]),
+  reviewed_by: z.string().min(1),
+  checked_items: z.array(z.string()),
+  notes: z.string(),
+  created_at: z.string()
+});
+
+export const ContentPlanningWorkspaceSchema = z.object({
+  proposal: z.object({
+    work_item_id: z.string().min(1),
+    planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+    final_canonical_url: z.string().min(1),
+    service_card_id: z.string().nullable(),
+    service_label: z.string().nullable(),
+    target_reader: z.string().min(1),
+    buyer_problem: z.string().min(1),
+    buyer_trigger: z.string().min(1),
+    search_intent: z.string().min(1),
+    cta_direction: z.string().min(1),
+    internal_link_directions: z.array(z.string()),
+    sections: z.array(z.object({
+      heading: z.string().min(1),
+      purpose: z.string().min(1),
+      evidence_ids: z.array(z.string())
+    })).min(1),
+    evidence_ids: z.array(z.string()),
+    source_connectors: z.array(z.string())
+  }),
+  scope_decision: ContentPlanningDecisionSchema.nullable(),
+  section_map_decision: ContentPlanningDecisionSchema.nullable(),
+  scope_current: z.boolean(),
+  section_map_current: z.boolean()
+});
+
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   response_type: z.literal("workflow_snapshot").default("workflow_snapshot"),
   freshness_assessment: ContentFreshnessAssessmentSchema,
@@ -2036,6 +2076,7 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponseSchema,
   measurement_window: ContentWorkItemMeasurementWindowResponseSchema,
   revision_workspace: ContentDraftRevisionWorkspaceSchema,
+  planning_workspace: ContentPlanningWorkspaceSchema.nullable().optional(),
   current_step_id: ContentWorkflowOperatorStepIdSchema,
   operator_steps: z.array(ContentWorkflowOperatorStepSchema).length(5)
 }).superRefine((snapshot, context) => {

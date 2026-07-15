@@ -38,6 +38,8 @@ def _facts(
         structured_contract_present=structured_contract_present,
         structured_contract_blocker=None,
         structured_contract_safe_next_step="Uzupełnij kontrakt szkicu.",
+        scope_review_current=True,
+        section_map_review_current=True,
     )
 
 

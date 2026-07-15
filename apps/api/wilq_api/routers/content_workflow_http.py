@@ -93,6 +93,7 @@ def project_content_work_item_browser_snapshot(
         wordpress_handoff=snapshot.wordpress_handoff,
         measurement_window=snapshot.measurement_window,
         revision_workspace=snapshot.revision_workspace,
+        planning_workspace=snapshot.planning_workspace,
         current_step_id=snapshot.current_step_id,
         operator_steps=snapshot.operator_steps,
     )

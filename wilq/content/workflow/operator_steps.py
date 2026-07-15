@@ -108,6 +108,8 @@ class ContentWorkflowOperatorFacts:
     revision_workspace_status: ContentDraftRevisionWorkspaceStatus = "empty"
     revision_context_current: bool = True
     revision_bound_wordpress_handoff_ready: bool = False
+    scope_review_current: bool = False
+    section_map_review_current: bool = False
 
 
 def build_content_workflow_operator_journey(
@@ -119,8 +121,10 @@ def build_content_workflow_operator_journey(
     review-bound text revision. Only the revision workspace can advance the journey
     from ``draft`` to ``review`` and then to the blocked ``dev_draft`` boundary.
     """
-    scope_complete = _scope_readiness(facts) != "blocked"
-    section_map_complete = scope_complete and facts.section_map_present
+    scope_complete = facts.scope_review_current and _scope_readiness(facts) != "blocked"
+    section_map_complete = (
+        scope_complete and facts.section_map_present and facts.section_map_review_current
+    )
     current_step_id: ContentWorkflowOperatorStepId
     if not scope_complete:
         current_step_id = "scope"
@@ -317,7 +321,7 @@ def _scope_readiness(
 ) -> ContentWorkflowOperatorStepReadiness:
     if not facts.sales_brief_present or facts.sales_brief_signal_status in {None, "thin"}:
         return "blocked"
-    if facts.sales_brief_signal_status == "review_required":
+    if facts.sales_brief_signal_status == "review_required" or not facts.scope_review_current:
         return "review_required"
     return "ready"
 
@@ -341,6 +345,15 @@ def _scope_blocker(
             label="Zakres wymaga review",
             reason=facts.sales_brief_signal_reason
             or "Część wiedzy albo twierdzeń wymaga decyzji człowieka.",
+        )
+    if not facts.scope_review_current:
+        return ContentWorkflowOperatorBlocker(
+            code="scope_review_missing",
+            label="Zakres wymaga decyzji marketera",
+            reason=(
+                "Strona, usługa, intencja, odbiorca i CTA nie zostały jeszcze "
+                "zatwierdzone jako jedna wersja planu."
+            ),
         )
     if facts.sales_brief_signal_status == "thin":
         return ContentWorkflowOperatorBlocker(
@@ -636,8 +649,17 @@ def _section_map_blocker(
 ) -> ContentWorkflowOperatorBlocker | None:
     if not scope_complete:
         return _prerequisite_blocker("scope", "Najpierw domknij zakres i cel.")
-    if facts.section_map_present:
+    if facts.section_map_present and facts.section_map_review_current:
         return None
+    if facts.section_map_present:
+        return ContentWorkflowOperatorBlocker(
+            code="section_map_review_missing",
+            label="Plan sekcji wymaga decyzji marketera",
+            reason=(
+                "Kolejność, cel i dowody sekcji nie zostały zatwierdzone dla "
+                "aktualnej wersji planu."
+            ),
+        )
     return facts.section_map_blocker or ContentWorkflowOperatorBlocker(
         code="missing_section_map",
         label="Brakuje planu sekcji",

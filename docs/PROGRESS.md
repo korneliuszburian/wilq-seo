@@ -1,6 +1,6 @@
 # WILQ Progress Ledger
 
-Ostatnia aktualizacja: 2026-07-15.
+Ostatnia aktualizacja: 2026-07-16.
 
 To jest krótki stan bieżący. Historia zmian i proofów pozostaje w git, Beads
 i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
@@ -118,6 +118,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   zasila ActionObject. Aktualna zatwierdzona rewizja ma `ready/can_submit=true`;
   brak handoffu, zmieniony kontekst i obcy binding nadal pozostają fail-closed.
   Nie odblokowuje to publikacji ani zapisu poza preview/review/confirm/impact.
+- `wilq-seo-amj2.1.1` utrwala pierwszą API-owned wersję decyzji planistycznych.
+  Snapshot pokazuje exact digest zakresu i mapy sekcji oraz najnowsze decyzje
+  `scope` i `section_map`. Review jest idempotentne, stary digest i próba
+  zatwierdzenia mapy przed zakresem kończą się typed `409`. Pierwszej rewizji
+  nie można zapisać, dopóki obie decyzje nie są aktualne i `approved`.
 
 ## Bieżący proof
 
@@ -170,8 +175,9 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   restart kończy się zdrowym API `:8000` i dashboardem `:5173`. Live metrics:
   109 541 faktów, 4 791 refresh runs, 8 connectorów. Queue nadal jest uczciwie
   density-blocked: 2 pozycje, 1 wykonalna przy wymaganych 3.
-- Live snapshot pozostaje uczciwie na `draft`: workspace jest pusty, zapis
-  pierwszej wersji jest dostępny, review i `dev_draft` są zamknięte.
+- Po managed restarcie live snapshot pozostaje uczciwie na `scope`: typed plan
+  i 64-znakowy digest istnieją, obie decyzje są niezapisane, a pierwsza rewizja
+  ma `can_save=false`. Nie zapisano decyzji w realnym lokalnym stanie.
 - Syntetyczny publiczny proof ActionObject utworzył dokładnie jeden draft przez
   spy-adapter. Siedem manipulacji bindingiem, eventy legacy, późniejsza v2,
   równoległy drugi apply i replay tej samej zgody zwróciły typed `409` z
@@ -206,18 +212,15 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 Fixed-point review jest zapisany w Beads jako epic `wilq-seo-amj2`. Kolejność
 pilota nie jest już luźną listą pomysłów:
 
-1. Naprawić `wilq-seo-amj2.2`: krok `dev_draft` ma czytać prawdziwą gotowość
-   exact ActionObject, a nie historyczny `missing_revision_bound_wordpress_seam`.
-2. Utrwalać jawne decyzje marketera o stronie, usłudze, intencji, CTA i planie
-   sekcji (`wilq-seo-amj2.1`), zamiast oznaczać automatyczną projekcję jako
-   ukończony multi-step.
-3. Dopiero do zaakceptowanego scope dołączyć typed GSC/Ads/keyword evidence
+1. Podłączyć API-owned review zakresu i mapy sekcji do aktywnego workspace'u
+   oraz sprawdzić reload/conflict w browserze (`wilq-seo-amj2.1`).
+2. Dopiero do zaakceptowanego scope dołączyć typed GSC/Ads/keyword evidence
    mapowane do strony i sekcji (`wilq-seo-amj2.3`), następnie wyrównać skill z
    tą samą ścieżką API (`wilq-seo-amj2.4`).
-4. Równolegle domknąć lokalną granicę pilota: bezwarunkowy loopback, server-owned
+3. Równolegle domknąć lokalną granicę pilota: bezwarunkowy loopback, server-owned
    local audit identity, prywatne filesystem modes i wersjonowany recovery proof
    (`wilq-seo-amj2.5`–`.8`).
-5. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
+4. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
    potwierdzonym publication event i persisted metric evidence; klient nie może
    zadeklarować sukcesu.
 

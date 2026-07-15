@@ -11,6 +11,10 @@ from apps.api.wilq_api.routers import actions as actions_router
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
+from wilq.content.workflow.planning import (
+    ContentPlanningWorkspace,
+    build_content_planning_workspace,
+)
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
@@ -29,6 +33,87 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
 )
+
+
+def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    client, work_item_id, snapshot = _planning_review_snapshot(monkeypatch, tmp_path)
+    planning = snapshot["planning_workspace"]
+    digest = planning["proposal"]["planning_digest"]
+
+    assert snapshot["current_step_id"] == "scope"
+    assert snapshot["revision_workspace"]["can_save"] is False
+    assert planning["scope_current"] is False
+    assert planning["section_map_current"] is False
+
+    premature_section_map = client.post(
+        _planning_review_path(work_item_id),
+        json=_planning_review_payload("section_map", digest),
+    )
+    assert premature_section_map.status_code == 409
+    assert premature_section_map.json()["detail"] == (
+        "Najpierw zatwierdź aktualny zakres treści."
+    )
+
+    scope_payload = _planning_review_payload("scope", digest)
+    scope = client.post(_planning_review_path(work_item_id), json=scope_payload)
+    assert scope.status_code == 200
+    assert scope.json()["status"] == "recorded"
+    assert scope.json()["planning_workspace"]["scope_current"] is True
+    assert _selected_snapshot(client, work_item_id)["current_step_id"] == "section_map"
+
+    repeated = client.post(_planning_review_path(work_item_id), json=scope_payload)
+    assert repeated.status_code == 200
+    assert repeated.json()["status"] == "idempotent"
+    assert repeated.json()["decision"]["decision_id"] == scope.json()["decision"][
+        "decision_id"
+    ]
+
+    stale_digest = "0" * 64 if digest != "0" * 64 else "1" * 64
+    stale = client.post(
+        _planning_review_path(work_item_id),
+        json=_planning_review_payload("section_map", stale_digest),
+    )
+    assert stale.status_code == 409
+    assert stale.json()["detail"] == (
+        "Plan treści zmienił się. Odśwież element przed zapisaniem decyzji."
+    )
+
+    section_map = client.post(
+        _planning_review_path(work_item_id),
+        json=_planning_review_payload("section_map", digest),
+    )
+    assert section_map.status_code == 200
+    assert section_map.json()["planning_workspace"]["section_map_current"] is True
+
+    unlocked = _selected_snapshot(client, work_item_id)
+    assert unlocked["current_step_id"] == "draft"
+    assert unlocked["revision_workspace"]["can_save"] is True
+    assert next(
+        step for step in unlocked["operator_steps"] if step["id"] == "draft"
+    )["can_submit"] is True
+
+    current_planning = ContentPlanningWorkspace.model_validate(
+        unlocked["planning_workspace"]
+    )
+    changed_proposal = current_planning.proposal.model_copy(
+        update={"planning_digest": stale_digest}
+    )
+    changed_workspace = build_content_planning_workspace(
+        changed_proposal,
+        [
+            decision
+            for decision in (
+                current_planning.scope_decision,
+                current_planning.section_map_decision,
+            )
+            if decision is not None
+        ],
+    )
+    assert changed_workspace.scope_current is False
+    assert changed_workspace.section_map_current is False
 
 
 def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(
@@ -759,6 +844,23 @@ def _revision_ready_snapshot(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> tuple[TestClient, str, dict[str, Any]]:
+    client, work_item_id, snapshot = _planning_review_snapshot(monkeypatch, tmp_path)
+    digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    for stage in ("scope", "section_map"):
+        response = client.post(
+            _planning_review_path(work_item_id),
+            json=_planning_review_payload(stage, digest),
+        )
+        assert response.status_code == 200
+    snapshot = _selected_snapshot(client, work_item_id)
+    assert snapshot["revision_workspace"]["can_save"] is True
+    return client, work_item_id, snapshot
+
+
+def _planning_review_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> tuple[TestClient, str, dict[str, Any]]:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
     client = TestClient(app)
     queue = client.get("/api/content/work-items/queue").json()
@@ -771,15 +873,16 @@ def _revision_ready_snapshot(
         snapshot = cast(dict[str, Any], response.json())
         if snapshot.get("response_type") != "workflow_snapshot":
             continue
+        planning = snapshot.get("planning_workspace")
         workspace = snapshot["revision_workspace"]
         evidence_ids = {
             evidence_id
             for section in workspace["editor_sections"]
             for evidence_id in section["evidence_ids"]
         }
-        if workspace["can_save"] and evidence_ids:
+        if planning is not None and workspace["status"] == "empty" and evidence_ids:
             return client, candidate["work_item_id"], snapshot
-    pytest.fail("Revision API proof requires one saveable work item with bound evidence.")
+    pytest.fail("Planning API proof requires one work item with a typed evidence plan.")
 
 
 def _selected_snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
@@ -871,6 +974,21 @@ def _review_payload(revision: dict[str, Any], decision: str) -> dict[str, Any]:
 
 def _save_path(work_item_id: str) -> str:
     return f"/api/content/work-items/{work_item_id}/draft-revisions"
+
+
+def _planning_review_path(work_item_id: str) -> str:
+    return f"/api/content/work-items/{work_item_id}/planning-review"
+
+
+def _planning_review_payload(stage: str, digest: str) -> dict[str, Any]:
+    return {
+        "stage": stage,
+        "expected_planning_digest": digest,
+        "decision": "approved",
+        "reviewed_by": "wilku",
+        "checked_items": ["zakres", "dowody", "CTA"],
+        "notes": "Sprawdzono aktualną wersję planu.",
+    }
 
 
 def _review_path(work_item_id: str, revision_id: str) -> str:

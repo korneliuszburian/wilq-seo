@@ -36,6 +36,7 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBrowserSnapshotResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
@@ -67,6 +68,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/work-items/{work_item_id}/enrichment",
     ): ContentOpportunityEnrichmentResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/planning-review",
+    ): ContentPlanningReviewResponse,
     (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions",

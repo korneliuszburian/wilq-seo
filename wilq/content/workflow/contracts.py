@@ -59,6 +59,7 @@ from wilq.content.quality.revision_apply import ContentRevisionApplication
 from wilq.content.review.human import ContentHumanReview, ContentHumanReviewBlocker
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.planning import ContentPlanningWorkspace
 from wilq.content.workflow.queue import ContentWorkItemQueueBlocker, ContentWorkItemQueueCandidate
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -570,6 +571,7 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
     measurement_window: ContentWorkItemMeasurementWindowResponse
     revision_workspace: ContentDraftRevisionWorkspace
+    planning_workspace: ContentPlanningWorkspace | None = None
     current_step_id: workflow_steps.ContentWorkflowOperatorStepId
     operator_steps: workflow_steps.ContentWorkflowOperatorSteps
 
@@ -600,6 +602,7 @@ class ContentWorkItemBrowserWorkflowSnapshotResponse(BaseModel):
     wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
     measurement_window: ContentWorkItemMeasurementWindowResponse
     revision_workspace: ContentDraftRevisionWorkspace
+    planning_workspace: ContentPlanningWorkspace | None = None
     current_step_id: workflow_steps.ContentWorkflowOperatorStepId
     operator_steps: workflow_steps.ContentWorkflowOperatorSteps
 
