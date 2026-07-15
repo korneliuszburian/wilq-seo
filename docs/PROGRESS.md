@@ -95,6 +95,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 - Marketerowy WordPress dry-run udający ocenę tekstu i pięć osieroconych paneli
   zostały usunięte po pełnym reference proof. Techniczny payload dry-run nadal
   istnieje wyłącznie w audycie technicznym.
+- `wilq-seo-r564.14` usuwa pięć publicznych ścieżek ujawniających full generation
+  contract: legacy generation/runtime/dwa preview oraz `draft-variants`. Usunięto
+  OpenAI SDK/API-key runtime, dependency, env flags i browser schemas. OpenAPI
+  ma jeden content-model entrypoint: exact `codex-proposal`; internal contract,
+  output i preview blockers pozostają częścią jego serwerowego działania.
 - `wilq-seo-c9h9.25` normalizuje bounded backend proof dla wykonawcy: jeden
   runner odkrywa aktualne pliki `test_*.py` i dzieli je deterministycznie na
   rozłączne shardy. `AGENTS.md` wymaga focused-first, jednego kosztownego procesu
@@ -168,12 +173,7 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Następny bezpieczny zakres
 
-1. Wykonać `wilq-seo-r564.14`: migrować `wilq-content-operator` i testy na
-   readiness plus exact `codex-proposal`, a następnie usunąć cztery publiczne
-   legacy generation/runtime/preview routes, API-key runtime, zależność i martwe
-   frontend/shared kontrakty. Zachować internal contract/output i preview
-   blockers używane przez kanoniczny Codex proposal.
-2. Następnie rozwijać najważniejszą wartość treściową: jawny wybór
+1. Rozwijać najważniejszą wartość treściową: jawny wybór
    strony/usługi/intencji/CTA, bibliotekę/historię treści, typed keyword/Ads
    signals tylko z dowodami i realny Wilku UAT. Nie nadawać oceny 10/10 przed
    tym dowodem.
@@ -186,11 +186,9 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   rezydualnym.
 - Queue nie ma wymaganych trzech wykonalnych pozycji; WILQ nie tworzy sztucznej
   trzeciej propozycji.
-- Dashboard ma jedną ścieżkę Codex proposal, ale OpenAPI nadal wystawia cztery
-  stare Structured Outputs generation/runtime/preview routes. Jedna z nich może
-  ponownie ujawnić pełny execution contract, a live runtime zależy od API keya i
-  nie przesyła bogatego `model_input`. `wilq-seo-r564.14` jest otwartym P0;
-  dopóki nie jest zamknięty, nie wolno claimować jednego entrypointu capability.
+- `openai_codex` connector readiness nadal opisuje historyczny `CODEX_API_KEY`,
+  choć exact proposal używa lokalnego `codex login`. Nie jest to drugi execution
+  path, ale status jest mylący i wymaga osobnego typed login-readiness slice.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
 - Goal 005, produkcyjna gotowość i pełna użyteczność dla marketera nie są

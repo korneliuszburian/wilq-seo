@@ -54,7 +54,8 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "GET /api/content/work-items/{work_item_id}/snapshot",
         "GET /api/content/work-items/{work_item_id}/enrichment",
         "GET /api/content/knowledge-cards",
-        "POST /api/content/work-items/structured-draft-runtime",
+        "POST /api/content/work-items/{work_item_id}/draft-revisions/"
+        "{base_revision_id}/codex-proposal",
         "POST /api/content/work-items/quality-review",
         "POST /api/content/work-items/revision-apply",
         "POST /api/content/work-items/wordpress-draft-execution",
@@ -65,7 +66,9 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
 
     for phrase in (
         "nie jako autora tekstu",
-        "Nie wywołuj OpenAI SDK bezpośrednio",
+        "jedyny modelowy entrypoint",
+        "istniejącego loginu",
+        "structured_generation_readiness.status=ready",
         "Nie wywołuj WordPress bezpośrednio",
         "Nie ustawiaj ani nie akceptuj `publish_ready=true`",
         "Brak preflightu oznacza brak pisania",

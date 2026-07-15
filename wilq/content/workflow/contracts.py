@@ -12,18 +12,11 @@ from wilq.content.briefs.sales import (
     ContentSalesBriefSeed,
 )
 from wilq.content.claims.ledger import ContentClaimLedger
-from wilq.content.drafts.openai_runtime import (
-    OpenAIStructuredDraftRuntimeMode,
-    OpenAIStructuredDraftRuntimeResult,
-)
 from wilq.content.drafts.package import ContentDraftPackage, ContentDraftPackageBuildResult
-from wilq.content.drafts.preview import StructuredDraftPreviewResult
 from wilq.content.drafts.structured_generation import (
-    StructuredDraftGenerationContract,
     StructuredDraftGenerationResult,
     StructuredDraftOutput,
 )
-from wilq.content.drafts.variants import ContentDraftVariantsResult
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichment
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
@@ -146,37 +139,6 @@ class ContentWorkItemStructuredDraftGenerationRequest(BaseModel):
 class ContentWorkItemStructuredDraftGenerationResponse(BaseModel):
     item: ContentWorkItem
     structured_generation_result: StructuredDraftGenerationResult
-
-
-class ContentWorkItemDraftVariantsRequest(BaseModel):
-    item: ContentWorkItem
-    sales_brief: ContentSalesBrief | None = None
-    claim_ledger: ContentClaimLedger | None = None
-    draft_package: ContentDraftPackage | None = None
-
-
-class ContentWorkItemDraftVariantsResponse(BaseModel):
-    item: ContentWorkItem
-    draft_variants_result: ContentDraftVariantsResult
-
-
-class ContentWorkItemStructuredDraftRuntimeRequest(BaseModel):
-    contract: StructuredDraftGenerationContract | None = None
-    model: str | None = None
-    mode: OpenAIStructuredDraftRuntimeMode = "dry_run"
-
-
-class ContentWorkItemStructuredDraftRuntimeResponse(BaseModel):
-    runtime_result: OpenAIStructuredDraftRuntimeResult
-
-
-class ContentWorkItemStructuredDraftPreviewRequest(BaseModel):
-    contract: StructuredDraftGenerationContract | None = None
-    output: StructuredDraftOutput | None = None
-
-
-class ContentWorkItemStructuredDraftPreviewResponse(BaseModel):
-    preview_result: StructuredDraftPreviewResult
 
 
 class ContentWorkItemQualityReviewRequest(BaseModel):

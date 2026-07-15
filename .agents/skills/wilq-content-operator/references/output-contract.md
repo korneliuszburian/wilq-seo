@@ -40,7 +40,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 3. `Plan sesji`: 4-6 kroków w kolejności działania: odśwież dane źródłowe, enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrola jakości/review człowieka, WordPress draft-only albo measurement window.
 4. `Kiedy stop`: konkretne warunki zatrzymania: brak świeżych danych, brak Service Profile, forbidden claim, brak human review, WordPress tylko jako szkic, ACF/`elementy` tylko jako preview, measurement outcome niegotowy.
 5. `Co pokazać Wilkowi`: krótki pakiet review: decyzja, źródła, dozwolone twierdzenia, zablokowane twierdzenia i najbliższa akcja do sprawdzenia.
-6. `Ślad WILQ`: identyfikatory dowodów, źródeł danych, wybranego materiału i akcji. Dalsze bramki procesu opisuj po ludzku: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, structured runtime, quality review, revision plan, revision apply, human review, audit, WordPress draft-only, measurement. Endpointy pokazuj tylko w technicznych notatkach/debugu albo na jawne życzenie.
+6. `Ślad WILQ`: identyfikatory dowodów, źródeł danych, wybranego materiału i akcji. Dalsze bramki procesu opisuj po ludzku: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, readiness, exact revision, Codex proposal, quality review, human review, audit, WordPress draft-only, measurement. Endpointy pokazuj tylko w technicznych notatkach/debugu albo na jawne życzenie.
    Jeżeli wybrana propozycja z kolejki ma `action_ids`, pokaż te identyfikatory akcji
    w tej sekcji i sprawdź je przez `POST /api/actions/{action_id}/validate`.
    Globalnie zablokowana kolejka UAT nie usuwa action proofu dla wybranego
@@ -68,6 +68,6 @@ Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych ozna
 
 ## Bezpieczeństwo treści
 
-Skill może prowadzić sesję tworzenia treści, ale nie może sam produkować finalnego artykułu. Produkcyjny draft może powstać tylko przez WILQ API structured draft runtime, strict schema, evidence mapping, rejestr twierdzeń, quality review i human review.
+Skill może prowadzić sesję tworzenia treści, ale nie może sam produkować finalnego artykułu. Poprawka tekstu może powstać tylko dla API-owned readiness i dokładnej wersji `needs_changes` albo `rejected`, przez exact Codex proposal z `expected_base_digest`, evidence mappingiem i rejestrem twierdzeń. Wynik pozostaje niezatwierdzoną child revision do quality review i human review.
 
 WordPress handoff pozostaje draft-only albo podgląd zmian. Publikacja i destrukcyjna aktualizacja są niedozwolone.

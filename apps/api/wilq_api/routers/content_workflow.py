@@ -40,8 +40,6 @@ from wilq.content.workflow.api import (
     build_content_work_item_revision_plan_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
-    build_content_work_item_structured_draft_preview_response,
-    build_content_work_item_structured_draft_runtime_response,
     build_content_work_item_wordpress_authoring_payload_preview_response,
     build_content_work_item_wordpress_draft_execution_response,
 )
@@ -60,8 +58,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
-    ContentWorkItemDraftVariantsRequest,
-    ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeRequest,
@@ -81,12 +77,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemSnapshotResponse,
-    ContentWorkItemStructuredDraftGenerationRequest,
-    ContentWorkItemStructuredDraftGenerationResponse,
-    ContentWorkItemStructuredDraftPreviewRequest,
-    ContentWorkItemStructuredDraftPreviewResponse,
-    ContentWorkItemStructuredDraftRuntimeRequest,
-    ContentWorkItemStructuredDraftRuntimeResponse,
     ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
     ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
@@ -107,8 +97,6 @@ from wilq.content.workflow.revisions import (
 )
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
-    build_content_work_item_draft_variants_response,
-    build_content_work_item_structured_draft_generation_response,
 )
 from wilq.content.workflow.stage_measurement import (
     build_content_work_item_measurement_outcome_response,
@@ -493,59 +481,6 @@ def content_work_item_draft_package(
 
 
 @router.post(
-    "/api/content/work-items/structured-draft-generation",
-    response_model=ContentWorkItemStructuredDraftGenerationResponse,
-)
-def content_work_item_structured_draft_generation(
-    request: ContentWorkItemStructuredDraftGenerationRequest,
-) -> ContentWorkItemStructuredDraftGenerationResponse:
-    return build_content_work_item_structured_draft_generation_response(request)
-
-
-@router.post(
-    "/api/content/work-items/draft-variants",
-    response_model=ContentWorkItemDraftVariantsResponse,
-)
-def content_work_item_draft_variants(
-    request: ContentWorkItemDraftVariantsRequest,
-) -> ContentWorkItemDraftVariantsResponse:
-    return build_content_work_item_draft_variants_response(request)
-
-
-@router.post(
-    "/api/content/work-items/structured-draft-runtime",
-    response_model=ContentWorkItemStructuredDraftRuntimeResponse,
-)
-def content_work_item_structured_draft_runtime(
-    request: ContentWorkItemStructuredDraftRuntimeRequest,
-) -> ContentWorkItemStructuredDraftRuntimeResponse:
-    return build_content_work_item_structured_draft_runtime_response(request)
-
-
-@router.post(
-    "/api/content/work-items/structured-draft-preview",
-    response_model=ContentWorkItemStructuredDraftPreviewResponse,
-)
-def content_work_item_structured_draft_preview(
-    request: ContentWorkItemStructuredDraftPreviewRequest,
-) -> ContentWorkItemStructuredDraftPreviewResponse:
-    return build_content_work_item_structured_draft_preview_response(request)
-
-
-@router.post(
-    "/api/content/work-items/{work_item_id}/structured-draft-preview",
-    response_model=ContentWorkItemStructuredDraftPreviewResponse,
-)
-def content_work_item_structured_draft_preview_for_selected_item(
-    work_item_id: str,
-    request: ContentWorkItemStructuredDraftPreviewRequest,
-) -> ContentWorkItemStructuredDraftPreviewResponse:
-    _snapshot_for_work_item_or_404(work_item_id)
-    _ensure_contract_matches_work_item(work_item_id, request)
-    return build_content_work_item_structured_draft_preview_response(request)
-
-
-@router.post(
     "/api/content/work-items/quality-review",
     response_model=ContentWorkItemQualityReviewResponse,
 )
@@ -873,20 +808,6 @@ def _revision_conflict_response(conflict: ContentDraftRevisionConflict) -> JSONR
         safe_next_step=revision_conflict_next_step(conflict.code),
     )
     return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
-
-
-def _ensure_contract_matches_work_item(
-    work_item_id: str,
-    request: ContentWorkItemStructuredDraftPreviewRequest,
-) -> None:
-    if request.contract is None:
-        return
-    if request.contract.model_input.work_item_id == work_item_id:
-        return
-    raise HTTPException(
-        status_code=400,
-        detail="Structured draft contract does not match the selected work item.",
-    )
 
 
 register_content_codex_proposal_route(

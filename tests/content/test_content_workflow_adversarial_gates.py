@@ -6,76 +6,13 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
-from tests.content.test_structured_generation_api import (
+from tests.content.structured_generation_fixtures import (
     _claim_ledger,
     _draft_package,
     _item,
     _sales_brief,
     _structured_output,
 )
-
-
-def test_adversarial_generation_blocks_missing_evidence_and_source_connector() -> None:
-    response = _post_generation(
-        item=_item(evidence_ids=[], source_connectors=[]),
-    )
-
-    result = response.json()["structured_generation_result"]
-    assert result["contract"] is None
-    assert {"missing_evidence", "missing_source_connector"} <= _blocker_codes(result)
-
-
-def test_adversarial_generation_blocks_dev_url_as_canonical() -> None:
-    response = _post_generation(
-        item=_item(final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/"),
-    )
-
-    result = response.json()["structured_generation_result"]
-    assert result["contract"] is None
-    assert "invalid_final_canonical" in _blocker_codes(result)
-
-
-def test_adversarial_generation_blocks_missing_preflight_even_with_forged_artifacts() -> None:
-    response = _post_generation(
-        item=_item(preflight_status="missing"),
-    )
-
-    result = response.json()["structured_generation_result"]
-    assert result["contract"] is None
-    assert "missing_preflight" in _blocker_codes(result)
-
-
-def test_adversarial_generation_blocks_missing_claim_gate_even_with_ledger_payload() -> None:
-    response = _post_generation(
-        item=_item(claim_ledger_status="missing", claim_ledger_id=None),
-    )
-
-    result = response.json()["structured_generation_result"]
-    assert result["contract"] is None
-    assert "missing_claim_ledger" in _blocker_codes(result)
-
-
-def test_adversarial_generation_blocks_missing_measurement_window() -> None:
-    response = _post_generation(
-        item=_item(measurement_window_status="missing", measurement_window_id=None),
-    )
-
-    result = response.json()["structured_generation_result"]
-    assert result["contract"] is None
-    assert "missing_measurement_window" in _blocker_codes(result)
-
-
-def test_adversarial_structured_preview_rejects_publish_ready_true() -> None:
-    contract = _generation_contract()
-    output = _structured_output()
-    output["publish_ready"] = True
-
-    response = TestClient(app).post(
-        "/api/content/work-items/structured-draft-preview",
-        json={"contract": contract, "output": output},
-    )
-
-    assert response.status_code == 422
 
 
 def test_adversarial_quality_review_blocks_forbidden_guarantee_claim() -> None:
@@ -186,27 +123,6 @@ def test_adversarial_wrong_item_review_cannot_unlock_handoff() -> None:
     data = response.json()
     assert data["wordpress_handoff_allowed"] is False
     assert {"wrong_work_item", "draft_package_mismatch"} <= _blocker_codes(data)
-
-
-def _post_generation(*, item: dict[str, object]) -> Any:
-    response = TestClient(app).post(
-        "/api/content/work-items/structured-draft-generation",
-        json={
-            "item": item,
-            "sales_brief": _sales_brief(),
-            "claim_ledger": _claim_ledger(),
-            "draft_package": _draft_package(),
-        },
-    )
-    assert response.status_code == 200
-    return response
-
-
-def _generation_contract() -> dict[str, Any]:
-    response = _post_generation(item=_item())
-    result = response.json()["structured_generation_result"]
-    assert result["blockers"] == []
-    return result["contract"]
 
 
 def _quality_payload() -> dict[str, Any]:

@@ -18,17 +18,13 @@ import {
   postContentWorkItemQualityReview,
   postContentWorkItemRevisionPlan,
   postContentWorkItemSalesBrief,
-  postContentWorkItemStructuredDraftGeneration,
-  postContentWorkItemStructuredDraftPreview,
-  postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   postContentWorkItemWordPressDraftHandoff,
   previewAction,
   saveContentWorkItemDraftRevision,
   saveContentWorkItemDraftRevisionReview,
   saveContentWorkItemSnapshotAudit,
-  saveContentWorkItemSnapshotHumanReview,
-  type ContentWorkItemStructuredDraftRuntimeRequest
+  saveContentWorkItemSnapshotHumanReview
 } from "./api";
 
 const responseByPath: Record<string, unknown> = {
@@ -52,28 +48,6 @@ const responseByPath: Record<string, unknown> = {
     preflight_verdict: preflightVerdict("draft_allowed"),
     sales_brief_result: { brief: salesBrief(), blockers: [] },
     draft_package_result: { draft_package: draftPackage(), blockers: [] }
-  },
-  "/api/content/work-items/structured-draft-generation": {
-    item: workItem(),
-    structured_generation_result: {
-      contract: structuredDraftGenerationContract(),
-      blockers: []
-    }
-  },
-  "/api/content/work-items/structured-draft-runtime": {
-    runtime_result: structuredDraftRuntimeResult()
-  },
-  "/api/content/work-items/structured-draft-preview": {
-    preview_result: {
-      preview: structuredDraftPreview(),
-      blockers: []
-    }
-  },
-  "/api/content/work-items/content_work_item_bdo/structured-draft-preview": {
-    preview_result: {
-      preview: structuredDraftPreview(),
-      blockers: []
-    }
   },
   "/api/content/work-items/quality-review": {
     item: workItem(),
@@ -678,28 +652,6 @@ describe("content workflow API helpers", () => {
       claim_ledger: claimLedger(),
       seed: salesBriefSeed()
     });
-    await postContentWorkItemStructuredDraftGeneration({
-      item: workItem(),
-      sales_brief: salesBrief(),
-      claim_ledger: claimLedger(),
-      draft_package: draftPackage()
-    });
-    await postContentWorkItemStructuredDraftRuntime({
-      contract: structuredDraftGenerationContract(),
-      model: "gpt-5",
-      mode: "dry_run"
-    });
-    await postContentWorkItemStructuredDraftPreview({
-      contract: structuredDraftGenerationContract(),
-      output: structuredDraftOutput()
-    });
-    await postContentWorkItemStructuredDraftPreview(
-      {
-        contract: structuredDraftGenerationContract(),
-        output: structuredDraftOutput()
-      },
-      "content_work_item_bdo"
-    );
     await postContentWorkItemQualityReview(qualityReviewRequest());
     await postContentWorkItemQualityReview(qualityReviewRequest(), "content_work_item_bdo");
     await postContentWorkItemRevisionPlan({
@@ -762,10 +714,6 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/preflight",
       "/api/content/work-items/sales-brief",
       "/api/content/work-items/draft-package",
-      "/api/content/work-items/structured-draft-generation",
-      "/api/content/work-items/structured-draft-runtime",
-      "/api/content/work-items/structured-draft-preview",
-      "/api/content/work-items/content_work_item_bdo/structured-draft-preview",
       "/api/content/work-items/quality-review",
       "/api/content/work-items/content_work_item_bdo/quality-review",
       "/api/content/work-items/revision-plan",
@@ -1445,117 +1393,6 @@ function draftPackage() {
   };
 }
 
-function structuredDraftGenerationContract(): NonNullable<
-  ContentWorkItemStructuredDraftRuntimeRequest["contract"]
-> {
-  return {
-    schema_name: "wilq_content_structured_draft_v1",
-    strict_schema: true,
-    model_input: {
-      work_item_id: "content_work_item_bdo",
-      language: "pl-PL",
-      draft_kind: "section_draft",
-      title: "BDO dla firm",
-      final_canonical_url: "https://ekologus.pl/bdo/",
-      source_public_url: "https://ekologus.pl/bdo/",
-      preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
-      target_reader: "właściciel firmy",
-      buyer_problem: "nie wie, jak podejść do BDO",
-      buyer_trigger: "zbliża się kontrola",
-      search_intent: "informacyjno-usługowy",
-      service_fit: "obsługa środowiskowa",
-      cta_direction: "Skontaktuj się z Ekologus.",
-      sections: [
-        {
-          heading: "Kogo dotyczy BDO",
-          purpose: "Sekcja konspektu do napisania po sprawdzeniu planu.",
-          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-          draft_notes: ["Zachowaj kierunek H1"]
-        }
-      ],
-      source_facts: [
-        {
-          evidence_id: "ev_gsc_bdo",
-          source_connector: "google_search_console",
-          summary: "GSC pokazuje popyt na temat BDO."
-        }
-      ],
-      knowledge_constraints: [
-        {
-          card_id: "ekologus_evidence_live_connector_requirement",
-          constraint_type: "evidence_requirement" as const,
-          label: "Live evidence i source connector są wymagane",
-          reason: "Brak evidence ID oznacza brak rekomendacji."
-        }
-      ],
-      sales_brief_signal_quality: salesBriefSignalQuality(),
-      claims_allowed: ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
-      claims_removed_or_blocked: [],
-      human_review_questions: ["Czy to brzmi jak Ekologus?"]
-    },
-    output_schema: {
-      type: "object",
-      additionalProperties: false,
-      properties: { sections: { type: "array" } }
-    },
-    system_instruction: "Pisz wyłącznie z przekazanych faktów.",
-    user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
-    publish_ready: false
-  };
-}
-
-function salesBriefSignalQuality() {
-  return {
-    status: "review_required" as const,
-    status_label: "sygnał użyteczny, ale wymaga review",
-    reason: "Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji człowieka.",
-    evidence_id_count: 2,
-    source_connector_count: 2,
-    source_fact_count: 1,
-    missing_evidence_count: 0,
-    knowledge_constraint_count: 1,
-    review_required_knowledge_card_count: 1,
-    measurement_baseline_ready: true,
-    safe_next_step: "Pokaż brief Wilkowi z ograniczeniami wiedzy."
-  };
-}
-
-function structuredDraftRuntimeResult() {
-  return {
-    status: "dry_run_ready",
-    request_payload: {
-      model: "gpt-5",
-      input: [
-        {
-          role: "system",
-          content: "Pisz wyłącznie z przekazanych faktów."
-        },
-        {
-          role: "user",
-          content: "Przygotuj ustrukturyzowany szkic treści dla WILQ."
-        }
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "wilq_content_structured_draft_v1",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: { sections: { type: "array" } }
-          }
-        }
-      },
-      temperature: 0.2,
-      max_output_tokens: 4000
-    },
-    output: null,
-    external_call_attempted: false,
-    blockers: []
-  };
-}
-
 function structuredDraftOutput() {
   return {
     draft_kind: "section_draft" as const,
@@ -1580,24 +1417,6 @@ function structuredDraftOutput() {
     forbidden_claims_avoided: ["Ta treść zwiększy liczbę leadów."],
     human_review_checklist: ["Czy to brzmi jak Ekologus?"],
     publish_ready: false as const
-  };
-}
-
-function structuredDraftPreview() {
-  const output = structuredDraftOutput();
-  return {
-    title: output.title,
-    meta_title: output.meta_title,
-    meta_description: output.meta_description,
-    h1: output.h1,
-    sections: output.sections,
-    faq: output.faq,
-    cta: output.cta,
-    internal_links: output.internal_links,
-    source_facts_used: output.source_facts_used,
-    forbidden_claims_avoided: output.forbidden_claims_avoided,
-    human_review_checklist: output.human_review_checklist,
-    publish_ready: false
   };
 }
 

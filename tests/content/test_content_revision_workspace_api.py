@@ -10,10 +10,14 @@ from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import actions as actions_router
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
 from wilq.content.workflow.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
+)
+from wilq.content.workflow.stage_drafts import (
+    build_content_work_item_structured_draft_generation_response,
 )
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import (
@@ -56,28 +60,6 @@ def test_snapshot_seeds_api_owned_editor_and_starts_at_draft(
 
     reloaded = _selected_snapshot(client, work_item_id)
     assert reloaded["revision_workspace"] == workspace
-
-
-def test_structured_preview_does_not_create_a_mutable_saved_draft(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    client, work_item_id, snapshot = _revision_ready_snapshot(monkeypatch, tmp_path)
-    contract = _structured_generation_from_snapshot(client, snapshot)["contract"]
-
-    response = client.post(
-        f"/api/content/work-items/{work_item_id}/structured-draft-preview",
-        json={
-            "contract": contract,
-            "output": _structured_output_from_contract(contract),
-        },
-    )
-
-    assert response.status_code == 200
-    workspace = _selected_snapshot(client, work_item_id)["revision_workspace"]
-    assert workspace["status"] == "empty"
-    assert workspace["revision_count"] == 0
-    assert workspace["latest_revision"] is None
 
 
 def test_revision_save_is_reloadable_idempotent_and_returns_raw_stale_conflict(
@@ -821,22 +803,25 @@ def _save_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
 
 
 def _structured_generation_from_snapshot(
-    client: TestClient,
+    _client: TestClient,
     snapshot: dict[str, Any],
 ) -> dict[str, Any]:
-    response = client.post(
-        "/api/content/work-items/structured-draft-generation",
-        json={
+    response = build_content_work_item_structured_draft_generation_response(
+        ContentWorkItemStructuredDraftGenerationRequest.model_validate(
+            {
             "item": snapshot["human_review"]["item"],
             "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
             "claim_ledger": snapshot["claim_ledger"],
             "draft_package": snapshot["draft_package"]["draft_package_result"][
                 "draft_package"
             ],
-        },
+            }
+        )
     )
-    assert response.status_code == 200
-    return cast(dict[str, Any], response.json()["structured_generation_result"])
+    return cast(
+        dict[str, Any],
+        response.structured_generation_result.model_dump(mode="json"),
+    )
 
 
 def _structured_output_from_contract(contract: dict[str, Any]) -> dict[str, Any]:

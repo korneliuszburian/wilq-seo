@@ -947,99 +947,6 @@ export const ContentWorkItemDraftPackageRequestSchema = z.object({
   sales_brief: ContentSalesBriefSchema.nullable().optional()
 });
 
-export const StructuredDraftSourceFactSchema = z.object({
-  evidence_id: z.string(),
-  source_connector: z.string(),
-  summary: z.string()
-});
-
-export const StructuredDraftClaimMarkerSchema = z.object({
-  claim_id: z.string(),
-  claim_text: z.string(),
-  claim_type: z.enum([
-    "service_claim",
-    "legal_requirement_claim",
-    "risk_claim",
-    "guarantee_claim",
-    "performance_claim",
-    "seo_claim",
-    "business_outcome_claim",
-    "environmental_claim",
-    "product_claim"
-  ]),
-  status: z.enum([
-    "allowed_with_evidence",
-    "allowed_general",
-    "needs_human_review",
-    "blocked",
-    "blocked_until_measurement"
-  ]),
-  strength: z.enum(["strong", "weak"]).default("strong"),
-  required: z.boolean().default(false),
-  evidence_ids: z.array(z.string()).default([]),
-  source_connectors: z.array(z.string()).default([]),
-  reviewer_id: z.string().nullable().optional()
-});
-
-export const StructuredDraftKnowledgeConstraintSchema = z.object({
-  card_id: z.string(),
-  constraint_type: ContentKnowledgeConstraintTypeSchema,
-  label: z.string(),
-  reason: z.string(),
-  evidence_ids: z.array(z.string()).default([])
-});
-
-export const StructuredDraftSignalQualitySchema = ContentSalesBriefSignalQualitySchema;
-
-export const StructuredDraftSectionInputSchema = z.object({
-  heading: z.string(),
-  purpose: z.string(),
-  evidence_ids: z.array(z.string()).default([]),
-  draft_notes: z.array(z.string()).default([])
-});
-
-export const StructuredDraftGenerationInputSchema = z.object({
-  work_item_id: z.string(),
-  language: z.literal("pl-PL"),
-  draft_kind: z.enum(["section_draft", "full_draft"]),
-  title: z.string(),
-  final_canonical_url: z.string(),
-  source_public_url: z.string().nullable().optional(),
-  preview_url: z.string().nullable().optional(),
-  target_reader: z.string(),
-  buyer_problem: z.string(),
-  buyer_trigger: z.string(),
-  search_intent: z.string(),
-  service_fit: z.string(),
-  cta_direction: z.string(),
-  sections: z.array(StructuredDraftSectionInputSchema).default([]),
-  source_facts: z.array(StructuredDraftSourceFactSchema).default([]),
-  knowledge_constraints: z.array(StructuredDraftKnowledgeConstraintSchema).default([]),
-  sales_brief_signal_quality: StructuredDraftSignalQualitySchema,
-  claim_markers: z.array(StructuredDraftClaimMarkerSchema).default([]),
-  removed_or_blocked_claim_markers: z
-    .array(StructuredDraftClaimMarkerSchema)
-    .default([]),
-  claims_allowed: z.array(z.string()).default([]),
-  claims_removed_or_blocked: z.array(z.string()).default([]),
-  human_review_questions: z.array(z.string()).default([])
-});
-
-export const StructuredDraftGenerationContractSchema = z.object({
-  schema_name: z.literal("wilq_content_structured_draft_v1"),
-  strict_schema: z.literal(true),
-  model_input: StructuredDraftGenerationInputSchema,
-  output_schema: z.record(z.string(), z.unknown()),
-  system_instruction: z.string(),
-  user_instruction: z.string(),
-  publish_ready: z.literal(false)
-});
-
-export const StructuredDraftGenerationResultSchema = z.object({
-  contract: StructuredDraftGenerationContractSchema.nullable().optional(),
-  blockers: z.array(ContentWorkflowBlockerSchema).default([])
-});
-
 export const StructuredDraftOutputSectionSchema = z.object({
   heading: z.string(),
   body_markdown: z.string(),
@@ -1063,84 +970,6 @@ export const StructuredDraftOutputSchema = z.object({
   forbidden_claims_avoided: z.array(z.string()).default([]),
   human_review_checklist: z.array(z.string()).default([]),
   publish_ready: z.literal(false)
-});
-
-export const OpenAIInputMessageSchema = z.object({
-  role: z.enum(["system", "user"]),
-  content: z.string()
-});
-
-export const OpenAIJsonSchemaFormatSchema = z.object({
-  type: z.literal("json_schema"),
-  name: z.string(),
-  strict: z.literal(true),
-  schema: z.record(z.string(), z.unknown())
-});
-
-export const OpenAITextFormatSchema = z.object({
-  format: OpenAIJsonSchemaFormatSchema
-});
-
-export const OpenAIStructuredDraftRequestPayloadSchema = z.object({
-  model: z.string(),
-  input: z.array(OpenAIInputMessageSchema),
-  text: OpenAITextFormatSchema,
-  temperature: z.number(),
-  max_output_tokens: z.number()
-});
-
-export const OpenAIStructuredDraftRuntimeBlockerSchema = z.object({
-  code: z.string(),
-  label: z.string(),
-  reason: z.string(),
-  next_step: z.string()
-});
-
-export const OpenAIStructuredDraftRuntimeResultSchema = z.object({
-  status: z.enum(["dry_run_ready", "generated", "blocked"]),
-  request_payload: OpenAIStructuredDraftRequestPayloadSchema.nullable().optional(),
-  output: StructuredDraftOutputSchema.nullable().optional(),
-  external_call_attempted: z.boolean(),
-  blockers: z.array(OpenAIStructuredDraftRuntimeBlockerSchema).default([])
-});
-
-export const StructuredDraftPreviewSchema = StructuredDraftOutputSchema.omit({
-  draft_kind: true,
-  language: true,
-  claims_needing_review: true
-});
-
-export const StructuredDraftPreviewBlockerCodeSchema = z.enum([
-  "missing_output",
-  "missing_contract",
-  "claims_need_review",
-  "missing_source_facts",
-  "section_missing_evidence",
-  "unknown_evidence_reference",
-  "unknown_claim_reference",
-  "claim_missing_required_evidence",
-  "missing_forbidden_claim_acknowledgement"
-]);
-
-export const StructuredDraftPreviewBlockerSchema = ContentBlockerBaseSchema.extend({
-  code: StructuredDraftPreviewBlockerCodeSchema
-});
-
-export const StructuredDraftPreviewResultSchema = z.object({
-  preview: StructuredDraftPreviewSchema.nullable().optional(),
-  blockers: z.array(StructuredDraftPreviewBlockerSchema).default([])
-});
-
-export const ContentWorkItemStructuredDraftGenerationRequestSchema = z.object({
-  item: ContentWorkItemSchema,
-  sales_brief: ContentSalesBriefSchema.nullable().optional(),
-  claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
-  draft_package: ContentDraftPackageSchema.nullable().optional()
-});
-
-export const ContentWorkItemStructuredDraftGenerationResponseSchema = z.object({
-  item: ContentWorkItemSchema,
-  structured_generation_result: StructuredDraftGenerationResultSchema
 });
 
 export const ContentStructuredGenerationBrowserReadinessSchema = z
@@ -1175,25 +1004,6 @@ export const ContentStructuredGenerationBrowserReadinessSchema = z
       });
     }
   });
-
-export const ContentWorkItemStructuredDraftRuntimeRequestSchema = z.object({
-  contract: StructuredDraftGenerationContractSchema.nullable().optional(),
-  model: z.string().nullable().optional(),
-  mode: z.enum(["dry_run", "live"]).default("dry_run")
-});
-
-export const ContentWorkItemStructuredDraftRuntimeResponseSchema = z.object({
-  runtime_result: OpenAIStructuredDraftRuntimeResultSchema
-});
-
-export const ContentWorkItemStructuredDraftPreviewRequestSchema = z.object({
-  contract: StructuredDraftGenerationContractSchema.nullable().optional(),
-  output: StructuredDraftOutputSchema.nullable().optional()
-});
-
-export const ContentWorkItemStructuredDraftPreviewResponseSchema = z.object({
-  preview_result: StructuredDraftPreviewResultSchema
-});
 
 export const ContentQualityDimensionSchema = z.object({
   status: z.enum(["pass", "needs_changes", "blocked"]),
@@ -2393,26 +2203,8 @@ export type ContentWorkItemDraftPackageResponse = z.infer<
 export type ContentWorkItemDraftPackageRequest = z.input<
   typeof ContentWorkItemDraftPackageRequestSchema
 >;
-export type ContentWorkItemStructuredDraftGenerationRequest = z.input<
-  typeof ContentWorkItemStructuredDraftGenerationRequestSchema
->;
-export type ContentWorkItemStructuredDraftGenerationResponse = z.infer<
-  typeof ContentWorkItemStructuredDraftGenerationResponseSchema
->;
 export type ContentStructuredGenerationBrowserReadiness = z.infer<
   typeof ContentStructuredGenerationBrowserReadinessSchema
->;
-export type ContentWorkItemStructuredDraftRuntimeRequest = z.input<
-  typeof ContentWorkItemStructuredDraftRuntimeRequestSchema
->;
-export type ContentWorkItemStructuredDraftRuntimeResponse = z.infer<
-  typeof ContentWorkItemStructuredDraftRuntimeResponseSchema
->;
-export type ContentWorkItemStructuredDraftPreviewRequest = z.input<
-  typeof ContentWorkItemStructuredDraftPreviewRequestSchema
->;
-export type ContentWorkItemStructuredDraftPreviewResponse = z.infer<
-  typeof ContentWorkItemStructuredDraftPreviewResponseSchema
 >;
 export type ContentQualityReview = z.infer<typeof ContentQualityReviewSchema>;
 export type ContentRevisionPlan = z.infer<typeof ContentRevisionPlanSchema>;

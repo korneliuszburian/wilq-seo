@@ -28,6 +28,18 @@ Usefulness is scored on a 1-10 scale:
 `failure_tags` are eval failures in the skill answer, not normal WILQ product
 blockers.
 
+## 2026-07-15 - Content operator uses the single exact Codex proposal seam
+
+- Skill guidance now follows browser-safe readiness → exact reviewed revision →
+  `codex-proposal` → human review. It no longer names the removed Structured
+  Outputs runtime, preview or API-key endpoints.
+- Deterministic live smoke passed against the managed API. The real queue stayed
+  honestly `blocked`: 2 candidates, 0 actionable, UAT minimum 3; no model call,
+  revision mutation or WordPress write was attempted.
+- Fresh non-interactive eval passed at
+  `.local-lab/evals/codex-skill/20260715T213036Z`. This proves the changed skill
+  contract, not 10/10 generated text quality or owner UAT.
+
 ## 2026-07-13 - Daily-check field schema repair and fresh proof
 
 - WILQ API proof: `health=ok`, `metric_fact_count=107900`; the API-owned

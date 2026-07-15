@@ -125,6 +125,25 @@ def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, 
     if item.get("final_canonical_url") and DEV_HOST in item["final_canonical_url"]:
         raise SystemExit("Selected snapshot cannot use dev URL as final canonical")
 
+    readiness = require_dict(
+        snapshot["structured_generation_readiness"],
+        "structured generation readiness",
+    )
+    headings = require_list(
+        readiness.get("editable_section_headings"),
+        "structured generation editable headings",
+    )
+    blockers = require_list(
+        readiness.get("blockers"),
+        "structured generation blockers",
+    )
+    if readiness.get("publish_ready") is not False:
+        raise SystemExit("Structured generation readiness must keep publish_ready=false")
+    if readiness.get("status") == "ready" and (not headings or blockers):
+        raise SystemExit("Ready structured generation requires headings and no blockers")
+    if readiness.get("status") == "blocked" and (headings or not blockers):
+        raise SystemExit("Blocked structured generation requires blockers and no headings")
+
     assert_false_everywhere(snapshot, "publish_ready", "content workflow snapshot")
     assert_false_everywhere(snapshot, "publish_allowed", "content workflow snapshot")
     assert_false_everywhere(snapshot, "destructive_update_allowed", "content workflow snapshot")

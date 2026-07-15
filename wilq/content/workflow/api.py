@@ -8,17 +8,6 @@ from wilq.content.briefs.sales import (
     ContentSalesBriefSeed,
 )
 from wilq.content.claims.ledger import ContentClaimLedger
-from wilq.content.drafts.openai_runtime import (
-    OpenAIClientProtocol,
-    execute_openai_structured_draft_generation,
-)
-from wilq.content.drafts.openai_sdk import (
-    build_openai_sdk_client,
-    openai_structured_draft_live_enabled,
-)
-from wilq.content.drafts.preview import (
-    build_structured_draft_preview,
-)
 from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichment,
     build_content_opportunity_enrichment,
@@ -65,8 +54,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemRevisionPlanRequest,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
-    ContentWorkItemStructuredDraftPreviewRequest,
-    ContentWorkItemStructuredDraftRuntimeRequest,
     ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
     ContentWorkItemWordPressDraftExecutionRequest,
 )
@@ -78,9 +65,6 @@ from wilq.content.workflow.contracts import (
 )
 from wilq.content.workflow.contracts import (
     ContentWorkItemDraftPackageResponse as ContentWorkItemDraftPackageResponse,
-)
-from wilq.content.workflow.contracts import (
-    ContentWorkItemDraftVariantsResponse as ContentWorkItemDraftVariantsResponse,
 )
 from wilq.content.workflow.contracts import (
     ContentWorkItemHumanReviewResponse as ContentWorkItemHumanReviewResponse,
@@ -108,12 +92,6 @@ from wilq.content.workflow.contracts import (
 )
 from wilq.content.workflow.contracts import (
     ContentWorkItemStructuredDraftGenerationResponse as ContentWorkItemStructuredDraftGenerationResponse,  # noqa: E501
-)
-from wilq.content.workflow.contracts import (
-    ContentWorkItemStructuredDraftPreviewResponse as ContentWorkItemStructuredDraftPreviewResponse,
-)
-from wilq.content.workflow.contracts import (
-    ContentWorkItemStructuredDraftRuntimeResponse as ContentWorkItemStructuredDraftRuntimeResponse,
 )
 from wilq.content.workflow.contracts import (
     ContentWorkItemWordPressAuthoringPayloadPreviewResponse as ContentWorkItemWordPressAuthoringPayloadPreviewResponse,  # noqa: E501
@@ -228,44 +206,6 @@ def build_content_wordpress_draft_activation_packet_response(
         ),
         action_id=action_id,
         latest_execution_result=latest_execution_result,
-    )
-
-
-def build_content_work_item_structured_draft_runtime_response(
-    request: ContentWorkItemStructuredDraftRuntimeRequest,
-    *,
-    client: OpenAIClientProtocol | None = None,
-    live_generation_enabled: bool | None = None,
-) -> ContentWorkItemStructuredDraftRuntimeResponse:
-    live_enabled = (
-        openai_structured_draft_live_enabled()
-        if live_generation_enabled is None
-        else live_generation_enabled
-    )
-    runtime_client = (
-        client
-        if client is not None or request.mode != "live" or not live_enabled
-        else build_openai_sdk_client()
-    )
-    return ContentWorkItemStructuredDraftRuntimeResponse(
-        runtime_result=execute_openai_structured_draft_generation(
-            contract=request.contract,
-            model=request.model,
-            mode=request.mode,
-            client=runtime_client,
-            live_generation_enabled=live_enabled,
-        )
-    )
-
-
-def build_content_work_item_structured_draft_preview_response(
-    request: ContentWorkItemStructuredDraftPreviewRequest,
-) -> ContentWorkItemStructuredDraftPreviewResponse:
-    return ContentWorkItemStructuredDraftPreviewResponse(
-        preview_result=build_structured_draft_preview(
-            contract=request.contract,
-            output=request.output,
-        )
     )
 
 

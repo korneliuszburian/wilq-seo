@@ -179,22 +179,9 @@ def test_selected_content_work_item_output_and_quality_state_is_isolated(
 
     contract = _structured_generation_from_snapshot(client, first_snapshot)["contract"]
     output = _structured_output_from_contract(contract)
-    preview_response = client.post(
-        f"/api/content/work-items/{first['work_item_id']}/structured-draft-preview",
-        json={"contract": contract, "output": output},
-    )
-    assert preview_response.status_code == 200
-    assert preview_response.json()["preview_result"]["blockers"] == []
 
     store = content_workflow_store()
     assert store.load_draft_revision_state(first["work_item_id"]).status == "empty"
-    assert store.load_draft_revision_state(second["work_item_id"]).status == "empty"
-
-    wrong_preview_response = client.post(
-        f"/api/content/work-items/{second['work_item_id']}/structured-draft-preview",
-        json={"contract": contract, "output": output},
-    )
-    assert wrong_preview_response.status_code == 400
     assert store.load_draft_revision_state(second["work_item_id"]).status == "empty"
 
     item = first_snapshot["human_review"]["item"]

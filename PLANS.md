@@ -104,8 +104,8 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
   reviewed base revision, uruchomić grounded Codex proposal i zobaczyć
   base-vs-child diff, findings oraz semantyczną bramkę review. Realny output
   nadal był generyczny i `needs_changes`, więc nie jest to dowód jakości 10/10.
-  Cztery stare publiczne Structured Outputs routes nadal tworzą alternatywny
-  API-key entrypoint poza dashboardem; usuwa je `wilq-seo-r564.14`.
+  `wilq-seo-r564.14` usunął legacy API-key runtime i pięć publicznych dróg
+  ujawnienia generation contract; OpenAPI ma tylko exact `codex-proposal`.
 - Live content queue jest świeża, ale ma 2 pozycje i 1 wykonalną przy minimum 3.
   Service Profile pozostaje `source_backed_review_required`.
 
@@ -131,9 +131,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
    sekcji, pending, diff, lineage i findings; mylący marketerowy WordPress
    dry-run i osierocone panele są usunięte. Cross-work-item wynik i brak sekcji
    są fail-closed, a browser proof desktop/mobile nie dotyka WordPressa.
-6. `wilq-seo-r564.14` usuwa niegrounded legacy public runtime po migracji
-   skilla/testów, bez usuwania internal contractów używanych przez Codex
-   proposal. Potem kontynuować usefulness-first rozwój:
+6. `wilq-seo-r564.14` usunął niegrounded legacy public runtime po migracji
+   skilla/testów, zachowując internal contracty używane przez Codex proposal.
+   Kontynuować usefulness-first rozwój:
    jawny wybór strony/usługi/sekcji/intencji/CTA, metryki i słowa kluczowe tylko
    z aktualnych typed źródeł, porównanie wersji, bibliotekę treści oraz realny
    Wilku UAT.

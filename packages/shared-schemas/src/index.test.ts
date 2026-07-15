@@ -17,9 +17,6 @@ import {
   ContentServiceProfileResponseSchema,
   ContentServiceProfileCoverageGapSchema,
   ContentWorkItemQualityReviewRequestSchema,
-  ContentWorkItemStructuredDraftGenerationResponseSchema,
-  ContentWorkItemStructuredDraftPreviewResponseSchema,
-  ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentQualityFindingSchema,
   ContentWorkItemSchema,
   ContentClaimLedgerSchema,
@@ -35,7 +32,6 @@ import {
   ContentGscSearchAnalyticsContractSchema,
   ContentServiceProfilePrivateSourceProposalSectionSchema,
   PrivateProposalSchema,
-  StructuredDraftPreviewBlockerSchema,
   DailyCheckResultSchema,
   ExpertKnowledgeSourceSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
@@ -1577,28 +1573,6 @@ describe("ContentRecommendedModeSchema", () => {
   });
 });
 
-describe("StructuredDraftPreviewBlockerSchema", () => {
-  it("accepts only known structured preview blocker codes", () => {
-    expect(
-      StructuredDraftPreviewBlockerSchema.safeParse({
-        code: "missing_forbidden_claim_acknowledgement",
-        label: "Szkic nie potwierdza uniknięcia zakazanych claimów",
-        reason: "Podgląd wymaga jawnego potwierdzenia.",
-        next_step: "Uzupełnij listę unikniętych claimów."
-      }).success
-    ).toBe(true);
-
-    expect(
-      StructuredDraftPreviewBlockerSchema.safeParse({
-        code: "new_unreviewed_preview_gate",
-        label: "Nieznany kod",
-        reason: "Nie powinien przejść shared schema.",
-        next_step: "Dodaj kod do kontraktu przed użyciem."
-      }).success
-    ).toBe(false);
-  });
-});
-
 describe("MerchantDiagnosticsResponseSchema", () => {
   it("accepts Merchant price-impact readiness decisions returned by the API", () => {
     const response = {
@@ -2038,145 +2012,6 @@ describe("Content work item workflow schemas", () => {
     ).toBe(true);
 
     expect(
-      ContentWorkItemStructuredDraftGenerationResponseSchema.safeParse({
-        item,
-        structured_generation_result: {
-          contract: {
-            schema_name: "wilq_content_structured_draft_v1",
-            strict_schema: true,
-            model_input: {
-              work_item_id: "content_work_item_bdo",
-              language: "pl-PL",
-              draft_kind: "section_draft",
-              title: "BDO dla firm",
-              final_canonical_url: "https://ekologus.pl/bdo/",
-              source_public_url: "https://ekologus.pl/bdo/",
-              preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
-              target_reader: "właściciel firmy",
-              buyer_problem: "nie wie, jak podejść do BDO",
-              buyer_trigger: "zbliża się kontrola",
-              search_intent: "informacyjno-usługowy",
-              service_fit: "obsługa środowiskowa",
-              cta_direction: "Skontaktuj się z Ekologus.",
-              sections: [
-                {
-                  heading: "Kogo dotyczy BDO",
-                  purpose: "Sekcja konspektu do napisania po sprawdzeniu planu.",
-                  evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-                  draft_notes: ["Zachowaj kierunek H1"]
-                }
-              ],
-              source_facts: [
-                {
-                  evidence_id: "ev_gsc_bdo",
-                  source_connector: "google_search_console",
-                  summary: "GSC pokazuje popyt na temat BDO."
-                }
-              ],
-              knowledge_constraints: [
-                {
-                  card_id: "content_knowledge_service_bdo",
-                  constraint_type: "service_fit",
-                  label: "Dopasuj treść do usługi Ekologus",
-                  reason: "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
-                  evidence_ids: ["ev_knowledge_bdo_service"]
-                }
-              ],
-              sales_brief_signal_quality: {
-                status: "review_required",
-                status_label: "sygnał użyteczny, ale wymaga review",
-                reason: "Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji człowieka.",
-                evidence_id_count: 2,
-                source_connector_count: 2,
-                source_fact_count: 1,
-                missing_evidence_count: 0,
-                knowledge_constraint_count: 1,
-                review_required_knowledge_card_count: 1,
-                measurement_baseline_ready: true,
-                safe_next_step: "Pokaż brief Wilkowi z ograniczeniami wiedzy."
-              },
-              claim_markers: [
-                {
-                  claim_id: "claim_general_bdo",
-                  claim_text: "Ekologus pomaga firmom uporządkować obowiązki BDO.",
-                  claim_type: "service_claim",
-                  status: "allowed_with_evidence",
-                  strength: "weak",
-                  required: true,
-                  evidence_ids: ["ev_wp_bdo"],
-                  source_connectors: ["wordpress_ekologus"],
-                  reviewer_id: "wilku"
-                }
-              ],
-              removed_or_blocked_claim_markers: [
-                {
-                  claim_id: "claim_more_leads",
-                  claim_text: "Ta treść zwiększy liczbę leadów.",
-                  claim_type: "business_outcome_claim",
-                  status: "blocked_until_measurement",
-                  strength: "strong",
-                  required: false,
-                  evidence_ids: ["ev_gsc_bdo"],
-                  source_connectors: ["google_search_console"]
-                }
-              ],
-              claims_allowed: ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
-              claims_removed_or_blocked: ["Ta treść zwiększy liczbę leadów."],
-              human_review_questions: ["Czy to brzmi jak Ekologus?"]
-            },
-            output_schema: {
-              type: "object",
-              additionalProperties: false,
-              properties: { sections: { type: "array" } }
-            },
-            system_instruction: "Pisz wyłącznie z przekazanych faktów.",
-            user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
-            publish_ready: false
-          },
-          blockers: []
-        }
-      }).success
-    ).toBe(true);
-
-    expect(
-      ContentWorkItemStructuredDraftRuntimeResponseSchema.safeParse({
-        runtime_result: {
-          status: "dry_run_ready",
-          request_payload: {
-            model: "gpt-5",
-            input: [
-              {
-                role: "system",
-                content: "Pisz wyłącznie z przekazanych faktów."
-              },
-              {
-                role: "user",
-                content: "Przygotuj ustrukturyzowany szkic treści dla WILQ."
-              }
-            ],
-            text: {
-              format: {
-                type: "json_schema",
-                name: "wilq_content_structured_draft_v1",
-                strict: true,
-                schema: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: { sections: { type: "array" } }
-                }
-              }
-            },
-            temperature: 0.2,
-            max_output_tokens: 4000
-          },
-          output: null,
-          external_call_attempted: false,
-          blockers: []
-        }
-      }).success
-    ).toBe(true);
-
-    expect(
       ContentWorkItemHumanReviewResponseSchema.safeParse({
         item,
         reviewed_item: item,
@@ -2211,35 +2046,6 @@ describe("Content work item workflow schemas", () => {
         },
         blockers: [],
         wordpress_handoff_allowed: true
-      }).success
-    ).toBe(true);
-
-    expect(
-      ContentWorkItemStructuredDraftPreviewResponseSchema.safeParse({
-        preview_result: {
-          preview: {
-            title: "BDO dla firm",
-            meta_title: "BDO dla firm",
-            meta_description: "Sprawdź, kiedy warto skonsultować BDO.",
-            h1: "BDO dla firm",
-            sections: [
-              {
-                heading: "Kogo dotyczy BDO",
-                body_markdown: "BDO warto sprawdzić na podstawie sytuacji firmy.",
-                evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-                claims_used: ["Ekologus pomaga firmom uporządkować obowiązki BDO."]
-              }
-            ],
-            faq: ["Czy każda firma musi mieć BDO?"],
-            cta: "Skontaktuj się z Ekologus, żeby omówić sytuację firmy.",
-            internal_links: ["https://ekologus.pl/kontakt/"],
-            source_facts_used: ["ev_gsc_bdo", "ev_wp_bdo"],
-            forbidden_claims_avoided: ["Ta treść zwiększy liczbę leadów."],
-            human_review_checklist: ["Czy to brzmi jak Ekologus?"],
-            publish_ready: false
-          },
-          blockers: []
-        }
       }).success
     ).toBe(true);
 

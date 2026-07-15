@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from wilq.content.drafts.preview import build_structured_draft_preview
+from wilq.content.drafts.preview import structured_draft_preview_blockers
 from wilq.content.drafts.structured_generation import (
     StructuredDraftClaimMarker,
     StructuredDraftGenerationContract,
@@ -112,39 +112,31 @@ def _output(**overrides: object) -> StructuredDraftOutput:
 
 
 def test_structured_draft_preview_returns_marketer_preview() -> None:
-    result = build_structured_draft_preview(output=_output(), contract=_contract())
+    blockers = structured_draft_preview_blockers(output=_output(), contract=_contract())
 
-    assert result.blockers == []
-    assert result.preview is not None
-    assert result.preview.title == "BDO dla firm"
-    assert result.preview.publish_ready is False
-    assert result.preview.sections[0].heading == "Kogo dotyczy BDO"
-    assert result.preview.source_facts_used == ["ev_gsc_bdo", "ev_wp_bdo"]
-    assert "Czy to brzmi jak Ekologus?" in result.preview.human_review_checklist
+    assert blockers == []
 
 
 def test_structured_draft_preview_blocks_missing_contract_or_output() -> None:
-    result = build_structured_draft_preview(output=None, contract=None)
+    blockers = structured_draft_preview_blockers(output=None, contract=None)
 
-    assert result.preview is None
-    assert {blocker.code for blocker in result.blockers} == {
+    assert {blocker.code for blocker in blockers} == {
         "missing_output",
         "missing_contract",
     }
 
 
 def test_structured_draft_preview_blocks_claims_that_still_need_review() -> None:
-    result = build_structured_draft_preview(
+    blockers = structured_draft_preview_blockers(
         output=_output(claims_needing_review=["Niepotwierdzona obietnica efektu."]),
         contract=_contract(),
     )
 
-    assert result.preview is None
-    assert [blocker.code for blocker in result.blockers] == ["claims_need_review"]
+    assert [blocker.code for blocker in blockers] == ["claims_need_review"]
 
 
 def test_structured_draft_preview_blocks_claims_outside_generation_contract() -> None:
-    result = build_structured_draft_preview(
+    blockers = structured_draft_preview_blockers(
         output=_output(
             sections=[
                 StructuredDraftOutputSection(
@@ -161,12 +153,11 @@ def test_structured_draft_preview_blocks_claims_outside_generation_contract() ->
         contract=_contract(),
     )
 
-    assert result.preview is None
-    assert [blocker.code for blocker in result.blockers] == ["unknown_claim_reference"]
+    assert [blocker.code for blocker in blockers] == ["unknown_claim_reference"]
 
 
 def test_structured_draft_preview_blocks_claim_marker_without_section_evidence() -> None:
-    result = build_structured_draft_preview(
+    blockers = structured_draft_preview_blockers(
         output=_output(
             sections=[
                 StructuredDraftOutputSection(
@@ -180,13 +171,12 @@ def test_structured_draft_preview_blocks_claim_marker_without_section_evidence()
         contract=_contract(),
     )
 
-    assert result.preview is None
-    assert [blocker.code for blocker in result.blockers] == ["claim_missing_required_evidence"]
-    assert "ev_wp_bdo" in result.blockers[0].next_step
+    assert [blocker.code for blocker in blockers] == ["claim_missing_required_evidence"]
+    assert "ev_wp_bdo" in blockers[0].next_step
 
 
 def test_structured_draft_preview_blocks_missing_required_claim() -> None:
-    result = build_structured_draft_preview(
+    blockers = structured_draft_preview_blockers(
         output=_output(
             sections=[
                 StructuredDraftOutputSection(
@@ -200,26 +190,24 @@ def test_structured_draft_preview_blocks_missing_required_claim() -> None:
         contract=_contract(),
     )
 
-    assert result.preview is None
-    assert [blocker.code for blocker in result.blockers] == ["required_claim_missing"]
-    assert "Ekologus pomaga firmom uporządkować obowiązki BDO." in result.blockers[0].next_step
+    assert [blocker.code for blocker in blockers] == ["required_claim_missing"]
+    assert "Ekologus pomaga firmom uporządkować obowiązki BDO." in blockers[0].next_step
 
 
 def test_structured_draft_preview_requires_forbidden_claim_acknowledgement() -> None:
-    result = build_structured_draft_preview(
+    blockers = structured_draft_preview_blockers(
         output=_output(forbidden_claims_avoided=[]),
         contract=_contract(),
     )
 
-    assert result.preview is None
-    assert [blocker.code for blocker in result.blockers] == [
+    assert [blocker.code for blocker in blockers] == [
         "missing_forbidden_claim_acknowledgement"
     ]
-    assert "Ta treść zwiększy liczbę leadów." in result.blockers[0].next_step
+    assert "Ta treść zwiększy liczbę leadów." in blockers[0].next_step
 
 
 def test_structured_draft_preview_keeps_text_only_claim_contract_compatible() -> None:
-    result = build_structured_draft_preview(
+    blockers = structured_draft_preview_blockers(
         output=_output(
             sections=[
                 StructuredDraftOutputSection(
@@ -233,12 +221,11 @@ def test_structured_draft_preview_keeps_text_only_claim_contract_compatible() ->
         contract=_contract(include_claim_markers=False),
     )
 
-    assert result.blockers == []
-    assert result.preview is not None
+    assert blockers == []
 
 
 def test_structured_draft_preview_blocks_missing_or_unknown_evidence() -> None:
-    missing_evidence = build_structured_draft_preview(
+    missing_evidence = structured_draft_preview_blockers(
         output=_output(
             sections=[
                 StructuredDraftOutputSection(
@@ -251,10 +238,10 @@ def test_structured_draft_preview_blocks_missing_or_unknown_evidence() -> None:
         ),
         contract=_contract(include_claim_markers=False),
     )
-    unknown_evidence = build_structured_draft_preview(
+    unknown_evidence = structured_draft_preview_blockers(
         output=_output(source_facts_used=["ev_fake"]),
         contract=_contract(),
     )
 
-    assert [blocker.code for blocker in missing_evidence.blockers] == ["section_missing_evidence"]
-    assert [blocker.code for blocker in unknown_evidence.blockers] == ["unknown_evidence_reference"]
+    assert [blocker.code for blocker in missing_evidence] == ["section_missing_evidence"]
+    assert [blocker.code for blocker in unknown_evidence] == ["unknown_evidence_reference"]

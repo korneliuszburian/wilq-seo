@@ -5,13 +5,10 @@ from wilq.content.drafts.package import build_content_draft_package
 from wilq.content.drafts.structured_generation import (
     build_structured_draft_generation_contract,
 )
-from wilq.content.drafts.variants import build_content_draft_variants
 from wilq.content.knowledge.cards import match_content_knowledge_cards
 from wilq.content.workflow.contracts import (
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
-    ContentWorkItemDraftVariantsRequest,
-    ContentWorkItemDraftVariantsResponse,
     ContentWorkItemStructuredDraftGenerationRequest,
     ContentWorkItemStructuredDraftGenerationResponse,
 )
@@ -53,27 +50,12 @@ def build_content_work_item_draft_package_response(
         ),
     )
 
-
 def build_content_work_item_structured_draft_generation_response(
     request: ContentWorkItemStructuredDraftGenerationRequest,
 ) -> ContentWorkItemStructuredDraftGenerationResponse:
     return ContentWorkItemStructuredDraftGenerationResponse(
         item=request.item,
         structured_generation_result=build_structured_draft_generation_contract(
-            item=request.item,
-            sales_brief=request.sales_brief,
-            claim_ledger=request.claim_ledger,
-            draft_package=request.draft_package,
-        ),
-    )
-
-
-def build_content_work_item_draft_variants_response(
-    request: ContentWorkItemDraftVariantsRequest,
-) -> ContentWorkItemDraftVariantsResponse:
-    return ContentWorkItemDraftVariantsResponse(
-        item=request.item,
-        draft_variants_result=build_content_draft_variants(
             item=request.item,
             sales_brief=request.sales_brief,
             claim_ledger=request.claim_ledger,

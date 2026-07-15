@@ -6,9 +6,13 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
+from wilq.content.workflow.stage_drafts import (
+    build_content_work_item_structured_draft_generation_response,
+)
 
 
-def test_diagnostics_derived_content_item_reaches_draft_dry_run_without_publish(
+def test_diagnostics_derived_content_item_reaches_grounded_contract_without_publish(
     monkeypatch: Any,
     tmp_path: Path,
 ) -> None:
@@ -42,25 +46,10 @@ def test_diagnostics_derived_content_item_reaches_draft_dry_run_without_publish(
     assert contract["publish_ready"] is False
     assert contract["model_input"]["work_item_id"] == item["id"]
 
-    runtime = _post_json(
-        client,
-        "/api/content/work-items/structured-draft-runtime",
-        {"contract": contract, "model": "gpt-5", "mode": "dry_run"},
-    )["runtime_result"]
-    assert runtime["status"] == "dry_run_ready"
-    assert runtime["external_call_attempted"] is False
-    assert runtime["output"] is None
-
     structured_output = _structured_output_from_contract(contract)
-    preview = _post_json(
-        client,
-        "/api/content/work-items/structured-draft-preview",
-        {"contract": contract, "output": structured_output},
-    )["preview_result"]
-    assert preview["blockers"] == []
-    assert preview["preview"]["publish_ready"] is False
-    assert preview["preview"]["source_facts_used"] == structured_output["source_facts_used"]
-    assert preview["preview"]["human_review_checklist"]
+    assert structured_output["publish_ready"] is False
+    assert structured_output["source_facts_used"]
+    assert structured_output["human_review_checklist"]
 
     initial_handoff = snapshot["wordpress_handoff"]["handoff_result"]
     assert initial_handoff["handoff"] is None
@@ -310,22 +299,25 @@ def _get_snapshot(client: TestClient) -> dict[str, Any]:
 
 
 def _structured_generation_from_snapshot(
-    client: TestClient,
+    _client: TestClient,
     snapshot: dict[str, Any],
 ) -> dict[str, Any]:
-    response = _post_json(
-        client,
-        "/api/content/work-items/structured-draft-generation",
-        {
+    response = build_content_work_item_structured_draft_generation_response(
+        ContentWorkItemStructuredDraftGenerationRequest.model_validate(
+            {
             "item": snapshot["human_review"]["item"],
             "sales_brief": snapshot["sales_brief"]["sales_brief_result"]["brief"],
             "claim_ledger": snapshot["claim_ledger"],
             "draft_package": snapshot["draft_package"]["draft_package_result"][
                 "draft_package"
             ],
-        },
+            }
+        )
     )
-    return cast(dict[str, Any], response["structured_generation_result"])
+    return cast(
+        dict[str, Any],
+        response.structured_generation_result.model_dump(mode="json"),
+    )
 
 
 def _post_json(client: TestClient, path: str, payload: dict[str, Any]) -> dict[str, Any]:

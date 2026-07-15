@@ -17,6 +17,10 @@ from tests.content.test_work_item_preflight_api import (
     _item,
     _sales_brief_seed,
 )
+from wilq.content.workflow.contracts import ContentWorkItemStructuredDraftGenerationRequest
+from wilq.content.workflow.stage_drafts import (
+    build_content_work_item_structured_draft_generation_response,
+)
 
 
 def test_content_quality_review_accepts_evidence_bound_draft() -> None:
@@ -403,19 +407,19 @@ def _quality_payload() -> dict[str, Any]:
         }
     )
     draft_package = deepcopy(draft_response["draft_package_result"]["draft_package"])
-    generation_response = TestClient(app).post(
-        "/api/content/work-items/structured-draft-generation",
-        json={
+    generation_response = build_content_work_item_structured_draft_generation_response(
+        ContentWorkItemStructuredDraftGenerationRequest.model_validate(
+            {
             "item": item,
             "sales_brief": brief,
             "claim_ledger": claim_ledger,
             "draft_package": draft_package,
-        },
+            }
+        )
     )
-    assert generation_response.status_code == 200
-    contract = generation_response.json()["structured_generation_result"]["contract"]
+    contract = generation_response.structured_generation_result.contract
     assert contract is not None
-    model_input = contract["model_input"]
+    model_input = contract.model_input.model_dump(mode="json")
     return {
         "item": item,
         "sales_brief": brief,

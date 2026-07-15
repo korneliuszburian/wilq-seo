@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
+
 from fastapi.routing import APIRoute
 
+from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.drafts.codex_section_proposal import (
@@ -15,7 +18,6 @@ from wilq.content.workflow.api import (
     ContentWordPressDraftWriteReadinessResponse,
     ContentWordPressExistingDraftUpdateReadinessResponse,
     ContentWorkItemDraftPackageResponse,
-    ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
@@ -24,9 +26,6 @@ from wilq.content.workflow.api import (
     ContentWorkItemRevisionApplyResponse,
     ContentWorkItemRevisionPlanResponse,
     ContentWorkItemSalesBriefResponse,
-    ContentWorkItemStructuredDraftGenerationResponse,
-    ContentWorkItemStructuredDraftPreviewResponse,
-    ContentWorkItemStructuredDraftRuntimeResponse,
     ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffResponse,
@@ -99,23 +98,6 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("POST", "/api/content/work-items/preflight"): ContentWorkItemPreflightResponse,
     ("POST", "/api/content/work-items/sales-brief"): ContentWorkItemSalesBriefResponse,
     ("POST", "/api/content/work-items/draft-package"): ContentWorkItemDraftPackageResponse,
-    (
-        "POST",
-        "/api/content/work-items/structured-draft-generation",
-    ): ContentWorkItemStructuredDraftGenerationResponse,
-    ("POST", "/api/content/work-items/draft-variants"): ContentWorkItemDraftVariantsResponse,
-    (
-        "POST",
-        "/api/content/work-items/structured-draft-runtime",
-    ): ContentWorkItemStructuredDraftRuntimeResponse,
-    (
-        "POST",
-        "/api/content/work-items/structured-draft-preview",
-    ): ContentWorkItemStructuredDraftPreviewResponse,
-    (
-        "POST",
-        "/api/content/work-items/{work_item_id}/structured-draft-preview",
-    ): ContentWorkItemStructuredDraftPreviewResponse,
     ("POST", "/api/content/work-items/quality-review"): ContentWorkItemQualityReviewResponse,
     (
         "POST",
@@ -173,7 +155,6 @@ def test_content_workflow_stateful_routes_have_selected_work_item_variants() -> 
         "snapshot",
         "human-review",
         "audit",
-        "structured-draft-preview",
         "quality-review",
         "revision-plan",
         "revision-apply",
@@ -182,6 +163,36 @@ def test_content_workflow_stateful_routes_have_selected_work_item_variants() -> 
             path == f"/api/content/work-items/{{work_item_id}}/{suffix}"
             for _method, path in routes
         )
+
+
+def test_public_content_openapi_has_one_model_entrypoint_and_no_execution_contract() -> None:
+    content_paths = {
+        path: operation
+        for path, operation in app.openapi()["paths"].items()
+        if path.startswith("/api/content/")
+    }
+    model_paths = [path for path in content_paths if "codex-proposal" in path]
+    forbidden_paths = {
+        "/api/content/work-items/structured-draft-generation",
+        "/api/content/work-items/structured-draft-runtime",
+        "/api/content/work-items/structured-draft-preview",
+        "/api/content/work-items/{work_item_id}/structured-draft-preview",
+        "/api/content/work-items/draft-variants",
+    }
+
+    assert model_paths == [
+        "/api/content/work-items/{work_item_id}/draft-revisions/"
+        "{base_revision_id}/codex-proposal"
+    ]
+    assert forbidden_paths.isdisjoint(content_paths)
+    serialized_contract = json.dumps(content_paths, sort_keys=True)
+    for forbidden_field in (
+        "model_input",
+        "system_instruction",
+        "user_instruction",
+        "output_schema",
+    ):
+        assert forbidden_field not in serialized_contract
 
 
 def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:

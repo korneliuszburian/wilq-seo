@@ -40,12 +40,6 @@ import {
   ContentWorkItemRevisionPlanResponseSchema,
   ContentWorkItemSalesBriefRequestSchema,
   ContentWorkItemSalesBriefResponseSchema,
-  ContentWorkItemStructuredDraftGenerationRequestSchema,
-  ContentWorkItemStructuredDraftGenerationResponseSchema,
-  ContentWorkItemStructuredDraftPreviewRequestSchema,
-  ContentWorkItemStructuredDraftPreviewResponseSchema,
-  ContentWorkItemStructuredDraftRuntimeRequestSchema,
-  ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
@@ -129,12 +123,6 @@ import {
   type ContentWorkItemRevisionPlanResponse,
   type ContentWorkItemSalesBriefRequest,
   type ContentWorkItemSalesBriefResponse,
-  type ContentWorkItemStructuredDraftGenerationRequest,
-  type ContentWorkItemStructuredDraftGenerationResponse,
-  type ContentWorkItemStructuredDraftPreviewRequest,
-  type ContentWorkItemStructuredDraftPreviewResponse,
-  type ContentWorkItemStructuredDraftRuntimeRequest,
-  type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemSnapshotAuditRequest,
   type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemSnapshotResponse,
@@ -501,41 +489,6 @@ export function postContentWorkItemDraftPackage(
   );
 }
 
-export function postContentWorkItemStructuredDraftGeneration(
-  request: ContentWorkItemStructuredDraftGenerationRequest
-): Promise<ContentWorkItemStructuredDraftGenerationResponse> {
-  return apiPost(
-    "/api/content/work-items/structured-draft-generation",
-    ContentWorkItemStructuredDraftGenerationResponseSchema,
-    ContentWorkItemStructuredDraftGenerationRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemStructuredDraftRuntime(
-  request: ContentWorkItemStructuredDraftRuntimeRequest
-): Promise<ContentWorkItemStructuredDraftRuntimeResponse> {
-  return apiPost(
-    "/api/content/work-items/structured-draft-runtime",
-    ContentWorkItemStructuredDraftRuntimeResponseSchema,
-    ContentWorkItemStructuredDraftRuntimeRequestSchema.parse(request)
-  );
-}
-
-export function postContentWorkItemStructuredDraftPreview(
-  request: ContentWorkItemStructuredDraftPreviewRequest,
-  workItemId?: string
-): Promise<ContentWorkItemStructuredDraftPreviewResponse> {
-  const path =
-    workItemId === undefined
-      ? "/api/content/work-items/structured-draft-preview"
-      : `/api/content/work-items/${encodeURIComponent(workItemId)}/structured-draft-preview`;
-  return apiPost(
-    path,
-    ContentWorkItemStructuredDraftPreviewResponseSchema,
-    ContentWorkItemStructuredDraftPreviewRequestSchema.parse(request)
-  );
-}
-
 export function postContentWorkItemQualityReview(
   request: ContentWorkItemQualityReviewRequest,
   workItemId?: string
@@ -824,12 +777,6 @@ export type {
   ContentWorkItemSnapshotAuditRequest,
   ContentWorkItemSnapshotHumanReviewRequest,
   ContentWorkItemSnapshotResponse,
-  ContentWorkItemStructuredDraftGenerationRequest,
-  ContentWorkItemStructuredDraftGenerationResponse,
-  ContentWorkItemStructuredDraftPreviewRequest,
-  ContentWorkItemStructuredDraftPreviewResponse,
-  ContentWorkItemStructuredDraftRuntimeRequest,
-  ContentWorkItemStructuredDraftRuntimeResponse,
   ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
   ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   ContentWorkItemWordPressDraftExecutionRequest,

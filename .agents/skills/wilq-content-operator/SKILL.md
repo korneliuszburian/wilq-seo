@@ -38,7 +38,13 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 6. Pobierz `GET /api/marketing/brief` tylko jako skondensowany marketingowy kontekst, nie jako zamiennik queue/snapshot.
 7. W widocznej odpowiedzi nazwij po ludzku źródła decyzji, np. GSC, WordPress, Ahrefs, GA4, Service Profile albo knowledge cards. Wilku ma widzieć "skąd to wiemy", nie tylko techniczne ID.
 8. Kroki workflow opisuj językiem operatora: enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrolę jakości, review człowieka, szkic WordPress, ACF i okno pomiaru. Angielskie nazwy zostaw tylko, gdy są nazwą pola albo endpointu.
-9. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation API path, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
+9. Dla poprawy tekstu używaj wyłącznie exact revision flow z WILQ API. Snapshot
+   musi zwrócić `structured_generation_readiness.status=ready`, a wybrana baza
+   musi być najnowszą wersją `needs_changes` albo `rejected`. Następnie wywołaj
+   `POST /api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal`
+   z dokładnym `expected_base_digest` i nagłówkami zwróconymi przez readiness.
+   Wynik jest niezatwierdzoną child revision i zawsze wymaga human review. Nie
+   rekonstruuj promptu ani kontraktu modelu i nie wywołuj OpenAI bezpośrednio.
 10. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Jeśli API zwraca `wordpress_authoring_preview`, pokaż ACF/`elementy` row candidate jako propozycję do ręcznego przeglądu, nie jako zapis. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
 11. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
 12. Jeśli użytkownik jawnie prosi o krótką paczkę UAT dla Wilka, możesz użyć `scripts/build_uat_packet.py`; to narzędzie pomocnicze, nie obowiązkowy start zwykłej sesji content.
@@ -64,11 +70,9 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 - `POST /api/content/work-items/preflight`
 - `POST /api/content/work-items/sales-brief`
 - `POST /api/content/work-items/draft-package`
-- `POST /api/content/work-items/structured-draft-generation`
-- `POST /api/content/work-items/structured-draft-runtime`
-- `POST /api/content/work-items/structured-draft-preview`
-- `POST /api/content/work-items/{work_item_id}/structured-draft-preview`
-- `POST /api/content/work-items/draft-variants`
+- `POST /api/content/work-items/{work_item_id}/draft-revisions`
+- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review`
+- `POST /api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal`
 - `POST /api/content/work-items/quality-review`
 - `POST /api/content/work-items/{work_item_id}/quality-review`
 - `POST /api/content/work-items/revision-plan`
@@ -128,8 +132,9 @@ Język: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Id
 <!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
 - Nie wymyślaj metryk, fraz, pozycji, danych GSC, danych GA4, gapów Ahrefs, twierdzeń ani statusów WordPress.
-- Nie pisz finalnego artykułu bez WILQ API structured draft runtime i strict schema.
-- Nie wywołuj OpenAI SDK bezpośrednio; produkcyjne generowanie przechodzi przez WILQ API.
+- Nie pisz finalnego artykułu poza exact revision/codex-proposal i human review.
+- Nie wywołuj OpenAI SDK ani API key bezpośrednio; jedyny modelowy entrypoint
+  treści to serwerowy exact Codex proposal korzystający z istniejącego loginu.
 - Nie wywołuj WordPress bezpośrednio; handoff przechodzi przez WILQ API i pozostaje draft-only.
 - Nie ustawiaj ani nie akceptuj `publish_ready=true`.
 - Nie pomijaj preflightu, briefu sprzedażowego, rejestr twierdzeń, quality review, human review, audytu ani measurement window.

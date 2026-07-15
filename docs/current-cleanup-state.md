@@ -36,10 +36,10 @@ promptu ani model inputu. Marketerowy WordPress dry-run udający content review 
 osierocone panele zostały usunięte. Desktop/mobile proof nie dotyka Codexa ani
 WordPressa; exact proposal POST jest syntetycznie przechwycony.
 
-Następny bounded P0 to `wilq-seo-r564.14`: po migracji skilla i testów usunąć
-cztery publiczne Structured Outputs generation/runtime/preview routes oraz ich
-API-key runtime. Zachowaj wewnętrzny structured contract/output i preview
-blockers używane przez kanoniczny Codex proposal. Nie dodawaj `OPENAI_API_KEY`,
+`wilq-seo-r564.14` usuwa legacy OpenAI SDK/API-key runtime, pięć publicznych
+dróg ujawnienia full generation contract oraz martwe browser schemas. OpenAPI
+ma wyłącznie exact `codex-proposal`; internal structured contract/output i
+preview blockers pozostają wymagane przez ten seam. Nie dodawaj `OPENAI_API_KEY`,
 Agents SDK, Ollamy ani alternatywnej ścieżki modelu.
 
 `c9h9.4` jest zamknięty i nie wolno go powtarzać. Po każdym slice uruchom
@@ -127,9 +127,9 @@ kontynuuj najwyższy bezpieczny task.
   pending/diff/findings bez promptu w browserze, approval ani WordPress write.
   Cross-work-item result i brak wybranej sekcji są fail-closed. Proof 1440×900 i
   390×844: `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
-- `wilq-seo-r564.14` jest otwartym P0 dla usunięcia publicznego alternatywnego
-  OpenAI Structured Outputs runtime. Internal generation contract pozostaje
-  wymagany przez kanoniczny proposal i nie jest martwym artefaktem.
+- `wilq-seo-r564.14` jest zweryfikowany: tylko exact `codex-proposal` pozostaje
+  publicznym content-model entrypointem; internal generation contract nie jest
+  martwym artefaktem.
 - Parent `wilq-seo-r564` pozostaje otwarty. Queue density jest zewnętrznie
   niepełna (1 actionable z wymaganych 3), a Service Profile i Wilku UAT nadal
   wymagają ownera. Nie blokuje to podłączenia zweryfikowanego proposal seam do
@@ -168,10 +168,7 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Resume
 
-1. Wykonaj `wilq-seo-r564.14`: przez `$skill-creator` przepnij content operatora
-   na readiness/exact proposal, usuń cztery alternate public routes i API-key
-   runtime, lecz zachowaj internal generation contract używany przez proposal.
-2. GSC, GA4, Ahrefs, Ads, Keyword Planner i inventory używaj tylko, gdy istnieje
+1. GSC, GA4, Ahrefs, Ads, Keyword Planner i inventory używaj tylko, gdy istnieje
    aktualny typed dowód; brak lub stale źródło jest blockerem, nie wymyśloną
    metryką ani wolumenem słowa kluczowego.
 3. Potem przygotuj review-ready paczkę tekstów; jakości 10/10 nie claimuj przed realnym Wilku
