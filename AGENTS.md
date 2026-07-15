@@ -1,5 +1,13 @@
 # AGENTS.md
 
+## Shell and execution contract
+
+- Prefix every shell command, including every pipeline segment, with `rtk`.
+- Never install, enable, invoke, read or inspect any `superpowers` plugin or skill.
+- Preserve unrelated dirty work and mutate only paths owned by the active task.
+- Treat publish, deploy, remote mutation, credentials and irreversible actions
+  as authority separate from local implementation and verification.
+
 ## Project identity
 
 This repository builds WILQ Marketing Operating System for Ekologus. WILQ is the system/product, Wilku is the human marketer/operator persona, and Ekologus is the first depth-first workspace/client. Codex Desktop/CLI is the primary operator runtime.
@@ -391,11 +399,11 @@ Use subagents for large parallel analysis. Merge subagent findings into one impl
 ## Development commands
 
 ```bash
-uv sync --all-extras
-pnpm install
-scripts/local_stack.sh start
-scripts/local_stack.sh status
-scripts/verify.sh
+rtk uv sync --all-extras
+rtk pnpm install
+rtk scripts/local_stack.sh start
+rtk scripts/local_stack.sh status
+rtk scripts/verify.sh
 ```
 
 ## Local runtime gotchas
@@ -420,10 +428,12 @@ scripts/verify.sh
   is fixed or the blocker is a specific external dependency. Record the exact
   blocker; do not merely say "API unreachable".
 - If live API output contradicts current source/tests after a code slice, run
-  `scripts/local_stack.sh restart` before debugging product logic. A stale
+  `rtk scripts/local_stack.sh restart` before debugging product logic. A stale
   managed API child can keep old response shapes even when the worktree is
   correct.
-- Use `uv run ...` for every Python-facing repo command. This machine may not have a global `python`; use `uv run python ...` in scripts, pipes and smoke commands instead of bare `python`.
+- Use `rtk uv run ...` for every Python-facing repo command. This machine may
+  not have a global `python`; use `rtk uv run python ...` in shell commands
+  instead of bare `python`.
 - If `agent-browser` fails with `Failed to create socket directory: Permission denied`, set a writable runtime dir first: `mkdir -p .local-lab/xdg-runtime && chmod 700 .local-lab/xdg-runtime && XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser ...`. In this WSL session `/run/user/1000` may not exist.
 - After changing `pyproject.toml` entrypoints or build metadata, run `uv sync --all-extras` before expecting `uv run wilq ...` to exist.
 - The canonical goal file is `docs/goals/001-goal.md`. Do not recreate old duplicate numbered goal files.
@@ -490,7 +500,8 @@ credential values, token prefixes, JSON bodies, or copied OAuth redirect codes.
 ## Testing instructions
 
 Use risk-based verification. Do not run broad suites by habit after every tiny
-edit.
+edit. Prefix every shell command and every pipeline segment with `rtk`; use
+`rtk uv run ...` for Python-facing commands.
 
 - Docs-only, copy-only or goal/progress updates: run `git diff --check`; no
   product test is required unless the text change affects generated contracts.
@@ -503,14 +514,25 @@ edit.
 - `scripts/verify.sh` is a final or broad-risk gate: use it before final
   handoff, before claiming cross-surface completion, after broad API/dashboard/
   skill changes, or when focused checks reveal shared regression risk.
+- Run only one expensive test/eval process at a time. Never start a duplicate
+  pytest while another pytest is active.
+- Run a broad gate once near completion. Do not rerun a green stage unless
+  relevant code changed or fresh completion evidence requires it.
+- If the executor wall cannot fit full backend pytest, use deterministic,
+  non-overlapping shards instead of manual filename groups. Run each shard
+  exactly once and keep the same shard count for that proof cycle.
+- Stop the managed local stack before a broad isolated gate only when its live
+  database lock would conflict; restore it with `local_stack.sh` before live or
+  browser proof. Do not hand-roll replacement processes.
 
 Common commands:
 
 ```bash
-uv run pytest
-pnpm --filter @wilq/dashboard test
-scripts/quality.sh
-scripts/verify.sh
+rtk uv run --extra dev pytest -q tests/path/to/focused_test.py
+rtk uv run python scripts/test_backend_shard.py --shard 1/8
+rtk pnpm --filter @wilq/dashboard test
+rtk scripts/quality.sh
+rtk scripts/verify.sh
 ```
 
 ## Stop conditions

@@ -95,6 +95,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 - Marketerowy WordPress dry-run udający ocenę tekstu i pięć osieroconych paneli
   zostały usunięte po pełnym reference proof. Techniczny payload dry-run nadal
   istnieje wyłącznie w audycie technicznym.
+- `wilq-seo-c9h9.25` normalizuje bounded backend proof dla wykonawcy: jeden
+  runner odkrywa aktualne pliki `test_*.py` i dzieli je deterministycznie na
+  rozłączne shardy. `AGENTS.md` wymaga focused-first, jednego kosztownego procesu
+  naraz, braku duplikatów pytest i niepowtarzania zielonych etapów bez zmiany kodu.
 
 ## Bieżący proof
 
