@@ -34,12 +34,17 @@ blockers.
   → persisted scope/section review → exact revision/human review → optional
   exact Codex proposal → revision-bound ActionObject → WordPress draft-only.
   Legacy client-owned stages and direct WordPress execution are absent.
-- Live smoke kept the real workspace at `scope`, exposed 2 exact GSC rows and
-  0 Ads/Planner rows, and performed no vendor write. The eval preflight now
-  waits only for the API's explicit `daily_check_runtime_prewarm` state after
-  ActionObject validation; it still fails on final missing connector evidence.
-- Fresh non-interactive eval passed with usefulness 9/10 at
-  `.local-lab/evals/codex-skill/20260716T001145Z`. It gives one Polish scope
+- Live smoke kept the real workspace at `scope`, exposed 11 exact GSC rows and
+  0 Ads/Planner rows, and performed no vendor write. Its compact eval payload
+  now carries four real query rows with metrics, freshness, evidence and
+  section mapping instead of only a row count. The eval preflight waits only
+  for the API's explicit `daily_check_runtime_prewarm` state after ActionObject
+  validation and remains fail-closed on missing connector evidence.
+- The first fresh eval correctly failed because its actionable answer lacked
+  the required explicit `Jedna decyzja` handoff and could not show query
+  metrics from the count-only smoke payload. After fixing those public proof
+  seams, the fresh non-interactive eval passed with usefulness 9/10 at
+  `.local-lab/evals/codex-skill/20260716T073745Z`. It gives one Polish scope
   decision, preserves GSC/WordPress evidence and blocks save/publication. This
   is not evidence of 10/10 generated text, Service Profile approval or Wilku
   UAT.

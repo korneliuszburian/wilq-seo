@@ -223,6 +223,52 @@ describe("ContentWorkflowSurface", () => {
     expect(within(context).queryByText("Kompaktowa kolejka pokazuje niepełne metryki.")).toBeNull();
   });
 
+  it("lets the marketer switch the exact evidenced page before the workflow", async () => {
+    const appRouter = createWilqRouter({
+      initialPath: "/content-workflow",
+      defaultPendingMinMs: 0
+    });
+    render(
+      <App
+        appRouter={appRouter}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const picker = await screen.findByRole("combobox", { name: "Strona i temat" });
+    expect(within(picker).getAllByRole("option")).toHaveLength(2);
+    expect(picker).toHaveValue("content_work_item_bdo");
+
+    fireEvent.change(picker, { target: { value: "content_work_item_green_deal" } });
+
+    await waitFor(() =>
+      expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_green_deal")
+    );
+    expect(Reflect.get(appRouter.state.location.search, "work_item_id")).toBe(
+      "content_work_item_green_deal"
+    );
+    expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
+    expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("falls back to an evidenced queue item for an unknown deep link", async () => {
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/content-workflow?work_item_id=missing_work_item",
+          defaultPendingMinMs: 0
+        })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const picker = await screen.findByRole("combobox", { name: "Strona i temat" });
+    expect(picker).toHaveValue("content_work_item_bdo");
+    expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
+  });
+
   it("records scope review and resumes on the section map without a wall of panels", async () => {
     const initialPlanning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
     const reviewedPlanning = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false });

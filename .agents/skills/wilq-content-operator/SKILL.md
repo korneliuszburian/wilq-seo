@@ -110,7 +110,8 @@ promptu, artykułu ani ścieżki WordPress.
 
 Zacznij od krótkiej karty, nie od architektury:
 
-- `Decyzja teraz`: work item, aktualny krok i czego potrzebujesz od Wilka.
+- `Decyzja teraz`: zacznij wprost od zdania `Jedna decyzja: ...`, nazwij work
+  item, aktualny krok i czego potrzebujesz od Wilka.
 - `Dlaczego`: strona/usługa, źródła, freshness i 2-4 najważniejsze dowody lub
   query rows bez wymyślonych fraz.
 - `Co już jest zapisane`: planning decision, revision i human review.

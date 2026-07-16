@@ -25,8 +25,26 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `do_not_touch`. Nadal jest poprawnie `blocked` przez review jakości landing
   page i pomiaru GA4; `v9ab.13` wymaga rzeczywistego werdyktu Wilka albo defer.
 
-## Ostatnie domknięte zakresy
+## Ostatnie zakresy i proofy
 
+- `wilq-seo-1oa.35` składa bieżący proof w jeden krótki folder
+  `docs/review-packets/2026-07-16-wilq-marketer/`: mapa Better BDOS,
+  instrukcja 20–30 minut, decyzja dnia, exact BDO context, pięć
+  aktualnych ekranów, uczciwa macierz możliwości i jeden formularz werdyktu.
+  Paczka rozdziela stan realny, review-only, zablokowany i nieudowodniony; nie
+  zawiera raw payloadu ani fikcyjnej akceptacji UAT. Browser proof potwierdził
+  pięć wyrenderowanych powierzchni bez błędów konsoli. Merchant działa, ale
+  zimny odczyt diagnostyki zmierzono na około 6.1 s, więc opóźnienie jest jawne
+  w paczce i pozostaje technicznym follow-upem.
+- `wilq-seo-1oa.36.1` naprawia pierwszy realny content entry gap. Content
+  diagnostics nie dziedziczy już limitu z cross-domain tactical queue:
+  kompletny zestaw evidenced GSC+WordPress stron trafia najpierw do własnego
+  rankera. Live kolejka wzrosła z 2 do 5 kandydatów i z 1 do 4 actionable;
+  exact strona BDO jest pierwszą wykonalną pracą. Snapshot wiąże ją z kartą
+  `ekologus_service_bdo_reporting`, 11 wierszami GSC, aktualnym WordPress
+  inventory i 0 zgadywanych Ads/Planner rows. Marketer mode ma zwarty picker,
+  a exact `work_item_id` pozostaje w URL po reloadzie. Scope i section map nadal
+  wymagają człowieka; karta BDO pozostaje `source_backed_review_required`.
 - Live homepage UAT ujawnił dwie luki w prezentacji popytu. Query GSC
   dziedziczyły wszystkie trzy
   sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence

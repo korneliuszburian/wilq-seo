@@ -36,8 +36,14 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
     queryKey: ["content-workflow", "queue"],
     queryFn: getContentWorkItemQueue
   });
-  const activeWorkItemId =
-    selectedWorkItemId ?? (queue.data ? defaultSelectedWorkItemId(queue.data) : null);
+  const requestedCandidate = queue.data?.candidates.find(
+    (candidate) => candidate.work_item_id === selectedWorkItemId
+  );
+  const activeWorkItemId = requestedCandidate
+    ? requestedCandidate.work_item_id
+    : queue.data
+      ? defaultSelectedWorkItemId(queue.data)
+      : null;
   const selectedCandidate =
     queue.data?.candidates.find((candidate) => candidate.work_item_id === activeWorkItemId) ?? null;
   const selectedCandidateBlocked = selectedCandidate?.recommended_mode === "block";

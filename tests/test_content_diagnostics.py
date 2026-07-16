@@ -9,7 +9,12 @@ from wilq.briefing.content_diagnostics import (
     _rank_content_decisions_for_diagnostics,
     build_content_diagnostics,
 )
-from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse, MetricFact
+from wilq.schemas import (
+    ContentDecisionItem,
+    ContentDiagnosticsResponse,
+    MetricFact,
+    TacticalQueueResponse,
+)
 
 
 def test_content_diagnostics_cache_reuses_one_build_for_initial_request_flow(monkeypatch) -> None:
@@ -124,6 +129,50 @@ def test_content_diagnostics_uses_latest_metric_evidence_by_identity() -> None:
     assert "ev_new_wp" in all_section_evidence
     assert "ev_old_gsc" not in all_section_evidence
     assert "ev_old_wp" not in all_section_evidence
+
+
+def test_content_diagnostics_ranks_evidenced_pages_before_daily_queue_limit(
+    monkeypatch,
+) -> None:
+    collected_at = datetime(2026, 7, 15, 8, 0, tzinfo=UTC)
+    bdo_page = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    pages = [bdo_page, *[f"https://www.ekologus.pl/usluga-{index}/" for index in range(6)]]
+    facts: list[MetricFact] = []
+    for index, page in enumerate(pages):
+        query = "bdo co to jest" if page == bdo_page else f"usługa {index}"
+        impressions = 1000 if page == bdo_page else 10 + index
+        evidence_suffix = "bdo" if page == bdo_page else str(index)
+        facts.extend(
+            [
+                _gsc_fact(
+                    "impressions",
+                    impressions,
+                    query,
+                    page,
+                    f"ev_gsc_{evidence_suffix}",
+                    collected_at,
+                ),
+                _gsc_fact(
+                    "clicks",
+                    1,
+                    query,
+                    page,
+                    f"ev_gsc_{evidence_suffix}",
+                    collected_at,
+                ),
+                _wordpress_fact(page, f"ev_wp_{evidence_suffix}", collected_at),
+            ]
+        )
+    monkeypatch.setattr(
+        content_diagnostics_module,
+        "build_tactical_queue",
+        lambda **_: TacticalQueueResponse.model_construct(items=[]),
+    )
+
+    diagnostics = build_content_diagnostics(actions=[], metric_facts=facts)
+
+    assert any(decision.page == bdo_page for decision in diagnostics.decision_queue)
+    assert len(diagnostics.decision_queue) == 5
 
 
 def test_content_diagnostics_ranking_prefers_fresh_primary_over_stale_ahrefs() -> None:

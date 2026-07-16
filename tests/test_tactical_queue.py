@@ -2,9 +2,30 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from wilq.briefing.tactical_queue import build_tactical_queue
+from wilq.briefing.tactical_queue import _balanced_tactical_items, build_tactical_queue
 from wilq.content.planning.ahrefs_overlap import AhrefsCrossSourceMatcher
-from wilq.schemas import MetricFact, OpportunityDomain
+from wilq.schemas import MetricFact, OpportunityDomain, TacticalQueueItem
+
+
+def test_tactical_queue_keeps_domain_floor_after_full_content_extraction() -> None:
+    items = [
+        _tactical_item(f"gsc-{index}", OpportunityDomain.gsc_seo, priority=1)
+        for index in range(30)
+    ]
+    for domain in (OpportunityDomain.ga4, OpportunityDomain.merchant, OpportunityDomain.ahrefs):
+        items.extend(_tactical_item(f"{domain.value}-{index}", domain, priority=100) for index in range(4))
+
+    balanced = _balanced_tactical_items(items, limit=24)
+
+    assert len(balanced) == 24
+    assert {
+        domain: sum(item.domain == domain for item in balanced)
+        for domain in (OpportunityDomain.ga4, OpportunityDomain.merchant, OpportunityDomain.ahrefs)
+    } == {
+        OpportunityDomain.ga4: 4,
+        OpportunityDomain.merchant: 4,
+        OpportunityDomain.ahrefs: 4,
+    }
 
 
 def test_tactical_queue_uses_latest_gsc_query_page_identity() -> None:
@@ -190,4 +211,29 @@ def _gsc_fact(
         evidence_id=evidence_id,
         dimensions={"query": query, "page": page},
         collected_at=collected_at,
+    )
+
+
+def _tactical_item(
+    item_id: str,
+    domain: OpportunityDomain,
+    *,
+    priority: int,
+) -> TacticalQueueItem:
+    intent = {
+        OpportunityDomain.gsc_seo: "content_refresh",
+        OpportunityDomain.ga4: "landing_page_quality",
+        OpportunityDomain.merchant: "merchant_feed_triage",
+        OpportunityDomain.ahrefs: "content_create",
+    }[domain]
+    return TacticalQueueItem(
+        id=item_id,
+        title=item_id,
+        domain=domain,
+        intent=intent,
+        priority=priority,
+        source_connectors=[domain.value],
+        evidence_ids=[f"ev_{item_id}"],
+        diagnosis="test balance input",
+        next_step="review",
     )

@@ -1,144 +1,175 @@
-# WILQ Context Index
+# WILQ — kanoniczny kontekst produktu i runtime
 
-Ten plik jest krótkim indeksem recovery po utracie kontekstu. Nie jest
-changelogiem ani kopią goalu. Jeżeli potrzebujesz historii, użyj git log,
-`docs/progress/archive/` albo dedykowanych ledgerów.
+Stan na: 2026-07-16.
 
-## Start After Context Loss
+Ten plik jest pierwszym recovery entrypointem po utracie kontekstu. Pokazuje
+docelowy produkt, aktualną prawdę, aktywny priorytet i granice. Nie jest
+changelogiem. Historia pozostaje w git, zamkniętych Beads i archiwach progress.
 
-Przeczytaj w tej kolejności:
+## Recovery
 
-1. `AGENTS.md` - stałe reguły pracy, sekrety, lokalne ścieżki i gotchas.
-2. `docs/goals/001-goal.md` - aktywny goal i granice aktualnego etapu.
-3. `docs/PROGRESS.md` - krótki aktualny stan, aktywne luki i następny ruch.
-4. `bd prime` and `bd ready --json` - operational issue graph for the current
-   cleanup queue.
-5. `docs/evals/skill-coverage-audit.md` - aktualna tabela pokrycia skillów.
-6. `docs/evals/skill-eval-ledger.md` - szczegóły manualnych i non-interactive
-   przebiegów skillów.
-7. `docs/architecture/bdos-class-wilq-operating-system.md` - produktowa
-   poprzeczka “lepszy BDOS”.
-8. `docs/infra/001.md` i `docs/audits/001-output.md` - pierwotny scope i
-   audyt, tylko gdy trzeba sprawdzić źródłowy intent.
+Czytaj w tej kolejności:
 
-## Current Product Direction
+1. `AGENTS.md` — stałe reguły, bezpieczeństwo, runtime i gotchas.
+2. `docs/CONTEXT.md` — pełna bieżąca mapa produktu.
+3. `docs/goals/001-goal.md` — aktywny cel pilota.
+4. `docs/current-cleanup-state.md` — aktualne seamy i zakończony cleanup.
+5. `docs/dashboard-state.md` — prawda per route.
+6. `docs/PROGRESS.md` — najnowszy krótki dowód i luki.
+7. `PLANS.md` — długotrwały ExecPlan i decyzje.
+8. `rtk bd prime` oraz `rtk bd ready --json` — operacyjny graf pracy.
 
-WILQ to API-first Marketing Operating System dla Ekologus. WILQ API jest
-mózgiem systemu; dashboard, Codex skills, hooks, workflows, expert rules,
-szanse i akcje do sprawdzenia mają używać tych samych typed contracts.
+## Czym jest WILQ / Better BDOS
 
-Marketer jest polski. Widzi decyzje, źródła danych, dowody opisane po polsku,
-blokady i bezpieczny następny krok. Techniczne ID, connector IDs, raw trace i
-surowe payloady trafiają tylko do technicznego szczegółu albo audytu.
+WILQ to lokalny, API-first Marketing Operating System dla Ekologus. Ma
+przenieść jakość operacyjną BDOS na cały marketing: mniej klikania i ręcznego
+łączenia danych, szybsze decyzje, zakodowana wiedza ekspercka, bezpieczne
+wykonanie i mierzalna pamięć wyniku.
 
-## Current Recovery State
+`evidence-first` jest warstwą bezpieczeństwa, nie definicją produktu. Pełny
+operator WILQ musi jednocześnie:
 
-- Aktywny goal: `docs/goals/001-goal.md`.
-- Completed baseline: `docs/goals/archive/004-goal.md`.
-- Aktualny ledger: `docs/PROGRESS.md`.
-- Historyczne wpisy przeniesione lub pozostawione w git history i
-  `docs/progress/archive/`.
-- Nie dopisuj tu długich logów. Jeżeli ten plik zacznie puchnąć, usuń albo
-  zastąp outdated/done rzeczy zamiast dopisywać nowe sekcje.
+1. przyjąć normalne polecenie marketera albo poprowadzić prosty dashboard flow;
+2. zebrać aktualne dane, kontekst Ekologus i właściwe reguły eksperckie;
+3. zakwestionować słabe założenie oraz wskazać jedną decyzję i jej priorytet;
+4. zakończyć nazwane zadanie, a nie tylko wygenerować diagnozę lub raport;
+5. skrócić czas do decyzji/wyniku w sposób możliwy do zmierzenia;
+6. dla zapisu przejść `validate → preview → review → confirm → audit`;
+7. zachować kontekst, wersje, decyzje i historię tak, aby można było wrócić do
+   pracy po tygodniach;
+8. po wykonaniu otworzyć okno pomiaru i zaproponować wniosek bez automatycznego
+   claimu sukcesu.
 
-## Current Cleanup Gate
+WILQ API jest mózgiem. Dashboard, Codex skills i ograniczony lokalny executor
+używają tych samych typed contracts. MCP może być adapterem, nigdy drugim
+mózgiem. Browser nie łączy się z modelem bezpośrednio.
 
-Senior cleanup work is tracked under Beads epic `wilq-seo-c9h9`.
-Python/runtime cleanup standards live in
-`docs/architecture/python-runtime-and-test-standards.md`.
+### Decyzja z benchmarku BDOS
 
-Before adding new product behavior, run:
+Źródło: materiał z `bdos.ai` przekazany przez ownera 2026-07-16. Materiał jest
+benchmarkiem mechaniki produktu, nie dowodem lokalnej implementacji ani
+uprawnieniem do kopiowania jego obietnic.
 
-```bash
-rtk uv run python scripts/audit_complexity.py --changed --summary --limit 12
+- **Adoptujemy:** conversational/one-command entry, kompletne workflowy,
+  time-to-result, zakodowane API traps i wiedzę ekspercką, cross-source
+  analysis, durable client memory oraz safe mutation engine.
+- **Adaptujemy:** BDOS jest głównie Google Ads; WILQ stosuje ten wzorzec do
+  Treści/SEO, Ads, GA4, Merchant, Localo, social i wiedzy Ekologus.
+- **Odrzucamy jako nieudowodnione:** obietnice oszczędności czasu, przychodu,
+  ROAS, pełnej automatyzacji, bezpieczeństwa produkcyjnego lub jakości 10/10,
+  dopóki lokalny workflow i człowiek ich nie potwierdzą.
+- **Falsifier:** realny marketer ma ukończyć zadanie szybciej i lepiej niż
+  ręcznie, z wynikiem, który obroni w review. Sam endpoint, test lub screenshot
+  nie spełnia tego warunku.
+
+## Aktualna mapa możliwości
+
+| Capability | Stan realny | Działa | Brak / ryzyko |
+| --- | --- | --- | --- |
+| Daily Command | techniczny pilot działa | świeże dowody, priorytet, blocker i bezpieczne akcje | realny werdykt Wilka i zmierzona oszczędność czasu |
+| Evidence Engine | działa | evidence IDs, connectors, freshness, blocked claims | nierówna głębokość konektorów; dowód sam nie kończy pracy |
+| Knowledge Compiler / Service Profile | częściowo | source-backed karty, lifecycle, review actions i claim policy | 0 kart `approved_current`; 9 kart `review_required` |
+| Content Ops | mechaniczny loop działa, jakość nie | jeden entrypoint, planning reviews, exact revisions, Codex proposal, human review, dev draft-only, measurement/learning contracts | wybór konkretnej usługi/strony/sekcji jest zbyt pośredni; realny tekst ma około 5/10; brak owner-reviewed knowledge i Wilku UAT |
+| Ads Doctor | read/review działa | live campaigns/search terms/recommendations, diagnostyka, review-only ActionObjects | brak podstaw do części claims finansowych; Keyword Planner blokowany zewnętrzną gotowością tokena developerskiego |
+| Campaign Builder / custom segments | częściowo | struktury i preview/review contracts | brak dowodu pełnego bezpiecznego realnego build/apply w pilocie |
+| GA4 Analyst | read/review działa | rozdziela jakość ruchu od problemów pomiaru | braki pomiaru blokują konwersje, revenue i ROAS claims |
+| Merchant Operator | read/review działa | agregaty produktów, issue queue, readiness i ActionObject review | issue occurrences nie są listą unikalnych SKU; cold diagnostics około 6 s; brak vendor write |
+| Localo Operator | częściowo | read-only aggregate/ranking/GBP evidence i honest blockers | za mało dowodu do mocnych lokalnych tez i mutacji GBP |
+| Social Publisher | zablokowany poprawnie | review-only kierunki i duplicate guard | brak zatwierdzonego historycznego inventory LinkedIn/Facebook |
+| Action Engine | kontrakt działa | validate, preview, review, confirm, impact, audit; destructive writes zablokowane | realne vendor writes wymagają osobnej zgody i proofu |
+| Measurement Loop | techniczny kontrakt działa | publication-bound windows, server-owned outcome, review-only learning proposal | brak realnego zaakceptowanego publication event i okresu wyniku |
+| Eval Harness / skills | działa technicznie | deterministyczne smokes, Codex evals, polski/evidence/action checks | wynik eval nie zastępuje realnej użyteczności i jakości pracy |
+| Codex executor | lokalny kontrakt działa | Codex app-server przez istniejący `codex login`, bez API keya | ergonomia osadzenia w dashboardzie i realne długie sesje wymagają proofu |
+| Produkcja | nieudowodniona | prywatny loopback-only pilot i lokalne credential sources | auth, TLS, tenant/actor contract, monitoring, HA, rotation i maintenance procedures |
+
+## Priorytet P0: Content Ops jako pierwszy pełny Better BDOS workflow
+
+Owner ustalił, że cały WILQ ma osiągnąć powyższy standard, ale Treści i SEO ma
+być pierwszym pionem dopracowanym maksymalnie i jak najszybciej przekazanym
+marketerowi.
+
+Docelowa jedna sesja:
+
+```text
+„Popraw treść dla usługi/strony/sekcji X”
+→ wybór exact usługi, strony, intencji, odbiorcy i CTA
+→ GSC + WordPress + Ahrefs + Ads/Planner tylko przy exact mappingu
+→ inventory, canonical, duplicate i internal-link checks
+→ reviewed Service Profile + Sales Brief + Claim Ledger
+→ reviewed scope i mapa sekcji
+→ grounded Codex proposal na exact revision
+→ automatyczna diagnoza jakości + SEO/content/marketer review
+→ iteracje i human acceptance dokładnej wersji
+→ revision-bound WordPress dev draft-only
+→ publication-bound measurement window
+→ review-only learning proposal
 ```
 
-If the gate flags a frozen file, do not continue as a broad exception. Create
-or use a focused child bead that names the exact extraction or compatibility
-slice. `--allow-frozen` is acceptable only for a documented temporary extraction
-or route-compatibility slice; it must not hide new behavior in
-`tests/test_api_contracts.py`, the `wilq/schemas/__init__.py` compatibility
-façade, `wilq/actions/service.py` or
-other frozen growth files.
+Pierwszy realny case: karta `ekologus_service_bdo_reporting` oraz publiczna
+strona BDO. Karta ma status `source_backed_review_required`, więc wolno z niej
+zbudować paczkę do review, ale nie wolno udawać owner acceptance ani finalnego
+claimu prawnego/obowiązkowego.
+
+Aktywny graf:
+
+- `wilq-seo-1oa.36` — epic pełnego marketer-grade Content Ops;
+- `wilq-seo-1oa.36.1` — pierwszy slice: API-owned wybór usługi, strony i sekcji
+  z BDO jako realnym review-only case;
+- `wilq-seo-1oa.35` — jeden folder demonstracyjny; artefakt przekazania, nie
+  substytut ukończonego content loopu.
+
+## Aktualny dowód contentu
+
+- `/content-workflow` jest jedynym głównym entrypointem.
+- Bieżący selected work item dotyczy strony BDO i jest na kroku `scope`.
+- Exact snapshot obejmuje 11 page-scoped wierszy GSC; bieżąca karta zakresu
+  agreguje 65 wyświetleń, 0 kliknięć i najlepszą średnią pozycję 9,00. UI i
+  eval pokazują cztery najwyższe wiersze oraz pełną liczność.
+- Scope i section map nie mają human approval.
+- Realny Codex proposal został poprawnie związany z wersją i dowodami, lecz
+  quality review zwrócił `needs_changes`; jakość tekstu pozostaje około 5/10.
+- Kolejka ma 5 kandydatów, z czego 4 są actionable. BDO jest pierwszym
+  wykonalnym exact work itemem i jego wybór przeżywa reload przez typed URL
+  search.
+- Karta BDO ma public source lineage i status review-required; wspiera scope do
+  review, ale nie finalny claim ani publikację.
+
+Ocena 10/10 wymaga realnej paczki tekstów i werdyktu marketera. Nie może zostać
+nadana przez Codex, testy ani ownera kodu bez review treści.
 
 ## Runtime
 
-Canonical local stack:
+Kanoniczny lokalny stack:
 
 ```bash
-scripts/local_stack.sh start
-scripts/local_stack.sh status
+rtk scripts/local_stack.sh start
+rtk scripts/local_stack.sh status
 ```
-
-Canonical URLs:
 
 - API: `http://127.0.0.1:8000`
 - Dashboard: `http://127.0.0.1:5173/command-center`
+- Python/API: zawsze `rtk uv run ...`
+- Model runtime: istniejący lokalny Codex login/app-server; brak OpenAI API keya,
+  Agents SDK, Ollamy i drugiej ścieżki generowania.
 
-Python/API commands must use `uv run ...`.
+## Granice i zewnętrzne bramki
 
-## Current High-Level Status
+- Brak evidence/source/freshness oznacza brak rekomendacji.
+- Brak reviewed knowledge oznacza review packet albo blocker, nie finalny claim.
+- Każda mutacja wymaga ActionObject i audytu; publish/update/delete są poza
+  content journey.
+- Nie wykonuj realnej publikacji, vendor write, storage migration ani secret
+  rotation bez osobnej zgody i właściwego okna.
+- Nie claimuj produkcji, auth, TLS, multi-tenant, aktualnego prawa, jakości
+  retrievalu, efektu marketingowego ani expert acceptance bez dowodu.
+- Nie naprawiaj produktu w skill promptach. Najpierw typed WILQ API/schema/
+  view-model, potem dashboard i skill.
+- Martwe artefakty usuwaj dopiero po potwierdzeniu braku referencji.
 
-Goal 004 completed the safe content operations mechanics. Goal 005 is active
-because mechanics are not the same as Wilku usefulness. Do not infer daily
-content-operations readiness from route/API availability, test count or the
-UAT harness alone.
+## Po każdym slice
 
-Available evidence surfaces for current proof include:
-
-- Google Ads OAuth/customer selection and live campaign/search-term reads.
-- GA4 landing/behavior plus key-event/ecommerce/revenue metric reads.
-- Merchant aggregate issues and review-only feed queue with marketer-readable
-  change previews.
-- GSC query/page and WordPress inventory matching for current Ekologus URLs.
-- Localo aggregate visibility, rankings, GBP visibility, competitor visibility
-  and reviews as read-only evidence.
-- 13 WILQ skills with strict eval coverage cases and baseline non-interactive
-  eval proof in `docs/evals/skill-eval-ledger.md`.
-
-Active gaps live in:
-
-- `docs/goals/001-goal.md` - current goal contract and next execution
-  boundaries.
-- `docs/PROGRESS.md` - short current readout, latest proof and active gaps.
-- `PLAN.md` - canonical cleanup/product-semantics plan.
-- `PLANS.md` - active long-running Goal 005 ExecPlan.
-- `bd ready --json` - current operational work graph. Do not duplicate this as
-  markdown TODOs.
-
-## Current Important Boundaries
-
-- Brak dowodu w WILQ i źródła danych oznacza brak rekomendacji.
-- Brak akcji do sprawdzenia, podglądu, potwierdzenia i audytu oznacza brak zapisu
-  zmian.
-- Nie naprawiaj zachowania produktu w opisach skilli. Najpierw popraw typowany
-  kontrakt API, schemat, view-model albo eval, a dopiero potem każ skillowi
-  używać nowego pola.
-- Exact live metric values are not release assertions. Exact clicks, costs,
-  rankings, reviews and issue counts belong in fixtures or proof notes.
-- Live smokes assert contract shape, freshness, nonempty expected facts and
-  honest ready/missing/blocked state.
-- Keep recovery docs aggressively pruned.
-
-## Prompt For `/new`
-
-Po zapisaniu/commitnięciu aktualnego stanu możesz rozpocząć świeżą sesję:
-
-```text
-Kontynuuj aktywny goal z repo:
-docs/goals/001-goal.md
-
-Najpierw przeczytaj AGENTS.md, docs/goals/001-goal.md, PLANS.md, docs/PROGRESS.md i docs/CONTEXT.md.
-Użyj aktualnego worktree i live WILQ API jako źródła prawdy.
-Nie rozbudowuj recovery docs; usuwaj outdated rzeczy zamiast dopisywać log.
-Kontynuuj następny najlepszy slice z goalu i używaj focused verification.
-```
-
-## When In Doubt
-
-1. Sprawdź `git status --branch --short`.
-2. Sprawdź `scripts/local_stack.sh status`.
-3. Pobierz live API dla dotykanego obszaru.
-4. Dodaj najmniejszy focused test dla zmiany zachowania.
-5. Zrób minimalny slice.
-6. Zapisz tylko aktualny stan i aktywne luki, nie historię wykonania.
+1. Focused proof ryzyka, które zmieniono.
+2. Aktualizacja bieżącego state record zamiast dopisywania kroniki.
+3. Komentarz i zamknięcie właściwego Beada po spełnieniu kryterium.
+4. Świadomy commit i push bez `AGENTS.md`, jeśli jest user-dirty.
+5. `rtk bd ready --json` i przejście do następnego potwierdzonego zadania.

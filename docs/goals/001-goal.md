@@ -33,10 +33,11 @@ typed kontraktów. Codex korzysta wyłącznie z istniejącego lokalnego
 
 - Techniczny pięciostopniowy workflow `scope → section_map → draft → review →
   dev_draft` istnieje w `/content-workflow` i ma jeden aktywny entrypoint.
-- Exact homepage snapshot używa 29 bieżących, page-scoped sygnałów
-  planistycznych GSC: 47 wyświetleń i 3 kliknięcia. Karta kontekstu, zakres,
-  tytuł oraz oba publiczne odczyty snapshotu korzystają z tego samego zakresu;
-  UI pokazuje cztery najwyższe wiersze i jawnie opisuje pełną liczność.
+- Bieżący exact BDO snapshot używa 11 page-scoped wierszy GSC; karta zakresu
+  agreguje 65 wyświetleń, 0 kliknięć i najlepszą średnią pozycję 9,00. UI oraz
+  skill eval pokazują cztery najwyższe wiersze i jawnie opisują pełną liczność.
+  Wcześniejszy homepage proof (29 sygnałów, 47 wyświetleń, 3 kliknięcia)
+  pozostaje dowodem historycznym, nie bieżącym wyborem marketera.
 - Exact revisions, human review, revision-bound ActionObject, WordPress
   draft-only, measurement window i review-only learning są zaimplementowane.
 - Realny wygenerowany tekst nadal uzyskał `needs_changes`; nie ma dowodu jakości
@@ -53,17 +54,23 @@ typed kontraktów. Codex korzysta wyłącznie z istniejącego lokalnego
 
 Beads jest jedynym operacyjnym grafem zadań. Bieżąca kolejność:
 
-1. `wilq-seo-lt1` — po otrzymaniu reviewed sources skompilować owner-reviewed
-   service/CTA/claim/evidence cards. To jest bramka ownera, nie pole do
-   zgadywania.
-2. `wilq-seo-jst` — przeprowadzić realny content UAT z Wilkiem albo zapisać
+1. `wilq-seo-1oa.36` — doprowadzić Content Ops do pełnego marketer-grade
+   Better BDOS loopu. Pierwszy slice `wilq-seo-1oa.36.1` daje API-owned wybór
+   exact usługi i strony oraz pokazuje plan sekcji; wybór exact sekcji pozostaje
+   otwartą częścią tego feature. BDO jest pierwszym realnym review-only case.
+2. `wilq-seo-lt1` — po otrzymaniu reviewed sources skompilować owner-reviewed
+   service/CTA/claim/evidence cards. To nadal jest bramka ownera, ale nie
+   blokuje repo-local ergonomii, paczki review ani pracy na jawnie
+   `review_required` wiedzy.
+3. `wilq-seo-jst` — przeprowadzić realny content UAT z Wilkiem albo zapisać
    jawny owner defer i residual risk.
-3. `wilq-seo-v9ab.13` — dać Wilkowi realny polski daily-check do oceny albo
+4. `wilq-seo-v9ab.13` — dać Wilkowi realny polski daily-check do oceny albo
    zapisać jawny defer. Techniczna implementacja Goal 006 jest już wykonana.
 
-`bd ready --json` pokazuje obecnie tylko dwa otwarte epiki nadrzędne. Nie ma
-potwierdzonego repo-local taska poza trzema powyższymi bramkami człowieka;
-nie wolno wymyślać technicznego cleanupu tylko po to, by utrzymać ruch.
+Nie ma zgody na losowy cleanup dla utrzymania ruchu. Jest natomiast
+potwierdzona praca repo-local: realny proposal otrzymał `needs_changes`,
+workspace nie pozwala jeszcze wybrać exact sekcji, a paczka tekstu dla
+marketera jeszcze nie istnieje.
 
 Po każdym zamkniętym slice odczytaj ponownie `bd ready --json` i
 `bd list --status=open --json`. Nie wracaj do zamkniętych technicznych epików
@@ -122,5 +129,10 @@ Ten goal można zamknąć dopiero, gdy:
 5. WordPress pozostaje draft-only i exact-version review-bound;
 6. realny daily-check jest reviewed albo jawnie odroczony;
 7. focused proof i wymagany finalny `scripts/verify.sh` są zielone;
-8. pozostały wyłącznie jawne bramki ownera lub osobnego maintenance/publish
+8. jedna exact usługa/strona przechodzi pełny Content Ops loop: wybór kontekstu,
+   wygenerowane sekcje, claim/section lineage, quality findings, before/after,
+   trzy role review i zmierzony czas do wyniku;
+9. paczka tekstowa ma zapisany realny werdykt marketera; samo oczekiwanie na
+   werdykt blokuje zamknięcie goalu i nie pozwala claimować jakości 10/10;
+10. pozostały wyłącznie jawne bramki ownera lub osobnego maintenance/publish
    authority, bez potwierdzonej bezpiecznej pracy repo-local.

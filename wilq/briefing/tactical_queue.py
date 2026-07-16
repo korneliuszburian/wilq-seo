@@ -195,7 +195,6 @@ def _build_tactical_queue(
     ]
     action_ids_by_connector = _tactical_action_ids_by_connector()
     wordpress_index = _wordpress_content_index(facts)
-    gsc_page_counts = _gsc_page_counts(facts)
     gsc_cross_check_facts = [
         fact for fact in facts if fact.source_connector == "google_search_console"
     ]
@@ -203,7 +202,10 @@ def _build_tactical_queue(
         fact for fact in facts if fact.source_connector.startswith("wordpress")
     ]
     items = [
-        *_gsc_content_items(facts, action_ids_by_connector, wordpress_index, gsc_page_counts),
+        *build_gsc_content_tactical_items(
+            facts,
+            wordpress_action_ids=action_ids_by_connector.get("wordpress_ekologus", []),
+        ),
         *_ga4_quality_items(facts, action_ids_by_connector, wordpress_index),
         *build_merchant_feed_items(facts=facts, action_ids=action_ids_by_connector),
         *_ahrefs_gap_items(
@@ -532,6 +534,26 @@ def _gsc_content_items(
             )
         )
     return items
+
+
+def build_gsc_content_tactical_items(
+    facts: list[MetricFact],
+    *,
+    wordpress_action_ids: Iterable[str] = (),
+) -> list[TacticalQueueItem]:
+    """Build the complete GSC/page inventory before any daily-queue limit.
+
+    Content diagnostics needs every evidenced page so its own ranking can pick
+    work items. The cross-domain tactical queue applies its balancing limit
+    only after this complete page set exists.
+    """
+    current_facts = latest_metric_facts_by_identity(facts)
+    return _gsc_content_items(
+        current_facts,
+        {"wordpress_ekologus": list(wordpress_action_ids)},
+        _wordpress_content_index(current_facts),
+        _gsc_page_counts(current_facts),
+    )
 
 
 def _ga4_quality_items(

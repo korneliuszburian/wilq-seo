@@ -8,7 +8,10 @@ from time import monotonic
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
-from wilq.briefing.tactical_queue import build_tactical_queue
+from wilq.briefing.tactical_queue import (
+    build_gsc_content_tactical_items,
+    build_tactical_queue,
+)
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.content.planning.ahrefs import ahrefs_gap_record_decisions
@@ -149,8 +152,16 @@ def build_content_diagnostics(
         or item.source_connectors.count("wordpress_ekologus") > 0
     ]
     action_ids = _content_action_ids(actions if actions is not None else _list_actions())
+    decision_tactical_items = (
+        all_tactical_items
+        if tactical_items is not None
+        else build_gsc_content_tactical_items(
+            trusted_facts,
+            wordpress_action_ids=action_ids,
+        )
+    )
     decision_queue = _content_decision_queue(
-        all_tactical_items,
+        decision_tactical_items,
         trusted_facts,
         action_ids,
         latest_refreshes,

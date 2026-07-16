@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
@@ -63,7 +64,20 @@ type CodexProposalMutationInput = {
   selectedSectionHeadings: string[];
 };
 export function ContentWorkflowSurface() {
-  const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const routeSearch = useRouterState({ select: (state) => state.location.search });
+  const requestedWorkItemId = contentWorkItemIdFromSearch(routeSearch);
+  const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | null>(
+    requestedWorkItemId
+  );
+  const selectWorkItem = (workItemId: string) => {
+    setSelectedWorkItemId(workItemId);
+    void navigate({
+      to: "/content-workflow",
+      search: (previous) => ({ ...previous, work_item_id: workItemId }),
+      replace: true
+    });
+  };
   const {
     activeWorkItemId,
     authoringProfile,
@@ -85,9 +99,15 @@ export function ContentWorkflowSurface() {
       queue={queue}
       selectedCandidate={selectedCandidate}
       workflow={workflow}
-      onSelectWorkItem={setSelectedWorkItemId}
+      onSelectWorkItem={selectWorkItem}
     />
   );
+}
+
+function contentWorkItemIdFromSearch(search: unknown) {
+  if (typeof search !== "object" || search === null) return null;
+  const value = Reflect.get(search, "work_item_id");
+  return typeof value === "string" && value ? value : null;
 }
 
 function ContentWorkflowRouteState({
@@ -292,15 +312,17 @@ function ContentWorkflowLoaded({
       </section>
 
       {viewMode === "marketer" ? (
-        <ContentWorkflowMarketerJourney
+      <ContentWorkflowMarketerJourney
           key={`${selectedWorkItemId}:${data.currentStepId}`}
           actions={actions}
           authoringProfile={authoringProfile}
           data={data}
           draftActivationPacket={draftActivationPacket}
           enrichment={enrichment}
-          queue={queue}
-        />
+        queue={queue}
+        selectedWorkItemId={selectedWorkItemId}
+        onSelectWorkItem={onSelectWorkItem}
+      />
       ) : (
         <section
           id="content-workflow-details"
@@ -342,7 +364,9 @@ function ContentWorkflowMarketerJourney({
   data,
   draftActivationPacket,
   enrichment,
-  queue
+  queue,
+  selectedWorkItemId,
+  onSelectWorkItem
 }: {
   actions: ContentWorkflowActions;
   authoringProfile: WordPressAuthoringProfileQuery;
@@ -350,6 +374,8 @@ function ContentWorkflowMarketerJourney({
   draftActivationPacket: WordPressDraftActivationPacketQuery;
   enrichment: ContentOpportunityEnrichment | null;
   queue: ContentWorkItemQueueResponse;
+  selectedWorkItemId: string;
+  onSelectWorkItem: (workItemId: string) => void;
 }) {
   const [selectedStepId, setSelectedStepId] = useState<WorkflowStepId>(data.currentStepId);
   const selectStep = (stepId: WorkflowStepId) => {
@@ -360,6 +386,11 @@ function ContentWorkflowMarketerJourney({
 
   return (
     <div data-testid="content-workflow-marketer-journey">
+      <ContentSessionPicker
+        queue={queue}
+        selectedWorkItemId={selectedWorkItemId}
+        onSelectWorkItem={onSelectWorkItem}
+      />
       <ContentWorkflowJourneyContext data={data} />
       <ContentWorkflowTaskMap
         currentStepId={data.currentStepId}
@@ -378,6 +409,74 @@ function ContentWorkflowMarketerJourney({
       />
     </div>
   );
+}
+
+function ContentSessionPicker({
+  queue,
+  selectedWorkItemId,
+  onSelectWorkItem
+}: {
+  queue: ContentWorkItemQueueResponse;
+  selectedWorkItemId: string;
+  onSelectWorkItem: (workItemId: string) => void;
+}) {
+  const candidates = queue.candidates.filter(
+    (candidate) => candidate.recommended_mode !== "block"
+  );
+  const selected = candidates.find(
+    (candidate) => candidate.work_item_id === selectedWorkItemId
+  );
+  if (!selected || candidates.length < 2) return null;
+
+  return (
+    <section
+      aria-labelledby="content-session-picker-title"
+      className="mb-3 rounded-md border border-line bg-white px-3 py-3 sm:mb-4 sm:px-4"
+      data-testid="content-session-picker"
+    >
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,28rem)] lg:items-end">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Początek sesji
+          </p>
+          <h2 id="content-session-picker-title" className="mt-1 text-lg font-semibold text-ink">
+            Wybierz stronę do pracy
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            WILQ pokazuje tylko strony z dowodami i sprawdzonym adresem. Wybór zmienia cały
+            pięciostopniowy przebieg poniżej.
+          </p>
+        </div>
+        <label className="text-sm font-semibold text-ink" htmlFor="content-session-work-item">
+          Strona i temat
+          <select
+            id="content-session-work-item"
+            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
+            value={selectedWorkItemId}
+            onChange={(event) => onSelectWorkItem(event.target.value)}
+          >
+            {candidates.map((candidate) => (
+              <option key={candidate.work_item_id} value={candidate.work_item_id}>
+                {candidate.topic} — {contentCandidatePath(candidate.final_canonical_url)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="mt-2 text-xs text-slate-500">
+        {selected.recommended_mode_label} · {selected.evidence_ids.length} źródła dowodowe
+      </p>
+    </section>
+  );
+}
+
+function contentCandidatePath(url: string | null | undefined) {
+  if (!url) return "adres do sprawdzenia";
+  try {
+    return new URL(url).pathname || "/";
+  } catch {
+    return "adres do sprawdzenia";
+  }
 }
 
 function useContentWorkflowActions(
