@@ -2,9 +2,9 @@
 
 Status: active.
 
-Primary Beads epic: `wilq-seo-amj2`.
+Primary Beads epic: `wilq-seo-1oa`.
 
-Owner-gated UAT epic: `wilq-seo-1oa`.
+Completed technical pilot epic: `wilq-seo-amj2`.
 
 Date: 2026-07-01
 
@@ -16,7 +16,7 @@ Codex proposal through the existing local login → human review →
 revision-bound WordPress draft-only ActionObject → publication-bound
 measurement → review-only learning proposal.
 
-Publication-bound measurement and review-only learning are complete in
+The technical pilot graph is complete. Publication-bound measurement and review-only learning are complete in
 `wilq-seo-amj2.9`–`.10` without a real runtime migration, publication claim or
 human acceptance. Peer-scope proof is complete in `wilq-seo-or2e`; the current
 step is a fresh roadmap review. Knowledge depth and real Wilku UAT remain completion

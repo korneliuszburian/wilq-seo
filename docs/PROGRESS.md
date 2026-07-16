@@ -20,6 +20,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- Epiki `wilq-seo-c9h9` (43/43 dzieci), `wilq-seo-3bst` (28/28) i
+  `wilq-seo-amj2` (10/10) są zamknięte po ponownym odczycie grafu. Nie zamyka to
+  Goal 005: `lt1` nadal wymaga reviewed knowledge, `jst` realnego Wilku UAT, a
+  `v9ab.13` review realnego daily-check output.
 - Parent `wilq-seo-r564` jest zamknięty po świeżym fixed-point proof: wszystkie
   14 dzieci są closed, dashboard przechodzi 164/164, a live snapshot pokazuje
   konkretny homepage work item, 2 evidence IDs, jawny Service Profile review

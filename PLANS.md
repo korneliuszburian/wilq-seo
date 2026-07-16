@@ -1,7 +1,7 @@
 # PLANS.md — Useful Controlled WILQ Content Pilot
 
-Status: active. Primary Beads epic: `wilq-seo-amj2`.
-Owner-gated UAT epic: `wilq-seo-1oa`.
+Status: active. Primary Beads epic: `wilq-seo-1oa`.
+Technical pilot epic `wilq-seo-amj2`: completed.
 
 To jest restartowalny plan bieżący, nie historia wykonania. Szczegóły produktu
 są w `docs/goals/archive/005-goal.md`, stan dashboardu w
@@ -156,6 +156,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 11. Parent `wilq-seo-r564` jest zamknięty po świeżym dashboard/live proof;
     wszystkie 14 dzieci są closed. To zamyka bounded content workbench, nie
     owner-reviewed wiedzę, globalną freshness, realny UAT ani jakość tekstu.
+12. Epiki techniczne `wilq-seo-c9h9`, `wilq-seo-3bst` i `wilq-seo-amj2` mają
+    wszystkie dzieci closed i są zamknięte. Aktywny goal wraca do realnych
+    bramek `wilq-seo-1oa`: reviewed knowledge (`lt1`) oraz Wilku UAT (`jst`).
 
 ## Weryfikacja każdego slice
 

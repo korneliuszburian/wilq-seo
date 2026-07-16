@@ -144,6 +144,10 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Bieżący graf
 
+- Techniczne epiki `wilq-seo-c9h9`, `wilq-seo-3bst` i `wilq-seo-amj2` są
+  zamknięte odpowiednio z 43/43, 28/28 i 10/10 zamkniętymi dziećmi. Aktywny
+  produktowy goal to `wilq-seo-1oa`; jego realne bramki to reviewed knowledge
+  (`lt1`) i Wilku UAT (`jst`). `v9ab` pozostaje otwarty przez review `v9ab.13`.
 - Fixed-point `wilq-seo-c9h9.26` rozdzielił pracę od historycznych ticketów.
   `wilq-seo-jnra`, `wilq-seo-djly` i `wilq-seo-kgvy` są zamknięte po świeżych
   testach parity, Ruff/mypy i live proof z 21 akcjami oraz 0 możliwych vendor
