@@ -189,7 +189,13 @@ function SearchDemandSummary({
     <div className="mt-4 rounded-md border border-line bg-surface p-3">
       <h3 className="text-sm font-semibold text-ink">Popyt z wyszukiwarki dla tej strony</h3>
       {demand.gsc_query_rows.length ? (
-        <ul className="mt-2 grid gap-2 md:grid-cols-2">
+        <>
+          <p className="mt-2 text-xs leading-5 text-slate-600">
+            {demand.gsc_query_rows.length > 4
+              ? `Pokazujemy 4 najwyższe z ${demand.gsc_query_rows.length} sygnałów planistycznych GSC. Metryki zakresu wyżej są sumą wszystkich tych sygnałów, nie tylko czterech widocznych wierszy.`
+              : `Pokazujemy wszystkie ${demand.gsc_query_rows.length} sygnały planistyczne GSC dla tej strony.`}
+          </p>
+          <ul className="mt-2 grid gap-2 md:grid-cols-2">
           {demand.gsc_query_rows.slice(0, 4).map((row) => (
             <li key={`${row.page}-${row.term}`} className="rounded-md bg-white p-3 text-sm">
               <p className="font-semibold text-ink">{row.term}</p>
@@ -203,7 +209,8 @@ function SearchDemandSummary({
               </p>
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       ) : (
         <p className="mt-2 text-sm leading-6 text-slate-700">{demand.safe_next_step}</p>
       )}

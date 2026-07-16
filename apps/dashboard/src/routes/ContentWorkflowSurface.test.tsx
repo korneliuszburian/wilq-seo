@@ -195,6 +195,34 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
   });
 
+  it("uses the loaded snapshot candidate in the task context", async () => {
+    const queue = contentQueueResponse();
+    queue.candidates[0] = {
+      ...queue.candidates[0],
+      reason: "Kompaktowa kolejka pokazuje niepełne metryki."
+    };
+    const snapshot = workflowSnapshot();
+    snapshot.candidate = {
+      ...snapshot.candidate,
+      reason: "Dokładny snapshot pokazuje pełne metryki strony."
+    };
+    vi.mocked(getContentWorkItemQueue).mockResolvedValue(queue);
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(snapshot);
+
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const context = await screen.findByRole("region", {
+      name: "Kontekst zadania treściowego"
+    });
+    expect(within(context).getByText("Dokładny snapshot pokazuje pełne metryki strony.")).toBeTruthy();
+    expect(within(context).queryByText("Kompaktowa kolejka pokazuje niepełne metryki.")).toBeNull();
+  });
+
   it("records scope review and resumes on the section map without a wall of panels", async () => {
     const initialPlanning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
     const reviewedPlanning = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false });

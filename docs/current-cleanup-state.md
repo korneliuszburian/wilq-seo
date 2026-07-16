@@ -217,11 +217,13 @@ kontynuuj najwyższy bezpieczny task.
 ## Verification checkpoint
 
 - Fresh parent proof `r564`: 14/14 dzieci closed, dashboard 164/164, API health
-  200, `/content-workflow` 200. Live snapshot: konkretny homepage item, 2
-  evidence IDs, krok `scope`, Service Profile `source_backed_review_required`,
-  `publish_ready=false`. Follow-up snapshot po canonical refreshach sklepu i
-  Ahrefs ma `fresh`, `requires_refresh=false` i puste stale/missing/blocked
-  connector lists.
+  200, `/content-workflow` 200. Exact homepage snapshot agreguje 29 bieżących
+  sygnałów planistycznych GSC do 47 wyświetleń i 3 kliknięć; cztery najwyższe
+  wiersze są widoczne bez udawania mapowania sekcji. Karta kontekstu i panel
+  planowania korzystają z tego samego snapshotu. Krok pozostaje `scope`,
+  Service Profile `source_backed_review_required`, `publish_ready=false`.
+  Follow-up snapshot po canonical refreshach sklepu i Ahrefs ma `fresh`,
+  `requires_refresh=false` i puste stale/missing/blocked connector lists.
 - Content state proof nie zamraża już dokładnego zdania CTA. Nadal sprawdza
   review gate, brak draft/publish readiness oraz knowledge-card lineage; focused
   repro po usunięciu redundantnej asercji jest zielony 1/1.

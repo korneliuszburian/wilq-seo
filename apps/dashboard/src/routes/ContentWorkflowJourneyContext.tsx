@@ -1,17 +1,14 @@
-import type { ContentWorkItemQueueResponse } from "../lib/api";
 import { environmentLabel } from "./contentPageWorkbenchModel";
 import type { ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 import { normalizedPath } from "./contentWorkflowTarget";
 
 export function ContentWorkflowJourneyContext({
-  data,
-  queue
+  data
 }: {
   data: ContentWorkflowSnapshot;
-  queue: ContentWorkItemQueueResponse;
 }) {
   const item = data.preflight.item;
-  const candidate = queue.candidates.find((row) => row.work_item_id === item.id) ?? data.candidate;
+  const candidate = data.candidate;
   const publicUrl =
     item.source_public_url ?? item.final_canonical_url ?? item.intended_final_url ?? "";
   const pageTitle =

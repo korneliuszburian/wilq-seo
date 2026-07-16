@@ -360,7 +360,7 @@ function ContentWorkflowMarketerJourney({
 
   return (
     <div data-testid="content-workflow-marketer-journey">
-      <ContentWorkflowJourneyContext data={data} queue={queue} />
+      <ContentWorkflowJourneyContext data={data} />
       <ContentWorkflowTaskMap
         currentStepId={data.currentStepId}
         selectedStepId={selectedStepId}

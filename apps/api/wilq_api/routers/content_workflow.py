@@ -6,6 +6,15 @@ from fastapi.responses import JSONResponse
 from apps.api.wilq_api.routers.content_codex_proposal import (
     register_content_codex_proposal_route,
 )
+from apps.api.wilq_api.routers.content_snapshot import (
+    snapshot_for_default_work_item_or_404 as _snapshot_for_default_work_item_or_404,
+)
+from apps.api.wilq_api.routers.content_snapshot import (
+    snapshot_for_work_item_or_404 as _snapshot_for_work_item_or_404,
+)
+from apps.api.wilq_api.routers.content_snapshot import (
+    snapshot_for_work_item_or_blocked_or_404 as _snapshot_for_work_item_or_blocked_or_404,
+)
 from apps.api.wilq_api.routers.content_workflow_http import (
     project_content_work_item_browser_snapshot,
     revision_conflict_next_step,
@@ -19,7 +28,6 @@ from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichmentResponse,
     build_content_opportunity_enrichment_response,
 )
-from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCardsResponse,
     content_knowledge_cards_response,
@@ -28,13 +36,10 @@ from wilq.content.knowledge.service_profile import (
     ContentServiceProfileResponse,
     content_service_profile_response,
 )
-from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
     build_content_wordpress_draft_activation_packet_response,
     build_content_wordpress_draft_write_readiness_response,
-    build_content_work_item_blocked_snapshot_response_for_work_item,
     build_content_work_item_diagnostics_snapshot_response,
-    build_content_work_item_diagnostics_snapshot_response_for_work_item,
     build_content_work_item_quality_review_response,
     build_content_work_item_revision_apply_response,
     build_content_work_item_revision_plan_response,
@@ -78,7 +83,6 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemSalesBriefResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
-    ContentWorkItemSnapshotResponse,
     ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
     ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
@@ -171,9 +175,7 @@ def content_wordpress_existing_draft_update_readiness(
     snapshot = (
         _snapshot_for_work_item_or_404(work_item_id)
         if work_item_id is not None
-        else build_content_work_item_diagnostics_snapshot_response(
-            build_content_diagnostics_cached()
-        )
+        else _snapshot_for_default_work_item_or_404()
     )
     return build_content_wordpress_existing_draft_update_readiness_response(snapshot)
 
@@ -192,16 +194,7 @@ def content_wordpress_draft_activation_packet(
                 work_item_id
             ),
         )
-    diagnostics = build_content_diagnostics_cached()
-    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
-    review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
-    if review is not None:
-        audit = content_workflow_store().latest_audit_for_review(review.id)
-        snapshot = build_content_work_item_diagnostics_snapshot_response(
-            diagnostics,
-            human_review=review,
-            audit=audit,
-        )
+    snapshot = _snapshot_for_default_work_item_or_404()
     return build_content_wordpress_draft_activation_packet_response(
         snapshot,
         latest_execution_result=content_workflow_store().latest_wordpress_draft_execution(
@@ -223,20 +216,8 @@ def content_work_item_queue() -> ContentWorkItemQueueResponse:
     response_model=ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
 def content_work_item_snapshot() -> ContentWorkItemBrowserWorkflowSnapshotResponse:
-    diagnostics = build_content_diagnostics_cached()
-    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
-    work_item_id = snapshot.preflight.item.id
-    store = content_workflow_store()
-    review = store.latest_human_review(work_item_id)
-    audit = None if review is None else store.latest_audit_for_review(review.id)
     return project_content_work_item_browser_snapshot(
-        build_content_work_item_diagnostics_snapshot_response(
-            diagnostics,
-            human_review=review,
-            audit=audit,
-            revision_state=store.load_draft_revision_state(work_item_id),
-            planning_decisions=store.load_planning_decisions(work_item_id),
-        )
+        _snapshot_for_default_work_item_or_404()
     )
 
 
@@ -701,85 +682,6 @@ def content_work_item_learning_proposal(
         return build_content_work_item_learning_proposal_response(request)
     except (LookupError, ValueError) as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
-
-
-def _snapshot_for_work_item_or_404(
-    work_item_id: str,
-    *,
-    human_review: ContentHumanReview | None = None,
-    audit: ContentWordPressDraftAuditEnvelope | None = None,
-) -> ContentWorkItemWorkflowSnapshotResponse:
-    diagnostics = build_content_diagnostics_cached()
-    store = content_workflow_store()
-    revision_state = store.load_draft_revision_state(work_item_id)
-    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-        diagnostics,
-        work_item_id,
-        human_review=human_review,
-        audit=audit,
-        revision_state=revision_state,
-        planning_decisions=store.load_planning_decisions(work_item_id),
-    )
-    if snapshot is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Content work item is not available for the gated workflow.",
-        )
-    review = store.latest_human_review(work_item_id)
-    if human_review is None and review is not None:
-        audit_record = store.latest_audit_for_review(review.id)
-        snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-            diagnostics,
-            work_item_id,
-            human_review=review,
-            audit=audit_record,
-            revision_state=revision_state,
-            planning_decisions=store.load_planning_decisions(work_item_id),
-        )
-        if snapshot is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Content work item is not available after review lookup.",
-            )
-    return snapshot
-
-
-def _snapshot_for_work_item_or_blocked_or_404(
-    work_item_id: str,
-) -> ContentWorkItemSnapshotResponse:
-    diagnostics = build_content_diagnostics_cached()
-    store = content_workflow_store()
-    revision_state = store.load_draft_revision_state(work_item_id)
-    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-        diagnostics,
-        work_item_id,
-        revision_state=revision_state,
-        planning_decisions=store.load_planning_decisions(work_item_id),
-    )
-    if snapshot is not None:
-        review = store.latest_human_review(work_item_id)
-        if review is None:
-            return snapshot
-        audit_record = store.latest_audit_for_review(review.id)
-        reviewed_snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
-            diagnostics,
-            work_item_id,
-            human_review=review,
-            audit=audit_record,
-            revision_state=revision_state,
-            planning_decisions=store.load_planning_decisions(work_item_id),
-        )
-        return snapshot if reviewed_snapshot is None else reviewed_snapshot
-    blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(
-        diagnostics,
-        work_item_id,
-    )
-    if blocked_snapshot is not None:
-        return blocked_snapshot
-    raise HTTPException(
-        status_code=404,
-        detail="Content work item is not available for the gated workflow.",
-    )
 
 
 def _validate_revision_sections(
