@@ -63,6 +63,9 @@ type CodexProposalMutationInput = {
   baseRevision: ContentDraftRevision;
   selectedSectionHeadings: string[];
 };
+type ContentPlanningSections = NonNullable<
+  ContentWorkflowSnapshot["planningWorkspace"]
+>["proposal"]["sections"];
 export function ContentWorkflowSurface() {
   const navigate = useNavigate();
   const routeSearch = useRouterState({ select: (state) => state.location.search });
@@ -74,7 +77,12 @@ export function ContentWorkflowSurface() {
     setSelectedWorkItemId(workItemId);
     void navigate({
       to: "/content-workflow",
-      search: (previous) => ({ ...previous, work_item_id: workItemId }),
+      search: (previous) => ({
+        ...previous,
+        work_item_id: workItemId,
+        section_heading: undefined,
+        planning_digest: undefined
+      }),
       replace: true
     });
   };
@@ -105,8 +113,12 @@ export function ContentWorkflowSurface() {
 }
 
 function contentWorkItemIdFromSearch(search: unknown) {
+  return stringFromSearch(search, "work_item_id");
+}
+
+function stringFromSearch(search: unknown, key: string) {
   if (typeof search !== "object" || search === null) return null;
-  const value = Reflect.get(search, "work_item_id");
+  const value = Reflect.get(search, key);
   return typeof value === "string" && value ? value : null;
 }
 
@@ -387,6 +399,8 @@ function ContentWorkflowMarketerJourney({
   return (
     <div data-testid="content-workflow-marketer-journey">
       <ContentSessionPicker
+        planningDigest={data.planningWorkspace?.proposal.planning_digest ?? null}
+        planningSections={data.planningWorkspace?.proposal.sections ?? []}
         queue={queue}
         selectedWorkItemId={selectedWorkItemId}
         onSelectWorkItem={onSelectWorkItem}
@@ -412,21 +426,35 @@ function ContentWorkflowMarketerJourney({
 }
 
 function ContentSessionPicker({
+  planningDigest,
+  planningSections,
   queue,
   selectedWorkItemId,
   onSelectWorkItem
 }: {
+  planningDigest: string | null;
+  planningSections: ContentPlanningSections;
   queue: ContentWorkItemQueueResponse;
   selectedWorkItemId: string;
   onSelectWorkItem: (workItemId: string) => void;
 }) {
+  const navigate = useNavigate();
+  const routeSearch = useRouterState({ select: (state) => state.location.search });
+  const requestedSectionHeading = stringFromSearch(routeSearch, "section_heading");
+  const requestedPlanningDigest = stringFromSearch(routeSearch, "planning_digest");
   const candidates = queue.candidates.filter(
     (candidate) => candidate.recommended_mode !== "block"
   );
   const selected = candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
-  if (!selected || candidates.length < 2) return null;
+  const selectedSection =
+    (requestedPlanningDigest === planningDigest
+      ? planningSections.find((section) => section.heading === requestedSectionHeading)
+      : null) ??
+    planningSections[0] ??
+    null;
+  if (!selected) return null;
 
   return (
     <section
@@ -434,7 +462,7 @@ function ContentSessionPicker({
       className="mb-3 rounded-md border border-line bg-white px-3 py-3 sm:mb-4 sm:px-4"
       data-testid="content-session-picker"
     >
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,28rem)] lg:items-end">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)_minmax(15rem,22rem)] lg:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
             Początek sesji
@@ -462,9 +490,38 @@ function ContentSessionPicker({
             ))}
           </select>
         </label>
+        {selectedSection ? (
+          <label className="text-sm font-semibold text-ink" htmlFor="content-session-section">
+            Sekcja do pracy
+            <select
+              id="content-session-section"
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal text-ink"
+              value={selectedSection.heading}
+              onChange={(event) => {
+                void navigate({
+                  to: "/content-workflow",
+                  search: (previous) => ({
+                    ...previous,
+                    work_item_id: selectedWorkItemId,
+                    section_heading: event.target.value,
+                    planning_digest: planningDigest
+                  }),
+                  replace: true
+                });
+              }}
+            >
+              {planningSections.map((section) => (
+                <option key={section.heading} value={section.heading}>
+                  {section.heading}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
       </div>
       <p className="mt-2 text-xs text-slate-500">
         {selected.recommended_mode_label} · {selected.evidence_ids.length} źródła dowodowe
+        {selectedSection ? ` · Fokus: ${selectedSection.heading}` : ""}
       </p>
     </section>
   );

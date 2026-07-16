@@ -56,8 +56,8 @@ Beads jest jedynym operacyjnym grafem zadań. Bieżąca kolejność:
 
 1. `wilq-seo-1oa.36` — doprowadzić Content Ops do pełnego marketer-grade
    Better BDOS loopu. Pierwszy slice `wilq-seo-1oa.36.1` daje API-owned wybór
-   exact usługi i strony oraz pokazuje plan sekcji; wybór exact sekcji pozostaje
-   otwartą częścią tego feature. BDO jest pierwszym realnym review-only case.
+   exact usługi, strony i sekcji. BDO jest pierwszym realnym review-only case;
+   następnym zakresem jest paczka tekstowa po decyzjach scope/section map.
 2. `wilq-seo-lt1` — po otrzymaniu reviewed sources skompilować owner-reviewed
    service/CTA/claim/evidence cards. To nadal jest bramka ownera, ale nie
    blokuje repo-local ergonomii, paczki review ani pracy na jawnie
@@ -68,9 +68,8 @@ Beads jest jedynym operacyjnym grafem zadań. Bieżąca kolejność:
    zapisać jawny defer. Techniczna implementacja Goal 006 jest już wykonana.
 
 Nie ma zgody na losowy cleanup dla utrzymania ruchu. Jest natomiast
-potwierdzona praca repo-local: realny proposal otrzymał `needs_changes`,
-workspace nie pozwala jeszcze wybrać exact sekcji, a paczka tekstu dla
-marketera jeszcze nie istnieje.
+potwierdzona praca repo-local: realny proposal otrzymał `needs_changes`, a
+paczka tekstu dla marketera jeszcze nie istnieje.
 
 Po każdym zamkniętym slice odczytaj ponownie `bd ready --json` i
 `bd list --status=open --json`. Nie wracaj do zamkniętych technicznych epików

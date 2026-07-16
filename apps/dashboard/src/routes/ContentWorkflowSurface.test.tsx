@@ -178,7 +178,7 @@ describe("ContentWorkflowSurface", () => {
 
     expect(document.querySelector('[data-active-workspace="section_map"]')).toBeInTheDocument();
     expect(screen.getByText("Zatwierdź plan sekcji")).toBeInTheDocument();
-    expect(screen.getByText("Kogo dotyczy BDO")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kogo dotyczy BDO" })).toBeInTheDocument();
     expect(screen.queryByText("Sygnały i braki")).not.toBeInTheDocument();
     expect(screen.queryByText("Tekst sekcji do szkicu")).not.toBeInTheDocument();
     expect(within(taskMap).getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
@@ -225,7 +225,8 @@ describe("ContentWorkflowSurface", () => {
 
   it("lets the marketer switch the exact evidenced page before the workflow", async () => {
     const appRouter = createWilqRouter({
-      initialPath: "/content-workflow",
+      initialPath:
+        `/content-workflow?work_item_id=content_work_item_bdo&section_heading=Kogo%20dotyczy%20BDO&planning_digest=${"a".repeat(64)}`,
       defaultPendingMinMs: 0
     });
     render(
@@ -247,6 +248,8 @@ describe("ContentWorkflowSurface", () => {
     expect(Reflect.get(appRouter.state.location.search, "work_item_id")).toBe(
       "content_work_item_green_deal"
     );
+    expect(Reflect.get(appRouter.state.location.search, "section_heading")).toBeUndefined();
+    expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBeUndefined();
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
@@ -267,6 +270,35 @@ describe("ContentWorkflowSurface", () => {
     expect(picker).toHaveValue("content_work_item_bdo");
     expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_bdo");
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
+  });
+
+  it("keeps the session focus on an exact section from the current plan", async () => {
+    const appRouter = createWilqRouter({
+      initialPath:
+        "/content-workflow?work_item_id=content_work_item_bdo&section_heading=Jak%20przygotowa%C4%87%20dokumenty&planning_digest=stale_plan",
+      defaultPendingMinMs: 0
+    });
+    render(
+      <App
+        appRouter={appRouter}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja do pracy" });
+    expect(sectionPicker).toHaveValue("Kogo dotyczy BDO");
+
+    fireEvent.change(sectionPicker, { target: { value: "Jak przygotować dokumenty" } });
+
+    await waitFor(() =>
+      expect(Reflect.get(appRouter.state.location.search, "section_heading")).toBe(
+        "Jak przygotować dokumenty"
+      )
+    );
+    expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBe("a".repeat(64));
+    expect(screen.getByText("Fokus: Jak przygotować dokumenty", { exact: false })).toBeTruthy();
+    expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
+    expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
   });
 
   it("records scope review and resumes on the section map without a wall of panels", async () => {

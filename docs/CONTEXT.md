@@ -113,15 +113,18 @@ claimu prawnego/obowiązkowego.
 Aktywny graf:
 
 - `wilq-seo-1oa.36` — epic pełnego marketer-grade Content Ops;
-- `wilq-seo-1oa.36.1` — pierwszy slice: API-owned wybór usługi, strony i sekcji
-  z BDO jako realnym review-only case;
-- `wilq-seo-1oa.35` — jeden folder demonstracyjny; artefakt przekazania, nie
-  substytut ukończonego content loopu.
+- `wilq-seo-1oa.36.1` — pierwszy slice API-owned wyboru usługi, strony i sekcji
+  jest technicznie domknięty na BDO;
+- `wilq-seo-1oa.35` — zamknięty folder demonstracyjny; artefakt przekazania,
+  nie substytut ukończonego content loopu.
 
 ## Aktualny dowód contentu
 
 - `/content-workflow` jest jedynym głównym entrypointem.
 - Bieżący selected work item dotyczy strony BDO i jest na kroku `scope`.
+- Exact sekcja `Co wiemy z zapytań: bdo dla kogo` jest wybranym focusem sesji
+  i przeżywa reload tylko z pasującym `planning_digest`; zmieniony plan
+  unieważnia stary fokus. Wybór nie zapisuje planning review ani approval.
 - Exact snapshot obejmuje 11 page-scoped wierszy GSC; bieżąca karta zakresu
   agreguje 65 wyświetleń, 0 kliknięć i najlepszą średnią pozycję 9,00. UI i
   eval pokazują cztery najwyższe wiersze oraz pełną liczność.

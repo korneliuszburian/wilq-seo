@@ -43,8 +43,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   exact strona BDO jest pierwszą wykonalną pracą. Snapshot wiąże ją z kartą
   `ekologus_service_bdo_reporting`, 11 wierszami GSC, aktualnym WordPress
   inventory i 0 zgadywanych Ads/Planner rows. Marketer mode ma zwarty picker,
-  a exact `work_item_id` pozostaje w URL po reloadzie. Scope i section map nadal
-  wymagają człowieka; karta BDO pozostaje `source_backed_review_required`.
+  a exact `work_item_id`, API-owned nagłówek sekcji i pasujący
+  `planning_digest` pozostają w URL po reloadzie. Nieznany work item, nagłówek
+  lub stale digest bezpiecznie wraca do istniejącej opcji bez requestu do
+  obcego snapshotu. Wybór sekcji jest tylko fokusem sesji:
+  scope i section map nadal wymagają człowieka, a karta BDO pozostaje
+  `source_backed_review_required`.
 - Live homepage UAT ujawnił dwie luki w prezentacji popytu. Query GSC
   dziedziczyły wszystkie trzy
   sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence
