@@ -4,7 +4,7 @@ Status: active. Primary Beads epic: `wilq-seo-1oa`.
 Technical pilot epic `wilq-seo-amj2`: completed.
 
 To jest restartowalny plan bieżący, nie historia wykonania. Szczegóły produktu
-są w `docs/goals/archive/005-goal.md`, stan dashboardu w
+są w `docs/goals/001-goal.md`, stan dashboardu w
 `docs/dashboard-state.md`, handoff cleanupu w `docs/current-cleanup-state.md`,
 a kolejność pracy w Beads.
 

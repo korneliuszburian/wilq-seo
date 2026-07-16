@@ -1,6 +1,6 @@
-# Active Goal — Useful Controlled WILQ Content Pilot
+# Archived Goal 005 — Useful Controlled WILQ Content Pilot
 
-Status: active.
+Status: archived; superseded by `docs/goals/001-goal.md`.
 
 Primary Beads epic: `wilq-seo-1oa`.
 
@@ -297,3 +297,4 @@ Stop and record a blocker if:
 - Wilku cannot trace a claim or recommendation back to a concrete source fact,
 - a proposed knowledge endpoint allows ungated card edits,
 - live Structured Outputs is enabled without a separate adapter-boundary audit.
+

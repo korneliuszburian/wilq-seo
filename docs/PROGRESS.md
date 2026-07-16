@@ -7,6 +7,9 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Aktywny kierunek
 
+- Kanoniczny bieżący cel jest w `docs/goals/001-goal.md`; archiwalny Goal 005
+  nie jest już aktywnym recovery entrypointem. Operacyjna kolejka pozostaje
+  wyłącznie w Beads pod `wilq-seo-1oa` i review-only `wilq-seo-v9ab`.
 - Priorytetem jest jeden użyteczny workspace `/content-workflow`, a nie nowe
   ekrany ani kolejne warstwy ceremonii.
 - Kanoniczny przebieg marketera ma pięć kroków:

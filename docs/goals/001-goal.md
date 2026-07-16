@@ -1,200 +1,120 @@
-# Goal 001 - Clean Product Semantics And Marketer Cockpit
+# Active Goal — WILQ SEO Useful Controlled Pilot
 
-Status: owner-deferred UAT recorded; ready for completion audit
+Status: active.
 
-Date: 2026-06-28
+Primary Beads epic: `wilq-seo-1oa`.
 
-## Objective
+Follow-on review epic: `wilq-seo-v9ab`.
 
-Clean WILQ's active product semantics and marketer-facing surfaces before
-starting the next product layer.
+Date: 2026-07-16.
 
-This goal does not finish the full WILQ Marketing Operating System. It makes
-the current review cockpit coherent, condensed and usable enough that Wilku can
-inspect it without reading technical internals.
+## Cel
 
-## Identity
+Dowieźć uczciwy, użyteczny pilot WILQ Marketing Operating System dla Ekologus,
+w którym Wilku może podjąć decyzję i przeprowadzić jedną pełną pracę nad
+treścią bez pomocy developera:
 
-- WILQ = system/product.
-- Wilku = human marketer/operator persona.
-- Ekologus = first depth-first workspace/client.
-- `ekologus.pl` = public canonical content home.
-- Dev preview hosts = optional design/staging context only when explicitly
-  configured.
+```text
+aktualne dowody i reviewed knowledge
+→ wybór strony, usługi, intencji, CTA i sekcji
+→ zatwierdzony zakres i mapa sekcji
+→ exact persisted revision i grounded Codex proposal
+→ human review
+→ revision-bound WordPress draft-only
+→ publication-bound measurement
+→ review-only learning proposal
+```
 
-## Product Rules
+WILQ API pozostaje mózgiem produktu. Dashboard i skills używają tych samych
+typed kontraktów. Codex korzysta wyłącznie z istniejącego lokalnego
+`codex login`; browser nie łączy się z nim bezpośrednio.
 
-- Brak dowodu w WILQ -> brak rekomendacji.
-- Brak źródła danych -> brak rekomendacji.
-- Brak sprawdzenia treści przed pisaniem -> brak pisania.
-- Brak briefu sprzedażowego -> brak szkicu.
-- Brak sprawdzenia ryzykownych obietnic -> brak języka gotowego do publikacji.
-- Brak sprawdzenia przez człowieka -> brak przekazania szkicu do WordPress.
-- Brak audytu -> brak zapisu zmian.
-- Brak okna pomiarowego -> brak twierdzeń o sukcesie albo porażce.
-- Brak logiki biznesowej w promptach albo opisach skilli.
-- Brak translatorów React/UI, helperów `replaceAll` i słowników w route'ach
-  dla semantyki produktu.
-- Brak aliasów zgodności i przestarzałych aktywnych pól, gdy bezpośrednia
-  migracja jest wykonalna.
-- Usuń stare semantyki target/dev/migration z aktywnych kontraktów.
-- Brudny tekst widoczny dla marketera naprawiaj w źródłowym kontrakcie API,
-  schemacie, view-modelu albo warstwie domenowej.
-- Raw IDs may appear in technical panels, audit detail and trace views only.
-- Every repeated issue becomes a typed API/schema/view-model field or a test
-  guard.
+## Aktualna prawda
 
-## Current Cleanup Vocabulary
+- Techniczny pięciostopniowy workflow `scope → section_map → draft → review →
+  dev_draft` istnieje w `/content-workflow` i ma jeden aktywny entrypoint.
+- Exact revisions, human review, revision-bound ActionObject, WordPress
+  draft-only, measurement window i review-only learning są zaimplementowane.
+- Realny wygenerowany tekst nadal uzyskał `needs_changes`; nie ma dowodu jakości
+  10/10 ani gotowości do publikacji.
+- Service Profile ma source-backed wiedzę, ale nadal
+  `source_backed_review_required`; nie ma owner-approved production-depth cards.
+- Realny Wilku content UAT i review realnego daily-check nie odbyły się.
+- Runtime jest prywatnym pilotem loopback-only. Nie jest to dowód auth, TLS,
+  multi-tenant ani gotowości produkcyjnej.
+- Realna migracja storage, publikacja i vendor write pozostają poza obecną
+  zgodą.
 
-Use `PLAN.md` as the canonical visible-language source.
+## Aktualne zadania
 
-Preferred visible terms include:
+Beads jest jedynym operacyjnym grafem zadań. Bieżąca kolejność:
 
-- `Centrum pracy`
-- `Treści`
-- `Google Ads`
-- `akcja do sprawdzenia`
-- `podgląd zmian`
-- `zapis zmian`
-- `zatwierdzenie zmian`
-- `blokada`
-- `dowody`
-- `źródła danych`
-- `co zrobić dalej`
-- `czego nie wolno obiecać`
+1. `wilq-seo-1oa.29` — dokończyć read-only refresh `wordpress_sklep` i Ahrefs,
+   a potem odczytać API-owned freshness bez ujawniania raw danych lub sekretów.
+2. `wilq-seo-lt1` — po otrzymaniu reviewed sources skompilować owner-reviewed
+   service/CTA/claim/evidence cards. To jest bramka ownera, nie pole do
+   zgadywania.
+3. `wilq-seo-jst` — przeprowadzić realny content UAT z Wilkiem albo zapisać
+   jawny owner defer i residual risk.
+4. `wilq-seo-v9ab.13` — dać Wilkowi realny polski daily-check do oceny albo
+   zapisać jawny defer. Techniczna implementacja Goal 006 jest już wykonana.
 
-Forbidden primary-surface terms include:
+Po każdym zamkniętym slice odczytaj ponownie `bd ready --json` i
+`bd list --status=open --json`. Nie wracaj do zamkniętych technicznych epików
+bez nowego dowodu regresji.
 
-- `Command Center`
-- `Content Planner`
-- `Ads Doctor`
-- `payload`
-- `evidence IDs`
-- `blockery`
-- raw connector/debug wording
-- legacy dev-preview placement wording
-- migration-map or mapping-review wording
+## Kryterium jakości
 
-Technical route slugs, schema fields, enum values, connector IDs, evidence IDs,
-action IDs and audit fields may stay in technical contracts or drawers.
+Pilot jest użyteczny dopiero, gdy Wilku w realnym zadaniu potrafi:
 
-## Current State
+- w 30 sekund zrozumieć decyzję, dowody, freshness, blocker i następny krok;
+- wybrać stronę, usługę, intencję, CTA i sekcje bez technicznej ściany;
+- rozpoznać, które twierdzenia są approved, review-required albo zabronione;
+- zapisać, wznowić, porównać i poprawić dokładną wersję treści;
+- przekazać wyłącznie przeczytaną wersję jako WordPress draft przez
+  ActionObject i audit;
+- później zobaczyć server-owned pomiar i learning proposal bez automatycznego
+  success claimu ani zmiany wiedzy.
 
-- Active docs agree on the current product model: WILQ is the system, Wilku is
-  the human operator persona, Ekologus is the first workspace, and
-  `ekologus.pl` remains the canonical content home.
-- Dev-preview and migration-era assumptions are guarded in active content
-  diagnostics, context packs, skill contracts and dashboard smoke tests.
-- Primary dashboard and skill surfaces use Polish operator copy and API/domain
-  labels for decisions, evidence summaries, sources, blockers and next steps.
-  Raw IDs, payloads, connector trace and audit detail remain behind technical
-  detail.
-- Connector status is live and current for the core proof: GSC, GA4, Merchant,
-  Google Ads, Ahrefs, Localo and WordPress are configured and fresh. LinkedIn
-  and Facebook are optional missing-credential social connectors; Google Sheets
-  is disabled by current scope.
-- JS workspace dependencies are current as of 2026-06-29. Google Ads minor API
-  releases are tracked as explicit WILQ read/review contracts, not endpoint
-  churn.
-- Fallow is wired as the changed-file audit gate. Current full health shows
-  historical dashboard hotspots, but no high-confidence current refactoring
-  target blocks this cleanup goal.
-- Machine guardrails cover marketer language, context-pack language, content URL
-  semantics, raw visible copy, schema label hydration, active goal count and
-  Goal 001 completion status.
-- Active raw label/vendor enum/fallback cleanup is closed in Beads
-  (`wilq-seo-6rw.4`). Current touched marketer surfaces describe unknown or
-  missing data as an explicit decision limit instead of bare `brak` /
-  `brak danych`, and no React remapper or stale alias was added.
-- Durable UAT handoff lives at
-  `docs/handoffs/2026-06-29-marketer-uat-ready.md`.
-- Owner explicitly deferred real marketer UAT in
-  `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json` because WILQ should
-  first deliver Goal 002 content-production workflow before being presented as
-  a real content tool. This is not a claim that UAT happened.
+Syntetyczne testy i browser proof chronią kontrakt techniczny. Oceny 10/10 nie
+wolno nadać przed realnym UAT marketera i review konkretnej paczki tekstów.
 
-## Active Findings
+## Granice
 
-Use these as the next work queue. Do not start future product layers until these
-are resolved or explicitly deferred.
+- Brak evidence ID, source connectora albo aktualności oznacza brak rekomendacji.
+- Brak reviewed knowledge oznacza blocker, nie modelowe dopowiedzenie.
+- WordPress pozostaje draft-only; publish/update/delete są poza journey.
+- Nie dodawaj OpenAI API keya, Agents SDK, Ollamy ani drugiej ścieżki modelu.
+- Nie buduj broad RAG, nowego ekranu, endpointu, guardu lub testu bez
+  konkretnego ryzyka operatora.
+- Nie wykonuj vendor write, realnej publikacji ani migracji storage bez osobnej
+  zgody i właściwego okna.
+- Nie claimuj owner/expert acceptance, jakości tekstu, efektu SEO/Ads ani
+  gotowości produkcyjnej bez dowodu.
 
-1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
-   aligned.
-2. Continue focused surface audits only when a current Fallow/browser/API scan
-   exposes a marketer-facing usefulness, language or product-semantics risk.
-   Do not reopen broad raw-label cleanup without fresh evidence.
-3. Keep the guardrails that now prevent old raw label/vendor enum fallbacks from
-   returning. Any newly found visible fallback must be fixed at typed
-   API/schema/view-model source and covered by a focused check.
-4. Continue checking compacted context-packs after dashboard/API cleanup. Daily
-   and content-strategist context packs have focused tests, and
-   `scripts/context_pack_language_guard.py` now guards live compact skill
-   contexts across the core skill set in both `verify.sh` and the pre-demo
-   gate.
-5. Continue focused browser audits when touched routes change or a new visible
-   copy risk is found. Any future long blocker/review list must be condensed at
-   API/domain source, not trimmed in React.
-6. Real marketer UAT is explicitly deferred by the owner. Use
-   `docs/handoffs/2026-06-29-marketer-uat-ready.md` for the later real UAT
-   session and
-   `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json` as the current
-   Goal 001 defer proof. Guard command:
-   `rtk uv run python scripts/goal_001_completion_check.py --owner-defer docs/handoffs/2026-06-30-owner-defer-marketer-uat.json --format markdown`.
+## Sposób pracy
 
-## Execution Policy
+Każdy slice ma: konkretny problem, minimalną zmianę, focused proof, aktualizację
+właściwego state record, komentarz i zamknięcie Beada, świadomy commit i push.
+Po pushu wybierz najwyżej wartościową bezpieczną pracę z aktualnego grafu.
 
-- Use `rtk` before every shell command.
-- Use beads for operational task tracking: run `bd prime` and
-  `bd ready --json` after recovery, claim work with `bd update <id> --claim`,
-  and do not recreate the same queue as markdown TODOs.
-- Use `scripts/local_stack.sh start|status|logs|restart|stop` for the local
-  WILQ API/dashboard runtime; do not hand-roll detached API or dashboard
-  processes.
-- Inspect existing implementation before editing.
-- Prefer small verified slices and conventional commits.
-- Use subagents for parallel read-only audits or disjoint write scopes.
-- Do not let multiple workers edit the same files without explicit ownership.
-- After each slice:
-  - run focused tests,
-  - capture browser/API proof when a marketer route changes,
-  - update only current recovery facts,
-  - commit and push a coherent green slice.
+Przed zmianą dashboardu czytaj `docs/dashboard-state.md`; przed cleanupem
+`docs/current-cleanup-state.md`; bieżący skrót pozostaje w
+`docs/PROGRESS.md`. Historia jest w git i zamkniętych Beads, nie w tym pliku.
 
-## Verification
+## Zakończenie
 
-Focused checks:
+Ten goal można zamknąć dopiero, gdy:
 
-- Docs-only: `rtk git diff --check`.
-- API/schema/action: focused `rtk uv run pytest ...`.
-- Dashboard: touched route test plus `rtk pnpm --dir apps/dashboard typecheck`.
-- Skill changes: deterministic smoke and targeted eval.
-- Marketer copy: `rtk uv run python scripts/marketer_language_guard.py`.
-- Browser: `agent-browser` proof for touched marketer routes.
-
-Broad checks:
-
-- `rtk scripts/verify.sh` before cross-surface completion claims.
-
-## Completion Definition
-
-Goal 001 is complete when:
-
-- Active docs agree on the corrected product model and cleaned language.
-- Active product paths no longer depend on dev-site migration semantics.
-- Primary marketer surfaces no longer show forbidden technical jargon.
-- UI translators/string replacement cleanup helpers are removed or proven
-  out-of-scope internal utilities.
-- Deprecated active fields and compatibility aliases are removed where direct
-  migration is feasible.
-- Ukierunkowane kontrole API/dashboard/skill przechodzą dla każdego dotkniętego
-  zakresu.
-- Dowód w przeglądarce potwierdza dotknięte ścieżki marketera.
-- Pozostałe historyczne wzmianki są zarchiwizowane albo jawnie śledzone jako
-  dług do usunięcia.
-- Realny UAT marketera jest zapisany albo jawnie odroczony przez ownera.
-  Current proof: `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json`.
-
-Finalny WILQ Marketing Operating System pozostaje późniejszym celem. Nadal
-wymaga ContentPreflight, briefu sprzedażowego, rejestru ryzykownych obietnic,
-sprawdzenia przez człowieka, przekazania szkicu do WordPress, pomiaru efektu,
-profili przestrzeni klienta, cyklu życia wiedzy i bramek bezpiecznego zapisu.
+1. źródła wymagane przez realny content workflow są aktualne albo mają jawny
+   zewnętrzny blocker;
+2. wiedza użyta do tekstu jest owner-reviewed i zachowuje lineage;
+3. realny Wilku content UAT jest wykonany albo owner jawnie go odracza z
+   residual risk;
+4. pierwszy ekran dashboardu prowadzi do użytecznej decyzji bez tłumaczenia
+   developera;
+5. WordPress pozostaje draft-only i exact-version review-bound;
+6. realny daily-check jest reviewed albo jawnie odroczony;
+7. focused proof i wymagany finalny `scripts/verify.sh` są zielone;
+8. pozostały wyłącznie jawne bramki ownera lub osobnego maintenance/publish
+   authority, bez potwierdzonej bezpiecznej pracy repo-local.
