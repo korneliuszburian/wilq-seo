@@ -1,6 +1,7 @@
 # Handoff — `v9ab.13` review pakietu daily-check
 
-Data przygotowania: 2026-07-13 Europe/Warsaw
+Data przygotowania: 2026-07-13 Europe/Warsaw  
+Ostatnie odświeżenie materiału: 2026-07-16 Europe/Warsaw
 
 ## Status
 
@@ -11,27 +12,35 @@ zapisana sesja UAT i nie zawiera zmyślonego uczestnika, czasu ani werdyktu.
 
 Źródło znaczenia: `GET /api/marketing/daily-check`.
 
-Ostatni odczyt live:
+Ostatni odczyt live 2026-07-16:
 
 - `status=blocked`;
-- `freshness.state=fresh`;
+- `freshness.state=stale` — co najmniej jeden sprawdzony connector wymaga
+  odświeżenia; GSC dla bieżącego content workflow pozostaje świeży;
 - 7 source connectors w odpowiedzi;
-- 23 evidence IDs;
-- 1 blocked recommendation;
-- 3 safe next actions;
+- 24 evidence IDs;
+- 3 blocked recommendations;
+- 1 safe next action;
 - 1 element `do_not_touch`.
 
-Świeży packet `ekologus_marketer_uat_packet_v1` wygenerowany 2026-07-13
-19:31:16Z zawiera dodatkowo:
+Świeży packet `ekologus_marketer_uat_packet_v1` wygenerowany 2026-07-16
+zawiera dodatkowo:
 
 - 24 zadania w Centrum pracy, z pierwszym krokiem Merchant;
 - 1330 zgłoszeń problemów Merchant, nadal review-only;
-- Treści: 2 decyzje, 1 potwierdzone dopasowanie WordPress i 1 actionable
-  temat — strona główna `https://www.ekologus.pl/` z 22 zapytaniami;
+- Treści: 2 decyzje, 1 potwierdzone dopasowanie WordPress i exact homepage
+  snapshot dla `https://www.ekologus.pl/`: 29 sygnałów planistycznych GSC,
+  47 wyświetleń, 3 kliknięcia oraz jawny blocker, że kontekst usługi nie jest
+  zatwierdzony do finalnych treści;
 - Ahrefs pozostaje zablokowany do ręcznego cross-checku, bez publicznego URL-a
   i canonicalu;
-- Ads: 18 kampanii i 9 akcji do sprawdzenia, bez zapisu zmian;
+- Ads: 18 kampanii i 5 widocznych decyzji do sprawdzenia, bez zapisu zmian;
 - GA4: 2 jawne problemy pomiaru, bez interpretacji jako problemu kampanii.
+
+Generator packetu pobiera teraz dla wybranego content itemu kanoniczny
+`GET /api/content/work-items/snapshot`, więc nie miesza 31 surowych query z
+29 sygnałami planistycznymi widocznymi w dashboardzie. Diagnostyka nadal
+dostarcza pozostałe decyzje, w tym ręczny cross-check Ahrefs.
 
 To jest lepszy materiał do sesji niż wcześniejszy skrót, ale nadal nie jest
 werdyktem marketera.

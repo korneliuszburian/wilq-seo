@@ -13,6 +13,7 @@ ENDPOINTS = {
     "command_center": "/api/dashboard/command-center",
     "merchant": "/api/merchant/diagnostics",
     "content": "/api/content/diagnostics",
+    "content_snapshot": "/api/content/work-items/snapshot",
     "ads": "/api/ads/diagnostics",
     "ga4": "/api/ga4/diagnostics",
 }
@@ -159,8 +160,14 @@ def build_marketer_uat_packet(
         raise RuntimeError(f"Missing UAT surfaces: {', '.join(missing)}")
 
     command_center = _mapping(surfaces["command_center"])
+    content_payload = dict(_mapping(surfaces["content"]))
+    content_payload["_selected_snapshot"] = _mapping(surfaces["content_snapshot"])
     route_checks = [
-        build_route_check(route, _mapping(surfaces.get(route["key"]))) for route in UAT_ROUTE_ORDER
+        build_route_check(
+            route,
+            content_payload if route["key"] == "content" else _mapping(surfaces.get(route["key"])),
+        )
+        for route in UAT_ROUTE_ORDER
     ]
 
     return {
@@ -240,35 +247,7 @@ def live_snapshot_for(key: str, payload: dict[str, Any]) -> dict[str, Any]:
             ],
         }
     if key == "content":
-        summary = _mapping(payload.get("operator_summary"))
-        decisions = _list(payload.get("decision_queue"))
-        return {
-            "potwierdzone_dopasowania_wordpress": summary.get("confirmed_wordpress_count"),
-            "brakujące_dopasowania_wordpress": summary.get("missing_wordpress_count"),
-            "dopasowania_obecnej_strony": summary.get("current_site_match_count"),
-            "tryby_decyzji": summary.get("decision_type_labels"),
-            "najważniejsze_decyzje": [
-                {
-                    "decyzja": item.get("title"),
-                    "tryb": item.get("decision_type_label")
-                    or _operator_decision_type_label(item.get("decision_type")),
-                    "publiczny_url": item.get("source_public_url"),
-                    "planowany_finalny_url": item.get("intended_final_url"),
-                    "finalny_kanoniczny_url": item.get("final_canonical_url"),
-                    "opcjonalny_podgląd": item.get("preview_url"),
-                    "następny_krok": item.get("next_step"),
-                    "czego_nie_obiecywać": _label_list(
-                        item.get("blocked_claim_labels"), item.get("blocked_claims")
-                    ),
-                }
-                for item in (_mapping(item) for item in decisions[:5])
-            ],
-            "czego_nie_obiecywać": _label_list(
-                payload.get("blocked_claim_labels"), payload.get("blocked_claims")
-            ),
-            "akcje_do_sprawdzenia": payload.get("action_summary_label")
-            or _count_label(_list(payload.get("action_ids")), "akcja do sprawdzenia"),
-        }
+        return _content_uat_snapshot(payload)
     if key in {"merchant", "ads", "ga4"}:
         summary = _mapping(payload.get("operator_summary"))
         return {
@@ -427,6 +406,11 @@ def _readable_packet_label(key: str) -> str | None:
         "brakujące_dopasowania_wordpress": "brakujące dopasowania WordPress",
         "dopasowania_obecnej_strony": "dopasowania obecnej strony",
         "tryby_decyzji": "tryby decyzji",
+        "status_popytu_gsc": "status popytu GSC",
+        "sygnały_planistyczne_gsc": "sygnały planistyczne GSC",
+        "wyświetlenia_gsc": "wyświetlenia GSC",
+        "kliknięcia_gsc": "kliknięcia GSC",
+        "status_wiedzy": "status wiedzy",
         "najważniejsze_decyzje": "najważniejsze decyzje",
         "publiczny_url": "publiczny URL",
         "planowany_finalny_url": "planowany finalny URL",
@@ -480,6 +464,103 @@ def _compact_decision_queue(value: Any) -> list[dict[str, Any]]:
     return queue
 
 
+def _content_uat_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
+    summary = _mapping(payload.get("operator_summary"))
+    selected_snapshot = _mapping(payload.get("_selected_snapshot"))
+    selected_candidate = _mapping(selected_snapshot.get("candidate"))
+    search_demand = _mapping(
+        _mapping(_mapping(selected_snapshot.get("planning_workspace")).get("proposal")).get(
+            "search_demand"
+        )
+    )
+    raw_gsc_query_rows = search_demand.get("gsc_query_rows")
+    demand_status = search_demand.get("status")
+    if demand_status == "available" and isinstance(raw_gsc_query_rows, list):
+        demand_available = True
+        gsc_query_rows = [_mapping(item) for item in raw_gsc_query_rows]
+    else:
+        demand_available = False
+        gsc_query_rows = []
+    visible_items = _visible_content_decisions(
+        [_mapping(item) for item in _list(payload.get("decision_queue"))],
+        selected_decision_id=selected_candidate.get("decision_id"),
+    )
+    decisions = [
+        _content_decision_preview(
+            _mapping(item),
+            selected_candidate=selected_candidate,
+        )
+        for item in visible_items
+    ]
+    return {
+        "potwierdzone_dopasowania_wordpress": summary.get("confirmed_wordpress_count"),
+        "brakujące_dopasowania_wordpress": summary.get("missing_wordpress_count"),
+        "dopasowania_obecnej_strony": summary.get("current_site_match_count"),
+        "tryby_decyzji": summary.get("decision_type_labels"),
+        "status_popytu_gsc": (
+            "exact snapshot dostępny"
+            if demand_available
+            else search_demand.get("safe_next_step")
+            or "brak exact danych popytu — nie interpretuj jako zero"
+        ),
+        "sygnały_planistyczne_gsc": len(gsc_query_rows) if demand_available else None,
+        "wyświetlenia_gsc": _sum_numeric(gsc_query_rows, "impressions"),
+        "kliknięcia_gsc": _sum_numeric(gsc_query_rows, "clicks"),
+        "status_wiedzy": _mapping(selected_snapshot.get("service_profile_context")).get(
+            "status_label"
+        ),
+        "najważniejsze_decyzje": decisions,
+        "czego_nie_obiecywać": _label_list(
+            payload.get("blocked_claim_labels"), payload.get("blocked_claims")
+        ),
+        "akcje_do_sprawdzenia": payload.get("action_summary_label")
+        or _count_label(_list(payload.get("action_ids")), "akcja do sprawdzenia"),
+    }
+
+
+def _content_decision_preview(
+    item: dict[str, Any],
+    *,
+    selected_candidate: dict[str, Any],
+) -> dict[str, Any]:
+    is_selected = item.get("id") == selected_candidate.get("decision_id")
+    source = selected_candidate if is_selected else item
+    return {
+        "decyzja": source.get("title"),
+        "tryb": (
+            source.get("recommended_mode_label")
+            if is_selected
+            else source.get("decision_type_label")
+            or _operator_decision_type_label(source.get("decision_type"))
+        ),
+        "publiczny_url": source.get("source_public_url"),
+        "planowany_finalny_url": source.get("intended_final_url"),
+        "finalny_kanoniczny_url": source.get("final_canonical_url"),
+        "opcjonalny_podgląd": source.get("preview_url"),
+        "następny_krok": (source.get("safe_next_step") if is_selected else source.get("next_step")),
+        "czego_nie_obiecywać": _label_list(
+            item.get("blocked_claim_labels"), item.get("blocked_claims")
+        ),
+    }
+
+
+def _visible_content_decisions(
+    items: list[dict[str, Any]],
+    *,
+    selected_decision_id: Any,
+) -> list[dict[str, Any]]:
+    visible = items[:5]
+    if not isinstance(selected_decision_id, str):
+        return visible
+    if any(item.get("id") == selected_decision_id for item in visible):
+        return visible
+    selected = next(
+        (item for item in items if item.get("id") == selected_decision_id),
+        None,
+    )
+    return [*visible[:4], selected] if selected is not None else visible
+
+
 def _label_list(preferred: Any, fallback: Any) -> list[Any]:
     labels = _list(preferred)
     return labels if labels else _list(fallback)
@@ -522,6 +603,12 @@ def _count_label(items: list[Any], singular: str) -> str:
     if 2 <= count <= 4:
         return f"{count} akcje do sprawdzenia"
     return f"{count} akcji do sprawdzenia"
+
+
+def _sum_numeric(rows: list[dict[str, Any]], field: str) -> int | float | None:
+    values = [row.get(field) for row in rows]
+    numeric = [value for value in values if isinstance(value, int | float)]
+    return sum(numeric) if numeric else None
 
 
 def _mapping(value: Any) -> dict[str, Any]:

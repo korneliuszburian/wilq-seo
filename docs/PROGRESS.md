@@ -35,7 +35,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   47 wyświetleń i 3 kliknięć, pokazuje cztery najwyższe wiersze i jawnie
   wyjaśnia różnicę. Karta kontekstu oraz panel planowania używają tego samego
   snapshotu; browser nie pokazuje już starego podsumowania 17/3. Scope nadal
-  wymaga decyzji Wilka, a Service Profile review ownera.
+  wymaga decyzji Wilka, a Service Profile review ownera. Packet realnego
+  review marketera pobiera teraz ten sam exact snapshot: pokazuje 29 sygnałów,
+  47 wyświetleń i 3 kliknięcia zamiast starego queue title z 31 surowymi query;
+  nadal jawnie mówi, że nie jest dowodem wykonanego UAT.
 - Epiki `wilq-seo-c9h9` (43/43 dzieci), `wilq-seo-3bst` (28/28) i
   `wilq-seo-amj2` (10/10) są zamknięte po ponownym odczycie grafu. Nie zamyka to
   aktywnego celu pilota: `lt1` nadal wymaga reviewed knowledge, `jst` realnego Wilku UAT, a
