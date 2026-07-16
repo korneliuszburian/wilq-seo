@@ -18,8 +18,8 @@ measurement → review-only learning proposal.
 
 Publication-bound measurement and review-only learning are complete in
 `wilq-seo-amj2.9`–`.10` without a real runtime migration, publication claim or
-human acceptance. The current repo-local task is `wilq-seo-or2e`, followed by
-a fresh roadmap review. Knowledge depth and real Wilku UAT remain completion
+human acceptance. Peer-scope proof is complete in `wilq-seo-or2e`; the current
+step is a fresh roadmap review. Knowledge depth and real Wilku UAT remain completion
 gates, not reasons to stop safe technical work.
 
 ## Execution continuity
@@ -30,7 +30,7 @@ gates, not reasons to stop safe technical work.
   Beads, commit deliberately, push `origin/main`, then recheck the roadmap.
 - The original continuation starting at `wilq-seo-c9h9.4` and the five-step
   exact-revision/Codex/draft-only path are complete; do not repeat them.
-  Continue from peer-scope loopback proof (`wilq-seo-or2e`) and re-read the graph.
+  Re-read the graph and choose only a confirmed repo-local risk.
 - Before compaction, replace the durable handoff in
   `docs/current-cleanup-state.md` so completed work is not repeated.
 - Existing ChatGPT/Codex login is the available model authority. Do not make an

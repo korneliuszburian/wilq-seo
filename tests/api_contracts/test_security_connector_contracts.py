@@ -271,9 +271,3 @@ def test_codex_run_redacts_token_like_error_values(
     listed = json.dumps(list_response.json())
     assert "codex_redaction_test" in listed
     assert "sk-testsecretvalue1234567890" not in listed
-
-
-def test_api_is_local_only_by_default() -> None:
-    remote_client = TestClient(app, base_url="http://example.com")
-    response = remote_client.get("/api/health")
-    assert response.status_code == 403

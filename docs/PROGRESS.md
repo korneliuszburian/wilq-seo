@@ -20,6 +20,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-or2e` usuwa stale test, który utożsamiał obcy nagłówek `Host` z
+  remote peerem. Istniejący kanoniczny ASGI proof sprawdza rzeczywisty socket
+  peer: remote + spoofed local Host daje `403`, loopback + malicious Host daje
+  `200`. Middleware produktu nie został zmieniony; focused security file jest
+  zielony 14/14.
 - `wilq-seo-amj2.10` tworzy trwały learning proposal wyłącznie z atomowo
   utrwalonego, zamkniętego measurement window i pasującego outcome. Proposal
   zachowuje WordPress/GSC/GA4 evidence, metric-fact i refresh lineage, ale ma
@@ -302,9 +307,9 @@ pilota nie jest już luźną listą pomysłów:
 2. Lokalna granica pilota `.5`–`.8` ma loopback-only, server-owned identity,
    prywatne tryby i syntetyczny versioned recovery proof. Realny restore drill
    nadal wymaga maintenance window.
-3. Measurement i review-only learning są domknięte w `amj2.9`–`.10`.
-   Następny potwierdzony repo-local bug to `wilq-seo-or2e`: peer-scope proof
-   loopback bez przywracania zaufania do nagłówka `Host`.
+3. Measurement, review-only learning i peer-scope proof są domknięte. Ponownie
+   odczytać roadmapę; nie zamykać epica pilota bez realnego Wilku UAT i
+   owner-reviewed Service Profile.
 
 Architektoniczne tickety `wilq-seo-jnra`, `wilq-seo-djly` i `wilq-seo-kgvy`
 zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie

@@ -203,6 +203,10 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Verification checkpoint
 
+- Loopback proof jest zielony 14/14. Kanoniczny test używa ASGI peer scope:
+  remote peer ze spoofed local Host dostaje `403`, a loopback peer z malicious
+  Host dostaje `200`. Usunięto tylko sprzeczny test Host-header; middleware bez
+  zmian.
 - Review-only learning proof jest zielony: brak outcome i `insufficient_data`
   zwracają `409`, caller-supplied acceptance zwraca `422`, a zamknięty wynik
   tworzy trwały proposal z pełnym publication/metric lineage i wszystkimi
@@ -247,7 +251,7 @@ kontynuuj najwyższy bezpieczny task.
 1. GSC, GA4, Ahrefs, Ads, Keyword Planner i inventory używaj tylko, gdy istnieje
    aktualny typed dowód; brak lub stale źródło jest blockerem, nie wymyśloną
    metryką ani wolumenem słowa kluczowego.
-2. Zrealizuj `wilq-seo-or2e`: zastąp stale Host-header test prawdziwym
-   peer-scope proofem bez osłabienia loopback middleware.
-3. Potem przygotuj review-ready paczkę tekstów; jakości 10/10 nie claimuj przed
+2. Ponownie odczytaj Beads i roadmapę; nie wracaj do ukończonych `.9`, `.10`
+   ani `or2e` bez nowego repro.
+3. Przygotuj review-ready paczkę tekstów; jakości 10/10 nie claimuj przed
    realnym Wilku UAT i owner-reviewed Service Profile.
