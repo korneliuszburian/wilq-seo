@@ -15,27 +15,31 @@ zapisana sesja UAT i nie zawiera zmyślonego uczestnika, czasu ani werdyktu.
 Ostatni odczyt live 2026-07-16:
 
 - `status=blocked`;
-- `freshness.state=stale` — co najmniej jeden sprawdzony connector wymaga
-  odświeżenia; GSC dla bieżącego content workflow pozostaje świeży;
+- `freshness.state=fresh` po bezpiecznych read-only refreshach Ads, Merchant i
+  Localo; blocker nie wynika już ze starych danych;
 - 7 source connectors w odpowiedzi;
 - 24 evidence IDs;
-- 3 blocked recommendations;
-- 1 safe next action;
+- 8 expert rules;
+- 1 blocked recommendation: review jakości landing page i pomiaru GA4;
+- 3 safe next actions;
 - 1 element `do_not_touch`.
 
 Świeży packet `ekologus_marketer_uat_packet_v1` wygenerowany 2026-07-16
 zawiera dodatkowo:
 
 - 24 zadania w Centrum pracy, z pierwszym krokiem Merchant;
-- 1330 zgłoszeń problemów Merchant, nadal review-only;
+- 1345 zgłoszeń problemów Merchant, 5 widocznych decyzji i 1 akcja do
+  sprawdzenia, nadal review-only;
 - Treści: 2 decyzje, 1 potwierdzone dopasowanie WordPress i exact homepage
   snapshot dla `https://www.ekologus.pl/`: 29 sygnałów planistycznych GSC,
   47 wyświetleń, 3 kliknięcia oraz jawny blocker, że kontekst usługi nie jest
   zatwierdzony do finalnych treści;
 - Ahrefs pozostaje zablokowany do ręcznego cross-checku, bez publicznego URL-a
   i canonicalu;
-- Ads: 18 kampanii i 5 widocznych decyzji do sprawdzenia, bez zapisu zmian;
-- GA4: 2 jawne problemy pomiaru, bez interpretacji jako problemu kampanii.
+- Ads: 18 kampanii, 5 widocznych decyzji i 9 akcji do sprawdzenia, bez zapisu
+  zmian;
+- GA4: 2 jawne problemy pomiaru, 4 decyzje i 1 akcja do sprawdzenia, bez
+  interpretacji jako problemu kampanii.
 
 Generator packetu pobiera teraz dla wybranego content itemu kanoniczny
 `GET /api/content/work-items/snapshot`, więc nie miesza 31 surowych query z

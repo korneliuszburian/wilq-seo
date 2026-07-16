@@ -20,6 +20,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 - Ograniczony executor działa po stronie serwera przez Codex app-server i
   istniejący `codex login`. OpenAI API key, Agents SDK, Ollama ani drugi model
   nie są zależnościami produktu. Browser nie łączy się z Codex bezpośrednio.
+- Realny daily-check po read-only refreshach Ads, Merchant i Localo ma świeży
+  stan, 24 dowody, 7 źródeł, 8 reguł eksperckich, 3 bezpieczne akcje i 1
+  `do_not_touch`. Nadal jest poprawnie `blocked` przez review jakości landing
+  page i pomiaru GA4; `v9ab.13` wymaga rzeczywistego werdyktu Wilka albo defer.
 
 ## Ostatnie domknięte zakresy
 
