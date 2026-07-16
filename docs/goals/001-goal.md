@@ -33,6 +33,10 @@ typed kontraktów. Codex korzysta wyłącznie z istniejącego lokalnego
 
 - Techniczny pięciostopniowy workflow `scope → section_map → draft → review →
   dev_draft` istnieje w `/content-workflow` i ma jeden aktywny entrypoint.
+- Exact homepage snapshot używa 29 bieżących, page-scoped sygnałów
+  planistycznych GSC: 47 wyświetleń i 3 kliknięcia. Karta kontekstu, zakres,
+  tytuł oraz oba publiczne odczyty snapshotu korzystają z tego samego zakresu;
+  UI pokazuje cztery najwyższe wiersze i jawnie opisuje pełną liczność.
 - Exact revisions, human review, revision-bound ActionObject, WordPress
   draft-only, measurement window i review-only learning są zaimplementowane.
 - Realny wygenerowany tekst nadal uzyskał `needs_changes`; nie ma dowodu jakości
@@ -49,15 +53,17 @@ typed kontraktów. Codex korzysta wyłącznie z istniejącego lokalnego
 
 Beads jest jedynym operacyjnym grafem zadań. Bieżąca kolejność:
 
-1. `wilq-seo-1oa.29` — dokończyć read-only refresh `wordpress_sklep` i Ahrefs,
-   a potem odczytać API-owned freshness bez ujawniania raw danych lub sekretów.
-2. `wilq-seo-lt1` — po otrzymaniu reviewed sources skompilować owner-reviewed
+1. `wilq-seo-lt1` — po otrzymaniu reviewed sources skompilować owner-reviewed
    service/CTA/claim/evidence cards. To jest bramka ownera, nie pole do
    zgadywania.
-3. `wilq-seo-jst` — przeprowadzić realny content UAT z Wilkiem albo zapisać
+2. `wilq-seo-jst` — przeprowadzić realny content UAT z Wilkiem albo zapisać
    jawny owner defer i residual risk.
-4. `wilq-seo-v9ab.13` — dać Wilkowi realny polski daily-check do oceny albo
+3. `wilq-seo-v9ab.13` — dać Wilkowi realny polski daily-check do oceny albo
    zapisać jawny defer. Techniczna implementacja Goal 006 jest już wykonana.
+
+`bd ready --json` pokazuje obecnie tylko dwa otwarte epiki nadrzędne. Nie ma
+potwierdzonego repo-local taska poza trzema powyższymi bramkami człowieka;
+nie wolno wymyślać technicznego cleanupu tylko po to, by utrzymać ruch.
 
 Po każdym zamkniętym slice odczytaj ponownie `bd ready --json` i
 `bd list --status=open --json`. Nie wracaj do zamkniętych technicznych epików
