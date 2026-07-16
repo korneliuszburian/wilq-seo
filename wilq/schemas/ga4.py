@@ -106,10 +106,15 @@ class Ga4DecisionItem(BaseModel):
 
 class Ga4ConversionReadinessContract(BaseModel):
     id: Literal["ga4_conversion_readiness_contract"] = "ga4_conversion_readiness_contract"
-    status: Literal["ready", "blocked"]
+    status: Literal["ready", "review_required", "blocked"]
     status_label: str = ""
     title: str
     summary: str
+    conversion_metric_availability_status: Literal["available", "missing"] = "missing"
+    conversion_observation_status: Literal["observed_non_zero", "zero_or_missing"] = (
+        "zero_or_missing"
+    )
+    key_event_configuration_status: Literal["verified", "unverified", "missing"] = "missing"
     allowed_metrics: list[str] = Field(default_factory=list)
     available_read_contracts: list[str] = Field(default_factory=list)
     available_read_contract_labels: list[str] = Field(default_factory=list)
@@ -117,6 +122,7 @@ class Ga4ConversionReadinessContract(BaseModel):
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contract_summary_label: str = ""
     conversion_like_metric_count: int = 0
+    observed_conversion_fact_count: int = 0
     dimensioned_behavior_metric_count: int = 0
     landing_group_count: int = 0
     source_connectors: list[str] = Field(default_factory=list)
@@ -159,7 +165,7 @@ class Ga4OperatorSummary(BaseModel):
     top_decision_ids: list[str] = Field(default_factory=list)
     measurement_issue_count: int = 0
     wordpress_missing_count: int = 0
-    conversion_readiness_status: Literal["ready", "blocked"]
+    conversion_readiness_status: Literal["ready", "review_required", "blocked"]
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

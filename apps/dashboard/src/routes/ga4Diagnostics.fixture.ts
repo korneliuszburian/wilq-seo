@@ -84,14 +84,24 @@ export const ga4Diagnostics = {
     status_label: "blokuje wnioski o konwersjach",
     title: "GA4: gotowość konwersji i zdarzeń kluczowych",
     summary:
-      "WILQ może oceniać jakość ruchu z GA4, ale obietnice konwersji, zwrotu z wydatków reklamowych, przychodu i opłacalności wymagają osobnych metryk konwersji albo zdarzeń kluczowych.",
+      "GA4 nie dostarczył metryk konwersji ani zdarzeń kluczowych. WILQ może ocenić wyłącznie jakość ruchu; wnioski o konwersjach, przychodzie i opłacalności pozostają zablokowane.",
+    conversion_metric_availability_status: "missing",
+    conversion_observation_status: "zero_or_missing",
+    key_event_configuration_status: "missing",
     allowed_metrics: ["conversions", "key_events", "purchase_revenue", "total_revenue", "transactions"],
     available_read_contracts: [],
     available_read_contract_labels: [],
-    missing_read_contracts: ["conversion_or_key_event_mapping"],
-    missing_read_contract_labels: ["powiązanie konwersji i zdarzeń kluczowych"],
-    missing_read_contract_summary_label: "1 brakujący zakres danych",
+    missing_read_contracts: [
+      "conversion_or_key_event_mapping",
+      "conversion_or_key_event_metric_facts"
+    ],
+    missing_read_contract_labels: [
+      "powiązanie konwersji i zdarzeń kluczowych",
+      "metryki konwersji i zdarzeń kluczowych"
+    ],
+    missing_read_contract_summary_label: "2 brakujące zakresy danych",
     conversion_like_metric_count: 0,
+    observed_conversion_fact_count: 0,
     dimensioned_behavior_metric_count: 1,
     landing_group_count: 1,
     source_connectors: ["google_analytics_4"],

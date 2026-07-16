@@ -177,6 +177,28 @@ def test_conversion_guard_uses_ga4_read_contract() -> None:
     assert result.next_step == "Sprawdź zdarzenia kluczowe."
 
 
+def test_conversion_guard_blocks_metric_columns_without_verified_key_event_configuration() -> None:
+    contract = Ga4ConversionReadinessContract(
+        status="review_required",
+        title="GA4",
+        summary="Kolumny są dostępne, konfiguracja niepotwierdzona.",
+        conversion_metric_availability_status="available",
+        conversion_observation_status="zero_or_missing",
+        key_event_configuration_status="unverified",
+        conversion_like_metric_count=2,
+        observed_conversion_fact_count=0,
+        available_read_contracts=["conversion_or_key_event_metric_facts"],
+        missing_read_contracts=["conversion_or_key_event_mapping"],
+        next_step="Potwierdź konfigurację zdarzeń kluczowych.",
+    )
+
+    result = evaluate_conversion_readiness_guard(contract)
+
+    assert result.guard_id == "unverified_key_event_configuration"
+    assert result.status == "blocked"
+    assert result.next_step == "Potwierdź konfigurację zdarzeń kluczowych."
+
+
 def test_gsc_date_window_guard_requires_bounded_contract() -> None:
     contract = ContentGscSearchAnalyticsContract(
         data_availability_checked=True,

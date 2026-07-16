@@ -66,10 +66,13 @@ export const Ga4DecisionItemSchema = z.object({
 
 export const Ga4ConversionReadinessContractSchema = z.object({
   id: z.literal("ga4_conversion_readiness_contract"),
-  status: z.enum(["ready", "blocked"]),
+  status: z.enum(["ready", "review_required", "blocked"]),
   status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
+  conversion_metric_availability_status: z.enum(["available", "missing"]),
+  conversion_observation_status: z.enum(["observed_non_zero", "zero_or_missing"]),
+  key_event_configuration_status: z.enum(["verified", "unverified", "missing"]),
   allowed_metrics: z.array(z.string()),
   available_read_contracts: z.array(z.string()),
   available_read_contract_labels: z.array(z.string()).optional().default([]),
@@ -77,6 +80,7 @@ export const Ga4ConversionReadinessContractSchema = z.object({
   missing_read_contract_labels: z.array(z.string()).optional().default([]),
   missing_read_contract_summary_label: z.string().optional().default(""),
   conversion_like_metric_count: z.number(),
+  observed_conversion_fact_count: z.number(),
   dimensioned_behavior_metric_count: z.number(),
   landing_group_count: z.number(),
   source_connectors: z.array(z.string()),
@@ -89,7 +93,6 @@ export const Ga4ConversionReadinessContractSchema = z.object({
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
-
 export const Ga4FreshnessAssessmentSchema = z.object({
   state: z.enum(["fresh", "stale", "missing", "blocked"]),
   state_label: z.string().default(""),
@@ -111,7 +114,7 @@ export const Ga4OperatorSummarySchema = z.object({
   top_decision_ids: z.array(z.string()),
   measurement_issue_count: z.number(),
   wordpress_missing_count: z.number(),
-  conversion_readiness_status: z.enum(["ready", "blocked"]),
+  conversion_readiness_status: z.enum(["ready", "review_required", "blocked"]),
   source_connectors: z.array(z.string()),
   source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
@@ -148,5 +151,3 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   blocker_count: z.number(),
   decision_blocker_count: z.number()
 });
-
-

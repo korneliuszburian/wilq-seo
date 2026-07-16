@@ -220,15 +220,23 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert readiness_contract["id"] == "ga4_conversion_readiness_contract"
     assert readiness_contract["status"] == "blocked"
     assert readiness_contract["status_label"] == "blokuje wnioski o konwersjach"
+    assert readiness_contract["conversion_metric_availability_status"] == "missing"
+    assert readiness_contract["conversion_observation_status"] == "zero_or_missing"
+    assert readiness_contract["key_event_configuration_status"] == "missing"
     assert readiness_contract["conversion_like_metric_count"] == 0
+    assert readiness_contract["observed_conversion_fact_count"] == 0
     assert readiness_contract["dimensioned_behavior_metric_count"] >= 1
     assert readiness_contract["landing_group_count"] >= 1
-    assert readiness_contract["missing_read_contracts"] == ["conversion_or_key_event_mapping"]
+    assert readiness_contract["missing_read_contracts"] == [
+        "conversion_or_key_event_mapping",
+        "conversion_or_key_event_metric_facts",
+    ]
     assert readiness_contract["missing_read_contract_labels"] == [
-        "powiązanie konwersji i zdarzeń kluczowych"
+        "powiązanie konwersji i zdarzeń kluczowych",
+        "metryki konwersji i zdarzeń kluczowych",
     ]
     assert readiness_contract["missing_read_contract_summary_label"] == (
-        "1 brakujący zakres danych"
+        "2 brakujące zakresy danych"
     )
     assert "powiązanie konwersji" in readiness_contract["next_step"]
     assert "mapowanie konwersji" not in json.dumps(payload, ensure_ascii=False)
@@ -327,7 +335,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "google_adc.json" not in serialized
 
 
-def test_ga4_operator_summary_uses_conversion_ready_copy(
+def test_ga4_operator_summary_blocks_zero_metrics_without_verified_key_event_configuration(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -374,16 +382,24 @@ def test_ga4_operator_summary_uses_conversion_ready_copy(
 
     payload = build_ga4_diagnostics(tactical_items=[], actions=[], metric_facts=facts)
 
-    assert payload.conversion_readiness_contract.status == "ready"
+    assert payload.conversion_readiness_contract.status == "review_required"
+    assert (
+        payload.conversion_readiness_contract.conversion_metric_availability_status == "available"
+    )
+    assert payload.conversion_readiness_contract.conversion_observation_status == "zero_or_missing"
+    assert payload.conversion_readiness_contract.key_event_configuration_status == "unverified"
     assert payload.conversion_readiness_contract.conversion_like_metric_count == 2
-    assert payload.conversion_readiness_contract.missing_read_contracts == []
+    assert payload.conversion_readiness_contract.observed_conversion_fact_count == 0
+    assert payload.conversion_readiness_contract.missing_read_contracts == [
+        "conversion_or_key_event_mapping"
+    ]
     assert (
         payload.conversion_readiness_contract.missing_read_contract_summary_label
-        == "Dane kompletne dla tej decyzji"
+        == "1 brakujący zakres danych"
     )
-    assert "Brak metryk konwersji" not in payload.operator_summary.summary
-    assert "metryki konwersji" in payload.operator_summary.summary
+    assert "nie ma potwierdzenia ich konfiguracji" in payload.operator_summary.summary
     assert "zwrot z reklam" in payload.operator_summary.blocked_claims
+    assert payload.blocker_count >= 1
 
 
 def test_ga4_diagnostics_preserves_dimensioned_landing_facts_after_aggregate_noise(

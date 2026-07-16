@@ -21,14 +21,14 @@ def validate_ga4_contract(
         or context.get("conversion_readiness_contract") != readiness
     ):
         raise SystemExit("GA4 conversion readiness contract differs from route")
-    if readiness.get("status") == "blocked":
+    if readiness.get("status") != "ready":
         missing_contracts = set(readiness.get("missing_read_contracts", []))
         claims = set(readiness.get("blocked_claims", []))
         if "conversion_or_key_event_mapping" not in missing_contracts:
-            raise SystemExit("Blocked GA4 conversion readiness must expose mapping gap")
+            raise SystemExit("Unconfirmed GA4 conversion readiness must expose mapping gap")
         required = {"współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"}
         if not required.issubset(claims):
-            raise SystemExit("Blocked GA4 conversion readiness lacks blocked claims")
+            raise SystemExit("Unconfirmed GA4 conversion readiness lacks blocked claims")
     decisions = diagnostics.get("decision_queue", [])
     if _trace(context.get("decision_queue", [])) != _trace(decisions):
         raise SystemExit("Context-pack ga4_diagnostics decision trace differs from route")

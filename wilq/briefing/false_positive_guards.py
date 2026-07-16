@@ -52,12 +52,26 @@ def evaluate_conversion_readiness_guard(
     contract: Ga4ConversionReadinessContract,
 ) -> FalsePositiveGuardResult:
     """Use the existing GA4 read contract instead of inferring conversion proof."""
-    if contract.status == "ready" and contract.conversion_like_metric_count > 0:
+    if (
+        contract.status == "ready"
+        and contract.key_event_configuration_status == "verified"
+        and contract.conversion_metric_availability_status == "available"
+    ):
         return FalsePositiveGuardResult(
             guard_id="conversion_readiness_ready",
             status="pass",
-            reason="GA4 ma potwierdzone metryki konwersji albo zdarzeń kluczowych.",
+            reason="GA4 ma potwierdzoną konfigurację konwersji albo zdarzeń kluczowych.",
             next_step="Można rozdzielić jakość ruchu od problemu pomiaru.",
+        )
+    if contract.key_event_configuration_status == "unverified":
+        return FalsePositiveGuardResult(
+            guard_id="unverified_key_event_configuration",
+            status="blocked",
+            reason=(
+                "GA4 zwraca metryki, ale konfiguracja konwersji i zdarzeń kluczowych "
+                "nie została potwierdzona."
+            ),
+            next_step=contract.next_step,
         )
     return FalsePositiveGuardResult(
         guard_id="missing_conversion",

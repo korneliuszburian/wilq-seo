@@ -197,7 +197,7 @@ def build_ga4_diagnostics(
         action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
         blocker_count=(
             sum(1 for section in sections if section.status == "blocked")
-            + (1 if conversion_readiness_contract.status == "blocked" else 0)
+            + (1 if conversion_readiness_contract.status != "ready" else 0)
         ),
         decision_blocker_count=sum(
             1 for decision in decision_queue if decision.status == "blocked"
@@ -330,9 +330,15 @@ def _operator_summary(
 def _operator_conversion_note(contract: Ga4ConversionReadinessContract) -> str:
     if contract.status == "ready":
         return (
-            "WILQ ma metryki konwersji i zdarzeń kluczowych w dowodach, ale zwrot z reklam, "
+            "WILQ ma potwierdzoną konfigurację zdarzeń kluczowych, ale zwrot z reklam, "
             "opłacalność, spadek konwersji i wina kampanii nadal wymagają "
             "osobnych dowodów oraz kontekstu kosztów, historii i atrybucji."
+        )
+    if contract.status == "review_required":
+        return (
+            "GA4 zwraca kolumny konwersji lub zdarzeń kluczowych, ale WILQ nie ma "
+            "potwierdzenia ich konfiguracji. Nie wolno na tej podstawie oceniać "
+            "konwersji, przychodu ani opłacalności."
         )
     return (
         "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o zwrot z reklam, "
@@ -575,7 +581,12 @@ def _ga4_section_status_label(status: object) -> str:
 
 
 def _ga4_conversion_readiness_status_label(status: object) -> str:
-    return "blokuje wnioski o konwersjach" if _enum_value(status) == "blocked" else "gotowe"
+    normalized = _enum_value(status)
+    if normalized == "ready":
+        return "konfiguracja zdarzeń potwierdzona"
+    if normalized == "review_required":
+        return "konfiguracja zdarzeń do potwierdzenia"
+    return "blokuje wnioski o konwersjach"
 
 
 def _ga4_risk_label(risk: object) -> str:
@@ -860,16 +871,27 @@ def _conversion_readiness_contract(
     action_ids: list[str],
 ) -> Ga4ConversionReadinessContract:
     conversion_like_facts = [fact for fact in facts if fact.name in GA4_CONVERSION_METRIC_NAMES]
+    observed_conversion_facts = [
+        fact
+        for fact in conversion_like_facts
+        if isinstance(fact.value, (int, float))
+        and not isinstance(fact.value, bool)
+        and fact.value > 0
+    ]
     dimensioned_facts = _dimensioned_ga4_facts(facts)
     landing_group_count = max(
         _landing_group_count(dimensioned_facts),
         _tactical_landing_group_count(tactical_items),
     )
-    status: Literal["ready", "blocked"] = "ready" if conversion_like_facts else "blocked"
+    status: Literal["review_required", "blocked"] = (
+        "review_required" if conversion_like_facts else "blocked"
+    )
     available_read_contracts = (
         ["conversion_or_key_event_metric_facts"] if conversion_like_facts else []
     )
-    missing_read_contracts = [] if conversion_like_facts else ["conversion_or_key_event_mapping"]
+    missing_read_contracts = ["conversion_or_key_event_mapping"]
+    if not conversion_like_facts:
+        missing_read_contracts.append("conversion_or_key_event_metric_facts")
     evidence_ids = _unique(
         [
             *(fact.evidence_id for fact in conversion_like_facts),
@@ -882,27 +904,37 @@ def _conversion_readiness_contract(
         status=status,
         title="GA4: gotowość konwersji i zdarzeń kluczowych",
         summary=(
-            "WILQ może oceniać jakość ruchu z GA4, ale obietnice konwersji, "
-            "zwrotu z reklam, przychodu i opłacalności wymagają osobnych metryk konwersji "
-            "albo zdarzeń kluczowych."
+            "WILQ może oceniać jakość ruchu z GA4. Obecność kolumn konwersji i zdarzeń "
+            "kluczowych nie potwierdza jednak ich konfiguracji; zwrot z reklam, przychód "
+            "i opłacalność pozostają zablokowane do osobnego sprawdzenia."
+            if conversion_like_facts
+            else "GA4 nie dostarczył metryk konwersji ani zdarzeń kluczowych. WILQ może "
+            "ocenić wyłącznie jakość ruchu; wnioski o konwersjach, przychodzie i "
+            "opłacalności pozostają zablokowane."
         ),
+        conversion_metric_availability_status=("available" if conversion_like_facts else "missing"),
+        conversion_observation_status=(
+            "observed_non_zero" if observed_conversion_facts else "zero_or_missing"
+        ),
+        key_event_configuration_status=("unverified" if conversion_like_facts else "missing"),
         allowed_metrics=sorted(GA4_CONVERSION_METRIC_NAMES),
         available_read_contracts=available_read_contracts,
         available_read_contract_labels=_ga4_read_contract_labels(available_read_contracts),
         missing_read_contracts=missing_read_contracts,
         missing_read_contract_labels=_ga4_read_contract_labels(missing_read_contracts),
         conversion_like_metric_count=len(conversion_like_facts),
+        observed_conversion_fact_count=len(observed_conversion_facts),
         dimensioned_behavior_metric_count=len(dimensioned_facts),
         landing_group_count=landing_group_count,
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=evidence_ids,
         action_ids=action_ids,
-        blocked_claims=[] if conversion_like_facts else GA4_CONVERSION_BLOCKED_CLAIMS,
+        blocked_claims=GA4_CONVERSION_BLOCKED_CLAIMS,
         next_step=(
             "Sprawdź jakość pomiaru w WILQ i potwierdź powiązanie "
             "konwersji i zdarzeń kluczowych przed wnioskami o opłacalności."
         ),
-        risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
+        risk=ActionRisk.medium,
     )
 
 

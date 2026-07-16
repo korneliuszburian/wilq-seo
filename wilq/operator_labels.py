@@ -513,6 +513,8 @@ def missing_contract_label(contract: object) -> str:
         "change_history_summary": "podsumowanie historii zmian",
         "pre_post_change_window": "okno przed i po zmianie",
         "human_strategy_review": "sprawdzenie strategii przez człowieka",
+        "conversion_or_key_event_mapping": "powiązanie konwersji i zdarzeń kluczowych",
+        "conversion_or_key_event_metric_facts": "metryki konwersji i zdarzeń kluczowych",
         "profit_margin_or_business_goal": "cel biznesowy albo marża",
         "pre_post_change_impact": "wpływ zmian przed i po",
         "operator_change_notes": "notatki operatora o zmianach",
