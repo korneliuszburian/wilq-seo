@@ -9,10 +9,12 @@ import {
   getContentKnowledgeCards,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
+  getContentWorkItemSemanticReview,
   getContentWorkItemSnapshot,
   postContentWorkItemDraftPackage,
   postContentWorkItemCodexSectionProposal,
   postContentWorkItemInitialDraft,
+  postContentWorkItemSemanticReview,
   postContentWorkItemHumanReview,
   postContentWorkItemMeasurementWindow,
   postContentWorkItemPreflight,
@@ -627,6 +629,7 @@ describe("content workflow API helpers", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       expected_base_digest: "a".repeat(64),
       selected_section_headings: ["Kogo dotyczy BDO"],
+      selected_section_ids: [],
       requested_by: "wilku"
     });
   });
@@ -681,6 +684,95 @@ describe("content workflow API helpers", () => {
       expected_proposal_id: "proposal/1",
       expected_planning_digest: "a".repeat(64),
       expected_planning_input_digest: "b".repeat(64),
+      requested_by: "wilku"
+    });
+  });
+
+  it("reads and posts an exact revision-bound semantic review", async () => {
+    const dimensions = [
+      "answer_directness",
+      "completeness",
+      "logical_flow",
+      "specificity",
+      "repetition",
+      "search_intent_fit",
+      "buyer_fit",
+      "credibility",
+      "conversion_clarity"
+    ] as const;
+    const review = {
+      review_id: "semantic-review-1",
+      work_item_id: "content/work item",
+      revision_id: "revision/1",
+      revision_digest: "c".repeat(64),
+      criteria_version: "wilq_semantic_content_review_v1",
+      codex_run_id: "codex-run-1",
+      status: "needs_changes",
+      dimensions: dimensions.map((dimension) => ({
+        dimension,
+        status: dimension === "answer_directness" ? "needs_changes" : "strong",
+        reason: "Ocena dokładnej wersji.",
+        affected_targets: ["section-1"]
+      })),
+      findings: [{
+        finding_id: "semantic-finding-1",
+        dimension: "answer_directness",
+        severity: "medium",
+        label: "Za wolne wejście w odpowiedź",
+        reason: "Czytelnik za późno dostaje decyzję.",
+        instruction: "Przenieś odpowiedź na początek.",
+        affected_targets: ["section-1"],
+        evidence_ids: ["ev-gsc"]
+      }],
+      evidence_ids: ["ev-gsc"],
+      source_connectors: ["google_search_console"],
+      requested_by: "wilku",
+      created_at: "2026-07-16T18:00:00Z",
+      safe_next_step: "Wybierz sekcję do poprawy.",
+      publish_ready: false,
+      human_review_required: true,
+      action_object_created: false
+    } as const;
+    const response = {
+      status: "ready",
+      work_item_id: "content/work item",
+      revision_id: "revision/1",
+      revision_digest: "c".repeat(64),
+      review,
+      run_id: "codex-run-1",
+      runtime: {
+        status: "not_started",
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      blockers: [],
+      safe_next_step: "Wybierz sekcję do poprawy.",
+      publish_ready: false,
+      human_review_required: true,
+      action_object_created: false
+    } as const;
+    const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getContentWorkItemSemanticReview("content/work item", "revision/1");
+    await postContentWorkItemSemanticReview({
+      expected_revision_digest: "c".repeat(64),
+      requested_by: "wilku"
+    }, "content/work item", "revision/1");
+
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).pathname).toBe(
+      "/api/content/work-items/content%2Fwork%20item/draft-revisions/revision%2F1/semantic-review"
+    );
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
+      expected_revision_digest: "c".repeat(64),
       requested_by: "wilku"
     });
   });

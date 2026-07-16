@@ -17,6 +17,8 @@ import {
   ContentCodexSectionProposalResponseSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentSemanticReviewRequestSchema,
+  ContentSemanticReviewResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -99,6 +101,9 @@ import {
   type ContentCodexSectionProposalResponse,
   type ContentInitialDraftRequest,
   type ContentInitialDraftResponse,
+  type ContentSemanticReview,
+  type ContentSemanticReviewRequest,
+  type ContentSemanticReviewResponse,
   type ContentDiagnosticsResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
@@ -516,6 +521,31 @@ export function postContentWorkItemInitialDraft(
   );
 }
 
+export function getContentWorkItemSemanticReview(
+  workItemId: string,
+  revisionId: string
+): Promise<ContentSemanticReviewResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/semantic-review`,
+    ContentSemanticReviewResponseSchema
+  );
+}
+
+export function postContentWorkItemSemanticReview(
+  request: ContentSemanticReviewRequest,
+  workItemId: string,
+  revisionId: string
+): Promise<ContentSemanticReviewResponse> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/semantic-review`;
+  return apiPostWithConflict(
+    path,
+    ContentSemanticReviewResponseSchema,
+    ContentSemanticReviewResponseSchema,
+    ContentSemanticReviewRequestSchema.parse(request),
+    CODEX_PROPOSAL_TIMEOUT_MS
+  );
+}
+
 export function getContentWorkItemEnrichment(
   workItemId: string
 ): Promise<ContentOpportunityEnrichmentResponse> {
@@ -810,6 +840,9 @@ export type {
   ContentCodexSectionProposalResponse,
   ContentInitialDraftRequest,
   ContentInitialDraftResponse,
+  ContentSemanticReview,
+  ContentSemanticReviewRequest,
+  ContentSemanticReviewResponse,
   ContentDraftRevision,
   ContentDraftRevisionBinding,
   ContentDraftRevisionConflict,

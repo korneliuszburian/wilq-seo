@@ -9,8 +9,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from apps.api.wilq_api.routers import content_codex_proposal as section_proposal_router
 from apps.api.wilq_api.routers import content_initial_draft as initial_draft_router
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
+from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
 from apps.api.wilq_api.routers import content_snapshot as content_snapshot_router
 from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
 from wilq.codex.app_server import CodexAppServerTurnResult
@@ -45,6 +47,7 @@ class _PlanningClient:
         self.calls = 0
         self.fail = False
         self.planning_placement = "after_content"
+        self.semantic_external_call_attempted = False
 
     def run_structured_turn(self, request: Any) -> CodexAppServerTurnResult:
         self.calls += 1
@@ -56,6 +59,10 @@ class _PlanningClient:
         application = json.loads(request.application_context)
         if application["operation"] == "generate_initial_full_content_draft":
             return self._initial_draft_result(request)
+        if application["operation"] == "review_full_content_revision_semantics":
+            return self._semantic_review_result(request)
+        if application["operation"] == "propose_section_revision":
+            return self._section_revision_result(request)
         context = json.loads(request.untrusted_context)
         planning_input = context["planning_input"]
         inventory_heading = planning_input["inventory"]["sections"][0]["heading"]
@@ -199,6 +206,122 @@ class _PlanningClient:
             item_types=("agentMessage",),
         )
 
+    def _semantic_review_result(self, request: Any) -> CodexAppServerTurnResult:
+        context = json.loads(request.untrusted_context)
+        revision = context["revision"]
+        proposal = context["approved_planning_proposal"]
+        planning_input = context["planning_input"]
+        assert revision["content_digest"] == json.loads(request.application_context)[
+            "revision_digest"
+        ]
+        assert proposal["planning_input_digest"] == planning_input["planning_input_digest"]
+        target = revision["sections"][0]["section_id"]
+        evidence_id = revision["sections"][0]["evidence_ids"][0]
+        dimensions = [
+            "answer_directness",
+            "completeness",
+            "logical_flow",
+            "specificity",
+            "repetition",
+            "search_intent_fit",
+            "buyer_fit",
+            "credibility",
+            "conversion_clarity",
+        ]
+        output = {
+            "language": "pl-PL",
+            "dimensions": [
+                {
+                    "dimension": dimension,
+                    "status": "needs_changes" if dimension == "answer_directness" else "strong",
+                    "reason": (
+                        "Pierwsza odpowiedź powinna szybciej przejść do decyzji czytelnika."
+                        if dimension == "answer_directness"
+                        else "Wymiar nie ma konkretnego problemu w tej syntetycznej wersji."
+                    ),
+                    "affected_targets": [target],
+                }
+                for dimension in dimensions
+            ],
+            "findings": [
+                {
+                    "dimension": "answer_directness",
+                    "severity": "medium",
+                    "label": "Odpowiedź zaczyna się zbyt ogólnie",
+                    "reason": "Czytelnik zbyt późno widzi bezpośredni następny krok.",
+                    "instruction": "Przenieś konkretną odpowiedź na początek wybranej sekcji.",
+                    "affected_targets": [target],
+                    "evidence_ids": [evidence_id],
+                }
+            ],
+            "publish_ready": False,
+            "human_review_required": True,
+        }
+        schema = request.output_schema
+        finding_schema = schema["$defs"]["ContentSemanticFindingOutput"]
+        assert target in finding_schema["properties"]["affected_targets"]["items"]["enum"]
+        return CodexAppServerTurnResult(
+            status="completed",
+            output_text=json.dumps(output, ensure_ascii=False),
+            thread_id=f"thread_{self.calls}",
+            turn_id=f"turn_{self.calls}",
+            event_methods=("turn/completed",),
+            item_types=("agentMessage",),
+            external_call_attempted=self.semantic_external_call_attempted,
+        )
+
+    def _section_revision_result(self, request: Any) -> CodexAppServerTurnResult:
+        context = json.loads(request.untrusted_context)
+        generation_input = context["generation_input"]
+        base_revision = context["base_revision"]
+        selected_headings = context["editable_section_headings"]
+        base_by_heading = {
+            section["heading"]: section for section in base_revision["sections"]
+        }
+        selected_sections = [base_by_heading[heading] for heading in selected_headings]
+        evidence_ids = list(
+            dict.fromkeys(
+                evidence_id
+                for section in selected_sections
+                for evidence_id in section["evidence_ids"]
+            )
+        )
+        output = {
+            "draft_kind": "section_draft",
+            "language": "pl-PL",
+            "title": base_revision["title"],
+            "meta_title": generation_input["title"],
+            "meta_description": "Sprawdź zakres przed kontaktem z Ekologus.",
+            "h1": generation_input["title"],
+            "sections": [
+                {
+                    "heading": section["heading"],
+                    "body_markdown": (
+                        "Konkretna odpowiedź poprawiona po decyzji człowieka i advisory review."
+                    ),
+                    "evidence_ids": section["evidence_ids"],
+                    "claims_used": generation_input["claims_allowed"],
+                }
+                for section in selected_sections
+            ],
+            "faq": ["Co warto sprawdzić przed kontaktem z Ekologus?"],
+            "cta": "Skontaktuj się z Ekologus, żeby sprawdzić sytuację firmy.",
+            "internal_links": ["https://ekologus.pl/kontakt/"],
+            "source_facts_used": evidence_ids,
+            "claims_needing_review": [],
+            "forbidden_claims_avoided": generation_input["claims_removed_or_blocked"],
+            "human_review_checklist": generation_input["human_review_questions"],
+            "publish_ready": False,
+        }
+        return CodexAppServerTurnResult(
+            status="completed",
+            output_text=json.dumps(output, ensure_ascii=False),
+            thread_id=f"thread_{self.calls}",
+            turn_id=f"turn_{self.calls}",
+            event_methods=("turn/completed",),
+            item_types=("agentMessage",),
+        )
+
 
 class _FailingPlanningStore(ContentPlanningProposalStore):
     def save_generated(
@@ -287,6 +410,16 @@ def planning_harness(
     )
     monkeypatch.setattr(
         initial_draft_router,
+        "content_codex_app_server_client",
+        lambda: runtime,
+    )
+    monkeypatch.setattr(
+        semantic_review_router,
+        "content_codex_app_server_client",
+        lambda: runtime,
+    )
+    monkeypatch.setattr(
+        section_proposal_router,
         "content_codex_app_server_client",
         lambda: runtime,
     )

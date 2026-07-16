@@ -6,6 +6,7 @@ import { LoadingBand } from "../components/OperatorPrimitives";
 import {
   postContentWorkItemCodexSectionProposal,
   postContentWorkItemInitialDraft,
+  postContentWorkItemSemanticReview,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemDraftRevision,
@@ -17,6 +18,7 @@ import {
   type ContentDraftRevisionSaveRequest,
   type ContentDraftRevisionSection,
   type ContentPlanningReviewRequest,
+  type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentOpportunityEnrichment,
@@ -62,7 +64,7 @@ type ContentWorkflowActions = ReturnType<typeof useContentWorkflowActions>;
 type ContentWorkflowMutations = ReturnType<typeof useContentWorkflowMutations>;
 type CodexProposalMutationInput = {
   baseRevision: ContentDraftRevision;
-  selectedSectionHeadings: string[];
+  selection: { sectionIds: string[] } | { sectionHeadings: string[] };
 };
 type InitialDraftMutationInput = NonNullable<
   ContentWorkflowSnapshot["planningWorkspace"]
@@ -596,12 +598,14 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
   const codexProposalMutation = useMutation({
     mutationFn: ({
       baseRevision,
-      selectedSectionHeadings
+      selection
     }: CodexProposalMutationInput) =>
       postContentWorkItemCodexSectionProposal(
         {
           expected_base_digest: baseRevision.content_digest,
-          selected_section_headings: selectedSectionHeadings,
+          selected_section_headings:
+            "sectionHeadings" in selection ? selection.sectionHeadings : [],
+          selected_section_ids: "sectionIds" in selection ? selection.sectionIds : [],
           requested_by: "wilku"
         },
         selectedWorkItemId,
@@ -627,6 +631,29 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
       if (result.status === "created") void refreshRevisionWorkspace();
     }
   });
+  const semanticReviewMutation = useMutation({
+    mutationFn: ({ revisionId, revisionDigest }: { revisionId: string; revisionDigest: string }) =>
+      postContentWorkItemSemanticReview(
+        {
+          expected_revision_digest: revisionDigest,
+          requested_by: "wilku"
+        },
+        selectedWorkItemId,
+        revisionId
+      ),
+    onSuccess: (result: ContentSemanticReviewResponse) => {
+      if (result.revision_id) {
+        void queryClient.invalidateQueries({
+          queryKey: [
+            "content-workflow",
+            "semantic-review",
+            selectedWorkItemId,
+            result.revision_id
+          ]
+        });
+      }
+    }
+  });
   const acfPreviewMutation = useMutation({
     mutationFn: postContentWorkItemWordPressAuthoringPayloadPreview
   });
@@ -637,6 +664,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     revisionReviewMutation,
     codexProposalMutation,
     initialDraftMutation,
+    semanticReviewMutation,
     acfPreviewMutation,
     executionMutation,
     refreshRevisionWorkspace
@@ -707,17 +735,31 @@ function contentWorkflowActions(
       const proposal = data.planningWorkspace?.proposal;
       if (proposal) mutations.initialDraftMutation.mutate(proposal);
     },
+    semanticReviewPending: mutations.semanticReviewMutation.isPending,
+    semanticReviewError: mutations.semanticReviewMutation.error,
+    semanticReviewResult: mutations.semanticReviewMutation.data ?? null,
+    generateSemanticReview: () => {
+      if (!latestRevision) return;
+      mutations.semanticReviewMutation.mutate({
+        revisionId: latestRevision.revision_id,
+        revisionDigest: latestRevision.content_digest
+      });
+    },
     acfPreviewPending: mutations.acfPreviewMutation.isPending,
     executionPending: mutations.executionMutation.isPending,
     authoringProfileReady: Boolean(authoringProfile),
     acfPreviewResult: acfPreviewResultFrom(mutations.acfPreviewMutation.data),
     executionResult: executionResultFrom(mutations.executionMutation.data),
     executionError: mutations.executionMutation.error,
-    runCodexSectionProposal: (selectedSectionHeadings: string[]) => {
-      if (!latestRevision || selectedSectionHeadings.length === 0) return;
+    runCodexSectionProposal: (
+      selection: { sectionIds: string[] } | { sectionHeadings: string[] }
+    ) => {
+      const selectedCount =
+        "sectionIds" in selection ? selection.sectionIds.length : selection.sectionHeadings.length;
+      if (!latestRevision || selectedCount === 0) return;
       mutations.codexProposalMutation.mutate({
         baseRevision: latestRevision,
-        selectedSectionHeadings
+        selection
       });
     },
     refreshCodexProposalWorkspace: () => {

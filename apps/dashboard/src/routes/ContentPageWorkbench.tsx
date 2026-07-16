@@ -1,7 +1,9 @@
 import { ExternalLink } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import {
+  getContentWorkItemSemanticReview,
   type ContentCodexSectionProposalResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionConflict,
@@ -10,6 +12,7 @@ import {
   type ContentInitialDraftResponse,
   type ContentOpportunityEnrichment,
   type ContentPlanningReviewConflict,
+  type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse
 } from "../lib/api";
 import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
@@ -63,16 +66,38 @@ type ContentPageWorkbenchActions = {
   codexProposalError: Error | null;
   codexProposalResult: ContentCodexSectionProposalResponse | null;
   codexProposalBaseRevision: ContentDraftRevision | null;
-  runCodexSectionProposal: (selectedSectionHeadings: string[]) => void;
+  runCodexSectionProposal: (
+    selection: { sectionIds: string[] } | { sectionHeadings: string[] }
+  ) => void;
   refreshCodexProposalWorkspace: () => void;
   initialDraftPending: boolean;
   initialDraftError: Error | null;
   initialDraftResult: ContentInitialDraftResponse | null;
   generateInitialDraft: () => void;
+  semanticReviewPending: boolean;
+  semanticReviewError: Error | null;
+  semanticReviewResult: ContentSemanticReviewResponse | null;
+  generateSemanticReview: () => void;
 };
 
 function unique(values: string[]) {
   return [...new Set(values)];
+}
+
+function exactSemanticReviewForRevision(
+  result: ContentSemanticReviewResponse | null,
+  revision: ContentDraftRevision | null
+) {
+  if (
+    !result ||
+    !revision ||
+    result.work_item_id !== revision.work_item_id ||
+    result.revision_id !== revision.revision_id ||
+    result.revision_digest !== revision.content_digest
+  ) {
+    return null;
+  }
+  return result;
 }
 
 export function ContentPageWorkbench({
@@ -162,6 +187,24 @@ export function ContentPageWorkbench({
     reviewChecks.evidenceChecked ? "Sprawdzono dowody przypisane do tej wersji." : null
   ].filter((item): item is string => item !== null);
   const latestRevision = revisionWorkspace.latest_revision;
+  const semanticReviewQuery = useQuery({
+    queryKey: [
+      "content-workflow",
+      "semantic-review",
+      item.id,
+      latestRevision?.revision_id ?? "missing"
+    ],
+    queryFn: () =>
+      getContentWorkItemSemanticReview(
+        item.id,
+        latestRevision?.revision_id ?? "missing"
+      ),
+    enabled: (activeStepId === "draft" || activeStepId === "review") && Boolean(latestRevision),
+    retry: false
+  });
+  const semanticReviewResult =
+    exactSemanticReviewForRevision(actions.semanticReviewResult, latestRevision) ??
+    exactSemanticReviewForRevision(semanticReviewQuery.data ?? null, latestRevision);
   const revisionEvidenceCount = latestRevision
     ? unique(latestRevision.sections.flatMap((section) => section.evidence_ids)).length
     : 0;
@@ -384,6 +427,21 @@ export function ContentPageWorkbench({
                     error={actions.codexProposalError}
                     result={actions.codexProposalResult}
                     submittedBaseRevision={actions.codexProposalBaseRevision}
+                    suggestedSectionIds={
+                      semanticReviewResult?.status === "ready" ||
+                      semanticReviewResult?.status === "created" ||
+                      semanticReviewResult?.status === "idempotent"
+                        ? unique(
+                            semanticReviewResult.review?.findings.flatMap((finding) =>
+                              finding.affected_targets.filter((target) =>
+                                latestRevision?.sections.some(
+                                  (section) => section.section_id === target
+                                )
+                              )
+                            ) ?? []
+                          )
+                        : []
+                    }
                     onSubmit={actions.runCodexSectionProposal}
                     onRefresh={actions.refreshCodexProposalWorkspace}
                   />
@@ -497,6 +555,93 @@ export function ContentPageWorkbench({
                       </article>
                     ))}
                   </div>
+
+                  <section className="rounded-md border border-action/25 bg-action/5 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-ink">
+                          Advisory review semantyczne
+                        </h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-700">
+                          Sprawdza odpowiedź, kompletność, logikę, konkret, intencję,
+                          wiarygodność i konwersję. Nie zatwierdza tekstu.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={actions.generateSemanticReview}
+                        disabled={actions.semanticReviewPending}
+                        className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {actions.semanticReviewPending
+                          ? "Analizuję wersję..."
+                          : semanticReviewResult?.status === "ready"
+                            ? "Sprawdź exact review"
+                            : "Uruchom review semantyczne"}
+                      </button>
+                    </div>
+                    {semanticReviewResult?.review ? (
+                      <div className="mt-4 space-y-3" data-testid="semantic-review-result">
+                        <p className="text-sm font-semibold text-ink">
+                          {semanticReviewResult.review.findings.length
+                            ? `${semanticReviewResult.review.findings.length} konkretnych uwag do decyzji`
+                            : "Brak konkretnego findingu; nadal wymagane review człowieka"}
+                        </p>
+                        {semanticReviewResult.status === "stale" ? (
+                          <p className="text-sm text-wait">
+                            To review dotyczy starszego digestu. Uruchom je dla bieżącej wersji.
+                          </p>
+                        ) : null}
+                        {semanticReviewResult.review.findings.map((finding) => (
+                          <article
+                            key={finding.finding_id}
+                            className="rounded-md border border-line bg-white p-3"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <h4 className="text-sm font-semibold text-ink">{finding.label}</h4>
+                              <span className="text-xs font-semibold uppercase text-slate-500">
+                                {semanticSeverityLabel(finding.severity)}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm leading-6 text-slate-700">
+                              {finding.reason}
+                            </p>
+                            <p className="mt-2 text-sm font-semibold leading-6 text-action">
+                              {finding.instruction}
+                            </p>
+                          </article>
+                        ))}
+                        <details className="rounded-md border border-line bg-white px-3 py-2">
+                          <summary className="cursor-pointer text-sm font-semibold text-action">
+                            Wymiary i exact binding
+                          </summary>
+                          <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-600">
+                            {semanticReviewResult.review.dimensions.map((dimension) => (
+                              <li key={dimension.dimension}>
+                                <span className="font-semibold text-ink">
+                                  {semanticDimensionLabel(dimension.dimension)}:
+                                </span>{" "}
+                                {dimension.reason}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-3 break-all text-xs text-slate-500">
+                            Review {semanticReviewResult.review.review_id} · rewizja {semanticReviewResult.review.revision_digest}
+                          </p>
+                        </details>
+                      </div>
+                    ) : null}
+                    {semanticReviewResult && semanticReviewResult.blockers.length ? (
+                      <p className="mt-3 text-sm text-wait" role="alert">
+                        {semanticReviewResult.blockers[0]?.reason}
+                      </p>
+                    ) : null}
+                    {actions.semanticReviewError || semanticReviewQuery.error ? (
+                      <p className="mt-3 text-sm text-danger" role="alert">
+                        Nie udało się odczytać lub uruchomić review. Tekst nie został zmieniony.
+                      </p>
+                    ) : null}
+                  </section>
 
                   <label className="block text-sm font-semibold text-ink">
                     Decyzja
@@ -674,6 +819,27 @@ export function ContentPageWorkbench({
       </div>
     </section>
   );
+}
+
+function semanticSeverityLabel(severity: "high" | "medium" | "low") {
+  if (severity === "high") return "wysoki";
+  if (severity === "medium") return "średni";
+  return "niski";
+}
+
+function semanticDimensionLabel(dimension: string) {
+  const labels: Record<string, string> = {
+    answer_directness: "Bezpośredniość odpowiedzi",
+    completeness: "Kompletność",
+    logical_flow: "Logika",
+    specificity: "Konkretność",
+    repetition: "Powtórzenia",
+    search_intent_fit: "Intencja wyszukiwania",
+    buyer_fit: "Dopasowanie do odbiorcy",
+    credibility: "Wiarygodność",
+    conversion_clarity: "Następny krok"
+  };
+  return labels[dimension] ?? dimension;
 }
 
 function RevisionMutationFeedback({

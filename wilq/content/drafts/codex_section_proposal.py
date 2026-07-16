@@ -503,22 +503,9 @@ def _proposal_preflight_blockers(
                 "Uzupełnij blokady briefu i claimów przed użyciem Codexa.",
             )
         ]
-    base_headings = {section.heading for section in base_revision.sections}
-    contract_headings = {section.heading for section in contract.model_input.sections}
-    unknown = [
-        heading
-        for heading in request.selected_section_headings
-        if heading not in base_headings or heading not in contract_headings
-    ]
-    if unknown:
-        return [
-            _blocker(
-                "unknown_selected_section",
-                "Wybrana sekcja nie należy do aktualnego planu",
-                "Codex może zmienić tylko sekcje obecne w wersji bazowej i model input WILQ.",
-                "Odśwież mapę sekcji i wybierz aktualne nagłówki.",
-            )
-        ]
+    selection_blockers = _selected_section_blockers(base_revision, contract, request)
+    if selection_blockers:
+        return selection_blockers
     claim_texts = [
         marker.claim_text for marker in contract.model_input.claim_markers if marker.claim_text
     ]
@@ -534,6 +521,43 @@ def _proposal_preflight_blockers(
     return []
 
 
+def _selected_section_blockers(
+    base_revision: ContentDraftRevision,
+    contract: StructuredDraftGenerationContract,
+    request: ContentCodexSectionProposalRequest,
+) -> list[ContentCodexSectionProposalBlocker]:
+    base_headings = {section.heading for section in base_revision.sections}
+    base_by_id = {
+        str(section.section_id): section.heading
+        for section in base_revision.sections
+        if section.section_id is not None
+    }
+    contract_headings = {section.heading for section in contract.model_input.sections}
+    unknown = (
+        [
+            section_id
+            for section_id in request.selected_section_ids
+            if section_id not in base_by_id
+        ]
+        if request.selected_section_ids
+        else [
+            heading
+            for heading in request.selected_section_headings
+            if heading not in base_headings or heading not in contract_headings
+        ]
+    )
+    if not unknown:
+        return []
+    return [
+        _blocker(
+            "unknown_selected_section",
+            "Wybrana sekcja nie należy do aktualnego planu",
+            "Codex może zmienić tylko sekcje obecne w wersji bazowej i model input WILQ.",
+            "Odśwież mapę sekcji i wybierz aktualne sekcje.",
+        )
+    ]
+
+
 def _ordered_selected_headings(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     request: ContentCodexSectionProposalRequest,
@@ -541,8 +565,19 @@ def _ordered_selected_headings(
     base_revision = snapshot.revision_workspace.latest_revision
     if base_revision is None:
         return request.selected_section_headings
-    selected = set(request.selected_section_headings)
-    return [section.heading for section in base_revision.sections if section.heading in selected]
+    if request.selected_section_ids:
+        selected_ids = set(request.selected_section_ids)
+        return [
+            section.heading
+            for section in base_revision.sections
+            if section.section_id in selected_ids
+        ]
+    selected_headings = set(request.selected_section_headings)
+    return [
+        section.heading
+        for section in base_revision.sections
+        if section.heading in selected_headings
+    ]
 
 
 def _section_scope_blocker(

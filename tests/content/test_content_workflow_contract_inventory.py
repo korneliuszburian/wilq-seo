@@ -10,12 +10,14 @@ from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.drafts.codex_section_proposal import (
     ContentCodexSectionProposalResponse,
 )
+from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftResponse
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
+from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
 from wilq.content.workflow.api import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
@@ -93,9 +95,21 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal",
     ): ContentCodexSectionProposalResponse,
     (
+        "GET",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
+    ): ContentSemanticReviewResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
+    ): ContentSemanticReviewResponse,
+    (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review",
     ): ContentDraftRevisionReviewResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/initial-draft",
+    ): ContentInitialDraftResponse,
     (
         "POST",
         "/api/content/work-items/snapshot/human-review",
@@ -195,7 +209,15 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
     model_paths = {
         path
         for path in content_paths
-        if "codex-proposal" in path or "planning-proposals" in path
+        if any(
+            marker in path
+            for marker in (
+                "codex-proposal",
+                "initial-draft",
+                "planning-proposals",
+                "semantic-review",
+            )
+        )
     }
     forbidden_paths = {
         "/api/content/work-items/structured-draft-generation",
@@ -207,8 +229,11 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
 
     assert model_paths == {
         "/api/content/work-items/{work_item_id}/planning-proposals",
+        "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/work-items/{work_item_id}/draft-revisions/"
         "{base_revision_id}/codex-proposal",
+        "/api/content/work-items/{work_item_id}/draft-revisions/"
+        "{revision_id}/semantic-review",
     }
     assert forbidden_paths.isdisjoint(content_paths)
     serialized_contract = json.dumps(content_paths, sort_keys=True)

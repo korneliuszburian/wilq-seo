@@ -44,14 +44,14 @@ Marketer mode renders one compact page/service/decision context, the task map
 and exactly one selected workspace. The former queue/action/proof wall mounts
 only after an explicit switch to `Audyt techniczny`.
 
-The current reviewer estimate is 6/10 for the operator workflow, 5/10 for the
-quality of real generated content and 8/10 only for exact-version handoff
-safety. The active writing step now lets Wilku choose API-approved headings
-from an exact `needs_changes`/`rejected` revision, run the server-side Codex
-proposal, compare base and child, read quality findings and continue to exact
-human review. It does not expose a prompt box, approve the child or touch
-WordPress. The real 38-word proof was still generic and `needs_changes`, so the
-new UI is not evidence of final text quality.
+The current reviewer estimate is 7.5/10 for the operator workflow, real text
+quality remains unscored and exact-version handoff safety remains 8/10. The
+review step can now persist an advisory assessment of nine dimensions for the
+exact full-document digest. Findings point to stable section IDs; after a human
+`needs_changes` decision the writing step highlights those sections, but Wilku
+still chooses which ones to send through the existing child-revision seam. It
+does not expose a prompt box, approve the child or touch WordPress. Synthetic
+proof is not evidence of final text quality.
 
 Read-only Ahrefs and `wordpress_sklep` refreshes on 2026-07-16 restored source
 freshness. The live snapshot honestly remains on `scope`: the API exposes one
@@ -74,10 +74,11 @@ API-owned model input to create an unreviewed child revision without approval or
 vendor write. Browser proof for the new step is under
 `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
 `wilq-seo-r564.14` retired the legacy public Structured Outputs/API-key runtime,
-including the additional `draft-variants` leak. OpenAPI now has three bounded,
+including the additional `draft-variants` leak. OpenAPI now has four bounded,
 review-gated content-model entrypoints: dynamic `planning-proposals`, exact
-`initial-draft` and exact revision `codex-proposal`; browser snapshots remain
-readiness-only and no path can approve content or write to a vendor.
+`initial-draft`, exact revision `semantic-review` and exact revision
+`codex-proposal`; browser snapshots remain readiness-only and no path can
+approve content or write to a vendor.
 
 Architecture proof (2026-07-15):
 
@@ -111,7 +112,7 @@ Readiness is a product/usefulness estimate, not a test pass rate.
 | --- | ---: | --- | --- | --- | --- | --- |
 | `/command-center` | 70% | Daily priority, blockers and source freshness remain useful. Expired daily-check dependencies no longer make an operator wait for staggered Command Center/GA4/content rebuilds: one background prewarm starts and the existing typed blocker returns in `0.003 s`; full follow-up reads measured `0.018/0.020/0.018 s` with unchanged proof projection. Fresh browser smoke passes 1/1 in 3.2 s. | Existing `GET /api/dashboard/command-center`, `GET /api/marketing/daily-check`, current read caches and `getCommandCenter()`; no new endpoint. | Daily queue, blocked claims, source freshness and honest in-progress state. | Still needs stronger routing into one concrete work item; prewarm never means source refresh or recommendation readiness. | Keep as cockpit; preserve explicit invalidation and typed blocker, then route into content workbench. |
 | `/opportunities` | 50% | Useful as registry but overlaps with Command Center and Actions. | `GET /api/opportunities`, `getOpportunities()` | Opportunity list with evidence/action links. | Duplicates "Kolejka" mental model. | Eventually merge into one decision/action queue; avoid new UI work here now. |
-| `/content-workflow` | 7.5/10 operator workflow; real text quality still unscored; 8/10 handoff safety | Primary five-step "Treści i SEO" journey now carries one exact service and page from dynamic planning into an explicit „Wygeneruj pełny tekst” action. The first document is a complete immutable v2 revision with title/meta/H1/lead, stable sections, FAQ, CTA and internal links. Marketer mode renders a page-like preview; query/measurement context and exact IDs remain under „Dlaczego”. There is no browser model call or manual first-revision fallback in the primary UI. | Existing queue/snapshot and planning seams plus `POST /api/content/work-items/{id}/initial-draft`, the same server-side Codex app-server, atomic revision/CodexRun store and existing exact review/ActionObject paths. API rebuilds current planning input and passes inventory, query assignments, source facts, constraints, claims, source assessments and metrics. | Synthetic approved-card/temp-SQLite proof runs exact BDO and outsourcing through the same plan→full-document contract and persists different unreviewed v2 revisions. Stale proposal and existing revision are `409` before model execution; runtime failure leaves no partial revision; GET remains model-free. Shared schemas, dashboard typed helpers/page preview, TypeScript and focused API tests are green without WordPress calls. | Both real service cards still require owner review, so no real full text was generated. Semantic advisory review, selected-section child improvements, desktop/mobile browser proof and real Wilku UAT remain open. Real storage activation still requires the maintenance window. | Build persisted semantic review bound to the exact full-document digest, then selected-section child revisions; run the two real pilots only after owner review. |
+| `/content-workflow` | 7.5/10 operator workflow; real text quality still unscored; 8/10 handoff safety | Primary five-step "Treści i SEO" journey carries one exact service and page from dynamic planning through full-document generation, exact advisory review, human decision and selected-section child revision. The immutable v2 document includes title/meta/H1/lead, stable sections, FAQ, CTA and internal links. Marketer mode renders the page; metrics and exact IDs remain under „Dlaczego”. | Existing queue/snapshot and planning seams plus exact `initial-draft`, revision-bound `semantic-review` GET/POST and existing `codex-proposal`, all through the same server-side Codex app-server. Review and terminal run persist atomically; model output never approves or creates an ActionObject. | Synthetic approved-card/temp-SQLite proof runs BDO and outsourcing through the same contracts. Advisory findings map to stable section IDs; only a human-selected section after `needs_changes` becomes an unreviewed child while meta/FAQ/CTA/links remain unchanged. GET is model-free, stale and failure paths are typed, shared schemas and focused browser/API proof are green without WordPress calls. | Both real service cards still require owner review, so no real full text was generated. Real semantic storage activation requires backup and a maintenance window. Desktop/mobile proof of the new advisory-to-child UX and real Wilku UAT remain open. | Run bounded browser proof, then prepare both pilot packets to the owner-review boundary; do not claim real text quality or UAT. |
 | `/content-inventory` | 20% | Hidden technical placeholder. Inventory remains an input to `/content-workflow`, not a separate writing cockpit. | currently generic/compact route; check `surfaceRegistry.ts` before adding code | Concept is needed inside content workbench. | Not a real marketer view yet. | Do not build separate cockpit; expose inventory inside content workbench. |
 | `/service-profile` | 55% | Useful for owner/claim review, not daily writing screen. Its selected-card policy is now projected into the existing content work-item snapshot. | `GET /api/content/service-profile` is the source assembly; `GET /api/content/work-items/{id}/snapshot` projects its compact typed context; no frontend join. | Services, claim policy, source status and review-required data. | Not enough approved-current production depth; can overwhelm writer. | Keep owner review here; preserve the compact work-item projection instead of duplicating a second content view. |
 | `/knowledge` | 65% | Admin/review support surface with current "Wiedza" IA. Operating-map remains the only initial read; cards/playbooks defer until disclosure. `list_workflows()` now uses only command-center decisions; standalone map core is `4.878 s`. Managed runtime starts a non-blocking map prewarm after readiness; first/second warmed HTTP reads measured `0.003550 s` / `0.003175 s`. First decision/blockers render in the browser proof; focused current Playwright passes 1/1 in 2.7 s. | `GET /api/knowledge/cards`, `/api/knowledge/playbooks`, `/api/knowledge/operating-map`; `build_knowledge_operating_map_cached()` and existing disclosure controls | Source lineage and claim review. | Prewarm stability must be checked on subsequent restarts; live knowledge/source freshness remains separate from cache latency. | Keep prewarm fail-open and non-blocking; do not re-enable concurrent subordinate reads. |

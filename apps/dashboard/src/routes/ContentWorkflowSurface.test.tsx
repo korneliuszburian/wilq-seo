@@ -8,6 +8,7 @@ import {
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemPlanningProposal,
+  getContentWorkItemSemanticReview,
   getContentWorkItemSnapshot,
   getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
@@ -17,6 +18,7 @@ import {
   postContentWorkItemCodexSectionProposal,
   postContentWorkItemInitialDraft,
   postContentWorkItemPlanningProposal,
+  postContentWorkItemSemanticReview,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   previewAction,
@@ -34,6 +36,7 @@ import {
   type ContentInitialDraftResponse,
   type ContentOpportunityEnrichmentResponse,
   type ContentPlanningProposalResponse,
+  type ContentSemanticReviewResponse,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
@@ -57,6 +60,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemPlanningProposal: vi.fn(),
+    getContentWorkItemSemanticReview: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
     getContentWordPressDraftActivationPacket: vi.fn(),
     getContentWordPressDraftWriteReadiness: vi.fn(),
@@ -66,6 +70,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     postContentWorkItemCodexSectionProposal: vi.fn(),
     postContentWorkItemInitialDraft: vi.fn(),
     postContentWorkItemPlanningProposal: vi.fn(),
+    postContentWorkItemSemanticReview: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     previewAction: vi.fn(),
@@ -85,6 +90,9 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(
       planningProposalStatus()
+    );
+    vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue(
+      semanticReviewNotGenerated()
     );
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
     vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue(
@@ -109,6 +117,9 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValue(
       planningProposalStatus({ status: "created" })
+    );
+    vi.mocked(postContentWorkItemSemanticReview).mockResolvedValue(
+      semanticReviewCreated()
     );
     vi.mocked(postContentWorkItemWordPressAuthoringPayloadPreview).mockResolvedValue(
       wordpressAuthoringPayloadPreviewResponse()
@@ -667,6 +678,89 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
   });
 
+  it("shows persisted advisory findings without approving or writing the revision", async () => {
+    const revision = savedFullDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        workspace: savedRevisionWorkspace(revision),
+        currentStepId: "review",
+        steps: operatorStepsAtReview()
+      })
+    );
+    vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue(
+      semanticReviewNotGenerated(revision)
+    );
+    vi.mocked(postContentWorkItemSemanticReview).mockResolvedValue(
+      semanticReviewCreated(revision)
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByText("Advisory review semantyczne")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Uruchom review semantyczne" }));
+
+    await waitFor(() =>
+      expect(postContentWorkItemSemanticReview).toHaveBeenCalledWith(
+        {
+          expected_revision_digest: revision.content_digest,
+          requested_by: "wilku"
+        },
+        revision.work_item_id,
+        revision.revision_id
+      )
+    );
+    const result = await screen.findByTestId("semantic-review-result");
+    expect(within(result).getByText("1 konkretnych uwag do decyzji")).toBeInTheDocument();
+    expect(within(result).getByText("Odpowiedź zaczyna się zbyt ogólnie"))
+      .toBeInTheDocument();
+    expect(within(result).getByText("Przenieś konkretną odpowiedź na początek sekcji."))
+      .toBeInTheDocument();
+    expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
+
+    const childRevision = {
+      ...revision,
+      revision_id: "content_revision_bdo_full_2",
+      revision_number: 2,
+      base_revision_id: revision.revision_id,
+      content_digest: "b".repeat(64),
+      created_at: "2026-07-16T18:05:00Z"
+    };
+    const decision = savedDraftRevisionReview(revision, "needs_changes");
+    vi.mocked(saveContentWorkItemDraftRevisionReview).mockResolvedValue({
+      status: "recorded",
+      review: decision,
+      workspace: needsChangesRevisionWorkspace(revision)
+    });
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        workspace: savedRevisionWorkspace(childRevision),
+        currentStepId: "review",
+        steps: operatorStepsAtReview()
+      })
+    );
+    vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue(
+      semanticReviewNotGenerated(childRevision)
+    );
+    fireEvent.change(screen.getByLabelText("Notatka do decyzji"), {
+      target: { value: "Popraw bezpośredniość wskazanej sekcji." }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz decyzję dla wersji 1" }));
+
+    await waitFor(() => expect(getContentWorkItemSnapshot).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.queryByText("Odpowiedź zaczyna się zbyt ogólnie")).not.toBeInTheDocument()
+    );
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressAuthoringPayloadPreview).not.toHaveBeenCalled();
+  });
+
   it("runs the exact revision ActionObject inline and stops a typed apply blocker without retry", async () => {
     const revision = savedDraftRevision();
     const revisionReview = savedDraftRevisionReview(revision);
@@ -943,6 +1037,51 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("sends a human-selected advisory section by stable ID", async () => {
+    const revision = savedFullDraftRevision();
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ workspace: needsChangesRevisionWorkspace(revision) })
+    );
+    vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue(
+      semanticReviewCreated(revision).review
+        ? { ...semanticReviewCreated(revision), status: "ready" }
+        : semanticReviewNotGenerated(revision)
+    );
+    vi.mocked(postContentWorkItemCodexSectionProposal).mockImplementation(
+      () => new Promise(() => undefined)
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByText("Wskazane w advisory review")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /Kogo dotyczy BDO/ })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Popraw 1 sekcję z Codexem" }));
+
+    await waitFor(() =>
+      expect(postContentWorkItemCodexSectionProposal).toHaveBeenCalledWith(
+        {
+          expected_base_digest: revision.content_digest,
+          selected_section_headings: [],
+          selected_section_ids: [revision.sections[0]?.section_id],
+          requested_by: "wilku"
+        },
+        revision.work_item_id,
+        revision.revision_id
+      )
+    );
+    expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
   it("does not expose the legacy package-bound audit control", async () => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ review: humanReview() }));
     const client = createWilqQueryClient({
@@ -1003,6 +1142,7 @@ describe("ContentWorkflowSurface", () => {
         {
           expected_base_digest: revision.content_digest,
           selected_section_headings: ["Kogo dotyczy BDO"],
+          selected_section_ids: [],
           requested_by: "wilku"
         },
         revision.work_item_id,
@@ -2088,6 +2228,103 @@ function initialDraftResponse(
     blockers: [],
     safe_next_step: "Przeczytaj pełną stronę i zapisz decyzję człowieka.",
     publish_ready: false
+  };
+}
+
+function semanticReviewNotGenerated(
+  revision = savedFullDraftRevision()
+): ContentSemanticReviewResponse {
+  return {
+    status: "not_generated",
+    work_item_id: revision.work_item_id,
+    revision_id: revision.revision_id,
+    revision_digest: revision.content_digest,
+    review: null,
+    run_id: null,
+    runtime: {
+      status: "not_started",
+      thread_id: null,
+      turn_id: null,
+      event_methods: [],
+      item_types: [],
+      external_call_attempted: false
+    },
+    blockers: [],
+    safe_next_step: "Uruchom advisory review.",
+    publish_ready: false,
+    human_review_required: true,
+    action_object_created: false
+  };
+}
+
+function semanticReviewCreated(
+  revision = savedFullDraftRevision()
+): ContentSemanticReviewResponse {
+  const sectionId = revision.sections[0]?.section_id ?? "section_bdo_1";
+  const dimensions = [
+    "answer_directness",
+    "completeness",
+    "logical_flow",
+    "specificity",
+    "repetition",
+    "search_intent_fit",
+    "buyer_fit",
+    "credibility",
+    "conversion_clarity"
+  ] as const;
+  const review = {
+    review_id: "content_semantic_review_bdo_1",
+    work_item_id: revision.work_item_id,
+    revision_id: revision.revision_id,
+    revision_digest: revision.content_digest,
+    criteria_version: "wilq_semantic_content_review_v1" as const,
+    codex_run_id: "codex_content_semantic_review_bdo_1",
+    status: "needs_changes" as const,
+    dimensions: dimensions.map((dimension) => ({
+      dimension,
+      status: dimension === "answer_directness" ? "needs_changes" as const : "strong" as const,
+      reason: "Ocena dokładnej wersji dokumentu.",
+      affected_targets: [sectionId]
+    })),
+    findings: [{
+      finding_id: "content_semantic_review_bdo_1_finding_01",
+      dimension: "answer_directness" as const,
+      severity: "medium" as const,
+      label: "Odpowiedź zaczyna się zbyt ogólnie",
+      reason: "Czytelnik zbyt późno widzi decyzję.",
+      instruction: "Przenieś konkretną odpowiedź na początek sekcji.",
+      affected_targets: [sectionId],
+      evidence_ids: ["ev_gsc_bdo"]
+    }],
+    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+    source_connectors: ["google_search_console", "wordpress_ekologus"],
+    requested_by: "wilku",
+    created_at: "2026-07-16T18:00:00Z",
+    safe_next_step: "Wybierz sekcje do poprawy.",
+    publish_ready: false as const,
+    human_review_required: true as const,
+    action_object_created: false as const
+  };
+  return {
+    status: "created",
+    work_item_id: revision.work_item_id,
+    revision_id: revision.revision_id,
+    revision_digest: revision.content_digest,
+    review,
+    run_id: review.codex_run_id,
+    runtime: {
+      status: "completed",
+      thread_id: "thread_semantic_bdo",
+      turn_id: "turn_semantic_bdo",
+      event_methods: ["turn/completed"],
+      item_types: ["agentMessage"],
+      external_call_attempted: false
+    },
+    blockers: [],
+    safe_next_step: review.safe_next_step,
+    publish_ready: false,
+    human_review_required: true,
+    action_object_created: false
   };
 }
 

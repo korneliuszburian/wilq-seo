@@ -32,6 +32,8 @@ import {
   ContentDraftRevisionWorkspaceSchema,
   ContentInitialDraftRequestSchema,
   ContentInitialDraftResponseSchema,
+  ContentSemanticReviewRequestSchema,
+  ContentSemanticReviewResponseSchema,
   ContentKnowledgeConstraintTypeSchema,
   ContentRecommendedModeSchema,
   ContentGscSearchAnalyticsContractSchema,
@@ -183,6 +185,105 @@ describe("ContentInitialDraftResponseSchema", () => {
       ...blocked,
       status: "created",
       blockers: []
+    }).success).toBe(false);
+  });
+});
+
+describe("ContentSemanticReviewResponseSchema", () => {
+  it("requires exact revision binding and never accepts an unbound ready result", () => {
+    expect(ContentSemanticReviewRequestSchema.parse({
+      expected_revision_digest: "a".repeat(64),
+      requested_by: "wilku"
+    }).requested_by).toBe("wilku");
+    const notGenerated = {
+      status: "not_generated" as const,
+      work_item_id: "content_work_item_bdo",
+      revision_id: "revision_1",
+      revision_digest: "a".repeat(64),
+      review: null,
+      run_id: null,
+      runtime: {
+        status: "not_started" as const,
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      blockers: [],
+      safe_next_step: "Uruchom advisory review.",
+      publish_ready: false as const,
+      human_review_required: true as const,
+      action_object_created: false as const
+    };
+    expect(ContentSemanticReviewResponseSchema.parse(notGenerated).status)
+      .toBe("not_generated");
+    expect(ContentSemanticReviewResponseSchema.safeParse({
+      ...notGenerated,
+      status: "ready"
+    }).success).toBe(false);
+    const dimensionNames = [
+      "answer_directness",
+      "completeness",
+      "logical_flow",
+      "specificity",
+      "repetition",
+      "search_intent_fit",
+      "buyer_fit",
+      "credibility",
+      "conversion_clarity"
+    ] as const;
+    const review = {
+      review_id: "semantic_review_1",
+      work_item_id: notGenerated.work_item_id,
+      revision_id: notGenerated.revision_id,
+      revision_digest: notGenerated.revision_digest,
+      criteria_version: "wilq_semantic_content_review_v1" as const,
+      codex_run_id: "codex_semantic_1",
+      status: "reviewable" as const,
+      dimensions: dimensionNames.map((dimension) => ({
+        dimension,
+        status: "strong" as const,
+        reason: "Brak konkretnego problemu w tym wymiarze.",
+        affected_targets: ["whole_document"]
+      })),
+      findings: [],
+      evidence_ids: ["ev_gsc_bdo"],
+      source_connectors: ["google_search_console"],
+      requested_by: "wilku",
+      created_at: "2026-07-16T20:00:00Z",
+      safe_next_step: "Przejdź do review człowieka.",
+      publish_ready: false as const,
+      human_review_required: true as const,
+      action_object_created: false as const
+    };
+    const ready = {
+      ...notGenerated,
+      status: "ready" as const,
+      review,
+      run_id: review.codex_run_id
+    };
+    expect(ContentSemanticReviewResponseSchema.safeParse(ready).success).toBe(true);
+    expect(ContentSemanticReviewResponseSchema.safeParse({
+      ...ready,
+      review: {
+        ...review,
+        dimensions: review.dimensions.map((assessment) => ({
+          ...assessment,
+          dimension: "answer_directness" as const
+        }))
+      }
+    }).success).toBe(false);
+    expect(ContentSemanticReviewResponseSchema.safeParse({
+      ...notGenerated,
+      status: "blocked",
+      blockers: [{
+        code: "unknown_semantic_blocker",
+        label: "Nieznana blokada",
+        reason: "Nieznany kontrakt.",
+        next_step: "Odśwież.",
+        source_codes: []
+      }]
     }).success).toBe(false);
   });
 });
@@ -2980,6 +3081,21 @@ describe("Content work item workflow schemas", () => {
       ContentCodexSectionProposalRequestSchema.safeParse({
         expected_base_digest: "a".repeat(64),
         selected_section_headings: ["Kogo dotyczy BDO", "Kogo dotyczy BDO"],
+        requested_by: "wilku"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentCodexSectionProposalRequestSchema.safeParse({
+        expected_base_digest: "a".repeat(64),
+        selected_section_ids: ["section_bdo_scope"],
+        requested_by: "wilku"
+      }).success
+    ).toBe(true);
+    expect(
+      ContentCodexSectionProposalRequestSchema.safeParse({
+        expected_base_digest: "a".repeat(64),
+        selected_section_ids: ["section_bdo_scope"],
+        selected_section_headings: ["Kogo dotyczy BDO"],
         requested_by: "wilku"
       }).success
     ).toBe(false);

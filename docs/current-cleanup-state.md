@@ -5,6 +5,17 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`wilq-seo-1oa.37` dodaje exact-revision advisory review semantyczne przez ten
+sam server-side Codex app-server. GET nigdy nie uruchamia modelu; POST wymaga
+bieżącego pełnego dokumentu v2, exact digestu i aktualnego planning inputu.
+Persistowany wynik ocenia dziewięć jawnych wymiarów, wskazuje findings przez
+stabilne `section_id` i zawsze pozostawia `publish_ready=false`,
+`human_review_required=true` oraz `action_object_created=false`. Model nie
+autoryzuje własnej poprawki: dopiero decyzja człowieka `needs_changes` pozwala
+Wilkowi wybrać sekcje, po czym istniejący `codex-proposal` tworzy child revision.
+Realna tabela semantic review nie jest tworzona leniwie; bez backupu i
+maintenance window API zwraca `storage_activation_required` przed modelem.
+
 `wilq-seo-2xmw` dodaje jawny
 `POST /api/content/work-items/{id}/initial-draft` po dokładnie zatwierdzonym,
 wygenerowanym planie. Serwer ponownie buduje bieżący `ContentPlanningInput`,
@@ -49,8 +60,9 @@ stockowy protokół nie daje jednak twardej gwarancji `tool-free`. Wynik może
   utworzyć tylko `unreviewed` child revision, a rewizja i terminalny run zapisują
   się atomowo z trwałym evidence/claim lineage. Quality dotyczy wyłącznie
   utrwalanych wybranych sekcji; obcy identifier, literalny known blocked claim i
-  wąski high-risk promise guard są fail-closed, lecz pełna semantyka nadal wymaga
-  człowieka. Finalny proof po hardeningu
+  wąski high-risk promise guard są fail-closed. Persistowane advisory review
+  wspiera decyzję o poprawce, lecz akceptacja semantyczna nadal należy wyłącznie
+  do człowieka. Finalny proof po hardeningu
 utworzył 38-słowną poprawkę sekcji na dwóch dowodach GSC/WP bez zaobserwowanej
 próby tool call, ale quality uczciwie zwróciło
 `needs_changes`; nie jest to dowód finalnej jakości tekstu. Browser nadal nie
@@ -66,8 +78,9 @@ WordPressa; exact proposal POST jest syntetycznie przechwycony.
 
 `wilq-seo-r564.14` usuwa legacy OpenAI SDK/API-key runtime, pięć publicznych
 dróg ujawnienia full generation contract oraz martwe browser schemas. OpenAPI
-ma trzy ograniczone modelowe POST-y: exact section `codex-proposal`, versioned
-`planning-proposals` oraz exact `initial-draft`; wszystkie używają tego samego
+ma cztery ograniczone modelowe POST-y: exact section `codex-proposal`, versioned
+`planning-proposals`, exact `initial-draft` oraz exact revision
+`semantic-review`; wszystkie używają tego samego
 server-side app-servera, a odczyty pozostają model-free. Internal structured contract/output i
 preview blockers pozostają wymagane przez te seamy. Nie dodawaj
 `OPENAI_API_KEY`, Agents SDK, Ollamy ani alternatywnej ścieżki modelu.

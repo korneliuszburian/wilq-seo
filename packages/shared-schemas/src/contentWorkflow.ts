@@ -1945,16 +1945,33 @@ export const ContentCodexSectionProposalRequestSchema = z
     expected_base_digest: z.string().regex(/^[0-9a-f]{64}$/),
     selected_section_headings: z
       .array(z.string().refine((value) => value.trim().length > 0))
-      .min(1),
+      .default([]),
+    selected_section_ids: z
+      .array(z.string().refine((value) => value.trim().length > 0))
+      .default([]),
     requested_by: z.string().refine((value) => value.trim().length > 0)
   })
   .strict()
   .superRefine((request, context) => {
+    if ((request.selected_section_headings.length > 0) === (request.selected_section_ids.length > 0)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_section_ids"],
+        message: "select sections by stable IDs or legacy headings, never both"
+      });
+    }
     if (new Set(request.selected_section_headings).size !== request.selected_section_headings.length) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["selected_section_headings"],
         message: "selected section headings must be unique"
+      });
+    }
+    if (new Set(request.selected_section_ids).size !== request.selected_section_ids.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selected_section_ids"],
+        message: "selected section IDs must be unique"
       });
     }
   });
@@ -2425,6 +2442,171 @@ export const ContentInitialDraftResponseSchema = z.object({
   }
 });
 
+export const ContentSemanticDimensionSchema = z.enum([
+  "answer_directness",
+  "completeness",
+  "logical_flow",
+  "specificity",
+  "repetition",
+  "search_intent_fit",
+  "buyer_fit",
+  "credibility",
+  "conversion_clarity"
+]);
+
+export const ContentSemanticDimensionAssessmentSchema = z.object({
+  dimension: ContentSemanticDimensionSchema,
+  status: z.enum(["strong", "needs_changes"]),
+  reason: z.string().min(1),
+  affected_targets: z.array(z.string().min(1)).min(1)
+});
+
+export const ContentSemanticFindingSchema = z.object({
+  finding_id: z.string().min(1),
+  dimension: ContentSemanticDimensionSchema,
+  severity: z.enum(["high", "medium", "low"]),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  instruction: z.string().min(1),
+  affected_targets: z.array(z.string().min(1)).min(1),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentSemanticReviewSchema = z.object({
+  review_id: z.string().min(1),
+  work_item_id: z.string().min(1),
+  revision_id: z.string().min(1),
+  revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  criteria_version: z.literal("wilq_semantic_content_review_v1"),
+  codex_run_id: z.string().min(1),
+  status: z.enum(["reviewable", "needs_changes"]),
+  dimensions: z.array(ContentSemanticDimensionAssessmentSchema).length(9),
+  findings: z.array(ContentSemanticFindingSchema).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  requested_by: z.string().min(1),
+  created_at: z.string().min(1),
+  safe_next_step: z.string().min(1),
+  publish_ready: z.literal(false),
+  human_review_required: z.literal(true),
+  action_object_created: z.literal(false)
+}).superRefine((review, context) => {
+  const expectedDimensions = ContentSemanticDimensionSchema.options;
+  if (
+    review.dimensions.some(
+      (assessment, index) => assessment.dimension !== expectedDimensions[index]
+    )
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["dimensions"],
+      message: "semantic review must assess every dimension in canonical order"
+    });
+  }
+  const findingIds = review.findings.map((finding) => finding.finding_id);
+  if (new Set(findingIds).size !== findingIds.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["findings"],
+      message: "semantic finding IDs must be unique"
+    });
+  }
+  const findingDimensions = new Set(review.findings.map((finding) => finding.dimension));
+  const needsChangeDimensions = new Set(
+    review.dimensions
+      .filter((assessment) => assessment.status === "needs_changes")
+      .map((assessment) => assessment.dimension)
+  );
+  if (
+    findingDimensions.size !== needsChangeDimensions.size ||
+    [...findingDimensions].some((dimension) => !needsChangeDimensions.has(dimension))
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["findings"],
+      message: "semantic findings must match needs-change dimensions"
+    });
+  }
+  if ((review.findings.length > 0) !== (review.status === "needs_changes")) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "semantic review status must be derived from findings"
+    });
+  }
+});
+
+export const ContentSemanticReviewRequestSchema = z.object({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  requested_by: z.string().min(1)
+});
+
+export const ContentSemanticReviewBlockerCodeSchema = z.enum([
+  "missing_revision",
+  "stale_revision",
+  "legacy_revision",
+  "stale_content_context",
+  "missing_planning_input",
+  "storage_activation_required",
+  "runtime_blocked",
+  "runtime_failed",
+  "invalid_structured_output",
+  "semantic_scope_mismatch",
+  "persistence_failed",
+  "review_conflict"
+]);
+
+export const ContentSemanticReviewBlockerSchema = z.object({
+  code: ContentSemanticReviewBlockerCodeSchema,
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1),
+  source_codes: z.array(z.string()).default([])
+});
+
+export const ContentSemanticReviewResponseSchema = z.object({
+  status: z.enum([
+    "not_generated",
+    "created",
+    "idempotent",
+    "ready",
+    "stale",
+    "blocked",
+    "failed",
+    "conflict"
+  ]),
+  work_item_id: z.string().min(1),
+  revision_id: z.string().nullable().optional(),
+  revision_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  review: ContentSemanticReviewSchema.nullable().optional(),
+  run_id: z.string().nullable().optional(),
+  runtime: ContentCodexRuntimeTraceSchema,
+  blockers: z.array(ContentSemanticReviewBlockerSchema).default([]),
+  safe_next_step: z.string().min(1),
+  publish_ready: z.literal(false),
+  human_review_required: z.literal(true),
+  action_object_created: z.literal(false)
+}).superRefine((response, context) => {
+  const readable = ["created", "idempotent", "ready", "stale"].includes(response.status);
+  if (readable && (!response.review || response.blockers.length > 0)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "readable semantic review requires a result without blockers"
+    });
+  } else if (response.status === "not_generated") {
+    if (response.review || response.blockers.length > 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "not-generated semantic review cannot expose result or blockers"
+      });
+    }
+  } else if (!readable && (response.review || response.blockers.length === 0)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "blocked semantic review requires blockers without a result"
+    });
+  }
+});
+
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   response_type: z.literal("workflow_snapshot").default("workflow_snapshot"),
   freshness_assessment: ContentFreshnessAssessmentSchema,
@@ -2720,6 +2902,9 @@ export type ContentPlanningProposalResponse = z.infer<
 >;
 export type ContentInitialDraftRequest = z.input<typeof ContentInitialDraftRequestSchema>;
 export type ContentInitialDraftResponse = z.infer<typeof ContentInitialDraftResponseSchema>;
+export type ContentSemanticReview = z.infer<typeof ContentSemanticReviewSchema>;
+export type ContentSemanticReviewRequest = z.input<typeof ContentSemanticReviewRequestSchema>;
+export type ContentSemanticReviewResponse = z.infer<typeof ContentSemanticReviewResponseSchema>;
 export type ContentPlanningReviewRequest = z.input<typeof ContentPlanningReviewRequestSchema>;
 export type ContentPlanningReviewResponse = z.infer<typeof ContentPlanningReviewResponseSchema>;
 export type ContentPlanningReviewConflict = z.infer<typeof ContentPlanningReviewConflictSchema>;

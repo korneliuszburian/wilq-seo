@@ -27,6 +27,18 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie zakresy i proofy
 
+- `wilq-seo-1oa.37` dodaje persistowane advisory review semantyczne dokładnej
+  rewizji v2. GET jest model-free; POST wymaga exact revision digestu, bieżącego
+  planning inputu i ocenia dziewięć jawnych wymiarów bez approval, ActionObjectu
+  ani vendor write. Review, kryteria i terminalny `CodexRun` zapisują się
+  atomowo i idempotentnie. Findings wskazują stabilne `section_id`; dopiero po
+  decyzji człowieka `needs_changes` Wilku wybiera sekcje, a istniejący
+  `codex-proposal` tworzy niezmienną child revision, zachowując page assets,
+  FAQ, CTA i linki. Syntetyczny proof przechodzi ten sam kontrakt dla BDO i
+  outsourcingu, awaria runtime nie zostawia review, historyczne exact review
+  wraca jako `stale`, a nie `not_generated`. Realny local-state bez nowej tabeli
+  zwraca `storage_activation_required` przed modelem; aktywacja nadal wymaga
+  backupu i maintenance window.
 - `wilq-seo-2xmw` podłącza pierwszy pełny tekst do tego samego dynamicznego
   planu, zamiast używać osobnego generatora. Exact POST wymaga bieżących decyzji
   scope/section map, `approved_current` service card, proposal ID oraz obu

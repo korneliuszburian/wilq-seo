@@ -13,7 +13,7 @@ import { ContentCodexSectionProposalResult } from "./ContentCodexSectionProposal
 
 type ProposalSelectionState = {
   revisionId: string | null;
-  headings: string[];
+  keys: string[];
 };
 
 type ContentCodexSectionProposalPanelProps = {
@@ -25,7 +25,8 @@ type ContentCodexSectionProposalPanelProps = {
   error: Error | null;
   result: ContentCodexSectionProposalResponse | null;
   submittedBaseRevision: ContentDraftRevision | null;
-  onSubmit: (selectedSectionHeadings: string[]) => void;
+  suggestedSectionIds: string[];
+  onSubmit: (selection: { sectionIds: string[] } | { sectionHeadings: string[] }) => void;
   onRefresh: () => void;
 };
 
@@ -40,21 +41,22 @@ export function ContentCodexSectionProposalPanel({
   error,
   result,
   submittedBaseRevision,
+  suggestedSectionIds,
   onSubmit,
   onRefresh
 }: ContentCodexSectionProposalPanelProps) {
   const latestRevision = workspace.latest_revision;
   const [selectionState, setSelectionState] = useState<ProposalSelectionState>({
     revisionId: null,
-    headings: []
+    keys: []
   });
-  const selectedHeadings =
-    selectionState.revisionId === latestRevision?.revision_id ? selectionState.headings : [];
-  const availableHeadings = latestRevision
+  const selectedKeys =
+    selectionState.revisionId === latestRevision?.revision_id ? selectionState.keys : [];
+  const availableSections = latestRevision
     ? latestRevision.sections
-        .map((section) => section.heading)
-        .filter((heading) => generationReadiness.editable_section_headings.includes(heading))
+        .filter((section) => generationReadiness.editable_section_headings.includes(section.heading))
     : [];
+  const usesStableIds = availableSections.every((section) => Boolean(section.section_id));
   const createdResult = isCreatedResult(result) ? result : null;
 
   if (createdResult) {
@@ -86,7 +88,7 @@ export function ContentCodexSectionProposalPanel({
     );
   }
 
-  if (generationReadiness.status === "blocked" || availableHeadings.length === 0) {
+  if (generationReadiness.status === "blocked" || availableSections.length === 0) {
     const blocker = generationReadiness.blockers[0];
     return (
       <section className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3">
@@ -109,7 +111,7 @@ export function ContentCodexSectionProposalPanel({
       error ||
       confirmedFailure ||
       hasUnsavedChanges ||
-      selectedHeadings.length === 0
+      selectedKeys.length === 0
   );
 
   return (
@@ -139,11 +141,15 @@ export function ContentCodexSectionProposalPanel({
       <fieldset className="mt-4" disabled={pending || Boolean(error || confirmedFailure)}>
         <legend className="text-sm font-semibold text-ink">1. Wybierz sekcje do poprawy</legend>
         <div className="mt-2 grid min-w-0 gap-2 sm:grid-cols-2">
-          {availableHeadings.map((heading) => {
-            const checked = selectedHeadings.includes(heading);
+          {availableSections.map((section) => {
+            const selectionKey = usesStableIds ? String(section.section_id) : section.heading;
+            const checked = selectedKeys.includes(selectionKey);
+            const suggested = Boolean(
+              section.section_id && suggestedSectionIds.includes(section.section_id)
+            );
             return (
               <label
-                key={heading}
+                key={selectionKey}
                 className="flex min-w-0 cursor-pointer items-start gap-2 rounded-md border border-line bg-white p-3 text-sm leading-5 text-slate-700"
               >
                 <input
@@ -153,13 +159,20 @@ export function ContentCodexSectionProposalPanel({
                   onChange={() =>
                     setSelectionState({
                       revisionId: latestRevision?.revision_id ?? null,
-                      headings: checked
-                        ? selectedHeadings.filter((selected) => selected !== heading)
-                        : [...selectedHeadings, heading]
+                      keys: checked
+                        ? selectedKeys.filter((selected) => selected !== selectionKey)
+                        : [...selectedKeys, selectionKey]
                     })
                   }
                 />
-                <span className="min-w-0 break-words">{heading}</span>
+                <span className="min-w-0 break-words">
+                  {section.heading}
+                  {suggested ? (
+                    <span className="mt-1 block text-xs font-semibold text-action">
+                      Wskazane w advisory review
+                    </span>
+                  ) : null}
+                </span>
               </label>
             );
           })}
@@ -176,18 +189,24 @@ export function ContentCodexSectionProposalPanel({
       <button
         type="button"
         disabled={submitBlocked}
-        onClick={() => onSubmit(selectedHeadings)}
+        onClick={() =>
+          onSubmit(
+            usesStableIds
+              ? { sectionIds: selectedKeys }
+              : { sectionHeadings: selectedKeys }
+          )
+        }
         className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {pending
           ? "Codex poprawia sekcje..."
-          : `Popraw ${selectedHeadings.length || 0} ${sectionCountLabel(selectedHeadings.length)} z Codexem`}
+          : `Popraw ${selectedKeys.length || 0} ${sectionCountLabel(selectedKeys.length)} z Codexem`}
         <ArrowRight aria-hidden="true" size={16} />
       </button>
 
       {pending ? (
         <p role="status" className="mt-3 text-sm leading-6 text-slate-700">
-          Codex poprawia {selectedHeadings.length} {sectionCountLabel(selectedHeadings.length)} i
+          Codex poprawia {selectedKeys.length} {sectionCountLabel(selectedKeys.length)} i
           sprawdza przypisane dowody. Może to potrwać do 2 minut.
         </p>
       ) : null}
