@@ -16,6 +16,8 @@ _INSTRUCTION = (
     "Zachowaj użyteczne elementy inventory, przypisz każdej sekcji konkretne pytanie "
     "czytelnika i nie dopisuj zapytań, dowodów, claimów, linków ani metryk spoza "
     "przekazanego wejścia. Niski CTR jest tylko sygnałem do sprawdzenia, nie werdyktem. "
+    "Placement CTA lub linku ma być after_lead, after_content albo dokładnym nagłówkiem "
+    "jednej z zaplanowanych sekcji. "
     "Hipotezy Ads lub social są opcjonalne, zawsze review_required i wolno je zwrócić "
     "tylko przy exact evidence. Measurement plan nie może zawierać wymyślonych targetów. "
     "Nie zatwierdzaj treści, nie wykonuj write i zawsze zwróć publish_ready=false. "
@@ -107,6 +109,8 @@ def content_planning_output_schema(
         _restrict_array(_properties(definition), "evidence_ids", evidence_ids)
         _restrict_array(_properties(definition), "claim_ids", claim_ids)
     _restrict_array(_properties(faq), "query_terms", queries)
+    _restrict_array(_properties(link), "evidence_ids", evidence_ids)
+    _restrict_array(_properties(link), "claim_ids", claim_ids)
     _restrict_string(_properties(link), "target_url", [])
     _restrict_array(_properties(hypothesis), "evidence_ids", evidence_ids)
     _restrict_array(

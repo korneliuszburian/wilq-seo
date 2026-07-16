@@ -7,12 +7,14 @@ import {
   type ContentDraftRevisionConflict,
   type ContentDraftRevisionDecision,
   type ContentDraftRevisionSection,
+  type ContentInitialDraftResponse,
   type ContentOpportunityEnrichment,
   type ContentPlanningReviewConflict,
   type ContentWorkItemQueueResponse
 } from "../lib/api";
 import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
 import { ContentFreshnessBanner } from "./ContentWorkflowBoundaryStates";
+import { ContentFullPagePreview } from "./ContentFullPagePreview";
 import { ContentPlanningReviewPanel } from "./ContentPlanningReviewPanel";
 import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
@@ -63,6 +65,10 @@ type ContentPageWorkbenchActions = {
   codexProposalBaseRevision: ContentDraftRevision | null;
   runCodexSectionProposal: (selectedSectionHeadings: string[]) => void;
   refreshCodexProposalWorkspace: () => void;
+  initialDraftPending: boolean;
+  initialDraftError: Error | null;
+  initialDraftResult: ContentInitialDraftResponse | null;
+  generateInitialDraft: () => void;
 };
 
 function unique(values: string[]) {
@@ -172,6 +178,15 @@ export function ContentPageWorkbench({
       actions.codexProposalResult?.revision?.base_revision_id === latestRevision.revision_id &&
       ["created", "idempotent"].includes(actions.codexProposalResult.status)
   );
+  const generatedPlanning = data.planningWorkspace?.proposal ?? null;
+  const initialDraftReady = Boolean(
+    !latestRevision &&
+      generatedPlanning?.generation_status === "codex_generated" &&
+      generatedPlanning.proposal_id &&
+      generatedPlanning.planning_input_digest &&
+      data.planningWorkspace?.scope_current &&
+      data.planningWorkspace.section_map_current
+  );
   return (
     <section className="mb-5" data-active-workspace={activeStepId}>
       <ContentFreshnessBanner assessment={queue.freshness_assessment} />
@@ -217,6 +232,39 @@ export function ContentPageWorkbench({
 
               {revisionSections.length ? (
                 <div className="mt-4">
+                  {!latestRevision ? (
+                    <div className="mb-4 rounded-md border border-action/25 bg-action/5 p-4">
+                      <p className="text-sm font-semibold text-ink">Wygeneruj pełną pierwszą wersję</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-700">
+                        WILQ użyje zatwierdzonego planu, inventory, zapytań i dokładnych faktów.
+                        Wynik pozostanie niezatwierdzony i nie dotknie WordPressa.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={actions.generateInitialDraft}
+                        disabled={!initialDraftReady || actions.initialDraftPending}
+                        className="mt-3 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {actions.initialDraftPending ? "Tworzę pełny tekst..." : "Wygeneruj pełny tekst"}
+                      </button>
+                      {!initialDraftReady ? (
+                        <p className="mt-2 text-xs leading-5 text-slate-600">
+                          Najpierw wygeneruj plan i zatwierdź jego aktualny zakres oraz mapę sekcji.
+                        </p>
+                      ) : null}
+                      {actions.initialDraftResult && actions.initialDraftResult.status !== "created" ? (
+                        <p className="mt-2 text-sm text-danger" role="alert">
+                          {actions.initialDraftResult.blockers[0]?.reason ??
+                            actions.initialDraftResult.safe_next_step}
+                        </p>
+                      ) : null}
+                      {actions.initialDraftError ? (
+                        <p className="mt-2 text-sm text-danger" role="alert">
+                          Nie udało się utworzyć pełnej wersji. WILQ nie zapisał częściowego tekstu.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div
                     className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 border-b border-line sm:flex sm:flex-wrap sm:gap-x-5"
                     data-testid="draft-section-tabs"
@@ -285,25 +333,30 @@ export function ContentPageWorkbench({
                     </p>
                   ) : null}
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        actions.saveDraftRevision(revisionWorkspace.editor_title, sectionOverrides)
-                      }
-                      disabled={
-                        !revisionWorkspace.can_save ||
-                        !sectionOverrides.length ||
-                        hasEmptyRevisionSection ||
-                        actions.revisionSavePending ||
-                        actions.codexProposalPending ||
-                        proposalCommittedForLatest
-                      }
-                      className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {actions.revisionSavePending
-                        ? "Zapisuję wersję..."
-                        : "Zapisz wersję do review"}
-                    </button>
+                    {latestRevision ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          actions.saveDraftRevision(
+                            revisionWorkspace.editor_title,
+                            sectionOverrides
+                          )
+                        }
+                        disabled={
+                          !revisionWorkspace.can_save ||
+                          !sectionOverrides.length ||
+                          hasEmptyRevisionSection ||
+                          actions.revisionSavePending ||
+                          actions.codexProposalPending ||
+                          proposalCommittedForLatest
+                        }
+                        className="inline-flex h-10 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {actions.revisionSavePending
+                          ? "Zapisuję wersję..."
+                          : "Zapisz poprawioną wersję do review"}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() =>
@@ -343,8 +396,12 @@ export function ContentPageWorkbench({
               )}
             </div>
 
+            <div className="space-y-3">
+              {latestRevision?.schema_version === "wilq_content_draft_revision_v2" ? (
+                <ContentFullPagePreview revision={latestRevision} proposal={generatedPlanning} />
+              ) : null}
             <div className="rounded-md border border-line bg-white p-4 shadow-sm">
-              <h2 className="text-base font-semibold text-ink">Podgląd sekcji na devie</h2>
+              <h2 className="text-base font-semibold text-ink">Podgląd na devie</h2>
               {draftReadback?.status === "available" ? (
                 <div className="mt-3 rounded-md border border-success/25 bg-success/5 p-3">
                   <p className="text-sm font-semibold text-success">Dev draft odczytany</p>
@@ -398,6 +455,7 @@ export function ContentPageWorkbench({
                   <ExternalLink aria-hidden="true" size={14} />
                 </a>
               ) : null}
+            </div>
             </div>
             </div>
           ) : null}

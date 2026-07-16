@@ -15,6 +15,8 @@ import {
   CommandCenterResponseSchema,
   ContentCodexSectionProposalRequestSchema,
   ContentCodexSectionProposalResponseSchema,
+  ContentInitialDraftRequestSchema,
+  ContentInitialDraftResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentDraftRevisionConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -95,6 +97,8 @@ import {
   type CommandCenterResponse,
   type ContentCodexSectionProposalRequest,
   type ContentCodexSectionProposalResponse,
+  type ContentInitialDraftRequest,
+  type ContentInitialDraftResponse,
   type ContentDiagnosticsResponse,
   type ContentDraftRevision,
   type ContentDraftRevisionBinding,
@@ -109,6 +113,7 @@ import {
   type ContentClaimLedger,
   type ContentKnowledgeCardsResponse,
   type ContentPlanningProposalRequest,
+  type ContentPlanningProposal,
   type ContentPlanningProposalResponse,
   type ContentPlanningReviewConflict,
   type ContentPlanningReviewRequest,
@@ -497,6 +502,20 @@ export function postContentWorkItemCodexSectionProposal(
   );
 }
 
+export function postContentWorkItemInitialDraft(
+  request: ContentInitialDraftRequest,
+  workItemId: string
+): Promise<ContentInitialDraftResponse> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/initial-draft`;
+  return apiPostWithConflict(
+    path,
+    ContentInitialDraftResponseSchema,
+    ContentInitialDraftResponseSchema,
+    ContentInitialDraftRequestSchema.parse(request),
+    CODEX_PROPOSAL_TIMEOUT_MS
+  );
+}
+
 export function getContentWorkItemEnrichment(
   workItemId: string
 ): Promise<ContentOpportunityEnrichmentResponse> {
@@ -789,6 +808,8 @@ export type {
   ContentDiagnosticsResponse,
   ContentCodexSectionProposalRequest,
   ContentCodexSectionProposalResponse,
+  ContentInitialDraftRequest,
+  ContentInitialDraftResponse,
   ContentDraftRevision,
   ContentDraftRevisionBinding,
   ContentDraftRevisionConflict,
@@ -802,6 +823,7 @@ export type {
   ContentClaimLedger,
   ContentKnowledgeCardsResponse,
   ContentPlanningProposalRequest,
+  ContentPlanningProposal,
   ContentPlanningProposalResponse,
   ContentPlanningReviewConflict,
   ContentPlanningReviewRequest,

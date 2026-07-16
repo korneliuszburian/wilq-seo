@@ -5,11 +5,8 @@ from typing import NoReturn
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api.routers.content_codex_proposal import (
-    register_content_codex_proposal_route,
-)
-from apps.api.wilq_api.routers.content_planning_proposals import (
-    register_content_planning_proposal_routes,
+from apps.api.wilq_api.routers.content_model_routes import (
+    register_content_model_routes,
 )
 from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_default_work_item_or_404 as _snapshot_for_default_work_item_or_404,
@@ -877,11 +874,7 @@ def _revision_conflict_response(conflict: ContentDraftRevisionConflict) -> JSONR
     return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
 
 
-register_content_codex_proposal_route(
-    router,
-    snapshot_loader=_snapshot_for_work_item_or_404,
-)
-register_content_planning_proposal_routes(
+register_content_model_routes(
     router,
     snapshot_loader=_snapshot_for_work_item_or_404,
 )

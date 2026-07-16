@@ -1537,7 +1537,10 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     section_lineage: z.array(ContentDraftRevisionProposalSectionLineageSchema).min(1),
     quality_verdict: z.enum(["needs_changes", "reviewable", "ready_for_human_review"]),
     quality_finding_codes: z.array(z.string()).default([]),
-    review_scope: z.literal("persisted_selected_sections_and_declared_lineage"),
+    review_scope: z.enum([
+      "persisted_selected_sections_and_declared_lineage",
+      "persisted_full_document_and_declared_lineage"
+    ]),
     semantic_review_required: z.literal(true)
   })
   .superRefine((metadata, context) => {
@@ -2233,7 +2236,9 @@ export const ContentPlanningCtaBlockSchema = z.object({
 export const ContentPlanningInternalLinkSchema = z.object({
   placement: z.string().min(1),
   target_url: z.string().min(1),
-  anchor_direction: z.string().min(1)
+  anchor_direction: z.string().min(1),
+  evidence_ids: z.array(z.string()).default([]),
+  claim_ids: z.array(z.string()).default([])
 });
 
 export const ContentPlanningConditionalHypothesisSchema = z.object({
@@ -2377,6 +2382,47 @@ export const ContentPlanningProposalResponseSchema = z.object({
   blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),
   safe_next_step: z.string().min(1),
   publish_ready: z.literal(false)
+});
+
+export const ContentInitialDraftRequestSchema = z.object({
+  expected_proposal_id: z.string().min(1),
+  expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  requested_by: z.string().min(1)
+});
+
+export const ContentInitialDraftBlockerSchema = z.object({
+  code: z.string().min(1),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1),
+  source_codes: z.array(z.string()).default([])
+});
+
+export const ContentInitialDraftResponseSchema = z.object({
+  status: z.enum(["created", "blocked", "failed", "conflict"]),
+  work_item_id: z.string().min(1),
+  proposal_id: z.string().nullable().optional(),
+  run_id: z.string().nullable().optional(),
+  revision: ContentDraftRevisionSchema.nullable().optional(),
+  runtime: ContentCodexRuntimeTraceSchema,
+  blockers: z.array(ContentInitialDraftBlockerSchema).default([]),
+  safe_next_step: z.string().min(1),
+  publish_ready: z.literal(false)
+}).superRefine((response, context) => {
+  if (response.status === "created") {
+    if (!response.revision || !response.run_id || response.blockers.length > 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "created initial draft requires revision and run without blockers"
+      });
+    }
+  } else if (response.revision || response.blockers.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "non-created initial draft requires blockers without revision"
+    });
+  }
 });
 
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
@@ -2672,6 +2718,8 @@ export type ContentPlanningProposalRequest = z.input<
 export type ContentPlanningProposalResponse = z.infer<
   typeof ContentPlanningProposalResponseSchema
 >;
+export type ContentInitialDraftRequest = z.input<typeof ContentInitialDraftRequestSchema>;
+export type ContentInitialDraftResponse = z.infer<typeof ContentInitialDraftResponseSchema>;
 export type ContentPlanningReviewRequest = z.input<typeof ContentPlanningReviewRequestSchema>;
 export type ContentPlanningReviewResponse = z.infer<typeof ContentPlanningReviewResponseSchema>;
 export type ContentPlanningReviewConflict = z.infer<typeof ContentPlanningReviewConflictSchema>;

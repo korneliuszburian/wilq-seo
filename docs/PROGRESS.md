@@ -27,6 +27,27 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie zakresy i proofy
 
+- `wilq-seo-2xmw` podłącza pierwszy pełny tekst do tego samego dynamicznego
+  planu, zamiast używać osobnego generatora. Exact POST wymaga bieżących decyzji
+  scope/section map, `approved_current` service card, proposal ID oraz obu
+  digestów; istniejąca rewizja i stale request kończą się `409` przed modelem.
+  Typed turn dostaje 10 ocen źródeł, inventory, query portfolio, dokładne facts,
+  knowledge/claim constraints i measurement metrics. Serwer nadaje lineage i
+  stabilne ID, przeprowadza wąski claim-safety gate i zapisuje pełną rewizję v2
+  wraz z terminalnym `CodexRun` w jednej transakcji. Syntetyczne BDO oraz
+  outsourcing tworzą różne dokumenty tym samym kontraktem; failure runtime nie
+  zostawia częściowej rewizji, a GET snapshotu nie uruchamia modelu. Dashboard
+  nie oferuje modelowego fallbacku do ręcznej pierwszej rewizji: pokazuje jeden
+  przycisk generowania oraz pełny page preview, z metrykami i trace poniżej
+  fold. Nie uruchomiono realnego modelu, migracji ani WordPress write; obie
+  prawdziwe karty nadal czekają na owner review.
+- Planner i initial-draft odrzucają teraz nieznany placement CTA/linku zamiast
+  po cichu mapować go na koniec strony. Jawnie dozwolone są `after_lead`,
+  `after_content` albo dokładny nagłówek zaplanowanej sekcji, później wiązany ze
+  stabilnym `section_id`. Niezależny checker dla wcześniejszego fixed pointu nie
+  potwierdził defektu, ale wskazał tę lukę dowodową; lokalny review zaklasyfikował
+  ją jako `accept_and_fix`, a publiczny API falsifier potwierdza fail-closed.
+
 - `wilq-seo-1oa.35` składa bieżący proof w jeden krótki folder
   `docs/review-packets/2026-07-16-wilq-marketer/`: mapa Better BDOS,
   instrukcja 20–30 minut, decyzja dnia, exact BDO context, pięć
@@ -271,11 +292,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 - Marketerowy WordPress dry-run udający ocenę tekstu i pięć osieroconych paneli
   zostały usunięte po pełnym reference proof. Techniczny payload dry-run nadal
   istnieje wyłącznie w audycie technicznym.
-- `wilq-seo-r564.14` usuwa pięć publicznych ścieżek ujawniających full generation
+- `wilq-seo-r564.14` usunął pięć publicznych ścieżek ujawniających full generation
   contract: legacy generation/runtime/dwa preview oraz `draft-variants`. Usunięto
-  OpenAI SDK/API-key runtime, dependency, env flags i browser schemas. OpenAPI
-  ma jeden content-model entrypoint: exact `codex-proposal`; internal contract,
-  output i preview blockers pozostają częścią jego serwerowego działania.
+  OpenAI SDK/API-key runtime, dependency, env flags i browser schemas. Późniejsze
+  planning/initial-draft/section-revision POST-y nadal współdzielą jeden
+  server-side app-server; internal contract, output i preview blockers pozostają
+  częścią jego serwerowego działania.
 - `wilq-seo-c9h9.25` normalizuje bounded backend proof dla wykonawcy: jeden
   runner odkrywa aktualne pliki `test_*.py` i dzieli je deterministycznie na
   rozłączne shardy. `AGENTS.md` wymaga focused-first, jednego kosztownego procesu

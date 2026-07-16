@@ -30,6 +30,8 @@ import {
   ContentDraftRevisionReviewRequestSchema,
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionWorkspaceSchema,
+  ContentInitialDraftRequestSchema,
+  ContentInitialDraftResponseSchema,
   ContentKnowledgeConstraintTypeSchema,
   ContentRecommendedModeSchema,
   ContentGscSearchAnalyticsContractSchema,
@@ -140,6 +142,47 @@ describe("ContentDraftRevisionSchema", () => {
     expect(ContentDraftRevisionSchema.safeParse({
       ...parsed,
       service_card_id: ""
+    }).success).toBe(false);
+  });
+});
+
+describe("ContentInitialDraftResponseSchema", () => {
+  it("keeps generation exact-bound and fail-closed", () => {
+    expect(ContentInitialDraftRequestSchema.parse({
+      expected_proposal_id: "proposal_1",
+      expected_planning_digest: "a".repeat(64),
+      expected_planning_input_digest: "b".repeat(64),
+      requested_by: "wilku"
+    }).expected_proposal_id).toBe("proposal_1");
+    const blocked = {
+      status: "blocked" as const,
+      work_item_id: "content_work_item_bdo",
+      proposal_id: "proposal_1",
+      run_id: null,
+      revision: null,
+      runtime: {
+        status: "not_started" as const,
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      blockers: [{
+        code: "planning_not_approved",
+        label: "Plan wymaga decyzji",
+        reason: "Brakuje aktualnej mapy sekcji.",
+        next_step: "Sprawdź plan.",
+        source_codes: []
+      }],
+      safe_next_step: "Sprawdź plan.",
+      publish_ready: false as const
+    };
+    expect(ContentInitialDraftResponseSchema.parse(blocked).status).toBe("blocked");
+    expect(ContentInitialDraftResponseSchema.safeParse({
+      ...blocked,
+      status: "created",
+      blockers: []
     }).success).toBe(false);
   });
 });

@@ -196,6 +196,22 @@ def test_full_document_v2_requires_section_evidence_lineage() -> None:
         ContentDraftRevisionAppendCommand.model_validate(payload)
 
 
+def test_full_document_v2_rejects_blank_visible_page_content() -> None:
+    command = _full_document_command(_draft_package(), base_revision_id="content_revision_base")
+    invalid_paths = (
+        ("faq", "answer_markdown"),
+        ("cta_blocks", "body_markdown"),
+        ("internal_links", "anchor_text"),
+    )
+
+    for collection, field in invalid_paths:
+        payload = command.model_dump(mode="json")
+        payload[collection][0][field] = "   "
+
+        with pytest.raises(ValidationError):
+            ContentDraftRevisionAppendCommand.model_validate(payload)
+
+
 def _draft_package() -> ContentDraftPackage:
     return ContentDraftPackage(
         id="draft_package_consulting",

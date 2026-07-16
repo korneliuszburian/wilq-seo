@@ -15,6 +15,7 @@ import {
   getWordPressAuthoringProfile,
   impactCheckAction,
   postContentWorkItemCodexSectionProposal,
+  postContentWorkItemInitialDraft,
   postContentWorkItemPlanningProposal,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
@@ -30,6 +31,7 @@ import {
   type ActionObject,
   type ContentCodexSectionProposalResponse,
   type ContentDraftRevisionBinding,
+  type ContentInitialDraftResponse,
   type ContentOpportunityEnrichmentResponse,
   type ContentPlanningProposalResponse,
   type ContentWorkItemQueueResponse,
@@ -62,6 +64,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getWordPressAuthoringProfile: vi.fn(),
     impactCheckAction: vi.fn(),
     postContentWorkItemCodexSectionProposal: vi.fn(),
+    postContentWorkItemInitialDraft: vi.fn(),
     postContentWorkItemPlanningProposal: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
@@ -103,6 +106,7 @@ describe("ContentWorkflowSurface", () => {
     vi.mocked(postContentWorkItemCodexSectionProposal).mockResolvedValue(
       codexSectionProposalResponse()
     );
+    vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(initialDraftResponse());
     vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValue(
       planningProposalStatus({ status: "created" })
     );
@@ -343,6 +347,50 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("generates one exact full draft and renders a page-like preview", async () => {
+    const planning = planningWorkspace({ generated: true });
+    const revision = savedFullDraftRevision();
+    vi.mocked(postContentWorkItemInitialDraft).mockResolvedValue(
+      initialDraftResponse(revision)
+    );
+    vi.mocked(getContentWorkItemSnapshot)
+      .mockResolvedValueOnce(
+        workflowSnapshot({ planning, workspace: revisionWorkspace() })
+      )
+      .mockResolvedValue(
+        workflowSnapshot({ planning, workspace: savedRevisionWorkspace(revision) })
+      );
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Wygeneruj pełny tekst" }));
+    await waitFor(() =>
+      expect(postContentWorkItemInitialDraft).toHaveBeenCalledWith(
+        {
+          expected_proposal_id: "content_planning_proposal_bdo",
+          expected_planning_digest: "a".repeat(64),
+          expected_planning_input_digest: "f".repeat(64),
+          requested_by: "wilku"
+        },
+        "content_work_item_bdo"
+      )
+    );
+    const preview = await screen.findByTestId("content-full-page-preview");
+    expect(within(preview).getByRole("heading", { name: "BDO bez chaosu w dokumentach" }))
+      .toBeInTheDocument();
+    expect(within(preview).getByText("Najpierw sprawdź sytuację swojej firmy."))
+      .toBeInTheDocument();
+    expect(within(preview).getByText("Jak zacząć sprawdzanie BDO?"))
+      .toBeInTheDocument();
+    expect(within(preview).getByText("Opisz sytuację firmy i poproś o weryfikację."))
+      .toBeInTheDocument();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
   it("records scope review and resumes on the section map without a wall of panels", async () => {
     const initialPlanning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
     const reviewedPlanning = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false });
@@ -462,7 +510,7 @@ describe("ContentWorkflowSurface", () => {
     expect(sectionInput).toHaveValue("Zapisana treść pierwszej wersji o obowiązkach BDO.");
     const editedBody = "Poprawiona treść drugiej wersji zachowana przez workspace.";
     fireEvent.change(sectionInput, { target: { value: editedBody } });
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz wersję do review" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz poprawioną wersję do review" }));
 
     await waitFor(() => expect(saveContentWorkItemDraftRevision).toHaveBeenCalledTimes(1));
     expect(vi.mocked(saveContentWorkItemDraftRevision).mock.calls[0]).toEqual([
@@ -511,7 +559,7 @@ describe("ContentWorkflowSurface", () => {
     const sectionInput = await screen.findByLabelText("Tekst sekcji Kogo dotyczy BDO");
     const localText = "Moje lokalne poprawki nie mogą zniknąć po konflikcie.";
     fireEvent.change(sectionInput, { target: { value: localText } });
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz wersję do review" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz poprawioną wersję do review" }));
 
     const conflict = await screen.findByTestId("save-revision-conflict");
     expect(conflict).toHaveTextContent("Twój tekst pozostał w edytorze");
@@ -538,7 +586,9 @@ describe("ContentWorkflowSurface", () => {
 
     expect(screen.getByText(/Każda zaplanowana sekcja musi zachować treść/))
       .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Zapisz wersję do review" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Zapisz poprawioną wersję do review" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Wygeneruj pełny tekst" })).toBeDisabled();
     expect(screen.queryByRole("button", { name: "Sprawdź tekst szkicu" })).not.toBeInTheDocument();
     expect(within(screen.getByTestId("draft-section-tabs")).getAllByRole("button"))
       .toHaveLength(5);
@@ -1794,15 +1844,21 @@ function workflowSnapshot({
 
 function planningWorkspace({
   scopeCurrent = true,
-  sectionMapCurrent = true
+  sectionMapCurrent = true,
+  generated = false
 }: {
   scopeCurrent?: boolean;
   sectionMapCurrent?: boolean;
+  generated?: boolean;
 } = {}): NonNullable<ContentWorkItemWorkflowSnapshotResponse["planning_workspace"]> {
   const proposal = {
     work_item_id: "content_work_item_bdo",
     planning_digest: "a".repeat(64),
-    generation_status: "baseline" as const,
+    proposal_id: generated ? "content_planning_proposal_bdo" : null,
+    proposal_version: generated ? 1 : null,
+    codex_run_id: generated ? "codex_content_planning_bdo" : null,
+    generation_status: generated ? "codex_generated" as const : "baseline" as const,
+    planning_input_digest: generated ? "f".repeat(64) : null,
     input_schema_version: "wilq_content_planning_input_v1",
     criteria_version: "wilq_people_first_planning_v1",
     final_canonical_url: "https://ekologus.pl/bdo/",
@@ -1949,6 +2005,89 @@ function savedDraftRevision(): NonNullable<
     publish_ready: false,
     created_by: "wilku",
     created_at: "2026-07-14T04:00:00Z"
+  };
+}
+
+function savedFullDraftRevision(): NonNullable<
+  ContentWorkItemWorkflowSnapshotResponse["revision_workspace"]["latest_revision"]
+> {
+  const legacy = savedDraftRevision();
+  return {
+    ...legacy,
+    schema_version: "wilq_content_draft_revision_v2",
+    revision_id: "content_revision_bdo_full_1",
+    planning_input_digest: "f".repeat(64),
+    service_card_id: "ekologus_service_bdo_reporting",
+    service_digest: "e".repeat(64),
+    inventory_digest: "1".repeat(64),
+    title: "Pełny tekst BDO dla firm",
+    page_assets: {
+      wordpress_title: "Pełny tekst BDO dla firm",
+      meta_title: "BDO dla firm — Ekologus",
+      meta_description: "Sprawdź sytuację firmy i dokumenty.",
+      h1: "BDO bez chaosu w dokumentach",
+      lead: "Najpierw sprawdź sytuację swojej firmy."
+    },
+    sections: legacy.sections.map((section, index) => ({
+      ...section,
+      section_id: `section_bdo_${index + 1}`,
+      query_terms: index === 0 ? ["bdo odpady"] : [],
+      claim_ids: [],
+      body_markdown: `Pełna odpowiedź sekcji ${index + 1} oparta na planie i dowodach.`
+    })),
+    faq: [{
+      faq_id: "faq_bdo_start",
+      question: "Jak zacząć sprawdzanie BDO?",
+      answer_markdown: "Zacznij od sytuacji firmy i rodzaju prowadzonej działalności.",
+      query_terms: ["bdo odpady"],
+      evidence_ids: ["ev_gsc_bdo"],
+      claim_ids: []
+    }],
+    cta_blocks: [{
+      cta_id: "cta_bdo_contact",
+      placement: "after_content",
+      body_markdown: "Opisz sytuację firmy i poproś o weryfikację.",
+      evidence_ids: ["ev_wp_bdo"],
+      claim_ids: []
+    }],
+    internal_links: [],
+    proposal_metadata: {
+      source: "codex_app_server",
+      codex_run_id: "codex_content_initial_draft_bdo",
+      selected_section_headings: legacy.sections.map((section) => section.heading),
+      section_lineage: legacy.sections.map((section) => ({
+        heading: section.heading,
+        evidence_ids: section.evidence_ids,
+        claim_ids: []
+      })),
+      quality_verdict: "ready_for_human_review",
+      quality_finding_codes: ["semantic_review_required"],
+      review_scope: "persisted_full_document_and_declared_lineage",
+      semantic_review_required: true
+    }
+  };
+}
+
+function initialDraftResponse(
+  revision = savedFullDraftRevision()
+): ContentInitialDraftResponse {
+  return {
+    status: "created",
+    work_item_id: revision.work_item_id,
+    proposal_id: "content_planning_proposal_bdo",
+    run_id: "codex_content_initial_draft_bdo",
+    revision,
+    runtime: {
+      status: "completed",
+      thread_id: "thread_initial_bdo",
+      turn_id: "turn_initial_bdo",
+      event_methods: ["turn/completed"],
+      item_types: ["agentMessage"],
+      external_call_attempted: false
+    },
+    blockers: [],
+    safe_next_step: "Przeczytaj pełną stronę i zapisz decyzję człowieka.",
+    publish_ready: false
   };
 }
 

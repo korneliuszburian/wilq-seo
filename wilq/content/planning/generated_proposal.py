@@ -445,8 +445,11 @@ def _asset_lineage_errors(
             errors.append(f"cta_evidence:{cta.placement}")
         if not set(cta.claim_ids).issubset(allowed_claims):
             errors.append(f"cta_claim:{cta.placement}")
-    if output.internal_links:
-        errors.append("internal_links_without_exact_inventory_target")
+    for link in output.internal_links:
+        if not set(link.evidence_ids).issubset(allowed_evidence):
+            errors.append(f"link_evidence:{link.target_url}")
+        if not set(link.claim_ids).issubset(allowed_claims):
+            errors.append(f"link_claim:{link.target_url}")
     return errors
 
 

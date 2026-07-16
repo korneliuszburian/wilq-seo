@@ -104,6 +104,14 @@ class ContentPlanningModelOutput(BaseModel):
         headings = [section.heading.strip() for section in self.sections]
         if len(headings) != len(set(headings)):
             raise ValueError("Planning output section headings must be unique.")
+        allowed_placements = {"after_lead", "after_content", *headings}
+        placements = [item.placement for item in self.cta_blocks]
+        placements.extend(item.placement for item in self.internal_links)
+        if not set(placements).issubset(allowed_placements):
+            raise ValueError(
+                "CTA and internal-link placement must name after_lead, "
+                "after_content, or an exact planned section heading."
+            )
         page_assets = self.page_assets.model_dump()
         if any(not str(value).strip() for value in page_assets.values()):
             raise ValueError("Planning output requires every page asset.")

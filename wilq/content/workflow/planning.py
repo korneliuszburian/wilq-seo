@@ -63,6 +63,8 @@ class ContentPlanningInternalLink(BaseModel):
     placement: str = Field(min_length=1)
     target_url: str = Field(min_length=1)
     anchor_direction: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(default_factory=list)
+    claim_ids: list[str] = Field(default_factory=list)
 
 
 class ContentPlanningConditionalHypothesis(BaseModel):

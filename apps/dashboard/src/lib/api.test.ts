@@ -12,6 +12,7 @@ import {
   getContentWorkItemSnapshot,
   postContentWorkItemDraftPackage,
   postContentWorkItemCodexSectionProposal,
+  postContentWorkItemInitialDraft,
   postContentWorkItemHumanReview,
   postContentWorkItemMeasurementWindow,
   postContentWorkItemPreflight,
@@ -626,6 +627,60 @@ describe("content workflow API helpers", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       expected_base_digest: "a".repeat(64),
       selected_section_headings: ["Kogo dotyczy BDO"],
+      requested_by: "wilku"
+    });
+  });
+
+  it("posts an exact initial-draft binding and preserves a typed conflict", async () => {
+    const blocked = {
+      status: "conflict",
+      work_item_id: "content/work item",
+      proposal_id: "proposal/1",
+      run_id: null,
+      revision: null,
+      runtime: {
+        status: "not_started",
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      blockers: [{
+        code: "revision_already_exists",
+        label: "Pierwsza wersja już istnieje",
+        reason: "Initial draft może utworzyć tylko pierwszą rewizję.",
+        next_step: "Otwórz zapisaną wersję.",
+        source_codes: []
+      }],
+      safe_next_step: "Otwórz zapisaną wersję.",
+      publish_ready: false
+    } as const;
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      void url;
+      void init;
+      return new Response(JSON.stringify(blocked), {
+        status: 409,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await postContentWorkItemInitialDraft({
+      expected_proposal_id: "proposal/1",
+      expected_planning_digest: "a".repeat(64),
+      expected_planning_input_digest: "b".repeat(64),
+      requested_by: "wilku"
+    }, "content/work item");
+
+    expect(result).toEqual(blocked);
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).pathname).toBe(
+      "/api/content/work-items/content%2Fwork%20item/initial-draft"
+    );
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      expected_proposal_id: "proposal/1",
+      expected_planning_digest: "a".repeat(64),
+      expected_planning_input_digest: "b".repeat(64),
       requested_by: "wilku"
     });
   });

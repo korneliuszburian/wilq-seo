@@ -74,7 +74,10 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
         "ready_for_human_review",
     ]
     quality_finding_codes: list[str] = Field(default_factory=list)
-    review_scope: Literal["persisted_selected_sections_and_declared_lineage"] = (
+    review_scope: Literal[
+        "persisted_selected_sections_and_declared_lineage",
+        "persisted_full_document_and_declared_lineage",
+    ] = (
         "persisted_selected_sections_and_declared_lineage"
     )
     semantic_review_required: Literal[True] = True
@@ -116,6 +119,13 @@ class ContentDraftRevisionFaqItem(BaseModel):
     evidence_ids: list[str] = Field(min_length=1)
     claim_ids: list[str] = Field(default_factory=list)
 
+    @field_validator("faq_id", "question", "answer_markdown")
+    @classmethod
+    def require_visible_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Full-document FAQ fields cannot be blank.")
+        return value
+
 
 class ContentDraftRevisionCtaBlock(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -125,6 +135,13 @@ class ContentDraftRevisionCtaBlock(BaseModel):
     body_markdown: str = Field(min_length=1)
     evidence_ids: list[str] = Field(min_length=1)
     claim_ids: list[str] = Field(default_factory=list)
+
+    @field_validator("cta_id", "placement", "body_markdown")
+    @classmethod
+    def require_visible_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Full-document CTA fields cannot be blank.")
+        return value
 
 
 class ContentDraftRevisionInternalLink(BaseModel):
@@ -136,6 +153,13 @@ class ContentDraftRevisionInternalLink(BaseModel):
     anchor_text: str = Field(min_length=1)
     evidence_ids: list[str] = Field(min_length=1)
     claim_ids: list[str] = Field(default_factory=list)
+
+    @field_validator("link_id", "placement", "target_url", "anchor_text")
+    @classmethod
+    def require_visible_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Full-document internal-link fields cannot be blank.")
+        return value
 
 
 class ContentDraftRevisionSection(BaseModel):
@@ -431,8 +455,11 @@ def _validate_full_document(
 
 
 def _require_unique_ids(values: list[str], label: str) -> None:
-    if len(values) != len(set(values)):
-        raise ValueError(f"Full-document {label} IDs must be unique.")
+    normalized = [value.strip() for value in values]
+    if any(not value for value in normalized):
+        raise ValueError(f"Full-document {label} IDs cannot be blank.")
+    if len(normalized) != len(set(normalized)):
+        raise ValueError(f"Full-document {label} IDs must be unique after stripping.")
 
 
 def _validate_review_decision(

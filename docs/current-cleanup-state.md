@@ -5,6 +5,23 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`wilq-seo-2xmw` dodaje jawny
+`POST /api/content/work-items/{id}/initial-draft` po dokładnie zatwierdzonym,
+wygenerowanym planie. Serwer ponownie buduje bieżący `ContentPlanningInput`,
+przekazuje istniejącemu Codex app-serverowi inventory, query portfolio, source
+facts, claim policy, constraints i metryki, a następnie sam składa lineage oraz
+stabilne ID pełnej rewizji v2. Rewizja i terminalny `CodexRun` zapisują się
+atomowo; stale binding, istniejąca pierwsza rewizja, runtime failure albo
+niezatwierdzona karta nie uruchamiają fallbacku. Dashboard ma jeden przycisk
+„Wygeneruj pełny tekst” i page-like preview title/meta/H1/leadu, sekcji, FAQ,
+CTA i linków. Metryki i techniczne identyfikatory są w rozwijanym „Dlaczego”.
+Proof pozostaje syntetyczny na dwóch zatwierdzonych kopiach kart i tymczasowym
+SQLite; realne karty nadal blokują realny draft do owner review.
+Placement pełnego dokumentu nie ma fallbacku: nowy plan może wskazać tylko
+`after_lead`, `after_content` albo dokładny nagłówek własnej sekcji, który przy
+składaniu dokumentu staje się stabilnym `section_id`. Nieznana wartość blokuje
+plan albo initial-draft zamiast zmieniać położenie CTA/linku.
+
 `wilq-seo-1oa.36.5` rozszerza trwałą rewizję do pełnego dokumentu v2 bez
 zmiany istniejącego journey. Rewizja obejmuje teraz title/meta/H1/lead, sekcje
 ze stabilnymi ID, FAQ, CTA, linki wewnętrzne oraz exact digests planu, usługi i
@@ -49,9 +66,9 @@ WordPressa; exact proposal POST jest syntetycznie przechwycony.
 
 `wilq-seo-r564.14` usuwa legacy OpenAI SDK/API-key runtime, pięć publicznych
 dróg ujawnienia full generation contract oraz martwe browser schemas. OpenAPI
-ma dwa ograniczone modelowe POST-y: exact section `codex-proposal` oraz
-versioned `planning-proposals`; oba używają tego samego server-side app-servera,
-a ich GET-y pozostają czystym odczytem. Internal structured contract/output i
+ma trzy ograniczone modelowe POST-y: exact section `codex-proposal`, versioned
+`planning-proposals` oraz exact `initial-draft`; wszystkie używają tego samego
+server-side app-servera, a odczyty pozostają model-free. Internal structured contract/output i
 preview blockers pozostają wymagane przez te seamy. Nie dodawaj
 `OPENAI_API_KEY`, Agents SDK, Ollamy ani alternatywnej ścieżki modelu.
 
@@ -218,9 +235,10 @@ kontynuuj najwyższy bezpieczny task.
   pending/diff/findings bez promptu w browserze, approval ani WordPress write.
   Cross-work-item result i brak wybranej sekcji są fail-closed. Proof 1440×900 i
   390×844: `.local-lab/proof/dashboard-content-workflow/2026-07-15T19-06-55-670Z/`.
-- `wilq-seo-r564.14` jest zweryfikowany: tylko exact `codex-proposal` pozostaje
-  publicznym content-model entrypointem; internal generation contract nie jest
-  martwym artefaktem.
+- `wilq-seo-r564.14` jest zweryfikowany jako cleanup dawnej równoległej ścieżki:
+  po nim wszystkie późniejsze content-model POST-y nadal korzystają z jednego
+  server-side app-servera; internal generation contract nie jest martwym
+  artefaktem.
 - Parent `wilq-seo-r564` jest zamknięty: wszystkie 14 dzieci są closed, świeży
   dashboard gate przechodzi 164/164, a live snapshot zachowuje konkretny item,
   evidence, Service Profile review gate i `publish_ready=false`. Queue density,

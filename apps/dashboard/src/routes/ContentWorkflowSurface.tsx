@@ -5,6 +5,7 @@ import { useState } from "react";
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
   postContentWorkItemCodexSectionProposal,
+  postContentWorkItemInitialDraft,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemDraftRevision,
@@ -63,6 +64,9 @@ type CodexProposalMutationInput = {
   baseRevision: ContentDraftRevision;
   selectedSectionHeadings: string[];
 };
+type InitialDraftMutationInput = NonNullable<
+  ContentWorkflowSnapshot["planningWorkspace"]
+>["proposal"];
 type ContentPlanningSections = NonNullable<
   ContentWorkflowSnapshot["planningWorkspace"]
 >["proposal"]["sections"];
@@ -604,6 +608,25 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
         baseRevision.revision_id
       )
   });
+  const initialDraftMutation = useMutation({
+    mutationFn: (proposal: InitialDraftMutationInput) => {
+      if (!proposal?.proposal_id || !proposal.planning_input_digest) {
+        throw new Error("Bieżący plan nie ma exact bindingu do pełnego tekstu.");
+      }
+      return postContentWorkItemInitialDraft(
+        {
+          expected_proposal_id: proposal.proposal_id,
+          expected_planning_digest: proposal.planning_digest,
+          expected_planning_input_digest: proposal.planning_input_digest,
+          requested_by: "wilku"
+        },
+        selectedWorkItemId
+      );
+    },
+    onSuccess: (result) => {
+      if (result.status === "created") void refreshRevisionWorkspace();
+    }
+  });
   const acfPreviewMutation = useMutation({
     mutationFn: postContentWorkItemWordPressAuthoringPayloadPreview
   });
@@ -613,6 +636,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     revisionSaveMutation,
     revisionReviewMutation,
     codexProposalMutation,
+    initialDraftMutation,
     acfPreviewMutation,
     executionMutation,
     refreshRevisionWorkspace
@@ -676,6 +700,13 @@ function contentWorkflowActions(
     codexProposalResult: mutations.codexProposalMutation.data ?? null,
     codexProposalBaseRevision:
       mutations.codexProposalMutation.variables?.baseRevision ?? null,
+    initialDraftPending: mutations.initialDraftMutation.isPending,
+    initialDraftError: mutations.initialDraftMutation.error,
+    initialDraftResult: mutations.initialDraftMutation.data ?? null,
+    generateInitialDraft: () => {
+      const proposal = data.planningWorkspace?.proposal;
+      if (proposal) mutations.initialDraftMutation.mutate(proposal);
+    },
     acfPreviewPending: mutations.acfPreviewMutation.isPending,
     executionPending: mutations.executionMutation.isPending,
     authoringProfileReady: Boolean(authoringProfile),
