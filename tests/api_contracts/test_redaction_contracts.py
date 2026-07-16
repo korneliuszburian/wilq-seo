@@ -74,6 +74,22 @@ def test_redaction_checks_nested_wordpress_binding_identifier_shapes() -> None:
     assert binding["final_canonical_url"] == "https://ekologus.pl/bdo/"
 
 
+def test_redaction_preserves_valid_planning_binding_but_not_token_like_values() -> None:
+    redacted = redact_mapping(
+        {
+            "planning_digest": "0" * 64,
+            "expected_planning_digest": "1" * 64,
+            "service_card_id": "ekologus_service_bdo_reporting",
+            "summary": "sk-" + "x" * 40,  # pragma: allowlist secret
+        }
+    )
+
+    assert redacted["planning_digest"] == "0" * 64
+    assert redacted["expected_planning_digest"] == "1" * 64
+    assert redacted["service_card_id"] == "ekologus_service_bdo_reporting"
+    assert redacted["summary"] == "[REDACTED]"
+
+
 def test_redaction_preserves_operator_contract_metadata() -> None:
     redacted = redact_mapping(
         {

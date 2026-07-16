@@ -1737,6 +1737,8 @@ function planningWorkspace({
     final_canonical_url: "https://ekologus.pl/bdo/",
     service_card_id: "service_bdo",
     service_label: "BDO i sprawozdawczość środowiskowa",
+    service_selection_confirmed: true,
+    human_override_review_required: false,
     target_reader: "właściciel firmy",
     buyer_problem: "Firma nie wie, które obowiązki BDO jej dotyczą.",
     buyer_trigger: "Zbliża się termin sprawozdania.",
@@ -1784,6 +1786,8 @@ function planningWorkspace({
     work_item_id: proposal.work_item_id,
     stage,
     planning_digest: proposal.planning_digest,
+    service_card_id: proposal.service_card_id,
+    human_override_review_required: false,
     decision: "approved" as const,
     reviewed_by: "wilku",
     checked_items: [stage === "scope" ? "zakres i CTA" : "kolejność, cel i dowody"],
@@ -2055,6 +2059,19 @@ function serviceProfileContext() {
     service_label: "BDO i sprawozdawczość środowiskowa",
     service_status: "source_backed_review_required",
     service_status_label: "źródło istnieje, wymagane review",
+    service_selection_confirmed: true,
+    human_override_review_required: false,
+    service_candidates: [
+      {
+        service_card_id: "ekologus_service_bdo_reporting",
+        service_label: "BDO i sprawozdawczość środowiskowa",
+        lifecycle_status: "source_backed_review_required" as const,
+        lifecycle_label: "źródło wymaga review",
+        matched_terms: ["bdo"],
+        match_reasons: ["Temat lub adres strony zawiera dokładną frazę „bdo”."],
+        recommended: true
+      }
+    ],
     freshness_label: "publiczna strona wymaga review (ostatni sygnał: 2026-07-02)",
     freshness_as_of: "2026-07-02",
     source_summary_label: "Źródło profilu: publiczna strona Ekologus",

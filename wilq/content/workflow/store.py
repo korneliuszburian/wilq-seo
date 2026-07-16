@@ -27,6 +27,7 @@ from wilq.content.workflow.planning import (
     ContentPlanningDecision,
     ContentPlanningReviewRequest,
 )
+from wilq.content.workflow.planning_persistence import record_content_planning_review
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
@@ -172,57 +173,20 @@ class ContentWorkflowStore:
         self,
         work_item_id: str,
         request: ContentPlanningReviewRequest,
+        *,
+        planning_digest: str,
+        service_card_id: str | None,
+        human_override_review_required: bool,
     ) -> tuple[Literal["created", "idempotent"], ContentPlanningDecision]:
-        redacted = ContentPlanningReviewRequest.model_validate(
-            redact_mapping(request.model_dump(mode="json"))
-        )
         with self._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
-            latest = _latest_planning_decision(connection, work_item_id, redacted.stage)
-            if latest is not None and all(
-                (
-                    latest.planning_digest == redacted.expected_planning_digest,
-                    latest.decision == redacted.decision,
-                    latest.reviewed_by == redacted.reviewed_by,
-                    latest.checked_items == redacted.checked_items,
-                    latest.notes == redacted.notes,
-                )
-            ):
-                return "idempotent", latest
-            decision = ContentPlanningDecision(
-                decision_id=f"content_planning_review_{uuid4().hex}",
-                decision_number=1 if latest is None else latest.decision_number + 1,
+            return record_content_planning_review(
+                connection,
                 work_item_id=work_item_id,
-                stage=redacted.stage,
-                planning_digest=redacted.expected_planning_digest,
-                decision=redacted.decision,
-                reviewed_by=redacted.reviewed_by,
-                checked_items=redacted.checked_items,
-                notes=redacted.notes,
-                created_at=utc_now(),
+                request=request,
+                planning_digest=planning_digest,
+                service_card_id=service_card_id,
+                human_override_review_required=human_override_review_required,
             )
-            safe = ContentPlanningDecision.model_validate(
-                redact_mapping(decision.model_dump(mode="json"))
-            )
-            connection.execute(
-                """
-                INSERT INTO content_planning_reviews (
-                  decision_id, work_item_id, stage, decision_number,
-                  planning_digest, decision, created_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    safe.decision_id,
-                    safe.work_item_id,
-                    safe.stage,
-                    safe.decision_number,
-                    safe.planning_digest,
-                    safe.decision,
-                    safe.created_at.isoformat(),
-                    _model_json(safe),
-                ),
-            )
-        return "created", safe
 
     def load_planning_decisions(self, work_item_id: str) -> list[ContentPlanningDecision]:
         with self._connect() as connection:

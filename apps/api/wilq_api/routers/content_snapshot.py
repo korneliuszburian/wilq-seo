@@ -22,6 +22,7 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.demand_evidence import content_query_is_planning_signal
+from wilq.content.workflow.planning import ContentPlanningDecision
 from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import ContentDiagnosticsResponse
 from wilq.storage.metric_store import metric_store
@@ -32,17 +33,23 @@ def snapshot_for_work_item_or_404(
     *,
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
+    planning_decisions_override: list[ContentPlanningDecision] | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     diagnostics = diagnostics_with_exact_gsc_demand(work_item_id)
     store = content_workflow_store()
     revision_state = store.load_draft_revision_state(work_item_id)
+    planning_decisions = (
+        store.load_planning_decisions(work_item_id)
+        if planning_decisions_override is None
+        else planning_decisions_override
+    )
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
         human_review=human_review,
         audit=audit,
         revision_state=revision_state,
-        planning_decisions=store.load_planning_decisions(work_item_id),
+        planning_decisions=planning_decisions,
     )
     if snapshot is None:
         raise HTTPException(
@@ -58,7 +65,7 @@ def snapshot_for_work_item_or_404(
             human_review=review,
             audit=audit_record,
             revision_state=revision_state,
-            planning_decisions=store.load_planning_decisions(work_item_id),
+            planning_decisions=planning_decisions,
         )
         if snapshot is None:
             raise HTTPException(

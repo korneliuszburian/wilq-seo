@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from datetime import datetime
 from hashlib import sha256
 from typing import Literal
@@ -35,6 +36,8 @@ class ContentPlanningProposal(BaseModel):
     final_canonical_url: str = Field(min_length=1)
     service_card_id: str | None = None
     service_label: str | None = None
+    service_selection_confirmed: bool = False
+    human_override_review_required: bool = False
     target_reader: str = Field(min_length=1)
     buyer_problem: str = Field(min_length=1)
     buyer_trigger: str = Field(min_length=1)
@@ -55,6 +58,8 @@ class ContentPlanningDecision(BaseModel):
     work_item_id: str = Field(min_length=1)
     stage: ContentPlanningStage
     planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    service_card_id: str | None = None
+    human_override_review_required: bool = False
     decision: ContentPlanningDecisionValue
     reviewed_by: str = Field(min_length=1)
     principal_id: str = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
@@ -70,6 +75,7 @@ class ContentPlanningReviewRequest(BaseModel):
 
     stage: ContentPlanningStage
     expected_planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    service_card_id: str | None = None
     decision: ContentPlanningDecisionValue
     reviewed_by: str = Field(min_length=1)
     checked_items: list[str] = Field(default_factory=list)
@@ -141,12 +147,23 @@ def build_content_planning_proposal(
         ),
         "source_connectors": brief.source_connectors,
     }
-    digest = sha256(
+    digest = _planning_digest(payload)
+    return ContentPlanningProposal.model_validate(
+        {
+            "planning_digest": digest,
+            "service_selection_confirmed": service_profile.service_selection_confirmed,
+            "human_override_review_required": (
+                service_profile.human_override_review_required
+            ),
+            **payload,
+        }
+    )
+
+
+def _planning_digest(payload: Mapping[str, object]) -> str:
+    return sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
-    return ContentPlanningProposal.model_validate(
-        {"planning_digest": digest, **payload}
-    )
 
 
 def build_content_planning_workspace(

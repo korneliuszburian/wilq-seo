@@ -1973,6 +1973,16 @@ export const ContentWorkItemServiceProfileDecisionStatusSchema = z.enum([
   "blocked"
 ]);
 
+export const ContentWorkItemServiceCandidateSchema = z.object({
+  service_card_id: z.string().min(1),
+  service_label: z.string().min(1),
+  lifecycle_status: ContentKnowledgeLifecycleStatusSchema,
+  lifecycle_label: z.string().min(1),
+  matched_terms: z.array(z.string().min(1)).nonempty(),
+  match_reasons: z.array(z.string().min(1)).nonempty(),
+  recommended: z.boolean()
+});
+
 export const ContentWorkItemServiceProfileContextSchema = z.object({
   binding_status: ContentWorkItemServiceProfileBindingStatusSchema,
   decision_status: ContentWorkItemServiceProfileDecisionStatusSchema,
@@ -1982,6 +1992,9 @@ export const ContentWorkItemServiceProfileContextSchema = z.object({
   service_label: z.string().nullable().optional(),
   service_status: z.string().nullable().optional(),
   service_status_label: z.string().default(""),
+  service_selection_confirmed: z.boolean().default(false),
+  human_override_review_required: z.boolean().default(false),
+  service_candidates: z.array(ContentWorkItemServiceCandidateSchema).default([]),
   freshness_label: z.string().default(""),
   freshness_as_of: z.string().nullable().optional(),
   source_summary_label: z.string().default(""),
@@ -2006,6 +2019,9 @@ const ContentWorkItemServiceProfileContextDefault = {
   reason:
     "Workflow nie ma jeszcze bezpiecznego snapshotu do sprawdzenia usługi, więc WILQ jej nie przypisuje.",
   service_status_label: "",
+  service_selection_confirmed: false,
+  human_override_review_required: false,
+  service_candidates: [],
   freshness_label: "",
   freshness_as_of: null,
   source_summary_label: "",
@@ -2028,6 +2044,8 @@ export const ContentPlanningDecisionSchema = z.object({
   work_item_id: z.string().min(1),
   stage: z.enum(["scope", "section_map"]),
   planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  service_card_id: z.string().nullable().optional(),
+  human_override_review_required: z.boolean().default(false),
   decision: z.enum(["approved", "needs_changes"]),
   reviewed_by: z.string().min(1),
   checked_items: z.array(z.string()),
@@ -2061,6 +2079,8 @@ export const ContentPlanningWorkspaceSchema = z.object({
     final_canonical_url: z.string().min(1),
     service_card_id: z.string().nullable(),
     service_label: z.string().nullable(),
+    service_selection_confirmed: z.boolean().default(false),
+    human_override_review_required: z.boolean().default(false),
     target_reader: z.string().min(1),
     buyer_problem: z.string().min(1),
     buyer_trigger: z.string().min(1),
@@ -2094,6 +2114,7 @@ export const ContentPlanningWorkspaceSchema = z.object({
 export const ContentPlanningReviewRequestSchema = z.object({
   stage: z.enum(["scope", "section_map"]),
   expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  service_card_id: z.string().nullable().optional(),
   decision: z.enum(["approved", "needs_changes"]),
   reviewed_by: z.string().min(1),
   checked_items: z.array(z.string()),
@@ -2401,6 +2422,9 @@ export type ContentPlanningReviewResponse = z.infer<typeof ContentPlanningReview
 export type ContentPlanningReviewConflict = z.infer<typeof ContentPlanningReviewConflictSchema>;
 export type ContentWorkItemServiceProfileContext = z.infer<
   typeof ContentWorkItemServiceProfileContextSchema
+>;
+export type ContentWorkItemServiceCandidate = z.infer<
+  typeof ContentWorkItemServiceCandidateSchema
 >;
 export type ContentWorkItemWorkflowSnapshotResponse = z.infer<
   typeof ContentWorkItemWorkflowSnapshotResponseSchema

@@ -14,6 +14,7 @@ import {
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
+  ContentWorkItemServiceProfileContextSchema,
   ContentServiceProfileResponseSchema,
   ContentServiceProfileCoverageGapSchema,
   ContentWorkItemQualityReviewRequestSchema,
@@ -51,6 +52,45 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("ContentWorkItemServiceProfileContextSchema", () => {
+  it("keeps allowed service candidates and rejects an unknown lifecycle", () => {
+    const input = {
+      binding_status: "bound",
+      decision_status: "review_required",
+      status_label: "Usługa wymaga review",
+      reason: "Dopasowano dokładną frazę.",
+      safe_next_step: "Potwierdź usługę.",
+      service_candidates: [
+        {
+          service_card_id: "ekologus_service_environmental_consulting_outsourcing",
+          service_label: "Doradztwo i outsourcing środowiskowy",
+          lifecycle_status: "source_backed_review_required",
+          lifecycle_label: "źródło wymaga review",
+          matched_terms: ["outsourcing ekologiczny"],
+          match_reasons: [
+            "Temat lub adres strony zawiera dokładną frazę „outsourcing ekologiczny”."
+          ],
+          recommended: true
+        }
+      ]
+    };
+
+    const parsed = ContentWorkItemServiceProfileContextSchema.parse(input);
+
+    expect(parsed.service_candidates[0]?.matched_terms).toEqual([
+      "outsourcing ekologiczny"
+    ]);
+    expect(
+      ContentWorkItemServiceProfileContextSchema.safeParse({
+        ...input,
+        service_candidates: [
+          { ...input.service_candidates[0], lifecycle_status: "guessed" }
+        ]
+      }).success
+    ).toBe(false);
+  });
+});
 
 describe("AdsOperatorSummarySchema", () => {
   it("defaults review-only fields that are not part of the Ads API payload", () => {

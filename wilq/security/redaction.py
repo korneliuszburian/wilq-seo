@@ -49,6 +49,8 @@ SAFE_IDENTIFIER_KEYS = {
     "base_revision_id",
     "content_digest",
     "revision_digest",
+    "planning_digest",
+    "expected_planning_digest",
     "draft_package_id",
     "draft_package_digest",
     "handoff_id",
@@ -67,6 +69,9 @@ SAFE_IDENTIFIER_KEYS = {
     "job_run_id",
     "knowledge_card_id",
     "knowledge_card_ids",
+    "service_card_id",
+    "service_card_ids",
+    "recommended_service_card_id",
     "landing_page",
     "metric_name",
     "metric_names",
@@ -130,6 +135,8 @@ SAFE_SECRET_TELEMETRY_KEYS = {
 SAFE_DIGEST_IDENTIFIER_KEYS = {
     "content_digest",
     "draft_package_digest",
+    "expected_planning_digest",
+    "planning_digest",
     "revision_digest",
 }
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")

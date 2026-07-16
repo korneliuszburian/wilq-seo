@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCardMatch,
+    ContentKnowledgeServiceCandidate,
     match_content_knowledge_cards,
     required_content_knowledge_card_ids,
 )
@@ -14,6 +15,7 @@ from wilq.content.knowledge.service_profile import (
     ContentServiceProfileServiceSection,
     content_service_profile_response,
 )
+from wilq.content.knowledge.source_facts import ContentKnowledgeLifecycleStatus
 from wilq.content.workflow.models import ContentWorkItem
 
 ContentWorkItemServiceProfileBindingStatus = Literal["not_evaluated", "bound", "unbound"]
@@ -23,6 +25,18 @@ ContentWorkItemServiceProfileDecisionStatus = Literal[
     "review_required",
     "blocked",
 ]
+
+
+class ContentWorkItemServiceCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    service_card_id: str = Field(min_length=1)
+    service_label: str = Field(min_length=1)
+    lifecycle_status: ContentKnowledgeLifecycleStatus
+    lifecycle_label: str = Field(min_length=1)
+    matched_terms: list[str] = Field(min_length=1)
+    match_reasons: list[str] = Field(min_length=1)
+    recommended: bool
 
 
 class ContentWorkItemServiceProfileContext(BaseModel):
@@ -42,6 +56,11 @@ class ContentWorkItemServiceProfileContext(BaseModel):
     service_label: str | None = None
     service_status: str | None = None
     service_status_label: str = ""
+    service_selection_confirmed: bool = False
+    human_override_review_required: bool = False
+    service_candidates: list[ContentWorkItemServiceCandidate] = Field(
+        default_factory=list
+    )
     freshness_label: str = ""
     freshness_as_of: str | None = None
     source_summary_label: str = ""
@@ -85,6 +104,8 @@ def build_content_work_item_service_profile_context(
     item: ContentWorkItem,
     *,
     knowledge_match: ContentKnowledgeCardMatch | None = None,
+    service_selection_confirmed: bool = False,
+    human_override_review_required: bool = False,
 ) -> ContentWorkItemServiceProfileContext:
     """Project one API-owned Service Profile decision for a selected work item."""
     match = knowledge_match or match_content_knowledge_cards(item)
@@ -133,6 +154,9 @@ def build_content_work_item_service_profile_context(
         service_label=service_section.title,
         service_status=service_section.status,
         service_status_label=service_section.status_label,
+        service_selection_confirmed=service_selection_confirmed,
+        human_override_review_required=human_override_review_required,
+        service_candidates=_service_candidates(match),
         freshness_label=freshness_label,
         freshness_as_of=freshness_as_of,
         source_summary_label=_source_summary_label(service_section.source_connector_labels),
@@ -180,6 +204,7 @@ def _unbound_context(
             "więc nie użyje ogólnego opisu tematu jako podstawy claimów."
         ),
         missing_contracts=missing_contracts or blockers or ["Brakuje typed karty usługi."],
+        service_candidates=_service_candidates(match),
         claim_policy_scope_label=(
             "Brakuje przypisanej karty usługi, więc WILQ nie pokazuje polityki twierdzeń "
             "dla tego work itemu."
@@ -187,6 +212,45 @@ def _unbound_context(
         safe_next_step=(
             "Dodaj albo sprawdź kartę usługi i jej źródło w Service Profile przed szkicem."
         ),
+    )
+
+
+def _service_candidates(
+    match: ContentKnowledgeCardMatch,
+) -> list[ContentWorkItemServiceCandidate]:
+    return [
+        _service_candidate(
+            candidate,
+            recommended=candidate.card.id == match.recommended_service_card_id,
+        )
+        for candidate in match.service_candidates
+    ]
+
+
+def _service_candidate(
+    candidate: ContentKnowledgeServiceCandidate,
+    *,
+    recommended: bool,
+) -> ContentWorkItemServiceCandidate:
+    lifecycle = candidate.card.lifecycle_status or "source_backed_review_required"
+    lifecycle_labels = {
+        "seeded_contract_proof": "seed kontraktu",
+        "source_backed_review_required": "źródło wymaga review",
+        "approved_current": "zatwierdzona i aktualna",
+        "stale": "źródło nieaktualne",
+        "rejected": "karta odrzucona",
+    }
+    return ContentWorkItemServiceCandidate(
+        service_card_id=candidate.card.id,
+        service_label=candidate.card.title,
+        lifecycle_status=lifecycle,
+        lifecycle_label=lifecycle_labels[lifecycle],
+        matched_terms=candidate.matched_terms,
+        match_reasons=[
+            f"Temat lub adres strony zawiera dokładną frazę „{term}”."
+            for term in candidate.matched_terms
+        ],
+        recommended=recommended,
     )
 
 

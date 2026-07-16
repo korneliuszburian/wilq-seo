@@ -27,6 +27,7 @@ from wilq.content.inventory.records import (
 )
 from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
+    select_content_knowledge_service_card,
 )
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
@@ -555,9 +556,32 @@ def _build_content_work_item_snapshot_response(
     demand_source_page: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     knowledge_match = match_content_knowledge_cards(item)
+    scope_planning_decision = next(
+        (
+            decision
+            for decision in planning_decisions or []
+            if decision.stage == "scope"
+        ),
+        None,
+    )
+    selected_service_card_id = (
+        None
+        if scope_planning_decision is None
+        else scope_planning_decision.service_card_id
+    )
+    if selected_service_card_id is not None:
+        knowledge_match = select_content_knowledge_service_card(
+            knowledge_match,
+            selected_service_card_id,
+        )
     service_profile_context = build_content_work_item_service_profile_context(
         item,
         knowledge_match=knowledge_match,
+        service_selection_confirmed=bool(selected_service_card_id),
+        human_override_review_required=bool(
+            scope_planning_decision
+            and scope_planning_decision.human_override_review_required
+        ),
     )
     stage_callbacks = SnapshotStageCallbacks(
         preflight=build_content_work_item_preflight_response,

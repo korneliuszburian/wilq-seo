@@ -60,6 +60,73 @@ def test_unbound_work_item_is_a_blocker_not_a_free_text_service_guess() -> None:
     assert "typed karty usługi" in context.reason
 
 
+def test_two_exact_pages_use_one_normalized_service_candidate_contract() -> None:
+    bdo = build_content_work_item_service_profile_context(
+        ContentWorkItem(
+            id=(
+                "content_work_item_content_decision_https___www_ekologus_pl_"
+                "bdo_co_musi_wiedziec_przedsiebiorca"
+            ),
+            topic="BDO — co musi wiedzieć przedsiębiorca?",
+            source_public_url=(
+                "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+            ),
+            final_canonical_url=(
+                "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+            ),
+            evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+            source_connectors=["google_search_console", "wordpress_ekologus"],
+        )
+    )
+    outsourcing = build_content_work_item_service_profile_context(
+        ContentWorkItem(
+            id=(
+                "content_work_item_content_decision_https___www_ekologus_pl_"
+                "oferta_doradztwo_i_outsourcing_ekologiczny"
+            ),
+            topic="Doradztwo i outsourcing ekologiczny",
+            source_public_url=(
+                "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
+            ),
+            final_canonical_url=(
+                "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
+            ),
+            evidence_ids=["ev_gsc_outsourcing", "ev_wp_outsourcing"],
+            source_connectors=["google_search_console", "wordpress_ekologus"],
+        )
+    )
+
+    assert bdo.service_card_id == "ekologus_service_bdo_reporting"
+    assert outsourcing.service_card_id == (
+        "ekologus_service_environmental_consulting_outsourcing"
+    )
+    assert all(candidate.lifecycle_status for candidate in bdo.service_candidates)
+    assert all(candidate.match_reasons for candidate in bdo.service_candidates)
+    assert [
+        candidate.service_card_id
+        for candidate in outsourcing.service_candidates
+        if candidate.recommended
+    ] == ["ekologus_service_environmental_consulting_outsourcing"]
+    assert outsourcing.service_candidates[0].matched_terms == [
+        "outsourcing ekologiczny"
+    ]
+
+    for foreign_topic in ("subdomena firmowa", "rozliczenie podatku dochodowego"):
+        unrelated = build_content_work_item_service_profile_context(
+            ContentWorkItem(
+                id=f"content_work_item_{foreign_topic.replace(' ', '_')}",
+                topic=foreign_topic,
+                evidence_ids=["ev_gsc_unrelated"],
+                source_connectors=["google_search_console"],
+            )
+        )
+        assert unrelated.service_card_id is None
+        assert all(
+            candidate.service_card_id != "ekologus_service_bdo_reporting"
+            for candidate in unrelated.service_candidates
+        )
+
+
 def test_not_evaluated_context_does_not_assign_a_service_before_workflow_snapshot() -> None:
     context = ContentWorkItemServiceProfileContext.not_evaluated(
         safe_next_step="Najpierw usuń blocker kolejki."

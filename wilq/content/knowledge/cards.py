@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache
@@ -93,12 +94,23 @@ class ContentKnowledgeCardMatch(BaseModel):
 
     work_item_id: str
     service_card: ContentKnowledgeCard | None = None
+    recommended_service_card_id: str | None = None
+    service_candidates: list[ContentKnowledgeServiceCandidate] = Field(
+        default_factory=list
+    )
     buyer_problem_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     cta_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     claim_policy_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     evidence_requirement_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     measurement_sensitive_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     blockers: list[ContentKnowledgeCardBlocker] = Field(default_factory=list)
+
+
+class ContentKnowledgeServiceCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    card: ContentKnowledgeCard
+    matched_terms: list[str] = Field(min_length=1)
 
 
 class ContentKnowledgeProductionDepthReadiness(BaseModel):
@@ -464,7 +476,8 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
             *item.source_connectors,
         ]
     )
-    service_cards = _matching_cards(cards, text, "service")
+    service_candidates = _matching_service_candidates(cards, text)
+    service_cards = [candidate.card for candidate in service_candidates]
     cta_cards = _matching_cards(cards, text, "cta_pattern")
     claim_policy_cards = [
         card
@@ -482,6 +495,8 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     match = ContentKnowledgeCardMatch(
         work_item_id=item.id,
         service_card=service_cards[0] if service_cards else None,
+        recommended_service_card_id=service_cards[0].id if service_cards else None,
+        service_candidates=service_candidates,
         buyer_problem_cards=service_cards,
         cta_cards=cta_cards,
         claim_policy_cards=claim_policy_cards,
@@ -489,6 +504,23 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
         measurement_sensitive_cards=measurement_cards,
     )
     return match.model_copy(update={"blockers": content_knowledge_card_blockers(match)})
+
+
+def select_content_knowledge_service_card(
+    match: ContentKnowledgeCardMatch,
+    service_card_id: str,
+) -> ContentKnowledgeCardMatch:
+    selected = next(
+        (
+            candidate.card
+            for candidate in match.service_candidates
+            if candidate.card.id == service_card_id
+        ),
+        None,
+    )
+    if selected is None:
+        raise ValueError("Service card is not an allowed candidate for this work item.")
+    return match.model_copy(update={"service_card": selected})
 
 
 def content_knowledge_card_blockers(
@@ -642,12 +674,32 @@ def _matching_cards(
         for card in cards
         if card.card_type == card_type
         and any(
-            term.lower() in search_text
+            _normalized_term_matches(term, search_text)
             for term in card.service_fit_terms
-            if term.lower() not in BROAD_SERVICE_FIT_TERMS
+            if _normalize_search_text(term) not in _normalized_broad_service_terms()
         )
     ]
     return sorted(matches, key=_match_rank)
+
+
+def _matching_service_candidates(
+    cards: Iterable[ContentKnowledgeCard],
+    search_text: str,
+) -> list[ContentKnowledgeServiceCandidate]:
+    candidates = [
+        ContentKnowledgeServiceCandidate(card=card, matched_terms=matched_terms)
+        for card in cards
+        if card.card_type == "service"
+        and (
+            matched_terms := [
+                term
+                for term in card.service_fit_terms
+                if _normalize_search_text(term) not in _normalized_broad_service_terms()
+                and _normalized_term_matches(term, search_text)
+            ]
+        )
+    ]
+    return sorted(candidates, key=lambda candidate: _match_rank(candidate.card))
 
 
 def _match_rank(card: ContentKnowledgeCard) -> tuple[int, float]:
@@ -698,7 +750,28 @@ def _blocker(
 
 
 def _search_text(values: Iterable[object]) -> str:
-    return " ".join(str(value).lower() for value in values if value)
+    return _normalize_search_text(" ".join(str(value) for value in values if value))
+
+
+def _normalized_term_matches(term: str, normalized_search_text: str) -> bool:
+    normalized_term = _normalize_search_text(term)
+    return bool(normalized_term) and f" {normalized_term} " in f" {normalized_search_text} "
+
+
+def _normalize_search_text(value: str) -> str:
+    transliterated = value.casefold().replace("ł", "l")
+    decomposed = unicodedata.normalize("NFKD", transliterated)
+    return " ".join(
+        "".join(
+            character if character.isalnum() else " "
+            for character in decomposed
+            if not unicodedata.combining(character)
+        ).split()
+    )
+
+
+def _normalized_broad_service_terms() -> frozenset[str]:
+    return frozenset(_normalize_search_text(term) for term in BROAD_SERVICE_FIT_TERMS)
 
 
 def _homepage_match_markers(item: ContentWorkItem) -> list[str]:

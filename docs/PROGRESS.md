@@ -49,6 +49,20 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   obcego snapshotu. Wybór sekcji jest tylko fokusem sesji:
   scope i section map nadal wymagają człowieka, a karta BDO pozostaje
   `source_backed_review_required`.
+- `wilq-seo-1oa.36.3` przywraca ogólny wybór usługi dla dwóch pilotowych
+  case'ów bez wyjątków w kodzie. Normalizacja URL, myślników, odstępów i
+  polskich znaków wiąże stronę BDO z `ekologus_service_bdo_reporting`, a stronę
+  doradztwa i outsourcingu z
+  `ekologus_service_environmental_consulting_outsourcing`; `subdomena` ani
+  obcy temat nie wiążą karty BDO. Snapshot pokazuje wyłącznie kandydatury
+  wynikające z dokładnych fraz kart, wraz z lifecycle i powodem dopasowania.
+  Scope review utrwala jawnie wybraną kartę w istniejącym planie, odrzuca obcy
+  identyfikator i oznacza dozwolony wybór inny niż rekomendowany jako
+  `human_override_review_required`. Read-only proof po managed restarcie
+  potwierdził oba wiązania; kolejka pokazuje odpowiednio 11 i 26 zapytań.
+  Plan BDO ma 11 dokładnych wierszy GSC oraz 0 Ads/Planner, natomiast plan
+  outsourcingu poprawnie pozostaje zablokowany do owner review jego karty.
+  Żadna decyzja człowieka ani write do WordPressa nie zostały wykonane.
 - Live homepage UAT ujawnił dwie luki w prezentacji popytu. Query GSC
   dziedziczyły wszystkie trzy
   sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence

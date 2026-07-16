@@ -453,6 +453,7 @@ describe("content workflow API helpers", () => {
     expect(snapshot.service_profile_context.evidence_ids).toEqual([
       "ev_content_service_profile_source_facts"
     ]);
+    expect(snapshot.service_profile_context.service_candidates[0]?.recommended).toBe(true);
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/content/work-items/snapshot"
     ]);
@@ -820,6 +821,19 @@ function workflowSnapshot() {
       service_label: "BDO i sprawozdawczość środowiskowa",
       service_status: "source_backed_review_required",
       service_status_label: "źródło istnieje, wymagane review",
+      service_selection_confirmed: false,
+      human_override_review_required: false,
+      service_candidates: [
+        {
+          service_card_id: "ekologus_service_bdo_reporting",
+          service_label: "BDO i sprawozdawczość środowiskowa",
+          lifecycle_status: "source_backed_review_required",
+          lifecycle_label: "źródło wymaga review",
+          matched_terms: ["bdo"],
+          match_reasons: ["Temat lub adres strony zawiera dokładną frazę „bdo”."],
+          recommended: true
+        }
+      ],
       freshness_label: "publiczna strona wymaga review (ostatni sygnał: 2026-07-02)",
       freshness_as_of: "2026-07-02",
       source_summary_label: "Źródło profilu: publiczna strona Ekologus",

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import NoReturn
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
@@ -92,8 +94,11 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.planning import (
+    ContentPlanningDecision,
+    ContentPlanningProposal,
     ContentPlanningReviewRequest,
     ContentPlanningReviewResponse,
+    ContentPlanningWorkspace,
 )
 from wilq.content.workflow.queue import (
     ContentWorkItemQueueResponse,
@@ -104,6 +109,11 @@ from wilq.content.workflow.revisions import (
     ContentDraftRevisionConflict,
     ContentDraftRevisionReviewCommand,
     content_draft_package_digest,
+)
+from wilq.content.workflow.service_selection import (
+    ContentPlanningServiceSelection,
+    ContentPlanningServiceSelectionError,
+    resolve_content_planning_service_selection,
 )
 from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
@@ -124,6 +134,7 @@ from wilq.content.workflow.stage_review import (
     build_content_work_item_wordpress_draft_handoff_response,
 )
 from wilq.content.workflow.store import content_workflow_store
+from wilq.schemas.core import utc_now
 
 router = APIRouter()
 
@@ -273,9 +284,34 @@ def content_work_item_planning_review(
             status_code=409,
             detail="Najpierw zatwierdź aktualny zakres treści.",
         )
+    if (
+        request.stage == "section_map"
+        and request.service_card_id is not None
+        and request.service_card_id != workspace.proposal.service_card_id
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Usługę można zmienić tylko podczas review zakresu.",
+        )
+    try:
+        selection = resolve_content_planning_service_selection(
+            snapshot.service_profile_context,
+            request.service_card_id,
+        )
+    except ContentPlanningServiceSelectionError as error:
+        _raise_service_selection_http_error(error)
+    selected_proposal = _planning_proposal_for_service_selection(
+        work_item_id,
+        workspace,
+        request,
+        selection,
+    )
     status, decision = content_workflow_store().record_planning_review(
         work_item_id,
         request,
+        planning_digest=selected_proposal.planning_digest,
+        service_card_id=selection.service_card_id,
+        human_override_review_required=selection.human_override_review_required,
     )
     refreshed = _snapshot_for_work_item_or_404(work_item_id)
     if refreshed.planning_workspace is None:
@@ -285,6 +321,58 @@ def content_work_item_planning_review(
         decision=decision,
         planning_workspace=refreshed.planning_workspace,
     )
+
+
+def _raise_service_selection_http_error(
+    error: ContentPlanningServiceSelectionError,
+) -> NoReturn:
+    if error.code == "candidate_not_allowed":
+        raise HTTPException(
+            status_code=422,
+            detail="Wybrana karta usługi nie jest dozwolona dla tego work itemu.",
+        ) from error
+    raise HTTPException(
+        status_code=409,
+        detail="Brakuje aktualnej rekomendacji usługi. Odśwież work item.",
+    ) from error
+
+
+def _planning_proposal_for_service_selection(
+    work_item_id: str,
+    workspace: ContentPlanningWorkspace,
+    request: ContentPlanningReviewRequest,
+    selection: ContentPlanningServiceSelection,
+) -> ContentPlanningProposal:
+    if request.stage != "scope":
+        return workspace.proposal
+    transient_scope = ContentPlanningDecision(
+        decision_id="content_planning_review_transient_service_selection",
+        decision_number=(
+            1
+            if workspace.scope_decision is None
+            else workspace.scope_decision.decision_number + 1
+        ),
+        work_item_id=work_item_id,
+        stage="scope",
+        planning_digest=request.expected_planning_digest,
+        service_card_id=selection.service_card_id,
+        human_override_review_required=selection.human_override_review_required,
+        decision=request.decision,
+        reviewed_by=request.reviewed_by,
+        checked_items=request.checked_items,
+        notes=request.notes,
+        created_at=utc_now(),
+    )
+    transient_snapshot = _snapshot_for_work_item_or_404(
+        work_item_id,
+        planning_decisions_override=[transient_scope],
+    )
+    if transient_snapshot.planning_workspace is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Nie udało się zbudować planu dla wybranej usługi.",
+        )
+    return transient_snapshot.planning_workspace.proposal
 
 
 @router.post(
