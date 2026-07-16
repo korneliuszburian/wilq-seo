@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, Protocol, cast
 
+from wilq.codex.runtime_status import codex_auth_path
+
 CodexAppServerTurnStatus = Literal["completed", "blocked", "failed"]
 
 _SAFE_ITEM_TYPES = frozenset(
@@ -325,7 +327,7 @@ class StdioCodexAppServerClient:
 
 
 def _prepare_isolated_runtime(root: Path) -> _IsolatedCodexRuntime:
-    source_auth = _codex_auth_path()
+    source_auth = codex_auth_path()
     if source_auth is None or not source_auth.is_file():
         raise _SafeTransportFailure(
             "codex_not_authenticated",
@@ -520,14 +522,6 @@ def _validate_request(
             message="Limit czasu Codexa musi być dodatni.",
         )
     return None
-
-
-def _codex_auth_path() -> Path | None:
-    codex_home = os.environ.get("CODEX_HOME")
-    if codex_home:
-        return Path(codex_home).expanduser() / "auth.json"
-    home = os.environ.get("HOME")
-    return Path(home).expanduser() / ".codex" / "auth.json" if home else None
 
 
 def _codex_process_environment(

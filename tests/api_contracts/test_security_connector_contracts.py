@@ -130,6 +130,50 @@ def test_connector_registry_marks_experimental_and_runtime_surfaces_outside_dail
     assert connectors["openai_codex"]["active_for_daily_work"] is False
 
 
+def test_codex_connector_reports_local_cli_and_login_without_api_key_or_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    codex_home = tmp_path / "private-codex-home"
+    codex_home.mkdir()
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    monkeypatch.setenv("CODEX_API_KEY", "must-not-be-used")
+    monkeypatch.setenv("PATH", "")
+
+    missing_cli = client.get("/api/connectors/openai_codex/status").json()
+    assert missing_cli["status"] == "missing_dependency"
+    assert missing_cli["configured"] is False
+    assert missing_cli["required_env"] == []
+    assert missing_cli["missing_credentials"] == []
+    assert missing_cli["health_check"] == "local_codex_login"
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    executable = bin_dir / "codex"
+    executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    executable.chmod(0o700)
+    monkeypatch.setenv("PATH", str(bin_dir))
+
+    missing_login = client.get("/api/connectors/openai_codex/status").json()
+    assert missing_login["status"] == "auth_error"
+    assert missing_login["configured"] is False
+
+    (codex_home / "auth.json").write_text("not-read-by-status", encoding="utf-8")
+    configured = client.get("/api/connectors/openai_codex/status").json()
+    assert configured["status"] == "configured"
+    assert configured["configured"] is True
+    assert configured["available_credential_sources"] == ["local_codex_login"]
+
+    system_status = client.get("/api/system/status").json()["codex_runtime"]
+    assert system_status["readiness_status"] == "ready"
+    assert system_status["codex_available"] is True
+    assert system_status["login_available"] is True
+    serialized = json.dumps({"connector": configured, "runtime": system_status})
+    assert "CODEX_API_KEY" not in serialized
+    assert str(codex_home) not in serialized
+    assert "not-read-by-status" not in serialized
+
+
 def test_localo_status_requires_api_token_and_organization_id(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

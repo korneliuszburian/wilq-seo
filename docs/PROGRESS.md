@@ -20,6 +20,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-c9h9.27` usuwa historyczny `CODEX_API_KEY` z aktywnego kontraktu
+  runtime'u. `openai_codex` i system status korzystają z jednej typed readiness:
+  obecność lokalnego CLI oraz lokalnej sesji `codex login`, sprawdzanej bez
+  odczytu pliku, ujawnienia ścieżki i uruchamiania modelu. Live status po
+  managed restarcie to `configured`, `required_env=[]`, źródło
+  `local_codex_login`; runtime pozostaje poza daily evidence i vendor refresh.
 - `wilq-seo-amj2.4` wyrównuje skilla `wilq-content-operator` z jednym
   kanonicznym journey dashboardu i API: kolejka → snapshot → zapisane decyzje
   planu → exact revision/review → opcjonalny exact Codex proposal →
@@ -274,9 +280,6 @@ zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie
   rezydualnym.
 - Queue nie ma wymaganych trzech wykonalnych pozycji; WILQ nie tworzy sztucznej
   trzeciej propozycji.
-- `openai_codex` connector readiness nadal opisuje historyczny `CODEX_API_KEY`,
-  choć exact proposal używa lokalnego `codex login`. Nie jest to drugi execution
-  path, ale status jest mylący i wymaga osobnego typed login-readiness slice.
 - `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
   tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
 - Obecny runtime jest wymuszony jako loopback-only. Przed pilotem nadal trzeba

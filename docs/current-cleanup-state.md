@@ -151,8 +151,10 @@ kontynuuj najwyższy bezpieczny task.
   → local audit identity (`amj2.6`) oraz filesystem modes (`amj2.7`) → storage recovery
   (`amj2.8`). Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają
   publication-bound i nie mogą przyjmować sukcesu zadeklarowanego przez klienta.
-- `wilq-seo-c9h9.27` usuwa historyczny `CODEX_API_KEY` z connector readiness i
-  ma raportować wyłącznie typed lokalną gotowość CLI/login bez odczytu sekretu.
+- `wilq-seo-c9h9.27` jest domknięty: connector i system status współdzielą
+  typed lokalną gotowość CLI/login, nie wymagają `CODEX_API_KEY`, nie czytają
+  loginu i nie ujawniają jego ścieżki. Live status jest `configured`; brak CLI
+  i brak sesji pozostają osobnymi bezpiecznymi stanami.
 
 - `wilq-seo-r564.7` jest zamknięty i wypchnięty w `b23e413a`.
 - `wilq-seo-r564.8` jest zamknięty: append-only draft revisions i human

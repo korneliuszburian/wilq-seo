@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Literal
 
+from wilq.codex.runtime_status import codex_local_runtime_readiness
 from wilq.connectors.google_auth import (
     GOOGLE_CREDENTIAL_ENV_NAMES,
     google_credentials_available,
@@ -249,14 +250,14 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
     ConnectorDefinition(
         "openai_codex",
         "OpenAI Codex Runtime",
-        ("CODEX_API_KEY",),
+        (),
         True,
         False,
         ("codex_context_pack", "codex_exec_schema_smoke"),
         "Codex usage limits and model/runtime availability apply.",
         "May consume OpenAI/Codex credits depending on auth path.",
         "Runtime operatorski nie jest produkcyjnym autorem treści i nie omija WILQ API.",
-        "runtime_presence",
+        "local_codex_login",
         product_scope=ConnectorProductScope.runtime,
         active_for_daily_work=False,
     ),
@@ -342,6 +343,8 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
             risk_notes=definition.risk_notes,
             health_check=definition.health_check,
         )
+    if definition.id == "openai_codex":
+        return _codex_connector_status(definition)
     missing = [
         name for name in definition.required_env if not _credential_available(name)
     ] + _missing_credential_groups(definition)
@@ -388,6 +391,48 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
     )
 
 
+def _codex_connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
+    readiness = codex_local_runtime_readiness()
+    configured = readiness.status == "ready"
+    status = {
+        "ready": ConnectorStatusValue.configured,
+        "missing_cli": ConnectorStatusValue.missing_dependency,
+        "missing_login": ConnectorStatusValue.auth_error,
+    }[readiness.status]
+    freshness = FreshnessState(
+        state="unknown",
+        notes="Stan lokalnego runtime'u; nie jest dowodem ani źródłem metryk marketingowych.",
+    )
+    return ConnectorStatus(
+        id=definition.id,
+        label=definition.label,
+        status=status,
+        product_scope=definition.product_scope,
+        active_for_daily_work=definition.active_for_daily_work,
+        configured=configured,
+        missing_credentials=[],
+        available_credential_sources=["local_codex_login"] if configured else [],
+        error=readiness.blocker_label,
+        freshness=freshness,
+        refresh_state=_connector_refresh_state(
+            connector_id=definition.id,
+            configured=configured,
+            read=False,
+            freshness_state=freshness.state,
+            missing_credentials=[],
+        ),
+        capabilities=ConnectorCapability(
+            read=definition.read,
+            write=definition.write,
+            operations=list(definition.supported_actions),
+        ),
+        required_env=[],
+        supported_actions=list(definition.supported_actions),
+        rate_limit_notes=definition.rate_limit_notes,
+        cost_notes=definition.cost_notes,
+        risk_notes=definition.risk_notes,
+        health_check=definition.health_check,
+    )
 def list_connector_statuses() -> list[ConnectorStatus]:
     return [connector_status(definition) for definition in CONNECTOR_DEFINITIONS]
 

@@ -19,6 +19,11 @@ Required connectors:
 
 Each connector exposes ID, label, status, configured state, missing credential names, freshness, read/write capabilities, supported actions, rate/cost/risk notes, required env names, and health-check type.
 
+`openai_codex` is a local runtime capability, not a marketing evidence source.
+Its status checks only whether the `codex` executable and a local `codex login`
+session exist. It does not require an API key, read the login file, expose its
+path or start the model; missing CLI and missing login are separate states.
+
 Connector refreshes are durable API runs:
 
 - `status_probe` records local connector readiness from credential-name presence and never calls a vendor API.
