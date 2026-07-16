@@ -1,45 +1,51 @@
-# WILQ — warsztat marketera do tworzenia treści
+# WILQ — dwa realne piloty treści do decyzji marketera
 
-To jest jedna paczka robocza dla marketera, nie prezentacja całego WILQ. Jej
-celem jest przeprowadzenie jednej strony od decyzji do ocenionego szkicu na
-devie, z metrykami i dowodami przypisanymi do dokładnego URL-a.
+To nie jest opis architektury ani demonstracja testów. To cztery krótkie
+dokumenty z aktualnym wynikiem pracy WILQ dla dwóch istniejących stron
+Ekologus. Stan odczytano z lokalnego WILQ API 16 lipca 2026 po odświeżeniu
+procesu API.
 
 ## Decyzja w 30 sekund
 
-- **Co robimy:** odświeżamy istniejącą stronę, nie tworzymy równoległego artykułu.
-- **Na czym zaczynamy:** BDO — „co musi wiedzieć przedsiębiorca?”.
-- **Dlaczego teraz:** zapisany snapshot GSC zawiera 65 wyświetleń, 0 kliknięć,
-  CTR 0,00% i najlepszą średnią pozycję 9,00. To sygnał do sprawdzenia
-  dopasowania strony, nie automatyczny werdykt jakości.
-- **Co blokuje finalny tekst:** karta usługi nie ma jeszcze owner review, a
-  zakres i mapa sekcji wymagają decyzji człowieka.
-- **Następny bezpieczny krok:** potwierdź stronę i właściwą kartę usługi, potem
-  oceń strategię oraz dyspozycję istniejących sekcji.
+Obie strony warto dalej analizować jako **odświeżenie istniejącej treści**, ale
+żadna nie jest jeszcze gotowa do wygenerowania finalnego tekstu.
 
-## Dwa piloty tego samego workflow
+| Pilot | Co już wiemy | Co blokuje następny etap |
+| --- | --- | --- |
+| [BDO](PILOT-BDO.md) | 65 wyświetleń, 0 kliknięć, 11 zapytań; istniejące H1 i 12 nagłówków WordPress są dostępne | trzeba potwierdzić kartę usługi i poprawić zbyt ogólną mapę sekcji |
+| [Doradztwo i outsourcing](PILOT-DORADZTWO-OUTSOURCING.md) | poprawne przypisanie usługi; 50 wyświetleń, 0 kliknięć, 26 zapytań | trzeba potwierdzić kartę usługi i pobrać aktualne H1 oraz sekcje WordPress |
 
-1. BDO: `content_work_item_content_decision_https___www_ekologus_pl_bdo_co_musi_wiedziec_przedsiebiorca`
-   + `ekologus_service_bdo_reporting`.
-2. Doradztwo i outsourcing: `content_work_item_content_decision_https___www_ekologus_pl_oferta_doradztwo_i_outsourcing_ekologiczny`
-   + `ekologus_service_environmental_consulting_outsourcing`.
+Najbardziej wartościowa decyzja ownera teraz: przejrzeć obie karty usług na
+podstawie sekcji „Do decyzji” w dokumentach pilotów. Bez tego model pozostaje
+celowo zablokowany i nie produkuje tekstu z niezatwierdzonych twierdzeń.
 
-Identyfikatory są podane dla trace. Marketer wybiera czytelne nazwy w
-dashboardzie. Oba case'y muszą przejść ten sam kontrakt bez wyjątku w kodzie.
+## Co faktycznie działa
 
-## Kolejność pracy — 15–20 minut
+- ten sam workflow rozpoznaje dwie różne strony i dwie różne karty usług;
+- dane GSC i WordPress są świeże w progu 48 godzin;
+- WILQ rozróżnia wynik możliwy do planowania od zgody na draft;
+- odczyt planu nie uruchamia modelu, a blokady są jawne;
+- brak rewizji blokuje semantic review, WordPress i pomiar zamiast tworzyć
+  fikcyjny wynik;
+- obietnice wzrostu pozycji, leadów i widoczności pozostają zablokowane do
+  zakończonego okna pomiaru.
 
-1. [Wybór i strategia](01-wybor-i-strategia.md)
-2. [Struktura i metryki](02-struktura-i-metryki.md)
-3. [Tekst, review i przekazanie](03-tekst-review-przekazanie.md)
-4. [Stan całego pipeline'u](05-stan-pipeline.md)
-5. [Formularz oceny treści](04-formularz-oceny.md)
+## Co jeszcze nie działa wystarczająco dobrze
 
-Aktualny zrzut pokazuje wyłącznie właściwy obszar roboczy:
-[Treści i SEO — BDO](screens/content-workflow-bdo.png).
+- żadna z dwóch kart usług nie ma `approved_current`;
+- BDO ma inventory, ale obecne dwie sekcje planu są generyczne i przypisują
+  niemal każde zapytanie do obu sekcji;
+- outsourcing nie ma w snapshotcie aktualnego H1 ani listy sekcji WordPress;
+- nie istnieje realna pełna rewizja tych pilotów, więc nie ma page preview,
+  semantic findings, diffu ani WordPress dry-run dla konkretnego tekstu;
+- nie wykonano realnego Wilku UAT ani publikacji.
 
-## Uczciwy status paczki
+## Jak użyć paczki
 
-To jest uporządkowany kontrakt sesji i bieżący checkpoint, nie finalna paczka
-tekstu. Nie przedstawia syntetycznego proofu jako UAT, nie zatwierdza wiedzy za
-ownera i nie oznacza zgody na zapis do WordPressa. Pełne assety dokumentu będą
-dodane tutaj po przejściu bramek opisanych w [stanie pipeline'u](05-stan-pipeline.md).
+1. Przejrzyj [pilot BDO](PILOT-BDO.md).
+2. Przejrzyj [pilot doradztwa i outsourcingu](PILOT-DORADZTWO-OUTSOURCING.md).
+3. Wypełnij odpowiednią część [formularzy oceny](FORMULARZE-OCENY.md).
+
+Najpierw potrzebujemy decyzji o usługach i planie. Ocena finalnego tekstu ma
+sens dopiero po zapisaniu exact revision; ta paczka nie udaje, że tekst już
+istnieje.

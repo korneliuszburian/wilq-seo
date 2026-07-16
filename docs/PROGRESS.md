@@ -27,6 +27,16 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie zakresy i proofy
 
+- `wilq-seo-1oa.36.7` redukuje paczkę dla marketera do czterech dokumentów
+  wynikowych bez generatora, manifestu i raw payloadu. Po managed restarcie
+  aktualny WILQ API zwrócił dla BDO 65 wyświetleń, 0 kliknięć, 11 wierszy GSC,
+  H1 i 12 nagłówków WordPress. Outsourcing ma 50 wyświetleń, 0 kliknięć i 26
+  wierszy GSC oraz jest poprawnie `bound` do własnej karty, ale brakuje mu
+  aktualnego inventory sekcji WordPress. Obie karty pozostają
+  `source_backed_review_required`, wybór usługi nie jest potwierdzony, revision
+  count wynosi 0, a GET planera nie uruchomił modelu. Paczka ujawnia też lukę
+  jakości: bieżąca mapa BDO przypisuje niemal każde query do obu generycznych
+  sekcji. Nie wykonano model generation, realnego UAT ani WordPress write.
 - `wilq-seo-1oa.37` dodaje persistowane advisory review semantyczne dokładnej
   rewizji v2. GET jest model-free; POST wymaga exact revision digestu, bieżącego
   planning inputu i ocenia dziewięć jawnych wymiarów bez approval, ActionObjectu
@@ -60,15 +70,6 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   potwierdził defektu, ale wskazał tę lukę dowodową; lokalny review zaklasyfikował
   ją jako `accept_and_fix`, a publiczny API falsifier potwierdza fail-closed.
 
-- `wilq-seo-1oa.35` składa bieżący proof w jeden krótki folder
-  `docs/review-packets/2026-07-16-wilq-marketer/`: mapa Better BDOS,
-  instrukcja 20–30 minut, decyzja dnia, exact BDO context, pięć
-  aktualnych ekranów, uczciwa macierz możliwości i jeden formularz werdyktu.
-  Paczka rozdziela stan realny, review-only, zablokowany i nieudowodniony; nie
-  zawiera raw payloadu ani fikcyjnej akceptacji UAT. Browser proof potwierdził
-  pięć wyrenderowanych powierzchni bez błędów konsoli. Merchant działa, ale
-  zimny odczyt diagnostyki zmierzono na około 6.1 s, więc opóźnienie jest jawne
-  w paczce i pozostaje technicznym follow-upem.
 - `wilq-seo-1oa.36.1` naprawia pierwszy realny content entry gap. Content
   diagnostics nie dziedziczy już limitu z cross-domain tactical queue:
   kompletny zestaw evidenced GSC+WordPress stron trafia najpierw do własnego
@@ -125,24 +126,19 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   który traktował długi slug z myślnikami jak sekret, niszczył tytuł/body i mógł
   błędnie uznać zmieniony zapis za idempotentny; publiczny API falsifier ponownie
   zwraca `409 stale_base`, zachowując widoczny tekst marketera.
-- Live homepage UAT ujawnił dwie luki w prezentacji popytu. Query GSC
+- Historyczny syntetyczny browser proof ujawnił dwie luki w prezentacji popytu. Query GSC
   dziedziczyły wszystkie trzy
   sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence
   ID. Demand evidence zachowuje oba query jako page-level proof, ale sekcję
   przypisuje wyłącznie po konserwatywnym dopasowaniu tokenu do jej nagłówka lub
   celu. Typed `section_mapping_status` rozróżnia `lexical_relevance` i
   `page_only`. Focused BDO case mapuje relewantny term i pozostawia niepowiązany
-  term z pustą mapą. Wybrany exact snapshot nie korzysta już z arbitralnego
-  limitu queue facts: agreguje 29 sygnałów planistycznych bieżącej strony do
-  47 wyświetleń i 3 kliknięć, pokazuje cztery najwyższe wiersze i jawnie
-  wyjaśnia różnicę. Karta kontekstu oraz panel planowania używają tego samego
-  snapshotu; browser nie pokazuje już starego podsumowania 17/3. Scope nadal
-  wymaga decyzji Wilka, a Service Profile review ownera. Packet realnego
-  review marketera i dedykowany packet `wilq-content-operator` pobierają teraz
-  ten sam exact snapshot: pokazują 29 sygnałów, 47 wyświetleń i 3 kliknięcia
-  zamiast starego queue title z 31 surowymi query. Deterministyczny smoke
+  term z pustą mapą. Bieżący exact snapshot z 2026-07-16 agreguje 11
+  page-scoped wierszy BDO do 65 wyświetleń i 0 kliknięć. Karta kontekstu,
+  panel planowania i packet marketera używają tego samego snapshotu. Scope
+  nadal wymaga decyzji Wilka, a Service Profile review ownera. Deterministyczny smoke
   akceptuje jawne `page_only` bez fałszywego wymagania dopasowania sekcji;
-  oba packety nadal mówią wprost, że nie są dowodem wykonanego UAT.
+  packet nadal mówi wprost, że nie jest dowodem wykonanego UAT.
 - Epiki `wilq-seo-c9h9` (43/43 dzieci), `wilq-seo-3bst` (28/28) i
   `wilq-seo-amj2` (10/10) są zamknięte po ponownym odczycie grafu. Nie zamyka to
   aktywnego celu pilota: `lt1` nadal wymaga reviewed knowledge, `jst` realnego Wilku UAT, a
