@@ -15,11 +15,27 @@ def test_redaction_hides_token_like_values() -> None:
         }
     )
 
-    assert redacted["summary"] == "[REDACTED]"
-    assert redacted["error"] == "[REDACTED]"
+    assert redacted["summary"] == "failure with [REDACTED]"
+    assert redacted["error"] == "failure with [REDACTED]"
     assert redacted["api_key"] == "[REDACTED]"
     assert redacted["safe_env_name"] == "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID"
     assert redacted["normalized_page_path"] == "[REDACTED]"
+
+
+def test_redaction_preserves_content_around_secrets_and_scans_credential_urls() -> None:
+    redacted = redact_mapping(
+        {
+            "body_markdown": "Przed XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX po.",
+            "reference": "Sprawdź https://example.test/callback?access_token=short dalej.",
+            "title": "Istniejący URL /bdo-co-musi-wiedziec-przedsiebiorca — treść",
+        }
+    )
+
+    assert redacted["body_markdown"] == "Przed [REDACTED] po."
+    assert redacted["reference"] == "Sprawdź [REDACTED] dalej."
+    assert redacted["title"] == (
+        "Istniejący URL /bdo-co-musi-wiedziec-przedsiebiorca — treść"
+    )
 
 
 def test_redaction_rejects_noncanonical_normalized_page_paths() -> None:
@@ -37,8 +53,7 @@ def test_redaction_rejects_noncanonical_normalized_page_paths() -> None:
     ]
 
     assert all(
-        redact_mapping({"normalized_page_path": value})["normalized_page_path"]
-        == "[REDACTED]"
+        redact_mapping({"normalized_page_path": value})["normalized_page_path"] == "[REDACTED]"
         for value in unsafe_values
     )
 
@@ -81,6 +96,8 @@ def test_redaction_preserves_valid_planning_binding_but_not_token_like_values() 
             "expected_planning_digest": "1" * 64,
             "planning_input_digest": "2" * 64,
             "expected_planning_input_digest": "3" * 64,
+            "service_digest": "4" * 64,
+            "inventory_digest": "5" * 64,
             "proposal_id": "content_planning_proposal_0123456789abcdef",
             "service_card_id": "ekologus_service_bdo_reporting",
             "summary": "sk-" + "x" * 40,  # pragma: allowlist secret
@@ -91,6 +108,8 @@ def test_redaction_preserves_valid_planning_binding_but_not_token_like_values() 
     assert redacted["expected_planning_digest"] == "1" * 64
     assert redacted["planning_input_digest"] == "2" * 64
     assert redacted["expected_planning_input_digest"] == "3" * 64
+    assert redacted["service_digest"] == "4" * 64
+    assert redacted["inventory_digest"] == "5" * 64
     assert redacted["proposal_id"] == "content_planning_proposal_0123456789abcdef"
     assert redacted["service_card_id"] == "ekologus_service_bdo_reporting"
     assert redacted["summary"] == "[REDACTED]"
@@ -208,9 +227,7 @@ def test_redaction_preserves_safe_marketing_context_values() -> None:
         "search_term_safety_read_contract",
     ]
     assert redacted["blocked_claims"] == ["rekomendacja uruchomienia Demand Gen"]
-    assert redacted["normalized_page_path"] == (
-        "/europejski-zielony-lad-co-to-takiego"
-    )
+    assert redacted["normalized_page_path"] == ("/europejski-zielony-lad-co-to-takiego")
     assert redacted["cluster_id"] == (
         "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
     )

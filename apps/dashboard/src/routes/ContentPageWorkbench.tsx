@@ -138,6 +138,7 @@ export function ContentPageWorkbench({
     : "";
   const sectionOverrides = revisionSections
     .map((section) => ({
+      ...section,
       heading: section.heading,
       body_markdown:
         sectionTexts[sectionOverrideKey(section.heading)] ?? section.body_markdown,

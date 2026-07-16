@@ -33,9 +33,9 @@ from wilq.content.drafts.structured_generation import (
 )
 from wilq.content.quality.review import ContentQualityReview, build_content_quality_review
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revisions import (
     ContentDraftRevision,
-    ContentDraftRevisionAppendCommand,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionSection,
@@ -391,14 +391,8 @@ def _persist_proposal(
     )
     completed_run = _terminal_run(runtime.run, status="completed")
     append_result = workflow_store.append_draft_revision(
-        ContentDraftRevisionAppendCommand(
-            work_item_id=base_revision.work_item_id,
-            base_revision_id=base_revision.revision_id,
-            draft_package_id=base_revision.draft_package_id,
-            draft_package_digest=base_revision.draft_package_digest,
-            planning_digest=base_revision.planning_digest,
-            final_canonical_url=base_revision.final_canonical_url,
-            title=base_revision.title,
+        build_child_draft_revision_command(
+            base_revision,
             sections=revision_sections,
             proposal_metadata=_proposal_metadata(
                 run=runtime.run,

@@ -6,11 +6,13 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 
 ContentWordPressDraftExecutionMode = Literal["dry_run", "live"]
 ContentWordPressDraftExecutionStatus = Literal["dry_run_ready", "created", "blocked"]
+ContentWordPressMetaWriteStatus = Literal["not_present", "review_required", "mapped"]
 ContentWordPressDraftExecutionBlockerCode = Literal[
     "missing_handoff",
     "missing_draft_package",
@@ -27,6 +29,15 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
 ]
 
 
+class ContentWordPressDraftMetadataBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Literal["missing_wordpress_meta_mapping"] = "missing_wordpress_meta_mapping"
+    label: str
+    reason: str
+    next_step: str
+
+
 class ContentWordPressDraftPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -35,6 +46,10 @@ class ContentWordPressDraftPayload(BaseModel):
     post_status: Literal["draft"] = "draft"
     title: str
     content_markdown: str
+    meta_title: str | None = None
+    meta_description: str | None = None
+    meta_write_status: ContentWordPressMetaWriteStatus = "not_present"
+    metadata_blockers: list[ContentWordPressDraftMetadataBlocker] = Field(default_factory=list)
     final_canonical_url: str
     evidence_ids: list[str] = Field(default_factory=list)
     publish_allowed: bool = False
@@ -261,6 +276,20 @@ def content_wordpress_draft_payload(
     *,
     section_overrides: list[ContentWordPressDraftSectionOverride] | None = None,
 ) -> ContentWordPressDraftPayload:
+    document = handoff.revision_document
+    if document is not None and document.schema_version == "wilq_content_draft_revision_v2":
+        if document.page_assets is None:
+            raise RuntimeError("Full-document revision passed validation without page assets.")
+        return ContentWordPressDraftPayload(
+            title=document.page_assets.wordpress_title,
+            content_markdown=revision_document_markdown(document),
+            meta_title=document.page_assets.meta_title,
+            meta_description=document.page_assets.meta_description,
+            meta_write_status="review_required",
+            metadata_blockers=[_missing_meta_mapping_blocker()],
+            final_canonical_url=handoff.final_canonical_url,
+            evidence_ids=handoff.evidence_ids,
+        )
     return ContentWordPressDraftPayload(
         title=handoff.title,
         content_markdown=_content_markdown_from_draft_package(
@@ -270,6 +299,17 @@ def content_wordpress_draft_payload(
         ),
         final_canonical_url=handoff.final_canonical_url,
         evidence_ids=handoff.evidence_ids,
+    )
+
+
+def _missing_meta_mapping_blocker() -> ContentWordPressDraftMetadataBlocker:
+    return ContentWordPressDraftMetadataBlocker(
+        label="Meta pola wymagają mapowania WordPress",
+        reason=(
+            "Pełny dokument zachowuje meta title i description, ale WILQ nie ma "
+            "potwierdzonego profilu ACF/SEO dla automatycznego zapisu tych pól."
+        ),
+        next_step="Sprawdź mapowanie profilu WordPress; nie kopiuj pól w ciemno.",
     )
 
 
@@ -377,9 +417,7 @@ def _live_write_blockers(
                 "Podłącz adapter zapisu szkicu i zostaw publikację wyłączoną.",
             )
         ]
-    if write_authorization is None or not _write_authorization_complete(
-        write_authorization
-    ):
+    if write_authorization is None or not _write_authorization_complete(write_authorization):
         return [
             _blocker(
                 "missing_write_authorization",
@@ -443,8 +481,7 @@ def _adapter_error_reason(exc: Exception) -> str:
     if isinstance(public_message, str) and public_message.strip():
         return public_message.strip()
     return (
-        "Adapter przerwał zapis szkicu bez ujawniania danych technicznych "
-        f"({type(exc).__name__})."
+        f"Adapter przerwał zapis szkicu bez ujawniania danych technicznych ({type(exc).__name__})."
     )
 
 

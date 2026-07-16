@@ -14,7 +14,7 @@ from wilq.content.review.human import (
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
-from wilq.content.workflow.revisions import ContentDraftRevisionSection
+from wilq.content.workflow.revisions import ContentDraftRevision, ContentDraftRevisionSection
 
 ContentWordPressDraftActor = Literal["wilku", "system", "codex"]
 ContentWordPressDraftHandoffStatus = Literal["prepared"]
@@ -63,6 +63,7 @@ class ContentWordPressDraftHandoff(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     revision_binding: ContentDraftRevisionBinding | None = None
     revision_sections: list[ContentDraftRevisionSection] = Field(default_factory=list)
+    revision_document: ContentDraftRevision | None = None
     publish_allowed: bool = False
     destructive_update_allowed: bool = False
 
@@ -246,8 +247,7 @@ def _human_review_blockers(
                 "Decyzja człowieka nie odblokowuje WordPress",
                 "Sprawdzenie musi mieć zatwierdzenie, checklistę, dowody i obsłużone "
                 "ryzykowne twierdzenia.",
-                "Rozwiąż sprawdzenie: "
-                + ", ".join(_unique(blocker.label for blocker in details)),
+                "Rozwiąż sprawdzenie: " + ", ".join(_unique(blocker.label for blocker in details)),
             )
         ]
     return []

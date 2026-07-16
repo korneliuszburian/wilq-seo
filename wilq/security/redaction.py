@@ -6,7 +6,7 @@ from typing import Any
 
 SECRET_KEY_RE = re.compile(r"(token|secret|password|credential|api[_-]?key|client_secret)", re.I)
 SECRET_VALUE_RE = re.compile(
-    r"(gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+|[A-Za-z0-9_-]{32,})"
+    r"(gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+|[A-Za-z0-9_]{32,})"
 )
 PUBLIC_URL_RE = re.compile(r"https?://[^\s]+", re.I)
 ENV_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]+$")
@@ -53,6 +53,8 @@ SAFE_IDENTIFIER_KEYS = {
     "expected_planning_digest",
     "planning_input_digest",
     "expected_planning_input_digest",
+    "service_digest",
+    "inventory_digest",
     "proposal_id",
     "draft_package_id",
     "draft_package_digest",
@@ -142,6 +144,8 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "planning_digest",
     "expected_planning_input_digest",
     "planning_input_digest",
+    "service_digest",
+    "inventory_digest",
     "revision_digest",
 }
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -162,15 +166,11 @@ def redact_value(value: Any) -> Any:
     if value is None:
         return None
     if isinstance(value, str):
-        if _looks_like_public_url_text(value):
-            return value
-        matches = SECRET_VALUE_RE.findall(value)
-        if matches and not all(
-            _looks_like_env_name(match) or _looks_like_safe_trace_identifier(match)
-            for match in matches
-        ):
-            return "[REDACTED]"
-        return value
+        redacted = PUBLIC_URL_RE.sub(_redact_credential_url, value)
+        for match in SECRET_VALUE_RE.findall(redacted):
+            if not (_looks_like_env_name(match) or _looks_like_safe_trace_identifier(match)):
+                redacted = redacted.replace(match, "[REDACTED]")
+        return redacted
     if isinstance(value, list):
         return [redact_value(item) for item in value]
     if isinstance(value, Mapping):
@@ -186,10 +186,9 @@ def _looks_like_safe_trace_identifier(value: str) -> bool:
     return bool(SAFE_TRACE_VALUE_RE.fullmatch(value) or SAFE_LOWER_ENUM_VALUE_RE.fullmatch(value))
 
 
-def _looks_like_public_url_text(value: str) -> bool:
-    if not PUBLIC_URL_RE.search(value):
-        return False
-    lowered = value.lower()
+def _redact_credential_url(match: re.Match[str]) -> str:
+    value = match.group(0)
+    lowered = value.casefold()
     unsafe_fragments = (
         "access_token",
         "api_key",
@@ -201,7 +200,7 @@ def _looks_like_public_url_text(value: str) -> bool:
         "secret",
         "token",
     )
-    return not any(fragment in lowered for fragment in unsafe_fragments)
+    return "[REDACTED]" if any(fragment in lowered for fragment in unsafe_fragments) else value
 
 
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:

@@ -24,6 +24,7 @@ import {
   ContentClaimLedgerSchema,
   ContentClaimReferenceSchema,
   ContentDraftPackageSchema,
+  ContentDraftRevisionSchema,
   ContentDraftRevisionConflictSchema,
   ContentCodexSectionProposalRequestSchema,
   ContentDraftRevisionReviewRequestSchema,
@@ -53,6 +54,95 @@ import {
   WorkOrderSchema,
   WordPressAuthoringProfileSchema
 } from "./index";
+
+describe("ContentDraftRevisionSchema", () => {
+  it("keeps legacy v1 readable and preserves every full-document v2 asset", () => {
+    const common = {
+      revision_id: "content_revision_1",
+      work_item_id: "content_work_item_consulting",
+      revision_number: 1,
+      base_revision_id: null,
+      content_digest: "a".repeat(64),
+      draft_package_id: "draft_package_consulting",
+      draft_package_digest: "b".repeat(64),
+      planning_digest: "c".repeat(64),
+      final_canonical_url: "https://www.ekologus.pl/oferta/doradztwo/",
+      title: "Doradztwo środowiskowe dla firm",
+      sections: [{
+        heading: "Kiedy firma potrzebuje wsparcia",
+        body_markdown: "Treść sekcji.",
+        evidence_ids: ["ev_wp"]
+      }],
+      proposal_metadata: null,
+      publish_ready: false as const,
+      created_by: "wilku",
+      created_at: "2026-07-16T12:00:00Z"
+    };
+    expect(ContentDraftRevisionSchema.parse(common).schema_version)
+      .toBe("wilq_content_draft_revision_v1");
+
+    const parsed = ContentDraftRevisionSchema.parse({
+      ...common,
+      schema_version: "wilq_content_draft_revision_v2",
+      planning_input_digest: "d".repeat(64),
+      service_card_id: "ekologus_service_environmental_consulting_outsourcing",
+      service_digest: "e".repeat(64),
+      inventory_digest: "f".repeat(64),
+      page_assets: {
+        wordpress_title: common.title,
+        meta_title: "Doradztwo środowiskowe — Ekologus",
+        meta_description: "Sprawdź zakres usługi.",
+        h1: "Kiedy firma potrzebuje doradztwa środowiskowego",
+        lead: "Najpierw sprawdź sytuację firmy."
+      },
+      sections: [{
+        ...common.sections[0],
+        section_id: "section_when_support",
+        query_terms: ["doradztwo środowiskowe"],
+        claim_ids: ["claim_service_scope"]
+      }],
+      faq: [{
+        faq_id: "faq_start",
+        question: "Od czego zacząć?",
+        answer_markdown: "Od sprawdzenia sytuacji firmy.",
+        query_terms: [],
+        evidence_ids: ["ev_wp"],
+        claim_ids: []
+      }],
+      cta_blocks: [{
+        cta_id: "cta_contact",
+        placement: "after_content",
+        body_markdown: "Opisz sytuację firmy.",
+        evidence_ids: ["ev_wp"],
+        claim_ids: []
+      }],
+      internal_links: [{
+        link_id: "link_contact",
+        placement: "section_when_support",
+        target_url: "https://www.ekologus.pl/kontakt/",
+        anchor_text: "Kontakt",
+        evidence_ids: ["ev_wp"],
+        claim_ids: []
+      }]
+    });
+    expect(parsed.page_assets?.meta_description).toBe("Sprawdź zakres usługi.");
+    expect(parsed.sections[0].section_id).toBe("section_when_support");
+    expect(parsed.faq[0].answer_markdown).toBe("Od sprawdzenia sytuacji firmy.");
+    expect(parsed.cta_blocks[0].placement).toBe("after_content");
+    expect(parsed.internal_links[0].target_url).toBe("https://www.ekologus.pl/kontakt/");
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...parsed,
+      internal_links: [
+        parsed.internal_links[0],
+        { ...parsed.internal_links[0], link_id: "link_missing", placement: "missing_section" }
+      ]
+    }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...parsed,
+      service_card_id: ""
+    }).success).toBe(false);
+  });
+});
 
 describe("ContentWorkItemServiceProfileContextSchema", () => {
   it("keeps allowed service candidates and rejects an unknown lifecycle", () => {

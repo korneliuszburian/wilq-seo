@@ -295,6 +295,16 @@ def _assemble_delivery(
         state=revision_state,
         structured_contract_present=(structured.structured_generation_result.contract is not None),
         planning_digest=foundation.approved_planning_digest,
+        planning_input_digest=(
+            None
+            if foundation.planning_workspace is None
+            else foundation.planning_workspace.proposal.planning_input_digest
+        ),
+        service_card_id=(
+            None
+            if foundation.planning_workspace is None
+            else foundation.planning_workspace.proposal.service_card_id
+        ),
     )
     revision_workspace = _gate_revision_workspace(
         revision_workspace,
@@ -312,6 +322,16 @@ def _assemble_delivery(
         item=item,
         draft=draft,
         planning_digest=foundation.approved_planning_digest,
+        planning_input_digest=(
+            None
+            if foundation.planning_workspace is None
+            else foundation.planning_workspace.proposal.planning_input_digest
+        ),
+        service_card_id=(
+            None
+            if foundation.planning_workspace is None
+            else foundation.planning_workspace.proposal.service_card_id
+        ),
         human_review=human_review,
         audit=audit,
         revision_state=revision_state,
@@ -356,6 +376,8 @@ def _wordpress_handoff(
     item: ContentWorkItem,
     draft: ContentDraftPackage | None,
     planning_digest: str | None,
+    planning_input_digest: str | None,
+    service_card_id: str | None,
     human_review: ContentWorkItemHumanReviewResponse,
     audit: ContentWordPressDraftAuditEnvelope | None,
     revision_state: ContentDraftRevisionState | None,
@@ -375,6 +397,8 @@ def _wordpress_handoff(
             draft_package=draft,
             revision_state=revision_state,
             planning_digest=planning_digest,
+            planning_input_digest=planning_input_digest,
+            service_card_id=service_card_id,
         ),
     )
 
@@ -417,6 +441,16 @@ def _operator_journey(
                 draft_package=draft,
                 state=revision_state,
                 planning_digest=foundation.approved_planning_digest,
+                planning_input_digest=(
+                    None
+                    if foundation.planning_workspace is None
+                    else foundation.planning_workspace.proposal.planning_input_digest
+                ),
+                service_card_id=(
+                    None
+                    if foundation.planning_workspace is None
+                    else foundation.planning_workspace.proposal.service_card_id
+                ),
             ),
             revision_bound_wordpress_handoff_ready=(
                 delivery.wordpress_handoff.handoff_result.handoff is not None
@@ -506,6 +540,8 @@ def build_content_draft_revision_workspace(
     state: ContentDraftRevisionState | None,
     structured_contract_present: bool,
     planning_digest: str | None,
+    planning_input_digest: str | None,
+    service_card_id: str | None,
 ) -> ContentDraftRevisionWorkspace:
     current_state = state or ContentDraftRevisionState(
         status="empty",
@@ -517,6 +553,8 @@ def build_content_draft_revision_workspace(
         draft_package=draft_package,
         state=current_state,
         planning_digest=planning_digest,
+        planning_input_digest=planning_input_digest,
+        service_card_id=service_card_id,
     )
     if latest_revision is not None and (context_current or draft_package is None):
         editor_title = latest_revision.title
@@ -596,12 +634,14 @@ def _revision_context_is_current(
     draft_package: ContentDraftPackage | None,
     state: ContentDraftRevisionState | None,
     planning_digest: str | None,
+    planning_input_digest: str | None,
+    service_card_id: str | None,
 ) -> bool:
     if state is None or state.latest_revision is None:
         return True
     canonical_url = item.final_canonical_url or item.intended_final_url
     revision = state.latest_revision
-    return bool(
+    baseline_current = bool(
         draft_package is not None
         and canonical_url
         and revision.draft_package_id == draft_package.id
@@ -609,6 +649,14 @@ def _revision_context_is_current(
         and revision.planning_digest is not None
         and revision.planning_digest == planning_digest
         and revision.final_canonical_url == canonical_url
+    )
+    if not baseline_current or revision.schema_version == "wilq_content_draft_revision_v1":
+        return baseline_current
+    return bool(
+        revision.planning_input_digest is not None
+        and revision.planning_input_digest == planning_input_digest
+        and revision.service_card_id is not None
+        and revision.service_card_id == service_card_id
     )
 
 

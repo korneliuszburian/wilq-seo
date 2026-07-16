@@ -363,7 +363,7 @@ def test_revision_digest_is_computed_from_redacted_content(tmp_path: Path) -> No
         store.append_draft_revision(_append_command(body_markdown=synthetic_token_like_text))
     )
 
-    assert revision.sections[0].body_markdown == "[REDACTED]"
+    assert revision.sections[0].body_markdown == "syntetyczny identyfikator [REDACTED]"
     assert revision.content_digest != "[REDACTED]"
     assert len(revision.content_digest) == 64
 

@@ -1290,6 +1290,7 @@ function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
     ],
     wordpress_section_count: 3,
     wordpress_section_inventory_status: "available",
+    wordpress_content_inventory_status: "available",
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
     inventory_status: "resolved",
@@ -1801,6 +1802,9 @@ function planningWorkspace({
   const proposal = {
     work_item_id: "content_work_item_bdo",
     planning_digest: "a".repeat(64),
+    generation_status: "baseline" as const,
+    input_schema_version: "wilq_content_planning_input_v1",
+    criteria_version: "wilq_people_first_planning_v1",
     final_canonical_url: "https://ekologus.pl/bdo/",
     service_card_id: "service_bdo",
     service_label: "BDO i sprawozdawczość środowiskowa",
@@ -1810,11 +1814,18 @@ function planningWorkspace({
     buyer_problem: "Firma nie wie, które obowiązki BDO jej dotyczą.",
     buyer_trigger: "Zbliża się termin sprawozdania.",
     search_intent: "sprawdzenie obowiązków i wybór wsparcia",
+    angle: "Odpowiedz bezpośrednio na pytania firmy.",
+    value_proposition: "Wyjaśnij zakres wsparcia na podstawie dowodów.",
     cta_direction: "Skontaktuj się z Ekologus.",
     internal_link_directions: ["Kontakt", "Oferta BDO"],
     sections: draftPackage().sections.map((section) => ({
+      section_id: `section_${section.heading.toLowerCase().replaceAll(" ", "_")}`,
       heading: section.heading,
       purpose: section.purpose,
+      reader_question: section.purpose,
+      inventory_disposition: "rewrite" as const,
+      query_terms: [],
+      claim_ids: [],
       evidence_ids: section.evidence_ids
     })),
     search_demand: {
@@ -1843,6 +1854,23 @@ function planningWorkspace({
       evidence_ids: ["ev_gsc_bdo"],
       optional_ads_status: "not_exactly_mapped" as const,
       safe_next_step: "Sprawdź zapytania GSC przypisane do strony i sekcji."
+    },
+    page_assets: {
+      title: "BDO dla firm",
+      h1: "BDO dla firm",
+      lead: "Sprawdź obowiązki BDO swojej firmy.",
+      meta_title: "BDO dla firm — Ekologus",
+      meta_description: "Sprawdź obowiązki BDO swojej firmy."
+    },
+    faq: [],
+    cta_blocks: [],
+    internal_links: [],
+    conditional_hypotheses: [],
+    measurement_plan: {
+      metrics_to_watch: ["gsc_clicks"],
+      baseline_evidence_ids: ["ev_gsc_bdo"],
+      observation_rule: "Porównaj równoważne okresy po publikacji.",
+      success_claim_rule: "Nie claimuj efektu bez obserwacji."
     },
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"]
@@ -1884,7 +1912,9 @@ function revisionWorkspace(): ContentWorkItemWorkflowSnapshotResponse["revision_
       body_markdown: [section.purpose, ...section.draft_notes.map((note) => `- ${note}`)].join(
         "\n\n"
       ),
-      evidence_ids: [...section.evidence_ids]
+      query_terms: [],
+      evidence_ids: [...section.evidence_ids],
+      claim_ids: []
     })),
     can_save: true,
     can_review: false,
@@ -1897,6 +1927,7 @@ function savedDraftRevision(): NonNullable<
 > {
   const workspace = revisionWorkspace();
   return {
+    schema_version: "wilq_content_draft_revision_v1",
     revision_id: "content_revision_bdo_1",
     work_item_id: "content_work_item_bdo",
     revision_number: 1,
@@ -1912,6 +1943,9 @@ function savedDraftRevision(): NonNullable<
       body_markdown:
         index === 0 ? "Zapisana treść pierwszej wersji o obowiązkach BDO." : section.body_markdown
     })),
+    faq: [],
+    cta_blocks: [],
+    internal_links: [],
     publish_ready: false,
     created_by: "wilku",
     created_at: "2026-07-14T04:00:00Z"
@@ -2503,6 +2537,8 @@ function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecuti
         post_status: "draft",
         title: "BDO dla firm",
         content_markdown: "# BDO dla firm",
+        meta_write_status: "not_present",
+        metadata_blockers: [],
         final_canonical_url: "https://ekologus.pl/bdo/",
         evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
         publish_allowed: false,

@@ -520,7 +520,11 @@ describe("content workflow API helpers", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       base_revision_id: "content_revision_bdo_1",
       title: revision.title,
-      sections,
+      sections: sections.map((section) => ({
+        ...section,
+        query_terms: [],
+        claim_ids: []
+      })),
       created_by: "wilku"
     });
     expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
@@ -1126,6 +1130,7 @@ function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
     wordpress_section_headings: ["Co to jest BDO", "Kogo dotyczy BDO"],
     wordpress_section_count: 2,
     wordpress_section_inventory_status: "available",
+    wordpress_content_inventory_status: "available",
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
     inventory_status: "resolved",

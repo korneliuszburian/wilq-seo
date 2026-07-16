@@ -1168,9 +1168,12 @@ export const ContentWorkItemSnapshotAuditRequestSchema = z.object({
 });
 
 export const ContentDraftRevisionSectionSchema = z.object({
+  section_id: z.string().min(1).nullable().optional(),
   heading: z.string().refine((value) => value.trim().length > 0),
   body_markdown: z.string().refine((value) => value.trim().length > 0),
-  evidence_ids: z.array(z.string()).default([])
+  query_terms: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
+  evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
+  claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
 });
 
 export const ContentWordPressDraftHandoffSchema = z.object({
@@ -1190,6 +1193,7 @@ export const ContentWordPressDraftHandoffSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   revision_binding: ContentDraftRevisionBindingSchema.nullable().optional(),
   revision_sections: z.array(ContentDraftRevisionSectionSchema).default([]),
+  revision_document: z.lazy(() => ContentDraftRevisionSchema).nullable().optional(),
   publish_allowed: z.boolean(),
   destructive_update_allowed: z.boolean()
 });
@@ -1217,6 +1221,16 @@ export const ContentWordPressDraftExecutionPayloadSchema = z.object({
   post_status: z.literal("draft"),
   title: z.string(),
   content_markdown: z.string(),
+  meta_title: z.string().nullable().optional(),
+  meta_description: z.string().nullable().optional(),
+  meta_write_status: z.enum(["not_present", "review_required", "mapped"])
+    .default("not_present"),
+  metadata_blockers: z.array(z.object({
+    code: z.literal("missing_wordpress_meta_mapping"),
+    label: z.string(),
+    reason: z.string(),
+    next_step: z.string()
+  })).default([]),
   final_canonical_url: z.string(),
   evidence_ids: z.array(z.string()).default([]),
   publish_allowed: z.boolean(),
@@ -1542,7 +1556,47 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     }
   });
 
+export const ContentDraftRevisionPageAssetsSchema = z.object({
+  wordpress_title: z.string().min(1),
+  meta_title: z.string().min(1),
+  meta_description: z.string().min(1),
+  h1: z.string().min(1),
+  lead: z.string().min(1)
+});
+
+export const ContentDraftRevisionFaqItemSchema = z.object({
+  faq_id: z.string().min(1),
+  question: z.string().min(1),
+  answer_markdown: z.string().min(1),
+  query_terms: z.array(z.string().refine((value) => value.trim().length > 0)).default([]),
+  evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).min(1),
+  claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
+});
+
+export const ContentDraftRevisionCtaBlockSchema = z.object({
+  cta_id: z.string().min(1),
+  placement: z.string().min(1),
+  body_markdown: z.string().min(1),
+  evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).min(1),
+  claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
+});
+
+export const ContentDraftRevisionInternalLinkSchema = z.object({
+  link_id: z.string().min(1),
+  placement: z.string().min(1),
+  target_url: z.string().url().refine((value) => {
+    const hostname = new URL(value).hostname.toLowerCase();
+    return hostname === "ekologus.pl" || hostname === "www.ekologus.pl";
+  }, "Internal links must target the public Ekologus site."),
+  anchor_text: z.string().min(1),
+  evidence_ids: z.array(z.string().refine((value) => value.trim().length > 0)).min(1),
+  claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
+});
+
 export const ContentDraftRevisionSchema = z.object({
+  schema_version: z
+    .enum(["wilq_content_draft_revision_v1", "wilq_content_draft_revision_v2"])
+    .default("wilq_content_draft_revision_v1"),
   revision_id: z.string(),
   work_item_id: z.string(),
   revision_number: z.number().int().positive(),
@@ -1551,13 +1605,81 @@ export const ContentDraftRevisionSchema = z.object({
   draft_package_id: z.string(),
   draft_package_digest: z.string().regex(/^[0-9a-f]{64}$/),
   planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  service_card_id: z.string().min(1).nullable().optional(),
+  service_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  inventory_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   final_canonical_url: z.string(),
   title: z.string().refine((value) => value.trim().length > 0),
+  page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
   sections: z.array(ContentDraftRevisionSectionSchema).min(1),
+  faq: z.array(ContentDraftRevisionFaqItemSchema).default([]),
+  cta_blocks: z.array(ContentDraftRevisionCtaBlockSchema).default([]),
+  internal_links: z.array(ContentDraftRevisionInternalLinkSchema).default([]),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
+}).superRefine((revision, context) => {
+  if (revision.schema_version !== "wilq_content_draft_revision_v2") return;
+  const requiredBindings = [
+    revision.planning_input_digest,
+    revision.service_card_id,
+    revision.service_digest,
+    revision.inventory_digest,
+    revision.page_assets
+  ];
+  if (requiredBindings.some((value) => value == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["schema_version"],
+      message: "full-document revision requires exact bindings and page assets"
+    });
+  }
+  if (revision.page_assets?.wordpress_title !== revision.title) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["page_assets", "wordpress_title"],
+      message: "WordPress title must match the revision title"
+    });
+  }
+  const sectionIds = revision.sections.map((section) => section.section_id);
+  if (sectionIds.some((value) => !value) || new Set(sectionIds).size !== sectionIds.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sections"],
+      message: "full-document sections require unique stable IDs"
+    });
+  }
+  if (revision.sections.some((section) => section.evidence_ids.length === 0)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sections"],
+      message: "full-document sections require evidence lineage"
+    });
+  }
+  const stableIds: Array<[string[], Array<string | number>, string]> = [
+    [revision.faq.map((item) => item.faq_id), ["faq"], "FAQ IDs must be unique"],
+    [revision.cta_blocks.map((item) => item.cta_id), ["cta_blocks"], "CTA IDs must be unique"],
+    [revision.internal_links.map((item) => item.link_id), ["internal_links"], "link IDs must be unique"]
+  ];
+  for (const [values, path, message] of stableIds) {
+    if (new Set(values).size !== values.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path, message });
+    }
+  }
+  const allowedPlacements = new Set(["after_lead", "after_content", ...sectionIds]);
+  const placements = [
+    ...revision.cta_blocks.map((item) => item.placement),
+    ...revision.internal_links.map((item) => item.placement)
+  ];
+  if (placements.some((placement) => !allowedPlacements.has(placement))) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["internal_links"],
+      message: "CTA and link placements must target the document structure"
+    });
+  }
 });
 
 export const ContentDraftRevisionDecisionSchema = z.enum([

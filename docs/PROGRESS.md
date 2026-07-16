@@ -79,6 +79,19 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   WordPressa bez tej decyzji. Realne karty nadal wymagają owner review, realny
   model nie został uruchomiony, a nowa tabela nie została aktywowana w local
   state bez maintenance window.
+- `wilq-seo-1oa.36.5` dodaje kompatybilną rewizję pełnego dokumentu v2.
+  Immutable rekord przechowuje WordPress title, meta, H1, lead, sekcje ze
+  stabilnymi ID, FAQ, CTA, linki i exact bindingi plan/service/inventory.
+  Historyczne v1 zachowuje dawny digest; w v2 zmiana dowolnego page assetu
+  zmienia digest, usuwa aktualność review i wraca w readbacku. Child revision
+  zachowuje wszystkie nieedytowane assety. Revision-bound WordPress dry-run
+  renderuje pełne body, ale meta pozostaje w payloadzie z typed blockerem do
+  czasu potwierdzenia mapowania ACF/SEO. Focused proof używa tymczasowego SQLite
+  i nie aktywuje nowych tabel w realnym local state. Linki wewnętrzne wymagają
+  lineage i publicznego hosta Ekologus. Naprawiono też false positive redaktora,
+  który traktował długi slug z myślnikami jak sekret, niszczył tytuł/body i mógł
+  błędnie uznać zmieniony zapis za idempotentny; publiczny API falsifier ponownie
+  zwraca `409 stale_base`, zachowując widoczny tekst marketera.
 - Live homepage UAT ujawnił dwie luki w prezentacji popytu. Query GSC
   dziedziczyły wszystkie trzy
   sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence

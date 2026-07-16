@@ -5,14 +5,16 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-`wilq-seo-1oa.36.2` odzyskuje dynamiczny baseline planowania po dwóch review,
-które odrzuciły hardkodowane intencje, sekcje, CTA i mapowanie zapytań dla
-jednego tematu. Ogólny mapper zapytanie → sekcja pozostaje konserwatywny:
-wymaga wspólnego evidence i pokrycia tokenów, a niepewne zapytanie zachowuje
-status `page_only`; focused observer chroni regresję na obcym terminie
-`subdomena firmowa`. W modułach planowania nie ma już osobnej gałęzi BDO ani
-`topic_terms.py`. Następny slice ma naprawić ogólny wybór Service Profile dla
-dwóch exact case'ów przez ten sam typed kontrakt.
+`wilq-seo-1oa.36.5` rozszerza trwałą rewizję do pełnego dokumentu v2 bez
+zmiany istniejącego journey. Rewizja obejmuje teraz title/meta/H1/lead, sekcje
+ze stabilnymi ID, FAQ, CTA, linki wewnętrzne oraz exact digests planu, usługi i
+inventory. Jeden digest obejmuje wszystkie te pola; zmiana dowolnego page assetu
+unieważnia exact review. Stare rekordy v1 pozostają czytelne i zachowują swój
+historyczny algorytm digestu. Revision-bound WordPress dry-run renderuje pełny
+dokument, ale zachowuje meta pola jako `review_required` z typed blockerem,
+ponieważ nie ma potwierdzonego mapowania ACF/SEO. Proof używa wyłącznie
+tymczasowego SQLite; nie uruchamiaj migracji ani restartu realnego local state
+bez backupu i maintenance window.
 
 `wilq-seo-r564.10` domknął zwarty exact-revision flow człowieka w
 `/content-workflow`: podgląd, review, potwierdzenie, kontrola bezpieczeństwa i
@@ -47,9 +49,11 @@ WordPressa; exact proposal POST jest syntetycznie przechwycony.
 
 `wilq-seo-r564.14` usuwa legacy OpenAI SDK/API-key runtime, pięć publicznych
 dróg ujawnienia full generation contract oraz martwe browser schemas. OpenAPI
-ma wyłącznie exact `codex-proposal`; internal structured contract/output i
-preview blockers pozostają wymagane przez ten seam. Nie dodawaj `OPENAI_API_KEY`,
-Agents SDK, Ollamy ani alternatywnej ścieżki modelu.
+ma dwa ograniczone modelowe POST-y: exact section `codex-proposal` oraz
+versioned `planning-proposals`; oba używają tego samego server-side app-servera,
+a ich GET-y pozostają czystym odczytem. Internal structured contract/output i
+preview blockers pozostają wymagane przez te seamy. Nie dodawaj
+`OPENAI_API_KEY`, Agents SDK, Ollamy ani alternatywnej ścieżki modelu.
 
 `c9h9.4` jest zamknięty i nie wolno go powtarzać. Po każdym slice uruchom
 `bd ready --json`, zaktualizuj ten handoff, zrób świadomy commit/push i
@@ -89,10 +93,12 @@ kontynuuj najwyższy bezpieczny task.
   revision-bound ActionObject; zwykła sesja kończy się decyzją marketera i
   bezpiecznym następnym krokiem. Fresh eval ma usefulness 9/10, ale nie dowodzi
   jakości finalnego tekstu.
-- Nowa rewizja przechowuje exact `planning_digest`; ten sam digest przechodzi
-  do child revision Codexa i WordPress ActionObject bindingu. Cofnięcie decyzji
-  planistycznej lub zmiana proposal unieważnia review/handoff bez kasowania
-  zapisanej wersji. Rewizje sprzed bindingu są czytelne, ale jawnie stale.
+- Rewizja v2 przechowuje exact `planning_digest`, `planning_input_digest`,
+  service/inventory digests i pełne page assets; te same bindingi przechodzą do
+  child revision Codexa. Cofnięcie decyzji albo zmiana inventory, usługi,
+  wiedzy lub metryk unieważnia review/handoff bez kasowania zapisanej wersji.
+  Rewizje v1 pozostają czytelne na historycznym digescie, ale brak bieżącego
+  bindingu nadal oznacza stale.
 - Ocena 8/10 dotyczy wyłącznie bezpieczeństwa exact handoffu. Operator workflow
   ma obecnie około 6/10, ale jakość realnego tekstu pozostaje około 5/10:
   sekcję można już poprawić przez grounded Codex proposal i porównać wynik,

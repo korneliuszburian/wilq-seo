@@ -12,6 +12,8 @@ from wilq.content.handoff.wordpress import (
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionReview,
     ContentDraftRevisionState,
     content_draft_package_digest,
 )
@@ -23,6 +25,8 @@ def build_revision_bound_wordpress_draft_handoff(
     draft_package: ContentDraftPackage | None,
     revision_state: ContentDraftRevisionState,
     planning_digest: str | None,
+    planning_input_digest: str | None,
+    service_card_id: str | None,
 ) -> ContentWordPressDraftHandoffResult:
     """Prepare a draft-only handoff from one exact approved immutable revision."""
     blockers = revision_bound_wordpress_draft_handoff_blockers(
@@ -30,6 +34,8 @@ def build_revision_bound_wordpress_draft_handoff(
         draft_package=draft_package,
         revision_state=revision_state,
         planning_digest=planning_digest,
+        planning_input_digest=planning_input_digest,
+        service_card_id=service_card_id,
     )
     if blockers:
         return ContentWordPressDraftHandoffResult(blockers=blockers)
@@ -56,11 +62,7 @@ def build_revision_bound_wordpress_draft_handoff(
         approval_decision_id=approval.decision_id,
         final_canonical_url=revision.final_canonical_url,
     )
-    revision_evidence = _unique(
-        evidence_id
-        for section in revision.sections
-        for evidence_id in section.evidence_ids
-    )
+    revision_evidence = _revision_evidence_ids(revision)
     return ContentWordPressDraftHandoffResult(
         handoff=ContentWordPressDraftHandoff(
             id=handoff_id,
@@ -73,6 +75,7 @@ def build_revision_bound_wordpress_draft_handoff(
             evidence_ids=revision_evidence,
             revision_binding=binding,
             revision_sections=[section.model_copy(deep=True) for section in revision.sections],
+            revision_document=revision.model_copy(deep=True),
         )
     )
 
@@ -83,6 +86,8 @@ def revision_bound_wordpress_draft_handoff_blockers(
     draft_package: ContentDraftPackage | None,
     revision_state: ContentDraftRevisionState,
     planning_digest: str | None,
+    planning_input_digest: str | None,
+    service_card_id: str | None,
 ) -> list[ContentWordPressDraftHandoffBlocker]:
     blockers: list[ContentWordPressDraftHandoffBlocker] = []
     revision = revision_state.latest_revision
@@ -107,15 +112,7 @@ def revision_bound_wordpress_draft_handoff_blockers(
             )
         )
 
-    if revision.planning_digest is None:
-        blockers.append(
-            _blocker(
-                "missing_planning_binding",
-                "Wersja nie jest powiązana z zatwierdzonym planem",
-                "Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
-                "Zapisz nową wersję po zatwierdzeniu aktualnego zakresu i planu sekcji.",
-            )
-        )
+    blockers.extend(_planning_binding_blockers(revision))
 
     if item.canonical_status != "resolved" or not item.final_canonical_url:
         blockers.append(
@@ -155,21 +152,13 @@ def revision_bound_wordpress_draft_handoff_blockers(
             )
         )
 
-    context_current = bool(
-        draft_package is not None
-        and item.final_canonical_url
-        and revision.work_item_id == item.id
-        and draft_package.work_item_id == item.id
-        and revision.draft_package_id == draft_package.id
-        and revision.draft_package_digest == content_draft_package_digest(draft_package)
-        and revision.planning_digest == planning_digest
-        and revision.final_canonical_url == item.final_canonical_url
-        and [
-            (section.heading, section.evidence_ids) for section in revision.sections
-        ]
-        == [
-            (section.heading, section.evidence_ids) for section in draft_package.sections
-        ]
+    context_current = _revision_context_is_current(
+        item=item,
+        draft_package=draft_package,
+        revision=revision,
+        planning_digest=planning_digest,
+        planning_input_digest=planning_input_digest,
+        service_card_id=service_card_id,
     )
     if not context_current:
         blockers.append(
@@ -181,21 +170,80 @@ def revision_bound_wordpress_draft_handoff_blockers(
             )
         )
 
-    revision_evidence = {
-        evidence_id
-        for section in revision.sections
-        for evidence_id in section.evidence_ids
-    }
-    if approval is not None and not set(approval.evidence_ids).issubset(revision_evidence):
-        blockers.append(
-            _blocker(
-                "revision_approval_mismatch",
-                "Decyzja nie pasuje do dowodów wersji",
-                "Zatwierdzenie wskazuje dowody spoza dokładnej zapisanej wersji.",
-                "Sprawdź ponownie tę wersję, używając wyłącznie jej powiązanych dowodów.",
-            )
-        )
+    revision_evidence = set(_revision_evidence_ids(revision))
+    blockers.extend(_approval_evidence_blockers(approval, revision_evidence))
     return blockers
+
+
+def _revision_context_is_current(
+    *,
+    item: ContentWorkItem,
+    draft_package: ContentDraftPackage | None,
+    revision: ContentDraftRevision,
+    planning_digest: str | None,
+    planning_input_digest: str | None,
+    service_card_id: str | None,
+) -> bool:
+    baseline_current = bool(
+        draft_package is not None
+        and item.final_canonical_url
+        and revision.work_item_id == item.id
+        and draft_package.work_item_id == item.id
+        and revision.draft_package_id == draft_package.id
+        and revision.draft_package_digest == content_draft_package_digest(draft_package)
+        and revision.planning_digest == planning_digest
+        and revision.final_canonical_url == item.final_canonical_url
+        and [(section.heading, section.evidence_ids) for section in revision.sections]
+        == [(section.heading, section.evidence_ids) for section in draft_package.sections]
+    )
+    if not baseline_current or revision.schema_version == "wilq_content_draft_revision_v1":
+        return baseline_current
+    return bool(
+        revision.planning_input_digest == planning_input_digest
+        and revision.service_card_id == service_card_id
+    )
+
+
+def _planning_binding_blockers(
+    revision: ContentDraftRevision,
+) -> list[ContentWordPressDraftHandoffBlocker]:
+    if revision.planning_digest is not None:
+        return []
+    return [
+        _blocker(
+            "missing_planning_binding",
+            "Wersja nie jest powiązana z zatwierdzonym planem",
+            "Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
+            "Zapisz nową wersję po zatwierdzeniu aktualnego zakresu i planu sekcji.",
+        )
+    ]
+
+
+def _approval_evidence_blockers(
+    approval: ContentDraftRevisionReview | None,
+    revision_evidence: set[str],
+) -> list[ContentWordPressDraftHandoffBlocker]:
+    if approval is None or set(approval.evidence_ids).issubset(revision_evidence):
+        return []
+    return [
+        _blocker(
+            "revision_approval_mismatch",
+            "Decyzja nie pasuje do dowodów wersji",
+            "Zatwierdzenie wskazuje dowody spoza dokładnej zapisanej wersji.",
+            "Sprawdź ponownie tę wersję, używając wyłącznie jej powiązanych dowodów.",
+        )
+    ]
+
+
+def _revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:
+    return _unique(
+        [
+            *(evidence_id for section in revision.sections for evidence_id in section.evidence_ids),
+            *(evidence_id for item in revision.faq for evidence_id in item.evidence_ids),
+            *(evidence_id for item in revision.cta_blocks for evidence_id in item.evidence_ids),
+            *(evidence_id for item in revision.internal_links for evidence_id in item.evidence_ids),
+        ]
+    )
 
 
 def _unique(values: Iterable[str]) -> list[str]:
