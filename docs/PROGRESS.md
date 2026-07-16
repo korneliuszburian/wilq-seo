@@ -20,6 +20,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.8` nadaje SQLite i DuckDB jawne wersje schematu oraz
+  transakcyjnie chroni istniejącą migrację metryk. `wilq storage
+  backup|restore` kopiuje oba store'y wyłącznie do nowych alternatywnych
+  ścieżek i zwraca proof wersji oraz liczników rewizji, auditów i metryk.
+  Syntetyczny backup→restore zachował 1 rewizję, 3 audity i 1 metric fact,
+  a przerwana migracja
+  zachowała stary readback. Realny runtime nie został zmigrowany ani użyty do
+  restore drill — to wymaga maintenance window.
 - `wilq-seo-amj2.7` wymusza prywatne prawa lokalnego pilota: runtime i
   kanoniczny state dir 0700, pid/log/SQLite/DuckDB 0600. Start normalizuje
   istniejące artefakty bez zmiany treści. Custom DB path nie zmienia praw
@@ -272,10 +280,10 @@ pilota nie jest już luźną listą pomysłów:
 
 1. Typed demand evidence i zgodny content skill są domknięte w `amj2.3`–`.4`;
    nie dodawać alternatywnego content entrypointu.
-2. Domknąć lokalną granicę pilota wersjonowanym recovery proof (`amj2.8`);
-   loopback-only `.5`, server-owned identity `.6` i private modes `.7` są
-   zakończone.
-3. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
+2. Lokalna granica pilota `.5`–`.8` ma loopback-only, server-owned identity,
+   prywatne tryby i syntetyczny versioned recovery proof. Realny restore drill
+   nadal wymaga maintenance window.
+3. Domknąć measurement i learning (`wilq-seo-amj2.9`–`.10`) wyłącznie na
    potwierdzonym publication event i persisted metric evidence; klient nie może
    zadeklarować sukcesu.
 
@@ -293,9 +301,10 @@ zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie
   trzeciej propozycji.
 - Principal `local_operator` ma jawny trust `local_unverified`; nadal nie jest
   uwierzytelnionym ownerem, ekspertem ani tenant/actor contractem.
-- Obecny runtime jest wymuszony jako loopback-only, a state/logi mają prywatne
-  prawa. Nadal brakuje syntetycznego, niedestrukcyjnego storage recovery proof.
-  Remote deployment wymaga osobnego auth/TLS/owner
+- Obecny runtime jest wymuszony jako loopback-only, state/logi mają prywatne
+  prawa, a recovery ma syntetyczny proof na alternatywnych ścieżkach. Realna
+  migracja i restore drill wymagają maintenance window. Remote deployment
+  wymaga osobnego auth/TLS/owner
   contractu; bieżący runtime nie ma zdalnego bypassu.
 - PostgreSQL/HA, monitoring i alerting, retencja/legal hold, realny restore
   drill, rotacja credentials oraz publiczny reverse proxy pozostają decyzjami

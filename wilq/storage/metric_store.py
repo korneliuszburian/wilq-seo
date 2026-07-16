@@ -13,6 +13,10 @@ import duckdb
 from wilq.connectors.vendor import VendorMetricFact
 from wilq.schemas import ConnectorRefreshRun, MetricFact
 from wilq.storage.private_paths import prepare_private_store_path
+from wilq.storage.schema_versions import (
+    ensure_duckdb_schema_version,
+    reject_newer_duckdb_schema,
+)
 
 DEFAULT_METRIC_DB = Path(".local-lab/state/wilq.duckdb")
 DUCKDB_CONNECT_ATTEMPTS = 5
@@ -47,11 +51,17 @@ class DuckDbMetricStore:
                 FROM connector_metric_facts
                 """
             ).fetchone()
+            version_row = connection.execute(
+                "SELECT version FROM wilq_schema_metadata WHERE store_key = 'metric_store'"
+            ).fetchone()
         if row is None:
             raise RuntimeError("DuckDB metric store status query returned no row")
+        if version_row is None:
+            raise RuntimeError("DuckDB metric store schema version is missing")
         return {
             "backend": "duckdb",
             "enabled": True,
+            "schema_version": int(version_row[0]),
             "path_configured": bool(os.getenv("WILQ_METRIC_DB")),
             "metric_fact_count": int(row[0]),
             "connector_count": int(row[1]),
@@ -443,31 +453,43 @@ class DuckDbMetricStore:
             return _connect_with_retry(self.path, read_only=True)
         connection = _connect_with_retry(self.path)
         self.path.chmod(0o600)
-        self._ensure_schema(connection)
+        try:
+            self._ensure_schema(connection)
+        except Exception:
+            connection.close()
+            raise
         return connection
 
     def _ensure_schema(self, connection: duckdb.DuckDBPyConnection) -> None:
-        self._migrate_schema(connection)
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS connector_metric_facts (
-              run_id VARCHAR NOT NULL,
-              connector_id VARCHAR NOT NULL,
-              metric_name VARCHAR NOT NULL,
-              metric_value_double DOUBLE,
-              metric_value_text VARCHAR,
-              value_kind VARCHAR NOT NULL,
-              period VARCHAR NOT NULL,
-              unit VARCHAR,
-              dimensions_json VARCHAR NOT NULL,
-              mode VARCHAR NOT NULL,
-              status VARCHAR NOT NULL,
-              collected_at TIMESTAMP NOT NULL,
-              evidence_id VARCHAR NOT NULL,
-              PRIMARY KEY (run_id, metric_name, dimensions_json)
+        connection.execute("BEGIN TRANSACTION")
+        try:
+            reject_newer_duckdb_schema(connection)
+            self._migrate_schema(connection)
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS connector_metric_facts (
+                  run_id VARCHAR NOT NULL,
+                  connector_id VARCHAR NOT NULL,
+                  metric_name VARCHAR NOT NULL,
+                  metric_value_double DOUBLE,
+                  metric_value_text VARCHAR,
+                  value_kind VARCHAR NOT NULL,
+                  period VARCHAR NOT NULL,
+                  unit VARCHAR,
+                  dimensions_json VARCHAR NOT NULL,
+                  mode VARCHAR NOT NULL,
+                  status VARCHAR NOT NULL,
+                  collected_at TIMESTAMP NOT NULL,
+                  evidence_id VARCHAR NOT NULL,
+                  PRIMARY KEY (run_id, metric_name, dimensions_json)
+                )
+                """
             )
-            """
-        )
+            ensure_duckdb_schema_version(connection)
+        except Exception:
+            connection.execute("ROLLBACK")
+            raise
+        connection.execute("COMMIT")
 
     def _migrate_schema(self, connection: duckdb.DuckDBPyConnection) -> None:
         if not _table_exists(connection, "connector_metric_facts"):
@@ -476,6 +498,7 @@ class DuckDbMetricStore:
         required_columns = {"period", "unit", "dimensions_json"}
         if required_columns.issubset(columns):
             return
+        connection.execute("DROP TABLE IF EXISTS connector_metric_facts_v2")
         connection.execute(
             """
             CREATE TABLE connector_metric_facts_v2 (

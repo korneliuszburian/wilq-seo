@@ -20,6 +20,10 @@ from wilq.schemas import (
 )
 from wilq.security.redaction import redact_mapping
 from wilq.storage.private_paths import prepare_private_store_path
+from wilq.storage.schema_versions import (
+    ensure_sqlite_schema_version,
+    reject_newer_sqlite_schema,
+)
 from wilq.workflows.models import WorkflowRun
 
 DEFAULT_STATE_DB = Path(".local-lab/state/wilq.sqlite3")
@@ -44,6 +48,7 @@ class LocalStateStore:
         return {
             "backend": "sqlite",
             "enabled": True,
+            "schema_version": self._schema_version(),
             "codex_runs": self._count_with_query("SELECT COUNT(*) AS count FROM codex_runs"),
             "workflow_runs": self._count_with_query("SELECT COUNT(*) AS count FROM workflow_runs"),
             "audit_events": self._count_with_query("SELECT COUNT(*) AS count FROM audit_events"),
@@ -460,6 +465,13 @@ class LocalStateStore:
             row = connection.execute(query).fetchone()
         return cast(int, row["count"])
 
+    def _schema_version(self) -> int:
+        with self._connect() as connection:
+            row = connection.execute("PRAGMA user_version").fetchone()
+        if row is None:
+            raise RuntimeError("SQLite schema version is unavailable")
+        return int(row[0])
+
     def _connect(self) -> sqlite3.Connection:
         prepare_private_store_path(
             self.path,
@@ -472,6 +484,7 @@ class LocalStateStore:
         return connection
 
     def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        reject_newer_sqlite_schema(connection)
         connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS codex_runs (
@@ -542,6 +555,7 @@ class LocalStateStore:
             );
             """
         )
+        ensure_sqlite_schema_version(connection)
 
 
 def _model_json(model: BaseModel) -> str:

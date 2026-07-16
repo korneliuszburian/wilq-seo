@@ -31,6 +31,7 @@ from wilq.jobs.scheduler import list_job_runs, run_job, scheduler_status
 from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRequest
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+from wilq.storage.recovery import copy_storage_pair
 
 app = typer.Typer(help="WILQ local operator CLI for API-backed runtime checks.")
 connectors_app = typer.Typer(help="Connector readiness and refresh commands.")
@@ -39,12 +40,14 @@ jobs_app = typer.Typer(help="Local job orchestration commands.")
 google_ads_app = typer.Typer(help="Google Ads OAuth and operator setup commands.")
 localo_app = typer.Typer(help="Localo MCP OAuth setup commands.")
 wordpress_apply_app = typer.Typer(help="Recovery of interrupted WordPress draft applies.")
+storage_app = typer.Typer(help="Non-destructive local pilot storage recovery commands.")
 app.add_typer(connectors_app, name="connectors")
 app.add_typer(metrics_app, name="metrics")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(google_ads_app, name="google-ads")
 app.add_typer(localo_app, name="localo")
 app.add_typer(wordpress_apply_app, name="wordpress-apply")
+app.add_typer(storage_app, name="storage")
 
 
 @app.command()
@@ -103,6 +106,59 @@ def metrics_list(
     """Print stored connector metric facts."""
     facts = metric_store().list_metric_facts(connector_id, limit)
     _print_json([fact.model_dump(mode="json") for fact in facts])
+
+
+@storage_app.command("backup")
+def storage_backup(
+    sqlite_source: Annotated[Path, typer.Option("--sqlite-source")],
+    duckdb_source: Annotated[Path, typer.Option("--duckdb-source")],
+    sqlite_destination: Annotated[Path, typer.Option("--sqlite-destination")],
+    duckdb_destination: Annotated[Path, typer.Option("--duckdb-destination")],
+) -> None:
+    """Copy both stores to new alternate paths and report recovery proof."""
+    _copy_storage_pair(
+        sqlite_source=sqlite_source,
+        duckdb_source=duckdb_source,
+        sqlite_destination=sqlite_destination,
+        duckdb_destination=duckdb_destination,
+    )
+
+
+@storage_app.command("restore")
+def storage_restore(
+    sqlite_backup: Annotated[Path, typer.Option("--sqlite-backup")],
+    duckdb_backup: Annotated[Path, typer.Option("--duckdb-backup")],
+    sqlite_destination: Annotated[Path, typer.Option("--sqlite-destination")],
+    duckdb_destination: Annotated[Path, typer.Option("--duckdb-destination")],
+) -> None:
+    """Restore a backup into new alternate paths and report recovery proof."""
+    _copy_storage_pair(
+        sqlite_source=sqlite_backup,
+        duckdb_source=duckdb_backup,
+        sqlite_destination=sqlite_destination,
+        duckdb_destination=duckdb_destination,
+    )
+
+
+def _copy_storage_pair(
+    *,
+    sqlite_source: Path,
+    duckdb_source: Path,
+    sqlite_destination: Path,
+    duckdb_destination: Path,
+) -> None:
+    proof = copy_storage_pair(
+        sqlite_source=sqlite_source,
+        duckdb_source=duckdb_source,
+        sqlite_destination=sqlite_destination,
+        duckdb_destination=duckdb_destination,
+    )
+    _print_json(
+        {
+            "destination_mode": "alternative_paths_only",
+            "proof": proof,
+        }
+    )
 
 
 @jobs_app.command("status")

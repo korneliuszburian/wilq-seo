@@ -38,7 +38,12 @@ from wilq.content.workflow.revisions import (
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent, CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
-from wilq.storage.local_state import state_db_path
+from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
+from wilq.storage.private_paths import prepare_private_store_path
+from wilq.storage.schema_versions import (
+    ensure_sqlite_schema_version,
+    reject_newer_sqlite_schema,
+)
 
 WordPressRevisionApplyClaimResult = Literal[
     "acquired",
@@ -759,13 +764,18 @@ class ContentWorkflowStore:
         )
 
     def _connect(self) -> sqlite3.Connection:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        prepare_private_store_path(
+            self.path,
+            normalize_existing_parent=self.path == DEFAULT_STATE_DB,
+        )
         connection = sqlite3.connect(self.path)
+        self.path.chmod(0o600)
         connection.row_factory = sqlite3.Row
         self._ensure_schema(connection)
         return connection
 
     def _ensure_schema(self, connection: sqlite3.Connection) -> None:
+        reject_newer_sqlite_schema(connection)
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS content_human_reviews (
@@ -887,6 +897,7 @@ class ContentWorkflowStore:
             ON content_wordpress_revision_apply_claims (work_item_id, status)
             """
         )
+        ensure_sqlite_schema_version(connection)
 
 
 def _model_json(
