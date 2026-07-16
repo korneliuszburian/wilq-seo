@@ -12,6 +12,7 @@ import duckdb
 
 from wilq.connectors.vendor import VendorMetricFact
 from wilq.schemas import ConnectorRefreshRun, MetricFact
+from wilq.storage.private_paths import prepare_private_store_path
 
 DEFAULT_METRIC_DB = Path(".local-lab/state/wilq.duckdb")
 DUCKDB_CONNECT_ATTEMPTS = 5
@@ -434,10 +435,14 @@ class DuckDbMetricStore:
         return [_metric_fact_from_row(row) for row in rows]
 
     def _connect(self, read_only: bool = False) -> duckdb.DuckDBPyConnection:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        prepare_private_store_path(
+            self.path,
+            normalize_existing_parent=self.path == DEFAULT_METRIC_DB,
+        )
         if read_only and self.path.exists():
             return _connect_with_retry(self.path, read_only=True)
         connection = _connect_with_retry(self.path)
+        self.path.chmod(0o600)
         self._ensure_schema(connection)
         return connection
 

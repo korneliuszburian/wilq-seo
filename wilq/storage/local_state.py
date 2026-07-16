@@ -19,6 +19,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
 )
 from wilq.security.redaction import redact_mapping
+from wilq.storage.private_paths import prepare_private_store_path
 from wilq.workflows.models import WorkflowRun
 
 DEFAULT_STATE_DB = Path(".local-lab/state/wilq.sqlite3")
@@ -460,8 +461,12 @@ class LocalStateStore:
         return cast(int, row["count"])
 
     def _connect(self) -> sqlite3.Connection:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        prepare_private_store_path(
+            self.path,
+            normalize_existing_parent=self.path == DEFAULT_STATE_DB,
+        )
         connection = sqlite3.connect(self.path)
+        self.path.chmod(0o600)
         connection.row_factory = sqlite3.Row
         self._ensure_schema(connection)
         return connection

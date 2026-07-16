@@ -19,9 +19,39 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     MetricFact,
 )
+from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import _connect_with_retry, metric_store
 
 client = TestClient(app)
+
+
+def test_local_storage_paths_are_private(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    state_dir = tmp_path / "state"
+    state_path = state_dir / "wilq.sqlite3"
+    metric_path = state_dir / "wilq.duckdb"
+    monkeypatch.setenv("WILQ_STATE_DB", str(state_path))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(metric_path))
+
+    local_state_store().status()
+    metric_store().status()
+
+    assert state_dir.stat().st_mode & 0o777 == 0o700
+    assert state_path.stat().st_mode & 0o777 == 0o600
+    assert metric_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_custom_store_path_does_not_change_existing_parent_mode(tmp_path: Path) -> None:
+    from wilq.storage.private_paths import prepare_private_store_path
+
+    shared_parent = tmp_path / "shared"
+    shared_parent.mkdir(mode=0o755)
+
+    prepare_private_store_path(
+        shared_parent / "wilq.sqlite3",
+        normalize_existing_parent=False,
+    )
+
+    assert shared_parent.stat().st_mode & 0o777 == 0o755
 
 
 def test_connector_refresh_persists_metric_facts_to_duckdb(

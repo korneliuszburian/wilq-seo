@@ -66,6 +66,31 @@ def test_local_stack_rejects_non_loopback_bind_before_running_command(tmp_path: 
         assert not runtime_dir.exists()
 
 
+def test_local_stack_normalizes_runtime_directory_and_file_modes(tmp_path: Path) -> None:
+    runtime_dir = tmp_path / "runtime"
+    runtime_dir.mkdir(mode=0o755)
+    pid_file = runtime_dir / "api.pid"
+    log_file = runtime_dir / "api.log"
+    pid_file.write_text("", encoding="utf-8")
+    log_file.write_text("", encoding="utf-8")
+    pid_file.chmod(0o644)
+    log_file.chmod(0o644)
+
+    result = subprocess.run(
+        [str(STACK_SCRIPT), "status"],
+        cwd=ROOT,
+        env={**os.environ, "WILQ_RUNTIME_DIR": str(runtime_dir)},
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert runtime_dir.stat().st_mode & 0o777 == 0o700
+    assert pid_file.stat().st_mode & 0o777 == 0o600
+    assert log_file.stat().st_mode & 0o777 == 0o600
+
+
 def test_operator_docs_point_to_local_stack_manager() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     context = (ROOT / "docs" / "CONTEXT.md").read_text(encoding="utf-8")

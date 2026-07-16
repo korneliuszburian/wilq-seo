@@ -20,6 +20,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.7` wymusza prywatne prawa lokalnego pilota: runtime i
+  kanoniczny state dir 0700, pid/log/SQLite/DuckDB 0600. Start normalizuje
+  istniejące artefakty bez zmiany treści. Custom DB path nie zmienia praw
+  istniejącego współdzielonego katalogu; 0700 dostaje tylko katalog utworzony
+  przez WILQ. Managed restart potwierdził tryby i zdrowie obu usług.
 - `wilq-seo-amj2.6` oddziela client-supplied etykietę aktora od autorytetu.
   Planning review, revision review i ActionObject review/confirm/impact/apply
   zapisują server-owned principal `local_operator`, workspace
@@ -267,9 +272,9 @@ pilota nie jest już luźną listą pomysłów:
 
 1. Typed demand evidence i zgodny content skill są domknięte w `amj2.3`–`.4`;
    nie dodawać alternatywnego content entrypointu.
-2. Domknąć lokalną granicę pilota: prywatne filesystem modes i wersjonowany
-   recovery proof (`wilq-seo-amj2.7`–`.8`); loopback-only `.5` i server-owned
-   local audit identity `.6` są zakończone.
+2. Domknąć lokalną granicę pilota wersjonowanym recovery proof (`amj2.8`);
+   loopback-only `.5`, server-owned identity `.6` i private modes `.7` są
+   zakończone.
 3. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
    potwierdzonym publication event i persisted metric evidence; klient nie może
    zadeklarować sukcesu.
@@ -288,9 +293,9 @@ zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie
   trzeciej propozycji.
 - Principal `local_operator` ma jawny trust `local_unverified`; nadal nie jest
   uwierzytelnionym ownerem, ekspertem ani tenant/actor contractem.
-- Obecny runtime jest wymuszony jako loopback-only. Przed pilotem nadal trzeba
-  prywatnie ustawić prawa state/logów i dodać syntetyczny, niedestrukcyjny
-  storage recovery proof. Remote deployment wymaga osobnego auth/TLS/owner
+- Obecny runtime jest wymuszony jako loopback-only, a state/logi mają prywatne
+  prawa. Nadal brakuje syntetycznego, niedestrukcyjnego storage recovery proof.
+  Remote deployment wymaga osobnego auth/TLS/owner
   contractu; bieżący runtime nie ma zdalnego bypassu.
 - PostgreSQL/HA, monitoring i alerting, retencja/legal hold, realny restore
   drill, rotacja credentials oraz publiczny reverse proxy pozostają decyzjami

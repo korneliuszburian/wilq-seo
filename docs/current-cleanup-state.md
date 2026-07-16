@@ -114,6 +114,10 @@ kontynuuj najwyższy bezpieczny task.
   `local_unverified`, a przesłany tekst zachowuje tylko jako etykietę. Planning
   i revision review pokazują ten sam server-owned principal/trust obok
   historycznego reviewer label. Nie claimuj owner/expert acceptance ani auth.
+- Kanoniczne `.local-lab/runtime` i `.local-lab/state` są normalizowane do
+  `0700`, a PID-y, logi, SQLite i DuckDB do `0600`. WILQ nie zmienia praw
+  istniejącego katalogu nadrzędnego dla niestandardowej ścieżki DB. To chroni
+  lokalne artefakty pilota, ale nie jest dowodem backupu ani recovery.
 - Content router zawsze przekazuje `create_draft=None` i
   `action_apply_authorized=False`.
 - Direct live zwraca `action_apply_required` przed adapterem.
@@ -152,10 +156,10 @@ kontynuuj najwyższy bezpieczny task.
   rewizji lub zmiana kontekstu pozostają zablokowane. Typed demand evidence
   (`amj2.3`) i zgodny content skill (`amj2.4`) są domknięte; oba używają tych
   samych decyzji planistycznych i exact dev readiness.
-- Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`, domknięty)
-  → server-owned local audit identity (`amj2.6`, domknięty) oraz filesystem
-  modes (`amj2.7`) → storage recovery
-  (`amj2.8`). Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają
+- Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`),
+  server-owned local audit identity (`amj2.6`) i private filesystem modes
+  (`amj2.7`) są domknięte; następnym krokiem jest storage recovery (`amj2.8`).
+  Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają
   publication-bound i nie mogą przyjmować sukcesu zadeklarowanego przez klienta.
 - `wilq-seo-c9h9.27` jest domknięty: connector i system status współdzielą
   typed lokalną gotowość CLI/login, nie wymagają `CODEX_API_KEY`, nie czytają

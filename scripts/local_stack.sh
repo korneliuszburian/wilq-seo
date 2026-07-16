@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME_DIR="${WILQ_RUNTIME_DIR:-"$ROOT_DIR/.local-lab/runtime"}"
@@ -28,6 +29,13 @@ API_URL="http://${API_HOST}:${API_PORT}"
 DASHBOARD_URL="http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 
 mkdir -p "$RUNTIME_DIR"
+chmod 700 "$RUNTIME_DIR"
+
+for runtime_file in "$RUNTIME_DIR"/*.pid "$RUNTIME_DIR"/*.log; do
+  if [ -e "$runtime_file" ]; then
+    chmod 600 "$runtime_file"
+  fi
+done
 
 usage() {
   cat <<EOF
