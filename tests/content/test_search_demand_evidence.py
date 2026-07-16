@@ -7,15 +7,63 @@ from wilq.content.workflow.demand_evidence import build_content_search_demand_ev
 from wilq.schemas import ContentFreshnessAssessment, MetricFact
 
 
-def test_search_demand_requires_exact_page_service_and_section_evidence() -> None:
+def test_search_demand_keeps_page_queries_but_maps_only_relevant_sections() -> None:
     page = "https://www.ekologus.pl/bdo/"
     service_card_id = "service_bdo"
-    collected_at = datetime(2026, 7, 15, 12, tzinfo=UTC)
-    facts = [
+    evidence = build_content_search_demand_evidence(
+        metric_facts=_demand_facts(page, service_card_id),
+        source_page=page,
+        final_canonical_url=page,
+        service_card_id=service_card_id,
+        draft=_draft(),
+        freshness=ContentFreshnessAssessment(
+            state="fresh",
+            requires_refresh=False,
+            summary="Źródła aktualne.",
+            next_step="Użyj dowodów.",
+        ),
+    )
+
+    assert evidence.status == "available"
+    assert [row.term for row in evidence.gsc_query_rows] == [
+        "bdo odpady",
+        "diwass szkolenie bielsko-biała",
+    ]
+    assert evidence.gsc_query_rows[0].model_dump(
+        include={"impressions", "clicks", "ctr", "average_position", "section_headings"}
+    ) == {
+        "impressions": 120,
+        "clicks": 12,
+        "ctr": 0.1,
+        "average_position": 6.4,
+        "section_headings": ["Obowiązki BDO"],
+    }
+    assert evidence.gsc_query_rows[1].section_headings == []
+    assert [row.section_mapping_status for row in evidence.gsc_query_rows] == [
+        "lexical_relevance",
+        "page_only",
+    ]
+    assert evidence.ads_term_rows[0].section_mapping_status == "lexical_relevance"
+    assert [row.evidence_ids for row in evidence.ads_term_rows] == [["ev_ads_exact"]]
+    assert evidence.keyword_planner_rows == []
+    assert evidence.evidence_ids == ["ev_gsc", "ev_ads_exact"]
+    assert evidence.optional_ads_status == "exact_rows_available"
+
+
+def _demand_facts(page: str, service_card_id: str) -> list[MetricFact]:
+    return [
         _fact("google_search_console", "impressions", 120, "ev_gsc", page, "bdo odpady"),
         _fact("google_search_console", "clicks", 12, "ev_gsc", page, "bdo odpady"),
         _fact("google_search_console", "ctr", 0.1, "ev_gsc", page, "bdo odpady"),
         _fact("google_search_console", "average_position", 6.4, "ev_gsc", page, "bdo odpady"),
+        _fact(
+            "google_search_console",
+            "impressions",
+            1,
+            "ev_gsc",
+            page,
+            "diwass szkolenie bielsko-biała",
+        ),
         _fact(
             "google_search_console",
             "impressions",
@@ -57,10 +105,13 @@ def test_search_demand_requires_exact_page_service_and_section_evidence() -> Non
             source_connector="google_ads",
             evidence_id="ev_planner_unmapped",
             dimensions={"keyword_idea_text": "bdo odpady"},
-            collected_at=collected_at,
+            collected_at=datetime(2026, 7, 15, 12, tzinfo=UTC),
         ),
     ]
-    draft = ContentDraftPackage(
+
+
+def _draft() -> ContentDraftPackage:
+    return ContentDraftPackage(
         id="draft_bdo",
         work_item_id="item_bdo",
         brief_id="brief_bdo",
@@ -79,36 +130,6 @@ def test_search_demand_requires_exact_page_service_and_section_evidence() -> Non
             ),
         ],
     )
-
-    evidence = build_content_search_demand_evidence(
-        metric_facts=facts,
-        source_page=page,
-        final_canonical_url=page,
-        service_card_id=service_card_id,
-        draft=draft,
-        freshness=ContentFreshnessAssessment(
-            state="fresh",
-            requires_refresh=False,
-            summary="Źródła aktualne.",
-            next_step="Użyj dowodów.",
-        ),
-    )
-
-    assert evidence.status == "available"
-    assert [row.term for row in evidence.gsc_query_rows] == ["bdo odpady"]
-    assert evidence.gsc_query_rows[0].model_dump(
-        include={"impressions", "clicks", "ctr", "average_position", "section_headings"}
-    ) == {
-        "impressions": 120,
-        "clicks": 12,
-        "ctr": 0.1,
-        "average_position": 6.4,
-        "section_headings": ["Obowiązki BDO"],
-    }
-    assert [row.evidence_ids for row in evidence.ads_term_rows] == [["ev_ads_exact"]]
-    assert evidence.keyword_planner_rows == []
-    assert evidence.evidence_ids == ["ev_gsc", "ev_ads_exact"]
-    assert evidence.optional_ads_status == "exact_rows_available"
 
 
 def _fact(

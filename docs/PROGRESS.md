@@ -23,6 +23,15 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- Live homepage UAT ujawnił, że dwa query GSC dziedziczyły wszystkie trzy
+  sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence
+  ID. Demand evidence zachowuje oba query jako page-level proof, ale sekcję
+  przypisuje wyłącznie po konserwatywnym dopasowaniu tokenu do jej nagłówka lub
+  celu. Typed `section_mapping_status` rozróżnia `lexical_relevance` i
+  `page_only`. Focused BDO case mapuje relewantny term i pozostawia niepowiązany
+  term z pustą mapą; live homepage snapshot ma 2 świeże query i 0 fałszywych
+  przypisań do sekcji. Browser opisuje oba jako sygnał strony bez potwierdzonej
+  sekcji. Scope nadal wymaga decyzji Wilka, a Service Profile review ownera.
 - Epiki `wilq-seo-c9h9` (43/43 dzieci), `wilq-seo-3bst` (28/28) i
   `wilq-seo-amj2` (10/10) są zamknięte po ponownym odczycie grafu. Nie zamyka to
   Goal 005: `lt1` nadal wymaga reviewed knowledge, `jst` realnego Wilku UAT, a

@@ -66,9 +66,14 @@ kontynuuj najwyższy bezpieczny task.
   najpierw zatwierdza zakres, potem kolejność, cel i dowody sekcji. Konflikt
   zachowuje lokalną notatkę i wymaga jawnego odświeżenia.
 - Scope pokazuje typed zapytania GSC z metrykami, okresem, freshness i
-  przypisaniem do sekcji przez exact page/evidence. Ads i Keyword Planner nie
-  są zgadywane: pojawiają się tylko przy exact term+page+service; bieżący live
-  stan ma 2 wiersze GSC i 0 ściśle mapowanych wierszy Ads/Planner.
+  konserwatywnym przypisaniem do sekcji. Same exact page i wspólny refresh-level
+  evidence ID nie wystarczają już do przypisania query do każdej sekcji; term
+  musi pokrywać się tokenem z nagłówkiem lub celem, a inaczej pozostaje widoczny
+  wyłącznie jako page-level evidence. Typed `section_mapping_status` i polska
+  etykieta UI ujawniają, czy mapping to `lexical_relevance`, czy `page_only`.
+  Ads i Keyword Planner nie są zgadywane:
+  pojawiają się tylko przy exact term+page+service; bieżący live stan ma 2
+  wiersze GSC, 0 przypisań do sekcji i 0 ściśle mapowanych wierszy Ads/Planner.
 - `wilq-content-operator` konsumuje dokładnie ten sam pięciostopniowy kontrakt:
   nie rekonstruuje preflightu, briefu ani wariantów po stronie skilla i nie ma
   direct WordPress execution. Jawne polecenie zapisu nadal wymaga exact

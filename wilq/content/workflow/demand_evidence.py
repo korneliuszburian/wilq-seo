@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from datetime import datetime
 from typing import Literal
@@ -20,7 +21,8 @@ class ContentSearchDemandRow(BaseModel):
     term: str = Field(min_length=1)
     page: str = Field(min_length=1)
     service_card_id: str | None = None
-    section_headings: list[str] = Field(min_length=1)
+    section_headings: list[str] = Field(default_factory=list)
+    section_mapping_status: Literal["lexical_relevance", "page_only"]
     period: str = Field(min_length=1)
     freshness: Literal["fresh", "stale", "missing", "blocked"]
     collected_at: datetime | None = None
@@ -158,13 +160,15 @@ def _gsc_row(
     freshness: ContentFreshnessAssessment,
 ) -> ContentSearchDemandRow | None:
     evidence_ids = list(dict.fromkeys(fact.evidence_id for fact in facts))
+    term_tokens = _planning_tokens(term)
     section_headings = [
         section.heading
         for section in draft.sections
         if set(section.evidence_ids).intersection(evidence_ids)
+        and term_tokens.intersection(
+            _planning_tokens(f"{section.heading} {section.purpose}")
+        )
     ]
-    if not section_headings:
-        return None
     return ContentSearchDemandRow(
         source_kind="gsc_query",
         source_connector="google_search_console",
@@ -172,6 +176,9 @@ def _gsc_row(
         page=page,
         service_card_id=service_card_id,
         section_headings=section_headings,
+        section_mapping_status=(
+            "lexical_relevance" if section_headings else "page_only"
+        ),
         period=facts[0].period,
         freshness=freshness.state,
         collected_at=max(
@@ -202,6 +209,7 @@ def _ads_row(
         page=gsc_row.page,
         service_card_id=service_card_id,
         section_headings=gsc_row.section_headings,
+        section_mapping_status=gsc_row.section_mapping_status,
         period=facts[0].period,
         freshness=freshness.state,
         collected_at=max(
@@ -263,3 +271,31 @@ def content_query_is_planning_signal(term: str) -> bool:
     return len(term) <= 160 and normalized.count("-site:") < 2 and not normalized.startswith(
         "site:"
     )
+
+
+_PLANNING_TOKEN_RE = re.compile(r"[0-9a-ząćęłńóśźż]+")
+_PLANNING_STOPWORDS = {
+    "and",
+    "czy",
+    "dla",
+    "gdzie",
+    "jak",
+    "jaka",
+    "jakie",
+    "jaki",
+    "jest",
+    "kiedy",
+    "lub",
+    "nie",
+    "oraz",
+    "się",
+    "the",
+}
+
+
+def _planning_tokens(value: str) -> set[str]:
+    return {
+        token
+        for token in _PLANNING_TOKEN_RE.findall(value.casefold())
+        if len(token) >= 3 and token not in _PLANNING_STOPWORDS
+    }

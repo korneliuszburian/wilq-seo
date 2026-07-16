@@ -1651,6 +1651,7 @@ function planningWorkspace({
         page: "https://ekologus.pl/bdo/",
         service_card_id: "service_bdo",
         section_headings: ["Kogo dotyczy BDO"],
+        section_mapping_status: "lexical_relevance" as const,
         period: "last_28_days",
         freshness: "fresh" as const,
         collected_at: "2026-07-15T12:00:00Z",
