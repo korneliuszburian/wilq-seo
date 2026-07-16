@@ -60,6 +60,10 @@ export const ContentWorkItemSchema = z.object({
   wordpress_section_inventory_status: ContentWordPressSectionInventoryStatusSchema.default(
     "missing"
   ),
+  wordpress_content_summary: z.string().nullable().optional(),
+  wordpress_content_word_count: z.number().int().nonnegative().nullable().optional(),
+  wordpress_content_inventory_status: z.enum(["available", "missing"]).default("missing"),
+  wordpress_content_inventory_note: z.string().nullable().optional(),
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
   inventory_status: ContentInventoryStatusSchema,
@@ -2072,39 +2076,126 @@ const ContentSearchDemandRowSchema = z.object({
   average_monthly_searches: z.number().int().nullable()
 });
 
-export const ContentPlanningWorkspaceSchema = z.object({
-  proposal: z.object({
-    work_item_id: z.string().min(1),
-    planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
-    final_canonical_url: z.string().min(1),
-    service_card_id: z.string().nullable(),
-    service_label: z.string().nullable(),
-    service_selection_confirmed: z.boolean().default(false),
-    human_override_review_required: z.boolean().default(false),
-    target_reader: z.string().min(1),
-    buyer_problem: z.string().min(1),
-    buyer_trigger: z.string().min(1),
-    search_intent: z.string().min(1),
-    cta_direction: z.string().min(1),
-    internal_link_directions: z.array(z.string()),
-    sections: z.array(z.object({
-      heading: z.string().min(1),
-      purpose: z.string().min(1),
-      evidence_ids: z.array(z.string())
-    })).min(1),
-    search_demand: z.object({
-      status: z.enum(["available", "missing"]),
-      gsc_query_rows: z.array(ContentSearchDemandRowSchema),
-      ads_term_rows: z.array(ContentSearchDemandRowSchema),
-      keyword_planner_rows: z.array(ContentSearchDemandRowSchema),
-      source_connectors: z.array(z.string()),
-      evidence_ids: z.array(z.string()),
-      optional_ads_status: z.enum(["exact_rows_available", "not_exactly_mapped"]),
-      safe_next_step: z.string().min(1)
-    }),
+export const ContentPlanningInventoryDispositionSchema = z.enum([
+  "preserve",
+  "merge",
+  "rewrite",
+  "remove_review_required",
+  "create"
+]);
+
+export const ContentPlanningPageAssetsSchema = z.object({
+  title: z.string().default(""),
+  h1: z.string().default(""),
+  lead: z.string().default(""),
+  meta_title: z.string().default(""),
+  meta_description: z.string().default("")
+});
+
+export const ContentPlanningFaqItemSchema = z.object({
+  question: z.string().min(1),
+  purpose: z.string().min(1),
+  query_terms: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  claim_ids: z.array(z.string()).default([])
+});
+
+export const ContentPlanningCtaBlockSchema = z.object({
+  placement: z.string().min(1),
+  purpose: z.string().min(1),
+  copy_direction: z.string().min(1),
+  evidence_ids: z.array(z.string()).default([]),
+  claim_ids: z.array(z.string()).default([])
+});
+
+export const ContentPlanningInternalLinkSchema = z.object({
+  placement: z.string().min(1),
+  target_url: z.string().min(1),
+  anchor_direction: z.string().min(1)
+});
+
+export const ContentPlanningConditionalHypothesisSchema = z.object({
+  channel: z.enum(["google_ads", "social"]),
+  hypothesis: z.string().min(1),
+  evidence_ids: z.array(z.string()).min(1),
+  review_required: z.literal(true).default(true)
+});
+
+export const ContentPlanningMeasurementPlanSchema = z.object({
+  metrics_to_watch: z.array(z.string()).default([]),
+  baseline_evidence_ids: z.array(z.string()).default([]),
+  observation_rule: z.string().default(""),
+  success_claim_rule: z.string().default("")
+});
+
+export const ContentPlanningProposalSchema = z.object({
+  work_item_id: z.string().min(1),
+  planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  proposal_id: z.string().nullable().optional(),
+  proposal_version: z.number().int().positive().nullable().optional(),
+  codex_run_id: z.string().nullable().optional(),
+  generation_status: z.enum(["baseline", "codex_generated"]).default("baseline"),
+  input_schema_version: z.string().default("wilq_content_planning_input_v1"),
+  criteria_version: z.string().default("wilq_people_first_planning_v1"),
+  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  final_canonical_url: z.string().min(1),
+  service_card_id: z.string().nullable(),
+  service_label: z.string().nullable(),
+  service_selection_confirmed: z.boolean().default(false),
+  human_override_review_required: z.boolean().default(false),
+  target_reader: z.string().min(1),
+  buyer_problem: z.string().min(1),
+  buyer_trigger: z.string().min(1),
+  search_intent: z.string().min(1),
+  angle: z.string().default(""),
+  value_proposition: z.string().default(""),
+  cta_direction: z.string().min(1),
+  internal_link_directions: z.array(z.string()),
+  sections: z.array(z.object({
+    section_id: z.string().default(""),
+    heading: z.string().min(1),
+    purpose: z.string().min(1),
+    reader_question: z.string().default(""),
+    inventory_disposition: ContentPlanningInventoryDispositionSchema.default("create"),
+    inventory_heading: z.string().nullable().optional(),
+    query_terms: z.array(z.string()).default([]),
     evidence_ids: z.array(z.string()),
-    source_connectors: z.array(z.string())
+    claim_ids: z.array(z.string()).default([])
+  })).min(1),
+  search_demand: z.object({
+    status: z.enum(["available", "missing"]),
+    gsc_query_rows: z.array(ContentSearchDemandRowSchema),
+    ads_term_rows: z.array(ContentSearchDemandRowSchema),
+    keyword_planner_rows: z.array(ContentSearchDemandRowSchema),
+    source_connectors: z.array(z.string()),
+    evidence_ids: z.array(z.string()),
+    optional_ads_status: z.enum(["exact_rows_available", "not_exactly_mapped"]),
+    safe_next_step: z.string().min(1)
   }),
+  page_assets: ContentPlanningPageAssetsSchema.default({
+    title: "",
+    h1: "",
+    lead: "",
+    meta_title: "",
+    meta_description: ""
+  }),
+  faq: z.array(ContentPlanningFaqItemSchema).default([]),
+  cta_blocks: z.array(ContentPlanningCtaBlockSchema).default([]),
+  internal_links: z.array(ContentPlanningInternalLinkSchema).default([]),
+  conditional_hypotheses: z.array(ContentPlanningConditionalHypothesisSchema).default([]),
+  measurement_plan: ContentPlanningMeasurementPlanSchema.default({
+    metrics_to_watch: [],
+    baseline_evidence_ids: [],
+    observation_rule: "",
+    success_claim_rule: ""
+  }),
+  evidence_ids: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  created_at: z.string().nullable().optional()
+});
+
+export const ContentPlanningWorkspaceSchema = z.object({
+  proposal: ContentPlanningProposalSchema,
   scope_decision: ContentPlanningDecisionSchema.nullable(),
   section_map_decision: ContentPlanningDecisionSchema.nullable(),
   scope_current: z.boolean(),
@@ -2129,6 +2220,41 @@ export const ContentPlanningReviewResponseSchema = z.object({
 
 export const ContentPlanningReviewConflictSchema = z.object({
   detail: z.string().min(1)
+});
+
+export const ContentPlanningProposalRequestSchema = z.object({
+  service_card_id: z.string().min(1),
+  expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  operator_hint: z.string().max(500).default(""),
+  requested_by: z.string().min(1)
+});
+
+export const ContentPlanningProposalBlockerSchema = z.object({
+  code: z.string().min(1),
+  label: z.string().min(1),
+  reason: z.string().min(1),
+  next_step: z.string().min(1),
+  source_codes: z.array(z.string()).default([])
+});
+
+export const ContentPlanningProposalResponseSchema = z.object({
+  status: z.enum([
+    "not_generated",
+    "created",
+    "idempotent",
+    "ready",
+    "stale",
+    "blocked",
+    "failed"
+  ]),
+  work_item_id: z.string().min(1),
+  service_card_id: z.string().nullable().optional(),
+  planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  proposal: ContentPlanningProposalSchema.nullable().optional(),
+  runtime: ContentCodexRuntimeTraceSchema,
+  blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),
+  safe_next_step: z.string().min(1),
+  publish_ready: z.literal(false)
 });
 
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
@@ -2417,6 +2543,13 @@ export type ContentCodexSectionProposalResponse = z.infer<
 >;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentPlanningWorkspace = z.infer<typeof ContentPlanningWorkspaceSchema>;
+export type ContentPlanningProposal = z.infer<typeof ContentPlanningProposalSchema>;
+export type ContentPlanningProposalRequest = z.input<
+  typeof ContentPlanningProposalRequestSchema
+>;
+export type ContentPlanningProposalResponse = z.infer<
+  typeof ContentPlanningProposalResponseSchema
+>;
 export type ContentPlanningReviewRequest = z.input<typeof ContentPlanningReviewRequestSchema>;
 export type ContentPlanningReviewResponse = z.infer<typeof ContentPlanningReviewResponseSchema>;
 export type ContentPlanningReviewConflict = z.infer<typeof ContentPlanningReviewConflictSchema>;

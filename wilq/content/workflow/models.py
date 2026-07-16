@@ -80,6 +80,10 @@ class ContentWorkItem(BaseModel):
     wordpress_section_headings: list[str] = Field(default_factory=list)
     wordpress_section_count: int | None = None
     wordpress_section_inventory_status: ContentWordPressSectionInventoryStatus = "missing"
+    wordpress_content_summary: str | None = None
+    wordpress_content_word_count: int | None = None
+    wordpress_content_inventory_status: Literal["available", "missing"] = "missing"
+    wordpress_content_inventory_note: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     inventory_status: ContentInventoryStatus = "missing"

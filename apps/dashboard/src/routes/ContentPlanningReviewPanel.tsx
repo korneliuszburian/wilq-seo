@@ -2,7 +2,8 @@ import { useState } from "react";
 
 import type {
   ContentPlanningReviewConflict,
-  ContentPlanningWorkspace
+  ContentPlanningWorkspace,
+  ContentWorkItemServiceCandidate
 } from "../lib/api";
 import type { WorkflowStepId } from "./contentWorkflowRuntime";
 
@@ -17,27 +18,39 @@ export type ContentPlanningReviewPanelActions = {
     stage: PlanningStage,
     decision: "approved" | "needs_changes",
     notes: string,
-    checkedItems: string[]
+    checkedItems: string[],
+    serviceCardId?: string
   ) => void;
 };
 
 export function ContentPlanningReviewPanel({
   actions,
   planning,
+  serviceCandidates,
   stage
 }: {
   actions: ContentPlanningReviewPanelActions;
   planning: ContentPlanningWorkspace;
+  serviceCandidates: ContentWorkItemServiceCandidate[];
   stage: PlanningStage;
 }) {
   const [decision, setDecision] = useState<"approved" | "needs_changes">("approved");
   const [notes, setNotes] = useState("");
   const [checked, setChecked] = useState(false);
   const proposal = planning.proposal;
+  const [selectedServiceCardId, setSelectedServiceCardId] = useState(
+    proposal.service_card_id ??
+      serviceCandidates.find((candidate) => candidate.recommended)?.service_card_id ??
+      ""
+  );
+  const selectedService = serviceCandidates.find(
+    (candidate) => candidate.service_card_id === selectedServiceCardId
+  );
   const latestDecision = stage === "scope" ? planning.scope_decision : planning.section_map_decision;
   const canSubmit =
     !actions.pending &&
-    (decision === "approved" ? checked : notes.trim().length > 0);
+    (decision === "approved" ? checked : notes.trim().length > 0) &&
+    (stage !== "scope" || Boolean(selectedServiceCardId));
 
   return (
     <section
@@ -63,6 +76,27 @@ export function ContentPlanningReviewPanel({
 
       {stage === "scope" ? (
         <>
+          <label className="mt-4 block max-w-xl text-sm font-semibold text-ink">
+            Potwierdzona usługa
+            <select
+              aria-label="Potwierdzona usługa"
+              value={selectedServiceCardId}
+              onChange={(event) => setSelectedServiceCardId(event.target.value)}
+              className="mt-2 h-11 w-full rounded-md border border-line bg-white px-3 font-normal"
+            >
+              {serviceCandidates.map((candidate) => (
+                <option key={candidate.service_card_id} value={candidate.service_card_id}>
+                  {candidate.service_label} · {candidate.lifecycle_label}
+                  {candidate.recommended ? " · rekomendowana" : " · wybór wymaga review"}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedService ? (
+            <p className="mt-2 text-xs leading-5 text-slate-600">
+              {selectedService.match_reasons.join(" ")}
+            </p>
+          ) : null}
           <dl className="mt-4 grid gap-3 sm:grid-cols-2">
             <PlanningFact label="Strona" value={proposal.final_canonical_url} />
             <PlanningFact label="Usługa" value={proposal.service_label ?? "Brak dopasowanej usługi"} />
@@ -150,7 +184,8 @@ export function ContentPlanningReviewPanel({
             stage,
             decision,
             notes,
-            checked ? [stage === "scope" ? "zakres i CTA" : "kolejność, cel i dowody"] : []
+            checked ? [stage === "scope" ? "zakres i CTA" : "kolejność, cel i dowody"] : [],
+            stage === "scope" ? selectedServiceCardId : undefined
           )
         }
         className="mt-4 inline-flex h-11 items-center rounded-md bg-action px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"

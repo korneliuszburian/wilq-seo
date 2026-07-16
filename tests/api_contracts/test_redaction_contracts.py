@@ -79,6 +79,9 @@ def test_redaction_preserves_valid_planning_binding_but_not_token_like_values() 
         {
             "planning_digest": "0" * 64,
             "expected_planning_digest": "1" * 64,
+            "planning_input_digest": "2" * 64,
+            "expected_planning_input_digest": "3" * 64,
+            "proposal_id": "content_planning_proposal_0123456789abcdef",
             "service_card_id": "ekologus_service_bdo_reporting",
             "summary": "sk-" + "x" * 40,  # pragma: allowlist secret
         }
@@ -86,6 +89,9 @@ def test_redaction_preserves_valid_planning_binding_but_not_token_like_values() 
 
     assert redacted["planning_digest"] == "0" * 64
     assert redacted["expected_planning_digest"] == "1" * 64
+    assert redacted["planning_input_digest"] == "2" * 64
+    assert redacted["expected_planning_input_digest"] == "3" * 64
+    assert redacted["proposal_id"] == "content_planning_proposal_0123456789abcdef"
     assert redacted["service_card_id"] == "ekologus_service_bdo_reporting"
     assert redacted["summary"] == "[REDACTED]"
 

@@ -15,6 +15,7 @@ import {
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
   ContentWorkItemServiceProfileContextSchema,
+  ContentPlanningProposalResponseSchema,
   ContentServiceProfileResponseSchema,
   ContentServiceProfileCoverageGapSchema,
   ContentWorkItemQualityReviewRequestSchema,
@@ -87,6 +88,99 @@ describe("ContentWorkItemServiceProfileContextSchema", () => {
         service_candidates: [
           { ...input.service_candidates[0], lifecycle_status: "guessed" }
         ]
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentPlanningProposalResponseSchema", () => {
+  it("keeps generated page assets and section lineage while remaining review-only", () => {
+    const response = {
+      status: "ready",
+      work_item_id: "content_work_item_bdo",
+      service_card_id: "ekologus_service_bdo_reporting",
+      planning_input_digest: "1".repeat(64),
+      proposal: {
+        work_item_id: "content_work_item_bdo",
+        planning_digest: "2".repeat(64),
+        proposal_id: "content_planning_proposal_1",
+        proposal_version: 1,
+        codex_run_id: "codex_content_planning_1",
+        generation_status: "codex_generated",
+        planning_input_digest: "1".repeat(64),
+        final_canonical_url: "https://www.ekologus.pl/bdo/",
+        service_card_id: "ekologus_service_bdo_reporting",
+        service_label: "BDO",
+        service_selection_confirmed: true,
+        target_reader: "Przedsiębiorca",
+        buyer_problem: "Nie wie, co sprawdzić.",
+        buyer_trigger: "Termin dokumentów.",
+        search_intent: "Informacyjna",
+        angle: "Najpierw odpowiedź.",
+        value_proposition: "Bezpieczny następny krok.",
+        cta_direction: "Konsultacja bez gwarancji.",
+        internal_link_directions: [],
+        sections: [{
+          section_id: "section_1",
+          heading: "Co sprawdzić",
+          purpose: "Odpowiedzieć na pytanie.",
+          reader_question: "Od czego zacząć?",
+          inventory_disposition: "rewrite",
+          inventory_heading: "Stara sekcja",
+          query_terms: ["bdo co to"],
+          evidence_ids: ["ev_1"],
+          claim_ids: ["claim_1"]
+        }],
+        search_demand: {
+          status: "missing",
+          gsc_query_rows: [],
+          ads_term_rows: [],
+          keyword_planner_rows: [],
+          source_connectors: [],
+          evidence_ids: [],
+          optional_ads_status: "not_exactly_mapped",
+          safe_next_step: "Sprawdź exact mapping."
+        },
+        page_assets: {
+          title: "BDO",
+          h1: "BDO dla przedsiębiorcy",
+          lead: "Najpierw sprawdź zakres.",
+          meta_title: "BDO — Ekologus",
+          meta_description: "Bezpieczny plan sprawdzenia BDO."
+        },
+        faq: [],
+        cta_blocks: [],
+        internal_links: [],
+        conditional_hypotheses: [],
+        measurement_plan: {
+          metrics_to_watch: ["GSC clicks"],
+          baseline_evidence_ids: ["ev_1"],
+          observation_rule: "Czekaj do końca okna.",
+          success_claim_rule: "Tylko zamknięte okno."
+        },
+        evidence_ids: ["ev_1"],
+        source_connectors: ["google_search_console"],
+        created_at: "2026-07-16T12:00:00Z"
+      },
+      runtime: {
+        status: "completed",
+        thread_id: null,
+        turn_id: null,
+        external_call_attempted: false
+      },
+      blockers: [],
+      safe_next_step: "Sprawdź plan.",
+      publish_ready: false
+    };
+
+    const parsed = ContentPlanningProposalResponseSchema.parse(response);
+
+    expect(parsed.proposal?.sections[0]?.inventory_disposition).toBe("rewrite");
+    expect(parsed.proposal?.page_assets.meta_title).toBe("BDO — Ekologus");
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        publish_ready: true
       }).success
     ).toBe(false);
   });

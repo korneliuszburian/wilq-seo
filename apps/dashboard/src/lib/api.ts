@@ -22,6 +22,8 @@ import {
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionSaveResponseSchema,
   ContentKnowledgeCardsResponseSchema,
+  ContentPlanningProposalRequestSchema,
+  ContentPlanningProposalResponseSchema,
   ContentPlanningReviewConflictSchema,
   ContentPlanningReviewRequestSchema,
   ContentPlanningReviewResponseSchema,
@@ -106,6 +108,8 @@ import {
   type ContentFreshnessAssessment,
   type ContentClaimLedger,
   type ContentKnowledgeCardsResponse,
+  type ContentPlanningProposalRequest,
+  type ContentPlanningProposalResponse,
   type ContentPlanningReviewConflict,
   type ContentPlanningReviewRequest,
   type ContentPlanningReviewResponse,
@@ -133,6 +137,7 @@ import {
   type ContentWorkItemSnapshotAuditRequest,
   type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemSnapshotResponse,
+  type ContentWorkItemServiceCandidate,
   type ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
@@ -437,6 +442,28 @@ export function saveContentWorkItemPlanningReview(
     ContentPlanningReviewResponseSchema,
     ContentPlanningReviewConflictSchema,
     ContentPlanningReviewRequestSchema.parse(request)
+  );
+}
+
+export function getContentWorkItemPlanningProposal(
+  workItemId: string
+): Promise<ContentPlanningProposalResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/planning-proposals`,
+    ContentPlanningProposalResponseSchema
+  );
+}
+
+export function postContentWorkItemPlanningProposal(
+  request: ContentPlanningProposalRequest,
+  workItemId: string
+): Promise<ContentPlanningProposalResponse> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/planning-proposals`;
+  return apiPostWithConflict(
+    path,
+    ContentPlanningProposalResponseSchema,
+    ContentPlanningProposalResponseSchema,
+    ContentPlanningProposalRequestSchema.parse(request)
   );
 }
 
@@ -774,6 +801,8 @@ export type {
   ContentFreshnessAssessment,
   ContentClaimLedger,
   ContentKnowledgeCardsResponse,
+  ContentPlanningProposalRequest,
+  ContentPlanningProposalResponse,
   ContentPlanningReviewConflict,
   ContentPlanningReviewRequest,
   ContentPlanningReviewResponse,
@@ -801,6 +830,7 @@ export type {
   ContentWorkItemSnapshotAuditRequest,
   ContentWorkItemSnapshotHumanReviewRequest,
   ContentWorkItemSnapshotResponse,
+  ContentWorkItemServiceCandidate,
   ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
   ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   ContentWorkItemWordPressDraftExecutionRequest,

@@ -11,6 +11,9 @@ from wilq.content.planning.decisions import (
     content_decision_summary,
     content_decision_title,
 )
+from wilq.content.planning.generated_proposal_store import (
+    content_planning_proposal_store,
+)
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
     build_content_work_item_blocked_snapshot_response_for_work_item,
@@ -43,6 +46,7 @@ def snapshot_for_work_item_or_404(
         if planning_decisions_override is None
         else planning_decisions_override
     )
+    generated_planning_proposal = content_planning_proposal_store().latest(work_item_id)
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
@@ -50,6 +54,7 @@ def snapshot_for_work_item_or_404(
         audit=audit,
         revision_state=revision_state,
         planning_decisions=planning_decisions,
+        generated_planning_proposal=generated_planning_proposal,
     )
     if snapshot is None:
         raise HTTPException(
@@ -66,6 +71,7 @@ def snapshot_for_work_item_or_404(
             audit=audit_record,
             revision_state=revision_state,
             planning_decisions=planning_decisions,
+            generated_planning_proposal=generated_planning_proposal,
         )
         if snapshot is None:
             raise HTTPException(

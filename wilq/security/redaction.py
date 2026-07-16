@@ -51,6 +51,9 @@ SAFE_IDENTIFIER_KEYS = {
     "revision_digest",
     "planning_digest",
     "expected_planning_digest",
+    "planning_input_digest",
+    "expected_planning_input_digest",
+    "proposal_id",
     "draft_package_id",
     "draft_package_digest",
     "handoff_id",
@@ -137,6 +140,8 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "draft_package_digest",
     "expected_planning_digest",
     "planning_digest",
+    "expected_planning_input_digest",
+    "planning_input_digest",
     "revision_digest",
 }
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")

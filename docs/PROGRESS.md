@@ -63,6 +63,22 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   Plan BDO ma 11 dokładnych wierszy GSC oraz 0 Ads/Planner, natomiast plan
   outsourcingu poprawnie pozostaje zablokowany do owner review jego karty.
   Żadna decyzja człowieka ani write do WordPressa nie zostały wykonane.
+- `wilq-seo-1oa.36.4` dodaje jeden wersjonowany `ContentPlanningInput` dla
+  istniejącego planera. Digest obejmuje exact stronę, potwierdzoną usługę,
+  publiczne inventory WordPress, wiedzę, source facts, metryki i wersję
+  kryteriów; wszystkie dziesięć rozważanych źródeł ma jawny status
+  `used/not_applicable/missing/stale/blocked`. `GET/POST
+  /api/content/work-items/{id}/planning-proposals` używa istniejącego
+  serwerowego Codex app-servera: GET nie uruchamia modelu ani nie inicjalizuje
+  tabeli, POST wymaga expected digestu, jest idempotentny i atomowo wiąże
+  niezmienny plan z exact `CodexRun`. Syntetyczne zatwierdzone karty i tymczasowy
+  SQLite udowodniły dwa różne plany dla exact BDO i outsourcingu, obcy service
+  ID `422`, stale input `409` oraz brak częściowego zapisu po błędzie runtime.
+  Dashboard podłącza pierwsze trzy kroki przez jawny wybór usługi, stan
+  gotowości i jeden przycisk „Wygeneruj plan”; browser nie wywołuje Codexa ani
+  WordPressa bez tej decyzji. Realne karty nadal wymagają owner review, realny
+  model nie został uruchomiony, a nowa tabela nie została aktywowana w local
+  state bez maintenance window.
 - Live homepage UAT ujawnił dwie luki w prezentacji popytu. Query GSC
   dziedziczyły wszystkie trzy
   sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence

@@ -562,7 +562,19 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     mutationFn: (request: ContentPlanningReviewRequest) =>
       saveContentWorkItemPlanningReview(request, selectedWorkItemId),
     onSuccess: (result) => {
-      if (!("detail" in result)) void refreshRevisionWorkspace();
+      if (!("detail" in result)) {
+        void Promise.all([
+          refreshRevisionWorkspace(),
+          queryClient.invalidateQueries({
+            queryKey: [
+              "content-workflow",
+              "work-item",
+              selectedWorkItemId,
+              "planning-proposal"
+            ]
+          })
+        ]);
+      }
     }
   });
   const revisionReviewMutation = useMutation({
@@ -632,13 +644,15 @@ function contentWorkflowActions(
       stage: "scope" | "section_map",
       decision: "approved" | "needs_changes",
       notes: string,
-      checkedItems: string[]
+      checkedItems: string[],
+      serviceCardId?: string
     ) => {
       const planning = data.planningWorkspace;
       if (!planning) return;
       mutations.planningReviewMutation.mutate({
         stage,
         expected_planning_digest: planning.proposal.planning_digest,
+        service_card_id: stage === "scope" ? serviceCardId : undefined,
         decision,
         reviewed_by: "wilku",
         checked_items: checkedItems,

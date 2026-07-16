@@ -538,7 +538,9 @@ def content_knowledge_card_blockers(
                 "service",
             )
         )
-    if not match.cta_cards:
+    if not match.cta_cards and not (
+        match.service_card and match.service_card.cta_patterns
+    ):
         blockers.append(
             _blocker(
                 "missing_cta_card",

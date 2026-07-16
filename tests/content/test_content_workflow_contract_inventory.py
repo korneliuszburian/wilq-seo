@@ -13,6 +13,9 @@ from wilq.content.drafts.codex_section_proposal import (
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
+from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningProposalResponse,
+)
 from wilq.content.workflow.api import (
     ContentWordPressDraftActivationPacketResponse,
     ContentWordPressDraftWriteReadinessResponse,
@@ -35,6 +38,7 @@ from wilq.content.workflow.contracts import (
     ContentDraftRevisionSaveResponse,
     ContentWorkItemBrowserSnapshotResponse,
     ContentWorkItemBrowserWorkflowSnapshotResponse,
+    ContentWorkItemLearningProposalResponse,
 )
 from wilq.content.workflow.planning import ContentPlanningReviewResponse
 from wilq.content.workflow.queue import ContentWorkItemQueueResponse
@@ -72,6 +76,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/planning-review",
     ): ContentPlanningReviewResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/planning-proposals",
+    ): ContentPlanningProposalResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/planning-proposals",
+    ): ContentPlanningProposalResponse,
     (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions",
@@ -142,6 +154,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/measurement-outcome",
     ): ContentWorkItemMeasurementOutcomeResponse,
+    (
+        "POST",
+        "/api/content/work-items/learning-proposal",
+    ): ContentWorkItemLearningProposalResponse,
 }
 
 
@@ -170,13 +186,17 @@ def test_content_workflow_stateful_routes_have_selected_work_item_variants() -> 
         )
 
 
-def test_public_content_openapi_has_one_model_entrypoint_and_no_execution_contract() -> None:
+def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> None:
     content_paths = {
         path: operation
         for path, operation in app.openapi()["paths"].items()
         if path.startswith("/api/content/")
     }
-    model_paths = [path for path in content_paths if "codex-proposal" in path]
+    model_paths = {
+        path
+        for path in content_paths
+        if "codex-proposal" in path or "planning-proposals" in path
+    }
     forbidden_paths = {
         "/api/content/work-items/structured-draft-generation",
         "/api/content/work-items/structured-draft-runtime",
@@ -185,10 +205,11 @@ def test_public_content_openapi_has_one_model_entrypoint_and_no_execution_contra
         "/api/content/work-items/draft-variants",
     }
 
-    assert model_paths == [
+    assert model_paths == {
+        "/api/content/work-items/{work_item_id}/planning-proposals",
         "/api/content/work-items/{work_item_id}/draft-revisions/"
-        "{base_revision_id}/codex-proposal"
-    ]
+        "{base_revision_id}/codex-proposal",
+    }
     assert forbidden_paths.isdisjoint(content_paths)
     serialized_contract = json.dumps(content_paths, sort_keys=True)
     for forbidden_field in (

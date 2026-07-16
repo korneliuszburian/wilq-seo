@@ -14,6 +14,7 @@ import {
 import { ContentCodexSectionProposalPanel } from "./ContentCodexSectionProposalPanel";
 import { ContentFreshnessBanner } from "./ContentWorkflowBoundaryStates";
 import { ContentPlanningReviewPanel } from "./ContentPlanningReviewPanel";
+import { ContentPlanningGenerationPanel } from "./ContentPlanningGenerationPanel";
 import { ContentSourceStatusBar } from "./ContentSourceStatusBar";
 import { ContentWordPressDraftActionWizard } from "./ContentWordPressDraftActionWizard";
 import {
@@ -41,7 +42,8 @@ type ContentPageWorkbenchActions = {
     stage: "scope" | "section_map",
     decision: "approved" | "needs_changes",
     notes: string,
-    checkedItems: string[]
+    checkedItems: string[],
+    serviceCardId?: string
   ) => void;
   revisionSavePending: boolean;
   revisionSaveConflict: ContentDraftRevisionConflict | null;
@@ -180,17 +182,24 @@ export function ContentPageWorkbench({
         <div className="min-w-0 space-y-3">
           {(activeStepId === "scope" || activeStepId === "section_map") &&
           data.planningWorkspace ? (
-            <ContentPlanningReviewPanel
-              actions={{
-                conflict: actions.planningReviewConflict,
-                error: actions.planningReviewError,
-                pending: actions.planningReviewPending,
-                refresh: actions.refreshPlanningWorkspace,
-                save: actions.savePlanningReview
-              }}
-              planning={data.planningWorkspace}
-              stage={activeStepId}
-            />
+            <>
+              <ContentPlanningGenerationPanel
+                serviceCardId={data.serviceProfileContext.service_card_id}
+                workItemId={item.id}
+              />
+              <ContentPlanningReviewPanel
+                actions={{
+                  conflict: actions.planningReviewConflict,
+                  error: actions.planningReviewError,
+                  pending: actions.planningReviewPending,
+                  refresh: actions.refreshPlanningWorkspace,
+                  save: actions.savePlanningReview
+                }}
+                planning={data.planningWorkspace}
+                serviceCandidates={data.serviceProfileContext.service_candidates}
+                stage={activeStepId}
+              />
+            </>
           ) : null}
 
           {activeStepId === "draft" ? (

@@ -7,6 +7,7 @@ import {
   getAction,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
+  getContentWorkItemPlanningProposal,
   getContentWorkItemSnapshot,
   getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
@@ -14,6 +15,7 @@ import {
   getWordPressAuthoringProfile,
   impactCheckAction,
   postContentWorkItemCodexSectionProposal,
+  postContentWorkItemPlanningProposal,
   postContentWorkItemWordPressAuthoringPayloadPreview,
   postContentWorkItemWordPressDraftExecution,
   previewAction,
@@ -29,6 +31,7 @@ import {
   type ContentCodexSectionProposalResponse,
   type ContentDraftRevisionBinding,
   type ContentOpportunityEnrichmentResponse,
+  type ContentPlanningProposalResponse,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
@@ -51,6 +54,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getAction: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
+    getContentWorkItemPlanningProposal: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
     getContentWordPressDraftActivationPacket: vi.fn(),
     getContentWordPressDraftWriteReadiness: vi.fn(),
@@ -58,6 +62,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     getWordPressAuthoringProfile: vi.fn(),
     impactCheckAction: vi.fn(),
     postContentWorkItemCodexSectionProposal: vi.fn(),
+    postContentWorkItemPlanningProposal: vi.fn(),
     postContentWorkItemWordPressAuthoringPayloadPreview: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     previewAction: vi.fn(),
@@ -75,6 +80,9 @@ describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(
+      planningProposalStatus()
+    );
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
     vi.mocked(getContentWordPressDraftActivationPacket).mockResolvedValue(
       wordpressDraftActivationPacket()
@@ -94,6 +102,9 @@ describe("ContentWorkflowSurface", () => {
     );
     vi.mocked(postContentWorkItemCodexSectionProposal).mockResolvedValue(
       codexSectionProposalResponse()
+    );
+    vi.mocked(postContentWorkItemPlanningProposal).mockResolvedValue(
+      planningProposalStatus({ status: "created" })
     );
     vi.mocked(postContentWorkItemWordPressAuthoringPayloadPreview).mockResolvedValue(
       wordpressAuthoringPayloadPreviewResponse()
@@ -301,6 +312,37 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
   });
 
+  it("starts dynamic planning only from the explicit strategy action", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({
+        planning: planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false }),
+        workspace: { ...revisionWorkspace(), can_save: false },
+        currentStepId: "scope",
+        steps: operatorStepsAtScope()
+      })
+    );
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Wygeneruj plan" }));
+    await waitFor(() =>
+      expect(postContentWorkItemPlanningProposal).toHaveBeenCalledWith(
+        {
+          service_card_id: "ekologus_service_bdo_reporting",
+          expected_planning_input_digest: "f".repeat(64),
+          operator_hint: "",
+          requested_by: "wilku"
+        },
+        "content_work_item_bdo"
+      )
+    );
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
   it("records scope review and resumes on the section map without a wall of panels", async () => {
     const initialPlanning = planningWorkspace({ scopeCurrent: false, sectionMapCurrent: false });
     const reviewedPlanning = planningWorkspace({ scopeCurrent: true, sectionMapCurrent: false });
@@ -350,6 +392,7 @@ describe("ContentWorkflowSurface", () => {
       {
         stage: "scope",
         expected_planning_digest: initialPlanning.proposal.planning_digest,
+        service_card_id: "service_bdo",
         decision: "approved",
         reviewed_by: "wilku",
         checked_items: ["zakres i CTA"],
@@ -1205,6 +1248,30 @@ describe("ContentWorkflowSurface", () => {
 async function openWorkflowDetails() {
   fireEvent.click(await screen.findByRole("button", { name: "Audyt techniczny" }));
   await screen.findByTestId("content-workflow-technical-audit");
+}
+
+function planningProposalStatus(
+  overrides: Partial<ContentPlanningProposalResponse> = {}
+): ContentPlanningProposalResponse {
+  return {
+    status: "not_generated",
+    work_item_id: "content_work_item_bdo",
+    service_card_id: "ekologus_service_bdo_reporting",
+    planning_input_digest: "f".repeat(64),
+    proposal: null,
+    runtime: {
+      status: "not_started",
+      thread_id: null,
+      turn_id: null,
+      event_methods: [],
+      item_types: [],
+      external_call_attempted: false
+    },
+    blockers: [],
+    safe_next_step: "Wygeneruj pierwszy plan i sprawdź go przed decyzją człowieka.",
+    publish_ready: false,
+    ...overrides
+  };
 }
 
 function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
