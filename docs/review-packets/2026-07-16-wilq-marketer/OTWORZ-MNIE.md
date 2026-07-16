@@ -1,20 +1,45 @@
-# WILQ / Better BDOS — paczka do oceny przez marketera
+# WILQ — warsztat marketera do tworzenia treści
 
-Ta paczka nie jest prezentacją „gotowego produktu”. To krótki test: czy WILQ pomaga marketerowi podjąć decyzję bez czytania dokumentacji technicznej.
+To jest jedna paczka robocza dla marketera, nie prezentacja całego WILQ. Jej
+celem jest przeprowadzenie jednej strony od decyzji do ocenionego szkicu na
+devie, z metrykami i dowodami przypisanymi do dokładnego URL-a.
 
-## Co zrobić w 20–30 minut
+## Decyzja w 30 sekund
 
-1. Zacznij od [mapy Better BDOS](00-mapa-better-bdos.md): sprawdź, czy taki system odpowiada prawdziwej pracy marketingowej.
-2. Otwórz [plan dnia](01-plan-dnia.md) i odpowiedz: czy w 30 sekund wiadomo, od czego zacząć?
-3. Otwórz [Treści i SEO](02-tresci-i-seo.md) i oceń decyzję dotyczącą strony BDO. Nie oceniaj jeszcze finalnego tekstu — WILQ nie ma zatwierdzonego profilu usług ani zaakceptowanego zakresu.
-4. Przejrzyj [ekrany](03-ekrany.md) oraz [stan możliwości](05-stan-mozliwosci.md).
-5. Wypełnij jeden [formularz oceny](04-formularz-oceny.md). Konkretne uwagi są ważniejsze niż uprzejmość.
+- **Co robimy:** odświeżamy istniejącą stronę, nie tworzymy równoległego artykułu.
+- **Na czym zaczynamy:** BDO — „co musi wiedzieć przedsiębiorca?”.
+- **Dlaczego teraz:** zapisany snapshot GSC zawiera 65 wyświetleń, 0 kliknięć,
+  CTR 0,00% i najlepszą średnią pozycję 9,00. To sygnał do sprawdzenia
+  dopasowania strony, nie automatyczny werdykt jakości.
+- **Co blokuje finalny tekst:** karta usługi nie ma jeszcze owner review, a
+  zakres i mapa sekcji wymagają decyzji człowieka.
+- **Następny bezpieczny krok:** potwierdź stronę i właściwą kartę usługi, potem
+  oceń strategię oraz dyspozycję istniejących sekcji.
 
-## Co jest prawdziwe, a co nie
+## Dwa piloty tego samego workflow
 
-- **Prawdziwe:** pokazane liczniki i decyzje pochodzą z lokalnego WILQ API. Zrzuty wykonano 2026-07-16; bieżące odczyty mogą zmienić liczby po odświeżeniu.
-- **Do review:** zakres treści, profil usług, akcje Ads/Merchant i wszystkie proponowane zmiany.
-- **Zablokowane:** publikacja, automatyczne zmiany u dostawców, twierdzenia o przychodzie/ROAS oraz finalna jakość treści bez akceptacji człowieka.
-- **Nieudowodnione:** że marketer zaakceptował workflow, że teksty są 10/10 albo że cały WILQ jest gotowy produkcyjnie.
+1. BDO: `content_work_item_content_decision_https___www_ekologus_pl_bdo_co_musi_wiedziec_przedsiebiorca`
+   + `ekologus_service_bdo_reporting`.
+2. Doradztwo i outsourcing: `content_work_item_content_decision_https___www_ekologus_pl_oferta_doradztwo_i_outsourcing_ekologiczny`
+   + `ekologus_service_environmental_consulting_outsourcing`.
 
-Wersja testowa działa lokalnie pod adresem `http://127.0.0.1:5173/command-center`. Jeśli paczka jest przekazana bez działającego runtime, użyj zrzutów ekranu.
+Identyfikatory są podane dla trace. Marketer wybiera czytelne nazwy w
+dashboardzie. Oba case'y muszą przejść ten sam kontrakt bez wyjątku w kodzie.
+
+## Kolejność pracy — 15–20 minut
+
+1. [Wybór i strategia](01-wybor-i-strategia.md)
+2. [Struktura i metryki](02-struktura-i-metryki.md)
+3. [Tekst, review i przekazanie](03-tekst-review-przekazanie.md)
+4. [Stan całego pipeline'u](05-stan-pipeline.md)
+5. [Formularz oceny treści](04-formularz-oceny.md)
+
+Aktualny zrzut pokazuje wyłącznie właściwy obszar roboczy:
+[Treści i SEO — BDO](screens/content-workflow-bdo.png).
+
+## Uczciwy status paczki
+
+To jest uporządkowany kontrakt sesji i bieżący checkpoint, nie finalna paczka
+tekstu. Nie przedstawia syntetycznego proofu jako UAT, nie zatwierdza wiedzy za
+ownera i nie oznacza zgody na zapis do WordPressa. Pełne assety dokumentu będą
+dodane tutaj po przejściu bramek opisanych w [stanie pipeline'u](05-stan-pipeline.md).

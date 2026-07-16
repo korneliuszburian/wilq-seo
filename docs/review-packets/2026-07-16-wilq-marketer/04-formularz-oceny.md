@@ -1,39 +1,59 @@
-# 4. Formularz oceny marketera
+# 4. Formularz oceny treści
 
 **Osoba oceniająca:**  
 **Data:**  
 **Czas przeglądu:**  
+**Case i revision ID:**  
+**Exact revision digest:**  
 
-## Werdykt
+## Werdykt tej rewizji
 
-Zaznacz jedno: `gotowe do dalszego pilota` / `wymaga zmian` / `odłożyć`
+Zaznacz jedno: `akceptuję exact revision` / `wymaga zmian` / `blokuję`
 
-**Użyteczność całości (1–10):**  
-**Użyteczność „Treści i SEO” (1–10):**  
+**Rola:** `SEO reviewer` / `content editor` / `marketer`  
+**Ocena (1–10):**  
 
 ## Najważniejsze odpowiedzi
 
-1. Jaką pierwszą decyzję podjąłeś/podjęłaś po otwarciu „Dzisiaj”?
+1. Czy po 30 sekundach było jasne: jaka strona, jaka usługa, dlaczego teraz i
+   jaki jest następny krok?
 
 
-2. Co było najbardziej niejasne?
+2. Która część strategii — odbiorca, problem, trigger, intent, angle, value
+   proposition lub CTA — wymaga zmiany?
 
 
-3. Co realnie oszczędza czas względem obecnego sposobu pracy?
+3. Które istniejące sekcje należy zachować, scalić, przepisać albo usunąć po
+   review?
 
 
-4. Co blokuje użycie WILQ przy prawdziwym zadaniu marketingowym?
+4. Czy każde ważne query ma naturalne miejsce, a niepewne query pozostało bez
+   zgadywanego przypisania?
 
 
-5. Która informacja lub sekcja powinna zniknąć?
+5. Gdzie tekst nie odpowiada bezpośrednio, jest ogólny, powtarzalny albo nie
+   pasuje do realnego kupującego?
 
 
-6. Jakich danych o usłudze lub kliencie brakuje, żeby przygotować dobry tekst?
+6. Który claim jest nieudowodniony, zbyt kategoryczny albo wymaga eksperta?
 
 
-7. Czy widzisz miejsce, w którym WILQ sugeruje coś bez wystarczającej podstawy?
+7. Czy CTA i linki wewnętrzne są użyteczne, konkretne i uczciwe?
 
 
-## Treść próbna
+8. Czy meta title, meta description, H1 i lead obiecują dokładnie to, co
+   dostarcza body?
 
-Po zatwierdzeniu profilu jednej usługi i zakresu jednej strony wygenerujemy osobną paczkę tekstową do oceny. W tej rundzie brak finalnego tekstu jest świadomą blokadą, nie dowodem jakości.
+
+9. Jakie maksymalnie trzy zmiany są konieczne przed następną rewizją?
+
+
+## Findings blokujące
+
+**Critical:**  
+**High:**  
+**Sekcje do poprawy (`section_id`):**  
+**Dozwolone elementy, których poprawka nie może zmienić:**  
+
+Ocena 10/10 jest ważna tylko dla wskazanego digestu i roli. Brak wpisanych
+findings nie oznacza automatycznego zatwierdzenia.
