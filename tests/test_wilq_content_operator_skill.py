@@ -581,6 +581,9 @@ def test_content_operator_uat_packet_item_includes_sales_brief_constraint_eviden
             }
         if path == "/api/content/work-items/content_work_item_bdo/snapshot":
             return {
+                "candidate": {
+                    "work_item_id": "content_work_item_bdo",
+                },
                 "sales_brief": {
                     "sales_brief_result": {
                         "brief": {

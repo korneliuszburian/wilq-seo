@@ -100,18 +100,10 @@ def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, 
     proposal = require_dict(planning.get("proposal"), "planning proposal")
     demand = require_dict(proposal.get("search_demand"), "search demand")
     for row in demand.get("gsc_query_rows") or []:
-        row = require_dict(row, "GSC query row")
-        if (
-            row.get("source_connector") != "google_search_console"
-            or not row.get("evidence_ids")
-            or not row.get("section_headings")
-            or not row.get("period")
-            or not row.get("freshness")
-        ):
-            raise SystemExit("GSC row needs source, evidence, sections, period and freshness")
-    if (
-        demand.get("ads_term_rows") or demand.get("keyword_planner_rows")
-    ) and demand.get("optional_ads_status") != "exact_rows_available":
+        validate_gsc_query_row(require_dict(row, "GSC query row"))
+    if (demand.get("ads_term_rows") or demand.get("keyword_planner_rows")) and demand.get(
+        "optional_ads_status"
+    ) != "exact_rows_available":
         raise SystemExit("Ads/Planner rows require exact mapping status")
 
     revision = require_dict(snapshot.get("revision_workspace"), "revision workspace")
@@ -140,6 +132,24 @@ def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, 
         "evidence_ids": item.get("evidence_ids") or [],
         "source_connectors": item.get("source_connectors") or [],
     }
+
+
+def validate_gsc_query_row(row: dict[str, Any]) -> None:
+    if (
+        row.get("source_connector") != "google_search_console"
+        or not row.get("evidence_ids")
+        or not row.get("period")
+        or not row.get("freshness")
+    ):
+        raise SystemExit("GSC row needs source, evidence, period and freshness")
+    mapping_status = row.get("section_mapping_status")
+    section_headings = row.get("section_headings")
+    if mapping_status == "lexical_relevance" and not section_headings:
+        raise SystemExit("Lexically mapped GSC row needs at least one section")
+    if mapping_status == "page_only" and section_headings:
+        raise SystemExit("Page-only GSC row cannot claim a section mapping")
+    if not section_headings and mapping_status != "page_only":
+        raise SystemExit("Unmapped GSC row must be explicitly page-only")
 
 
 def read_wordpress_boundary(api_base: str, work_item_id: str) -> dict[str, Any]:

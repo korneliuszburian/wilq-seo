@@ -7,6 +7,18 @@ import urllib.error
 import urllib.request
 from typing import Any, cast
 
+from scripts.content_uat_snapshot import (
+    exact_candidate_from_snapshot,
+    matched_snapshot_for_work_item,
+    sales_brief_trace_from_snapshot,
+    sales_brief_trace_markdown_lines,
+    search_demand_from_snapshot,
+    search_demand_markdown_lines,
+)
+
+# Operator copy rendered by the imported trace helper includes:
+# "ograniczenia wiedzy z dowodami" and "zablokowany albo niedostępny".
+
 SKILL_NAME = "wilq-content-operator"
 DEV_HOST = "ekologus.dev.proudsite.pl"
 SERVICE_PROFILE_REVIEW_RECORDER = "scripts/record_service_profile_review_result.py"
@@ -114,73 +126,6 @@ def safe_workflow_snapshot(api_base: str, work_item_id: str) -> dict[str, Any]:
             "status": "blocked",
             "blocker": str(exc),
         }
-
-
-def sales_brief_trace_from_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
-    sales_brief_stage = snapshot.get("sales_brief")
-    if not isinstance(sales_brief_stage, dict):
-        return {"status": "missing", "blocker": "snapshot nie zawiera sales_brief"}
-    result = sales_brief_stage.get("sales_brief_result")
-    if not isinstance(result, dict):
-        return {"status": "missing", "blocker": "snapshot nie zawiera sales_brief_result"}
-    brief = result.get("brief")
-    blockers = result.get("blockers")
-    if not isinstance(brief, dict):
-        return {
-            "status": "blocked",
-            "blockers": blockers if isinstance(blockers, list) else [],
-        }
-    signal_quality = brief.get("signal_quality")
-    constraints = [
-        {
-            "card_id": constraint.get("card_id"),
-            "constraint_type": constraint.get("constraint_type"),
-            "label": constraint.get("label"),
-            "reason": constraint.get("reason"),
-            "evidence_ids": constraint.get("evidence_ids") or [],
-        }
-        for constraint in as_list(brief.get("knowledge_constraints"))[:5]
-        if isinstance(constraint, dict)
-    ]
-    return {
-        "status": "ready",
-        "signal_quality": signal_quality if isinstance(signal_quality, dict) else {},
-        "knowledge_constraint_count": len(as_list(brief.get("knowledge_constraints"))),
-        "shown_knowledge_constraints": constraints,
-    }
-
-
-def sales_brief_trace_markdown_lines(trace: dict[str, Any]) -> list[str]:
-    lines: list[str] = []
-    signal_quality = trace.get("signal_quality")
-    if isinstance(signal_quality, dict) and signal_quality.get("status_label"):
-        lines.append(f"- jakość Sales Brief: {signal_quality.get('status_label')}")
-    status = str(trace.get("status") or "")
-    blocker = trace.get("blocker")
-    blockers = [
-        str(item.get("label") or item.get("reason") or item.get("code") or item)
-        for item in as_list(trace.get("blockers"))
-        if isinstance(item, dict) or item
-    ]
-    if status in {"missing", "blocked"} and (blocker or blockers):
-        reason = str(blocker) if blocker else "; ".join(blockers)
-        lines.append(f"- Sales Brief: zablokowany albo niedostępny ({reason})")
-    constraints = [
-        constraint
-        for constraint in as_list(trace.get("shown_knowledge_constraints"))
-        if isinstance(constraint, dict)
-    ]
-    if constraints:
-        lines.append("- ograniczenia wiedzy z dowodami:")
-        for constraint in constraints:
-            constraint_evidence = [
-                str(value) for value in constraint.get("evidence_ids") or []
-            ]
-            lines.append(
-                f"  - {constraint.get('label')}: {constraint.get('reason')} "
-                f"(dowody: {', '.join(constraint_evidence) or 'brak'})"
-            )
-    return lines
 
 
 def safe_action(api_base: str, action_id: str) -> dict[str, Any]:
@@ -458,6 +403,9 @@ def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
     snapshot_response: dict[str, Any] = (
         safe_workflow_snapshot(api_base, work_item_id) if work_item_id else {}
     )
+    matched_snapshot = matched_snapshot_for_work_item(snapshot_response, work_item_id)
+    exact_candidate = exact_candidate_from_snapshot(matched_snapshot, work_item_id)
+    display_candidate = exact_candidate or candidate
     raw_enrichment = enrichment_response.get("enrichment")
     enrichment: dict[str, Any] = (
         cast(dict[str, Any], raw_enrichment)
@@ -467,8 +415,10 @@ def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
     response_blockers = enrichment_response.get("blockers") if isinstance(
         enrichment_response.get("blockers"), list
     ) else []
-    final_url = candidate.get("final_canonical_url") or candidate.get("intended_final_url")
-    preview_url = candidate.get("preview_url")
+    final_url = display_candidate.get("final_canonical_url") or display_candidate.get(
+        "intended_final_url"
+    )
+    preview_url = display_candidate.get("preview_url")
     final_url_status = (
         "blocked_dev_url"
         if isinstance(final_url, str) and DEV_HOST in final_url
@@ -476,22 +426,25 @@ def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
     )
     return {
         "work_item_id": work_item_id,
-        "title": candidate.get("title"),
-        "topic": candidate.get("topic"),
-        "recommended_mode": candidate.get("recommended_mode"),
-        "recommended_mode_label": candidate.get("recommended_mode_label"),
-        "status_label": candidate.get("status_label"),
-        "reason": candidate.get("reason"),
-        "safe_next_step": candidate.get("safe_next_step"),
-        "evidence_ids": candidate.get("evidence_ids") or [],
-        "source_connectors": candidate.get("source_connectors") or [],
+        "title": display_candidate.get("title"),
+        "topic": display_candidate.get("topic"),
+        "recommended_mode": display_candidate.get("recommended_mode"),
+        "recommended_mode_label": display_candidate.get("recommended_mode_label"),
+        "status_label": display_candidate.get("status_label"),
+        "reason": display_candidate.get("reason"),
+        "safe_next_step": display_candidate.get("safe_next_step"),
+        "evidence_ids": display_candidate.get("evidence_ids") or [],
+        "source_connectors": display_candidate.get("source_connectors") or [],
         "final_canonical_url": final_url,
         "preview_url": preview_url,
         "final_url_status": final_url_status,
-        "preflight_status": candidate.get("preflight_status"),
-        "duplicate_canonical_risk_summary": candidate.get("duplicate_canonical_risk_summary"),
-        "measurement_readiness": candidate.get("measurement_readiness"),
-        "blockers": candidate.get("blockers") or [],
+        "preflight_status": display_candidate.get("preflight_status"),
+        "duplicate_canonical_risk_summary": display_candidate.get(
+            "duplicate_canonical_risk_summary"
+        ),
+        "measurement_readiness": display_candidate.get("measurement_readiness"),
+        "blockers": display_candidate.get("blockers") or [],
+        "search_demand": search_demand_from_snapshot(matched_snapshot),
         "enrichment_summary": {
             "status": enrichment.get("status") or enrichment.get("enrichment_status"),
             "intent": enrichment.get("intent_label")
@@ -505,7 +458,7 @@ def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
             "safe_next_step": enrichment.get("safe_next_step"),
             "blockers": enrichment.get("blockers") or response_blockers,
         },
-        "sales_brief_trace": sales_brief_trace_from_snapshot(snapshot_response),
+        "sales_brief_trace": sales_brief_trace_from_snapshot(matched_snapshot),
     }
 
 
@@ -840,6 +793,10 @@ def main() -> int:
         print(f"- final canonical: {item['final_canonical_url'] or 'brak'}")
         print(f"- preview: {item['preview_url'] or 'brak'}")
         print(f"- następny krok: {item['safe_next_step']}")
+        search_demand = item.get("search_demand")
+        if isinstance(search_demand, dict):
+            for line in search_demand_markdown_lines(search_demand):
+                print(line)
         sales_brief_trace = item.get("sales_brief_trace")
         if isinstance(sales_brief_trace, dict):
             for line in sales_brief_trace_markdown_lines(sales_brief_trace):
