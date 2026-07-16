@@ -87,8 +87,11 @@ kontynuuj najwyższy bezpieczny task.
 - Marketer widzi stronę, usługę, decyzję, pięć zadań i jeden aktywny workspace.
   Dziewięć paneli technicznych nie istnieje w marketer-mode DOM i wymaga
   jawnego przejścia do `Audyt techniczny`.
-- Read-only refresh `wordpress_sklep` i Ahrefs z 2026-07-14 przywrócił
-  freshness. Kolejka pozostaje uczciwie `blocked`: 2 kandydatów, 1 actionable,
+- Read-only refresh `wordpress_sklep` i Ahrefs z 2026-07-16 przywrócił
+  freshness. Oba canonical `vendor_read` zakończyły się po 2 dowody, z
+  zewnętrznym odczytem i zapisem metryk, bez błędów lub brakujących
+  credentials. Snapshot zwraca `fresh` i puste stale/missing/blocked connector
+  lists. Kolejka pozostaje uczciwie `blocked`: 2 kandydatów, 1 actionable,
   minimum 3. Nie wolno wymyślać trzeciego tematu.
 - Service Profile dla wybranego work itemu jest związany z usługą, ale jego
   publiczne karty nadal wymagają review; WILQ nie przedstawia tego jako
@@ -201,8 +204,8 @@ kontynuuj najwyższy bezpieczny task.
 - Parent `wilq-seo-r564` jest zamknięty: wszystkie 14 dzieci są closed, świeży
   dashboard gate przechodzi 164/164, a live snapshot zachowuje konkretny item,
   evidence, Service Profile review gate i `publish_ready=false`. Queue density,
-  owner-reviewed Service Profile, globalnie stale sklep/Ahrefs i Wilku UAT
-  pozostają otwarte poza tym bounded workbench outcome.
+  owner-reviewed Service Profile i Wilku UAT pozostają otwarte poza tym bounded
+  workbench outcome; stale sklep/Ahrefs zostało usunięte read-only refreshem.
 - Nie kopiuj tutaj pełnej listy Beads ani historii zamkniętych seamów. Po każdym
   pushu odczytaj `bd ready --json` i `bd list --status=open --json`.
 
@@ -211,7 +214,9 @@ kontynuuj najwyższy bezpieczny task.
 - Fresh parent proof `r564`: 14/14 dzieci closed, dashboard 164/164, API health
   200, `/content-workflow` 200. Live snapshot: konkretny homepage item, 2
   evidence IDs, krok `scope`, Service Profile `source_backed_review_required`,
-  `publish_ready=false`; global freshness jawnie stale przez sklep/Ahrefs.
+  `publish_ready=false`. Follow-up snapshot po canonical refreshach sklepu i
+  Ahrefs ma `fresh`, `requires_refresh=false` i puste stale/missing/blocked
+  connector lists.
 - Content state proof nie zamraża już dokładnego zdania CTA. Nadal sprawdza
   review gate, brak draft/publish readiness oraz knowledge-card lineage; focused
   repro po usunięciu redundantnej asercji jest zielony 1/1.
