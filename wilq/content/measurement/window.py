@@ -28,6 +28,8 @@ ContentMeasurementWindowBlockerCode = Literal[
     "invalid_final_canonical",
     "missing_allowed_metrics",
     "missing_source_connector",
+    "missing_publication_event",
+    "missing_metric_evidence",
     "measurement_window_not_ready",
 ]
 
@@ -55,6 +57,9 @@ class ContentMeasurementWindow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     status: ContentMeasurementWindowStatus = "planned"
     handoff_id: str | None = None
+    publication_evidence_id: str | None = None
+    publication_refresh_run_id: str | None = None
+    wordpress_post_id: str | None = None
     success_claim_allowed: bool = False
 
 

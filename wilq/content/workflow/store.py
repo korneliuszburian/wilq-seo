@@ -13,6 +13,8 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBoundary,
     ContentWordPressDraftExecutionResult,
 )
+from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
+from wilq.content.measurement.window import ContentMeasurementWindow
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.codex_revision_commit import (
@@ -763,6 +765,84 @@ class ContentWorkflowStore:
             json.loads(cast(str, row["payload_json"]))
         )
 
+    def save_measurement_window(
+        self,
+        window: ContentMeasurementWindow,
+    ) -> ContentMeasurementWindow:
+        redacted = ContentMeasurementWindow.model_validate(
+            redact_mapping(window.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO content_measurement_windows (work_item_id, window_id, payload_json)
+                VALUES (?, ?, ?)
+                ON CONFLICT(work_item_id) DO UPDATE SET
+                  window_id = excluded.window_id,
+                  payload_json = excluded.payload_json
+                """,
+                (redacted.work_item_id, redacted.id, _model_json(redacted)),
+            )
+        return redacted
+
+    def latest_measurement_window(self, work_item_id: str) -> ContentMeasurementWindow | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_measurement_windows
+                WHERE work_item_id = ?
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return ContentMeasurementWindow.model_validate(json.loads(cast(str, row["payload_json"])))
+
+    def save_measurement_outcome(
+        self,
+        outcome: ContentMeasurementOutcomeInterpretation,
+    ) -> ContentMeasurementOutcomeInterpretation:
+        redacted = ContentMeasurementOutcomeInterpretation.model_validate(
+            redact_mapping(outcome.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO content_measurement_outcomes (
+                  work_item_id, measurement_window_id, payload_json
+                ) VALUES (?, ?, ?)
+                ON CONFLICT(work_item_id) DO UPDATE SET
+                  measurement_window_id = excluded.measurement_window_id,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    redacted.work_item_id,
+                    redacted.measurement_window_id,
+                    _model_json(redacted),
+                ),
+            )
+        return redacted
+
+    def latest_measurement_outcome(
+        self,
+        work_item_id: str,
+    ) -> ContentMeasurementOutcomeInterpretation | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_measurement_outcomes
+                WHERE work_item_id = ?
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return ContentMeasurementOutcomeInterpretation.model_validate(
+            json.loads(cast(str, row["payload_json"]))
+        )
+
     def _connect(self) -> sqlite3.Connection:
         prepare_private_store_path(
             self.path,
@@ -807,6 +887,24 @@ class ContentWorkflowStore:
             """
             CREATE TABLE IF NOT EXISTS content_wordpress_draft_executions (
               work_item_id TEXT PRIMARY KEY,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_measurement_windows (
+              work_item_id TEXT PRIMARY KEY,
+              window_id TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_measurement_outcomes (
+              work_item_id TEXT PRIMARY KEY,
+              measurement_window_id TEXT NOT NULL,
               payload_json TEXT NOT NULL
             )
             """
@@ -906,6 +1004,8 @@ def _model_json(
         | ContentWordPressDraftAuditEnvelope
         | ContentQualityReview
         | ContentWordPressDraftExecutionResult
+        | ContentMeasurementWindow
+        | ContentMeasurementOutcomeInterpretation
         | ContentDraftRevision
         | ContentDraftRevisionReview
         | ContentPlanningDecision

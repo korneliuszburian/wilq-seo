@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.briefs.sales import (
@@ -41,14 +40,8 @@ from wilq.content.knowledge.cards import ContentKnowledgeCardMatch
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
-from wilq.content.measurement.outcome import (
-    ContentMeasurementObservedMetric,
-    ContentMeasurementOutcomeInterpretation,
-)
+from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import (
-    ContentDateRange,
-    ContentMeasurementMetric,
-    ContentMeasurementWindow,
     ContentMeasurementWindowBlocker,
     ContentMeasurementWindowBuildResult,
 )
@@ -384,10 +377,12 @@ class ContentWorkItemWordPressAuthoringPayloadPreviewResponse(BaseModel):
 class ContentWorkItemMeasurementWindowRequest(BaseModel):
     item: ContentWorkItem
     handoff: ContentWordPressDraftHandoff | None = None
-    baseline_period: ContentDateRange
-    observation_period: ContentDateRange
-    allowed_metrics: list[ContentMeasurementMetric] = Field(default_factory=list)
-    source_connectors: list[str] = Field(default_factory=list)
+
+
+class ContentWorkItemMeasurementCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    work_item_id: str = Field(min_length=1)
 
 
 class ContentWorkItemMeasurementWindowResponse(BaseModel):
@@ -398,9 +393,9 @@ class ContentWorkItemMeasurementWindowResponse(BaseModel):
 
 
 class ContentWorkItemMeasurementOutcomeRequest(BaseModel):
-    window: ContentMeasurementWindow
-    observed_metrics: list[ContentMeasurementObservedMetric] = Field(default_factory=list)
-    as_of: date
+    model_config = ConfigDict(extra="forbid")
+
+    work_item_id: str = Field(min_length=1)
 
 
 class ContentWorkItemMeasurementOutcomeResponse(BaseModel):

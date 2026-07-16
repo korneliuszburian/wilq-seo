@@ -161,9 +161,10 @@ kontynuuj najwyższy bezpieczny task.
   samych decyzji planistycznych i exact dev readiness.
 - Lokalna granica pilota `.5`–`.8` ma loopback-only, server-owned identity,
   private filesystem modes i syntetyczny versioned recovery proof.
-  Następnym krokiem jest measurement (`amj2.9`) → learning proposal (`amj2.10`);
-  oba pozostają
-  publication-bound i nie mogą przyjmować sukcesu zadeklarowanego przez klienta.
+  `amj2.9` domknął publication-bound measurement: exact WordPress post/URL musi
+  wrócić jako `publish`, a okresy, metryki i wynik ładuje serwer. Klient podaje
+  tylko `work_item_id`. Następnym krokiem jest review-only learning proposal
+  (`amj2.10`) z utrwalonego outcome.
 - `wilq-seo-c9h9.27` jest domknięty: connector i system status współdzielą
   typed lokalną gotowość CLI/login, nie wymagają `CODEX_API_KEY`, nie czytają
   loginu i nie ujawniają jego ścieżki. Live status jest `configured`; brak CLI
@@ -201,6 +202,14 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Verification checkpoint
 
+- Publication-bound measurement proof jest zielony 5/5: przed exact publish
+  nie ma okna, obie próby podania client-owned okresu/wartości zwracają `422`,
+  snapshot bez porównywalnego okresu albo z dodatkowym segmentem daje
+  `insufficient_data`, a dopiero syntetyczny WordPress publish i okresowe
+  page-aggregate fakty GSC pozwalają serwerowi utrwalić okno i wyliczyć
+  `measured_success`. Exact-URL query oraz okres raportu GA4 są częścią
+  provenance. Ruff i mypy są zielone. Realnego store/runtime nie
+  migrowano ani nie restartowano bez maintenance window.
 - Focused proposal/store/preview chronią pełny grounded input, body-only claim
   leakage, brak quality credit z model-only delivery fields, atomowość child
   revision z CodexRun i fail-closed tool attempt; 29/29 przechodzi. Focused
@@ -233,5 +242,7 @@ kontynuuj najwyższy bezpieczny task.
 1. GSC, GA4, Ahrefs, Ads, Keyword Planner i inventory używaj tylko, gdy istnieje
    aktualny typed dowód; brak lub stale źródło jest blockerem, nie wymyśloną
    metryką ani wolumenem słowa kluczowego.
-3. Potem przygotuj review-ready paczkę tekstów; jakości 10/10 nie claimuj przed realnym Wilku
-   UAT i owner-reviewed Service Profile.
+2. Zrealizuj `wilq-seo-amj2.10`: review-only learning proposal wyłącznie z
+   utrwalonego outcome; bez automatycznej zmiany wiedzy lub success claimu.
+3. Potem przygotuj review-ready paczkę tekstów; jakości 10/10 nie claimuj przed
+   realnym Wilku UAT i owner-reviewed Service Profile.

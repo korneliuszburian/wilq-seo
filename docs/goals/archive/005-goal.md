@@ -1,20 +1,26 @@
-# Goal 005 - Ekologus Knowledge Depth And UAT Closure
+# Active Goal — Useful Controlled WILQ Content Pilot
 
 Status: active.
 
-Beads epic: `wilq-seo-1oa`.
+Primary Beads epic: `wilq-seo-amj2`.
+
+Owner-gated UAT epic: `wilq-seo-1oa`.
 
 Date: 2026-07-01
 
 ## Objective
 
-Validate that the Goal 004 content operations loop is useful for Wilku with
-real Ekologus knowledge, not only mechanically complete.
+Deliver one honest, useful, API-first content-production pilot for Wilku:
+evidence and reviewed scope → section map → exact persisted revision → bounded
+Codex proposal through the existing local login → human review →
+revision-bound WordPress draft-only ActionObject → publication-bound
+measurement → review-only learning proposal.
 
-Goal 005 must deepen or truthfully block typed Ekologus knowledge, expose a
-read-only Service Profile/review path, run or explicitly defer the first real
-Wilku UAT, and audit whether Sales Brief v2 signals are strong enough to avoid
-generic SEO content.
+The current repo-local sequence is `wilq-seo-amj2.10`, followed by a fresh
+roadmap review and the highest-value confirmed task. Publication-bound
+measurement is complete in `.9` without a real runtime migration or a real
+publication claim. Knowledge depth and
+real Wilku UAT remain completion gates, not reasons to stop safe technical work.
 
 ## Execution continuity
 
@@ -22,10 +28,9 @@ generic SEO content.
   choose the highest-value confirmed task from `bd ready`, make the smallest
   safe change, verify API/dashboard/browser proof, update current docs and
   Beads, commit deliberately, push `origin/main`, then recheck the roadmap.
-- The original continuation starting at `wilq-seo-c9h9.4` is already complete;
-  do not repeat it. Current sequence is the five-step Content Workflow journey,
-  revision-bound draft persistence and only then the server-side Codex
-  app-server/SDK handshake.
+- The original continuation starting at `wilq-seo-c9h9.4` and the five-step
+  exact-revision/Codex/draft-only path are complete; do not repeat them.
+  Continue from review-only learning (`amj2.10`) and re-read the graph.
 - Before compaction, replace the durable handoff in
   `docs/current-cleanup-state.md` so completed work is not repeated.
 - Existing ChatGPT/Codex login is the available model authority. Do not make an

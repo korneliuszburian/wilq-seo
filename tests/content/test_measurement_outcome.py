@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any, cast
+from typing import cast
 
-from fastapi.testclient import TestClient
-
-from apps.api.wilq_api.main import app
 from wilq.content.measurement.outcome import (
     ContentMeasurementObservedMetric,
     interpret_content_measurement_outcome,
@@ -174,35 +171,3 @@ def test_measurement_outcome_classifies_noisy_directional_and_success_states() -
     assert success.metric_fact_ids == ["metric_fact_gsc_bdo_clicks"]
     assert success.refresh_run_ids == ["refresh_google_search_console_bdo"]
     assert "nie pełny dowód przyczyny" in " ".join(success.limitations)
-
-
-def test_measurement_outcome_api_returns_typed_interpretation() -> None:
-    response = TestClient(app).post(
-        "/api/content/work-items/measurement-outcome",
-        json={
-            "window": _window().model_dump(mode="json"),
-            "observed_metrics": [
-                {
-                    "metric": "gsc_clicks",
-                    "baseline_value": 100,
-                    "observation_value": 130,
-                    "source_connector": "google_search_console",
-                    "evidence_ids": ["ev_gsc_bdo"],
-                    "metric_fact_ids": ["metric_fact_gsc_bdo_clicks"],
-                    "refresh_run_ids": ["refresh_google_search_console_bdo"],
-                    "work_item_id": "content_work_item_bdo",
-                    "measurement_window_id": "measurement_window_content_work_item_bdo",
-                    "content_url": "https://ekologus.pl/bdo/",
-                }
-            ],
-            "as_of": "2026-08-01",
-        },
-    )
-
-    assert response.status_code == 200
-    payload: dict[str, Any] = response.json()
-    assert payload["outcome"]["status"] == "measured_success"
-    assert payload["outcome"]["success_claim_allowed"] is True
-    assert payload["outcome"]["source_connectors"] == ["google_search_console"]
-    assert payload["outcome"]["metric_fact_ids"] == ["metric_fact_gsc_bdo_clicks"]
-    assert payload["outcome"]["refresh_run_ids"] == ["refresh_google_search_console_bdo"]

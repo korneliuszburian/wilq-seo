@@ -193,7 +193,14 @@ def _summarize_run_report_response(
             totals[metric] += _float_metric(values[index].get("value"))
         dimensions = _ga4_dimensions(row, dimension_names)
         if dimensions:
-            metric_facts.extend(_ga4_metric_facts(values, metric_names, dimensions))
+            metric_facts.extend(
+                _ga4_metric_facts(
+                    values,
+                    metric_names,
+                    dimensions,
+                    period=f"{date_start}/{date_end}",
+                )
+            )
     return (
         {
             "api": "analytics_data_run_report",
@@ -291,6 +298,8 @@ def _ga4_metric_facts(
     values: Any,
     metric_names: list[str],
     dimensions: dict[str, str],
+    *,
+    period: str = "connector_refresh",
 ) -> list[VendorMetricFact]:
     if not isinstance(values, list):
         return []
@@ -305,7 +314,12 @@ def _ga4_metric_facts(
         else:
             metric_value = round(value, 6)
         facts.append(
-            VendorMetricFact(_snake_case_ga4_metric(metric_name), metric_value, dimensions)
+            VendorMetricFact(
+                _snake_case_ga4_metric(metric_name),
+                metric_value,
+                dimensions,
+                period=period,
+            )
         )
     return facts
 

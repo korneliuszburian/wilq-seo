@@ -96,13 +96,10 @@ def test_diagnostics_derived_content_item_reaches_grounded_contract_without_publ
 
     after_audit = _get_snapshot(client)
     measurement = after_audit["measurement_window"]
-    window = measurement["measurement_window_result"]["window"]
-    assert window["handoff_id"] == handoff["id"]
-    assert window["content_url"] == item["final_canonical_url"]
-    assert window["success_claim_allowed"] is False
-    assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
-        "measurement_window_not_ready"
-    ]
+    assert measurement["measurement_window_result"]["window"] is None
+    assert measurement["measurement_window_result"]["blockers"][0]["code"] == (
+        "missing_publication_event"
+    )
 
     execution = _post_json(
         client,
@@ -190,7 +187,7 @@ def _assert_workflow_build_gates(*, snapshot: dict[str, Any]) -> None:
     assert handoff_candidate["audit_status"] == "missing"
 
     measurement_candidate = snapshot["measurement_window"]["updated_item"]
-    assert measurement_candidate["measurement_window_status"] == "planned"
+    assert measurement_candidate["measurement_window_status"] == "missing"
 
 
 def _assert_claim_ledger(*, snapshot: dict[str, Any]) -> None:

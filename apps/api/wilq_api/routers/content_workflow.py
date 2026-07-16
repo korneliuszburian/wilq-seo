@@ -60,9 +60,9 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
+    ContentWorkItemMeasurementCommand,
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementOutcomeResponse,
-    ContentWorkItemMeasurementWindowRequest,
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightRequest,
     ContentWorkItemPreflightResponse,
@@ -104,7 +104,6 @@ from wilq.content.workflow.stage_drafts import (
 )
 from wilq.content.workflow.stage_measurement import (
     build_content_work_item_measurement_outcome_response,
-    build_content_work_item_measurement_window_response,
 )
 from wilq.content.workflow.stage_preparation import (
     build_content_work_item_preflight_response,
@@ -666,9 +665,13 @@ def content_work_item_wordpress_authoring_payload_preview(
     response_model=ContentWorkItemMeasurementWindowResponse,
 )
 def content_work_item_measurement_window(
-    request: ContentWorkItemMeasurementWindowRequest,
+    request: ContentWorkItemMeasurementCommand,
 ) -> ContentWorkItemMeasurementWindowResponse:
-    return build_content_work_item_measurement_window_response(request)
+    response = _snapshot_for_work_item_or_404(request.work_item_id).measurement_window
+    window = response.measurement_window_result.window
+    if window is not None:
+        content_workflow_store().save_measurement_window(window)
+    return response
 
 
 @router.post(
@@ -678,7 +681,10 @@ def content_work_item_measurement_window(
 def content_work_item_measurement_outcome(
     request: ContentWorkItemMeasurementOutcomeRequest,
 ) -> ContentWorkItemMeasurementOutcomeResponse:
-    return build_content_work_item_measurement_outcome_response(request)
+    try:
+        return build_content_work_item_measurement_outcome_response(request)
+    except LookupError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
 
 def _snapshot_for_work_item_or_404(

@@ -162,10 +162,10 @@ def test_homepage_work_item_builds_review_required_public_brief_without_publish(
     assert handoff["handoff"] is None
     assert "missing_human_review" in {blocker["code"] for blocker in handoff["blockers"]}
     measurement = snapshot["measurement_window"]
-    assert measurement["measurement_window_result"]["window"]["success_claim_allowed"] is False
-    assert "measurement_window_not_ready" in {
-        blocker["code"] for blocker in measurement["outcome_blockers"]
-    }
+    assert measurement["measurement_window_result"]["window"] is None
+    assert measurement["measurement_window_result"]["blockers"][0]["code"] == (
+        "missing_publication_event"
+    )
 
 
 def test_selected_content_work_item_output_and_quality_state_is_isolated(

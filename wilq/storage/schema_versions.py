@@ -4,7 +4,7 @@ import sqlite3
 
 import duckdb
 
-SQLITE_SCHEMA_VERSION = 1
+SQLITE_SCHEMA_VERSION = 2
 DUCKDB_SCHEMA_VERSION = 1
 
 

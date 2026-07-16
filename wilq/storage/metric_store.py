@@ -444,6 +444,73 @@ class DuckDbMetricStore:
             rows = connection.execute(query, [unique_evidence_ids]).fetchall()
         return [_metric_fact_from_row(row) for row in rows]
 
+    def list_metric_facts_for_content_url(
+        self,
+        connector_ids: list[str],
+        content_url: str,
+        *,
+        content_path: str,
+        limit: int = MAX_METRIC_FACT_READ_LIMIT,
+    ) -> list[MetricFact]:
+        if not connector_ids or not content_url or not content_path:
+            return []
+        bounded_limit = max(1, min(limit, MAX_METRIC_FACT_READ_LIMIT))
+        normalized_url = content_url.rstrip("/")
+        normalized_path = content_path.rstrip("/")
+        query = """
+            SELECT
+              metric_name,
+              metric_value_double,
+              metric_value_text,
+              value_kind,
+              connector_id,
+              evidence_id,
+              collected_at,
+              period,
+              unit,
+              dimensions_json,
+              NULL AS previous_metric_value_double,
+              NULL AS previous_metric_value_text,
+              NULL AS previous_value_kind,
+              NULL AS previous_evidence_id,
+              NULL AS previous_collected_at
+            FROM connector_metric_facts
+            WHERE connector_id = ANY(?)
+              AND (
+                rtrim(split_part(
+                  json_extract_string(dimensions_json, '$.content_url'), '?', 1
+                ), '/') = ?
+                OR rtrim(split_part(
+                  json_extract_string(dimensions_json, '$.page'), '?', 1
+                ), '/') = ?
+                OR rtrim(split_part(
+                  json_extract_string(dimensions_json, '$.page_location'), '?', 1
+                ), '/') = ?
+                OR rtrim(split_part(
+                  json_extract_string(dimensions_json, '$.landing_page'), '?', 1
+                ), '/') = ?
+                OR rtrim(split_part(
+                  json_extract_string(
+                    dimensions_json, '$.landing_page_plus_query_string'
+                  ), '?', 1
+                ), '/') = ?
+              )
+            ORDER BY collected_at DESC, connector_id ASC, metric_name ASC, evidence_id ASC
+            LIMIT ?
+        """
+        params: list[Any] = [
+            list(dict.fromkeys(connector_ids)),
+            normalized_url,
+            normalized_url,
+            normalized_url,
+            normalized_path,
+            normalized_path,
+            bounded_limit,
+        ]
+        with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
+            rows = connection.execute(query, params).fetchall()
+        return [_metric_fact_from_row(row) for row in rows]
+
     def _connect(self, read_only: bool = False) -> duckdb.DuckDBPyConnection:
         prepare_private_store_path(
             self.path,

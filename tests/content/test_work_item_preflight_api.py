@@ -243,24 +243,6 @@ def _wordpress_handoff(**overrides: object) -> dict[str, object]:
     return payload
 
 
-def _baseline_period(**overrides: object) -> dict[str, object]:
-    payload: dict[str, object] = {
-        "start": "2026-05-01",
-        "end": "2026-05-31",
-    }
-    payload.update(overrides)
-    return payload
-
-
-def _observation_period(**overrides: object) -> dict[str, object]:
-    payload: dict[str, object] = {
-        "start": "2026-07-01",
-        "end": "2026-07-31",
-    }
-    payload.update(overrides)
-    return payload
-
-
 def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     response = TestClient(app).post("/api/content/work-items/preflight", json=payload)
     assert response.status_code == 200
@@ -291,22 +273,6 @@ def _post_wordpress_handoff(payload: dict[str, Any]) -> dict[str, Any]:
     assert response.status_code == 200
     data = response.json()
     assert sorted(data) == ["handoff_result", "item"]
-    return data
-
-
-def _post_measurement_window(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post(
-        "/api/content/work-items/measurement-window",
-        json=payload,
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert sorted(data) == [
-        "item",
-        "measurement_window_result",
-        "outcome_blockers",
-        "updated_item",
-    ]
     return data
 
 
@@ -541,95 +507,6 @@ def test_content_work_item_wordpress_handoff_api_blocks_dev_canonical() -> None:
     ]
 
 
-def test_content_work_item_measurement_window_api_schedules_planned_window() -> None:
-    data = _post_measurement_window(
-        {
-            "item": _item(),
-            "handoff": _wordpress_handoff(),
-            "baseline_period": _baseline_period(),
-            "observation_period": _observation_period(),
-            "allowed_metrics": ["gsc_clicks", "gsc_impressions", "ga4_engaged_sessions"],
-            "source_connectors": ["google_search_console", "google_analytics_4"],
-        }
-    )
-
-    result = data["measurement_window_result"]
-    assert result["blockers"] == []
-    window = result["window"]
-    assert window["id"] == "measurement_window_content_work_item_bdo"
-    assert window["status"] == "planned"
-    assert window["handoff_id"] == "wordpress_draft_handoff_content_work_item_bdo"
-    assert window["content_url"] == "https://ekologus.pl/bdo/"
-    assert window["earliest_verdict_date"] == "2026-08-01"
-    assert window["success_claim_allowed"] is False
-    assert window["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
-    assert data["updated_item"]["measurement_window_status"] == "planned"
-    assert (
-        data["updated_item"]["measurement_window_id"] == "measurement_window_content_work_item_bdo"
-    )
-    assert [blocker["code"] for blocker in data["outcome_blockers"]] == [
-        "measurement_window_not_ready"
-    ]
-
-
-def test_content_work_item_measurement_window_api_blocks_missing_metrics() -> None:
-    data = _post_measurement_window(
-        {
-            "item": _item(),
-            "handoff": _wordpress_handoff(),
-            "baseline_period": _baseline_period(),
-            "observation_period": _observation_period(),
-            "allowed_metrics": [],
-            "source_connectors": ["google_search_console"],
-        }
-    )
-
-    assert data["measurement_window_result"]["window"] is None
-    assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
-        "missing_allowed_metrics"
-    ]
-    assert data["updated_item"]["measurement_window_status"] == "missing"
-    assert data["outcome_blockers"] == []
-
-
-def test_content_work_item_measurement_window_api_blocks_missing_connectors() -> None:
-    data = _post_measurement_window(
-        {
-            "item": _item(),
-            "handoff": _wordpress_handoff(),
-            "baseline_period": _baseline_period(),
-            "observation_period": _observation_period(),
-            "allowed_metrics": ["gsc_clicks"],
-            "source_connectors": [],
-        }
-    )
-
-    assert data["measurement_window_result"]["window"] is None
-    assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
-        "missing_source_connector"
-    ]
-
-
-def test_content_work_item_measurement_window_api_blocks_dev_canonical() -> None:
-    data = _post_measurement_window(
-        {
-            "item": _item(final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/"),
-            "handoff": _wordpress_handoff(
-                final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/"
-            ),
-            "baseline_period": _baseline_period(),
-            "observation_period": _observation_period(),
-            "allowed_metrics": ["gsc_clicks"],
-            "source_connectors": ["google_search_console"],
-        }
-    )
-
-    assert data["measurement_window_result"]["window"] is None
-    assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
-        "invalid_final_canonical"
-    ]
-
-
 def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
     monkeypatch: Any,
     tmp_path: Path,
@@ -714,13 +591,13 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
         ]
 
     measurement = data["measurement_window"]
-    window = measurement["measurement_window_result"]["window"]
-    assert window["content_url"] == source_decision["final_canonical_url"]
-    assert window["handoff_id"] is None
-    assert window["success_claim_allowed"] is False
-    assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
-        "measurement_window_not_ready"
+    assert measurement["measurement_window_result"]["window"] is None
+    assert [
+        blocker["code"] for blocker in measurement["measurement_window_result"]["blockers"]
+    ] == [
+        "missing_publication_event"
     ]
+    assert measurement["outcome_blockers"] == []
 
     operator_steps = data["operator_steps"]
     assert [step["id"] for step in operator_steps] == [
@@ -756,9 +633,14 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics(
         for step in operator_steps
     )
     draft_package = data["draft_package"]["draft_package_result"]["draft_package"]
+    planning_workspace = data["planning_workspace"]
     if brief is None or brief["signal_quality"]["status"] == "thin":
         assert data["current_step_id"] == "scope"
     elif draft_package is None:
+        assert data["current_step_id"] == "section_map"
+    elif not planning_workspace["scope_current"]:
+        assert data["current_step_id"] == "scope"
+    elif not planning_workspace["section_map_current"]:
         assert data["current_step_id"] == "section_map"
     else:
         assert data["current_step_id"] == "draft"
@@ -845,9 +727,10 @@ def test_content_work_item_snapshot_persists_real_human_review(
     handoff_result = persisted["wordpress_handoff"]["handoff_result"]
     assert handoff_result["handoff"] is None
     assert [blocker["code"] for blocker in handoff_result["blockers"]] == ["missing_audit"]
-    assert persisted["current_step_id"] == "draft"
+    assert persisted["current_step_id"] == "scope"
     journey = {step["id"]: step for step in persisted["operator_steps"]}
-    assert journey["draft"]["phase"] == "current"
+    assert journey["scope"]["phase"] == "current"
+    assert journey["draft"]["phase"] == "pending"
     assert journey["review"]["phase"] == "pending"
     assert journey["review"]["can_submit"] is False
 
@@ -928,15 +811,15 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
     assert handoff["audit_id"] == audit["audit_id"]
     assert handoff["evidence_ids"] == item["evidence_ids"]
 
-    window = persisted["measurement_window"]["measurement_window_result"]["window"]
-    assert window["handoff_id"] == handoff["id"]
-    assert window["success_claim_allowed"] is False
-    assert persisted["current_step_id"] == "draft"
-    operator_steps = {step["id"]: step for step in persisted["operator_steps"]}
-    assert operator_steps["draft"]["phase"] == "current"
-    assert operator_steps["draft"]["blocker"]["code"] == (
-        "missing_revision_bound_draft"
+    measurement = persisted["measurement_window"]
+    assert measurement["measurement_window_result"]["window"] is None
+    assert measurement["measurement_window_result"]["blockers"][0]["code"] == (
+        "missing_publication_event"
     )
+    assert persisted["current_step_id"] == "scope"
+    operator_steps = {step["id"]: step for step in persisted["operator_steps"]}
+    assert operator_steps["scope"]["phase"] == "current"
+    assert operator_steps["draft"]["phase"] == "pending"
     assert operator_steps["review"]["phase"] == "pending"
     assert operator_steps["review"]["blocker"]["code"] == (
         "missing_revision_bound_draft"

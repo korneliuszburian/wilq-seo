@@ -1,6 +1,7 @@
-# PLANS.md — Goal 005 Knowledge Depth And UAT Closure
+# PLANS.md — Useful Controlled WILQ Content Pilot
 
-Status: active. Beads epic: `wilq-seo-1oa`.
+Status: active. Primary Beads epic: `wilq-seo-amj2`.
+Owner-gated UAT epic: `wilq-seo-1oa`.
 
 To jest restartowalny plan bieżący, nie historia wykonania. Szczegóły produktu
 są w `docs/goals/archive/005-goal.md`, stan dashboardu w
@@ -9,11 +10,11 @@ a kolejność pracy w Beads.
 
 ## Cel
 
-Udowodnić, że WILQ pomaga realnemu marketerowi Ekologus podejmować decyzje
-i tworzyć treści na podstawie aktualnych dowodów oraz reviewed knowledge.
-Mechanicznie poprawny pipeline nie wystarcza: wynik ma być zrozumiały,
-odtwarzalny, wersjonowany i bezpieczny przed przypadkowym zatwierdzeniem innej
-treści niż ta, którą przeczytał człowiek.
+Dowieźć jeden uczciwy pilot treści: od aktualnych dowodów i decyzji marketera,
+przez exact revision i bounded Codex proposal, do kontrolowanego WordPress
+draft-only oraz późniejszego pomiaru i learning proposal. Mechanicznie poprawny
+pipeline nie wystarcza: wynik ma być zrozumiały, użyteczny, odtwarzalny,
+wersjonowany i bezpieczny przed zatwierdzeniem innej treści niż przeczytana.
 
 ## Granice
 
@@ -137,7 +138,15 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
    jawny wybór strony/usługi/sekcji/intencji/CTA, metryki i słowa kluczowe tylko
    z aktualnych typed źródeł, porównanie wersji, bibliotekę treści oraz realny
    Wilku UAT.
-6. Po każdym slice ponownie odczytać `bd ready --json` i
+7. `wilq-seo-amj2.1`–`.8` domknęły persisted scope/section map, exact dev
+   readiness, typed demand evidence, zgodny content skill, loopback-only
+   runtime, server-owned local identity, prywatne tryby i syntetyczny recovery
+   proof. Nie powtarzać tych zakresów.
+8. `wilq-seo-amj2.9` jest domknięty: measurement window aktywuje się wyłącznie
+   po exact WordPress publication evidence, a okresy, metryki i outcome są
+   server-owned i trwałe. Aktywny następny slice `.10` tworzy wyłącznie
+   review-only learning proposal z utrwalonego outcome.
+9. Po każdym slice ponownie odczytać `bd ready --json` i
    `bd list --status=open --json`; nie wracać do ukończonych zakresów bez nowego
    dowodu regresji.
 
@@ -172,9 +181,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 - Owner/Wilku: realna sesja UAT albo jawne odroczenie z ryzykiem.
 - Dane: za mała gęstość bezpiecznej kolejki treści.
 - Kontrakt zewnętrzny: uwierzytelniony actor/tenant przed produkcyjnym użyciem.
-- Techniczne, nadal wykonywalne repo-local: dashboardowy wybór sekcji +
-  diff/findings dla app-server proposal, wycofanie legacy runtime po audycie
-  referencji oraz użytecznościowy proof paczki tekstów.
+- Techniczne, nadal wykonywalne repo-local: review-only learning,
+  potwierdzona regresja peer-scope testu oraz późniejszy
+  usefulness proof paczki tekstów.
 
 ## Outcome
 

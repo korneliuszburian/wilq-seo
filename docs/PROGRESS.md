@@ -20,6 +20,18 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.9` wiąże okno pomiaru z utrwalonym live-created WordPress
+  draftem oraz exact post ID/URL widocznym później jako `publish` w odczycie
+  WordPress. Daty, dozwolone metryki, evidence i wynik pochodzą wyłącznie ze
+  store WILQ; publiczne komendy przyjmują tylko `work_item_id`, więc klient nie
+  może podać własnego okresu, wartości ani `measured_success`. Okno i wynik są
+  trwałe. Syntetyczny proof potwierdza blokadę przed publikacją, `422` dla obu
+  client-owned payloadów, `insufficient_data` dla snapshotu bez porównywalnego
+  okresu lub z dodatkowym segmentem oraz server-derived wynik dopiero z
+  okresowych page-aggregate faktów GSC. Exact-URL query nie zależy od
+  przypadkowego top-N całego connectora, a nowe fakty GA4 zachowują zakres
+  raportu. Realny stack nie został restartowany ani zmigrowany: brak
+  maintenance window i potwierdzonego realnego publication event pozostają jawne.
 - `wilq-seo-amj2.8` nadaje SQLite i DuckDB jawne wersje schematu oraz
   transakcyjnie chroni istniejącą migrację metryk. `wilq storage
   backup|restore` kopiuje oba store'y wyłącznie do nowych alternatywnych
@@ -283,8 +295,8 @@ pilota nie jest już luźną listą pomysłów:
 2. Lokalna granica pilota `.5`–`.8` ma loopback-only, server-owned identity,
    prywatne tryby i syntetyczny versioned recovery proof. Realny restore drill
    nadal wymaga maintenance window.
-3. Domknąć measurement i learning (`wilq-seo-amj2.9`–`.10`) wyłącznie na
-   potwierdzonym publication event i persisted metric evidence; klient nie może
+3. Domknąć review-only learning (`wilq-seo-amj2.10`) wyłącznie z utrwalonego
+   publication-bound outcome; propozycja nie może sama zmienić wiedzy ani
    zadeklarować sukcesu.
 
 Architektoniczne tickety `wilq-seo-jnra`, `wilq-seo-djly` i `wilq-seo-kgvy`

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
 
 from wilq.content.briefs.sales import ContentSalesBrief, ContentSalesBriefSeed
 from wilq.content.claims.ledger import ContentClaimLedger
@@ -11,7 +10,6 @@ from wilq.content.enrichment.opportunity import ContentOpportunityEnrichment
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.inventory.records import ContentInventoryRecord
 from wilq.content.knowledge.cards import ContentKnowledgeCardMatch
-from wilq.content.measurement.window import ContentDateRange
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.contracts import (
     ContentWorkItemDraftPackageRequest,
@@ -213,10 +211,6 @@ def snapshot_measurement_window(
                 human_review,
             ),
             handoff=wordpress_handoff.handoff_result.handoff,
-            baseline_period=ContentDateRange(start=date(2026, 5, 1), end=date(2026, 5, 31)),
-            observation_period=ContentDateRange(start=date(2026, 7, 1), end=date(2026, 7, 31)),
-            allowed_metrics=["gsc_clicks", "gsc_impressions", "ga4_engaged_sessions"],
-            source_connectors=["google_search_console", "google_analytics_4"],
         )
     )
 
