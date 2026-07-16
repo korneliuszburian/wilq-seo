@@ -20,6 +20,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.4` wyrównuje skilla `wilq-content-operator` z jednym
+  kanonicznym journey dashboardu i API: kolejka → snapshot → zapisane decyzje
+  planu → exact revision/review → opcjonalny exact Codex proposal →
+  revision-bound ActionObject → WordPress draft-only. Skill nie opisuje już
+  client-owned preflightów, legacy wariantów ani direct WordPress execution.
+  Live smoke zachował realny blocker `scope`, 2 wiersze GSC i 0 zgadywanych
+  Ads/Planner; non-interactive eval ma usefulness 9/10. To jest proof obsługi
+  decyzji, nie jakości 10/10 realnego tekstu ani owner UAT.
 - `wilq-seo-amj2.3` projektuje typed popyt bez nowego endpointu: live scope ma
   2 świeże wiersze GSC powiązane exact page i evidence ID z 3 sekcjami.
   Operatorowe zapytania z wieloma `-site:` nie wypierają zwykłych fraz z
@@ -245,12 +253,11 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 Fixed-point review jest zapisany w Beads jako epic `wilq-seo-amj2`. Kolejność
 pilota nie jest już luźną listą pomysłów:
 
-1. Dopiero do zaakceptowanego scope dołączyć typed GSC/Ads/keyword evidence
-   mapowane do strony i sekcji (`wilq-seo-amj2.3`), następnie wyrównać skill z
-   tą samą ścieżką API (`wilq-seo-amj2.4`).
-2. Równolegle domknąć lokalną granicę pilota: bezwarunkowy loopback, server-owned
+1. Typed demand evidence i zgodny content skill są domknięte w `amj2.3`–`.4`;
+   nie dodawać alternatywnego content entrypointu.
+2. Domknąć lokalną granicę pilota: server-owned
    local audit identity, prywatne filesystem modes i wersjonowany recovery proof
-   (`wilq-seo-amj2.5`–`.8`).
+   (`wilq-seo-amj2.6`–`.8`); loopback-only `.5` jest zakończony.
 3. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
    potwierdzonym publication event i persisted metric evidence; klient nie może
    zadeklarować sukcesu.

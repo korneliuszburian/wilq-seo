@@ -28,6 +28,22 @@ Usefulness is scored on a 1-10 scale:
 `failure_tags` are eval failures in the skill answer, not normal WILQ product
 blockers.
 
+## 2026-07-16 - Content operator aligned with the exact planning journey
+
+- Skill and deterministic smoke now use one path: queue → browser-safe snapshot
+  → persisted scope/section review → exact revision/human review → optional
+  exact Codex proposal → revision-bound ActionObject → WordPress draft-only.
+  Legacy client-owned stages and direct WordPress execution are absent.
+- Live smoke kept the real workspace at `scope`, exposed 2 exact GSC rows and
+  0 Ads/Planner rows, and performed no vendor write. The eval preflight now
+  waits only for the API's explicit `daily_check_runtime_prewarm` state after
+  ActionObject validation; it still fails on final missing connector evidence.
+- Fresh non-interactive eval passed with usefulness 9/10 at
+  `.local-lab/evals/codex-skill/20260716T001145Z`. It gives one Polish scope
+  decision, preserves GSC/WordPress evidence and blocks save/publication. This
+  is not evidence of 10/10 generated text, Service Profile approval or Wilku
+  UAT.
+
 ## 2026-07-15 - Content operator uses the single exact Codex proposal seam
 
 - Skill guidance now follows browser-safe readiness → exact reviewed revision →

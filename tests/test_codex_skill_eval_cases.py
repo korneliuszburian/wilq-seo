@@ -702,22 +702,17 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert set(content_operator_case["required_decision_terms_pl"]).issuperset(
         {
             "/content-workflow",
-            "dane wymagają odświeżenia",
-            "odśwież dane źródłowe",
-            "enrichment",
-            "preflight",
-            "brief sprzedażowy",
-            "Claim Ledger",
-            "kontrolę jakości",
-            "review człowieka",
-            "WordPress",
-            "szkic",
-            "okno pomiaru",
-            "Service Profile",
-            "źródła",
-            "blokady twierdzeń",
+            "Decyzja teraz",
+            "Dlaczego",
+            "Co już jest zapisane",
+            "Co blokuje",
+            "Następny bezpieczny krok",
+            "Ślad WILQ",
+            "GSC",
+            "metryki",
+            "planning review",
             "nie publikuj",
-            "nie pisz finalnego artykułu",
+            "jedna decyzja",
         }
     )
 
@@ -809,6 +804,14 @@ def test_route_specific_skill_smokes_expose_typed_marketing_surfaces() -> None:
             "smoke_context_pack.py" if skill == "wilq-daily-command" else "smoke_skill_contract.py"
         )
         smoke_script = (skill_root / "scripts" / smoke_script_name).read_text(encoding="utf-8")
+
+        if skill == "wilq-content-operator":
+            assert "GET /api/content/work-items/queue" in skill_doc
+            assert "GET /api/marketing/brief" not in skill_doc
+            assert '"/api/content/work-items/queue"' in smoke_script
+            assert "planning_workspace" in smoke_script
+            assert "search_demand" in smoke_script
+            continue
 
         assert "GET /api/marketing/brief" in skill_doc
         assert any(

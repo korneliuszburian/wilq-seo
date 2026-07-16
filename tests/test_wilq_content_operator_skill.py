@@ -7,10 +7,6 @@ from typing import Any
 
 from scripts.record_service_profile_review_result import PRIVATE_DECISION_BOOLEAN_FIELDS
 
-CONTENT_OPERATOR_SKILL_PATH = Path(".agents/skills/wilq-content-operator/SKILL.md")
-CONTENT_OPERATOR_OUTPUT_CONTRACT_PATH = Path(
-    ".agents/skills/wilq-content-operator/references/output-contract.md"
-)
 CONTENT_OPERATOR_SMOKE_PATH = Path(
     ".agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py"
 )
@@ -43,61 +39,8 @@ def load_smoke_script() -> ModuleType:
     return module
 
 
-def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
-    skill_doc = CONTENT_OPERATOR_SKILL_PATH.read_text(encoding="utf-8")
-    output_contract = CONTENT_OPERATOR_OUTPUT_CONTRACT_PATH.read_text(encoding="utf-8")
-    smoke_script = CONTENT_OPERATOR_SMOKE_PATH.read_text(encoding="utf-8")
+def test_wilq_content_operator_uat_contract_keeps_review_boundaries() -> None:
     uat_script = CONTENT_OPERATOR_UAT_PATH.read_text(encoding="utf-8")
-
-    for endpoint in (
-        "GET /api/content/work-items/queue",
-        "GET /api/content/work-items/{work_item_id}/snapshot",
-        "GET /api/content/work-items/{work_item_id}/enrichment",
-        "GET /api/content/knowledge-cards",
-        "POST /api/content/work-items/{work_item_id}/draft-revisions/"
-        "{base_revision_id}/codex-proposal",
-        "POST /api/content/work-items/quality-review",
-        "POST /api/content/work-items/revision-apply",
-        "POST /api/content/work-items/wordpress-draft-execution",
-        "POST /api/content/work-items/wordpress-authoring-payload-preview",
-        "POST /api/content/work-items/measurement-outcome",
-    ):
-        assert endpoint in skill_doc
-
-    for phrase in (
-        "nie jako autora tekstu",
-        "jedyny modelowy entrypoint",
-        "istniejącego loginu",
-        "structured_generation_readiness.status=ready",
-        "Nie wywołuj WordPress bezpośrednio",
-        "Nie ustawiaj ani nie akceptuj `publish_ready=true`",
-        "Brak preflightu oznacza brak pisania",
-        "Brak measurement window oznacza brak wniosku o sukcesie albo porażce",
-    ):
-        assert phrase in skill_doc or phrase in output_contract
-
-    for marker in (
-        "/api/content/work-items/queue",
-        "/api/content/work-items/{work_item_id}/snapshot",
-        "/api/content/work-items/{work_item_id}/enrichment",
-        "/api/content/knowledge-cards",
-        "/api/content/work-items/wordpress-draft-execution",
-        "/api/content/work-items/wordpress-authoring-payload-preview",
-        "/api/content/work-items/measurement-outcome",
-        "publish_ready",
-        "publish_allowed",
-        "destructive_update_allowed",
-        "external_write_attempted",
-        "ekologus.dev.proudsite.pl",
-        "measured_success",
-        "knowledge_card_count",
-        "selected_action_ids",
-        "selected_validated_action_ids",
-        "wordpress_authoring_preview",
-        "row_candidate_count",
-        "/api/actions/{action_id}/validate",
-    ):
-        assert marker in smoke_script
 
     for marker in (
         "uat_tasks",
@@ -142,97 +85,64 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         assert marker in uat_script
 
 
-def test_content_operator_smoke_summarizes_acf_authoring_preview(
-    monkeypatch,
-) -> None:
+def test_content_operator_smoke_reads_exact_planning_revision_contract() -> None:
     smoke_script = load_smoke_script()
-    seen_requests: list[dict[str, Any]] = []
-
-    def fake_request_json(
-        api_base: str,
-        method: str,
-        path: str,
-        body: dict[str, Any] | None = None,
-        *,
-        timeout: int = 180,
-    ) -> dict[str, Any]:
-        del api_base, timeout
-        seen_requests.append({"method": method, "path": path, "body": body})
-        assert method == "POST"
-        assert path == "/api/content/work-items/wordpress-authoring-payload-preview"
-        assert body is not None
-        assert body["handoff"]["publish_allowed"] is False
-        assert body["handoff"]["destructive_update_allowed"] is False
-        assert body["draft_package"]["publish_ready"] is False
-        return {
-            "authoring_profile": {},
-            "preview_result": {
-                "status": "ready",
-                "mode": "dry_run",
-                "layout": "podstrona",
-                "publish_allowed": False,
-                "destructive_update_allowed": False,
-                "external_write_attempted": False,
-                "sections": [
-                    {
-                        "section_heading": "Kogo dotyczy BDO",
-                        "field_previews": [
+    summary = smoke_script.validate_snapshot(
+        {
+            "response_type": "workflow_snapshot",
+            "current_step_id": "scope",
+            "operator_steps": [
+                {"id": step}
+                for step in ("scope", "section_map", "draft", "review", "dev_draft")
+            ],
+            "preflight": {
+                "item": {
+                    "id": "content_work_item_bdo",
+                    "evidence_ids": ["ev_gsc_bdo"],
+                    "source_connectors": ["google_search_console"],
+                }
+            },
+            "planning_workspace": {
+                "scope_current": False,
+                "section_map_current": False,
+                "proposal": {
+                    "planning_digest": "a" * 64,
+                    "search_demand": {
+                        "gsc_query_rows": [
                             {
-                                "field_name": "elementy",
-                                "row_candidates": [
-                                    {
-                                        "row_label": (
-                                            "Wiersz do ręcznego przeglądu: "
-                                            "Kogo dotyczy BDO"
-                                        ),
-                                        "review_status": "review_required",
-                                        "evidence_ids": ["ev_gsc_bdo"],
-                                        "field_values": [
-                                            {
-                                                "field_name": "opis",
-                                                "field_label": "Opis",
-                                                "value_preview": (
-                                                    "Sprawdź źródła przed briefem."
-                                                ),
-                                                "source": "section_purpose",
-                                            }
-                                        ],
-                                    }
-                                ],
+                                "source_connector": "google_search_console",
+                                "evidence_ids": ["ev_gsc_bdo"],
+                                "section_headings": ["Kogo dotyczy BDO"],
+                                "period": "last_28_days",
+                                "freshness": "fresh",
                             }
                         ],
-                    }
-                ],
+                        "ads_term_rows": [],
+                        "keyword_planner_rows": [],
+                        "optional_ads_status": "not_exactly_mapped",
+                    },
+                },
             },
-        }
-
-    monkeypatch.setattr(smoke_script, "request_json", fake_request_json)
-
-    summary = smoke_script.validate_wordpress_authoring_preview(
-        "http://example.test",
-        {
-            "work_item_id": "content_work_item_bdo",
-            "title": "BDO dla firm",
-            "topic": "Kogo dotyczy BDO",
-            "safe_next_step": "Sprawdź źródła przed briefem.",
-            "final_canonical_url": "https://ekologus.pl/bdo/",
+            "revision_workspace": {"status": "empty", "latest_revision": None},
+            "wordpress_handoff": {"handoff_result": {"handoff": None}},
+            "publish_ready": False,
         },
-        evidence_ids=["ev_gsc_bdo"],
+        "content_work_item_bdo",
     )
 
-    assert seen_requests
     assert summary == {
-        "status": "ready",
-        "layout": "podstrona",
-        "mode": "dry_run",
-        "row_candidate_count": 1,
-        "first_row_label": "Wiersz do ręcznego przeglądu: Kogo dotyczy BDO",
-        "first_row_review_status": "review_required",
-        "first_row_fields": ["opis"],
+        "current_step_id": "scope",
+        "planning_digest": "a" * 64,
+        "scope_current": False,
+        "section_map_current": False,
+        "gsc_query_row_count": 1,
+        "ads_term_row_count": 0,
+        "keyword_planner_row_count": 0,
+        "revision_status": "empty",
+        "latest_revision_id": None,
+        "handoff_revision_bound": False,
         "evidence_ids": ["ev_gsc_bdo"],
-        "publish_allowed": False,
-        "destructive_update_allowed": False,
-        "external_write_attempted": False,
+        "source_connectors": ["google_search_console"],
     }
 
 

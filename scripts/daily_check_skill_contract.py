@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -20,7 +21,7 @@ SKILL_CONNECTORS = {
 }
 
 
-def _request(api_base: str) -> dict[str, Any]:
+def _request_once(api_base: str) -> dict[str, Any]:
     request = urllib.request.Request(f"{api_base.rstrip('/')}/api/marketing/daily-check")
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
@@ -30,6 +31,21 @@ def _request(api_base: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise SystemExit("DailyCheckResult must be an object")
     return payload
+
+
+def _request(api_base: str) -> dict[str, Any]:
+    for attempt in range(20):
+        payload = _request_once(api_base)
+        blocked_ids = {
+            str(item.get("id"))
+            for item in payload.get("blocked_recommendations") or []
+            if isinstance(item, dict)
+        }
+        if "daily_check_runtime_prewarm" not in blocked_ids:
+            return payload
+        if attempt < 19:
+            time.sleep(0.5)
+    raise SystemExit("DailyCheckResult remained in runtime prewarm state")
 
 
 def compact_daily_check(payload: dict[str, Any], skill: str) -> dict[str, Any]:
@@ -55,7 +71,7 @@ def compact_daily_check(payload: dict[str, Any], skill: str) -> dict[str, Any]:
     required_connectors = SKILL_CONNECTORS.get(skill, set())
     checked = {
         str(item.get("connector_id"))
-        for item in [*(payload.get("checked_connectors") or [])]
+        for item in payload.get("checked_connectors") or []
         if isinstance(item, dict)
     }
     if required_connectors and not required_connectors & checked:

@@ -69,6 +69,12 @@ kontynuuj najwyższy bezpieczny task.
   przypisaniem do sekcji przez exact page/evidence. Ads i Keyword Planner nie
   są zgadywane: pojawiają się tylko przy exact term+page+service; bieżący live
   stan ma 2 wiersze GSC i 0 ściśle mapowanych wierszy Ads/Planner.
+- `wilq-content-operator` konsumuje dokładnie ten sam pięciostopniowy kontrakt:
+  nie rekonstruuje preflightu, briefu ani wariantów po stronie skilla i nie ma
+  direct WordPress execution. Jawne polecenie zapisu nadal wymaga exact
+  revision-bound ActionObject; zwykła sesja kończy się decyzją marketera i
+  bezpiecznym następnym krokiem. Fresh eval ma usefulness 9/10, ale nie dowodzi
+  jakości finalnego tekstu.
 - Nowa rewizja przechowuje exact `planning_digest`; ten sam digest przechodzi
   do child revision Codexa i WordPress ActionObject bindingu. Cofnięcie decyzji
   planistycznej lub zmiana proposal unieważnia review/handoff bez kasowania
@@ -139,8 +145,8 @@ kontynuuj najwyższy bezpieczny task.
   Snapshot wiąże
   `dev_draft.can_submit` z istniejącym exact revision-bound handoffem; brak
   rewizji lub zmiana kontekstu pozostają zablokowane. Typed demand evidence
-  (`amj2.3`) zależy od scope, a content skill (`amj2.4`) od obu decyzji i exact
-  dev readiness.
+  (`amj2.3`) i zgodny content skill (`amj2.4`) są domknięte; oba używają tych
+  samych decyzji planistycznych i exact dev readiness.
 - Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`, domknięty)
   → local audit identity (`amj2.6`) oraz filesystem modes (`amj2.7`) → storage recovery
   (`amj2.8`). Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają

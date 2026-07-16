@@ -1,73 +1,55 @@
-# WILQ Content Operator Kontrakt odpowiedzi
+# Content Operator — techniczny kontrakt odpowiedzi
 
-## Cel
+Czytaj ten plik tylko podczas debugowania lub evala ustrukturyzowanego outputu.
+Zwykła sesja marketera ma działać z instrukcji w `SKILL.md` i wąskiego snapshotu.
 
-Prowadzenie Wilka przez operacyjny workflow treści Ekologus wyłącznie na kontraktach WILQ API.
+## Wymagany ślad
 
-Oczekiwany wynik: krótka, polska odpowiedź, która pokazuje, co można bezpiecznie zrobić z wybranym content work itemem, co blokuje pisanie albo handoff, jakie dowody to wspierają i jaki jest następny krok.
+- `work_item_id` wybranego elementu kolejki;
+- bieżący `current_step_id` oraz persisted planning/revision decision;
+- `planning_digest`, a po zapisie tekstu także exact `revision_id` i digest;
+- `source_connectors` i `evidence_ids` użyte w rekomendacji;
+- GSC query rows tylko z `planning_workspace.proposal.search_demand`;
+- `action_id` oraz revision binding, jeśli sesja dochodzi do `dev_draft`.
 
-## Wymagany kontekst API
+## Dozwolone przejścia
 
-Najpierw pobierz `GET /api/content/work-items/queue`. Dla wybranej propozycji pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli praca dotyczy briefu, szkicu, rewizji albo handoffu.
+```text
+queue
+  -> selected snapshot
+  -> scope planning-review
+  -> section_map planning-review
+  -> exact draft revision
+  -> exact revision human review
+  -> optional exact Codex child proposal
+  -> revision-bound activation/readiness
+  -> ActionObject validate/preview/review/confirm/impact-check/apply
+  -> WordPress draft-only readback
+```
 
-Jeśli ścieżka dotyczy WordPressa, użyj WILQ API authoring preview zamiast
-bezpośredniego WordPressa: `POST /api/content/work-items/wordpress-authoring-
-payload-preview`. Wynik `wordpress_authoring_preview` ma być opisany jako
-podgląd ACF/`elementy` do ręcznego przeglądu. `row_candidate_count`,
-`first_row_fields`, `publish_allowed=false`, `destructive_update_allowed=false`
-i `external_write_attempted=false` są dowodem, że to nie jest zapis ani
-publikacja.
-
-Użyj `POST /api/codex/context-pack` tylko jako dodatkowego kontekstu, jeśli operator pyta o szersze tło. Kanoniczne decyzje contentowe pochodzą z endpointów `content-work-items`, nie z promptu.
-
-Wymagane źródła danych zależą od itemu i muszą pochodzić z API:
-
-- `google_search_console`
-- `google_analytics_4`
-- `ahrefs`
-- `wordpress_ekologus`
-- `wordpress_sklep`
-- `google_ads`, gdy źródłem insightu są search terms
-- `google_merchant_center`, gdy temat dotyczy produktu lub sklepu
-- `localo`, gdy temat ma intencję lokalną
+Każde `409` oznacza odświeżenie snapshotu i ponowną decyzję człowieka. Nie
+rekonstruuj digestu, bindingu ani payloadu z wcześniejszej odpowiedzi.
 
 ## Kształt odpowiedzi
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Zaczynaj od jednej sesji pracy, nie od raportu bramek. Widoczna odpowiedź musi zawierać polskie etykiety: `Co wybieramy`, `Dlaczego ten temat`, `Plan sesji`, `Kiedy stop`, `Co pokazać Wilkowi` i `Ślad WILQ`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory work itemów, identyfikatory akcji i wartości enumów zostaw bez zmian. W opisach dla marketera pisz `dowody WILQ`, `identyfikatory dowodów` i `źródła danych`; nie używaj angielskich etykiet identyfikatorów dowodów ani źródeł poza technicznymi polami JSON.
+Widoczne pola decyzyjne muszą po polsku odpowiedzieć na:
 
-1. `Co wybieramy`: wybrany `work_item_id`, tryb pracy i decyzja, czy praca jest refresh-first, draft-ready czy zablokowana.
-2. `Dlaczego ten temat`: źródła danych i dowody WILQ po ludzku: GSC, WordPress, Ahrefs, GA4, Service Profile, knowledge cards, final canonical i preview URL tylko jako preview.
-3. `Plan sesji`: 4-6 kroków w kolejności działania: odśwież dane źródłowe, enrichment, preflight, brief sprzedażowy, Claim Ledger, kontrola jakości/review człowieka, WordPress draft-only albo measurement window.
-4. `Kiedy stop`: konkretne warunki zatrzymania: brak świeżych danych, brak Service Profile, forbidden claim, brak human review, WordPress tylko jako szkic, ACF/`elementy` tylko jako preview, measurement outcome niegotowy.
-5. `Co pokazać Wilkowi`: krótki pakiet review: decyzja, źródła, dozwolone twierdzenia, zablokowane twierdzenia i najbliższa akcja do sprawdzenia.
-6. `Ślad WILQ`: identyfikatory dowodów, źródeł danych, wybranego materiału i akcji. Dalsze bramki procesu opisuj po ludzku: preflight, brief sprzedażowy, rejestr twierdzeń, draft package, readiness, exact revision, Codex proposal, quality review, human review, audit, WordPress draft-only, measurement. Endpointy pokazuj tylko w technicznych notatkach/debugu albo na jawne życzenie.
-   Jeżeli wybrana propozycja z kolejki ma `action_ids`, pokaż te identyfikatory akcji
-   w tej sekcji i sprawdź je przez `POST /api/actions/{action_id}/validate`.
-   Globalnie zablokowana kolejka UAT nie usuwa action proofu dla wybranego
-   bezpiecznego kroku, np. `act_prepare_content_refresh_queue`.
+- `Decyzja teraz`;
+- `Dlaczego`;
+- `Co już jest zapisane`;
+- `Co blokuje`;
+- `Następny bezpieczny krok`;
+- `Ślad WILQ`.
 
-W ustrukturyzowanym JSON eval albo handoffie etykiety `Plan sesji`, `Kiedy stop` i `Co pokazać Wilkowi` muszą pojawić się w widocznych polach decyzyjnych, np. w `operator_next_step`, `recommendations[].label_pl` albo `action_candidates[].label_pl`. Nie wystarczy wrzucić ich do `notes`.
+Nie wystarczy lista endpointów. Wynik ma wskazać jedną czynność Wilka i
+zatrzymać się, jeśli brakuje jego approval, exact bindingu albo dowodu.
+Identyfikatory źródeł i dowodów pozostają w `Ślad WILQ`, poniżej decyzji.
 
-## Warunki odmowy lub obniżenia do blokady
+## Niedozwolone skróty
 
-Odmów albo obniż odpowiedź do raportu blokady, gdy:
-
-- WILQ API jest niedostępne.
-- Kolejka nie zawiera propozycji z identyfikatorami dowodów i źródeł danych.
-- Wybrana propozycja nie ma `work_item_id`.
-- Brakuje final canonical albo final canonical wskazuje na `ekologus.dev.proudsite.pl`.
-- Operator prosi o wygenerowanie szkicu bez preflightu, briefu sprzedażowego, rejestr twierdzeń albo draft package.
-- Operator prosi o direct OpenAI call poza WILQ API.
-- Operator prosi o zapis WordPress bez human review i audytu.
-- Operator prosi o publikację albo destrukcyjną aktualizację na `ekologus.pl`.
-- Operator prosi o sukces, porażkę albo wzrost bez gotowego measurement outcome.
-
-## Reguły dowodów
-
-Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak preflightu oznacza brak pisania. Brak briefu sprzedażowego oznacza brak draftu. Brak rejestr twierdzeń oznacza brak draftu. Brak human review oznacza brak WordPress draft. Brak audytu oznacza brak write/apply. Brak measurement window oznacza brak wniosku o sukcesie albo porażce.
-
-## Bezpieczeństwo treści
-
-Skill może prowadzić sesję tworzenia treści, ale nie może sam produkować finalnego artykułu. Poprawka tekstu może powstać tylko dla API-owned readiness i dokładnej wersji `needs_changes` albo `rejected`, przez exact Codex proposal z `expected_base_digest`, evidence mappingiem i rejestrem twierdzeń. Wynik pozostaje niezatwierdzoną child revision do quality review i human review.
-
-WordPress handoff pozostaje draft-only albo podgląd zmian. Publikacja i destrukcyjna aktualizacja są niedozwolone.
+- client-owned stage POST-y do preflight/brief/draft package;
+- legacy quality/revision apply poza exact revision workspace;
+- `wordpress-draft-execution` i synthetic authoring preview jako substytut
+  ActionObjectu;
+- caller-supplied measurement outcome;
+- direct OpenAI/WordPress oraz publish/update/delete.

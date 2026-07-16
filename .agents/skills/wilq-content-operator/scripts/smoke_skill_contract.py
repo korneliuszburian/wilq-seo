@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -14,19 +14,6 @@ from scripts.skill_smoke_harness import request_json
 
 SKILL_NAME = "wilq-content-operator"
 DEV_HOST = "ekologus.dev.proudsite.pl"
-MIN_SMOKE_ITEMS = 1
-MIN_UAT_ITEMS = 3
-
-
-def assert_false_everywhere(value: Any, forbidden_key: str, context: str) -> None:
-    if isinstance(value, dict):
-        if value.get(forbidden_key) is True:
-            raise SystemExit(f"{context} must not expose {forbidden_key}=true")
-        for child in value.values():
-            assert_false_everywhere(child, forbidden_key, context)
-    elif isinstance(value, list):
-        for child in value:
-            assert_false_everywhere(child, forbidden_key, context)
 
 
 def require_dict(value: Any, label: str) -> dict[str, Any]:
@@ -41,427 +28,192 @@ def require_list(value: Any, label: str) -> list[Any]:
     return value
 
 
-def first_candidate(candidates: list[dict[str, Any]]) -> dict[str, Any]:
-    for candidate in candidates:
-        if candidate.get("recommended_mode") != "block":
-            return candidate
-    return candidates[0]
+def assert_false_everywhere(value: Any, key: str) -> None:
+    if isinstance(value, dict):
+        if value.get(key) is True:
+            raise SystemExit(f"Content workflow must not expose {key}=true")
+        for child in value.values():
+            assert_false_everywhere(child, key)
+    elif isinstance(value, list):
+        for child in value:
+            assert_false_everywhere(child, key)
 
 
-def validate_queue(queue: dict[str, Any], *, min_candidates: int) -> dict[str, Any]:
+def select_candidate(queue: dict[str, Any]) -> dict[str, Any]:
     candidates = [
         candidate
         for candidate in require_list(queue.get("candidates"), "content queue candidates")
         if isinstance(candidate, dict)
     ]
-    if len(candidates) < min_candidates:
-        raise SystemExit(
-            f"{SKILL_NAME} needs at least {min_candidates} content candidates for this smoke; "
-            f"got {len(candidates)}"
-        )
-    if queue.get("candidate_count") != len(candidates):
-        raise SystemExit("Content queue candidate_count must match candidates length")
-
-    for candidate in candidates:
-        work_item_id = candidate.get("work_item_id")
-        if not work_item_id:
-            raise SystemExit("Every content queue candidate must expose work_item_id")
-        blockers = candidate.get("blockers") or []
-        if not candidate.get("evidence_ids") and not blockers:
-            raise SystemExit(f"{work_item_id}: candidate needs evidence IDs or typed blockers")
-        if not candidate.get("source_connectors") and not blockers:
-            raise SystemExit(f"{work_item_id}: candidate needs source connectors or typed blockers")
-        final_url = candidate.get("final_canonical_url") or candidate.get("intended_final_url")
-        if final_url and DEV_HOST in final_url:
-            raise SystemExit(f"{work_item_id}: dev URL cannot be final canonical")
-        if candidate.get("preview_url") and candidate.get("preview_url") == final_url:
-            raise SystemExit(f"{work_item_id}: preview URL cannot equal final canonical")
-        if not candidate.get("safe_next_step"):
-            raise SystemExit(f"{work_item_id}: candidate needs safe_next_step")
-        if candidate.get("recommended_mode") != "block" and not candidate.get("action_ids"):
-            raise SystemExit(f"{work_item_id}: actionable candidate needs action_ids")
-
-    return first_candidate(candidates)
+    if queue.get("candidate_count") != len(candidates) or not candidates:
+        raise SystemExit("Content queue must expose at least one counted candidate")
+    selected = next(
+        (candidate for candidate in candidates if candidate.get("recommended_mode") != "block"),
+        candidates[0],
+    )
+    if not selected.get("work_item_id"):
+        raise SystemExit("Selected candidate must expose work_item_id")
+    if selected.get("recommended_mode") != "block" and (
+        not selected.get("evidence_ids") or not selected.get("source_connectors")
+    ):
+        raise SystemExit("Actionable candidate needs evidence IDs and source connectors")
+    final_url = selected.get("final_canonical_url") or selected.get("intended_final_url")
+    if final_url and DEV_HOST in str(final_url):
+        raise SystemExit("Dev URL cannot be final canonical")
+    return selected
 
 
-def validate_selected_actions(api_base: str, selected: dict[str, Any]) -> list[str]:
-    action_ids = [str(action_id) for action_id in selected.get("action_ids") or []]
+def validate_queue_actions(api_base: str, selected: dict[str, Any]) -> list[str]:
     if selected.get("recommended_mode") == "block":
         return []
-    if not action_ids:
-        raise SystemExit("Selected non-block content candidate needs action_ids")
-    validated_action_ids: list[str] = []
-    for action_id in action_ids:
-        validation = require_dict(
-            request_json(api_base, "POST", f"/api/actions/{action_id}/validate"),
-            f"action validation response for {action_id}",
+    validated: list[str] = []
+    for raw_action_id in selected.get("action_ids") or []:
+        action_id = str(raw_action_id)
+        encoded = urllib.parse.quote(action_id, safe="")
+        result = require_dict(
+            request_json(api_base, "POST", f"/api/actions/{encoded}/validate"),
+            f"action validation {action_id}",
         )
-        if validation.get("valid") is not True:
+        if result.get("valid") is not True:
             raise SystemExit(f"Selected action {action_id} did not validate")
-        validated_action_ids.append(action_id)
-    return validated_action_ids
+        validated.append(action_id)
+    if not validated:
+        raise SystemExit("Actionable candidate needs a validated ActionObject")
+    return validated
 
 
 def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, Any]:
-    for section in (
-        "preflight",
-        "sales_brief",
-        "draft_package",
-        "structured_generation_readiness",
-        "human_review",
-        "wordpress_handoff",
-        "measurement_window",
-        "operator_steps",
-    ):
-        if section not in snapshot:
-            raise SystemExit(f"Snapshot missing {section}")
-    item = require_dict(snapshot["preflight"].get("item"), "snapshot preflight item")
+    if snapshot.get("response_type") != "workflow_snapshot":
+        raise SystemExit("Selected work item must expose a workflow snapshot")
+    item = require_dict(snapshot.get("preflight", {}).get("item"), "preflight item")
     if item.get("id") != work_item_id:
         raise SystemExit("Selected snapshot work_item_id mismatch")
-    if not item.get("evidence_ids"):
-        raise SystemExit("Selected snapshot item must expose evidence IDs")
-    if not item.get("source_connectors"):
-        raise SystemExit("Selected snapshot item must expose source connectors")
-    if item.get("final_canonical_url") and DEV_HOST in item["final_canonical_url"]:
-        raise SystemExit("Selected snapshot cannot use dev URL as final canonical")
 
-    readiness = require_dict(
-        snapshot["structured_generation_readiness"],
-        "structured generation readiness",
-    )
-    headings = require_list(
-        readiness.get("editable_section_headings"),
-        "structured generation editable headings",
-    )
-    blockers = require_list(
-        readiness.get("blockers"),
-        "structured generation blockers",
-    )
-    if readiness.get("publish_ready") is not False:
-        raise SystemExit("Structured generation readiness must keep publish_ready=false")
-    if readiness.get("status") == "ready" and (not headings or blockers):
-        raise SystemExit("Ready structured generation requires headings and no blockers")
-    if readiness.get("status") == "blocked" and (headings or not blockers):
-        raise SystemExit("Blocked structured generation requires blockers and no headings")
+    steps = require_list(snapshot.get("operator_steps"), "operator steps")
+    expected_steps = ["scope", "section_map", "draft", "review", "dev_draft"]
+    if [step.get("id") for step in steps if isinstance(step, dict)] != expected_steps:
+        raise SystemExit("Snapshot must expose the canonical five-step journey")
+    if snapshot.get("current_step_id") not in expected_steps:
+        raise SystemExit("Snapshot current_step_id is outside the canonical journey")
 
-    assert_false_everywhere(snapshot, "publish_ready", "content workflow snapshot")
-    assert_false_everywhere(snapshot, "publish_allowed", "content workflow snapshot")
-    assert_false_everywhere(snapshot, "destructive_update_allowed", "content workflow snapshot")
-    return item
+    planning = require_dict(snapshot.get("planning_workspace"), "planning workspace")
+    proposal = require_dict(planning.get("proposal"), "planning proposal")
+    demand = require_dict(proposal.get("search_demand"), "search demand")
+    for row in demand.get("gsc_query_rows") or []:
+        row = require_dict(row, "GSC query row")
+        if (
+            row.get("source_connector") != "google_search_console"
+            or not row.get("evidence_ids")
+            or not row.get("section_headings")
+            or not row.get("period")
+            or not row.get("freshness")
+        ):
+            raise SystemExit("GSC row needs source, evidence, sections, period and freshness")
+    if (
+        demand.get("ads_term_rows") or demand.get("keyword_planner_rows")
+    ) and demand.get("optional_ads_status") != "exact_rows_available":
+        raise SystemExit("Ads/Planner rows require exact mapping status")
 
+    revision = require_dict(snapshot.get("revision_workspace"), "revision workspace")
+    latest_revision = revision.get("latest_revision")
+    handoff = snapshot.get("wordpress_handoff", {}).get("handoff_result", {}).get("handoff")
+    if handoff is not None:
+        binding = require_dict(handoff.get("revision_binding"), "revision binding")
+        if not latest_revision or binding.get("revision_id") != latest_revision.get("revision_id"):
+            raise SystemExit("WordPress handoff must bind the latest exact revision")
 
-def validate_enrichment(api_base: str, work_item_id: str) -> dict[str, Any]:
-    enrichment = require_dict(
-        request_json(api_base, "GET", f"/api/content/work-items/{work_item_id}/enrichment"),
-        "content enrichment response",
-    )
-    if enrichment.get("work_item_id") not in {None, work_item_id}:
-        raise SystemExit("Enrichment work_item_id mismatch")
-    assert_false_everywhere(enrichment, "publish_ready", "content enrichment")
-    return enrichment
-
-
-def validate_knowledge_cards(api_base: str) -> dict[str, Any]:
-    cards = require_dict(
-        request_json(api_base, "GET", "/api/content/knowledge-cards"),
-        "content knowledge cards response",
-    )
-    card_items = cards.get("cards") or cards.get("knowledge_cards") or []
-    if not isinstance(card_items, list) or not card_items:
-        raise SystemExit("Content operator needs typed content knowledge cards")
-    return cards
-
-
-def compact_brief_items(brief: dict[str, Any], *, limit: int = 5) -> list[dict[str, Any]]:
-    items: list[dict[str, Any]] = []
-    sections = brief.get("sections")
-    if not isinstance(sections, list):
-        return items
-    for section in sections:
-        if not isinstance(section, dict):
-            continue
-        for raw_item in section.get("items") or []:
-            if not isinstance(raw_item, dict):
-                continue
-            items.append(
-                {
-                    "id": raw_item.get("id"),
-                    "title": raw_item.get("title"),
-                    "kind": raw_item.get("kind"),
-                    "source_connectors": raw_item.get("source_connectors") or [],
-                    "evidence_ids": raw_item.get("evidence_ids") or [],
-                }
-            )
-            if len(items) >= limit:
-                return items
-    return items
-
-
-def validate_wordpress_boundary(api_base: str, snapshot: dict[str, Any]) -> dict[str, Any]:
-    handoff = (
-        snapshot.get("wordpress_handoff", {})
-        .get("handoff_result", {})
-        .get("handoff")
-    )
-    draft_package = (
-        snapshot.get("draft_package", {})
-        .get("draft_package_result", {})
-        .get("draft_package")
-    )
-    execution = require_dict(
-        request_json(
-            api_base,
-            "POST",
-            "/api/content/work-items/wordpress-draft-execution",
-            {"handoff": handoff, "draft_package": draft_package, "mode": "dry_run"},
-        ),
-        "wordpress draft execution response",
-    )
-    assert_false_everywhere(execution, "publish_allowed", "wordpress draft execution")
-    assert_false_everywhere(execution, "destructive_update_allowed", "wordpress draft execution")
-    assert_false_everywhere(execution, "external_write_attempted", "wordpress draft execution")
-    return execution
-
-
-def validate_wordpress_authoring_preview(
-    api_base: str,
-    selected: dict[str, Any],
-    *,
-    evidence_ids: list[str],
-) -> dict[str, Any]:
-    work_item_id = str(selected.get("work_item_id") or "content_work_item_preview")
-    title = str(selected.get("title") or selected.get("topic") or "WILQ content preview")
-    final_url = str(
-        selected.get("final_canonical_url")
-        or selected.get("intended_final_url")
-        or "https://www.ekologus.pl/"
-    )
-    if DEV_HOST in final_url:
-        final_url = "https://www.ekologus.pl/"
-    clean_evidence_ids = [str(evidence_id) for evidence_id in evidence_ids if evidence_id]
-    if not clean_evidence_ids:
-        clean_evidence_ids = [f"ev_{work_item_id}_authoring_preview"]
-    primary_evidence_ids = clean_evidence_ids[:2]
-    draft_package = {
-        "id": f"draft_package_{work_item_id}_authoring_preview",
-        "work_item_id": work_item_id,
-        "brief_id": f"sales_brief_{work_item_id}",
-        "claim_ledger_id": f"claim_ledger_{work_item_id}",
-        "title": title,
-        "sections": [
-            {
-                "heading": str(selected.get("topic") or title),
-                "purpose": str(
-                    selected.get("safe_next_step")
-                    or "Przygotuj review-only sekcję do szkicu WordPress."
-                ),
-                "evidence_ids": primary_evidence_ids,
-                "draft_notes": [
-                    "WordPress authoring preview pozostaje dry-run i nie zapisuje zmian."
-                ],
-            }
-        ],
-        "section_to_evidence_map": [
-            {
-                "section_heading": str(selected.get("topic") or title),
-                "evidence_ids": primary_evidence_ids,
-            }
-        ],
-        "claims_used": [],
-        "publish_ready": False,
-    }
-    handoff = {
-        "id": f"wordpress_draft_handoff_{work_item_id}_authoring_preview",
-        "work_item_id": work_item_id,
-        "draft_package_id": draft_package["id"],
-        "human_review_id": f"human_review_{work_item_id}",
-        "audit_id": f"audit_{work_item_id}",
-        "title": title,
-        "final_canonical_url": final_url,
-        "evidence_ids": clean_evidence_ids,
-        "publish_allowed": False,
-        "destructive_update_allowed": False,
-    }
-    response = require_dict(
-        request_json(
-            api_base,
-            "POST",
-            "/api/content/work-items/wordpress-authoring-payload-preview",
-            {"handoff": handoff, "draft_package": draft_package},
-        ),
-        "wordpress authoring payload preview response",
-    )
-    preview = require_dict(response.get("preview_result"), "wordpress authoring preview")
-    assert_false_everywhere(preview, "publish_allowed", "wordpress authoring preview")
-    assert_false_everywhere(preview, "destructive_update_allowed", "wordpress authoring preview")
-    assert_false_everywhere(preview, "external_write_attempted", "wordpress authoring preview")
-    row_candidates = _authoring_row_candidates(preview)
-    if preview.get("status") == "ready" and not row_candidates:
-        raise SystemExit("WordPress authoring preview needs at least one ACF row candidate")
-    first_candidate = row_candidates[0] if row_candidates else {}
+    for key in ("publish_ready", "publish_allowed", "destructive_update_allowed"):
+        assert_false_everywhere(snapshot, key)
     return {
-        "status": preview.get("status"),
-        "layout": preview.get("layout"),
-        "mode": preview.get("mode"),
-        "row_candidate_count": len(row_candidates),
-        "first_row_label": first_candidate.get("row_label"),
-        "first_row_review_status": first_candidate.get("review_status"),
-        "first_row_fields": [
-            field.get("field_name")
-            for field in first_candidate.get("field_values", [])
-            if isinstance(field, dict) and field.get("field_name")
-        ],
-        "evidence_ids": first_candidate.get("evidence_ids") or [],
-        "publish_allowed": preview.get("publish_allowed"),
-        "destructive_update_allowed": preview.get("destructive_update_allowed"),
-        "external_write_attempted": preview.get("external_write_attempted"),
+        "current_step_id": snapshot.get("current_step_id"),
+        "planning_digest": proposal.get("planning_digest"),
+        "scope_current": planning.get("scope_current"),
+        "section_map_current": planning.get("section_map_current"),
+        "gsc_query_row_count": len(demand.get("gsc_query_rows") or []),
+        "ads_term_row_count": len(demand.get("ads_term_rows") or []),
+        "keyword_planner_row_count": len(demand.get("keyword_planner_rows") or []),
+        "revision_status": revision.get("status"),
+        "latest_revision_id": (
+            None if latest_revision is None else latest_revision.get("revision_id")
+        ),
+        "handoff_revision_bound": handoff is not None,
+        "evidence_ids": item.get("evidence_ids") or [],
+        "source_connectors": item.get("source_connectors") or [],
     }
 
 
-def _authoring_row_candidates(preview: dict[str, Any]) -> list[dict[str, Any]]:
-    candidates: list[dict[str, Any]] = []
-    for section in preview.get("sections") or []:
-        if isinstance(section, dict):
-            candidates.extend(_field_row_candidates(section.get("field_previews") or []))
-    return candidates
-
-
-def _field_row_candidates(fields: list[Any]) -> list[dict[str, Any]]:
-    candidates: list[dict[str, Any]] = []
-    for field in fields:
-        if not isinstance(field, dict):
-            continue
-        candidates.extend(
-            candidate
-            for candidate in field.get("row_candidates") or []
-            if isinstance(candidate, dict)
-        )
-        candidates.extend(_field_row_candidates(field.get("nested_values") or []))
-    return candidates
-
-
-def validate_measurement_outcome(api_base: str, snapshot: dict[str, Any]) -> dict[str, Any] | None:
-    window = (
-        snapshot.get("measurement_window", {})
-        .get("measurement_window_result", {})
-        .get("window")
-    )
-    if not isinstance(window, dict):
-        return None
-    outcome = require_dict(
+def read_wordpress_boundary(api_base: str, work_item_id: str) -> dict[str, Any]:
+    query = urllib.parse.urlencode({"work_item_id": work_item_id})
+    activation = require_dict(
         request_json(
             api_base,
-            "POST",
-            "/api/content/work-items/measurement-outcome",
-            {
-                "window": window,
-                "observed_metrics": [],
-                "as_of": date.today().isoformat(),
-            },
+            "GET",
+            f"/api/content/wordpress/draft-activation-packet?{query}",
         ),
-        "measurement outcome response",
+        "WordPress activation packet",
     )
-    status = require_dict(outcome.get("outcome"), "measurement outcome").get("status")
-    if status == "measured_success":
-        raise SystemExit("Measurement outcome cannot claim success without observed evidence")
-    return outcome
+    readiness = require_dict(
+        request_json(api_base, "GET", "/api/content/wordpress/draft-write-readiness"),
+        "WordPress write readiness",
+    )
+    for value in (activation, readiness):
+        for key in ("publish_allowed", "destructive_update_allowed"):
+            assert_false_everywhere(value, key)
+    return {
+        "action_id": activation.get("action_id"),
+        "activation_missing_step": activation.get("activation_missing_step"),
+        "activation_next_step": activation.get("operator_next_step"),
+        "handoff_ready": activation.get("handoff_ready"),
+        "write_ready": readiness.get("ready"),
+        "write_authorization_status": readiness.get("write_authorization_status"),
+    }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
-    parser.add_argument(
-        "--require-uat-queue",
-        action="store_true",
-        help="Require the 3+ item queue expected for a full Wilku UAT packet.",
-    )
     args = parser.parse_args()
 
-    health = require_dict(request_json(args.api_base, "GET", "/api/health"), "health response")
+    health = require_dict(request_json(args.api_base, "GET", "/api/health"), "health")
     if health.get("status") != "ok":
-        raise SystemExit(f"WILQ API health is not ok: {health}")
-
-    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
-    brief = require_dict(brief, "marketing brief response")
-    brief_items = compact_brief_items(brief)
-
+        raise SystemExit("WILQ API health is not ok")
     queue = require_dict(
         request_json(args.api_base, "GET", "/api/content/work-items/queue"),
-        "content queue response",
+        "content queue",
     )
-    selected = validate_queue(
-        queue,
-        min_candidates=MIN_UAT_ITEMS if args.require_uat_queue else MIN_SMOKE_ITEMS,
-    )
+    selected = select_candidate(queue)
     work_item_id = str(selected["work_item_id"])
-    selected_validated_action_ids = validate_selected_actions(args.api_base, selected)
-    knowledge_cards = validate_knowledge_cards(args.api_base)
-    authoring_preview = validate_wordpress_authoring_preview(
-        args.api_base,
-        selected,
-        evidence_ids=queue.get("evidence_ids") or selected.get("evidence_ids") or [],
-    )
-    if (
-        queue.get("queue_status") == "blocked"
-        or int(queue.get("actionable_candidate_count") or 0) == 0
-        or selected.get("recommended_mode") == "block"
-    ):
-        summary = {
-            "skill": SKILL_NAME,
-            "queue_status": queue.get("queue_status"),
-            "candidate_count": queue.get("candidate_count"),
-            "actionable_candidate_count": queue.get("actionable_candidate_count"),
-            "uat_queue_ready": int(queue.get("candidate_count") or 0) >= MIN_UAT_ITEMS,
-            "uat_min_candidate_count": MIN_UAT_ITEMS,
-            "selected_work_item_id": work_item_id,
-            "selected_mode": selected.get("recommended_mode"),
-            "selected_action_ids": selected.get("action_ids") or [],
-            "selected_validated_action_ids": selected_validated_action_ids,
-            "workflow_blocked": True,
-            "blocker_count": len(queue.get("blockers") or []),
-            "evidence_ids": queue.get("evidence_ids") or [],
-            "source_connectors": queue.get("source_connectors") or [],
-            "knowledge_card_count": len(knowledge_cards.get("cards") or []),
-            "safe_next_step": selected.get("safe_next_step"),
-            "brief_items": brief_items,
-            "wordpress_authoring_preview": authoring_preview,
-        }
-        print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
-        return 0
+    validated_action_ids = validate_queue_actions(args.api_base, selected)
 
-    snapshot = require_dict(
-        request_json(args.api_base, "GET", f"/api/content/work-items/{work_item_id}/snapshot"),
-        "content workflow snapshot response",
-    )
-    item = validate_snapshot(snapshot, work_item_id)
-    enrichment = validate_enrichment(args.api_base, work_item_id)
-    execution = validate_wordpress_boundary(args.api_base, snapshot)
-    outcome = validate_measurement_outcome(args.api_base, snapshot)
-
-    summary = {
+    summary: dict[str, Any] = {
         "skill": SKILL_NAME,
         "queue_status": queue.get("queue_status"),
         "candidate_count": queue.get("candidate_count"),
-        "uat_queue_ready": int(queue.get("candidate_count") or 0) >= MIN_UAT_ITEMS,
-        "uat_min_candidate_count": MIN_UAT_ITEMS,
         "selected_work_item_id": work_item_id,
         "selected_mode": selected.get("recommended_mode"),
         "selected_action_ids": selected.get("action_ids") or [],
-        "selected_validated_action_ids": selected_validated_action_ids,
-        "evidence_ids": item.get("evidence_ids", []),
-        "source_connectors": item.get("source_connectors", []),
-        "enrichment_keys": sorted(enrichment.keys()),
-        "knowledge_card_count": len(knowledge_cards.get("cards") or []),
-        "wordpress_execution_status": execution.get("execution_result", {}).get("status"),
-        "measurement_outcome_status": None
-        if outcome is None
-        else outcome.get("outcome", {}).get("status"),
-        "publish_blocked": True,
-        "destructive_update_blocked": True,
-        "success_claim_blocked_until_measurement": True,
-        "wordpress_authoring_preview": authoring_preview,
-        "brief_items": brief_items,
+        "selected_validated_action_ids": validated_action_ids,
     }
+    if selected.get("recommended_mode") == "block":
+        summary.update(
+            workflow_blocked=True,
+            safe_next_step=selected.get("safe_next_step"),
+            evidence_ids=selected.get("evidence_ids") or [],
+            source_connectors=selected.get("source_connectors") or [],
+        )
+    else:
+        snapshot = require_dict(
+            request_json(
+                args.api_base,
+                "GET",
+                f"/api/content/work-items/{urllib.parse.quote(work_item_id, safe='')}/snapshot",
+            ),
+            "content workflow snapshot",
+        )
+        summary.update(validate_snapshot(snapshot, work_item_id))
+        summary["wordpress_boundary"] = read_wordpress_boundary(args.api_base, work_item_id)
+        summary["workflow_blocked"] = snapshot.get("current_step_id") != "dev_draft"
+
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
