@@ -194,15 +194,20 @@ kontynuuj najwyższy bezpieczny task.
 - `wilq-seo-r564.14` jest zweryfikowany: tylko exact `codex-proposal` pozostaje
   publicznym content-model entrypointem; internal generation contract nie jest
   martwym artefaktem.
-- Parent `wilq-seo-r564` pozostaje otwarty. Queue density jest zewnętrznie
-  niepełna (1 actionable z wymaganych 3), a Service Profile i Wilku UAT nadal
-  wymagają ownera. Nie blokuje to podłączenia zweryfikowanego proposal seam do
-  aktywnego kroku dashboardu ani evidence-backed propozycji konkretnej sekcji.
+- Parent `wilq-seo-r564` jest zamknięty: wszystkie 14 dzieci są closed, świeży
+  dashboard gate przechodzi 164/164, a live snapshot zachowuje konkretny item,
+  evidence, Service Profile review gate i `publish_ready=false`. Queue density,
+  owner-reviewed Service Profile, globalnie stale sklep/Ahrefs i Wilku UAT
+  pozostają otwarte poza tym bounded workbench outcome.
 - Nie kopiuj tutaj pełnej listy Beads ani historii zamkniętych seamów. Po każdym
   pushu odczytaj `bd ready --json` i `bd list --status=open --json`.
 
 ## Verification checkpoint
 
+- Fresh parent proof `r564`: 14/14 dzieci closed, dashboard 164/164, API health
+  200, `/content-workflow` 200. Live snapshot: konkretny homepage item, 2
+  evidence IDs, krok `scope`, Service Profile `source_backed_review_required`,
+  `publish_ready=false`; global freshness jawnie stale przez sklep/Ahrefs.
 - Content state proof nie zamraża już dokładnego zdania CTA. Nadal sprawdza
   review gate, brak draft/publish readiness oraz knowledge-card lineage; focused
   repro po usunięciu redundantnej asercji jest zielony 1/1.

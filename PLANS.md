@@ -153,6 +153,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 10. `wilq-seo-or2e` i `wilq-seo-c9h9.28` domknęły dwa potwierdzone test-theater
     failures bez zmiany produkcji: peer-scope zastąpił Host-header semantykę, a
     content state proof nie zamraża już dokładnej frazy CTA.
+11. Parent `wilq-seo-r564` jest zamknięty po świeżym dashboard/live proof;
+    wszystkie 14 dzieci są closed. To zamyka bounded content workbench, nie
+    owner-reviewed wiedzę, globalną freshness, realny UAT ani jakość tekstu.
 
 ## Weryfikacja każdego slice
 

@@ -20,6 +20,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- Parent `wilq-seo-r564` jest zamknięty po świeżym fixed-point proof: wszystkie
+  14 dzieci są closed, dashboard przechodzi 164/164, a live snapshot pokazuje
+  konkretny homepage work item, 2 evidence IDs, jawny Service Profile review
+  gate i `publish_ready=false`. Globalna freshness pozostaje stale przez
+  `wordpress_sklep` i `ahrefs`; wybrany item używa GSC i `wordpress_ekologus`.
+  To nie jest Wilku UAT ani dowód jakości tekstu 10/10.
 - `wilq-seo-c9h9.28` usuwa jedną brittle asercję wymagającą dokładnej frazy CTA
   mimo równoważnego, bezpiecznego brzmienia. Test nadal chroni realny kontrakt:
   `review_required`, `draft_allowed=false`, przypisane knowledge cards i
