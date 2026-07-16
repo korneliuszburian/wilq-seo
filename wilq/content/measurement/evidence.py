@@ -138,6 +138,7 @@ def build_publication_bound_measurement_window(
             handoff_id=None if handoff is None else handoff.id,
             publication_evidence_id=publication_fact.evidence_id,
             publication_refresh_run_id=_refresh_run_id(publication_fact.evidence_id),
+            publication_source_connector=publication_fact.source_connector,
             wordpress_post_id=execution.wordpress_post_id,
         )
     )

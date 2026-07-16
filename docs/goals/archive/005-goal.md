@@ -16,11 +16,11 @@ Codex proposal through the existing local login → human review →
 revision-bound WordPress draft-only ActionObject → publication-bound
 measurement → review-only learning proposal.
 
-The current repo-local sequence is `wilq-seo-amj2.10`, followed by a fresh
-roadmap review and the highest-value confirmed task. Publication-bound
-measurement is complete in `.9` without a real runtime migration or a real
-publication claim. Knowledge depth and
-real Wilku UAT remain completion gates, not reasons to stop safe technical work.
+Publication-bound measurement and review-only learning are complete in
+`wilq-seo-amj2.9`–`.10` without a real runtime migration, publication claim or
+human acceptance. The current repo-local task is `wilq-seo-or2e`, followed by
+a fresh roadmap review. Knowledge depth and real Wilku UAT remain completion
+gates, not reasons to stop safe technical work.
 
 ## Execution continuity
 
@@ -30,7 +30,7 @@ real Wilku UAT remain completion gates, not reasons to stop safe technical work.
   Beads, commit deliberately, push `origin/main`, then recheck the roadmap.
 - The original continuation starting at `wilq-seo-c9h9.4` and the five-step
   exact-revision/Codex/draft-only path are complete; do not repeat them.
-  Continue from review-only learning (`amj2.10`) and re-read the graph.
+  Continue from peer-scope loopback proof (`wilq-seo-or2e`) and re-read the graph.
 - Before compaction, replace the durable handoff in
   `docs/current-cleanup-state.md` so completed work is not repeated.
 - Existing ChatGPT/Codex login is the available model authority. Do not make an

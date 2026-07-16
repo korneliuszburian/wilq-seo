@@ -60,6 +60,8 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
+    ContentWorkItemLearningProposalRequest,
+    ContentWorkItemLearningProposalResponse,
     ContentWorkItemMeasurementCommand,
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementOutcomeResponse,
@@ -103,6 +105,7 @@ from wilq.content.workflow.stage_drafts import (
     build_content_work_item_draft_package_response,
 )
 from wilq.content.workflow.stage_measurement import (
+    build_content_work_item_learning_proposal_response,
     build_content_work_item_measurement_outcome_response,
 )
 from wilq.content.workflow.stage_preparation import (
@@ -684,6 +687,19 @@ def content_work_item_measurement_outcome(
     try:
         return build_content_work_item_measurement_outcome_response(request)
     except LookupError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@router.post(
+    "/api/content/work-items/learning-proposal",
+    response_model=ContentWorkItemLearningProposalResponse,
+)
+def content_work_item_learning_proposal(
+    request: ContentWorkItemLearningProposalRequest,
+) -> ContentWorkItemLearningProposalResponse:
+    try:
+        return build_content_work_item_learning_proposal_response(request)
+    except (LookupError, ValueError) as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 

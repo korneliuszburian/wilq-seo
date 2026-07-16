@@ -20,6 +20,13 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.10` tworzy trwały learning proposal wyłącznie z atomowo
+  utrwalonego, zamkniętego measurement window i pasującego outcome. Proposal
+  zachowuje WordPress/GSC/GA4 evidence, metric-fact i refresh lineage, ale ma
+  literalne `review_required`, `human_acceptance_required=true` oraz wszystkie
+  uprawnienia do zmiany wiedzy, kolejki i claimu sukcesu ustawione na `false`.
+  Przed outcome i po `insufficient_data` endpoint zwraca `409`; caller-supplied
+  `approved` zwraca `422`. Nie dodano acceptance ani automatycznej zmiany wiedzy.
 - `wilq-seo-amj2.9` wiąże okno pomiaru z utrwalonym live-created WordPress
   draftem oraz exact post ID/URL widocznym później jako `publish` w odczycie
   WordPress. Daty, dozwolone metryki, evidence i wynik pochodzą wyłącznie ze
@@ -295,9 +302,9 @@ pilota nie jest już luźną listą pomysłów:
 2. Lokalna granica pilota `.5`–`.8` ma loopback-only, server-owned identity,
    prywatne tryby i syntetyczny versioned recovery proof. Realny restore drill
    nadal wymaga maintenance window.
-3. Domknąć review-only learning (`wilq-seo-amj2.10`) wyłącznie z utrwalonego
-   publication-bound outcome; propozycja nie może sama zmienić wiedzy ani
-   zadeklarować sukcesu.
+3. Measurement i review-only learning są domknięte w `amj2.9`–`.10`.
+   Następny potwierdzony repo-local bug to `wilq-seo-or2e`: peer-scope proof
+   loopback bez przywracania zaufania do nagłówka `Host`.
 
 Architektoniczne tickety `wilq-seo-jnra`, `wilq-seo-djly` i `wilq-seo-kgvy`
 zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie

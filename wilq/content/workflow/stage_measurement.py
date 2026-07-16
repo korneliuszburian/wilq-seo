@@ -7,6 +7,7 @@ from wilq.content.measurement.evidence import (
     load_content_measurement_facts,
     observed_metrics_from_store,
 )
+from wilq.content.measurement.learning import build_content_learning_proposal
 from wilq.content.measurement.outcome import interpret_content_measurement_outcome
 from wilq.content.measurement.window import (
     ContentMeasurementWindowBuildResult,
@@ -15,6 +16,8 @@ from wilq.content.measurement.window import (
     mark_content_measurement_window_ready,
 )
 from wilq.content.workflow.contracts import (
+    ContentWorkItemLearningProposalRequest,
+    ContentWorkItemLearningProposalResponse,
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowRequest,
@@ -71,6 +74,20 @@ def build_content_work_item_measurement_outcome_response(
         observed_metrics=observed_metrics,
         as_of=as_of,
     )
-    store.save_measurement_window(window)
-    store.save_measurement_outcome(outcome)
+    if outcome.status not in {"not_ready", "insufficient_data"}:
+        window = window.model_copy(update={"status": "closed"})
+    store.save_measurement_completion(window, outcome)
     return ContentWorkItemMeasurementOutcomeResponse(outcome=outcome)
+
+
+def build_content_work_item_learning_proposal_response(
+    request: ContentWorkItemLearningProposalRequest,
+) -> ContentWorkItemLearningProposalResponse:
+    store = content_workflow_store()
+    window = store.latest_measurement_window(request.work_item_id)
+    outcome = store.latest_measurement_outcome(request.work_item_id)
+    if window is None or outcome is None:
+        raise LookupError("Persisted measurement window and outcome are required")
+    proposal = build_content_learning_proposal(window=window, outcome=outcome)
+    store.save_learning_proposal(proposal)
+    return ContentWorkItemLearningProposalResponse(proposal=proposal)

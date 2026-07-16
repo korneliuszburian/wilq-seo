@@ -142,10 +142,10 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
    readiness, typed demand evidence, zgodny content skill, loopback-only
    runtime, server-owned local identity, prywatne tryby i syntetyczny recovery
    proof. Nie powtarzać tych zakresów.
-8. `wilq-seo-amj2.9` jest domknięty: measurement window aktywuje się wyłącznie
-   po exact WordPress publication evidence, a okresy, metryki i outcome są
-   server-owned i trwałe. Aktywny następny slice `.10` tworzy wyłącznie
-   review-only learning proposal z utrwalonego outcome.
+8. `wilq-seo-amj2.9`–`.10` są domknięte: measurement window aktywuje się
+   wyłącznie po exact WordPress publication evidence, outcome jest server-owned,
+   a trwały learning proposal pozostaje literalnie review-only bez zmiany wiedzy,
+   kolejki lub success claimu. Następny potwierdzony bug to `wilq-seo-or2e`.
 9. Po każdym slice ponownie odczytać `bd ready --json` i
    `bd list --status=open --json`; nie wracać do ukończonych zakresów bez nowego
    dowodu regresji.
@@ -181,8 +181,8 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 - Owner/Wilku: realna sesja UAT albo jawne odroczenie z ryzykiem.
 - Dane: za mała gęstość bezpiecznej kolejki treści.
 - Kontrakt zewnętrzny: uwierzytelniony actor/tenant przed produkcyjnym użyciem.
-- Techniczne, nadal wykonywalne repo-local: review-only learning,
-  potwierdzona regresja peer-scope testu oraz późniejszy
+- Techniczne, nadal wykonywalne repo-local: potwierdzona regresja peer-scope
+  testu oraz późniejszy
   usefulness proof paczki tekstów.
 
 ## Outcome

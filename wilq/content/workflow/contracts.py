@@ -40,6 +40,7 @@ from wilq.content.knowledge.cards import ContentKnowledgeCardMatch
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
+from wilq.content.measurement.learning import ContentLearningProposal
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import (
     ContentMeasurementWindowBlocker,
@@ -400,6 +401,16 @@ class ContentWorkItemMeasurementOutcomeRequest(BaseModel):
 
 class ContentWorkItemMeasurementOutcomeResponse(BaseModel):
     outcome: ContentMeasurementOutcomeInterpretation
+
+
+class ContentWorkItemLearningProposalRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    work_item_id: str = Field(min_length=1)
+
+
+class ContentWorkItemLearningProposalResponse(BaseModel):
+    proposal: ContentLearningProposal
 
 
 class ContentDraftRevisionWorkspace(BaseModel):

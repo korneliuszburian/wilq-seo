@@ -56,6 +56,10 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert blocked.measurement_window_result.blockers[0].code == (
         "missing_publication_event"
     )
+    assert client.post(
+        "/api/content/work-items/learning-proposal",
+        json={"work_item_id": work_item_id},
+    ).status_code == 409
 
     content_workflow_store().save_wordpress_draft_execution(
         work_item_id,
@@ -167,6 +171,10 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
         ContentWorkItemMeasurementOutcomeRequest(work_item_id=work_item_id)
     )
     assert unbounded.outcome.status == "insufficient_data"
+    assert client.post(
+        "/api/content/work-items/learning-proposal",
+        json={"work_item_id": work_item_id},
+    ).status_code == 409
 
     _save_fact(
         run_id="gsc_observation",
@@ -192,6 +200,32 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert outcome.source_connectors == ["google_search_console"]
     assert content_workflow_store().latest_measurement_window(work_item_id) is not None
     assert content_workflow_store().latest_measurement_outcome(work_item_id) is not None
+
+    caller_accepted = client.post(
+        "/api/content/work-items/learning-proposal",
+        json={"work_item_id": work_item_id, "review_status": "approved"},
+    )
+    assert caller_accepted.status_code == 422
+
+    proposal_response = client.post(
+        "/api/content/work-items/learning-proposal",
+        json={"work_item_id": work_item_id},
+    )
+    assert proposal_response.status_code == 200
+    proposal = proposal_response.json()["proposal"]
+    assert proposal["verdict"] == "measured_success"
+    assert proposal["review_status"] == "review_required"
+    assert proposal["human_acceptance_required"] is True
+    assert proposal["knowledge_update_allowed"] is False
+    assert proposal["queue_update_allowed"] is False
+    assert proposal["success_claim_allowed"] is False
+    assert proposal["measurement_outcome_id"] == outcome.id
+    assert set(outcome.evidence_ids) <= set(proposal["evidence_ids"])
+    assert proposal["source_connectors"] == [
+        "google_search_console",
+        "wordpress_ekologus",
+    ]
+    assert content_workflow_store().latest_learning_proposal(work_item_id) is not None
 
 
 def _save_fact(

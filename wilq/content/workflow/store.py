@@ -13,6 +13,7 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBoundary,
     ContentWordPressDraftExecutionResult,
 )
+from wilq.content.measurement.learning import ContentLearningProposal
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import ContentMeasurementWindow
 from wilq.content.quality.review import ContentQualityReview
@@ -799,14 +800,38 @@ class ContentWorkflowStore:
             return None
         return ContentMeasurementWindow.model_validate(json.loads(cast(str, row["payload_json"])))
 
-    def save_measurement_outcome(
+    def save_measurement_completion(
         self,
+        window: ContentMeasurementWindow,
         outcome: ContentMeasurementOutcomeInterpretation,
-    ) -> ContentMeasurementOutcomeInterpretation:
-        redacted = ContentMeasurementOutcomeInterpretation.model_validate(
+    ) -> tuple[ContentMeasurementWindow, ContentMeasurementOutcomeInterpretation]:
+        if (
+            outcome.work_item_id != window.work_item_id
+            or outcome.measurement_window_id != window.id
+        ):
+            raise ValueError("Measurement outcome does not match the persisted window")
+        redacted_window = ContentMeasurementWindow.model_validate(
+            redact_mapping(window.model_dump(mode="json"))
+        )
+        redacted_outcome = ContentMeasurementOutcomeInterpretation.model_validate(
             redact_mapping(outcome.model_dump(mode="json"))
         )
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                """
+                INSERT INTO content_measurement_windows (work_item_id, window_id, payload_json)
+                VALUES (?, ?, ?)
+                ON CONFLICT(work_item_id) DO UPDATE SET
+                  window_id = excluded.window_id,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    redacted_window.work_item_id,
+                    redacted_window.id,
+                    _model_json(redacted_window),
+                ),
+            )
             connection.execute(
                 """
                 INSERT INTO content_measurement_outcomes (
@@ -817,12 +842,12 @@ class ContentWorkflowStore:
                   payload_json = excluded.payload_json
                 """,
                 (
-                    redacted.work_item_id,
-                    redacted.measurement_window_id,
-                    _model_json(redacted),
+                    redacted_outcome.work_item_id,
+                    redacted_outcome.measurement_window_id,
+                    _model_json(redacted_outcome),
                 ),
             )
-        return redacted
+        return redacted_window, redacted_outcome
 
     def latest_measurement_outcome(
         self,
@@ -840,6 +865,43 @@ class ContentWorkflowStore:
         if row is None:
             return None
         return ContentMeasurementOutcomeInterpretation.model_validate(
+            json.loads(cast(str, row["payload_json"]))
+        )
+
+    def save_learning_proposal(
+        self,
+        proposal: ContentLearningProposal,
+    ) -> ContentLearningProposal:
+        redacted = ContentLearningProposal.model_validate(
+            redact_mapping(proposal.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO content_learning_proposals (
+                  work_item_id, proposal_id, payload_json
+                ) VALUES (?, ?, ?)
+                ON CONFLICT(work_item_id) DO UPDATE SET
+                  proposal_id = excluded.proposal_id,
+                  payload_json = excluded.payload_json
+                """,
+                (redacted.work_item_id, redacted.id, _model_json(redacted)),
+            )
+        return redacted
+
+    def latest_learning_proposal(self, work_item_id: str) -> ContentLearningProposal | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_learning_proposals
+                WHERE work_item_id = ?
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return ContentLearningProposal.model_validate(
             json.loads(cast(str, row["payload_json"]))
         )
 
@@ -905,6 +967,15 @@ class ContentWorkflowStore:
             CREATE TABLE IF NOT EXISTS content_measurement_outcomes (
               work_item_id TEXT PRIMARY KEY,
               measurement_window_id TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_learning_proposals (
+              work_item_id TEXT PRIMARY KEY,
+              proposal_id TEXT NOT NULL,
               payload_json TEXT NOT NULL
             )
             """
@@ -1006,6 +1077,7 @@ def _model_json(
         | ContentWordPressDraftExecutionResult
         | ContentMeasurementWindow
         | ContentMeasurementOutcomeInterpretation
+        | ContentLearningProposal
         | ContentDraftRevision
         | ContentDraftRevisionReview
         | ContentPlanningDecision
