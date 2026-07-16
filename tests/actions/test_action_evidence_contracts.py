@@ -176,8 +176,11 @@ def test_action_apply_confirmed_prepare_action_still_blocks_with_audit(
     body = response.json()["detail"]
     assert body["status"] == "blocked"
     assert body["audit_event"]["event_type"] == "apply_blocked"
-    assert body["audit_event"]["actor"] == "operator_test"
-    assert body["mutation_audit"]["actor"] == "operator_test"
+    assert body["audit_event"]["actor"] == "local_operator"
+    assert body["mutation_audit"]["actor"] == "local_operator"
+    assert body["audit_event"]["trust_level"] == "local_unverified"
+    assert body["mutation_audit"]["trust_level"] == "local_unverified"
+    assert body["audit_event"]["submitted_actor_label"] == "operator_test"
     assert body["mutation_audit"]["mutation_attempted"] is False
     assert "Akcja nie ma trybu zapisu zmian w zewnętrznym systemie" in str(body)
 def test_metric_backed_prepare_actions_are_evidence_grounded(

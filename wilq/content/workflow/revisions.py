@@ -13,6 +13,7 @@ from pydantic import (
     model_validator,
 )
 
+from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
 from wilq.content.workflow.revision_binding import (
     ContentDraftRevisionBinding as ContentDraftRevisionBinding,
 )
@@ -137,6 +138,9 @@ class ContentDraftRevisionReview(BaseModel):
     revision_digest: str = Field(min_length=64, max_length=64)
     decision: ContentDraftRevisionDecision
     reviewed_by: str = Field(min_length=1)
+    principal_id: str = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
+    workspace_id: str = LOCAL_PILOT_AUDIT_IDENTITY.workspace_id
+    trust_level: LocalAuditTrustLevel = LOCAL_PILOT_AUDIT_IDENTITY.trust_level
     notes: str = ""
     checked_items: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

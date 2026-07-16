@@ -60,9 +60,14 @@ def test_planning_reviews_unlock_first_draft_and_reject_stale_digest(
     )
 
     scope_payload = _planning_review_payload("scope", digest)
+    scope_payload["reviewed_by"] = "authenticated_expert"
     scope = client.post(_planning_review_path(work_item_id), json=scope_payload)
     assert scope.status_code == 200
     assert scope.json()["status"] == "recorded"
+    assert scope.json()["decision"]["principal_id"] == "local_operator"
+    assert scope.json()["decision"]["workspace_id"] == "ekologus_local_pilot"
+    assert scope.json()["decision"]["trust_level"] == "local_unverified"
+    assert scope.json()["decision"]["reviewed_by"] == "authenticated_expert"
     assert scope.json()["planning_workspace"]["scope_current"] is True
     assert _selected_snapshot(client, work_item_id)["current_step_id"] == "section_map"
 
@@ -244,6 +249,7 @@ def test_exact_revision_decision_drives_the_five_step_journey(
         "revision"
     ]
     review_payload = _review_payload(revision, decision)
+    review_payload["reviewed_by"] = "authenticated_expert"
 
     response = client.post(
         _review_path(work_item_id, revision["revision_id"]),
@@ -256,6 +262,10 @@ def test_exact_revision_decision_drives_the_five_step_journey(
     assert body["review"]["revision_id"] == revision["revision_id"]
     assert body["review"]["revision_digest"] == revision["content_digest"]
     assert body["review"]["decision"] == decision
+    assert body["review"]["principal_id"] == "local_operator"
+    assert body["review"]["workspace_id"] == "ekologus_local_pilot"
+    assert body["review"]["trust_level"] == "local_unverified"
+    assert body["review"]["reviewed_by"] == "authenticated_expert"
     assert body["workspace"]["status"] == decision
     assert body["workspace"]["can_save"] is expected_can_save
     assert body["workspace"]["can_review"] is expected_can_review

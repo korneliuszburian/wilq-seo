@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.knowledge.work_item_service_profile import (
@@ -56,6 +57,9 @@ class ContentPlanningDecision(BaseModel):
     planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     decision: ContentPlanningDecisionValue
     reviewed_by: str = Field(min_length=1)
+    principal_id: str = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
+    workspace_id: str = LOCAL_PILOT_AUDIT_IDENTITY.workspace_id
+    trust_level: LocalAuditTrustLevel = LOCAL_PILOT_AUDIT_IDENTITY.trust_level
     checked_items: list[str] = Field(default_factory=list)
     notes: str = ""
     created_at: datetime

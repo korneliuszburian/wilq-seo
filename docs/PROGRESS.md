@@ -20,6 +20,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-amj2.6` oddziela client-supplied etykietę aktora od autorytetu.
+  Planning review, revision review i ActionObject review/confirm/impact/apply
+  zapisują server-owned principal `local_operator`, workspace
+  `ekologus_local_pilot` i trust `local_unverified`. Tekst typu
+  `authenticated_expert` pozostaje wyłącznie etykietą; nie tworzy owner/expert
+  acceptance. To nie jest authentication ani multi-tenant.
 - `wilq-seo-c9h9.27` usuwa historyczny `CODEX_API_KEY` z aktywnego kontraktu
   runtime'u. `openai_codex` i system status korzystają z jednej typed readiness:
   obecność lokalnego CLI oraz lokalnej sesji `codex login`, sprawdzanej bez
@@ -261,9 +267,9 @@ pilota nie jest już luźną listą pomysłów:
 
 1. Typed demand evidence i zgodny content skill są domknięte w `amj2.3`–`.4`;
    nie dodawać alternatywnego content entrypointu.
-2. Domknąć lokalną granicę pilota: server-owned
-   local audit identity, prywatne filesystem modes i wersjonowany recovery proof
-   (`wilq-seo-amj2.6`–`.8`); loopback-only `.5` jest zakończony.
+2. Domknąć lokalną granicę pilota: prywatne filesystem modes i wersjonowany
+   recovery proof (`wilq-seo-amj2.7`–`.8`); loopback-only `.5` i server-owned
+   local audit identity `.6` są zakończone.
 3. Measurement i learning (`wilq-seo-amj2.9`–`.10`) mogą bazować wyłącznie na
    potwierdzonym publication event i persisted metric evidence; klient nie może
    zadeklarować sukcesu.
@@ -280,8 +286,8 @@ zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie
   rezydualnym.
 - Queue nie ma wymaganych trzech wykonalnych pozycji; WILQ nie tworzy sztucznej
   trzeciej propozycji.
-- `created_by="wilku"` i `reviewed_by="wilku"` nie są uwierzytelnionym
-  tenant/actor contractem. Nie wolno przedstawiać ich jako takiego dowodu.
+- Principal `local_operator` ma jawny trust `local_unverified`; nadal nie jest
+  uwierzytelnionym ownerem, ekspertem ani tenant/actor contractem.
 - Obecny runtime jest wymuszony jako loopback-only. Przed pilotem nadal trzeba
   prywatnie ustawić prawa state/logów i dodać syntetyczny, niedestrukcyjny
   storage recovery proof. Remote deployment wymaga osobnego auth/TLS/owner

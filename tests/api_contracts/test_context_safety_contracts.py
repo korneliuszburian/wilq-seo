@@ -144,7 +144,7 @@ def test_daily_context_pack_preserves_human_review_outcome(
     actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
     merchant_action = actions_by_id["act_review_merchant_feed_issues"]
     assert merchant_action["review_gate"]["last_review_outcome"] == "needs_changes"
-    assert merchant_action["review_gate"]["last_reviewed_by"] == "operator_test"
+    assert merchant_action["review_gate"]["last_reviewed_by"] == "local_operator"
     assert merchant_action["review_gate"]["apply_allowed"] is False
     serialized = json.dumps(merchant_action, ensure_ascii=False)
     assert "[REDACTED]" not in serialized

@@ -83,7 +83,10 @@ def test_action_confirm_records_preview_confirmation_without_apply(
     assert confirmation["blockers"] == []
     assert confirmation["blocker_labels"] == []
     assert confirmation["audit_event"]["event_type"] == "action_apply_confirmed"
-    assert confirmation["audit_event"]["actor"] == "operator_test"
+    assert confirmation["audit_event"]["actor"] == "local_operator"
+    assert confirmation["audit_event"]["principal_id"] == "local_operator"
+    assert confirmation["audit_event"]["trust_level"] == "local_unverified"
+    assert confirmation["audit_event"]["submitted_actor_label"] == "operator_test"
     assert "Potwierdzenie podglądu zapisane" in confirmation["audit_event"]["summary"]
     assert "Audyt podglądu" not in confirmation["audit_event"]["summary"]
     assert "audit_" not in confirmation["audit_event"]["summary"]
@@ -91,7 +94,7 @@ def test_action_confirm_records_preview_confirmation_without_apply(
     assert "Audyt podglądu" not in confirmation["review_gate"]["last_confirmation_summary"]
     assert "audit_" not in confirmation["review_gate"]["last_confirmation_summary"]
     assert ".." not in confirmation["review_gate"]["last_confirmation_summary"]
-    assert confirmation["review_gate"]["last_confirmation_by"] == "operator_test"
+    assert confirmation["review_gate"]["last_confirmation_by"] == "local_operator"
     assert confirmation["review_gate"]["apply_allowed"] is False
     assert "human_confirm_before_apply" not in confirmation["review_gate"]["apply_blockers"]
     context_response = client.post(
@@ -103,7 +106,7 @@ def test_action_confirm_records_preview_confirmation_without_apply(
     actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
     merchant_action = actions_by_id["act_review_merchant_feed_issues"]
     assert merchant_action["latest_audit_event"]["event_type"] == "action_apply_confirmed"
-    assert merchant_action["review_gate"]["last_confirmation_by"] == "operator_test"
+    assert merchant_action["review_gate"]["last_confirmation_by"] == "local_operator"
     assert merchant_action["review_gate"]["apply_allowed"] is False
 
 
@@ -192,7 +195,7 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert result["blocker_labels"] == []
     assert result["audit_event"]["event_type"] == "action_impact_check_completed"
     assert result["review_gate"]["last_impact_check_status"] == "checked"
-    assert result["review_gate"]["last_impact_checked_by"] == "operator_test"
+    assert result["review_gate"]["last_impact_checked_by"] == "local_operator"
     assert result["review_gate"]["apply_allowed"] is False
     assert "impact_sanity_check_required" not in result["review_gate"]["apply_blockers"]
     assert result["review_gate"]["apply_blocker_summary_label"]

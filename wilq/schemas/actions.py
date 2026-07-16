@@ -17,6 +17,10 @@ class AuditEvent(BaseModel):
     event_type: str
     event_type_label: str = ""
     actor: str
+    principal_id: str | None = None
+    workspace_id: str | None = None
+    trust_level: Literal["local_unverified"] | None = None
+    submitted_actor_label: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
     summary: str
     evidence_ids: list[str] = Field(default_factory=list)
@@ -45,6 +49,10 @@ class ActionMutationAuditRecord(BaseModel):
     mutation_attempted: bool = False
     mutation_adapter: str | None = None
     actor: str
+    principal_id: str | None = None
+    workspace_id: str | None = None
+    trust_level: Literal["local_unverified"] | None = None
+    submitted_actor_label: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
     audit_event_id: str
     evidence_ids: list[str] = Field(default_factory=list)

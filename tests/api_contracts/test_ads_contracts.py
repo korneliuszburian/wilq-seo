@@ -392,7 +392,7 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
     assert "docelowy zwrot z reklam: 4.2" in confirmation["audit_event"]["summary"]
     assert "target_roas=" not in confirmation["audit_event"]["summary"]
     assert "target_cpa_micros=" not in confirmation["audit_event"]["summary"]
-    assert confirmation["review_gate"]["last_confirmation_by"] == "operator_test"
+    assert confirmation["review_gate"]["last_confirmation_by"] == "local_operator"
     assert confirmation["review_gate"]["apply_allowed"] is False
 
     after_response = client.get("/api/ads/diagnostics")
@@ -448,7 +448,7 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
     final_business_context = final_payload["business_context_read_contract"]
     assert final_business_context["missing_read_contracts"] == []
     assert final_business_context["strategy_review_status"] == "approved_for_prepare"
-    assert final_business_context["strategy_reviewed_by"] == "operator_test"
+    assert final_business_context["strategy_reviewed_by"] == "local_operator"
     assert (
         f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}"
         in final_business_context["configured_sources"]

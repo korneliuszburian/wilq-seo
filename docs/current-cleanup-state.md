@@ -109,6 +109,11 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Granica bezpieczeństwa
 
+- Requestowe `reviewed_by`, `confirmed_by` i `checked_by` nie nadają
+  autorytetu. Action audit używa `local_operator` / `ekologus_local_pilot` /
+  `local_unverified`, a przesłany tekst zachowuje tylko jako etykietę. Planning
+  i revision review pokazują ten sam server-owned principal/trust obok
+  historycznego reviewer label. Nie claimuj owner/expert acceptance ani auth.
 - Content router zawsze przekazuje `create_draft=None` i
   `action_apply_authorized=False`.
 - Direct live zwraca `action_apply_required` przed adapterem.
@@ -148,7 +153,8 @@ kontynuuj najwyższy bezpieczny task.
   (`amj2.3`) i zgodny content skill (`amj2.4`) są domknięte; oba używają tych
   samych decyzji planistycznych i exact dev readiness.
 - Lokalna granica pilota ma osobny łańcuch: loopback-only (`amj2.5`, domknięty)
-  → local audit identity (`amj2.6`) oraz filesystem modes (`amj2.7`) → storage recovery
+  → server-owned local audit identity (`amj2.6`, domknięty) oraz filesystem
+  modes (`amj2.7`) → storage recovery
   (`amj2.8`). Measurement (`amj2.9`) → learning proposal (`amj2.10`) pozostają
   publication-bound i nie mogą przyjmować sukcesu zadeklarowanego przez klienta.
 - `wilq-seo-c9h9.27` jest domknięty: connector i system status współdzielą

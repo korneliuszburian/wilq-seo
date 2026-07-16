@@ -305,6 +305,7 @@ from wilq.actions.wordpress_mutation_requirements import (
 from wilq.actions.wordpress_preview import (
     wordpress_draft_payload_preview_card,
 )
+from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -696,9 +697,13 @@ def record_action_review(
     action: ActionObject,
     request: ActionReviewRequest,
 ) -> ActionReviewResult:
-    return record_action_review_lifecycle(
+    submitted_actor_label = request.reviewed_by
+    bound_request = request.model_copy(
+        update={"reviewed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
+    )
+    result = record_action_review_lifecycle(
         action,
-        request,
+        bound_request,
         review_summary=_action_review_summary,
         review_details=_action_review_details,
         review_gate=_action_review_gate,
@@ -706,6 +711,8 @@ def record_action_review(
         audit_event_label=_audit_event_with_operator_label,
         review_gate_labels=_review_gate_with_operator_labels,
     )
+    _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    return result
 
 
 def preview_action(
@@ -738,9 +745,13 @@ def confirm_action(
     action: ActionObject,
     request: ActionConfirmRequest,
 ) -> ActionConfirmResult:
-    return confirm_action_lifecycle(
+    submitted_actor_label = request.confirmed_by
+    bound_request = request.model_copy(
+        update={"confirmed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
+    )
+    result = confirm_action_lifecycle(
         action,
-        request,
+        bound_request,
         review_gate=_action_review_gate,
         latest_preview=_latest_preview_event,
         confirmation_blockers=action_confirmation_blockers,
@@ -756,15 +767,21 @@ def confirm_action(
         audit_event_label=_audit_event_with_operator_label,
         review_gate_labels=_review_gate_with_operator_labels,
     )
+    _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    return result
 
 
 def impact_check_action(
     action: ActionObject,
     request: ActionImpactCheckRequest,
 ) -> ActionImpactCheckResult:
-    return impact_check_action_lifecycle(
+    submitted_actor_label = request.checked_by
+    bound_request = request.model_copy(
+        update={"checked_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
+    )
+    result = impact_check_action_lifecycle(
         action,
-        request,
+        bound_request,
         review_gate=_action_review_gate,
         latest_confirmation=_latest_action_confirmation_event,
         status_label=_action_result_status_label,
@@ -774,6 +791,8 @@ def impact_check_action(
         audit_event_label=_audit_event_with_operator_label,
         review_gate_labels=_review_gate_with_operator_labels,
     )
+    _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    return result
 
 
 def apply_action(
@@ -781,9 +800,19 @@ def apply_action(
     request: ActionApplyRequest | None = None,
 ) -> ActionApplyResult:
     workflow_store = action_content_workflow_store()
-    return apply_action_lifecycle(
+    submitted_actor_label = None if request is None else request.confirmed_by
+    bound_request = (
+        None
+        if request is None
+        else request
+        if submitted_actor_label is None
+        else request.model_copy(
+            update={"confirmed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
+        )
+    )
+    result = apply_action_lifecycle(
         action,
-        request,
+        bound_request,
         review_gate=_action_review_gate,
         wordpress_apply_capability=_wordpress_draft_apply_capability,
         mutation_adapter=_supported_mutation_adapter,
@@ -795,6 +824,24 @@ def apply_action(
         status_label=_action_result_status_label,
         audit_event_label=_audit_event_with_operator_label,
     )
+    if submitted_actor_label is not None:
+        _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+        result.mutation_audit.principal_id = result.audit_event.principal_id
+        result.mutation_audit.workspace_id = result.audit_event.workspace_id
+        result.mutation_audit.trust_level = result.audit_event.trust_level
+        result.mutation_audit.submitted_actor_label = submitted_actor_label
+    return result
+
+
+def _stamp_local_audit_identity(
+    event: AuditEvent,
+    submitted_actor_label: str | None,
+) -> None:
+    event.actor = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
+    event.principal_id = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
+    event.workspace_id = LOCAL_PILOT_AUDIT_IDENTITY.workspace_id
+    event.trust_level = LOCAL_PILOT_AUDIT_IDENTITY.trust_level
+    event.submitted_actor_label = submitted_actor_label
 
 
 def _wordpress_draft_apply_capability(

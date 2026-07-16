@@ -483,7 +483,11 @@ def test_action_review_records_human_outcome_without_apply(
     assert review_payload["status_label"] == "zapisane"
     assert review_payload["audit_event"]["event_type"] == "human_review_approved_for_prepare"
     assert review_payload["audit_event"]["event_type_label"] == "Przegląd operatora zapisany"
-    assert review_payload["audit_event"]["actor"] == "operator_test"
+    assert review_payload["audit_event"]["actor"] == "local_operator"
+    assert review_payload["audit_event"]["principal_id"] == "local_operator"
+    assert review_payload["audit_event"]["workspace_id"] == "ekologus_local_pilot"
+    assert review_payload["audit_event"]["trust_level"] == "local_unverified"
+    assert review_payload["audit_event"]["submitted_actor_label"] == "operator_test"
     assert review_payload["review_gate"]["last_review_outcome"] == "approved_for_prepare"
     assert (
         review_payload["review_gate"]["last_review_outcome_label"]
@@ -510,5 +514,5 @@ def test_action_review_records_human_outcome_without_apply(
         action["review_gate"]["last_review_outcome_label"]
         == "zatwierdzone do dalszego przygotowania"
     )
-    assert action["review_gate"]["last_reviewed_by"] == "operator_test"
+    assert action["review_gate"]["last_reviewed_by"] == "local_operator"
     assert action["review_gate"]["apply_allowed"] is False
