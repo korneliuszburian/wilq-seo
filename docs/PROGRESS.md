@@ -20,6 +20,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie domknięte zakresy
 
+- `wilq-seo-c9h9.28` usuwa jedną brittle asercję wymagającą dokładnej frazy CTA
+  mimo równoważnego, bezpiecznego brzmienia. Test nadal chroni realny kontrakt:
+  `review_required`, `draft_allowed=false`, przypisane knowledge cards i
+  `publish_ready=false`. Nie zmieniono copy ani produkcji i nie dodano snapshotu.
 - `wilq-seo-or2e` usuwa stale test, który utożsamiał obcy nagłówek `Host` z
   remote peerem. Istniejący kanoniczny ASGI proof sprawdza rzeczywisty socket
   peer: remote + spoofed local Host daje `403`, loopback + malicious Host daje

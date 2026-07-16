@@ -150,6 +150,9 @@ do tego czasu dashboard zachowuje aktualną, niższą ocenę i jawny następny c
 9. Po każdym slice ponownie odczytać `bd ready --json` i
    `bd list --status=open --json`; nie wracać do ukończonych zakresów bez nowego
    dowodu regresji.
+10. `wilq-seo-or2e` i `wilq-seo-c9h9.28` domknęły dwa potwierdzone test-theater
+    failures bez zmiany produkcji: peer-scope zastąpił Host-header semantykę, a
+    content state proof nie zamraża już dokładnej frazy CTA.
 
 ## Weryfikacja każdego slice
 

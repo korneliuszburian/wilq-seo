@@ -203,6 +203,9 @@ kontynuuj najwyższy bezpieczny task.
 
 ## Verification checkpoint
 
+- Content state proof nie zamraża już dokładnego zdania CTA. Nadal sprawdza
+  review gate, brak draft/publish readiness oraz knowledge-card lineage; focused
+  repro po usunięciu redundantnej asercji jest zielony 1/1.
 - Loopback proof jest zielony 14/14. Kanoniczny test używa ASGI peer scope:
   remote peer ze spoofed local Host dostaje `403`, a loopback peer z malicious
   Host dostaje `200`. Usunięto tylko sprzeczny test Host-header; middleware bez

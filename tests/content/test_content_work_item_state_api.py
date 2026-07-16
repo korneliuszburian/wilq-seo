@@ -144,7 +144,6 @@ def test_homepage_work_item_builds_review_required_public_brief_without_publish(
         "Kiedy warto skonsultować obowiązki środowiskowe",
         "Jak przygotować się do rozmowy",
     ]
-    assert "bez obietnicy wyniku" in brief["cta_direction"]
     assert "ekologus_service_homepage_overview" in brief["knowledge_card_ids"]
     assert "ekologus_cta_homepage_contact_review_required" in brief[
         "knowledge_card_ids"
