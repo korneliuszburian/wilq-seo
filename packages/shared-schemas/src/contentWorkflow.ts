@@ -2605,6 +2605,19 @@ export const ContentSemanticReviewResponseSchema = z.object({
       message: "blocked semantic review requires blockers without a result"
     });
   }
+  if (
+    response.review &&
+    (response.work_item_id !== response.review.work_item_id ||
+      response.revision_id !== response.review.revision_id ||
+      response.revision_digest !== response.review.revision_digest ||
+      response.run_id !== response.review.codex_run_id)
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["review"],
+      message: "semantic response must bind the exact embedded review"
+    });
+  }
 });
 
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({

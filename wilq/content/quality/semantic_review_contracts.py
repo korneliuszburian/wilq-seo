@@ -205,6 +205,13 @@ class ContentSemanticReviewResponse(BaseModel):
                 raise ValueError("Not-generated semantic review cannot expose a result or blocker.")
         elif self.review is not None or not self.blockers:
             raise ValueError("Blocked semantic-review status requires blockers and no review.")
+        if self.review is not None and (
+            self.work_item_id != self.review.work_item_id
+            or self.revision_id != self.review.revision_id
+            or self.revision_digest != self.review.revision_digest
+            or self.run_id != self.review.codex_run_id
+        ):
+            raise ValueError("Semantic-review response must bind the exact embedded review.")
         return self
 
 

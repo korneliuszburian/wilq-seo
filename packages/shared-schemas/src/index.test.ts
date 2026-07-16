@@ -266,6 +266,11 @@ describe("ContentSemanticReviewResponseSchema", () => {
     expect(ContentSemanticReviewResponseSchema.safeParse(ready).success).toBe(true);
     expect(ContentSemanticReviewResponseSchema.safeParse({
       ...ready,
+      revision_id: "revision_2",
+      revision_digest: "b".repeat(64)
+    }).success).toBe(false);
+    expect(ContentSemanticReviewResponseSchema.safeParse({
+      ...ready,
       review: {
         ...review,
         dimensions: review.dimensions.map((assessment) => ({

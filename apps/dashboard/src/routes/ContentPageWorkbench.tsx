@@ -93,7 +93,12 @@ function exactSemanticReviewForRevision(
     !revision ||
     result.work_item_id !== revision.work_item_id ||
     result.revision_id !== revision.revision_id ||
-    result.revision_digest !== revision.content_digest
+    result.revision_digest !== revision.content_digest ||
+    (result.review !== null &&
+      result.review !== undefined &&
+      (result.review.work_item_id !== revision.work_item_id ||
+        result.review.revision_id !== revision.revision_id ||
+        result.review.revision_digest !== revision.content_digest))
   ) {
     return null;
   }

@@ -746,7 +746,11 @@ describe("ContentWorkflowSurface", () => {
       })
     );
     vi.mocked(getContentWorkItemSemanticReview).mockResolvedValue(
-      semanticReviewNotGenerated(childRevision)
+      {
+        ...semanticReviewCreated(revision),
+        status: "stale",
+        safe_next_step: "Wersja zmieniła się; uruchom nowe review."
+      }
     );
     fireEvent.change(screen.getByLabelText("Notatka do decyzji"), {
       target: { value: "Popraw bezpośredniość wskazanej sekcji." }

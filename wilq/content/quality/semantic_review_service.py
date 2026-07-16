@@ -101,8 +101,8 @@ def read_content_semantic_review(
     return ContentSemanticReviewResponse(
         status="stale",
         work_item_id=revision.work_item_id,
-        revision_id=revision.revision_id,
-        revision_digest=revision.content_digest,
+        revision_id=latest.revision_id,
+        revision_digest=latest.revision_digest,
         review=latest,
         run_id=latest.codex_run_id,
         safe_next_step="Wersja zmieniła się; uruchom nowe review dla bieżącego digestu.",

@@ -235,6 +235,13 @@ def test_semantic_finding_section_id_drives_only_a_human_selected_child_revision
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     assert snapshot["revision_workspace"]["status"] == "unreviewed"
     assert snapshot["revision_workspace"]["latest_review"] is None
+    stale_child_review = client.get(
+        _semantic_review_path(BDO_WORK_ITEM_ID, child["revision_id"])
+    ).json()
+    assert stale_child_review["status"] == "stale"
+    assert stale_child_review["revision_id"] == base_revision["revision_id"]
+    assert stale_child_review["revision_digest"] == base_revision["content_digest"]
+    assert stale_child_review["review"]["review_id"] == review["review_id"]
     child_review = client.post(
         _semantic_review_path(BDO_WORK_ITEM_ID, child["revision_id"]),
         json={
