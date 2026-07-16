@@ -27,7 +27,7 @@ def test_search_demand_keeps_page_queries_but_maps_only_relevant_sections() -> N
     assert evidence.status == "available"
     assert [row.term for row in evidence.gsc_query_rows] == [
         "bdo odpady",
-        "diwass szkolenie bielsko-biała",
+        "subdomena firmowa",
     ]
     assert evidence.gsc_query_rows[0].model_dump(
         include={"impressions", "clicks", "ctr", "average_position", "section_headings"}
@@ -62,7 +62,7 @@ def _demand_facts(page: str, service_card_id: str) -> list[MetricFact]:
             1,
             "ev_gsc",
             page,
-            "diwass szkolenie bielsko-biała",
+            "subdomena firmowa",
         ),
         _fact(
             "google_search_console",
@@ -124,8 +124,8 @@ def _draft() -> ContentDraftPackage:
                 evidence_ids=["ev_gsc"],
             ),
             ContentDraftSection(
-                heading="Kontakt",
-                purpose="Podaj następny krok.",
+                heading="Subdomena firmowa",
+                purpose="Nie mapuj bez wspólnego dowodu.",
                 evidence_ids=["ev_service"],
             ),
         ],

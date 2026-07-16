@@ -115,6 +115,9 @@ Aktywny graf:
 - `wilq-seo-1oa.36` — epic pełnego marketer-grade Content Ops;
 - `wilq-seo-1oa.36.1` — pierwszy slice API-owned wyboru usługi, strony i sekcji
   jest technicznie domknięty na BDO;
+- `wilq-seo-1oa.36.2` — odzyskuje dynamiczny planning po odrzuceniu
+  hardkodowanego slice'a BDO; dalszy kontrakt ma obsłużyć co najmniej dwie
+  usługi przez te same API-owned reguły;
 - `wilq-seo-1oa.35` — zamknięty folder demonstracyjny; artefakt przekazania,
   nie substytut ukończonego content loopu.
 

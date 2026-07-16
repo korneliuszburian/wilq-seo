@@ -5,6 +5,15 @@ Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
+`wilq-seo-1oa.36.2` odzyskuje dynamiczny baseline planowania po dwóch review,
+które odrzuciły hardkodowane intencje, sekcje, CTA i mapowanie zapytań dla
+jednego tematu. Ogólny mapper zapytanie → sekcja pozostaje konserwatywny:
+wymaga wspólnego evidence i pokrycia tokenów, a niepewne zapytanie zachowuje
+status `page_only`; focused observer chroni regresję na obcym terminie
+`subdomena firmowa`. W modułach planowania nie ma już osobnej gałęzi BDO ani
+`topic_terms.py`. Następny slice ma naprawić ogólny wybór Service Profile dla
+dwóch exact case'ów przez ten sam typed kontrakt.
+
 `wilq-seo-r564.10` domknął zwarty exact-revision flow człowieka w
 `/content-workflow`: podgląd, review, potwierdzenie, kontrola bezpieczeństwa i
 draft-only apply używają jednego API-owned bindingu. Tylko aktywny etap jest
