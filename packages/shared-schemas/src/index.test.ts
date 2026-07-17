@@ -443,7 +443,7 @@ describe("ContentPlanningProposalResponseSchema", () => {
       alignment_basis: "same_window_search_term_landing",
       review_required: false,
       section_headings: [],
-      section_mapping_status: "page_only",
+      section_mapping_status: "intent_relevance",
       period: "last_30_days",
       freshness: "stale",
       collected_at: "2026-07-13T12:00:00Z",

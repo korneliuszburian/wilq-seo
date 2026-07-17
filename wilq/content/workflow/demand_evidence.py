@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections import Counter
 from collections.abc import Iterable
 from datetime import datetime
@@ -24,6 +23,7 @@ from wilq.content.canonical.landing_identity import (
 )
 from wilq.content.canonical.redacted_landing import build_redacted_landing_reference
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.workflow.query_section_intent import assign_query_to_sections
 from wilq.schemas import ContentFreshnessAssessment, MetricFact
 
 ContentDemandSourceKind = Literal["gsc_query", "ads_search_term", "keyword_planner"]
@@ -59,7 +59,9 @@ class ContentSearchDemandRow(BaseModel):
     ] = "legacy_unspecified"
     review_required: bool = True
     section_headings: list[str] = Field(default_factory=list)
-    section_mapping_status: Literal["lexical_relevance", "page_only"]
+    section_mapping_status: Literal[
+        "intent_relevance", "lexical_relevance", "page_only"
+    ]
     period: str = Field(min_length=1)
     freshness: Literal["fresh", "stale", "missing", "blocked"]
     collected_at: datetime | None = None
@@ -132,47 +134,19 @@ def build_content_search_demand_evidence(
     )
     gsc_rows.sort(key=lambda row: (row.impressions or 0, row.clicks or 0), reverse=True)
 
-    gsc_by_term = {row.term: row for row in gsc_rows}
-    ads_blocker_evidence_ids, ads_blocker_codes = _ads_mapping_blockers(
-        metric_facts,
-        gsc_terms=set(gsc_by_term),
-    )
-    ads_groups = _exact_ads_groups(
-        metric_facts,
+    (
+        ads_rows,
+        planner_rows,
+        ads_blocker_evidence_ids,
+        ads_blocker_codes,
+        optional_ads_status,
+    ) = _prepare_optional_ads_demand(
+        metric_facts=metric_facts,
         allowed_pages=allowed_pages,
-        service_card_id=service_card_id,
-    )
-    ads_rows, planner_rows = _build_exact_ads_rows(
-        ads_groups=ads_groups,
-        gsc_by_term=gsc_by_term,
         final_canonical_url=final_canonical_url,
         service_card_id=service_card_id,
+        gsc_rows=gsc_rows,
         freshness=freshness,
-    )
-    ads_source_freshness = _connector_freshness_state(freshness, "google_ads")
-    if ads_source_freshness in {"blocked", "missing"} and (ads_rows or planner_rows):
-        ads_blocker_evidence_ids = list(
-            dict.fromkeys(
-                [
-                    *ads_blocker_evidence_ids,
-                    *(
-                        evidence_id
-                        for row in [*ads_rows, *planner_rows]
-                        for evidence_id in row.evidence_ids
-                    ),
-                ]
-            )
-        )
-        ads_blocker_codes = list(
-            dict.fromkeys([*ads_blocker_codes, "ads_source_freshness_blocked"])
-        )
-
-    if ads_blocker_evidence_ids:
-        ads_rows = []
-        planner_rows = []
-    optional_ads_status = _optional_ads_status(
-        rows=[*ads_rows, *planner_rows],
-        blocker_evidence_ids=ads_blocker_evidence_ids,
     )
     all_rows = [*gsc_rows, *ads_rows, *planner_rows]
     return ContentSearchDemandEvidence(
@@ -216,6 +190,66 @@ def build_content_search_demand_evidence(
             else "Odśwież GSC albo sprawdź exact page mapping; nie planuj słów kluczowych z opisu."
         ),
     )
+
+
+def _prepare_optional_ads_demand(
+    *,
+    metric_facts: list[MetricFact],
+    allowed_pages: list[str],
+    final_canonical_url: str,
+    service_card_id: str | None,
+    gsc_rows: list[ContentSearchDemandRow],
+    freshness: ContentFreshnessAssessment,
+) -> tuple[
+    list[ContentSearchDemandRow],
+    list[ContentSearchDemandRow],
+    list[str],
+    list[str],
+    ContentOptionalAdsStatus,
+]:
+    gsc_by_term = {row.term: row for row in gsc_rows}
+    blocker_evidence_ids, blocker_codes = _ads_mapping_blockers(
+        metric_facts,
+        gsc_terms=set(gsc_by_term),
+    )
+    ads_rows, planner_rows = _build_exact_ads_rows(
+        ads_groups=_exact_ads_groups(
+            metric_facts,
+            allowed_pages=allowed_pages,
+            service_card_id=service_card_id,
+        ),
+        gsc_by_term=gsc_by_term,
+        final_canonical_url=final_canonical_url,
+        service_card_id=service_card_id,
+        freshness=freshness,
+    )
+    if (
+        _connector_freshness_state(freshness, "google_ads") in {"blocked", "missing"}
+        and (ads_rows or planner_rows)
+    ):
+        blocker_evidence_ids = list(
+            dict.fromkeys(
+                [
+                    *blocker_evidence_ids,
+                    *(
+                        evidence_id
+                        for row in [*ads_rows, *planner_rows]
+                        for evidence_id in row.evidence_ids
+                    ),
+                ]
+            )
+        )
+        blocker_codes = list(
+            dict.fromkeys([*blocker_codes, "ads_source_freshness_blocked"])
+        )
+    if blocker_evidence_ids:
+        ads_rows = []
+        planner_rows = []
+    status = _optional_ads_status(
+        rows=[*ads_rows, *planner_rows],
+        blocker_evidence_ids=blocker_evidence_ids,
+    )
+    return ads_rows, planner_rows, blocker_evidence_ids, blocker_codes, status
 
 
 def _optional_ads_status(
@@ -374,15 +408,14 @@ def _gsc_row(
     if not landing_match_tiers:
         return None
     evidence_ids = list(dict.fromkeys(fact.evidence_id for fact in facts))
-    term_tokens = _planning_tokens(term)
-    section_headings = [
-        section.heading
-        for section in draft.sections
-        if set(section.evidence_ids).intersection(evidence_ids)
-        and term_tokens.intersection(
-            _planning_tokens(f"{section.heading} {section.purpose}")
-        )
-    ]
+    section_headings = assign_query_to_sections(
+        term,
+        (
+            (section.heading, section.purpose)
+            for section in draft.sections
+            if set(section.evidence_ids).intersection(evidence_ids)
+        ),
+    )
     return ContentSearchDemandRow(
         source_kind="gsc_query",
         source_connector="google_search_console",
@@ -394,7 +427,7 @@ def _gsc_row(
         review_required=False,
         section_headings=section_headings,
         section_mapping_status=(
-            "lexical_relevance" if section_headings else "page_only"
+            "intent_relevance" if section_headings else "page_only"
         ),
         period=facts[0].period,
         freshness=_connector_freshness_state(freshness, "google_search_console"),
@@ -725,31 +758,3 @@ def content_query_is_planning_signal(term: str) -> bool:
     return len(term) <= 160 and normalized.count("-site:") < 2 and not normalized.startswith(
         "site:"
     )
-
-
-_PLANNING_TOKEN_RE = re.compile(r"[0-9a-ząćęłńóśźż]+")
-_PLANNING_STOPWORDS = {
-    "and",
-    "czy",
-    "dla",
-    "gdzie",
-    "jak",
-    "jaka",
-    "jakie",
-    "jaki",
-    "jest",
-    "kiedy",
-    "lub",
-    "nie",
-    "oraz",
-    "się",
-    "the",
-}
-
-
-def _planning_tokens(value: str) -> set[str]:
-    return {
-        token
-        for token in _PLANNING_TOKEN_RE.findall(value.casefold())
-        if len(token) >= 3 and token not in _PLANNING_STOPWORDS
-    }

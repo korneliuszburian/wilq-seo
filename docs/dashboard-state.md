@@ -65,11 +65,16 @@ planning read remains blocked until the matched Service Profile has
 queue still has only
 1 actionable item from 2 candidates and
 remains density-blocked; WILQ must not invent a third topic. Service Profile
-remains review-required. Two fresh exact-page GSC queries remain visible in
-scope, but neither is assigned to a section: shared refresh-level evidence no
-longer pretends that every query supports every section. Typed
-`section_mapping_status` rozróżnia `lexical_relevance` od `page_only`, a scope
-opisuje oba live query jako „Sygnał dla strony — bez potwierdzonej sekcji”.
+remains review-required. Exact-page GSC queries remain visible in scope, while
+shared refresh-level evidence no longer pretends that every query supports every
+section. The same intent-aware mapper now assigns a query only when one planned
+section uniquely answers its intent; ambiguous or uncovered demand remains
+`page_only`. Typed `section_mapping_status` distinguishes current
+`intent_relevance`, readable legacy `lexical_relevance`, and `page_only`. Live
+proof for both pilots shows BDO applicability queries only in the applicability
+section, exact general consulting queries only in the general service section,
+exact Śląsk demand in the locality section, and unmatched qualifiers—including
+Ruda Śląska or unsupported cities—as page-level evidence.
 Stateful proof is under
 `.local-lab/proof/dashboard-content-workflow/2026-07-15T11-50-52-058Z/`.
 The server-side Codex app-server path uses the existing ChatGPT login and full

@@ -40,14 +40,14 @@ def test_search_demand_keeps_page_queries_but_maps_only_relevant_sections() -> N
         "clicks": 12,
         "ctr": 0.1,
         "average_position": 6.4,
-        "section_headings": ["Obowiązki BDO"],
+        "section_headings": [],
     }
     assert evidence.gsc_query_rows[1].section_headings == []
     assert [row.section_mapping_status for row in evidence.gsc_query_rows] == [
-        "lexical_relevance",
+        "page_only",
         "page_only",
     ]
-    assert evidence.ads_term_rows[0].section_mapping_status == "lexical_relevance"
+    assert evidence.ads_term_rows[0].section_mapping_status == "page_only"
     assert evidence.gsc_query_rows[0].landing_match_tiers == ["exact"]
     assert evidence.ads_term_rows[0].landing_match_tiers == ["exact"]
     assert [row.evidence_ids for row in evidence.ads_term_rows] == [["ev_ads_exact"]]

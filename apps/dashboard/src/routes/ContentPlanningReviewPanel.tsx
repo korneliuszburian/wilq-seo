@@ -238,9 +238,11 @@ function SearchDemandSummary({
                 {formatDemandMetrics(row)} · {demandPeriodLabel(row.period)} · {row.freshness === "fresh" ? "świeże" : "wymaga odświeżenia"}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                {row.section_mapping_status === "lexical_relevance"
-                  ? "Dopasowanie słowne do planowanej sekcji — wymaga sprawdzenia"
-                  : "Sygnał dla strony — bez potwierdzonej sekcji"}
+                {row.section_mapping_status === "intent_relevance"
+                  ? "Dopasowanie intencji do planowanej sekcji — wymaga sprawdzenia"
+                  : row.section_mapping_status === "lexical_relevance"
+                    ? "Starsze dopasowanie słowne — wymaga sprawdzenia"
+                    : "Sygnał dla strony — bez potwierdzonej sekcji"}
               </p>
             </li>
           ))}

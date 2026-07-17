@@ -110,13 +110,16 @@ kontynuuj najwyższy bezpieczny task.
   zachowuje lokalną notatkę i wymaga jawnego odświeżenia.
 - Scope pokazuje typed zapytania GSC z metrykami, okresem, freshness i
   konserwatywnym przypisaniem do sekcji. Same exact page i wspólny refresh-level
-  evidence ID nie wystarczają już do przypisania query do każdej sekcji; term
-  musi pokrywać się tokenem z nagłówkiem lub celem, a inaczej pozostaje widoczny
-  wyłącznie jako page-level evidence. Typed `section_mapping_status` i polska
-  etykieta UI ujawniają, czy mapping to `lexical_relevance`, czy `page_only`.
+  evidence ID nie wystarczają już do przypisania query do każdej sekcji. Ogólny
+  mapper intencji rozróżnia definicję, zastosowanie, obowiązek, proces, usługę i
+  lokalność; przypisuje wyłącznie jedną najlepiej dopasowaną sekcję, a remis,
+  obce miasto lub brak pokrycia pozostawia jako page-level evidence. Typed
+  `section_mapping_status` i polska etykieta UI ujawniają aktualne
+  `intent_relevance`, historyczne `lexical_relevance` oraz `page_only`.
   Ads i Keyword Planner nie są zgadywane:
-  pojawiają się tylko przy exact term+page+service; bieżący live stan ma 2
-  wiersze GSC, 0 przypisań do sekcji i 0 ściśle mapowanych wierszy Ads/Planner.
+  pojawiają się tylko przy exact term+page+service. Live proof obu pilotów
+  rozdziela BDO applicability oraz ogólne i lokalne zapytania outsourcingu;
+  nieobsługiwane miasta pozostają `page_only`.
 - `wilq-content-operator` prowadzi jeden kanoniczny kontrakt API: wybór exact
   work itemu, baseline scope/service review, ponowne zbudowanie planning inputu,
   jawne wygenerowanie planu, review scope i section map, initial full draft,

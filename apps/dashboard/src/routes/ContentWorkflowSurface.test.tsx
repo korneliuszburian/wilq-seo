@@ -2174,7 +2174,7 @@ function planningWorkspace({
         alignment_basis: "gsc_exact_page" as const,
         review_required: false,
         section_headings: ["Kogo dotyczy BDO"],
-        section_mapping_status: "lexical_relevance" as const,
+        section_mapping_status: "intent_relevance" as const,
         period: "last_28_days",
         freshness: "fresh" as const,
         collected_at: "2026-07-15T12:00:00Z",
@@ -2183,7 +2183,10 @@ function planningWorkspace({
         clicks: 12,
         ctr: 0.1,
         average_position: 6.4,
-        average_monthly_searches: null
+        average_monthly_searches: null,
+        cost_micros: null,
+        conversions: null,
+        conversion_value: null
       }],
       ads_term_rows: [],
       keyword_planner_rows: [],

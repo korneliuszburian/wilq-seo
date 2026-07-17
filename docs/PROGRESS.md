@@ -113,9 +113,10 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   wierszy GSC oraz jest poprawnie `bound` do własnej karty. Brakujące wtedy
   inventory sekcji WordPress odzyskuje `.36.13`. Obie karty pozostają
   `source_backed_review_required`, wybór usługi nie jest potwierdzony, revision
-  count wynosi 0, a GET planera nie uruchomił modelu. Paczka ujawnia też lukę
-  jakości: bieżąca mapa BDO przypisuje niemal każde query do obu generycznych
-  sekcji. Nie wykonano model generation, realnego UAT ani WordPress write.
+  count wynosi 0, a GET planera nie uruchomił modelu. Wykryta wtedy luka, w
+  której mapa BDO przypisywała niemal każde query do obu generycznych sekcji,
+  została zamknięta przez `.36.9`. Nie wykonano model generation, realnego UAT
+  ani WordPress write.
 - `wilq-seo-1oa.36.11` wyrównuje `wilq-content-operator` z bieżącym pełnym
   workflowem API. Skill najpierw zapisuje baseline scope review z exact wyborem
   usługi, odświeża planning input, generuje plan, prowadzi osobne review scope i
@@ -232,19 +233,19 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   który traktował długi slug z myślnikami jak sekret, niszczył tytuł/body i mógł
   błędnie uznać zmieniony zapis za idempotentny; publiczny API falsifier ponownie
   zwraca `409 stale_base`, zachowując widoczny tekst marketera.
-- Historyczny syntetyczny browser proof ujawnił dwie luki w prezentacji popytu. Query GSC
-  dziedziczyły wszystkie trzy
-  sekcje tylko dlatego, że facts i sekcje współdzieliły refresh-level evidence
-  ID. Demand evidence zachowuje oba query jako page-level proof, ale sekcję
-  przypisuje wyłącznie po konserwatywnym dopasowaniu tokenu do jej nagłówka lub
-  celu. Typed `section_mapping_status` rozróżnia `lexical_relevance` i
-  `page_only`. Focused BDO case mapuje relewantny term i pozostawia niepowiązany
-  term z pustą mapą. Bieżący exact snapshot z 2026-07-16 agreguje 11
-  page-scoped wierszy BDO do 65 wyświetleń i 0 kliknięć. Karta kontekstu,
-  panel planowania i packet marketera używają tego samego snapshotu. Scope
-  nadal wymaga decyzji Wilka, a Service Profile review ownera. Deterministyczny smoke
-  akceptuje jawne `page_only` bez fałszywego wymagania dopasowania sekcji;
-  packet nadal mówi wprost, że nie jest dowodem wykonanego UAT.
+- `wilq-seo-1oa.36.9` zastępuje token-overlap ogólnym, intent-aware query mapperem.
+  Query GSC nie dziedziczą już wszystkich sekcji przez wspólny refresh-level
+  evidence ID ani pojedynczy token tematu. Mapper rozróżnia definicję,
+  zastosowanie, obowiązek, proces, usługę i lokalność, wymaga jednego najlepszego
+  dopasowania, a niepewność pozostawia jako `page_only`. Live GET z zarządzanego
+  API przeszedł tym samym kontraktem oba exact piloty: BDO przypisuje `bdo dla
+  kogo` i `mikroprzedsiębiorca bdo` wyłącznie do sekcji zastosowania; outsourcing
+  przypisuje exact ogólne doradztwo tylko do sekcji usługi i exact Śląsk tylko
+  do sekcji lokalnej, a Ruda Śląska, Bydgoszcz, Warszawa, Kraków, Katowice i
+  Szczecin pozostają bez zgadywania. Typed schema oraz dashboard rozróżniają aktualne
+  `intent_relevance`, historyczne `lexical_relevance` i `page_only`. GET pozostał
+  model-free; scope nadal wymaga decyzji Wilka, Service Profile review ownera,
+  a proof nie jest realnym UAT ani generacją tekstu.
 - Epiki `wilq-seo-c9h9` (43/43 dzieci), `wilq-seo-3bst` (28/28) i
   `wilq-seo-amj2` (10/10) są zamknięte po ponownym odczycie grafu. Nie zamyka to
   aktywnego celu pilota: `lt1` nadal wymaga reviewed knowledge, `jst` realnego Wilku UAT, a

@@ -2218,7 +2218,7 @@ const ContentSearchDemandRowSchema = z.object({
   ]).default("legacy_unspecified"),
   review_required: z.boolean().default(true),
   section_headings: z.array(z.string()),
-  section_mapping_status: z.enum(["lexical_relevance", "page_only"]),
+  section_mapping_status: z.enum(["intent_relevance", "lexical_relevance", "page_only"]),
   period: z.string().min(1),
   freshness: z.enum(["fresh", "stale", "missing", "blocked"]),
   collected_at: z.string().nullable(),
