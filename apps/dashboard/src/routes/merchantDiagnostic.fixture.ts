@@ -63,6 +63,15 @@ export const merchantDiagnostics = {
     missing_credentials: [],
     available_credential_sources: ["repo_env"],
     freshness: { state: "fresh" },
+    capabilities: {
+      read: true,
+      write: false,
+      read_adapter: "merchant_api",
+      mutation_adapter: null,
+      action_scope: "review_only",
+      blockers: ["vendor_write_not_implemented"],
+      operations: ["merchant_feed_issue"]
+    },
     supported_actions: ["merchant_feed_issue"]
   },
   connector_status_label: "dostęp skonfigurowany",

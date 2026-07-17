@@ -284,6 +284,20 @@ def compact_connector_status_for_operator_context(
     else:
         compact_freshness = freshness
     capabilities = dumped.get("capabilities")
+    compact_capabilities = (
+        {
+            "read": bool(capabilities.get("read")),
+            "write": bool(capabilities.get("write")),
+            "read_adapter_implemented": capabilities.get("read_adapter") is not None,
+            "mutation_adapter_implemented": capabilities.get("mutation_adapter") is not None,
+            "action_scope": capabilities.get("action_scope") or "read_only",
+            "blockers": capabilities.get("blockers")
+            if isinstance(capabilities.get("blockers"), list)
+            else [],
+        }
+        if isinstance(capabilities, dict)
+        else {}
+    )
     supported_actions = dumped.get("supported_actions")
     missing_credentials = dumped.get("missing_credentials")
     status_label = dumped.get("status_label") or connector_status_label(
@@ -305,7 +319,13 @@ def compact_connector_status_for_operator_context(
         "missing_credentials": (
             missing_credentials if isinstance(missing_credentials, list) else []
         ),
-        "capability_count": len(capabilities) if isinstance(capabilities, list) else 0,
+        "capabilities": compact_capabilities,
+        "capability_count": sum(
+            1
+            for key in ("read", "write")
+            if compact_capabilities.get(key) is True
+        )
+        + (1 if supported_actions else 0),
         "supported_action_count": (
             len(supported_actions) if isinstance(supported_actions, list) else 0
         ),

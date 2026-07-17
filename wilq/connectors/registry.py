@@ -52,6 +52,14 @@ class ConnectorDefinition:
     enabled: bool = True
     product_scope: ConnectorProductScope = ConnectorProductScope.production
     active_for_daily_work: bool = True
+    read_adapter: str | None = None
+    mutation_adapter: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.read != (self.read_adapter is not None):
+            raise ValueError(f"Connector {self.id} read capability does not match its adapter")
+        if self.write != (self.mutation_adapter is not None):
+            raise ValueError(f"Connector {self.id} write capability does not match its adapter")
 
 
 CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
@@ -67,7 +75,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
         ),
         True,
-        True,
+        False,
         (
             "negative_keyword_candidate",
             "campaign_change_review",
@@ -75,13 +83,14 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "google_ads_change_history_impact_review",
             "google_ads_search_term_ngram_review",
             "google_ads_demand_gen_readiness_review",
-            "demand_gen_mode_review_plan",
             "custom_segment_candidate",
         ),
         "Google Ads API quotas and mutate limits apply.",
         "External API usage may consume Google Ads API quota.",
-        "Zapis zmian może wpływać na wydatki reklamowe i wymaga walidacji.",
+        "Akcje Ads służą obecnie wyłącznie do przygotowania i sprawdzenia; "
+        "brak adaptera zapisu do Google Ads.",
         "credential_presence",
+        read_adapter="google_ads_api",
     ),
     ConnectorDefinition(
         "google_search_console",
@@ -89,12 +98,13 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("GOOGLE_SEARCH_CONSOLE_SITE_URL",),
         True,
         False,
-        ("gsc_content_opportunity",),
+        (),
         "Search Analytics API query limits apply.",
         "No direct API cost expected; quota-limited.",
         "Tylko odczyt do diagnostyki SEO i contentu; nie służy do publikacji ani zapisu zmian.",
         "credential_presence",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
+        read_adapter="search_console_api",
     ),
     ConnectorDefinition(
         "google_analytics_4",
@@ -102,33 +112,35 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("GA4_PROPERTY_ID",),
         True,
         False,
-        ("ga4_landing_page_issue", "ga4_tracking_gap"),
+        ("ga4_tracking_gap",),
         "GA4 Data API quotas apply.",
         "No direct API cost expected; quota-limited.",
         "Braki pomiaru nie mogą być raportowane jako porażka kampanii, strony ani SEO.",
         "credential_presence",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
+        read_adapter="ga4_data_api",
     ),
     ConnectorDefinition(
         "google_merchant_center",
         "Google Merchant Center",
         ("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID",),
         True,
-        True,
-        ("merchant_feed_issue", "product_feed_edit_candidate"),
+        False,
+        ("merchant_feed_issue",),
         "Merchant API quotas apply.",
         "No direct API cost expected; quota-limited.",
-        "Zmiany feedu mogą wpływać na widoczność produktów i wymagają zachowania faktów.",
+        "WILQ przygotowuje wyłącznie sprawdzenie problemów feedu; brak adaptera jego zmian.",
         "credential_presence",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
+        read_adapter="merchant_api",
     ),
     ConnectorDefinition(
         "google_sheets",
         "Google Sheets",
         ("GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID",),
         True,
-        True,
-        ("export_review_sheet", "import_reviewed_bulk_edits"),
+        False,
+        (),
         "Sheets API quotas apply.",
         "No direct API cost expected; quota-limited.",
         (
@@ -140,6 +152,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         False,
         ConnectorProductScope.optional_disabled,
         False,
+        read_adapter="sheets_api",
     ),
     ConnectorDefinition(
         "ahrefs",
@@ -147,26 +160,28 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("AHREFS_API_TOKEN",),
         True,
         False,
-        ("content_gap", "backlink_gap", "competitor_gap"),
+        (),
         "Ahrefs API plan and endpoint limits apply.",
         "May consume paid Ahrefs API credits.",
         "Tylko odczyt kontekstu konkurencji; Ahrefs nie zastępuje GSC, WordPress ani claim gate.",
         "credential_presence",
+        read_adapter="ahrefs_api",
     ),
     ConnectorDefinition(
         "localo",
         "Localo",
         ("LOCALO_API_TOKEN", "LOCALO_ORGANIZATION_ID", "LOCALO_ACCESS_TOKEN"),
         True,
-        True,
-        ("local_visibility_task", "gbp_post_candidate"),
+        False,
+        ("local_visibility_task",),
         "Localo API/MCP limits apply.",
         "Depends on Localo subscription.",
         (
             "Localo jest źródłem gotowości i lokalnego kontekstu; sam dostęp nie "
-            "potwierdza rankingów, zapisu GBP ani poprawy widoczności."
+            "potwierdza rankingów ani poprawy widoczności, a zapis GBP nie ma adaptera."
         ),
         "credential_presence",
+        read_adapter="localo_mcp_oauth",
     ),
     ConnectorDefinition(
         "wordpress_ekologus",
@@ -193,6 +208,8 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "osobnym modelem review/audit."
         ),
         "credential_presence",
+        read_adapter="wordpress_rest_api",
+        mutation_adapter="wordpress_draft_execution_boundary",
     ),
     ConnectorDefinition(
         "wordpress_sklep",
@@ -203,28 +220,29 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "WORDPRESS_SKLEP_APP_PASSWORD",
         ),
         True,
-        True,
-        ("product_content_refresh", "product_draft_update"),
+        False,
+        (),
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",
         (
-            "WordPress sklepu służy do inventory i pracy na szkicach produktowych; "
-            "publikacja i nadpisywanie wymagają osobnego modelu review/audit."
+            "WordPress sklepu służy obecnie wyłącznie do odczytu inventory; "
+            "brak adaptera szkicu, publikacji i nadpisywania produktów."
         ),
         "credential_presence",
+        read_adapter="wordpress_rest_api",
     ),
     ConnectorDefinition(
         "linkedin",
         "LinkedIn",
         ("LINKEDIN_ORGANIZATION_ID", "LINKEDIN_ACCESS_TOKEN"),
-        True,
-        True,
+        False,
+        False,
         ("linkedin_post_candidate",),
         "LinkedIn API permissions and organization roles apply.",
         "No direct API cost expected.",
         (
-            "Social publishing jest poza bieżącym content workflow; wymaga osobnych "
-            "uprawnień, review i akcji publikacji."
+            "WILQ przygotowuje propozycje z własnych dowodów; brak adaptera odczytu "
+            "LinkedIn i publikacji w tym kanale."
         ),
         "credential_presence",
         product_scope=ConnectorProductScope.experimental,
@@ -234,14 +252,14 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "facebook",
         "Facebook Pages",
         ("FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_ACCESS_TOKEN"),
-        True,
-        True,
+        False,
+        False,
         ("facebook_post_candidate",),
         "Meta API permissions and app review apply.",
         "No direct API cost expected.",
         (
-            "Social publishing jest poza bieżącym content workflow; wymaga osobnych "
-            "uprawnień, review i akcji publikacji."
+            "WILQ przygotowuje propozycje z własnych dowodów; brak adaptera odczytu "
+            "Facebooka i publikacji w tym kanale."
         ),
         "credential_presence",
         product_scope=ConnectorProductScope.experimental,
@@ -253,13 +271,14 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         (),
         True,
         False,
-        ("codex_context_pack", "codex_exec_schema_smoke"),
+        (),
         "Codex usage limits and model/runtime availability apply.",
         "May consume OpenAI/Codex credits depending on auth path.",
         "Runtime operatorski nie jest produkcyjnym autorem treści i nie omija WILQ API.",
         "local_codex_login",
         product_scope=ConnectorProductScope.runtime,
         active_for_daily_work=False,
+        read_adapter="codex_local_runtime_status",
     ),
 )
 
@@ -307,6 +326,33 @@ def _connector_error(missing: list[str]) -> str | None:
     return None
 
 
+def _connector_capability(definition: ConnectorDefinition) -> ConnectorCapability:
+    if not definition.enabled:
+        action_scope: Literal["read_only", "review_only", "draft_only", "disabled"] = (
+            "disabled"
+        )
+    elif definition.mutation_adapter is not None:
+        action_scope = "draft_only"
+    elif definition.supported_actions:
+        action_scope = "review_only"
+    else:
+        action_scope = "read_only"
+    blockers = (
+        ["vendor_write_not_implemented"]
+        if definition.supported_actions and definition.mutation_adapter is None
+        else []
+    )
+    return ConnectorCapability(
+        read=definition.read,
+        write=definition.write,
+        read_adapter=definition.read_adapter,
+        mutation_adapter=definition.mutation_adapter,
+        action_scope=action_scope,
+        blockers=blockers,
+        operations=list(definition.supported_actions),
+    )
+
+
 def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
     required_names = _required_credential_names(definition)
     if not definition.enabled:
@@ -331,11 +377,7 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
                 freshness_state="missing",
                 missing_credentials=[],
             ),
-            capabilities=ConnectorCapability(
-                read=definition.read,
-                write=definition.write,
-                operations=list(definition.supported_actions),
-            ),
+            capabilities=_connector_capability(definition),
             required_env=required_names,
             supported_actions=list(definition.supported_actions),
             rate_limit_notes=definition.rate_limit_notes,
@@ -377,11 +419,7 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
             freshness_state=freshness.state,
             missing_credentials=missing,
         ),
-        capabilities=ConnectorCapability(
-            read=definition.read,
-            write=definition.write,
-            operations=list(definition.supported_actions),
-        ),
+        capabilities=_connector_capability(definition),
         required_env=required_names,
         supported_actions=list(definition.supported_actions),
         rate_limit_notes=definition.rate_limit_notes,
@@ -421,11 +459,7 @@ def _codex_connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
             freshness_state=freshness.state,
             missing_credentials=[],
         ),
-        capabilities=ConnectorCapability(
-            read=definition.read,
-            write=definition.write,
-            operations=list(definition.supported_actions),
-        ),
+        capabilities=_connector_capability(definition),
         required_env=[],
         supported_actions=list(definition.supported_actions),
         rate_limit_notes=definition.rate_limit_notes,

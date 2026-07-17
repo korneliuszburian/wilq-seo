@@ -1963,6 +1963,15 @@ describe("MerchantDiagnosticsResponseSchema", () => {
         missing_credentials: [],
         available_credential_sources: ["repo_env"],
         freshness: { state: "fresh" },
+        capabilities: {
+          read: true,
+          write: false,
+          read_adapter: "merchant_api",
+          mutation_adapter: null,
+          action_scope: "review_only",
+          blockers: ["vendor_write_not_implemented"],
+          operations: ["merchant_feed_issue"]
+        },
         supported_actions: ["merchant_feed_issue"]
       },
       latest_refresh: {
@@ -2094,6 +2103,10 @@ describe("MerchantDiagnosticsResponseSchema", () => {
     const result = MerchantDiagnosticsResponseSchema.safeParse(response);
 
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.connector.capabilities.write).toBe(false);
+      expect(result.data.connector.capabilities.action_scope).toBe("review_only");
+    }
   });
 });
 

@@ -89,8 +89,18 @@ describe("RegistryPanels", () => {
                 cooldown_seconds: 900
               }
             },
-            risk_notes: "Zapis Ads wymaga ActionObject, review człowieka i audit eventu.",
+            risk_notes:
+              "Akcje Ads służą obecnie wyłącznie do przygotowania i sprawdzenia; brak adaptera zapisu do Google Ads.",
             health_check: "credential_presence",
+            capabilities: {
+              read: true,
+              write: false,
+              read_adapter: "google_ads_api",
+              mutation_adapter: null,
+              action_scope: "review_only",
+              blockers: ["vendor_write_not_implemented"],
+              operations: []
+            },
             supported_actions: []
           } satisfies ConnectorStatus)
         ]}
@@ -100,8 +110,11 @@ describe("RegistryPanels", () => {
     expect(screen.getByText("Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Źródło danych sprawdzane przez WILQ.")).toBeInTheDocument();
     expect(
+      screen.getByText("Akcje: przygotowanie i review, bez zapisu do systemu zewnętrznego.")
+    ).toBeInTheDocument();
+    expect(
       screen.getByText(
-        "Zakres i bezpieczeństwo: Zapis Ads wymaga ActionObject, review człowieka i audit eventu."
+        "Zakres i bezpieczeństwo: Akcje Ads służą obecnie wyłącznie do przygotowania i sprawdzenia; brak adaptera zapisu do Google Ads."
       )
     ).toBeInTheDocument();
     expect(screen.getByText("Brakujące ustawienia dostępu")).toBeInTheDocument();

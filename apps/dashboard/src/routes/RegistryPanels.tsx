@@ -28,6 +28,9 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
             <StatusBadge value={connector.status} label={connector.status_label} />
           </div>
           <div className="mt-4 text-xs text-slate-600">
+            <p className="mb-3 font-medium text-ink">
+              {connectorCapabilityLabel(connector)}
+            </p>
             {connector.risk_notes ? (
               <p className="mb-3 rounded-md border border-line bg-slate-50 p-2 text-slate-600">
                 Zakres i bezpieczeństwo: {connector.risk_notes}
@@ -54,6 +57,21 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
       ))}
     </div>
   );
+}
+
+function connectorCapabilityLabel(connector: ConnectorStatus) {
+  if (connector.capabilities.action_scope === "disabled") {
+    return "Zakres: integracja wyłączona w bieżącym produkcie.";
+  }
+  if (connector.capabilities.action_scope === "draft_only") {
+    return "Zapis: wyłącznie nowy szkic przez zaimplementowany adapter.";
+  }
+  if (connector.capabilities.action_scope === "review_only") {
+    return connector.capabilities.read
+      ? "Akcje: przygotowanie i review, bez zapisu do systemu zewnętrznego."
+      : "Akcje: przygotowanie i review z danych WILQ; brak odczytu i publikacji w tym kanale.";
+  }
+  return "Zakres: wyłącznie odczyt danych.";
 }
 
 export function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {

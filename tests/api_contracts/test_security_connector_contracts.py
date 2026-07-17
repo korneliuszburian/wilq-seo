@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from apps.api.wilq_api.context_compaction import compact_connector_status_for_operator_context
 from apps.api.wilq_api.main import app
 from wilq.connectors.google_auth import GOOGLE_CREDENTIAL_ENV_NAMES
 
@@ -118,6 +119,12 @@ def test_connector_registry_marks_experimental_and_runtime_surfaces_outside_dail
     assert response.status_code == 200
     connectors = {connector["id"]: connector for connector in response.json()}
 
+    for connector in connectors.values():
+        capability = connector["capabilities"]
+        assert capability["read"] is (capability["read_adapter"] is not None)
+        assert capability["write"] is (capability["mutation_adapter"] is not None)
+        assert capability["operations"] == connector["supported_actions"]
+
     for connector_id in ("google_ads", "google_search_console", "wordpress_ekologus"):
         assert connectors[connector_id]["product_scope"] == "production"
         assert connectors[connector_id]["active_for_daily_work"] is True
@@ -128,6 +135,52 @@ def test_connector_registry_marks_experimental_and_runtime_surfaces_outside_dail
     assert connectors["facebook"]["active_for_daily_work"] is False
     assert connectors["openai_codex"]["product_scope"] == "runtime"
     assert connectors["openai_codex"]["active_for_daily_work"] is False
+
+
+def test_connector_registry_exposes_only_implemented_adapters_and_review_actions() -> None:
+    response = client.get("/api/connectors")
+    assert response.status_code == 200
+    connectors = {connector["id"]: connector for connector in response.json()}
+
+    wordpress = connectors["wordpress_ekologus"]
+    assert wordpress["capabilities"]["write"] is True
+    assert (
+        wordpress["capabilities"]["mutation_adapter"]
+        == "wordpress_draft_execution_boundary"
+    )
+    assert wordpress["capabilities"]["action_scope"] == "draft_only"
+
+    for connector_id in (
+        "google_ads",
+        "google_merchant_center",
+        "localo",
+        "wordpress_sklep",
+        "linkedin",
+        "facebook",
+        "ahrefs",
+    ):
+        capability = connectors[connector_id]["capabilities"]
+        assert capability["write"] is False
+        assert capability["mutation_adapter"] is None
+
+    assert connectors["google_merchant_center"]["supported_actions"] == [
+        "merchant_feed_issue"
+    ]
+    assert connectors["localo"]["supported_actions"] == ["local_visibility_task"]
+    assert connectors["ahrefs"]["supported_actions"] == []
+    assert connectors["wordpress_sklep"]["supported_actions"] == []
+    assert connectors["linkedin"]["capabilities"]["read"] is False
+    assert connectors["facebook"]["capabilities"]["read"] is False
+
+    ads_context = compact_connector_status_for_operator_context(connectors["google_ads"])
+    assert ads_context["capabilities"] == {
+        "read": True,
+        "write": False,
+        "read_adapter_implemented": True,
+        "mutation_adapter_implemented": False,
+        "action_scope": "review_only",
+        "blockers": ["vendor_write_not_implemented"],
+    }
 
 
 def test_codex_connector_reports_local_cli_and_login_without_api_key_or_path(

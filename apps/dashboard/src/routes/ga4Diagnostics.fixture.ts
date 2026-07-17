@@ -41,6 +41,15 @@ export const ga4Diagnostics = {
     missing_credentials: [],
     available_credential_sources: ["repo_env"],
     freshness: { state: "fresh" },
+    capabilities: {
+      read: true,
+      write: false,
+      read_adapter: "ga4_data_api",
+      mutation_adapter: null,
+      action_scope: "review_only",
+      blockers: ["vendor_write_not_implemented"],
+      operations: ["ga4_tracking_gap"]
+    },
     supported_actions: ["ga4_tracking_gap"]
   },
   latest_refresh: {

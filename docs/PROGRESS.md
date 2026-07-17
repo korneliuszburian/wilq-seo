@@ -27,6 +27,19 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie zakresy i proofy
 
+- `wilq-seo-v9ab.18.1` usuwa fałszywe `ready` dla konwersji GA4. API rozdziela
+  dostępność kolumn, zaobserwowane niezerowe fakty i potwierdzenie konfiguracji
+  zdarzeń kluczowych; bieżący runtime ma 275 faktów konwersyjnych, 0 niezerowych
+  obserwacji i brak potwierdzenia konfiguracji, więc zwraca `review_required`
+  oraz blokuje wnioski o konwersji, przychodzie i opłacalności. Daily guard,
+  dashboard schema i `wilq-ga4-analyst` używają tego samego kontraktu.
+- `wilq-seo-v9ab.18.5` wiąże capability registry z realnymi adapterami. Ads,
+  Merchant, Localo, WordPress sklep, LinkedIn i Facebook nie reklamują już
+  vendor write; Ahrefs, GSC i pozostałe źródła nie wystawiają fikcyjnych typów
+  akcji. Typed `read_adapter`, `mutation_adapter`, `action_scope` i blocker
+  przechodzą przez API, shared schema, settings dashboard i context-pack.
+  Jedyną aktywną ścieżką zapisu pozostaje exact WordPress ekologus.pl
+  draft-only; nie dodano vendor write ani nowego skryptu.
 - `wilq-seo-1oa.36.7` redukuje paczkę dla marketera do czterech dokumentów
   wynikowych bez generatora, manifestu i raw payloadu. Po managed restarcie
   aktualny WILQ API zwrócił dla BDO 65 wyświetleń, 0 kliknięć, 11 wierszy GSC,

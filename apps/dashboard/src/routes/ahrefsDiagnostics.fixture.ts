@@ -10,7 +10,16 @@ export const ahrefsDiagnostics = {
     missing_credentials: [],
     available_credential_sources: ["repo_env"],
     freshness: { state: "fresh" },
-    supported_actions: ["content_gap", "backlink_gap", "competitor_gap"]
+    capabilities: {
+      read: true,
+      write: false,
+      read_adapter: "ahrefs_api",
+      mutation_adapter: null,
+      action_scope: "read_only",
+      blockers: [],
+      operations: []
+    },
+    supported_actions: []
   },
   connector_status_label: "dostęp skonfigurowany",
   latest_refresh: {

@@ -10,7 +10,16 @@ export const localoDiagnostics = {
     missing_credentials: [],
     available_credential_sources: ["repo_env"],
     freshness: { state: "fresh" },
-    supported_actions: []
+    capabilities: {
+      read: true,
+      write: false,
+      read_adapter: "localo_mcp_oauth",
+      mutation_adapter: null,
+      action_scope: "review_only",
+      blockers: ["vendor_write_not_implemented"],
+      operations: ["local_visibility_task"]
+    },
+    supported_actions: ["local_visibility_task"]
   },
   latest_refresh: {
     id: "refresh_localo_access_ready_test",

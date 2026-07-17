@@ -172,6 +172,12 @@ DecisionState = Literal["ready", "stale", "blocked", "missing", "unknown"]
 class ConnectorCapability(BaseModel):
     read: bool = True
     write: bool = False
+    read_adapter: str | None = None
+    mutation_adapter: str | None = None
+    action_scope: Literal["read_only", "review_only", "draft_only", "disabled"] = (
+        "read_only"
+    )
+    blockers: list[str] = Field(default_factory=list)
     operations: list[str] = Field(default_factory=list)
 
 

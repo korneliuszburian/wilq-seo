@@ -30,7 +30,32 @@ export const settingsConnectors: ConnectorStatus[] = [
       }
     },
     health_check: "",
-    supported_actions: []
+    capabilities: {
+      read: true,
+      write: false,
+      read_adapter: "google_ads_api",
+      mutation_adapter: null,
+      action_scope: "review_only",
+      blockers: ["vendor_write_not_implemented"],
+      operations: [
+        "negative_keyword_candidate",
+        "campaign_change_review",
+        "google_ads_recommendation_review",
+        "google_ads_change_history_impact_review",
+        "google_ads_search_term_ngram_review",
+        "google_ads_demand_gen_readiness_review",
+        "custom_segment_candidate"
+      ]
+    },
+    supported_actions: [
+      "negative_keyword_candidate",
+      "campaign_change_review",
+      "google_ads_recommendation_review",
+      "google_ads_change_history_impact_review",
+      "google_ads_search_term_ngram_review",
+      "google_ads_demand_gen_readiness_review",
+      "custom_segment_candidate"
+    ]
   },
   {
     id: "google_analytics_4",
@@ -61,7 +86,16 @@ export const settingsConnectors: ConnectorStatus[] = [
       }
     },
     health_check: "",
-    supported_actions: []
+    capabilities: {
+      read: true,
+      write: false,
+      read_adapter: "ga4_data_api",
+      mutation_adapter: null,
+      action_scope: "review_only",
+      blockers: ["vendor_write_not_implemented"],
+      operations: ["ga4_tracking_gap"]
+    },
+    supported_actions: ["ga4_tracking_gap"]
   }
 ];
 

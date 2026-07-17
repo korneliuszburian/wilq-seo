@@ -66,6 +66,15 @@ export const ConnectorStatusSchema = z.object({
   cost_notes: z.string().nullable().optional(),
   risk_notes: z.string().nullable().optional(),
   health_check: z.string().default(""),
+  capabilities: z.object({
+    read: z.boolean(),
+    write: z.boolean(),
+    read_adapter: z.string().nullable(),
+    mutation_adapter: z.string().nullable(),
+    action_scope: z.enum(["read_only", "review_only", "draft_only", "disabled"]),
+    blockers: z.array(z.string()),
+    operations: z.array(z.string())
+  }),
   supported_actions: z.array(z.string())
 });
 
