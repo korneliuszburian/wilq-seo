@@ -49,8 +49,8 @@ export function CommandCenter() {
       <div className="lg:hidden">
         <MobileDailyTriage
           item={topWork}
-          blockers={blockerRows(data, blockedOrders).slice(0, 2)}
-          forbiddenClaims={forbiddenClaims.slice(0, 2)}
+          blockers={blockerRows(data, blockedOrders)}
+          forbiddenClaims={forbiddenClaims}
         />
       </div>
       <div className="hidden lg:block">
@@ -174,6 +174,10 @@ function MobileDailyTriage({
   blockers: ReturnType<typeof blockerRows>;
   forbiddenClaims: string[];
 }) {
+  const visibleBlockers = blockers.slice(0, 2);
+  const remainingBlockers = blockers.slice(2);
+  const visibleForbiddenClaims = forbiddenClaims.slice(0, 2);
+  const remainingForbiddenClaims = forbiddenClaims.slice(2);
   return (
     <section aria-label="Mobilny triage dnia" className="space-y-3">
       <div>
@@ -207,17 +211,40 @@ function MobileDailyTriage({
       <div className="rounded-md border border-wait/30 bg-wait/10 p-4">
         <h2 className="text-sm font-semibold text-ink">Dwa najważniejsze blokery</h2>
         <ul className="mt-3 space-y-3">
-          {blockers.map((blocker) => (
+          {visibleBlockers.map((blocker) => (
             <li key={blocker.title} className="text-sm leading-5 text-slate-700">
               <span className="font-semibold text-ink">{blocker.title}</span>
               <span className="mt-1 block">{blocker.description}</span>
             </li>
           ))}
         </ul>
-        {forbiddenClaims.length ? (
+        {remainingBlockers.length ? (
+          <details className="mt-3 border-t border-wait/20 pt-3 text-sm text-slate-700">
+            <summary className="cursor-pointer font-semibold text-action">
+              Pozostałe blokady: {remainingBlockers.length}
+            </summary>
+            <ul className="mt-3 space-y-3">
+              {remainingBlockers.map((blocker) => (
+                <li key={blocker.title}>
+                  <span className="font-semibold text-ink">{blocker.title}</span>
+                  <span className="mt-1 block">{blocker.description}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+        {visibleForbiddenClaims.length ? (
           <p className="mt-3 border-t border-wait/20 pt-3 text-xs leading-5 text-slate-600">
-            Nie obiecuj dziś: {forbiddenClaims.join("; ")}
+            Nie obiecuj dziś: {visibleForbiddenClaims.join("; ")}
           </p>
+        ) : null}
+        {remainingForbiddenClaims.length ? (
+          <details className="mt-2 text-xs leading-5 text-slate-600">
+            <summary className="cursor-pointer font-semibold text-action">
+              Pozostałe ograniczenia: {remainingForbiddenClaims.length}
+            </summary>
+            <p className="mt-2">{remainingForbiddenClaims.join("; ")}</p>
+          </details>
         ) : null}
       </div>
     </section>

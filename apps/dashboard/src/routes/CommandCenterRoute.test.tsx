@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createWilqQueryClient } from "../lib/queryClient";
@@ -324,6 +324,34 @@ describe("CommandCenter route", () => {
     expect(screen.queryByText(/average_position=/)).not.toBeInTheDocument();
     expect(screen.queryByText(new RegExp("lead " + "up" + "lift"))).not.toBeInTheDocument();
     expect(screen.queryByText(new RegExp("ranking " + "guarantee"))).not.toBeInTheDocument();
+  });
+
+  it("keeps mobile triage compact without hiding blocker and claim overflow", async () => {
+    const blocked = commandCenterFixture.work_orders[1]!;
+    vi.mocked(getCommandCenter).mockResolvedValue({
+      ...commandCenterFixture,
+      work_orders: [
+        ...commandCenterFixture.work_orders,
+        {
+          ...blocked,
+          id: "work_order_extra_blocker_1",
+          title: "Dodatkowa blokada GA4",
+          route_label: "GA4"
+        },
+        {
+          ...blocked,
+          id: "work_order_extra_blocker_2",
+          title: "Dodatkowa blokada Ads",
+          route_label: "Ads"
+        }
+      ]
+    });
+
+    renderCommandCenter();
+
+    const mobile = await screen.findByRole("region", { name: "Mobilny triage dnia" });
+    expect(within(mobile).getByText("Pozostałe blokady: 1")).toBeInTheDocument();
+    expect(within(mobile).getByText("Pozostałe ograniczenia: 2")).toBeInTheDocument();
   });
 
   it("renders command decisions from API-owned fields instead of route-local copy maps", async () => {
