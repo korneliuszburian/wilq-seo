@@ -1939,6 +1939,8 @@ function workflowSnapshot({
               next_step: "Zatwierdź brief, claimy i paczkę szkicu."
             }
           ],
+      review_recordable: Boolean(review),
+      review_recorded: Boolean(review),
       wordpress_handoff_allowed: Boolean(review)
     },
     wordpress_handoff: {

@@ -2413,6 +2413,8 @@ describe("Content work item workflow schemas", () => {
             next_step: "Zatwierdź brief, claimy i paczkę szkicu."
           }
         ],
+        review_recordable: false,
+        review_recorded: false,
         wordpress_handoff_allowed: false
       }).success
     ).toBe(true);
@@ -2434,6 +2436,8 @@ describe("Content work item workflow schemas", () => {
           draft_package_id: "draft_package_content_work_item_bdo"
         },
         blockers: [],
+        review_recordable: true,
+        review_recorded: false,
         wordpress_handoff_allowed: true
       }).success
     ).toBe(true);
@@ -2778,6 +2782,8 @@ describe("Content work item workflow schemas", () => {
           reviewed_item: item,
           review: humanReview,
           blockers: [],
+          review_recordable: true,
+          review_recorded: true,
           wordpress_handoff_allowed: true
         },
         wordpress_handoff: {

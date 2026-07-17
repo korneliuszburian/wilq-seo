@@ -56,6 +56,29 @@ class ContentHumanReviewBlocker(BaseModel):
     next_step: str
 
 
+_NON_RECORDABLE_REVIEW_BLOCKERS: frozenset[ContentHumanReviewBlockerCode] = frozenset(
+    {
+        "missing_human_review",
+        "wrong_work_item",
+        "missing_reviewer",
+        "missing_checked_items",
+        "missing_evidence",
+        "missing_draft_package",
+        "draft_package_mismatch",
+    }
+)
+
+
+def content_human_review_is_recordable(
+    review: ContentHumanReview | None,
+    blockers: list[ContentHumanReviewBlocker],
+) -> bool:
+    """Keep an exact human decision without confusing it with approval."""
+    return review is not None and not any(
+        blocker.code in _NON_RECORDABLE_REVIEW_BLOCKERS for blocker in blockers
+    )
+
+
 def content_human_review_blockers(
     *,
     item: ContentWorkItem,

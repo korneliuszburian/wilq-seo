@@ -1141,6 +1141,8 @@ export const ContentWorkItemHumanReviewResponseSchema = z.object({
   reviewed_item: ContentWorkItemSchema,
   review: ContentHumanReviewSchema.nullable().optional(),
   blockers: z.array(ContentWorkflowBlockerSchema).default([]),
+  review_recordable: z.boolean(),
+  review_recorded: z.boolean(),
   wordpress_handoff_allowed: z.boolean()
 });
 

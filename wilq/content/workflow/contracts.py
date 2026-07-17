@@ -184,6 +184,8 @@ class ContentWorkItemHumanReviewResponse(BaseModel):
     reviewed_item: ContentWorkItem
     review: ContentHumanReview | None = None
     blockers: list[ContentHumanReviewBlocker] = Field(default_factory=list)
+    review_recordable: bool = False
+    review_recorded: bool = False
     wordpress_handoff_allowed: bool = False
 
 

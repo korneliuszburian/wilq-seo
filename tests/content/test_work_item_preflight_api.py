@@ -259,6 +259,8 @@ def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
         "blockers",
         "item",
         "review",
+        "review_recordable",
+        "review_recorded",
         "reviewed_item",
         "wordpress_handoff_allowed",
     ]
@@ -359,6 +361,8 @@ def test_content_work_item_human_review_api_updates_approved_review_state() -> N
     assert data["blockers"] == []
     assert data["reviewed_item"]["human_review_status"] == "approved"
     assert data["reviewed_item"]["human_review_id"] == "human_review_bdo"
+    assert data["review_recordable"] is True
+    assert data["review_recorded"] is False
     assert data["wordpress_handoff_allowed"] is True
     assert "wordpress_handoff" not in data
 
@@ -390,6 +394,10 @@ def test_content_work_item_human_review_api_blocks_needs_changes() -> None:
         }
     )
 
+    assert data["review_recordable"] is True
+    assert data["review_recorded"] is False
+    assert data["reviewed_item"]["human_review_status"] == "needs_changes"
+    assert data["reviewed_item"]["human_review_id"] == "human_review_bdo"
     assert data["wordpress_handoff_allowed"] is False
     assert "not_approved" in [blocker["code"] for blocker in data["blockers"]]
 
@@ -722,6 +730,7 @@ def test_content_work_item_snapshot_persists_real_human_review(
     human_review = persisted["human_review"]
     assert human_review["review"]["id"] == review["id"]
     assert human_review["reviewed_item"]["human_review_status"] == "approved"
+    assert human_review["review_recorded"] is True
     assert human_review["wordpress_handoff_allowed"] is True
 
     handoff_result = persisted["wordpress_handoff"]["handoff_result"]
@@ -761,12 +770,54 @@ def test_content_work_item_snapshot_does_not_persist_wrong_work_item_review(
         },
     )
     assert response.status_code == 200
+    assert response.json()["review_recordable"] is False
+    assert response.json()["review_recorded"] is False
     assert response.json()["wordpress_handoff_allowed"] is False
     assert "wrong_work_item" in [blocker["code"] for blocker in response.json()["blockers"]]
 
     persisted = client.get("/api/content/work-items/snapshot").json()
     assert persisted["human_review"]["review"] is None
     assert persisted["human_review"]["reviewed_item"]["human_review_status"] == "missing"
+
+
+def test_content_work_item_snapshot_persists_needs_changes_without_allowing_handoff(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    client = TestClient(app)
+
+    initial = client.get("/api/content/work-items/snapshot").json()
+    item = initial["preflight"]["item"]
+    draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    if draft is None:
+        assert _snapshot_blocks_draft_on_missing_knowledge(initial)
+        return
+    review = _human_review(
+        id=f"human_review_{item['id']}_needs_changes",
+        work_item_id=item["id"],
+        decision="needs_changes",
+        evidence_ids=item["evidence_ids"],
+        draft_package_id=draft["id"],
+        blocked_claims_handled=draft["claims_removed_or_blocked"],
+    )
+
+    response = client.post(
+        "/api/content/work-items/snapshot/human-review",
+        json={"review": review},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["review_recordable"] is True
+    assert response.json()["review_recorded"] is True
+    assert response.json()["reviewed_item"]["human_review_status"] == "needs_changes"
+    assert response.json()["wordpress_handoff_allowed"] is False
+
+    persisted = client.get("/api/content/work-items/snapshot").json()["human_review"]
+    assert persisted["review"]["id"] == review["id"]
+    assert persisted["reviewed_item"]["human_review_status"] == "needs_changes"
+    assert persisted["review_recorded"] is True
+    assert persisted["wordpress_handoff_allowed"] is False
 
 
 def test_content_work_item_snapshot_persists_matching_audit_envelope(

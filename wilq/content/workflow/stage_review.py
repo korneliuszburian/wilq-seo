@@ -5,6 +5,7 @@ from wilq.content.review.human import (
     apply_content_human_review_to_work_item,
     content_human_review_allows_wordpress_handoff,
     content_human_review_blockers,
+    content_human_review_is_recordable,
 )
 from wilq.content.workflow.contracts import (
     ContentWorkItemHumanReviewRequest,
@@ -23,9 +24,10 @@ def build_content_work_item_human_review_response(
         draft_package=request.draft_package,
         claim_ledger=request.claim_ledger,
     )
+    review_recordable = content_human_review_is_recordable(request.review, blockers)
     reviewed_item = (
         apply_content_human_review_to_work_item(request.item, request.review)
-        if request.review is not None and not blockers
+        if request.review is not None and review_recordable
         else request.item
     )
     return ContentWorkItemHumanReviewResponse(
@@ -33,6 +35,7 @@ def build_content_work_item_human_review_response(
         reviewed_item=reviewed_item,
         review=request.review,
         blockers=blockers,
+        review_recordable=review_recordable,
         wordpress_handoff_allowed=not blockers
         and request.review is not None
         and content_human_review_allows_wordpress_handoff(

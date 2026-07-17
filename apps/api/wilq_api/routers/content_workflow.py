@@ -508,8 +508,9 @@ def content_work_item_snapshot_human_review(
         build_content_diagnostics_cached(),
         request,
     )
-    if response.wordpress_handoff_allowed and response.review is not None:
+    if response.review_recordable and response.review is not None:
         content_workflow_store().save_human_review(response.review)
+        return response.model_copy(update={"review_recorded": True})
     return response
 
 
@@ -525,8 +526,9 @@ def content_work_item_human_review_for_selected_item(
         work_item_id,
         human_review=request.review,
     ).human_review
-    if response.wordpress_handoff_allowed and response.review is not None:
+    if response.review_recordable and response.review is not None:
         content_workflow_store().save_human_review(response.review)
+        return response.model_copy(update={"review_recorded": True})
     return response
 
 

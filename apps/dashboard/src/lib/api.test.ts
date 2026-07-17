@@ -73,6 +73,8 @@ const responseByPath: Record<string, unknown> = {
     reviewed_item: workItem({ human_review_status: "approved" }),
     review: humanReview(),
     blockers: [],
+    review_recordable: true,
+    review_recorded: false,
     wordpress_handoff_allowed: true
   },
   "/api/content/work-items/snapshot/human-review": {
@@ -80,6 +82,8 @@ const responseByPath: Record<string, unknown> = {
     reviewed_item: workItem({ human_review_status: "approved" }),
     review: humanReview(),
     blockers: [],
+    review_recordable: true,
+    review_recorded: true,
     wordpress_handoff_allowed: true
   },
   "/api/content/work-items/content_work_item_bdo/human-review": {
@@ -87,6 +91,8 @@ const responseByPath: Record<string, unknown> = {
     reviewed_item: workItem({ human_review_status: "approved" }),
     review: humanReview(),
     blockers: [],
+    review_recordable: true,
+    review_recorded: true,
     wordpress_handoff_allowed: true
   },
   "/api/content/work-items/snapshot/audit": {

@@ -510,7 +510,7 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
                 """
                 SELECT payload_json FROM content_human_reviews
                 WHERE work_item_id = ?
-                ORDER BY id DESC
+                ORDER BY rowid DESC
                 LIMIT 1
                 """,
                 (work_item_id,),

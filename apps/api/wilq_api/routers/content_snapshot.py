@@ -78,6 +78,7 @@ def snapshot_for_work_item_or_404(
                 status_code=404,
                 detail="Content work item is not available after review lookup.",
             )
+        snapshot = _with_recorded_human_review(snapshot)
     return snapshot
 
 
@@ -112,7 +113,11 @@ def snapshot_for_work_item_or_blocked_or_404(
             revision_state=revision_state,
             planning_decisions=store.load_planning_decisions(work_item_id),
         )
-        return snapshot if reviewed_snapshot is None else reviewed_snapshot
+        return (
+            snapshot
+            if reviewed_snapshot is None
+            else _with_recorded_human_review(reviewed_snapshot)
+        )
     blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(
         diagnostics,
         work_item_id,
@@ -122,6 +127,18 @@ def snapshot_for_work_item_or_blocked_or_404(
     raise HTTPException(
         status_code=404,
         detail="Content work item is not available for the gated workflow.",
+    )
+
+
+def _with_recorded_human_review(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    return snapshot.model_copy(
+        update={
+            "human_review": snapshot.human_review.model_copy(
+                update={"review_recorded": True}
+            )
+        }
     )
 
 

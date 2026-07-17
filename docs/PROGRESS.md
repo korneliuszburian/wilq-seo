@@ -40,6 +40,12 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   przechodzą przez API, shared schema, settings dashboard i context-pack.
   Jedyną aktywną ścieżką zapisu pozostaje exact WordPress ekologus.pl
   draft-only; nie dodano vendor write ani nowego skryptu.
+- `wilq-seo-1oa.36.17` rozdziela prawidłową decyzję człowieka od approval.
+  `needs_changes`, `rejected` i `deferred` są zapisywalne i po realnym zapisie
+  wracają jako `recorded`, aktualizując stan reviewed itemu, ale nadal nie
+  odblokowują WordPress. Czysty preflight mówi tylko `recordable`; błędny work
+  item, brak reviewera/checklisty/dowodów lub niepasujący draft nie trafia do
+  storage. Latest review wynika z kolejności zapisu, a nie leksykalnego ID.
 - `wilq-seo-1oa.36.7` redukuje paczkę dla marketera do czterech dokumentów
   wynikowych bez generatora, manifestu i raw payloadu. Po managed restarcie
   aktualny WILQ API zwrócił dla BDO 65 wyświetleń, 0 kliknięć, 11 wierszy GSC,
