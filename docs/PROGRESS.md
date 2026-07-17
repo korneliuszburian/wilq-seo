@@ -110,8 +110,8 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   wynikowych bez generatora, manifestu i raw payloadu. Po managed restarcie
   aktualny WILQ API zwrócił dla BDO 65 wyświetleń, 0 kliknięć, 11 wierszy GSC,
   H1 i 12 nagłówków WordPress. Outsourcing ma 50 wyświetleń, 0 kliknięć i 26
-  wierszy GSC oraz jest poprawnie `bound` do własnej karty, ale brakuje mu
-  aktualnego inventory sekcji WordPress. Obie karty pozostają
+  wierszy GSC oraz jest poprawnie `bound` do własnej karty. Brakujące wtedy
+  inventory sekcji WordPress odzyskuje `.36.13`. Obie karty pozostają
   `source_backed_review_required`, wybór usługi nie jest potwierdzony, revision
   count wynosi 0, a GET planera nie uruchomił modelu. Paczka ujawnia też lukę
   jakości: bieżąca mapa BDO przypisuje niemal każde query do obu generycznych
@@ -129,6 +129,20 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   managed-stack smoke są zielone; realny BDO nadal uczciwie blokują
   `service_selection_not_confirmed` oraz `service_card_not_approved`. Smoke nie
   uruchomił modelu ani vendor write i nie jest realnym Wilku UAT.
+- `wilq-seo-1oa.36.13` naprawia ogólny publiczny inventory read dla stron
+  usługowych bez wyjątku po URL. Sitemap produkcyjny miał 116 postów przed
+  grupą stron, a jeden globalny limit 50 pobrań metadata obejmował BDO na
+  pozycji 41, lecz nigdy stronę outsourcingu. Metadata ma teraz osobne bounded
+  budżety dla `posts`, `pages` i pozostałych typów; surowy marker grupy nie
+  trafia do MetricFact. Po read-only vendor refresh exact outsourcing ma
+  canonical URL, tytuł/H1, 12 odczytanych nagłówków,
+  `confirmed_current_inventory` i świeże evidence WordPress; BDO zachowuje 12
+  nagłówków i ten sam gate. Układ bez H2/H3 pozostaje pustym inventory. Publiczny
+  HTML nie jest przedstawiany jako readback ACF: status ACF nadal uczciwie
+  wynosi `missing`. Klient WordPress został rozcięty na właściciela inventory i
+  wspólne czyszczenie tekstu; wszystkie zmienione moduły mieszczą się w
+  budżetach złożoności. Focused adapter/planner/authoring proof, Ruff i mypy są
+  zielone; nie wykonano WordPress write, model generation ani UAT.
 - `wilq-seo-1oa.37` dodaje persistowane advisory review semantyczne dokładnej
   rewizji v2. GET jest model-free; POST wymaga exact revision digestu, bieżącego
   planning inputu i ocenia dziewięć jawnych wymiarów bez approval, ActionObjectu

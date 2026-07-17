@@ -127,6 +127,14 @@ kontynuuj najwyższy bezpieczny task.
   WordPress execution. Dawny 809-liniowy `build_uat_packet.py` oraz duplikujący
   snapshot/export zostały usunięte bez zastępczego generatora; kanoniczna
   sanitizowana paczka pozostaje czterema dokumentami wynikowymi.
+- Publiczny WordPress inventory rozdziela bounded metadata enrichment per grupa
+  `posts`, `pages` i pozostałe typy. Dzięki temu późniejsza w sitemapie strona
+  doradztwa/outsourcingu ma exact canonical, tytuł/H1 i 12 obserwowanych H2/H3
+  z aktualnym evidence zamiast samego URL; BDO pozostaje pokryte. Te nagłówki są
+  publicznym inventory HTML, nie potwierdzonym readbackiem ACF —
+  `wordpress_acf_section_inventory_status` nadal wynosi `missing`, a układ bez
+  nagłówków nie dostaje wymyślonych sekcji. Klient konektora jest poniżej 800
+  linii; inventory i wspólne czyszczenie tekstu mają osobnych właścicieli.
 - Rewizja v2 przechowuje exact `planning_digest`, `planning_input_digest`,
   service/inventory digests i pełne page assets; te same bindingi przechodzą do
   child revision Codexa. Cofnięcie decyzji albo zmiana inventory, usługi,

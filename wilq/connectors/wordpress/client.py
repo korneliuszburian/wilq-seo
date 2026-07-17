@@ -2,15 +2,26 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from html import unescape
-from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import httpx
-from defusedxml import ElementTree
 
-from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
+from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.wordpress.inventory import (
+    WORDPRESS_CONTENT_PER_PAGE,
+    WORDPRESS_CONTENT_TYPES,
+    WORDPRESS_READ_FIELDS,
+    acf_inventory,
+    content_inventory,
+    fetch_content_inventory,
+)
+from wilq.connectors.wordpress.text import (
+    clean_metadata_text,
+    html_text,
+    summary_text_limited,
+    wordpress_title,
+)
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -39,20 +50,6 @@ WORDPRESS_CONNECTORS = {
 }
 WORDPRESS_DEV_HOSTS = {"ekologus.dev.proudsite.pl"}
 
-WORDPRESS_CONTENT_TYPES = ("posts", "pages")
-WORDPRESS_CONTENT_PER_PAGE = 100
-WORDPRESS_READ_FIELDS = (
-    "id,status,modified_gmt,date_gmt,link,slug,title,content,acf,template"
-)
-WORDPRESS_SITEMAP_PATHS = ("wp-sitemap.xml", "sitemap_index.xml", "sitemap.xml")
-WORDPRESS_SITEMAP_CHILD_LIMIT = 20
-WORDPRESS_SITEMAP_URL_LIMIT = 500
-WORDPRESS_METADATA_FETCH_LIMIT = 50
-WORDPRESS_METADATA_MAX_BYTES = 200_000
-WORDPRESS_METADATA_TIMEOUT_SECONDS = 3.0
-WORDPRESS_SECTION_HEADING_LIMIT = 12
-WORDPRESS_CONTENT_SUMMARY_MAX_CHARS = 240
-WORDPRESS_BLOCK_NAME_LIMIT = 16
 WORDPRESS_AUTHORING_PAGE_FIELDS = (
     "id,slug,link,title,status,modified,modified_gmt,template,parent,acf"
 )
@@ -166,10 +163,14 @@ def refresh_wordpress_content_inventory(
     client = http_client or httpx.Client(timeout=30)
     try:
         try:
-            metric_summary, metric_facts = _fetch_content_inventory(
+            metric_summary, metric_facts = fetch_content_inventory(
                 client,
                 connector_id,
-                credentials,
+                base_url=credentials.base_url or "",
+                public_url=credentials.public_url,
+                username=credentials.username or "",
+                application_auth=credentials.application_auth or "",
+                site_kind=credentials.site_kind,
             )
         except httpx.HTTPStatusError as exc:
             return _http_failure_result(connector_id, exc)
@@ -376,18 +377,18 @@ def _draft_post_readback(
     if not isinstance(body, dict):
         raise WordPressDraftReadError("WordPress zwrócił nieprawidłową odpowiedź szkicu.")
     post_id = body.get("id")
-    content_inventory = _content_inventory(body.get("content"))
-    acf_inventory = _acf_inventory(body.get("acf"))
-    acf_names = _json_string_list(acf_inventory.get("acf_field_names_json"))
-    content_word_count = _optional_int(content_inventory.get("content_word_count"))
-    acf_field_count = _optional_int(acf_inventory.get("acf_field_count"))
+    content_dimensions = content_inventory(body.get("content"))
+    acf_dimensions = acf_inventory(body.get("acf"))
+    acf_names = _json_string_list(acf_dimensions.get("acf_field_names_json"))
+    content_word_count = _optional_int(content_dimensions.get("content_word_count"))
+    acf_field_count = _optional_int(acf_dimensions.get("acf_field_count"))
     return WordPressDraftPostReadback(
         post_id=str(post_id) if post_id is not None else requested_post_id,
         status=str(body.get("status") or ""),
-        title=_wordpress_title(body.get("title")),
+        title=wordpress_title(body.get("title")),
         link=str(body.get("link") or ""),
         modified_gmt=str(body.get("modified_gmt") or ""),
-        content_summary=content_inventory.get("content_summary", ""),
+        content_summary=content_dimensions.get("content_summary", ""),
         content_word_count=content_word_count,
         acf_field_count=acf_field_count,
         acf_field_names=acf_names,
@@ -454,347 +455,6 @@ def _normalize_base_url(value: str | None) -> str | None:
     return stripped.rstrip("/") + "/"
 
 
-def _fetch_content_inventory(
-    client: httpx.Client,
-    connector_id: str,
-    credentials: WordPressCredentials,
-) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
-    auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
-    summaries: dict[str, dict[str, int | str | list[dict[str, str]]]] = {}
-    content_object_count = 0
-    latest_modified_values: list[str] = []
-    for content_type in WORDPRESS_CONTENT_TYPES:
-        summary = _fetch_content_type_summary(
-            client,
-            credentials.base_url or "",
-            content_type,
-            auth,
-        )
-        summaries[content_type] = summary
-        content_object_count += _summary_total(summary)
-        latest = summary["latest_modified_gmt"]
-        if isinstance(latest, str) and latest:
-            latest_modified_values.append(latest)
-    sitemap_objects = _fetch_sitemap_objects(client, credentials.base_url or "")
-    public_sitemap_objects = _fetch_public_sitemap_objects(
-        client,
-        credentials.base_url,
-        credentials.public_url,
-    )
-    metric_summary: dict[str, float | int | str] = {
-        "api": "wordpress_rest_and_sitemap_content_inventory",
-        "connector_id": connector_id,
-        "site_kind": credentials.site_kind,
-        "content_object_count": content_object_count,
-        "posts_total": _summary_total(summaries["posts"]),
-        "pages_total": _summary_total(summaries["pages"]),
-        "sitemap_url_count": len(sitemap_objects),
-        "public_sitemap_url_count": len(public_sitemap_objects),
-        "latest_modified_gmt": max(latest_modified_values) if latest_modified_values else "",
-        "latest_post_modified_gmt": str(summaries["posts"]["latest_modified_gmt"]),
-        "latest_page_modified_gmt": str(summaries["pages"]["latest_modified_gmt"]),
-    }
-    metric_facts = [
-        VendorMetricFact(
-            name="content_object_count",
-            value=_summary_total(summary),
-            dimensions={
-                "connector_id": connector_id,
-                "site_kind": credentials.site_kind,
-                "content_type": content_type,
-            },
-        )
-        for content_type, summary in summaries.items()
-    ]
-    for content_type, summary in summaries.items():
-        objects = summary["objects"]
-        if not isinstance(objects, list):
-            continue
-        for item in objects:
-            metric_facts.append(
-                VendorMetricFact(
-                    name="content_object_seen",
-                    value=1,
-                    dimensions={
-                        "connector_id": connector_id,
-                        "site_kind": credentials.site_kind,
-                        "content_type": content_type,
-                        "object_id": item.get("object_id", ""),
-                        "content_url": item.get("content_url", ""),
-                        "status": item.get("status", ""),
-                        "modified_gmt": item.get("modified_gmt", ""),
-                        "title_or_h1": item.get("title_or_h1", ""),
-                        "canonical_url": item.get("canonical_url", ""),
-                        "section_headings_json": item.get("section_headings_json", ""),
-                        "section_heading_count": item.get("section_heading_count", ""),
-                        "content_summary": item.get("content_summary", ""),
-                        "content_word_count": item.get("content_word_count", ""),
-                        "block_names_json": item.get("block_names_json", ""),
-                        "block_name_count": item.get("block_name_count", ""),
-                        "acf_field_count": item.get("acf_field_count", ""),
-                        "inventory_source": "wordpress_rest",
-                    },
-                )
-            )
-    for item in sitemap_objects:
-        metric_facts.append(
-            VendorMetricFact(
-                name="content_object_seen",
-                value=1,
-                dimensions={
-                    "connector_id": connector_id,
-                    "site_kind": credentials.site_kind,
-                    "content_type": item.get("content_type", "sitemap"),
-                    "object_id": "",
-                    "content_url": item.get("content_url", ""),
-                    "status": "indexed",
-                    "modified_gmt": item.get("modified_gmt", ""),
-                    "title_or_h1": item.get("title_or_h1", ""),
-                    "canonical_url": item.get("canonical_url", ""),
-                    "section_headings_json": item.get("section_headings_json", ""),
-                    "section_heading_count": item.get("section_heading_count", ""),
-                    "inventory_source": "sitemap",
-                },
-            )
-        )
-    for item in public_sitemap_objects:
-        metric_facts.append(
-            VendorMetricFact(
-                name="content_object_seen",
-                value=1,
-                dimensions={
-                    "connector_id": connector_id,
-                    "site_kind": credentials.site_kind,
-                    "content_type": item.get("content_type", "sitemap"),
-                    "object_id": "",
-                    "content_url": item.get("content_url", ""),
-                    "status": "indexed",
-                    "modified_gmt": item.get("modified_gmt", ""),
-                    "title_or_h1": item.get("title_or_h1", ""),
-                    "canonical_url": item.get("canonical_url", ""),
-                    "section_headings_json": item.get("section_headings_json", ""),
-                    "section_heading_count": item.get("section_heading_count", ""),
-                    "inventory_source": "public_sitemap",
-                },
-            )
-        )
-    if sitemap_objects:
-        metric_facts.append(
-            VendorMetricFact(
-                name="sitemap_url_count",
-                value=len(sitemap_objects),
-                dimensions={
-                    "connector_id": connector_id,
-                    "site_kind": credentials.site_kind,
-                    "inventory_source": "sitemap",
-                },
-            )
-        )
-    if public_sitemap_objects:
-        metric_facts.append(
-            VendorMetricFact(
-                name="public_sitemap_url_count",
-                value=len(public_sitemap_objects),
-                dimensions={
-                    "connector_id": connector_id,
-                    "site_kind": credentials.site_kind,
-                    "inventory_source": "public_sitemap",
-                },
-            )
-        )
-    return metric_summary, metric_facts
-
-
-def _fetch_public_sitemap_objects(
-    client: httpx.Client,
-    base_url: str | None,
-    public_url: str | None,
-) -> list[dict[str, str]]:
-    if not public_url or _normalize_base_url(public_url) == _normalize_base_url(base_url):
-        return []
-    base_hosts = {_host(base_url or "")}
-    public_objects = _fetch_sitemap_objects(client, public_url, enrich_metadata=False)
-    filtered_objects = [
-        item for item in public_objects if _host(item.get("content_url", "")) not in base_hosts
-    ]
-    return _enrich_sitemap_objects_with_page_metadata(
-        client,
-        _prioritize_sitemap_objects(filtered_objects, [public_url]),
-    )
-
-
-def _fetch_sitemap_objects(
-    client: httpx.Client,
-    base_url: str,
-    *,
-    enrich_metadata: bool = True,
-) -> list[dict[str, str]]:
-    for sitemap_path in WORDPRESS_SITEMAP_PATHS:
-        try:
-            response = client.get(urljoin(base_url, sitemap_path))
-            if response.status_code == 404:
-                continue
-            response.raise_for_status()
-        except httpx.HTTPError:
-            continue
-        sitemap_objects = _sitemap_objects_from_xml(client, response.text)
-        if sitemap_objects:
-            limited_objects = sitemap_objects[:WORDPRESS_SITEMAP_URL_LIMIT]
-            if not enrich_metadata:
-                return limited_objects
-            return _enrich_sitemap_objects_with_page_metadata(client, limited_objects)
-    return []
-
-
-def _enrich_sitemap_objects_with_page_metadata(
-    client: httpx.Client,
-    objects: list[dict[str, str]],
-) -> list[dict[str, str]]:
-    enriched: list[dict[str, str]] = []
-    for index, item in enumerate(objects):
-        if index >= WORDPRESS_METADATA_FETCH_LIMIT:
-            enriched.append(item)
-            continue
-        metadata = _fetch_public_page_metadata(client, item.get("content_url", ""))
-        enriched.append({**item, **metadata} if metadata else item)
-    return enriched
-
-
-def _prioritize_sitemap_objects(
-    objects: list[dict[str, str]],
-    priority_urls: list[str | None],
-) -> list[dict[str, str]]:
-    priority_keys = {_normalize_base_url(url) for url in priority_urls if url}
-    return sorted(
-        objects,
-        key=lambda item: (
-            0
-            if _normalize_base_url(item.get("content_url", "")) in priority_keys
-            else 1
-        ),
-    )
-
-
-def _fetch_public_page_metadata(client: httpx.Client, url: str) -> dict[str, str]:
-    if not url:
-        return {}
-    try:
-        response = client.get(url, timeout=WORDPRESS_METADATA_TIMEOUT_SECONDS)
-        response.raise_for_status()
-    except httpx.HTTPError:
-        return {}
-    content_type = response.headers.get("content-type", "")
-    if content_type and "html" not in content_type.lower():
-        return {}
-    parser = _HtmlMetadataParser()
-    parser.feed(response.text[:WORDPRESS_METADATA_MAX_BYTES])
-    title_or_h1 = _clean_metadata_text(parser.title or parser.h1)
-    canonical_url = _clean_metadata_text(parser.canonical_url)
-    section_headings = [
-        heading
-        for heading in (_clean_metadata_text(value) for value in parser.section_headings)
-        if heading
-    ][:WORDPRESS_SECTION_HEADING_LIMIT]
-    return {
-        key: value
-        for key, value in {
-            "title_or_h1": title_or_h1,
-            "canonical_url": canonical_url,
-            "section_headings_json": json.dumps(section_headings, ensure_ascii=False),
-            "section_heading_count": str(len(section_headings)),
-        }.items()
-        if value
-    }
-
-
-def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[str, str]]:
-    entries = _parse_sitemap_xml(xml_text)
-    child_sitemaps = [entry for entry in entries if entry["kind"] == "sitemap"]
-    if not child_sitemaps:
-        return [_sitemap_url_object(entry) for entry in entries if entry["kind"] == "url"][
-            :WORDPRESS_SITEMAP_URL_LIMIT
-        ]
-
-    objects: list[dict[str, str]] = []
-    for sitemap in child_sitemaps[:WORDPRESS_SITEMAP_CHILD_LIMIT]:
-        try:
-            response = client.get(sitemap["loc"])
-            response.raise_for_status()
-        except httpx.HTTPError:
-            continue
-        child_entries = _parse_sitemap_xml(response.text)
-        objects.extend(
-            _sitemap_url_object(entry) for entry in child_entries if entry["kind"] == "url"
-        )
-        if len(objects) >= WORDPRESS_SITEMAP_URL_LIMIT:
-            return objects[:WORDPRESS_SITEMAP_URL_LIMIT]
-    return objects
-
-
-def _parse_sitemap_xml(xml_text: str) -> list[dict[str, str]]:
-    try:
-        root = ElementTree.fromstring(xml_text)
-    except ElementTree.ParseError:
-        return []
-    entries: list[dict[str, str]] = []
-    for element in root:
-        tag = _local_name(element.tag)
-        if tag not in {"url", "sitemap"}:
-            continue
-        loc = ""
-        lastmod = ""
-        for child in element:
-            child_tag = _local_name(child.tag)
-            text = (child.text or "").strip()
-            if child_tag == "loc":
-                loc = text
-            elif child_tag == "lastmod":
-                lastmod = text
-        if loc:
-            entries.append({"kind": tag, "loc": loc, "lastmod": lastmod})
-    return entries
-
-
-def _sitemap_url_object(entry: dict[str, str]) -> dict[str, str]:
-    return {
-        "content_type": "sitemap",
-        "content_url": entry["loc"],
-        "modified_gmt": entry.get("lastmod", ""),
-    }
-
-
-def _local_name(tag: str) -> str:
-    return tag.rsplit("}", 1)[-1]
-
-
-def _host(value: str) -> str:
-    return httpx.URL(value).host or ""
-
-
-def _fetch_content_type_summary(
-    client: httpx.Client,
-    base_url: str,
-    content_type: str,
-    auth: httpx.BasicAuth,
-) -> dict[str, int | str | list[dict[str, str]]]:
-    response = client.get(
-        urljoin(base_url, f"wp-json/wp/v2/{content_type}"),
-        auth=auth,
-        params={
-            "per_page": WORDPRESS_CONTENT_PER_PAGE,
-            "orderby": "modified",
-            "order": "desc",
-            "_fields": WORDPRESS_READ_FIELDS,
-        },
-    )
-    response.raise_for_status()
-    return {
-        "total": _header_int(response.headers.get("X-WP-Total")),
-        "latest_modified_gmt": _latest_modified(response.json()),
-        "objects": _content_objects(response.json()),
-    }
-
-
 def _http_failure_result(connector_id: str, exc: httpx.HTTPStatusError) -> VendorReadResult:
     status_code = exc.response.status_code
     return VendorReadResult(
@@ -812,62 +472,6 @@ def _transport_failure_result(connector_id: str, exc: httpx.HTTPError) -> Vendor
         external_call_attempted=True,
         errors=[f"WordPress {connector_id} content inventory {type(exc).__name__}."],
     )
-
-
-def _header_int(value: str | None) -> int:
-    if value is None:
-        return 0
-    try:
-        return int(value)
-    except ValueError:
-        return 0
-
-
-def _summary_total(summary: dict[str, int | str | list[dict[str, str]]]) -> int:
-    total = summary["total"]
-    return total if isinstance(total, int) else 0
-
-
-def _latest_modified(payload: Any) -> str:
-    if not isinstance(payload, list):
-        return ""
-    for item in payload:
-        if not isinstance(item, dict):
-            continue
-        modified = item.get("modified_gmt") or item.get("date_gmt")
-        if isinstance(modified, str):
-            return modified
-    return ""
-
-
-def _content_objects(payload: Any) -> list[dict[str, str]]:
-    if not isinstance(payload, list):
-        return []
-    objects: list[dict[str, str]] = []
-    for item in payload:
-        if not isinstance(item, dict):
-            continue
-        content_url = item.get("link")
-        if not isinstance(content_url, str) or not content_url:
-            continue
-        object_id = item.get("id")
-        modified = item.get("modified_gmt") or item.get("date_gmt")
-        status = item.get("status")
-        content_inventory = _content_inventory(item.get("content"))
-        acf_inventory = _acf_inventory(item.get("acf"))
-        objects.append(
-            {
-                "object_id": str(object_id) if object_id is not None else "",
-                "content_url": content_url,
-                "status": status if isinstance(status, str) else "",
-                "modified_gmt": modified if isinstance(modified, str) else "",
-                "title_or_h1": _wordpress_title(item.get("title")),
-                "canonical_url": "",
-                **content_inventory,
-                **acf_inventory,
-            }
-        )
-    return objects
 
 
 def _authoring_pages_from_response(
@@ -892,8 +496,8 @@ def _authoring_pages_from_response(
         pages.append(
             WordPressAuthoringPageReadback(
                 post_id=str(post_id) if post_id is not None else "",
-                slug=_clean_metadata_text(slug_value if isinstance(slug_value, str) else ""),
-                title=_wordpress_title(item.get("title")),
+                slug=clean_metadata_text(slug_value if isinstance(slug_value, str) else ""),
+                title=wordpress_title(item.get("title")),
                 link=str(item.get("link") or ""),
                 status=str(item.get("status") or ""),
                 modified=str(item.get("modified") or ""),
@@ -916,7 +520,7 @@ def _authoring_sections_from_acf(
     rows = _acf_flexible_rows(value, preferred_flexible_field_name=preferred_flexible_field_name)
     sections: list[WordPressAuthoringSectionReadback] = []
     for index, (field_name, row) in enumerate(rows[:WORDPRESS_AUTHORING_SECTION_LIMIT], start=1):
-        layout_name = _clean_metadata_text(str(row.get("acf_fc_layout") or f"section_{index}"))
+        layout_name = clean_metadata_text(str(row.get("acf_fc_layout") or f"section_{index}"))
         field_names = _acf_top_level_field_names(row)
         candidates = sorted(_acf_text_candidates(row), key=lambda item: item.score, reverse=True)
         title = _best_acf_title(candidates)
@@ -956,7 +560,7 @@ def _acf_flexible_rows(
         for row in raw_rows:
             if not isinstance(row, dict):
                 continue
-            if not _clean_metadata_text(str(row.get("acf_fc_layout") or "")):
+            if not clean_metadata_text(str(row.get("acf_fc_layout") or "")):
                 continue
             rows.append((str(key), row))
     return rows
@@ -1004,8 +608,8 @@ def _acf_text_candidates(value: Any, path: tuple[str, ...] = ()) -> list[_AcfTex
 
 
 def _clean_acf_text_value(value: str) -> str:
-    source = _html_text(value) if "<" in value and ">" in value else value
-    cleaned = _clean_metadata_text(source)
+    source = html_text(value) if "<" in value and ">" in value else value
+    cleaned = clean_metadata_text(source)
     if len(cleaned) < 3:
         return ""
     lowered = cleaned.lower()
@@ -1017,7 +621,7 @@ def _clean_acf_text_value(value: str) -> str:
         return ""
     if cleaned.lower() in _acf_non_content_values():
         return ""
-    return _summary_text_limited(cleaned, WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
+    return summary_text_limited(cleaned, WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
 
 
 def _acf_text_score(path: tuple[str, ...], value: str) -> int:
@@ -1067,15 +671,8 @@ def _best_acf_summary(candidates: list[_AcfTextCandidate], title: str) -> str:
             chunks.append(candidate.value)
         summary = " ".join(chunks)
         if len(summary) >= WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS:
-            return _summary_text_limited(summary, WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
-    return _summary_text_limited(" ".join(chunks), WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
-
-
-def _summary_text_limited(value: str, max_chars: int) -> str:
-    if len(value) <= max_chars:
-        return value
-    shortened = value[:max_chars].rsplit(" ", 1)[0].strip()
-    return shortened + "..."
+            return summary_text_limited(summary, WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
+    return summary_text_limited(" ".join(chunks), WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS)
 
 
 def _humanize_layout_name(value: str) -> str:
@@ -1174,165 +771,3 @@ def _acf_non_content_values() -> set[str]:
         "true",
         "false",
     }
-
-
-def _content_inventory(value: Any) -> dict[str, str]:
-    if not isinstance(value, dict):
-        return {}
-    raw = value.get("raw")
-    rendered = value.get("rendered")
-    source = raw if isinstance(raw, str) and raw.strip() else rendered
-    if not isinstance(source, str) or not source.strip():
-        return {}
-    block_names = _block_names(source)
-    text = _html_text(source)
-    summary = _summary_text(text)
-    dimensions: dict[str, str] = {}
-    if summary:
-        dimensions["content_summary"] = summary
-        dimensions["content_word_count"] = str(len(text.split()))
-    if block_names:
-        dimensions["block_names_json"] = json.dumps(block_names, ensure_ascii=False)
-        dimensions["block_name_count"] = str(len(block_names))
-    return dimensions
-
-
-def _acf_inventory(value: Any) -> dict[str, str]:
-    if isinstance(value, dict):
-        field_names = [
-            str(key)
-            for key, val in value.items()
-            if key and val not in (None, "", [], {})
-        ]
-        return {
-            "acf_field_count": str(len(field_names)),
-            "acf_field_names_json": json.dumps(
-                field_names[:WORDPRESS_BLOCK_NAME_LIMIT],
-                ensure_ascii=False,
-            ),
-        }
-    if isinstance(value, list):
-        return {"acf_field_count": str(len(value))}
-    return {}
-
-
-def _block_names(value: str) -> list[str]:
-    names: list[str] = []
-    marker = "<!-- wp:"
-    start = 0
-    while len(names) < WORDPRESS_BLOCK_NAME_LIMIT:
-        index = value.find(marker, start)
-        if index < 0:
-            break
-        name_start = index + len(marker)
-        name_end = value.find(" ", name_start)
-        close_end = value.find("-->", name_start)
-        candidates = [pos for pos in (name_end, close_end) if pos >= 0]
-        if not candidates:
-            break
-        name = value[name_start : min(candidates)].strip().strip("/")
-        if name and name not in names:
-            names.append(name)
-        start = min(candidates) + 1
-    return names
-
-
-def _html_text(value: str) -> str:
-    parser = _HtmlTextParser()
-    parser.feed(value[:WORDPRESS_METADATA_MAX_BYTES])
-    return _clean_metadata_text(" ".join(parser.chunks))
-
-
-def _summary_text(value: str) -> str:
-    if len(value) <= WORDPRESS_CONTENT_SUMMARY_MAX_CHARS:
-        return value
-    shortened = value[:WORDPRESS_CONTENT_SUMMARY_MAX_CHARS].rsplit(" ", 1)[0].strip()
-    return shortened + "..."
-
-
-def _wordpress_title(value: Any) -> str:
-    if not isinstance(value, dict):
-        return ""
-    rendered = value.get("rendered")
-    if not isinstance(rendered, str):
-        return ""
-    return _clean_metadata_text(rendered)
-
-
-def _clean_metadata_text(value: str | None) -> str:
-    if not value:
-        return ""
-    return " ".join(unescape(value).split())
-
-
-class _HtmlMetadataParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.title = ""
-        self.h1 = ""
-        self.canonical_url = ""
-        self.section_headings: list[str] = []
-        self._capture: str | None = None
-        self._capture_tag: str | None = None
-        self._chunks: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attr_map = {key.lower(): value or "" for key, value in attrs}
-        normalized_tag = tag.lower()
-        if normalized_tag == "link" and not self.canonical_url:
-            rel_values = attr_map.get("rel", "").lower().split()
-            href = attr_map.get("href", "")
-            if "canonical" in rel_values and href:
-                self.canonical_url = href
-        if normalized_tag == "title" and not self.title:
-            self._capture = "title"
-            self._capture_tag = normalized_tag
-            self._chunks = []
-        elif normalized_tag == "h1" and not self.h1:
-            self._capture = "h1"
-            self._capture_tag = normalized_tag
-            self._chunks = []
-        elif (
-            normalized_tag in {"h2", "h3"}
-            and len(self.section_headings) < WORDPRESS_SECTION_HEADING_LIMIT
-        ):
-            self._capture = "section_heading"
-            self._capture_tag = normalized_tag
-            self._chunks = []
-
-    def handle_endtag(self, tag: str) -> None:
-        if self._capture_tag != tag.lower():
-            return
-        text = _clean_metadata_text("".join(self._chunks))
-        if self._capture == "title" and text:
-            self.title = text
-        elif self._capture == "h1" and text:
-            self.h1 = text
-        elif self._capture == "section_heading" and text:
-            self.section_headings.append(text)
-        self._capture = None
-        self._capture_tag = None
-        self._chunks = []
-
-    def handle_data(self, data: str) -> None:
-        if self._capture:
-            self._chunks.append(data)
-
-
-class _HtmlTextParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.chunks: list[str] = []
-        self._skip_depth = 0
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag.lower() in {"script", "style", "noscript", "svg"}:
-            self._skip_depth += 1
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag.lower() in {"script", "style", "noscript", "svg"} and self._skip_depth:
-            self._skip_depth -= 1
-
-    def handle_data(self, data: str) -> None:
-        if not self._skip_depth and data.strip():
-            self.chunks.append(data)
