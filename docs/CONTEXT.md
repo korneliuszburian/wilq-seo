@@ -137,6 +137,9 @@ Aktywny graf:
   wymaga jednego rekordu canonical i rozwiązywalnego evidence właściwego
   konektora; freshness jest oceniana per connector. Dwa piloty przechodzą ten
   sam kontrakt wyłącznie na syntetycznie zatwierdzonych kartach.
+- Search terms Ads mogą zasilić plan wyłącznie przez kompletny, świeży batch z
+  faktycznie klikniętym landingiem i pięcioma metrykami z tego samego evidence;
+  stare, częściowe, wrażliwe i niepasujące dane są jawnie odrzucane.
 - Realny Codex proposal został poprawnie związany z wersją i dowodami, lecz
   quality review zwrócił `needs_changes`; jakość tekstu pozostaje około 5/10.
 - Kolejka ma 5 kandydatów, z czego 4 są actionable. BDO jest pierwszym

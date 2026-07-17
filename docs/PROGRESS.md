@@ -60,9 +60,20 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   zwraca blocker przed kontrolą stale digestu. Dashboard nie nazywa starego
   planu gotowym i nie pozwala generować przy zablokowanym źródle. Dwa piloty
   przechodzą ten sam input v2 na syntetycznie zatwierdzonych kartach; realne
-  karty nadal czekają na owner review. Bead pozostaje otwarty na trwały
-  kontrakt partycjonowania LAG, konsumenta Ads i finalny cross-source proof;
-  nie wykonano migracji ani vendor write.
+  karty nadal czekają na owner review. Czwarty slice łączy kliknięty search
+  term Ads z `expanded_final_url` i pięcioma metrykami w tym samym 30-dniowym
+  wierszu bez `LIMIT`; do storage trafia tylko redagowany digest landingu,
+  status i flagi. Content boundary wymaga jednego `ready` statusu tego samego
+  evidence/periodu oraz kompletnego, równo policzonego zestawu clicks,
+  impressions, cost, conversions i conversion value. Malformed, częściowy,
+  wrażliwy lub non-finite batch jest typed blockerem. Świeżość jest per
+  connector: stare Ads pozostają widocznym diagnostycznym sygnałem, ale nie
+  trafiają do model-authorized portfolio. Focused proof ma 24 testy; shared
+  schema ma 42, dashboard 177, oba typechecki i Ruff są zielone. Niezależny
+  review znalazł cztery P1/P2, wszystkie poprawiono, a finalny fixed-point
+  review dał PASS. Legalność GAQL potwierdzono z metadata v24; nie wykonano
+  live vendor calla, migracji ani vendor write. Bead pozostaje otwarty na
+  trwały kontrakt partycjonowania LAG i finalny cross-source pilot.
 - `wilq-seo-1oa.36.8` domyka pełny, source-bound review WILQ na fixed commicie
   `d2649f15`: cztery niezależne ledgery contentu, dashboardu marketera,
   skillów/skryptów oraz metrics/actions/learning mają łącznie 37 zwalidowanych

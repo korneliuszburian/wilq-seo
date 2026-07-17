@@ -2210,6 +2210,13 @@ const ContentSearchDemandRowSchema = z.object({
     z.enum(["exact", "tracking_only", "host_alias"])
   ).default([]),
   service_card_id: z.string().nullable(),
+  alignment_basis: z.enum([
+    "legacy_unspecified",
+    "gsc_exact_page",
+    "direct_page_service_scope",
+    "same_window_search_term_landing"
+  ]).default("legacy_unspecified"),
+  review_required: z.boolean().default(true),
   section_headings: z.array(z.string()),
   section_mapping_status: z.enum(["lexical_relevance", "page_only"]),
   period: z.string().min(1),
@@ -2220,7 +2227,79 @@ const ContentSearchDemandRowSchema = z.object({
   clicks: z.number().int().nullable(),
   ctr: z.number().nullable(),
   average_position: z.number().nullable(),
-  average_monthly_searches: z.number().int().nullable()
+  average_monthly_searches: z.number().int().nullable(),
+  cost_micros: z.number().int().nullable().default(null),
+  conversions: z.number().nullable().default(null),
+  conversion_value: z.number().nullable().default(null)
+});
+
+const ContentSearchDemandEvidenceSchema = z.object({
+  status: z.enum(["available", "missing"]),
+  gsc_query_rows: z.array(ContentSearchDemandRowSchema),
+  ads_term_rows: z.array(ContentSearchDemandRowSchema),
+  keyword_planner_rows: z.array(ContentSearchDemandRowSchema),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  optional_ads_status: z.enum([
+    "exact_rows_available",
+    "not_exactly_mapped",
+    "stale",
+    "blocked"
+  ]),
+  optional_ads_evidence_ids: z.array(z.string()).default([]),
+  optional_ads_blockers: z.array(z.string()).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((demand, context) => {
+  const exactRows = [...demand.ads_term_rows, ...demand.keyword_planner_rows];
+  if (demand.optional_ads_status === "blocked" && (
+    demand.optional_ads_evidence_ids.length === 0 || demand.optional_ads_blockers.length === 0
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["optional_ads_status"],
+      message: "blocked Ads demand requires evidence and blockers"
+    });
+  }
+  if (demand.optional_ads_status === "blocked" && exactRows.length > 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["optional_ads_status"],
+      message: "blocked Ads demand cannot expose usable rows"
+    });
+  }
+  if (demand.optional_ads_status !== "blocked" && demand.optional_ads_blockers.length > 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["optional_ads_blockers"],
+      message: "non-blocked Ads demand cannot expose blockers"
+    });
+  }
+  if (demand.optional_ads_status === "exact_rows_available" && (
+    exactRows.length === 0 || demand.optional_ads_evidence_ids.length === 0
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["optional_ads_status"],
+      message: "exact Ads demand requires rows and evidence"
+    });
+  }
+  if (demand.optional_ads_status === "stale" && (
+    demand.optional_ads_evidence_ids.length === 0 ||
+    exactRows.some((row) => row.freshness !== "stale")
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["optional_ads_status"],
+      message: "stale Ads demand requires evidence and only stale rows"
+    });
+  }
+  if (demand.optional_ads_status === "not_exactly_mapped" && exactRows.length > 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["optional_ads_status"],
+      message: "unmapped Ads demand cannot expose exact rows"
+    });
+  }
 });
 
 export const ContentPlanningInventoryDispositionSchema = z.enum([
@@ -2311,16 +2390,7 @@ export const ContentPlanningProposalSchema = z.object({
     evidence_ids: z.array(z.string()),
     claim_ids: z.array(z.string()).default([])
   })).min(1),
-  search_demand: z.object({
-    status: z.enum(["available", "missing"]),
-    gsc_query_rows: z.array(ContentSearchDemandRowSchema),
-    ads_term_rows: z.array(ContentSearchDemandRowSchema),
-    keyword_planner_rows: z.array(ContentSearchDemandRowSchema),
-    source_connectors: z.array(z.string()),
-    evidence_ids: z.array(z.string()),
-    optional_ads_status: z.enum(["exact_rows_available", "not_exactly_mapped"]),
-    safe_next_step: z.string().min(1)
-  }),
+  search_demand: ContentSearchDemandEvidenceSchema,
   page_assets: ContentPlanningPageAssetsSchema.default({
     title: "",
     h1: "",

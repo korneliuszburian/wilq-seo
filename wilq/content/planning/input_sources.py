@@ -226,18 +226,10 @@ def build_source_assessments(
             "GA4 ma evidence, ale bez typed landing match tieru nie zasila planu.",
             "Brak dokładnego sygnału GA4 dla tej strony.",
         ),
-        _assessment(
-            "google_ads",
-            _available_status(
-                ads_evidence and ads_tiers,
-                ["google_ads"],
-                freshness,
-                absent_status="not_applicable",
-            ),
-            "Dokładne terminy Ads pasują do termu, strony i usługi."
-            if ads_evidence
-            else "Brak ścisłego mapowania termu, strony i usługi; Ads nie zasila planu.",
-            ads_evidence,
+        _ads_source_assessment(
+            demand=demand,
+            freshness=freshness,
+            evidence_ids=ads_evidence,
             landing_match_tiers=ads_tiers,
         ),
         _blocked_typed_source(
@@ -261,6 +253,48 @@ def build_source_assessments(
             fact_evidence=fact_evidence,
         ),
     ]
+
+
+def _ads_source_assessment(
+    *,
+    demand: ContentSearchDemandEvidence,
+    freshness: ContentFreshnessAssessment,
+    evidence_ids: list[str],
+    landing_match_tiers: list[ContentAcceptedLandingMatchTier],
+) -> ContentPlanningSourceAssessment:
+    blocked = (
+        demand.optional_ads_status == "blocked"
+        or "google_ads" in freshness.blocked_connector_ids
+    )
+    status = (
+        "blocked"
+        if blocked
+        else _available_status(
+            bool(evidence_ids and landing_match_tiers),
+            ["google_ads"],
+            freshness,
+            absent_status="not_applicable",
+        )
+    )
+    reason = (
+        "Raport Ads jest niepełny albo nie pozwala na ścisłe mapowanie landingu."
+        if blocked
+        else "Dopasowanie termu i klikniętego landingu jest dokładne, ale batch Ads "
+        "jest nieaktualny i nie zasila planu do czasu odświeżenia."
+        if demand.optional_ads_status == "stale"
+        else "Termin Ads, jego metryki i faktycznie kliknięty landing pochodzą z "
+        "tego samego 30-dniowego wiersza; landing dokładnie pasuje do strony, a "
+        "usługa jest potwierdzona przez operatora."
+        if evidence_ids
+        else "Brak ścisłego mapowania termu, strony i usługi; Ads nie zasila planu."
+    )
+    return _assessment(
+        "google_ads",
+        status,
+        reason,
+        evidence_ids or demand.optional_ads_evidence_ids,
+        landing_match_tiers=landing_match_tiers,
+    )
 
 
 def _conditional_assessments(
@@ -341,7 +375,15 @@ def usable_query_portfolio(
         "keyword_planner_rows": planner,
         "source_connectors": _unique([row.source_connector for row in rows]),
         "evidence_ids": _row_evidence(rows),
-        "optional_ads_status": "exact_rows_available" if ads or planner else "not_exactly_mapped",
+        "optional_ads_status": (
+            "blocked"
+            if demand.optional_ads_status == "blocked"
+            else "stale"
+            if demand.optional_ads_status == "stale"
+            else "exact_rows_available"
+            if ads or planner
+            else "not_exactly_mapped"
+        ),
     })
 
 

@@ -35,6 +35,7 @@ from wilq.connectors.google_ads.client import (
     refresh_google_ads_campaign_summary,
 )
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
+from wilq.content.canonical.redacted_landing import build_redacted_landing_reference
 from wilq.schemas import (
     ActionObject,
     AdsSearchTermMetricRow,
@@ -3286,6 +3287,9 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                 "searchTerm": "bdo rejestracja",
                                 "status": "ADDED",
                             },
+                            "expandedLandingPageView": {
+                                "expandedFinalUrl": "https://www.ekologus.pl/bdo/"
+                            },
                             "metrics": {
                                 "clicks": "4",
                                 "impressions": "20",
@@ -3439,6 +3443,11 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "ad_group_name": "BDO",
         "search_term": "bdo rejestracja",
         "search_term_status": "ADDED",
+        "landing_mapping_status": "resolved",
+        "landing_identity_sha256": build_redacted_landing_reference(
+            "https://www.ekologus.pl/bdo/"
+        ).identity_sha256,
+        "actual_clicked_in_window": "true",
     }
     search_term_conversion_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_term_conversions"

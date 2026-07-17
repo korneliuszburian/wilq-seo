@@ -433,6 +433,27 @@ describe("ContentPlanningProposalResponseSchema", () => {
     };
 
     const parsed = ContentPlanningProposalResponseSchema.parse(response);
+    const staleAdsRow = {
+      source_kind: "ads_search_term",
+      source_connector: "google_ads",
+      term: "bdo rejestracja",
+      page: "https://www.ekologus.pl/bdo/",
+      landing_match_tiers: ["exact"],
+      service_card_id: "service_bdo",
+      alignment_basis: "same_window_search_term_landing",
+      review_required: false,
+      section_headings: [],
+      section_mapping_status: "page_only",
+      period: "last_30_days",
+      freshness: "stale",
+      collected_at: "2026-07-13T12:00:00Z",
+      evidence_ids: ["ev_ads_stale"],
+      impressions: 100,
+      clicks: 9,
+      ctr: 0.09,
+      average_position: null,
+      average_monthly_searches: null
+    };
 
     expect(parsed.proposal?.sections[0]?.inventory_disposition).toBe("rewrite");
     expect(parsed.proposal?.page_assets.meta_title).toBe("BDO — Ekologus");
@@ -442,6 +463,48 @@ describe("ContentPlanningProposalResponseSchema", () => {
       ContentPlanningProposalResponseSchema.safeParse({
         ...response,
         publish_ready: true
+      }).success
+    ).toBe(false);
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        proposal: {
+          ...response.proposal,
+          search_demand: {
+            ...response.proposal.search_demand,
+            ads_term_rows: [staleAdsRow],
+            source_connectors: ["google_ads"],
+            evidence_ids: ["ev_ads_stale"],
+            optional_ads_status: "stale",
+            optional_ads_evidence_ids: ["ev_ads_stale"]
+          }
+        }
+      }).success
+    ).toBe(true);
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        proposal: {
+          ...response.proposal,
+          search_demand: {
+            ...response.proposal.search_demand,
+            ads_term_rows: [{ ...staleAdsRow, freshness: "fresh" }],
+            optional_ads_status: "stale",
+            optional_ads_evidence_ids: ["ev_ads_stale"]
+          }
+        }
+      }).success
+    ).toBe(false);
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        proposal: {
+          ...response.proposal,
+          search_demand: {
+            ...response.proposal.search_demand,
+            optional_ads_status: "blocked"
+          }
+        }
       }).success
     ).toBe(false);
     expect(

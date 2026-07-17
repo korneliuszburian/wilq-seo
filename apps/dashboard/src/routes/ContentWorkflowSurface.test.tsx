@@ -2171,6 +2171,8 @@ function planningWorkspace({
         page: "https://ekologus.pl/bdo/",
         landing_match_tiers: ["host_alias" as const],
         service_card_id: "service_bdo",
+        alignment_basis: "gsc_exact_page" as const,
+        review_required: false,
         section_headings: ["Kogo dotyczy BDO"],
         section_mapping_status: "lexical_relevance" as const,
         period: "last_28_days",
@@ -2188,6 +2190,8 @@ function planningWorkspace({
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_gsc_bdo"],
       optional_ads_status: "not_exactly_mapped" as const,
+      optional_ads_evidence_ids: [],
+      optional_ads_blockers: [],
       safe_next_step: "Sprawdź zapytania GSC przypisane do strony i sekcji."
     },
     page_assets: {

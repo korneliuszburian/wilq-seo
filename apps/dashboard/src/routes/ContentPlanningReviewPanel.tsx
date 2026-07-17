@@ -250,8 +250,19 @@ function SearchDemandSummary({
         <p className="mt-2 text-sm leading-6 text-slate-700">{demand.safe_next_step}</p>
       )}
       <p className="mt-2 text-xs text-slate-500">
-        Ads i Keyword Planner: {demand.optional_ads_status === "exact_rows_available" ? "ścisłe dopasowanie dostępne" : "brak ścisłego mapowania do strony i usługi — nie używamy"}.
+        Ads i Keyword Planner: {demand.optional_ads_status === "exact_rows_available"
+          ? "ścisłe dopasowanie dostępne"
+          : demand.optional_ads_status === "blocked"
+            ? "blokada kompletności albo ścisłego mapowania klikniętego landingu — nie używamy"
+            : demand.optional_ads_status === "stale"
+              ? "ścisłe dopasowanie jest nieaktualne — odśwież Ads przed użyciem"
+            : "brak ścisłego mapowania do strony i usługi — nie używamy"}.
       </p>
+      {demand.ads_term_rows.length ? (
+        <p className="mt-1 text-xs text-slate-500">
+          {demand.ads_term_rows.length} terminów Ads ma metryki i faktycznie kliknięty landing w tym samym 30-dniowym wierszu danych.
+        </p>
+      ) : null}
     </div>
   );
 }

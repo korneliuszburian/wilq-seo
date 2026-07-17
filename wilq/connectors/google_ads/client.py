@@ -8,6 +8,14 @@ from typing import Any
 
 import httpx
 
+from wilq.connectors.google_ads.ad_landing_pages import (
+    ADS_DEMAND_PERIOD,
+    ADS_LANDING_MAPPING_STATUS,
+    ADS_LANDING_RESOLVED,
+    ADS_SEARCH_TERM_PAYLOAD_STATUS,
+    search_term_landing_dimensions,
+    strict_search_stream_rows,
+)
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
@@ -75,6 +83,7 @@ SELECT
   ad_group.name,
   search_term_view.search_term,
   search_term_view.status,
+  expanded_landing_page_view.expanded_final_url,
   metrics.clicks,
   metrics.impressions,
   metrics.cost_micros,
@@ -82,7 +91,7 @@ SELECT
   metrics.conversions_value
 FROM search_term_view
 WHERE segments.date DURING LAST_30_DAYS
-LIMIT 50
+  AND metrics.clicks > 0
 """.strip()
 
 SEARCH_TERM_SAFETY_LOOKBACK_DAYS = 90
@@ -1516,13 +1525,15 @@ def _clip_dimension(value: str, limit: int = 240) -> str:
 def _summarize_search_term_response(
     payload: Any,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
-    rows = _search_stream_rows(payload)
+    rows, payload_valid = strict_search_stream_rows(payload)
     clicks = 0
     impressions = 0
     cost_micros = 0
     conversions = 0.0
     conversion_value = 0.0
     metric_facts: list[VendorMetricFact] = []
+    mapped_landing_rows = 0
+    blocked_landing_rows = 0
     for row in rows:
         metrics = row.get("metrics", {})
         row_clicks = _int_metric(metrics.get("clicks"))
@@ -1538,20 +1549,51 @@ def _summarize_search_term_response(
         conversions += row_conversions
         conversion_value += row_conversion_value
         dimensions = _search_term_dimensions(row)
+        if "expandedLandingPageView" in row or "expanded_landing_page_view" in row:
+            dimensions.update(search_term_landing_dimensions(row))
+        if dimensions.get(ADS_LANDING_MAPPING_STATUS) == ADS_LANDING_RESOLVED:
+            mapped_landing_rows += 1
+        else:
+            blocked_landing_rows += 1
         if dimensions:
             metric_facts.extend(
                 [
-                    VendorMetricFact("search_term_clicks", row_clicks, dimensions),
-                    VendorMetricFact("search_term_impressions", row_impressions, dimensions),
-                    VendorMetricFact("search_term_cost_micros", row_cost_micros, dimensions),
-                    VendorMetricFact("search_term_conversions", row_conversions, dimensions),
+                    VendorMetricFact(
+                        "search_term_clicks", row_clicks, dimensions, ADS_DEMAND_PERIOD
+                    ),
+                    VendorMetricFact(
+                        "search_term_impressions",
+                        row_impressions,
+                        dimensions,
+                        ADS_DEMAND_PERIOD,
+                    ),
+                    VendorMetricFact(
+                        "search_term_cost_micros",
+                        row_cost_micros,
+                        dimensions,
+                        ADS_DEMAND_PERIOD,
+                    ),
+                    VendorMetricFact(
+                        "search_term_conversions",
+                        row_conversions,
+                        dimensions,
+                        ADS_DEMAND_PERIOD,
+                    ),
                     VendorMetricFact(
                         "search_term_conversion_value",
                         row_conversion_value,
                         dimensions,
+                        ADS_DEMAND_PERIOD,
                     ),
                 ]
             )
+    metric_facts.append(
+        VendorMetricFact(
+            ADS_SEARCH_TERM_PAYLOAD_STATUS,
+            "ready" if payload_valid else "blocked",
+            period=ADS_DEMAND_PERIOD,
+        )
+    )
     return (
         {
             "search_term_query": "search_term_last_30_days",
@@ -1561,6 +1603,9 @@ def _summarize_search_term_response(
             "search_term_cost_micros": cost_micros,
             "search_term_conversions": conversions,
             "search_term_conversion_value": conversion_value,
+            ADS_SEARCH_TERM_PAYLOAD_STATUS: "ready" if payload_valid else "blocked",
+            "search_term_landing_mapped_row_count": mapped_landing_rows,
+            "search_term_landing_blocked_row_count": blocked_landing_rows,
         },
         metric_facts,
     )

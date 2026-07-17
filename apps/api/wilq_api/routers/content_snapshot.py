@@ -3,6 +3,10 @@ from __future__ import annotations
 from fastapi import HTTPException
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from wilq.connectors.google_ads.ad_landing_pages import (
+    ADS_DEMAND_INPUT_FACT_NAMES,
+)
+from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.content.canonical.landing_identity import (
     LandingPageCandidate,
     landing_page_metric_lookup_path,
@@ -10,16 +14,14 @@ from wilq.content.canonical.landing_identity import (
     match_landing_page,
 )
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
-from wilq.content.planning.decisions import (
-    content_decision_metric_tiles,
-    content_decision_metrics,
-    content_decision_summary,
-    content_decision_title,
-)
 from wilq.content.planning.generated_proposal_store import (
     content_planning_proposal_store,
 )
 from wilq.content.review.human import ContentHumanReview
+from wilq.content.workflow.ads_demand_source import (
+    content_diagnostics_with_ads_refresh,
+    latest_ads_refresh,
+)
 from wilq.content.workflow.api import (
     build_content_work_item_blocked_snapshot_response_for_work_item,
     build_content_work_item_diagnostics_snapshot_response,
@@ -29,10 +31,21 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemSnapshotResponse,
     ContentWorkItemWorkflowSnapshotResponse,
 )
-from wilq.content.workflow.demand_evidence import content_query_is_planning_signal
+from wilq.content.workflow.demand_evidence import (
+    CONTENT_ADS_TERM_METRIC_NAMES,
+    content_query_is_planning_signal,
+)
+from wilq.content.workflow.exact_demand_decision import (
+    content_decision_with_exact_demand,
+)
 from wilq.content.workflow.planning import ContentPlanningDecision
 from wilq.content.workflow.store import content_workflow_store
-from wilq.schemas import ContentDiagnosticsResponse
+from wilq.schemas import (
+    ContentDiagnosticsResponse,
+    MetricFact,
+    connector_refresh_has_live_data,
+)
+from wilq.storage.exact_metric_batch import list_exact_metric_batch
 from wilq.storage.metric_store import metric_store
 
 
@@ -151,6 +164,13 @@ def diagnostics_with_exact_gsc_demand(
     work_item_id: str,
 ) -> ContentDiagnosticsResponse:
     diagnostics = build_content_diagnostics_cached()
+    diagnostics = content_diagnostics_with_ads_refresh(
+        diagnostics,
+        latest_ads_refresh(
+            diagnostics,
+            list_connector_refresh_runs(connector_id="google_ads"),
+        ),
+    )
     decision_id = work_item_id.removeprefix("content_work_item_")
     decision = next(
         (item for item in diagnostics.decision_queue if item.id == decision_id),
@@ -185,45 +205,11 @@ def diagnostics_with_exact_gsc_demand(
     ]
     if not exact_facts:
         return diagnostics
-    queries = list(
-        dict.fromkeys(fact.dimensions["query"] for fact in exact_facts)
-    )
-    metrics = content_decision_metrics(exact_facts, queries)
-    wordpress_match = decision.wordpress_match or "missing"
-    enriched_decision = decision.model_copy(
-        update={
-            "title": content_decision_title(
-                decision.decision_type,
-                decision.page,
-                len(queries),
-                metrics,
-            ),
-            "summary": content_decision_summary(
-                decision.decision_type,
-                metrics,
-                wordpress_match,
-                wordpress_title_or_h1=decision.wordpress_title_or_h1,
-                wordpress_section_headings=decision.wordpress_section_headings,
-            ),
-            "metric_tiles": content_decision_metric_tiles(
-                decision.decision_type,
-                metrics,
-                len(queries),
-                wordpress_match,
-                wordpress_section_count=decision.wordpress_section_count,
-                wordpress_section_inventory_status=(
-                    decision.wordpress_section_inventory_status
-                ),
-            ),
-            "queries": queries,
-            "query_count": len(queries),
-            "primary_query": metrics.primary_query,
-            "total_clicks": metrics.total_clicks,
-            "total_impressions": metrics.total_impressions,
-            "aggregate_ctr": metrics.aggregate_ctr,
-            "best_average_position": metrics.best_average_position,
-            "metric_facts": exact_facts,
-        }
+    ads_facts = _latest_ads_demand_facts(diagnostics)
+    enriched_decision = content_decision_with_exact_demand(
+        decision,
+        gsc_facts=exact_facts,
+        ads_facts=ads_facts,
     )
     return diagnostics.model_copy(
         update={
@@ -232,4 +218,29 @@ def diagnostics_with_exact_gsc_demand(
                 for item in diagnostics.decision_queue
             ]
         }
+    )
+
+
+def _latest_ads_demand_facts(
+    diagnostics: ContentDiagnosticsResponse,
+) -> list[MetricFact]:
+    latest = next(
+        (
+            refresh
+            for refresh in diagnostics.latest_refreshes
+            if refresh.connector_id == "google_ads"
+        ),
+        None,
+    )
+    if latest is None or not connector_refresh_has_live_data(latest):
+        return []
+    evidence_id = latest.evidence_ids[-1] if latest.evidence_ids else None
+    if evidence_id is None:
+        return []
+    allowed_names = CONTENT_ADS_TERM_METRIC_NAMES | ADS_DEMAND_INPUT_FACT_NAMES
+    return list_exact_metric_batch(
+        metric_store(),
+        connector_id="google_ads",
+        evidence_id=evidence_id,
+        metric_names=allowed_names,
     )

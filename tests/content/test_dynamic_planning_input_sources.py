@@ -128,6 +128,30 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     )
     assert "stale_planning_sources" in {blocker.code for blocker in relevant.blockers}
 
+    blocked_ads = demand.model_copy(
+        update={
+            "optional_ads_status": "blocked",
+            "optional_ads_evidence_ids": ["ev_ads_blocked"],
+            "optional_ads_blockers": ["ads_search_term_landing_invalid"],
+        }
+    )
+    blocked_assessments = build_source_assessments(
+        item=item,
+        inventory=inventory,
+        service_profile=service_profile,
+        freshness=_freshness([]),
+        brief=brief,
+        demand=blocked_ads,
+        service_lifecycle="approved_current",
+    )
+    ads_assessment = next(
+        assessment
+        for assessment in blocked_assessments
+        if assessment.source == "google_ads"
+    )
+    assert ads_assessment.status == "blocked"
+    assert ads_assessment.evidence_ids == ["ev_ads_blocked"]
+
 
 def _demand() -> ContentSearchDemandEvidence:
     row = ContentSearchDemandRow(
@@ -136,6 +160,7 @@ def _demand() -> ContentSearchDemandEvidence:
         term="usługa dla firm",
         page=PAGE,
         landing_match_tiers=["exact"],
+        alignment_basis="gsc_exact_page",
         section_mapping_status="page_only",
         period="last_28_days",
         freshness="fresh",
