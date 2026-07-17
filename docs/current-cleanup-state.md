@@ -117,12 +117,16 @@ kontynuuj najwyższy bezpieczny task.
   Ads i Keyword Planner nie są zgadywane:
   pojawiają się tylko przy exact term+page+service; bieżący live stan ma 2
   wiersze GSC, 0 przypisań do sekcji i 0 ściśle mapowanych wierszy Ads/Planner.
-- `wilq-content-operator` konsumuje dokładnie ten sam pięciostopniowy kontrakt:
-  nie rekonstruuje preflightu, briefu ani wariantów po stronie skilla i nie ma
-  direct WordPress execution. Jawne polecenie zapisu nadal wymaga exact
-  revision-bound ActionObject; zwykła sesja kończy się decyzją marketera i
-  bezpiecznym następnym krokiem. Fresh eval ma usefulness 9/10, ale nie dowodzi
-  jakości finalnego tekstu.
+- `wilq-content-operator` prowadzi jeden kanoniczny kontrakt API: wybór exact
+  work itemu, baseline scope/service review, ponowne zbudowanie planning inputu,
+  jawne wygenerowanie planu, review scope i section map, initial full draft,
+  exact semantic review, poprawkę wybranych `section_id`, human review oraz
+  revision-bound WordPress draft-only. Statusy GET pozostają model-free, a
+  `stale` może wskazywać historyczną rewizję bez udawania aktualnego review.
+  Skill nie rekonstruuje preflightu, briefu ani paczki marketera i nie ma direct
+  WordPress execution. Dawny 809-liniowy `build_uat_packet.py` oraz duplikujący
+  snapshot/export zostały usunięte bez zastępczego generatora; kanoniczna
+  sanitizowana paczka pozostaje czterema dokumentami wynikowymi.
 - Rewizja v2 przechowuje exact `planning_digest`, `planning_input_digest`,
   service/inventory digests i pełne page assets; te same bindingi przechodzą do
   child revision Codexa. Cofnięcie decyzji albo zmiana inventory, usługi,

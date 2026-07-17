@@ -116,6 +116,19 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   count wynosi 0, a GET planera nie uruchomił modelu. Paczka ujawnia też lukę
   jakości: bieżąca mapa BDO przypisuje niemal każde query do obu generycznych
   sekcji. Nie wykonano model generation, realnego UAT ani WordPress write.
+- `wilq-seo-1oa.36.11` wyrównuje `wilq-content-operator` z bieżącym pełnym
+  workflowem API. Skill najpierw zapisuje baseline scope review z exact wyborem
+  usługi, odświeża planning input, generuje plan, prowadzi osobne review scope i
+  section map, a następnie initial draft, persistowane semantic review,
+  poprawkę wybranych stabilnych sekcji, human review i revision-bound WordPress
+  draft-only. Walidator smoke rozróżnia aktualny wynik od legalnego
+  historycznego `stale` i odrzuca obce work itemy, karty, digests oraz run IDs.
+  Usunięto szeroki `build_uat_packet.py` i duplikujący content UAT snapshot wraz
+  z testami; nie dodano nowego exportera, a cztery sanitizowane dokumenty
+  marketera pozostały bez zmian. Focused kontrakty przechodzą 5/5, Ruff i live
+  managed-stack smoke są zielone; realny BDO nadal uczciwie blokują
+  `service_selection_not_confirmed` oraz `service_card_not_approved`. Smoke nie
+  uruchomił modelu ani vendor write i nie jest realnym Wilku UAT.
 - `wilq-seo-1oa.37` dodaje persistowane advisory review semantyczne dokładnej
   rewizji v2. GET jest model-free; POST wymaga exact revision digestu, bieżącego
   planning inputu i ocenia dziewięć jawnych wymiarów bez approval, ActionObjectu

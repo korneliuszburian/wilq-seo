@@ -21,11 +21,14 @@ promptu, artykułu ani ścieżki WordPress.
    **Done when:** istnieje dokładnie jeden wybrany `work_item_id` albo jawny
    powód, dlaczego nie można go wybrać.
 
-2. **Czytaj jeden snapshot.** Pobierz
-   `GET /api/content/work-items/{work_item_id}/snapshot`. To jest źródło prawdy
-   dla pięciu kroków `scope → section_map → draft → review → dev_draft`.
-   Enrichment lub knowledge cards pobieraj tylko wtedy, gdy operator pyta o
-   ślad źródłowy głębiej niż pokazuje snapshot.
+2. **Czytaj jeden snapshot i status planera.** Pobierz
+   `GET /api/content/work-items/{work_item_id}/snapshot`, a następnie model-free
+   `GET /api/content/work-items/{work_item_id}/planning-proposals`. Snapshot jest
+   źródłem prawdy dla pięciu kroków
+   `scope → section_map → draft → review → dev_draft`; status planera mówi
+   `not_generated`, `ready`, `stale` albo `blocked` i nigdy sam nie uruchamia
+   modelu. Enrichment lub knowledge cards pobieraj tylko wtedy, gdy operator
+   prosi o ślad głębszy niż snapshot.
 
    Dla `scope` pokaż stronę, usługę, intencję, odbiorcę, problem, CTA oraz
    `planning_workspace.proposal.search_demand`: metryki GSC, okres, freshness,
@@ -35,30 +38,74 @@ promptu, artykułu ani ścieżki WordPress.
    **Done when:** odpowiedź nazywa bieżący krok, decyzję człowieka, dowody,
    blocker i najmniejszy bezpieczny następny krok.
 
-3. **Zapisuj plan tylko na polecenie.** Gdy operator jawnie zatwierdza lub
-   odsyła do poprawy aktywny `scope` albo `section_map`, wywołaj
-   `POST /api/content/work-items/{work_item_id}/planning-review` z dokładnym
-   `expected_planning_digest`. Nie zatwierdzaj mapy sekcji przed aktualnym
-   scope. Konflikt `409` wymaga odświeżenia, nie retry ze starym digestem.
+3. **Zapisz wybór usługi przed modelem.** Dla świeżego itemu jawna decyzja
+   operatora najpierw zapisuje review bazowego `scope` przez
+   `POST /api/content/work-items/{work_item_id}/planning-review`: `stage=scope`,
+   exact `expected_planning_digest`, dozwolone `service_card_id`, `decision`,
+   `reviewed_by` oraz `checked_items` dla approval albo `notes` dla zmian.
+   Następnie odśwież snapshot i model-free GET planera. Karta bez
+   `approved_current` pozostaje zewnętrzną bramką ownera; skill nie zapisuje
+   jej review ani nie obchodzi lifecycle.
 
-   **Done when:** API zwróci aktualny persisted decision albo sesja zatrzyma się
-   na typed konflikcie.
+   **Done when:** API utrwaliło human-confirmed service selection dla bieżącego
+   baseline digestu albo zwróciło typed konflikt/blokadę.
 
-4. **Pracuj na exact revision.** Pierwszą lub następną wersję zapisuj wyłącznie
-   przez `POST /api/content/work-items/{work_item_id}/draft-revisions` i tylko,
-   gdy oba planning reviews są aktualne. Decyzję człowieka zapisuj przez
-   `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review`.
-   Nie rekonstruuj wersji z draft package ani tekstu w rozmowie.
+4. **Generuj plan tylko na polecenie.** Gdy odświeżony GET zwraca aktualny
+   planning input i operator prosi o plan, wywołaj
+   `POST /api/content/work-items/{work_item_id}/planning-proposals` z exact
+   `service_card_id`, `expected_planning_input_digest`, krótkim opcjonalnym
+   `operator_hint` i atrybucją `requested_by`. Nie rekonstruuj inputu ani planu
+   w rozmowie. `409 stale_input`, unknown service, typed blocker albo błąd
+   runtime zatrzymuje sesję bez fallbacku.
 
-   Jeśli najnowsza wersja ma `needs_changes` albo `rejected`, a
-   `structured_generation_readiness.status=ready`, popraw wybrane nagłówki
-   przez `POST /api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal`
-   z exact `expected_base_digest`. Wynik jest `unreviewed` child revision.
+   **Done when:** istnieje persisted proposal związany z exact inputem albo
+   jawny blocker i model nie został zastąpiony inną ścieżką.
 
-   **Done when:** najnowsza wersja i jej decyzja są widoczne w odświeżonym
-   snapshotcie; proposal nigdy nie staje się approvalem.
+5. **Zatwierdzaj wygenerowany plan etapami.** Jawne `approved` albo
+   `needs_changes` zapisuj przez
+   `POST /api/content/work-items/{work_item_id}/planning-review` z `stage`,
+   exact `expected_planning_digest`, `decision`, `reviewed_by` oraz
+   `checked_items` dla approval albo `notes` dla zmian. Przy `scope` przekaż
+   wybrane `service_card_id`; potem osobno oceń `section_map`. Konflikt `409`
+   wymaga odświeżenia; nie retry ze starym digestem i nie przenoś decyzji na
+   inną propozycję.
 
-5. **Przekaż tylko revision-bound draft.** Czytaj
+   **Done when:** oba current planning reviews odnoszą się do tej samej
+   wygenerowanej propozycji albo operator dostał dokładną instrukcję poprawy.
+
+6. **Twórz i oceniaj pełny dokument.** Po dwóch aktualnych approvals i wyłącznie
+   na jawne polecenie wywołaj
+   `POST /api/content/work-items/{work_item_id}/initial-draft` z exact
+   `expected_proposal_id`, `expected_planning_digest`,
+   `expected_planning_input_digest` oraz `requested_by`. Wynik jest pełną
+   rewizją v2 `unreviewed`, nigdy approvalem.
+
+   Dla tej rewizji najpierw czytaj model-free
+   `GET .../draft-revisions/{revision_id}/semantic-review`. Jawna prośba o
+   advisory review prowadzi do `POST` na ten sam endpoint z
+   `expected_revision_digest` i `requested_by`. Semantic review jest
+   exact-digest advisory: nie zapisuje human acceptance, ActionObjectu ani
+   `publish_ready=true`. Decyzję człowieka zapisuj osobno przez
+   `POST .../draft-revisions/{revision_id}/review` z
+   `expected_revision_digest`, `reviewed_by`, `decision` i: dla approval
+   `checked_items` oraz `evidence_ids`, a dla pozostałych decyzji `notes`.
+
+   **Done when:** pełny dokument, advisory findings i decyzja człowieka są
+   rozdzielone oraz związane z jednym exact revision digestem.
+
+7. **Poprawiaj tylko wybrane sekcje.** Gdy exact human review ma
+   `needs_changes` albo `rejected`, a readiness pozwala na poprawkę, operator
+   wskazuje stabilne `section_id`. Wywołaj
+   `POST .../draft-revisions/{base_revision_id}/codex-proposal` z exact
+   `expected_base_digest`, niepustym `selected_section_ids` i `requested_by`.
+   Nie wysyłaj równocześnie legacy headings. Wynik jest niezmienną `unreviewed`
+   child revision; ponownie przechodzi semantic review i osobną decyzję
+   człowieka.
+
+   **Done when:** odświeżony snapshot pokazuje child revision, diff i jej własny
+   status review; poprawka nie zmieniła niewybranych page assets.
+
+8. **Przekaż tylko revision-bound draft.** Czytaj
    `GET /api/content/wordpress/draft-activation-packet` i
    `GET /api/content/wordpress/draft-write-readiness`. Brak exact approved
    revision bindingu zatrzymuje zapis. Gdy operator prosi tylko o sprawdzenie,
@@ -73,7 +120,7 @@ promptu, artykułu ani ścieżki WordPress.
    **Done when:** istnieje auditowalny wynik dokładnej akcji albo typed blocker;
    nie wykonano bezpośredniego requestu do WordPressa.
 
-6. **Zakończ na dowodzie, nie obietnicy.** Measurement opisuj tylko ze stanu
+9. **Zakończ na dowodzie, nie obietnicy.** Measurement opisuj tylko ze stanu
    zwróconego przez snapshot. Dopóki nie ma publication-bound persisted window
    i metric provenance, nie przyjmuj metryk ani sukcesu od użytkownika.
 
@@ -90,8 +137,12 @@ promptu, artykułu ani ścieżki WordPress.
 - `GET /api/content/work-items/{work_item_id}/enrichment`
 - `GET /api/content/knowledge-cards`
 - `GET /api/content/service-profile`
+- `GET /api/content/work-items/{work_item_id}/planning-proposals`
+- `POST /api/content/work-items/{work_item_id}/planning-proposals`
 - `POST /api/content/work-items/{work_item_id}/planning-review`
-- `POST /api/content/work-items/{work_item_id}/draft-revisions`
+- `POST /api/content/work-items/{work_item_id}/initial-draft`
+- `GET /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review`
+- `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review`
 - `POST /api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review`
 - `POST /api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/codex-proposal`
 - `GET /api/content/wordpress/draft-activation-packet`

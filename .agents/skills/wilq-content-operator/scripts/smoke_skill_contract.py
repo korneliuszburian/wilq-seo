@@ -119,6 +119,8 @@ def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, 
     return {
         "current_step_id": snapshot.get("current_step_id"),
         "planning_digest": proposal.get("planning_digest"),
+        "planning_input_digest": proposal.get("planning_input_digest"),
+        "service_card_id": proposal.get("service_card_id"),
         "scope_current": planning.get("scope_current"),
         "section_map_current": planning.get("section_map_current"),
         "gsc_query_rows": (demand.get("gsc_query_rows") or [])[:4],
@@ -129,9 +131,132 @@ def validate_snapshot(snapshot: dict[str, Any], work_item_id: str) -> dict[str, 
         "latest_revision_id": (
             None if latest_revision is None else latest_revision.get("revision_id")
         ),
+        "latest_revision_digest": (
+            None if latest_revision is None else latest_revision.get("content_digest")
+        ),
         "handoff_revision_bound": handoff is not None,
         "evidence_ids": item.get("evidence_ids") or [],
         "source_connectors": item.get("source_connectors") or [],
+    }
+
+
+def validate_planning_generation_status(
+    response: dict[str, Any], work_item_id: str, service_card_id: str | None
+) -> dict[str, Any]:
+    status = response.get("status")
+    if response.get("work_item_id") != work_item_id:
+        raise SystemExit("Planning status work_item_id mismatch")
+    if status not in {
+        "not_generated",
+        "created",
+        "idempotent",
+        "ready",
+        "stale",
+        "blocked",
+        "failed",
+    }:
+        raise SystemExit("Planning status is outside the public contract")
+    if response.get("publish_ready") is not False:
+        raise SystemExit("Planning status cannot be publish-ready")
+    response_service_card_id = response.get("service_card_id")
+    if service_card_id and response_service_card_id != service_card_id:
+        raise SystemExit("Planning status service_card_id mismatch")
+    runtime = require_dict(response.get("runtime"), "planning runtime")
+    proposal = response.get("proposal")
+    blockers = require_list(response.get("blockers"), "planning blockers")
+    if status == "not_generated" and (
+        proposal is not None or blockers or runtime.get("status") != "not_started"
+    ):
+        raise SystemExit("Model-free planning GET must remain not started")
+    if status in {"created", "idempotent", "ready"}:
+        proposal = require_dict(proposal, "generated planning proposal")
+        input_digest = response.get("planning_input_digest")
+        if (
+            blockers
+            or not proposal.get("proposal_id")
+            or not input_digest
+            or proposal.get("work_item_id") != work_item_id
+            or proposal.get("service_card_id") != response_service_card_id
+            or proposal.get("planning_input_digest") != input_digest
+        ):
+            raise SystemExit("Ready planning status needs exact persisted bindings")
+    if status in {"stale", "blocked", "failed"} and not blockers:
+        raise SystemExit("Non-ready planning status needs typed blockers")
+    return {
+        "status": status,
+        "planning_input_digest": response.get("planning_input_digest"),
+        "proposal_id": (
+            proposal.get("proposal_id") if isinstance(proposal, dict) else None
+        ),
+        "runtime_status": runtime.get("status"),
+        "blocker_codes": [
+            blocker.get("code")
+            for blocker in blockers
+            if isinstance(blocker, dict) and blocker.get("code")
+        ],
+    }
+
+
+def validate_semantic_review_status(
+    response: dict[str, Any],
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
+) -> dict[str, Any]:
+    if response.get("work_item_id") != work_item_id:
+        raise SystemExit("Semantic review work_item_id mismatch")
+    if response.get("human_review_required") is not True:
+        raise SystemExit("Semantic review cannot replace human review")
+    if response.get("action_object_created") is not False:
+        raise SystemExit("Semantic review cannot create an ActionObject")
+    if response.get("publish_ready") is not False:
+        raise SystemExit("Semantic review cannot be publish-ready")
+    status = response.get("status")
+    if status not in {
+        "not_generated",
+        "created",
+        "idempotent",
+        "ready",
+        "stale",
+        "blocked",
+        "failed",
+        "conflict",
+    }:
+        raise SystemExit("Semantic review status is outside the public contract")
+    runtime = require_dict(response.get("runtime"), "semantic review runtime")
+    blockers = require_list(response.get("blockers"), "semantic review blockers")
+    review = response.get("review")
+    if status in {"not_generated", "created", "idempotent", "ready"} and (
+        response.get("revision_id") != revision_id
+        or response.get("revision_digest") != revision_digest
+    ):
+        raise SystemExit("Current semantic review binding mismatch")
+    if status == "not_generated" and (
+        review is not None or blockers or runtime.get("status") != "not_started"
+    ):
+        raise SystemExit("Model-free semantic GET must remain not started")
+    if status in {"created", "idempotent", "ready", "stale"}:
+        review = require_dict(review, "semantic review")
+        if (
+            blockers
+            or review.get("work_item_id") != work_item_id
+            or review.get("revision_id") != response.get("revision_id")
+            or review.get("revision_digest") != response.get("revision_digest")
+            or not response.get("run_id")
+            or review.get("codex_run_id") != response.get("run_id")
+        ):
+            raise SystemExit("Semantic review must bind the exact revision")
+    if status in {"blocked", "failed", "conflict"} and not blockers:
+        raise SystemExit("Non-ready semantic review needs typed blockers")
+    return {
+        "status": status,
+        "revision_digest": response.get("revision_digest"),
+        "runtime_status": runtime.get("status"),
+        "blocker_codes": [
+            blocker.get("code")
+            for blocker in blockers
+            if isinstance(blocker, dict) and blocker.get("code")
+        ],
     }
 
 
@@ -180,6 +305,49 @@ def read_wordpress_boundary(api_base: str, work_item_id: str) -> dict[str, Any]:
     }
 
 
+def read_planning_generation_status(
+    api_base: str,
+    work_item_id: str,
+    service_card_id: str | None,
+) -> dict[str, Any]:
+    encoded = urllib.parse.quote(work_item_id, safe="")
+    response = require_dict(
+        request_json(
+            api_base,
+            "GET",
+            f"/api/content/work-items/{encoded}/planning-proposals",
+        ),
+        "planning generation status",
+    )
+    return validate_planning_generation_status(response, work_item_id, service_card_id)
+
+
+def read_semantic_review_status(
+    api_base: str,
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
+) -> dict[str, Any]:
+    encoded_work_item_id = urllib.parse.quote(work_item_id, safe="")
+    encoded_revision_id = urllib.parse.quote(revision_id, safe="")
+    response = require_dict(
+        request_json(
+            api_base,
+            "GET",
+            "/api/content/work-items/"
+            f"{encoded_work_item_id}/draft-revisions/"
+            f"{encoded_revision_id}/semantic-review",
+        ),
+        "semantic review status",
+    )
+    return validate_semantic_review_status(
+        response,
+        work_item_id,
+        revision_id,
+        revision_digest,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
@@ -221,7 +389,22 @@ def main() -> int:
             ),
             "content workflow snapshot",
         )
-        summary.update(validate_snapshot(snapshot, work_item_id))
+        snapshot_summary = validate_snapshot(snapshot, work_item_id)
+        summary.update(snapshot_summary)
+        summary["planning_generation"] = read_planning_generation_status(
+            args.api_base,
+            work_item_id,
+            snapshot_summary["service_card_id"],
+        )
+        latest_revision_id = snapshot_summary["latest_revision_id"]
+        latest_revision_digest = snapshot_summary["latest_revision_digest"]
+        if latest_revision_id and latest_revision_digest:
+            summary["semantic_review"] = read_semantic_review_status(
+                args.api_base,
+                work_item_id,
+                str(latest_revision_id),
+                str(latest_revision_digest),
+            )
         summary["wordpress_boundary"] = read_wordpress_boundary(args.api_base, work_item_id)
         summary["workflow_blocked"] = snapshot.get("current_step_id") != "dev_draft"
 
