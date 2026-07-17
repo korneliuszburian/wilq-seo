@@ -10,7 +10,9 @@ from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRun
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
+    ContentPlanningInputSummary,
     build_content_planning_input,
+    content_planning_input_summary,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
@@ -56,12 +58,14 @@ def read_content_planning_proposal(
             result.blockers,
         )
     planning_input = result.planning_input
+    input_summary = content_planning_input_summary(planning_input)
     if result.blockers:
         return _blocked_from_input(
             planning_input.work_item_id,
             service_card_id,
             result.blockers,
             planning_input_digest=planning_input.planning_input_digest,
+            input_summary=input_summary,
         )
     latest = store.latest(planning_input.work_item_id)
     if latest is None:
@@ -70,6 +74,7 @@ def read_content_planning_proposal(
             work_item_id=planning_input.work_item_id,
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
+            input_summary=input_summary,
             safe_next_step="Wygeneruj pierwszy plan i sprawdź go przed decyzją człowieka.",
         )
     if (
@@ -81,6 +86,7 @@ def read_content_planning_proposal(
             work_item_id=planning_input.work_item_id,
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
+            input_summary=input_summary,
             proposal=latest,
             blockers=[_stale_input_blocker()],
             safe_next_step="Wygeneruj nową wersję planu z aktualnego wejścia.",
@@ -90,6 +96,7 @@ def read_content_planning_proposal(
         work_item_id=planning_input.work_item_id,
         service_card_id=service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
+        input_summary=input_summary,
         proposal=latest,
         safe_next_step="Sprawdź strategię i mapę sekcji; tylko człowiek może je zatwierdzić.",
     )
@@ -160,21 +167,24 @@ def _prepare_generation(
             result.blockers,
         )
     planning_input = result.planning_input
-    if request.expected_planning_input_digest != planning_input.planning_input_digest:
-        return None, ContentPlanningProposalResponse(
-            status="stale",
-            work_item_id=planning_input.work_item_id,
-            service_card_id=request.service_card_id,
-            planning_input_digest=planning_input.planning_input_digest,
-            blockers=[_stale_input_blocker()],
-            safe_next_step="Odśwież wejście i świadomie uruchom nową wersję planu.",
-        )
+    input_summary = content_planning_input_summary(planning_input)
     if result.blockers:
         return None, _blocked_from_input(
             planning_input.work_item_id,
             request.service_card_id,
             result.blockers,
             planning_input_digest=planning_input.planning_input_digest,
+            input_summary=input_summary,
+        )
+    if request.expected_planning_input_digest != planning_input.planning_input_digest:
+        return None, ContentPlanningProposalResponse(
+            status="stale",
+            work_item_id=planning_input.work_item_id,
+            service_card_id=request.service_card_id,
+            planning_input_digest=planning_input.planning_input_digest,
+            input_summary=input_summary,
+            blockers=[_stale_input_blocker()],
+            safe_next_step="Odśwież wejście i świadomie uruchom nową wersję planu.",
         )
     existing = store.for_input(
         planning_input.work_item_id,
@@ -187,6 +197,7 @@ def _prepare_generation(
             work_item_id=planning_input.work_item_id,
             service_card_id=request.service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
+            input_summary=input_summary,
             proposal=existing,
             safe_next_step="Sprawdź zapisaną wersję planu; model nie został uruchomiony ponownie.",
         )
@@ -287,6 +298,7 @@ def _persist_generated_proposal(
         work_item_id=planning_input.work_item_id,
         service_card_id=request.service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
+        input_summary=content_planning_input_summary(planning_input),
         proposal=stored,
         runtime=trace or ContentCodexRuntimeTrace(status="completed"),
         safe_next_step="Sprawdź strategię i każdą sekcję; plan pozostaje niezatwierdzony.",
@@ -321,7 +333,7 @@ def _proposal_from_output(
         cta_direction=(
             output.cta_blocks[0].copy_direction
             if output.cta_blocks
-            else planning_input.baseline_proposal.cta_direction
+            else planning_input.baseline_cta_direction
         ),
         internal_link_directions=[
             f"{item.placement}: {item.target_url} ({item.anchor_direction})"
@@ -547,6 +559,7 @@ def _runtime_failure_response(
         work_item_id=planning_input.work_item_id,
         service_card_id=planning_input.confirmed_service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
+        input_summary=content_planning_input_summary(planning_input),
         runtime=trace or ContentCodexRuntimeTrace(status="failed"),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
@@ -559,11 +572,13 @@ def _blocked_from_input(
     blockers: list[ContentPlanningInputBlocker],
     *,
     planning_input_digest: str | None = None,
+    input_summary: ContentPlanningInputSummary | None = None,
 ) -> ContentPlanningProposalResponse:
     return _blocked_response(
         work_item_id,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest,
+        input_summary=input_summary,
         blockers=[
             _blocker(item.code, item.label, item.reason, item.next_step) for item in blockers
         ],
@@ -576,12 +591,14 @@ def _blocked_response(
     service_card_id: str | None,
     planning_input_digest: str | None,
     blockers: list[ContentPlanningProposalBlocker],
+    input_summary: ContentPlanningInputSummary | None = None,
 ) -> ContentPlanningProposalResponse:
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=work_item_id,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest,
+        input_summary=input_summary,
         blockers=blockers,
         safe_next_step=blockers[0].next_step,
     )

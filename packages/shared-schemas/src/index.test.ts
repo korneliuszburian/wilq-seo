@@ -339,6 +339,26 @@ describe("ContentPlanningProposalResponseSchema", () => {
       work_item_id: "content_work_item_bdo",
       service_card_id: "ekologus_service_bdo_reporting",
       planning_input_digest: "1".repeat(64),
+      input_summary: {
+        final_canonical_url: "https://www.ekologus.pl/bdo/",
+        service_label: "BDO",
+        inventory_status: "available",
+        source_assessments: [
+          "wordpress", "service_profile", "gsc", "ga4", "google_ads",
+          "ahrefs", "keyword_planner", "merchant", "localo", "social"
+        ].map((source) => ({
+          source,
+          status: source === "gsc" ? "used" : "not_applicable",
+          reason: "Jawna ocena źródła.",
+          landing_match_tiers: source === "gsc" ? ["tracking_only"] : [],
+          evidence_ids: source === "gsc" ? ["ev_1"] : [],
+          knowledge_card_ids: []
+        })),
+        source_fact_count: 1,
+        evidence_id_count: 1,
+        knowledge_card_count: 1,
+        measurement_metrics: ["gsc_clicks"]
+      },
       proposal: {
         work_item_id: "content_work_item_bdo",
         planning_digest: "2".repeat(64),
@@ -416,10 +436,31 @@ describe("ContentPlanningProposalResponseSchema", () => {
 
     expect(parsed.proposal?.sections[0]?.inventory_disposition).toBe("rewrite");
     expect(parsed.proposal?.page_assets.meta_title).toBe("BDO — Ekologus");
+    expect(parsed.input_summary?.source_assessments[2]?.landing_match_tiers)
+      .toEqual(["tracking_only"]);
     expect(
       ContentPlanningProposalResponseSchema.safeParse({
         ...response,
         publish_ready: true
+      }).success
+    ).toBe(false);
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        input_summary: null
+      }).success
+    ).toBe(false);
+    expect(
+      ContentPlanningProposalResponseSchema.safeParse({
+        ...response,
+        input_summary: {
+          ...response.input_summary,
+          source_assessments: response.input_summary.source_assessments.map(
+            (assessment, index) => index === 9
+              ? { ...assessment, source: "wordpress" }
+              : assessment
+          )
+        }
       }).success
     ).toBe(false);
   });

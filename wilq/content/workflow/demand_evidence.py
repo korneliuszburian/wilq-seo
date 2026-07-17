@@ -3,11 +3,12 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from datetime import datetime
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.canonical.landing_identity import (
+    LandingMatchTier,
     LandingPageCandidate,
     build_landing_page_identity,
     match_landing_page,
@@ -16,6 +17,7 @@ from wilq.content.drafts.package import ContentDraftPackage
 from wilq.schemas import ContentFreshnessAssessment, MetricFact
 
 ContentDemandSourceKind = Literal["gsc_query", "ads_search_term", "keyword_planner"]
+ContentAcceptedLandingMatchTier = Literal["exact", "tracking_only", "host_alias"]
 
 
 class ContentSearchDemandRow(BaseModel):
@@ -25,6 +27,9 @@ class ContentSearchDemandRow(BaseModel):
     source_connector: Literal["google_search_console", "google_ads"]
     term: str = Field(min_length=1)
     page: str = Field(min_length=1)
+    landing_match_tiers: list[ContentAcceptedLandingMatchTier] = Field(
+        default_factory=list
+    )
     service_card_id: str | None = None
     section_headings: list[str] = Field(default_factory=list)
     section_mapping_status: Literal["lexical_relevance", "page_only"]
@@ -78,6 +83,7 @@ def build_content_search_demand_evidence(
                 term=key[1],
                 page=key[0],
                 facts=facts,
+                final_canonical_url=final_canonical_url,
                 service_card_id=service_card_id,
                 draft=draft,
                 freshness=freshness,
@@ -114,9 +120,12 @@ def build_content_search_demand_evidence(
             term=term,
             gsc_row=gsc_row,
             facts=facts,
+            final_canonical_url=final_canonical_url,
             service_card_id=service_card_id,
             freshness=freshness,
         )
+        if row is None:
+            continue
         (planner_rows if source_kind == "keyword_planner" else ads_rows).append(row)
 
     all_rows = [*gsc_rows, *ads_rows, *planner_rows]
@@ -161,10 +170,14 @@ def _gsc_row(
     term: str,
     page: str,
     facts: list[MetricFact],
+    final_canonical_url: str,
     service_card_id: str | None,
     draft: ContentDraftPackage,
     freshness: ContentFreshnessAssessment,
 ) -> ContentSearchDemandRow | None:
+    landing_match_tiers = _landing_match_tiers(facts, final_canonical_url)
+    if not landing_match_tiers:
+        return None
     evidence_ids = list(dict.fromkeys(fact.evidence_id for fact in facts))
     term_tokens = _planning_tokens(term)
     section_headings = [
@@ -180,6 +193,7 @@ def _gsc_row(
         source_connector="google_search_console",
         term=term,
         page=page,
+        landing_match_tiers=landing_match_tiers,
         service_card_id=service_card_id,
         section_headings=section_headings,
         section_mapping_status=(
@@ -205,14 +219,19 @@ def _ads_row(
     term: str,
     gsc_row: ContentSearchDemandRow,
     facts: list[MetricFact],
+    final_canonical_url: str,
     service_card_id: str | None,
     freshness: ContentFreshnessAssessment,
-) -> ContentSearchDemandRow:
+) -> ContentSearchDemandRow | None:
+    landing_match_tiers = _landing_match_tiers(facts, final_canonical_url)
+    if not landing_match_tiers:
+        return None
     return ContentSearchDemandRow(
         source_kind=source_kind,
         source_connector="google_ads",
         term=term,
         page=gsc_row.page,
+        landing_match_tiers=landing_match_tiers,
         service_card_id=service_card_id,
         section_headings=gsc_row.section_headings,
         section_mapping_status=gsc_row.section_mapping_status,
@@ -229,6 +248,31 @@ def _ads_row(
             facts, "keyword_planner_avg_monthly_searches"
         ),
     )
+
+
+def _landing_match_tiers(
+    facts: list[MetricFact],
+    final_canonical_url: str,
+) -> list[ContentAcceptedLandingMatchTier]:
+    accepted: set[ContentAcceptedLandingMatchTier] = set()
+    for fact in facts:
+        page = _fact_page(fact)
+        if not page:
+            continue
+        match = match_landing_page(
+            final_canonical_url,
+            LandingPageCandidate(candidate_id=fact.evidence_id, url=page),
+        )
+        if match.matched and match.tier in {"exact", "tracking_only", "host_alias"}:
+            accepted.add(_accepted_landing_tier(match.tier))
+    order = {"exact": 0, "tracking_only": 1, "host_alias": 2}
+    return sorted(accepted, key=order.__getitem__)
+
+
+def _accepted_landing_tier(tier: LandingMatchTier) -> ContentAcceptedLandingMatchTier:
+    if tier not in {"exact", "tracking_only", "host_alias"}:
+        raise ValueError(f"Unsupported accepted landing tier: {tier}")
+    return cast(ContentAcceptedLandingMatchTier, tier)
 
 
 def _strict_ads_scope_matches(

@@ -103,10 +103,14 @@ Architecture proof (2026-07-15):
   and result states at 1440×900 and 390×844, and proves zero WordPress requests
   plus no horizontal overflow. The older ActionObject proof separately keeps
   WordPress apply synthetic and draft-only.
-- Dynamic planning uses one versioned input digest covering the exact page,
-  confirmed service, WordPress inventory, knowledge, source facts and metrics.
-  GET is read-only and model-free; POST is idempotent, returns stale `409`,
-  persists the proposal with its exact CodexRun, and has no fallback.
+- Dynamic planning v2 uses one versioned input digest covering the exact page,
+  confirmed service, one exact WordPress inventory record, knowledge, source
+  facts and metrics. Its compact summary always exposes exactly ten unique
+  source assessments with landing tiers and per-connector freshness. Only
+  `used` lineage reaches model-authorized evidence; stale or blocked inputs
+  return a typed blocker before stale-digest handling. GET is read-only and
+  model-free; POST is idempotent, persists the proposal with its exact
+  CodexRun, and has no fallback.
 ## Surface State
 
 Readiness is a product/usefulness estimate, not a test pass rate.

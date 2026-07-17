@@ -61,11 +61,30 @@ export function ContentPlanningGenerationPanel({
 
   const state = generation.data ?? status.data;
   const proposal = state.proposal;
+  const currentProposal = ["created", "idempotent", "ready"].includes(state.status)
+    ? proposal
+    : null;
   const blocker = state.blockers[0] ?? null;
+  const inputSummary = state.input_summary ?? null;
+  const usedSourceCount = inputSummary?.source_assessments.filter(
+    (source) => source.status === "used"
+  ).length ?? 0;
+  const landingBoundSourceCount = inputSummary?.source_assessments.filter(
+    (source) => source.landing_match_tiers.length > 0
+  ).length ?? 0;
+  const inputReady = Boolean(
+    inputSummary &&
+      inputSummary.inventory_status === "available" &&
+      !inputSummary.source_assessments.some(
+        (source) => source.status === "stale" || source.status === "blocked"
+      )
+  );
   const canGenerate = Boolean(
     serviceCardId &&
       state.planning_input_digest &&
-      ["not_generated", "stale", "failed"].includes(state.status)
+      inputReady &&
+      (["not_generated", "failed"].includes(state.status) ||
+        (state.status === "stale" && state.blockers.every((item) => item.code === "stale_input")))
   );
 
   return (
@@ -80,11 +99,11 @@ export function ContentPlanningGenerationPanel({
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="content-planning-generation-title" className="text-lg font-semibold text-ink">
-            {proposal ? "Plan strony jest gotowy do review" : "Zbuduj plan z aktualnych danych"}
+            {planningHeadline(state.status, Boolean(currentProposal))}
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-700">
             {blocker?.reason ??
-              proposal?.value_proposition ??
+              currentProposal?.value_proposition ??
               "Codex użyje wyłącznie exact inventory, zatwierdzonej usługi i dowodów WILQ."}
           </p>
         </div>
@@ -93,17 +112,40 @@ export function ContentPlanningGenerationPanel({
         </span>
       </div>
 
-      {proposal ? (
+      {currentProposal ? (
         <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
           <div className="rounded-md border border-line bg-surface p-3">
             <p className="text-xs font-semibold uppercase text-slate-500">Kąt i intencja</p>
-            <p className="mt-1 text-sm font-semibold text-ink">{proposal.angle}</p>
-            <p className="mt-1 text-sm text-slate-700">{proposal.search_intent}</p>
+            <p className="mt-1 text-sm font-semibold text-ink">{currentProposal.angle}</p>
+            <p className="mt-1 text-sm text-slate-700">{currentProposal.search_intent}</p>
           </div>
           <div className="rounded-md border border-line bg-surface p-3">
             <p className="text-xs font-semibold uppercase text-slate-500">Zakres</p>
             <p className="mt-1 text-sm text-slate-700">
-              {proposal.sections.length} sekcji · {proposal.faq.length} FAQ · {proposal.cta_blocks.length} CTA
+              {currentProposal.sections.length} sekcji · {currentProposal.faq.length} FAQ · {currentProposal.cta_blocks.length} CTA
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {inputSummary ? (
+        <div className="mt-4 grid gap-2 sm:grid-cols-3" aria-label="Gotowość danych do planu">
+          <div className="rounded-md border border-line bg-surface p-3">
+            <p className="text-xs font-semibold uppercase text-slate-500">Źródła użyte</p>
+            <p className="mt-1 text-sm font-semibold text-ink">
+              {usedSourceCount} z {inputSummary.source_assessments.length}
+            </p>
+          </div>
+          <div className="rounded-md border border-line bg-surface p-3">
+            <p className="text-xs font-semibold uppercase text-slate-500">Powiązanie landing</p>
+            <p className="mt-1 text-sm font-semibold text-ink">
+              {landingBoundSourceCount} {landingBoundSourceCount === 1 ? "źródło" : "źródła"}
+            </p>
+          </div>
+          <div className="rounded-md border border-line bg-surface p-3">
+            <p className="text-xs font-semibold uppercase text-slate-500">Dowody wejścia</p>
+            <p className="mt-1 text-sm font-semibold text-ink">
+              {inputSummary.evidence_id_count}
             </p>
           </div>
         </div>
@@ -139,12 +181,71 @@ export function ContentPlanningGenerationPanel({
       <details className="mt-3 text-xs text-slate-500">
         <summary className="cursor-pointer font-semibold text-action">Dlaczego ten stan?</summary>
         <p className="mt-2 break-all">
-          Input: {state.planning_input_digest ?? "brak"} · wersja: {proposal?.proposal_version ?? "brak"}
+          Input: {state.planning_input_digest ?? "brak"} · wersja: {currentProposal?.proposal_version ?? "brak"}
         </p>
+        {inputSummary ? (
+          <ul className="mt-3 space-y-2">
+            {inputSummary.source_assessments.map((source) => (
+              <li key={source.source} className="rounded-md border border-line bg-surface p-2">
+                <span className="font-semibold text-ink">
+                  {planningSourceLabel(source.source)}: {planningSourceStatusLabel(source.status)}
+                </span>
+                {source.landing_match_tiers.length ? (
+                  <span> · landing {source.landing_match_tiers.map(landingTierLabel).join(", ")}</span>
+                ) : null}
+                <span className="block mt-1 leading-5 text-slate-600">{source.reason}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <p className="mt-1">Codex nigdy nie uruchamia się przy GET ani bez gotowego inputu.</p>
       </details>
     </section>
   );
+}
+
+function planningHeadline(status: string, hasCurrentProposal: boolean) {
+  if (hasCurrentProposal) return "Plan strony jest gotowy do review";
+  if (status === "stale") return "Plan wymaga aktualizacji";
+  if (status === "blocked") return "Plan jest zablokowany";
+  if (status === "failed") return "Nie udało się zbudować planu";
+  return "Zbuduj plan z aktualnych danych";
+}
+
+function planningSourceLabel(source: string) {
+  const labels: Record<string, string> = {
+    wordpress: "WordPress",
+    service_profile: "Profil usługi",
+    gsc: "GSC",
+    ga4: "GA4",
+    google_ads: "Google Ads",
+    ahrefs: "Ahrefs",
+    keyword_planner: "Keyword Planner",
+    merchant: "Merchant",
+    localo: "Localo",
+    social: "Social"
+  };
+  return labels[source] ?? source;
+}
+
+function planningSourceStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    used: "użyte",
+    not_applicable: "nie dotyczy",
+    missing: "brak",
+    stale: "nieaktualne",
+    blocked: "zablokowane"
+  };
+  return labels[status] ?? status;
+}
+
+function landingTierLabel(tier: string) {
+  const labels: Record<string, string> = {
+    exact: "exact",
+    tracking_only: "po usunięciu trackingu",
+    host_alias: "alias hosta"
+  };
+  return labels[tier] ?? tier;
 }
 
 function planningStatusLabel(status: string) {

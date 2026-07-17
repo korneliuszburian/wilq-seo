@@ -44,6 +44,8 @@ def test_search_demand_keeps_page_queries_but_maps_only_relevant_sections() -> N
         "page_only",
     ]
     assert evidence.ads_term_rows[0].section_mapping_status == "lexical_relevance"
+    assert evidence.gsc_query_rows[0].landing_match_tiers == ["exact"]
+    assert evidence.ads_term_rows[0].landing_match_tiers == ["exact"]
     assert [row.evidence_ids for row in evidence.ads_term_rows] == [["ev_ads_exact"]]
     assert evidence.keyword_planner_rows == []
     assert evidence.evidence_ids == ["ev_gsc", "ev_ads_exact"]
@@ -97,6 +99,7 @@ def test_search_demand_accepts_tracking_only_but_rejects_functional_page_variant
     assert evidence.evidence_ids == ["ev_tracking"]
     assert evidence.gsc_query_rows[0].impressions == 50
     assert evidence.gsc_query_rows[0].clicks == 5
+    assert evidence.gsc_query_rows[0].landing_match_tiers == ["tracking_only"]
 
 
 def _demand_facts(page: str, service_card_id: str) -> list[MetricFact]:

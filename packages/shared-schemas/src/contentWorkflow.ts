@@ -2206,6 +2206,9 @@ const ContentSearchDemandRowSchema = z.object({
   source_connector: z.enum(["google_search_console", "google_ads"]),
   term: z.string().min(1),
   page: z.string().min(1),
+  landing_match_tiers: z.array(
+    z.enum(["exact", "tracking_only", "host_alias"])
+  ).default([]),
   service_card_id: z.string().nullable(),
   section_headings: z.array(z.string()),
   section_mapping_status: z.enum(["lexical_relevance", "page_only"]),
@@ -2383,6 +2386,65 @@ export const ContentPlanningProposalBlockerSchema = z.object({
   source_codes: z.array(z.string()).default([])
 });
 
+export const ContentPlanningSourceAssessmentSchema = z.object({
+  source: z.enum([
+    "wordpress",
+    "service_profile",
+    "gsc",
+    "ga4",
+    "google_ads",
+    "ahrefs",
+    "keyword_planner",
+    "merchant",
+    "localo",
+    "social"
+  ]),
+  status: z.enum(["used", "not_applicable", "missing", "stale", "blocked"]),
+  reason: z.string().min(1),
+  landing_match_tiers: z.array(
+    z.enum(["exact", "tracking_only", "host_alias"])
+  ).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  knowledge_card_ids: z.array(z.string()).default([])
+});
+
+const contentPlanningSourceNames = [
+  "wordpress",
+  "service_profile",
+  "gsc",
+  "ga4",
+  "google_ads",
+  "ahrefs",
+  "keyword_planner",
+  "merchant",
+  "localo",
+  "social"
+] as const;
+
+export const ContentPlanningInputSummarySchema = z.object({
+  final_canonical_url: z.string().min(1),
+  service_label: z.string().min(1),
+  inventory_status: z.enum(["available", "missing"]),
+  source_assessments: z.array(ContentPlanningSourceAssessmentSchema).min(10),
+  source_fact_count: z.number().int().nonnegative(),
+  evidence_id_count: z.number().int().nonnegative(),
+  knowledge_card_count: z.number().int().nonnegative(),
+  measurement_metrics: z.array(z.string()).default([])
+}).superRefine((summary, context) => {
+  const sources = summary.source_assessments.map((assessment) => assessment.source);
+  if (
+    sources.length !== contentPlanningSourceNames.length ||
+    new Set(sources).size !== contentPlanningSourceNames.length ||
+    contentPlanningSourceNames.some((source) => !sources.includes(source))
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["source_assessments"],
+      message: "Every planning source must appear exactly once."
+    });
+  }
+});
+
 export const ContentPlanningProposalResponseSchema = z.object({
   status: z.enum([
     "not_generated",
@@ -2396,11 +2458,20 @@ export const ContentPlanningProposalResponseSchema = z.object({
   work_item_id: z.string().min(1),
   service_card_id: z.string().nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
   proposal: ContentPlanningProposalSchema.nullable().optional(),
   runtime: ContentCodexRuntimeTraceSchema,
   blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),
   safe_next_step: z.string().min(1),
   publish_ready: z.literal(false)
+}).superRefine((response, context) => {
+  if (response.planning_input_digest && !response.input_summary) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["input_summary"],
+      message: "Planning input digest requires its exact input summary."
+    });
+  }
 });
 
 export const ContentInitialDraftRequestSchema = z.object({

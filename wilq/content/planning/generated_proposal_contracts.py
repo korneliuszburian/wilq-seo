@@ -5,7 +5,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
-from wilq.content.planning.dynamic_input import ContentPlanningInputBlockerCode
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInputBlockerCode,
+    ContentPlanningInputSummary,
+)
 from wilq.content.workflow.planning import (
     ContentPlanningConditionalHypothesis,
     ContentPlanningCtaBlock,
@@ -136,6 +139,7 @@ class ContentPlanningProposalResponse(BaseModel):
         default=None,
         pattern=r"^[0-9a-f]{64}$",
     )
+    input_summary: ContentPlanningInputSummary | None = None
     proposal: ContentPlanningProposal | None = None
     runtime: ContentCodexRuntimeTrace = Field(
         default_factory=lambda: ContentCodexRuntimeTrace(status="not_started")
@@ -146,6 +150,8 @@ class ContentPlanningProposalResponse(BaseModel):
 
     @model_validator(mode="after")
     def require_status_payload(self) -> ContentPlanningProposalResponse:
+        if self.planning_input_digest is not None and self.input_summary is None:
+            raise ValueError("Planning input digest requires its exact input summary.")
         if self.status in {"created", "idempotent", "ready"}:
             if self.proposal is None or self.blockers:
                 raise ValueError("Ready planning response requires a proposal without blockers.")

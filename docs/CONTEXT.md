@@ -132,6 +132,11 @@ Aktywny graf:
   agreguje 65 wyświetleń, 0 kliknięć i najlepszą średnią pozycję 9,00. UI i
   eval pokazują cztery najwyższe wiersze oraz pełną liczność.
 - Scope i section map nie mają human approval.
+- Dynamic planning v2 ocenia zawsze dziesięć źródeł, ale dopuszcza do modelu
+  tylko `used` lineage z exact landing/service/inventory matchu. WordPress
+  wymaga jednego rekordu canonical i rozwiązywalnego evidence właściwego
+  konektora; freshness jest oceniana per connector. Dwa piloty przechodzą ten
+  sam kontrakt wyłącznie na syntetycznie zatwierdzonych kartach.
 - Realny Codex proposal został poprawnie związany z wersją i dowodami, lecz
   quality review zwrócił `needs_changes`; jakość tekstu pozostaje około 5/10.
 - Kolejka ma 5 kandydatów, z czego 4 są actionable. BDO jest pierwszym

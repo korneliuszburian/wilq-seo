@@ -204,6 +204,10 @@ describe("ContentWorkflowSurface", () => {
 
     expect(document.querySelector('[data-active-workspace="section_map"]')).toBeInTheDocument();
     expect(screen.getByText("Zatwierdź plan sekcji")).toBeInTheDocument();
+    expect(await screen.findByText("Źródła użyte")).toBeInTheDocument();
+    expect(screen.getByText("3 z 10")).toBeInTheDocument();
+    expect(screen.getByText("Powiązanie landing")).toBeInTheDocument();
+    expect(screen.getByText("GSC: użyte")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kogo dotyczy BDO" })).toBeInTheDocument();
     expect(screen.queryByText("Sygnały i braki")).not.toBeInTheDocument();
     expect(screen.queryByText("Tekst sekcji do szkicu")).not.toBeInTheDocument();
@@ -219,6 +223,51 @@ describe("ContentWorkflowSurface", () => {
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevisionReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
+  });
+
+  it("does not present an old proposal as ready when planning input is blocked", async () => {
+    const blockedSummary = planningInputSummary();
+    blockedSummary.source_assessments = blockedSummary.source_assessments.map((assessment) =>
+      assessment.source === "ga4"
+        ? {
+            ...assessment,
+            status: "blocked" as const,
+            reason: "GA4 nie ma jeszcze exact landing matchu.",
+            evidence_ids: ["ev_ga4_unbound"]
+          }
+        : assessment
+    );
+    vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(
+      planningProposalStatus({
+        status: "blocked",
+        input_summary: blockedSummary,
+        proposal: planningWorkspace({ generated: true }).proposal,
+        blockers: [{
+          code: "blocked_planning_sources",
+          label: "Źródło wymaga dokładnego powiązania",
+          reason: "GA4 nie ma jeszcze exact landing matchu.",
+          next_step: "Dodaj typed landing match.",
+          source_codes: ["ga4"]
+        }]
+      })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    const taskMap = await screen.findByTestId("content-workflow-task-map");
+    fireEvent.click(within(taskMap).getByRole("button", { name: /Plan sekcji/ }));
+
+    expect(await screen.findByText("Plan jest zablokowany")).toBeInTheDocument();
+    expect(screen.queryByText("Plan strony jest gotowy do review")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Wygeneruj/ })).not.toBeInTheDocument();
+    expect(screen.getByText("GA4: zablokowane")).toBeInTheDocument();
   });
 
   it("uses the loaded snapshot candidate in the task context", async () => {
@@ -1487,6 +1536,7 @@ function planningProposalStatus(
     work_item_id: "content_work_item_bdo",
     service_card_id: "ekologus_service_bdo_reporting",
     planning_input_digest: "f".repeat(64),
+    input_summary: planningInputSummary(),
     proposal: null,
     runtime: {
       status: "not_started",
@@ -1500,6 +1550,53 @@ function planningProposalStatus(
     safe_next_step: "Wygeneruj pierwszy plan i sprawdź go przed decyzją człowieka.",
     publish_ready: false,
     ...overrides
+  };
+}
+
+function planningInputSummary(): NonNullable<ContentPlanningProposalResponse["input_summary"]> {
+  return {
+    final_canonical_url: "https://www.ekologus.pl/bdo/",
+    service_label: "BDO i sprawozdawczość środowiskowa",
+    inventory_status: "available",
+    source_assessments: [
+      {
+        source: "wordpress",
+        status: "used",
+        reason: "Publiczne inventory jest aktualne.",
+        landing_match_tiers: ["host_alias"],
+        evidence_ids: ["ev_wp_bdo"],
+        knowledge_card_ids: []
+      },
+      {
+        source: "service_profile",
+        status: "used",
+        reason: "Karta usługi jest zatwierdzona.",
+        landing_match_tiers: [],
+        evidence_ids: ["ev_service_bdo"],
+        knowledge_card_ids: ["ekologus_service_bdo_reporting"]
+      },
+      {
+        source: "gsc",
+        status: "used",
+        reason: "Dokładne zapytania GSC są aktualne.",
+        landing_match_tiers: ["tracking_only"],
+        evidence_ids: [],
+        knowledge_card_ids: []
+      },
+      ...(["ga4", "google_ads", "ahrefs", "keyword_planner", "merchant", "localo", "social"] as const)
+        .map((source) => ({
+          source,
+          status: "not_applicable" as const,
+          reason: "To źródło nie zasila tego planu.",
+          landing_match_tiers: [],
+          evidence_ids: [],
+          knowledge_card_ids: []
+        }))
+    ],
+    source_fact_count: 2,
+    evidence_id_count: 3,
+    knowledge_card_count: 1,
+    measurement_metrics: ["gsc_clicks"]
   };
 }
 
@@ -2072,6 +2169,7 @@ function planningWorkspace({
         source_connector: "google_search_console" as const,
         term: "bdo odpady",
         page: "https://ekologus.pl/bdo/",
+        landing_match_tiers: ["host_alias" as const],
         service_card_id: "service_bdo",
         section_headings: ["Kogo dotyczy BDO"],
         section_mapping_status: "lexical_relevance" as const,

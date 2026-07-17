@@ -52,9 +52,17 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   mypy, Ruff i diff check są zielone; niezależny read-only review znalazł
   cztery błędy, po poprawkach potwierdził PASS w tym zakresie. Claude checker
   nie dał werdyktu: pierwszy pass poprawnie zgłosił brak osadzonego evidence,
-  drugi zakończył się timeoutem bez outputu. Bead pozostaje otwarty na
-  trwały kontrakt partycjonowania LAG, projekcję tierów do API, konsumenta Ads
-  i proof obu pilotów; nie wykonano migracji ani vendor write.
+  drugi zakończył się timeoutem bez outputu. Trzeci slice przenosi typed landing
+  tiers do demand i wersjonowanego `ContentPlanningInput` v2, wymaga dokładnie
+  dziesięciu unikalnych ocen źródeł, filtruje stale/blocked evidence przed
+  modelem i wiąże inventory wyłącznie z jednym pasującym rekordem oraz
+  rozwiązywalnym evidence WordPress. GET nadal nie uruchamia modelu, a POST
+  zwraca blocker przed kontrolą stale digestu. Dashboard nie nazywa starego
+  planu gotowym i nie pozwala generować przy zablokowanym źródle. Dwa piloty
+  przechodzą ten sam input v2 na syntetycznie zatwierdzonych kartach; realne
+  karty nadal czekają na owner review. Bead pozostaje otwarty na trwały
+  kontrakt partycjonowania LAG, konsumenta Ads i finalny cross-source proof;
+  nie wykonano migracji ani vendor write.
 - `wilq-seo-1oa.36.8` domyka pełny, source-bound review WILQ na fixed commicie
   `d2649f15`: cztery niezależne ledgery contentu, dashboardu marketera,
   skillów/skryptów oraz metrics/actions/learning mają łącznie 37 zwalidowanych

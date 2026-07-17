@@ -65,6 +65,7 @@ class _PlanningClient:
             return self._section_revision_result(request)
         context = json.loads(request.untrusted_context)
         planning_input = context["planning_input"]
+        _assert_planning_input_contract(planning_input)
         inventory_heading = planning_input["inventory"]["sections"][0]["heading"]
         evidence_id = planning_input["evidence_ids"][0]
         query_rows = planning_input["query_portfolio"]["gsc_query_rows"]
@@ -321,6 +322,22 @@ class _PlanningClient:
             event_methods=("turn/completed",),
             item_types=("agentMessage",),
         )
+
+
+def _assert_planning_input_contract(planning_input: dict[str, Any]) -> None:
+    assert planning_input["schema_name"] == "wilq_content_planning_input_v2"
+    excluded_connectors = {
+        "google_search_console",
+        "google_ads",
+        "google_analytics_4",
+        "ahrefs",
+        "google_merchant_center",
+        "localo",
+    }
+    assert not {
+        fact["source_connector"] for fact in planning_input["source_facts"]
+    }.intersection(excluded_connectors)
+    assert "baseline_proposal" not in planning_input
 
 
 class _FailingPlanningStore(ContentPlanningProposalStore):
@@ -647,6 +664,14 @@ def _approve_and_generate(
     before = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
     assert before.status_code == 200
     assert before.json()["status"] == "not_generated", before.json()["blockers"]
+    input_summary = before.json()["input_summary"]
+    assert len(input_summary["source_assessments"]) == 10
+    gsc_assessment = next(
+        item for item in input_summary["source_assessments"] if item["source"] == "gsc"
+    )
+    assert gsc_assessment["status"] == "used"
+    assert gsc_assessment["landing_match_tiers"]
+    assert input_summary["evidence_id_count"] > 0
     assert runtime.calls == expected_calls
     if expected_calls == 0:
         assert not _planning_table_exists()
@@ -670,6 +695,9 @@ def _approve_and_generate(
     )
     assert created.status_code == 200
     assert created.json()["status"] == "created"
+    assert created.json()["proposal"]["input_schema_version"] == (
+        "wilq_content_planning_input_v2"
+    )
     repeated = client.post(
         f"/api/content/work-items/{work_item_id}/planning-proposals",
         json=_generation_request(service_card_id, input_digest),
@@ -679,6 +707,7 @@ def _approve_and_generate(
     ready = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
     assert ready.json()["status"] == "ready"
     assert ready.json()["proposal"] == created.json()["proposal"]
+    assert ready.json()["input_summary"] == input_summary
     return cast(dict[str, Any], created.json()["proposal"])
 
 

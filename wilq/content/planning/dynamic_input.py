@@ -4,7 +4,7 @@ import json
 from hashlib import sha256
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
@@ -13,6 +13,18 @@ from wilq.content.inventory.records import ContentInventoryResolution
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceCandidate,
     ContentWorkItemServiceProfileContext,
+)
+from wilq.content.planning.input_sources import (
+    ContentPlanningInventory,
+    ContentPlanningSourceAssessment,
+    ContentPlanningSourceFact,
+    assessment_status,
+    build_planning_inventory,
+    build_source_assessments,
+    build_source_facts,
+    planning_source_connectors,
+    usable_query_portfolio,
+    validate_source_assessment_membership,
 )
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.models import ContentWorkItem
@@ -25,25 +37,6 @@ from wilq.schemas import ContentFreshnessAssessment
 if TYPE_CHECKING:
     from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 
-ContentPlanningSourceStatus = Literal[
-    "used",
-    "not_applicable",
-    "missing",
-    "stale",
-    "blocked",
-]
-ContentPlanningSourceName = Literal[
-    "wordpress",
-    "service_profile",
-    "gsc",
-    "ga4",
-    "google_ads",
-    "ahrefs",
-    "keyword_planner",
-    "merchant",
-    "localo",
-    "social",
-]
 ContentPlanningInputBlockerCode = Literal[
     "unknown_service_card",
     "service_selection_not_confirmed",
@@ -52,6 +45,7 @@ ContentPlanningInputBlockerCode = Literal[
     "missing_planning_foundation",
     "missing_wordpress_section_inventory",
     "stale_planning_sources",
+    "blocked_planning_sources",
 ]
 
 
@@ -64,52 +58,10 @@ class ContentPlanningInputBlocker(BaseModel):
     next_step: str
 
 
-class ContentPlanningInventorySection(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    section_id: str = Field(min_length=1)
-    heading: str = Field(min_length=1)
-    recommended_disposition: Literal["preserve"] = "preserve"
-    evidence_ids: list[str] = Field(default_factory=list)
-
-
-class ContentPlanningInventory(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    status: Literal["available", "missing"]
-    title_or_h1: str | None = None
-    content_summary: str | None = None
-    word_count: int | None = Field(default=None, ge=0)
-    sections: list[ContentPlanningInventorySection] = Field(default_factory=list)
-    evidence_ids: list[str] = Field(default_factory=list)
-    source_connectors: list[str] = Field(default_factory=list)
-    note: str = ""
-
-
-class ContentPlanningSourceFact(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    fact_id: str = Field(min_length=1)
-    summary: str = Field(min_length=1)
-    source_connector: str = Field(min_length=1)
-    evidence_ids: list[str] = Field(min_length=1)
-    knowledge_card_ids: list[str] = Field(default_factory=list)
-
-
-class ContentPlanningSourceAssessment(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    source: ContentPlanningSourceName
-    status: ContentPlanningSourceStatus
-    reason: str = Field(min_length=1)
-    evidence_ids: list[str] = Field(default_factory=list)
-    knowledge_card_ids: list[str] = Field(default_factory=list)
-
-
 class ContentPlanningInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_name: Literal["wilq_content_planning_input_v1"] = "wilq_content_planning_input_v1"
+    schema_name: Literal["wilq_content_planning_input_v2"] = "wilq_content_planning_input_v2"
     criteria_version: Literal["wilq_people_first_planning_v1"] = "wilq_people_first_planning_v1"
     planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     work_item_id: str = Field(min_length=1)
@@ -134,7 +86,30 @@ class ContentPlanningInput(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
-    baseline_proposal: ContentPlanningProposal
+    baseline_cta_direction: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_complete_source_assessments(self) -> ContentPlanningInput:
+        validate_source_assessment_membership(self.source_assessments)
+        return self
+
+
+class ContentPlanningInputSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    final_canonical_url: str = Field(min_length=1)
+    service_label: str = Field(min_length=1)
+    inventory_status: Literal["available", "missing"]
+    source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
+    source_fact_count: int = Field(ge=0)
+    evidence_id_count: int = Field(ge=0)
+    knowledge_card_count: int = Field(ge=0)
+    measurement_metrics: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_complete_source_assessments(self) -> ContentPlanningInputSummary:
+        validate_source_assessment_membership(self.source_assessments)
+        return self
 
 
 class ContentPlanningInputBuildResult(BaseModel):
@@ -142,6 +117,21 @@ class ContentPlanningInputBuildResult(BaseModel):
 
     planning_input: ContentPlanningInput | None = None
     blockers: list[ContentPlanningInputBlocker] = Field(default_factory=list)
+
+
+def content_planning_input_summary(
+    planning_input: ContentPlanningInput,
+) -> ContentPlanningInputSummary:
+    return ContentPlanningInputSummary(
+        final_canonical_url=planning_input.final_canonical_url,
+        service_label=planning_input.service_label,
+        inventory_status=planning_input.inventory.status,
+        source_assessments=planning_input.source_assessments,
+        source_fact_count=len(planning_input.source_facts),
+        evidence_id_count=len(planning_input.evidence_ids),
+        knowledge_card_count=len(planning_input.knowledge_card_ids),
+        measurement_metrics=planning_input.measurement_metrics,
+    )
 
 
 def build_content_planning_input(
@@ -193,23 +183,24 @@ def build_content_planning_input_from_components(
     if brief is None or draft is None or baseline_proposal is None:
         return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
     assert candidate is not None
-    inventory = _inventory(item, inventory_resolution)
-    blockers = _readiness_blockers(
-        service_profile=service_profile,
-        service_lifecycle=candidate.lifecycle_status,
-        inventory=inventory,
-        freshness=freshness,
-    )
-    source_facts = _source_facts(brief)
-    source_assessments = _source_assessments(
+    inventory = build_planning_inventory(item, inventory_resolution)
+    source_assessments = build_source_assessments(
         item=item,
-        inventory_resolution=inventory_resolution,
+        inventory=inventory,
         service_profile=service_profile,
         freshness=freshness,
         brief=brief,
         demand=baseline_proposal.search_demand,
         service_lifecycle=candidate.lifecycle_status,
     )
+    blockers = _readiness_blockers(
+        service_profile=service_profile,
+        service_lifecycle=candidate.lifecycle_status,
+        inventory=inventory,
+        freshness=freshness,
+        source_assessments=source_assessments,
+    )
+    source_facts = build_source_facts(brief, source_assessments)
     payload = _planning_payload(
         item=item,
         service_profile=service_profile,
@@ -274,6 +265,7 @@ def _readiness_blockers(
     service_lifecycle: str,
     inventory: ContentPlanningInventory,
     freshness: ContentFreshnessAssessment,
+    source_assessments: list[ContentPlanningSourceAssessment],
 ) -> list[ContentPlanningInputBlocker]:
     blockers: list[ContentPlanningInputBlocker] = []
     if not service_profile.service_selection_confirmed:
@@ -304,13 +296,37 @@ def _readiness_blockers(
                 "Odśwież publiczny inventory WordPress i wróć do planowania.",
             )
         )
-    if freshness.state != "fresh":
+    stale_sources = [
+        assessment.source
+        for assessment in source_assessments
+        if assessment.status == "stale"
+    ]
+    if stale_sources:
         blockers.append(
             _blocker(
                 "stale_planning_sources",
                 "Źródła planu nie są świeże",
-                freshness.summary,
+                "Dokładnie powiązane źródła wymagają odświeżenia: "
+                f"{', '.join(stale_sources)}.",
                 freshness.next_step,
+            )
+        )
+    blocked_sources = [
+        assessment.source
+        for assessment in source_assessments
+        if assessment.status == "blocked"
+    ]
+    if blocked_sources and not any(
+        blocker.code in {"service_card_not_approved", "stale_planning_sources"}
+        for blocker in blockers
+    ):
+        blockers.append(
+            _blocker(
+                "blocked_planning_sources",
+                "Źródło wymaga dokładnego powiązania",
+                "Co najmniej jedno dostępne źródło nie ma jeszcze bezpiecznego "
+                f"powiązania z tą stroną: {', '.join(blocked_sources)}.",
+                "Dodaj typed landing/service match albo usuń niedopasowany fakt z wejścia.",
             )
         )
     return blockers
@@ -328,11 +344,11 @@ def _planning_payload(
     source_assessments: list[ContentPlanningSourceAssessment],
     claim_ledger: ContentClaimLedger,
 ) -> dict[str, object]:
+    query_portfolio = usable_query_portfolio(baseline.search_demand, source_assessments)
     evidence_ids = _planning_evidence_ids(
-        brief=brief,
-        baseline=baseline,
         inventory=inventory,
         service_profile=service_profile,
+        source_facts=source_facts,
         source_assessments=source_assessments,
         claim_ledger=claim_ledger,
     )
@@ -349,244 +365,63 @@ def _planning_payload(
         "search_intent": brief.search_intent,
         "source_facts": source_facts,
         "source_assessments": source_assessments,
-        "query_portfolio": baseline.search_demand,
+        "query_portfolio": query_portfolio,
         "claim_ledger": claim_ledger.entries,
         "measurement_metrics": brief.measurement_plan.metrics_to_watch,
-        "measurement_baseline_evidence_ids": brief.measurement_plan.baseline_evidence_ids,
+        "measurement_baseline_evidence_ids": [
+            evidence_id
+            for evidence_id in brief.measurement_plan.baseline_evidence_ids
+            if evidence_id in evidence_ids
+        ],
         "measurement_observation_rule": brief.measurement_plan.earliest_verdict_note,
         "measurement_success_claim_rule": brief.measurement_plan.success_claim_rule,
         "knowledge_card_ids": brief.knowledge_card_ids,
         "evidence_ids": evidence_ids,
-        "source_connectors": _unique([*brief.source_connectors, *baseline.source_connectors]),
-        "baseline_proposal": baseline,
+        "source_connectors": planning_source_connectors(
+            inventory=inventory,
+            service_profile=service_profile,
+            demand=query_portfolio,
+            source_facts=source_facts,
+            assessments=source_assessments,
+        ),
+        "baseline_cta_direction": baseline.cta_direction,
     }
 
 
 def _planning_evidence_ids(
     *,
-    brief: ContentSalesBrief,
-    baseline: ContentPlanningProposal,
     inventory: ContentPlanningInventory,
     service_profile: ContentWorkItemServiceProfileContext,
+    source_facts: list[ContentPlanningSourceFact],
     source_assessments: list[ContentPlanningSourceAssessment],
     claim_ledger: ContentClaimLedger,
 ) -> list[str]:
     return _unique(
         [
-            *brief.evidence_ids,
-            *baseline.evidence_ids,
-            *inventory.evidence_ids,
-            *service_profile.evidence_ids,
-            *brief.measurement_plan.baseline_evidence_ids,
-            *(evidence_id for item in source_assessments for evidence_id in item.evidence_ids),
-            *(evidence_id for entry in claim_ledger.entries for evidence_id in entry.evidence_ids),
+            *(
+                inventory.evidence_ids
+                if assessment_status(source_assessments, "wordpress") == "used"
+                else []
+            ),
+            *(
+                service_profile.evidence_ids
+                if assessment_status(source_assessments, "service_profile") == "used"
+                else []
+            ),
+            *(evidence_id for fact in source_facts for evidence_id in fact.evidence_ids),
+            *(
+                evidence_id
+                for item in source_assessments
+                if item.status == "used"
+                for evidence_id in item.evidence_ids
+            ),
+            *(
+                evidence_id
+                for entry in claim_ledger.entries
+                if entry.status in {"allowed_with_evidence", "allowed_general"}
+                for evidence_id in entry.evidence_ids
+            ),
         ]
-    )
-
-
-def _inventory(
-    item: ContentWorkItem,
-    inventory_resolution: ContentInventoryResolution,
-) -> ContentPlanningInventory:
-    evidence_ids = inventory_resolution.evidence_ids
-    headings = item.wordpress_section_headings
-    return ContentPlanningInventory(
-        status="available" if headings else "missing",
-        title_or_h1=item.wordpress_title_or_h1,
-        content_summary=item.wordpress_content_summary,
-        word_count=item.wordpress_content_word_count,
-        sections=[
-            ContentPlanningInventorySection(
-                section_id=f"inventory_section_{index:02d}",
-                heading=heading,
-                evidence_ids=evidence_ids,
-            )
-            for index, heading in enumerate(headings, start=1)
-        ],
-        evidence_ids=evidence_ids,
-        source_connectors=inventory_resolution.source_connectors,
-        note=item.wordpress_content_inventory_note or "",
-    )
-
-
-def _source_facts(
-    brief: ContentSalesBrief,
-) -> list[ContentPlanningSourceFact]:
-    return [
-        ContentPlanningSourceFact(
-            fact_id=f"planning_fact_{index:02d}",
-            summary=fact.summary,
-            source_connector=fact.source_connector,
-            evidence_ids=[fact.evidence_id],
-            knowledge_card_ids=brief.knowledge_card_ids,
-        )
-        for index, fact in enumerate(brief.source_facts, start=1)
-    ]
-
-
-def _source_assessments(
-    *,
-    item: ContentWorkItem,
-    inventory_resolution: ContentInventoryResolution,
-    service_profile: ContentWorkItemServiceProfileContext,
-    freshness: ContentFreshnessAssessment,
-    brief: ContentSalesBrief,
-    demand: ContentSearchDemandEvidence,
-    service_lifecycle: str,
-) -> list[ContentPlanningSourceAssessment]:
-    fact_kinds = {fact.source_connector for fact in brief.source_facts}
-    freshness_state = freshness.state
-    common_status: ContentPlanningSourceStatus = (
-        "stale"
-        if freshness_state == "stale"
-        else "blocked"
-        if freshness_state == "blocked"
-        else "missing"
-    )
-    gsc_evidence = [
-        evidence_id for row in demand.gsc_query_rows for evidence_id in row.evidence_ids
-    ]
-    ads_evidence = [evidence_id for row in demand.ads_term_rows for evidence_id in row.evidence_ids]
-    planner_evidence = [
-        evidence_id for row in demand.keyword_planner_rows for evidence_id in row.evidence_ids
-    ]
-    return [
-        *_primary_source_assessments(
-            item=item,
-            inventory_resolution=inventory_resolution,
-            service_profile=service_profile,
-            service_lifecycle=service_lifecycle,
-            knowledge_ids=brief.knowledge_card_ids,
-            fact_kinds=fact_kinds,
-            common_status=common_status,
-            gsc_evidence=gsc_evidence,
-            ads_evidence=ads_evidence,
-        ),
-        *_optional_source_assessments(
-            item=item,
-            brief=brief,
-            fact_kinds=fact_kinds,
-            planner_evidence=planner_evidence,
-        ),
-    ]
-
-
-def _primary_source_assessments(
-    *,
-    item: ContentWorkItem,
-    inventory_resolution: ContentInventoryResolution,
-    service_profile: ContentWorkItemServiceProfileContext,
-    service_lifecycle: str,
-    knowledge_ids: list[str],
-    fact_kinds: set[str],
-    common_status: ContentPlanningSourceStatus,
-    gsc_evidence: list[str],
-    ads_evidence: list[str],
-) -> list[ContentPlanningSourceAssessment]:
-    return [
-        _assessment(
-            "wordpress",
-            "used" if item.wordpress_section_headings else "missing",
-            "Publiczne inventory strony jest wejściem do decyzji zachowaj/scal/przepisz."
-            if item.wordpress_section_headings
-            else "Brakuje publicznych nagłówków istniejącej strony.",
-            inventory_resolution.evidence_ids,
-        ),
-        _assessment(
-            "service_profile",
-            "used" if service_lifecycle == "approved_current" else "blocked",
-            "Zatwierdzona karta usługi ogranicza odbiorcę, problemy, CTA i twierdzenia."
-            if service_lifecycle == "approved_current"
-            else "Karta usługi nie ma owner review.",
-            service_profile.evidence_ids,
-            knowledge_ids,
-        ),
-        _assessment(
-            "gsc",
-            "used" if gsc_evidence else common_status,
-            "Dokładne zapytania tej strony są wejściem planu."
-            if gsc_evidence
-            else "Brak dokładnych zapytań GSC dla strony.",
-            gsc_evidence,
-        ),
-        _assessment(
-            "ga4",
-            "used" if "google_analytics_4" in fact_kinds else "missing",
-            "Dokładny sygnał zachowania landing page jest dostępny."
-            if "google_analytics_4" in fact_kinds
-            else "Brak dokładnego sygnału GA4 dla tej strony.",
-        ),
-        _assessment(
-            "google_ads",
-            "used" if ads_evidence else "not_applicable",
-            "Dokładne terminy Ads pasują do termu, strony i usługi."
-            if ads_evidence
-            else "Brak ścisłego mapowania termu, strony i usługi; Ads nie zasila planu.",
-            ads_evidence,
-        ),
-    ]
-
-
-def _optional_source_assessments(
-    *,
-    item: ContentWorkItem,
-    brief: ContentSalesBrief,
-    fact_kinds: set[str],
-    planner_evidence: list[str],
-) -> list[ContentPlanningSourceAssessment]:
-    is_product = "wordpress_sklep" in item.source_connectors
-    has_local_intent = "lokal" in brief.search_intent.casefold()
-    return [
-        _assessment(
-            "ahrefs",
-            "used" if "ahrefs" in fact_kinds else "missing",
-            "Sprawdzony sygnał Ahrefs dotyczy tej strony."
-            if "ahrefs" in fact_kinds
-            else "Brak dokładnego, cross-source sygnału Ahrefs dla tej strony.",
-        ),
-        _assessment(
-            "keyword_planner",
-            "used" if planner_evidence else "missing",
-            "Dokładne metryki Keyword Planner są dostępne."
-            if planner_evidence
-            else "Brak developer tokena albo exact term mappingu; nie zgadujemy wolumenu.",
-            planner_evidence,
-        ),
-        _assessment(
-            "merchant",
-            "used" if is_product else "not_applicable",
-            "Strona produktowa może użyć dokładnych faktów Merchant."
-            if is_product
-            else "To nie jest strona produktowa.",
-        ),
-        _assessment(
-            "localo",
-            "missing" if has_local_intent else "not_applicable",
-            "Lokalna intencja wymaga dokładnego sygnału Localo."
-            if has_local_intent
-            else "Strona nie ma potwierdzonej lokalnej intencji.",
-        ),
-        _assessment(
-            "social",
-            "not_applicable",
-            "Social może ponownie użyć dopiero zatwierdzonej treści; nie zmienia planu strony.",
-        ),
-    ]
-
-
-def _assessment(
-    source: ContentPlanningSourceName,
-    status: ContentPlanningSourceStatus,
-    reason: str,
-    evidence_ids: list[str] | None = None,
-    knowledge_card_ids: list[str] | None = None,
-) -> ContentPlanningSourceAssessment:
-    return ContentPlanningSourceAssessment(
-        source=source,
-        status=status,
-        reason=reason,
-        evidence_ids=_unique(evidence_ids or []),
-        knowledge_card_ids=_unique(knowledge_card_ids or []),
     )
 
 
@@ -633,7 +468,9 @@ __all__ = [
     "ContentPlanningInput",
     "ContentPlanningInputBlocker",
     "ContentPlanningInputBuildResult",
+    "ContentPlanningInputSummary",
     "ContentPlanningInventory",
     "ContentPlanningSourceAssessment",
     "build_content_planning_input",
+    "content_planning_input_summary",
 ]
