@@ -217,6 +217,192 @@ def test_metric_store_exposes_previous_value_delta_and_freshness(
     assert traffic_source.trend == "unknown"
 
 
+def test_metric_store_applies_landing_identity_before_content_limit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    older = datetime.now(UTC) - timedelta(hours=2)
+    newer = datetime.now(UTC) - timedelta(minutes=5)
+    outsourcing_url = "https://www.ekologus.pl/oferta/?service=outsourcing"
+    for run_id, collected_at, value, page in (
+        (
+            "gsc_outsourcing_old",
+            older,
+            10,
+            f"{outsourcing_url}&utm_source=organic",
+        ),
+        (
+            "gsc_outsourcing_new",
+            newer,
+            15,
+            f"{outsourcing_url}&utm_medium=search",
+        ),
+        (
+            "gsc_audit_newer_noise",
+            newer + timedelta(seconds=1),
+            999,
+            "https://www.ekologus.pl/oferta/?service=audyt",
+        ),
+    ):
+        metric_store().save_connector_refresh_metrics(
+            ConnectorRefreshRun(
+                id=run_id,
+                connector_id="google_search_console",
+                mode=ConnectorRefreshMode.vendor_read,
+                status=ConnectorRefreshStatus.completed,
+                started_at=collected_at,
+                completed_at=collected_at,
+                evidence_ids=[f"ev_{run_id}"],
+                summary="Landing identity metric proof.",
+            ),
+            detailed_facts=[
+                VendorMetricFact(
+                    name="clicks",
+                    value=value,
+                    period="last_28_days",
+                    dimensions={"page": page, "query": "outsourcing środowiskowy"},
+                )
+            ],
+        )
+
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="gsc_mixed_invalid_newest",
+            connector_id="google_search_console",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=newer + timedelta(seconds=2),
+            completed_at=newer + timedelta(seconds=2),
+            evidence_ids=["ev_gsc_mixed_invalid_newest"],
+            summary="Conflicting URL dimension proof.",
+        ),
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=1000,
+                dimensions={
+                    "page": f"{outsourcing_url}&utm_source=organic",
+                    "landing_page": "(not set)",
+                },
+            )
+        ],
+    )
+
+    with duckdb.connect(str(tmp_path / "metrics.duckdb")) as connection:
+        connection.execute(
+            "UPDATE connector_metric_facts SET dimensions_json = ? WHERE run_id = ?",
+            [
+                json.dumps(
+                    {
+                        "page": f"{outsourcing_url}&utm_source=organic",
+                        "query": "outsourcing środowiskowy",
+                    },
+                    sort_keys=True,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+                "gsc_outsourcing_old",
+            ],
+        )
+
+    exact_limited = metric_store().list_metric_facts_for_content_url(
+        ["google_search_console"],
+        outsourcing_url,
+        content_path="/oferta?service=outsourcing",
+        limit=1,
+    )
+    assert [fact.evidence_id for fact in exact_limited] == [
+        "ev_gsc_outsourcing_new"
+    ]
+    assert set(exact_limited[0].dimensions) == {"page", "query"}
+
+
+def test_metric_store_owns_and_hides_reserved_dimension_namespace(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    collected_at = datetime.now(UTC) - timedelta(minutes=5)
+    page = "https://www.ekologus.pl/oferta/?service=outsourcing"
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="gsc_reserved_input",
+            connector_id="google_search_console",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=collected_at,
+            completed_at=collected_at,
+            evidence_ids=["ev_gsc_reserved_input"],
+            summary="Reserved namespace proof.",
+        ),
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=10,
+                dimensions={
+                    "page": f"{page}&utm_source=organic",
+                    "_wilq_landing_identity": "forced",
+                    "_wilq_metric_partition": "forced",
+                },
+            )
+        ],
+    )
+
+    facts = metric_store().list_metric_facts_by_evidence_ids(
+        ["ev_gsc_reserved_input"]
+    )
+    with duckdb.connect(str(tmp_path / "metrics.duckdb"), read_only=True) as connection:
+        stored_dimensions = json.loads(
+            connection.execute(
+                "SELECT dimensions_json FROM connector_metric_facts WHERE run_id = ?",
+                ["gsc_reserved_input"],
+            ).fetchone()[0]
+        )
+
+    assert facts[0].dimensions == {"page": f"{page}&utm_source=organic"}
+    assert stored_dimensions["_wilq_landing_identity"] == (
+        "https://www.ekologus.pl/oferta?service=outsourcing"
+    )
+    assert "_wilq_metric_partition" not in stored_dimensions
+
+
+def test_evidence_scoped_metric_read_computes_previous_over_full_history(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    dimensions = {"page": "https://www.ekologus.pl/oferta/"}
+    for run_id, value, collected_at in (
+        ("gsc_history_old", 10, datetime.now(UTC) - timedelta(hours=2)),
+        ("gsc_history_new", 15, datetime.now(UTC) - timedelta(minutes=5)),
+    ):
+        metric_store().save_connector_refresh_metrics(
+            ConnectorRefreshRun(
+                id=run_id,
+                connector_id="google_search_console",
+                mode=ConnectorRefreshMode.vendor_read,
+                status=ConnectorRefreshStatus.completed,
+                started_at=collected_at,
+                completed_at=collected_at,
+                evidence_ids=[f"ev_{run_id}"],
+                summary="Evidence-scoped history proof.",
+            ),
+            detailed_facts=[
+                VendorMetricFact(
+                    name="clicks",
+                    value=value,
+                    dimensions=dimensions,
+                )
+            ],
+        )
+
+    facts = metric_store().list_metric_facts_by_evidence_ids(["ev_gsc_history_new"])
+
+    assert facts[0].previous_value == 10
+    assert facts[0].previous_evidence_id == "ev_gsc_history_old"
+
+
 def test_metric_store_lists_metric_facts_by_connector_in_one_batch(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

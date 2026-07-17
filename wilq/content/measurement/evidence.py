@@ -5,10 +5,14 @@ from typing import cast
 
 from wilq.content.canonical.landing_identity import (
     LandingPageCandidate,
+    landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
     match_landing_page,
 )
-from wilq.content.canonical.urls import content_normalized_path
+from wilq.content.canonical.metric_dimensions import (
+    METRIC_LANDING_URL_DIMENSIONS,
+    metric_dimensions_match_landing,
+)
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.measurement.outcome import ContentMeasurementObservedMetric
@@ -38,18 +42,9 @@ METRIC_NAMES: dict[tuple[str, str], ContentMeasurementMetric] = {
     ("google_analytics_4", "engagement_rate"): "ga4_engagement_rate",
     ("google_analytics_4", "key_events"): "ga4_key_events",
 }
-CONTENT_URL_DIMENSIONS = {
-    "content_url",
-    "page",
-    "page_location",
-    "landing_page",
-    "landing_page_plus_query_string",
-}
-
-
 def load_content_measurement_facts(content_url: str | None) -> list[MetricFact]:
     store = metric_store()
-    normalized_path = content_normalized_path(content_url)
+    normalized_path = landing_page_metric_lookup_path(content_url)
     facts = [
         fact
         for normalized_url in landing_page_metric_lookup_urls(content_url)
@@ -243,15 +238,7 @@ def _measurement_metric(fact: MetricFact) -> ContentMeasurementMetric | None:
 
 
 def _fact_matches_url(fact: MetricFact, content_url: str | None) -> bool:
-    matches = [
-        match_landing_page(
-            content_url,
-            LandingPageCandidate(candidate_id=key, url=fact.dimensions.get(key)),
-        )
-        for key in CONTENT_URL_DIMENSIONS
-        if fact.dimensions.get(key)
-    ]
-    return bool(content_url) and bool(matches) and all(match.matched for match in matches)
+    return metric_dimensions_match_landing(fact.dimensions, content_url)
 
 
 def _latest_period_fact(
@@ -267,7 +254,7 @@ def _fact_covers_period(fact: MetricFact, period: ContentDateRange) -> bool:
 
 
 def _fact_is_page_aggregate(fact: MetricFact) -> bool:
-    return bool(fact.dimensions) and set(fact.dimensions) <= CONTENT_URL_DIMENSIONS
+    return bool(fact.dimensions) and set(fact.dimensions) <= METRIC_LANDING_URL_DIMENSIONS
 
 
 def _required_collected_at(fact: MetricFact) -> datetime:

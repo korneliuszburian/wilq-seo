@@ -35,13 +35,26 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   exact GSC snapshot, WordPress publication binding i publication-bound
   measurement. Wariant funkcjonalny, sama ścieżka GA4 oraz sprzeczne URL
   dimensions nie mogą zasilić wyniku; UTM-only facts łączą się bez duplikacji,
-  a oba zatwierdzone aliasy hosta Ekologus są odczytywane. Focused proof,
+  a oba zatwierdzone aliasy hosta Ekologus są odczytywane. Drugi slice zapisuje
+  wyliczoną identity w prywatnej przestrzeni dimensions nowych metryk, usuwa
+  wszystkie caller-supplied `_wilq_*`, uzupełnia request-scoped index wyłącznie
+  dla pasujących legacy rows i stosuje exact identity przed SQL `LIMIT`.
+  Evidence-scoped read liczy poprzednią wartość nad pełną historią właściwych
+  konektorów, zanim odfiltruje żądane evidence IDs. Dynamiczne przepinanie LAG
+  po identity zostało wycofane po regresji wydajności i ryzyku fałszywego
+  trendu; pozostaje jawnym zakresem wymagającym trwałego klucza lub maintenance
+  window. Niezależny review drugiego slice'u znalazł P1, w którym populated
+  `"(not set)"` w drugim URL dimension mogło wyprzeć poprawny fakt dopiero po
+  limicie; identity wymaga teraz resolved i zgodnego wyniku dla każdego
+  populated URL dimension, a publiczny falsyfikator oraz re-review są zielone.
+  Claude checker na tym dirty fixed poincie zakończył się statusem 1 bez JSON,
+  więc nie jest przedstawiany ani jako finding, ani PASS. Focused proof,
   mypy, Ruff i diff check są zielone; niezależny read-only review znalazł
   cztery błędy, po poprawkach potwierdził PASS w tym zakresie. Claude checker
   nie dał werdyktu: pierwszy pass poprawnie zgłosił brak osadzonego evidence,
   drugi zakończył się timeoutem bez outputu. Bead pozostaje otwarty na
-  query-aware identity przed limitem store/LAG, projekcję tierów do API,
-  konsumenta Ads i proof obu pilotów; nie wykonano migracji ani vendor write.
+  trwały kontrakt partycjonowania LAG, projekcję tierów do API, konsumenta Ads
+  i proof obu pilotów; nie wykonano migracji ani vendor write.
 - `wilq-seo-1oa.36.8` domyka pełny, source-bound review WILQ na fixed commicie
   `d2649f15`: cztery niezależne ledgery contentu, dashboardu marketera,
   skillów/skryptów oraz metrics/actions/learning mają łącznie 37 zwalidowanych

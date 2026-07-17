@@ -5,10 +5,10 @@ from fastapi import HTTPException
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
 from wilq.content.canonical.landing_identity import (
     LandingPageCandidate,
+    landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
     match_landing_page,
 )
-from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.planning.decisions import (
     content_decision_metric_tiles,
@@ -165,7 +165,7 @@ def diagnostics_with_exact_gsc_demand(
         for fact in metric_store().list_metric_facts_for_content_url(
             ["google_search_console"],
             lookup_url,
-            content_path=content_normalized_path(decision.page),
+            content_path=landing_page_metric_lookup_path(decision.page),
         )
     ]
     exact_facts = [

@@ -11,6 +11,16 @@ from typing import Any, Literal, cast
 import duckdb
 
 from wilq.connectors.vendor import VendorMetricFact
+from wilq.content.canonical.landing_identity import (
+    landing_page_metric_legacy_base_urls,
+    landing_page_metric_lookup_path,
+)
+from wilq.content.canonical.metric_dimensions import (
+    LANDING_IDENTITY_DIMENSION,
+    dimensions_with_metric_identity,
+    metric_dimensions_landing_identity,
+    metric_dimensions_match_landing,
+)
 from wilq.schemas import ConnectorRefreshRun, MetricFact
 from wilq.storage.private_paths import prepare_private_store_path
 from wilq.storage.schema_versions import (
@@ -415,7 +425,7 @@ class DuckDbMetricStore:
                 ORDER BY collected_at ASC, evidence_id ASC
               ) AS previous_collected_at
             FROM connector_metric_facts
-            WHERE evidence_id = ANY(?)
+            WHERE connector_id = ANY(?)
             )
             SELECT
               metric_name,
@@ -434,6 +444,7 @@ class DuckDbMetricStore:
               previous_evidence_id,
               previous_collected_at
             FROM metric_facts_with_previous
+            WHERE evidence_id = ANY(?)
             ORDER BY
               evidence_id ASC,
               connector_id ASC,
@@ -441,7 +452,21 @@ class DuckDbMetricStore:
               dimensions_json ASC
         """
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
-            rows = connection.execute(query, [unique_evidence_ids]).fetchall()
+            connector_rows = connection.execute(
+                """
+                SELECT DISTINCT connector_id
+                FROM connector_metric_facts
+                WHERE evidence_id = ANY(?)
+                """,
+                [unique_evidence_ids],
+            ).fetchall()
+            rows = connection.execute(
+                query,
+                [
+                    [cast(str, row[0]) for row in connector_rows],
+                    unique_evidence_ids,
+                ],
+            ).fetchall()
         return [_metric_fact_from_row(row) for row in rows]
 
     def list_metric_facts_for_content_url(
@@ -455,61 +480,65 @@ class DuckDbMetricStore:
         if not connector_ids or not content_url or not content_path:
             return []
         bounded_limit = max(1, min(limit, MAX_METRIC_FACT_READ_LIMIT))
-        normalized_url = content_url.rstrip("/")
-        normalized_path = content_path.rstrip("/")
+        identity_dimensions = dimensions_with_metric_identity({"page": content_url})
+        landing_identity = identity_dimensions.get(LANDING_IDENTITY_DIMENSION)
+        if not landing_identity:
+            return []
         query = """
             SELECT
-              metric_name,
-              metric_value_double,
-              metric_value_text,
-              value_kind,
-              connector_id,
-              evidence_id,
-              collected_at,
-              period,
-              unit,
-              dimensions_json,
+              facts.metric_name,
+              facts.metric_value_double,
+              facts.metric_value_text,
+              facts.value_kind,
+              facts.connector_id,
+              facts.evidence_id,
+              facts.collected_at,
+              facts.period,
+              facts.unit,
+              facts.dimensions_json,
               NULL AS previous_metric_value_double,
               NULL AS previous_metric_value_text,
               NULL AS previous_value_kind,
               NULL AS previous_evidence_id,
               NULL AS previous_collected_at
-            FROM connector_metric_facts
-            WHERE connector_id = ANY(?)
-              AND (
-                rtrim(split_part(
-                  json_extract_string(dimensions_json, '$.content_url'), '?', 1
-                ), '/') = ?
-                OR rtrim(split_part(
-                  json_extract_string(dimensions_json, '$.page'), '?', 1
-                ), '/') = ?
-                OR rtrim(split_part(
-                  json_extract_string(dimensions_json, '$.page_location'), '?', 1
-                ), '/') = ?
-                OR rtrim(split_part(
-                  json_extract_string(dimensions_json, '$.landing_page'), '?', 1
-                ), '/') = ?
-                OR rtrim(split_part(
-                  json_extract_string(
-                    dimensions_json, '$.landing_page_plus_query_string'
-                  ), '?', 1
-                ), '/') = ?
-              )
-            ORDER BY collected_at DESC, connector_id ASC, metric_name ASC, evidence_id ASC
+            FROM connector_metric_facts facts
+            LEFT JOIN wilq_legacy_landing_identity identity
+              ON identity.run_id = facts.run_id
+             AND identity.metric_name = facts.metric_name
+             AND identity.dimensions_json = facts.dimensions_json
+            WHERE facts.connector_id = ANY(?)
+              AND COALESCE(
+                json_extract_string(
+                  facts.dimensions_json, '$._wilq_landing_identity'
+                ),
+                identity.landing_identity
+              ) = ?
+            ORDER BY
+              facts.collected_at DESC,
+              facts.connector_id ASC,
+              facts.metric_name ASC,
+              facts.evidence_id ASC
             LIMIT ?
         """
         params: list[Any] = [
             list(dict.fromkeys(connector_ids)),
-            normalized_url,
-            normalized_url,
-            normalized_url,
-            normalized_path,
-            normalized_path,
+            landing_identity,
             bounded_limit,
         ]
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
+            _prepare_legacy_landing_identity_index(
+                connection,
+                connector_ids,
+                content_url=content_url,
+                content_path=content_path,
+            )
             rows = connection.execute(query, params).fetchall()
-        return [_metric_fact_from_row(row) for row in rows]
+        facts = [_metric_fact_from_row(row) for row in rows]
+        return [
+            fact
+            for fact in facts
+            if metric_dimensions_match_landing(fact.dimensions, content_url)
+        ]
 
     def _connect(self, read_only: bool = False) -> duckdb.DuckDBPyConnection:
         prepare_private_store_path(
@@ -637,6 +666,87 @@ def _connect_with_retry(path: Path, read_only: bool = False) -> duckdb.DuckDBPyC
                 raise
             time.sleep(DUCKDB_CONNECT_RETRY_SECONDS * (attempt + 1))
     raise RuntimeError("DuckDB connection retry exhausted") from last_error
+
+
+def _prepare_legacy_landing_identity_index(
+    connection: duckdb.DuckDBPyConnection,
+    connector_ids: list[str],
+    *,
+    content_url: str,
+    content_path: str,
+) -> None:
+    connection.execute(
+        """
+        CREATE TEMP TABLE wilq_legacy_landing_identity (
+          run_id VARCHAR NOT NULL,
+          metric_name VARCHAR NOT NULL,
+          dimensions_json VARCHAR NOT NULL,
+          landing_identity VARCHAR NOT NULL,
+          PRIMARY KEY (run_id, metric_name, dimensions_json)
+        )
+        """
+    )
+    if landing_page_metric_lookup_path(content_url) != content_path:
+        return
+
+    url_bases = [
+        base.rstrip("/").casefold()
+        for base in landing_page_metric_legacy_base_urls(content_url)
+    ]
+
+    base_match = """
+        lower(rtrim(split_part(json_extract_string(dimensions_json, ?), '?', 1), '/'))
+          = ANY(?)
+    """
+    dimension_paths = [
+        "$.content_url",
+        "$.final_url",
+        "$.landing_page",
+        "$.landing_page_plus_query_string",
+        "$.page",
+        "$.page_location",
+    ]
+    stored_rows = connection.execute(
+        f"""
+        SELECT DISTINCT run_id, metric_name, dimensions_json
+        FROM connector_metric_facts
+        WHERE connector_id = ANY(?)
+          AND json_extract_string(
+            dimensions_json, '$._wilq_landing_identity'
+          ) IS NULL
+          AND ({" OR ".join(base_match for _ in dimension_paths)})
+        """,
+        [
+            list(dict.fromkeys(connector_ids)),
+            *[
+                item
+                for dimension_path in dimension_paths
+                for item in (dimension_path, url_bases)
+            ],
+        ],
+    ).fetchall()
+    index_rows: list[tuple[str, str, str, str]] = []
+    for run_id, metric_name, dimensions_json in stored_rows:
+        public_dimensions = _parse_dimensions(cast(str, dimensions_json))
+        landing_identity = metric_dimensions_landing_identity(public_dimensions)
+        if landing_identity:
+            index_rows.append(
+                (
+                    cast(str, run_id),
+                    cast(str, metric_name),
+                    cast(str, dimensions_json),
+                    landing_identity,
+                )
+            )
+    if index_rows:
+        connection.executemany(
+            """
+            INSERT INTO wilq_legacy_landing_identity (
+              run_id, metric_name, dimensions_json, landing_identity
+            ) VALUES (?, ?, ?, ?)
+            """,
+            index_rows,
+        )
 
 
 def _table_exists(connection: duckdb.DuckDBPyConnection, table_name: str) -> bool:
@@ -770,12 +880,8 @@ def _metric_fact_from_row(row: tuple[Any, ...]) -> MetricFact:
 
 
 def _dimensions_json(dimensions: dict[str, str]) -> str:
-    cleaned = {
-        str(key): str(value)
-        for key, value in dimensions.items()
-        if str(key).strip() and str(value).strip()
-    }
-    return json.dumps(cleaned, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    enriched = dimensions_with_metric_identity(dimensions)
+    return json.dumps(enriched, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
 
 
 def _parse_dimensions(value: str) -> dict[str, str]:
@@ -785,7 +891,11 @@ def _parse_dimensions(value: str) -> dict[str, str]:
         return {}
     if not isinstance(parsed, dict):
         return {}
-    return {str(key): str(item) for key, item in parsed.items() if item is not None}
+    return {
+        str(key): str(item)
+        for key, item in parsed.items()
+        if item is not None and not str(key).startswith("_wilq_")
+    }
 
 
 def _deduplicate_metric_rows(rows: list[MetricRow]) -> list[MetricRow]:

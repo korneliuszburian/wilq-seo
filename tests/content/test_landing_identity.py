@@ -3,6 +3,8 @@ from __future__ import annotations
 from wilq.content.canonical.landing_identity import (
     LandingPageCandidate,
     build_landing_page_identity,
+    landing_page_metric_legacy_base_urls,
+    landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
     match_landing_page,
     resolve_landing_page_candidates,
@@ -120,8 +122,14 @@ def test_landing_identity_preserves_functional_query_and_discards_only_tracking(
     assert identity.removed_tracking_parameters == ["utm_campaign"]
     assert identity.host_alias_applied
     assert landing_page_metric_lookup_urls(identity.canonical_url) == [
-        "https://www.ekologus.pl/oferta",
+        "https://www.ekologus.pl/oferta?z=2&a=1",
+    ]
+    assert landing_page_metric_lookup_path(identity.canonical_url) == "/oferta?z=2&a=1"
+    assert landing_page_metric_legacy_base_urls(identity.canonical_url) == [
         "https://ekologus.pl/oferta",
+        "https://ekologus.pl:443/oferta",
+        "https://www.ekologus.pl/oferta",
+        "https://www.ekologus.pl:443/oferta",
     ]
 
 

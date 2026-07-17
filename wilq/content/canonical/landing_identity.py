@@ -33,9 +33,6 @@ _HOST_ALIASES = {
     "ekologus.pl": "www.ekologus.pl",
     "www.ekologus.pl": "www.ekologus.pl",
 }
-_CANONICAL_HOST_LOOKUP_ALIASES = {
-    "www.ekologus.pl": ["www.ekologus.pl", "ekologus.pl"],
-}
 
 
 class LandingPageIdentity(BaseModel):
@@ -276,21 +273,43 @@ def landing_page_metric_lookup_urls(value: str | None) -> list[str]:
         or not identity.normalized_path
     ):
         return []
-    hosts = _CANONICAL_HOST_LOOKUP_ALIASES.get(
-        identity.normalized_host,
-        [identity.normalized_host],
-    )
+    return [identity.canonical_url] if identity.canonical_url else []
+
+
+def landing_page_metric_lookup_path(value: str | None) -> str:
+    identity = build_landing_page_identity(value)
+    if identity.status != "resolved" or not identity.normalized_path:
+        return ""
+    if identity.functional_query:
+        return f"{identity.normalized_path}?{identity.functional_query}"
+    return identity.normalized_path
+
+
+def landing_page_metric_legacy_base_urls(value: str | None) -> list[str]:
+    identity = build_landing_page_identity(value)
+    if (
+        identity.status != "resolved"
+        or not identity.normalized_scheme
+        or not identity.normalized_host
+        or not identity.normalized_path
+    ):
+        return []
+    hosts = {
+        raw_host
+        for raw_host, canonical_host in _HOST_ALIASES.items()
+        if canonical_host == identity.normalized_host
+    } or {identity.normalized_host}
     default_port = _default_port(identity.normalized_scheme)
-    port_suffix = (
-        f":{identity.normalized_port}"
-        if identity.normalized_port is not None
-        and identity.normalized_port != default_port
-        else ""
-    )
-    return [
-        f"{identity.normalized_scheme}://{host}{port_suffix}{identity.normalized_path}"
+    ports = {identity.normalized_port}
+    if identity.normalized_port == default_port:
+        ports.add(None)
+    return sorted(
+        f"{identity.normalized_scheme}://{host}"
+        f"{f':{port}' if port is not None else ''}"
+        f"{identity.normalized_path}"
         for host in hosts
-    ]
+        for port in ports
+    )
 
 
 def _candidate_match(

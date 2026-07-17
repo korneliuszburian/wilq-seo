@@ -254,12 +254,7 @@ def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
             "connector_ids": ["google_search_console"],
             "content_url": "https://www.ekologus.pl/",
             "content_path": "/",
-        },
-        {
-            "connector_ids": ["google_search_console"],
-            "content_url": "https://ekologus.pl/",
-            "content_path": "/",
-        },
+        }
     ]
     assert "150 wyświetleń" in buyer_problem
     assert 'główne zapytanie: "query one"' in buyer_problem
