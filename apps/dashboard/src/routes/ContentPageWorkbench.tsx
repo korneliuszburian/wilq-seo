@@ -336,18 +336,6 @@ export function ContentPageWorkbench({
                       );
                     })}
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 border-b border-line pb-3 text-sm">
-                    <span className="rounded-md border border-line bg-white px-3 py-2 text-slate-700">
-                      Akapit
-                    </span>
-                    <span className="font-bold text-ink">B</span>
-                    <span className="italic text-ink">I</span>
-                    <span className="text-slate-500">link</span>
-                    <span className="text-slate-500">lista</span>
-                    <span className="ml-auto rounded-md border border-line bg-white px-3 py-2 text-slate-700">
-                      Wstaw dowód
-                    </span>
-                  </div>
                   {selectedSection ? (
                     <label className="mt-4 block">
                       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
