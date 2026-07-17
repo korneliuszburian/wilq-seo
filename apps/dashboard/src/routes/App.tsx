@@ -173,6 +173,18 @@ function renderGeneratedRoute(path: string) {
   return <GenericSurface routeName={path} />;
 }
 
+function contentWorkflowSearch(search: Record<string, unknown>) {
+  return {
+    work_item_id: optionalSearchString(search.work_item_id),
+    section_heading: optionalSearchString(search.section_heading),
+    planning_digest: optionalSearchString(search.planning_digest)
+  };
+}
+
+function optionalSearchString(value: unknown) {
+  return typeof value === "string" && value ? value : undefined;
+}
+
 const rootRoute = createRootRoute({ component: Shell });
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -226,7 +238,8 @@ const generatedRoutes = [...generatedSurfaceRoutes]
     createRoute({
       getParentRoute: () => rootRoute,
       path,
-      component: () => renderGeneratedRoute(path)
+      component: () => renderGeneratedRoute(path),
+      ...(path === "/content-workflow" ? { validateSearch: contentWorkflowSearch } : {})
     })
   );
 

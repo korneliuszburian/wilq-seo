@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -296,6 +296,41 @@ describe("ContentWorkflowSurface", () => {
     expect(picker).toHaveValue("content_work_item_bdo");
     expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_bdo");
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
+  });
+
+  it("follows browser history after the route is already mounted", async () => {
+    const appRouter = createWilqRouter({
+      initialPath: "/content-workflow?work_item_id=content_work_item_bdo",
+      defaultPendingMinMs: 0
+    });
+    render(
+      <App
+        appRouter={appRouter}
+        client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
+      />
+    );
+
+    const picker = await screen.findByRole("combobox", { name: "Strona i temat" });
+    expect(picker).toHaveValue("content_work_item_bdo");
+
+    fireEvent.change(picker, { target: { value: "content_work_item_green_deal" } });
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "Strona i temat" })).toHaveValue(
+        "content_work_item_green_deal"
+      )
+    );
+    await act(async () => {
+      appRouter.history.back();
+    });
+
+    expect(Reflect.get(appRouter.state.location.search, "work_item_id")).toBe(
+      "content_work_item_bdo"
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "Strona i temat" })).toHaveValue(
+        "content_work_item_bdo"
+      )
+    );
   });
 
   it("keeps the session focus on an exact section from the current plan", async () => {

@@ -74,13 +74,9 @@ type ContentPlanningSections = NonNullable<
 >["proposal"]["sections"];
 export function ContentWorkflowSurface() {
   const navigate = useNavigate();
-  const routeSearch = useRouterState({ select: (state) => state.location.search });
-  const requestedWorkItemId = contentWorkItemIdFromSearch(routeSearch);
-  const [selectedWorkItemId, setSelectedWorkItemId] = useState<string | null>(
-    requestedWorkItemId
-  );
+  const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
+  const selectedWorkItemId = stringFromSearch(routeSearch, "work_item_id");
   const selectWorkItem = (workItemId: string) => {
-    setSelectedWorkItemId(workItemId);
     void navigate({
       to: "/content-workflow",
       search: (previous) => ({
@@ -88,8 +84,7 @@ export function ContentWorkflowSurface() {
         work_item_id: workItemId,
         section_heading: undefined,
         planning_digest: undefined
-      }),
-      replace: true
+      })
     });
   };
   const {
@@ -118,14 +113,9 @@ export function ContentWorkflowSurface() {
   );
 }
 
-function contentWorkItemIdFromSearch(search: unknown) {
-  return stringFromSearch(search, "work_item_id");
-}
-
-function stringFromSearch(search: unknown, key: string) {
-  if (typeof search !== "object" || search === null) return null;
-  const value = Reflect.get(search, key);
-  return typeof value === "string" && value ? value : null;
+function stringFromSearch(search: string, key: string) {
+  const value = new URLSearchParams(search).get(key);
+  return value || null;
 }
 
 function ContentWorkflowRouteState({
@@ -445,7 +435,7 @@ function ContentSessionPicker({
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   const navigate = useNavigate();
-  const routeSearch = useRouterState({ select: (state) => state.location.search });
+  const routeSearch = useRouterState({ select: (state) => state.location.searchStr });
   const requestedSectionHeading = stringFromSearch(routeSearch, "section_heading");
   const requestedPlanningDigest = stringFromSearch(routeSearch, "planning_digest");
   const candidates = queue.candidates.filter(
@@ -510,7 +500,7 @@ function ContentSessionPicker({
                     ...previous,
                     work_item_id: selectedWorkItemId,
                     section_heading: event.target.value,
-                    planning_digest: planningDigest
+                    planning_digest: planningDigest ?? undefined
                   }),
                   replace: true
                 });

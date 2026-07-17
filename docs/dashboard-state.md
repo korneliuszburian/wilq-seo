@@ -43,6 +43,9 @@ a blocker and the next safe step; React no longer parses Polish status copy.
 Marketer mode renders one compact page/service/decision context, the task map
 and exactly one selected workspace. The former queue/action/proof wall mounts
 only after an explicit switch to `Audyt techniczny`.
+Wybór work itemu jest własnością zwalidowanego URL-a: zmiana historii lub
+routera po zamontowaniu widoku przełącza kandydaturę i snapshot bez zachowania
+starego lokalnego wyboru React.
 
 The current reviewer estimate is 7.5/10 for the operator workflow, real text
 quality remains unscored and exact-version handoff safety remains 8/10. The
