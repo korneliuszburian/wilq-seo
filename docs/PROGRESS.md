@@ -27,6 +27,19 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie zakresy i proofy
 
+- `wilq-seo-1oa.36.8` domyka pełny, source-bound review WILQ na fixed commicie
+  `d2649f15`: cztery niezależne ledgery contentu, dashboardu marketera,
+  skillów/skryptów oraz metrics/actions/learning mają łącznie 37 zwalidowanych
+  findings. Pierwsza synteza została poprawnie odrzucona za cytowanie źródła
+  nieoznaczonego jako użyte i nie ma opublikowanego wyniku. Fresh replacement
+  przypiął cztery ledgery SHA-256 i zwalidował 30 deduplikowanych pozycji.
+  Lokalny disposition oznaczył jako już naprawione negative reviews, fake
+  toolbar i capability registry, a późniejsze commity `246c6020` i `5dfd3065`
+  naprawiły reaktywny URL content work itemu oraz uczciwy mobile overflow.
+  Istniejące Beads przejęły findings konektorów i redukcji skryptów; nowe
+  `.36.20`–`.36.25` posiadają brakujące measurement, history, execution-binding,
+  redaction, live-mode i operator-label contracts. Review nie wykonał vendor
+  write, migracji, realnego model generation, approval ani UAT.
 - `wilq-seo-v9ab.18.1` usuwa fałszywe `ready` dla konwersji GA4. API rozdziela
   dostępność kolumn, zaobserwowane niezerowe fakty i potwierdzenie konfiguracji
   zdarzeń kluczowych; bieżący runtime ma 275 faktów konwersyjnych, 0 niezerowych
