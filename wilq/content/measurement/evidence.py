@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
-from wilq.content.canonical.urls import content_normalized_path, content_normalized_url
+from wilq.content.canonical.landing_identity import (
+    LandingPageCandidate,
+    landing_page_metric_lookup_urls,
+    match_landing_page,
+)
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
 from wilq.content.measurement.outcome import ContentMeasurementObservedMetric
@@ -44,17 +49,17 @@ CONTENT_URL_DIMENSIONS = {
 
 def load_content_measurement_facts(content_url: str | None) -> list[MetricFact]:
     store = metric_store()
-    normalized_url = content_normalized_url(content_url)
     normalized_path = content_normalized_path(content_url)
-    return [
+    facts = [
         fact
-        for connector_id in MEASUREMENT_CONNECTORS
+        for normalized_url in landing_page_metric_lookup_urls(content_url)
         for fact in store.list_metric_facts_for_content_url(
-            [connector_id],
+            MEASUREMENT_CONNECTORS,
             normalized_url,
             content_path=normalized_path,
         )
     ]
+    return _unique_metric_facts(facts)
 
 
 def build_publication_bound_measurement_window(
@@ -96,7 +101,8 @@ def build_publication_bound_measurement_window(
                 _blocker(
                     "missing_metric_evidence",
                     "Brakuje metryk dla opublikowanego adresu",
-                    "WILQ potwierdził publikację, ale nie ma exact-URL danych GSC ani GA4.",
+                    "WILQ potwierdził publikację, ale nie ma jednoznacznie dopasowanych "
+                    "danych GSC ani GA4.",
                     "Odśwież GSC lub GA4 po publikacji i wróć do pomiaru.",
                 )
             ]
@@ -210,8 +216,13 @@ def _publication_fact(
         or execution.mode != "live"
         or not execution.wordpress_post_id
         or execution.payload is None
-        or content_normalized_url(execution.payload.final_canonical_url)
-        != content_normalized_url(item.final_canonical_url)
+        or not match_landing_page(
+            item.final_canonical_url,
+            LandingPageCandidate(
+                candidate_id="wordpress_execution_payload",
+                url=execution.payload.final_canonical_url,
+            ),
+        ).matched
     ):
         return None
     matches = [
@@ -232,21 +243,15 @@ def _measurement_metric(fact: MetricFact) -> ContentMeasurementMetric | None:
 
 
 def _fact_matches_url(fact: MetricFact, content_url: str | None) -> bool:
-    expected = content_normalized_url(content_url)
-    expected_path = content_normalized_path(content_url)
-    return bool(expected) and (
-        any(
-            content_normalized_url(fact.dimensions.get(key)) == expected
-            for key in ("content_url", "page", "page_location")
+    matches = [
+        match_landing_page(
+            content_url,
+            LandingPageCandidate(candidate_id=key, url=fact.dimensions.get(key)),
         )
-        or any(
-            content_normalized_path(fact.dimensions.get(key)) == expected_path
-            for key in (
-                "landing_page",
-                "landing_page_plus_query_string",
-            )
-        )
-    )
+        for key in CONTENT_URL_DIMENSIONS
+        if fact.dimensions.get(key)
+    ]
+    return bool(content_url) and bool(matches) and all(match.matched for match in matches)
 
 
 def _latest_period_fact(
@@ -278,6 +283,13 @@ def _refresh_run_id(evidence_id: str) -> str:
 
 def _metric_fact_locator(fact: MetricFact) -> str:
     return f"{fact.evidence_id}:{fact.source_connector}:{fact.name}"
+
+
+def _unique_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
+    unique: dict[str, MetricFact] = {}
+    for fact in facts:
+        unique.setdefault(fact.model_dump_json(), fact)
+    return list(unique.values())
 
 
 def _blocker(

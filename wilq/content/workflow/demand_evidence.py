@@ -7,6 +7,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.canonical.landing_identity import (
+    LandingPageCandidate,
+    build_landing_page_identity,
+    match_landing_page,
+)
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.schemas import ContentFreshnessAssessment, MetricFact
 
@@ -56,12 +61,12 @@ def build_content_search_demand_evidence(
     draft: ContentDraftPackage,
     freshness: ContentFreshnessAssessment,
 ) -> ContentSearchDemandEvidence:
-    allowed_pages = {page for page in (source_page, final_canonical_url) if page}
+    allowed_pages = [page for page in (source_page, final_canonical_url) if page]
     gsc_groups = _group_facts(
         fact
         for fact in metric_facts
         if fact.source_connector == "google_search_console"
-        and fact.dimensions.get("page") in allowed_pages
+        and _page_matches_allowed(_fact_page(fact), allowed_pages)
         and fact.dimensions.get("query")
         and content_query_is_planning_signal(fact.dimensions["query"])
     )
@@ -145,8 +150,9 @@ def _group_facts(facts: Iterable[MetricFact]) -> dict[tuple[str, str], list[Metr
             or fact.dimensions.get("search_term")
             or fact.dimensions.get("keyword_idea_text")
         )
-        if page and term:
-            grouped.setdefault((page, term), []).append(fact)
+        identity = build_landing_page_identity(page)
+        if identity.canonical_url and term:
+            grouped.setdefault((identity.canonical_url, term), []).append(fact)
     return grouped
 
 
@@ -228,13 +234,13 @@ def _ads_row(
 def _strict_ads_scope_matches(
     fact: MetricFact,
     *,
-    allowed_pages: set[str],
+    allowed_pages: list[str],
     service_card_id: str | None,
 ) -> bool:
     return bool(
         service_card_id
         and fact.dimensions.get("service_card_id") == service_card_id
-        and _fact_page(fact) in allowed_pages
+        and _page_matches_allowed(_fact_page(fact), allowed_pages)
         and (
             fact.dimensions.get("search_term")
             or fact.dimensions.get("keyword_idea_text")
@@ -247,6 +253,16 @@ def _fact_page(fact: MetricFact) -> str | None:
         fact.dimensions.get("page")
         or fact.dimensions.get("landing_page")
         or fact.dimensions.get("final_url")
+    )
+
+
+def _page_matches_allowed(page: str | None, allowed_pages: list[str]) -> bool:
+    return bool(page) and any(
+        match_landing_page(
+            expected,
+            LandingPageCandidate(candidate_id="metric_fact_page", url=page),
+        ).matched
+        for expected in allowed_pages
     )
 
 

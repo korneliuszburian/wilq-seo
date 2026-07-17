@@ -213,7 +213,7 @@ def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
             dimensions={"page": "https://www.ekologus.pl/", "query": "stale query"},
         )
     )
-    requested_scope: dict[str, Any] = {}
+    requested_scopes: list[dict[str, Any]] = []
 
     class ExactFactStore:
         def list_metric_facts_for_content_url(
@@ -223,10 +223,12 @@ def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
             *,
             content_path: str,
         ) -> list[MetricFact]:
-            requested_scope.update(
-                connector_ids=connector_ids,
-                content_url=content_url,
-                content_path=content_path,
+            requested_scopes.append(
+                {
+                    "connector_ids": connector_ids,
+                    "content_url": content_url,
+                    "content_path": content_path,
+                }
             )
             return facts
 
@@ -236,13 +238,7 @@ def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
         client,
         "content_work_item_content_decision_https___www_ekologus_pl",
     )
-    default_snapshot_response = client.get("/api/content/work-items/snapshot")
-    assert default_snapshot_response.status_code == 200
-    default_snapshot = default_snapshot_response.json()
     rows = snapshot["planning_workspace"]["proposal"]["search_demand"]["gsc_query_rows"]
-    default_rows = default_snapshot["planning_workspace"]["proposal"]["search_demand"][
-        "gsc_query_rows"
-    ]
     buyer_problem = snapshot["planning_workspace"]["proposal"]["buyer_problem"]
 
     assert [row["term"] for row in rows] == [
@@ -253,17 +249,21 @@ def test_homepage_snapshot_expands_current_exact_gsc_query_rows(
         "query five",
     ]
     assert all(row["evidence_ids"] == [evidence_id] for row in rows)
-    assert default_rows == rows
-    assert requested_scope == {
-        "connector_ids": ["google_search_console"],
-        "content_url": "https://www.ekologus.pl/",
-        "content_path": "/",
-    }
+    assert requested_scopes == [
+        {
+            "connector_ids": ["google_search_console"],
+            "content_url": "https://www.ekologus.pl/",
+            "content_path": "/",
+        },
+        {
+            "connector_ids": ["google_search_console"],
+            "content_url": "https://ekologus.pl/",
+            "content_path": "/",
+        },
+    ]
     assert "150 wyświetleń" in buyer_problem
     assert 'główne zapytanie: "query one"' in buyer_problem
     assert "5 zapytań" in snapshot["candidate"]["title"]
-    assert default_snapshot["candidate"]["title"] == snapshot["candidate"]["title"]
-    assert default_snapshot["candidate"]["reason"] == snapshot["candidate"]["reason"]
 
 
 def test_selected_content_work_item_output_and_quality_state_is_isolated(

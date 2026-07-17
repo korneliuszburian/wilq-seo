@@ -3,7 +3,12 @@ from __future__ import annotations
 from fastapi import HTTPException
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
-from wilq.content.canonical.urls import content_normalized_path, content_normalized_url
+from wilq.content.canonical.landing_identity import (
+    LandingPageCandidate,
+    landing_page_metric_lookup_urls,
+    match_landing_page,
+)
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.planning.decisions import (
     content_decision_metric_tiles,
@@ -154,14 +159,28 @@ def diagnostics_with_exact_gsc_demand(
     if decision is None or not decision.page:
         return diagnostics
     current_evidence_ids = set(decision.evidence_ids)
-    exact_facts = [
+    candidate_facts = [
         fact
+        for lookup_url in landing_page_metric_lookup_urls(decision.page)
         for fact in metric_store().list_metric_facts_for_content_url(
             ["google_search_console"],
-            content_normalized_url(decision.page),
+            lookup_url,
             content_path=content_normalized_path(decision.page),
         )
+    ]
+    exact_facts = [
+        fact
+        for fact in {
+            candidate.model_dump_json(): candidate for candidate in candidate_facts
+        }.values()
         if fact.evidence_id in current_evidence_ids
+        and match_landing_page(
+            decision.page,
+            LandingPageCandidate(
+                candidate_id=fact.evidence_id,
+                url=fact.dimensions.get("page"),
+            ),
+        ).matched
         and content_query_is_planning_signal(fact.dimensions.get("query", ""))
     ]
     if not exact_facts:

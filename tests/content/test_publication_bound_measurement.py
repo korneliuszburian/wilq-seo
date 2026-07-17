@@ -13,6 +13,7 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionResult,
     ContentWordPressDraftPayload,
 )
+from wilq.content.measurement.evidence import build_publication_bound_measurement_window
 from wilq.content.workflow.contracts import (
     ContentWorkItemMeasurementOutcomeRequest,
     ContentWorkItemMeasurementWindowRequest,
@@ -23,7 +24,12 @@ from wilq.content.workflow.stage_measurement import (
     build_content_work_item_measurement_window_response,
 )
 from wilq.content.workflow.store import content_workflow_store
-from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus
+from wilq.schemas import (
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
+    MetricFact,
+)
 from wilq.storage.metric_store import metric_store
 
 
@@ -228,6 +234,121 @@ def test_measurement_uses_bound_publication_and_server_metrics_only(
     assert content_workflow_store().latest_learning_proposal(work_item_id) is not None
 
 
+def test_measurement_rejects_functional_query_and_path_only_fallback() -> None:
+    content_url = "https://www.ekologus.pl/oferta/?service=outsourcing"
+    item = ContentWorkItem(
+        id="content_work_item_outsourcing",
+        topic="Outsourcing środowiskowy",
+        source_public_url=content_url,
+        final_canonical_url=content_url,
+        intended_final_url=content_url,
+        evidence_ids=["ev_revision"],
+        source_connectors=["wordpress_ekologus", "google_search_console"],
+        inventory_status="resolved",
+        canonical_status="resolved",
+        duplicate_status="checked",
+    )
+    execution = ContentWordPressDraftExecutionResult(
+        status="created",
+        mode="live",
+        boundary=ContentWordPressDraftExecutionBoundary(
+            live_write_enabled=True,
+            live_adapter_configured=True,
+        ),
+        payload=ContentWordPressDraftPayload(
+            title="Outsourcing środowiskowy",
+            content_markdown="Treść.",
+            final_canonical_url=content_url,
+            evidence_ids=["ev_revision"],
+        ),
+        wordpress_post_id="999",
+        external_write_attempted=True,
+    )
+    publication = _direct_fact(
+        connector="wordpress_ekologus",
+        name="content_object_seen",
+        value=1,
+        evidence_id="ev_refresh_wp",
+        dimensions={
+            "object_id": "999",
+            "content_url": content_url,
+            "status": "publish",
+        },
+    )
+    unsafe_result = build_publication_bound_measurement_window(
+        item=item,
+        handoff=None,
+        execution=execution,
+        metric_facts=[
+            publication,
+            _direct_fact(
+                connector="google_search_console",
+                name="clicks",
+                value=500,
+                evidence_id="ev_wrong_variant",
+                dimensions={
+                    "page": "https://www.ekologus.pl/oferta/?service=audyt"
+                },
+            ),
+            _direct_fact(
+                connector="google_analytics_4",
+                name="sessions",
+                value=200,
+                evidence_id="ev_path_only",
+                dimensions={"landing_page_plus_query_string": "/oferta/?service=outsourcing"},
+            ),
+        ],
+    )
+
+    assert unsafe_result.window is None
+    assert [blocker.code for blocker in unsafe_result.blockers] == [
+        "missing_metric_evidence"
+    ]
+
+    conflicting_dimensions = build_publication_bound_measurement_window(
+        item=item,
+        handoff=None,
+        execution=execution,
+        metric_facts=[
+            publication,
+            _direct_fact(
+                connector="google_search_console",
+                name="clicks",
+                value=900,
+                evidence_id="ev_conflicting_dimensions",
+                dimensions={
+                    "page": content_url,
+                    "landing_page": "https://www.ekologus.pl/oferta/?service=audyt",
+                },
+            ),
+        ],
+    )
+
+    assert conflicting_dimensions.window is None
+    assert [blocker.code for blocker in conflicting_dimensions.blockers] == [
+        "missing_metric_evidence"
+    ]
+
+    safe_result = build_publication_bound_measurement_window(
+        item=item,
+        handoff=None,
+        execution=execution,
+        metric_facts=[
+            publication,
+            _direct_fact(
+                connector="google_search_console",
+                name="clicks",
+                value=50,
+                evidence_id="ev_tracking_only",
+                dimensions={"page": f"{content_url}&utm_source=search"},
+            ),
+        ],
+    )
+
+    assert safe_result.window is not None
+    assert safe_result.window.allowed_metrics == ["gsc_clicks"]
+
+
 def _save_fact(
     *,
     run_id: str,
@@ -249,4 +370,23 @@ def _save_fact(
             summary="Synthetic publication-bound measurement proof.",
         ),
         detailed_facts=[fact],
+    )
+
+
+def _direct_fact(
+    *,
+    connector: str,
+    name: str,
+    value: int,
+    evidence_id: str,
+    dimensions: dict[str, str],
+) -> MetricFact:
+    return MetricFact(
+        name=name,
+        value=value,
+        period="2026-05-04/2026-05-31",
+        source_connector=connector,
+        evidence_id=evidence_id,
+        dimensions=dimensions,
+        collected_at=datetime(2026, 6, 1, 8, tzinfo=UTC),
     )

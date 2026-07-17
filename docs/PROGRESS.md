@@ -1,6 +1,6 @@
 # WILQ Progress Ledger
 
-Ostatnia aktualizacja: 2026-07-16.
+Ostatnia aktualizacja: 2026-07-17.
 
 To jest krótki stan bieżący. Historia zmian i proofów pozostaje w git, Beads
 i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
@@ -27,6 +27,21 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
 
 ## Ostatnie zakresy i proofy
 
+- `wilq-seo-v9ab.18.2` ma pierwszy produkcyjny slice wspólnej tożsamości
+  landing page. Typed kontrakt rozróżnia exact, tracking-only, alias hosta,
+  path-only, functional-query, ambiguity, missing i no-match; scheme oraz port
+  należą do originu, wadliwy URL konektora daje `invalid`, a tylko rozpoznane
+  parametry trackingowe są usuwane. Ten sam matcher filtruje demand contentu,
+  exact GSC snapshot, WordPress publication binding i publication-bound
+  measurement. Wariant funkcjonalny, sama ścieżka GA4 oraz sprzeczne URL
+  dimensions nie mogą zasilić wyniku; UTM-only facts łączą się bez duplikacji,
+  a oba zatwierdzone aliasy hosta Ekologus są odczytywane. Focused proof,
+  mypy, Ruff i diff check są zielone; niezależny read-only review znalazł
+  cztery błędy, po poprawkach potwierdził PASS w tym zakresie. Claude checker
+  nie dał werdyktu: pierwszy pass poprawnie zgłosił brak osadzonego evidence,
+  drugi zakończył się timeoutem bez outputu. Bead pozostaje otwarty na
+  query-aware identity przed limitem store/LAG, projekcję tierów do API,
+  konsumenta Ads i proof obu pilotów; nie wykonano migracji ani vendor write.
 - `wilq-seo-1oa.36.8` domyka pełny, source-bound review WILQ na fixed commicie
   `d2649f15`: cztery niezależne ledgery contentu, dashboardu marketera,
   skillów/skryptów oraz metrics/actions/learning mają łącznie 37 zwalidowanych

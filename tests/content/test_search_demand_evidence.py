@@ -50,6 +50,55 @@ def test_search_demand_keeps_page_queries_but_maps_only_relevant_sections() -> N
     assert evidence.optional_ads_status == "exact_rows_available"
 
 
+def test_search_demand_accepts_tracking_only_but_rejects_functional_page_variant() -> None:
+    page = "https://www.ekologus.pl/oferta/?service=outsourcing"
+    evidence = build_content_search_demand_evidence(
+        metric_facts=[
+            _fact(
+                "google_search_console",
+                "impressions",
+                50,
+                "ev_tracking",
+                f"{page}&utm_source=search",
+                "outsourcing środowiskowy",
+            ),
+            _fact(
+                "google_search_console",
+                "clicks",
+                5,
+                "ev_tracking",
+                f"{page}&utm_medium=organic",
+                "outsourcing środowiskowy",
+            ),
+            _fact(
+                "google_search_console",
+                "impressions",
+                500,
+                "ev_other_service",
+                "https://www.ekologus.pl/oferta/?service=audyt",
+                "audyt środowiskowy",
+            ),
+        ],
+        source_page=page,
+        final_canonical_url=page,
+        service_card_id="service_outsourcing",
+        draft=_draft(),
+        freshness=ContentFreshnessAssessment(
+            state="fresh",
+            requires_refresh=False,
+            summary="Źródła aktualne.",
+            next_step="Użyj dowodów.",
+        ),
+    )
+
+    assert [row.term for row in evidence.gsc_query_rows] == [
+        "outsourcing środowiskowy"
+    ]
+    assert evidence.evidence_ids == ["ev_tracking"]
+    assert evidence.gsc_query_rows[0].impressions == 50
+    assert evidence.gsc_query_rows[0].clicks == 5
+
+
 def _demand_facts(page: str, service_card_id: str) -> list[MetricFact]:
     return [
         _fact("google_search_console", "impressions", 120, "ev_gsc", page, "bdo odpady"),
