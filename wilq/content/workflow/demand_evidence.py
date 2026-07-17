@@ -600,7 +600,7 @@ def _clicked_landing_batch_is_complete(
         len(evidence_ids) == 1
         and next(iter(evidence_ids), None) in ready_evidence_ids
         and set(counts) == CONTENT_ADS_TERM_METRIC_NAMES
-        and len(set(counts.values())) == 1
+        and set(counts.values()) == {1}
     )
 
 

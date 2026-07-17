@@ -216,6 +216,23 @@ def test_search_demand_blocks_partial_persisted_ads_batch() -> None:
     assert blocked.optional_ads_evidence_ids == ["ev_ads_refresh"]
 
 
+def test_search_demand_blocks_duplicate_persisted_ads_metrics() -> None:
+    page, facts = _same_window_ads_case()
+    duplicate_metrics = [
+        fact
+        for fact in facts
+        if fact.name.startswith("search_term_")
+        and fact.name != "search_term_payload_status"
+    ]
+
+    blocked = _build_demand([*facts, *duplicate_metrics], page)
+
+    assert blocked.ads_term_rows == []
+    assert blocked.optional_ads_status == "blocked"
+    assert blocked.optional_ads_blockers == ["ads_search_term_batch_incomplete"]
+    assert blocked.optional_ads_evidence_ids == ["ev_ads_refresh"]
+
+
 def test_search_demand_projects_ads_freshness_per_connector() -> None:
     page, facts = _same_window_ads_case()
 
