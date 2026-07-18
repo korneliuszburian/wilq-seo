@@ -4,10 +4,17 @@ Stan: 18 lipca 2026 · środowisko lokalne, read-only · WordPress draft-only
 
 ## Co masz sprawdzić
 
-Otwórz `http://127.0.0.1:5173/content-workflow`, wybierz dowolny adres z
-inventory i kliknij rozpoczęcie workflow. Pierwszy ekran powinien pokazać
-wybraną stronę, decyzję, podstawowe metryki, źródła i następny krok; pełny
-materiał WordPress ładuje się osobno.
+Otwórz `http://127.0.0.1:5173/content-workflow`. Na pierwszym ekranie zobaczysz
+pełny read-only inventory WordPress (aktualnie 601 adresów), wyszukiwarkę,
+status materiału, dostępne metryki i rozpoznane sekcje ACF. Rekomendowane
+okazje są osobną kolejką — nic nie jest wybierane automatycznie.
+
+Wyszukaj dowolną stronę, kliknij `Sprawdź materiał`, a następnie `Rozpocznij
+workflow`. Dla adresu spoza kolejki WILQ tworzy jego identyfikator workflow na
+podstawie dokładnego URL-u. Pierwszy ekran powinien pokazać wybraną stronę,
+decyzję, podstawowe metryki, źródła i następny krok; pełny materiał WordPress
+ładuje się osobno. Treść może pochodzić z WordPress REST/ACF albo z
+wyrenderowanego `the_content` — panel pokazuje, którą ścieżkę odczytu wybrał.
 
 Nie oceniasz tu publikacji ani wzrostu wyników. Oceniasz, czy z ekranu da się
 podjąć właściwą decyzję bez pomocy developera.
@@ -25,6 +32,19 @@ Testowany adres BDO:
 - świeżość: GSC settled/partial, GA4 settling/unverified;
 - bezpieczny krok: sprawdzić materiał, wybrać kartę usługi i wygenerować plan;
 - generowanie i WordPress pozostają zablokowane do wymaganych review.
+
+### Co oznaczają adresy bez materiału
+
+Inventory może pokazać `Sam adres`, `Sama struktura`, `Skrót treści` albo
+`Treść + struktura`. `Sam adres` nie oznacza błędu ani pustej strony: REST/ACF
+nie zwróciły wystarczającego materiału w snapshotcie, więc przy świadomym
+wyborze WILQ wykonuje jeden read-only odczyt publicznego HTML. Taki materiał ma
+status `review-required` i nie odblokowuje draftu bez potwierdzenia człowieka.
+
+Karty usług są dopasowywane dopiero po wyborze strony. Dwie karty pilotowe
+(BDO oraz doradztwo i outsourcing) mają obecnie `approved_current`; pozostałe
+karty są widoczne, ale pozostają `wymaga review` i nie mogą zasilić produkcyjnego
+draftu.
 
 WILQ API ma 12 konektorów, 9 skonfigurowanych i 2 bez credentials. Brak danych
 nie jest zastępowany domysłem.
@@ -45,6 +65,6 @@ narzędzia jako gotowego dla marketera.
 ## Artefakty techniczne
 
 - browser proof: `proof/` oraz `WILQ-DEMO-DZIALAJACEGO-WORKFLOW.webm`;
-- aktualny commit: `42609ca9` na `origin/main`;
+- aktualny fixed point: sprawdź `git rev-parse --short HEAD` przed nagraniem;
 - wynik completion check: brak realnego UAT — cel pozostaje otwarty;
 - zasady i kolejność: [`PLANS.md`](../../../../PLANS.md).
