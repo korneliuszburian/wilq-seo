@@ -204,6 +204,7 @@ def _prepare_inputs(
     generation_contract = contract_for_planning_proposal(
         generation.contract,
         proposal,
+        planning_input,
     )
     return _InitialDraftInputs(
         planning_input=planning_input,

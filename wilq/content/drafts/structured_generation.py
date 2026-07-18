@@ -19,6 +19,7 @@ from wilq.content.claims.ledger import (
     publish_ready_claims,
 )
 from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.models import ContentWorkItem, content_workflow_blockers
 from wilq.content.workflow.planning import ContentPlanningProposal
 
@@ -61,6 +62,8 @@ class StructuredDraftSourceFact(BaseModel):
     evidence_id: str
     source_connector: str
     summary: str
+    source_fact_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
 
 
 class StructuredDraftClaimMarker(BaseModel):
@@ -123,6 +126,8 @@ class StructuredDraftGenerationInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     work_item_id: str
+    planning_input_digest: str | None = None
+    planning_criteria_version: str | None = None
     language: Literal["pl-PL"] = "pl-PL"
     draft_kind: Literal["section_draft", "full_draft"] = "section_draft"
     title: str
@@ -150,6 +155,9 @@ class StructuredDraftGenerationInput(BaseModel):
     claims_allowed: list[str] = Field(default_factory=list)
     claims_removed_or_blocked: list[str] = Field(default_factory=list)
     human_review_questions: list[str] = Field(default_factory=list)
+    measurement_metrics: list[str] = Field(default_factory=list)
+    measurement_baseline_evidence_ids: list[str] = Field(default_factory=list)
+    query_portfolio_evidence_ids: list[str] = Field(default_factory=list)
 
 
 class StructuredDraftOutputSection(BaseModel):
@@ -205,6 +213,7 @@ def build_structured_draft_generation_contract(
     claim_ledger: ContentClaimLedger | None,
     draft_package: ContentDraftPackage | None,
     planning_proposal: ContentPlanningProposal | None = None,
+    planning_input: ContentPlanningInput | None = None,
     draft_kind: Literal["section_draft", "full_draft"] = "section_draft",
 ) -> StructuredDraftGenerationResult:
     blockers = structured_draft_generation_blockers(
@@ -238,6 +247,12 @@ def build_structured_draft_generation_contract(
 
     model_input = StructuredDraftGenerationInput(
         work_item_id=item.id,
+        planning_input_digest=(
+            None if planning_input is None else planning_input.planning_input_digest
+        ),
+        planning_criteria_version=(
+            None if planning_input is None else planning_input.criteria_version
+        ),
         draft_kind=draft_kind,
         title=draft_package.title,
         final_canonical_url=final_canonical_url,
@@ -259,6 +274,8 @@ def build_structured_draft_generation_contract(
                 evidence_id=fact.evidence_id,
                 source_connector=fact.source_connector,
                 summary=fact.summary,
+                source_fact_ids=fact.source_fact_ids,
+                source_material_ids=fact.source_material_ids,
             )
             for fact in sales_brief.source_facts
         ],
@@ -308,6 +325,15 @@ def build_structured_draft_generation_contract(
         claims_allowed=draft_package.claims_used,
         claims_removed_or_blocked=draft_package.claims_removed_or_blocked,
         human_review_questions=draft_package.human_review_questions,
+        measurement_metrics=([] if planning_input is None else planning_input.measurement_metrics),
+        measurement_baseline_evidence_ids=(
+            []
+            if planning_input is None
+            else planning_input.measurement_baseline_evidence_ids
+        ),
+        query_portfolio_evidence_ids=(
+            [] if planning_input is None else planning_input.query_portfolio.evidence_ids
+        ),
     )
     return StructuredDraftGenerationResult(
         contract=StructuredDraftGenerationContract(
@@ -360,6 +386,7 @@ def planning_section_inputs(
 def contract_for_planning_proposal(
     contract: StructuredDraftGenerationContract,
     planning_proposal: ContentPlanningProposal,
+    planning_input: ContentPlanningInput | None = None,
 ) -> StructuredDraftGenerationContract:
     """Project the reviewed planning proposal into the model input contract."""
     return contract.model_copy(
@@ -370,6 +397,31 @@ def contract_for_planning_proposal(
                     or planning_proposal.sections[0].heading,
                     "sections": planning_section_inputs(planning_proposal),
                     "cta_direction": planning_proposal.cta_direction,
+                    "planning_input_digest": (
+                        contract.model_input.planning_input_digest
+                        if planning_input is None
+                        else planning_input.planning_input_digest
+                    ),
+                    "planning_criteria_version": (
+                        contract.model_input.planning_criteria_version
+                        if planning_input is None
+                        else planning_input.criteria_version
+                    ),
+                    "measurement_metrics": (
+                        contract.model_input.measurement_metrics
+                        if planning_input is None
+                        else planning_input.measurement_metrics
+                    ),
+                    "measurement_baseline_evidence_ids": (
+                        contract.model_input.measurement_baseline_evidence_ids
+                        if planning_input is None
+                        else planning_input.measurement_baseline_evidence_ids
+                    ),
+                    "query_portfolio_evidence_ids": (
+                        contract.model_input.query_portfolio_evidence_ids
+                        if planning_input is None
+                        else planning_input.query_portfolio.evidence_ids
+                    ),
                 }
             )
         }
