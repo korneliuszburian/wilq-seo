@@ -339,7 +339,7 @@ export function ContentWordPressDraftActionWizard({
             Dokładnie zaakceptowana wersja
           </p>
           <h2 id="dev-draft-workspace-title" className="mt-1 text-base font-semibold text-ink">
-            {revisionNumber ? `Wersja ${revisionNumber} → szkic na devie` : "Szkic na devie"}
+            Szkic aktualnego tekstu → dev
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             Treść {binding.content_digest.slice(0, 10)} · wyłącznie nowy draft

@@ -1008,9 +1008,9 @@ describe("ContentWorkflowSurface", () => {
     );
 
     await waitFor(() => expect(getAction).toHaveBeenCalledWith("act_apply_wordpress_draft_handoff"));
-    await screen.findByText("Wersja 1 → szkic na devie");
+    await screen.findByText("Szkic aktualnego tekstu → dev");
     const wizard = screen.getByTestId("content-wordpress-draft-action-wizard");
-    expect(within(wizard).getByText("Wersja 1 → szkic na devie")).toBeInTheDocument();
+    expect(within(wizard).getByText("Szkic aktualnego tekstu → dev")).toBeInTheDocument();
     expect(within(wizard).getByText(/bez publikacji · bez aktualizacji/)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /kanoniczną akcję/ })).not.toBeInTheDocument();
     expect(within(wizard).queryByRole("button", { name: "Utwórz szkic na devie" }))
@@ -1232,7 +1232,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    expect(await screen.findByText("Popraw wersję 1 z Codexem")).toBeInTheDocument();
+    expect(await screen.findByText("Popraw aktualny tekst z Codexem")).toBeInTheDocument();
     expect(screen.getByText(/Uwagi z review: „Ta wersja wymaga opisanych poprawek/))
       .toBeInTheDocument();
     const proposalButton = screen.getByRole("button", {
@@ -1262,7 +1262,7 @@ describe("ContentWorkflowSurface", () => {
 
     resolveProposal?.(codexSectionProposalResponse());
     const result = await screen.findByTestId("codex-proposal-result");
-    expect(result).toHaveTextContent("Wersja 2 utworzona · wymaga review człowieka");
+    expect(result).toHaveTextContent("Poprawiona wersja aktualnego tekstu · wymaga review człowieka");
     expect(result).toHaveTextContent("Zapisana treść pierwszej wersji o obowiązkach BDO.");
     expect(result).toHaveTextContent(
       "Sprawdź, czy zakres działalności firmy tworzy obowiązki BDO"

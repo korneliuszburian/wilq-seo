@@ -125,7 +125,7 @@ export function ContentCodexSectionProposalPanel({
         </span>
         <div className="min-w-0">
           <h3 id="codex-section-proposal-title" className="text-sm font-semibold text-ink">
-            Popraw wersję {latestRevision?.revision_number} z Codexem
+            Popraw aktualny tekst z Codexem
           </h3>
           {workspace.latest_review?.notes ? (
             <p className="mt-1 text-sm leading-6 text-slate-700">

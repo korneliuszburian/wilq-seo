@@ -66,7 +66,7 @@ export function ContentCodexSectionProposalResult({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-success">
-            Wersja {revision.revision_number} utworzona · wymaga review człowieka
+            Poprawiona wersja aktualnego tekstu · wymaga review człowieka
           </p>
           <p className="mt-1 text-sm leading-6 text-slate-700">
             Ocena WILQ: {qualityVerdictLabel(result.quality_review.verdict)}.
@@ -170,7 +170,7 @@ export function ContentCodexSectionProposalResult({
         onClick={onRefresh}
         className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-action px-4 text-sm font-semibold text-white sm:w-auto"
       >
-        Przejdź do review wersji {revision.revision_number}
+        Przejdź do review aktualnego tekstu
         <ArrowRight aria-hidden="true" size={16} />
       </button>
     </section>
