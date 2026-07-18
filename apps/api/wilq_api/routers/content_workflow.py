@@ -507,6 +507,7 @@ def content_work_item_draft_revision_save(
     if (
         latest_revision is not None
         and latest_revision.schema_version == "wilq_content_draft_revision_v2"
+        and request.base_revision_id == latest_revision.revision_id
     ):
         command = ContentDraftRevisionAppendCommand(
             schema_version="wilq_content_draft_revision_v2",
