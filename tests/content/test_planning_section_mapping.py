@@ -189,3 +189,35 @@ def test_decorative_or_dated_inventory_is_explicitly_excluded_for_review() -> No
     assert mappings[0].status == "excluded"
     assert mappings[0].disposition == "remove_review_required"
     assert mappings[0].reason == "dated_or_event_inventory"
+
+
+def test_model_remove_review_disposition_is_not_presented_as_article_mapping() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_clients",
+                    heading="Zaufali nam",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Jak zweryfikować doświadczenie?",
+                purpose="Pozostawić referencje do osobnego review.",
+                reader_question="Czy referencje są aktualne?",
+                inventory_disposition="remove_review_required",
+                inventory_section_id="inventory_clients",
+            )
+        ]
+    )
+
+    mappings = build_inventory_mapping(planning_input, output, ["plan_01"])
+
+    assert mappings[0].status == "excluded"
+    assert mappings[0].disposition == "remove_review_required"
+    assert mappings[0].reason == "navigation_or_promotional_inventory"

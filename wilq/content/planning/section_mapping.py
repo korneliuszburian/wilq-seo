@@ -94,14 +94,16 @@ def build_inventory_mapping(
         if len(explicit_id) == 1 and explicit_id[0][0] not in used_plan_indices:
             index, section = explicit_id[0]
             used_plan_indices.add(index)
+            status, reason = _mapped_status(section, inventory_section.heading)
             mappings.append(
                 ContentPlanningInventoryMapping(
                     inventory_section_id=inventory_section.section_id,
                     inventory_heading=inventory_section.heading,
-                    status="mapped",
+                    status=status,
                     mapped_section_id=section_ids[index],
                     mapped_section_heading=section.heading,
                     disposition=section.inventory_disposition,
+                    reason=reason,
                     evidence_ids=inventory_section.evidence_ids,
                 )
             )
@@ -110,14 +112,16 @@ def build_inventory_mapping(
         if len(explicit) == 1 and explicit[0][0] not in used_plan_indices:
             index, section = explicit[0]
             used_plan_indices.add(index)
+            status, reason = _mapped_status(section, inventory_section.heading)
             mappings.append(
                 ContentPlanningInventoryMapping(
                     inventory_section_id=inventory_section.section_id,
                     inventory_heading=inventory_section.heading,
-                    status="mapped",
+                    status=status,
                     mapped_section_id=section_ids[index],
                     mapped_section_heading=section.heading,
                     disposition=section.inventory_disposition,
+                    reason=reason,
                     evidence_ids=inventory_section.evidence_ids,
                 )
             )
@@ -140,7 +144,11 @@ def build_inventory_mapping(
             else:
                 status = "mapped"
                 used_plan_indices.add(chosen[1])
+                if chosen[2].inventory_disposition == "remove_review_required":
+                    status = "excluded"
         reason = _excluded_reason(inventory_section.heading)
+        if chosen is not None and status == "excluded" and not reason:
+            reason = "model_remove_review_required"
         if chosen is None and reason:
             status = "excluded"
         mappings.append(
@@ -162,6 +170,12 @@ def build_inventory_mapping(
             )
         )
     return mappings
+
+
+def _mapped_status(section: object, inventory_heading: str) -> tuple[SectionMappingStatus, str]:
+    if getattr(section, "inventory_disposition", None) == "remove_review_required":
+        return "excluded", _excluded_reason(inventory_heading) or "model_remove_review_required"
+    return "mapped", ""
 
 
 def _best_inventory_heading(
