@@ -6,6 +6,7 @@ import {
   getSocialReuseProposals,
   getSocialPublisherContextPack,
   reviewSocialReuseProposal,
+  reviseSocialReuseProposal,
   type SocialDraftContext,
   type SocialHistoryInventory,
   type SocialReuseProposalListResponse
@@ -93,6 +94,10 @@ function SocialReuseProposalsPanel({
 }) {
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<Record<string, boolean>>({});
+  const [revisionDrafts, setRevisionDrafts] = useState<
+    Record<string, { audience: string; angle: string; body: string; measurement_hypothesis: string }>
+  >({});
   const reviewMutation = useMutation({
     mutationFn: (input: {
       proposalId: string;
@@ -114,6 +119,25 @@ function SocialReuseProposalsPanel({
           ?.proposal?.source_evidence_ids ?? []
       }),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["social-reuse-proposals"] });
+    }
+  });
+  const revisionMutation = useMutation({
+    mutationFn: (input: {
+      proposalId: string;
+      digest: string;
+      claimIds: string[];
+      draft: { audience: string; angle: string; body: string; measurement_hypothesis: string };
+    }) => reviseSocialReuseProposal(input.proposalId, {
+      expected_proposal_digest: input.digest,
+      audience: input.draft.audience,
+      angle: input.draft.angle,
+      body: input.draft.body,
+      claim_ids: input.claimIds,
+      measurement_hypothesis: input.draft.measurement_hypothesis
+    }),
+    onSuccess: () => {
+      setEditing({});
       void queryClient.invalidateQueries({ queryKey: ["social-reuse-proposals"] });
     }
   });
@@ -142,6 +166,12 @@ function SocialReuseProposalsPanel({
             const proposal = item.proposal;
             if (!proposal) return null;
             const decision = item.review?.decision;
+            const draft = revisionDrafts[proposal.proposal_id] ?? {
+              audience: proposal.audience,
+              angle: proposal.angle,
+              body: proposal.body,
+              measurement_hypothesis: proposal.measurement_hypothesis
+            };
             return (
               <article key={proposal.proposal_id} className="rounded border border-line bg-surface p-3">
                 <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
@@ -204,6 +234,89 @@ function SocialReuseProposalsPanel({
                     </button>
                   </div>
                 ) : null}
+                {decision === "needs_changes" ? (
+                  <div className="mt-3">
+                    {!editing[proposal.proposal_id] ? (
+                      <button
+                        type="button"
+                        className="rounded border border-action/40 bg-white px-3 py-2 text-xs font-semibold text-action"
+                        onClick={() => setEditing((current) => ({ ...current, [proposal.proposal_id]: true }))}
+                      >
+                        Przygotuj poprawioną wersję
+                      </button>
+                    ) : (
+                      <div className="rounded border border-action/20 bg-white p-3">
+                        <p className="text-xs font-semibold text-ink">Jedna poprawiona wersja do ponownego review</p>
+                        <label className="mt-2 block text-xs text-slate-600">
+                          Odbiorca
+                          <input
+                            className="mt-1 w-full rounded border border-line p-2 text-sm"
+                            value={draft.audience}
+                            onChange={(event) => setRevisionDrafts((current) => ({
+                              ...current,
+                              [proposal.proposal_id]: { ...draft, audience: event.target.value }
+                            }))}
+                          />
+                        </label>
+                        <label className="mt-2 block text-xs text-slate-600">
+                          Kąt komunikacji
+                          <input
+                            className="mt-1 w-full rounded border border-line p-2 text-sm"
+                            value={draft.angle}
+                            onChange={(event) => setRevisionDrafts((current) => ({
+                              ...current,
+                              [proposal.proposal_id]: { ...draft, angle: event.target.value }
+                            }))}
+                          />
+                        </label>
+                        <label className="mt-2 block text-xs text-slate-600">
+                          Treść
+                          <textarea
+                            className="mt-1 min-h-28 w-full rounded border border-line p-2 text-sm"
+                            value={draft.body}
+                            onChange={(event) => setRevisionDrafts((current) => ({
+                              ...current,
+                              [proposal.proposal_id]: { ...draft, body: event.target.value }
+                            }))}
+                          />
+                        </label>
+                        <label className="mt-2 block text-xs text-slate-600">
+                          Hipoteza pomiaru
+                          <input
+                            className="mt-1 w-full rounded border border-line p-2 text-sm"
+                            value={draft.measurement_hypothesis}
+                            onChange={(event) => setRevisionDrafts((current) => ({
+                              ...current,
+                              [proposal.proposal_id]: { ...draft, measurement_hypothesis: event.target.value }
+                            }))}
+                          />
+                        </label>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            className="rounded bg-action px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                            disabled={revisionMutation.isPending || !draft.body.trim() || !draft.angle.trim()}
+                            onClick={() => revisionMutation.mutate({
+                              proposalId: proposal.proposal_id,
+                              digest: proposal.proposal_digest,
+                              claimIds: proposal.source_claim_ids,
+                              draft
+                            })}
+                          >
+                            Zapisz poprawioną wersję
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded border border-line px-3 py-2 text-xs text-slate-600"
+                            onClick={() => setEditing((current) => ({ ...current, [proposal.proposal_id]: false }))}
+                          >
+                            Anuluj
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </article>
             );
           })}
@@ -217,6 +330,16 @@ function SocialReuseProposalsPanel({
       {reviewMutation.data ? (
         <p className="mt-3 rounded border border-action/30 bg-action/5 p-3 text-sm text-slate-700">
           Review zapisany. {reviewMutation.data.next_step}
+        </p>
+      ) : null}
+      {revisionMutation.error instanceof Error ? (
+        <p className="mt-3 rounded border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
+          Nie zapisano poprawionej wersji: {revisionMutation.error.message}
+        </p>
+      ) : null}
+      {revisionMutation.data ? (
+        <p className="mt-3 rounded border border-action/30 bg-action/5 p-3 text-sm text-slate-700">
+          Poprawiona wersja została zapisana jako nowa rewizja i wymaga osobnego review.
         </p>
       ) : null}
     </section>
