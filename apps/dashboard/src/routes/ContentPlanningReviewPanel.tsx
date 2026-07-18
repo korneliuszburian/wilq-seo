@@ -137,7 +137,7 @@ export function ContentPlanningReviewPanel({
                     {section.evidence_ids.length} {section.evidence_ids.length === 1 ? "dowód" : "dowodów"}
                   </p>
                   <SectionDemandTerms
-                    heading={section.heading}
+                    queryTerms={section.query_terms}
                     rows={proposal.search_demand.gsc_query_rows}
                   />
                 </div>
@@ -292,17 +292,21 @@ function SearchDemandSummary({
 }
 
 function SectionDemandTerms({
-  heading,
+  queryTerms,
   rows
 }: {
-  heading: string;
+  queryTerms: string[];
   rows: ContentPlanningWorkspace["proposal"]["search_demand"]["gsc_query_rows"];
 }) {
-  const terms = rows.filter((row) => row.section_headings.includes(heading)).slice(0, 3);
-  if (!terms.length) return null;
+  if (!queryTerms.length) return null;
+  const metricsByTerm = new Map(rows.map((row) => [row.term, formatDemandMetrics(row)]));
+  const terms = queryTerms.slice(0, 6).map((term) => {
+    const metrics = metricsByTerm.get(term);
+    return metrics ? `${term} (${metrics})` : term;
+  });
   return (
     <p className="mt-2 text-xs leading-5 text-slate-600">
-      Zapytania GSC dopasowane słowem: {terms.map((row) => row.term).join(" · ")}
+      Zapytania przypisane do sekcji: {terms.join(" · ")}
     </p>
   );
 }
