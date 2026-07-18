@@ -14,6 +14,10 @@ from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceCandidate,
     ContentWorkItemServiceProfileContext,
 )
+from wilq.content.measurement.aggregates import (
+    MeasurementPeriodComparison,
+    compare_exact_page_metric_periods,
+)
 from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
@@ -25,6 +29,10 @@ from wilq.content.planning.input_sources import (
     planning_source_connectors,
     usable_query_portfolio,
     validate_source_assessment_membership,
+)
+from wilq.content.planning.internal_link_candidates import (
+    ContentPlanningInternalLinkCandidate,
+    load_content_internal_link_candidates,
 )
 from wilq.content.workflow.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.models import ContentWorkItem
@@ -44,6 +52,8 @@ ContentPlanningInputBlockerCode = Literal[
     "service_context_mismatch",
     "missing_planning_foundation",
     "missing_wordpress_section_inventory",
+    "missing_wordpress_full_inventory",
+    "wordpress_material_review_required",
     "stale_planning_sources",
     "blocked_planning_sources",
 ]
@@ -63,6 +73,7 @@ class ContentPlanningInput(BaseModel):
 
     schema_name: Literal["wilq_content_planning_input_v6"] = "wilq_content_planning_input_v6"
     criteria_version: Literal["wilq_people_first_planning_v4"] = "wilq_people_first_planning_v4"
+    inventory_mapping_policy: Literal["wilq_inventory_mapping_v2"] = "wilq_inventory_mapping_v2"
     planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     work_item_id: str = Field(min_length=1)
     goal: Literal["refresh_existing"] = "refresh_existing"
@@ -71,6 +82,9 @@ class ContentPlanningInput(BaseModel):
     confirmed_service_card_id: str = Field(min_length=1)
     service_label: str = Field(min_length=1)
     inventory: ContentPlanningInventory
+    internal_link_candidates: list[ContentPlanningInternalLinkCandidate] = Field(
+        default_factory=list
+    )
     target_reader: str = Field(min_length=1)
     buyer_problem: str = Field(min_length=1)
     buyer_trigger: str = Field(min_length=1)
@@ -80,6 +94,7 @@ class ContentPlanningInput(BaseModel):
     query_portfolio: ContentSearchDemandEvidence
     claim_ledger: list[ContentClaimLedgerEntry] = Field(default_factory=list)
     measurement_metrics: list[str] = Field(default_factory=list)
+    metric_comparisons: list[MeasurementPeriodComparison] = Field(default_factory=list)
     measurement_baseline_evidence_ids: list[str] = Field(default_factory=list)
     measurement_observation_rule: str = Field(min_length=1)
     measurement_success_claim_rule: str = Field(min_length=1)
@@ -100,11 +115,16 @@ class ContentPlanningInputSummary(BaseModel):
     final_canonical_url: str = Field(min_length=1)
     service_label: str = Field(min_length=1)
     inventory_status: Literal["available", "missing"]
+    content_inventory_status: Literal["available", "missing"]
+    acf_section_inventory_status: Literal["available", "missing"]
     source_assessments: list[ContentPlanningSourceAssessment] = Field(min_length=10)
     source_fact_count: int = Field(ge=0)
+    source_fact_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
     evidence_id_count: int = Field(ge=0)
     knowledge_card_count: int = Field(ge=0)
     measurement_metrics: list[str] = Field(default_factory=list)
+    metric_comparisons: list[MeasurementPeriodComparison] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInputSummary:
@@ -126,12 +146,45 @@ def content_planning_input_summary(
         final_canonical_url=planning_input.final_canonical_url,
         service_label=planning_input.service_label,
         inventory_status=planning_input.inventory.status,
+        content_inventory_status=planning_input.inventory.content_status,
+        acf_section_inventory_status=planning_input.inventory.acf_section_status,
         source_assessments=planning_input.source_assessments,
         source_fact_count=len(planning_input.source_facts),
+        source_fact_ids=sorted(
+            {
+                source_fact_id
+                for fact in planning_input.source_facts
+                for source_fact_id in fact.source_fact_ids
+            }
+        ),
+        source_material_ids=sorted(
+            {
+                source_material_id
+                for fact in planning_input.source_facts
+                for source_material_id in fact.source_material_ids
+            }
+        ),
         evidence_id_count=len(planning_input.evidence_ids),
         knowledge_card_count=len(planning_input.knowledge_card_ids),
         measurement_metrics=planning_input.measurement_metrics,
+        metric_comparisons=planning_input.metric_comparisons,
     )
+
+
+def planning_generation_blockers(
+    blockers: list[ContentPlanningInputBlocker],
+) -> list[ContentPlanningInputBlocker]:
+    """Block plan generation only for blockers that make planning unsafe.
+
+    A public rendered `the_content` read is sufficient to build a reviewable
+    plan. Its REST/ACF provenance still blocks an initial full draft, which is
+    enforced by the draft seam consuming the unfiltered result.
+    """
+    return [
+        blocker
+        for blocker in blockers
+        if blocker.code != "wordpress_material_review_required"
+    ]
 
 
 def build_content_planning_input(
@@ -200,7 +253,11 @@ def build_content_planning_input_from_components(
         freshness=freshness,
         source_assessments=source_assessments,
     )
-    source_facts = build_source_facts(brief, source_assessments)
+    source_facts = build_source_facts(brief, source_assessments, service_profile)
+    metric_comparisons = compare_exact_page_metric_periods(
+        item.metric_facts,
+        content_url=brief.final_canonical_url,
+    )
     payload = _planning_payload(
         item=item,
         service_profile=service_profile,
@@ -211,8 +268,19 @@ def build_content_planning_input_from_components(
         source_facts=source_facts,
         source_assessments=source_assessments,
         claim_ledger=claim_ledger,
+        metric_comparisons=metric_comparisons,
     )
-    digest = _digest(payload)
+    # Criteria are part of the fixed point. A quality-gate change must make
+    # older proposals stale instead of allowing same-input idempotency to
+    # preserve a plan produced under weaker rules.
+    digest = _digest(
+        {
+            "schema_name": "wilq_content_planning_input_v6",
+            "criteria_version": "wilq_people_first_planning_v4",
+            "inventory_mapping_policy": "wilq_inventory_mapping_v2",
+            **payload,
+        }
+    )
     return ContentPlanningInputBuildResult(
         planning_input=ContentPlanningInput.model_validate(
             {"planning_input_digest": digest, **payload}
@@ -296,6 +364,26 @@ def _readiness_blockers(
                 "Odśwież publiczny inventory WordPress i wróć do planowania.",
             )
         )
+    elif inventory.content_status != "available":
+        blockers.append(
+            _blocker(
+                "missing_wordpress_full_inventory",
+                "Brakuje pełnej treści istniejącej strony",
+                "Same nagłówki nie wystarczają do bezpiecznej decyzji zachowaj/scal/przepisz.",
+                "Odczytaj aktualną treść główną i układ strony WordPress przed planowaniem.",
+            )
+        )
+    if inventory.content_text and inventory.material_confidence == "review_required":
+        blockers.append(
+            _blocker(
+                "wordpress_material_review_required",
+                "Materiał strony wymaga potwierdzenia",
+                "Treść została odczytana z wyrenderowanego the_content, ale nie ma jeszcze "
+                "źródłowo związanej reprezentacji REST/ACF.",
+                "Potwierdź zakres odczytanego materiału albo udostępnij dokładne pola WordPress "
+                "przed generowaniem planu.",
+            )
+        )
     stale_sources = [
         assessment.source
         for assessment in source_assessments
@@ -343,6 +431,7 @@ def _planning_payload(
     source_facts: list[ContentPlanningSourceFact],
     source_assessments: list[ContentPlanningSourceAssessment],
     claim_ledger: ContentClaimLedger,
+    metric_comparisons: list[MeasurementPeriodComparison],
 ) -> dict[str, object]:
     query_portfolio = usable_query_portfolio(baseline.search_demand, source_assessments)
     evidence_ids = _planning_evidence_ids(
@@ -352,6 +441,10 @@ def _planning_payload(
         source_assessments=source_assessments,
         claim_ledger=claim_ledger,
     )
+    internal_link_candidates = load_content_internal_link_candidates(
+        brief.internal_link_direction,
+        allowed_evidence_ids=evidence_ids,
+    )
     return {
         "work_item_id": item.id,
         "final_canonical_url": brief.final_canonical_url,
@@ -359,6 +452,7 @@ def _planning_payload(
         "confirmed_service_card_id": candidate.service_card_id,
         "service_label": candidate.service_label,
         "inventory": inventory,
+        "internal_link_candidates": internal_link_candidates,
         "target_reader": brief.target_reader,
         "buyer_problem": brief.buyer_problem,
         "buyer_trigger": brief.buyer_trigger,
@@ -368,6 +462,7 @@ def _planning_payload(
         "query_portfolio": query_portfolio,
         "claim_ledger": claim_ledger.entries,
         "measurement_metrics": brief.measurement_plan.metrics_to_watch,
+        "metric_comparisons": metric_comparisons,
         "measurement_baseline_evidence_ids": [
             evidence_id
             for evidence_id in brief.measurement_plan.baseline_evidence_ids
@@ -473,4 +568,5 @@ __all__ = [
     "ContentPlanningSourceAssessment",
     "build_content_planning_input",
     "content_planning_input_summary",
+    "planning_generation_blockers",
 ]
