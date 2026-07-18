@@ -124,7 +124,7 @@ export function ContentInventoryCatalogPanel({
           Z metrykami ({catalog.items.filter((item) => item.metrics_status === "available").length})
         </button>
         <button type="button" className={`rounded-full border px-3 py-1 font-semibold ${catalogView === "all" ? "border-action bg-action/10 text-action" : "border-line bg-white text-slate-600"}`} onClick={() => setCatalogView("all")}>
-          Wszystkie ({catalog.total_count})
+          Pokaż wszystkie ({catalog.total_count})
         </button>
         {catalogView === "ready" ? <span className="text-slate-500">Najpierw pokazujemy strony z materiałem gotowym do planu.</span> : catalogView === "metrics" ? <span className="text-slate-500">Pokazujemy także adresy URL-only, jeśli mają realne metryki do decyzji.</span> : null}
       </div>
