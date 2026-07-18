@@ -36,7 +36,6 @@ export function wordpressExecutionRequest(
   const request: ContentWorkItemWordPressDraftExecutionRequest = {
     handoff,
     draft_package: draft,
-    mode: "dry_run",
     write_authorization: null
   };
   if (sectionOverrides.length) {

@@ -12,6 +12,7 @@ from wilq.content.drafts.package import (
     ContentDraftPackage,
     ContentDraftSection,
 )
+from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.handoff.revision_wordpress import (
     build_revision_bound_wordpress_draft_handoff,
 )
@@ -124,6 +125,41 @@ def test_full_document_v2_round_trips_and_renders_without_losing_assets(
     assert changed_state.latest_review is None
 
 
+def test_renderer_escapes_an_unsafe_historical_internal_link_anchor(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    package = _draft_package()
+    legacy = store.append_draft_revision(_legacy_command(package)).revision
+    assert legacy is not None
+    created = store.append_draft_revision(
+        _full_document_command(package, base_revision_id=legacy.revision_id)
+    ).revision
+    assert created is not None
+    unsafe_historical = created.model_copy(
+        update={
+            "schema_version": "wilq_content_draft_revision_v1",
+            "internal_links": [
+                created.internal_links[0].model_copy(
+                    update={
+                        "anchor_text": "Kontakt](https://example.com/phish)[dalej",
+                        "target_url": (
+                            "https://www.ekologus.pl/kontakt) "
+                            "[phish](https://example.com"
+                        ),
+                    }
+                )
+            ],
+        }
+    )
+
+    escaped_historical = revision_document_markdown(unsafe_historical)
+
+    assert "[Kontakt](https://example.com/phish)" not in escaped_historical
+    assert "](https://example.com)" not in escaped_historical
+    assert "Kontakt\\](https://example.com/phish)\\[dalej" in escaped_historical
+
+
 def test_every_page_asset_changes_the_full_document_digest(tmp_path: Path) -> None:
     package = _draft_package()
     replacements = {
@@ -174,6 +210,13 @@ def test_every_page_asset_changes_the_full_document_digest(tmp_path: Path) -> No
             "anchor_text": "Kontakt",
             "evidence_ids": ["ev_wp"],
         },
+        {
+            "link_id": "link_destination_injection",
+            "placement": "section_when_support",
+            "target_url": "https://www.ekologus.pl/kontakt) [phish](https://example.com",
+            "anchor_text": "Kontakt",
+            "evidence_ids": ["ev_wp"],
+        },
     ],
 )
 def test_full_document_v2_rejects_untraced_or_external_internal_links(
@@ -191,6 +234,47 @@ def test_full_document_v2_requires_section_evidence_lineage() -> None:
     command = _full_document_command(_draft_package(), base_revision_id="content_revision_base")
     payload = command.model_dump(mode="json")
     payload["sections"][0]["evidence_ids"] = []
+
+    with pytest.raises(ValidationError):
+        ContentDraftRevisionAppendCommand.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("collection", "field"),
+    [
+        ("page_assets", "lead"),
+        ("sections", "heading"),
+        ("sections", "body_markdown"),
+        ("faq", "answer_markdown"),
+        ("cta_blocks", "body_markdown"),
+    ],
+)
+def test_full_document_v2_rejects_inline_links_in_generated_text(
+    collection: str,
+    field: str,
+) -> None:
+    command = _full_document_command(_draft_package(), base_revision_id="content_revision_base")
+    payload = command.model_dump(mode="json")
+    target = payload[collection] if collection == "page_assets" else payload[collection][0]
+    target[field] = "Treść [phish](https://example.com)."
+
+    with pytest.raises(ValidationError):
+        ContentDraftRevisionAppendCommand.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "inline_link",
+    [
+        '<a\thref\t=\t"//example.com/phish">kliknij</a>',
+        "[phish]: //example.com/phish\nKliknij [phish]",
+    ],
+)
+def test_full_document_v2_rejects_indirect_inline_link_syntax(
+    inline_link: str,
+) -> None:
+    command = _full_document_command(_draft_package(), base_revision_id="content_revision_base")
+    payload = command.model_dump(mode="json")
+    payload["sections"][0]["body_markdown"] = inline_link
 
     with pytest.raises(ValidationError):
         ContentDraftRevisionAppendCommand.model_validate(payload)

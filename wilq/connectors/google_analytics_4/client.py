@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -43,6 +44,7 @@ GA4_ITEM_METRICS = (
     "itemsPurchased",
     "itemRevenue",
 )
+GA4_TARGET_LANDING_ROW_LIMIT = 20
 
 
 def refresh_ga4_behavior_summary(
@@ -70,7 +72,12 @@ def refresh_ga4_behavior_summary(
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     try:
-        metric_summary, metric_facts = _fetch_behavior_summary(client, property_id, access_token)
+        metric_summary, metric_facts = _fetch_behavior_summary(
+            client,
+            property_id,
+            access_token,
+            target_urls=request.target_urls,
+        )
     except httpx.HTTPStatusError as exc:
         return _http_failure_result(exc)
     except httpx.HTTPError as exc:
@@ -97,6 +104,7 @@ def _fetch_behavior_summary(
     client: httpx.Client,
     property_id: str,
     access_token: str,
+    target_urls: list[str] | None = None,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     date_start, date_end = _default_date_range()
     behavior_payload = _post_run_report(
@@ -125,7 +133,47 @@ def _fetch_behavior_summary(
         limit=50,
     )
     item_summary, item_facts = _summarize_item_run_report_response(item_payload)
-    return behavior_summary | item_summary, [*behavior_facts, *item_facts]
+    target_paths = _target_landing_paths(target_urls or [])
+    target_facts: list[VendorMetricFact] = []
+    target_row_count = 0
+    for path in target_paths:
+        target_payload = _post_run_report(
+            client,
+            property_id,
+            access_token,
+            date_start=date_start,
+            date_end=date_end,
+            dimensions=GA4_DIMENSIONS,
+            metrics=GA4_METRICS,
+            limit=GA4_TARGET_LANDING_ROW_LIMIT,
+            landing_page_path=path,
+        )
+        target_summary, facts = _summarize_run_report_response(
+            target_payload,
+            date_start=date_start,
+            date_end=date_end,
+        )
+        target_row_count += int(target_summary["row_count"])
+        target_facts.extend(facts)
+    unique_facts = {
+        (
+            fact.name,
+            fact.value,
+            tuple(sorted(fact.dimensions.items())),
+            fact.period,
+            fact.unit,
+        ): fact
+        for fact in [*behavior_facts, *item_facts, *target_facts]
+    }
+    return (
+        behavior_summary
+        | item_summary
+        | {
+            "target_landing_requested_count": len(target_paths),
+            "target_landing_returned_row_count": target_row_count,
+        },
+        list(unique_facts.values()),
+    )
 
 
 def _post_run_report(
@@ -138,16 +186,28 @@ def _post_run_report(
     dimensions: tuple[str, ...],
     metrics: tuple[str, ...],
     limit: int,
+    landing_page_path: str | None = None,
 ) -> Any:
+    payload: dict[str, Any] = {
+        "dateRanges": [{"startDate": date_start, "endDate": date_end}],
+        "dimensions": [{"name": dimension} for dimension in dimensions],
+        "metrics": [{"name": metric} for metric in metrics],
+        "limit": str(limit),
+    }
+    if landing_page_path is not None:
+        payload["dimensionFilter"] = {
+            "filter": {
+                "fieldName": "landingPagePlusQueryString",
+                "stringFilter": {
+                    "matchType": "EXACT",
+                    "value": landing_page_path,
+                },
+            }
+        }
     response = client.post(
         f"{GA4_API_BASE}/{_property_path(property_id)}:runReport",
         headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
-        json={
-            "dateRanges": [{"startDate": date_start, "endDate": date_end}],
-            "dimensions": [{"name": dimension} for dimension in dimensions],
-            "metrics": [{"name": metric} for metric in metrics],
-            "limit": str(limit),
-        },
+        json=payload,
     )
     response.raise_for_status()
     return response.json()
@@ -164,6 +224,22 @@ def _default_date_range() -> tuple[str, str]:
     end = datetime.now(UTC).date() - timedelta(days=1)
     start = end - timedelta(days=27)
     return start.isoformat(), end.isoformat()
+
+
+def _target_landing_paths(target_urls: list[str]) -> list[str]:
+    paths: list[str] = []
+    for value in target_urls:
+        candidate = value.strip()
+        if not candidate:
+            continue
+        parsed = urlsplit(candidate)
+        path = parsed.path if parsed.scheme and parsed.netloc else candidate
+        if not path.startswith("/"):
+            continue
+        normalized = path or "/"
+        if normalized not in paths:
+            paths.append(normalized)
+    return paths[:20]
 
 
 def _summarize_run_report_response(

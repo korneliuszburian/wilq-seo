@@ -23,6 +23,8 @@ from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTIO
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
+    _account_currency_read_contract,
+    _ads_aggregation_contract,
     _custom_segment_review_reason,
     _custom_segment_source_quality,
     build_ads_diagnostics,
@@ -46,6 +48,70 @@ from wilq.schemas import (
     MetricFact,
 )
 from wilq.storage.local_state import local_state_store
+
+
+def test_ads_account_currency_blocks_mixed_currency_evidence() -> None:
+    facts = [
+        MetricFact(
+            name="account_currency_code",
+            value="PLN",
+            period="account_context",
+            source_connector="google_ads",
+            evidence_id="ev_pln",
+        ),
+        MetricFact(
+            name="account_currency_code",
+            value="EUR",
+            period="account_context",
+            source_connector="google_ads",
+            evidence_id="ev_eur",
+        ),
+    ]
+
+    contract = _account_currency_read_contract(facts, None)
+
+    assert contract.status == "blocked"
+    assert contract.currency_code is None
+    assert contract.missing_read_contracts == ["account_currency_consistency"]
+    assert contract.evidence_ids == ["ev_pln", "ev_eur"]
+
+
+def test_ads_summary_exposes_bounded_window_and_non_exhaustive_scope() -> None:
+    currency = _account_currency_read_contract(
+        [
+            MetricFact(
+                name="account_currency_code",
+                value="PLN",
+                period="account_context",
+                source_connector="google_ads",
+                evidence_id="ev_pln",
+            )
+        ],
+        None,
+    )
+
+    contract = _ads_aggregation_contract(
+        view="summary",
+        campaign_rows_available=12,
+        search_term_rows_available=80,
+        account_currency_read_contract=currency,
+    )
+
+    assert contract.campaign_rows_returned == 5
+    assert contract.campaign_rows_available == 12
+    assert contract.search_term_rows_returned == 5
+    assert contract.search_term_rows_available == 80
+    assert contract.is_exhaustive is False
+    assert contract.campaign_window == "LAST_7_DAYS"
+    assert contract.money_aggregation_allowed is True
+
+    full_contract = _ads_aggregation_contract(
+        view="full",
+        campaign_rows_available=18,
+        search_term_rows_available=50,
+        account_currency_read_contract=currency,
+    )
+    assert full_contract.is_exhaustive is False
 
 
 def test_google_ads_business_context_allows_empty_preliminary_targets(
@@ -1789,6 +1855,18 @@ def assert_ads_search_terms_contract_basics(payload: dict[str, Any]) -> None:
         assert available not in contract["missing_read_contracts"]
     assert contract["operator_review_gates"] == ["negative_keyword_action_validation"]
     assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
+    assert contract["coverage"] == [
+        {
+            "window": "last_30_days",
+            "window_label": "ostatnie 30 dni",
+            "requested_row_limit": 50,
+            "returned_row_count": 2,
+            "connector_cap": 50,
+            "cap_applied": False,
+            "coverage_status": "bounded_sample",
+            "privacy_omission_caveat": "Google Ads może pomijać niskowolumenowe zapytania; wynik nie jest pełnym uniwersum."
+        }
+    ]
 
 
 def assert_ads_search_term_rows_contract(
@@ -1962,6 +2040,10 @@ def assert_ads_search_term_safety_contract_basics(payload: dict[str, Any]) -> No
         assert available not in contract["missing_read_contracts"]
     assert contract["operator_review_gates"] == ["human_intent_review"]
     assert "dodanie wykluczających słów kluczowych" in contract["blocked_claims"]
+    assert contract["coverage"][0]["window"] == "search_term_safety_90d"
+    assert contract["coverage"][0]["requested_row_limit"] == 200
+    assert contract["coverage"][0]["connector_cap"] == 200
+    assert "niskowolumenowe" in contract["coverage"][0]["privacy_omission_caveat"]
 
 
 def assert_ads_search_term_safety_row_contract(
@@ -2610,6 +2692,14 @@ def assert_ads_campaign_review_action_payload(action: dict[str, Any]) -> None:
         "recommended_budget_amount_micros": 42000000,
     }
     assert payload["preview_contract"] == "budget_apply_preview_v1"
+    measurement_plan = payload["measurement_plan"]
+    assert measurement_plan["source_action_id"] == "act_prepare_ads_campaign_review_queue"
+    assert measurement_plan["baseline_window"] == "LAST_7_DAYS"
+    assert measurement_plan["observation_window"] == "same_window_after_human_execution"
+    assert measurement_plan["baseline_evidence_ids"] == payload["evidence_ids"]
+    assert measurement_plan["execution_acknowledgement_required"] is True
+    assert measurement_plan["observation_required"] is True
+    assert measurement_plan["success_claim_allowed"] is False
     budget_preview = payload["budget_payload_preview"][0]
     assert budget_preview["operation_type"] == "CampaignBudgetOperation"
     assert budget_preview["proposed_budget_amount_micros"] == 42000000
@@ -3275,6 +3365,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         assert "search_term_view.search_term" in query
         assert "metrics.conversions" in query
         assert "metrics.conversions_value" in query
+        assert "LIMIT 50" in query
         return httpx.Response(
             200,
             json=[

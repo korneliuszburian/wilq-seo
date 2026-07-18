@@ -13,6 +13,7 @@ from wilq.connectors.wordpress.authoring import (
 from wilq.content.drafts.package import ContentDraftPackage, ContentDraftSection
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 
+ContentWordPressMetaWriteStatus = Literal["not_present", "review_required", "mapped"]
 ContentWordPressAuthoringPreviewStatus = Literal["ready", "blocked"]
 ContentWordPressAuthoringPreviewBlockerCode = Literal[
     "missing_handoff",
@@ -22,6 +23,7 @@ ContentWordPressAuthoringPreviewBlockerCode = Literal[
     "acf_flexible_layouts_missing",
     "acf_flexible_field_name_missing",
     "acf_layout_field_mapping_incomplete",
+    "missing_wordpress_meta_mapping",
 ]
 
 
@@ -81,6 +83,22 @@ class ContentWordPressFlexibleSectionPayload(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
 
 
+class ContentWordPressPageAssetsPreview(BaseModel):
+    """Every full-document asset survives the dry-run, even when meta is manual."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    wordpress_title: str
+    h1: str
+    lead: str
+    meta_title: str
+    meta_description: str
+    meta_write_status: ContentWordPressMetaWriteStatus = "review_required"
+    metadata_blockers: list[ContentWordPressAuthoringPreviewBlocker] = Field(
+        default_factory=list
+    )
+
+
 class ContentWordPressAuthoringPayloadPreviewResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -90,6 +108,7 @@ class ContentWordPressAuthoringPayloadPreviewResult(BaseModel):
     endpoint_kind: Literal["posts"] = "posts"
     post_status: Literal["draft"] = "draft"
     flexible_content_field_name: str | None = None
+    page_assets: ContentWordPressPageAssetsPreview | None = None
     sections: list[ContentWordPressFlexibleSectionPayload] = Field(default_factory=list)
     publish_allowed: Literal[False] = False
     destructive_update_allowed: Literal[False] = False
@@ -107,12 +126,14 @@ def build_content_wordpress_authoring_payload_preview(
     authoring_profile: WordPressAuthoringProfile | None = None,
 ) -> ContentWordPressAuthoringPayloadPreviewResult:
     profile = authoring_profile or build_wordpress_authoring_profile("wordpress_ekologus")
+    page_assets = _page_assets_preview(handoff)
     blockers = _input_blockers(handoff=handoff, draft_package=draft_package)
     blockers.extend(_profile_blockers(profile))
     if blockers:
         return ContentWordPressAuthoringPayloadPreviewResult(
             status="blocked",
             flexible_content_field_name=profile.acf.flexible_content_field_name,
+            page_assets=page_assets,
             blockers=blockers,
         )
 
@@ -126,6 +147,7 @@ def build_content_wordpress_authoring_payload_preview(
         return ContentWordPressAuthoringPayloadPreviewResult(
             status="blocked",
             flexible_content_field_name=profile.acf.flexible_content_field_name,
+            page_assets=page_assets,
             blockers=[
                 _blocker(
                     "acf_flexible_layouts_missing",
@@ -146,6 +168,7 @@ def build_content_wordpress_authoring_payload_preview(
         return ContentWordPressAuthoringPayloadPreviewResult(
             status="blocked",
             flexible_content_field_name=profile.acf.flexible_content_field_name,
+            page_assets=page_assets,
             sections=sections,
             blockers=[
                 _blocker(
@@ -160,7 +183,32 @@ def build_content_wordpress_authoring_payload_preview(
     return ContentWordPressAuthoringPayloadPreviewResult(
         status="ready",
         flexible_content_field_name=profile.acf.flexible_content_field_name,
+        page_assets=page_assets,
         sections=sections,
+    )
+
+
+def _page_assets_preview(
+    handoff: ContentWordPressDraftHandoff | None,
+) -> ContentWordPressPageAssetsPreview | None:
+    document = handoff.revision_document if handoff is not None else None
+    if document is None or document.page_assets is None:
+        return None
+    return ContentWordPressPageAssetsPreview(
+        wordpress_title=document.page_assets.wordpress_title,
+        h1=document.page_assets.h1,
+        lead=document.page_assets.lead,
+        meta_title=document.page_assets.meta_title,
+        meta_description=document.page_assets.meta_description,
+        meta_write_status="review_required",
+        metadata_blockers=[
+            ContentWordPressAuthoringPreviewBlocker(
+                code="missing_wordpress_meta_mapping",
+                label="Meta pola wymagają mapowania WordPress",
+                reason="Tytuł i opis meta są zachowane, ale profil SEO/ACF nie potwierdza pola zapisu.",
+                next_step="Przekaż meta ręcznie albo potwierdź dokładne pola profilu WordPress.",
+            )
+        ],
     )
 
 

@@ -10,6 +10,7 @@ from wilq.content.measurement.window import (
     ContentMeasurementWindow,
     content_measurement_window_outcome_allowed,
 )
+from wilq.schemas import ConnectorQualityState, ConnectorSettlementState
 
 ContentMeasurementOutcomeStatus = Literal[
     "not_ready",
@@ -34,6 +35,9 @@ class ContentMeasurementObservedMetric(BaseModel):
     work_item_id: str | None = None
     measurement_window_id: str | None = None
     content_url: str | None = None
+    quality_state: ConnectorQualityState = ConnectorQualityState.unknown
+    settlement_state: ConnectorSettlementState = ConnectorSettlementState.unknown
+    interpretation_caveats: list[str] = Field(default_factory=list)
 
 
 class ContentMeasurementOutcomeInterpretation(BaseModel):
@@ -86,7 +90,7 @@ def interpret_content_measurement_outcome(
         for metric in observed_metrics
         if not _metric_provenance_blockers(metric, window)
     ]
-    if not usable_metrics:
+    if metric_blockers:
         return _interpretation(
             window=window,
             status="insufficient_data",
@@ -243,6 +247,15 @@ def _metric_provenance_blockers(
         blockers.append("Brakuje metric_fact_ids dla obserwowanej metryki.")
     if not metric.refresh_run_ids:
         blockers.append("Brakuje refresh_run_ids dla obserwowanej metryki.")
+    if metric.quality_state in {
+        ConnectorQualityState.partial,
+        ConnectorQualityState.unverified,
+    }:
+        blockers.append(
+            "Jakość źródła nie pozwala na review-bound interpretację tej metryki."
+        )
+    if metric.settlement_state == ConnectorSettlementState.settling:
+        blockers.append("Źródło nadal się stabilizuje; interpretacja jest przedwczesna.")
     if metric.work_item_id != window.work_item_id:
         blockers.append("Metryka nie wskazuje tego samego work_item_id co window.")
     if metric.measurement_window_id != window.id:

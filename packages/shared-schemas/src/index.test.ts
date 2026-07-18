@@ -145,6 +145,36 @@ describe("ContentDraftRevisionSchema", () => {
       ...parsed,
       service_card_id: ""
     }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...parsed,
+      internal_links: [{
+        ...parsed.internal_links[0],
+        anchor_text: "Kontakt](https://example.com/phish)[dalej"
+      }]
+    }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...parsed,
+      internal_links: [{
+        ...parsed.internal_links[0],
+        target_url: "https://www.ekologus.pl/kontakt) [phish](https://example.com"
+      }]
+    }).success).toBe(false);
+    expect(ContentDraftRevisionSchema.safeParse({
+      ...parsed,
+      sections: [{
+        ...parsed.sections[0],
+        body_markdown: "Treść [phish](https://example.com)."
+      }]
+    }).success).toBe(false);
+    for (const body_markdown of [
+      '<a\thref\t=\t"//example.com/phish">kliknij</a>',
+      "[phish]: //example.com/phish\nKliknij [phish]"
+    ]) {
+      expect(ContentDraftRevisionSchema.safeParse({
+        ...parsed,
+        sections: [{ ...parsed.sections[0], body_markdown }]
+      }).success).toBe(false);
+    }
   });
 });
 
@@ -526,6 +556,22 @@ describe("ContentPlanningProposalResponseSchema", () => {
         }
       }).success
     ).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      status: "generating",
+      work_item_id: "content_work_item_bdo",
+      service_card_id: "ekologus_service_bdo_reporting",
+      runtime: {
+        status: "not_started",
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      blockers: [],
+      safe_next_step: "Poczekaj na plan.",
+      publish_ready: false
+    }).success).toBe(true);
   });
 });
 

@@ -104,6 +104,7 @@ class ContentWordPressDraftExecutionResult(BaseModel):
     mode: ContentWordPressDraftExecutionMode
     boundary: ContentWordPressDraftExecutionBoundary
     payload: ContentWordPressDraftPayload | None = None
+    revision_binding: ContentDraftRevisionBinding | None = None
     wordpress_post_id: str | None = None
     external_write_attempted: bool = False
     blockers: list[ContentWordPressDraftExecutionBlocker] = Field(default_factory=list)
@@ -149,6 +150,7 @@ def execute_content_wordpress_draft_handoff(
         return ContentWordPressDraftExecutionResult(
             status="blocked",
             mode=mode,
+            revision_binding=handoff.revision_binding if handoff is not None else None,
             boundary=_execution_boundary(
                 live_write_enabled=live_write_enabled,
                 create_draft=create_draft,
@@ -169,6 +171,7 @@ def execute_content_wordpress_draft_handoff(
         return ContentWordPressDraftExecutionResult(
             status="dry_run_ready",
             mode=mode,
+            revision_binding=handoff.revision_binding,
             boundary=_execution_boundary(
                 live_write_enabled=live_write_enabled,
                 create_draft=create_draft,
@@ -185,6 +188,7 @@ def execute_content_wordpress_draft_handoff(
         return ContentWordPressDraftExecutionResult(
             status="blocked",
             mode=mode,
+            revision_binding=handoff.revision_binding,
             boundary=_execution_boundary(
                 live_write_enabled=live_write_enabled,
                 create_draft=create_draft,
@@ -206,6 +210,7 @@ def execute_content_wordpress_draft_handoff(
     return ContentWordPressDraftExecutionResult(
         status="created",
         mode=mode,
+        revision_binding=handoff.revision_binding,
         boundary=_execution_boundary(
             live_write_enabled=live_write_enabled,
             create_draft=create_draft,

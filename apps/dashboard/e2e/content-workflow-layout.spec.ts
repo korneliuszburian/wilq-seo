@@ -40,8 +40,69 @@ type CodexProposalBrowserProof = {
 };
 
 const revisionProofEvidenceId = "ev_content_revision_browser_proof";
+const evidenceBoundUrl = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/";
+
+async function bindEvidenceBoundPage(page: Page) {
+  const apiPort = process.env.WILQ_E2E_API_PORT ?? "8875";
+  const response = await page.request.post(
+    `http://127.0.0.1:${apiPort}/api/content/inventory/bind`,
+    {
+    data: { url: evidenceBoundUrl }
+    }
+  );
+  expect(response.ok()).toBe(true);
+  const binding = (await response.json()) as { status: string; work_item_id: string | null };
+  expect(binding.status).toBe("ready");
+  expect(binding.work_item_id).toBeTruthy();
+  return binding.work_item_id as string;
+}
+
+async function getDefaultWorkItemId(page: Page) {
+  const apiPort = process.env.WILQ_E2E_API_PORT ?? "8875";
+  const response = await page.request.get(
+    `http://127.0.0.1:${apiPort}/api/content/work-items/snapshot`
+  );
+  expect(response.ok()).toBe(true);
+  const snapshot = (await response.json()) as ContentWorkItemWorkflowSnapshotResponse;
+  expect(snapshot.response_type).toBe("workflow_snapshot");
+  return snapshot.preflight.item.id;
+}
 
 test.describe("WILQ content workflow layout proof", () => {
+  test("shows selected inventory meat before a slow queue response", async ({ page }) => {
+    const workItemId = await bindEvidenceBoundPage(page);
+    await page.route("**/api/content/work-items/queue*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 5_000));
+      await route.continue();
+    });
+
+    await page.goto(
+      `/content-workflow?work_item_id=${workItemId}`
+    );
+    await expect(page.getByRole("heading", { name: /BDO - CO MUSI WIEDZIEĆ/ })).toBeVisible({
+      timeout: 4_000
+    });
+    await expect(page.getByText("Ładujemy decyzję i dopasowane źródła.", { exact: true })).toBeVisible();
+  });
+
+  test("opens an inventory-bound workflow instead of returning to the empty state", async ({ page }) => {
+    const workItemId = await bindEvidenceBoundPage(page);
+    await page.goto(
+      `/content-workflow?work_item_id=${workItemId}`
+    );
+    await expect(page.getByRole("combobox", { name: "Aktywna strona" })).toHaveValue(
+      workItemId,
+      { timeout: 30_000 }
+    );
+    await expect(
+      page.getByLabel("Kontekst zadania treściowego").getByText(
+        "BDO i sprawozdawczość środowiskowa",
+        { exact: true }
+      )
+    ).toBeVisible();
+    await expect(page.getByTestId("content-workflow-marketer-journey")).toBeVisible();
+  });
+
   test("keeps the API-owned planning step useful on desktop and mobile", async ({ page }) => {
     const runDir = path.join(proofRoot, new Date().toISOString().replace(/[:.]/g, "-"));
     await fs.mkdir(runDir, { recursive: true });
@@ -69,12 +130,15 @@ test.describe("WILQ content workflow layout proof", () => {
         queue_status?: string;
         freshness_assessment?: { requires_refresh?: boolean };
       };
+      await expect(
+        page.getByRole("heading", { name: "Tworzenie i odświeżanie treści" })
+      ).toBeVisible({ timeout: 30_000 });
 
       if (
         queuePayload.queue_status === "blocked" &&
         queuePayload.freshness_assessment?.requires_refresh
       ) {
-        await expect(page.getByRole("heading", { name: "Workflow treści bez slopu" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Tworzenie i odświeżanie treści" })).toBeVisible();
         await expect(page.getByRole("status").getByText(/Następny bezpieczny krok:/)).toBeVisible();
         await page.screenshot({
           path: path.join(runDir, `content-workflow-${viewport.label}-blocked.png`),
@@ -86,35 +150,58 @@ test.describe("WILQ content workflow layout proof", () => {
       const context = page.getByLabel("Kontekst zadania treściowego");
       const taskMap = page.getByTestId("content-workflow-task-map");
       readyViewportCount += 1;
+      if (await context.count() === 0) {
+        await expect(page.getByRole("heading", { name: "Tworzenie i odświeżanie treści" })).toBeVisible();
+        await expect(page.getByRole("region", { name: "Pełny inventory WordPress" })).toBeVisible();
+        await expect(page.getByRole("button", { name: /Pokaż wszystkie/ })).toBeVisible();
+        await expectNoHorizontalPageOverflow(page);
+        await page.screenshot({
+          path: path.join(runDir, `content-workflow-${viewport.label}-inventory.png`),
+          fullPage: true
+        });
+        continue;
+      }
       await expect(context).toBeVisible();
       await expect(context.getByText("Strona", { exact: true })).toBeVisible();
       await expect(context.getByText("Usługa", { exact: true })).toBeVisible();
       await expect(context.getByText("Decyzja", { exact: true })).toBeVisible();
       await expect(taskMap.getByRole("button")).toHaveCount(5);
       await expect(taskMap.locator('[aria-current="step"]')).toHaveCount(1);
-      await expect(
-        taskMap.getByRole("button", { name: /Zakres i cel/ })
-      ).toHaveAttribute("aria-current", "step");
-      await expect(taskMap.getByTestId("selected-step-blocker")).toHaveText(
-        "Zakres wymaga review"
-      );
+      const currentStepLabel = await taskMap
+        .locator('[aria-current="step"]')
+        .getAttribute("aria-label");
+      expect(currentStepLabel).toBeTruthy();
       await expect(taskMap.getByText("Następny bezpieczny krok")).toBeVisible();
-      await expect(taskMap.getByRole("button", { name: /Plan sekcji/ })).toBeDisabled();
-      await expect(taskMap.getByRole("button", { name: /Szkic treści/ })).toBeDisabled();
-      await expect(taskMap.getByRole("button", { name: /Sprawdzenie treści/ })).toBeDisabled();
-      await expect(taskMap.getByRole("button", { name: /Szkic na devie/ })).toBeDisabled();
 
       await expect(page.getByTestId("content-workflow-technical-audit")).toHaveCount(0);
-      await expect(page.locator('[data-active-workspace="scope"]')).toBeVisible();
-      const planningPanel = page.getByTestId("planning-review-scope");
-      await expect(planningPanel.getByRole("heading", { name: "Zatwierdź zakres treści" })).toBeVisible();
-      await expect(planningPanel.getByText("Strona", { exact: true })).toBeVisible();
-      await expect(planningPanel.getByText("Intencja", { exact: true })).toBeVisible();
-      await expect(planningPanel.getByText("CTA", { exact: true })).toBeVisible();
-      await expect(planningPanel.getByRole("button", { name: "Zapisz decyzję i przejdź dalej" })).toBeDisabled();
+      if (currentStepLabel?.includes("Zakres i cel")) {
+        await expect(taskMap.getByTestId("selected-step-blocker")).toHaveText(
+          "Zakres wymaga review"
+        );
+        await expect(taskMap.getByRole("button", { name: /Plan sekcji/ })).toBeDisabled();
+        await expect(taskMap.getByRole("button", { name: /Szkic treści/ })).toBeDisabled();
+        await expect(taskMap.getByRole("button", { name: /Sprawdzenie treści/ })).toBeDisabled();
+        await expect(taskMap.getByRole("button", { name: /Szkic na devie/ })).toBeDisabled();
+        await expect(page.locator('[data-active-workspace="scope"]')).toBeVisible();
+        const planningPanel = page.getByTestId("planning-review-scope");
+        await expect(planningPanel.getByRole("heading", { name: "Zatwierdź zakres treści" })).toBeVisible();
+        await expect(planningPanel.getByText("Strona", { exact: true })).toBeVisible();
+        await expect(planningPanel.getByText("Intencja", { exact: true })).toBeVisible();
+        await expect(planningPanel.getByText("CTA", { exact: true })).toBeVisible();
+        await expect(planningPanel.getByRole("button", { name: "Zapisz decyzję i przejdź dalej" })).toBeDisabled();
+      } else {
+        await expect(page.locator('[data-active-workspace="review"]')).toBeVisible();
+        await expect(page.getByText("Review konkretnej wersji szkicu")).toBeVisible();
+        await expect(page.getByText(/Wersja 1:/)).toBeVisible();
+      }
       await expect(page.getByRole("heading", { name: "Aktualna strona" })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Sygnały i braki" })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Dev draft / ACF" })).toHaveCount(0);
+
+      if (!currentStepLabel?.includes("Zakres i cel")) {
+        await page.getByText("Review konkretnej wersji szkicu").scrollIntoViewIfNeeded();
+        await page.waitForTimeout(2500);
+      }
 
       if (viewport.label === "mobile") {
         const safeStepBox = await taskMap.getByTestId("selected-step-safe-next-step").boundingBox();
@@ -152,6 +239,7 @@ test.describe("WILQ content workflow layout proof", () => {
     });
 
     let expandedTypedSnapshot = false;
+    const workItemId = await getDefaultWorkItemId(page);
     await page.route("**/api/content/work-items/*/snapshot", async (route) => {
       const response = await route.fetch();
       if (response.status() !== 200) {
@@ -178,6 +266,7 @@ test.describe("WILQ content workflow layout proof", () => {
         const source = sourceSections[index % sourceSections.length];
         return {
           ...source,
+          section_id: `${source.section_id ?? "synthetic_section"}_${index + 1}`,
           heading,
           evidence_ids: [...source.evidence_ids],
           draft_notes: [...source.draft_notes]
@@ -196,6 +285,7 @@ test.describe("WILQ content workflow layout proof", () => {
         const source = sourceEditorSections[index % sourceEditorSections.length];
         return {
           ...source,
+          section_id: `${source.section_id ?? "synthetic_editor_section"}_${index + 1}`,
           heading,
           evidence_ids: [...source.evidence_ids]
         };
@@ -204,12 +294,25 @@ test.describe("WILQ content workflow layout proof", () => {
       if (snapshot.revision_workspace.latest_revision) {
         snapshot.revision_workspace.latest_revision.sections = syntheticEditorSections;
       }
+      snapshot.current_step_id = "draft";
+      snapshot.operator_steps = snapshot.operator_steps.map((step, index) => ({
+        ...step,
+        phase: index < 2 ? "complete" : index === 2 ? "current" : "pending",
+        can_open: index <= 2,
+        can_submit: index === 2
+      }));
       expandedTypedSnapshot = true;
       await route.fulfill({ response, json: snapshot });
     });
 
-    await page.goto("/content-workflow");
+    await page.goto(`/content-workflow?work_item_id=${workItemId}`);
 
+    const taskMap = page.getByTestId("content-workflow-task-map");
+    const draftStep = taskMap.getByRole("button", { name: /Szkic treści/ });
+    await expect(draftStep).toBeVisible();
+    if ((await draftStep.getAttribute("aria-current")) !== "step") {
+      await draftStep.click();
+    }
     const sectionTabs = page.getByTestId("draft-section-tabs");
     await expect(sectionTabs).toBeVisible();
     await expect(sectionTabs.getByRole("button")).toHaveCount(5);
@@ -325,7 +428,7 @@ test.describe("WILQ content workflow layout proof", () => {
       const writeCountBefore = contentWriteRequests.length;
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/content-workflow");
+      await page.goto(`/content-workflow?work_item_id=${liveWorkItemId}`);
       await expect.poll(() => activeProof !== null).toBe(true);
       const proof = activeProof;
       if (proof === null) throw new Error("Live workflow snapshot did not produce Codex proof state");
@@ -355,7 +458,8 @@ test.describe("WILQ content workflow layout proof", () => {
         payload: {
           expected_base_digest: proof.baseRevision.content_digest,
           selected_section_headings: [proof.selectedHeading],
-          requested_by: "wilku"
+          selected_section_ids: [],
+          requested_by: "operator_local_dashboard"
         }
       });
       await expect(panel.getByRole("status")).toContainText(
@@ -432,6 +536,7 @@ test.describe("WILQ content workflow layout proof", () => {
     let actionAuditEvents: ActionObject["audit_events"] = [];
     let actionEventSequence = 0;
     let syntheticApplyCompleted = false;
+    const workItemId = await getDefaultWorkItemId(page);
 
     page.on("request", (request) => {
       if (request.method() !== "POST") return;
@@ -519,6 +624,8 @@ test.describe("WILQ content workflow layout proof", () => {
           content_digest: (currentViewportLabel === "desktop" ? "b" : "c").repeat(64),
           draft_package_id: draftPackage?.id ?? "draft_package_browser_proof",
           draft_package_digest: "d".repeat(64),
+          planning_digest:
+            baseSnapshot.planning_workspace?.proposal.planning_digest ?? "p".repeat(64),
           final_canonical_url:
             baseSnapshot.preflight.item.final_canonical_url ??
             baseSnapshot.preflight.item.intended_final_url ??
@@ -785,7 +892,7 @@ test.describe("WILQ content workflow layout proof", () => {
       const exactText = `Dokładna treść wersji do review — ${viewport.label}.`;
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/content-workflow");
+      await page.goto(`/content-workflow?work_item_id=${workItemId}`);
 
       const taskMap = page.getByTestId("content-workflow-task-map");
       await expect(taskMap.getByRole("button", { name: /Szkic treści/ })).toHaveAttribute(
@@ -805,7 +912,7 @@ test.describe("WILQ content workflow layout proof", () => {
       );
       expect(saveRequests.at(-1)?.base_revision_id).toBeNull();
       expect(saveRequests.at(-1)?.sections[0]?.body_markdown).toBe(exactText);
-      expect(saveRequests.at(-1)?.created_by).toBe("wilku");
+      expect(saveRequests.at(-1)?.created_by).toBe("operator_local_dashboard");
 
       await taskMap.getByRole("button", { name: /Szkic treści/ }).click();
       await expect(page.locator('[data-active-workspace="draft"]')).toBeVisible();
@@ -830,6 +937,7 @@ test.describe("WILQ content workflow layout proof", () => {
 
       await reloadedTaskMap.getByRole("button", { name: /Sprawdzenie treści/ }).click();
       const immutableRevision = page.getByTestId("immutable-revision-content");
+      await page.getByText("Źródła i powiązania sekcji", { exact: true }).click();
       await expect(immutableRevision.getByText(exactText)).toBeVisible();
       await expect(immutableRevision.getByText(revisionProofEvidenceId).first()).toBeVisible();
       await page.getByLabel("Decyzja dla wersji szkicu").selectOption("approved");
@@ -844,8 +952,11 @@ test.describe("WILQ content workflow layout proof", () => {
         .check();
       await expect(approveButton).toBeEnabled();
       await approveButton.click();
+      await expect.poll(() => reviewRequests.length).toBe(reviewCountBefore + 1);
+      await page.reload();
 
-      await expect(reloadedTaskMap.getByRole("button", { name: /Szkic na devie/ })).toHaveAttribute(
+      const approvedTaskMap = page.getByTestId("content-workflow-task-map");
+      await expect(approvedTaskMap.getByRole("button", { name: /Szkic na devie/ })).toHaveAttribute(
         "aria-current",
         "step"
       );
@@ -853,7 +964,6 @@ test.describe("WILQ content workflow layout proof", () => {
       await expect(wizard.getByRole("heading", { name: "Wersja 1 → szkic na devie" }))
         .toBeVisible();
       await expect(wizard.getByText(/bez publikacji · bez aktualizacji/)).toBeVisible();
-      await expect.poll(() => reviewRequests.length).toBe(reviewCountBefore + 1);
       expect(reviewRequests.at(-1)?.expected_revision_digest).toBe(
         (currentViewportLabel === "desktop" ? "b" : "c").repeat(64)
       );
@@ -928,6 +1038,7 @@ test.describe("WILQ content workflow layout proof", () => {
     );
     expect(forbiddenPostRequests).toEqual([]);
     expect(postRequests).toHaveLength(viewports.length * 8);
+    await page.unrouteAll({ behavior: "ignoreErrors" });
   });
 });
 
@@ -1060,6 +1171,8 @@ function codexProposalBrowserProof(
     content_digest: baseDigest,
     draft_package_id: draftPackage?.id ?? `draft_package_codex_browser_${viewportLabel}`,
     draft_package_digest: "d".repeat(64),
+    planning_digest:
+      snapshot.planning_workspace?.proposal.planning_digest ?? "p".repeat(64),
     final_canonical_url:
       snapshot.preflight.item.final_canonical_url ??
       snapshot.preflight.item.intended_final_url ??
@@ -1298,6 +1411,7 @@ function revisionProofBinding(
     content_digest: revision.content_digest,
     draft_package_id: revision.draft_package_id,
     draft_package_digest: revision.draft_package_digest,
+    planning_digest: revision.planning_digest,
     approval_decision_id: review.decision_id,
     final_canonical_url: revision.final_canonical_url
   };

@@ -29,6 +29,18 @@ export function AcfPreviewPanel({ result, safetyText }: AcfPreviewPanelProps) {
         <div>
           <h2 className="text-sm font-semibold text-ink">Mapowanie ACF</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">{safetyText}</p>
+          {result?.page_assets ? (
+            <div className="mt-3 rounded-md border border-line bg-surface p-3 text-sm text-slate-700">
+              <div className="text-xs uppercase tracking-normal text-slate-500">Page assets zachowane w dry-runie</div>
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                <div><dt className="font-medium text-ink">Tytuł / H1</dt><dd className="mt-1 text-xs leading-5">{result.page_assets.wordpress_title} · {result.page_assets.h1}</dd></div>
+                <div><dt className="font-medium text-ink">Meta</dt><dd className="mt-1 text-xs leading-5">{result.page_assets.meta_write_status === "mapped" ? "mapowanie potwierdzone" : "przekazanie ręczne — mapowanie niepotwierdzone"}</dd></div>
+              </dl>
+              {result.page_assets.metadata_blockers.map((blocker) => (
+                <p key={blocker.code} className="mt-2 rounded-md bg-wait/10 p-2 text-xs leading-5 text-slate-700">{blocker.label}: {blocker.next_step}</p>
+              ))}
+            </div>
+          ) : null}
           {firstSection ? (
             <div className="mt-3 space-y-3 text-sm text-slate-700">
               <div className="rounded-md border border-line bg-surface p-3">

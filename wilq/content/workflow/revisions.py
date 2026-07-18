@@ -14,7 +14,7 @@ from pydantic import (
 )
 
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
-from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
+from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.workflow.revision_binding import (
     ContentDraftRevisionBinding as ContentDraftRevisionBinding,
 )
@@ -28,6 +28,39 @@ ContentDraftRevisionDecision = Literal[
     "rejected",
     "deferred",
 ]
+_UNSAFE_INTERNAL_LINK_ANCHOR_CHARACTERS = frozenset("[]<>\\\r\n\t")
+_INLINE_LINK_MARKERS = (
+    "http://",
+    "https://",
+    "mailto:",
+    "javascript:",
+    "href=",
+    "href =",
+)
+
+
+def validate_plain_internal_link_anchor(value: str) -> str:
+    anchor = value.strip()
+    if not anchor:
+        raise ValueError("Internal-link anchor text cannot be blank.")
+    if any(character in _UNSAFE_INTERNAL_LINK_ANCHOR_CHARACTERS for character in anchor):
+        raise ValueError("Internal-link anchor text must be plain text.")
+    if "://" in anchor or anchor.casefold().startswith(("mailto:", "javascript:")):
+        raise ValueError("Internal-link anchor text cannot contain a URL.")
+    return anchor
+
+
+def validate_no_inline_link(value: str) -> str:
+    folded = value.casefold()
+    if (
+        any(marker in folded for marker in _INLINE_LINK_MARKERS)
+        or any(character in "[]<>" for character in value)
+        or "//" in value
+    ):
+        raise ValueError("Generated document text cannot contain inline links.")
+    return value
+
+
 ContentDraftRevisionStateStatus = Literal[
     "empty",
     "unreviewed",
@@ -108,7 +141,7 @@ class ContentDraftRevisionPageAssets(BaseModel):
     def require_visible_text(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("Draft revision page assets cannot be blank.")
-        return value
+        return validate_no_inline_link(value)
 
 
 class ContentDraftRevisionFaqItem(BaseModel):
@@ -429,12 +462,24 @@ def _validate_full_document(
     placements.extend(item.placement for item in document.internal_links)
     if not set(placements).issubset(allowed_placements):
         raise ValueError("Full-document CTA and link placement must target the document structure.")
-    if any(
-        not item.target_url.startswith(("https://", "http://"))
-        or content_url_host(item.target_url) not in CONTENT_SOURCE_SITE_HOSTS
-        for item in document.internal_links
-    ):
+    if any(not content_is_safe_public_url(item.target_url) for item in document.internal_links):
         raise ValueError("Full-document internal links require public Ekologus URLs.")
+    for item in document.internal_links:
+        validate_plain_internal_link_anchor(item.anchor_text)
+    generated_text = [
+        document.page_assets.wordpress_title,
+        document.page_assets.meta_title,
+        document.page_assets.meta_description,
+        document.page_assets.h1,
+        document.page_assets.lead,
+        *(item.heading for item in document.sections),
+        *(item.body_markdown for item in document.sections),
+        *(item.question for item in document.faq),
+        *(item.answer_markdown for item in document.faq),
+        *(item.body_markdown for item in document.cta_blocks),
+    ]
+    for value in generated_text:
+        validate_no_inline_link(value)
     evidence_collections = [
         *(item.evidence_ids for item in document.sections),
         *(item.evidence_ids for item in document.faq),

@@ -37,7 +37,19 @@ def build_content_work_item_measurement_window_response(
         else build_publication_bound_measurement_window(
             item=request.item,
             handoff=request.handoff,
-            execution=store.latest_wordpress_draft_execution(request.item.id),
+            # Measurement may only bind to the exact handoff/revision supplied
+            # by the caller.  A legacy work-item-wide execution must never
+            # unlock a newer or otherwise unbound revision.
+            execution=(
+                store.latest_wordpress_draft_execution(
+                    request.item.id,
+                    handoff_id=request.handoff.id,
+                    revision_id=request.handoff.revision_binding.revision_id,
+                    revision_digest=request.handoff.revision_binding.content_digest,
+                )
+                if request.handoff is not None and request.handoff.revision_binding is not None
+                else None
+            ),
             metric_facts=load_content_measurement_facts(request.item.final_canonical_url),
         )
     )

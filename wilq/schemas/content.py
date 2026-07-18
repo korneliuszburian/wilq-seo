@@ -7,7 +7,16 @@ from pydantic import BaseModel, Field, model_validator
 
 from wilq.operator_labels import source_connector_labels
 
-from .core import ActionRisk, ConnectorRefreshRun, ConnectorStatus, MetricFact, utc_now
+from .core import (
+    ActionRisk,
+    ConnectorCoveredWindow,
+    ConnectorQualityState,
+    ConnectorRefreshRun,
+    ConnectorSettlementState,
+    ConnectorStatus,
+    MetricFact,
+    utc_now,
+)
 from .marketing import TacticalQueueItem
 
 
@@ -113,6 +122,11 @@ class ContentDecisionItem(BaseModel):
     wordpress_section_count: int | None = None
     wordpress_section_inventory_status: Literal["available", "missing"] = "missing"
     wordpress_content_summary: str | None = None
+    wordpress_content_text: str | None = None
+    wordpress_content_source_kind: str | None = None
+    wordpress_content_extraction_region: str | None = None
+    wordpress_content_material_confidence: str | None = None
+    wordpress_content_source_field_lineage: list[str] = Field(default_factory=list)
     wordpress_content_word_count: int | None = None
     wordpress_content_inventory_status: Literal["available", "missing"] = "missing"
     wordpress_content_inventory_note: str | None = None
@@ -120,6 +134,8 @@ class ContentDecisionItem(BaseModel):
     wordpress_block_count: int | None = None
     wordpress_acf_section_inventory_status: Literal["available", "missing"] = "missing"
     wordpress_acf_section_inventory_note: str | None = None
+    wordpress_acf_section_headings: list[str] = Field(default_factory=list)
+    wordpress_acf_section_count: int | None = None
     source_public_url: str | None = None
     preview_url: str | None = None
     intended_final_url: str | None = None
@@ -329,6 +345,11 @@ class ContentFreshnessAssessment(BaseModel):
     blocked_connector_ids: list[str] = Field(default_factory=list)
     stale_connector_ids: list[str] = Field(default_factory=list)
     connector_labels_requiring_refresh: list[str] = Field(default_factory=list)
+    connector_refresh_run_ids: dict[str, str] = Field(default_factory=dict)
+    connector_covered_windows: dict[str, ConnectorCoveredWindow] = Field(default_factory=dict)
+    connector_settlement_states: dict[str, ConnectorSettlementState] = Field(default_factory=dict)
+    connector_quality_states: dict[str, ConnectorQualityState] = Field(default_factory=dict)
+    connector_quality_caveats: dict[str, list[str]] = Field(default_factory=dict)
     summary: str
     next_step: str
 

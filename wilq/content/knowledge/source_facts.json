@@ -9,9 +9,11 @@
       "scope": "service",
       "freshness_date": "2026-07-01",
       "confidence": 0.76,
-      "review_status": "review_required",
-      "reviewer": null,
-      "evidence_ids": [],
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
       "source_connectors": [
         "public_site"
       ],
@@ -171,9 +173,11 @@
       "scope": "service",
       "freshness_date": "2026-07-01",
       "confidence": 0.79,
-      "review_status": "review_required",
-      "reviewer": null,
-      "evidence_ids": [],
+      "review_status": "approved",
+      "reviewer": "Korneliusz Burian",
+      "evidence_ids": [
+        "ev_content_service_profile_source_facts"
+      ],
       "source_connectors": [
         "public_site"
       ],

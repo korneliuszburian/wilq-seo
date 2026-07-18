@@ -19,8 +19,11 @@ test.describe("WILQ knowledge layout proof", () => {
     await page.goto("/knowledge");
     await operatingMapResponse;
 
-    await expect(page.getByRole("heading", { name: "Wiedza", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Źródła i wiedza", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Realne materiały i fakty Ekologusa" })).toBeVisible();
+    await expect(page.getByText("15 materiałów w manifeście Ekologusa")).toBeVisible();
+    await expect(page.getByText("import pending")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Najbliższy krok źródłowy" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co blokuje produkcję treści" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kolejka sprawdzania wiedzy" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Sprawdź kartę" })).toBeVisible();
@@ -30,7 +33,7 @@ test.describe("WILQ knowledge layout proof", () => {
     await expect(page.getByText("Machine-Readable Playbooks")).toHaveCount(0);
 
     const primaryDecisionBox = await page
-      .getByRole("heading", { name: "Najbliższa wiedza do sprawdzenia" })
+      .getByRole("heading", { name: "Najbliższy krok źródłowy" })
       .boundingBox();
     const fullMapBox = await page
       .getByRole("button", { name: "Zobacz pełną kolejkę" })

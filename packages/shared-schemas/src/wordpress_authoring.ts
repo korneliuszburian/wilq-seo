@@ -207,6 +207,16 @@ const ContentWordPressFlexibleSectionPayloadSchema = z.object({
   evidence_ids: z.array(z.string()).default([])
 });
 
+const ContentWordPressPageAssetsPreviewSchema = z.object({
+  wordpress_title: z.string(),
+  h1: z.string(),
+  lead: z.string(),
+  meta_title: z.string(),
+  meta_description: z.string(),
+  meta_write_status: z.enum(["not_present", "review_required", "mapped"]),
+  metadata_blockers: z.array(ContentWordPressAuthoringPayloadPreviewBlockerSchema).default([])
+});
+
 export const ContentWordPressAuthoringPayloadPreviewResultSchema = z.object({
   status: z.enum(["ready", "blocked"]),
   mode: z.literal("dry_run"),
@@ -214,6 +224,7 @@ export const ContentWordPressAuthoringPayloadPreviewResultSchema = z.object({
   endpoint_kind: z.literal("posts"),
   post_status: z.literal("draft"),
   flexible_content_field_name: z.string().nullable().optional(),
+  page_assets: ContentWordPressPageAssetsPreviewSchema.nullable().optional(),
   sections: z.array(ContentWordPressFlexibleSectionPayloadSchema).default([]),
   publish_allowed: z.literal(false),
   destructive_update_allowed: z.literal(false),
@@ -232,5 +243,4 @@ export const ContentWorkItemWordPressAuthoringPayloadPreviewResponseSchema = z.o
   authoring_profile: WordPressAuthoringProfileSchema,
   preview_result: ContentWordPressAuthoringPayloadPreviewResultSchema
 });
-
 

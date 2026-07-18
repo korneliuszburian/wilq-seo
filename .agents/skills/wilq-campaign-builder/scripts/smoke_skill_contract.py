@@ -29,6 +29,19 @@ CORE_CAMPAIGN_ACTION_IDS = {
     "act_prepare_ads_campaign_review_queue",
     "act_prepare_google_ads_recommendation_review_queue",
 }
+UNSUPPORTED_GENERATOR_FIELDS = {
+    "keywords",
+    "keyword_ideas",
+    "ad_groups",
+    "assets",
+    "sitelinks",
+    "ad_copy",
+    "targeting",
+    "targeting_plan",
+    "target_budget",
+    "budget_recommendation",
+    "forecast",
+}
 
 
 def main() -> int:
@@ -91,6 +104,7 @@ def main() -> int:
         raise SystemExit("Live content_landing_context must expose landing candidates")
 
     action_validations = validate_core_campaign_actions(args.api_base, pack)
+    assert_review_contract_does_not_invent_campaign_build_inputs(pack)
 
     print(
         json.dumps(
@@ -142,6 +156,29 @@ def validate_core_campaign_actions(api_base: str, pack: dict[str, Any]) -> list[
     pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
     available_action_ids = sorted(CORE_CAMPAIGN_ACTION_IDS & pack_action_ids)
     return validate_action_ids(api_base, available_action_ids, label="Campaign")
+
+
+def assert_review_contract_does_not_invent_campaign_build_inputs(pack: dict[str, Any]) -> None:
+    """Keep the review-only surface honest until a typed builder contract exists."""
+    context = pack.get("content_landing_context") or {}
+    for candidate in context.get("query_page_candidates") or []:
+        if not isinstance(candidate, dict):
+            continue
+        invented = sorted(UNSUPPORTED_GENERATOR_FIELDS.intersection(candidate))
+        if invented:
+            raise SystemExit(
+                "content_landing_context exposes unsupported campaign-builder fields: "
+                + ", ".join(invented)
+            )
+    for action in pack.get("active_action_objects") or []:
+        payload = action.get("action_plan") if isinstance(action, dict) else None
+        if not isinstance(payload, dict):
+            continue
+        invented = sorted(UNSUPPORTED_GENERATOR_FIELDS.intersection(payload))
+        if invented:
+            raise SystemExit(
+                "campaign action exposes unsupported generator fields: " + ", ".join(invented)
+            )
 
 
 if __name__ == "__main__":

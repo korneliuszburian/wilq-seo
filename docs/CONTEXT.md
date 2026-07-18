@@ -1,6 +1,6 @@
 # WILQ — kanoniczny kontekst produktu i runtime
 
-Stan na: 2026-07-16.
+Stan na: 2026-07-18.
 
 Ten plik jest pierwszym recovery entrypointem po utracie kontekstu. Pokazuje
 docelowy produkt, aktualną prawdę, aktywny priorytet i granice. Nie jest
@@ -68,7 +68,7 @@ uprawnieniem do kopiowania jego obietnic.
 | --- | --- | --- | --- |
 | Daily Command | techniczny pilot działa | świeże dowody, priorytet, blocker i bezpieczne akcje | realny werdykt Wilka i zmierzona oszczędność czasu |
 | Evidence Engine | działa | evidence IDs, connectors, freshness, blocked claims | nierówna głębokość konektorów; dowód sam nie kończy pracy |
-| Knowledge Compiler / Service Profile | częściowo | source-backed karty, lifecycle, review actions i claim policy | 0 kart `approved_current`; 9 kart `review_required` |
+| Knowledge Compiler / Service Profile | częściowo | source-backed karty, lifecycle, review actions i claim policy; live API ma 21 source-facts, a BDO i outsourcing mają `approved_current` | 8 z 15 materiałów pozostaje `import_pending`; pozostałe karty/usługi nadal wymagają owner review |
 | Content Ops | mechaniczny loop działa, jakość nie | jeden entrypoint, planning reviews, exact revisions, Codex proposal, human review, dev draft-only, measurement/learning contracts | wybór konkretnej usługi/strony/sekcji jest zbyt pośredni; realny tekst ma około 5/10; brak owner-reviewed knowledge i Wilku UAT |
 | Ads Doctor | read/review działa | live campaigns/search terms/recommendations, diagnostyka, review-only ActionObjects | brak podstaw do części claims finansowych; Keyword Planner blokowany zewnętrzną gotowością tokena developerskiego |
 | Campaign Builder / custom segments | częściowo | struktury i preview/review contracts | brak dowodu pełnego bezpiecznego realnego build/apply w pilocie |
@@ -106,9 +106,9 @@ Docelowa jedna sesja:
 ```
 
 Pierwszy realny case: karta `ekologus_service_bdo_reporting` oraz publiczna
-strona BDO. Karta ma status `source_backed_review_required`, więc wolno z niej
-zbudować paczkę do review, ale nie wolno udawać owner acceptance ani finalnego
-claimu prawnego/obowiązkowego.
+strona BDO. Live API potwierdza obecnie `approved_current` dla BDO i dla
+`ekologus_service_environmental_consulting_outsourcing`; nadal nie wolno
+udawać finalnego claimu prawnego/obowiązkowego ani publikacji bez exact review.
 
 Aktywny graf:
 
@@ -145,11 +145,23 @@ Aktywny graf:
 - Kolejka ma 5 kandydatów, z czego 4 są actionable. BDO jest pierwszym
   wykonalnym exact work itemem i jego wybór przeżywa reload przez typed URL
   search.
-- Karta BDO ma public source lineage i status review-required; wspiera scope do
-  review, ale nie finalny claim ani publikację.
+- Karta BDO ma public source lineage i `approved_current`; wspiera aktualny
+  scope do review, ale nie finalny claim prawny ani publikację.
 
 Ocena 10/10 wymaga realnej paczki tekstów i werdyktu marketera. Nie może zostać
 nadana przez Codex, testy ani ownera kodu bez review treści.
+
+### Baza wiedzy Ekologusa
+
+`/knowledge` pokazuje teraz najpierw rejestr realnych, zredagowanych faktów
+źródłowych. Legacy karty i playbooki pozostają pomocniczą warstwą operacyjną i
+nie są przedstawiane jako wypowiedzi Ekologusa. Odnaleziony zatwierdzony korpus
+15 plików z repozytorium materiałów jest opisany w
+`docs/research/approved-ekologus-materials-2026-07-17.md`; jego treść nie jest
+jeszcze kopiowana do WILQ. Import wymaga redakcji, lineage, hashy i review
+ownera. Panel pokazuje metadata-only manifest 15 materiałów jako `import
+pending`, więc marketer widzi realny zakres korpusu bez dostępu do surowego
+tekstu; do tego czasu source-backed planning pozostaje jawnie `review_required`.
 
 ## Runtime
 

@@ -125,6 +125,7 @@ from wilq.schemas import (
     ActionPreviewRowViewModel,
     ActionRisk,
     AdsAccountCurrencyReadContract,
+    AdsAggregationContract,
     AdsBlockedHandoff,
     AdsBudgetApplyPreview,
     AdsBudgetPacingReadContract,
@@ -167,6 +168,7 @@ from wilq.schemas import (
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
     AdsSearchTermCampaignReviewRow,
+    AdsSearchTermCoverage,
     AdsSearchTermMetricRow,
     AdsSearchTermNgramReadContract,
     AdsSearchTermNgramRow,
@@ -194,6 +196,8 @@ AdsTargetStatus = Literal[
 ADS_METRIC_FACT_LIMIT = 2500
 ADS_SUMMARY_METRIC_FACT_LIMIT = 500
 ADS_SUMMARY_VIEW_ROW_LIMIT = 5
+ADS_SEARCH_TERM_ROW_LIMIT_30D = 50
+ADS_SEARCH_TERM_ROW_LIMIT_90D = 200
 ADS_STALE_AFTER_HOURS = 48
 GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID = "act_configure_google_ads_env"
 GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS = [
@@ -217,6 +221,30 @@ CARD_ADS_CUSTOM_SEGMENTS = "card_google_ads_custom_segments_playbook"
 
 
 ADS_RECOMMENDATION_HUMAN_REVIEW_GATE = "human_strategy_review"
+
+
+def _search_term_coverage(
+    *,
+    window: Literal["last_30_days", "search_term_safety_90d"],
+    returned_row_count: int,
+    requested_row_limit: int,
+    blocked: bool = False,
+) -> AdsSearchTermCoverage:
+    connector_cap = requested_row_limit
+    return AdsSearchTermCoverage(
+        window=window,
+        window_label="ostatnie 30 dni" if window == "last_30_days" else "ostatnie 90 dni",
+        requested_row_limit=requested_row_limit,
+        returned_row_count=returned_row_count,
+        connector_cap=connector_cap,
+        cap_applied=returned_row_count >= connector_cap,
+        coverage_status=(
+            "blocked" if blocked else "empty" if returned_row_count == 0 else "bounded_sample"
+        ),
+        privacy_omission_caveat=(
+            "Google Ads może pomijać niskowolumenowe zapytania; wynik nie jest pełnym uniwersum."
+        ),
+    )
 CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES = [
     "review_source_terms",
     "reject_brand_or_low_intent_terms",
@@ -1242,10 +1270,64 @@ def build_ads_diagnostics(
         sections=sections,
         blocked_handoff=blocked_handoff,
     )
+    response.aggregation_contract = _ads_aggregation_contract(
+        view=view,
+        campaign_rows_available=len(campaign_read_contract.campaign_rows),
+        search_term_rows_available=len(search_terms_read_contract.search_term_rows),
+        account_currency_read_contract=account_currency_read_contract,
+    )
     _hydrate_ads_response_labels(response)
     if view == "summary":
         return _compact_ads_diagnostics_summary(response)
     return response
+
+
+def _ads_aggregation_contract(
+    *,
+    view: Literal["full", "summary"],
+    campaign_rows_available: int,
+    search_term_rows_available: int,
+    account_currency_read_contract: AdsAccountCurrencyReadContract,
+) -> AdsAggregationContract:
+    summary = view == "summary"
+    currency_status = (
+        "ready"
+        if account_currency_read_contract.status == "ready"
+        else "blocked"
+        if account_currency_read_contract.missing_read_contracts
+        else "missing"
+    )
+    return AdsAggregationContract(
+        view=view,
+        search_term_windows=["last_30_days", "search_term_safety_90d"],
+        summary_row_limit=ADS_SUMMARY_VIEW_ROW_LIMIT,
+        campaign_rows_returned=min(campaign_rows_available, ADS_SUMMARY_VIEW_ROW_LIMIT)
+        if summary
+        else campaign_rows_available,
+        campaign_rows_available=campaign_rows_available,
+        search_term_rows_returned=min(search_term_rows_available, ADS_SUMMARY_VIEW_ROW_LIMIT)
+        if summary
+        else search_term_rows_available,
+        search_term_rows_available=search_term_rows_available,
+        # Even the full API view is bounded by connector limits/privacy
+        # omission; only the row compaction differs between views.
+        is_exhaustive=False,
+        summary_scope=(
+            "top_decisions_and_first_rows" if summary else "all_rows_from_bounded_source_reads"
+        ),
+        currency_code=account_currency_read_contract.currency_code,
+        currency_status=currency_status,
+        money_aggregation_allowed=currency_status == "ready",
+        caveats=[
+            "Podsumowanie nie jest pełną kolejką; pokazuje ograniczoną liczbę wierszy.",
+            "Okno kampanii to LAST_7_DAYS; pacing nie jest miesięcznym planem budżetu.",
+            (
+                "Wyszukiwane hasła podlegają limitom odczytu i pomijaniu niskiego "
+                "wolumenu przez Google."
+            ),
+            "Kosztów nie wolno sumować ani etykietować bez potwierdzonej jednej waluty konta.",
+        ],
+    )
 
 
 def build_ads_diagnostics_summary_cached() -> AdsDiagnosticsResponse:
@@ -1807,6 +1889,30 @@ def _account_currency_read_contract(
         currency_facts.append(fact)
         currency_codes.append(currency_code)
     currency_codes = _unique(currency_codes)
+    if len(currency_codes) > 1:
+        return AdsAccountCurrencyReadContract(
+            status="blocked",
+            title="Google Ads: niespójna waluta odczytu",
+            summary=(
+                "WILQ znalazł więcej niż jedną walutę konta w aktualnym zbiorze "
+                "dowodów; nie sumuje ani nie etykietuje kosztów jedną walutą."
+            ),
+            currency_code=None,
+            allowed_metrics=["account_currency_code"],
+            missing_read_contracts=["account_currency_consistency"],
+            blocked_claims=[
+                "koszt w walucie konta",
+                "opłacalność",
+                "ocena kosztu pozyskania celu",
+                "werdykt zwrotu z reklam",
+            ],
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(fact.evidence_id for fact in currency_facts),
+            next_step=(
+                "Rozdziel odczyt na jedno konto i jedną walutę albo potwierdź "
+                "spójność customer.currency_code przed interpretacją kosztów."
+            ),
+        )
     if currency_codes:
         currency_code = currency_codes[0]
         return AdsAccountCurrencyReadContract(
@@ -2747,6 +2853,13 @@ def _search_terms_read_contract(
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            coverage=[
+                _search_term_coverage(
+                    window="last_30_days",
+                    returned_row_count=len(rows),
+                    requested_row_limit=ADS_SEARCH_TERM_ROW_LIMIT_30D,
+                )
+            ],
             search_term_rows=rows,
             next_step=(
                 "Użyj wierszy zapytań jako przeglądu danych z reklam. Nie twórz "
@@ -2764,6 +2877,14 @@ def _search_terms_read_contract(
         blocked_claims=["wyszukiwane hasła", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        coverage=[
+            _search_term_coverage(
+                window="last_30_days",
+                returned_row_count=0,
+                requested_row_limit=ADS_SEARCH_TERM_ROW_LIMIT_30D,
+                blocked=True,
+            )
+        ],
         search_term_rows=[],
         next_step=(
             "Uruchom odczyt danych Google Ads po dodaniu odczytu `search_term_view` "
@@ -2826,6 +2947,7 @@ def _search_term_review_summary_contract(
         blocked_claims=blocked_claims,
         source_connectors=search_terms_read_contract.source_connectors,
         evidence_ids=search_terms_read_contract.evidence_ids,
+        coverage=search_terms_read_contract.coverage,
         total_search_term_count=len(rows),
         zero_conversion_search_term_count=zero_conversion_count,
         total_clicks=total_clicks,
@@ -3029,6 +3151,7 @@ def _search_term_ngram_read_contract(
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            coverage=search_terms_read_contract.coverage,
             ngram_rows=rows,
             next_step=(
                 "Użyj n-gramów do znalezienia powtarzających się tematów w "
@@ -3047,6 +3170,7 @@ def _search_term_ngram_read_contract(
         blocked_claims=["wyszukiwane hasła", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        coverage=search_terms_read_contract.coverage,
         ngram_rows=[],
         next_step="Uruchom odczyt danych Google Ads z odczytem `search_term_view`.",
     )
@@ -3188,6 +3312,13 @@ def _search_term_safety_read_contract(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids)
             or _refresh_or_connector_evidence_ids(latest_refresh),
+            coverage=[
+                _search_term_coverage(
+                    window="search_term_safety_90d",
+                    returned_row_count=len(rows),
+                    requested_row_limit=ADS_SEARCH_TERM_ROW_LIMIT_90D,
+                )
+            ],
             safety_rows=rows,
             next_step=(
                 "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa. Jeśli termin "
@@ -3210,6 +3341,14 @@ def _search_term_safety_read_contract(
         blocked_claims=["90-dniowa kontrola bezpieczeństwa wykluczeń", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        coverage=[
+            _search_term_coverage(
+                window="search_term_safety_90d",
+                returned_row_count=0,
+                requested_row_limit=ADS_SEARCH_TERM_ROW_LIMIT_90D,
+                blocked=True,
+            )
+        ],
         safety_rows=[],
         next_step=(
             "Uruchom 90-dniowy odczyt wyszukiwanych haseł w Google Ads. Nie twórz "
@@ -4217,6 +4356,7 @@ def _negative_keywords_read_contract(
                 *candidate.keyword_context_evidence_ids,
             ]
         ),
+        coverage=[*search_terms_read_contract.coverage, *search_term_safety_read_contract.coverage],
         missing_read_contracts=missing_read_contracts,
         blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
         action_ids=negative_keyword_action_ids,
@@ -4238,6 +4378,15 @@ def _negative_keywords_missing_search_terms_contract(
         summary="Brak wierszy wyszukiwanych haseł do kolejki oceny wykluczeń.",
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=search_terms_read_contract.evidence_ids,
+        coverage=[
+            *search_terms_read_contract.coverage,
+            _search_term_coverage(
+                window="search_term_safety_90d",
+                returned_row_count=0,
+                requested_row_limit=ADS_SEARCH_TERM_ROW_LIMIT_90D,
+                blocked=True,
+            ),
+        ],
         missing_read_contracts=[
             "search_term_view",
             *(
@@ -4271,6 +4420,7 @@ def _negative_keywords_no_candidates_contract(
         ),
         source_connectors=search_terms_read_contract.source_connectors,
         evidence_ids=search_terms_read_contract.evidence_ids,
+        coverage=[*search_terms_read_contract.coverage, *search_term_safety_read_contract.coverage],
         missing_read_contracts=[
             "zero_conversion_search_terms",
             *(

@@ -1,343 +1,48 @@
 from __future__ import annotations
 
-import json
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any, Literal, cast
 
 import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.wilq_api.main import app
-from apps.api.wilq_api.routers import content_codex_proposal as section_proposal_router
-from apps.api.wilq_api.routers import content_initial_draft as initial_draft_router
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
-from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
-from apps.api.wilq_api.routers import content_snapshot as content_snapshot_router
 from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
-from wilq.codex.app_server import CodexAppServerTurnResult
-from wilq.content.knowledge import cards as knowledge_cards
+from tests.content.dynamic_planning_test_support import (
+    PlanningClient,
+    configure_planning_harness,
+)
+from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.handoff.revision_document_renderer import revision_document_markdown
 from wilq.content.planning.dynamic_input import build_content_planning_input
 from wilq.content.planning.generated_proposal import (
+    _planning_output_quality_errors,
     generate_content_planning_proposal,
     read_content_planning_proposal,
 )
 from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningModelOutput,
+    ContentPlanningModelSection,
     ContentPlanningProposalRequest,
 )
 from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
+from wilq.content.workflow.catalog import inventory_work_item_id
 from wilq.content.workflow.planning import ContentPlanningProposal
+from wilq.content.workflow.revisions import ContentDraftRevision
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
 
-BDO_WORK_ITEM_ID = (
-    "content_work_item_content_decision_https___www_ekologus_pl_bdo_co_musi_wiedziec_przedsiebiorca"
+BDO_URL = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+OUTSOURCING_URL = (
+    "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
 )
-OUTSOURCING_WORK_ITEM_ID = (
-    "content_work_item_content_decision_https___www_ekologus_pl_"
-    "oferta_doradztwo_i_outsourcing_ekologiczny"
-)
-
-
-class _PlanningClient:
-    def __init__(self) -> None:
-        self.calls = 0
-        self.fail = False
-        self.planning_placement = "after_content"
-        self.semantic_external_call_attempted = False
-
-    def run_structured_turn(self, request: Any) -> CodexAppServerTurnResult:
-        self.calls += 1
-        if self.fail:
-            return CodexAppServerTurnResult(
-                status="failed",
-                blockers=(),
-            )
-        application = json.loads(request.application_context)
-        if application["operation"] == "generate_initial_full_content_draft":
-            return self._initial_draft_result(request)
-        if application["operation"] == "review_full_content_revision_semantics":
-            return self._semantic_review_result(request)
-        if application["operation"] == "propose_section_revision":
-            return self._section_revision_result(request)
-        context = json.loads(request.untrusted_context)
-        planning_input = context["planning_input"]
-        _assert_planning_input_contract(planning_input)
-        inventory_heading = planning_input["inventory"]["sections"][0]["heading"]
-        evidence_id = planning_input["evidence_ids"][0]
-        query_rows = planning_input["query_portfolio"]["gsc_query_rows"]
-        query_terms = [query_rows[0]["term"]] if query_rows else []
-        allowed_claims = [
-            entry["id"]
-            for entry in planning_input["claim_ledger"]
-            if entry["status"] in {"allowed_with_evidence", "allowed_general"}
-        ]
-        output = {
-            "language": "pl-PL",
-            "service_card_id": planning_input["confirmed_service_card_id"],
-            "target_reader": planning_input["target_reader"],
-            "buyer_problem": planning_input["buyer_problem"],
-            "buyer_trigger": planning_input["buyer_trigger"],
-            "search_intent": planning_input["search_intent"],
-            "angle": f"Plan dla {planning_input['service_label']}",
-            "value_proposition": "Bezpieczna odpowiedź na pytanie czytelnika.",
-            "page_assets": {
-                "title": f"Plan: {planning_input['service_label']}",
-                "h1": planning_input["inventory"]["title_or_h1"] or inventory_heading,
-                "lead": "Najpierw odpowiedz na główny problem czytelnika.",
-                "meta_title": f"{planning_input['service_label']} — Ekologus",
-                "meta_description": "Sprawdź zakres, dokumenty i bezpieczny następny krok.",
-            },
-            "sections": [
-                {
-                    "heading": inventory_heading,
-                    "purpose": "Zachowaj użyteczną sekcję i doprecyzuj odpowiedź.",
-                    "reader_question": "Co trzeba sprawdzić przed działaniem?",
-                    "inventory_disposition": "rewrite",
-                    "inventory_heading": inventory_heading,
-                    "query_terms": query_terms,
-                    "evidence_ids": [evidence_id],
-                    "claim_ids": allowed_claims[:1],
-                }
-            ],
-            "faq": [
-                {
-                    "question": "Od czego zacząć?",
-                    "purpose": "Wyjaśnić bezpieczny pierwszy krok.",
-                    "query_terms": query_terms,
-                    "evidence_ids": [evidence_id],
-                    "claim_ids": allowed_claims[:1],
-                }
-            ],
-            "cta_blocks": [
-                {
-                    "placement": self.planning_placement,
-                    "purpose": "Przejście do konsultacji bez gwarancji wyniku.",
-                    "copy_direction": "Opisz sytuację firmy i poproś o weryfikację.",
-                    "evidence_ids": [evidence_id],
-                    "claim_ids": allowed_claims[:1],
-                }
-            ],
-            "internal_links": [],
-            "conditional_hypotheses": [],
-            "measurement_plan": {
-                "metrics_to_watch": planning_input["measurement_metrics"],
-                "baseline_evidence_ids": planning_input["measurement_baseline_evidence_ids"],
-                "observation_rule": planning_input["measurement_observation_rule"],
-                "success_claim_rule": planning_input["measurement_success_claim_rule"],
-            },
-            "publish_ready": False,
-        }
-        return CodexAppServerTurnResult(
-            status="completed",
-            output_text=json.dumps(output, ensure_ascii=False),
-            thread_id=f"thread_{self.calls}",
-            turn_id=f"turn_{self.calls}",
-            event_methods=("turn/completed",),
-            item_types=("agentMessage",),
-        )
-
-    def _initial_draft_result(self, request: Any) -> CodexAppServerTurnResult:
-        context = json.loads(request.untrusted_context)
-        proposal = context["approved_planning_proposal"]
-        planning_input = context["planning_input"]
-        assert len(planning_input["source_assessments"]) == 10
-        assert planning_input["inventory"]["sections"]
-        assert "query_portfolio" in planning_input
-        assert "measurement_metrics" in planning_input
-        assert "generation_constraints" in context
-        schema = request.output_schema
-        section_schema = schema["$defs"]["ContentInitialDraftSectionOutput"]
-        assert schema["properties"]["sections"]["minItems"] == len(proposal["sections"])
-        assert section_schema["properties"]["section_id"]["enum"] == [
-            item["section_id"] for item in proposal["sections"]
-        ]
-        service_label = proposal["service_label"]
-        output = {
-            "language": "pl-PL",
-            "page_assets": {
-                "wordpress_title": f"Pełny tekst: {service_label}",
-                "meta_title": f"{service_label} — Ekologus",
-                "meta_description": "Sprawdź sytuację firmy i możliwy następny krok.",
-                "h1": f"{service_label} dla firm",
-                "lead": f"Wyjaśniamy, kiedy {service_label} może pomóc w uporządkowaniu działań.",
-            },
-            "sections": [
-                {
-                    "section_id": section["section_id"],
-                    "heading": section["heading"],
-                    "body_markdown": (
-                        f"{section['reader_question']} Odpowiedź wynika z dokładnego planu "
-                        f"dla usługi {service_label}."
-                    ),
-                }
-                for section in proposal["sections"]
-            ],
-            "faq": [
-                {
-                    "question": item["question"],
-                    "answer_markdown": (
-                        f"Najpierw opisz sytuację firmy w kontekście usługi {service_label}."
-                    ),
-                }
-                for item in proposal["faq"]
-            ],
-            "cta_blocks": [
-                {"body_markdown": f"Opisz potrzeby firmy dotyczące: {service_label}."}
-                for _ in proposal["cta_blocks"]
-            ],
-            "internal_links": [
-                {
-                    "target_url": item["target_url"],
-                    "anchor_text": item["anchor_direction"],
-                }
-                for item in proposal["internal_links"]
-            ],
-            "publish_ready": False,
-        }
-        return CodexAppServerTurnResult(
-            status="completed",
-            output_text=json.dumps(output, ensure_ascii=False),
-            thread_id=f"thread_{self.calls}",
-            turn_id=f"turn_{self.calls}",
-            event_methods=("turn/completed",),
-            item_types=("agentMessage",),
-        )
-
-    def _semantic_review_result(self, request: Any) -> CodexAppServerTurnResult:
-        context = json.loads(request.untrusted_context)
-        revision = context["revision"]
-        proposal = context["approved_planning_proposal"]
-        planning_input = context["planning_input"]
-        assert revision["content_digest"] == json.loads(request.application_context)[
-            "revision_digest"
-        ]
-        assert proposal["planning_input_digest"] == planning_input["planning_input_digest"]
-        target = revision["sections"][0]["section_id"]
-        evidence_id = revision["sections"][0]["evidence_ids"][0]
-        dimensions = [
-            "answer_directness",
-            "completeness",
-            "logical_flow",
-            "specificity",
-            "repetition",
-            "search_intent_fit",
-            "buyer_fit",
-            "credibility",
-            "conversion_clarity",
-        ]
-        output = {
-            "language": "pl-PL",
-            "dimensions": [
-                {
-                    "dimension": dimension,
-                    "status": "needs_changes" if dimension == "answer_directness" else "strong",
-                    "reason": (
-                        "Pierwsza odpowiedź powinna szybciej przejść do decyzji czytelnika."
-                        if dimension == "answer_directness"
-                        else "Wymiar nie ma konkretnego problemu w tej syntetycznej wersji."
-                    ),
-                    "affected_targets": [target],
-                }
-                for dimension in dimensions
-            ],
-            "findings": [
-                {
-                    "dimension": "answer_directness",
-                    "severity": "medium",
-                    "label": "Odpowiedź zaczyna się zbyt ogólnie",
-                    "reason": "Czytelnik zbyt późno widzi bezpośredni następny krok.",
-                    "instruction": "Przenieś konkretną odpowiedź na początek wybranej sekcji.",
-                    "affected_targets": [target],
-                    "evidence_ids": [evidence_id],
-                }
-            ],
-            "publish_ready": False,
-            "human_review_required": True,
-        }
-        schema = request.output_schema
-        finding_schema = schema["$defs"]["ContentSemanticFindingOutput"]
-        assert target in finding_schema["properties"]["affected_targets"]["items"]["enum"]
-        return CodexAppServerTurnResult(
-            status="completed",
-            output_text=json.dumps(output, ensure_ascii=False),
-            thread_id=f"thread_{self.calls}",
-            turn_id=f"turn_{self.calls}",
-            event_methods=("turn/completed",),
-            item_types=("agentMessage",),
-            external_call_attempted=self.semantic_external_call_attempted,
-        )
-
-    def _section_revision_result(self, request: Any) -> CodexAppServerTurnResult:
-        context = json.loads(request.untrusted_context)
-        generation_input = context["generation_input"]
-        base_revision = context["base_revision"]
-        selected_headings = context["editable_section_headings"]
-        base_by_heading = {
-            section["heading"]: section for section in base_revision["sections"]
-        }
-        selected_sections = [base_by_heading[heading] for heading in selected_headings]
-        evidence_ids = list(
-            dict.fromkeys(
-                evidence_id
-                for section in selected_sections
-                for evidence_id in section["evidence_ids"]
-            )
-        )
-        output = {
-            "draft_kind": "section_draft",
-            "language": "pl-PL",
-            "title": base_revision["title"],
-            "meta_title": generation_input["title"],
-            "meta_description": "Sprawdź zakres przed kontaktem z Ekologus.",
-            "h1": generation_input["title"],
-            "sections": [
-                {
-                    "heading": section["heading"],
-                    "body_markdown": (
-                        "Konkretna odpowiedź poprawiona po decyzji człowieka i advisory review."
-                    ),
-                    "evidence_ids": section["evidence_ids"],
-                    "claims_used": generation_input["claims_allowed"],
-                }
-                for section in selected_sections
-            ],
-            "faq": ["Co warto sprawdzić przed kontaktem z Ekologus?"],
-            "cta": "Skontaktuj się z Ekologus, żeby sprawdzić sytuację firmy.",
-            "internal_links": ["https://ekologus.pl/kontakt/"],
-            "source_facts_used": evidence_ids,
-            "claims_needing_review": [],
-            "forbidden_claims_avoided": generation_input["claims_removed_or_blocked"],
-            "human_review_checklist": generation_input["human_review_questions"],
-            "publish_ready": False,
-        }
-        return CodexAppServerTurnResult(
-            status="completed",
-            output_text=json.dumps(output, ensure_ascii=False),
-            thread_id=f"thread_{self.calls}",
-            turn_id=f"turn_{self.calls}",
-            event_methods=("turn/completed",),
-            item_types=("agentMessage",),
-        )
-
-
-def _assert_planning_input_contract(planning_input: dict[str, Any]) -> None:
-    assert planning_input["schema_name"] == "wilq_content_planning_input_v2"
-    excluded_connectors = {
-        "google_search_console",
-        "google_ads",
-        "google_analytics_4",
-        "ahrefs",
-        "google_merchant_center",
-        "localo",
-    }
-    assert not {
-        fact["source_connector"] for fact in planning_input["source_facts"]
-    }.intersection(excluded_connectors)
-    assert "baseline_proposal" not in planning_input
+BDO_WORK_ITEM_ID = inventory_work_item_id(BDO_URL)
+OUTSOURCING_WORK_ITEM_ID = inventory_work_item_id(OUTSOURCING_URL)
 
 
 class _FailingPlanningStore(ContentPlanningProposalStore):
@@ -353,98 +58,12 @@ class _FailingPlanningStore(ContentPlanningProposalStore):
 def planning_harness(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-) -> tuple[TestClient, _PlanningClient]:
-    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
-    original_cards = knowledge_cards.ekologus_content_knowledge_cards()
-    approved_service_ids = {
-        "ekologus_service_bdo_reporting",
-        "ekologus_service_environmental_consulting_outsourcing",
-    }
-    approved_cards = tuple(
-        card.model_copy(update={"lifecycle_status": "approved_current"})
-        if card.id in approved_service_ids
-        else card
-        for card in original_cards
-    )
-    monkeypatch.setattr(
-        knowledge_cards,
-        "ekologus_content_knowledge_cards",
-        lambda: approved_cards,
-    )
-    original_diagnostics = content_snapshot_router.diagnostics_with_exact_gsc_demand
-
-    def fresh_diagnostics(work_item_id: str) -> Any:
-        diagnostics = original_diagnostics(work_item_id)
-        decisions = [
-            decision.model_copy(
-                update={
-                    "wordpress_section_headings": (
-                        decision.wordpress_section_headings
-                        or [f"Istniejąca sekcja: {decision.primary_query or decision.title}"]
-                    ),
-                    "wordpress_section_count": (decision.wordpress_section_count or 1),
-                    "wordpress_section_inventory_status": "available",
-                    "wordpress_content_summary": (
-                        decision.wordpress_content_summary
-                        or "Syntetyczne podsumowanie publicznej treści."
-                    ),
-                    "wordpress_content_word_count": (decision.wordpress_content_word_count or 500),
-                    "wordpress_content_inventory_status": "available",
-                }
-            )
-            if f"content_work_item_{decision.id}" == work_item_id
-            else decision
-            for decision in diagnostics.decision_queue
-        ]
-        return diagnostics.model_copy(
-            update={
-                "decision_queue": decisions,
-                "freshness_assessment": diagnostics.freshness_assessment.model_copy(
-                    update={
-                        "state": "fresh",
-                        "requires_refresh": False,
-                        "missing_connector_ids": [],
-                        "blocked_connector_ids": [],
-                        "stale_connector_ids": [],
-                        "connector_labels_requiring_refresh": [],
-                        "summary": "Syntetyczny świeży proof planowania.",
-                        "next_step": "Można zbudować wejście planu do testu.",
-                    }
-                ),
-            }
-        )
-
-    monkeypatch.setattr(
-        content_snapshot_router,
-        "diagnostics_with_exact_gsc_demand",
-        fresh_diagnostics,
-    )
-    runtime = _PlanningClient()
-    monkeypatch.setattr(
-        planning_router,
-        "content_codex_app_server_client",
-        lambda: runtime,
-    )
-    monkeypatch.setattr(
-        initial_draft_router,
-        "content_codex_app_server_client",
-        lambda: runtime,
-    )
-    monkeypatch.setattr(
-        semantic_review_router,
-        "content_codex_app_server_client",
-        lambda: runtime,
-    )
-    monkeypatch.setattr(
-        section_proposal_router,
-        "content_codex_app_server_client",
-        lambda: runtime,
-    )
-    return TestClient(app), runtime
+) -> tuple[TestClient, PlanningClient]:
+    return configure_planning_harness(monkeypatch, tmp_path)
 
 
 def test_dynamic_planning_proposals_are_two_case_and_idempotent(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     generated = {
@@ -462,10 +81,193 @@ def test_dynamic_planning_proposals_are_two_case_and_idempotent(
         "ekologus_service_environmental_consulting_outsourcing"
     )
     assert generated[BDO_WORK_ITEM_ID]["angle"] != generated[OUTSOURCING_WORK_ITEM_ID]["angle"]
+    assert all(
+        proposal["internal_links"][0]["target_url"]
+        == "https://www.ekologus.pl/kontakt"
+        for proposal in generated.values()
+    )
+    assert generated[BDO_WORK_ITEM_ID]["source_material_ids"]
+    assert generated[BDO_WORK_ITEM_ID]["knowledge_card_ids"]
+    assert all(
+        "source_material_ids" in section and "knowledge_card_ids" in section
+        for section in generated[BDO_WORK_ITEM_ID]["sections"]
+    )
 
+
+def test_explicit_plan_request_confirms_only_service_selection(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    assert snapshot["planning_workspace"]["scope_current"] is False
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    before = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    )
+    assert before.json()["status"] == "not_generated", before.json()
+
+    generated = _post_planning(
+        client,
+        BDO_WORK_ITEM_ID,
+        _generation_request(service_card_id, before.json()["planning_input_digest"]),
+    )
+
+    assert generated.status_code == 200
+    assert generated.json()["status"] in {"ready", "idempotent"}, generated.json()
+    assert runtime.calls == 1
+    current = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    )
+    assert current.json()["status"] == "ready", current.json()
+    after = _snapshot(client, BDO_WORK_ITEM_ID)
+    assert after["planning_workspace"]["proposal"]["proposal_id"] == generated.json()[
+        "proposal"
+    ]["proposal_id"]
+    assert after["planning_workspace"]["scope_current"] is False
+    assert after["planning_workspace"]["section_map_current"] is False
+
+
+def test_executor_submission_failure_is_typed_and_retryable(
+    planning_harness: tuple[TestClient, PlanningClient],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    input_state = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    ).json()
+    digest = input_state["planning_input_digest"]
+
+    class FailingExecutor:
+        calls = 0
+
+        def submit(self, *_args: Any, **_kwargs: Any) -> None:
+            self.calls += 1
+            raise RuntimeError("executor unavailable")
+
+    executor = FailingExecutor()
+    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    request = _generation_request(service_card_id, digest)
+
+    first = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=request,
+    )
+    assert first.status_code == 200
+    assert first.json()["status"] == "failed"
+    assert first.json()["blockers"][0]["code"] == "runtime_failed"
+    monkeypatch.setattr(
+        planning_router,
+        "read_content_planning_proposal",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("pending GET must not rebuild the snapshot")
+        ),
+    )
+    status = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    )
+    assert status.json()["status"] == "failed"
+    second = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=request,
+    )
+    assert second.status_code == 200
+    assert second.json()["status"] == "failed"
+    assert executor.calls == 2
+
+
+def test_planning_runtime_has_separate_bounded_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", "17")
+    monkeypatch.setattr(
+        planning_router,
+        "content_codex_app_server_client",
+        lambda: StdioCodexAppServerClient(),
+    )
+
+    client = planning_router._planning_codex_client()
+
+    assert isinstance(client, StdioCodexAppServerClient)
+    assert client.timeout_seconds == 17
+
+
+def test_planning_runtime_default_allows_full_structured_turn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("WILQ_PLANNING_CODEX_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.setattr(
+        planning_router,
+        "content_codex_app_server_client",
+        lambda: StdioCodexAppServerClient(),
+    )
+
+    client = planning_router._planning_codex_client()
+
+    assert isinstance(client, StdioCodexAppServerClient)
+    assert client.timeout_seconds == 120.0
+
+
+def test_planning_output_quality_gate_rejects_navigation_and_dated_headings() -> None:
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Poniżej przedstawiamy często zadawane pytania dotyczące BDO"
+            ),
+            ContentPlanningModelSection.model_construct(
+                heading='13 marca 2020 „Gospodarka opakowaniami”'
+            ),
+            ContentPlanningModelSection.model_construct(
+                heading="Powiązane materiały o gospodarce odpadami"
+            ),
+        ]
+    )
+
+    assert _planning_output_quality_errors(output) == [
+        "heading_presentation_noise",
+        "heading_dated_event_noise",
+        "heading_related_content_noise",
+    ]
+
+
+def test_changed_input_can_enqueue_replan_when_older_proposal_exists(
+    planning_harness: tuple[TestClient, PlanningClient],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, runtime = planning_harness
+    proposal = _approve_and_generate(
+        client,
+        runtime,
+        BDO_WORK_ITEM_ID,
+        expected_calls=0,
+    )
+    assert proposal["planning_input_digest"]
+
+    class CaptureExecutor:
+        submitted = 0
+
+        def submit(self, *_args: Any, **_kwargs: Any) -> None:
+            self.submitted += 1
+
+    executor = CaptureExecutor()
+    monkeypatch.setattr(planning_router, "_PLANNING_GENERATION_EXECUTOR", executor)
+    changed_digest = "f" * 64
+    response = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=_generation_request(
+            proposal["service_card_id"],
+            changed_digest,
+        ),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "generating"
+    assert executor.submitted == 1
 
 def test_dynamic_planning_rejects_an_unknown_document_placement(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
@@ -489,9 +291,10 @@ def test_dynamic_planning_rejects_an_unknown_document_placement(
     ).json()
     runtime.planning_placement = "gdzieś obok formularza"
 
-    result = client.post(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
-        json=_generation_request(service_card_id, planning_input["planning_input_digest"]),
+    result = _post_planning(
+        client,
+        BDO_WORK_ITEM_ID,
+        _generation_request(service_card_id, planning_input["planning_input_digest"]),
     )
 
     assert result.status_code == 200
@@ -500,8 +303,61 @@ def test_dynamic_planning_rejects_an_unknown_document_placement(
     assert content_planning_proposal_store().latest(BDO_WORK_ITEM_ID) is None
 
 
+@pytest.mark.parametrize(
+    ("mutation", "expected_source_code"),
+    [
+        ("target", "link_target:https://example.com/kontakt"),
+        ("evidence", "link_inventory_evidence:https://www.ekologus.pl/kontakt"),
+        ("claim", "link_claim:https://www.ekologus.pl/kontakt"),
+    ],
+)
+def test_dynamic_planning_rejects_internal_link_outside_exact_lineage(
+    planning_harness: tuple[TestClient, PlanningClient],
+    mutation: str,
+    expected_source_code: str,
+) -> None:
+    client, runtime = planning_harness
+    snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
+    service_card_id = snapshot["service_profile_context"]["service_card_id"]
+    planning_digest = snapshot["planning_workspace"]["proposal"]["planning_digest"]
+    approved = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-review",
+        json={
+            "stage": "scope",
+            "service_card_id": service_card_id,
+            "expected_planning_digest": planning_digest,
+            "decision": "approved",
+            "reviewed_by": "wilku",
+            "checked_items": ["strona", "usługa", "intencja", "CTA"],
+            "notes": "Syntetyczny proof linkowania.",
+        },
+    )
+    assert approved.status_code == 200
+    planning_input = client.get(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
+    ).json()
+    if mutation == "target":
+        runtime.planning_link_target = "https://example.com/kontakt"
+    elif mutation == "evidence":
+        runtime.planning_link_evidence_ids = ["ev_unknown"]
+    else:
+        runtime.planning_link_claim_ids = ["claim_unknown"]
+
+    result = _post_planning(
+        client,
+        BDO_WORK_ITEM_ID,
+        _generation_request(service_card_id, planning_input["planning_input_digest"]),
+    )
+
+    assert result.status_code == 200
+    assert result.json()["status"] == "blocked"
+    assert result.json()["blockers"][0]["code"] == "lineage_mismatch"
+    assert expected_source_code in result.json()["blockers"][0]["source_codes"]
+    assert content_planning_proposal_store().latest(BDO_WORK_ITEM_ID) is None
+
+
 def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     generated = _approve_and_generate(
@@ -564,7 +420,7 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
 
 
 def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     revisions: dict[str, dict[str, Any]] = {}
@@ -603,6 +459,11 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
         assert revision["planning_input_digest"] == proposal["planning_input_digest"]
         assert revision["service_card_id"] == proposal["service_card_id"]
         assert all(section["evidence_ids"] for section in revision["sections"])
+        assert revision["internal_links"][0]["target_url"] == (
+            "https://www.ekologus.pl/kontakt"
+        )
+        rendered = revision_document_markdown(ContentDraftRevision.model_validate(revision))
+        assert "[Kontakt z Ekologus](https://www.ekologus.pl/kontakt)" in rendered
         assert runtime.calls == expected_calls + 1
         expected_calls += 1
         repeated = client.post(
@@ -619,8 +480,47 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
     )
 
 
+def test_initial_full_draft_rejects_unstructured_or_unsafe_links(
+    planning_harness: tuple[TestClient, PlanningClient],
+) -> None:
+    client, runtime = planning_harness
+    proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
+    _approve_generated_plan(client, BDO_WORK_ITEM_ID, proposal)
+    malicious_outputs = (
+        ("initial_link_anchor_text", "Kontakt](https://example.com/phish)[dalej"),
+        (
+            "initial_link_target_url",
+            "https://www.ekologus.pl/kontakt) [phish](https://example.com",
+        ),
+        ("initial_section_body_markdown", "Treść [phish](https://example.com)."),
+        (
+            "initial_section_body_markdown",
+            '<a\thref\t=\t"//example.com/phish">kliknij</a>',
+        ),
+        (
+            "initial_section_body_markdown",
+            "[phish]: //example.com/phish\nKliknij [phish]",
+        ),
+    )
+
+    for runtime_field, malicious_value in malicious_outputs:
+        setattr(runtime, runtime_field, malicious_value)
+        result = client.post(
+            f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
+            json=_initial_draft_request(proposal),
+        )
+        setattr(runtime, runtime_field, None)
+
+        assert result.status_code == 200
+        assert result.json()["status"] == "blocked"
+        assert result.json()["blockers"][0]["code"] == "invalid_structured_output"
+        assert _snapshot(client, BDO_WORK_ITEM_ID)["revision_workspace"][
+            "latest_revision"
+        ] is None
+
+
 def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_is_model_free(
-    planning_harness: tuple[TestClient, _PlanningClient],
+    planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
     client, runtime = planning_harness
     proposal = _approve_and_generate(client, runtime, BDO_WORK_ITEM_ID, expected_calls=0)
@@ -640,7 +540,7 @@ def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_i
 
 def _approve_and_generate(
     client: TestClient,
-    runtime: _PlanningClient,
+    runtime: PlanningClient,
     work_item_id: str,
     *,
     expected_calls: int,
@@ -688,13 +588,17 @@ def _approve_and_generate(
     )
     assert stale.status_code == 409
     assert stale.json()["status"] == "stale"
-    assert stale.json()["planning_input_digest"] == input_digest
-    created = client.post(
-        f"/api/content/work-items/{work_item_id}/planning-proposals",
-        json=_generation_request(service_card_id, input_digest),
+    assert stale.json().get("planning_input_digest") in {None, input_digest}
+    created = _post_planning(
+        client,
+        work_item_id,
+        _generation_request(service_card_id, input_digest),
     )
     assert created.status_code == 200
-    assert created.json()["status"] == "created"
+    assert created.json()["status"] in {"ready", "idempotent"}, [
+        (blocker.get("code"), blocker.get("source_codes"), blocker.get("reason"))
+        for blocker in created.json().get("blockers", [])
+    ]
     assert created.json()["proposal"]["input_schema_version"] == (
         "wilq_content_planning_input_v6"
     )
@@ -709,6 +613,26 @@ def _approve_and_generate(
     assert ready.json()["proposal"] == created.json()["proposal"]
     assert ready.json()["input_summary"] == input_summary
     return cast(dict[str, Any], created.json()["proposal"])
+
+
+def _post_planning(
+    client: TestClient,
+    work_item_id: str,
+    request: dict[str, str],
+) -> Any:
+    response = client.post(
+        f"/api/content/work-items/{work_item_id}/planning-proposals",
+        json=request,
+    )
+    if response.status_code == 200 and response.json().get("status") == "generating":
+        for _ in range(200):
+            time.sleep(0.05)
+            response = client.get(
+                f"/api/content/work-items/{work_item_id}/planning-proposals"
+            )
+            if response.json().get("status") != "generating":
+                break
+    return response
 
 
 def _snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:

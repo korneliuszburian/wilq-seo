@@ -69,7 +69,9 @@ Beads jest jedynym operacyjnym grafem zadań. Bieżąca kolejność:
 
 Nie ma zgody na losowy cleanup dla utrzymania ruchu. Jest natomiast
 potwierdzona praca repo-local: realny proposal otrzymał `needs_changes`, a
-paczka tekstu dla marketera jeszcze nie istnieje.
+paczka review dla marketera istnieje w
+`docs/review-packets/2026-07-17-wilku-live/`. Nie zawiera jeszcze realnego,
+owner-reviewed pełnego tekstu ani nagrania Wilku UAT.
 
 Po każdym zamkniętym slice odczytaj ponownie `bd ready --json` i
 `bd list --status=open --json`. Nie wracaj do zamkniętych technicznych epików
