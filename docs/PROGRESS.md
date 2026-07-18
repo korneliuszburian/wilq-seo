@@ -1,6 +1,6 @@
 # WILQ Progress Ledger
 
-Ostatnia aktualizacja: 2026-07-17.
+Ostatnia aktualizacja: 2026-07-18.
 
 To jest krótki stan bieżący. Historia zmian i proofów pozostaje w git, Beads
 i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
@@ -24,6 +24,111 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   stan, 24 dowody, 7 źródeł, 8 reguł eksperckich, 3 bezpieczne akcje i 1
   `do_not_touch`. Nadal jest poprawnie `blocked` przez review jakości landing
   page i pomiaru GA4; `v9ab.13` wymaga rzeczywistego werdyktu Wilka albo defer.
+
+- `scripts/local_stack.sh` uruchamia lokalny API z jawnym `WILQ_API_RELOAD=1`
+  (domyślnie), pokazuje tryb w `status` i pozwala go wyłączyć wartością `0`.
+  To wyłącznie ergonomia lokalnego developmentu; produkcyjny/deploy runtime
+  nie dziedziczy tej flagi. Live log po zmianie `wilq/schemas/core.py` zawiera
+  `StatReload detected changes` i ponowne uruchomienie procesu serwera.
+
+- Content queue ma teraz bounded comparison contract: exact page facts muszą
+  mieć dwa kompletne okresy i rozróżnialne evidence. Przy jednym świeżym dniu
+  UI pokazuje `brak dwóch porównywalnych okresów`, a nie udaje spadku/wzrostu.
+  Helper `compare_exact_page_metric_periods` zachowuje okresy i evidence dla
+  GSC/GA4; focused aggregate + queue proof to 11 testów, shared schemas i
+  dashboard typecheck są zielone. Live BDO obecnie jawnie zwraca
+  `comparison_status=not_available` dla pojedynczego snapshotu.
+
+- Comparison jest teraz częścią `ContentPlanningInput`, a nie tylko projekcją
+  kolejki. `ContentWorkItem` przenosi sanitized metric facts do planning seam;
+  digest obejmuje status, exact okresy, evidence i wartości baseline/observation.
+  Zmiana wartości metryki zmienia planning input digest, więc stary proposal,
+  review i revision nie mogą zostać potraktowane jako aktualne. Focused
+  planning-input proof przechodzi razem z testami dynamic proposal.
+
+- Review-bound measurement outcome sprawdza teraz jakość i settlement źródła:
+  `partial/unverified` oraz `settling` stają się typed limitations i nie mogą
+  przyznać `success_claim_allowed` ani feedbacku do kolejki. Metadata runu jest
+  przenoszone do obserwowanej metryki; zwykły plan nadal może użyć częściowego
+  GSC jako sygnału z caveatem. Focused outcome suite przechodzi 5 testów.
+
+- Propagacja jest potwierdzona osobnym proofem: refresh run → observed metric
+  zachowuje `quality_state`, `settlement_state` i caveats, a outcome odrzuca
+  taki sygnał jako review-bound. Wspólny focused zestaw measurement/planning/
+  queue ma 24 przejścia; nie uruchamiałem szerokiego `verify.sh` bez potrzeby.
+
+- Po checker findingu F1 naprawiono ciche pomijanie niepełnego okresu: brak
+  baseline albo observation tworzy obserwowaną metrykę z `None` i caveatem,
+  a dowolny metric blocker zatrzymuje outcome przed sukcesem/feedbackiem nawet
+  wtedy, gdy inne metryki wyglądają dobrze. Focused regression obejmuje oba
+  przypadki; finding został lokalnie zweryfikowany i przełożony na produkcyjną
+  poprawkę.
+
+- Shared browser/API schema `ContentMeasurementObservedMetric` przenosi teraz
+  także `quality_state`, `settlement_state` i `interpretation_caveats`, więc
+  UI nie gubi blokady jakości przy readbacku outcome. Shared typecheck i 42
+  kontraktowe testy przechodzą.
+
+- Read-only odczyt materiału WordPress dla wybranego inventory itemu ma jawny
+  cache 30 s kluczowany przez URL i bieżące `evidence_id`. Powtórny reload nie
+  odpala tego samego requestu sieciowego, ale nowy refresh/evidence wymusza
+  ponowny odczyt; cache obejmuje również typed `blocked`, bez ukrywania
+  blockera. Focused inventory suite: 8 testów. Live timing wybranego queue:
+  pierwszy odczyt 2,50 s, kolejne 0,17–0,19 s na tym samym fixed poincie.
+
+- Aktualny browser proof potwierdza dwa krytyczne zachowania workflow: wybrany
+  inventory item pokazuje mięso przed sztucznie opóźnioną odpowiedzią kolejki,
+  a bezpośrednie wejście na URL inventory otwiera właściwy workflow zamiast
+  pustego stanu. Playwright: 2 testy passed (desktopowy lokalny API na porcie
+  proofowym 8875).
+
+- 2026-07-18: cold selected queue nie wykonuje już synchronicznego pełnego
+  odczytu WordPress. Jawnie wybrany inventory item dostaje szybki, katalogowy
+  decision z `material pending`, a snapshot zachowuje dokładny read-only seam
+  dla `the_content`/ACF i nadal blokuje plan/draft, gdy materiału nie da się
+  potwierdzić. Katalog jest prewarmowany w tle po gotowości API. Managed proof:
+  queue 1,077 s po restarcie, potem 0,503/0,176/0,222/0,229 s; queue tests 5/5,
+  ContentWorkflowSurface 30/30. Commit `301125a0` został wypchnięty na
+  `origin/main`. Checker `workflow-latency-ZBoaoR` ma zero findingów, ale
+  evidence gaps z powodu braku excerptów; nie traktujemy go jako PASS.
+
+- Niezależny checker dla cache materiału został uruchomiony na świeżym fixed
+  poincie, ale lokalny walidator odrzucił wynik, bo Claude podał dla `F1`
+  zakres dowodu większy niż dozwolone 20 linii. Pass i disposition są w
+  `~/coding/krn/second-opinion-review/wilq-seo/check/2026-07-17-inventory-material-cache-v2-Ry8VDY/`;
+  nie ma reviewerowego PASS ani zaakceptowanego findingu.
+
+- Naprawiono marketer-facing dead end w katalogu: adresy `url_only` nie są już
+  oznaczane jako „Brak materiału do workflow”. Przycisk uruchamia teraz ten sam
+  API-owned binding, który próbuje publiczny HTML/`the_content`, zachowując
+  `review-required` dla materiału bez REST/ACF. Dashboard typecheck i
+  `ContentWorkflowSurface` 30 testów przechodzą.
+
+- Wykonano realny read-only pilot GSC + GA4 + WordPress dla exact landingu
+  `/rewolucja-w-decyzjach-o-warunkach-zabudowy-co-zmienia-sie-od-2026/`.
+  WordPress i GA4 są połączone przez path match, a pakiet zapisuje evidence,
+  21 aktywnych użytkowników, 218 zdarzeń i 48,15% engagement z jawnym
+  `stale` (~49 h) oraz blokadą interpretacji konwersji/ROAS. Dwa odczyty API
+  zwróciły identyczny digest `e8214bd88ebd04b42df8713caae3013ba1a45c22b3b51e7f9aa4a9ec9ec0fae1`;
+  realny werdykt Wilku pozostaje otwarty.
+
+- Naprawiono rozjazd synchronicznego i asynchronicznego refreshu konektorów:
+  `_persist_refresh_result` korzysta teraz z tego samego `_quality_contract`
+  co ścieżka bez kolejki. Live async GA4 refresh
+  `refresh_google_analytics_4_5b60fde574ae` zapisuje okno `2026-06-19` →
+  `2026-07-16`, `settling`, `unverified` i caveat o rozliczaniu danych zamiast
+  pustego `covered_window`/`unknown`. Focused quality suite: 4 testy.
+
+- GA4 read obsługuje teraz do 20 wybranych publicznych URL-i jako bounded
+  target query (`EXACT landingPagePlusQueryString`, limit 20), z licznikami
+  żądanych i zwróconych wierszy. Live run `refresh_google_analytics_4_421d4f76d1f4`
+  zwrócił 2 wiersze dla landingu pilota; brak hosta w wymiarze GA4 nadal daje
+  `path_only/review_required`, więc planner nie udaje exact URL.
+
+- Checker nowego async-quality/target-read fixed pointu został uruchomiony, ale
+  lokalny walidator odrzucił `F1` za zakres cytowania większy niż 20 linii.
+  Disposition jest zapisane poza repo; nie ma reviewerowego PASS ani zmiany
+  produktu opartej na tym niewalidowanym wyniku.
 
 ## Ostatnie zakresy i proofy
 
@@ -246,6 +351,17 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   `intent_relevance`, historyczne `lexical_relevance` i `page_only`. GET pozostał
   model-free; scope nadal wymaga decyzji Wilka, Service Profile review ownera,
   a proof nie jest realnym UAT ani generacją tekstu.
+- `wilq-seo-1oa.36.10` przywraca jeden evidence-bound internal-link path zamiast
+  planistycznego `maxItems=0`. `ContentPlanningInput` v3 rozwiązuje kierunek z
+  reviewed scope wyłącznie do dokładnego, publicznego faktu inventory WordPress
+  z evidence należącym do bieżącego wejścia. Output schema ogranicza URL i
+  cardinality, a lineage odrzuca obcy host/URL, evidence, claim i placement bez
+  persystencji. Focused public proof przeprowadza oba piloty przez generated
+  proposal i atomową rewizję v2; link zachowuje target, anchor, stable ID,
+  placement i evidence w rendererze WordPress. Live read-only proof dla BDO i
+  outsourcingu rozwiązał `Kontakt - Ekologus` do bieżącego WordPress evidence;
+  realne karty nadal czekają na owner review, więc nie wykonano model generation,
+  approval, WordPress write ani UAT.
 - Epiki `wilq-seo-c9h9` (43/43 dzieci), `wilq-seo-3bst` (28/28) i
   `wilq-seo-amj2` (10/10) są zamknięte po ponownym odczycie grafu. Nie zamyka to
   aktywnego celu pilota: `lt1` nadal wymaga reviewed knowledge, `jst` realnego Wilku UAT, a
@@ -539,6 +655,141 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   zachowuje teraz wyłącznie zwalidowaną absolutną ścieżkę treści; tokenowe,
   sekretowe, traversalowe i malformed wartości nadal kończą jako `[REDACTED]`.
   Focused redaction przechodzi 5/5, a pierwotny publiczny context-pack repro 1/1.
+- `/knowledge` ma teraz osobną, pierwszoplanową listę 14 zredagowanych
+  `source-facts` z URL/path, statusem review, evidence i blokowanymi claimami.
+  Legacy seed-karty/playbooki są jawnie opisane jako warstwa operacyjna, nie
+  jako słowa Ekologusa. W odnalezionym repozytorium materiałów potwierdzono 15
+  plików `materials_clean/approved`; ich manifest i hash-prefixy są zapisane w
+  `docs/research/approved-ekologus-materials-2026-07-17.md`. Pełny import
+  redacted excerptów nadal wymaga kontrolowanego seamu i owner review.
+- Po świeżym checkerze source facts mają jawny `generation_status`: wyłącznie
+  approved + commit-safe + evidence może być `eligible`; prywatne kandydatury
+  są `blocked_review_required`. Focused falsifier w Sales Brief sprawdza, że
+  fact bez evidence nie przechodzi do structured model input. Live API po
+  restarcie zwróciło oba statusy poprawnie.
+- `/knowledge` ma również metadata-only endpoint i panel manifestu 15
+  materiałów z zatwierdzonego korpusu (`import_pending`): nazwa, rola, word
+  count i hash-prefix są widoczne, ale surowy prywatny tekst nie trafia do
+  WILQ. UI nazywa tę warstwę „Źródła i wiedza” i jasno oddziela materiały od
+  wtórnych kart/playbooków.
+  Live endpoint zwrócił 15 rekordów i 3 183 słowa z manifestu; focused API,
+  dashboard i TypeScript proof przechodzą.
+- Browser proof `/knowledge` rozszerzono o source-facts i manifest materiałów:
+  1/1 przechodzi na live API, a Ruff dla nowych Python seams jest zielony.
+- Pełny draft/page preview ma teraz aktualny focused proof 1/1 po poprawieniu
+  testowego wejścia na jawnie wybrany `work_item_id`; `/content-workflow` nie
+  udaje już automatycznie wybranego tematu na pustym wejściu.
+- 2026-07-17: planowanie działa przez API-owned `ThreadPoolExecutor`, więc POST
+  nie czeka na ciężki snapshot/Codex; exact retry/dedup i stale queued-job
+  recovery mają focused proof. Initial full-draft slice przechodzi 1/1,
+  publication-bound measurement 5/5. Selected inventory queue po restarcie
+  zwrócił HTTP 200 w 3.22 s z realnymi 43 impressions, 1 click i 11 query;
+  secondary snapshot zwrócił 200 w 5.76 s. Zimna ścieżka pozostaje obserwowana,
+  ale nie blokuje pierwszego panelu.
+- 2026-07-17: pomiar nie może już użyć starego, niepowiązanego execution
+  work-itemu; wymaga exact handoff + revision digest. Trzeci checker Claude
+  `.../exact-measurement-and-pipeline-final-check-LuscRL/checker.review.json`
+  jest strukturalnie ważny, ale ma `findings=[]` wyłącznie dlatego, że nie
+  dostał literalnych excerptów kodu; jego `evidence_gaps` zamieniono na Beads
+  `wilq-seo-j54`, `wilq-seo-7trz` i `wilq-seo-7wdf`. Nie traktujemy tego jako
+  PASS ani jako zamknięcia pipeline.
+- 2026-07-17: source-backed review wykrył niespójne service-card scoping w
+  stale-checku planu; `latest(work_item_id, service_card_id=...)` i route seam
+  są teraz zgodne, z focused proofem 3 testów store. Terminalny błąd executora
+  nie wycieka jako 500, a status GET nie odbudowuje snapshotu: czyta najnowszy
+  queued/failed job bez skanowania metryk. Szeroki test został przerwany po
+  ponad 10 minutach w znanym legacy metric-store hot path; nie traktujemy go
+  jako PASS ani jako dowodu gotowości.
+- 2026-07-17: usunięto hot path w `list_metric_facts_for_content_url`: każdy
+  exact URL nie buduje już tymczasowego indeksu legacy na całej tabeli DuckDB;
+  używa bezpośrednich predykatów URL i końcowej walidacji landing identity.
+  Managed proof po restarcie: selected queue 200/0,17 s, snapshot 200/3,065 s
+  cold i 200/0,768 s warm. To jest poprawa runtime, nie dowód semantic quality
+  ani pełnego UAT.
+- 2026-07-17: publication-bound measurement dostał server-owned aggregate seam
+  dla exact URL + exact ISO period. GSC sumuje clicks/impressions i wylicza CTR,
+  GA4 sumuje sessions/engaged_sessions i wylicza engagement rate; average
+  position wymaga impressions. Mixed evidence lineage, złe okresy, brak
+  mianownika i niepełny rdzeń źródeł są typed exclusions. Focused aggregate
+  proof 3/3 oraz istniejący publication suite 5/5. Live BDO nadal ma głównie
+  `period=connector_refresh`, więc realny measurement pilot pozostaje jawnie
+  zablokowany jako brak exact covered window.
+- Niezależny checker Claude dla agregacji (`measurement-aggregate-seam-vFeain`)
+  wykrył trzy realne hardeningi: pusty licznik ratio, ciche nieznane metryki i
+  brak jednostki derived ratio — wszystkie naprawione. Czwarty finding o
+  deduplikacji odrzucono po sprawdzeniu pełnego JSON `MetricFact` i 15/15 testów
+  metric store. Pass ma disposition i nie jest przedstawiany jako approval.
+- GSC connector nie zapisuje już nowych query/page facts jako bezokresowego
+  `connector_refresh`: bierze `date_start/date_end` z odpowiedzi Search Analytics.
+  Metric store potrafi też nadać ten exact period starszemu refreshowi, jeśli
+  run ma daty w `metric_summary`; GA4 już używa zakresów dat. Vendor contract i
+  metric-store proof przechodzą 16 testów. Historyczne fakty bez dat nadal są
+  jawnie blokowane, dopóki nie pojawi się świeży refresh z covered window.
+- 2026-07-17: świeży vendor-read GSC `refresh_google_search_console_666a2c20f82c`
+  potwierdził realne okno `2026-07-15/2026-07-15`, `partial_possible`, brak
+  truncation i stan `settled/partial`; dla BDO agregat exact URL ma 1 klik,
+  266 wyświetleń, CTR 0,003759 i średnią pozycję 12,55. `ConnectorRefreshRun`
+  przechowuje teraz typed `covered_window`, `settlement_state` i
+  `quality_state`; GA4 bez sygnału settling pozostaje `unknown`, nie udajemy
+  uniwersalnej świeżości.
+- 2026-07-17: kolejne odświeżenia tego samego okresu nie powodują już fałszywego
+  `ambiguous_source_lineage`: aggregate seam wybiera najnowszy refresh po
+  `collected_at`, a przy remisie nadal blokuje. BDO readback po refreshu 666 ma
+  exact evidence, 1 klik, 266 impressions, CTR 0,003759 i weighted position
+  13,7878; 544 historycznych `connector_refresh` rows pozostaje wykluczonych.
+- 2026-07-17: reprodukcja live wykazała, że POST nowego planu po zmianie
+  metryk był odrzucany przez porównanie do starego proposal digestu, mimo że
+  operator wysyłał aktualny digest. Usunięto ten błędny gate: nowy digest może
+  wejść do kolejki, a worker nadal waliduje go względem odbudowanego snapshotu.
+  Live proof zwrócił `generating`; po 120 s Codex poprawnie przeszedł w typed
+  `runtime_failed/codex_timeout` bez częściowego zapisu. To pozostaje limit
+  runtime, nie spinner bez końca.
+- 2026-07-17: panel planowania nie eksponuje już Codexa jako głównego języka
+  marketera. Stan generowania mówi wprost, że plan powstaje z aktualnej strony,
+  metryk i usługi, ma `aria-live` oraz informuje, że nie trzeba uruchamiać
+  drugiego planu; techniczny runtime pozostaje w sekcji „Dlaczego”. Dashboard
+  typecheck przechodzi.
+- 2026-07-17: planowanie ma osobny bounded timeout Codexa: domyślnie 60 s
+  (`WILQ_PLANNING_CODEX_TIMEOUT_SECONDS`), niezależnie od draftu i semantic
+  review. Focused proof potwierdza konfigurację; live status po wcześniejszej
+  próbie jest jawnie `failed/runtime_failed`, bez partial write i z retry.
+- 2026-07-17: niezależny health probe minimalnego turnu Codexa również
+  timeoutuje przy 20 s, więc ostatnie timeouty planera są problemem runtime,
+  nie rozmiarem wejścia (plan: 25,9 KB danych + 9,6 KB schema). Nie dodano
+  fallbacku ani zmyślonego planu; failure pozostaje typed i retryable.
+- 2026-07-17: WordPress public REST importer zachowuje teraz zwykłe pola ACF
+  także wtedy, gdy strona nie ma flexible-content rows. Live refresh
+  `refresh_wordpress_ekologus_fa66b5c70328` dla BDO zapisał
+  `acf_field_names=["wyswietlenia"]`, brak sekcji flexible i pełny
+  `the_content`; katalog po restarcie pokazuje `content_and_structure` zamiast
+  udawać brak ACF.
+- 2026-07-17: dodano metadata-only endpoint `GET
+  /api/knowledge/source-materials/readiness` oraz banner w powierzchni Wiedza.
+  Manifest 15 materiałów pozostaje jawnie `import_pending` (0/15), więc
+  generowanie nie udaje dostępu do transkrypcji ani bazy wiedzy. Kontrakt
+  pokazuje liczności, blocker i bezpieczny następny krok: kontrolowany import
+  redagowanych excerptów po owner review. Focused API/dashboard proof przechodzi.
+- 2026-07-17: pełny browser proof `/content-workflow` przeszedł 6/6 testów.
+  Proof wiąże prawdziwy URL BDO przez `/api/content/inventory/bind` zamiast
+  używać historycznego ID, pokazuje wybrany inventory przed wolną kolejką,
+  przechodzi desktop/mobile planning, pięć sekcji, poprawkę wybranej sekcji
+  oraz trwały review → draft-only wizard bez publikacji. W trakcie proofu
+  naprawiono brak przycisku zapisu pierwszej wersji; backend nadal wymusza
+  aktualny scope/mapę, exact sekcje i lineage.
+- 2026-07-17: live proof drugiego dokładnego case'u potwierdził ogólny seam
+  URL → workflow dla `https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/`.
+  Bind zwrócił `ready`, a snapshot po odczycie dynamicznym zidentyfikował kartę
+  `ekologus_service_environmental_consulting_outsourcing`, 52 zapytania GSC,
+  731 wyświetleń, 0 kliknięć, CTR 0% i najlepszą średnią pozycję 1,00.
+  Początkowy katalog ma `url_only`, ale workflow nie zgaduje: dopiero snapshot
+  potwierdza publiczny HTML jako `review_required` i pozostawia draft zablokowany
+  do dalszego review.
+- 2026-07-17: checker `second-opinion-review` dla fixed pointu browser proof
+  przeszedł walidację. Przyjęte findings: live Codex timeout i 0/15
+  zaimportowanych materiałów są blockerami, 6/6 browser proof nie jest UAT ani
+  dowodem produkcji, a pojedynczy BDO bind nie dowodzi wszystkich możliwych URL-i.
+  Nie przedstawiamy tych dowodów jako pełnej gotowości; pass retained w
+  `~/coding/krn/second-opinion-review/wilq-seo/check/2026-07-17-wilq-content-pipeline-browser-proof-kQsMkb`.
 
 ## Następny bezpieczny zakres
 
@@ -579,3 +830,283 @@ zostały zamknięte po świeżym parity proof. Dalsze mechaniczne rozcinanie
   pilota i nie są zamknięte.
 - Goal 005, produkcyjna gotowość i pełna użyteczność dla marketera nie są
   zakończone.
+### 2026-07-17 — nowa sanitizowana paczka do realnego Wilku UAT
+
+- Dodano `docs/review-packets/2026-07-17-wilku-live/` z instrukcją „otwórz
+  mnie”, live proof, osobnym opisem synthetic proof, formularzem oceny oraz
+  instrukcją prawdziwego nagrania. Paczka nie kopiuje surowych materiałów ani
+  nie udaje, że fixture'y są UAT.
+- Poprzednie paczki zawierały opisy, które mogły sugerować `approved_current`
+  i stare wartości GSC. Nowa wersja kwalifikuje stan: obie ścieżki są
+  `service_match_required`, knowledge readiness to `import_pending` 0/15, a
+  live Codex generation i realny WordPress draft pozostają nieudowodnione.
+- Odczyt live 17.07: DuckDB 133895 facts / 4855 refresh runs; GSC świeży
+  17.07, GA4 ostatni udany odczyt 15.07, Ads read/review-only; LinkedIn/Facebook
+  bez dostępu, Google Sheets wyłączony.
+- Paczka jest przekazywalna marketerowi, ale nie zamyka pilota. Do zamknięcia
+  nadal wymagane są: realne nagranie i formularz Wilku, owner review kart,
+  kontrolowany import materiałów, udane pełne generation/review oraz exact
+  draft-only dry-run.
+
+### 2026-07-17 — binding URL-u rozwiązuje publiczny materiał
+
+- `POST /api/content/inventory/bind` nie zwraca już fałszywego `url_only`, gdy
+  katalog REST ma tylko URL, ale wybrany adres ma czytelny publiczny
+  `the_content`/HTML. Binding wykonuje jeden read-only resolver dla wybranego
+  adresu i zwraca `content_summary` albo `content_and_structure` oraz tytuł.
+- Live proof po restarcie stacka: BDO i doradztwo/outsourcing zwracają
+  `ready`, `content_and_structure`, tytuł i `metrics_status=available`; oba
+  nadal prawidłowo mają `service_match_required` oraz
+  `blocked_until_service_and_metrics`.
+- Falsifier: `tests/content/test_inventory_catalog.py` — 7/7 passed.
+  Ruff dla produkcyjnego `wilq/content/workflow/catalog.py` i `git diff --check`
+  są zielone. Szerszy testowy plik ma wcześniejsze, niezwiązane naruszenia
+  formatowania/importów; nie przedstawiam ich jako regresji tego slice'u.
+- Dashboard smoke dla inventory-bound workflow również przeszedł `1/1` po
+  restarcie stacka; nie uruchamia modelu ani vendor write.
+
+### 2026-07-17 — baseline planu przestaje produkować nagłówkowy slop
+
+- Baseline dla istniejącej strony korzysta teraz z rzeczywistych nagłówków
+  materiału zamiast tworzyć „Co wiemy z zapytań: …”. Odfiltrowuje nagłówki
+  nawigacji, related content, „Więcej”, „Oferta…” i zaufanych klientów, a
+  ogólny BDO-owy lead normalizuje do „Najczęstsze pytania dotyczące BDO”.
+- Zniknęło też powtarzanie H1 i CTA w każdej pustej sekcji. Placeholder ma
+  teraz reader-first purpose, a pełny tekst nadal wymaga planu modelowego,
+  review i zatwierdzenia człowieka.
+- Falsifiers: `tests/content/test_decision_mapping.py` i istniejący sales brief
+  — 20 testów passed; Ruff dla zmienionych modułów i `git diff --check` zielone.
+- Live snapshot po restarcie: outsourcing pokazuje nagłówki „Korzyści ze
+  współpracy z nami”, „Doradztwo ekologiczne” i „Potrzebujesz doradztwa…”, a
+  BDO „Najczęstsze pytania dotyczące BDO”, bez prefiksu „Co wiemy z zapytań”.
+- Próba ponownego live planningu outsourcingu na aktualnym digest zakończyła
+  się po bounded deadline typed `runtime_failed/codex_timeout`; GET zwrócił
+  blocker, bez częściowego proposal. To nadal zewnętrzny blocker runtime’u,
+  nie powód do fallbacku ani twierdzenia, że pełny pipeline działa.
+- Checker Claude dla tego slice'u ponownie został odrzucony przez validator za
+  cytację ponad 20 linii; brak ważnego JSON/PASS pozostaje jawny.
+
+### 2026-07-17 — retry orphaned planning jobów
+
+- Minimalny `codex exec` probe kończy się poprawnie w około 8 s, więc login i
+  podstawowy app-server są zdrowe. Live structured planning outsourcingu nadal
+  może kończyć się `codex_timeout` przy większym wejściu/schema.
+- Naprawiono lifecycle queued joba: stale orphan nie jest już prezentowany jako
+  terminalny `failed` bez digestu. Po przekroczeniu 120 s GET odbudowuje aktualny
+  input i zwraca retryable `stale` z exact `planning_input_digest`; następny POST
+  może ponowić plan od razu zamiast czekać 15 minut.
+- Falsifier store: `tests/content/test_generated_proposal_store.py` 3/3 passed;
+  live GET po restarcie zwrócił `stale` z digestem, a retry POST `generating`.
+
+### 2026-07-17 — pełny input, kompaktowy transport modelu
+
+- Pomiar aktualnego kontraktu wykazał 54,9 KB dla BDO i 79,1 KB dla
+  outsourcingu; największym polem jest portfolio GSC (31/52 exact rows), w
+  których powtarzały się te same refresh-level evidence IDs.
+- `content_planning_turn_request` zachowuje pełny `ContentPlanningInput` dla
+  digestu, stale detection, walidacji i readbacku, ale przekazuje do modelu
+  niemutujący envelope: wszystkie exact query rows, bez `null` i z maksymalnie
+  trzema powtarzającymi się evidence IDs oraz czterema nagłówkami na wiersz.
+  Coverage (`rows_available`/`rows_included`) jest jawne, a pełny top-level
+  evidence set i output schema pozostają niezmienione.
+- Falsifier: `test_model_planning_envelope_compacts_repeated_query_lineage_without_dropping_rows`
+  oraz `tests/content/test_dynamic_planning_input_sources.py` — focused test
+  passed; Ruff i `git diff --check` passed. Nie jest to jeszcze dowód udanego
+  live Codex generation; poprzednia próba nadal kończyła się typed timeoutem.
+- Po restarcie stacka wykonano nowy live POST dla outsourcingu na digest
+  `418322…`; kolejka ruszyła, ale po bounded deadline ponownie zapisała
+  `runtime_failed/codex_timeout` bez proposal/partial write. Kompaktowanie samo
+  nie rozwiązuje runtime transportu; nie dodano fallbacku ani drugiego modelu.
+- Niezależny execution-binding review zgłosił potencjalny legacy path. Lokalny
+  exact lookup w `stage_measurement.py` oraz falsifier
+  `test_unbound_legacy_execution_cannot_unlock_measurement_window` przeszedł
+  1/1, więc brak reprodukcji i brak nieautoryzowanej zmiany tego kontraktu.
+
+### 2026-07-17 — structured planning działa po pełnym bounded retry
+
+- Bezpośredni probe aktualnego outsourcingowego inputu (57,9 KB envelope,
+  schema 15,9 KB) zakończył się poprawnym structured outputem po 85,6 s przy
+  limicie 120 s. Wcześniejsze 60 s było fałszywym runtime blockerem; planner
+  pozostaje asynchroniczny, więc nie wydłuża requestu przeglądarki.
+- Domyślny planning deadline zmieniono z 60 do 120 s, z env override i testem
+  kontraktu. Live retry outsourcingu zakończył się `ready`, proposal
+  `content_planning_proposal_a200ee01d1114440bf7bf2b1eb524cd3`, bez blockerów.
+- Dodano deterministyczną bramkę slopu dla nagłówków nawigacyjnych,
+  promocyjnych, datowanych i related-content. Istniejący BDO plan został
+  poprawnie oznaczony `quality_gate_failed`, a wersja kryteriów została
+  podniesiona do `wilq_people_first_planning_v3`, aby stare propozycje nie
+  przechodziły przez idempotency.
+- Live BDO i outsourcing przeszły ten sam kontrakt v3: odpowiednio
+  `content_planning_proposal_cc06635ba2e547ab9ddc15151b28c175` i
+  `content_planning_proposal_f764da84dc19483488e59501db5ccb07`, oba `ready`,
+  `publish_ready=false`, bez noise headings i bez automatycznej akceptacji.
+- Focused falsifiers: bounded-timeout, quality-gate, compact-envelope oraz
+  `unbound_legacy_execution` — zielone; Ruff i `git diff --check` zielone.
+- Niezależny checker Claude dla planning v3 został uruchomiony w dozwolonym
+  oknie, ale runner ponownie nie opublikował `checker.review.json`; validator
+  odrzucił brak outputu. Nie przedstawiam tego jako PASS ani jako findingu.
+
+### 2026-07-17 — initial full draft i mocniejsza bramka materiału
+
+- Na BDO wykonano synthetic local-operator scope + section-map review (jawnie
+  nie owner/Wilku UAT), a initial full draft zakończył się `created`:
+  revision `content_revision_228d0f04d0594c9e889ee2e2cd715344`, digest
+  `74c6528254505f1bb53a35932106fcda912f5193a5bbae541b7e28d20c59d46e`.
+  Rewizja v2 ma trwałe page assets (title, meta, H1, lead), 8 sekcji, 5 FAQ,
+  2 CTA i 1 link; pozostaje `unreviewed`, `publish_ready=false`.
+- Próba semantic review tej rewizji zatrzymała się typed
+  `missing_planning_input`, bo bieżący materiał WordPress ma
+  `material_confidence=review_required`. To ujawniło niespójność: initial
+  draft korzystał z filtrowanego `planning_generation_blockers()` i omijał
+  wymaganie review materiału.
+- Naprawiono seam: initial full draft używa pełnego zbioru readiness blockers.
+  Po synthetic scope + section-map review outsourcingu ponowny initial-draft
+  POST zatrzymuje się przed modelem jako `stale_planning_input` z
+  `wordpress_material_review_required`, bez rewizji i bez runtime call.
+- Wniosek: publiczny rendered `the_content` może zasilać plan reviewable, ale
+  nie może sam zasilać trwałego pełnego draftu ani semantic review. Kontrolowany
+  import/redakcja/owner review materiałów pozostaje realnym blockerem.
+- Dodatkowo revision workspace nie pokazuje historycznej rewizji jako
+  reviewable, gdy bieżący materiał ma `review_required`: live snapshot BDO ma
+  `status=unreviewed`, `can_review=false`, `can_save=false` i jawny następny
+  krok zatwierdzenia źródłowego materiału.
+- Semantic review ma teraz osobny typed blocker
+  `source_material_review_required` zamiast ogólnego `missing_planning_input`,
+  z następnym krokiem kontrolowanego importu/redakcji i owner review. Live POST
+  BDO potwierdza blocker bez uruchamiania Codexa.
+
+### 2026-07-17 — wspólny proof pełnego draftu dla dwóch usług
+
+- Testowy harness został przełączony ze starych `content_decision` IDs na ten
+  sam kanoniczny `inventory_work_item_id(url)`, którego używa produkcja. URL
+  outsourcingu poprawiono do rzeczywistego `/oferta/...`; nie dodano wyjątku w
+  kodzie produkcyjnym.
+- Syntetyczny harness jawnie oznacza materiał jako `source_bound`, aby testować
+  atomowy zapis dokumentu po zatwierdzeniu materiału; produkcyjny
+  `review_required` nadal blokuje initial draft i semantic review.
+- Falsifier przeszedł: `test_initial_full_draft_uses_the_same_atomic_contract_for_both_services`.
+  Ten sam przepływ dla BDO i doradztwa/outsourcingu utworzył trwałe rewizje v2
+  z pełnymi page assets, bez częściowego zapisu; `publish_ready=false`.
+- Ruff dla zmienionego harnessu i `git diff --check` są zielone. To synthetic
+  contract proof, nie owner/Wilku UAT ani zgoda na WordPress write.
+- Niezależny execution-binding review ponownie sprawdził `stage_measurement`:
+  exact lookup wymaga work itemu, handoff ID, revision ID i content digest;
+  ścieżka bez bindingu przekazuje `None`. `test_publication_bound_measurement.py`
+  przeszedł 5/5, więc nie dodano redundantnej zmiany.
+- Dodatkowa bramka store jest all-or-none: częściowy zestaw
+  `handoff_id/revision_id/revision_digest` zwraca `None` zamiast legacy
+  work-item execution. Falsifier obejmuje próbę częściowego lookupu po
+  zapisanym legacy execution; testy pomiaru 5/5 i Ruff przechodzą.
+
+### 2026-07-17 — source quality bez uniwersalnego SLA
+
+- Świeży WILQ context: 133895 faktów metrycznych, 4855 refreshów, 12
+  konektorów / 9 skonfigurowanych; GSC i WordPress są świeże, GA4 ma ostatni
+  udany odczyt 2026-07-15.
+- `_quality_contract` rozróżnia teraz semantykę źródeł: GA4 ma
+  `settling` + `unverified`, Ahrefs i Localo `not_applicable` dla settlementu
+  oraz jawne caveaty snapshotu/coverage. Localo zapisuje w summary zakres
+  `date_start/date_end` dla agregatu 30-dniowego.
+- GSC content diagnostics przestał dołączać `seo_content_decay_v1` i
+  `seo_cannibalization_v1`, ponieważ obecny odczyt nie ma historii ani okresu
+  porównawczego. Reguły pozostają w katalogu wiedzy, ale decyzja ich nie
+  cytuje bez wymaganych danych.
+- Falsifier: `tests/connectors/test_refresh_quality_contract.py` 3/3,
+  Ruff i `git diff --check` zielone. Pełne porównania okresów są kolejnym
+  otwartym slice'em, nie zostały udawane tym ograniczeniem.
+
+### 2026-07-18 — Campaign Builder i spójność waluty Ads
+
+- Campaign Builder został sprowadzony do rzeczywistego kontraktu API: kolejka
+  review istniejących kampanii, landing/context, KPI, brakujące kontrakty,
+  human gates i niemutujący preview. Skill/agent/output contract jawnie blokują
+  keywords, assety, sitelinki, copy, targetowanie, budżet docelowy, prognozy i
+  readiness bez osobnego typed źródła. Live smoke zwrócił 2 poprawne actions i
+  4 landing candidates; focused context/eval tests 15 passed.
+- Ads account currency nie wybiera już pierwszego kodu przy niespójnym evidence:
+  wiele walut daje typed `account_currency_consistency` blocker. Falsifier
+  mixed-currency przeszedł; agregacja okien i summary limits pozostaje osobnym
+  zadaniem.
+- `AdsAggregationContract` domyka ten osobny seam: API, shared schema i panel
+  marketera pokazują `LAST_7_DAYS`, okna search terms 30/90 dni, limit skrótu,
+  returned/available rows, `is_exhaustive`, podstawę pacingu, status waluty i
+  caveaty. Live summary: 18 kampanii dostępnych, 5 pokazanych, 50 wierszy
+  search-term z bounded read. Full Ads contract suite i dashboard typecheck
+  przechodzą.
+- Cross-source landing identity nie traci już trendu na ścieżce contentowej:
+  `list_metric_facts_for_content_url` filtruje identity przed bounded read,
+  liczy identity-partitioned LAG i zwraca `previous_value`, delta oraz trend;
+  stare legacy URL-e są normalizowane, a mieszane wymiary nadal odpadają przed
+  limitem operatora. Metric-store suite 16/16 i focused outsourcing proof
+  przechodzą.
+- Niezależny second-opinion znalazł i wymusił dodatkową korektę: legacy/noisy
+  URL nie może uczestniczyć w historii przed Pythonowym filtrem identity. SQL
+  zwraca kandydatów bez LAG, a historia jest liczona dopiero po
+  `metric_dimensions_match_landing`; interloper proof pokazuje exact row po
+  błędnym nowszym wierszu i zachowuje poprzedni exact evidence. Finding został
+  zapisany w Beadzie; wcześniejszy checker nie jest przedstawiany jako PASS.
+
+### 2026-07-18 — source quality w planning input v5
+
+- `ContentPlanningSourceAssessment` niesie teraz `refresh_run_id`, exact
+  `covered_window`, `settlement_state`, `quality_state` i caveats. Pola są
+  projektowane z `ContentFreshnessAssessment`, więc należą do wejścia planu,
+  summary i digestu, a nie tylko do panelu konektora.
+- Zmieniono schema name z `wilq_content_planning_input_v4` na
+  `wilq_content_planning_input_v5`; zmiana jakości (np. GSC partial → verified)
+  zmienia `planning_input_digest` i nie może przejść jako idempotentny stary plan.
+- Falsifier `test_source_quality_is_part_of_planning_lineage_and_digest` pokazał
+  readback pól oraz różne digesty po zmianie quality state. Input/planning tests
+  8/8, Ruff i diff-check zielone.
+- Po restarcie managed stack live snapshot BDO zwrócił nowe pola jakości w
+  `freshness_assessment`; API zachowało 133895 faktów i 4855 refreshów.
+- `ConnectorCoveredWindow` niesie dodatkowo `cadence`, `snapshot_date`,
+  `coverage_scope` i `coverage_count`: Ahrefs jest jawnie manualnym
+  `manual_lag_1_snapshot` bez zgadywania daty vendora, a Localo ma
+  `trailing_30_days` i liczbę aktywnych miejsc.
+- Shared schema oraz `/content-workflow` pokazują nieblokujące ostrzeżenie
+  jakości (np. GA4 do rozliczenia, GSC częściowy odczyt) nawet przy świeżym
+  źródle. Dashboard focused test 2/2 i typecheck przechodzą.
+### 2026-07-18 — naprawa wejścia z pełnego inventory do workflow
+
+Reprodukowalny błąd ścieżki marketera został naprawiony na granicy API:
+`POST /api/content/inventory/bind` zwracał poprawny `work_item_id`, ale
+następny `GET /api/content/work-items/queue?work_item_id=...` budował kartę z
+`read_material=False`. Każdy nowy adres z inventory wyglądał więc jak
+`block`, mimo że materiał WordPress był dostępny; dashboard sprawiał wrażenie,
+że tylko odświeża stronę. Wybrany adres teraz czyta ten sam materiał
+read-only, który został zweryfikowany przy bindzie, bez uruchamiania pełnej
+diagnostyki. Focused falsifier sprawdza `read_material=True` i brak pełnego
+diagnostics; live odczyt dla `content_work_item_inventory_0454c020b0ddbad0062b3d08`
+zwrócił `recommended_mode=refresh` zamiast `block` po restarcie stacka.
+### 2026-07-18 — comparison periods visible in the marketer journey
+
+The selected-page context now renders the exact comparison status/reason from
+the queue search-metrics contract. When two complete periods exist it shows
+their date range; otherwise it explicitly says that no trend is inferred.
+This keeps the useful metric snapshot above the fold while preventing a single
+period from being read as growth or decline. Proof: dashboard typecheck and
+`ContentWorkflowSurface.test.tsx` (30 tests) pass.
+### 2026-07-18 — bounded coverage for Ads search terms
+
+Search-term-derived Ads decisions now carry one typed coverage contract: exact
+window, returned rows, connector cap, whether the cap was hit, bounded/empty/
+blocked status and Google's low-volume privacy omission caveat. The 30-day
+read is explicitly capped at 50 rows; the 90-day safety read remains capped at
+200. The contract propagates to n-grams, review summaries and negative-keyword
+review, and the dashboard shows the coverage above detail tables. No claim of
+complete search-term universe is made. Focused Ads contracts, shared schema,
+dashboard typecheck/tests and Ruff pass.
+### 2026-07-18 — WordPress sitemap coverage is explicit
+
+The WordPress inventory connector now retains source sitemap count, returned
+count, truncation and the 500-URL limit in its typed refresh metric summary.
+This distinguishes a complete read from a bounded inventory without exposing
+raw content or credentials. Existing vendor-read and inventory contract tests
+(15) pass.
+### 2026-07-18 — inventory coverage reaches the marketer catalog
+
+`ContentInventoryCatalogResponse` now exposes the latest WordPress sitemap
+coverage. The dashboard shows returned/source counts and a caveat; historical
+refreshes without the new counters remain `coverage niepotwierdzone`, never
+implicitly complete.
