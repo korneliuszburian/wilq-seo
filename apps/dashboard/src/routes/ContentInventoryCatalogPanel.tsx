@@ -43,13 +43,15 @@ export function ContentInventoryCatalogPanel({
   }, [queue.candidates]);
   const normalizedSearch = search.trim().toLocaleLowerCase();
   const items = useMemo(
-    () => catalog.items.filter((item) =>
-      (showAll || item.material_status !== "url_only") &&
-      (!normalizedSearch || `${item.title} ${item.path} ${item.url} ${item.acf_section_headings.join(" ")}`
-        .toLocaleLowerCase()
-        .includes(normalizedSearch))
-    ),
-    [catalog.items, normalizedSearch, showAll]
+    () => catalog.items
+      .filter((item) =>
+        (showAll || item.material_status !== "url_only") &&
+        (!normalizedSearch || `${item.title} ${item.path} ${item.url} ${item.acf_section_headings.join(" ")}`
+          .toLocaleLowerCase()
+          .includes(normalizedSearch))
+      )
+      .sort((left, right) => compareInventoryItems(left, right, candidateByUrl)),
+    [catalog.items, candidateByUrl, normalizedSearch, showAll]
   );
 
   return (
@@ -119,7 +121,7 @@ export function ContentInventoryCatalogPanel({
         <button type="button" className={`rounded-full border px-3 py-1 font-semibold ${showAll ? "border-action bg-action/10 text-action" : "border-line bg-white text-slate-600"}`} onClick={() => setShowAll(true)}>
           Pokaż wszystkie ({catalog.total_count})
         </button>
-        {!showAll ? <span className="text-slate-500">Adresy bez materiału są pokazane dopiero po świadomym rozwinięciu.</span> : null}
+        {!showAll ? <span className="text-slate-500">Najpierw pokazujemy strony gotowe do planu i te z realnymi metrykami. Adresy bez materiału są pokazane dopiero po świadomym rozwinięciu.</span> : null}
       </div>
       <div className="mt-4 max-h-[34rem] overflow-auto rounded-md border border-line">
         <table className="min-w-full text-left text-sm">
@@ -193,6 +195,35 @@ function normalizeUrl(value: string) {
     // Keep relative WordPress paths as-is.
   }
   return path.toLocaleLowerCase().replace(/[ąćęłńóśźż]/g, (char) => ({ ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z" }[char] ?? char)).replace(/[-_\s]+/g, "-").replace(/\/$/, "") || "/";
+}
+
+export function compareInventoryItems(
+  left: ContentInventoryCatalogResponse["items"][number],
+  right: ContentInventoryCatalogResponse["items"][number],
+  candidateByUrl: Map<string, string>
+) {
+  const leftCandidate = candidateByUrl.has(normalizeUrl(left.url)) ? 0 : 1;
+  const rightCandidate = candidateByUrl.has(normalizeUrl(right.url)) ? 0 : 1;
+  if (leftCandidate !== rightCandidate) return leftCandidate - rightCandidate;
+
+  const materialRank = {
+    content_and_structure: 0,
+    content_summary: 1,
+    structure_only: 2,
+    url_only: 3
+  } as const;
+  const leftMaterial = materialRank[left.material_status];
+  const rightMaterial = materialRank[right.material_status];
+  if (leftMaterial !== rightMaterial) return leftMaterial - rightMaterial;
+
+  const leftMetrics = left.metrics_status === "available" ? 0 : 1;
+  const rightMetrics = right.metrics_status === "available" ? 0 : 1;
+  if (leftMetrics !== rightMetrics) return leftMetrics - rightMetrics;
+  if (left.metrics_impressions !== right.metrics_impressions) {
+    return right.metrics_impressions - left.metrics_impressions;
+  }
+  if (left.metrics_clicks !== right.metrics_clicks) return right.metrics_clicks - left.metrics_clicks;
+  return `${left.title ?? ""} ${left.path}`.localeCompare(`${right.title ?? ""} ${right.path}`, "pl");
 }
 
 function materialLabel(status: ContentInventoryCatalogResponse["items"][number]["material_status"]) {

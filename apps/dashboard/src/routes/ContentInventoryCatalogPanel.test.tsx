@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { ContentInventoryCatalogResponse } from "../lib/api";
-import { InventoryWorkflowStartingPanel } from "./ContentInventoryCatalogPanel";
+import { compareInventoryItems, InventoryWorkflowStartingPanel } from "./ContentInventoryCatalogPanel";
 
 const item = {
   catalog_id: "catalog_1",
@@ -33,5 +33,23 @@ describe("InventoryWorkflowStartingPanel", () => {
     );
     expect(screen.getByText("240 wyświetleń · 12 kliknięć")).toBeInTheDocument();
     expect(screen.getByText(/Strona jest już wybrana/)).toBeInTheDocument();
+  });
+});
+
+describe("compareInventoryItems", () => {
+  it("keeps existing workflow candidates before material and metric fallbacks", () => {
+    const readyWithMetrics = { ...item, url: "https://www.ekologus.pl/ready/", path: "/ready/" };
+    const queuedUrlOnly = {
+      ...item,
+      url: "https://www.ekologus.pl/queued/",
+      path: "/queued/",
+      material_status: "url_only" as const,
+      metrics_status: "missing" as const,
+      metrics_impressions: 0
+    } as typeof item;
+
+    expect(
+      compareInventoryItems(queuedUrlOnly, readyWithMetrics, new Map([["/queued", "work_item_1"]]))
+    ).toBeLessThan(0);
   });
 });
