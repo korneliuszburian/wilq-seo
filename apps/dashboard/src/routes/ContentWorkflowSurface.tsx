@@ -625,7 +625,9 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
   const initialDraftStatusQuery = useQuery({
     queryKey: ["content-workflow", "initial-draft", selectedWorkItemId],
     queryFn: () => getContentWorkItemInitialDraft(selectedWorkItemId),
-    enabled: initialDraftMutation.data?.status === "generating",
+    // Status is API-owned and must survive a browser reload.  The GET is
+    // read-only; only a generating response enables the 2-second poll.
+    enabled: Boolean(selectedWorkItemId),
     refetchInterval: (query) =>
       query.state.data?.status === "generating" ? 2000 : false
   });
