@@ -523,7 +523,9 @@ describe("content workflow API helpers", () => {
       sections: sections.map((section) => ({
         ...section,
         query_terms: [],
-        claim_ids: []
+        claim_ids: [],
+        source_material_ids: [],
+        knowledge_card_ids: []
       })),
       created_by: "wilku"
     });
