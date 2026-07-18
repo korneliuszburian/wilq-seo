@@ -48,6 +48,7 @@ export function ContentPlanningReviewPanel({
   );
   const latestDecision = stage === "scope" ? planning.scope_decision : planning.section_map_decision;
   const inventoryMapping = planning.proposal.inventory_mapping ?? [];
+  const documentScopeSummary = planningScopeSummary(proposal.sections);
   const canSubmit =
     !actions.pending &&
     (decision === "approved" ? checked : notes.trim().length > 0) &&
@@ -149,6 +150,12 @@ export function ContentPlanningReviewPanel({
             </ul>
           </div>
         ) : null}
+        <p
+          className="mt-4 rounded-md border border-action/20 bg-action/5 px-3 py-2 text-sm text-slate-700"
+          data-testid="planning-document-scope-summary"
+        >
+          {documentScopeSummary}
+        </p>
         <ol className="mt-4 space-y-3">
           {proposal.sections.map((section, index) => (
             <li key={`${index}-${section.heading}`} className="rounded-md border border-line bg-surface p-3">
@@ -272,6 +279,23 @@ export function inventoryDispositionLabel(
     remove_review_required: "usuń po review",
     create: "utwórz"
   }[disposition];
+}
+
+export function planningScopeSummary(
+  sections: Array<{ inventory_disposition: string }>
+) {
+  const excluded = sections.filter(
+    (section) => section.inventory_disposition === "remove_review_required"
+  ).length;
+  const draftable = sections.length - excluded;
+  const sectionLabel =
+    draftable === 1
+      ? "sekcja"
+      : draftable >= 2 && draftable <= 4
+        ? "sekcje"
+        : "sekcji";
+  const excludedLabel = excluded === 1 ? "element" : "elementów";
+  return `${draftable} ${sectionLabel} trafi do pełnego tekstu · ${excluded} ${excludedLabel} pozostaje do osobnego review`;
 }
 
 function SearchDemandSummary({
