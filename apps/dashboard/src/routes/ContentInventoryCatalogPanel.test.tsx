@@ -2,7 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { ContentInventoryCatalogResponse } from "../lib/api";
-import { compareInventoryItems, InventoryWorkflowStartingPanel } from "./ContentInventoryCatalogPanel";
+import {
+  compareInventoryItems,
+  InventoryWorkflowStartingPanel,
+  matchesInventoryView
+} from "./ContentInventoryCatalogPanel";
 
 const item = {
   catalog_id: "catalog_1",
@@ -51,5 +55,19 @@ describe("compareInventoryItems", () => {
     expect(
       compareInventoryItems(queuedUrlOnly, readyWithMetrics, new Map([["/queued", "work_item_1"]]))
     ).toBeLessThan(0);
+  });
+});
+
+describe("matchesInventoryView", () => {
+  it("keeps a URL-only page selectable when it has real metrics", () => {
+    const metricsOnly = {
+      ...item,
+      material_status: "url_only" as const,
+      metrics_status: "available" as const
+    } as typeof item;
+
+    expect(matchesInventoryView(metricsOnly, "ready")).toBe(false);
+    expect(matchesInventoryView(metricsOnly, "metrics")).toBe(true);
+    expect(matchesInventoryView(metricsOnly, "all")).toBe(true);
   });
 });

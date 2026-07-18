@@ -3,6 +3,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { getContentInventoryMaterial, postContentInventoryBinding, type ContentInventoryCatalogResponse, type ContentInventoryMaterialResponse, type ContentServiceProfileResponse, type ContentWorkItemQueueResponse } from "../lib/api";
 
+type InventoryCatalogView = "ready" | "metrics" | "all";
+
 export function ContentInventoryCatalogPanel({
   catalog,
   queue,
@@ -15,7 +17,7 @@ export function ContentInventoryCatalogPanel({
   onSelectWorkItem: (workItemId: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  const [catalogView, setCatalogView] = useState<InventoryCatalogView>("ready");
   const [inspectedUrl, setInspectedUrl] = useState<string | null>(null);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const bind = useMutation({
@@ -45,13 +47,13 @@ export function ContentInventoryCatalogPanel({
   const items = useMemo(
     () => catalog.items
       .filter((item) =>
-        (showAll || item.material_status !== "url_only") &&
+        matchesInventoryView(item, catalogView) &&
         (!normalizedSearch || `${item.title} ${item.path} ${item.url} ${item.acf_section_headings.join(" ")}`
           .toLocaleLowerCase()
           .includes(normalizedSearch))
       )
       .sort((left, right) => compareInventoryItems(left, right, candidateByUrl)),
-    [catalog.items, candidateByUrl, normalizedSearch, showAll]
+    [catalog.items, candidateByUrl, catalogView, normalizedSearch]
   );
 
   return (
@@ -115,13 +117,16 @@ export function ContentInventoryCatalogPanel({
         className="mt-2 w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-action"
       />
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-        <button type="button" className={`rounded-full border px-3 py-1 font-semibold ${!showAll ? "border-action bg-action/10 text-action" : "border-line bg-white text-slate-600"}`} onClick={() => setShowAll(false)}>
-          Gotowe do odczytu ({catalog.ready_count + catalog.partial_count})
+        <button type="button" className={`rounded-full border px-3 py-1 font-semibold ${catalogView === "ready" ? "border-action bg-action/10 text-action" : "border-line bg-white text-slate-600"}`} onClick={() => setCatalogView("ready")}>
+          Do pracy teraz ({catalog.ready_count + catalog.partial_count})
         </button>
-        <button type="button" className={`rounded-full border px-3 py-1 font-semibold ${showAll ? "border-action bg-action/10 text-action" : "border-line bg-white text-slate-600"}`} onClick={() => setShowAll(true)}>
-          Pokaż wszystkie ({catalog.total_count})
+        <button type="button" className={`rounded-full border px-3 py-1 font-semibold ${catalogView === "metrics" ? "border-action bg-action/10 text-action" : "border-line bg-white text-slate-600"}`} onClick={() => setCatalogView("metrics")}>
+          Z metrykami ({catalog.items.filter((item) => item.metrics_status === "available").length})
         </button>
-        {!showAll ? <span className="text-slate-500">Najpierw pokazujemy strony gotowe do planu i te z realnymi metrykami. Adresy bez materiału są pokazane dopiero po świadomym rozwinięciu.</span> : null}
+        <button type="button" className={`rounded-full border px-3 py-1 font-semibold ${catalogView === "all" ? "border-action bg-action/10 text-action" : "border-line bg-white text-slate-600"}`} onClick={() => setCatalogView("all")}>
+          Wszystkie ({catalog.total_count})
+        </button>
+        {catalogView === "ready" ? <span className="text-slate-500">Najpierw pokazujemy strony z materiałem gotowym do planu.</span> : catalogView === "metrics" ? <span className="text-slate-500">Pokazujemy także adresy URL-only, jeśli mają realne metryki do decyzji.</span> : null}
       </div>
       <div className="mt-4 max-h-[34rem] overflow-auto rounded-md border border-line">
         <table className="min-w-full text-left text-sm">
@@ -224,6 +229,15 @@ export function compareInventoryItems(
   }
   if (left.metrics_clicks !== right.metrics_clicks) return right.metrics_clicks - left.metrics_clicks;
   return `${left.title ?? ""} ${left.path}`.localeCompare(`${right.title ?? ""} ${right.path}`, "pl");
+}
+
+export function matchesInventoryView(
+  item: ContentInventoryCatalogResponse["items"][number],
+  view: InventoryCatalogView
+) {
+  if (view === "all") return true;
+  if (view === "metrics") return item.metrics_status === "available";
+  return item.material_status !== "url_only";
 }
 
 function materialLabel(status: ContentInventoryCatalogResponse["items"][number]["material_status"]) {
