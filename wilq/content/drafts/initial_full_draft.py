@@ -24,6 +24,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftOutput,
     StructuredDraftOutputSection,
+    contract_for_planning_proposal,
 )
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -200,10 +201,14 @@ def _prepare_inputs(
                 )
             ],
         )
+    generation_contract = contract_for_planning_proposal(
+        generation.contract,
+        proposal,
+    )
     return _InitialDraftInputs(
         planning_input=planning_input,
         proposal=proposal,
-        generation_contract=generation.contract,
+        generation_contract=generation_contract,
         base_revision_id=None if latest_revision is None else latest_revision.revision_id,
     )
 

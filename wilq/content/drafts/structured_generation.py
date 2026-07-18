@@ -20,6 +20,7 @@ from wilq.content.claims.ledger import (
 )
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.workflow.models import ContentWorkItem, content_workflow_blockers
+from wilq.content.workflow.planning import ContentPlanningProposal
 
 StructuredDraftGenerationBlockerCode = Literal[
     "missing_evidence",
@@ -109,6 +110,13 @@ class StructuredDraftSectionInput(BaseModel):
     purpose: str
     evidence_ids: list[str] = Field(default_factory=list)
     draft_notes: list[str] = Field(default_factory=list)
+    section_id: str | None = None
+    reader_question: str = ""
+    inventory_disposition: str | None = None
+    query_terms: list[str] = Field(default_factory=list)
+    claim_ids: list[str] = Field(default_factory=list)
+    source_material_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
 
 
 class StructuredDraftGenerationInput(BaseModel):
@@ -121,6 +129,10 @@ class StructuredDraftGenerationInput(BaseModel):
     final_canonical_url: str
     source_public_url: str | None = None
     preview_url: str | None = None
+    existing_content_text: str | None = None
+    existing_content_source_kind: str | None = None
+    existing_content_extraction_region: str | None = None
+    existing_content_source_field_lineage: list[str] = Field(default_factory=list)
     target_reader: str
     buyer_problem: str
     buyer_trigger: str
@@ -192,6 +204,7 @@ def build_structured_draft_generation_contract(
     sales_brief: ContentSalesBrief | None,
     claim_ledger: ContentClaimLedger | None,
     draft_package: ContentDraftPackage | None,
+    planning_proposal: ContentPlanningProposal | None = None,
     draft_kind: Literal["section_draft", "full_draft"] = "section_draft",
 ) -> StructuredDraftGenerationResult:
     blockers = structured_draft_generation_blockers(
@@ -230,21 +243,17 @@ def build_structured_draft_generation_contract(
         final_canonical_url=final_canonical_url,
         source_public_url=item.source_public_url,
         preview_url=item.preview_url,
+        existing_content_text=item.wordpress_content_text,
+        existing_content_source_kind=item.wordpress_content_source_kind,
+        existing_content_extraction_region=item.wordpress_content_extraction_region,
+        existing_content_source_field_lineage=item.wordpress_content_source_field_lineage,
         target_reader=sales_brief.target_reader,
         buyer_problem=sales_brief.buyer_problem,
         buyer_trigger=sales_brief.buyer_trigger,
         search_intent=sales_brief.search_intent,
         service_fit=sales_brief.service_fit,
         cta_direction=sales_brief.cta_direction,
-        sections=[
-            StructuredDraftSectionInput(
-                heading=section.heading,
-                purpose=section.purpose,
-                evidence_ids=section.evidence_ids,
-                draft_notes=section.draft_notes,
-            )
-            for section in draft_package.sections
-        ],
+        sections=_section_inputs(draft_package, planning_proposal),
         source_facts=[
             StructuredDraftSourceFact(
                 evidence_id=fact.evidence_id,
@@ -307,6 +316,63 @@ def build_structured_draft_generation_contract(
             system_instruction=_system_instruction(),
             user_instruction=_user_instruction(model_input),
         )
+    )
+
+
+def _section_inputs(
+    draft_package: ContentDraftPackage,
+    planning_proposal: ContentPlanningProposal | None,
+) -> list[StructuredDraftSectionInput]:
+    if planning_proposal is None:
+        return [
+            StructuredDraftSectionInput(
+                heading=section.heading,
+                purpose=section.purpose,
+                evidence_ids=section.evidence_ids,
+                draft_notes=section.draft_notes,
+            )
+            for section in draft_package.sections
+        ]
+    return planning_section_inputs(planning_proposal)
+
+
+def planning_section_inputs(
+    planning_proposal: ContentPlanningProposal,
+) -> list[StructuredDraftSectionInput]:
+    return [
+        StructuredDraftSectionInput(
+            section_id=section.section_id or None,
+            heading=section.heading,
+            purpose=section.purpose,
+            reader_question=section.reader_question,
+            inventory_disposition=section.inventory_disposition,
+            query_terms=section.query_terms,
+            evidence_ids=section.evidence_ids,
+            claim_ids=section.claim_ids,
+            source_material_ids=section.source_material_ids,
+            knowledge_card_ids=section.knowledge_card_ids,
+        )
+        for section in planning_proposal.sections
+        if section.inventory_disposition != "remove_review_required"
+    ]
+
+
+def contract_for_planning_proposal(
+    contract: StructuredDraftGenerationContract,
+    planning_proposal: ContentPlanningProposal,
+) -> StructuredDraftGenerationContract:
+    """Project the reviewed planning proposal into the model input contract."""
+    return contract.model_copy(
+        update={
+            "model_input": contract.model_input.model_copy(
+                update={
+                    "title": planning_proposal.page_assets.title
+                    or planning_proposal.sections[0].heading,
+                    "sections": planning_section_inputs(planning_proposal),
+                    "cta_direction": planning_proposal.cta_direction,
+                }
+            )
+        }
     )
 
 
@@ -544,6 +610,10 @@ def _user_instruction(model_input: StructuredDraftGenerationInput) -> str:
         f"Temat: {model_input.title}. "
         f"Odbiorca: {model_input.target_reader}. "
         f"Problem kupującego: {model_input.buyer_problem}. "
+        "Jeżeli istniejąca treść jest dostępna, traktuj ją jako materiał do "
+        "odświeżenia i nie wymyślaj faktów poza jej lineage. "
+        f"Źródło istniejącej treści: {model_input.existing_content_source_kind or 'brak'}. "
+        f"Lineage: {', '.join(model_input.existing_content_source_field_lineage) or 'brak'}. "
         "Każda sekcja musi wskazywać użyte identyfikatory dowodów. "
         f"Jakość sygnału briefu: {model_input.sales_brief_signal_quality.status_label}. "
         "Używaj wyłącznie claimów z claim_markers/claims_allowed. "
