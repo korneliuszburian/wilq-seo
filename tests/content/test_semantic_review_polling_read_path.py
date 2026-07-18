@@ -78,7 +78,7 @@ def test_failed_semantic_run_remains_visible_after_reload(monkeypatch) -> None:
         hook="content_semantic_review",
         status="failed",
         id="codex_content_semantic_review_failed",
-        error="runtime_failed",
+        error="runtime_failed:codex_timeout",
         started_at=datetime(2026, 7, 18, 8, 0, tzinfo=UTC),
         used_endpoints=[endpoint],
     )
@@ -121,6 +121,7 @@ def test_failed_semantic_run_remains_visible_after_reload(monkeypatch) -> None:
     assert response.json()["status"] == "failed"
     assert response.json()["run_id"] == failed_run.id
     assert response.json()["blockers"][0]["code"] == "runtime_failed"
+    assert response.json()["blockers"][0]["source_codes"] == ["codex_timeout"]
 
 
 def test_semantic_review_returns_known_storage_blocker_before_queueing(monkeypatch) -> None:

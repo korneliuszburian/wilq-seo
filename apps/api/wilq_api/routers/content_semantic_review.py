@@ -225,6 +225,7 @@ def _terminal_run_response(
     blocked = run.status == "blocked"
     code = "runtime_blocked" if blocked else "runtime_failed"
     status = "blocked" if blocked else "failed"
+    source_code = None if run.error is None else run.error.split(":", 1)[-1]
     return ContentSemanticReviewResponse(
         status=status,
         work_item_id=work_item_id,
@@ -248,7 +249,7 @@ def _terminal_run_response(
                     "tekst nie został zmieniony."
                 ),
                 next_step="Uruchom nową próbę review dla tej samej exact rewizji.",
-                source_codes=[run.error] if run.error else [],
+                source_codes=[source_code] if source_code else [],
             )
         ],
         safe_next_step="Uruchom nową próbę review dla tej samej exact rewizji.",

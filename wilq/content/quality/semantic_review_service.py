@@ -360,7 +360,12 @@ def _execute(
             "Sprawdź runtime i uruchom nową próbę; WILQ nic nie zapisał.",
             source_codes=[item.code for item in result.blockers],
         )
-        _finish_run(run_store, run, status=status, error=code)
+        _finish_run(
+            run_store,
+            run,
+            status=status,
+            error=_runtime_error(code, [item.code for item in result.blockers]),
+        )
         return _blocked(
             snapshot,
             revision=inputs.revision,
@@ -512,6 +517,13 @@ def _finish_run(
     return store.save_codex_run(
         run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
     )
+
+
+def _runtime_error(code: str, source_codes: list[str]) -> str:
+    """Persist the public failure plus the safe app-server source code."""
+
+    source = next((item for item in source_codes if item), None)
+    return code if source is None else f"{code}:{source}"
 
 
 def _trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
