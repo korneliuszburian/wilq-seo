@@ -135,6 +135,33 @@ def register_content_planning_proposal_routes(
                 safe_next_step="Odśwież stan planu i użyj aktualnego digestu.",
             )
             return JSONResponse(status_code=409, content=stale.model_dump(mode="json"))
+        existing = store.for_input(
+            work_item_id,
+            request.service_card_id,
+            request.expected_planning_input_digest,
+        )
+        if existing is not None:
+            current = read_content_planning_proposal(
+                snapshot=snapshot_loader(work_item_id),
+                store=store,
+            )
+            if not (
+                current.status == "stale"
+                and any(
+                    blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
+                    for blocker in current.blockers
+                )
+            ):
+                return ContentPlanningProposalResponse(
+                    status="idempotent",
+                    work_item_id=work_item_id,
+                    service_card_id=request.service_card_id,
+                    proposal=existing,
+                    safe_next_step=(
+                        "Plan już istnieje dla tego exact wejścia; odczytano wersję "
+                        "bez ponownego uruchamiania Codexa."
+                    ),
+                )
         # A changed digest is the normal re-plan path after fresh metrics,
         # inventory or knowledge arrive.  The background generator validates
         # the request against the rebuilt snapshot and returns typed stale_input
