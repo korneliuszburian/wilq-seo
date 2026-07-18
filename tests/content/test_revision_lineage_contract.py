@@ -4,6 +4,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+from apps.api.wilq_api.routers.content_workflow import _build_editor_save_command
+from wilq.content.workflow.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.revision_persistence import (
     build_stored_draft_revision,
@@ -168,3 +170,38 @@ def test_child_revision_preserves_full_document_lineage() -> None:
     assert child.source_material_ids == revision.source_material_ids
     assert child.knowledge_card_ids == revision.knowledge_card_ids
     assert child.sections[0].source_material_ids == revision.sections[0].source_material_ids
+
+
+def test_editor_save_v2_carries_page_assets_and_lineage() -> None:
+    command = _command(
+        schema_version="wilq_content_draft_revision_v2",
+        source_material_ids=["ekologus_material_approved"],
+    )
+    revision = build_stored_draft_revision(
+        command,
+        revision_number=1,
+        content_digest=draft_revision_content_digest(command),
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=revision.revision_id,
+        title="Zmieniony tytuł",
+        sections=revision.sections,
+        created_by="wilku",
+    )
+
+    saved = _build_editor_save_command(
+        work_item_id=revision.work_item_id,
+        request=request,
+        latest_revision=revision,
+        draft_package=None,  # v2 carryover must not read the fallback package.
+        planning=None,
+        final_canonical_url=revision.final_canonical_url,
+    )
+
+    assert saved.schema_version == "wilq_content_draft_revision_v2"
+    assert saved.page_assets is not None
+    assert saved.page_assets.wordpress_title == "Zmieniony tytuł"
+    assert saved.page_assets.meta_title == revision.page_assets.meta_title
+    assert saved.page_assets.meta_description == revision.page_assets.meta_description
+    assert saved.source_material_ids == revision.source_material_ids
+    assert saved.knowledge_card_ids == revision.knowledge_card_ids

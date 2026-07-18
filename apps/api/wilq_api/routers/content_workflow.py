@@ -29,6 +29,7 @@ from wilq.connectors.wordpress.authoring import (
     WordPressAuthoringProfile,
     build_wordpress_authoring_profile,
 )
+from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichmentResponse,
     build_content_opportunity_enrichment_response,
@@ -115,6 +116,7 @@ from wilq.content.workflow.queue import (
     build_selected_content_work_item_queue_response,
 )
 from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionConflict,
     ContentDraftRevisionReviewCommand,
@@ -468,6 +470,62 @@ def _planning_proposal_for_service_selection(
     return transient_snapshot.planning_workspace.proposal
 
 
+def _build_editor_save_command(
+    *,
+    work_item_id: str,
+    request: ContentDraftRevisionSaveRequest,
+    latest_revision: ContentDraftRevision | None,
+    draft_package: ContentDraftPackage,
+    planning: ContentPlanningWorkspace,
+    final_canonical_url: str,
+) -> ContentDraftRevisionAppendCommand:
+    if (
+        latest_revision is not None
+        and latest_revision.schema_version == "wilq_content_draft_revision_v2"
+        and request.base_revision_id == latest_revision.revision_id
+    ):
+        return ContentDraftRevisionAppendCommand(
+            schema_version="wilq_content_draft_revision_v2",
+            work_item_id=work_item_id,
+            base_revision_id=latest_revision.revision_id,
+            draft_package_id=latest_revision.draft_package_id,
+            draft_package_digest=latest_revision.draft_package_digest,
+            planning_digest=latest_revision.planning_digest,
+            planning_input_digest=latest_revision.planning_input_digest,
+            service_card_id=latest_revision.service_card_id,
+            service_digest=latest_revision.service_digest,
+            inventory_digest=latest_revision.inventory_digest,
+            source_material_ids=latest_revision.source_material_ids,
+            knowledge_card_ids=latest_revision.knowledge_card_ids,
+            final_canonical_url=latest_revision.final_canonical_url,
+            title=request.title,
+            page_assets=(
+                None
+                if latest_revision.page_assets is None
+                else latest_revision.page_assets.model_copy(
+                    update={"wordpress_title": request.title}
+                )
+            ),
+            sections=request.sections,
+            faq=latest_revision.faq,
+            cta_blocks=latest_revision.cta_blocks,
+            internal_links=latest_revision.internal_links,
+            proposal_metadata=latest_revision.proposal_metadata,
+            created_by=request.created_by,
+        )
+    return ContentDraftRevisionAppendCommand(
+        work_item_id=work_item_id,
+        base_revision_id=request.base_revision_id,
+        draft_package_id=draft_package.id,
+        draft_package_digest=content_draft_package_digest(draft_package),
+        planning_digest=planning.proposal.planning_digest,
+        final_canonical_url=final_canonical_url,
+        title=request.title,
+        sections=request.sections,
+        created_by=request.created_by,
+    )
+
+
 @router.post(
     "/api/content/work-items/{work_item_id}/draft-revisions",
     response_model=ContentDraftRevisionSaveResponse,
@@ -504,46 +562,14 @@ def content_work_item_draft_revision_save(
         )
     _validate_revision_sections(request, snapshot)
 
-    if (
-        latest_revision is not None
-        and latest_revision.schema_version == "wilq_content_draft_revision_v2"
-        and request.base_revision_id == latest_revision.revision_id
-    ):
-        command = ContentDraftRevisionAppendCommand(
-            schema_version="wilq_content_draft_revision_v2",
-            work_item_id=work_item_id,
-            base_revision_id=latest_revision.revision_id,
-            draft_package_id=latest_revision.draft_package_id,
-            draft_package_digest=latest_revision.draft_package_digest,
-            planning_digest=latest_revision.planning_digest,
-            planning_input_digest=latest_revision.planning_input_digest,
-            service_card_id=latest_revision.service_card_id,
-            service_digest=latest_revision.service_digest,
-            inventory_digest=latest_revision.inventory_digest,
-            source_material_ids=latest_revision.source_material_ids,
-            knowledge_card_ids=latest_revision.knowledge_card_ids,
-            final_canonical_url=latest_revision.final_canonical_url,
-            title=request.title,
-            page_assets=latest_revision.page_assets,
-            sections=request.sections,
-            faq=latest_revision.faq,
-            cta_blocks=latest_revision.cta_blocks,
-            internal_links=latest_revision.internal_links,
-            proposal_metadata=latest_revision.proposal_metadata,
-            created_by=request.created_by,
-        )
-    else:
-        command = ContentDraftRevisionAppendCommand(
-            work_item_id=work_item_id,
-            base_revision_id=request.base_revision_id,
-            draft_package_id=draft_package.id,
-            draft_package_digest=content_draft_package_digest(draft_package),
-            planning_digest=planning.proposal.planning_digest,
-            final_canonical_url=final_canonical_url,
-            title=request.title,
-            sections=request.sections,
-            created_by=request.created_by,
-        )
+    command = _build_editor_save_command(
+        work_item_id=work_item_id,
+        request=request,
+        latest_revision=latest_revision,
+        draft_package=draft_package,
+        planning=planning,
+        final_canonical_url=final_canonical_url,
+    )
     result = content_workflow_store().append_draft_revision(command)
     if result.status == "conflict":
         if result.conflict is None:
