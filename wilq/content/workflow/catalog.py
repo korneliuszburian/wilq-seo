@@ -61,7 +61,10 @@ class ContentInventoryCoverage(BaseModel):
     status: str = "unknown"
     source_count: int | None = None
     returned_count: int = 0
+    public_sitemap_source_count: int | None = None
     public_sitemap_returned_count: int | None = None
+    public_sitemap_limit: int | None = None
+    public_sitemap_truncated: bool | None = None
     limit: int | None = None
     truncated: bool | None = None
     caveat: str = "Brak coverage z aktualnego odczytu WordPress."
@@ -245,15 +248,38 @@ def _inventory_coverage() -> ContentInventoryCoverage:
     source_count = summary.get("sitemap_url_source_count")
     returned_count = summary.get("sitemap_url_returned_count")
     public_sitemap_returned_count = summary.get("public_sitemap_url_count")
+    public_sitemap_source_count = summary.get("public_sitemap_url_source_count")
+    public_sitemap_returned = summary.get("public_sitemap_url_returned_count")
+    public_sitemap_limit = summary.get("public_sitemap_url_limit")
+    public_sitemap_truncated = summary.get("public_sitemap_url_truncated")
     limit = summary.get("sitemap_url_limit")
     truncated = summary.get("sitemap_url_truncated")
     if not all(isinstance(value, int) for value in (source_count, returned_count, limit)):
         return ContentInventoryCoverage(
             status="unknown",
             returned_count=int(summary.get("sitemap_url_count", 0) or 0),
+            public_sitemap_source_count=(
+                int(public_sitemap_source_count)
+                if isinstance(public_sitemap_source_count, (int, float))
+                else None
+            ),
             public_sitemap_returned_count=(
-                int(public_sitemap_returned_count)
-                if isinstance(public_sitemap_returned_count, (int, float))
+                int(public_sitemap_returned)
+                if isinstance(public_sitemap_returned, (int, float))
+                else (
+                    int(public_sitemap_returned_count)
+                    if isinstance(public_sitemap_returned_count, (int, float))
+                    else None
+                )
+            ),
+            public_sitemap_limit=(
+                int(public_sitemap_limit)
+                if isinstance(public_sitemap_limit, (int, float))
+                else None
+            ),
+            public_sitemap_truncated=(
+                bool(public_sitemap_truncated)
+                if isinstance(public_sitemap_truncated, bool)
                 else None
             ),
             caveat=(
@@ -262,19 +288,38 @@ def _inventory_coverage() -> ContentInventoryCoverage:
             ),
         )
     return ContentInventoryCoverage(
-        status="truncated" if truncated else "complete",
+        status="truncated" if truncated or public_sitemap_truncated is True else "complete",
         source_count=source_count,
         returned_count=returned_count,
+        public_sitemap_source_count=(
+            int(public_sitemap_source_count)
+            if isinstance(public_sitemap_source_count, (int, float))
+            else None
+        ),
         public_sitemap_returned_count=(
-            int(public_sitemap_returned_count)
-            if isinstance(public_sitemap_returned_count, (int, float))
+            int(public_sitemap_returned)
+            if isinstance(public_sitemap_returned, (int, float))
+            else (
+                int(public_sitemap_returned_count)
+                if isinstance(public_sitemap_returned_count, (int, float))
+                else None
+            )
+        ),
+        public_sitemap_limit=(
+            int(public_sitemap_limit)
+            if isinstance(public_sitemap_limit, (int, float))
+            else None
+        ),
+        public_sitemap_truncated=(
+            bool(public_sitemap_truncated)
+            if isinstance(public_sitemap_truncated, bool)
             else None
         ),
         limit=limit,
         truncated=bool(truncated),
         caveat=(
             "Sitemap przekroczył limit; część adresów wymaga osobnego odczytu."
-            if truncated
+            if truncated or public_sitemap_truncated is True
             else (
                 "Liczba adresów mieści się w limicie tego odczytu; nie oznacza to "
                 "kompletności danych ACF."

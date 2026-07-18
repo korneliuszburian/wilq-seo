@@ -71,7 +71,13 @@ export function ContentInventoryCatalogPanel({
                 : `${catalog.coverage.returned_count}/${catalog.coverage.source_count ?? catalog.coverage.returned_count}`}
             </div>
             {catalog.coverage.public_sitemap_returned_count !== null && catalog.coverage.public_sitemap_returned_count !== undefined ? (
-              <div className="mt-1 text-xs text-slate-500">Publiczna mapa: {catalog.coverage.public_sitemap_returned_count} adresów</div>
+              <div className="mt-1 text-xs text-slate-500">
+                Publiczna mapa: {catalog.coverage.public_sitemap_returned_count}
+                {catalog.coverage.public_sitemap_source_count !== null && catalog.coverage.public_sitemap_source_count !== undefined
+                  ? `/${catalog.coverage.public_sitemap_source_count}`
+                  : ""} adresów
+                {catalog.coverage.public_sitemap_truncated ? " · niepełna" : ""}
+              </div>
             ) : null}
         </div>
       </div>

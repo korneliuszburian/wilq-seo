@@ -30,6 +30,8 @@ def _public_sitemap_handler() -> Callable[[httpx.Request], httpx.Response]:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "ekologus.dev.proudsite.pl":
             return _dev_response(request)
+        if request.url.path in {"/wp-json/wp/v2/posts", "/wp-json/wp/v2/pages"}:
+            return _public_rest_response(request)
         if request.url.path == "/wp-sitemap.xml":
             return httpx.Response(404)
         if request.url.path == "/sitemap_index.xml":
@@ -55,6 +57,47 @@ def _dev_response(request: httpx.Request) -> httpx.Response:
     if request.url.path in {"/wp-json/wp/v2/posts", "/wp-json/wp/v2/pages"}:
         return httpx.Response(200, headers={"X-WP-Total": "0"}, json=[])
     return httpx.Response(404)
+
+
+def _public_rest_response(request: httpx.Request) -> httpx.Response:
+    slug = request.url.params.get("slug")
+    if request.url.path.endswith("/posts") and slug == "bdo-co-musi-wiedziec-przedsiebiorca":
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "link": BDO_URL,
+                    "acf": {"wyrozniony_tytul": "BDO", "wyswietlenia": 1},
+                }
+            ],
+        )
+    if (
+        request.url.path.endswith("/pages")
+        and slug == "doradztwo-i-outsourcing-ekologiczny"
+    ):
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "link": OUTSOURCING_URL,
+                    "acf": {
+                        "podstrona": {
+                            "elementy": [
+                                {
+                                    "acf_fc_layout": "blok_z_ikonami",
+                                    "tytul": "Zakres obsługi środowiskowej",
+                                },
+                                {
+                                    "acf_fc_layout": "wezwanie_do_dzialania",
+                                    "naglowek": "Porozmawiajmy o obowiązkach",
+                                },
+                            ]
+                        }
+                    },
+                }
+            ],
+        )
+    return httpx.Response(200, json=[])
 
 
 def _xml_response(body: str) -> httpx.Response:
@@ -93,7 +136,11 @@ def _public_page_response(request: httpx.Request) -> httpx.Response:
     return httpx.Response(
         200,
         headers={"content-type": "text/html; charset=utf-8"},
-        text=f"<html><body><h1>{h1}</h1>{heading_html}</body></html>",
+        text=(
+            f"<html><body><main><h1>{h1}</h1>{heading_html}"
+            "<p>Aktualny opis usługi do bezpiecznego inventory treści.</p>"
+            "</main><footer>Nie wliczaj stopki.</footer></body></html>"
+        ),
     )
 
 
@@ -110,11 +157,25 @@ def test_public_inventory_enriches_posts_and_pages_with_separate_bounded_budgets
 
     result = refresh_wordpress_content_inventory(
         "wordpress_ekologus",
-        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        ConnectorRefreshRequest(
+            mode=ConnectorRefreshMode.vendor_read,
+            target_urls=[BDO_URL, OUTSOURCING_URL],
+        ),
         http_client=client,
     )
 
+    bdo_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.dimensions.get("content_url") == BDO_URL
+        and fact.dimensions.get("content_summary")
+    )
+    assert bdo_fact.dimensions["content_summary"].startswith("BDO dla przedsiębiorcy")
+    assert int(bdo_fact.dimensions["content_word_count"]) > 0
+    assert "Nie wliczaj stopki" not in bdo_fact.dimensions["content_summary"]
+
     assert result.status == ConnectorRefreshStatus.completed
+    assert result.metric_summary["target_url_count"] == 2
     facts = {
         fact.dimensions.get("content_url"): fact
         for fact in result.metric_facts
@@ -130,4 +191,14 @@ def test_public_inventory_enriches_posts_and_pages_with_separate_bounded_budgets
         "Zakres doradztwa",
         "Oferta Pomiary Emisji",
     ]
-    assert json.loads(facts[UNSUPPORTED_URL].dimensions["section_headings_json"]) == []
+    assert json.loads(facts[OUTSOURCING_URL].dimensions["acf_section_headings_json"]) == [
+        "Zakres obsługi środowiskowej",
+        "Porozmawiajmy o obowiązkach",
+    ]
+    assert facts[OUTSOURCING_URL].dimensions["acf_section_count"] == "2"
+    assert json.loads(facts[BDO_URL].dimensions["acf_field_names_json"]) == [
+        "wyrozniony_tytul",
+        "wyswietlenia",
+    ]
+    assert facts[BDO_URL].dimensions["acf_section_headings_json"] == ""
+    assert facts[UNSUPPORTED_URL].dimensions["section_headings_json"] == ""

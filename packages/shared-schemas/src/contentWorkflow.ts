@@ -3149,7 +3149,10 @@ export const ContentInventoryCatalogResponseSchema = z.object({
     status: z.string(),
     source_count: z.number().int().nonnegative().nullable().optional(),
     returned_count: z.number().int().nonnegative(),
+    public_sitemap_source_count: z.number().int().nonnegative().nullable().optional(),
     public_sitemap_returned_count: z.number().int().nonnegative().nullable().optional(),
+    public_sitemap_limit: z.number().int().nonnegative().nullable().optional(),
+    public_sitemap_truncated: z.boolean().nullable().optional(),
     limit: z.number().int().nonnegative().nullable().optional(),
     truncated: z.boolean().nullable().optional(),
     caveat: z.string()

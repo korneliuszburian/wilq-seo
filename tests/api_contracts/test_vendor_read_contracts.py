@@ -17,7 +17,11 @@ from tests._contract_support.env import (
     clear_wordpress_env,
 )
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
-from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
+from wilq.connectors.google_analytics_4.client import (
+    _post_run_report,
+    _target_landing_paths,
+    refresh_ga4_behavior_summary,
+)
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
 from wilq.connectors.localo.client import (
@@ -190,6 +194,7 @@ def test_gsc_vendor_read_uses_search_analytics(
         "query": "odpady przemysłowe 0",
         "page": "https://ekologus.pl/oferta/0/",
     }
+    assert result.metric_facts[0].period == "2026-06-28/2026-06-28"
 
 
 def test_ga4_vendor_read_uses_run_report(
@@ -359,6 +364,40 @@ def test_ga4_vendor_read_uses_run_report(
     assert len(requests_seen) == 2
 
 
+def test_ga4_target_landing_read_uses_bounded_exact_path_filter() -> None:
+    requests_seen: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content.decode())
+        requests_seen.append(body)
+        return httpx.Response(200, json={"rows": []})
+
+    assert _target_landing_paths(
+        [
+            "https://www.ekologus.pl/oferta/",
+            "/oferta/",
+            "javascript:alert(1)",
+        ]
+    ) == ["/oferta/"]
+    _post_run_report(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        "properties/411974093",
+        "ga4-access-token",
+        date_start="2026-06-19",
+        date_end="2026-07-16",
+        dimensions=("landingPagePlusQueryString",),
+        metrics=("activeUsers",),
+        limit=20,
+        landing_page_path="/oferta/",
+    )
+
+    assert requests_seen[0]["limit"] == "20"
+    assert requests_seen[0]["dimensionFilter"] == {
+        "filter": {
+            "fieldName": "landingPagePlusQueryString",
+            "stringFilter": {"matchType": "EXACT", "value": "/oferta/"},
+        }
+    }
 def test_google_first_party_vendor_reads_route_through_refresh_endpoint(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1230,12 +1269,21 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "site_kind": "primary",
         "content_object_count": 16,
         "posts_total": 12,
-        "pages_total": 4,
-        "sitemap_url_count": 1,
-        "public_sitemap_url_count": 0,
+            "pages_total": 4,
+            "sitemap_url_count": 1,
+            "sitemap_url_source_count": 1,
+            "sitemap_url_returned_count": 1,
+            "sitemap_url_truncated": False,
+                "sitemap_url_limit": 500,
+                "public_sitemap_url_count": 0,
+                "public_sitemap_url_source_count": 0,
+                "public_sitemap_url_returned_count": 0,
+                "public_sitemap_url_truncated": False,
+                "public_sitemap_url_limit": 500,
         "latest_modified_gmt": "2026-06-16T10:00:00",
         "latest_post_modified_gmt": "2026-06-15T10:00:00",
         "latest_page_modified_gmt": "2026-06-16T10:00:00",
+        "target_url_count": 0,
     }
     assert result.metric_facts[0].name == "content_object_count"
     assert result.metric_facts[0].value == 12
