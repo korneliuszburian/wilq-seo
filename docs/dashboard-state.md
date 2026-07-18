@@ -88,13 +88,15 @@ queue currently exposes 6 candidates and 5 actionable candidates for the
 selected inventory proof; WILQ must still not invent topics outside inventory.
 After bounding the first structured plan to 12 sections, 8 FAQ items, 4 CTA
 blocks and 4 conditional hypotheses, the latest knowledge-bound live proof
-persisted proposal `content_planning_proposal_92df327510d64e97bc3e32a387f49839`
-for BDO (6 sections, 4 FAQ, 2 CTA) and
+persisted proposal `content_planning_proposal_9e0bd2c118b6443285392b1a96284375`
+for BDO (6 sections, 3 FAQ, 2 CTA) and
 `content_planning_proposal_245ee55e7d4e46808397f9509b94d34d` for outsourcing
 (5 sections, 3 FAQ, 2 CTA). Both include the seven imported material IDs,
 current WordPress/GSC lineage and `publish_ready=false`; both remain
 unreviewed. The remaining eight manifest materials stay `import_pending`.
-The second exact pilot now resolves the offer URL to
+The 2026-07-18 BDO regeneration replaced the stale prior input with digest
+`4b6065acaceabf7443fa030155a3725a50fd9b5af7cae687f8d59a06e1144f08`; its
+old scope and section-map decisions are intentionally not reused. The second exact pilot now resolves the offer URL to
 `ekologus_service_environmental_consulting_outsourcing` with source fact
 `ekologus_public_consulting_outsourcing_offer_2026_07_01`, even when the page
 copy also mentions BDO. Exact canonical URL matching is ranked ahead of broad
