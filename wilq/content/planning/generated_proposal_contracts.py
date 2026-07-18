@@ -98,12 +98,12 @@ class ContentPlanningModelOutput(BaseModel):
     angle: str = Field(min_length=1)
     value_proposition: str = Field(min_length=1)
     page_assets: ContentPlanningPageAssets
-    sections: list[ContentPlanningModelSection] = Field(min_length=1)
-    faq: list[ContentPlanningFaqItem] = Field(default_factory=list)
-    cta_blocks: list[ContentPlanningCtaBlock] = Field(default_factory=list)
+    sections: list[ContentPlanningModelSection] = Field(min_length=1, max_length=12)
+    faq: list[ContentPlanningFaqItem] = Field(default_factory=list, max_length=8)
+    cta_blocks: list[ContentPlanningCtaBlock] = Field(default_factory=list, max_length=4)
     internal_links: list[ContentPlanningInternalLink] = Field(default_factory=list)
     conditional_hypotheses: list[ContentPlanningConditionalHypothesis] = Field(
-        default_factory=list
+        default_factory=list, max_length=4
     )
     measurement_plan: ContentPlanningMeasurementPlan
     publish_ready: Literal[False] = False
