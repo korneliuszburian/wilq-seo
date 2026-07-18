@@ -61,6 +61,7 @@ class ContentInventoryCoverage(BaseModel):
     status: str = "unknown"
     source_count: int | None = None
     returned_count: int = 0
+    public_sitemap_returned_count: int | None = None
     limit: int | None = None
     truncated: bool | None = None
     caveat: str = "Brak coverage z aktualnego odczytu WordPress."
@@ -130,7 +131,7 @@ class ContentInventoryBindingResponse(BaseModel):
 def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     rows: dict[str, ContentInventoryCatalogItem] = {}
     metric_by_path = _catalog_metric_facts_by_path()
-    for fact in metric_store().list_metric_facts("wordpress_ekologus", limit=5000):
+    for fact in _latest_wordpress_inventory_facts():
         if fact.name != "content_object_seen":
             continue
         dimensions: dict[str, Any] = fact.dimensions
@@ -198,6 +199,29 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     )
 
 
+def _latest_wordpress_inventory_facts() -> list[Any]:
+    """Read one exact WordPress refresh batch, not an unbounded history union."""
+    store = metric_store()
+    runs = local_state_store().list_connector_refresh_runs(
+        connector_id="wordpress_ekologus"
+    )
+    latest = next(
+        (
+            run
+            for run in runs
+            if run.mode.value == "vendor_read" and run.status.value == "completed"
+        ),
+        None,
+    )
+    evidence_ids = [] if latest is None else list(latest.evidence_ids)
+    by_evidence = getattr(store, "list_metric_facts_by_evidence_ids", None)
+    if evidence_ids and callable(by_evidence):
+        return by_evidence(evidence_ids)
+    # Keep lightweight test doubles and pre-migration local stores readable;
+    # production DuckDB always has the evidence-scoped method above.
+    return store.list_metric_facts("wordpress_ekologus", limit=5000)
+
+
 def _inventory_coverage() -> ContentInventoryCoverage:
     runs = local_state_store().list_connector_refresh_runs(
         connector_id="wordpress_ekologus"
@@ -215,12 +239,18 @@ def _inventory_coverage() -> ContentInventoryCoverage:
     summary = latest.metric_summary
     source_count = summary.get("sitemap_url_source_count")
     returned_count = summary.get("sitemap_url_returned_count")
+    public_sitemap_returned_count = summary.get("public_sitemap_url_count")
     limit = summary.get("sitemap_url_limit")
     truncated = summary.get("sitemap_url_truncated")
     if not all(isinstance(value, int) for value in (source_count, returned_count, limit)):
         return ContentInventoryCoverage(
             status="unknown",
             returned_count=int(summary.get("sitemap_url_count", 0) or 0),
+            public_sitemap_returned_count=(
+                int(public_sitemap_returned_count)
+                if isinstance(public_sitemap_returned_count, (int, float))
+                else None
+            ),
             caveat=(
                 "Ostatni odczyt nie zapisał liczników coverage; nie traktuj inventory "
                 "jako pełnego."
@@ -230,6 +260,11 @@ def _inventory_coverage() -> ContentInventoryCoverage:
         status="truncated" if truncated else "complete",
         source_count=source_count,
         returned_count=returned_count,
+        public_sitemap_returned_count=(
+            int(public_sitemap_returned_count)
+            if isinstance(public_sitemap_returned_count, (int, float))
+            else None
+        ),
         limit=limit,
         truncated=bool(truncated),
         caveat=(

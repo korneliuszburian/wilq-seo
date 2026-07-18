@@ -51,6 +51,51 @@ def test_inventory_catalog_deduplicates_urls_and_keeps_acf_headings(monkeypatch)
     assert result.items[0].evidence_id == "ev_wp"
 
 
+def test_inventory_catalog_uses_the_latest_wordpress_refresh_batch(monkeypatch):
+    old_row = SimpleNamespace(
+        name="content_object_seen",
+        dimensions={"content_url": "https://www.ekologus.pl/old-page/"},
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_refresh_old",
+        collected_at=datetime(2026, 7, 16, tzinfo=timezone.utc),
+    )
+    current_row = SimpleNamespace(
+        name="content_object_seen",
+        dimensions={"content_url": "https://www.ekologus.pl/current-page/"},
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_refresh_current",
+        collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+    )
+    latest_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=["ev_connector_wordpress_ekologus_status", "ev_refresh_current"],
+        metric_summary={},
+    )
+    store = SimpleNamespace(
+        list_metric_facts=lambda *_args, **_kwargs: [old_row, current_row],
+        list_metric_facts_by_evidence_ids=lambda evidence_ids: (
+            [current_row]
+            if evidence_ids
+            == ["ev_connector_wordpress_ekologus_status", "ev_refresh_current"]
+            else []
+        ),
+    )
+    monkeypatch.setattr(catalog_module, "metric_store", lambda: store)
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [latest_run]
+        ),
+    )
+
+    result = build_content_inventory_catalog()
+
+    assert result.total_count == 1
+    assert result.items[0].url == "https://www.ekologus.pl/current-page/"
+
+
 def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
     monkeypatch.setattr(
         "wilq.connectors.wordpress.client._wordpress_credentials",
