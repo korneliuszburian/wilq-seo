@@ -178,7 +178,12 @@ def _can_queue_initial_draft(
     request: ContentInitialDraftRequest,
 ) -> bool:
     planning = snapshot.planning_workspace
-    if planning is None or not planning.scope_current or not planning.section_map_current:
+    if (
+        planning is None
+        or not planning.scope_current
+        or not planning.section_map_current
+        or snapshot.revision_workspace.latest_revision is not None
+    ):
         return False
     if snapshot.revision_workspace.latest_revision is not None:
         return False
