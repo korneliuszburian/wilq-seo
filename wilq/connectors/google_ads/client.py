@@ -83,7 +83,6 @@ SELECT
   ad_group.name,
   search_term_view.search_term,
   search_term_view.status,
-  expanded_landing_page_view.expanded_final_url,
   metrics.clicks,
   metrics.impressions,
   metrics.cost_micros,
@@ -92,6 +91,7 @@ SELECT
 FROM search_term_view
 WHERE segments.date DURING LAST_30_DAYS
   AND metrics.clicks > 0
+LIMIT 50
 """.strip()
 
 SEARCH_TERM_SAFETY_LOOKBACK_DAYS = 90
@@ -1549,8 +1549,7 @@ def _summarize_search_term_response(
         conversions += row_conversions
         conversion_value += row_conversion_value
         dimensions = _search_term_dimensions(row)
-        if "expandedLandingPageView" in row or "expanded_landing_page_view" in row:
-            dimensions.update(search_term_landing_dimensions(row))
+        dimensions.update(search_term_landing_dimensions(row))
         if dimensions.get(ADS_LANDING_MAPPING_STATUS) == ADS_LANDING_RESOLVED:
             mapped_landing_rows += 1
         else:

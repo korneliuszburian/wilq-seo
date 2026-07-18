@@ -19,7 +19,7 @@ from wilq.schemas import (
 )
 
 
-def test_google_ads_refresh_reads_clicked_destination_in_search_term_row(
+def test_google_ads_refresh_keeps_search_terms_live_when_landing_join_is_unavailable(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: object,
 ) -> None:
@@ -27,23 +27,18 @@ def test_google_ads_refresh_reads_clicked_destination_in_search_term_row(
 
     assert result.status == ConnectorRefreshStatus.completed
     assert result.metric_summary[ADS_SEARCH_TERM_PAYLOAD_STATUS] == "ready"
-    assert result.metric_summary["search_term_landing_mapped_row_count"] == 1
-    query = next(
-        query
-        for query in queries
-        if "expanded_landing_page_view.expanded_final_url" in query
-    )
+    assert result.metric_summary["search_term_landing_mapped_row_count"] == 0
+    assert result.metric_summary["search_term_landing_blocked_row_count"] == 1
+    query = next(query for query in queries if "FROM search_term_view" in query)
     assert "metrics.clicks > 0" in query
-    assert "LIMIT" not in query
+    assert "expanded_landing_page_view.expanded_final_url" not in query
     click_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_term_clicks"
     )
     assert click_fact.period == "last_30_days"
-    assert click_fact.dimensions[ADS_LANDING_MAPPING_STATUS] == "resolved"
-    assert click_fact.dimensions[ADS_LANDING_ACTUAL_CLICKED] == "true"
-    assert len(click_fact.dimensions[ADS_LANDING_IDENTITY]) == 64
-    assert "service=outsourcing" not in str(result.metric_facts)
-    assert "utm_source=ads" not in str(result.metric_facts)
+    assert click_fact.dimensions[ADS_LANDING_MAPPING_STATUS] != "resolved"
+    assert ADS_LANDING_ACTUAL_CLICKED not in click_fact.dimensions
+    assert ADS_LANDING_IDENTITY not in click_fact.dimensions
     assert any(
         fact.name == ADS_SEARCH_TERM_PAYLOAD_STATUS and fact.value == "ready"
         for fact in result.metric_facts
@@ -106,11 +101,7 @@ def _run_refresh(
             return httpx.Response(200, json={"results": []})
         query = payload["query"]
         queries.append(query)
-        if (
-            "FROM search_term_view" in query
-            and "LAST_30_DAYS" in query
-            and "expanded_landing_page_view.expanded_final_url" in query
-        ):
+        if "FROM search_term_view" in query and "LAST_30_DAYS" in query:
             return httpx.Response(200, json=[{"results": [search_term_row]}])
         return httpx.Response(200, json=[])
 
@@ -129,11 +120,6 @@ def _search_term_row() -> dict[str, object]:
         "searchTermView": {
             "searchTerm": "outsourcing środowiskowy",
             "status": "ADDED",
-        },
-        "expandedLandingPageView": {
-            "expandedFinalUrl": (
-                "https://ekologus.pl/oferta/?service=outsourcing&utm_source=ads"
-            )
         },
         "metrics": {
             "clicks": "9",

@@ -70,7 +70,7 @@ def _search_term_row_is_complete(row: dict[str, Any]) -> bool:
         "expanded_landing_page_view",
     )
     metrics = _nested_object(row, "metrics")
-    if not all((campaign, ad_group, search_term, landing, metrics)):
+    if not all((campaign, ad_group, search_term, metrics)):
         return False
     clicks = _metric_number(metrics, "clicks")
     required_metrics = (
@@ -80,11 +80,14 @@ def _search_term_row_is_complete(row: dict[str, Any]) -> bool:
         _metric_number(metrics, "conversions"),
         _metric_number(metrics, "conversionsValue", "conversions_value"),
     )
+    landing_is_valid = landing is None or bool(
+        _nonempty_text(landing, "expandedFinalUrl", "expanded_final_url")
+    )
     return bool(
         _nonempty_scalar(campaign, "id")
         and _nonempty_scalar(ad_group, "id")
         and _nonempty_text(search_term, "searchTerm", "search_term")
-        and _nonempty_text(landing, "expandedFinalUrl", "expanded_final_url")
+        and landing_is_valid
         and all(value is not None and value >= 0 for value in required_metrics)
         and clicks is not None
         and clicks > 0
