@@ -18,15 +18,31 @@ def canonicalize_model_inventory_headings(
 ) -> ContentPlanningModelOutput:
     """Fill omitted inventory references using a conservative deterministic match."""
     inventory = [section.heading for section in planning_input.inventory.sections]
+    inventory_by_id = {
+        section.section_id: section.heading for section in planning_input.inventory.sections
+    }
     if not inventory:
         return output
     used: set[str] = set()
     sections = []
     changed = False
     for section in output.sections:
-        if section.inventory_disposition == "create" or section.inventory_heading:
-            if section.inventory_heading:
-                used.add(section.inventory_heading)
+        if section.inventory_disposition == "create":
+            sections.append(section)
+            continue
+        if section.inventory_section_id in inventory_by_id:
+            heading = inventory_by_id[section.inventory_section_id]
+            if section.inventory_heading != heading:
+                sections.append(
+                    section.model_copy(update={"inventory_heading": heading})
+                )
+                changed = True
+            else:
+                sections.append(section)
+            used.add(heading)
+            continue
+        if section.inventory_heading:
+            used.add(section.inventory_heading)
             sections.append(section)
             continue
         match = _best_inventory_heading(section.heading, inventory, used)
@@ -45,13 +61,32 @@ def build_inventory_mapping(
     section_ids: list[str],
 ) -> list[ContentPlanningInventoryMapping]:
     """Map all current inventory rows to the generated plan without guessing."""
+    by_inventory_id: dict[str, list[tuple[int, object]]] = {}
     by_inventory_heading: dict[str, list[tuple[int, object]]] = {}
     for index, section in enumerate(output.sections):
+        if section.inventory_section_id:
+            by_inventory_id.setdefault(section.inventory_section_id, []).append((index, section))
         if section.inventory_heading:
             by_inventory_heading.setdefault(section.inventory_heading, []).append((index, section))
     used_plan_indices: set[int] = set()
     mappings: list[ContentPlanningInventoryMapping] = []
     for inventory_section in planning_input.inventory.sections:
+        explicit_id = by_inventory_id.get(inventory_section.section_id, [])
+        if len(explicit_id) == 1 and explicit_id[0][0] not in used_plan_indices:
+            index, section = explicit_id[0]
+            used_plan_indices.add(index)
+            mappings.append(
+                ContentPlanningInventoryMapping(
+                    inventory_section_id=inventory_section.section_id,
+                    inventory_heading=inventory_section.heading,
+                    status="mapped",
+                    mapped_section_id=section_ids[index],
+                    mapped_section_heading=section.heading,
+                    disposition=section.inventory_disposition,
+                    evidence_ids=inventory_section.evidence_ids,
+                )
+            )
+            continue
         explicit = by_inventory_heading.get(inventory_section.heading, [])
         if len(explicit) == 1 and explicit[0][0] not in used_plan_indices:
             index, section = explicit[0]

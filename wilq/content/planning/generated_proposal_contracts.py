@@ -74,6 +74,9 @@ class ContentPlanningModelSection(BaseModel):
     purpose: str = Field(min_length=1)
     reader_question: str = Field(min_length=1)
     inventory_disposition: ContentPlanningInventoryDisposition
+    # Stable server-assigned inventory identity.  The heading is presentation;
+    # this ID is the authoritative link to the WordPress/ACF/the_content row.
+    inventory_section_id: str | None = None
     inventory_heading: str | None = None
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(min_length=1)

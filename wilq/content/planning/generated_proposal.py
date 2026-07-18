@@ -630,12 +630,14 @@ def _lineage_errors(
         for candidate in planning_input.internal_link_candidates
     }
     inventory_headings = {item.heading for item in planning_input.inventory.sections}
+    inventory_section_ids = {item.section_id for item in planning_input.inventory.sections}
     errors = _section_lineage_errors(
         output,
         allowed_queries=allowed_queries,
         allowed_evidence=allowed_evidence,
         allowed_claims=allowed_claims,
         inventory_headings=inventory_headings,
+        inventory_section_ids=inventory_section_ids,
     )
     if output.service_card_id != planning_input.confirmed_service_card_id:
         errors.append("service_card_id")
@@ -660,6 +662,7 @@ def _section_lineage_errors(
     allowed_evidence: set[str],
     allowed_claims: set[str],
     inventory_headings: set[str],
+    inventory_section_ids: set[str],
 ) -> list[str]:
     errors: list[str] = []
     for section in output.sections:
@@ -670,10 +673,16 @@ def _section_lineage_errors(
         if not set(section.claim_ids).issubset(allowed_claims):
             errors.append(f"section_claim:{section.heading}")
         if section.inventory_disposition == "create":
-            if section.inventory_heading is not None:
+            if section.inventory_heading is not None or section.inventory_section_id is not None:
                 errors.append(f"created_section_inventory:{section.heading}")
-        elif section.inventory_heading not in inventory_headings:
-            errors.append(f"inventory_heading:{section.heading}")
+        else:
+            if (
+                section.inventory_section_id is not None
+                and section.inventory_section_id not in inventory_section_ids
+            ):
+                errors.append(f"inventory_section_id:{section.heading}")
+            if section.inventory_heading not in inventory_headings:
+                errors.append(f"inventory_heading:{section.heading}")
     return errors
 
 

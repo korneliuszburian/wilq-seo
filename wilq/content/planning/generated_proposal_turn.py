@@ -177,6 +177,7 @@ def content_planning_output_schema(
         if entry.status in {"allowed_with_evidence", "allowed_general"}
     ]
     inventory_headings = [section.heading for section in planning_input.inventory.sections]
+    inventory_section_ids = [section.section_id for section in planning_input.inventory.sections]
     internal_link_urls = [
         candidate.target_url for candidate in planning_input.internal_link_candidates
     ]
@@ -191,6 +192,11 @@ def content_planning_output_schema(
         _properties(section),
         "inventory_heading",
         inventory_headings,
+    )
+    _restrict_nullable_string(
+        _properties(section),
+        "inventory_section_id",
+        inventory_section_ids,
     )
     for definition in (faq, cta):
         _restrict_array(_properties(definition), "evidence_ids", evidence_ids)

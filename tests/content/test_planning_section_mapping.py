@@ -95,3 +95,36 @@ def test_fuzzy_mapping_is_one_to_one_and_never_reuses_a_plan_section() -> None:
 
     assert sum(item.status == "mapped" for item in mappings) == 1
     assert sum(item.status == "unmapped" for item in mappings) == 1
+
+
+def test_stable_inventory_id_wins_when_the_plan_renames_a_section() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_acf_07",
+                    heading="Jak wygląda współpraca",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Co otrzymuje firma na początku współpracy",
+                purpose="Wyjaśnić pierwszy etap.",
+                reader_question="Co dzieje się na początku?",
+                inventory_disposition="rewrite",
+                inventory_section_id="inventory_acf_07",
+                inventory_heading=None,
+            )
+        ]
+    )
+
+    canonical = canonicalize_model_inventory_headings(planning_input, output)
+    assert canonical.sections[0].inventory_heading == "Jak wygląda współpraca"
+    mappings = build_inventory_mapping(planning_input, canonical, ["plan_01"])
+    assert mappings[0].status == "mapped"
+    assert mappings[0].mapped_section_id == "plan_01"

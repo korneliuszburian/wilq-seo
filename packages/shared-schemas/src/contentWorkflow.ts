@@ -2580,6 +2580,7 @@ export const ContentPlanningProposalSchema = z.object({
     purpose: z.string().min(1),
     reader_question: z.string().default(""),
     inventory_disposition: ContentPlanningInventoryDispositionSchema.default("create"),
+    inventory_section_id: z.string().nullable().optional(),
     inventory_heading: z.string().nullable().optional(),
     query_terms: z.array(z.string()).default([]),
     evidence_ids: z.array(z.string()),

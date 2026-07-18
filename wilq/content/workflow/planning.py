@@ -94,6 +94,7 @@ class ContentPlanningSection(BaseModel):
     purpose: str = Field(min_length=1)
     reader_question: str = ""
     inventory_disposition: ContentPlanningInventoryDisposition = "create"
+    inventory_section_id: str | None = None
     inventory_heading: str | None = None
     query_terms: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
