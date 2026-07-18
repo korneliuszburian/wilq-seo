@@ -45,8 +45,6 @@ import {
   ContentWorkItemQualityReviewRequestSchema,
   ContentWorkItemQualityReviewResponseSchema,
   ContentWorkItemQueueResponseSchema,
-  ContentWorkItemRevisionPlanRequestSchema,
-  ContentWorkItemRevisionPlanResponseSchema,
   ContentWorkItemSalesBriefRequestSchema,
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
@@ -140,8 +138,6 @@ import {
   type ContentWorkItemQualityReviewResponse,
   type ContentWorkItemQueueCandidate,
   type ContentWorkItemQueueResponse,
-  type ContentWorkItemRevisionPlanRequest,
-  type ContentWorkItemRevisionPlanResponse,
   type ContentWorkItemSalesBriefRequest,
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemSnapshotAuditRequest,
@@ -600,21 +596,6 @@ export function postContentWorkItemQualityReview(
   );
 }
 
-export function postContentWorkItemRevisionPlan(
-  request: ContentWorkItemRevisionPlanRequest,
-  workItemId?: string
-): Promise<ContentWorkItemRevisionPlanResponse> {
-  const path =
-    workItemId === undefined
-      ? "/api/content/work-items/revision-plan"
-      : `/api/content/work-items/${encodeURIComponent(workItemId)}/revision-plan`;
-  return apiPost(
-    path,
-    ContentWorkItemRevisionPlanResponseSchema,
-    ContentWorkItemRevisionPlanRequestSchema.parse(request)
-  );
-}
-
 export function postContentWorkItemHumanReview(
   request: ContentWorkItemHumanReviewRequest
 ): Promise<ContentWorkItemHumanReviewResponse> {
@@ -878,8 +859,6 @@ export type {
   ContentWorkItemQualityReviewResponse,
   ContentWorkItemQueueCandidate,
   ContentWorkItemQueueResponse,
-  ContentWorkItemRevisionPlanRequest,
-  ContentWorkItemRevisionPlanResponse,
   ContentWorkItemSalesBriefRequest,
   ContentWorkItemSalesBriefResponse,
   ContentWorkItemSnapshotAuditRequest,
