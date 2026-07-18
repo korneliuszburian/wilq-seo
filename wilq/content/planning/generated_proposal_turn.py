@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from typing import cast
 
@@ -36,6 +37,30 @@ _INSTRUCTION = (
 # repeated/null presentation fields from the untrusted model context.
 _MODEL_QUERY_EVIDENCE_IDS_PER_ROW = 3
 _MODEL_QUERY_HEADINGS_PER_ROW = 4
+_MODEL_INVENTORY_NOISE = (
+    re.compile(
+        r"\b\d{1,2}\s+(?:stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|"
+        r"sierpnia|września|października|listopada|grudnia)\s+\d{4}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"^(?:zaufali nam|może cię również zainteresować)\b", re.IGNORECASE),
+    re.compile(r"^(?:poniżej przedstawiamy|dowiedz się więcej)\b", re.IGNORECASE),
+)
+
+
+def _model_inventory_sections(sections: object) -> list[object]:
+    if not isinstance(sections, list):
+        return []
+    kept: list[object] = []
+    for section in sections:
+        if not isinstance(section, dict):
+            kept.append(section)
+            continue
+        heading = str(section.get("heading") or "").strip()
+        if heading and any(pattern.search(heading) for pattern in _MODEL_INVENTORY_NOISE):
+            continue
+        kept.append(section)
+    return kept
 
 
 def compact_planning_input_for_model(
@@ -51,6 +76,9 @@ def compact_planning_input_for_model(
     """
 
     payload = planning_input.model_dump(mode="json", exclude_none=True)
+    inventory = payload.get("inventory")
+    if isinstance(inventory, dict):
+        inventory["sections"] = _model_inventory_sections(inventory.get("sections"))
     portfolio = payload.get("query_portfolio")
     if not isinstance(portfolio, dict):
         return payload, {"rows_available": 0, "rows_included": 0}

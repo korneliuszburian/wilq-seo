@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
-from wilq.content.briefs.sales import ContentSalesBrief, ContentSalesBriefMeasurementPlan
+from wilq.content.briefs.sales import (
+    ContentSalesBrief,
+    ContentSalesBriefMeasurementPlan,
+    ContentSalesBriefSourceFact,
+)
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.inventory.records import ContentInventoryRecord, ContentInventoryResolution
@@ -12,11 +18,18 @@ from wilq.content.knowledge.work_item_service_profile import (
 )
 from wilq.content.planning import input_sources
 from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
     ContentPlanningInputBuildResult,
     build_content_planning_input_from_components,
+    content_planning_input_summary,
+    planning_generation_blockers,
+)
+from wilq.content.planning.generated_proposal_turn import (
+    compact_planning_input_for_model,
 )
 from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
+    ContentPlanningInventorySection,
     build_planning_inventory,
     build_source_assessments,
     usable_query_portfolio,
@@ -27,9 +40,86 @@ from wilq.content.workflow.demand_evidence import (
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.content.workflow.planning import ContentPlanningProposal
-from wilq.schemas import ContentFreshnessAssessment, Evidence, FreshnessState
+from wilq.schemas import (
+    ConnectorCoveredWindow,
+    ConnectorQualityState,
+    ConnectorSettlementState,
+    ContentFreshnessAssessment,
+    Evidence,
+    FreshnessState,
+    MetricFact,
+)
 
 PAGE = "https://www.ekologus.pl/usluga/"
+
+
+def test_model_planning_envelope_compacts_repeated_query_lineage_without_dropping_rows() -> None:
+    row = ContentSearchDemandRow(
+        source_kind="gsc_query",
+        source_connector="google_search_console",
+        term="gospodarka odpadami",
+        page=PAGE,
+        section_mapping_status="page_only",
+        period="2026-06",
+        freshness="fresh",
+        evidence_ids=[f"ev_{index}" for index in range(8)],
+        impressions=120,
+    )
+    demand = ContentSearchDemandEvidence(
+        status="available",
+        gsc_query_rows=[row, row.model_copy(update={"term": "odpady"})],
+        optional_ads_status="not_exactly_mapped",
+        safe_next_step="Użyj tylko dokładnych danych.",
+    )
+    planning_input = ContentPlanningInput.model_construct(query_portfolio=demand)
+
+    compact, coverage = compact_planning_input_for_model(planning_input)
+
+    assert coverage == {"rows_available": 2, "rows_included": 2}
+    assert len(compact["query_portfolio"]["gsc_query_rows"][0]["evidence_ids"]) == 3
+    assert [row["term"] for row in compact["query_portfolio"]["gsc_query_rows"]] == [
+        "gospodarka odpadami",
+        "odpady",
+    ]
+    assert planning_input.query_portfolio.gsc_query_rows[0].evidence_ids == [
+        f"ev_{index}" for index in range(8)
+    ]
+
+
+def test_model_planning_envelope_drops_inventory_navigation_and_dated_noise() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            content_status="available",
+            acf_section_status="missing",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="s1", heading="Kto musi złożyć wniosek?", evidence_ids=["ev_wp"]
+                ),
+                ContentPlanningInventorySection(
+                    section_id="s2",
+                    heading="13 marca 2020 w Bielsku-Białej",
+                    evidence_ids=["ev_wp"],
+                ),
+                ContentPlanningInventorySection(
+                    section_id="s3",
+                    heading="Może Cię również zainteresować",
+                    evidence_ids=["ev_wp"],
+                ),
+            ],
+        )
+    )
+
+    compact, _ = compact_planning_input_for_model(planning_input)
+
+    assert [section["heading"] for section in compact["inventory"]["sections"]] == [
+        "Kto musi złożyć wniosek?"
+    ]
+    assert [section.heading for section in planning_input.inventory.sections] == [
+        "Kto musi złożyć wniosek?",
+        "13 marca 2020 w Bielsku-Białej",
+        "Może Cię również zainteresować",
+    ]
 
 
 @pytest.fixture
@@ -53,7 +143,13 @@ def source_context(
         wordpress_title_or_h1="Usługa dla firm",
         wordpress_section_headings=["Zakres usługi"],
         wordpress_content_summary="Istniejąca treść.",
+        wordpress_content_text="Pełny materiał z the_content.",
         wordpress_content_word_count=300,
+        wordpress_content_inventory_status="available",
+        wordpress_content_source_kind="rendered_html",
+        wordpress_content_extraction_region="main_or_article_visible_text",
+        wordpress_content_material_confidence="review_required",
+        wordpress_content_source_field_lineage=["public_html.main_or_article"],
         source_connectors=["wordpress_ekologus", "google_search_console"],
     )
     record = ContentInventoryRecord(
@@ -82,6 +178,10 @@ def test_planning_inventory_requires_one_exact_wordpress_record(
     assert inventory.evidence_ids == ["ev_wp"]
     assert inventory.source_connectors == ["wordpress_ekologus"]
     assert inventory.landing_match_tiers == ["exact"]
+    assert inventory.content_text == "Pełny materiał z the_content."
+    assert inventory.extraction_region == "main_or_article_visible_text"
+    assert inventory.material_confidence == "review_required"
+    assert inventory.source_field_lineage == ["public_html.main_or_article"]
 
     exact_record = resolution.records[0]
     mismatch = exact_record.model_copy(
@@ -116,6 +216,15 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     )
     statuses = {assessment.source: assessment.status for assessment in assessments}
     assert statuses["wordpress"] == "used"
+    result = _build_result(
+        item, resolution, brief, service_profile, baseline, _freshness([])
+    )
+    assert "wordpress_material_review_required" in {
+        blocker.code for blocker in result.blockers
+    }
+    assert "wordpress_material_review_required" not in {
+        blocker.code for blocker in planning_generation_blockers(result.blockers)
+    }
     assert statuses["gsc"] == "stale"
     assert usable_query_portfolio(demand, assessments).gsc_query_rows == []
 
@@ -151,6 +260,170 @@ def test_planning_readiness_uses_connector_freshness_not_global_state(
     )
     assert ads_assessment.status == "blocked"
     assert ads_assessment.evidence_ids == ["ev_ads_blocked"]
+
+
+def test_source_quality_is_part_of_planning_lineage_and_digest(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    brief, service_profile, baseline = _planning_models(_demand())
+    freshness = _freshness([]).model_copy(
+        update={
+            "connector_refresh_run_ids": {"google_search_console": "refresh-gsc-1"},
+            "connector_covered_windows": {
+                "google_search_console": ConnectorCoveredWindow(
+                    date_start="2026-07-15",
+                    date_end="2026-07-15",
+                    completeness="partial_possible",
+                )
+            },
+            "connector_settlement_states": {
+                "google_search_console": ConnectorSettlementState.settled
+            },
+            "connector_quality_states": {
+                "google_search_console": ConnectorQualityState.partial
+            },
+            "connector_quality_caveats": {
+                "google_search_console": ["Dane mogą być częściowe."]
+            },
+        }
+    )
+    assessments = build_source_assessments(
+        item=item,
+        inventory=build_planning_inventory(item, resolution),
+        service_profile=service_profile,
+        freshness=freshness,
+        brief=brief,
+        demand=baseline.search_demand,
+        service_lifecycle="approved_current",
+    )
+    gsc = next(assessment for assessment in assessments if assessment.source == "gsc")
+    assert gsc.refresh_run_id == "refresh-gsc-1"
+    assert gsc.covered_window.date_start == "2026-07-15"
+    assert gsc.quality_state == ConnectorQualityState.partial
+    assert gsc.interpretation_caveats == ["Dane mogą być częściowe."]
+
+    first = _build_result(item, resolution, brief, service_profile, baseline, freshness)
+    changed = freshness.model_copy(
+        update={
+            "connector_quality_states": {
+                "google_search_console": ConnectorQualityState.verified
+            }
+        }
+    )
+    second = _build_result(item, resolution, brief, service_profile, baseline, changed)
+    assert first.planning_input is not None
+    assert second.planning_input is not None
+    assert first.planning_input.planning_input_digest != second.planning_input.planning_input_digest
+
+
+def test_metric_comparison_contract_is_persisted_in_planning_digest(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    brief, service_profile, baseline = _planning_models(_demand())
+    facts = [
+        MetricFact(
+            name=name,
+            value=value,
+            period=period,
+            source_connector="google_search_console",
+            evidence_id=evidence,
+            dimensions={"page": PAGE, "query": "usługa"},
+            collected_at=datetime(2026, 7, 16, tzinfo=UTC),
+        )
+        for period, evidence, values in [
+            ("2026-07-01/2026-07-07", "ev-baseline", {"clicks": 1, "impressions": 10}),
+            ("2026-07-08/2026-07-14", "ev-observation", {"clicks": 2, "impressions": 20}),
+        ]
+        for name, value in values.items()
+    ]
+    with_comparison = item.model_copy(update={"metric_facts": facts})
+    first = _build_result(
+        with_comparison, resolution, brief, service_profile, baseline, _freshness([])
+    )
+    changed = with_comparison.model_copy(
+        update={
+            "metric_facts": [
+                facts[0],
+                facts[1],
+                facts[2].model_copy(update={"value": 99}),
+                facts[3],
+            ]
+        }
+    )
+    second = _build_result(changed, resolution, brief, service_profile, baseline, _freshness([]))
+    assert first.planning_input is not None
+    assert second.planning_input is not None
+    gsc = next(
+        item
+        for item in first.planning_input.metric_comparisons
+        if item.source_connector == "google_search_console"
+    )
+    assert gsc.status == "available"
+    assert first.planning_input.planning_input_digest != second.planning_input.planning_input_digest
+
+
+def test_planning_input_preserves_source_fact_and_material_lineage(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    brief, service_profile, baseline = _planning_models(_demand())
+    brief = brief.model_copy(
+        update={
+            "source_facts": [
+                ContentSalesBriefSourceFact(
+                    evidence_id="ev_service",
+                    source_connector="public_site",
+                    summary="Zatwierdzony fakt o usłudze.",
+                    source_fact_ids=["ekologus_public_consulting_outsourcing_offer_2026_07_01"],
+                    source_material_ids=["ekologus_material_portfolio"],
+                )
+            ]
+        }
+    )
+
+    result = _build_result(item, resolution, brief, service_profile, baseline, _freshness([]))
+
+    assert result.planning_input is not None
+    assert result.planning_input.source_facts[0].source_fact_ids == [
+        "ekologus_public_consulting_outsourcing_offer_2026_07_01"
+    ]
+    assert result.planning_input.source_facts[0].source_material_ids == [
+        "ekologus_material_portfolio"
+    ]
+    summary = content_planning_input_summary(result.planning_input)
+    assert summary.source_fact_ids == [
+        "ekologus_public_consulting_outsourcing_offer_2026_07_01"
+    ]
+    assert summary.source_material_ids == ["ekologus_material_portfolio"]
+
+
+def test_planning_blocks_rewrite_when_only_headings_are_available(
+    source_context: tuple[ContentWorkItem, ContentInventoryResolution, ContentPlanningInventory],
+) -> None:
+    item, resolution, _ = source_context
+    brief, service_profile, baseline = _planning_models(_demand())
+    headings_only = item.model_copy(
+        update={
+            "wordpress_content_summary": None,
+            "wordpress_content_word_count": None,
+            "wordpress_content_inventory_status": "missing",
+        }
+    )
+
+    result = _build_result(
+        headings_only,
+        resolution,
+        brief,
+        service_profile,
+        baseline,
+        _freshness([]),
+    )
+
+    assert "missing_wordpress_full_inventory" in {
+        blocker.code for blocker in result.blockers
+    }
 
 
 def _demand() -> ContentSearchDemandEvidence:
