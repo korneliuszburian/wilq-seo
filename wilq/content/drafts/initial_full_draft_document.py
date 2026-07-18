@@ -9,6 +9,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
 )
+from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
@@ -49,7 +50,9 @@ def build_initial_draft_revision_command(
             source_material_ids=sorted(set(plan.source_material_ids)),
             knowledge_card_ids=sorted(set(plan.knowledge_card_ids)),
         )
-        for plan, generated in zip(proposal.sections, output.sections, strict=True)
+        for plan, generated in zip(
+            draftable_planning_sections(proposal.sections), output.sections, strict=True
+        )
     ]
     return ContentDraftRevisionAppendCommand(
         schema_version="wilq_content_draft_revision_v2",

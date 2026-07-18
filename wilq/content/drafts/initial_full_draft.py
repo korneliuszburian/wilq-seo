@@ -18,6 +18,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 from wilq.content.drafts.initial_full_draft_document import (
     build_initial_draft_revision_command,
 )
+from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
@@ -119,6 +120,22 @@ def _prepare_inputs(
             ],
         )
     proposal = planning.proposal
+    if not draftable_planning_sections(proposal.sections):
+        return _blocked_response(
+            snapshot,
+            proposal=proposal,
+            status="blocked",
+            blockers=[
+                _blocker(
+                    "document_scope_mismatch",
+                    "Plan nie ma sekcji do napisania",
+                    "Wszystkie rozpoznane elementy zostały oznaczone do usunięcia "
+                    "lub osobnego review.",
+                    "Zostaw co najmniej jedną sekcję do tekstu albo zakończ review "
+                    "bez generowania draftu.",
+                )
+            ],
+        )
     mismatch = _proposal_request_mismatch(proposal, request)
     if mismatch is not None:
         return _blocked_response(

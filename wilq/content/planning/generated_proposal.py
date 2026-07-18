@@ -7,6 +7,8 @@ from hashlib import sha256
 from typing import Literal, cast
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.knowledge.cards import (
@@ -415,6 +417,15 @@ def _run_planning_turn(
         return None, trace, blocker, status
     try:
         output = ContentPlanningModelOutput.model_validate_json(runtime_result.output_text)
+    except ValidationError as error:
+        blocker = _blocker(
+            "invalid_structured_output",
+            "Codex zwrócił niepoprawny plan",
+            "Wynik nie przeszedł ścisłego schematu planowania WILQ.",
+            "Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
+            source_codes=_validation_source_codes(error),
+        )
+        return None, trace, blocker, "blocked"
     except ValueError:
         blocker = _blocker(
             "invalid_structured_output",
@@ -446,6 +457,19 @@ def _run_planning_turn(
         )
         return None, trace, blocker, "blocked"
     return output, trace, None, None
+
+
+def _validation_source_codes(error: ValidationError) -> list[str]:
+    """Expose safe schema locations without persisting model output."""
+
+    codes: list[str] = []
+    for detail in error.errors():
+        location = ".".join(str(part) for part in detail.get("loc", ())) or "$"
+        error_type = str(detail.get("type", "validation_error"))
+        code = f"schema:{location}:{error_type}"[:160]
+        if code not in codes:
+            codes.append(code)
+    return codes[:12]
 
 
 _HEADING_NOISE_PATTERNS = (
