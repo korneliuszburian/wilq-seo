@@ -1,3 +1,5 @@
+import pytest
+
 from wilq.content.knowledge.cards import match_content_knowledge_cards
 from wilq.content.workflow.models import ContentWorkItem
 
@@ -42,3 +44,35 @@ def test_article_navigation_copy_does_not_bind_a_service_card() -> None:
         != "ekologus_service_environmental_consulting_outsourcing"
         for candidate in match.service_candidates
     )
+
+
+@pytest.mark.parametrize(
+    ("url", "expected_card_id"),
+    [
+        (
+            "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+            "ekologus_service_bdo_reporting",
+        ),
+        (
+            "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+            "ekologus_service_environmental_consulting_outsourcing",
+        ),
+    ],
+)
+def test_exact_service_landings_keep_typed_url_lineage(
+    url: str, expected_card_id: str
+) -> None:
+    match = match_content_knowledge_cards(
+        ContentWorkItem(
+            id="content_work_item_exact_service_landing",
+            topic="Wybrana strona usługi",
+            source_public_url=url,
+            final_canonical_url=url,
+            wordpress_content_text="Treść strony zawiera dane usługi.",
+            evidence_ids=["ev_wp_exact_service"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert match.service_card is not None
+    assert match.service_card.id == expected_card_id
