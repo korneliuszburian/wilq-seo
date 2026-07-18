@@ -547,6 +547,8 @@ def _exact_ads_groups(
         fact
         for fact in metric_facts
         if fact.source_connector == "google_ads"
+        # Direct rows already carry an explicit service-card and page scope;
+        # the batch/landing gates below apply to identity-resolved rows.
         and _strict_ads_scope_matches(
             fact,
             allowed_pages=allowed_pages,
@@ -579,6 +581,8 @@ def _exact_ads_groups(
                 update={
                     "dimensions": {
                         **fact.dimensions,
+                        "page": landing_page,
+                        "landing_page": landing_page,
                         "mapped_allowed_page": landing_page,
                         "final_url": landing_page,
                     }
