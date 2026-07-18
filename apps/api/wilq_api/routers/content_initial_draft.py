@@ -107,10 +107,25 @@ def register_content_initial_draft_route(
         runs = [
             run
             for run in local_state_store().list_codex_runs()
-            if run.hook == "content_initial_full_draft" and endpoint in run.used_endpoints
+            if (
+                run.hook == "content_initial_full_draft"
+                and endpoint in run.used_endpoints
+            )
         ]
-        latest = max(runs, key=lambda run: run.started_at, default=None)
         proposal = content_planning_proposal_store().latest(work_item_id)
+        latest = max(
+            (
+                run
+                for run in runs
+                if proposal is None
+                or (
+                    run.proposal_id == proposal.proposal_id
+                    and run.planning_input_digest == proposal.planning_input_digest
+                )
+            ),
+            key=lambda run: run.started_at,
+            default=None,
+        )
         revision = content_workflow_store().load_draft_revision_state(work_item_id).latest_revision
         if latest is not None and latest.status == "started":
             return ContentInitialDraftResponse(

@@ -490,6 +490,8 @@ class CodexRun(BaseModel):
     used_endpoints: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    proposal_id: str | None = None
+    planning_input_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     started_at: datetime = Field(default_factory=utc_now)
     completed_at: datetime | None = None
     error: str | None = None

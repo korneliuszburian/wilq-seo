@@ -579,10 +579,12 @@ def _start_run(
             skill="wilq-content-operator",
             hook="content_initial_full_draft",
             source="wilq_api",
-            status="started",
-            used_endpoints=[f"/api/content/work-items/{work_item_id}/initial-draft"],
-            evidence_ids=inputs.planning_input.evidence_ids,
-        )
+        status="started",
+        used_endpoints=[f"/api/content/work-items/{work_item_id}/initial-draft"],
+        evidence_ids=inputs.planning_input.evidence_ids,
+        proposal_id=inputs.proposal.proposal_id,
+        planning_input_digest=inputs.planning_input.planning_input_digest,
+    )
     )
 
 

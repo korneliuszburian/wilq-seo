@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from types import SimpleNamespace
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -51,3 +54,57 @@ def test_initial_draft_status_get_avoids_heavy_snapshot_loader(monkeypatch) -> N
     assert response.json()["status"] == "blocked"
     assert response.json()["blockers"][0]["code"] == "planning_not_approved"
     assert snapshot_calls == 0
+
+
+def test_initial_draft_status_ignores_failed_run_from_an_older_plan(monkeypatch) -> None:
+    app = FastAPI()
+    endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    stale_run = SimpleNamespace(
+        hook="content_initial_full_draft",
+        used_endpoints=[endpoint],
+        started_at=datetime(2026, 7, 18, tzinfo=UTC),
+        status="failed",
+        id="stale-run",
+        error="codex_timeout",
+        proposal_id="old-proposal",
+        planning_input_digest="0" * 64,
+    )
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [stale_run]
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return SimpleNamespace(
+                proposal_id="current-proposal",
+                planning_input_digest="1" * 64,
+            )
+
+    class WorkflowStore:
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_workflow_store",
+        lambda: WorkflowStore(),
+    )
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(
+            AssertionError("status GET must remain snapshot-free")
+        ),
+    )
+
+    response = TestClient(app).get(endpoint)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "blocked"
+    assert response.json()["blockers"][0]["code"] == "planning_not_approved"
