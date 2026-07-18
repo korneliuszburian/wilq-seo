@@ -16,6 +16,10 @@ _INSTRUCTION = (
     "Zachowaj użyteczne elementy inventory, przypisz każdej sekcji konkretne pytanie "
     "czytelnika i nie dopisuj zapytań, dowodów, claimów, linków ani metryk spoza "
     "przekazanego wejścia. Niski CTR jest tylko sygnałem do sprawdzenia, nie werdyktem. "
+    "Każdy nagłówek sekcji ma nazywać konkretną odpowiedź lub problem czytelnika; "
+    "nie używaj nagłówków prezentacyjnych, nawigacyjnych ani promocyjnych, takich jak "
+    "'Poniżej przedstawiamy', 'Dowiedz się więcej', 'Zobacz także', 'Podsumowanie' "
+    "albo 'Kontakt'. Nie twórz nagłówków opisujących sam plan, proces lub układ strony. "
     "Placement CTA lub linku ma być after_lead, after_content albo dokładnym nagłówkiem "
     "jednej z zaplanowanych sekcji. "
     "Hipotezy Ads lub social są opcjonalne, zawsze review_required i wolno je zwrócić "
@@ -23,6 +27,55 @@ _INSTRUCTION = (
     "Nie zatwierdzaj treści, nie wykonuj write i zawsze zwróć publish_ready=false. "
     "Zwróć wyłącznie JSON zgodny ze schema."
 )
+
+# The persisted planning input is intentionally complete: its digest covers
+# every connector row and every lineage edge.  The model envelope is a
+# transport concern, however.  GSC/Ads rows repeat the same refresh-level
+# evidence ids, and sending those repetitions makes structured planning both
+# slow and needlessly expensive.  Keep every exact fact while removing only
+# repeated/null presentation fields from the untrusted model context.
+_MODEL_QUERY_EVIDENCE_IDS_PER_ROW = 3
+_MODEL_QUERY_HEADINGS_PER_ROW = 4
+
+
+def compact_planning_input_for_model(
+    planning_input: ContentPlanningInput,
+) -> tuple[dict[str, object], dict[str, int]]:
+    """Build a bounded, lineage-preserving model view without changing the digest.
+
+    Full input remains the source of truth for validation, persistence and
+    stale detection.  Every query row is retained; only null fields and
+    repeated row-level evidence/heading arrays are bounded.  The complete
+    evidence id set stays at the planning-input top level and output schema,
+    so the model can still cite any allowed evidence id.
+    """
+
+    payload = planning_input.model_dump(mode="json", exclude_none=True)
+    portfolio = payload.get("query_portfolio")
+    if not isinstance(portfolio, dict):
+        return payload, {"rows_available": 0, "rows_included": 0}
+    row_keys = ("gsc_query_rows", "ads_term_rows", "keyword_planner_rows")
+    rows_available = 0
+    for key in row_keys:
+        rows = portfolio.get(key)
+        if not isinstance(rows, list):
+            continue
+        rows_available += len(rows)
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            evidence_ids = row.get("evidence_ids")
+            if isinstance(evidence_ids, list):
+                row["evidence_ids"] = list(
+                    dict.fromkeys(evidence_ids[:_MODEL_QUERY_EVIDENCE_IDS_PER_ROW])
+                )
+            headings = row.get("section_headings")
+            if isinstance(headings, list):
+                row["section_headings"] = headings[:_MODEL_QUERY_HEADINGS_PER_ROW]
+    return payload, {
+        "rows_available": rows_available,
+        "rows_included": rows_available,
+    }
 
 
 def content_planning_turn_request(
@@ -49,9 +102,11 @@ def content_planning_turn_request(
         sort_keys=True,
         separators=(",", ":"),
     )
+    model_input, coverage = compact_planning_input_for_model(planning_input)
     untrusted_context = json.dumps(
         {
-            "planning_input": planning_input.model_dump(mode="json"),
+            "planning_input": model_input,
+            "planning_input_coverage": coverage,
             "operator_hint": operator_hint,
         },
         ensure_ascii=False,
@@ -70,6 +125,7 @@ def content_planning_output_schema(
     planning_input: ContentPlanningInput,
 ) -> dict[str, object]:
     schema = deepcopy(ContentPlanningModelOutput.model_json_schema())
+    _require_all_object_properties(schema)
     properties = _mapping(schema, "properties")
     definitions = _mapping(schema, "$defs")
     section = _definition(definitions, "ContentPlanningModelSection")
@@ -93,6 +149,9 @@ def content_planning_output_schema(
         if entry.status in {"allowed_with_evidence", "allowed_general"}
     ]
     inventory_headings = [section.heading for section in planning_input.inventory.sections]
+    internal_link_urls = [
+        candidate.target_url for candidate in planning_input.internal_link_candidates
+    ]
 
     _mapping(properties, "service_card_id")["const"] = (
         planning_input.confirmed_service_card_id
@@ -111,8 +170,17 @@ def content_planning_output_schema(
     _restrict_array(_properties(faq), "query_terms", queries)
     _restrict_array(_properties(link), "evidence_ids", evidence_ids)
     _restrict_array(_properties(link), "claim_ids", claim_ids)
-    _restrict_string(_properties(link), "target_url", [])
+    _restrict_string(_properties(link), "target_url", internal_link_urls)
+    _restrict_single_link_candidate_evidence(link, planning_input)
     _restrict_array(_properties(hypothesis), "evidence_ids", evidence_ids)
+    # Keep the first plan deliberately compact.  The model is producing a
+    # reviewable strategy, not the full article; bounded arrays materially
+    # reduce structured-output search while still leaving room for a normal
+    # service page and its evidence lineage.
+    _cap_array(properties, "sections", 12)
+    _cap_array(properties, "faq", 8)
+    _cap_array(properties, "cta_blocks", 4)
+    _cap_array(properties, "conditional_hypotheses", 4)
     _restrict_array(
         _properties(measurement),
         "metrics_to_watch",
@@ -134,7 +202,7 @@ def content_planning_output_schema(
         for source in planning_input.source_assessments
     ):
         _mapping(properties, "conditional_hypotheses")["maxItems"] = 0
-    _mapping(properties, "internal_links")["maxItems"] = 0
+    _mapping(properties, "internal_links")["maxItems"] = len(internal_link_urls)
     return schema
 
 
@@ -191,6 +259,50 @@ def _restrict_string(
     field = _mapping(properties, key)
     if values:
         field["enum"] = list(dict.fromkeys(values))
+
+
+def _restrict_single_link_candidate_evidence(
+    link_schema: dict[str, object],
+    planning_input: ContentPlanningInput,
+) -> None:
+    """Enforce exact evidence when the input has one unambiguous link target."""
+
+    if len(planning_input.internal_link_candidates) != 1:
+        return
+    _restrict_array(
+        _properties(link_schema),
+        "evidence_ids",
+        planning_input.internal_link_candidates[0].evidence_ids,
+    )
+
+
+def _cap_array(properties: dict[str, object], key: str, maximum: int) -> None:
+    field = _mapping(properties, key)
+    current = field.get("maxItems")
+    if not isinstance(current, int) or current > maximum:
+        field["maxItems"] = maximum
+
+
+def _require_all_object_properties(value: object) -> None:
+    """Normalize Pydantic's optional defaults for Codex structured output.
+
+    The app-server response-format contract requires every object property in
+    ``required``.  Pydantic omits fields that have a default, even when the
+    model can safely receive those values.  The model must therefore emit its
+    empty lists and fixed review flags explicitly instead of the runtime
+    rejecting the schema before a planning turn starts.
+    """
+
+    if isinstance(value, dict):
+        properties = value.get("properties")
+        if isinstance(properties, dict):
+            value["required"] = list(properties)
+        value.pop("default", None)
+        for nested in value.values():
+            _require_all_object_properties(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            _require_all_object_properties(nested)
 
 
 __all__ = ["content_planning_output_schema", "content_planning_turn_request"]
