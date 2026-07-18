@@ -38,7 +38,11 @@ from wilq.content.planning.section_mapping import (
     canonicalize_model_inventory_headings,
 )
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
-from wilq.content.workflow.planning import ContentPlanningProposal, ContentPlanningSection
+from wilq.content.workflow.planning import (
+    ContentPlanningInventoryMapping,
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore, local_state_store
@@ -142,6 +146,26 @@ def read_content_planning_proposal(
                 )
             ],
             safe_next_step="Uruchom nową próbę planowania z aktualnego wejścia.",
+        )
+    if not _persisted_inventory_mapping_is_current(planning_input, latest):
+        remapped = _remapped_proposal_projection(planning_input, latest)
+        return ContentPlanningProposalResponse(
+            status="stale",
+            work_item_id=planning_input.work_item_id,
+            service_card_id=service_card_id,
+            planning_input_digest=planning_input.planning_input_digest,
+            input_summary=input_summary,
+            proposal=remapped,
+            blockers=[
+                _blocker(
+                    "stale_input",
+                    "Mapa istniejącej strony wymaga odświeżenia",
+                    "Zapisany plan nie zawiera aktualnej, deterministycznej mapy sekcji inventory.",
+                    "Uruchom nową wersję planu; WILQ ponownie przypisze sekcje "
+                    "bez ręcznego mapowania.",
+                )
+            ],
+            safe_next_step="Uruchom nową wersję planu, aby odświeżyć automatyczną mapę sekcji.",
         )
     return ContentPlanningProposalResponse(
         status="ready",
@@ -302,7 +326,9 @@ def _prepare_generation(
         planning_input.planning_input_digest,
     )
     if existing is not None:
-        if _proposal_quality_errors(existing):
+        if _proposal_quality_errors(existing) or not _persisted_inventory_mapping_is_current(
+            planning_input, existing
+        ):
             return planning_input, None
         return None, ContentPlanningProposalResponse(
             status="idempotent",
@@ -450,6 +476,33 @@ def _planning_output_quality_errors(
 
 def _proposal_quality_errors(proposal: ContentPlanningProposal) -> list[str]:
     return _planning_heading_quality_errors(section.heading for section in proposal.sections)
+
+
+def _expected_inventory_mapping(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> list[ContentPlanningInventoryMapping]:
+    return build_inventory_mapping(
+        planning_input,
+        proposal,
+        [section.section_id for section in proposal.sections],
+    )
+
+
+def _persisted_inventory_mapping_is_current(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> bool:
+    return _expected_inventory_mapping(planning_input, proposal) == proposal.inventory_mapping
+
+
+def _remapped_proposal_projection(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> ContentPlanningProposal:
+    return proposal.model_copy(
+        update={"inventory_mapping": _expected_inventory_mapping(planning_input, proposal)}
+    )
 
 
 def _planning_heading_quality_errors(headings: Iterable[str]) -> list[str]:

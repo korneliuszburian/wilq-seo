@@ -75,13 +75,14 @@ def canonicalize_model_inventory_headings(
 
 def build_inventory_mapping(
     planning_input: ContentPlanningInput,
-    output: ContentPlanningModelOutput,
+    output: object,
     section_ids: list[str],
 ) -> list[ContentPlanningInventoryMapping]:
     """Map all current inventory rows to the generated plan without guessing."""
+    output_sections = getattr(output, "sections", [])
     by_inventory_id: dict[str, list[tuple[int, object]]] = {}
     by_inventory_heading: dict[str, list[tuple[int, object]]] = {}
-    for index, section in enumerate(output.sections):
+    for index, section in enumerate(output_sections):
         if section.inventory_section_id:
             by_inventory_id.setdefault(section.inventory_section_id, []).append((index, section))
         if section.inventory_heading:
@@ -123,7 +124,7 @@ def build_inventory_mapping(
             continue
         candidates = [
             (score, index, section)
-            for index, section in enumerate(output.sections)
+            for index, section in enumerate(output_sections)
             if section.inventory_disposition != "create" and index not in used_plan_indices
             for score in [_heading_similarity(inventory_section.heading, section.heading)]
             if score >= 0.72
