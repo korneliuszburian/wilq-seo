@@ -96,6 +96,75 @@ def test_inventory_catalog_uses_the_latest_wordpress_refresh_batch(monkeypatch):
     assert result.items[0].url == "https://www.ekologus.pl/current-page/"
 
 
+def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
+    page_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    wordpress_row = SimpleNamespace(
+        name="content_object_seen",
+        dimensions={"content_url": page_url},
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_wp_current",
+        collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+    )
+    old_clicks = SimpleNamespace(
+        name="clicks",
+        dimensions={"page": page_url, "query": "stare zapytanie"},
+        source_connector="google_search_console",
+        evidence_id="ev_gsc_old",
+        value="99",
+        collected_at=datetime(2026, 7, 17, tzinfo=timezone.utc),
+    )
+    current_clicks = SimpleNamespace(
+        name="clicks",
+        dimensions={"page": page_url, "query": "bdo"},
+        source_connector="google_search_console",
+        evidence_id="ev_gsc_current",
+        value="1",
+        collected_at=datetime(2026, 7, 18, tzinfo=timezone.utc),
+    )
+    wordpress_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=["ev_wp_current"],
+        metric_summary={},
+    )
+    gsc_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=["ev_gsc_current"],
+    )
+    store = SimpleNamespace(
+        list_metric_facts=lambda connector_id, **_kwargs: (
+            [wordpress_row]
+            if connector_id == "wordpress_ekologus"
+            else [old_clicks, current_clicks]
+        ),
+        list_metric_facts_by_evidence_ids=lambda evidence_ids: (
+            [wordpress_row]
+            if evidence_ids == ["ev_wp_current"]
+            else [current_clicks]
+        ),
+    )
+    monkeypatch.setattr(catalog_module, "metric_store", lambda: store)
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: (
+                [wordpress_run]
+                if connector_id == "wordpress_ekologus"
+                else [gsc_run]
+            )
+        ),
+    )
+
+    result = build_content_inventory_catalog()
+
+    assert result.total_count == 1
+    assert result.items[0].metrics_clicks == 1
+    assert result.items[0].metrics_query_count == 1
+    assert result.items[0].metrics_evidence_ids == ["ev_gsc_current"]
+
+
 def test_dynamic_material_falls_back_to_rendered_the_content(monkeypatch):
     monkeypatch.setattr(
         "wilq.connectors.wordpress.client._wordpress_credentials",

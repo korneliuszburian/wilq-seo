@@ -201,9 +201,14 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
 
 def _latest_wordpress_inventory_facts() -> list[Any]:
     """Read one exact WordPress refresh batch, not an unbounded history union."""
+    return _latest_connector_refresh_facts("wordpress_ekologus")
+
+
+def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
+    """Read one connector batch so catalog metrics never sum refresh history."""
     store = metric_store()
     runs = local_state_store().list_connector_refresh_runs(
-        connector_id="wordpress_ekologus"
+        connector_id=connector_id
     )
     latest = next(
         (
@@ -219,7 +224,7 @@ def _latest_wordpress_inventory_facts() -> list[Any]:
         return by_evidence(evidence_ids)
     # Keep lightweight test doubles and pre-migration local stores readable;
     # production DuckDB always has the evidence-scoped method above.
-    return store.list_metric_facts("wordpress_ekologus", limit=5000)
+    return store.list_metric_facts(connector_id, limit=5000)
 
 
 def _inventory_coverage() -> ContentInventoryCoverage:
@@ -447,7 +452,7 @@ def inventory_metric_facts(url: str, path: str):
 def _catalog_metric_facts_by_path() -> dict[str, list[Any]]:
     """Read the optional analytics snapshot once for the 601-row catalog."""
     try:
-        facts = metric_store().list_metric_facts("google_search_console", limit=5000)
+        facts = _latest_connector_refresh_facts("google_search_console")
     except AttributeError:
         return {}
     indexed: dict[str, list[Any]] = {}
