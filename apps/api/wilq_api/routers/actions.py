@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
@@ -196,6 +197,20 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
                 status_code=409,
                 detail="Najpierw zapisz acknowledgement ręcznego wykonania dla tego planu.",
             )
+        executed_at = acknowledgement.details.get("executed_at")
+        if acknowledgement.details.get("execution_status") == "executed" and executed_at:
+            try:
+                executed_at_value = datetime.fromisoformat(executed_at)
+            except (TypeError, ValueError):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Acknowledgement ma nieprawidłowy czas wykonania.",
+                ) from None
+            if request.observed_at <= executed_at_value:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Obserwacja musi nastąpić po zgłoszonym wykonaniu zmiany.",
+                )
         event = AuditEvent(
             id=f"ads_external_observation_{uuid4().hex}",
             action_id=action_id,
