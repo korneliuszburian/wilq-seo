@@ -5,7 +5,7 @@ from typing import Literal, cast
 from uuid import uuid4
 
 from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerTurnResult
-from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
+from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_section_proposal_contracts import ContentCodexRuntimeTrace
 from wilq.content.drafts.generated_claim_safety import generated_claim_safety_issues
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -24,7 +24,10 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftOutput,
     StructuredDraftOutputSection,
 )
-from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
+    build_content_planning_input,
+)
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.planning import ContentPlanningProposal
 from wilq.content.workflow.store import ContentWorkflowStore
@@ -125,7 +128,20 @@ def _prepare_inputs(
     if service_card_id is None:
         return _planning_not_generated(snapshot, proposal)
     planning_result = build_content_planning_input(snapshot, service_card_id=service_card_id)
-    if planning_result.planning_input is None or planning_result.blockers:
+    # Planning may use a public rendered ``the_content`` read to produce a
+    # reviewable strategy, but a full durable document is a stronger boundary.
+    # Keep every readiness blocker here: review-required WordPress material,
+    # unapproved service cards and stale/blocked sources must not become a
+    # real draft merely because the planner was allowed to inspect them.
+    draft_blockers = [
+        blocker
+        for blocker in planning_result.blockers
+        if not (
+            blocker.code == "wordpress_material_review_required"
+            and _usable_rendered_content_baseline(planning_result.planning_input)
+        )
+    ]
+    if planning_result.planning_input is None or draft_blockers:
         return _blocked_response(
             snapshot,
             proposal=proposal,
@@ -136,7 +152,7 @@ def _prepare_inputs(
                     "Wejście tekstu nie jest aktualne",
                     "Usługa, wiedza, inventory albo metryki nie przechodzą bieżących bramek.",
                     "Odśwież źródła lub zatwierdzenia i wygeneruj aktualny plan.",
-                    source_codes=[item.code for item in planning_result.blockers],
+                    source_codes=[item.code for item in draft_blockers],
                 )
             ],
         )
@@ -168,6 +184,29 @@ def _prepare_inputs(
         planning_input=planning_input,
         proposal=proposal,
         generation_contract=generation.contract,
+    )
+
+
+def _usable_rendered_content_baseline(
+    planning_input: ContentPlanningInput | None,
+) -> bool:
+    """Allow an existing public page body to ground a refresh draft.
+
+    A rendered ``the_content`` read is not an approved knowledge source, but it
+    is a valid baseline for an unreviewed refresh when the API has preserved
+    exact evidence and extraction lineage.  Claims and human scope/map gates
+    remain enforced elsewhere in this preparation path.
+    """
+    if planning_input is None:
+        return False
+    inventory = planning_input.inventory
+    return bool(
+        inventory.content_status == "available"
+        and inventory.content_text
+        and inventory.material_confidence == "review_required"
+        and inventory.extraction_region == "main_or_article_visible_text"
+        and inventory.evidence_ids
+        and inventory.source_field_lineage
     )
 
 
@@ -338,10 +377,7 @@ def _document_scope_errors(
     ]
     if any(not value.strip() for value in lineage_atoms):
         errors.append("blank_lineage_atom")
-    if any(
-        content_url_host(item.target_url) not in CONTENT_SOURCE_SITE_HOSTS
-        for item in proposal.internal_links
-    ):
+    if any(not content_is_safe_public_url(item.target_url) for item in proposal.internal_links):
         errors.append("invalid_internal_link_target")
     return errors
 
