@@ -2754,7 +2754,7 @@ export const ContentInitialDraftBlockerSchema = z.object({
 });
 
 export const ContentInitialDraftResponseSchema = z.object({
-  status: z.enum(["created", "blocked", "failed", "conflict"]),
+  status: z.enum(["generating", "created", "blocked", "failed", "conflict"]),
   work_item_id: z.string().min(1),
   proposal_id: z.string().nullable().optional(),
   run_id: z.string().nullable().optional(),
@@ -2769,6 +2769,13 @@ export const ContentInitialDraftResponseSchema = z.object({
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "created initial draft requires revision and run without blockers"
+      });
+    }
+  } else if (response.status === "generating") {
+    if (response.revision || response.blockers.length === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "generating initial draft requires blockers without revision"
       });
     }
   } else if (response.revision || response.blockers.length === 0) {

@@ -50,11 +50,12 @@ def generate_initial_full_draft(
     client: CodexAppServerClientProtocol,
     workflow_store: ContentWorkflowStore,
     run_store: LocalStateStore,
+    run_id: str | None = None,
 ) -> ContentInitialDraftResponse:
     prepared = _prepare_inputs(snapshot, request)
     if isinstance(prepared, ContentInitialDraftResponse):
         return prepared
-    run = _start_run(prepared, run_store)
+    run = _start_run(prepared, run_store, run_id=run_id)
     runtime_result = _execute_runtime(prepared, client, run, run_store)
     if isinstance(runtime_result, ContentInitialDraftResponse):
         return runtime_result
@@ -561,11 +562,16 @@ def _claim_texts(claim_ids: list[str], claim_text_by_id: dict[str, str]) -> list
     return [claim_text_by_id[item] for item in claim_ids if item in claim_text_by_id]
 
 
-def _start_run(inputs: _InitialDraftInputs, run_store: LocalStateStore) -> CodexRun:
+def _start_run(
+    inputs: _InitialDraftInputs,
+    run_store: LocalStateStore,
+    *,
+    run_id: str | None = None,
+) -> CodexRun:
     work_item_id = inputs.planning_input.work_item_id
     return run_store.save_codex_run(
         CodexRun(
-            id=f"codex_content_initial_draft_{uuid4().hex}",
+            id=run_id or f"codex_content_initial_draft_{uuid4().hex}",
             skill="wilq-content-operator",
             hook="content_initial_full_draft",
             source="wilq_api",

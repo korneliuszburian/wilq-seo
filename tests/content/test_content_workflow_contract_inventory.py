@@ -109,6 +109,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/initial-draft",
     ): ContentInitialDraftResponse,
     (
+        "GET",
+        "/api/content/work-items/{work_item_id}/initial-draft",
+    ): ContentInitialDraftResponse,
+    (
         "POST",
         "/api/content/work-items/snapshot/human-review",
     ): ContentWorkItemHumanReviewResponse,
