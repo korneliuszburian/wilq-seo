@@ -193,6 +193,29 @@ export function AdsMarketSnapshot({
           }
         />
       </div>
+      <div className="mt-3 rounded-md border border-line bg-slate-50/70 p-3 text-xs leading-5 text-slate-600">
+        <div className="font-semibold text-ink">Zakres odczytu</div>
+        <div className="mt-1 grid gap-1 sm:grid-cols-2">
+          <span>
+            Kampanie: {data.aggregation_contract.campaign_rows_returned}/
+            {data.aggregation_contract.campaign_rows_available ?? "?"} · {data.aggregation_contract.campaign_window}
+          </span>
+          <span>
+            Zapytania: {data.aggregation_contract.search_term_rows_returned}/
+            {data.aggregation_contract.search_term_rows_available ?? "?"} · okna 30/90 dni
+          </span>
+          <span>
+            {data.aggregation_contract.is_exhaustive
+              ? "Pełny odczyt"
+              : data.aggregation_contract.view === "summary"
+                ? "Skrót — nie pełna kolejka"
+                : "Pełny odczyt w granicach limitów źródła"}
+          </span>
+          <span>
+            Waluta: {data.aggregation_contract.currency_code ?? "do potwierdzenia"} · {data.aggregation_contract.money_aggregation_allowed ? "potwierdzona" : "zablokowana"}
+          </span>
+        </div>
+      </div>
     </section>
   );
 }

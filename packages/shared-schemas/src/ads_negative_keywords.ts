@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { ActionPreviewCardViewModelSchema } from "./actions";
 import { AdsKeywordMatchContextRowSchema } from "./ads_keyword_contracts";
+import { AdsSearchTermCoverageSchema } from "./ads_search_terms";
 import { MetricFactSchema } from "./connectors";
 
 export const AdsNegativeKeywordPayloadPreviewSchema = z.object({
@@ -85,6 +86,7 @@ export const AdsNegativeKeywordsReadContractSchema = z.object({
   payload_preview: z.array(AdsNegativeKeywordPayloadPreviewSchema),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  coverage: z.array(AdsSearchTermCoverageSchema).default([]),
   missing_read_contracts: z.array(z.string()),
   missing_read_contract_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
@@ -92,4 +94,3 @@ export const AdsNegativeKeywordsReadContractSchema = z.object({
   action_ids: z.array(z.string()),
   next_step: z.string()
 });
-

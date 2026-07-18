@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from wilq.briefing.content_diagnostics import GSC_CONTENT_EXPERT_RULE_IDS
 from wilq.content.planning.decisions import (
     ContentDecisionMetrics,
     content_decision_metric_tiles,
@@ -28,6 +29,11 @@ def _metric_fact(name: str, value: int | float | str, **dimensions: str) -> Metr
         evidence_id=f"ev_{name}_{dimensions.get('query', 'page')}",
         dimensions=dimensions,
     )
+
+
+def test_gsc_content_diagnostics_do_not_claim_unavailable_trend_rules() -> None:
+    assert "seo_content_decay_v1" not in GSC_CONTENT_EXPERT_RULE_IDS
+    assert "seo_cannibalization_v1" not in GSC_CONTENT_EXPERT_RULE_IDS
 
 
 def test_content_decision_metrics_aggregate_gsc_and_pick_primary_query() -> None:

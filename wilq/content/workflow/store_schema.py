@@ -33,10 +33,30 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_wordpress_draft_execution_history (
+      work_item_id TEXT NOT NULL,
+      handoff_id TEXT NOT NULL,
+      revision_id TEXT NOT NULL,
+      revision_digest TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      PRIMARY KEY (work_item_id, handoff_id, revision_id, revision_digest)
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_measurement_windows (
       work_item_id TEXT PRIMARY KEY,
       window_id TEXT NOT NULL,
       payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS content_measurement_window_history (
+      work_item_id TEXT NOT NULL,
+      window_id TEXT NOT NULL,
+      window_digest TEXT NOT NULL,
+      stored_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      PRIMARY KEY (work_item_id, window_id, window_digest)
     )
     """,
     """
@@ -47,10 +67,31 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_measurement_outcome_history (
+      work_item_id TEXT NOT NULL,
+      measurement_window_id TEXT NOT NULL,
+      outcome_id TEXT NOT NULL,
+      outcome_digest TEXT NOT NULL,
+      stored_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      PRIMARY KEY (work_item_id, measurement_window_id, outcome_id, outcome_digest)
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_learning_proposals (
       work_item_id TEXT PRIMARY KEY,
       proposal_id TEXT NOT NULL,
       payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS content_learning_proposal_history (
+      work_item_id TEXT NOT NULL,
+      measurement_window_id TEXT NOT NULL,
+      proposal_id TEXT NOT NULL,
+      stored_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      PRIMARY KEY (work_item_id, measurement_window_id, proposal_id)
     )
     """,
     """

@@ -34,6 +34,10 @@ import {
   ContentServiceProfileResponseSchema,
   ContentPreflightResponseSchema,
   ContentOpportunityEnrichmentResponseSchema,
+  ContentInventoryCatalogResponseSchema,
+  ContentInventoryMaterialResponseSchema,
+  ContentInventoryBindingResponseSchema,
+  ContentOperatorContextSchema,
   ContentWorkItemDraftPackageRequestSchema,
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewRequestSchema,
@@ -76,7 +80,11 @@ import {
   OpportunitySchema,
   SocialHistoryInventorySchema,
   SocialPublisherContextPackSchema,
+  SocialReuseProposalResponseSchema,
   SocialReuseProposalListResponseSchema,
+  SocialReuseReviewRequestSchema,
+  SocialReuseReviewResponseSchema,
+  SocialReuseRevisionRequestSchema,
   TacticalQueueResponseSchema,
   WorkflowRunSchema,
   WorkflowSchema,
@@ -130,6 +138,10 @@ import {
   type ContentPreflightResponse,
   type ContentOpportunityEnrichment,
   type ContentOpportunityEnrichmentResponse,
+  type ContentInventoryCatalogResponse,
+  type ContentInventoryMaterialResponse,
+  type ContentInventoryBindingResponse,
+  type ContentOperatorContext,
   type ContentWorkItemDraftPackageRequest,
   type ContentWorkItemDraftPackageResponse,
   type ContentWorkItemHumanReviewRequest,
@@ -347,6 +359,30 @@ export function getSocialReuseProposals(
   );
 }
 
+export function reviewSocialReuseProposal(
+  proposalId: string,
+  request: SocialReuseReviewRequest
+): Promise<SocialReuseReviewResponse> {
+  return apiPostWithConflict(
+    `/api/social/reuse-proposals/${encodeURIComponent(proposalId)}/review`,
+    SocialReuseReviewResponseSchema,
+    SocialReuseReviewResponseSchema,
+    SocialReuseReviewRequestSchema.parse(request)
+  );
+}
+
+export function reviseSocialReuseProposal(
+  proposalId: string,
+  request: SocialReuseRevisionRequest
+): Promise<SocialReuseProposalResponse> {
+  return apiPostWithConflict(
+    `/api/social/reuse-proposals/${encodeURIComponent(proposalId)}/revise`,
+    SocialReuseProposalResponseSchema,
+    SocialReuseProposalResponseSchema,
+    SocialReuseRevisionRequestSchema.parse(request)
+  );
+}
+
 export function getWordPressAuthoringProfile(): Promise<WordPressAuthoringProfile> {
   return apiGet("/api/content/wordpress/authoring-profile", WordPressAuthoringProfileSchema);
 }
@@ -430,8 +466,32 @@ export function getContentServiceProfile(): Promise<ContentServiceProfileRespons
   return apiGet("/api/content/service-profile", ContentServiceProfileResponseSchema);
 }
 
-export function getContentWorkItemQueue(): Promise<ContentWorkItemQueueResponse> {
-  return apiGet("/api/content/work-items/queue", ContentWorkItemQueueResponseSchema);
+export function getContentOperatorContext(): Promise<ContentOperatorContext> {
+  return apiGet("/api/content/operator-context", ContentOperatorContextSchema);
+}
+
+export function getContentWorkItemQueue(workItemId?: string): Promise<ContentWorkItemQueueResponse> {
+  const query = workItemId ? `?work_item_id=${encodeURIComponent(workItemId)}` : "";
+  return apiGet(`/api/content/work-items/queue${query}`, ContentWorkItemQueueResponseSchema);
+}
+
+export function getContentInventoryCatalog(): Promise<ContentInventoryCatalogResponse> {
+  return apiGet("/api/content/inventory/catalog", ContentInventoryCatalogResponseSchema);
+}
+
+export function getContentInventoryMaterial(url: string): Promise<ContentInventoryMaterialResponse> {
+  return apiGet(
+    `/api/content/inventory/material?url=${encodeURIComponent(url)}`,
+    ContentInventoryMaterialResponseSchema
+  );
+}
+
+export function postContentInventoryBinding(url: string): Promise<ContentInventoryBindingResponse> {
+  return apiPost(
+    "/api/content/inventory/bind",
+    ContentInventoryBindingResponseSchema,
+    { url }
+  );
 }
 
 export function getContentWorkItemSnapshot(
@@ -824,6 +884,21 @@ export function getKnowledgeCards(): Promise<KnowledgeCard[]> {
   return apiGet("/api/knowledge/cards", z.array(KnowledgeCardSchema));
 }
 
+export function getKnowledgeSourceFacts(): Promise<KnowledgeSourceFactView[]> {
+  return apiGet("/api/knowledge/source-facts", z.array(KnowledgeSourceFactViewSchema));
+}
+
+export function getKnowledgeSourceMaterials(): Promise<KnowledgeSourceMaterialView[]> {
+  return apiGet("/api/knowledge/source-materials", z.array(KnowledgeSourceMaterialViewSchema));
+}
+
+export function getKnowledgeSourceMaterialReadiness(): Promise<KnowledgeSourceMaterialReadiness> {
+  return apiGet(
+    "/api/knowledge/source-materials/readiness",
+    KnowledgeSourceMaterialReadinessSchema
+  );
+}
+
 export function getKnowledgePlaybooks(): Promise<MarketingPlaybook[]> {
   return apiGet("/api/knowledge/playbooks", z.array(MarketingPlaybookSchema));
 }
@@ -878,6 +953,10 @@ export type {
   ContentPreflightResponse,
   ContentOpportunityEnrichment,
   ContentOpportunityEnrichmentResponse,
+  ContentInventoryCatalogResponse,
+  ContentInventoryMaterialResponse,
+  ContentInventoryBindingResponse,
+  ContentOperatorContext,
   ContentWorkItemDraftPackageRequest,
   ContentWorkItemDraftPackageResponse,
   ContentWorkItemHumanReviewRequest,
@@ -913,6 +992,9 @@ export type {
   ExpertRule,
   Ga4DiagnosticsResponse,
   KnowledgeCard,
+  KnowledgeSourceFactView,
+  KnowledgeSourceMaterialView,
+  KnowledgeSourceMaterialReadiness,
   KnowledgeOperatingMapResponse,
   LocaloDiagnosticsResponse,
   MarketingBrief,

@@ -4,10 +4,16 @@ import {
   getContentWordPressDraftActivationPacket,
   getContentWordPressDraftWriteReadiness,
   getContentWorkItemEnrichment,
+  getContentInventoryCatalog,
+  getContentServiceProfile,
+  getContentOperatorContext,
   getContentWorkItemQueue,
   getWordPressAuthoringProfile,
   type ContentWorkItemQueueCandidate,
   type ContentWorkItemQueueResponse,
+  type ContentInventoryCatalogResponse,
+  type ContentServiceProfileResponse,
+  type ContentOperatorContext,
   type ContentOpportunityEnrichmentResponse,
   type ContentWordPressDraftActivationPacketResponse,
   type ContentWordPressDraftWriteReadinessResponse,
@@ -16,6 +22,9 @@ import {
 import { loadContentWorkflowSnapshot, type ContentWorkflowSnapshot } from "./contentWorkflowRuntime";
 
 export type ContentWorkItemQueueQuery = UseQueryResult<ContentWorkItemQueueResponse, Error>;
+export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
+export type ContentServiceProfileQuery = UseQueryResult<ContentServiceProfileResponse, Error>;
+export type ContentOperatorContextQuery = UseQueryResult<ContentOperatorContext, Error>;
 export type ContentWorkflowSnapshotQuery = UseQueryResult<ContentWorkflowSnapshot, Error>;
 export type ContentOpportunityEnrichmentQuery = UseQueryResult<
   ContentOpportunityEnrichmentResponse,
@@ -33,17 +42,25 @@ export type WordPressDraftActivationPacketQuery = UseQueryResult<
 
 export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
   const queue = useQuery({
-    queryKey: ["content-workflow", "queue"],
-    queryFn: getContentWorkItemQueue
+    queryKey: ["content-workflow", "queue", selectedWorkItemId],
+    queryFn: () => getContentWorkItemQueue(selectedWorkItemId ?? undefined)
+  });
+  const inventory = useQuery({
+    queryKey: ["content-workflow", "inventory-catalog"],
+    queryFn: getContentInventoryCatalog
+  });
+  const serviceProfile = useQuery({
+    queryKey: ["content-workflow", "service-profile"],
+    queryFn: getContentServiceProfile
+  });
+  const operatorContext = useQuery({
+    queryKey: ["content-workflow", "operator-context"],
+    queryFn: getContentOperatorContext
   });
   const requestedCandidate = queue.data?.candidates.find(
     (candidate) => candidate.work_item_id === selectedWorkItemId
   );
-  const activeWorkItemId = requestedCandidate
-    ? requestedCandidate.work_item_id
-    : queue.data
-      ? defaultSelectedWorkItemId(queue.data)
-      : null;
+  const activeWorkItemId = requestedCandidate?.work_item_id ?? null;
   const selectedCandidate =
     queue.data?.candidates.find((candidate) => candidate.work_item_id === activeWorkItemId) ?? null;
   const selectedCandidateBlocked = selectedCandidate?.recommended_mode === "block";
@@ -79,21 +96,13 @@ export function useContentWorkflowQueries(selectedWorkItemId: string | null) {
     draftActivationPacket,
     draftWriteReadiness,
     enrichment,
+    inventory,
+    operatorContext,
+    serviceProfile,
     queue,
     selectedCandidate,
     workflow
   };
-}
-
-function defaultSelectedWorkItemId(queue: ContentWorkItemQueueResponse) {
-  return (
-    queue.candidates.find((candidate) => candidate.recommended_mode !== "block")?.work_item_id ??
-    queue.candidates.find(
-      (candidate) => candidate.source_public_url || candidate.final_canonical_url
-    )?.work_item_id ??
-    queue.candidates[0]?.work_item_id ??
-    null
-  );
 }
 
 export type { ContentWorkItemQueueCandidate };

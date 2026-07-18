@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
+from wilq.schemas import MetricFact
 
 ContentInventoryStatus = Literal["missing", "resolved", "blocked"]
 ContentCanonicalStatus = Literal["missing", "resolved", "blocked"]
@@ -81,9 +82,18 @@ class ContentWorkItem(BaseModel):
     wordpress_section_count: int | None = None
     wordpress_section_inventory_status: ContentWordPressSectionInventoryStatus = "missing"
     wordpress_content_summary: str | None = None
+    wordpress_content_text: str | None = None
+    wordpress_content_source_kind: str | None = None
+    wordpress_content_extraction_region: str | None = None
+    wordpress_content_material_confidence: str | None = None
+    wordpress_content_source_field_lineage: list[str] = Field(default_factory=list)
     wordpress_content_word_count: int | None = None
     wordpress_content_inventory_status: Literal["available", "missing"] = "missing"
     wordpress_content_inventory_note: str | None = None
+    wordpress_acf_section_inventory_status: Literal["available", "missing"] = "missing"
+    wordpress_acf_section_inventory_note: str | None = None
+    wordpress_acf_section_headings: list[str] = Field(default_factory=list)
+    wordpress_acf_section_count: int | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     inventory_status: ContentInventoryStatus = "missing"
@@ -105,6 +115,7 @@ class ContentWorkItem(BaseModel):
     wordpress_post_id: str | None = None
     measurement_window_status: ContentMeasurementWindowStatus = "missing"
     measurement_window_id: str | None = None
+    metric_facts: list[MetricFact] = Field(default_factory=list)
 
 
 class ContentWorkflowBlocker(BaseModel):

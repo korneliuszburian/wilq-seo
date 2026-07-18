@@ -15,6 +15,10 @@ from wilq.content.canonical.metric_dimensions import (
 )
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import ContentWordPressDraftExecutionResult
+from wilq.content.measurement.aggregates import (
+    MeasurementAggregateResult,
+    aggregate_exact_page_metric_facts,
+)
 from wilq.content.measurement.outcome import ContentMeasurementObservedMetric
 from wilq.content.measurement.window import (
     ContentDateRange,
@@ -24,7 +28,8 @@ from wilq.content.measurement.window import (
     ContentMeasurementWindowBuildResult,
 )
 from wilq.content.workflow.models import ContentWorkItem
-from wilq.schemas import MetricFact
+from wilq.schemas import ConnectorQualityState, ConnectorSettlementState, MetricFact
+from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 MEASUREMENT_CONNECTORS = [
@@ -43,6 +48,12 @@ METRIC_NAMES: dict[tuple[str, str], ContentMeasurementMetric] = {
     ("google_analytics_4", "key_events"): "ga4_key_events",
 }
 def load_content_measurement_facts(content_url: str | None) -> list[MetricFact]:
+    return load_content_measurement_evidence(content_url).facts
+
+
+def load_content_measurement_evidence(
+    content_url: str | None,
+) -> MeasurementAggregateResult:
     store = metric_store()
     normalized_path = landing_page_metric_lookup_path(content_url)
     facts = [
@@ -54,7 +65,11 @@ def load_content_measurement_facts(content_url: str | None) -> list[MetricFact]:
             content_path=normalized_path,
         )
     ]
-    return _unique_metric_facts(facts)
+    unique_facts = _unique_metric_facts(facts)
+    return aggregate_exact_page_metric_facts(
+        unique_facts,
+        content_url=content_url or "",
+    )
 
 
 def build_publication_bound_measurement_window(
@@ -150,6 +165,9 @@ def observed_metrics_from_store(
     metric_facts: list[MetricFact],
 ) -> list[ContentMeasurementObservedMetric]:
     observed: list[ContentMeasurementObservedMetric] = []
+    refresh_runs = {
+        run.id: run for run in local_state_store().list_connector_refresh_runs()
+    }
     for metric in window.allowed_metrics:
         candidates = [
             fact
@@ -176,8 +194,42 @@ def observed_metrics_from_store(
             window.observation_period,
         )
         if baseline is None or observation is None:
+            available = [fact for fact in (baseline, observation) if fact is not None]
+            evidence_ids = list(dict.fromkeys(fact.evidence_id for fact in available))
+            quality_state, settlement_state, caveats = _quality_metadata(
+                evidence_ids, refresh_runs
+            )
+            observed.append(
+                ContentMeasurementObservedMetric(
+                    metric=metric,
+                    baseline_value=None if baseline is None else float(baseline.value),
+                    observation_value=None if observation is None else float(observation.value),
+                    source_connector=(
+                        available[0].source_connector
+                        if available
+                        else _metric_connector(metric)
+                    ),
+                    evidence_ids=evidence_ids,
+                    metric_fact_ids=[_metric_fact_locator(fact) for fact in available],
+                    refresh_run_ids=list(
+                        dict.fromkeys(_refresh_run_id(evidence) for evidence in evidence_ids)
+                    ),
+                    work_item_id=window.work_item_id,
+                    measurement_window_id=window.id,
+                    content_url=window.content_url,
+                    quality_state=quality_state,
+                    settlement_state=settlement_state,
+                    interpretation_caveats=[
+                        *caveats,
+                        "Brakuje jednego z dwóch okresów wymaganych przez pomiar.",
+                    ],
+                )
+            )
             continue
         evidence_ids = list(dict.fromkeys([baseline.evidence_id, observation.evidence_id]))
+        quality_state, settlement_state, caveats = _quality_metadata(
+            evidence_ids, refresh_runs
+        )
         observed.append(
             ContentMeasurementObservedMetric(
                 metric=metric,
@@ -195,9 +247,48 @@ def observed_metrics_from_store(
                 work_item_id=window.work_item_id,
                 measurement_window_id=window.id,
                 content_url=window.content_url,
+                quality_state=quality_state,
+                settlement_state=settlement_state,
+                interpretation_caveats=caveats,
             )
         )
     return observed
+
+
+def _metric_connector(metric: ContentMeasurementMetric) -> str:
+    return "google_analytics_4" if metric.startswith("ga4_") else "google_search_console"
+
+
+def _quality_metadata(evidence_ids, refresh_runs):
+    runs = [
+        refresh_runs[_refresh_run_id(evidence_id)]
+        for evidence_id in evidence_ids
+        if _refresh_run_id(evidence_id) in refresh_runs
+    ]
+    quality_states = {run.quality_state for run in runs}
+    if ConnectorQualityState.unverified in quality_states:
+        quality_state = ConnectorQualityState.unverified
+    elif ConnectorQualityState.partial in quality_states:
+        quality_state = ConnectorQualityState.partial
+    elif ConnectorQualityState.verified in quality_states:
+        quality_state = ConnectorQualityState.verified
+    else:
+        quality_state = ConnectorQualityState.unknown
+    settlement_state = (
+        ConnectorSettlementState.settling
+        if any(run.settlement_state == ConnectorSettlementState.settling for run in runs)
+        else ConnectorSettlementState.settled
+        if runs and all(run.settlement_state == ConnectorSettlementState.settled for run in runs)
+        else ConnectorSettlementState.unknown
+    )
+    caveats = list(
+        dict.fromkeys(
+            caveat
+            for run in runs
+            for caveat in run.covered_window.interpretation_caveats
+        )
+    )
+    return quality_state, settlement_state, caveats
 
 
 def _publication_fact(

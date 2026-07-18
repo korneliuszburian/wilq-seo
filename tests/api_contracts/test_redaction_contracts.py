@@ -31,7 +31,7 @@ def test_redaction_preserves_content_around_secrets_and_scans_credential_urls() 
         }
     )
 
-    assert redacted["body_markdown"] == "Przed [REDACTED] po."
+    assert redacted["body_markdown"] == "Przed XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX po."
     assert redacted["reference"] == "Sprawdź [REDACTED] dalej."
     assert redacted["title"] == (
         "Istniejący URL /bdo-co-musi-wiedziec-przedsiebiorca — treść"

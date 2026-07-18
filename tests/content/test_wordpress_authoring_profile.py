@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
@@ -13,6 +14,11 @@ from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_authoring import (
     build_content_wordpress_authoring_payload_preview,
+)
+from wilq.content.workflow.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionPageAssets,
+    ContentDraftRevisionSection,
 )
 
 WORDPRESS_AUTHORING_ENV = (
@@ -268,6 +274,61 @@ def test_wordpress_authoring_payload_preview_maps_draft_to_acf_without_write(
     assert "Wyjaśnij obowiązki" in (section.field_values["body"] or "")
     assert section.field_values["evidence_ids"] == "ev_gsc_bdo"
     assert section.missing_required_fields == []
+
+
+def test_wordpress_authoring_preview_preserves_full_document_assets_and_meta_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_rest(monkeypatch)
+    export_path = _write_acf_export(tmp_path)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FIELD_GROUPS_EXPORT_PATH", str(export_path))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ACF_FLEX_FIELD_NAME", "sections")
+    profile = build_wordpress_authoring_profile("wordpress_ekologus")
+    document = ContentDraftRevision(
+        schema_version="wilq_content_draft_revision_v2",
+        revision_id="revision_bdo_v2",
+        work_item_id="content_work_item_bdo",
+        revision_number=1,
+        content_digest="a" * 64,
+        draft_package_id="draft_package_bdo",
+        draft_package_digest="b" * 64,
+        planning_input_digest="c" * 64,
+        service_card_id="ekologus_service_bdo_reporting",
+        service_digest="d" * 64,
+        inventory_digest="e" * 64,
+        final_canonical_url="https://ekologus.pl/bdo/",
+        title="BDO dla firm",
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="BDO dla firm",
+            meta_title="BDO dla firm — Ekologus",
+            meta_description="Sprawdź obowiązki BDO swojej firmy.",
+            h1="BDO dla firm",
+            lead="Sprawdź obowiązki BDO swojej firmy.",
+        ),
+        sections=[ContentDraftRevisionSection(
+            section_id="section_bdo",
+            heading="Kogo dotyczy BDO",
+            body_markdown="Wyjaśnij obowiązki BDO.",
+            query_terms=["bdo dla firm"],
+            evidence_ids=["ev_gsc_bdo"],
+            claim_ids=["claim_bdo_scope"],
+        )],
+        publish_ready=False,
+        created_by="codex",
+        created_at=datetime.now(timezone.utc),
+    )
+    result = build_content_wordpress_authoring_payload_preview(
+        handoff=_handoff().model_copy(update={"revision_document": document}),
+        draft_package=_draft_package(),
+        authoring_profile=profile,
+    )
+
+    assert result.page_assets is not None
+    assert result.page_assets.meta_title == "BDO dla firm — Ekologus"
+    assert result.page_assets.h1 == "BDO dla firm"
+    assert result.page_assets.meta_write_status == "review_required"
+    assert result.page_assets.metadata_blockers[0].code == "missing_wordpress_meta_mapping"
 
 
 def test_wordpress_authoring_payload_preview_prefers_content_layout(

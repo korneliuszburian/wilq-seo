@@ -1096,6 +1096,19 @@ class AdsSearchTermMetricRow(BaseModel):
         return self
 
 
+class AdsSearchTermCoverage(BaseModel):
+    """Bounded coverage contract shared by search-term-derived decisions."""
+
+    window: Literal["last_30_days", "search_term_safety_90d"]
+    window_label: str
+    requested_row_limit: int | None = None
+    returned_row_count: int = Field(default=0, ge=0)
+    connector_cap: int | None = None
+    cap_applied: bool = False
+    coverage_status: Literal["bounded_sample", "empty", "blocked"]
+    privacy_omission_caveat: str
+
+
 class AdsSearchTermsReadContract(BaseModel):
     id: str = "ads_search_terms_read_contract"
     status: Literal["ready", "blocked"]
@@ -1109,6 +1122,7 @@ class AdsSearchTermsReadContract(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    coverage: list[AdsSearchTermCoverage] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     next_step: str
 
@@ -1189,6 +1203,7 @@ class AdsSearchTermReviewSummaryContract(BaseModel):
     blocked_claim_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    coverage: list[AdsSearchTermCoverage] = Field(default_factory=list)
     total_search_term_count: int = 0
     zero_conversion_search_term_count: int = 0
     total_clicks: int = 0
@@ -1251,6 +1266,7 @@ class AdsSearchTermNgramReadContract(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    coverage: list[AdsSearchTermCoverage] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     ngram_rows: list[AdsSearchTermNgramRow] = Field(default_factory=list)
     next_step: str
@@ -1305,6 +1321,7 @@ class AdsSearchTermSafetyReadContract(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    coverage: list[AdsSearchTermCoverage] = Field(default_factory=list)
     safety_rows: list[AdsSearchTermSafetyRow] = Field(default_factory=list)
     next_step: str
 
@@ -1738,6 +1755,7 @@ class AdsNegativeKeywordsReadContract(BaseModel):
     payload_preview: list[AdsNegativeKeywordPayloadPreview] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    coverage: list[AdsSearchTermCoverage] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contract_summary_label: str = ""
@@ -1929,6 +1947,27 @@ class AdsFreshnessAssessment(BaseModel):
     next_step: str
 
 
+class AdsAggregationContract(BaseModel):
+    """Make Ads window, compaction and money semantics visible to operators."""
+
+    id: str = "ads_aggregation_contract_v1"
+    view: Literal["full", "summary"]
+    campaign_window: str = "LAST_7_DAYS"
+    search_term_windows: list[str] = Field(default_factory=list)
+    summary_row_limit: int = 5
+    campaign_rows_returned: int = 0
+    campaign_rows_available: int | None = None
+    search_term_rows_returned: int = 0
+    search_term_rows_available: int | None = None
+    is_exhaustive: bool = False
+    summary_scope: str
+    pacing_basis: str = "daily_context_from_last_7_days"
+    currency_code: str | None = None
+    currency_status: Literal["ready", "blocked", "missing"] = "missing"
+    money_aggregation_allowed: bool = False
+    caveats: list[str] = Field(default_factory=list)
+
+
 class AdsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -1940,6 +1979,12 @@ class AdsDiagnosticsResponse(BaseModel):
     live_data_status_label: str = ""
     live_data_available: bool
     freshness_assessment: AdsFreshnessAssessment
+    aggregation_contract: AdsAggregationContract = Field(
+        default_factory=lambda: AdsAggregationContract(
+            view="full",
+            summary_scope="unknown_until_view_assembly",
+        )
+    )
     campaign_read_contract: AdsCampaignReadContract
     account_currency_read_contract: AdsAccountCurrencyReadContract
     business_context_read_contract: AdsBusinessContextReadContract

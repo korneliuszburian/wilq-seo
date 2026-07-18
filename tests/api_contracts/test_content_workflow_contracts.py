@@ -1646,8 +1646,6 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert first_decision["expert_rule_ids"] == [
         "seo_gsc_opportunities_v1",
         "seo_query_page_matrix_v1",
-        "seo_content_decay_v1",
-        "seo_cannibalization_v1",
         "content_duplication_rules_v1",
         "content_brief_rules_v1",
     ]

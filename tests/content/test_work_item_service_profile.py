@@ -7,7 +7,7 @@ from wilq.content.knowledge.work_item_service_profile import (
 from wilq.content.workflow.models import ContentWorkItem
 
 
-def test_homepage_projects_typed_service_profile_binding_with_review_blocker() -> None:
+def test_homepage_projects_typed_service_profile_binding_with_review_requirement() -> None:
     context = build_content_work_item_service_profile_context(
         ContentWorkItem(
             id="content_work_item_homepage",
@@ -21,7 +21,7 @@ def test_homepage_projects_typed_service_profile_binding_with_review_blocker() -
     )
 
     assert context.binding_status == "bound"
-    assert context.decision_status == "blocked"
+    assert context.decision_status == "review_required"
     assert context.service_card_id == "ekologus_service_homepage_overview"
     assert context.service_label == "Strona główna i przegląd oferty Ekologus"
     assert context.service_status == "source_backed_review_required"
@@ -110,6 +110,35 @@ def test_two_exact_pages_use_one_normalized_service_candidate_contract() -> None
     assert outsourcing.service_candidates[0].matched_terms == [
         "outsourcing ekologiczny"
     ]
+    assert bdo.decision_status == "ready"
+    assert outsourcing.decision_status == "ready"
+    assert not bdo.missing_contracts
+    assert not outsourcing.missing_contracts
+
+
+def test_exact_landing_url_wins_when_page_copy_mentions_bdo_too() -> None:
+    context = build_content_work_item_service_profile_context(
+        ContentWorkItem(
+            id="content_work_item_outsourcing_with_bdo_copy",
+            topic="Doradztwo i outsourcing ekologiczny",
+            source_public_url=(
+                "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
+            ),
+            final_canonical_url=(
+                "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
+            ),
+            wordpress_content_text=(
+                "Doradztwo i outsourcing ekologiczny. W ramach oferty wspieramy "
+                "firmy także przy BDO i sprawozdawczości."
+            ),
+            evidence_ids=["ev_wp_outsourcing"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert context.service_card_id == (
+        "ekologus_service_environmental_consulting_outsourcing"
+    )
 
     for foreign_topic in ("subdomena firmowa", "rozliczenie podatku dochodowego"):
         unrelated = build_content_work_item_service_profile_context(

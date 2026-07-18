@@ -238,12 +238,18 @@ def test_metric_store_applies_landing_identity_before_content_limit(
             15,
             f"{outsourcing_url}&utm_medium=search",
         ),
-        (
-            "gsc_audit_newer_noise",
-            newer + timedelta(seconds=1),
-            999,
-            "https://www.ekologus.pl/oferta/?service=audyt",
-        ),
+            (
+                "gsc_audit_newer_noise",
+                newer + timedelta(seconds=1),
+                999,
+                "https://www.ekologus.pl/oferta/?service=audyt",
+            ),
+            (
+                "gsc_outsourcing_after_noise",
+                newer + timedelta(seconds=2),
+                20,
+                outsourcing_url,
+            ),
     ):
         metric_store().save_connector_refresh_metrics(
             ConnectorRefreshRun(
@@ -313,9 +319,13 @@ def test_metric_store_applies_landing_identity_before_content_limit(
         limit=1,
     )
     assert [fact.evidence_id for fact in exact_limited] == [
-        "ev_gsc_outsourcing_new"
+        "ev_gsc_outsourcing_after_noise"
     ]
     assert set(exact_limited[0].dimensions) == {"page", "query"}
+    assert exact_limited[0].previous_value == 15
+    assert exact_limited[0].previous_evidence_id == "ev_gsc_outsourcing_new"
+    assert exact_limited[0].delta == 5
+    assert exact_limited[0].trend == "up"
 
 
 def test_metric_store_owns_and_hides_reserved_dimension_namespace(
@@ -684,3 +694,42 @@ def test_metric_store_retries_duckdb_conflicting_lock(
         assert calls == 2
     finally:
         connection.close()
+
+
+def test_gsc_detail_fact_inherits_exact_refresh_window(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    collected_at = datetime(2026, 6, 29, 8, tzinfo=UTC)
+    run = ConnectorRefreshRun(
+        id="refresh_gsc_exact_period",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=collected_at,
+        completed_at=collected_at,
+        evidence_ids=["ev_refresh_gsc_exact_period"],
+        summary="GSC exact covered window.",
+        metric_summary={"date_start": "2026-06-28", "date_end": "2026-06-28"},
+    )
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=3,
+                dimensions={
+                    "page": "https://www.ekologus.pl/bdo/",
+                    "query": "bdo",
+                },
+            )
+        ],
+    )
+
+    facts = metric_store().list_metric_facts(
+        connector_id="google_search_console",
+        limit=10,
+    )
+
+    assert facts[0].period == "2026-06-28/2026-06-28"

@@ -23,6 +23,17 @@ export const AdsSearchTermMetricRowSchema = z.object({
   blocked_claims: z.array(z.string())
 });
 
+export const AdsSearchTermCoverageSchema = z.object({
+  window: z.enum(["last_30_days", "search_term_safety_90d"]),
+  window_label: z.string(),
+  requested_row_limit: z.number().int().nonnegative().nullable().optional(),
+  returned_row_count: z.number().int().nonnegative(),
+  connector_cap: z.number().int().nonnegative().nullable().optional(),
+  cap_applied: z.boolean(),
+  coverage_status: z.enum(["bounded_sample", "empty", "blocked"]),
+  privacy_omission_caveat: z.string()
+});
+
 export const AdsSearchTermsReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
@@ -39,6 +50,7 @@ export const AdsSearchTermsReadContractSchema = z.object({
   blocked_claim_summary_label: z.string().optional().default(""),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  coverage: z.array(AdsSearchTermCoverageSchema).default([]),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   next_step: z.string()
 });
@@ -92,6 +104,7 @@ export const AdsSearchTermReviewSummaryContractSchema = z.object({
   blocked_claim_summary_label: z.string().optional().default(""),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  coverage: z.array(AdsSearchTermCoverageSchema).default([]),
   total_search_term_count: z.number().int().nonnegative(),
   zero_conversion_search_term_count: z.number().int().nonnegative(),
   total_clicks: z.number().int().nonnegative(),
@@ -132,6 +145,7 @@ export const AdsSearchTermNgramReadContractSchema = z.object({
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  coverage: z.array(AdsSearchTermCoverageSchema).default([]),
   action_ids: z.array(z.string()).optional().default([]),
   ngram_rows: z.array(AdsSearchTermNgramRowSchema),
   next_step: z.string()
@@ -170,6 +184,7 @@ export const AdsSearchTermSafetyReadContractSchema = z.object({
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  coverage: z.array(AdsSearchTermCoverageSchema).default([]),
   safety_rows: z.array(AdsSearchTermSafetyRowSchema),
   next_step: z.string()
 });

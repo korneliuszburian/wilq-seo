@@ -190,6 +190,55 @@ class KnowledgeCard(BaseModel):
         return self
 
 
+class KnowledgeSourceFactView(BaseModel):
+    """A marketer-readable projection of the actual Ekologus source corpus."""
+
+    source_id: str
+    source_type: str
+    privacy_class: str
+    source_url_or_path: str
+    extracted_fact: str
+    scope: str
+    freshness_date: str
+    confidence: float = Field(ge=0, le=1)
+    review_status: str
+    generation_status: Literal["eligible", "blocked_review_required"]
+    reviewer: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    target_card_id: str
+    target_card_title: str
+    blocked_claims: list[str] = Field(default_factory=list)
+    usage_notes: list[str] = Field(default_factory=list)
+
+
+class KnowledgeSourceMaterialView(BaseModel):
+    """Metadata-only view of approved Ekologus materials awaiting import."""
+
+    source_id: str
+    file_name: str
+    title: str
+    kind: str
+    word_count: int = Field(ge=0)
+    digest_prefix: str
+    privacy_class: str
+    import_status: str
+    source_path: str
+
+
+class KnowledgeSourceMaterialReadiness(BaseModel):
+    """Aggregate, metadata-only gate for using the approved source corpus."""
+
+    status: Literal["ready", "import_pending", "excerpt_review_required"]
+    total_count: int = Field(ge=0)
+    imported_count: int = Field(ge=0)
+    import_pending_count: int = Field(ge=0)
+    excerpt_review_required_count: int = Field(ge=0)
+    ready_for_generation: bool
+    blocker: str | None = None
+    next_step: str
+
+
 class KnowledgeTaxonomyEntry(BaseModel):
     id: KnowledgeTaxonomyType
     label: str = ""

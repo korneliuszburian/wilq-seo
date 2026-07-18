@@ -1,6 +1,6 @@
 ---
 name: wilq-campaign-builder
-description: Buduje bezpieczne akcje kampanii Google Ads do sprawdzenia dla Ekologus przez WILQ API. Użyj, gdy marketer pyta "stwórz strukturę kampanii", "zaplanuj PMax/Search/Shopping", "przygotuj kampanię na usługę/produkt", "jakie słowa kluczowe, materiały i sitelinki?", "daj podgląd zmian", albo chce strukturę kampanii, plan grup reklam, pomysły słów kluczowych i materiałów, budżety, kierowanie lub bezpieczny podgląd zmian. Musi sprawdzać propozycje w WILQ przed zapisem zmian i nie wolno omijać audytu.
+description: Przygotowuje evidence-bound kolejkę przeglądu istniejących kampanii Google Ads dla Ekologus przez WILQ API. Użyj, gdy marketer chce ocenić istniejące kampanie, landing page, metryki, ryzyka budżetowe albo bezpieczny podgląd review-only. Nie obiecuje kompletnej struktury nowej kampanii, słów kluczowych, assetów, sitelinków, targetowania ani budżetu bez osobnego kontraktu danych. Musi sprawdzać propozycje w WILQ przed zapisem zmian i nie wolno omijać audytu.
 ---
 
 # WILQ Plan kampanii
@@ -17,10 +17,27 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 <triggers>
 
-- "Przygotuj strukturę kampanii Search dla tej usługi Ekologus."
-- "Zbuduj draft PMax/Shopping bez zapisu zmian."
-- "Jakie materiały, słowa kluczowe i sitelinki możemy przygotować z obecnych dowodów?"
+- "Oceń istniejące kampanie dla tej usługi Ekologus."
+- "Pokaż, co trzeba sprawdzić przed zmianą budżetu lub kampanii."
+- "Połącz landing page, GSC, GA4 i Ads w kolejkę review."
 - "Pokaż podgląd zmian i ryzyka przed zapisem zmian."
+
+## Zakres, który faktycznie dostarcza API
+
+WILQ zwraca evidence-bound `campaign_candidates` z istniejących odczytów Ads,
+policzonymi metrykami, priorytetem review, kontekstem landing page, jawnie
+brakującymi kontraktami oraz niemutującym `budget_payload_preview`. To jest
+materiał do decyzji człowieka i native-UI handoff, nie generator nowej kampanii.
+
+Skill nie może wymyślać ani przedstawiać jako gotowych:
+
+- słów kluczowych, grup reklam, assetów, sitelinków lub copy reklam;
+- typu kampanii, targetowania, budżetu docelowego, CPA/ROAS albo prognozy;
+- gotowości, skuteczności, wzrostu ani opłacalności kampanii.
+
+Jeżeli użytkownik prosi o którykolwiek z tych elementów, odpowiedź ma zawierać
+blokadę `missing_read_contracts` i najmniejszy następny krok do pozyskania
+brakującego, zatwierdzonego źródła. Nie wypełniaj luki brainstormem.
 
 </triggers>
 
@@ -28,10 +45,10 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 <workflow>
 
-1. Wywołaj `GET /api/ads/diagnostics`, żeby sprawdzić gotowość konta, kampanii, search terms, rekomendacji i brakujące dane przed planem kampanii.
+1. Wywołaj `GET /api/ads/diagnostics`, żeby sprawdzić gotowość konta, kampanii, search terms, rekomendacji i brakujące dane przed review.
 2. Pobierz `GET /api/marketing/brief` tylko jako tło marketingowe; nie używaj go zamiast danych Ads.
 3. `POST /api/codex/context-pack` pobieraj tylko gdy potrzebujesz połączyć Ads z GA4, GSC i WordPress albo przygotować szerszy podgląd kampanii.
-4. Odpowiedz jako plan do sprawdzenia: struktura, ryzyka, dowody, zablokowane twierdzenia i action ID do preview/review. Nie zapisuj kampanii.
+4. Odpowiedz jako kolejka review: istniejące kampanie, landing/context, ryzyka, dowody, brakujące kontrakty, zablokowane twierdzenia i action ID do preview/review. Nie zapisuj kampanii.
 5. Jeśli użytkownik prosi o zapis albo podgląd zmiany, użyj `POST /api/actions/{action_id}/validate`; w review-only odpowiedzi wystarczy wskazać action_id i bezpieczny następny krok.
 6. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
 

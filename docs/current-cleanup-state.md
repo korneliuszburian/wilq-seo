@@ -1,33 +1,18 @@
-# Current Cleanup State — 2026-07-16
+# Current Cleanup State — 2026-07-17
 
 Przeczytaj przed cleanupem, refaktorem dashboardu albo zmianą kontraktu API.
 Historia slice’ów jest w git i Beads; ten plik opisuje tylko bieżący stan.
 
 ## Najbliższa instrukcja
 
-`wilq-seo-1oa.37` dodaje exact-revision advisory review semantyczne przez ten
-sam server-side Codex app-server. GET nigdy nie uruchamia modelu; POST wymaga
-bieżącego pełnego dokumentu v2, exact digestu i aktualnego planning inputu.
-Persistowany wynik ocenia dziewięć jawnych wymiarów, wskazuje findings przez
-stabilne `section_id` i zawsze pozostawia `publish_ready=false`,
-`human_review_required=true` oraz `action_object_created=false`. Model nie
-autoryzuje własnej poprawki: dopiero decyzja człowieka `needs_changes` pozwala
-Wilkowi wybrać sekcje, po czym istniejący `codex-proposal` tworzy child revision.
-Realna tabela semantic review nie jest tworzona leniwie; bez backupu i
-maintenance window API zwraca `storage_activation_required` przed modelem.
-
-`wilq-seo-2xmw` dodaje jawny
-`POST /api/content/work-items/{id}/initial-draft` po dokładnie zatwierdzonym,
-wygenerowanym planie. Serwer ponownie buduje bieżący `ContentPlanningInput`,
-przekazuje istniejącemu Codex app-serverowi inventory, query portfolio, source
-facts, claim policy, constraints i metryki, a następnie sam składa lineage oraz
-stabilne ID pełnej rewizji v2. Rewizja i terminalny `CodexRun` zapisują się
-atomowo; stale binding, istniejąca pierwsza rewizja, runtime failure albo
-niezatwierdzona karta nie uruchamiają fallbacku. Dashboard ma jeden przycisk
-„Wygeneruj pełny tekst” i page-like preview title/meta/H1/leadu, sekcji, FAQ,
-CTA i linków. Metryki i techniczne identyfikatory są w rozwijanym „Dlaczego”.
-Proof pozostaje syntetyczny na dwóch zatwierdzonych kopiach kart i tymczasowym
-SQLite; realne karty nadal blokują realny draft do owner review.
+Po evidence-bound query mappingu, pełnym dokumencie i inventory-verified
+linkowaniu najwyższym bezpiecznym P0 jest `wilq-seo-1oa.36.23`: redakcja
+bezpieczeństwa nie może zmieniać utrwalanej prozy ani prowadzić do fałszywej
+idempotencji. Następnie `.36.22` wiąże WordPress execution readback z exact
+revision handoff, a `.36.21` chroni historię measurement windows. Każdy slice
+pozostaje osobno claimowany i proofowany; nie łącz tych władz w jeden cleanup.
+Realne initial draft i semantic review nadal wymagają owner review obu kart, a
+aktywacja storage wymaga backupu i maintenance window.
 Placement pełnego dokumentu nie ma fallbacku: nowy plan może wskazać tylko
 `after_lead`, `after_content` albo dokładny nagłówek własnej sekcji, który przy
 składaniu dokumentu staje się stabilnym `section_id`. Nieznana wartość blokuje
@@ -130,6 +115,14 @@ kontynuuj najwyższy bezpieczny task.
   WordPress execution. Dawny 809-liniowy `build_uat_packet.py` oraz duplikujący
   snapshot/export zostały usunięte bez zastępczego generatora; kanoniczna
   sanitizowana paczka pozostaje czterema dokumentami wynikowymi.
+- Dynamiczne planowanie nie blokuje już wszystkich linków przez `maxItems=0`.
+  `ContentPlanningInput` v3 zawiera wyłącznie kandydatury URL z kierunku
+  widocznego w reviewed scope, które mają dokładny publiczny rekord WordPress i
+  evidence z bieżącego wejścia. Schema modelu ogranicza URL i liczbę linków,
+  lineage odrzuca obcy target/evidence/claim/placement, a zaakceptowany link
+  zachowuje stabilne ID przez pełną rewizję, child revision i renderer
+  WordPress. Brak potwierdzonego inventory daje zero kandydatur, nie zgadywany
+  link.
 - Publiczny WordPress inventory rozdziela bounded metadata enrichment per grupa
   `posts`, `pages` i pozostałe typy. Dzięki temu późniejsza w sitemapie strona
   doradztwa/outsourcingu ma exact canonical, tytuł/H1 i 12 obserwowanych H2/H3

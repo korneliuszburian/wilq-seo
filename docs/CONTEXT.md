@@ -1,6 +1,6 @@
 # WILQ — kanoniczny kontekst produktu i runtime
 
-Stan na: 2026-07-16.
+Stan na: 2026-07-18.
 
 Ten plik jest pierwszym recovery entrypointem po utracie kontekstu. Pokazuje
 docelowy produkt, aktualną prawdę, aktywny priorytet i granice. Nie jest
@@ -68,7 +68,7 @@ uprawnieniem do kopiowania jego obietnic.
 | --- | --- | --- | --- |
 | Daily Command | techniczny pilot działa | świeże dowody, priorytet, blocker i bezpieczne akcje | realny werdykt Wilka i zmierzona oszczędność czasu |
 | Evidence Engine | działa | evidence IDs, connectors, freshness, blocked claims | nierówna głębokość konektorów; dowód sam nie kończy pracy |
-| Knowledge Compiler / Service Profile | częściowo | source-backed karty, lifecycle, review actions i claim policy | 0 kart `approved_current`; 9 kart `review_required` |
+| Knowledge Compiler / Service Profile | częściowo | source-backed karty, lifecycle, review actions i claim policy; 14 jawnych source-facts | 0 kart `approved_current`; 9 kart `review_required`; pełny zatwierdzony korpus 15 materiałów czeka na kontrolowany import |
 | Content Ops | mechaniczny loop działa, jakość nie | jeden entrypoint, planning reviews, exact revisions, Codex proposal, human review, dev draft-only, measurement/learning contracts | wybór konkretnej usługi/strony/sekcji jest zbyt pośredni; realny tekst ma około 5/10; brak owner-reviewed knowledge i Wilku UAT |
 | Ads Doctor | read/review działa | live campaigns/search terms/recommendations, diagnostyka, review-only ActionObjects | brak podstaw do części claims finansowych; Keyword Planner blokowany zewnętrzną gotowością tokena developerskiego |
 | Campaign Builder / custom segments | częściowo | struktury i preview/review contracts | brak dowodu pełnego bezpiecznego realnego build/apply w pilocie |
@@ -150,6 +150,18 @@ Aktywny graf:
 
 Ocena 10/10 wymaga realnej paczki tekstów i werdyktu marketera. Nie może zostać
 nadana przez Codex, testy ani ownera kodu bez review treści.
+
+### Baza wiedzy Ekologusa
+
+`/knowledge` pokazuje teraz najpierw rejestr realnych, zredagowanych faktów
+źródłowych. Legacy karty i playbooki pozostają pomocniczą warstwą operacyjną i
+nie są przedstawiane jako wypowiedzi Ekologusa. Odnaleziony zatwierdzony korpus
+15 plików z repozytorium materiałów jest opisany w
+`docs/research/approved-ekologus-materials-2026-07-17.md`; jego treść nie jest
+jeszcze kopiowana do WILQ. Import wymaga redakcji, lineage, hashy i review
+ownera. Panel pokazuje metadata-only manifest 15 materiałów jako `import
+pending`, więc marketer widzi realny zakres korpusu bez dostępu do surowego
+tekstu; do tego czasu source-backed planning pozostaje jawnie `review_required`.
 
 ## Runtime
 

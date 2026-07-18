@@ -363,6 +363,27 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert "sygnał użyteczny" in contract.user_instruction
     assert "gotowej do publikacji" in contract.system_instruction
 
+    grounded_item = item.model_copy(
+        update={
+            "wordpress_content_text": "Aktualny materiał the_content.",
+            "wordpress_content_source_kind": "rendered_html",
+            "wordpress_content_extraction_region": "main_or_article_visible_text",
+            "wordpress_content_source_field_lineage": ["public_html.main_or_article"],
+        }
+    )
+    grounded = build_structured_draft_generation_contract(
+        item=grounded_item,
+        sales_brief=brief,
+        claim_ledger=ledger,
+        draft_package=draft_package,
+    )
+    assert grounded.contract is not None
+    assert grounded.contract.model_input.existing_content_text == "Aktualny materiał the_content."
+    assert grounded.contract.model_input.existing_content_source_field_lineage == [
+        "public_html.main_or_article"
+    ]
+    assert "public_html.main_or_article" in grounded.contract.user_instruction
+
 
 def test_structured_generation_blocks_full_draft_on_review_required_knowledge() -> None:
     item, ledger, draft_package = _draft_stack()

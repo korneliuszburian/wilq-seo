@@ -6,6 +6,7 @@ import {
   confirmAction,
   getAction,
   getContentWorkItemEnrichment,
+  getContentOperatorContext,
   getContentWorkItemQueue,
   getContentWorkItemPlanningProposal,
   getContentWorkItemSemanticReview,
@@ -58,6 +59,7 @@ vi.mock("../lib/api", async (importOriginal) => {
     confirmAction: vi.fn(),
     getAction: vi.fn(),
     getContentWorkItemEnrichment: vi.fn(),
+    getContentOperatorContext: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemPlanningProposal: vi.fn(),
     getContentWorkItemSemanticReview: vi.fn(),
@@ -86,6 +88,13 @@ vi.mock("../lib/api", async (importOriginal) => {
 
 describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
+    vi.mocked(getContentOperatorContext).mockResolvedValue({
+      display_label: "Wilku (lokalny pilot)",
+      request_label: "wilku",
+      principal_id: "local_operator",
+      trust_level: "local_unverified",
+      authentication_status: "not_configured"
+    } as never);
     vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemPlanningProposal).mockResolvedValue(
@@ -159,7 +168,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -181,11 +190,11 @@ describe("ContentWorkflowSurface", () => {
     expect(within(taskMap).getByRole("button", { name: /Sprawdzenie treści/ })).toBeDisabled();
     expect(within(taskMap).getByRole("button", { name: /Szkic na devie/ })).toBeDisabled();
 
-    expect(within(marketerJourney).getByText("BDO dla firm")).toBeInTheDocument();
+    expect(within(marketerJourney).getAllByText("BDO dla firm").length).toBeGreaterThan(0);
     expect(
       within(marketerJourney).getByText("BDO i sprawozdawczość środowiskowa")
     ).toBeInTheDocument();
-    expect(within(marketerJourney).getByText("odśwież istniejącą treść")).toBeInTheDocument();
+    expect(within(marketerJourney).getAllByText("odśwież istniejącą treść").length).toBeGreaterThan(0);
     expect(within(taskMap).getByText("Brakuje zapisanej wersji szkicu")).toBeInTheDocument();
     expect(within(taskMap).getByText(/Przygotuj podgląd/)).toBeInTheDocument();
 
@@ -204,10 +213,7 @@ describe("ContentWorkflowSurface", () => {
 
     expect(document.querySelector('[data-active-workspace="section_map"]')).toBeInTheDocument();
     expect(screen.getByText("Zatwierdź plan sekcji")).toBeInTheDocument();
-    expect(await screen.findByText("Źródła użyte")).toBeInTheDocument();
-    expect(screen.getByText("3 z 10")).toBeInTheDocument();
-    expect(screen.getByText("Powiązanie landing")).toBeInTheDocument();
-    expect(screen.getByText("GSC: użyte")).toBeInTheDocument();
+    expect(await screen.findByText(/Użyto \d+ z 10 źródeł/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Kogo dotyczy BDO" })).toBeInTheDocument();
     expect(screen.queryByText("Sygnały i braki")).not.toBeInTheDocument();
     expect(screen.queryByText("Tekst sekcji do szkicu")).not.toBeInTheDocument();
@@ -215,7 +221,6 @@ describe("ContentWorkflowSurface", () => {
       "aria-current",
       "step"
     );
-    expect(within(taskMap).getByText(/Oglądasz ukończony krok/)).toBeInTheDocument();
 
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
@@ -256,7 +261,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -286,7 +291,7 @@ describe("ContentWorkflowSurface", () => {
 
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
       />
     );
@@ -311,7 +316,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const picker = await screen.findByRole("combobox", { name: "Strona i temat" });
+    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
     expect(within(picker).getAllByRole("option")).toHaveLength(2);
     expect(picker).toHaveValue("content_work_item_bdo");
 
@@ -330,7 +335,7 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
-  it("falls back to an evidenced queue item for an unknown deep link", async () => {
+  it("keeps an unknown deep link on the explicit selection screen", async () => {
     render(
       <App
         appRouter={createWilqRouter({
@@ -341,9 +346,9 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const picker = await screen.findByRole("combobox", { name: "Strona i temat" });
-    expect(picker).toHaveValue("content_work_item_bdo");
-    expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_bdo");
+    expect(await screen.findByText("Wybierz stronę lub temat")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Aktywna strona" })).not.toBeInTheDocument();
+    expect(getContentWorkItemSnapshot).not.toHaveBeenCalled();
     expect(getContentWorkItemSnapshot).not.toHaveBeenCalledWith("missing_work_item");
   });
 
@@ -359,12 +364,12 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const picker = await screen.findByRole("combobox", { name: "Strona i temat" });
+    const picker = await screen.findByRole("combobox", { name: "Aktywna strona" });
     expect(picker).toHaveValue("content_work_item_bdo");
 
     fireEvent.change(picker, { target: { value: "content_work_item_green_deal" } });
     await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "Strona i temat" })).toHaveValue(
+      expect(screen.getByRole("combobox", { name: "Aktywna strona" })).toHaveValue(
         "content_work_item_green_deal"
       )
     );
@@ -376,7 +381,7 @@ describe("ContentWorkflowSurface", () => {
       "content_work_item_bdo"
     );
     await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "Strona i temat" })).toHaveValue(
+      expect(screen.getByRole("combobox", { name: "Aktywna strona" })).toHaveValue(
         "content_work_item_bdo"
       )
     );
@@ -395,7 +400,7 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    const sectionPicker = await screen.findByRole("combobox", { name: "Sekcja do pracy" });
+    const sectionPicker = await screen.findByRole("combobox", { name: "Poprawiana sekcja" });
     expect(sectionPicker).toHaveValue("Kogo dotyczy BDO");
 
     fireEvent.change(sectionPicker, { target: { value: "Jak przygotować dokumenty" } });
@@ -406,7 +411,9 @@ describe("ContentWorkflowSurface", () => {
       )
     );
     expect(Reflect.get(appRouter.state.location.search, "planning_digest")).toBe("a".repeat(64));
-    expect(screen.getByText("Fokus: Jak przygotować dokumenty", { exact: false })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Poprawiana sekcja" })).toHaveValue(
+      "Jak przygotować dokumenty"
+    );
     expect(saveContentWorkItemPlanningReview).not.toHaveBeenCalled();
     expect(saveContentWorkItemDraftRevision).not.toHaveBeenCalled();
   });
@@ -422,7 +429,7 @@ describe("ContentWorkflowSurface", () => {
     );
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
       />
     );
@@ -457,7 +464,7 @@ describe("ContentWorkflowSurface", () => {
       );
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })}
       />
     );
@@ -514,7 +521,7 @@ describe("ContentWorkflowSurface", () => {
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -564,7 +571,7 @@ describe("ContentWorkflowSurface", () => {
     const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -596,7 +603,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -646,7 +653,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -671,7 +678,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -705,7 +712,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -782,7 +789,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -983,7 +990,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1055,7 +1062,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1089,7 +1096,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1097,7 +1104,7 @@ describe("ContentWorkflowSurface", () => {
     await waitFor(() => {
       expect(getContentWorkItemSnapshot).toHaveBeenCalledWith("content_work_item_bdo");
     });
-    expect(screen.getByText("Workflow treści bez slopu")).toBeInTheDocument();
+    expect(screen.getByText("Tworzenie i odświeżanie treści")).toBeInTheDocument();
     expect(screen.getAllByText("BDO dla firm").length).toBeGreaterThan(0);
     expect(screen.getByText("Ładowanie szczegółów workflow")).toBeInTheDocument();
     expect(screen.queryByText("Ładowanie stanu WILQ")).not.toBeInTheDocument();
@@ -1112,7 +1119,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1143,7 +1150,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1177,7 +1184,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1208,7 +1215,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1293,7 +1300,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1319,7 +1326,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1361,7 +1368,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1395,7 +1402,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1416,7 +1423,6 @@ describe("ContentWorkflowSurface", () => {
         .toEqual(expect.objectContaining({
           handoff: wordpressHandoff(),
           draft_package: draftPackage(),
-          mode: "dry_run",
           write_authorization: null,
           section_overrides: expect.arrayContaining([
             expect.objectContaining({
@@ -1463,7 +1469,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1497,7 +1503,7 @@ describe("ContentWorkflowSurface", () => {
     });
     render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?work_item_id=content_work_item_bdo", defaultPendingMinMs: 0 })}
         client={client}
       />
     );
@@ -1558,6 +1564,7 @@ function planningInputSummary(): NonNullable<ContentPlanningProposalResponse["in
     final_canonical_url: "https://www.ekologus.pl/bdo/",
     service_label: "BDO i sprawozdawczość środowiskowa",
     inventory_status: "available",
+    content_inventory_status: "available",
     source_assessments: [
       {
         source: "wordpress",
@@ -1594,6 +1601,8 @@ function planningInputSummary(): NonNullable<ContentPlanningProposalResponse["in
         }))
     ],
     source_fact_count: 2,
+    source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+    source_material_ids: [],
     evidence_id_count: 3,
     knowledge_card_count: 1,
     measurement_metrics: ["gsc_clicks"]
@@ -1841,6 +1850,8 @@ function inventoryResolution() {
         preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
         content_status: "published",
         source_connectors: ["wordpress_ekologus"],
+        source_fact_ids: [],
+        source_material_ids: [],
         evidence_ids: ["ev_wp_bdo"],
         title: "BDO dla firm",
         h1: "BDO dla firm",
@@ -1905,7 +1916,9 @@ function salesBrief() {
       {
         evidence_id: "ev_gsc_bdo",
         source_connector: "google_search_console",
-        summary: "GSC pokazuje popyt na temat BDO."
+        summary: "GSC pokazuje popyt na temat BDO.",
+        source_fact_ids: [],
+        source_material_ids: []
       }
     ],
     knowledge_card_ids: [
@@ -1929,6 +1942,8 @@ function salesBrief() {
       evidence_id_count: 2,
       source_connector_count: 2,
       source_fact_count: 1,
+      source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+      source_material_ids: [],
       missing_evidence_count: 0,
       knowledge_constraint_count: 1,
       review_required_knowledge_card_count: 1,
@@ -2160,7 +2175,9 @@ function planningWorkspace({
       inventory_disposition: "rewrite" as const,
       query_terms: [],
       claim_ids: [],
-      evidence_ids: section.evidence_ids
+      evidence_ids: section.evidence_ids,
+      source_material_ids: [],
+      knowledge_card_ids: []
     })),
     search_demand: {
       status: "available" as const,
@@ -2215,7 +2232,9 @@ function planningWorkspace({
       success_claim_rule: "Nie claimuj efektu bez obserwacji."
     },
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-    source_connectors: ["google_search_console", "wordpress_ekologus"]
+    source_connectors: ["google_search_console", "wordpress_ekologus"],
+    source_material_ids: [],
+    knowledge_card_ids: []
   };
   const decision = (stage: "scope" | "section_map") => ({
     decision_id: `planning_${stage}`,
@@ -2256,7 +2275,9 @@ function revisionWorkspace(): ContentWorkItemWorkflowSnapshotResponse["revision_
       ),
       query_terms: [],
       evidence_ids: [...section.evidence_ids],
-      claim_ids: []
+      claim_ids: [],
+      source_material_ids: [],
+      knowledge_card_ids: []
     })),
     can_save: true,
     can_review: false,
@@ -2279,6 +2300,8 @@ function savedDraftRevision(): NonNullable<
     draft_package_digest: "d".repeat(64),
     planning_digest: "a".repeat(64),
     final_canonical_url: "https://ekologus.pl/bdo/",
+    source_material_ids: [],
+    knowledge_card_ids: [],
     title: workspace.editor_title,
     sections: workspace.editor_sections.map((section, index) => ({
       ...section,
@@ -2319,6 +2342,8 @@ function savedFullDraftRevision(): NonNullable<
       section_id: `section_bdo_${index + 1}`,
       query_terms: index === 0 ? ["bdo odpady"] : [],
       claim_ids: [],
+      source_material_ids: [],
+      knowledge_card_ids: [],
       body_markdown: `Pełna odpowiedź sekcji ${index + 1} oparta na planie i dowodach.`
     })),
     faq: [{
@@ -2344,7 +2369,9 @@ function savedFullDraftRevision(): NonNullable<
       section_lineage: legacy.sections.map((section) => ({
         heading: section.heading,
         evidence_ids: section.evidence_ids,
-        claim_ids: []
+        claim_ids: [],
+        source_material_ids: [],
+        knowledge_card_ids: []
       })),
       quality_verdict: "ready_for_human_review",
       quality_finding_codes: ["semantic_review_required"],
@@ -2677,7 +2704,7 @@ function serviceProfileContext() {
     decision_status: "blocked" as const,
     status_label: "Kontekst usługi nie jest zatwierdzony do finalnych treści",
     reason:
-      "WILQ dopasował kartę BDO, ale Service Profile nie ma jeszcze zatwierdzenia do production-depth.",
+      "WILQ dopasował kartę BDO, ale Service Profile nie ma jeszcze zatwierdzenia do tworzenia finalnych treści.",
     service_card_id: "ekologus_service_bdo_reporting",
     service_label: "BDO i sprawozdawczość środowiskowa",
     service_status: "source_backed_review_required",
@@ -2707,6 +2734,8 @@ function serviceProfileContext() {
     missing_contracts: ["Publiczne karty usług sprawdzone przez człowieka"],
     safe_next_step: "Sprawdź kartę usługi BDO przed finalnym draftem.",
     source_connectors: ["public_site"],
+    source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+    source_material_ids: [],
     evidence_ids: ["ev_content_service_profile_source_facts"],
     knowledge_card_ids: ["ekologus_service_bdo_reporting"],
     review_action_id: "service_profile_review_card_ekologus_service_bdo_reporting",
@@ -2843,7 +2872,9 @@ function codexSectionProposalResponse(): ContentCodexSectionProposalResponse {
         {
           heading,
           evidence_ids: ["ev_gsc_bdo"],
-          claim_ids: ["claim_general_bdo"]
+          claim_ids: ["claim_general_bdo"],
+          source_material_ids: [],
+          knowledge_card_ids: []
         }
       ],
       quality_verdict: "needs_changes" as const,

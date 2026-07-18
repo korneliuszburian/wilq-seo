@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { KnowledgeOperatingMapResponse } from "../lib/api";
-import { getKnowledgeCards, getKnowledgeOperatingMap, getKnowledgePlaybooks } from "../lib/api";
+import { getKnowledgeCards, getKnowledgeOperatingMap, getKnowledgePlaybooks, getKnowledgeSourceFacts, getKnowledgeSourceMaterialReadiness, getKnowledgeSourceMaterials } from "../lib/api";
 import { GenericSurface } from "./GenericSurface";
 
 vi.mock("../lib/api", () => ({
@@ -12,6 +12,9 @@ vi.mock("../lib/api", () => ({
   getKnowledgeOperatingMap: vi.fn(),
   getKnowledgeCards: vi.fn(),
   getKnowledgePlaybooks: vi.fn(),
+  getKnowledgeSourceFacts: vi.fn(),
+  getKnowledgeSourceMaterials: vi.fn(),
+  getKnowledgeSourceMaterialReadiness: vi.fn(),
   refreshConnector: vi.fn(),
   getWorkflowRuns: vi.fn(),
   getWorkflows: vi.fn()
@@ -88,14 +91,40 @@ describe("KnowledgeSurface", () => {
     vi.mocked(getKnowledgeOperatingMap).mockResolvedValue(operatingMap);
     vi.mocked(getKnowledgeCards).mockResolvedValue([]);
     vi.mocked(getKnowledgePlaybooks).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceFacts).mockResolvedValue([]);
+    vi.mocked(getKnowledgeSourceMaterials).mockResolvedValue([
+      {
+        source_id: "ekologus_material_kb014",
+        file_name: "KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md",
+        title: "Styl marki i język Ekologus",
+        kind: "policy",
+        word_count: 306,
+        digest_prefix: "8186c09a4f715e64",
+        privacy_class: "redacted_only",
+        import_status: "import_pending",
+        source_path: "materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md"
+      }
+    ]);
+    vi.mocked(getKnowledgeSourceMaterialReadiness).mockResolvedValue({
+      status: "import_pending",
+      total_count: 15,
+      imported_count: 0,
+      import_pending_count: 15,
+      excerpt_review_required_count: 0,
+      ready_for_generation: false,
+      blocker: "Korpus oczekuje na import.",
+      next_step: "Zatwierdź excerpty."
+    });
     renderKnowledge();
 
-    expect(await screen.findByRole("heading", { name: "Wiedza" })).toBeInTheDocument();
-    expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
-    expect((await screen.findAllByText("Sprawdź kartę: Sprawdź pomiar przed decyzją Ads")).length).toBeGreaterThan(0);
+    expect(await screen.findByRole("heading", { name: "Źródła i wiedza" })).toBeInTheDocument();
+    expect(screen.getByText("Najbliższy krok źródłowy")).toBeInTheDocument();
+    expect((await screen.findAllByText("Doprowadź 1 materiałów Ekologusa do redakcji i review")).length).toBeGreaterThan(0);
     expect(screen.getByText(/1 twierdzeń wymaga blokady/)).toBeInTheDocument();
     expect(screen.queryByText("binding_ads_review")).not.toBeInTheDocument();
     expect(screen.getByText("ROAS")).toBeInTheDocument();
+    expect(screen.getByText("1 materiałów w manifeście Ekologusa")).toBeInTheDocument();
+    expect(screen.getByText("Korpus źródłowy: zablokowany")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Zasady pracy z wiedzą" }));
     expect(screen.getByText("Co blokuje produkcję treści")).toBeInTheDocument();
@@ -104,11 +133,13 @@ describe("KnowledgeSurface", () => {
 
   it("keeps the knowledge layout useful while the operating map is loading", async () => {
     vi.mocked(getKnowledgeOperatingMap).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getKnowledgeSourceFacts).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getKnowledgeSourceMaterials).mockReturnValue(new Promise(() => {}));
     renderKnowledge();
 
-    expect(await screen.findByRole("heading", { name: "Wiedza" })).toBeInTheDocument();
-    expect(screen.getByText("Najbliższa wiedza do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Ładowanie stanu WILQ")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Źródła i wiedza" })).toBeInTheDocument();
+    expect(screen.getByText("Najbliższy krok źródłowy")).toBeInTheDocument();
+    expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBeGreaterThan(0);
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
   });
 });
