@@ -125,8 +125,8 @@ export function ContentPlanningReviewPanel({
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-sm font-semibold text-ink">Pokrycie istniejącej strony</h3>
               <span className="text-xs text-slate-500">
-                {inventoryMapping.filter((item) => item.status === "mapped").length}/
-                {inventoryMapping.length} sekcji przypisanych automatycznie
+                {inventoryMapping.filter((item) => item.status === "mapped" || item.status === "excluded").length}/
+                {inventoryMapping.length} sekcji obsłużonych automatycznie
               </span>
             </div>
             <ul className="mt-2 grid gap-2 md:grid-cols-2">
