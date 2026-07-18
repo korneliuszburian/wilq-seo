@@ -33,6 +33,7 @@ from wilq.schemas import (
     ActionPreviewRequest,
     ActionReviewRequest,
     AdsExternalExecutionAcknowledgementRequest,
+    AdsExternalObservationRequest,
     AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
     AuditEvent,
@@ -154,6 +155,69 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
                 "notes": request.notes,
                 "observation_required": bool(plan.get("observation_required")),
                 "success_claim_allowed": False,
+                "vendor_write_attempted": False,
+            },
+        )
+        local_state_store().save_audit_event(event)
+        clear_api_view_model_caches()
+        return event
+
+    @router.post(
+        "/api/actions/{action_id}/external-observation",
+        response_model=AuditEvent,
+    )
+    def record_external_ads_observation(
+        action_id: str,
+        request: AdsExternalObservationRequest,
+    ) -> AuditEvent:
+        """Persist a later observation without converting it into causality."""
+
+        action = get_action(action_id)
+        if action is None:
+            raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+        plan = action.payload.get("measurement_plan")
+        if not isinstance(plan, dict) or request.measurement_plan_id != plan.get("id"):
+            raise HTTPException(
+                status_code=409,
+                detail="Observation wskazuje nieaktualny plan pomiaru.",
+            )
+        acknowledgement = next(
+            (
+                event
+                for event in local_state_store().list_audit_events(action_id=action_id)
+                if event.id == request.acknowledgement_event_id
+                and event.event_type == "ads_external_execution_acknowledged"
+                and event.details.get("measurement_plan_id") == request.measurement_plan_id
+            ),
+            None,
+        )
+        if acknowledgement is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Najpierw zapisz acknowledgement ręcznego wykonania dla tego planu.",
+            )
+        event = AuditEvent(
+            id=f"ads_external_observation_{uuid4().hex}",
+            action_id=action_id,
+            event_type="ads_external_observation_recorded",
+            event_type_label="Obserwacja Ads odnotowana",
+            actor=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
+            principal_id=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
+            workspace_id=LOCAL_PILOT_AUDIT_IDENTITY.workspace_id,
+            trust_level=LOCAL_PILOT_AUDIT_IDENTITY.trust_level,
+            summary=(
+                "WILQ zapisał obserwację po ręcznej zmianie Ads; wynik nie jest "
+                "automatycznie sukcesem ani dowodem przyczynowości."
+            ),
+            evidence_ids=list(request.evidence_ids),
+            details={
+                "measurement_plan_id": request.measurement_plan_id,
+                "acknowledgement_event_id": acknowledgement.id,
+                "observation_status": request.observation_status,
+                "observed_at": request.observed_at.isoformat(),
+                "notes": request.notes,
+                "success_claim_allowed": False,
+                "causal_claim_allowed": False,
                 "vendor_write_attempted": False,
             },
         )

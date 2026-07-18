@@ -52,6 +52,23 @@ def test_ads_external_execution_acknowledgement_persists_exact_measurement_bindi
     assert event["details"]["vendor_write_attempted"] is False
     assert event["details"]["success_claim_allowed"] is False
 
+    observation = client.post(
+        f"/api/actions/{action_id}/external-observation",
+        json={
+            "measurement_plan_id": plan_id,
+            "acknowledgement_event_id": event["id"],
+            "observation_status": "inconclusive",
+            "observed_at": "2026-07-25T10:00:00Z",
+            "evidence_ids": ["ev_ads_observation"],
+            "notes": "Okno obserwacji nie daje jeszcze jednoznacznego kierunku.",
+        },
+    )
+    assert observation.status_code == 200, observation.text
+    observation_event = observation.json()
+    assert observation_event["event_type"] == "ads_external_observation_recorded"
+    assert observation_event["details"]["acknowledgement_event_id"] == event["id"]
+    assert observation_event["details"]["causal_claim_allowed"] is False
+
     mismatch = client.post(
         f"/api/actions/{action_id}/external-execution-acknowledgement",
         json={
