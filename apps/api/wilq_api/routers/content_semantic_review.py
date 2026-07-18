@@ -22,6 +22,7 @@ from wilq.content.quality.semantic_review_service import (
 )
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
 from wilq.content.workflow.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import local_state_store
@@ -52,17 +53,18 @@ def register_content_semantic_review_routes(
         work_item_id: str,
         revision_id: str,
     ) -> ContentSemanticReviewResponse:
-        snapshot = snapshot_loader(work_item_id)
         active = _latest_semantic_run(work_item_id, revision_id)
         if active is not None and active.status == "started":
-            snapshot = snapshot_loader(work_item_id)
-            revision = snapshot.revision_workspace.latest_revision
+            revision = content_workflow_store().load_draft_revision_state(
+                work_item_id
+            ).latest_revision
             return _generating_response(
                 work_item_id,
                 revision_id,
                 None if revision is None else revision.content_digest,
                 active.id,
             )
+        snapshot = snapshot_loader(work_item_id)
         result = read_content_semantic_review(
             snapshot=snapshot,
             revision_id=revision_id,
