@@ -146,10 +146,13 @@ def register_content_planning_proposal_routes(
                 store=store,
             )
             stale_mapping = (
-                current.status == "stale"
-                and any(
-                    blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
-                    for blocker in current.blockers
+                request.regenerate_stale_mapping
+                or (
+                    current.status == "stale"
+                    and any(
+                        blocker.label == "Mapa istniejącej strony wymaga odświeżenia"
+                        for blocker in current.blockers
+                    )
                 )
             )
             if not stale_mapping:
