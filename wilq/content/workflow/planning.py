@@ -25,7 +25,7 @@ ContentPlanningInventoryDisposition = Literal[
     "remove_review_required",
     "create",
 ]
-ContentPlanningInventoryMappingStatus = Literal["mapped", "unmapped", "ambiguous"]
+ContentPlanningInventoryMappingStatus = Literal["mapped", "unmapped", "ambiguous", "excluded"]
 
 
 class ContentPlanningPageAssets(BaseModel):
@@ -114,6 +114,7 @@ class ContentPlanningInventoryMapping(BaseModel):
     mapped_section_id: str | None = None
     mapped_section_heading: str | None = None
     disposition: ContentPlanningInventoryDisposition | None = None
+    reason: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
 
 

@@ -135,10 +135,11 @@ export function ContentPlanningReviewPanel({
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-medium text-ink">{item.inventory_heading}</span>
                     <span className={item.status === "mapped" ? "font-semibold text-action" : "font-semibold text-wait"}>
-                {item.status === "mapped" ? "przypisana" : item.status === "ambiguous" ? "niejednoznaczna" : "do sprawdzenia"}
+                {item.status === "mapped" ? "przypisana" : item.status === "ambiguous" ? "niejednoznaczna" : item.status === "excluded" ? "pominięta do review" : "do sprawdzenia"}
                     </span>
                   </div>
                   {item.mapped_section_heading ? <div className="mt-1 text-slate-500">→ {item.mapped_section_heading} · {item.disposition ?? "bez decyzji"}</div> : null}
+                  {item.reason ? <div className="mt-1 text-slate-500">{item.reason === "dated_or_event_inventory" ? "Element datowany lub wydarzenie — nie jest strukturą odpowiedzi." : item.reason === "navigation_or_promotional_inventory" ? "Element nawigacyjny/promocyjny — wymaga osobnego review." : item.reason}</div> : null}
                 </li>
               ))}
             </ul>

@@ -128,3 +128,33 @@ def test_stable_inventory_id_wins_when_the_plan_renames_a_section() -> None:
     mappings = build_inventory_mapping(planning_input, canonical, ["plan_01"])
     assert mappings[0].status == "mapped"
     assert mappings[0].mapped_section_id == "plan_01"
+
+
+def test_decorative_or_dated_inventory_is_explicitly_excluded_for_review() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        inventory=ContentPlanningInventory(
+            status="available",
+            sections=[
+                ContentPlanningInventorySection(
+                    section_id="inventory_event",
+                    heading="13 marca 2020 — szkolenie dla przedsiębiorców",
+                    evidence_ids=["ev_wp"],
+                )
+            ],
+        )
+    )
+    output = ContentPlanningModelOutput.model_construct(
+        sections=[
+            ContentPlanningModelSection.model_construct(
+                heading="Nowa odpowiedź dla czytelnika",
+                purpose="Wyjaśnić temat.",
+                reader_question="Co powinien wiedzieć czytelnik?",
+                inventory_disposition="create",
+            )
+        ]
+    )
+
+    mappings = build_inventory_mapping(planning_input, output, ["plan_01"])
+    assert mappings[0].status == "excluded"
+    assert mappings[0].disposition == "remove_review_required"
+    assert mappings[0].reason == "dated_or_event_inventory"

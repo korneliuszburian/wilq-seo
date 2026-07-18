@@ -9,7 +9,7 @@ from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import ContentPlanningModelOutput
 from wilq.content.workflow.planning import ContentPlanningInventoryMapping
 
-SectionMappingStatus = Literal["mapped", "unmapped", "ambiguous"]
+SectionMappingStatus = Literal["mapped", "unmapped", "ambiguous", "excluded"]
 
 
 def canonicalize_model_inventory_headings(
@@ -121,6 +121,9 @@ def build_inventory_mapping(
             else:
                 status = "mapped"
                 used_plan_indices.add(chosen[1])
+        reason = _excluded_reason(inventory_section.heading)
+        if chosen is None and reason:
+            status = "excluded"
         mappings.append(
             ContentPlanningInventoryMapping(
                 inventory_section_id=inventory_section.section_id,
@@ -128,7 +131,14 @@ def build_inventory_mapping(
                 status=status,
                 mapped_section_id=section_ids[chosen[1]] if chosen else None,
                 mapped_section_heading=chosen[2].heading if chosen else None,
-                disposition=chosen[2].inventory_disposition if chosen else None,
+                disposition=(
+                    chosen[2].inventory_disposition
+                    if chosen
+                    else "remove_review_required"
+                    if status == "excluded"
+                    else None
+                ),
+                reason=reason,
                 evidence_ids=inventory_section.evidence_ids,
             )
         )
@@ -165,6 +175,26 @@ def _heading_similarity(left: str, right: str) -> float:
 
 def _heading_tokens(value: str) -> list[str]:
     return [token for token in re.split(r"[^a-z0-9]+", _normalize_heading(value)) if len(token) > 2]
+
+
+def _excluded_reason(heading: str) -> str:
+    normalized = _normalize_heading(heading)
+    if re.search(r"\b(?:19|20)\d{2}\b", normalized) or re.search(
+        r"\b\d{1,2}\s+(?:stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|"
+        r"sierpnia|wrzesnia|pazdziernika|listopada|grudnia)\b",
+        normalized,
+    ):
+        return "dated_or_event_inventory"
+    if normalized.startswith(
+        (
+            "zaufali nam",
+            "moze cie rowniez zainteresowac",
+            "dowiedz sie wiecej",
+            "sprawdz co ci grozi",
+        )
+    ):
+        return "navigation_or_promotional_inventory"
+    return ""
 
 
 def _normalize_heading(value: str) -> str:

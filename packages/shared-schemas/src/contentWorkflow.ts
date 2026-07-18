@@ -2591,10 +2591,11 @@ export const ContentPlanningProposalSchema = z.object({
   inventory_mapping: z.array(z.object({
     inventory_section_id: z.string().min(1),
     inventory_heading: z.string().min(1),
-    status: z.enum(["mapped", "unmapped", "ambiguous"]),
+    status: z.enum(["mapped", "unmapped", "ambiguous", "excluded"]),
     mapped_section_id: z.string().nullable().optional(),
     mapped_section_heading: z.string().nullable().optional(),
     disposition: ContentPlanningInventoryDispositionSchema.nullable().optional(),
+    reason: z.string().default(""),
     evidence_ids: z.array(z.string()).default([])
   })).optional(),
   search_demand: ContentSearchDemandEvidenceSchema,
