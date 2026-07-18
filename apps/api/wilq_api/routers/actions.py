@@ -22,6 +22,7 @@ from wilq.actions.service import (
     record_action_review,
     validate_action,
 )
+from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
@@ -31,6 +32,7 @@ from wilq.schemas import (
     ActionMutationReadinessSummaryResponse,
     ActionPreviewRequest,
     ActionReviewRequest,
+    AdsExternalExecutionAcknowledgementRequest,
     AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
     AuditEvent,
@@ -94,6 +96,70 @@ def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> AP
             )
         clear_api_view_model_caches()
         return result.model_dump(mode="json")
+
+    @router.post(
+        "/api/actions/{action_id}/external-execution-acknowledgement",
+        response_model=AuditEvent,
+    )
+    def acknowledge_external_ads_execution(
+        action_id: str,
+        request: AdsExternalExecutionAcknowledgementRequest,
+    ) -> AuditEvent:
+        """Persist a human report of an Ads change executed outside WILQ.
+
+        This records attribution and the exact measurement-plan binding only;
+        it never calls Google Ads and never turns the observation into a
+        success claim.
+        """
+
+        action = get_action(action_id)
+        if action is None:
+            raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+        payload = action.payload
+        plan = payload.get("measurement_plan")
+        if payload.get("action_type") != "campaign_change_review" or not isinstance(plan, dict):
+            raise HTTPException(
+                status_code=409,
+                detail="Ta akcja nie ma zatwierdzonego planu pomiaru Ads.",
+            )
+        if request.measurement_plan_id != plan.get("id"):
+            raise HTTPException(
+                status_code=409,
+                detail="Potwierdzenie wskazuje inną wersję planu pomiaru.",
+            )
+        if plan.get("execution_acknowledgement_required") is not True:
+            raise HTTPException(
+                status_code=409,
+                detail="Plan pomiaru nie dopuszcza acknowledgement wykonania.",
+            )
+        event = AuditEvent(
+            id=f"ads_external_execution_{uuid4().hex}",
+            action_id=action_id,
+            event_type="ads_external_execution_acknowledged",
+            event_type_label="Ręczne wykonanie zmiany Ads odnotowane",
+            actor=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
+            principal_id=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
+            workspace_id=LOCAL_PILOT_AUDIT_IDENTITY.workspace_id,
+            trust_level=LOCAL_PILOT_AUDIT_IDENTITY.trust_level,
+            submitted_actor_label=request.acknowledged_by,
+            summary=(
+                "WILQ zapisał informację człowieka o wykonaniu zmiany poza API; "
+                "nie jest to potwierdzenie vendor write ani sukcesu."
+            ),
+            evidence_ids=list(plan.get("baseline_evidence_ids", [])),
+            details={
+                "measurement_plan_id": request.measurement_plan_id,
+                "execution_status": request.execution_status,
+                "executed_at": request.executed_at.isoformat() if request.executed_at else None,
+                "notes": request.notes,
+                "observation_required": bool(plan.get("observation_required")),
+                "success_claim_allowed": False,
+                "vendor_write_attempted": False,
+            },
+        )
+        local_state_store().save_audit_event(event)
+        clear_api_view_model_caches()
+        return event
 
     @router.post("/api/actions/{action_id}/preview")
     def preview_action_endpoint(

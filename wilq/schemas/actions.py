@@ -368,6 +368,18 @@ class ActionReviewResult(BaseModel):
     review_gate: ActionReviewGate
 
 
+class AdsExternalExecutionAcknowledgementRequest(BaseModel):
+    """Human report that an Ads recommendation was executed outside WILQ."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    measurement_plan_id: str = Field(min_length=1)
+    execution_status: Literal["executed", "not_executed", "unknown"]
+    acknowledged_by: str = Field(min_length=1, max_length=200)
+    executed_at: datetime | None = None
+    notes: str = Field(min_length=1, max_length=2000)
+
+
 class ActionConfirmRequest(BaseModel):
     confirmed_by: str = Field(min_length=1)
     notes: str = Field(min_length=1, max_length=2000)
