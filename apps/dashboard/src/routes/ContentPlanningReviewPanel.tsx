@@ -115,6 +115,10 @@ export function ContentPlanningReviewPanel({
         </>
       ) : (
         <>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+          WILQ automatycznie przypisał istniejące sekcje ACF lub treści głównej do planu.
+          Sprawdź tylko decyzję redakcyjną i elementy oznaczone jako niejednoznaczne.
+        </p>
         {!inventoryMapping.length && planning.proposal.generation_status === "codex_generated" ? (
           <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700" data-testid="planning-legacy-mapping-notice">
             Ten plan powstał przed pełną mapą istniejącej strony. Wygeneruj świeżą wersję, aby WILQ pokazał decyzję dla każdej sekcji ACF lub treści głównej.
