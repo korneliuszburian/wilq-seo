@@ -92,6 +92,19 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS social_reuse_proposals (
+      proposal_id TEXT PRIMARY KEY,
+      work_item_id TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      source_revision_id TEXT NOT NULL,
+      source_revision_digest TEXT NOT NULL,
+      proposal_digest TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (work_item_id, platform, source_revision_id, source_revision_digest)
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS audit_events (
       id TEXT PRIMARY KEY,
       action_id TEXT,

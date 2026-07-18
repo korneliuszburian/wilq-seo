@@ -35,4 +35,32 @@ export const SocialPublisherContextPackSchema = z.object({
   social_draft_context: SocialDraftContextSchema
 });
 
+export const SocialReuseProposalSchema = z.object({
+  contract: z.literal("social_reuse_proposal_v1"),
+  proposal_id: z.string().min(1),
+  work_item_id: z.string().min(1),
+  platform: z.enum(["linkedin", "facebook"]),
+  source_revision_id: z.string().min(1),
+  source_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  source_evidence_ids: z.array(z.string().min(1)).min(1),
+  source_claim_ids: z.array(z.string().min(1)),
+  audience: z.string().min(1),
+  angle: z.string().min(1),
+  body: z.string().min(1),
+  constraints: z.array(z.string().min(1)).min(1),
+  duplicate_risk_inventory_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  duplicate_risk_status: z.literal("review_ready"),
+  measurement_hypothesis: z.string().min(1),
+  status: z.enum(["review_required", "approved", "rejected", "stale", "blocked"]),
+  publish_allowed: z.literal(false),
+  created_at: z.string(),
+  proposal_digest: z.string().regex(/^[0-9a-f]{64}$/)
+});
+
+export const SocialReuseProposalResponseSchema = z.object({
+  status: z.enum(["created", "blocked", "stale"]),
+  proposal: SocialReuseProposalSchema.optional(),
+  blocker: z.string().nullable().optional(),
+  next_step: z.string().min(1)
+});
 

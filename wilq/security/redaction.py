@@ -58,6 +58,9 @@ SAFE_IDENTIFIER_KEYS = {
     "proposal_id",
     "draft_package_id",
     "draft_package_digest",
+    "source_revision_digest",
+    "duplicate_risk_inventory_digest",
+    "proposal_digest",
     "handoff_id",
     "decision_type",
     "decision_types",
@@ -147,6 +150,9 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "service_digest",
     "inventory_digest",
     "revision_digest",
+    "source_revision_digest",
+    "duplicate_risk_inventory_digest",
+    "proposal_digest",
 }
 CONTENT_TEXT_KEYS = {
     "body_markdown",

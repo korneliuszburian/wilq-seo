@@ -78,6 +78,7 @@ from wilq.content.workflow.store_schema import ensure_content_workflow_schema
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent, CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
+from wilq.social.reuse import SocialReuseProposal
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
 
@@ -504,6 +505,62 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
             )
         return redacted
 
+
+class _SocialReuseStoreMixin(_StoreConnectionMixin):
+    def save_social_reuse_proposal(self, proposal: SocialReuseProposal) -> SocialReuseProposal:
+        redacted = SocialReuseProposal.model_validate(
+            redact_mapping(proposal.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO social_reuse_proposals (
+                  proposal_id, work_item_id, platform, source_revision_id,
+                  source_revision_digest, proposal_digest, created_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(work_item_id, platform, source_revision_id, source_revision_digest)
+                DO NOTHING
+                """,
+                (
+                    redacted.proposal_id,
+                    redacted.work_item_id,
+                    redacted.platform,
+                    redacted.source_revision_id,
+                    redacted.source_revision_digest,
+                    redacted.proposal_digest,
+                    redacted.created_at.isoformat(),
+                    _model_json(redacted),
+                ),
+            )
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM social_reuse_proposals
+                WHERE work_item_id = ? AND platform = ?
+                  AND source_revision_id = ? AND source_revision_digest = ?
+                LIMIT 1
+                """,
+                (
+                    redacted.work_item_id,
+                    redacted.platform,
+                    redacted.source_revision_id,
+                    redacted.source_revision_digest,
+                ),
+            ).fetchone()
+        if row is None:
+            raise RuntimeError("Social reuse proposal was not persisted.")
+        return SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
+
+    def get_social_reuse_proposal(self, proposal_id: str) -> SocialReuseProposal | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM social_reuse_proposals WHERE proposal_id = ? LIMIT 1",
+                (proposal_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return SocialReuseProposal.model_validate(json.loads(cast(str, row["payload_json"])))
+
     def latest_human_review(self, work_item_id: str) -> ContentHumanReview | None:
         with self._connect() as connection:
             row = connection.execute(
@@ -646,6 +703,7 @@ class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     _WordPressApplyStoreMixin,
     _ReviewStoreMixin,
+    _SocialReuseStoreMixin,
     MeasurementStoreMixin,
 ):
     def __init__(self, path: Path) -> None:
