@@ -53,6 +53,8 @@ describe("Ga4DiagnosticSurface", () => {
     await waitFor(() => expect(screen.getByRole("heading", { name: "GA4" })).toBeInTheDocument());
     expect(screen.getByText("GA4: co dziś zrobić")).toBeInTheDocument();
     expect(screen.getByText("Najpierw pomiar")).toBeInTheDocument();
+    expect(screen.getByText("362")).toBeInTheDocument();
+    expect(screen.getByText("0%")).toBeInTheDocument();
     expect(screen.getAllByText(/dane świeże/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/konwersji/).length).toBeGreaterThan(0);
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();

@@ -154,7 +154,7 @@ export const ga4Diagnostics = {
       status: "blocked",
       status_label: "zablokowane",
       priority: 11,
-      metric_tiles: {},
+      metric_tiles: { aktywni: 58, zdarzenia: 362, zaangażowanie: "0%" },
       landing_page: "(not set)",
       landing_page_label: "brak strony wejścia w raporcie",
       source_medium: "google / organic",

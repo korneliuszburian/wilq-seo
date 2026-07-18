@@ -479,6 +479,20 @@ function Ga4MeasurementIssueCard({
           </span>
         ) : null}
       </div>
+      {Object.keys(decision.metric_tiles).length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Object.entries(decision.metric_tiles).map(([label, value]) => (
+            <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
+          ))}
+        </div>
+      ) : null}
+      <div className="mt-3 text-xs text-slate-600">
+        <TraceLine
+          label="Dowód"
+          values={[decision.evidence_summary_label]}
+          empty="WILQ nie podał dowodu źródłowego; nie traktuj tej luki jako potwierdzonej diagnozy."
+        />
+      </div>
     </article>
   );
 }
