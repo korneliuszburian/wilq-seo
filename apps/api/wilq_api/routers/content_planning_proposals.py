@@ -38,10 +38,11 @@ _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
     thread_name_prefix="wilq-content-plan",
 )
 # Planning is queued and polled by the API, so this deadline is not a browser
-# request budget.  Keep the model turn bounded at two minutes; a timeout is a
+# request budget.  Keep the model turn bounded at three minutes; larger real
+# pages can need more structured-output search, while a timeout remains a
 # typed runtime blocker and can be retried from the same exact input digest.
 # The first useful browser response remains the queued ``generating`` state.
-_DEFAULT_PLANNING_TIMEOUT_SECONDS = 120.0
+_DEFAULT_PLANNING_TIMEOUT_SECONDS = 180.0
 
 
 def _planning_codex_client():
