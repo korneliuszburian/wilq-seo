@@ -8,6 +8,7 @@ from wilq.content.canonical.urls import (
 )
 from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
 from wilq.content.inventory.records import ContentInventoryRecord
+from wilq.content.knowledge.source_facts import ekologus_source_fact_registry
 from wilq.content.workflow.models import (
     ContentCanonicalStatus,
     ContentDuplicateStatus,
@@ -31,11 +32,21 @@ def content_work_item_from_decision(decision: ContentDecisionItem) -> ContentWor
         wordpress_section_count=decision.wordpress_section_count,
         wordpress_section_inventory_status=decision.wordpress_section_inventory_status,
         wordpress_content_summary=decision.wordpress_content_summary,
+        wordpress_content_text=decision.wordpress_content_text,
+        wordpress_content_source_kind=decision.wordpress_content_source_kind,
+        wordpress_content_extraction_region=decision.wordpress_content_extraction_region,
+        wordpress_content_material_confidence=decision.wordpress_content_material_confidence,
+        wordpress_content_source_field_lineage=decision.wordpress_content_source_field_lineage,
         wordpress_content_word_count=decision.wordpress_content_word_count,
         wordpress_content_inventory_status=decision.wordpress_content_inventory_status,
         wordpress_content_inventory_note=decision.wordpress_content_inventory_note,
+        wordpress_acf_section_inventory_status=decision.wordpress_acf_section_inventory_status,
+        wordpress_acf_section_inventory_note=decision.wordpress_acf_section_inventory_note,
+        wordpress_acf_section_headings=decision.wordpress_acf_section_headings,
+        wordpress_acf_section_count=decision.wordpress_acf_section_count,
         evidence_ids=decision.evidence_ids,
         source_connectors=decision.source_connectors,
+        metric_facts=decision.metric_facts,
         inventory_status=_inventory_status(decision),
         canonical_status=_canonical_status(final_url),
         duplicate_status=_duplicate_status(decision),
@@ -124,6 +135,7 @@ def content_sales_brief_seed_from_decision(
     primary_query = decision.primary_query or (
         decision.queries[0] if decision.queries else decision.title
     )
+    source_fact_ids_by_evidence = _source_fact_ids_by_evidence()
     return ContentSalesBriefSeed(
         target_reader="osoba odpowiedzialna za decyzję środowiskową w firmie",
         buyer_problem=decision.summary or decision.title,
@@ -140,11 +152,22 @@ def content_sales_brief_seed_from_decision(
                 evidence_id=evidence_id,
                 source_connector=_source_connector_for_evidence(decision, index),
                 summary=_source_fact_summary(decision, evidence_id),
+                source_fact_ids=source_fact_ids_by_evidence.get(evidence_id, []),
             )
             for index, evidence_id in enumerate(decision.evidence_ids)
         ],
         missing_evidence=[],
     )
+
+
+def _source_fact_ids_by_evidence() -> dict[str, list[str]]:
+    mapping: dict[str, list[str]] = {}
+    for fact in ekologus_source_fact_registry().facts:
+        if fact.review_status != "approved":
+            continue
+        for evidence_id in fact.evidence_ids:
+            mapping.setdefault(evidence_id, []).append(fact.source_id)
+    return mapping
 
 
 def _inventory_status(decision: ContentDecisionItem) -> ContentInventoryStatus:
@@ -182,9 +205,38 @@ def _decision_h2_direction(decision: ContentDecisionItem) -> list[str]:
             "Kiedy warto skonsultować obowiązki środowiskowe",
             "Jak przygotować się do rozmowy",
         ]
-    if decision.queries:
-        return [f"Co wiemy z zapytań: {query}" for query in decision.queries[:2]]
-    return ["Co pokazują dane", "Co sprawdzić przed publikacją"]
+    existing_headings = _usable_inventory_headings(decision.wordpress_section_headings)
+    if existing_headings:
+        return existing_headings[:4]
+    return [
+        "Najważniejsze pytania odbiorców",
+        "Zakres informacji i następny krok",
+    ]
+
+
+def _usable_inventory_headings(headings: list[str]) -> list[str]:
+    """Keep content headings while dropping navigation and related-content noise."""
+    output: list[str] = []
+    ignored_fragments = (
+        "zaufali nam",
+        "może cię również",
+        "powrót",
+        "copyright",
+        "więcej",
+    )
+    for raw_heading in headings:
+        heading = " ".join(raw_heading.split())
+        if not heading or any(fragment in heading.casefold() for fragment in ignored_fragments):
+            continue
+        if heading.casefold().startswith("oferta "):
+            continue
+        if heading.casefold().startswith("poniżej przedstawiamy często zadawane pytania"):
+            heading = "Najczęstsze pytania dotyczące BDO"
+        if heading not in output:
+            output.append(heading)
+        if len(output) == 4:
+            break
+    return output
 
 
 def _decision_h1_direction(decision: ContentDecisionItem) -> str:
