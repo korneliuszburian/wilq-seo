@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  getKnowledgeSourceMaterialReadiness,
   getContentWorkItemPlanningProposal,
   postContentWorkItemPlanningProposal
 } from "../lib/api";
@@ -20,6 +21,11 @@ export function ContentPlanningGenerationPanel({
     queryFn: () => getContentWorkItemPlanningProposal(workItemId),
     refetchInterval: (query) =>
       query.state.data?.status === "generating" ? 1500 : false
+  });
+  const materialReadiness = useQuery({
+    queryKey: ["knowledge-source-material-readiness"],
+    queryFn: getKnowledgeSourceMaterialReadiness,
+    staleTime: 60_000
   });
   const generation = useMutation({
     mutationFn: () => {
@@ -131,6 +137,17 @@ export function ContentPlanningGenerationPanel({
             <PlanningInputFact label="Ślady źródeł" value={inputSummary.evidence_id_count} />
           </div>
         </div>
+      ) : null}
+
+      {materialReadiness.data?.status === "import_pending" ? (
+        <p
+          className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm text-slate-700"
+          data-testid="content-material-readiness-warning"
+        >
+          Materiały firmy: {materialReadiness.data.imported_count}/
+          {materialReadiness.data.total_count} dostępnych. Pozostałe materiały czekają na
+          kontrolowany import po review, więc plan korzysta wyłącznie z widocznych źródeł.
+        </p>
       ) : null}
 
       {currentProposal ? (
