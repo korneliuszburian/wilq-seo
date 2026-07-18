@@ -517,6 +517,15 @@ export function postContentWorkItemInitialDraft(
   );
 }
 
+export function getContentWorkItemInitialDraft(
+  workItemId: string
+): Promise<ContentInitialDraftResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/initial-draft`,
+    ContentInitialDraftResponseSchema
+  );
+}
+
 export function getContentWorkItemSemanticReview(
   workItemId: string,
   revisionId: string

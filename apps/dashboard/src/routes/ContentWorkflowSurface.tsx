@@ -1,10 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
   postContentWorkItemCodexSectionProposal,
+  getContentWorkItemInitialDraft,
   postContentWorkItemInitialDraft,
   postContentWorkItemSemanticReview,
   postContentWorkItemWordPressAuthoringPayloadPreview,
@@ -621,6 +622,13 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
       if (result.status === "created") void refreshRevisionWorkspace();
     }
   });
+  const initialDraftStatusQuery = useQuery({
+    queryKey: ["content-workflow", "initial-draft", selectedWorkItemId],
+    queryFn: () => getContentWorkItemInitialDraft(selectedWorkItemId),
+    enabled: initialDraftMutation.data?.status === "generating",
+    refetchInterval: (query) =>
+      query.state.data?.status === "generating" ? 2000 : false
+  });
   const semanticReviewMutation = useMutation({
     mutationFn: ({ revisionId, revisionDigest }: { revisionId: string; revisionDigest: string }) =>
       postContentWorkItemSemanticReview(
@@ -654,6 +662,7 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     revisionReviewMutation,
     codexProposalMutation,
     initialDraftMutation,
+    initialDraftStatusQuery,
     semanticReviewMutation,
     acfPreviewMutation,
     executionMutation,
@@ -762,7 +771,7 @@ function contentWorkflowActions(
         base_revision_id: latestRevision?.revision_id ?? null,
         title,
         sections,
-        created_by: "wilku"
+        created_by: operatorLabel
       }),
     saveRevisionReview: (
       decision: ContentDraftRevisionDecision,
