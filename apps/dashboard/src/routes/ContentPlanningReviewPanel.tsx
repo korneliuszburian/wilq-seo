@@ -115,6 +115,11 @@ export function ContentPlanningReviewPanel({
         </>
       ) : (
         <>
+        {!inventoryMapping.length && planning.proposal.generation_status === "codex_generated" ? (
+          <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-slate-700" data-testid="planning-legacy-mapping-notice">
+            Ten plan powstał przed pełną mapą istniejącej strony. Wygeneruj świeżą wersję, aby WILQ pokazał decyzję dla każdej sekcji ACF lub treści głównej.
+          </div>
+        ) : null}
         {inventoryMapping.length ? (
           <div className="mt-4 rounded-md border border-line bg-surface p-3" data-testid="planning-inventory-mapping">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
