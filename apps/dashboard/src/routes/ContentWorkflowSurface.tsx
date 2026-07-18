@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
@@ -629,6 +629,18 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     refetchInterval: (query) =>
       query.state.data?.status === "generating" ? 2000 : false
   });
+  const initialDraftStatus = initialDraftStatusQuery.data;
+  useEffect(() => {
+    const result = initialDraftStatus;
+    if (result?.status !== "created" || !result.revision?.revision_id) return;
+    // The status poll has its own query key.  Refresh the canonical snapshot
+    // once the worker has persisted the revision so the page preview, editor,
+    // and review step switch from "generating" to the exact document without
+    // requiring a manual reload.
+    void queryClient.invalidateQueries({
+      queryKey: ["content-workflow", "work-item", selectedWorkItemId]
+    });
+  }, [initialDraftStatus, queryClient, selectedWorkItemId]);
   const semanticReviewMutation = useMutation({
     mutationFn: ({ revisionId, revisionDigest }: { revisionId: string; revisionDigest: string }) =>
       postContentWorkItemSemanticReview(
