@@ -52,6 +52,11 @@ odczytu i działania workflow, nie UAT Wilka ani zgoda na publikację.
 - Oba review są związane z exact rewizją i nie zatwierdzają tekstu. Brak okna
   pomiarowego nie jest dopowiadany ani zastępowany obietnicą wyniku.
 
+Advisory semantic review dla obu rewizji zwraca ten sam jawny blocker
+`storage_activation_required`: realny local state nie ma aktywowanej tabeli
+immutable semantic review. API nie udaje, że review zostało wykonane; wymaga
+tymczasowego storage do proof albo osobnego backupu i maintenance window.
+
 ## Jedna decyzja produktu
 
 Marketer nie wybiera dziesięciu wersji. WILQ prowadzi do jednego aktualnego
