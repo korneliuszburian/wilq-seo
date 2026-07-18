@@ -270,13 +270,15 @@ function NextBestWorkCard({ item }: { item: WorkOrder }) {
           </div>
         </div>
 
+        <div className="mt-4 rounded-md border border-action/25 bg-action/5 p-3">
+          <h4 className="text-sm font-semibold text-ink">Najbezpieczniejszy następny krok</h4>
+          <p className="mt-1 text-sm leading-6 text-slate-700">{item.next_safe_step}</p>
+        </div>
+
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <EvidenceBox label="Dowód" value={item.evidence_summary || `${item.evidence_ids.length} dowodów`} />
           <EvidenceBox label="Akcja" value={item.action_summary || `${item.action_ids.length} akcji`} />
         </div>
-
-        <h4 className="mt-5 text-sm font-semibold text-ink">Najbezpieczniejszy następny krok</h4>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{item.next_safe_step}</p>
 
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
