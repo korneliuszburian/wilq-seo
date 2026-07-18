@@ -14,6 +14,14 @@ i lokalnych katalogach `.local-lab/proof/`; ten plik nie jest kroniką.
   ekrany ani kolejne warstwy ceremonii.
 - Kanoniczny przebieg marketera ma pięć kroków:
   `scope → section_map → draft → review → dev_draft`.
+- 2026-07-18: świeży BDO plan został najpierw poprawnie zablokowany przez
+  datowany nagłówek wydarzenia w istniejącym inventory, a następnie ponowiony
+  po filtrze transportowym dla nagłówków datowanych/promocyjnych/nawigacyjnych.
+  Canonical planning input i pełne inventory nie są filtrowane; tylko envelope
+  modelu pomija presentation noise. Live re-run jest `ready`:
+  `content_planning_proposal_d0e26eb81e7a4d909e83ed831511454c`,
+  `codex_content_planning_60536efbe93e46bf913e8e0241e0183f`, 6 sekcji, 4 FAQ,
+  2 CTA, 1 link. `publish_ready=false`; review człowieka nadal wymagany.
 - WILQ API jest właścicielem stanu, dowodów, wersji, decyzji, ActionObjectów
   i audytu. React renderuje typed view-model i przechowuje tylko niezapisane
   edycje formularza.
