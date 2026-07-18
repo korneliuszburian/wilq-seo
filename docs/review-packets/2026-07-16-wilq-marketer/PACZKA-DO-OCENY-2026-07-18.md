@@ -25,8 +25,8 @@ Testowany adres BDO:
 `https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/`
 
 - decyzja: odśwież istniejącą treść;
-- GSC: 15 237 wyświetleń, 14 kliknięć, CTR 0,09%, 31 zapytań, najlepsza pozycja 1,0;
-- okres GSC: 15 lipca 2026 — pojedynczy snapshot, nie trend;
+- GSC: 266 wyświetleń, 1 kliknięcie, CTR 0,38%, 18 zapytań, najlepsza średnia pozycja 8,50;
+- okres GSC: 15 lipca 2026 — pojedynczy exact snapshot, nie trend; wcześniejsze liczby z paczki zostały zastąpione przez nowszy odczyt;
 - WordPress: 789 słów z odczytu materiału, 12 rozpoznanych nagłówków, ACF dostępny;
 - źródła: WordPress ekologus.pl i Google Search Console;
 - świeżość: GSC settled/partial, GA4 settling/unverified;
