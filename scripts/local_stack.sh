@@ -106,12 +106,13 @@ safe_to_stop() {
 
 kill_process_group() {
   local pid="$1"
+  local signal="${2:-TERM}"
   local pgid
   pgid="$(pid_pgid "$pid")"
   if [ -n "$pgid" ]; then
-    kill -TERM -- "-$pgid" >/dev/null 2>&1 || true
+    kill -"$signal" -- "-$pgid" >/dev/null 2>&1 || true
   else
-    kill "$pid" >/dev/null 2>&1 || true
+    kill -"$signal" "$pid" >/dev/null 2>&1 || true
   fi
 }
 
@@ -164,7 +165,23 @@ stop_service() {
     fi
   fi
 
-  wait_port_free "$port"
+  if wait_port_free "$port"; then
+    return 0
+  fi
+
+  # Uvicorn/Vite reloaders can leave a child listener behind after TERM.  Only
+  # escalate when the remaining listener still belongs to this repository;
+  # an unrelated process remains protected and is reported to the operator.
+  owner="$(port_pid "$port")"
+  if [ -n "$owner" ] && safe_to_stop "$service" "$owner"; then
+    echo "${service} did not release port ${port} after TERM; sending KILL to its process group." >&2
+    kill_process_group "$owner" KILL
+    if wait_port_free "$port"; then
+      return 0
+    fi
+  fi
+  echo "${service} still owns port ${port} after shutdown; refusing to continue." >&2
+  return 1
 }
 
 start_api() {
