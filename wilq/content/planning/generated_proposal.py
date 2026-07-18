@@ -326,8 +326,13 @@ def _prepare_generation(
         planning_input.planning_input_digest,
     )
     if existing is not None:
-        if _proposal_quality_errors(existing) or not _persisted_inventory_mapping_is_current(
-            planning_input, existing
+        if (
+            _proposal_quality_errors(existing)
+            or any(
+                mapping.status in {"unmapped", "ambiguous"}
+                for mapping in existing.inventory_mapping
+            )
+            or not _persisted_inventory_mapping_is_current(planning_input, existing)
         ):
             return planning_input, None
         return None, ContentPlanningProposalResponse(
